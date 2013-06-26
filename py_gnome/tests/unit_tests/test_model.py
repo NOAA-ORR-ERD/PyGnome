@@ -143,7 +143,8 @@ def test_simple_run_rewind():
         print "just ran time step: %s"%model.current_time_step
         
     assert np.all( model.spills.LE('positions') == pos)
-    
+
+
 def test_simple_run_with_map():
     """
     pretty much all this tests is that the model will run

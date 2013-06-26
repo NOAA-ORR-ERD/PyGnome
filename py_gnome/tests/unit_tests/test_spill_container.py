@@ -89,6 +89,27 @@ def test_multiple_spills():
     with pytest.raises(KeyError):
         assert sc.spills[spill.id] is None # it shouldn't be there anymore.
 
+def test_add_data_array_spill_container():
+    """ add a custom data array to spill container and see that it works"""
+    spill = SurfaceReleaseSpill(num_elements=10,
+                                start_position=(23.0, -78.5, 0.0),
+                                release_time=datetime(2012, 1, 1, 12))
+    sc = SpillContainer()
+    sc.spills.add(spill)
+    sc.release_elements(spill.release_time,1)
+    
+    with pytest.raises(TypeError):
+        sc['test'] = 0
+    
+    with pytest.raises(IndexError):
+        sc['test'] = np.zeros( len(sc['spill_num'])-1, dtype=np.int)
+        
+        
+    sc['test1'] = np.zeros( len(sc['spill_num']), dtype=np.int)
+    assert 'test1' in sc._data_arrays.keys() 
+    all_array_types = sc.all_array_types.keys()
+    assert 'test1' in all_array_types
+
 
 def test_rewind():
     start_time = datetime(2012, 1, 1, 12)

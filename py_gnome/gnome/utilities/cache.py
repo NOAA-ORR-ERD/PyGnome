@@ -113,12 +113,9 @@ class ElementCache(object):
         """
         for sc in spill_container_pair.items():
             data = copy.deepcopy(sc.data_arrays_dict)
-            # odd -- deepcopy seems to convert array scalar to item.
-            # kludge to get around that
-            try:
-                data['current_time_stamp'] = np.array(data['current_time_stamp'])
-            except KeyError:
-                pass # not there
+            
+            if sc.current_time_stamp:
+                data['current_time_stamp'] = np.array(sc.current_time_stamp)
 
             ## note: this assumes that the certain SC will be first!
             if sc.uncertain:
@@ -144,7 +141,17 @@ class ElementCache(object):
 
         # look first in in-memory cache.
         try:
-            (data_arrays_dict, u_data_arrays_dict) = self.recent[step_num]
+            # make a copy because we pop out the current_time_stamp
+            # make these changes to the copy so the self.recent does not change
+            (data_arrays_dict, u_data_arrays_dict) = copy.deepcopy(self.recent[step_num])
+            
+            # copy.deepcopy(self.recent[step_num]) converts 'current_time_stamp' to datetime object
+            # to be consistent with np.load() operation below, make this an array.
+            if 'current_time_stamp' in data_arrays_dict:
+                data_arrays_dict['current_time_stamp'] = np.array( data_arrays_dict['current_time_stamp'])
+                if u_data_arrays_dict:    
+                    u_data_arrays_dict['current_time_stamp'] = np.array( u_data_arrays_dict['current_time_stamp'])
+                 
         except KeyError:
             # not in the recent dict: try to load from disk
             try:
@@ -156,11 +163,26 @@ class ElementCache(object):
             except IOError:
                 u_data_arrays_dict = None
 
+        # HOWEVER, loading numpy arrays data_arrays_dict = dict( np.load(self._make_filename(step_num)) )
+        # converts current_time_stamp to numpy.ndarray objects
+        current_time_stamp = None
+        if 'current_time_stamp' in data_arrays_dict:
+            current_time_stamp = data_arrays_dict.pop('current_time_stamp').item()
         sc = SpillContainerData(data_arrays_dict)
+        if current_time_stamp:
+            sc.current_time_stamp = current_time_stamp
+        
         if u_data_arrays_dict is None:
             u_sc = None
         else:
+            current_time_stamp = None
+            if 'current_time_stamp' in u_data_arrays_dict:  
+                current_time_stamp = u_data_arrays_dict.pop('current_time_stamp').item()
+                
             u_sc = SpillContainerData(u_data_arrays_dict, uncertain=True)
+            
+            if current_time_stamp:
+                u_sc.current_time_stamp = current_time_stamp
         scp = SpillContainerPairData(sc, u_sc)
 
         return scp

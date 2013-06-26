@@ -153,6 +153,11 @@ class Spill(object):
             array_types = self.array_types
 
         for name, array_type in array_types.iteritems():
+            #===================================================================
+            # if array_type.shape == ():  # it is a scalar array
+            #    arrays[name] = np.array(0,dtype=array_type.dtype)
+            # else:
+            #===================================================================
             arrays[name] = np.zeros( (num_elements,)+array_type.shape, dtype=array_type.dtype)
         self.initialize_new_elements(arrays, array_types)
         return arrays

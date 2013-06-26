@@ -197,6 +197,11 @@ class Model(serializable.Serializable):
          for outputter in self.outputters]
         
         self.spills.rewind()
+        
+        # setup the current_time_stamp for the spill_container objects
+        for sc in self.spills.items():
+            sc.current_time_stamp = self.model_time
+        
 
     def setup_time_step(self):
         """
@@ -279,11 +284,7 @@ class Model(serializable.Serializable):
         ## but not yet moved, at the beginning of the release time.
         for sc in self.spills.items():
             sc.release_elements(self.model_time, self.time_step)
-        # cache the results
-        # add the timestamp first:
-        for sc in self.spills.items():
-            # needs to be a numpy array -- this will be a rank-zero array scalar with a datetime object in it.
-            sc['current_time_stamp'] = np.array(self.model_time) 
+        # cache the results 
         self._cache.save_timestep(self.current_time_step, self.spills)
         output_info = self.write_output()
         return output_info

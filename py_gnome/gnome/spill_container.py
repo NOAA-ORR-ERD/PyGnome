@@ -42,6 +42,7 @@ class SpillContainerData(object):
         if not data_arrays:
             data_arrays = {}
         self._data_arrays = data_arrays
+        self.current_time_stamp = None
 
     def __getitem__(self, data_name):
         """
@@ -78,6 +79,14 @@ class SpillContainerData(object):
             if array.shape !=  self._data_arrays[data_name].shape:
                 raise ValueError("new data array must be the same shape")
                     
+                    
+        # make sure length(array) equals length of other data_arrays - check against one key
+        if array.shape == ():
+            raise TypeError("0-rank arrays are not valid. If new data is a scalar, enter a list [value]")
+            
+        if len(array) != len(self._data_arrays[self._data_arrays.keys()[0]]):
+            raise IndexError("length of new data should match length of existing data_arrays.")
+        
         self._data_arrays[data_name] = array
 
     @property
@@ -85,7 +94,10 @@ class SpillContainerData(object):
         """
         The number of elements currently in the SpillContainer
         """
-        return len(self['positions']) # every spill should have a postitions data array
+        try:
+            return len(self['positions']) # every spill should have a postitions data array
+        except:
+            return None
 
     @property
     def data_arrays_dict(self):
@@ -110,7 +122,27 @@ class SpillContainer(SpillContainerData):
      
     positions = spill_container['positions'] : returns a (num_LEs, 3) array of world_point_types
     """
-
+    
+    @property
+    def array_types(self):
+        """ 
+        define array_types for a SpillContainer similar to Spill objects. If user
+        adds a new array to the _data_arrays, the corresponding ArrayType object should get
+        created. reconcile_data_arrays looks for array_types to add/remove to _data_arrays.
+        """
+        x = {}
+        for name in dir(self):
+            if name != 'array_types' and type(getattr(self, name)) == gnome.spill.ArrayType:
+                x.update( {name: getattr(self,name) })
+        
+        #=======================================================================
+        # x= dict([(name, getattr(self, name))
+        #        for name in dir(self)
+        #        if name != 'array_types'
+        #        and type(getattr(self, name)) == gnome.spill.ArrayType])
+        #=======================================================================
+        return x
+    
     def __init__(self, uncertain=False):
         super(SpillContainer, self).__init__(uncertain=uncertain)
         
@@ -118,6 +150,20 @@ class SpillContainer(SpillContainerData):
         self.spills = OrderedCollection(dtype=gnome.spill.Spill)
         self.rewind()
 
+    def __setitem__(self, data_name, array):
+        """
+        Invoke baseclass __setitem__ method so the _data_array is set correctly.
+         
+        In addition, create the appropriate ArrayType if it wasn't created by the user. 
+        """
+        super(SpillContainer,self).__setitem__(data_name, array)
+        if data_name not in self.array_types.keys():
+            shape = self._data_arrays[data_name].shape
+            dtype = self._data_arrays[data_name].dtype.type
+            setattr( self, data_name, gnome.spill.ArrayType(shape, dtype))
+            
+        self.reconcile_data_arrays()
+    
     def rewind(self):
         """
         In the rewind operation, we:
@@ -144,14 +190,18 @@ class SpillContainer(SpillContainerData):
                 data_arrays = gnome.spill.Spill().create_new_elements(self.num_elements, array_type)
                 self._data_arrays[name] = data_arrays[name]
 
+        # NOTE: REVIST SINCE DELETING A SPILL REQUIRES REWIND
+        #       NO NEED TO DELETE DATA (JS)
+        #       However, this fails a test so leave for now
+        # 
         # if a spill was deleted, it may have had properties
         # that are not needed anymore
         for k in self._data_arrays.keys()[:]:
-            if k not in self.all_array_types:
-                del self._data_arrays[k]
+           if k not in self.all_array_types:
+               del self._data_arrays[k]
 
     def update_all_array_types(self):
-        self.all_array_types = {}
+        self.all_array_types = self.array_types
         for spill in self.spills:
             self.all_array_types.update(spill.array_types)
 
@@ -170,12 +220,18 @@ class SpillContainer(SpillContainerData):
             u_sc.spills += sp.uncertain_copy()
         return u_sc
 
+    def prepare_for_model_run(self, current_time):
+        """
+        called when setting up the model prior to 1st time step 
+        """
+        
+
     def prepare_for_model_step(self, current_time, time_step=None):
         """
         Called at the beginning of a time step
-        Not sure what might need to get done here...        
+        set the current_time_stamp attribute        
         """
-        pass
+        self.current_time_stamp = current_time
 
     def release_elements(self, current_time, time_step):
         """
@@ -195,7 +251,7 @@ class SpillContainer(SpillContainerData):
                     if 'spill_num' in new_data:
                         new_data['spill_num'][:] = self.spills.index(spill.id, renumber=False)
                     for name in new_data:
-                        if name in self._data_arrays:
+                        if name in self._data_arrays and self._data_arrays[name].shape != ():
                             self._data_arrays[name] = np.r_[ self._data_arrays[name], new_data[name] ]
                         else:
                             self._data_arrays[name] = new_data[name]
@@ -271,12 +327,23 @@ class SpillContainerPairData(object):
         else:
             return (self._spill_container,)
 
-    LE_data = property(lambda self: self._spill_container._data_arrays.keys())    
+    #LE_data = property(lambda self: self._spill_container._data_arrays.keys())
+    @property
+    def LE_data(self):
+        data = self._spill_container._data_arrays.keys()
+        data.append('current_time_stamp')
+        return data    
     
     def LE(self, prop_name, uncertain=False):
         if uncertain:
+            if prop_name == 'current_time_stamp':
+                return self._u_spill_container.current_time_stamp
+            
             return self._u_spill_container[prop_name]
         else:
+            if prop_name == 'current_time_stamp':
+                return self._spill_container.current_time_stamp
+            
             return self._spill_container[prop_name]
 
 
