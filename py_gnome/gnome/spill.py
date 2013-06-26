@@ -58,7 +58,15 @@ class ArrayType(object):#,serializable.Serializable):
              
         # everything passed, then they must be equal
         return True
-                 
+    
+    def __ne__(self,other):
+        """ 
+        Compare inequality (!=) of two objects
+        """
+        if self == other:
+            return False
+        else:
+            return True
         
     
 

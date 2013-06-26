@@ -329,16 +329,15 @@ class Scenario(object):
             return
         
         data = gnome.netcdf_outputter.NetCDFOutput.read_data(self._certainspill_data, all_data=True)
-        ts   = data.pop('current_time_stamp')
          
+        self.model.spills._spill_container.current_time_stamp = data.pop('current_time_stamp').item()
         self.model.spills._spill_container._data_arrays = data
         self.model.spills._spill_container.reconcile_data_arrays()
-        
-        self.model.spills._spill_container._data_arrays['current_time_stamp'] = ts
         
         if self.model.uncertain:
             if not os.path.exists(self._uncertainspill_data):
                 return
             data    = gnome.netcdf_outputter.NetCDFOutput.read_data(self._uncertainspill_data, all_data=True)
+            self.model.spills._u_spill_container.current_time_stamp = data.pop('current_time_stamp').item()
             self.model.spills._u_spill_container._data_arrays = data
             self.model.spills._u_spill_container.reconcile_data_arrays()

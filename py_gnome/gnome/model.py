@@ -374,4 +374,23 @@ class Model(serializable.Serializable):
         if isinstance(obj_added, CatsMover):
             if obj_added.tide is not None and obj_added.tide.id not in self.environment:
                     self.environment += obj_added.tide
+
+    def __eq__(self, other):
+        check = super(Model, self).__eq__(other)
+        if check:
+            # also check the data in spill_container object
+            if type(self.spills) != type(other.spills):
+                return False
+            if self.spills != other.spills:
+                return False
+            
+        return check
         
+    def __ne__(self,other):
+        """ 
+        Compare inequality (!=) of two objects
+        """
+        if self == other:
+            return False
+        else:
+            return True
