@@ -309,7 +309,7 @@ class NetCDFOutput(Outputter, serializable.Serializable):
                 time_.long_name = 'time'
                 time_.standard_name = 'time'
                 time_.calendar = 'gregorian'
-                time_.comment = 'unspecfied time zone'
+                time_.comment = 'unspecified time zone'
                 
                 pc = rootgrp.createVariable('particle_count',np.int32, ('time',), zlib=self._compress)
                 pc.units = '1'
@@ -358,7 +358,7 @@ class NetCDFOutput(Outputter, serializable.Serializable):
             else:
                 file_ = self.netcdf_filename
             
-            time_stamp = sc['current_time_stamp'].item()
+            time_stamp = sc.current_time_stamp
             
             with nc.Dataset(file_, 'a') as rootgrp:
                 rootgrp.variables['time'][step_num] = nc.date2num( time_stamp, 

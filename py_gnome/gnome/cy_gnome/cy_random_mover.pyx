@@ -3,7 +3,7 @@ import numpy as np
 
 # following exist in gnome.cy_gnome 
 from type_defs cimport *
-from movers cimport Random_c,Mover_c
+from movers cimport Random_c, Mover_c
 cimport cy_mover
 
 """
