@@ -94,7 +94,10 @@ class SpillContainerData(object):
         """
         The number of elements currently in the SpillContainer
         """
-        return len(self['positions']) # every spill should have a postitions data array
+        try:
+            return len(self['positions']) # every spill should have a postitions data array
+        except:
+            return None
 
     @property
     def data_arrays_dict(self):

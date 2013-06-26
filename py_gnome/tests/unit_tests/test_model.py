@@ -144,7 +144,7 @@ def test_simple_run_rewind():
         
     assert np.all( model.spills.LE('positions') == pos)
 
-@pytest.mark.xfail    
+
 def test_simple_run_with_map():
     """
     pretty much all this tests is that the model will run
