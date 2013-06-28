@@ -85,19 +85,18 @@ if sys.platform == 'darwin' and sys.maxint <= 2147483647:
 
 
 # the cython extensions to build -- each should correspond to a *.pyx file
-extension_names = [
+extension_names = ['cy_mover',
                    'cy_helpers',
-                   'cy_ossm_time',
-                   'cy_shio_time',
-                   'cy_mover',
                    'cy_wind_mover',
                    'cy_cats_mover',
                    'cy_gridcurrent_mover',
                    'cy_gridwind_mover',
+                   'cy_ossm_time',
                    'cy_random_mover',
                    'cy_random_vertical_mover',
                    'cy_land_check',
                    'cy_grid_map',
+                   'cy_shio_time',
                    ]
 
 cpp_files = ['RectGridVeL_c.cpp',
@@ -318,12 +317,10 @@ for mod_name in extension_names:
                        )
 
 # and platfrom-independent cython extensions:
-# well...not entirely platform-independant.  We need to pass the link_args
 extensions.append( Extension("gnome.utilities.geometry.cy_point_in_polygon",
                              sources=["gnome/utilities/geometry/cy_point_in_polygon.pyx",
                                       "gnome/utilities/geometry/c_point_in_polygon.c"],
                              include_dirs=[np.get_include()],
-                             extra_link_args=link_args,
                             )
                   )
 
