@@ -8,8 +8,8 @@ cimport type_defs
 cimport utils
 
 cdef class CyDateTime:
-    cdef type_defs.Seconds * seconds
-    cdef type_defs.Seconds tSeconds
+    cdef unsigned long * seconds
+    cdef unsigned long tSeconds
     cdef type_defs.DateTimeRec * dateRec
     cdef type_defs.DateTimeRec tDateRec
     
@@ -29,7 +29,7 @@ cdef class CyDateTime:
         utils.DateToSeconds( &date[0], self.seconds)
         return self.tSeconds
     
-    def SecondsToDate(self, type_defs.Seconds secs):
+    def SecondsToDate(self, unsigned long secs):
         utils.SecondsToDate( secs, self.dateRec)
         return self.tDateRec
 

@@ -47,7 +47,7 @@ cdef class CyMover(object):
         if self.mover:
             self.mover.PrepareForModelRun()
     
-    def prepare_for_model_step(self, model_time, step_len, numSets=0, cnp.ndarray[cnp.npy_longlong] setSizes=None):
+    def prepare_for_model_step(self, model_time, step_len, numSets=0, cnp.ndarray[cnp.npy_int] setSizes=None):
         """
         .. function:: prepare_for_model_step(self, model_time, step_len, uncertain)
         

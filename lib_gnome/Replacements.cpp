@@ -15,7 +15,7 @@
 using std::fstream;
 using std::ios;
 
-void DisplayMessage(const char *msg) {return;}
+void DisplayMessage(char *msg) {return;}
 
 void MySpinCursor(void) { return; }
 

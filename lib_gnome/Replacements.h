@@ -50,11 +50,11 @@
 #define TimeGridWindRect TimeGridWindRect_c
 #define TimeGridWindCurv TimeGridWindCurv_c
 
-#define TechError(a, b, c) printf("%s", a)
-#define printError(msg) printf("%s", msg)
-#define printNote(msg) printf("%s", msg)
+#define TechError(a, b, c) printf(a)
+#define printError(msg) printf(msg)
+#define printNote(msg) printf(msg)
 
-void DisplayMessage(const char *msg);
+void DisplayMessage(char *msg);
 void MySpinCursor(void);
 void SysBeep(short);
 
