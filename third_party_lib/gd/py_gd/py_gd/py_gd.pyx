@@ -9,7 +9,8 @@ import cython
 from py_gd cimport *
 
 from libc.stdio cimport FILE, fopen, fclose
-from libc.string cimport *
+from libc.string cimport memcpy
+from libc.stdlib cimport malloc, free
 
 import operator
 
@@ -44,12 +45,13 @@ cdef class Image:
     """
     cdef readonly unsigned int width, height
     cdef gdImagePtr _image
+    cdef unsigned char* _buffer_array
 
     cdef list color_names
     cdef list color_rgb
     cdef dict colors 
 
-    def __cinit__(self, int width, int height, preset_colors=True):
+    def __cinit__(self, int width, int height, preset_colors='web_colors'):
 
         self.width = width
         self.height = height
@@ -72,7 +74,7 @@ cdef class Image:
         if self._image is not NULL:
             gdImageDestroy(self._image)
 
-    def __init__(self, width, height, preset_colors=True):
+    def __init__(self, width, height, preset_colors='web_colors'):
         """
         create a new Image object
 
@@ -82,17 +84,36 @@ cdef class Image:
         :param height: height of image in pixels
         :type height: integer
 
-        The Image is created as a 8-bit Paletted Image
+        :param preset_colors='web_colors': which set of preset colors you want.                                   options are:
+                                           
+                                            'web_colors' - the basic named colors for the web: transparent background
 
-        NOTE: the initilization of the C stucts is happening in the __cinit__
+                                           'basic' - transparent, black, and white: transparent background
+                                           
+                                           'none' - no pre-allocated colors -- the first one you allocate will be the background color 
+        :type preset_colors: string
+
+        The Image is created as a 8-bit Paletted Image.
+
+        NOTE: the initilization of the C structs is happening in the __cinit__
         """
+        # set first color (background) to transparent
+        self.colors = {'transparent': gdImageColorAllocateAlpha(self._image, 0, 0, 0, 127)}# set first color (background) to transparent
+        self.color_names = ['transparent']
         ## initilize a couple standard colors
-        if preset_colors:
-            self.colors = {name:gdImageColorAllocate (self._image, r, g, b) for (name, (r,g,b)) in web_colors}
-            self.color_names = [name for (name, c) in web_colors]
+        if preset_colors == 'web_colors':
+            [ self.colors.setdefault(name, gdImageColorAllocate (self._image, r, g, b) ) for (name, (r,g,b)) in web_colors ]
+            [ self.color_names.append(name) for (name, c) in web_colors ]
+        elif preset_colors == 'basic':
+            self.colors['black'] = gdImageColorAllocate (self._image, 0, 0, 0)
+            self.color_names.append('black')
+            self.colors['white'] = gdImageColorAllocate (self._image, 255, 255, 255)
+            self.color_names.append('white')
+        elif preset_colors == 'none':
+            self.colors = {}
+            self.color_names = []
         else:
-            self.colors = {'black':gdImageColorAllocate (self._image, 0, 0, 0)}
-            self.color_names = ['black']
+            raise ValueError("preset_colors needs to one of 'web_colors', 'basic', or 'none'")
 
     @cython.boundscheck(False)
     def __array__(self):
@@ -102,7 +123,7 @@ cdef class Image:
         Note that the array is (height, width) in size, in
         keeping with image storage standards (e.g. PIL)
         """
-        cdef cnp.ndarray[char, ndim=2, mode='c'] arr
+        cdef cnp.ndarray[cnp.uint8_t, ndim=2, mode='c'] arr
         arr = np.zeros((self.height, self.width), dtype=np.uint8)
         cdef unsigned int row
 
@@ -111,30 +132,41 @@ cdef class Image:
             memcpy( &arr[row, 0], self._image.pixels[row], self.width)
         return arr
 
-        # ## attempts at using cython arrays and/or memoryviews
-        # # assign to some local vaiables (partly to make the types clear)
-        # cdef int sx = self.width
-        # cdef int sy = self.height
-        # cdef unsigned char **image = self._image.pixels
 
-        # # create a cython array for the pixels
-        # pixel_array = view.array(shape=(sx, sy), itemsize=sizeof(unsigned char), format="b")
-        
-        # # create a memoryview object to wrap the same memory
-        # cdef char[:, :] image_view = pixel_array
-        
+    # def __getbuffer__(self, Py_buffer* buffer, int flags):
+    #     print "__getbuffer__ called"
 
-        # cdef int row
-        # ##loop through the rows to copy data from pixel buffer to new array
-        # for row in range(sy):
-        #     #image_view[row, :] = image[row]
-        #     pixel_array[row, :] = image[row]
+    #     #allocate the array:
+    #     self._buffer_array = <unsigned char*> malloc(self.width*self.height)
 
-        # # <unsigned char[::view.indirect_contiguous, ::1]> image_view = \
-        # #     <unsigned char[:sy:view.indirect_contiguous, :sx:1]> image
+    #     cdef unsigned char i
+    #     for i in range(self.width*self.height):
+    #         self._buffer_array[i] = i
 
-        # return pixel_array
-        # # return np.asarray(pixel_array)
+    #     cdef Py_ssize_t shape[2]
+    #     shape[0] = 5
+    #     shape[1] = 10
+
+    #     print "shape is:", shape[0], shape[1]
+    #     #shape[0] = <Py_ssize_t> self.width
+    #     #shape[1] = <Py_ssize_t> self.height
+
+    #     buffer.buf = <char*> self._buffer_array
+    #     buffer.obj = self
+    #     buffer.len = self.width*self.height
+    #     buffer.readonly = 0
+    #     buffer.format = "B"
+    #     buffer.ndim = 2
+    #     buffer.shape = &shape[0]
+    #     buffer.strides =  NULL # NULL for c-contiguous
+    #     buffer.suboffsets = NULL # NULL for C-contiguous
+    #     buffer.itemsize = 1 
+    #     buffer.internal = NULL # NULL for the ordinary case
+
+    # def __releasebuffer__(self, Py_buffer* buffer):
+    #     print "releasing buffer!"
+
+    #     free(self._buffer_array)
 
 
     def __str__(self):
@@ -182,7 +214,7 @@ cdef class Image:
         except UnicodeEncodeError:
             raise ValueError("can only except ascii filenames")
 
-        if file_type == "bmp":
+        if file_type in ["bmp", "BMP"]:
             fp = fopen(file_path, "wb");
             gdImageBmp(self._image, fp, 0)
             fclose(fp)
@@ -199,8 +231,12 @@ cdef class Image:
             fp = fopen(file_path, "wb");
             gdImageGif(self._image, fp)
             fclose(fp)
+        elif file_type in ("png", "PNG"):
+            fp = fopen(file_path, "wb");
+            gdImagePng(self._image, fp)
+            fclose(fp)
         else:
-            raise ValueError('"bmp", "gif", and "jpeg" are the only valid file_type')
+            raise ValueError('"bmp", "gif", "png", and "jpeg" are the only valid file_type')
 
     def add_color(self, name, rgb):
         """
@@ -230,7 +266,7 @@ cdef class Image:
         """
         :returns color_names: a list of all color names in use
         """
-        return self.colors.keys()
+        return self.color_names
 
 
     def _get_color_index(self, color):
@@ -285,11 +321,15 @@ cdef class Image:
     def draw_line(self, pt1, pt2, color, int line_width=1):
         """
         draw a line from pt1 to pt2
+
         :param pt1: (x,y) coordinates of start point
         :type pt1: (x,y) sequence of integers
 
-        :param pt1: (x,y) coordinates of start point
-        :param pt1: (x,y) coordinates of start point
+        :param pt2: (x,y) coordinates of end point
+        :type pt2: (x,y) sequence of integers
+
+        :param line_width=1: width of line
+        :type line_width: integer
         """
         gdImageSetThickness(self._image, line_width)
         gdImageLine(self._image,
@@ -310,6 +350,9 @@ cdef class Image:
 
         :param fill_color=None: the color of the filled polygon
         :type  fill_color=None: color name or index
+
+        :param line_width=1: width of line
+        :type line_width: integer
 
         """
         cdef int n
@@ -351,7 +394,7 @@ cdef class Image:
         :param fill_color=None: the color of the filled polygon
         :type  fill_color=None: color name or index
 
-        :param line_width: windth of the line to be drawn, in pixels
+        :param line_width: width of the line to be drawn, in pixels
         :type line_width: integer
         """
 
@@ -386,6 +429,9 @@ cdef class Image:
 
         :param fill_color=None: the color of the filled rectangle
         :type  fill_color=None: color name or index
+
+        :param line_width=1: width of line
+        :type line_width: integer
 
         """
         
@@ -432,33 +478,27 @@ cdef class Image:
         :param end: end of ellipse in degrees from ???
         :type end: integer
 
-        :param fill_color=None: the color of the filled rectangle
+        :param fill_color=None: the color of the filled portion of the ellipse
         :type  fill_color=None: color name or index
 
-        :param style=["Arc"]: styles used to draw the arc. Options are: "Arc" or "Chord", "NoFill", "Edged" 
-        :type syles: sequence of styles to use
+        :param line_color=None: the color of the outline
+        :type  line_color=None: color name or index
+
+        :param line_width=1: width of line
+        :type line_width: integer
+
+        :param style='arc': styles used to draw the arc. Options are: 'arc' or 'chord'. 'arc' draws the rounded curve, 'chord' connects the start and end points with a line.
+        :type style: string
 
         :param draw_wedge=True: whether to draw the wedge of the slice, or just the outer arc
         :type draw_wedge: bool
+
 
         Degrees increase clockwise, starting from the right (east)
 
         A circle can be drawn by beginning from 0 degrees and ending at 360
         degrees, with width and height being equal. end must be greater than start.
         Values greater than 360 are interpreted modulo 360.
-
-        style specifies how the arc is drawn. Options are:
-
-        "Arc", "Pie", "Chord", "NoFill", "Edged" 
-
-        The options can be bit-wise or'd together, e.g. ["Edged", "NoFill"]
-
-        "Arc" and "Chord" are mutually exclusive; "Chord" just connects the starting
-        and ending angles with a straight line, while "Arc" produces a rounded edge.
-        "Pie" is a synonym for "Arc". "NoFill" indicates that the arc or chord should
-        be outlined, not filled. "Edged", used together with "NoFill", indicates that
-        the beginning and ending angles should be connected to the center; this is a
-        good way to outline (rather than fill) a 'pie slice'.
 
         """
 
@@ -493,7 +533,50 @@ cdef class Image:
                              )
             gdImageSetThickness(self._image, 1)
 
+    def draw_text(self, text, point, font="medium", color='black'):
+        """
+        draw some text
 
+        :param text: the text to draw
+        :type text: string (ascii only for now)
+
+        :param point: coordinates at which to draw the text. the point is the upper left corner of the text bounding box.
+        :type point: 2-tuple of (x,y) integers
+        
+        :param font: desired font -- gd built in fonts: "tiny", "small", "medium", "large", and "giant"
+        :type font: string
+
+        :param color: color of text
+        :type  color=None: color name or index
+
+        """
+        cdef text_bytes
+        try:
+            text_bytes = text.encode('ascii')
+        except UnicodeEncodeError:
+            raise ValueError("can only except ascii text")
+
+        cdef gdFontPtr gdfont
+
+        if font == 'tiny':
+            gdfont = gdFontTiny
+        elif font == 'small':
+            gdfont = gdFontSmall
+        elif font == 'medium':
+            gdfont = gdFontMediumBold
+        elif font == 'large':
+            gdfont = gdFontLarge
+        elif font == 'giant':
+            gdfont = gdFontGiant
+        else:
+            raise ValueError('font must be one of: "tiny", "small", "medium", "large", and "giant"')
+
+        gdImageString(self._image,
+                      gdfont,
+                      point[0], point[1],
+                      text_bytes,
+                      self._get_color_index(color),
+                      )
 
 
         # if line_color is not None:
@@ -506,13 +589,19 @@ cdef class Image:
 
 
 #def from_array(cnp.ndarray[char, ndim=2, mode='c'] arr not None):
-def from_array(char [:,:] arr not None):
+def from_array(char [:,:] arr not None, *args, **kwargs):
     """
-    create an Image from an arr, or array-like object
+    create an Image from a numpy array, or other object that exposed the PEP 3118 bufer interface.
 
     the image is the same size as the input array, with the contents copied.
+
+    :param arr: the input array
+    :type arr: an array, or other PEP 3118 buffer compliant object. Should be 2-d, and of type np.unit8 ('B')
+
+    Other parameters are passed on to the Image() constructor.
+
     """
-    img = Image(arr.shape[1], arr.shape[0])
+    img = Image(arr.shape[1], arr.shape[0], *args, **kwargs)
     img.set_data(arr)
 
     return img

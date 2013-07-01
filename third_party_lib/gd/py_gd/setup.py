@@ -17,7 +17,8 @@ ext_modules=[ Extension("py_gd.py_gd",
                                         numpy.get_include(),
                                         ],
                         libraries=["jpeg"],
-                        extra_objects=["../static_libs/lib/libgd.a"],
+                        extra_objects=["../static_libs/lib/libgd.a",
+                                       "../static_libs/lib/libpng.a"],
                          )]
 setup(
     name = "py_gd",

@@ -9,7 +9,7 @@ import os
 
 import numpy as np
 
-from datetime import datetime
+from datetime import datetime, timedelta
 
 import pytest
 
@@ -19,8 +19,8 @@ from gnome.utilities import cache
 from gnome.spill_container import TestSpillContainer, SpillContainerPairData
 
 # some sample datetimes for tests:
-dt64 = np.datetime64(datetime(2013, 4, 15, 12))
-tdelta = np.timedelta64(1, 'h')
+dt = datetime(2013, 4, 15, 12)
+tdelta = timedelta(hours=1)
 
 
 def test_init():
@@ -70,7 +70,7 @@ def test_write():
                             start_pos = (3.14, 2.72, 1.2),
                             )
     # add a timestamp:
-    sc['current_time_stamp'] = dt64
+    sc.current_time_stamp = dt
 
     # put it in a SpillContainerPair
     scp = SpillContainerPairData(sc)
@@ -90,7 +90,7 @@ def test_write_uncert():
                              start_pos = (4.14, 3.72, 2.2),
                              uncertain=True)
     # add a timestamp:
-    sc['current_time_stamp'] = dt64
+    sc.current_time_stamp = dt
 
     # put it in a SpillContainerPair
     scp = SpillContainerPairData(sc, u_sc)
@@ -116,7 +116,7 @@ def test_write_and_read_back():
                             start_pos = (3.14, 2.72, 1.2),
                             )
     # add a timestamp:
-    sc['current_time_stamp'] = dt64
+    sc.current_time_stamp = dt
 
     # put it in a SpillContainerPair
     scp = SpillContainerPairData(sc)
@@ -129,14 +129,14 @@ def test_write_and_read_back():
     sc['positions'] += 1.1
     pos1 = sc['positions'].copy()
     # change time stamp
-    sc['current_time_stamp'] = dt64 + tdelta
+    sc.current_time_stamp = dt + tdelta
     c.save_timestep(1, scp)
 
     # change things...
     sc['positions'] *= 1.1
     pos2 = sc['positions'].copy()
     # change time stamp
-    sc['current_time_stamp'] = dt64 + tdelta*2
+    sc.current_time_stamp = dt + tdelta*2
     # save it:
     c.save_timestep(2, scp)
 
@@ -144,19 +144,19 @@ def test_write_and_read_back():
 
     sc2 = c.load_timestep(2)
     assert np.array_equal(sc2._spill_container['positions'], pos2)
-    assert sc2._spill_container['current_time_stamp'] == dt64 + tdelta*2
+    assert sc2._spill_container.current_time_stamp == dt + tdelta*2
 
     sc0 = c.load_timestep(0)
     assert np.array_equal(sc0._spill_container['positions'], pos0)
-    assert sc0._spill_container['current_time_stamp'] == dt64
+    assert sc0._spill_container.current_time_stamp == dt
 
     sc1 = c.load_timestep(1)
     assert np.array_equal(sc1._spill_container['positions'], pos1)
-    assert sc1._spill_container['current_time_stamp'] == dt64 + tdelta
+    assert sc1._spill_container.current_time_stamp == dt + tdelta
 
     sc2 = c.load_timestep(2)
     assert np.array_equal(sc2._spill_container['positions'], pos2)
-    assert sc2._spill_container['current_time_stamp'] == dt64 +tdelta*2
+    assert sc2._spill_container.current_time_stamp == dt +tdelta*2
 
 def test_write_and_read_back_uncertain():
     """

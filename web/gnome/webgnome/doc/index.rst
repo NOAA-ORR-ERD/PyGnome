@@ -13,12 +13,13 @@ JavaScript.
 Contents:
 
 .. toctree::
-   :maxdepth: 2
+    :maxdepth: 2
 
-   pyramid_architecture
-   javascript_architecture
-   api
-   services
+    pyramid_architecture
+    javascript_architecture
+    project_notes
+    api
+    services
 
 
 Indices and tables

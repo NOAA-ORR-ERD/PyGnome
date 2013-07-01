@@ -9,6 +9,8 @@ import glob
 import string
 import shutil
 
+import netCDF4 as nc
+
 import gnome
 
 from gnome.persist import (
@@ -45,6 +47,8 @@ class Scenario(object):
     
         self.saveloc = saveloc
         self.model = model
+        self._certainspill_data = os.path.join(self.saveloc,'spills_data_arrays.nc')
+        self._uncertainspill_data = None    # will be updated when _certainspill_data is saved
         
     def save(self):
         """
@@ -66,6 +70,9 @@ class Scenario(object):
         
         for sc in self.model.spills.items():
             self._save_collection( sc.spills)
+        
+        if self.model.current_time_step > -1: # persist model state since middle of run
+            self._save_spill_data()
         
     def load(self):
         """
@@ -99,6 +106,9 @@ class Scenario(object):
         
         print "add movers .."    
         self._add_movers(l_movers)
+        
+        print "load data .."
+        self._load_spill_data()
         return self.model
     
     def dict_to_json(self,dict_):
@@ -303,3 +313,31 @@ class Scenario(object):
         else:
             obj_list = c_spills
         [self.model.spills.add(obj) for obj in obj_list]
+    
+    def _save_spill_data(self):
+        """ save the data arrays for current timestep to NetCDF """
+        nc_out = gnome.netcdf_outputter.NetCDFOutput(self._certainspill_data,
+                                                     all_data=True, cache=self.model._cache)
+        nc_out.prepare_for_model_run(model_start_time=self.model.start_time, num_time_steps=1,
+                                     uncertain=self.model.uncertain,spills=self.model.spills)
+        nc_out.write_output(self.model.current_time_step)
+        self._uncertainspill_data = nc_out._u_netcdf_filename
+        
+    def _load_spill_data(self):
+        """ load NetCDF file and add spill data back in """
+        if not os.path.exists(self._certainspill_data):
+            return
+        
+        data = gnome.netcdf_outputter.NetCDFOutput.read_data(self._certainspill_data, all_data=True)
+         
+        self.model.spills._spill_container.current_time_stamp = data.pop('current_time_stamp').item()
+        self.model.spills._spill_container._data_arrays = data
+        self.model.spills._spill_container.reconcile_data_arrays()
+        
+        if self.model.uncertain:
+            if not os.path.exists(self._uncertainspill_data):
+                return
+            data    = gnome.netcdf_outputter.NetCDFOutput.read_data(self._uncertainspill_data, all_data=True)
+            self.model.spills._u_spill_container.current_time_stamp = data.pop('current_time_stamp').item()
+            self.model.spills._u_spill_container._data_arrays = data
+            self.model.spills._u_spill_container.reconcile_data_arrays()

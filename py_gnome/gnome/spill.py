@@ -41,6 +41,34 @@ class ArrayType(object):#,serializable.Serializable):
         self.dtype = dtype
         self.initial_value = initial_value
 
+    def __eq__(self, other):
+        """" Equality of two ArrayType objects """
+        if not isinstance(other, self.__class__):
+            return False
+        
+        if len(self.__dict__) != len(other.__dict__):   
+            return False
+        
+        for key,val in self.__dict__.iteritems():
+             if key not in other.__dict__:
+                 return False
+             
+             elif val != other.__dict__[key]:
+                 return False
+             
+        # everything passed, then they must be equal
+        return True
+    
+    def __ne__(self,other):
+        """ 
+        Compare inequality (!=) of two objects
+        """
+        if self == other:
+            return False
+        else:
+            return True
+        
+    
 
 class Spill(object):
     """
@@ -153,6 +181,11 @@ class Spill(object):
             array_types = self.array_types
 
         for name, array_type in array_types.iteritems():
+            #===================================================================
+            # if array_type.shape == ():  # it is a scalar array
+            #    arrays[name] = np.array(0,dtype=array_type.dtype)
+            # else:
+            #===================================================================
             arrays[name] = np.zeros( (num_elements,)+array_type.shape, dtype=array_type.dtype)
         self.initialize_new_elements(arrays, array_types)
         return arrays
