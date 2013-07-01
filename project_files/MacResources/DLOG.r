@@ -589,7 +589,7 @@ resource 'DLOG' (1670, "Use Shio Ref Pt ?", purgeable, preload) {
 };
 
 resource 'DLOG' (5000, "M50: TMap Settings") {
-	{53, 14, 253, 395},
+	{53, 14, 423, 495},
 #ifdef MPW
 	noGrowDocProc,
 #else
