@@ -576,6 +576,9 @@ PtCurMap::PtCurMap(char* name, WorldRect bounds) : TMap(name, bounds)
 	fMinDistOffshore = 0.;	//km - use bounds to set default
 	bUseLineCrossAlgorithm = false;
 
+	fBitMapBounds = bounds;
+	fUseBitMapBounds = false;
+	
 	fWaveHtInput = 0;	// default compute from wind speed
 	
 	bTrackAllLayers = false;
@@ -1366,6 +1369,18 @@ OSErr PtCurMap::MakeBitmaps()
 {
 	OSErr err = 0;
 	TCurrentMover *mover=0;
+
+	{	// clear out bitmaps if they already exist
+#ifdef MAC
+		DisposeBlackAndWhiteBitMap (&fWaterBitmap);
+		DisposeBlackAndWhiteBitMap (&fLandBitmap);
+#else
+		if(fWaterBitmap) DestroyDIB(fWaterBitmap);
+		fWaterBitmap = 0;
+		if(fLandBitmap) DestroyDIB(fLandBitmap);
+		fLandBitmap = 0;
+#endif
+	}
 
 	mover = Get3DCurrentMover();	
 	if (!mover) return -1;	

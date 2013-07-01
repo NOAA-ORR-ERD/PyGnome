@@ -88,6 +88,9 @@ PtCurMap_c::PtCurMap_c(char* name, WorldRect bounds) : Map_c(name, bounds)
 	fMinDistOffshore = 0.;	//km - use bounds to set default
 	bUseLineCrossAlgorithm = false;
 	
+	fBitMapBounds = bounds;
+	fUseBitMapBounds = false;
+	
 	fWaveHtInput = 0;	// default compute from wind speed
 	
 	bTrackAllLayers = false;

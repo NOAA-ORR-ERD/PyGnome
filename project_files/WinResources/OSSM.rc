@@ -1694,20 +1694,69 @@ BEGIN
     CHECKBOX        "Extrapolate winds",62,14,244,126,10
 END
 
-5000 DIALOG DISCARDABLE  0, 0, 220, 85
+5000 DIALOG DISCARDABLE  0, 0, 240, 220
 STYLE DS_MODALFRAME | WS_VISIBLE | WS_CAPTION
 CAPTION "Map Settings"
 FONT 8, "MS Sans Serif"
 BEGIN
-    EDITTEXT        8,78,41,35,12,ES_AUTOHSCROLL
-    DEFPUSHBUTTON   "OK",1,43,63,35,14
-    PUSHBUTTON      "Cancel",3,94,63,35,14
-    PUSHBUTTON      "&Help...",4,145,63,35,14,WS_GROUP
+    RADIOBUTTON     "decimal degrees",51,57,159,65,10,WS_GROUP | WS_TABSTOP
+    RADIOBUTTON     "degrees/minutes",52,57,170,70,10,WS_TABSTOP
+    RADIOBUTTON     "degrees/minutes/seconds",53,57,181,96,10,WS_TABSTOP
+    EDITTEXT        14,76,80,19,13,ES_AUTOHSCROLL
+    EDITTEXT        12,60,80,50,13,ES_AUTOHSCROLL
+    EDITTEXT        17,116,80,17,13,ES_AUTOHSCROLL
+    EDITTEXT        16,116,80,25,13,ES_AUTOHSCROLL
+    EDITTEXT        19,153,80,23,13,ES_AUTOHSCROLL
+    COMBOBOX        20,183,80,38,29,CBS_DROPDOWNLIST | WS_VSCROLL | 
+                    WS_TABSTOP
+    EDITTEXT        24,76,95,19,13,ES_AUTOHSCROLL
+    EDITTEXT        22,60,95,50,13,ES_AUTOHSCROLL
+    EDITTEXT        27,116,95,17,13,ES_AUTOHSCROLL
+    EDITTEXT        26,116,95,25,13,ES_AUTOHSCROLL
+    EDITTEXT        29,153,95,23,13,ES_AUTOHSCROLL
+    COMBOBOX        30,183,95,38,30,CBS_DROPDOWNLIST | WS_VSCROLL | 
+                    WS_TABSTOP
+    GROUPBOX        "",55,10,71,220,86
+    CHECKBOX        "Change Bitmap Bounds",10,10,60,88,11
+    EDITTEXT        34,75,119,19,13,ES_AUTOHSCROLL
+    EDITTEXT        32,59,119,50,13,ES_AUTOHSCROLL
+    EDITTEXT        37,115,119,17,13,ES_AUTOHSCROLL
+    EDITTEXT        36,115,119,25,13,ES_AUTOHSCROLL
+    EDITTEXT        39,153,119,23,13,ES_AUTOHSCROLL
+    COMBOBOX        40,183,119,38,29,CBS_DROPDOWNLIST | WS_VSCROLL | 
+                    WS_TABSTOP
+    EDITTEXT        44,75,134,19,13,ES_AUTOHSCROLL
+    EDITTEXT        42,59,134,50,13,ES_AUTOHSCROLL
+    EDITTEXT        47,115,134,17,13,ES_AUTOHSCROLL
+    EDITTEXT        46,115,134,25,13,ES_AUTOHSCROLL
+    EDITTEXT        49,153,134,23,13,ES_AUTOHSCROLL
+    COMBOBOX        50,183,134,38,30,CBS_DROPDOWNLIST | WS_VSCROLL | 
+                    WS_TABSTOP
+    LTEXT           "Min:",15,100,82,15,8
+    LTEXT           "Min:",25,100,97,15,8
+    LTEXT           "Sec:",18,138,82,15,8
+    LTEXT           "Sec:",28,138,97,15,8
+    RTEXT           "Lat (Top):",11,24,82,31,8
+    RTEXT           "Long (Left):",21,18,97,37,8
+    LTEXT           "Deg:",13,58,82,17,8
+    LTEXT           "Deg:",23,58,97,17,8
+    LTEXT           "Min:",35,99,121,15,8
+    LTEXT           "Min:",45,99,136,15,8
+    LTEXT           "Sec:",38,137,121,15,8
+    LTEXT           "Sec:",48,137,136,15,8
+    RTEXT           "Lat (Bottom):",31,12,121,43,8
+    RTEXT           "Long (Right):",41,13,136,42,8
+    LTEXT           "Deg:",33,57,121,17,8
+    LTEXT           "Deg:",43,57,136,17,8
+    EDITTEXT        8,77,44,35,12,ES_AUTOHSCROLL
+    DEFPUSHBUTTON   "OK",1,25,199,35,14
+    PUSHBUTTON      "Cancel",3,75,199,35,14
+    PUSHBUTTON      "&Help...",4,127,199,35,14,WS_GROUP
     LTEXT           "Name:",5,11,5,28,8
-    LTEXT           "Refloat Half Life:",7,11,43,62,14
-    LTEXT           "hours",9,120,43,23,8
-    LTEXT           "mapName",6,47,5,154,17
-    PUSHBUTTON      "Replace Map",10,9,22,60,14
+    LTEXT           "Refloat Half Life:",7,11,45,62,9
+    LTEXT           "hours",9,119,45,23,8
+    LTEXT           "mapName",6,47,5,154,9
+    PUSHBUTTON      "Replace Map",54,10,24,60,14
 END
 
 3000 DIALOG DISCARDABLE  0, 0, 229, 198

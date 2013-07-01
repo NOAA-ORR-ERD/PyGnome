@@ -20,10 +20,10 @@
 
 
 #ifdef pyGNOME
-#include "Mover_c.h"
+//#include "Mover_c.h"
 #include "GridVel_c.h"
 #include "TriGridVel_c.h"
-#define TMover Mover_c
+//#define TMover Mover_c
 #define TGridVel GridVel_c
 #define TTriGridVel TriGridVel_c
 #else
@@ -96,7 +96,7 @@ public:
 
 OSErr 	NumberIslands(LONGH *islandNumberH, DOUBLEH landmaskH,LONGH landWaterInfo,long numRows,long numCols,long *numIslands);
 
-#undef TMover
+//#undef TMover
 #undef TGridVel
 #undef TTriGridVel
 #endif

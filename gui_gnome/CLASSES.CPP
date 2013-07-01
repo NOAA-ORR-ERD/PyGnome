@@ -128,6 +128,14 @@ static PopInfoRec M25PopTable[] = {
 	};
 
 
+static PopInfoRec M50PopTable[] = {
+	{ M50, nil, M25TOPLATDIR, 0, pNORTHSOUTH1, 0, 1, FALSE, nil },
+	{ M50, nil, M25LEFTLONGDIR, 0, pEASTWEST1, 0, 1, FALSE, nil },
+	{ M50, nil, M25BOTTOMLATDIR, 0, pNORTHSOUTH2, 0, 1, FALSE, nil },
+	{ M50, nil, M25RIGHTLONGDIR, 0, pEASTWEST2, 0, 1, FALSE, nil }
+};
+
+
 void ShowHideBounds(DialogPtr dialog)
 {
 	Boolean show  = GetButton (dialog, M25WANTEDCHANGEBOUNDS); 
@@ -634,11 +642,34 @@ OSErr M50Init(DialogPtr dialog, VOIDPTR data)
 {
 #pragma unused(data)
 	char name[256];
+	WorldPoint wp;
+	PtCurMap *dialogPtCurMap = dynamic_cast<PtCurMap *>(gDialogTMap);
 	
 	gDialogTMap -> GetMapName(name);
 	mysetitext(dialog, M50NAME, name);
 	
+	SetDialogItemHandle(dialog, M25HILITEDEFAULT, (Handle)FrameDefault);
+	SetDialogItemHandle(dialog, M25FROST1, (Handle) FrameEmbossed);
+	
+	RegisterPopTable (M50PopTable, sizeof (M50PopTable) / sizeof (PopInfoRec));
+	RegisterPopUpDialog (M50, dialog);
+	
 	Float2EditText(dialog,M50REFLOATTIME, gDialogTMap -> fRefloatHalfLifeInHrs , 4);
+	
+	SetButton (dialog, M25WANTEDCHANGEBOUNDS, dialogPtCurMap -> fUseBitMapBounds); // !EquaLWRect()
+	
+	//SetButton (dialog, M25REPLACEMAP, false); 
+	
+	wp.pLat = dialogPtCurMap -> fBitMapBounds.hiLat;
+	wp.pLong = dialogPtCurMap -> fBitMapBounds.loLong;
+	LL2EditTexts (dialog, M25TOPLATDEGREES, &wp);
+	
+	wp.pLat = dialogPtCurMap -> fBitMapBounds.loLat;
+	wp.pLong = dialogPtCurMap -> fBitMapBounds.hiLong;
+	LL2EditTexts (dialog, M25BOTTOMLATDEGREES, &wp);
+	
+	//ShowHideBitMapBounds(dialog);
+	ShowHideBounds(dialog);	// for now using same enum values as M25 vector map dialog
 	
 	if (gDialogTMap ->IAm(TYPE_OSSMMAP)) 	// don't show refloat stuff since it varies with each grid cell
 	{
@@ -655,17 +686,87 @@ OSErr M50Init(DialogPtr dialog, VOIDPTR data)
 
 short M50Click(DialogPtr dialog, short itemNum, long lParam, VOIDPTR data)
 {
-	OSErr 	err = 0;
-
+	Boolean changed, tempUseBounds, needToResetBitMap = false;
+	WorldPoint p, p2;
+	WorldRect origBounds;
+	float tempRefloat;
+	PtCurMap *dialogPtCurMap = dynamic_cast<PtCurMap *>(gDialogTMap);
+	OSErr err = 0;
+	
+	
+	StandardLLClick(dialog, itemNum, M25TOPLATDEGREES, M25DEGREES, &p, &changed);
+	StandardLLClick(dialog, itemNum, M25BOTTOMLATDEGREES, M25DEGREES, &p2, &changed);
+	
+	
 	switch (itemNum) {
 		case M50CANCEL: return M50CANCEL;
 
 		case M50OK:
 			gDialogTMap -> fRefloatHalfLifeInHrs = EditText2Float(dialog,M50REFLOATTIME);
+			tempUseBounds = GetButton (dialog, M25WANTEDCHANGEBOUNDS);
+			
+			if (tempUseBounds != dialogPtCurMap -> fUseBitMapBounds || tempUseBounds == true)
+			{
+				needToResetBitMap = true;
+			}
+			
+			if(tempUseBounds)
+			{
+				long oneSecond = (1000000/3600);
+				// retrieve the extendedBounds
+				err = EditTexts2LL(dialog, M25TOPLATDEGREES, &p,TRUE);
+				if(err)break;
+				err = EditTexts2LL(dialog, M25BOTTOMLATDEGREES, &p2,TRUE);
+				if(err)break;
+				
+				// get original map bounds for comparison
+				//origBounds = dialogTVectorMap -> fMapBounds;  // if use GetMapBounds() may return extended bounds
+				origBounds = gDialogTMap -> fMapBounds;  // if use GetMapBounds() may return extended bounds
+				
+				// check extended bounds (oneSecond handles accuracy issue in reading from dialog)			
+				if (p.pLat > origBounds.hiLat + oneSecond || p2.pLat< origBounds.loLat - oneSecond
+					|| p.pLong < origBounds.loLong - oneSecond || p2.pLong > origBounds.hiLong + oneSecond)
+				{
+					printError("The bitmap bounds must be less than the original bounds."); 
+					return 0; 
+				}
+				
+				// just in case of round off
+				p.pLat = _min(p.pLat,origBounds.hiLat);
+				p.pLong = _max(p.pLong,origBounds.loLong);
+				p2.pLat = _max(p2.pLat,origBounds.loLat);
+				p2.pLong = _min(p2.pLong,origBounds.hiLong);
+			}
+			
+			dialogPtCurMap -> fUseBitMapBounds = GetButton (dialog, M25WANTEDCHANGEBOUNDS);
+			
+			if (dialogPtCurMap -> fUseBitMapBounds)
+			{
+				dialogPtCurMap -> fBitMapBounds.hiLat = p.pLat;
+				dialogPtCurMap -> fBitMapBounds.loLong = p.pLong;
+				dialogPtCurMap -> fBitMapBounds.loLat = p2.pLat;
+				dialogPtCurMap -> fBitMapBounds.hiLong = p2.pLong;
+				//err = dialogPtCurMap -> MakeBitmaps();
+				//if (!err) ChangeCurrentView(UnionWRect(settings.currentView, AddWRectBorders(dialogPtCurMap -> fBitMapBounds, 10)), TRUE, TRUE);
+			}
+			else
+				dialogPtCurMap -> fBitMapBounds = dialogPtCurMap -> GetMapBounds();			
+			
+			if (needToResetBitMap) 
+			{
+				err = dialogPtCurMap -> MakeBitmaps();
+				if (!err) ChangeCurrentView(AddWRectBorders(dialogPtCurMap -> fBitMapBounds, 10), TRUE, TRUE);
+			}
+					
 			return itemNum;
 			
 		case M50REFLOATTIME:
 			CheckNumberTextItem(dialog, itemNum, TRUE);
+			break;
+
+		case M25WANTEDCHANGEBOUNDS:
+			ToggleButton(dialog, itemNum);
+			ShowHideBounds(dialog);
 			break;
 
 		case M50REPLACEMAP:
@@ -673,7 +774,25 @@ short M50Click(DialogPtr dialog, short itemNum, long lParam, VOIDPTR data)
 			if (err == USERCANCEL) break;	// stay at dialog
 			return itemNum;	// what to do on error?
 			break;
-
+			
+			
+		case M25DEGREES:
+		case M25DEGMIN:
+		case M25DMS:
+			err = EditTexts2LL(dialog, M25TOPLATDEGREES, &p,TRUE);
+			if(err) break;
+			err = EditTexts2LL(dialog, M25BOTTOMLATDEGREES, &p2,TRUE);
+			if(err) break;
+			if (itemNum == M25DEGREES) settings.latLongFormat = DEGREES;
+			if (itemNum == M25DEGMIN) settings.latLongFormat = DEGMIN;
+			if (itemNum == M25DMS) settings.latLongFormat = DMS;
+			ShowHideBounds(dialog);
+			//LL2EditTexts(dialog, M25TOPLATDEGREES, &p2);
+			//LL2EditTexts(dialog, M25BOTTOMLATDEGREES, &p);
+			LL2EditTexts(dialog, M25BOTTOMLATDEGREES, &p2);
+			LL2EditTexts(dialog, M25TOPLATDEGREES, &p);
+			break;
+			
 	}
 
 	return 0;
