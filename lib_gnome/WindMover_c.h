@@ -17,7 +17,7 @@
 
 #ifdef pyGNOME
 #define TOSSMTimeValue OSSMTimeValue_c
-#define TMap Map_c
+//#define TMap Map_c
 #endif
 
 class TOSSMTimeValue;
@@ -66,6 +66,7 @@ public:
 	virtual Boolean		IAm(ClassID id) { if(id==TYPE_WINDMOVER) return TRUE; return Mover_c::IAm(id); }
 	
 	virtual OSErr		AllocateUncertainty (int numLESets, int* LESetsSizesList);
+	virtual OSErr		ReallocateUncertainty(int numLEs, short* statusCodes);	
 	virtual void		DisposeUncertainty ();
 	virtual OSErr		AddUncertainty(long setIndex,long leIndex,VelocityRec *v);
 	virtual void 		UpdateUncertaintyValues(Seconds elapsedTime);
@@ -86,5 +87,5 @@ public:
 };
 
 #undef TOSSMTimeValue
-#undef TMap
+//#undef TMap
 #endif

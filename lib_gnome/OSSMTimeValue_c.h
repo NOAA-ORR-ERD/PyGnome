@@ -14,11 +14,7 @@
 #include "Basics.h"
 #include "TypeDefs.h"
 #include "TimeValue_c.h"
-
-#ifdef pyGNOME
-#define TMover Mover_c
 #include "ExportSymbols.h"
-#endif
 
 class DLL_API OSSMTimeValue_c : virtual public TimeValue_c {
 
@@ -41,8 +37,10 @@ public:
 	virtual short			GetFileType	() { if (fFileType == PROGRESSIVETIDEFILE) return SHIOHEIGHTSFILE; else return fFileType; }
 	virtual void			SetFileType	(short fileType) { fFileType = fileType; }
 	
+#ifndef pyGNOME
 	OSSMTimeValue_c (TMover *theOwner);
 	OSSMTimeValue_c (TMover *theOwner,TimeValuePairH tvals,short userUnits);
+#endif
 	OSSMTimeValue_c ();
 	virtual				   ~OSSMTimeValue_c ();
 
@@ -75,5 +73,4 @@ protected:
 
 };
 
-#undef TMover
 #endif

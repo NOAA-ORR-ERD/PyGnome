@@ -73,6 +73,7 @@ define([
                 surfaceReleaseSpills: this.surfaceReleaseSpills,
                 renderer: this.renderer,
                 model: this.map,
+                customMap: this.customMap,
                 animationThreshold: this.options.animationThreshold,
                 newModel: this.options.newModel,
                 state: this.state,
@@ -200,7 +201,7 @@ define([
                 gnomeModel: this.gnomeModel
             });
 
-            model.save().then(function() {
+            model.save().done(function() {
                 util.refresh();
             }).fail(function() {
                 alert('That location file is not available yet.');
@@ -632,7 +633,7 @@ define([
             }
             // Empty out the time steps.
             this.stepGenerator.reset();
-            this.mapView.reset().then(function() {
+            this.mapView.reset().done(function() {
                 _this.stepGenerator.setCurrentTimeStep(
                     _this.stepGenerator.currentTimeStep);
             });
@@ -641,7 +642,7 @@ define([
         rewind: function() {
             var _this = this;
             this.state.animation.setPaused();
-            this.mapView.reset().then(function() { _this.mapControlView.reset() })
+            this.mapView.reset().done(function() { _this.mapControlView.reset() })
                 .then(function() { _this.stepGenerator.clearData() })
                 .then(function() {
                     if (_this.map.id) {

@@ -28,6 +28,7 @@ define([
 
         prepareForm: function() {
             this.setDateFields('.release_time_container', this.model.get('release_time'));
+            this.setDateFields('.end_release_time_container', this.model.get('end_release_time'));
             SurfaceReleaseSpillFormView.__super__.prepareForm.apply(this, arguments);
         },
 
@@ -47,7 +48,11 @@ define([
         },
 
         prepareSubmitData: function() {
-            this.model.set('release_time', this.getDate(this.getForm()));
+            var form = this.getForm();
+            var releaseTime = this.getDate(form.find('.release_time_container'));
+            var endReleaseTime = this.getDate(form.find('.end_release_time_container'));
+            this.model.set('release_time', releaseTime);
+            this.model.set('end_release_time', endReleaseTime);
         },
 
         cancel: function() {

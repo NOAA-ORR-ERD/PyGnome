@@ -99,6 +99,7 @@ cdef extern from "TypeDefs.h":
         OILSTAT_ONLAND
         OILSTAT_OFFMAPS = 7
         OILSTAT_EVAPORATED = 10 
+        OILSTAT_TO_BE_REMOVED = 12 
     
     # In C++, this information is defined for each LE
     # However, it is the same for all LEs in a spill.

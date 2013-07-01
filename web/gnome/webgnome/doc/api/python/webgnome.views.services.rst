@@ -57,6 +57,14 @@ services Package
     :undoc-members:
     :show-inheritance:
 
+:mod:`renderer` Module
+----------------------
+
+.. automodule:: webgnome.views.services.renderer
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 :mod:`schema_validation` Module
 -------------------------------
 

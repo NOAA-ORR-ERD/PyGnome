@@ -17,8 +17,9 @@ from gnome.utilities.file_tools import haz_files
 from gnome.utilities import map_canvas
 from gnome.spill_container import TestSpillContainer
 
-datadir = os.path.join(os.path.dirname(__file__), r"SampleData")
- 
+basedir = os.path.dirname(__file__)
+datadir = os.path.join(basedir, r"sample_data")
+testmap = os.path.join(basedir, '../sample_data', 'MapBounds_Island.bna')
 ##fixme: these two should maybe be in their own test file -- for testing map_canvas.
 
 ### tests of depricated code -- port to new map code?
@@ -27,7 +28,7 @@ datadir = os.path.join(os.path.dirname(__file__), r"SampleData")
 #    Test whether the location of a particle on the map -- in or out of water -- is determined correctly.
 #    '''
 #    m = gnome.map.lw_map([500,500],
-#                         "SampleData/MapBounds_Island.bna",
+#                         "../sample_data/MapBounds_Island.bna",
 #                         2.*60.*60.,"1") #Create a 500x500 pixel map, with an LE refloat half-life of 2 hours (specified here in seconds).
 #    
 #    #Coordinate of a point within the water area of MapBounds_Island.bna.
@@ -41,7 +42,7 @@ datadir = os.path.join(os.path.dirname(__file__), r"SampleData")
 #    Test whether the location of a particle on the map -- off or on land -- is determined correctly.
 #    '''
 #    m = gnome.map.lw_map((500,500),
-#                         "SampleData/MapBounds_Island.bna",
+#                         "../sample_data/MapBounds_Island.bna",
 #                         2.*60.*60.,
 #                         color_mode = "1") #Create a 500x500 pixel map, with an LE refloat half-life of 2 hours (specified here in seconds).
 #    
@@ -64,7 +65,7 @@ def test_in_water_resolution():
     Test the limits of the precision, to within an order of magnitude, defining whether a point is in or out of water.
     '''
     
-    m = gnome.map.MapFromBNA(filename = os.path.join(datadir, "Mapbounds_Island.bna"),
+    m = gnome.map.MapFromBNA(filename = testmap,
                              refloat_halflife = (2.*60.*60.) ,
                              raster_size = 500*500 , # approx resolution
                              ) #Create an 500x500 pixel map, with an LE refloat half-life of 2 hours (specified here in seconds).
@@ -332,7 +333,7 @@ class TestRefloat:
 
 from gnome.map import MapFromBNA
 class Test_MapfromBNA:
-    bna_map = MapFromBNA(os.path.join(datadir, "Mapbounds_Island.bna"), 6, raster_size=1000)
+    bna_map = MapFromBNA(testmap, 6, raster_size=1000)
     
     def test_map_in_water(self):
         '''
@@ -397,14 +398,14 @@ def test_MapfromBNA_new_from_dict():
     """
     test create new object from to_dict
     """
-    map = gnome.map.MapFromBNA(os.path.join(datadir, "Mapbounds_Island.bna"), 6)
+    map = gnome.map.MapFromBNA(testmap, 6)
     dict_ = map.to_dict('create')
     dict_.pop('obj_type')
     map2 = map.new_from_dict(dict_)
     assert map == map2
     
 def test_MapfromBNA_from_dict():
-    map = gnome.map.MapFromBNA(os.path.join(datadir, "Mapbounds_Island.bna"), 6)
+    map = gnome.map.MapFromBNA(testmap, 6)
     dict_ = map.to_dict()
     dict_['map_bounds'] = ((-10, 10),(10,10),(10,-10),(-10,-10))
     dict_['spillable_area'] = ((-5, 5),(5,5),(5,-5),(-5,-5))

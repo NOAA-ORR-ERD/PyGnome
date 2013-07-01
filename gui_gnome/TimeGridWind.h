@@ -6,7 +6,7 @@
  *  Copyright 2011 __MyCompanyName__. All rights reserved.
  *
  */
-
+// This is not used yet, for now everything is in TimeGridVel.h
 #ifndef __NetCDFWindMover__
 #define __NetCDFWindMover__
 

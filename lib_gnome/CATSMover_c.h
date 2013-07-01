@@ -22,10 +22,10 @@
 #else
 #include "OSSMTimeValue_c.h"
 #include "GridVel_c.h"
-#include "Map_c.h"
+//#include "Map_c.h"
 #define TOSSMTimeValue OSSMTimeValue_c
 #define TGridVel GridVel_c
-#define TMap Map_c
+//#define TMap Map_c
 #endif
 
 //class CATSMover_c : virtual public CurrentMover_c {
@@ -63,7 +63,6 @@ public:
 	void				SetRefPosition (WorldPoint p, long z) { refP = p; refZ = z; }
 	void				GetRefPosition (WorldPoint *p, long *z) { (*p) = refP; (*z) = refZ; }
 	virtual WorldRect GetGridBounds(){return fGrid->GetBounds();}	
-	//void				SetTimeDep (TOSSMTimeValue *newTimeDep);
 	void				SetTimeDep (TOSSMTimeValue *newTimeDep);
 	TOSSMTimeValue		*GetTimeDep () { return (timeDep); }
 	void				DeleteTimeDep ();
@@ -85,5 +84,5 @@ public:
 
 #undef TOSSMTimeValue
 #undef TGridVel
-#undef TMap
+//#undef TMap
 #endif

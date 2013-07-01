@@ -16,14 +16,11 @@
 #include "ExportSymbols.h"
 
 #ifndef pyGNOME
-#include "GridVel.h"
+//#include "GridVel.h"
 #include "TimeGridVel.h"
 #else
-//#include "GridVel_c.h"
-//#define TGridVel GridVel_c
 #include "TimeGridVel_c.h"
 #define TimeGridVel TimeGridVel_c
-#define TMap Map_c
 #endif
 
 typedef struct {
@@ -59,7 +56,6 @@ public:
 #ifndef pyGNOME
 	GridCurrentMover_c (TMap *owner, char *name);
 #endif
-	//GridCurrentMover_c () {timeGrid = 0; fLESetSizesH = 0; fUncertaintyListH = 0;} 
 	GridCurrentMover_c (); 
 	virtual ~GridCurrentMover_c () { Dispose (); }
 	virtual void		Dispose ();
@@ -89,5 +85,4 @@ public:
 
 };
 
-#undef TMap
 #endif

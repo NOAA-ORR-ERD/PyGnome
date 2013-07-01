@@ -1,16 +1,25 @@
 <%inherit file="base.mak"/>
 
-
 <%block name="extra_head">
     <link rel="stylesheet" href='/static/css/leaflet.css'/>
     <link rel="stylesheet" href='/static/css/leaflet.draw.css'/>
     <link rel='stylesheet' type='text/css' href='/static/css/skin/ui.dynatree.css'>
     <link rel='stylesheet' type='text/css' href='/static/css/model.css'>
 
+    ## HTML 5 and IE-specific shims. Not sure why they're called "shivs" ...
+    <!--[if lt IE 9]>
+        <!--<script src="/static/js/lib/excanvas.compiled.js"></script>-->
+        <script src="/static/js/lib/excanvas.js"></script>
+        <script src="/static/js/lib/html5shiv.js"></script>
+        <script src="/static/js/lib/indexOfShiv.js"></script>
+    <![endif]-->
+
+    ## TODO: Add these as RequireJS dependencies.
     <script src="/static/js/lib/leaflet-src.js"></script>
     <script src="/static/js/lib/leaflet.draw.js"></script>
     <script src="/static/js/lib/leaflet.label.js"></script>
     <script src="/static/js/lib/L.Graticule.js"></script>
+
     <script src="/static/js/require-jquery.js"></script>
     <script src="/static/js/config.js"></script>
 </%block>

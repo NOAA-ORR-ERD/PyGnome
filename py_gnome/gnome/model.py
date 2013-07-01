@@ -197,6 +197,11 @@ class Model(serializable.Serializable):
          for outputter in self.outputters]
         
         self.spills.rewind()
+        
+        # setup the current_time_stamp for the spill_container objects
+        for sc in self.spills.items():
+            sc.current_time_stamp = self.model_time
+        
 
     def setup_time_step(self):
         """
@@ -246,7 +251,11 @@ class Model(serializable.Serializable):
         """
 
         for mover in self.movers:
-            mover.model_step_is_done()
+            for sc in self.spills.items():	
+                mover.model_step_is_done(sc)	
+        for sc in self.spills.items():	
+            sc.model_step_is_done()
+
         for outputter in self.outputters:
             outputter.model_step_is_done()
 
@@ -275,11 +284,7 @@ class Model(serializable.Serializable):
         ## but not yet moved, at the beginning of the release time.
         for sc in self.spills.items():
             sc.release_elements(self.model_time, self.time_step)
-        # cache the results
-        # add the timestamp first:
-        for sc in self.spills.items():
-            # needs to be a numpy array -- this will be a rank-zero array scalar with a datetime object in it.
-            sc['current_time_stamp'] = np.array(self.model_time) 
+        # cache the results 
         self._cache.save_timestep(self.current_time_step, self.spills)
         output_info = self.write_output()
         return output_info
@@ -369,4 +374,23 @@ class Model(serializable.Serializable):
         if isinstance(obj_added, CatsMover):
             if obj_added.tide is not None and obj_added.tide.id not in self.environment:
                     self.environment += obj_added.tide
+
+    def __eq__(self, other):
+        check = super(Model, self).__eq__(other)
+        if check:
+            # also check the data in spill_container object
+            if type(self.spills) != type(other.spills):
+                return False
+            if self.spills != other.spills:
+                return False
+            
+        return check
         
+    def __ne__(self,other):
+        """ 
+        Compare inequality (!=) of two objects
+        """
+        if self == other:
+            return False
+        else:
+            return True

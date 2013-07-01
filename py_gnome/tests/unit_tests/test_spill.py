@@ -12,7 +12,7 @@ import pytest
 import numpy as np
 
 from gnome import basic_types
-from gnome.spill import Spill, FloatingSpill, SurfaceReleaseSpill, SpatialReleaseSpill
+from gnome.spill import Spill, FloatingSpill, SurfaceReleaseSpill, SpatialReleaseSpill, ArrayType
 
 
 def test_init_Spill():
@@ -430,6 +430,34 @@ class Test_SurfaceReleaseSpill(object):
                                      end_release_time = self.release_time - timedelta(seconds=1),
                                      )
 
+    def test_end_position(self):
+        """
+        if end_position = None, then automatically set it to start_position 
+        """
+        sp = SurfaceReleaseSpill(num_elements = self.num_elements,
+                                 start_position = self.start_position,
+                                 release_time = self.release_time,
+                                 )
+        
+        sp.start_position = (0,0,0)
+        assert np.any( sp.start_position != sp.end_position)
+        
+        sp.end_position = None
+        assert np.all( sp.start_position == sp.end_position)
+    
+    def test_end_release_time(self):    
+        """
+        if end_release_time = None, then automatically set it to release_time
+        """
+        sp = SurfaceReleaseSpill(num_elements = self.num_elements,
+                                 start_position = self.start_position,
+                                 release_time = self.release_time,
+                                 )
+        sp.release_time = self.release_time + timedelta(hours=20)
+        assert sp.release_time != sp.end_release_time
+        
+        sp.end_release_time = None
+        assert sp.release_time == sp.end_release_time
 
 num_elements = ((998,),
                 (100,),
@@ -628,6 +656,40 @@ def test_SurfaceReleaseSpill_from_dict():
             assert spill.__getattribute__(key) == sp_dict.__getitem__(key)
             
 
+class TestArrayType_eq(object):
+    """ 
+    contains functions that test __eq__ for ArrayType object 
+    """
+    def test_eq_wrong_shape(self):
+        """ array shape is different for two ArrayType objects """
+        positions = ArrayType( (), basic_types.world_point_type)
+        positions2= ArrayType( (3,), basic_types.world_point_type)
+        assert positions != positions2      
+    
+    def test_eq_wrong_dtype(self):
+        """ dtype is different for two ArrayType objects """
+        positions = ArrayType( (3,), basic_types.world_point_type)
+        positions2= ArrayType( (3,), np.int)
+        assert positions != positions2      # wrong dtype
+    
+    def test_eq_wrong_init_value(self):
+        """ initial_value is different for two ArrayType objects """
+        status_codes = ArrayType( (), basic_types.status_code_type, basic_types.oil_status.in_water)
+        status_codes2= ArrayType( (), basic_types.status_code_type)
+        assert status_codes != status_codes2    # no init conditions
+        
+    def test_eq_wrong_attr(self):
+        """ added an attribute so two ArrayType objects are diffferent """
+        positions = ArrayType( (), basic_types.world_point_type)
+        positions2= ArrayType( (3,), basic_types.world_point_type)
+        positions2.test = 'test'
+        assert positions != positions2      # wrong number of attributes
+        
+    def test_eq(self):
+        """ both ArrayType objects are the same """
+        positions = ArrayType( (3,), basic_types.world_point_type)
+        positions2= ArrayType( (3,), basic_types.world_point_type)
+        assert positions == positions2      # wrong shape
 
 if __name__ == "__main__":
     #TC = Test_SurfaceReleaseSpill()

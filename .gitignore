@@ -1,6 +1,4 @@
 # ignore following files
-.cproject
-.project
 node_modules
 *.swp
 *.so
@@ -28,3 +26,6 @@ web/gnome/webgnome/webgnome/static/test_models/*
 .coverage
 .coverage
 .vagrant
+
+# ignore data directory on deployed website
+web/gnome/webgnome/data

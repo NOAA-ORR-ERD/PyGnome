@@ -65,7 +65,7 @@ def test_exceptions(invalid_rq):
     with pytest.raises(unit_conversion.InvalidUnitError):
         wind = environment.Wind(timeseries=dtv,units='met per second')
 
-wind_file = os.path.join(os.path.dirname(__file__), r"SampleData/WindDataFromGnome.WND")
+wind_file = os.path.join(os.path.dirname(__file__), r"sample_data/WindDataFromGnome.WND")
 def test_read_file_init():
     """
     initialize from a long wind file

@@ -7,22 +7,14 @@
  *
  */
 
-#ifdef MAC
-#ifdef MPW
-#include <QDOffscreen.h>
-#pragma SEGMENT WINDMOVER_C
-#endif
-#endif
 #include "WindMover_c.h"
 #include "MemUtils.h"
 #include "GEOMETRY.H"
 #include "CompFunctions.h"
-#include "OUTILS.H"
+//#include "OUTILS.H"
 
 #ifdef pyGNOME
 #include "OSSMTimeValue_c.h"
-#include "LEList_c.h"
-//#include "Model_c.h"
 #include "Replacements.h"
 #define TOSSMTimeValue OSSMTimeValue_c
 #else
@@ -161,6 +153,48 @@ void WindMover_c::UpdateUncertaintyValues(Seconds elapsedTime)
 		(*fWindUncertaintyList)[i].randCos=cosTerm;
 		(*fWindUncertaintyList)[i].randSin = sinTerm;
 	}
+}
+
+OSErr WindMover_c::ReallocateUncertainty(int numLEs, short* statusCodes)	// remove off map LEs
+{
+	long i,numrec=0,uncertListSize,numLESetsStored;
+	OSErr err=0;
+	
+	if (numLEs == 0 || ! statusCodes) return -1;	// shouldn't happen
+	
+	if(!fWindUncertaintyList || !fLESetSizes) return 0;	// assume uncertainty is not on
+	
+	// check that (*fLESetSizesH)[0]==numLEs and size of fLESetSizesH == 1
+	uncertListSize = _GetHandleSize((Handle)fWindUncertaintyList)/sizeof(LEWindUncertainRec);
+	numLESetsStored = _GetHandleSize((Handle)fLESetSizes)/sizeof(long);
+	
+	if (uncertListSize != numLEs) return -1;
+	if (numLESetsStored != 1) return -1;
+	
+	for (i = 0,numrec=0; i < numLEs ; i++) {
+		if( statusCodes[i] == OILSTAT_TO_BE_REMOVED)	// for OFF_MAPS, EVAPORATED, etc
+		{
+			//continue;
+		}
+		else {
+			fWindUncertaintyList[numrec] = fWindUncertaintyList[i];
+			numrec++;
+		}
+	}
+	
+	if (numrec == 0)
+	{	
+		this->DisposeUncertainty();
+		return noErr;
+	}
+	
+	if (numrec < uncertListSize)
+	{
+		(*fLESetSizes)[0] = numrec;
+		_SetHandleSize((Handle)fWindUncertaintyList,numrec*sizeof(LEWindUncertainRec)); 
+	}
+	
+	return noErr;
 }
 
 

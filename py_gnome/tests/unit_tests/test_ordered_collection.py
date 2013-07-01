@@ -134,6 +134,15 @@ class TestOrderedCollection(object):
         assert [m for m in mymovers] == [mover_1, mover_4, mover_3]
         assert mymovers[mover_4.id] == mover_4
 
+    def test_eq(self):
+        """ Test comparison operator __eq__ """
+        assert OrderedCollection([1,2,3,4,5]) == OrderedCollection([1,2,3,4,5])
+        
+    def test_ne(self):
+        """ Test comparison operator (not equal) """ 
+        assert OrderedCollection([1,2,3,4,5]) != OrderedCollection([2,1,3,4,5])
+        assert OrderedCollection([1,2,3,4,5]) != OrderedCollection([1,2,3,4])
+        assert OrderedCollection([1,2,3,4,5]) != [1,2,3,4,5]
 
 def test_to_dict():
     """

@@ -100,10 +100,15 @@ define([
             this.stepGenerator.on(models.StepGenerator.CREATED, this.reset);
 
             this.model = this.options.model;
-            this.model.on('destroy', function () {
-                _this.reset();
-                _this.map.empty();
+            this.model.on('destroy', function() {
+                _this.reset().then(function() {
+                    _this.leafletMap.removeLayer(_this.backgroundOverlay);
+                });
             });
+            this.model.on('sync', this.mapSynced);
+
+            this.customMap = this.options.customMap;
+            this.customMap.on('sync', this.mapSynced);
 
             if (this.stepGenerator.hasCachedTimeStep(this.stepGenerator.getCurrentTimeStep())) {
                 this.nextTimeStepReady();
@@ -113,6 +118,31 @@ define([
             this.currentCoordinates = $('.current-coordinates');
 
             this.setupMap();
+        },
+
+        /*
+         If a new map was added, fetch the renderer and model data and then reset
+         the Leaflet map.
+
+         Because the view looks at `this.model` instead of a collection -- since
+         there is always only one map -- we don't have an 'add' event we could
+         watch, so this method exists as a 'sync' callback. To differentiate a
+         sync caused by saving a new model versus one caused by fetching or
+         saving an existing one, we check for the 'added' flag and bail if it
+         wasn't set. We pass a manual flag to `this.model.save()` when saving a
+         new map, and watch for that flag in this method.
+         */
+        mapSynced: function(model, attrs, opts) {
+            var _this = this;
+            if (!opts.added) {
+                return;
+            }
+
+            this.renderer.fetch().done(function() {
+                _this.model.fetch().done(function() {
+                    _this.reset();
+                });
+            });
         },
 
         setupDrawingTools: function() {
@@ -295,8 +325,8 @@ define([
             var savingRenderer;
 
             // If we're in the process of setting a new viewport, part of
-            // which is to get the new background image, then we don't need to
-            // save the renderer -- otherwise we do.
+            // which involves saving the renderer, then we don't need to save
+            // the renderer -- otherwise we do.
             if (this.isSettingViewport) {
                 savingRenderer = this.model.fetch({reloadTree: false});
             } else {
@@ -341,7 +371,7 @@ define([
                 this.hidePlaceholder();
             } else {
                 this.showPlaceholder();
-                return;
+                return $.Deferred().resolve();
             }
 
             var oldOverlay = _this.backgroundOverlay;
@@ -447,8 +477,11 @@ define([
                 var timeStepLayer = imageOverlay(url, _this.viewport, {
                     zIndex: -50
                 });
-                setTimeout(addLayer, _this.getAnimationTimeout(requestTime),
-                           timeStepLayer);
+                // IE requires that we use an anonymous function to pass
+                // parameters to the target function.
+                setTimeout(function() {
+                    addLayer(timeStepLayer);
+                }, _this.getAnimationTimeout(requestTime));
             }
 
             var url = timeStep.get('url');
@@ -606,10 +639,6 @@ define([
             this.spillMarkers.push(marker);
         },
 
-        clearCanvas: function(canvas) {
-            console.log('Clear canvas called')
-        },
-
         // Draw a mark on the map for each existing spill.
         drawSpills: function() {
             var _this = this;
@@ -627,7 +656,7 @@ define([
             });
         },
 
-        // TODO: This probably belongs in app.js
+        // TODO: This may belong in app.js
         stepGeneratorError: function() {
             this.state.animation.setStopped();
         },

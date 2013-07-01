@@ -22,7 +22,8 @@ from gnome.utilities.file_tools import haz_files
 from gnome.utilities import inf_datetime
 
 basedir = os.path.dirname(__file__)
-datadir = os.path.join(basedir, r"SampleData")
+datadir = os.path.join(basedir, r"sample_data")
+testmap = os.path.join(basedir, '../sample_data', 'MapBounds_Island.bna')
 
 def setup_simple_model():
     """
@@ -37,7 +38,7 @@ def setup_simple_model():
     start_time = datetime(2012, 9, 15, 12, 0)
 
     # the image output map
-    mapfile = os.path.join(datadir, 'MapBounds_Island.bna')
+    mapfile = testmap
 
     # the land-water map
     gnome_map = gnome.map.MapFromBNA( mapfile,
@@ -143,7 +144,8 @@ def test_simple_run_rewind():
         print "just ran time step: %s"%model.current_time_step
         
     assert np.all( model.spills.LE('positions') == pos)
-    
+
+
 def test_simple_run_with_map():
     """
     pretty much all this tests is that the model will run
@@ -153,7 +155,7 @@ def test_simple_run_with_map():
     
     model = gnome.model.Model()
     
-    model.map = gnome.map.MapFromBNA(os.path.join(datadir, 'MapBounds_Island.bna'),
+    model.map = gnome.map.MapFromBNA(testmap,
                                 refloat_halflife=6*3600, #seconds
                                 )
     a_mover = movers.simple_mover.SimpleMover(velocity=(1.0, 2.0, 0.0))
@@ -197,14 +199,11 @@ def test_simple_run_with_image_output():
     start_time = datetime(2012, 9, 15, 12, 0)
     
 
-    # the image output map
-    mapfile = os.path.join(datadir, 'MapBounds_Island.bna')
-
     # the land-water map
-    gnome_map = gnome.map.MapFromBNA( mapfile,
+    gnome_map = gnome.map.MapFromBNA( testmap,
                                       refloat_halflife=6*3600, #seconds
                                      )
-    renderer = gnome.renderer.Renderer(mapfile,
+    renderer = gnome.renderer.Renderer(testmap,
                                        images_dir,
                                        size=(400, 300))
     model = gnome.model.Model(time_step=timedelta(minutes=15), 
@@ -263,14 +262,11 @@ def test_simple_run_with_image_output_uncertainty():
 
     start_time = datetime(2012, 9, 15, 12, 0)
 
-       # the image output map
-    mapfile = os.path.join(datadir, 'MapBounds_Island.bna')
-
     # the land-water map
-    map = gnome.map.MapFromBNA( mapfile,
+    map = gnome.map.MapFromBNA( testmap,
                                       refloat_halflife=6*3600, #seconds
                                      )
-    renderer = gnome.renderer.Renderer(mapfile,
+    renderer = gnome.renderer.Renderer(testmap,
                                        images_dir,
                                        size=(400, 300))
 
@@ -626,7 +622,7 @@ def test_callback_add_mover():
     model.movers += movers.simple_mover.SimpleMover(velocity=(1.0, -1.0, 0.0))
     series = np.array( (model.start_time, ( 10,   45) ),  dtype=gnome.basic_types.datetime_value_2d).reshape((1,))
     model.movers += movers.WindMover(environment.Wind(timeseries=series, units='meter per second'))
-    tide_ = environment.Tide(filename=os.path.join( os.path.dirname(__file__), r"SampleData","tides","CLISShio.txt"))
+    tide_ = environment.Tide(filename=os.path.join( os.path.dirname(__file__), r"sample_data","tides","CLISShio.txt"))
     model.movers += movers.CatsMover(os.path.join(datadir, r"long_island_sound/tidesWAC.CUR"), tide=tide_)
     model.movers += movers.CatsMover(os.path.join(datadir, r"long_island_sound/tidesWAC.CUR"))
     
@@ -643,7 +639,7 @@ def test_callback_add_mover():
         
     
     # say wind object was added to environment collection, it should not be added again
-    tide_ = environment.Tide(filename=os.path.join( os.path.dirname(__file__), r"SampleData","tides","CLISShio.txt"))
+    tide_ = environment.Tide(filename=os.path.join( os.path.dirname(__file__), r"sample_data","tides","CLISShio.txt"))
     model.environment += tide_
     model.movers += movers.CatsMover(os.path.join(datadir, r"long_island_sound/tidesWAC.CUR"), tide=tide_)
     
