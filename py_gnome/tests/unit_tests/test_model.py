@@ -485,19 +485,6 @@ def test_linearity_of_wind_movers(wind_persist):
     model2.movers += gnome.movers.WindMover(gnome.environment.Wind(timeseries=series2, units='meter per second'))
     model2.movers += gnome.movers.WindMover(gnome.environment.Wind(timeseries=series3, units='meter per second'))
     
-# <<<<<<< HEAD
-#     # tolerance for np.allclose(..) function
-#     atol = 1e-14
-#     rtol = 0
-    
-#     for i in range( model1.num_time_steps ):
-#         gnome.utilities.rand.seed() # set rand before each call so windages are set correctly
-#         model1.step()
-#         gnome.utilities.rand.seed() # set rand before each call so windages are set correctly
-#         model2.step()
-#         assert np.allclose(model1.spills.LE('positions'), model2.spills.LE('positions'), atol, rtol)
-    
-# =======
     while True:
         try: 
             model1.next()

@@ -376,7 +376,6 @@ class WindMover(CyMover, serializable.Serializable):
         if len(sc['positions']) == 0:
             return
         
-        #if (not WindMover._windage_is_set and not sc.uncertain) or (not WindMover._uspill_windage_is_set and sc.uncertain):
         for spill in sc.spills:
             spill_mask = sc.get_spill_mask(spill)
             if np.any(spill_mask):
@@ -385,12 +384,6 @@ class WindMover(CyMover, serializable.Serializable):
                                                                   spill.windage_persist,
                                                                   time_step,
                                                                   array_len=np.count_nonzero(spill_mask))
-            #===================================================================
-            # if sc.uncertain:
-            #    WindMover._uspill_windage_is_set = True
-            # else:
-            #    WindMover._windage_is_set = True
-            #===================================================================
         
     
     def get_move(self, sc, time_step, model_time_datetime):
@@ -415,18 +408,6 @@ class WindMover(CyMover, serializable.Serializable):
             
         return self.delta.view(dtype=basic_types.world_point_type).reshape((-1,len(basic_types.world_point)))
 
-    #===========================================================================
-    # def model_step_is_done(self):
-    #    """
-    #    Set _windage_is_set flag back to False
-    #    use super to invoke base class model_step_is_done
-    #    """
-    #    if WindMover._windage_is_set:
-    #        WindMover._windage_is_set = False
-    #    if WindMover._uspill_windage_is_set:
-    #        WindMover._uspill_windage_is_set = False
-    #    super(WindMover,self).model_step_is_done() 
-    #===========================================================================
 
 def wind_mover_from_file(filename, **kwargs):
     """
