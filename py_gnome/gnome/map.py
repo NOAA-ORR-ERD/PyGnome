@@ -213,7 +213,7 @@ class RasterMap(GnomeMap):
     
     This one uses us a numpy array of uint8 -- so there are 8 bits to choose from...
     
-    It requires a constant refloat half-life
+    It requires a constant refloat half-life in hours
     
     This will usually be initialized in a sub-class (from a BNA, etc)
     NOTE: Nothing new added to state attribute for serialization
@@ -231,7 +231,7 @@ class RasterMap(GnomeMap):
 
     land_flag  = 1    
     def __init__(self,
-                 refloat_halflife,    #seconds
+                 refloat_halflife,    #hours
                  bitmap_array,
                  projection,
                  **kwargs):
@@ -239,7 +239,7 @@ class RasterMap(GnomeMap):
         create a new RasterMap
         
         :param refloat_halflife: The halflife for refloating off land -- assumed to be the same for all land.
-        :type refloat_halflife: integer seconds
+        :type refloat_halflife: float. Units are hours
 
         :param bitmap_array: A numpy array that stores the land-water map
         :type bitmap_array: a (W,H) numpy array of type uint8
@@ -260,11 +260,19 @@ class RasterMap(GnomeMap):
         :type id: string 
         """
         
-        self.refloat_halflife = float(refloat_halflife)
+        self._refloat_halflife = refloat_halflife*60.0*60.0 # convert to seconds
         self.bitmap = bitmap_array
         self.projection = projection
         
         GnomeMap.__init__(self, **kwargs)
+        
+    @property
+    def refloat_halflife(self):
+        return self._refloat_halflife/3600.0    # convert to hours
+    
+    @refloat_halflife.setter
+    def refloat_halflife(self, value):
+        self._refloat_halflife = value*3600.0   # convert to seconds
         
     def _on_land_pixel(self, coord):
         """
@@ -390,9 +398,9 @@ class RasterMap(GnomeMap):
         if r_idx.size == 0:  # no particles on land
             return
         
-        if self.refloat_halflife > 0.0:
+        if self._refloat_halflife > 0.0:
             # refloat particles based on probability
-            refloat_probability = 1.0 - 0.5**(float(time_step)/self.refloat_halflife)
+            refloat_probability = 1.0 - 0.5**(float(time_step)/self._refloat_halflife)
             rnd = np.random.uniform(0,1,len(r_idx))  
             
             # subset of indices that will refloat 
@@ -463,7 +471,7 @@ class MapFromBNA(RasterMap, serializable.Serializable):
     
     def __init__(self,
                  filename,
-                 refloat_halflife, #seconds
+                 refloat_halflife, #hours
                  raster_size = 1024*1024, # default to 1MB raster
                  **kwargs):
         """
@@ -473,7 +481,7 @@ class MapFromBNA(RasterMap, serializable.Serializable):
         Required arguments:
         
         :param bna_file: full path to a bna file
-        :param refloat_halflife: the half-life (in seconds) for the re-floating.
+        :param refloat_halflife: the half-life (in hours) for the re-floating.
         :param raster_size: the total number of pixels (bytes) to make the raster -- the actual size will match the 
                             aspect ratio of the bounding box of the land
         
