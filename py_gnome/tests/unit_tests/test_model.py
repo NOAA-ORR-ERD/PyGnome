@@ -643,6 +643,25 @@ def test_callback_add_mover():
     assert model.movers[custom_mover.id].active_start == active_on
     assert model.movers[custom_mover.id].active_stop == active_off
     
+def test_callback_add_mover_midrun():   
+    """ Test callback after add mover called midway through the run """
+    model = gnome.model.Model()
+    model.time_step = timedelta(hours=1)
+    model.duration = timedelta(hours=10)
+    model.start_time = datetime(2012, 1, 1, 0, 0)
+    start_loc = (1.0, 2.0, 0.0) # random non-zero starting points
+    
+    model = setup_simple_model()
+
+    for i in range(2):
+        model.step()
+    
+    assert model.current_time_step > -1
+    
+    # now add another mover and make sure model rewinds
+    model.movers += movers.simple_mover.SimpleMover(velocity=(2.0, -2.0, 0.0))
+    assert model.current_time_step == -1    
+    
 if __name__ == "__main__":
     #test_all_movers()
     #test_release_at_right_time()

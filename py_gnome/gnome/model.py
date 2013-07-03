@@ -374,7 +374,9 @@ class Model(serializable.Serializable):
         if isinstance(obj_added, CatsMover):
             if obj_added.tide is not None and obj_added.tide.id not in self.environment:
                     self.environment += obj_added.tide
-
+                    
+        self.rewind()   # rewind model if a new mover is added
+        
     def __eq__(self, other):
         check = super(Model, self).__eq__(other)
         if check:
