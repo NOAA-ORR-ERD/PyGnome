@@ -107,7 +107,7 @@
             ]
         ],
         "id": "5317478c-a21d-11e2-908c-3c07541ca142",
-        "refloat_halflife": 21600.0
+        "refloat_halflife": 6.0
     },
     "uncertain": false,
     "start_time": "2013-04-10T13:00:00",

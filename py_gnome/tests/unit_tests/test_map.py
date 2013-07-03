@@ -66,7 +66,7 @@ def test_in_water_resolution():
     '''
     
     m = gnome.map.MapFromBNA(filename = testmap,
-                             refloat_halflife = (2.*60.*60.) ,
+                             refloat_halflife = 2,   # in hours
                              raster_size = 500*500 , # approx resolution
                              ) #Create an 500x500 pixel map, with an LE refloat half-life of 2 hours (specified here in seconds).
     
@@ -263,7 +263,7 @@ class TestRefloat:
     is irrelevant
     """
     time_step = 3600.   # make time_step = refloat_halflife so 50% probability of refloat
-    map = RasterMap(refloat_halflife = time_step, #hours
+    map = RasterMap(refloat_halflife = time_step/3600.0, #hours
                     bitmap_array= np.zeros((20, 12), dtype=np.uint8),   # land/water irrelevant for this test
                     projection=projections.NoProjection(),
                     map_bounds = ( (-50, -30), (-50, 30), (50, 30), (50, -30) ),
@@ -278,7 +278,7 @@ class TestRefloat:
     def reset(self):
         self.spill['positions'][:] = self.orig_pos
         self.spill['last_water_positions'][:] = self.last_water
-        self.map.refloat_halflife = self.time_step
+        self.map.refloat_halflife = self.time_step/3600.0
     
     def test_all_elementsinwater(self):
         """
@@ -307,7 +307,7 @@ class TestRefloat:
         """
         self.reset()
         self.spill['status_codes'][:] = basic_types.oil_status.in_water
-        self.map.refloat_halflife = 3*self.time_step
+        self.map.refloat_halflife = 3*self.time_step/3600.0
         # say 500 out of 1000 are on_land, and we expect about 50% of these to refloat
         init_ix = int(round(.25*self.num_les))  # initial 25% LEs on_land
         last_ix = self.num_les-( int(round( .5*self.num_les)) - init_ix) # last 25% of LEs on_land
@@ -317,7 +317,7 @@ class TestRefloat:
         
         self.spill['status_codes'][ix] = basic_types.oil_status.on_land
         self.map.refloat_elements(self.spill, self.time_step)
-        print "Expect {0}% refloat, actual refloated: {1}%".format(round(1.0-0.5**(self.time_step/self.map.refloat_halflife),2)*100, 
+        print "Expect {0}% refloat, actual refloated: {1}%".format(round(1.0-0.5**(self.time_step/(self.map.refloat_halflife*3600.0)),2)*100, 
                                                                    np.count_nonzero( self.spill['status_codes'][ix] == basic_types.oil_status.in_water)/(self.num_les/2)*100 )
         
         # ensure some of the elements that were on land are back on water

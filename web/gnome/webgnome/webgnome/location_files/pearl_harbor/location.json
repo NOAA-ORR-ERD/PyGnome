@@ -55,7 +55,7 @@
             ]
         ], 
         "id": "6ddc1817-d451-11e2-b63c-406c8f4bfe70", 
-        "refloat_halflife": 3600.0
+        "refloat_halflife": 1.0
     }, 
     "uncertain": false, 
     "start_time": "2013-01-01T01:00:00", 

@@ -491,7 +491,7 @@
             ]
         ], 
         "id": "61cb0d0a-a23a-11e2-acc5-3c07541ca142", 
-        "refloat_halflife": 3600.0
+        "refloat_halflife": 1.0
     }, 
     "cats_movers": [
         {
