@@ -254,6 +254,10 @@ class SurfaceReleaseSpill(FloatingSpill, serializable.Serializable):
     
     @classmethod
     def new_from_dict(cls, dict_):
+        """ 
+        create object using the same settings as persisted object.
+        In addition, set the state of other properties after initialization
+        """
         new_obj = cls(num_elements=dict_.pop('num_elements'),
                       start_position=dict_.pop('start_position'),
                       release_time=dict_.pop('release_time'),

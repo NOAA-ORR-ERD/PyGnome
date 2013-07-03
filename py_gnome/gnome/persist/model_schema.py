@@ -44,3 +44,4 @@ class Model(base_schema.Id, MappingSchema):
     #map = MapList()
     map = ObjectInModel()
     outputters = base_schema.OrderedCollection()
+    cache_enabled = SchemaNode(Bool())
