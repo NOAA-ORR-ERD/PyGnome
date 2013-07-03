@@ -82,7 +82,7 @@ cdef class CyRandomVerticalMover(cy_mover.CyMover):
             
         err = self.rand.get_move(N, model_time, step_len, &ref_points[0], &delta[0], <short *>&LE_status[0], spill_type, spill_ID)
         if err == 1:
-            raise ValueError("Make sure numpy arrays for ref_points, delta and windages are defined")
+            raise ValueError("Make sure numpy arrays for ref_points, delta are defined")
         
         """
         Can probably raise this error before calling the C++ code - but the C++ also throwing this error
