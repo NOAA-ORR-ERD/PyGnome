@@ -5,6 +5,14 @@ An implementation of the GNOME land-water map.
 
 This is a re-write of the C++ raster map approach
 """
+# ##fixme:
+# ## needs soime re-catoring -- more clear distiction between public and private API:
+
+# on_land, in_water, etc -- need that?
+
+
+
+
 # NOTES:
 #  - Should we just use non-projected coordinates for the raster map?
 #    It makes for a little less computation at every step.
@@ -165,7 +173,8 @@ class GnomeMap(serializable.Serializable):
 
     def beach_elements(self, spill):
         """
-        Determines which LEs were or weren't beached.
+        Determines which LEs were or weren't beached or moved off_map.
+        status_code is changed to oil_status.off_maps if off the map.
 
         Called by the model in the main time loop, after all movers have acted.
         
@@ -176,13 +185,13 @@ class GnomeMap(serializable.Serializable):
         """
         self._set_off_map_status(spill)
 
-    def refloat_elements(self, spill, time_step):
+    def refloat_elements(self, spill_container, time_step):
         """
         This method performs the re-float logic -- changing the element status flag,
         and moving the element to the last known water position
         
-        :param spill: current SpillContainer
-        :type spill:  :class:`gnome.spill_container.SpillContainer`
+        :param spill_container: current SpillContainer
+        :type spill_container:  :class:`gnome.spill_container.SpillContainer`
 
         .. note::
             This map class has no land, and so is a no-op.
@@ -190,18 +199,18 @@ class GnomeMap(serializable.Serializable):
         """
         pass
 
-    def resurface_airborne_elements(self, spill):
+    def resurface_airborne_elements(self, spill_container):
         """
         Takes any elements that are left above the water surface (z < 0.0)
         and puts them on the surface (z == 0.0)
 
-        :param spill: current SpillContainer
-        :type spill:  :class:`gnome.spill_container.SpillContainer`
+        :param spill_container: current SpillContainer
+        :type spill_container:  :class:`gnome.spill_container.SpillContainer`
 
         .. note::
             While this shouldn't occur according to the physics we're modeling, some movers may push elements up to high, or multiple movers may add vertical movement that adds up to over the surface.
         """
-        next_positions = spill['next_positions']
+        next_positions = spill_container['next_positions']
         #next_positions[:,2] = np.where(next_positions[:,2]<0.0, 0.0, next_positions[:,2])
         np.maximum(next_positions[:,2], 0.0, out=next_positions[:,2])
         return None
@@ -376,16 +385,16 @@ class RasterMap(GnomeMap):
         self._set_off_map_status(spill)
 
 
-    def refloat_elements(self, spill, time_step):
+    def refloat_elements(self, spill_container, time_step):
         """
         This method performs the re-float logic -- changing the element status flag,
         and moving the element to the last known water position
         
-        :param spill: the current spill container
-        :type spill:  :class:`gnome.spill_container.SpillContainer`
+        :param spill_container: the current spill container
+        :type spill_container:  :class:`gnome.spill_container.SpillContainer`
         """
         # index into array of particles on_land
-        r_idx = np.where( spill['status_codes'] == gnome.basic_types.oil_status.on_land)[0]
+        r_idx = np.where( spill_container['status_codes'] == gnome.basic_types.oil_status.on_land)[0]
         
         if r_idx.size == 0:  # no particles on land
             return
@@ -403,8 +412,8 @@ class RasterMap(GnomeMap):
             
         if r_idx.size > 0:
             # check is not required, but why do this operation if no particles need to be refloated
-            spill['positions'][r_idx] = spill['last_water_positions'][r_idx]
-            spill['status_codes'][r_idx] = gnome.basic_types.oil_status.in_water
+            spill_container['positions'][r_idx] = spill_container['last_water_positions'][r_idx]
+            spill_container['status_codes'][r_idx] = gnome.basic_types.oil_status.in_water
         
     def _check_land(self, raster_map, positions, end_positions, status_codes, last_water_positions):
         """

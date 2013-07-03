@@ -18,7 +18,7 @@ NOTE: only full support for triangular mesh grids at the moment
 import numpy as np
 
 # used for simple locate_face test
-from .geometry.cy_point_in_polygon import point_in_poly as point_in_tri
+#from .geometry.cy_point_in_polygon import point_in_poly as point_in_tri
 
 
 class data_set(object):
@@ -222,24 +222,24 @@ class ugrid(object):
             return self._face_data[name][indexes]
 
 
-    def locate_face_simple(self, point):
-        """
-        returns the index of the face that the point is in
+    # def locate_face_simple(self, point):
+    #     """
+    #     returns the index of the face that the point is in
         
-        returns None if the point is not in the mesh
+    #     returns None if the point is not in the mesh
         
-        : param point :  the point that you want to locate -- (x, y)
+    #     : param point :  the point that you want to locate -- (x, y)
         
-        this is a very simple, look through all the faces search.
-        It is slow ( O(N) ), but should be robust 
-        """        
-        for i, face in enumerate(self._faces):
-            f = self._nodes[face]
-            #print "checking:", point, "in", f 
-            if point_in_tri(f, point):
-                #print "got a hit:", i
-                return i
-        return None
+    #     this is a very simple, look through all the faces search.
+    #     It is slow ( O(N) ), but should be robust 
+    #     """        
+    #     for i, face in enumerate(self._faces):
+    #         f = self._nodes[face]
+    #         #print "checking:", point, "in", f 
+    #         if point_in_tri(f, point):
+    #             #print "got a hit:", i
+    #             return i
+    #     return None
             
             
     
@@ -247,12 +247,17 @@ class ugrid(object):
         """
         save the ugrid object as a netcdf file
         
-        follows the convernsion established by the netcdf UGRID working group:
+        follows the conversion established by the netcdf UGRID working group:
         
         http://publicwiki.deltares.nl/display/NETCDF/Deltares+CF+proposal+for+Unstructured+Grid+data+model
                 
         """
         
         import netCDF4
+
+        #create the file:
+
+
+
         
 
