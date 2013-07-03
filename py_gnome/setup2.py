@@ -92,6 +92,7 @@ extension_names = ['cy_mover',
                    'cy_ossm_time',
                    'cy_random_mover',
                    'cy_random_vertical_mover',
+                   'cy_rise_velocity_mover',
                    'cy_land_check',
                    'cy_grid_map',
                    'cy_shio_time',
@@ -133,6 +134,7 @@ cpp_files = [
               'GridMap_c.cpp',
               'GridMapUtils.cpp',
               'RandomVertical_c.cpp',
+              'RiseVelocity_c.cpp',
               ]
 
 
