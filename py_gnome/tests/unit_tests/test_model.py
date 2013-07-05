@@ -42,7 +42,7 @@ def setup_simple_model():
 
     # the land-water map
     gnome_map = gnome.map.MapFromBNA( mapfile,
-                                      refloat_halflife=6*3600, #seconds
+                                      refloat_halflife=6, #hours
                                      )
 
     renderer = gnome.renderer.Renderer(mapfile,
@@ -156,7 +156,7 @@ def test_simple_run_with_map():
     model = gnome.model.Model()
     
     model.map = gnome.map.MapFromBNA(testmap,
-                                refloat_halflife=6*3600, #seconds
+                                refloat_halflife=6, #hours
                                 )
     a_mover = movers.simple_mover.SimpleMover(velocity=(1.0, 2.0, 0.0))
     
@@ -201,7 +201,7 @@ def test_simple_run_with_image_output():
 
     # the land-water map
     gnome_map = gnome.map.MapFromBNA( testmap,
-                                      refloat_halflife=6*3600, #seconds
+                                      refloat_halflife=6, #hours
                                      )
     renderer = gnome.renderer.Renderer(testmap,
                                        images_dir,
@@ -264,7 +264,7 @@ def test_simple_run_with_image_output_uncertainty():
 
     # the land-water map
     map = gnome.map.MapFromBNA( testmap,
-                                      refloat_halflife=6*3600, #seconds
+                                      refloat_halflife=6, #hours
                                      )
     renderer = gnome.renderer.Renderer(testmap,
                                        images_dir,

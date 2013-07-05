@@ -35,7 +35,7 @@ def make_model(images_dir=os.path.join(base_dir,"images")):
     mapfile = os.path.join( base_dir, './ChesapeakeBay.bna')
     print "adding the map"
     model.map = gnome.map.MapFromBNA(mapfile,
-                                     refloat_halflife=1*3600, #seconds
+                                     refloat_halflife=1, #seconds
                                      )
     
     renderer = gnome.renderer.Renderer(mapfile, images_dir, size=(800, 600))
