@@ -11,9 +11,8 @@ define([
      if it exists.
      */
     function log(var_args) {
-        var args = Array.prototype.slice.call(arguments);
-        if (window.console && window.console.log) {
-            window.console.log.apply(window.console, args);
+        if (console && console.log) {
+            Function.prototype.apply.apply(console.log, [console, arguments]);
         }
     }
 
