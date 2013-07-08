@@ -27,7 +27,7 @@ cdef class CyGridWindMover(cy_mover.CyMover):
         del self.mover
         self.grid = NULL
 
-    def text_read(self, time_grid_file, topology_file):
+    def text_read(self, time_grid_file, topology_file=None):
         """
         .. function::text_read
         
@@ -36,6 +36,7 @@ cdef class CyGridWindMover(cy_mover.CyMover):
         cdef bytes time_grid, topology
         
         time_grid_file = os.path.normpath(time_grid_file)
+        
         time_grid = to_bytes( unicode(time_grid_file))
         
         if topology_file is None:
