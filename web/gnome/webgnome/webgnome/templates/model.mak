@@ -216,6 +216,12 @@
         ], function($, _, Backbone, router, util, rivets) {
             "use strict";
 
+            // Ask jQuery to add a cache-buster to AJAX requests, so that
+            // IE's aggressive caching doesn't break everything.
+            $.ajaxSetup({
+                cache: false
+            });
+
             // Configure a Rivets adapter to work with Backbone
             // per http://rivetsjs.com/
             rivets.configure({

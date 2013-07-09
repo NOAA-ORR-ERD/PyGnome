@@ -64,13 +64,13 @@ def test_ucode_char_in_filename(test_case):
 
 
 ##gridmover_ = [(movers.GridCurrentMover, os.path.join(r'currents',r'ny_cg.nc'), None),
-##              (movers.GridCurrentMover, os.path.join(r'winds',r'test_wind.cdf'), os.path.join(r'winds',r'WindSpeedDirSubsetTop.DAT')),
+##              (movers.GridCurrentMover, os.path.join(r'winds',r'test_wind.cdf'), os.path.join(r'winds',r'WindSpeedDirSubsetTop.dat')),
 ##              (movers.GridWindMover, os.path.join(r'currents',r'ny_cg.nc'), os.path.join(r'currents',r'NYTopology.dat')),
 ##              ]
 ##
 gridmover_ = [(movers.GridCurrentMover, os.path.join(r'currents',r'ny_cg.nc'), None),
-              (movers.GridWindMover, os.path.join(r'winds',r'windSpeedDirSubset.nc'), os.path.join(r'winds',r'WindSpeedDirSubsetTop.DAT')),
-              (movers.GridCurrentMover, os.path.join(r'currents',r'ny_cg.nc'), os.path.join(r'currents',r'NYTopology.DAT')),
+              (movers.GridWindMover, os.path.join(r'winds',r'WindSpeedDirSubset.nc'), os.path.join(r'winds',r'WindSpeedDirSubsetTop.dat')),
+              (movers.GridCurrentMover, os.path.join(r'currents',r'ny_cg.nc'), os.path.join(r'currents',r'NYTopology.dat')),
               ]
 
 @pytest.mark.parametrize("mover_test", gridmover_)

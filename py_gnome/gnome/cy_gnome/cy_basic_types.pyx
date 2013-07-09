@@ -36,16 +36,16 @@ oil_status =enum(not_released = OILSTAT_NOTRELEASED,
 """
 disperse status as an enum type
 """
-disp_status = enum(dont_disperse = DONT_DISPERSE,
-                   disperse = DISPERSE,
-                   have_dispersed = HAVE_DISPERSED,
-                   disperse_nat = DISPERSE_NAT,
-                   have_dispersed_nat = HAVE_DISPERSED_NAT,
-                   evaporate = EVAPORATE,
-                   have_evaporated = HAVE_EVAPORATED,
-                   remove = REMOVE,
-                   have_removed = HAVE_REMOVED)
-
+# disp_status = enum(dont_disperse = DONT_DISPERSE,
+#                    disperse = DISPERSE,
+#                    have_dispersed = HAVE_DISPERSED,
+#                    disperse_nat = DISPERSE_NAT,
+#                    have_dispersed_nat = HAVE_DISPERSED_NAT,
+#                    evaporate = EVAPORATE,
+#                    have_evaporated = HAVE_EVAPORATED,
+#                    remove = REMOVE,
+#                    have_removed = HAVE_REMOVED)
+# 
 """
 SpillType {FORECAST_LE = 1, UNCERTAINTY_LE = 2};
 """

@@ -30,10 +30,10 @@ cdef class CyRiseVelocityMover(cy_mover.CyMover):
         Default water_density = 1020 [kg/m3]
         Default water_viscosity = 1e-6
         """
-        #if water_density <= 0:
-            #raise ValueError("CyRiseVelocityMover must have a value greater than or equal to 0 for water_density")
-        #if water_viscosity <= 0:
-            #raise ValueError("CyRiseVelocityMover must have a value greater than or equal to 0 for water_viscosity")
+        if water_density <= 0:
+            raise ValueError("CyRiseVelocityMover must have a value greater than or equal to 0 for water_density")
+        if water_viscosity <= 0:
+            raise ValueError("CyRiseVelocityMover must have a value greater than or equal to 0 for water_viscosity")
         
         self.rise_vel.water_density = water_density
         self.rise_vel.water_viscosity = water_viscosity

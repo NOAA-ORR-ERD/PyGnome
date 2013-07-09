@@ -8,6 +8,10 @@ define([
 ], function($, _, Backbone, models, Geo) {
 
     var GnomeImageOverlay = L.ImageOverlay.extend({
+        /*
+         Copy of the parent class's _initImage method that uses `imagesLoaded`
+         to load the overlay image, to avoid cross-browser image loading issues.
+         */
         _initImage: function() {
             var _this = this;
             this._image = L.DomUtil.create('img', 'leaflet-image-layer');
@@ -20,10 +24,12 @@ define([
 
             this._updateOpacity();
 
+            // Use imagesLoaded to fire `_onImageLoad`
             $(this._image).imagesLoaded(function() {
                 _this._onImageLoad();
             });
 
+            // Don't add an "onload" event since we use `imagesLoaded` instead
             L.extend(this._image, {
                 galleryimg: 'no',
                 onselectstart: L.Util.falseFn,
@@ -234,17 +240,6 @@ define([
 
             this.setLeafletMapSize();
 
-            this.graticule = L.graticule({
-                interval: 1,
-                style: {
-                    weight: 0.5,
-                    color: '#333'
-                },
-                onEachFeature: function(feature, layer) {
-                    layer.bindLabel(feature.properties.name);
-                }
-            }).addTo(this.leafletMap);
-
             $(window).resize(this.setLeafletMapSize);
             
             this.drawSpills();
@@ -320,22 +315,31 @@ define([
             this.setBackground();
         },
 
+        /*
+         Add the background map as a Leaflet image overlay.
+
+         If this is a result of setting a new viewport on the map (i.e. if
+         `this.isSettingViewport is true), then fetch the map model from the
+         server first. We also don't need to save the renderer with the current
+         viewport in this case, because that is done elsewhere.
+
+         */
         addBackgroundLayer: function() {
             var _this = this;
-            var savingRenderer;
+            var refreshModelData;
 
             // If we're in the process of setting a new viewport, part of
             // which involves saving the renderer, then we don't need to save
-            // the renderer -- otherwise we do.
+            // the renderer and can just get the latest model data.
             if (this.isSettingViewport) {
-                savingRenderer = this.model.fetch({reloadTree: false});
+                refreshModelData = this.model.fetch({reloadTree: false});
             } else {
                 var size = this.leafletMap.getSize();
                 this.renderer.set('image_size', [size.x, size.y]);
-                savingRenderer = this.saveRenderer();
+                refreshModelData = this.saveRenderer();
             }
 
-            return savingRenderer.then(function() {
+            return refreshModelData.then(function() {
                 var viewport = _this.renderer.getLatLongViewport();
                 var url = _this.model.get('background_image_url');
                 _this.viewport = new L.LatLngBounds([viewport.sw, viewport.ne]);
@@ -347,7 +351,7 @@ define([
                 }
 
                 _this.backgroundOverlay = imageOverlay(url, _this.viewport, {
-                    zIndex: -100
+                    zIndex: 5
                 });
                 _this.leafletMap.addLayer(_this.backgroundOverlay);
                 _this.setupDrawingTools();
@@ -410,29 +414,6 @@ define([
             });
         },
 
-        makeActiveImageClickable: function() {
-            var image = this.getActiveImage();
-            image.data('clickEnabled', true);
-        },
-
-        makeActiveImageSelectable: function() {
-            var _this = this;
-            var image = this.getActiveImage();
-            image.selectable({
-                start: function(event) {
-                    _this.startPosition = {x: event.pageX, y: event.pageY};
-                },
-                stop: function(event) {
-                    if (!$(this).selectable('option', 'disabled')) {
-                        _this.trigger(MapView.DRAGGING_FINISHED, [
-                            _this.startPosition,
-                            {x: event.pageX, y: event.pageY}
-                        ]);
-                    }
-                }
-            });
-        },
-
         getActiveImage: function() {
             return $(this.mapEl + " > img.active");
         },
@@ -475,7 +456,7 @@ define([
 
             function addImageOverlay(url) {
                 var timeStepLayer = imageOverlay(url, _this.viewport, {
-                    zIndex: -50
+                    zIndex: 10
                 });
                 // IE requires that we use an anonymous function to pass
                 // parameters to the target function.
@@ -518,43 +499,6 @@ define([
         getSize: function() {
             var image = $('.background');
             return {height: image.height(), width: image.width()};
-        },
-
-        getPosition: function() {
-            return this.getActiveImage().position();
-        },
-
-        getBoundingBox: function() {
-            var pos = this.getPosition();
-            var size = this.getSize();
-
-            return [
-                {x: pos.left, y: pos.top},
-                {x: pos.left + size.width, y: pos.top + size.height}
-            ];
-        },
-
-        removeCursorClasses: function() {
-            for (var i = 0; i < this.cursorClasses.length; i++) {
-                var cls = this.cursorClasses[i];
-                $(this.mapEl).removeClass(cls);
-            }
-        },
-
-        setZoomingInCursor: function() {
-            $(this.mapEl).addClass('zooming-in-cursor');
-        },
-
-        setZoomingOutCursor: function() {
-            $(this.mapEl).addClass('zooming-out-cursor');
-        },
-
-        setRegularCursor: function() {
-            $(this.mapEl).addClass('regular-cursor');
-        },
-
-        setMovingCursor: function() {
-            $(this.mapEl).addClass('moving-cursor');
         },
 
         updateSize: function() {

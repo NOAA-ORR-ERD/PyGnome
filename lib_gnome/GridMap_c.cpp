@@ -3334,17 +3334,21 @@ OSErr GridMap_c::SaveAsNetCDF(char *path)
 	//nc_Mesh2_DAGtree.flag_meanings = "end-of-branch"
 	//nc_Mesh2_DAGtree[:]=np.column_stack([DAGTree_nSeg,DAGTree_branch_left,DAGTree_branch_right])
     
-	
+	//int Mesh2_boundary_nodes(Two, nMesh2_boundary) ;
+	//Mesh2_boundary_nodes:cf_role = "boundary_node_connectivity" ;
+	//Mesh2_boundary_nodes:long_name = "Maps every edge of each boundary to the two nodes that it connects." ;
+	//Mesh2_boundary_nodes:start_index = 1. ;
+
     /*Boundary segments (custom).*/
 	// change to boundary_nodes
     edge_dimid[0] = edge_dim;
     edge_dimid[1] = two_dim;
     startIndex = 1;
-	status = nc_def_var(ncid, "Mesh2_edge_nodes", NC_LONG, 2, edge_dimid, &mesh2_edge_id);
+	status = nc_def_var(ncid, "nMesh2_boundary", NC_LONG, 2, edge_dimid, &mesh2_edge_id);
 	if (status != NC_NOERR) {err = -1; goto done;}
- 	status = nc_put_att_text (ncid, mesh2_edge_id, "long_name", strlen("Maps each boundary edge to the two nodes that it connects."), "Maps each boundary edge to the two nodes that it connects.");
+ 	status = nc_put_att_text (ncid, mesh2_edge_id, "long_name", strlen("Maps every edge of each boundary to the two nodes that it connects."), "Maps every edge of each boundary to the two nodes that it connects.");
 	if (status != NC_NOERR) {err = -1; goto done;}
-	status = nc_put_att_text (ncid, mesh2_edge_id, "cf_role", strlen("edge_node_connectivity"), "edge_node_connectivity");
+	status = nc_put_att_text (ncid, mesh2_edge_id, "cf_role", strlen("boundary_node_connectivity"), "boundary_node_connectivity");
 	if (status != NC_NOERR) {err = -1; goto done;}
 	status = nc_put_att_long (ncid, mesh2_edge_id, "start_index", NC_LONG, 1, &startIndex);
 	if (status != NC_NOERR) {err = -1; goto done;}
@@ -3407,20 +3411,30 @@ OSErr GridMap_c::SaveAsNetCDF(char *path)
 //Mesh2_edge_boundary_type_WaterORLand=np.zeros(nMesh2_edge,dtype=np.int) #Preallocate with zeros, since in most cases the majority of boundary edges will be land.
 //Mesh2_edge_boundary_type_WaterORLand[WaterBoundaries-1]=1 #The water boundary values are the zero-based indices of the end nodes of the water boundary edges. 
 
+  //int Mesh2_boundary_types(nMesh2_boundary) ;
+  //Mesh2_boundary_types:cf_role = "boundary_type" ;
+  //Mesh2_boundary_types:long_name = "Classification flag for every edge of each boundary." ;
+  //Mesh2_boundary_types:location = "boundary" ;
+  //Mesh2_boundary_types:flag_range = 0., 1. ;
+  //Mesh2_boundary_types:flag_values = 0., 1. ;
+  //Mesh2_boundary_types:flag_meanings = "closed_boundary open_boundary" ;
+  
 	/*Water boundaries (custom).*/
 	landwater_dimid[0] = edge_dim;
 	// change to boundary type - boundary_types, 0 closed, 1 open
- 	status = nc_def_var(ncid, "Mesh2_edge_boundary_type_WaterORLand", NC_LONG, 1, landwater_dimid, &mesh2_landwater_id);
+ 	status = nc_def_var(ncid, "Mesh2_boundary_types", NC_LONG, 1, landwater_dimid, &mesh2_landwater_id);
 	if (status != NC_NOERR) {err = -1; goto done;}
-   	status = nc_put_att_text (ncid, mesh2_landwater_id, "long_name", strlen("Specifies whether the edge represents land or water."), "Specifies whether the edge represents land or water.");
+   	status = nc_put_att_text (ncid, mesh2_landwater_id, "long_name", strlen("Classification flag for every edge of each boundary."), "Classification flag for every edge of each boundary.");
 	if (status != NC_NOERR) {err = -1; goto done;}
-	status = nc_put_att_text (ncid, mesh2_landwater_id, "cf_role", strlen("edge_type"), "edge_type");
+	//status = nc_put_att_text (ncid, mesh2_landwater_id, "cf_role", strlen("edge_type"), "edge_type");
+	//if (status != NC_NOERR) {err = -1; goto done;}
+	status = nc_put_att_text (ncid, mesh2_landwater_id, "location", strlen("boundary"), "boundary");
 	if (status != NC_NOERR) {err = -1; goto done;}
 	status = nc_put_att_long (ncid, mesh2_landwater_id, "flag_values", NC_LONG, 2, boundaryFlagValues);
 	if (status != NC_NOERR) {err = -1; goto done;}
 	status = nc_put_att_long (ncid, mesh2_landwater_id, "flag_range", NC_LONG, 2, boundaryFlagRange);
 	if (status != NC_NOERR) {err = -1; goto done;}
-	status = nc_put_att_text (ncid, mesh2_landwater_id, "flag_meanings", strlen("land_boundary water_boundary"), "land_boundary water_boundary");
+	status = nc_put_att_text (ncid, mesh2_landwater_id, "flag_meanings", strlen("closed_boundary open_boundary"), "closed_boundary open_boundary");
 	if (status != NC_NOERR) {err = -1; goto done;}
 
     /*Set file attributes.*/
