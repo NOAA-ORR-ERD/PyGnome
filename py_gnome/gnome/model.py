@@ -259,6 +259,8 @@ class Model(serializable.Serializable):
         right now only prepares the movers -- maybe more later?.
         """
         # initialize movers differently if model uncertainty is on
+        [sc.prepare_for_model_step(self.model_time) for sc in self.spills.items()]
+            
         for mover in self.movers:
             for sc in self.spills.items():
                 mover.prepare_for_model_step(sc, self.time_step, self.model_time)
