@@ -15,60 +15,7 @@ import numpy as np
 from gnome import basic_types
 from gnome import GnomeId
 from gnome.utilities import serializable
-
-class ArrayType(object):#,serializable.Serializable):
-    """
-    Object used to capture attributes of numpy data array for elements
-
-    An ArrayType specifies how data arrays associated with elements
-    are defined.
-
-    Used by :class:`Spill` and :class:`gnome.spill_container.SpillContainer` 
-    """
-    
-    def __init__(self, shape, dtype, initial_value=None):
-        """
-        constructor for ArrayType
-        
-        :param shape: shape of the numpy array
-        :type shape: tuple of integers
-        :param dtype: numpy datatype contained in array
-        :type dtype: numpy dtype
-        :param initial_value: initialize array to this value
-        :type initial_value: numpy array of size: shape(:-1) (ie. the shape of a single element)
-        """
-        self.shape = shape
-        self.dtype = dtype
-        self.initial_value = initial_value
-
-    def __eq__(self, other):
-        """" Equality of two ArrayType objects """
-        if not isinstance(other, self.__class__):
-            return False
-        
-        if len(self.__dict__) != len(other.__dict__):   
-            return False
-        
-        for key,val in self.__dict__.iteritems():
-             if key not in other.__dict__:
-                 return False
-             
-             elif val != other.__dict__[key]:
-                 return False
-             
-        # everything passed, then they must be equal
-        return True
-    
-    def __ne__(self,other):
-        """ 
-        Compare inequality (!=) of two objects
-        """
-        if self == other:
-            return False
-        else:
-            return True
-        
-    
+from gnome.movers.element_types import ArrayType
 
 class Spill(object):
     """

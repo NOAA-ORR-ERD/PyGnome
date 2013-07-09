@@ -15,13 +15,17 @@ from gnome.cy_gnome import cy_gridcurrent_mover
 from gnome.cy_gnome import cy_gridwind_mover
 from gnome import environment
 from gnome.utilities import rand, inf_datetime    # not to confuse with python random module
+from gnome.movers import element_types
 
-class Mover(object):
+class Mover(element_types.basic, object):
     """
     Base class from which all Python movers can inherit
     
     It defines the interface for a Python mover. The model expects the methods defined here. 
     The get_move(...) method needs to be implemented by the derived class.  
+    
+    It uses the mixin element_types.basic to define the basic array_types that all movers need
+    Override the array_types property in children if an additional mixin is used in the child class.
     """
     state = copy.deepcopy(serializable.Serializable.state)
     state.add(update=['on','active_start','active_stop'],
@@ -235,12 +239,15 @@ class CyMover(Mover):
         		self.mover.model_step_is_done()
             	
 
-class WindMover(CyMover, serializable.Serializable):
+class WindMover(CyMover, element_types.windage, serializable.Serializable):
     """
     Python wrapper around the Cython wind_mover module.
     This class inherits from CyMover and contains CyWindMover 
 
     The real work is done by the CyWindMover object.  CyMover sets everything up that is common to all movers.
+    
+    In addition to base class element_types.basic, also use the element_types.windage mixin since
+    WindMover requires a windage array
     """
     # One wind mover with a 20knot wind should (on average) produce the same results as a two wind movers
     # with a 10know wind each. 
@@ -337,6 +344,18 @@ class WindMover(CyMover, serializable.Serializable):
         return info.format(self.mover, self)
 
     # Define properties using lambda functions: uses lambda function, which are accessible via fget/fset as follows:
+    
+    @property
+    def array_types(self):
+        """
+        Override array_types to append element_types.windage().array_types to the array_types
+        returned by base class.
+        
+        Must use super to get the array_types value from parent class 
+        """
+        etypes = super(WindMover,self).array_types
+        etypes.update(element_types.windage().array_types)
+        return etypes
     
     @property
     def wind(self):

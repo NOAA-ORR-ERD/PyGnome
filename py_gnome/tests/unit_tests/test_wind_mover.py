@@ -11,6 +11,7 @@ from gnome import basic_types, environment
 from gnome.spill_container import TestSpillContainer
 from gnome.utilities import time_utils, transforms, convert
 from gnome.utilities import projections
+from gnome.movers import element_types
 
 datadir = os.path.join(os.path.dirname(__file__), r'sample_data')
 file_ = os.path.join(datadir,r'WindDataFromGnome.WND')
@@ -331,6 +332,28 @@ def test_exception_new_from_dict():
     wm_state.update({'wind':environment.Wind(filename=file_)})
     with pytest.raises(ValueError):
         movers.WindMover.new_from_dict(wm_state)
+
+def test_array_types():
+    """
+    Check the array_types property of WindMover contains 
+    element_types.basic().array_types and element_types.windage().array_types
+    """
+    wm = movers.WindMover(environment.Wind(filename=file_)) # WindMover does not modify Wind object!
+    wm_array = wm.array_types
+    
+    assert len(wm_array) == len(element_types.basic().array_types) + len(element_types.windage().array_types)
+    
+    for key,val in element_types.basic().array_types.iteritems():
+        assert key in wm_array
+        assert wm_array[key] == val  
+        wm_array.pop(key)
+    
+    for key,val in element_types.windage().array_types.iteritems():
+        assert key in wm_array
+        assert wm_array[key] == val
+        wm_array.pop(key)
+        
+    assert len(wm_array) == 0
     
 """
 Helper methods for this module
@@ -379,3 +402,4 @@ def _assert_timeseries_equivalence(cpp_timeseries, wind_ts):
 
     assert np.all(cpp_timeseries['time'] == wind_ts['time'])
     assert np.allclose(cpp_timeseries['value'], wind_ts['value'], atol, rtol)
+
