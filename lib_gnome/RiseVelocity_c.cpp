@@ -113,8 +113,10 @@ WorldPoint3D RiseVelocity_c::GetMove (const Seconds& model_time, Seconds timeSte
 	// for now not implementing uncertainty
 	
 	// do we check if z = 0 here?
-	if (isnan((*theLE).riseVelocity)) (*theLE).riseVelocity = (2.*g/9.)*(1.-(*theLE).density/water_density)*((*theLE).dropletSize*1e-6/2.)*((*theLE).dropletSize*1e-6/2)/water_viscosity;	
-	deltaPoint.z = -1. * ((*theLE).riseVelocity*CMTOMETERS)*timeStep;	// assuming we add dz to the point, check units...
+	//if (isnan((*theLE).riseVelocity)) (*theLE).riseVelocity = (2.*g/9.)*(1.-(*theLE).density/water_density)*((*theLE).dropletSize*1e-6/2.)*((*theLE).dropletSize*1e-6/2)/water_viscosity;	
+	if (isnan((*theLE).riseVelocity)) (*theLE).riseVelocity = (2.*g/9.)*(1.-(*theLE).density*1000/water_density)*((*theLE).dropletSize*1e-6/2.)*((*theLE).dropletSize*1e-6/2)/water_viscosity;	
+	//deltaPoint.z = -1. * ((*theLE).riseVelocity*CMTOMETERS)*timeStep;	// assuming we add dz to the point, check units...
+	deltaPoint.z = -1. * ((*theLE).riseVelocity)*timeStep;	// assuming we add dz to the point, check units...
 
 	
 	return deltaPoint;

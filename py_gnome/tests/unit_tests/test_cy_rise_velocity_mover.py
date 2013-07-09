@@ -112,7 +112,7 @@ class TestRiseVelocity():
         """
         self.rise_velocity[:] = np.nan
         self.droplet_size[:] = 70
-        self.density[:] = 1
+        self.density[:] = .9
         print  "rise_velocity  = " 
         print self.rise_velocity 
         new_delta = np.zeros((self.cm.num_le,), dtype=basic_types.world_point)
