@@ -13,6 +13,7 @@ import numpy as np
 
 import gnome.spill
 from gnome.utilities.orderedcollection import OrderedCollection
+from gnome import basic_types
 
 class SpillContainerData(object):
     """
@@ -298,6 +299,16 @@ class SpillContainer(SpillContainerData):
         Need to remove particles marked as to_be_removed...        
         """
         pass
+#         to_be_removed = np.where( self['status_codes'] == basic_types.oil_status.to_be_removed)
+#         if np.any(to_be_removed):
+#         	print "found elements to be removed"
+#         	print to_be_removed
+#         	for key in self.all_array_types.keys():
+#         		self[key] = np.delete( self[key], to_be_removed) # we do not allow arrays to change size
+#         		print "to_be_removed: "
+#         		print to_be_removed
+#         		self.num_elements = len(self[key]) #needs to be reset, but is not settable
+
 
     def __str__(self):
         msg = "gnome.spill_container.SpillContainer\nspill LE attributes: %s" % self._data_arrays.keys()
