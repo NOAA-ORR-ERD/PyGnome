@@ -15,7 +15,6 @@ import numpy as np
 from gnome import basic_types
 from gnome import GnomeId
 from gnome.utilities import serializable
-from gnome.movers.element_types import ArrayType
 
 class Spill(object):
     """
@@ -23,27 +22,12 @@ class Spill(object):
     
     .. note:: This class is not serializable since it can't be used in PyGnome
     """
-    positions = ArrayType( (3,), basic_types.world_point_type)
-    next_positions = ArrayType( (3,), basic_types.world_point_type)
-    last_water_positions = ArrayType( (3,), basic_types.world_point_type)
-    status_codes = ArrayType( (), basic_types.status_code_type,
-                              basic_types.oil_status.in_water)
-    spill_num = ArrayType( (), basic_types.id_type)
 
-
-    # Should ArrayType objects be saved? Can they be updated?
     _update = ['num_elements','on']
     _create = []
     _create.extend(_update)
     state = copy.deepcopy(serializable.Serializable.state)
     state.add( create=_create, update=_update)
-
-    @property
-    def array_types(self):
-        return dict([(name, getattr(self, name))
-                for name in dir(self)
-                if name != 'array_types'
-                and type(getattr(self, name)) == ArrayType])
 
     @property
     def id(self):
@@ -116,31 +100,21 @@ class Spill(object):
         """
         pass
 
-    def release_elements(self, current_time, time_step, array_types=None):
+    def release_elements(self, current_time, time_step, array_types):
         """
         probably overridden by a subclass
         """
         return None
 
-    def create_new_elements(self, num_elements, array_types=None):
+    def create_new_elements(self, num_elements, array_types):
         arrays = {}
-        if not array_types:
-            array_types = self.array_types
 
         for name, array_type in array_types.iteritems():
-            #===================================================================
-            # if array_type.shape == ():  # it is a scalar array
-            #    arrays[name] = np.array(0,dtype=array_type.dtype)
-            # else:
-            #===================================================================
             arrays[name] = np.zeros( (num_elements,)+array_type.shape, dtype=array_type.dtype)
         self.initialize_new_elements(arrays, array_types)
         return arrays
 
-    def initialize_new_elements(self, arrays, array_types=None):
-        if not array_types:
-            array_types = self.array_types
-
+    def initialize_new_elements(self, arrays, array_types):
         for name, array_type in array_types.iteritems():
             if array_type.initial_value != None:
                 arrays[name][:] = array_type.initial_value
@@ -149,11 +123,10 @@ class FloatingSpill(Spill):
     """
     Spill for floating objects
 
-    all this does is add the 'windage' parameter
+    all this does is add the 'windage' parameters
     
     NOTE: This class is not serializable since it can't be used in PyGnome
     """
-    windages = ArrayType( (), basic_types.windage_type)
 
     _update= ['windage_range','windage_persist']
     _create= []
@@ -314,7 +287,7 @@ class SurfaceReleaseSpill(FloatingSpill, serializable.Serializable):
         else:
             self._end_release_time = val        
 
-    def release_elements(self, current_time, time_step, array_types=None):
+    def release_elements(self, current_time, time_step, array_types):
         """
         Release any new elements to be added to the SpillContainer
 
@@ -326,9 +299,6 @@ class SurfaceReleaseSpill(FloatingSpill, serializable.Serializable):
 
         :returns : None if there are no new elements released. A dict of arrays if there are new elements
         """
-
-        if not array_types:
-            array_types = self.array_types
 
         if self.num_released >= self.num_elements:
             # nothing left to release
@@ -405,7 +375,6 @@ class SubsurfaceSpill(Spill):
 
     all this does is add the 'water_currents' parameter
     """
-    water_currents = ArrayType( (3,), basic_types.water_current_type)
 
     def __init__(self):
         super(SubsurfaceSpill, self).__init__()
@@ -457,7 +426,7 @@ class SubsurfaceReleaseSpill(SubsurfaceSpill):
         self.num_released = 0
         self.prev_release_pos = self.start_position
 
-    def release_elements(self, current_time, time_step, array_types=None):
+    def release_elements(self, current_time, time_step, array_types):
         """
         Release any new elements to be added to the SpillContainer
 
@@ -467,9 +436,7 @@ class SubsurfaceReleaseSpill(SubsurfaceSpill):
         :returns : None if there are no new elements released
                    a dict of arrays if there are new elements
         """
-        if not array_types:
-            array_types = self.array_types
-
+        
         if current_time >= self.release_time:
             if self.num_released >= self.num_elements:
                 return None
@@ -572,7 +539,7 @@ class SpatialReleaseSpill(FloatingSpill):
         self.windage_range    = windage_range[0:2]
         self.windage_persist  = windage_persist
 
-    def release_elements(self, current_time, time_step, array_types=None):
+    def release_elements(self, current_time, time_step, array_types):
         """
         Release any new elements to be added to the SpillContainer
 
@@ -586,9 +553,7 @@ class SpatialReleaseSpill(FloatingSpill):
 
         .. note:: this releases all the elements at their initial positions at the release_time
         """
-        if not array_types:
-            array_types = self.array_types
-
+        
         if current_time > self.release_time and self.not_called_yet:
             #first call after release time -- don't release anything
             return None

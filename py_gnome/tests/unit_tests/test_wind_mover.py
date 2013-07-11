@@ -109,7 +109,7 @@ class TestWindMover:
     """
     time_step = 15 * 60 # seconds
     rel_time = datetime(2012, 8, 20, 13)    # yyyy/month/day/hr/min/sec
-    spill = TestSpillContainer(5, (3., 6., 0.), rel_time)
+    sc = TestSpillContainer(5, (3., 6., 0.), rel_time)
     model_time = rel_time
     
     time_val = np.array((rel_time, (2., 25.)), dtype=basic_types.datetime_value_2d).reshape(1,)
@@ -131,12 +131,12 @@ class TestWindMover:
         """
         Test the get_move(...) results in WindMover match the expected delta
         """
-        self.spill.prepare_for_model_step(self.model_time, self.time_step)
-        self.wm.prepare_for_model_step( self.spill, self.time_step, self.model_time)
+        self.sc.prepare_for_model_step(self.model_time)
+        self.wm.prepare_for_model_step( self.sc, self.time_step, self.model_time)
 
         for ix in range(2):
             curr_time = time_utils.sec_to_date(time_utils.date_to_sec(self.model_time)+(self.time_step*ix))
-            delta = self.wm.get_move(self.spill, self.time_step, curr_time)
+            delta = self.wm.get_move(self.sc, self.time_step, curr_time)
             actual = self._expected_move()
             
             # the results should be independent of model time
@@ -154,11 +154,11 @@ class TestWindMover:
 
     def test_get_move_exceptions(self):
         curr_time = time_utils.sec_to_date(time_utils.date_to_sec(self.model_time)+(self.time_step))
-        tmp_windages = self.spill._data_arrays['windages']
-        del self.spill._data_arrays['windages']
+        tmp_windages = self.sc._data_arrays['windages']
+        del self.sc._data_arrays['windages']
         with pytest.raises(KeyError):
-            self.wm.get_move(self.spill, self.time_step, curr_time)
-        self.spill._data_arrays['windages'] = tmp_windages
+            self.wm.get_move(self.sc, self.time_step, curr_time)
+        self.sc._data_arrays['windages'] = tmp_windages
 
     def test_update_wind_vel(self):
         self.time_val['value'] = (1., 120.) # now given as (r, theta)
@@ -172,17 +172,17 @@ class TestWindMover:
         """
         # expected move
         uv = transforms.r_theta_to_uv_wind(self.time_val['value'])
-        exp = np.zeros( (self.spill.num_elements, 3) )
-        exp[:,0] = self.spill['windages']*uv[0,0]*self.time_step # 'u'
-        exp[:,1] = self.spill['windages']*uv[0,1]*self.time_step # 'v'
+        exp = np.zeros( (self.sc.num_elements, 3) )
+        exp[:,0] = self.sc['windages']*uv[0,0]*self.time_step # 'u'
+        exp[:,1] = self.sc['windages']*uv[0,1]*self.time_step # 'v'
         
-        xform = projections.FlatEarthProjection.meters_to_lonlat(exp, self.spill['positions'])
+        xform = projections.FlatEarthProjection.meters_to_lonlat(exp, self.sc['positions'])
         return xform
 
 
 def test_windage_index():
     """
-    A very simple test to make sure windage is set for the correct spill if staggered release
+    A very simple test to make sure windage is set for the correct sc if staggered release
     """
     sc = gnome.spill_container.SpillContainer()
     rel_time = datetime(2013,1,1,0,0)
@@ -195,6 +195,8 @@ def test_windage_index():
                                                 windage_persist=900)
         sc.spills.add(spill)
     
+    arrays = dict(element_types.basic().array_types.items() + element_types.windage().array_types.items())
+    sc.prepare_for_model_run(rel_time, arrays)
     sc.release_elements(rel_time, timestep)
     wm = movers.WindMover(environment.ConstantWind(5,0))
     wm.prepare_for_model_step(sc, timestep, rel_time)
@@ -202,13 +204,13 @@ def test_windage_index():
     
     def _check_index(sc):
         """internal function for doing the test after windage is set - called twice so made a function"""
-        # only 1st spill is released
+        # only 1st sc is released
         for sp in sc.spills:
             mask = sc.get_spill_mask(sp)
             if np.any(mask):
                 assert np.all( sc['windages'][mask] == sp.windage_range[0])
                 
-    # only 1st spill is released
+    # only 1st sc is released
     _check_index(sc)    # 1st ASSERT
     
     sc.release_elements(rel_time+timedelta(hours=1), timestep)
@@ -221,16 +223,16 @@ def test_timespan():
     """
     time_step = 15 * 60 # seconds
 
-    #todo: hack for now, but should try to use same spill for all tests
+    #todo: hack for now, but should try to use same sc for all tests
     start_pos = (3., 6., 0.)
     rel_time = datetime(2012, 8, 20, 13)    # yyyy/month/day/hr/min/sec
     #fixme: what to do about persistance?
-    spill = TestSpillContainer(5, start_pos, rel_time)
-    spill.release_elements(datetime.now(), time_step=100)
+    sc = TestSpillContainer(5, start_pos, rel_time)
+    sc.release_elements(datetime.now(), time_step=100)
 
     #model_time = time_utils.sec_to_date(time_utils.date_to_sec(rel_time) + 1)
     model_time = rel_time
-    spill.prepare_for_model_step(model_time, time_step)   # release particles
+    sc.prepare_for_model_step(model_time)   # release particles
 
     time_val = np.zeros((1,), dtype=basic_types.datetime_value_2d)  # value is given as (r,theta)
     time_val['time']  = np.datetime64( rel_time.isoformat() )
@@ -239,15 +241,15 @@ def test_timespan():
     wm = movers.WindMover(environment.Wind(timeseries=time_val, units='meter per second'), 
                           active_start=model_time+timedelta(seconds=time_step))
     wm.prepare_for_model_run()
-    wm.prepare_for_model_step(spill, time_step, model_time)
-    delta = wm.get_move(spill, time_step, model_time)
+    wm.prepare_for_model_step(sc, time_step, model_time)
+    delta = wm.get_move(sc, time_step, model_time)
     wm.model_step_is_done()
     assert wm.active == False
     assert np.all(delta == 0)   # model_time + time_step = active_start
 
     wm.active_start = model_time - timedelta(seconds=time_step/2)
-    wm.prepare_for_model_step(spill, time_step, model_time)
-    delta = wm.get_move(spill, time_step, model_time)
+    wm.prepare_for_model_step(sc, time_step, model_time)
+    delta = wm.get_move(sc, time_step, model_time)
     wm.model_step_is_done()
     
     assert wm.active == True
@@ -258,16 +260,16 @@ def test_active():
     """ test that mover must be both active and on to get movement """
     time_step = 15 * 60 # seconds
 
-    #todo: hack for now, but should try to use same spill for all tests
+    #todo: hack for now, but should try to use same sc for all tests
     start_pos = (3., 6., 0.)
     rel_time = datetime(2012, 8, 20, 13)    # yyyy/month/day/hr/min/sec
     #fixme: what to do about persistance?
-    spill = TestSpillContainer(5, start_pos, rel_time)
-    spill.release_elements(datetime.now(), time_step=100)
+    sc = TestSpillContainer(5, start_pos, rel_time)
+    sc.release_elements(datetime.now(), time_step=100)
 
     #model_time = time_utils.sec_to_date(time_utils.date_to_sec(rel_time) + 1)
     model_time = rel_time
-    spill.prepare_for_model_step(model_time, time_step)   # release particles
+    sc.prepare_for_model_step(model_time)   # release particles
 
     time_val = np.zeros((1,), dtype=basic_types.datetime_value_2d)  # value is given as (r,theta)
     time_val['time']  = np.datetime64( rel_time.isoformat() )
@@ -275,8 +277,8 @@ def test_active():
 
     wm = movers.WindMover(environment.Wind(timeseries=time_val, units='meter per second'), on=False)
     wm.prepare_for_model_run()
-    wm.prepare_for_model_step(spill, time_step, model_time)
-    delta = wm.get_move(spill, time_step, model_time)
+    wm.prepare_for_model_step(sc, time_step, model_time)
+    delta = wm.get_move(sc, time_step, model_time)
     wm.model_step_is_done()
     assert wm.active == False
     assert np.all(delta == 0)   # model_time + time_step = active_start
@@ -292,15 +294,15 @@ def test_constant_wind_mover():
 
     wm = movers.constant_wind_mover(10, 45, units='m/s')
     
-    spill = TestSpillContainer(1)
+    sc = TestSpillContainer(1)
 
     print wm
     print repr(wm.wind)
     print wm.wind.get_timeseries()
     time_step = 1000
     model_time = datetime(2013, 3, 1, 0)
-    wm.prepare_for_model_step(spill, time_step, model_time)
-    delta = wm.get_move(spill, time_step, model_time)
+    wm.prepare_for_model_step(sc, time_step, model_time)
+    delta = wm.get_move(sc, time_step, model_time)
     print "delta:", delta
     assert delta[0][0] == delta[0][1] # 45 degree wind at the equator -- u,v should be the same
 

@@ -13,6 +13,11 @@ import numpy as np
 from gnome import basic_types
 from gnome.spill_container import SpillContainer, TestSpillContainer, SpillContainerPair
 from gnome.spill import Spill, SurfaceReleaseSpill, SubsurfaceReleaseSpill
+from gnome.movers import element_types  # only required to setup data arrays correctly
+
+basic_at = element_types.basic().array_types
+windage_at= element_types.basic().array_types
+windage_at.update(element_types.windage().array_types)
 
 def test_simple_init():
     sc = SpillContainer()
@@ -39,6 +44,7 @@ def test_one_simple_spill():
                                 start_position,
                                 start_time)
     sc.spills.add(spill)
+    sc.prepare_for_model_run( spill.release_time, windage_at)
     sc.release_elements(start_time,1)
 
     assert sc.num_elements == num_elements
@@ -70,7 +76,7 @@ def test_multiple_spills():
 
     sc.spills += [spill, sp2]
     print sc.spills
-
+    sc.prepare_for_model_run( start_time, windage_at)
     sc.release_elements(start_time, time_step=100)
 
     assert sc['positions'].shape == (num_elements, 3)
@@ -97,20 +103,19 @@ def test_add_data_array_spill_container():
                                 release_time=datetime(2012, 1, 1, 12))
     sc = SpillContainer()
     sc.spills.add(spill)
+    sc.prepare_for_model_run( spill.release_time, windage_at)
     sc.release_elements(spill.release_time,1)
     
-    with pytest.raises(TypeError):
+    with pytest.raises(KeyError):
         sc['test'] = 0
     
-    with pytest.raises(IndexError):
-        sc['test'] = np.zeros( len(sc['spill_num'])-1, dtype=np.int)
+    with pytest.raises(ValueError):
+        sc['positions'] = np.zeros( len(sc['spill_num'])-1, dtype=np.int)
         
-        
-    sc['test1'] = np.zeros( len(sc['spill_num']), dtype=np.int)
-    assert 'test1' in sc._data_arrays.keys() 
-    all_array_types = sc.all_array_types.keys()
-    assert 'test1' in all_array_types
+    with pytest.raises(ValueError):
+        sc['spill_num'] = np.zeros( len(sc['spill_num']), dtype=np.int)
 
+    sc['spill_num'] = np.zeros( len(sc['spill_num']), dtype=basic_types.id_type)
 
 def test_rewind():
     start_time = datetime(2012, 1, 1, 12)
@@ -221,7 +226,7 @@ def test_data_setting_error3():
     with pytest.raises(ValueError):
         sp['positions'] = new_pos
 
-
+@pytest.mark.xfail
 def test_data_setting_new():
     """
     Should be able to add a new data array
@@ -234,7 +239,7 @@ def test_data_setting_new():
 
     assert sp['new_name'] is new_arr
 
-
+@pytest.mark.xfail
 def test_data_setting_new_list():
     """
     Should be able to add a new data that's not a numpy array
@@ -247,7 +252,7 @@ def test_data_setting_new_list():
 
     assert np.array_equal(sp['new_name'],  new_arr)
 
-
+@pytest.mark.xfail
 def test_data_arrays():
     """
     SpillContainer manages a number of numpy arrays that represent the properties
@@ -288,6 +293,7 @@ def test_data_arrays():
 
     # as we move forward in time, the spills will release LEs
     # in an expected way
+    sc.prepare_for_model_run( start_time1, windage_at)
     sc.release_elements(start_time1, time_step=100)
 
     assert sc['positions'].shape == (num_elements, 3)
@@ -384,16 +390,17 @@ def test_uncertain_copy():
             assert not id1==id2
 
     # do the spills work?
-
+    sc.prepare_for_model_run( start_time, windage_at)
     sc.release_elements(start_time, time_step=100)
 
     assert sc['positions'].shape == (num_elements, 3)
     assert sc['last_water_positions'].shape == (num_elements, 3)
 
-    # nothing released yet.
-    assert u_sc['positions'].shape[0] == 0
-
     # now release second set:
+    u_sc.prepare_for_model_run( start_time, windage_at)
+
+    assert u_sc['positions'].shape[0] == 0  # nothing released yet.
+    
     u_sc.release_elements(start_time, time_step=100)
     # elements should be there.
     assert u_sc['positions'].shape == (num_elements, 3)
@@ -541,7 +548,8 @@ def test_get_spill_mask():
     sc.spills += [sp0, sp1, sp2]
 
     # as we move forward in time, the spills will release LEs in an expected way
-    sc.release_elements(start_time0, time_step=100)
+    sc.prepare_for_model_run( start_time0, windage_at)
+    sc.release_elements(start_time0, time_step=100)    
     sc.release_elements(start_time0 + timedelta(hours=24), time_step=100)
     sc.release_elements(start_time1 + timedelta(hours=1), time_step=100)
     sc.release_elements(start_time1 + timedelta(hours=3), time_step=100)
@@ -560,7 +568,10 @@ def test_eq_spill_container1():
     sc1.spills.add(sp1)
     sc2.spills.add(sp2)
     
+    sc1.prepare_for_model_run( sp1.release_time, windage_at)
     sc1.release_elements(sp1.release_time, 360)
+    
+    sc2.prepare_for_model_run( sp2.release_time, windage_at)
     sc2.release_elements(sp2.release_time, 360)
     
     assert sc1 == sc2
@@ -579,7 +590,10 @@ def test_eq_spill_container2():
     sc1.spills.add(sp1)
     sc2.spills.add(sp2)
     
+    sc1.prepare_for_model_run( sp1.release_time, windage_at)
     sc1.release_elements(sp1.release_time, 360)
+    
+    sc2.prepare_for_model_run( sp2.release_time, windage_at)
     sc2.release_elements(sp2.release_time, 360)
     
     sc1._array_allclose_atol = 1e-5 # need to change both atol
@@ -606,7 +620,10 @@ def test_ne_spill_container():
     sc1.spills.add(sp1)
     sc2.spills.add(sp2)
     
+    sc1.prepare_for_model_run( sp1.release_time, windage_at)
     sc1.release_elements(sp1.release_time, 360)
+    
+    sc2.prepare_for_model_run( sp2.release_time, windage_at)
     sc2.release_elements(sp2.release_time, 360)
     
     assert sc1 != sc2
@@ -619,7 +636,6 @@ def get_eq_spills():
     release_time = datetime(2000, 1, 1, 1)
     
     spill = SurfaceReleaseSpill(num_elements, (28, -75, 0), release_time)
-    spill.spill_num.initial_value = 0
     spill2 = SurfaceReleaseSpill.new_from_dict(spill.to_dict('create'))
     
     return (spill, spill2)

@@ -393,7 +393,7 @@ class WindMover(CyMover, element_types.windage, serializable.Serializable):
         super(WindMover,self).prepare_for_model_step(sc, time_step, model_time_datetime)
         
         # if no particles released, then no need for windage
-        if len(sc['positions']) == 0:
+        if sc.num_elements is None or sc.num_elements == 0:
             return
         
         for spill in sc.spills:

@@ -82,11 +82,11 @@ class basic(object):
         the ArrayType object as the value
         contains: position, next_position, last_water_position, status_code, spill_num
         """
-        etypes = {'position':ArrayType( (3,), basic_types.world_point_type),
-                 'next_position': ArrayType( (3,), basic_types.world_point_type),
-                 'last_water_position': ArrayType( (3,), basic_types.world_point_type),
-                 'status_code': ArrayType( (), basic_types.status_code_type,basic_types.oil_status.in_water),
-                 'spill_num': ArrayType( (), basic_types.id_type)}
+        etypes = {'positions':ArrayType( (3,), basic_types.world_point_type),
+                 'next_positions': ArrayType( (3,), basic_types.world_point_type),
+                 'last_water_positions': ArrayType( (3,), basic_types.world_point_type),
+                 'status_codes': ArrayType( (), basic_types.status_code_type,basic_types.oil_status.in_water),
+                 'spill_num': ArrayType( (), basic_types.id_type, -1)}
         return etypes
         
 class windage(object):
@@ -97,7 +97,7 @@ class windage(object):
         the ArrayType object as the value
         contains: windage
         """ 
-        etypes = {'windage':ArrayType( (), basic_types.windage_type)}
+        etypes = {'windages':ArrayType( (), basic_types.windage_type)}
         return etypes
         
 class subsurface(object):
@@ -108,5 +108,5 @@ class subsurface(object):
         the ArrayType object as the value
         contains: water_current 
         """ 
-        etypes = {'water_current':ArrayType( (3,), basic_types.water_current_type)}
+        etypes = {'water_currents':ArrayType( (3,), basic_types.water_current_type)}
         return etypes

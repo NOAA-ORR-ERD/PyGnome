@@ -364,9 +364,8 @@ def test_mover_api():
 
 
 test_cases = [(datetime(2012, 1, 1, 0, 0), 0, 12 ), # model start_time, No. of time_steps after which LEs release, duration as No. of timesteps
-              (datetime(2012, 1, 1, 0, 0), 12, 12),
-              (datetime(2012, 1, 1, 0, 0), 13, 12)]
-
+             (datetime(2012, 1, 1, 0, 0), 12, 12),
+             (datetime(2012, 1, 1, 0, 0), 13, 12)]
 
 @pytest.mark.parametrize(("start_time", "release_delay", "duration"), test_cases)
 def test_all_movers(start_time, release_delay, duration):
@@ -386,15 +385,6 @@ def test_all_movers(start_time, release_delay, duration):
                                                     start_position=start_loc,
                                                     release_time  = start_time + timedelta(seconds=model.time_step*release_delay),
                                                     )
-    print "release_delay: {0}".format(release_delay)
-    print "LE positions:"
-    print model.spills.LE('positions')
-    # model.spills += gnome.spill.PointReleaseSpill(num_LEs=10,
-    #                                               start_position = (0.0, 0.0, 0.0),
-    #                                               release_time = start_time,
-    #                                               )
-    # assert len(model.spills) == 1
-
     # the land-water map
     model.map = gnome.map.GnomeMap() # the simpleset of maps
     
@@ -419,7 +409,7 @@ def test_all_movers(start_time, release_delay, duration):
     num_steps_output = 0
     for step in model:
         num_steps_output += 1
-        #print "running step:", step
+        print "running step:", step
         
     # test release happens correctly for all cases
     if release_delay < duration:    # at least one get_move has been called after release
@@ -567,8 +557,8 @@ def test_release_at_right_time():
                                                     release_time=datetime(2013, 1, 1, 0),
                                                     end_release_time=datetime(2013, 1, 1, 6),
                                                     )
-    # before the run:
-    assert model.spills.items()[0].num_elements == 0
+    # before the run - no elements present since data_arrays get defined after 1st step (prepare_for_model_run):
+    assert model.spills.items()[0].num_elements is None
 
     model.step()
     assert model.spills.items()[0].num_elements == 4

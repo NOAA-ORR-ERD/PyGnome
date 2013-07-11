@@ -241,15 +241,23 @@ class Model(serializable.Serializable):
         Sets up each mover for the model run
 
         """
-        [mover.prepare_for_model_run() for mover in self.movers]
+        self.spills.rewind()    #why is rewind for spills here?
+        
         [outputter.prepare_for_model_run(self._cache, model_start_time=self.start_time,num_time_steps=self.num_time_steps, uncertain=self.uncertain, spills=self.spills) 
          for outputter in self.outputters]
         
-        self.spills.rewind()
+        array_types = {}
+        if len(self.movers) == 0:
+            array_types.update(Mover().array_types) # get the baseline array types required by all movers
+        else:
+            for mover in self.movers:
+                mover.prepare_for_model_run()
+                array_types.update(mover.array_types)
         
         # setup the current_time_stamp for the spill_container objects
         for sc in self.spills.items():
-            sc.current_time_stamp = self.model_time
+            #sc.current_time_stamp = self.model_time
+            sc.prepare_for_model_run(self.model_time, array_types)
         
 
     def setup_time_step(self):
