@@ -628,6 +628,44 @@ def test_ne_spill_container():
     
     assert sc1 != sc2
 
+def test_model_step_is_done():
+    """
+    tests that correct elements are released when their status_codes is toggled
+    to basic_types.oil_status.to_be_removed
+    """
+    start_time = datetime(2012, 1, 1, 12)
+    start_time2 = datetime(2012, 1, 2, 12)
+    start_position = (23.0, -78.5, 0.0)
+    num_elements =  10
+    sc = SpillContainer()
+    spill = SurfaceReleaseSpill(num_elements,
+                                start_position,
+                                start_time)
+
+    sp2 = SurfaceReleaseSpill(num_elements,
+                              start_position,
+                              start_time2)
+
+    sc.spills += [spill, sp2]
+ 
+    sc.release_elements(start_time, time_step=100)
+    sc.release_elements(start_time2, time_step=100)
+    sc['status_codes'][5:8] = basic_types.oil_status.to_be_removed
+    sc['status_codes'][14:17] = basic_types.oil_status.to_be_removed
+    sc['status_codes'][19] = basic_types.oil_status.to_be_removed
+    
+    # also make corresponding positions 0 as a way to test
+    sc['positions'][5:8,:] = (0,0,0)
+    sc['positions'][14:17,:] = (0,0,0)
+    sc['positions'][19,:] = (0,0,0)
+    sc.model_step_is_done()
+    
+    assert sc.num_elements == 2*num_elements - 7
+    assert np.all( sc['status_codes'] != basic_types.oil_status.to_be_removed)
+    assert np.all( sc['positions'] == start_position)
+    assert np.count_nonzero(sc['spill_num'] == 0) == num_elements - 3
+    assert np.count_nonzero(sc['spill_num'] == 1) == num_elements - 4
+
 """ Helper function """
 def get_eq_spills():
     """ returns a tuple of identical SurfaceReleaseSpill objects """
