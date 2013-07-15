@@ -317,16 +317,12 @@ class SpillContainer(SpillContainerData):
         Called at the end of a time step
         Need to remove particles marked as to_be_removed...        
         """
-        pass
-#         to_be_removed = np.where( self['status_codes'] == basic_types.oil_status.to_be_removed)
-#         if np.any(to_be_removed):
-#         	print "found elements to be removed"
-#         	print to_be_removed
-#         	for key in self.all_array_types.keys():
-#         		self[key] = np.delete( self[key], to_be_removed) # we do not allow arrays to change size
-#         		print "to_be_removed: "
-#         		print to_be_removed
-#         		self.num_elements = len(self[key]) #needs to be reset, but is not settable
+        if len(self._data_arrays) == 0:
+            return  # nothing to do - arrays are not yet defined.
+        to_be_removed = np.where( self['status_codes'] == basic_types.oil_status.to_be_removed)
+        if np.any(to_be_removed):
+        	for key in self.all_array_types.keys():
+        		self._data_arrays[key] = np.delete( self[key], to_be_removed, axis=0) 
 
 
     def __str__(self):
