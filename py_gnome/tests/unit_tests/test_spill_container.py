@@ -648,6 +648,7 @@ def test_model_step_is_done():
 
     sc.spills += [spill, sp2]
  
+    sc.prepare_for_model_run( start_time, windage_at)
     sc.release_elements(start_time, time_step=100)
     sc.release_elements(start_time2, time_step=100)
     sc['status_codes'][5:8] = basic_types.oil_status.to_be_removed
