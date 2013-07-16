@@ -388,6 +388,9 @@ class SurfaceReleaseSpill(FloatingSpill, serializable.Serializable):
             return None
 
         if current_time > self.release_time and self.not_called_yet:
+            # NOTE: JS - July 16th, 2013
+            # This is intentional but needs to be revisited. If model run begins 
+            # after the release_time, then do not release any elements!
             #first call after release time -- don't release anything
             #self.not_called_yet = False
             return None
