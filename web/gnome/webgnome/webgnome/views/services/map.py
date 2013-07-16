@@ -39,7 +39,7 @@ class MapResource(BaseResource):
 @resource(path='/model/{model_id}/map', renderer='gnome_json',
           description="The user's current map.")
 class Map(MapResource):
-    @view(validators=valid_map)
+    @view(validators=valid_map, http_cache=0)
     def get(self):
         """
         Return a JSON representation of the current map.
@@ -48,7 +48,7 @@ class Map(MapResource):
         map_data = self.get_map_data(model)
         return schema.MapSchema().bind().serialize(map_data)
 
-    @view(validators=util.valid_uploaded_file, schema=MapSchema)
+    @view(validators=util.valid_uploaded_file, schema=MapSchema, http_cache=0)
     def post(self):
         """
         Add a map to the current model.
@@ -64,7 +64,7 @@ class Map(MapResource):
         map_data = self.get_map_data(model)
         return schema.MapSchema().bind().serialize(map_data)
 
-    @view(validators=valid_map, schema=MapSchema)
+    @view(validators=valid_map, schema=MapSchema, http_cache=0)
     def put(self):
         """
         Update an existing map.
@@ -102,7 +102,7 @@ class CustomGoodsMap(BaseResource):
 
         return errors
 
-    @view(validators=valid_map)
+    @view(validators=valid_map, http_cache=0)
     def get(self):
         """
         Return a JSON representation of the current map.
@@ -110,7 +110,7 @@ class CustomGoodsMap(BaseResource):
         model = self.request.validated.pop('model')
         return self.get_map(model)
 
-    @view(validators=util.valid_model_id, schema=CustomMapSchema)
+    @view(validators=util.valid_model_id, schema=CustomMapSchema, http_cache=0)
     def post(self):
         """
         Get a custom map file from GOODS for the given coordinates and add it
@@ -154,7 +154,7 @@ class CustomGoodsMap(BaseResource):
 @resource(path='/model/{model_id}/file_upload', renderer='gnome_json',
           description="Post to upload a file into the model's data directory.")
 class FileUpload(BaseResource):
-    @view(validators=[util.valid_model_id, util.valid_filename])
+    @view(validators=[util.valid_model_id, util.valid_filename], http_cache=0)
     def post(self):
         """
         Upload a file.

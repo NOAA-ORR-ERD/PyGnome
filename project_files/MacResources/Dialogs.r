@@ -2407,63 +2407,328 @@ resource 'DITL' (1670, "Use Shio Ref Pt?") {
 resource 'DITL' (5000, "M50:  TMap Settings") {
 	{	/* array DITLarray: 10 elements */
 		/* [1] */
-		{155, 237, 177, 317},
+		{333, 307, 353, 365},
 		Button {
 			enabled,
 			"OK"
 		},
 		/* [2] */
-		{151, 233, 181, 321},
+		{329, 303, 357, 369},
 		UserItem {
 			disabled
 		},
 		/* [3] */
-		{155, 137, 177, 217},
+		{333, 229, 353, 292},
 		Button {
 			enabled,
 			"Cancel"
 		},
 		/* [4] */
-		{155, 44, 177, 124},
+		{333, 154, 353, 217},
 		Button {
 			enabled,
 			"Help"
 		},
 		/* [5] */
-		{18, 14, 34, 58},
+		{11, 18, 27, 62},
 		StaticText {
 			disabled,
 			"Name:"
 		},
 		/* [6] */
-		{18, 65, 53, 356},
+		{11, 71, 42, 362},
 		StaticText {
 			disabled,
 			"map name"
 		},
 		/* [7] */
-		{95, 12, 110, 126},
+		{79, 18, 94, 132},
 		StaticText {
 			disabled,
 			"Refloat Half Life:"
 		},
 		/* [8] */
-		{95, 133, 111, 191},
+		{79, 137, 95, 187},
 		EditText {
 			enabled,
 			""
 		},
 		/* [9] */
-		{94, 200, 114, 257},
+		{78, 200, 98, 257},
 		StaticText {
 			disabled,
 			"hours"
 		},
 		/* [10] */
-		{60, 12, 80, 122},
+		{111, 17, 128, 236},
+		CheckBox {
+			enabled,
+			"Change Bitmap Bounds"
+		},
+		/* [11] */
+		{141, 47, 157, 112},
+		StaticText {
+			disabled,
+			"Lat (Top):\n"
+		},
+		/* [12] */
+		{142, 116, 158, 196},
+		EditText {
+			enabled,
+			""
+		},
+		/* [13] */
+		{141, 114, 158, 144},
+		StaticText {
+			disabled,
+			"Deg:"
+		},
+		/* [14] */
+		{142, 147, 158, 174},
+		EditText {
+			enabled,
+			""
+		},
+		/* [15] */
+		{141, 185, 158, 215},
+		StaticText {
+			disabled,
+			"Min:"
+		},
+		/* [16] */
+		{142, 218, 158, 258},
+		EditText {
+			enabled,
+			""
+		},
+		/* [17] */
+		{142, 218, 158, 238},
+		EditText {
+			enabled,
+			""
+		},
+		/* [18] */
+		{141, 249, 159, 277},
+		StaticText {
+			disabled,
+			"Sec:"
+		},
+		/* [19] */
+		{142, 280, 158, 320},
+		EditText {
+			enabled,
+			""
+		},
+		/* [20] */
+		{141, 336, 159, 413},
+		UserItem {
+			enabled
+		},
+		/* [21] */
+		{166, 35, 183, 110},
+		StaticText {
+			disabled,
+			"Long (Left):"
+		},
+		/* [22] */
+		{167, 116, 183, 196},
+		EditText {
+			enabled,
+			""
+		},
+		/* [23] */
+		{166, 114, 183, 144},
+		StaticText {
+			disabled,
+			"Deg:"
+		},
+		/* [24] */
+		{167, 147, 183, 174},
+		EditText {
+			enabled,
+			""
+		},
+		/* [25] */
+		{166, 185, 183, 215},
+		StaticText {
+			disabled,
+			"Min:"
+		},
+		/* [26] */
+		{167, 218, 183, 258},
+		EditText {
+			enabled,
+			""
+		},
+		/* [27] */
+		{167, 218, 183, 238},
+		EditText {
+			enabled,
+			""
+		},
+		/* [28] */
+		{166, 249, 183, 277},
+		StaticText {
+			disabled,
+			"Sec:"
+		},
+		/* [29] */
+		{167, 280, 183, 320},
+		EditText {
+			enabled,
+			""
+		},
+		/* [30] */
+		{166, 336, 184, 413},
+		UserItem {
+			enabled
+		},
+		/* [31] */
+		{202, 23, 218, 109},
+		StaticText {
+			disabled,
+			"Lat (Bottom):"
+		},
+		/* [32] */
+		{202, 115, 218, 195},
+		EditText {
+			enabled,
+			""
+		},
+		/* [33] */
+		{201, 113, 218, 143},
+		StaticText {
+			disabled,
+			"Deg:"
+		},
+		/* [34] */
+		{202, 146, 218, 173},
+		EditText {
+			enabled,
+			""
+		},
+		/* [35] */
+		{201, 184, 218, 214},
+		StaticText {
+			disabled,
+			"Min:"
+		},
+		/* [36] */
+		{202, 217, 218, 257},
+		EditText {
+			enabled,
+			""
+		},
+		/* [37] */
+		{202, 217, 218, 237},
+		EditText {
+			enabled,
+			""
+		},
+		/* [38] */
+		{201, 248, 219, 276},
+		StaticText {
+			disabled,
+			"Sec:"
+		},
+		/* [39] */
+		{202, 279, 218, 319},
+		EditText {
+			enabled,
+			""
+		},
+		/* [40] */
+		{201, 336, 219, 413},
+		UserItem {
+			enabled
+		},
+		/* [41] */
+		{227, 26, 244, 113},
+		StaticText {
+			disabled,
+			"Long (Right):"
+		},
+		/* [42] */
+		{227, 115, 243, 195},
+		EditText {
+			enabled,
+			""
+		},
+		/* [43] */
+		{226, 113, 243, 143},
+		StaticText {
+			disabled,
+			"Deg:"
+		},
+		/* [44] */
+		{227, 146, 243, 173},
+		EditText {
+			enabled,
+			""
+		},
+		/* [45] */
+		{226, 184, 243, 214},
+		StaticText {
+			disabled,
+			"Min:"
+		},
+		/* [46] */
+		{227, 217, 243, 257},
+		EditText {
+			enabled,
+			""
+		},
+		/* [47] */
+		{227, 217, 243, 237},
+		EditText {
+			enabled,
+			""
+		},
+		/* [48] */
+		{226, 248, 243, 276},
+		StaticText {
+			disabled,
+			"Sec:"
+		},
+		/* [49] */
+		{227, 279, 243, 319},
+		EditText {
+			enabled,
+			""
+		},
+		/* [50] */
+		{226, 336, 244, 413},
+		UserItem {
+			enabled
+		},
+		/* [51] */
+		{264, 16, 282, 145},
+		RadioButton {
+			enabled,
+			"decimal degrees"
+		},
+		/* [52] */
+		{283, 16, 301, 148},
+		RadioButton {
+			enabled,
+			"degrees/minutes"
+		},
+		/* [53] */
+		{302, 16, 320, 208},
+		RadioButton {
+			enabled,
+			"degrees/minutes/seconds"
+		},
+		/* [54] */
+		{45, 17, 65, 127},
 		Button {
 			enabled,
 			"Replace Map"
+		},
+		/* [55] */
+		{129, 17, 259, 453},
+		UserItem {
+			disabled
 		}
 	}
 };

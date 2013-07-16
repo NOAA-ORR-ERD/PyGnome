@@ -101,7 +101,7 @@ class StepGenerator(BaseResource):
         return get_web_step_data(self.request, step_data, model,
                                  self.settings['model_images_url_path'])
 
-    @view(validators=[util.valid_model_id, valid_map])
+    @view(validators=[util.valid_model_id, valid_map], http_cache=0)
     def post(self):
         """
         Start a run of the user's current model and return a JSON object
@@ -119,7 +119,7 @@ class StepGenerator(BaseResource):
 
         return data
 
-    @view(validators=[util.valid_model_id, valid_map])
+    @view(validators=[util.valid_model_id, valid_map], http_cache=0)
     def get(self):
         """
         Get the next step in the model run.
@@ -153,7 +153,7 @@ class Step(BaseResource):
     """
     Return data about a step of the model run that has already been generated.
     """
-    @view(validators=util.valid_step_id)
+    @view(validators=util.valid_step_id, http_cache=0)
     def get(self):
         model = self.request.validated['model']
         step_data = self.request.validated['step_data']
@@ -180,7 +180,7 @@ class ModelFromLocationFile(BaseResource):
 
         return model_schema.serialize(data)
 
-    @view(validators=util.valid_location_file)
+    @view(validators=util.valid_location_file, http_cache=0)
     def post(self):
         """
         Create a new model using settings from a location file.
@@ -199,7 +199,7 @@ class ExistingModelFromLocationFile(ModelFromLocationFile):
 
     NOTE: This service is not used by the JavaScript application at this time.
     """
-    @view(validators=[util.valid_model_id, util.valid_location_file])
+    @view(validators=[util.valid_model_id, util.valid_location_file], http_cache=0)
     def post(self):
         model = self.request.validated['model']
         return self.apply_location_file_to_model(model)

@@ -23,6 +23,7 @@ from gnome.utilities import inf_datetime
 
 basedir = os.path.dirname(__file__)
 datadir = os.path.join(basedir, r"sample_data")
+testmap = os.path.join(basedir, '../sample_data', 'MapBounds_Island.bna')
 
 def setup_simple_model():
     """
@@ -37,11 +38,11 @@ def setup_simple_model():
     start_time = datetime(2012, 9, 15, 12, 0)
 
     # the image output map
-    mapfile = os.path.join(datadir, 'MapBounds_Island.bna')
+    mapfile = testmap
 
     # the land-water map
     gnome_map = gnome.map.MapFromBNA( mapfile,
-                                      refloat_halflife=6*3600, #seconds
+                                      refloat_halflife=6, #hours
                                      )
 
     renderer = gnome.renderer.Renderer(mapfile,
@@ -143,7 +144,8 @@ def test_simple_run_rewind():
         print "just ran time step: %s"%model.current_time_step
         
     assert np.all( model.spills.LE('positions') == pos)
-    
+
+
 def test_simple_run_with_map():
     """
     pretty much all this tests is that the model will run
@@ -153,8 +155,8 @@ def test_simple_run_with_map():
     
     model = gnome.model.Model()
     
-    model.map = gnome.map.MapFromBNA(os.path.join(datadir, 'MapBounds_Island.bna'),
-                                refloat_halflife=6*3600, #seconds
+    model.map = gnome.map.MapFromBNA(testmap,
+                                refloat_halflife=6, #hours
                                 )
     a_mover = movers.simple_mover.SimpleMover(velocity=(1.0, 2.0, 0.0))
     
@@ -197,14 +199,11 @@ def test_simple_run_with_image_output():
     start_time = datetime(2012, 9, 15, 12, 0)
     
 
-    # the image output map
-    mapfile = os.path.join(datadir, 'MapBounds_Island.bna')
-
     # the land-water map
-    gnome_map = gnome.map.MapFromBNA( mapfile,
-                                      refloat_halflife=6*3600, #seconds
+    gnome_map = gnome.map.MapFromBNA( testmap,
+                                      refloat_halflife=6, #hours
                                      )
-    renderer = gnome.renderer.Renderer(mapfile,
+    renderer = gnome.renderer.Renderer(testmap,
                                        images_dir,
                                        size=(400, 300))
     model = gnome.model.Model(time_step=timedelta(minutes=15), 
@@ -263,14 +262,11 @@ def test_simple_run_with_image_output_uncertainty():
 
     start_time = datetime(2012, 9, 15, 12, 0)
 
-       # the image output map
-    mapfile = os.path.join(datadir, 'MapBounds_Island.bna')
-
     # the land-water map
-    map = gnome.map.MapFromBNA( mapfile,
-                                      refloat_halflife=6*3600, #seconds
+    map = gnome.map.MapFromBNA( testmap,
+                                      refloat_halflife=6, #hours
                                      )
-    renderer = gnome.renderer.Renderer(mapfile,
+    renderer = gnome.renderer.Renderer(testmap,
                                        images_dir,
                                        size=(400, 300))
 
@@ -489,19 +485,6 @@ def test_linearity_of_wind_movers(wind_persist):
     model2.movers += gnome.movers.WindMover(gnome.environment.Wind(timeseries=series2, units='meter per second'))
     model2.movers += gnome.movers.WindMover(gnome.environment.Wind(timeseries=series3, units='meter per second'))
     
-# <<<<<<< HEAD
-#     # tolerance for np.allclose(..) function
-#     atol = 1e-14
-#     rtol = 0
-    
-#     for i in range( model1.num_time_steps ):
-#         gnome.utilities.rand.seed() # set rand before each call so windages are set correctly
-#         model1.step()
-#         gnome.utilities.rand.seed() # set rand before each call so windages are set correctly
-#         model2.step()
-#         assert np.allclose(model1.spills.LE('positions'), model2.spills.LE('positions'), atol, rtol)
-    
-# =======
     while True:
         try: 
             model1.next()
@@ -659,6 +642,25 @@ def test_callback_add_mover():
     
     assert model.movers[custom_mover.id].active_start == active_on
     assert model.movers[custom_mover.id].active_stop == active_off
+    
+def test_callback_add_mover_midrun():   
+    """ Test callback after add mover called midway through the run """
+    model = gnome.model.Model()
+    model.time_step = timedelta(hours=1)
+    model.duration = timedelta(hours=10)
+    model.start_time = datetime(2012, 1, 1, 0, 0)
+    start_loc = (1.0, 2.0, 0.0) # random non-zero starting points
+    
+    model = setup_simple_model()
+
+    for i in range(2):
+        model.step()
+    
+    assert model.current_time_step > -1
+    
+    # now add another mover and make sure model rewinds
+    model.movers += movers.simple_mover.SimpleMover(velocity=(2.0, -2.0, 0.0))
+    assert model.current_time_step == -1    
     
 if __name__ == "__main__":
     #test_all_movers()

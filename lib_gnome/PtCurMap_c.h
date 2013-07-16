@@ -58,6 +58,9 @@ public:
 	double			fMixedLayerDepth;
 	double			fBreakingWaveHeight;
 	
+	WorldRect		fBitMapBounds;
+	Boolean			fUseBitMapBounds;
+	
 	double			*fTriAreaArray;
 	//long			*fDepthSliceArray;	// number of LEs in each layer (1m) of depth slice
 	float			*fDepthSliceArray;	//changed to ppm in each layer (1m) of depth slice 7/21/03
@@ -92,6 +95,8 @@ public:
 	long 	WhichSelectedSegAmIIn(long index);
 	
 
+	void		 	SetBitMapBounds (WorldRect newBounds) {fBitMapBounds = newBounds;}
+	virtual WorldRect	GetMapBounds () { if (fUseBitMapBounds) return fBitMapBounds; else return fMapBounds; }
 	virtual	Boolean	HaveMapBoundsLayer (void) { return true; }
 	virtual long	PointOnWhichSeg(long p);
 	virtual	long 	PointOnWhichSeg(long longVal, long latVal, long *startver, long *endver, float *dist);

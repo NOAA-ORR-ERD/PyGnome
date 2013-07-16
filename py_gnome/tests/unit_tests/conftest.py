@@ -12,27 +12,6 @@ import pytest
 from gnome import basic_types
 from gnome.utilities import rand
 
-def pytest_addoption(parser):
-    '''
-    Skip slow tests
-    '''
-    parser.addoption("--runslow", action="store_true",
-        help="run slow tests")
-
-def pytest_runtest_setup(item):
-    """
-    pytest builtin hook
-    
-    This is executed before pytest_runtest_call. 
-    pytest_runtest_call is invoked to execute the test item. So the code in here
-    is executed before each test.
-    """
-    if 'slow' in item.keywords and not item.config.getoption("--runslow"):
-        pytest.skip("need --runslow option to run")
-        
-    # set random seed:
-    print "Seed C++, python, numpy random number generator to 1"
-    rand.seed(1)
 
 def pytest_sessionstart():
     from py.test import config
@@ -151,54 +130,6 @@ def wind_circ(rq_wind):
     dtv_uv.value= rq_wind['uv']
     wm  = environment.Wind(timeseries=dtv_rq,format='r-theta',units='meter per second')
     return {'wind':wm, 'rq': dtv_rq, 'uv': dtv_uv}
-
-@pytest.fixture(scope="module")
-def sample_model_spatial_release_spill():
-    """ 
-    sample model with no outputter
-    Uses:
-        sample_data/MapBounds_Island.bna
-        SpatialReleaseSpill with 10 particles
-        RandomMover
-        duration is 1 hour with 15min intervals so 5 timesteps total, including initial condition
-        model is uncertain and cache is not enabled
-    """
-    import gnome
-    from datetime import datetime,timedelta
-    
-    start_time = datetime(2012, 9, 15, 12, 0)
-    
-    # the image output map
-    mapfile = os.path.join(os.path.dirname(__file__),'sample_data','MapBounds_Island.bna')
-
-    # the land-water map
-    map = gnome.map.MapFromBNA( mapfile,
-                                refloat_halflife=6*3600, #seconds
-                                )
-
-    model = gnome.model.Model(time_step=timedelta(minutes=15), 
-                              start_time=start_time,
-                              duration=timedelta(hours=1),
-                              map=map,
-                              uncertain=True,
-                              cache_enabled=False,)
-
-    model.movers += gnome.movers.RandomMover(diffusion_coef=100000)
-
-    N = 10 # a line of ten points
-    start_points = np.zeros((N, 3) , dtype=np.float64)
-    start_points[:,0] = np.linspace(-127.1, -126.5, N)
-    start_points[:,1] = np.linspace( 47.93, 48.1, N)
-    
-    spill = gnome.spill.SpatialReleaseSpill(start_positions = start_points,
-                                            release_time = start_time,
-                                            )
-
-    model.spills += spill
-    model.start_time = spill.release_time
-
-    model.uncertain = True
-    return {'model':model}
 
 """
 End fixtures for testing model

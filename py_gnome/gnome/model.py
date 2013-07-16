@@ -38,6 +38,35 @@ class Model(serializable.Serializable):
     state.add(create=_create,
               update=_update)   # no need to copy parent's state in tis case
 
+    @classmethod
+    def new_from_dict(cls, dict_):
+        """
+        Restore model from previously persisted state
+        """
+        l_env = dict_.pop('environment')
+        l_out = dict_.pop('outputters')
+        l_movers = dict_.pop('movers')
+        
+        c_spills = dict_.pop('certain_spills')
+        if 'uncertain_spills' in dict_.keys():
+            u_spills = self._load_collection(l_spills['uncertain_spills'])
+            l_spills = zip(c_spills, u_spills)
+        else:
+            l_spills = c_spills
+            
+        model = object.__new__(cls)
+        model.__restore__(**dict_)
+        [model.environment.add(obj) for obj in l_env]
+        [model.outputters.add(obj) for obj in l_out]
+        [model.spills.add(obj) for obj in l_spills]
+        [model.movers.add(obj) for obj in l_movers]
+        
+        # register callback with OrderedCollection
+        model.movers.register_callback(model._callback_add_mover, ('add','replace'))
+        
+        return model
+            
+
     def __init__(self,
                  time_step=timedelta(minutes=15), 
                  start_time=round_time(datetime.now(), 3600), # default to now, rounded to the nearest hour
@@ -58,6 +87,30 @@ class Model(serializable.Serializable):
         :param id: Unique Id identifying the newly created mover (a UUID as a string). 
                    This is used when loading an object from a persisted model
         """
+        self.__restore__(time_step, 
+                         start_time, 
+                         duration,
+                         map,
+                         uncertain,
+                         cache_enabled,
+                         id)
+        # register callback with OrderedCollection
+        self.movers.register_callback(self._callback_add_mover, ('add','replace'))
+
+    
+    def __restore__(self,
+                    time_step, 
+                    start_time, 
+                    duration,
+                    map,
+                    uncertain,
+                    cache_enabled,
+                    id):
+        """
+        Take out initialization that does not register the callback here.
+        This is because new_from_dict will use this to restore the model state
+        when doing a midrun persistence.
+        """
         # making sure basic stuff is in place before properties are set
         self.environment = OrderedCollection(dtype=Environment)  
         self.movers = OrderedCollection(dtype=Mover)
@@ -72,10 +125,6 @@ class Model(serializable.Serializable):
         self.time_step = time_step # this calls rewind() !
 
         self._gnome_id = gnome.GnomeId(id)
-        
-        # register callback with OrderedCollection
-        self.movers.register_callback(self._callback_add_mover, ('add','replace'))
-
 
     def reset(self, **kwargs):
         """
@@ -197,6 +246,11 @@ class Model(serializable.Serializable):
          for outputter in self.outputters]
         
         self.spills.rewind()
+        
+        # setup the current_time_stamp for the spill_container objects
+        for sc in self.spills.items():
+            sc.current_time_stamp = self.model_time
+        
 
     def setup_time_step(self):
         """
@@ -205,6 +259,8 @@ class Model(serializable.Serializable):
         right now only prepares the movers -- maybe more later?.
         """
         # initialize movers differently if model uncertainty is on
+        [sc.prepare_for_model_step(self.model_time) for sc in self.spills.items()]
+            
         for mover in self.movers:
             for sc in self.spills.items():
                 mover.prepare_for_model_step(sc, self.time_step, self.model_time)
@@ -279,11 +335,7 @@ class Model(serializable.Serializable):
         ## but not yet moved, at the beginning of the release time.
         for sc in self.spills.items():
             sc.release_elements(self.model_time, self.time_step)
-        # cache the results
-        # add the timestamp first:
-        for sc in self.spills.items():
-            # needs to be a numpy array -- this will be a rank-zero array scalar with a datetime object in it.
-            sc['current_time_stamp'] = np.array(self.model_time) 
+        # cache the results 
         self._cache.save_timestep(self.current_time_step, self.spills)
         output_info = self.write_output()
         return output_info
@@ -373,4 +425,25 @@ class Model(serializable.Serializable):
         if isinstance(obj_added, CatsMover):
             if obj_added.tide is not None and obj_added.tide.id not in self.environment:
                     self.environment += obj_added.tide
+                    
+        self.rewind()   # rewind model if a new mover is added
         
+    def __eq__(self, other):
+        check = super(Model, self).__eq__(other)
+        if check:
+            # also check the data in spill_container object
+            if type(self.spills) != type(other.spills):
+                return False
+            if self.spills != other.spills:
+                return False
+            
+        return check
+        
+    def __ne__(self,other):
+        """ 
+        Compare inequality (!=) of two objects
+        """
+        if self == other:
+            return False
+        else:
+            return True

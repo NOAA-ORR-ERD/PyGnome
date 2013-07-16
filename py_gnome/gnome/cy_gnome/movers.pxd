@@ -78,6 +78,13 @@ cdef extern from "RandomVertical_c.h":
         double fVerticalDiffusionCoefficient
         OSErr get_move(int n, unsigned long model_time, unsigned long step_len, WorldPoint3D* ref, WorldPoint3D* delta, short* LE_status, LEType spillType, long spillID)        
         
+cdef extern from "RiseVelocity_c.h":
+    cdef cppclass RiseVelocity_c(Mover_c):
+        RiseVelocity_c() except +
+        double water_density
+        double water_viscosity
+        OSErr get_move(int n, unsigned long model_time, unsigned long step_len, WorldPoint3D* ref, WorldPoint3D* delta, double* rise_velocity, double* density, long* droplet_size, short* LE_status, LEType spillType, long spillID)        
+        
 cdef extern from "CATSMover_c.h":
    #============================================================================
    # ctypedef struct TCM_OPTIMZE:

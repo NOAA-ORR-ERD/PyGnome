@@ -230,7 +230,16 @@ class Wind( Environment, serializable.Serializable):
         #    return False
                 
         return check
-        
+    
+    def __ne__(self,other):
+        """ 
+        Compare inequality (!=) of two objects
+        """
+        if self == other:
+            return False
+        else:
+            return True
+    
     #user_units = property( lambda self: self._user_units)
     
     @property

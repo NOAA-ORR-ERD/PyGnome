@@ -138,6 +138,27 @@ class OrderedCollection(object):
     def __repr__(self):
         return self.__str__()
 
+    def __eq__(self,other):
+        """ Equality of two ordered collections """
+        if not isinstance(other, OrderedCollection):
+            return False
+        
+        if len(self) != len(other):
+            return False
+        
+        for oc in zip(self, other):
+            if oc[0] != oc[1]:
+                return False
+            
+        return True
+    
+    def __ne__(self,other):
+        """ Check if two ordered collections are not equal (!= opertor)"""
+        if self == other:
+            return False
+        else:
+            return True
+
     def to_dict(self):
         """
         method takes the instance of ordered collection and outputs a dict with 

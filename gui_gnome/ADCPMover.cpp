@@ -1580,7 +1580,8 @@ void ADCPMover::DrawContourScale(Rect r, WorldRect view)
 	
 	TextFont(kFontIDGeneva); TextSize(LISTTEXTSIZE);
 #ifdef IBM
-	TextFont(kFontIDGeneva); TextSize(6);
+	//TextFont(kFontIDGeneva); TextSize(6);
+	TextFont(kFontIDGeneva); TextSize(10);	//for Brian
 #endif
 	
 	if (gSavingOrPrintingPictFile)
@@ -1659,7 +1660,8 @@ void ADCPMover::DrawContourScale(Rect r, WorldRect view)
 	drawstring(numstr2);
 	widestNum = stringwidth(numstr2);
 	
-	v = rgbrect.top+45;
+	//v = rgbrect.top+45;
+	v = rgbrect.top+40;
 	h = rgbrect.left;
 	
 	for(j=numBins-1;j>=0;j--)	
@@ -1703,7 +1705,9 @@ void ADCPMover::DrawContourScale(Rect r, WorldRect view)
 	stationDepth = thisTimeDep->GetStationDepth();
 	sprintf(text, "Depth: %g m",stationDepth);
 	//MyMoveTo(x - stringwidth(text) / 2, y + 3 * dY);
-	MyMoveTo(h+20, v+5);
+	MyMoveTo(x - stringwidth(text) / 2,v+15);
+	//MyMoveTo(h+10, v+5);
+	//MyMoveTo(h+5, v+5);
 	drawstring(text);
 	if (stringwidth(text)+20 > widestNum) widestNum = stringwidth(text)+20;
 	v = v + 9;
@@ -1737,7 +1741,8 @@ void ADCPMover::Draw(Rect r, WorldRect view)
 	short pixX, pixY;
 	Boolean offQuickDrawPlane = false;
 	//VelocityRec velocity = {1.,1.};
-	double refScale = 10., arrowScale = 1.;
+	//double refScale = 10., arrowScale = 1.;
+	double refScale = 1., arrowScale = 1.;	//for Brian
 	WorldRect mapBounds = moverMap->GetMapBounds(); 
 	WorldPoint3D center;
 	WorldPoint stationPosition;
@@ -1788,7 +1793,8 @@ void ADCPMover::Draw(Rect r, WorldRect view)
 			if (!offQuickDrawPlane &&  bShowGrid)
 			{
 				RGBForeColor(&colors[BLUE]);
-				MySetRect(&c, p.h - 2, p.v - 2, p.h + 2, p.v + 2);
+				//MySetRect(&c, p.h - 2, p.v - 2, p.h + 2, p.v + 2);
+				MySetRect(&c, p.h - 1, p.v - 1, p.h + 1, p.v + 1);
 				PaintRect(&c);
 			}
 			RGBForeColor(&colors[BLACK]);

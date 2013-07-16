@@ -9,6 +9,8 @@ import glob
 import string
 import shutil
 
+import netCDF4 as nc
+
 import gnome
 
 from gnome.persist import (
@@ -45,6 +47,8 @@ class Scenario(object):
     
         self.saveloc = saveloc
         self.model = model
+        self._certainspill_data = os.path.join(self.saveloc,'spills_data_arrays.nc')
+        self._uncertainspill_data = None    # will be updated when _certainspill_data is saved
         
     def save(self):
         """
@@ -67,6 +71,9 @@ class Scenario(object):
         for sc in self.model.spills.items():
             self._save_collection( sc.spills)
         
+        if self.model.current_time_step > -1: # persist model state since middle of run
+            self._save_spill_data()
+        
     def load(self):
         """
         reconstruct the model from saveloc. It stores the re-created model inside 'model'
@@ -76,29 +83,26 @@ class Scenario(object):
         """
         model_dict = self.load_model_dict()
         
-        # pop lists that are not used for model initialization
+        # pop lists that correspond with ordered collections
+        # create a list of the associated objects and put it back into model_dict
         l_movers = model_dict.pop('movers')
         l_environment = model_dict.pop('environment')
         l_outputters = model_dict.pop('outputters')
         l_spills = model_dict.pop('spills')
                     
+        # load objects in a list and add that back to model_dict 
+        model_dict['environment'] = self._load_collection( l_environment)
+        model_dict['outputters'] = self._load_collection( l_outputters)
+        model_dict['certain_spills'] = self._load_collection(l_spills['certain_spills'])
+        if model_dict['uncertain']:
+            model_dict['uncertain_spills'] = self._load_collection(l_spills['uncertain_spills'])
+        
+        model_dict['movers'] = self._load_movers_collection(l_movers, model_dict['environment'])
+            
         self.model = self.dict_to_obj(model_dict)
-        print "created base model ..."
         
-        #first add environment collection - since l_movers depend on this
-        print "add environment .."    
-        obj_list = self._load_collection( l_environment)
-        [self.model.environment.add(obj) for obj in obj_list]
-        
-        print "add outputters .."
-        obj_list = self._load_collection( l_outputters)
-        [self.model.outputters.add(obj) for obj in obj_list]
-        
-        print "add spills .."
-        self._add_spills(l_spills)
-        
-        print "add movers .."    
-        self._add_movers(l_movers)
+        print "load data .."
+        self._load_spill_data()
         return self.model
     
     def dict_to_json(self,dict_):
@@ -261,7 +265,7 @@ class Scenario(object):
         return obj_list
         
         
-    def _add_movers( self, movers_dict):
+    def _load_movers_collection( self, movers_dict, l_env):
         """
         add movers to the model - dict contains the output of OrderedCollection.to_dict()
         'dtype' - not used for anything
@@ -269,9 +273,10 @@ class Scenario(object):
                     a valid dict, then create a new object using new_from_dict
                     'id_list' contains a list of tuples (object_type, id of object)
         
-        .. note:: If Wind object and Tide object are present, they must already be added to self.model.environment
-                  prior to calling _add_movers
+        .. note:: If Wind object and Tide object are present, the objects must be created and part of
+        a list passed in as l_env
         """
+        obj_list = []
         for type_, id_ in movers_dict['id_list']:
             
             obj_json = self._find_and_load_json_file( id_)
@@ -280,26 +285,53 @@ class Scenario(object):
             obj_dict = self.json_to_dict(obj_json)
                 
             if obj_name == 'WindMover':
-                obj_dict.update({'wind': self._get_obj(self.model.environment, obj_dict['wind_id']) })
+                obj_dict.update({'wind': self._get_obj(l_env, obj_dict['wind_id']) })
                 
             elif obj_name == 'CatsMover' and obj_dict.get('tide_id') is not None:
-                obj_dict.update({'tide': self._get_obj(self.model.environment, obj_dict['tide_id']) })
+                obj_dict.update({'tide': self._get_obj(l_env, obj_dict['tide_id']) })
                 
             obj = self.dict_to_obj( obj_dict)
-            self.model.movers += obj
+            obj_list.append( obj)
+            
+        return obj_list
     
-    def _get_obj( self, coll_, id):
-        try:
-            return coll_[id] # get object associated with this Id
-        except KeyError, e:
-            raise KeyError("Collection does not contain an object with id: {0}".format(e.message))
+    def _get_obj( self, list_, id):
+        """
+        Get object by ID from list of objects
+        """
+        obj = [obj for obj in list_ if id in obj.id]
+        if len(obj) == 0:
+            raise ValueError("List does not contain an object with id: {0}".format(id))
     
-    def _add_spills( self, l_spills):
-        """ add spills from spills dict (uncertain and certain). It directly adds spills to self.model attribute """
-        c_spills = self._load_collection(l_spills['certain_spills'])
+        if len(obj) > 1:
+            raise ValueError("List contains more than one object with id: {0}".format(id))
+        
+        return obj[0]
+    
+    def _save_spill_data(self):
+        """ save the data arrays for current timestep to NetCDF """
+        nc_out = gnome.netcdf_outputter.NetCDFOutput(self._certainspill_data,
+                                                     all_data=True, cache=self.model._cache)
+        nc_out.prepare_for_model_run(model_start_time=self.model.start_time, num_time_steps=1,
+                                     uncertain=self.model.uncertain,spills=self.model.spills)
+        nc_out.write_output(self.model.current_time_step)
+        self._uncertainspill_data = nc_out._u_netcdf_filename
+        
+    def _load_spill_data(self):
+        """ load NetCDF file and add spill data back in """
+        if not os.path.exists(self._certainspill_data):
+            return
+        
+        data = gnome.netcdf_outputter.NetCDFOutput.read_data(self._certainspill_data, all_data=True)
+         
+        self.model.spills._spill_container.current_time_stamp = data.pop('current_time_stamp').item()
+        self.model.spills._spill_container._data_arrays = data
+        self.model.spills._spill_container.reconcile_data_arrays()
+        
         if self.model.uncertain:
-            u_spills = self._load_collection(l_spills['uncertain_spills'])
-            obj_list = zip(c_spills, u_spills)
-        else:
-            obj_list = c_spills
-        [self.model.spills.add(obj) for obj in obj_list]
+            if not os.path.exists(self._uncertainspill_data):
+                return
+            data    = gnome.netcdf_outputter.NetCDFOutput.read_data(self._uncertainspill_data, all_data=True)
+            self.model.spills._u_spill_container.current_time_stamp = data.pop('current_time_stamp').item()
+            self.model.spills._u_spill_container._data_arrays = data
+            self.model.spills._u_spill_container.reconcile_data_arrays()

@@ -31,7 +31,7 @@ def make_model(images_dir=os.path.join(base_dir,"images") ):
     mapfile = os.path.join( base_dir, './LongIslandSoundMap.BNA')
 
     gnome_map = gnome.map.MapFromBNA(mapfile,
-                           refloat_halflife=6*3600, #seconds
+                           refloat_halflife=6, #hours
                            )
 
     ## the image output renderer

@@ -33,7 +33,7 @@ wind_datasource = enum(undefined=0, file=1, manual=2, nws=3, buoy=4)
 
 #----------------------------------------------------------------
 # Mirror C++ structures, following are used by cython code to access C++ methods/classes
-seconds = np.int # model time is going to be given in seconds
+seconds = np.uint32 # model time is going to be given in seconds
 world_point = np.dtype([('long', world_point_type),
                         ('lat', world_point_type),
                         ('z', world_point_type)],

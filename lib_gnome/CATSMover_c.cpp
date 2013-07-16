@@ -322,7 +322,7 @@ void CATSMover_c::ModelStepIsDone()
 	bIsFirstStep = false;
 }
 
-OSErr CATSMover_c::get_move(int n, Seconds model_time, Seconds step_len, WorldPoint3D* ref, WorldPoint3D* delta, short* LE_status, LEType spillType, long spill_ID) {
+OSErr CATSMover_c::get_move(int n, unsigned long model_time, unsigned long step_len, WorldPoint3D* ref, WorldPoint3D* delta, short* LE_status, LEType spillType, long spill_ID) {	
 
 	if(!delta || !ref) {
 		//cout << "worldpoints array not provided! returning.\n";

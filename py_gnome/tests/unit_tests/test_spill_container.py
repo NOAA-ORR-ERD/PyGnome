@@ -5,6 +5,7 @@ Tests the SpillContainer class
 """
 
 from datetime import datetime, timedelta
+import copy
 
 import pytest
 import numpy as np
@@ -88,6 +89,27 @@ def test_multiple_spills():
     sc.spills.remove(spill.id)
     with pytest.raises(KeyError):
         assert sc.spills[spill.id] is None # it shouldn't be there anymore.
+
+def test_add_data_array_spill_container():
+    """ add a custom data array to spill container and see that it works"""
+    spill = SurfaceReleaseSpill(num_elements=10,
+                                start_position=(23.0, -78.5, 0.0),
+                                release_time=datetime(2012, 1, 1, 12))
+    sc = SpillContainer()
+    sc.spills.add(spill)
+    sc.release_elements(spill.release_time,1)
+    
+    with pytest.raises(TypeError):
+        sc['test'] = 0
+    
+    with pytest.raises(IndexError):
+        sc['test'] = np.zeros( len(sc['spill_num'])-1, dtype=np.int)
+        
+        
+    sc['test1'] = np.zeros( len(sc['spill_num']), dtype=np.int)
+    assert 'test1' in sc._data_arrays.keys() 
+    all_array_types = sc.all_array_types.keys()
+    assert 'test1' in all_array_types
 
 
 def test_rewind():
@@ -527,6 +549,119 @@ def test_get_spill_mask():
     assert all(sc['spill_num'][sc.get_spill_mask(sp2)] == 2)
     assert all(sc['spill_num'][sc.get_spill_mask(sp0)] == 0)
     assert all(sc['spill_num'][sc.get_spill_mask(sp1)] == 1)
+
+
+def test_eq_spill_container1():
+    """ test if two spill containers are equal """
+    (sp1, sp2) = get_eq_spills()
+    sc1 = SpillContainer()
+    sc2 = SpillContainer()
+    
+    sc1.spills.add(sp1)
+    sc2.spills.add(sp2)
+    
+    sc1.release_elements(sp1.release_time, 360)
+    sc2.release_elements(sp2.release_time, 360)
+    
+    assert sc1 == sc2
+    
+def test_eq_spill_container2():
+    """ 
+    test if two spill containers are equal within 1e-5 tolerance
+    adjust the spill_container._array_allclose_atol = 1e-5 and vary start_positions
+    by 1e-8
+    """
+    (sp1, sp2) = get_eq_spills()
+    sp2.start_position = sp2.start_position + (1e-8, 1e-8, 0) # just move one data array a bit
+    sc1 = SpillContainer()
+    sc2 = SpillContainer()
+    
+    sc1.spills.add(sp1)
+    sc2.spills.add(sp2)
+    
+    sc1.release_elements(sp1.release_time, 360)
+    sc2.release_elements(sp2.release_time, 360)
+    
+    sc1._array_allclose_atol = 1e-5 # need to change both atol
+    sc2._array_allclose_atol = 1e-5
+    
+    assert sc1 == sc2    
+    assert sc2 == sc1    
+
+def test_eq_spill_container_pair():
+    """
+    SpillContainerPair inherits from SpillContainer so it should compute __eq__ and __ne__
+    in the same way - test it here 
+    """
+    pass
+
+def test_ne_spill_container():
+    """ test two spill containers are not equal """
+    (sp1, sp2) = get_eq_spills()
+    sp2.start_position = sp2.start_position + (1e-8, 1e-8, 0) # just move one data array a bit
+    
+    sc1 = SpillContainer()
+    sc2 = SpillContainer()
+    
+    sc1.spills.add(sp1)
+    sc2.spills.add(sp2)
+    
+    sc1.release_elements(sp1.release_time, 360)
+    sc2.release_elements(sp2.release_time, 360)
+    
+    assert sc1 != sc2
+
+def test_model_step_is_done():
+    """
+    tests that correct elements are released when their status_codes is toggled
+    to basic_types.oil_status.to_be_removed
+    """
+    start_time = datetime(2012, 1, 1, 12)
+    start_time2 = datetime(2012, 1, 2, 12)
+    start_position = (23.0, -78.5, 0.0)
+    num_elements =  10
+    sc = SpillContainer()
+    spill = SurfaceReleaseSpill(num_elements,
+                                start_position,
+                                start_time)
+
+    sp2 = SurfaceReleaseSpill(num_elements,
+                              start_position,
+                              start_time2)
+
+    sc.spills += [spill, sp2]
+ 
+    sc.release_elements(start_time, time_step=100)
+    sc.release_elements(start_time2, time_step=100)
+    sc['status_codes'][5:8] = basic_types.oil_status.to_be_removed
+    sc['status_codes'][14:17] = basic_types.oil_status.to_be_removed
+    sc['status_codes'][19] = basic_types.oil_status.to_be_removed
+    
+    # also make corresponding positions 0 as a way to test
+    sc['positions'][5:8,:] = (0,0,0)
+    sc['positions'][14:17,:] = (0,0,0)
+    sc['positions'][19,:] = (0,0,0)
+    sc.model_step_is_done()
+    
+    assert sc.num_elements == 2*num_elements - 7
+    assert np.all( sc['status_codes'] != basic_types.oil_status.to_be_removed)
+    assert np.all( sc['positions'] == start_position)
+    assert np.count_nonzero(sc['spill_num'] == 0) == num_elements - 3
+    assert np.count_nonzero(sc['spill_num'] == 1) == num_elements - 4
+
+""" Helper function """
+def get_eq_spills():
+    """ returns a tuple of identical SurfaceReleaseSpill objects """
+    pos = (28.0, -75.0, 0.0)
+    num_elements = 10
+    release_time = datetime(2000, 1, 1, 1)
+    
+    spill = SurfaceReleaseSpill(num_elements, (28, -75, 0), release_time)
+    spill.spill_num.initial_value = 0
+    spill2 = SurfaceReleaseSpill.new_from_dict(spill.to_dict('create'))
+    
+    return (spill, spill2)
+    
     
 if __name__ == "__main__":
     test_rewind2()

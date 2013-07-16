@@ -135,25 +135,7 @@ const ClassID TYPE_OVERFLIGHT_OVERLAY	= 940; //JLM
 typedef short OilType;
 typedef short OilStatus;
 typedef short LandType;
-
-// we need to key on the bus width here i386 vs. x86_64
-#ifdef _MSC_VER
-	#if _WIN64
-		// for now we will not change the type for windows64
-		typedef long Seconds; // duration in seconds, or seconds since 1904
-	#else
-		typedef long Seconds; // duration in seconds, or seconds since 1904
-	#endif
-#else
-	#if __x86_64__ || __ppc64__
-		typedef time_t Seconds; // duration in seconds, or seconds since 1904
-	#else
-		// this is the value we are using for 32 bit architecture
-		typedef time_t Seconds; // duration in seconds, or seconds since 1904
-	#endif
-#endif
-
-
+typedef unsigned long Seconds; // duration in seconds, or seconds since 1904
 typedef unsigned long LETYPE ;
 
 ///// TYPES ///////////////////////////////////////////////////////////////////////

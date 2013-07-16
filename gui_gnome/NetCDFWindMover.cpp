@@ -1314,7 +1314,7 @@ OSErr NetCDFWindMover::TextRead(char *path)
 	// this code is for regular grids
 	OSErr err = 0;
 	long i,j, numScanned;
-	int status, ncid, latid, lonid, recid, timeid;
+	int status, ncid, latid, lonid, recid, timeid, numdims;
 	int latvarid, lonvarid;
 	size_t latLength, lonLength, recs, t_len, t_len2;
 	double startLat,startLon,endLat,endLon,dLat,dLon,timeVal;
@@ -1417,8 +1417,8 @@ OSErr NetCDFWindMover::TextRead(char *path)
 		SetClassName(fFileName); //first check that name is now the default and not set by command file ("NetCDF Wind")
 	status = nc_inq_dimid(ncid, "lat", &latid); 
 	if (status != NC_NOERR) 
-	{
-		status = nc_inq_dimid(ncid, "LAT", &latid);	if (status != NC_NOERR) {err = -1; goto done;}	// this is for SSH files which have LAS/ferret style caps
+	{	// add new check if error for LON, LAT with extensions based on subset from LAS 1/29/09
+		status = nc_inq_dimid(ncid, "LAT", &latid);	if (status != NC_NOERR) {err = -1; goto LAS;}	// this is for SSH files which have LAS/ferret style caps
 	}
 	status = nc_inq_varid(ncid, "lat", &latvarid); 
 	if (status != NC_NOERR) 
@@ -1439,6 +1439,48 @@ OSErr NetCDFWindMover::TextRead(char *path)
 	}
 	status = nc_inq_dimlen(ncid, lonid, &lonLength);
 	if (status != NC_NOERR) {err = -1; goto done;}
+	
+LAS:
+	// check number of dimensions - 2D or 3D
+	// allow more flexibility with dimension names
+	if (err)
+	{
+		Boolean bLASStyleNames = false;
+		char latname[NC_MAX_NAME],lonname[NC_MAX_NAME],dimname[NC_MAX_NAME];
+		err = 0;
+		status = nc_inq_ndims(ncid, &numdims);
+		if (status != NC_NOERR) {err = -1; goto done;}
+		for (i=0;i<numdims;i++)
+		{
+			if (i == recid) continue;
+			status = nc_inq_dimname(ncid,i,dimname);
+			if (status != NC_NOERR) {err = -1; goto done;}
+			if (strstrnocase(dimname,"LON"))
+			{
+				lonid = i; bLASStyleNames = true;
+				strcpy(lonname,dimname);
+			}
+			if (strstrnocase(dimname,"LAT"))
+			{
+				latid = i; bLASStyleNames = true;
+				strcpy(latname,dimname);
+			}
+		}
+		if (bLASStyleNames)
+		{
+			status = nc_inq_varid(ncid, latname, &latvarid); //Navy
+			if (status != NC_NOERR) {err = -1; goto done;}
+			status = nc_inq_dimlen(ncid, latid, &latLength);
+			if (status != NC_NOERR) {err = -1; goto done;}
+			status = nc_inq_varid(ncid, lonname, &lonvarid);
+			if (status != NC_NOERR) {err = -1; goto done;}
+			status = nc_inq_dimlen(ncid, lonid, &lonLength);
+			if (status != NC_NOERR) {err = -1; goto done;}
+		}
+		else
+		{err = -1; goto done;}
+		
+	}
 	
 	pt_count[0] = latLength;
 	pt_count[1] = lonLength;
