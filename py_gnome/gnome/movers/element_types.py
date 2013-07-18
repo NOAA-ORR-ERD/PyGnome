@@ -1,13 +1,11 @@
 '''
-Module contains types of arrays that a mover can contain based on the data
-it needs for the released elements
-The different types of arrays are stored in a a dict
+Module contains array types that a mover can contain based on the data
+it needs for the released elements.
 
-These dicts are used by movers or others that need access to element_types. If
-these dicts are modified outside the module, then make a copy of the dict 
+The different types of arrays are stored in a frozenset so they are read only
+
+The users of this data can convert it to a dict or any other data type that is useful 
 '''
-import copy
-
 from gnome import basic_types
 
 class ArrayType(object):
@@ -62,29 +60,15 @@ class ArrayType(object):
             return True
 
 
-basic = {'positions':ArrayType( (3,), basic_types.world_point_type),
-         'next_positions': ArrayType( (3,), basic_types.world_point_type),
-         'last_water_positions': ArrayType( (3,), basic_types.world_point_type),
-         'status_codes': ArrayType( (), basic_types.status_code_type,basic_types.oil_status.in_water),
-         'spill_num': ArrayType( (), basic_types.id_type, -1)}
-     
-    
-windage = {'windages':ArrayType( (), basic_types.windage_type)}
-        
-subsurface = {'water_currents':ArrayType( (3,), basic_types.water_current_type)}
+""" """
+basic = frozenset([('positions', ArrayType( (3,), basic_types.world_point_type)),
+                   ('next_positions', ArrayType( (3,), basic_types.world_point_type)),
+                   ('last_water_positions', ArrayType( (3,), basic_types.world_point_type)),
+                   ('status_codes', ArrayType( (), basic_types.status_code_type,basic_types.oil_status.in_water)),
+                   ('spill_num', ArrayType( (), basic_types.id_type, -1))])
 
-#===============================================================================
-# def basic():
-#    return {'positions':ArrayType( (3,), basic_types.world_point_type),
-#            'next_positions': ArrayType( (3,), basic_types.world_point_type),
-#            'last_water_positions': ArrayType( (3,), basic_types.world_point_type),
-#            'status_codes': ArrayType( (), basic_types.status_code_type,basic_types.oil_status.in_water),
-#            'spill_num': ArrayType( (), basic_types.id_type, -1)}
-#     
-#    
-# def windage():
-#    return {'windages':ArrayType( (), basic_types.windage_type)}
-#        
-# def subsurface():
-#    return {'water_currents':ArrayType( (3,), basic_types.water_current_type)}
-#===============================================================================
+
+windage = frozenset([('windages',ArrayType( (), basic_types.windage_type))])
+
+## TODO: Find out if this is still required?        
+#subsurface = {'water_currents':ArrayType( (3,), basic_types.water_current_type)}
