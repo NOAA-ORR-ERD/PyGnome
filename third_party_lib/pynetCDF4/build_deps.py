@@ -153,11 +153,11 @@ if __name__ == "__main__":
             ]
     
     for lib in libs:
-        download(lib)
-        unpack(lib)
-        configure(lib)
-        build(lib)
-        check(lib)
+#        download(lib)
+#        unpack(lib)
+#        configure(lib)
+#        build(lib)
+#        check(lib)
         install(lib)
         pass
 

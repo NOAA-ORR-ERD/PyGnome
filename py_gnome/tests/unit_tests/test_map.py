@@ -334,7 +334,8 @@ class TestRefloat:
 from gnome.map import MapFromBNA
 class Test_MapfromBNA:
     bna_map = MapFromBNA(testmap, 6, raster_size=1000)
-    
+    assert False
+
     def test_map_in_water(self):
         '''
         Test whether the location of a particle is in water -- is determined correctly.
@@ -637,7 +638,8 @@ class Test_full_move:
 
         map.beach_elements(spill)
         
-        off = np.ones(4,) * basic_types.oil_status.off_maps
+        #off = np.ones(4,) * basic_types.oil_status.off_maps
+        off = np.ones(4,) * basic_types.oil_status.to_be_removed
         assert np.array_equal( spill['status_codes'][0::2], off )
 
         on = np.ones(4,) * basic_types.oil_status.in_water

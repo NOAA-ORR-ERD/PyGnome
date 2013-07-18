@@ -7,6 +7,7 @@ pytest>=2.3.4
 sphinx
 
 # requires netcdf-4 binaries to be correctly installed
+# see "third party" for build scripts
 netCDF4 
 
 # requires some binary packages

@@ -137,7 +137,7 @@ def test_render_beached_elements():
 def test_show_hide_map_bounds():
     r = renderer.Renderer(os.path.join(data_dir, 'Star.bna'),
                           output_dir,
-                          image_size=(600,600))
+                          image_size=(600,500))
 
     r.draw_background()
     r.save_background( os.path.join(output_dir, 'star_background.png') )
@@ -156,7 +156,7 @@ def test_set_viewport():
     """
     r = renderer.Renderer(os.path.join(data_dir, 'Star.bna'),
                           output_dir,
-                          image_size=(600,600),
+                          image_size=(500,600),
                           projection_class=gnome.utilities.projections.GeoProjection)
 
     # re-scale:

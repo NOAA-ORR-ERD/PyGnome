@@ -501,7 +501,6 @@ class MapFromBNA(RasterMap, serializable.Serializable):
         :param id: unique ID of the object. Using UUID as a string. This is only used when loading object from save file.
         :type id: string 
         """
-        #self.filename = os.path.abspath(filename)
         self.filename = filename
         polygons = haz_files.ReadBNA(filename, "PolygonSet")
         map_bounds = None
@@ -537,13 +536,13 @@ class MapFromBNA(RasterMap, serializable.Serializable):
         w = int(np.sqrt(raster_size*aspect_ratio))
         h = int(raster_size / w)
 
-        canvas = map_canvas.BW_MapCanvas( (w, h), land_polygons=just_land)
+        canvas = map_canvas.MapCanvas( (w, h), land_polygons=just_land)
         canvas.draw_background()
         #canvas.save_background("raster_map_test.png")
 
         ## get the bitmap as a numpy array:
-        bitmap_array = canvas.as_array()
-        
+        bitmap_array = canvas.background_as_array()
+        print "bitmap_array:", bitmap_array
         # __init__ the  RasterMap
         RasterMap.__init__(self,
                            refloat_halflife, #hours

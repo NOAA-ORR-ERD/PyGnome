@@ -14,8 +14,10 @@ import copy
 import os
 
 import numpy as np
-import PIL.Image
-import PIL.ImageDraw
+#import PIL.Image
+#import PIL.ImageDraw
+
+import py_gd
 
 from gnome.utilities.file_tools import haz_files
 from gnome.utilities import projections, serializable
@@ -32,7 +34,6 @@ def make_map(bna_filename, png_filename, image_size = (500, 500)):
     param: format='RGB' -- format of image. Options are: 'RGB', 'palette', 'B&W'
     
     """
-
 
     #print "Reading input BNA"
     polygons = haz_files.ReadBNA(bna_filename, "PolygonSet")
@@ -57,7 +58,7 @@ class MapCanvas(object):
     Note: For now - this is not serializable. Change if required in the future
     """
     # a bunch of constants -- maybe they should be settable, but...
-    colors_rgb = [('transparent', (122, 122, 122) ),
+    map_colors = [('black',       (255, 255, 255) ),
                   ('background',  (255, 255, 255) ),
                   ('lake',        (255, 255, 255) ),
                   ('land',        (255, 204, 153) ),
@@ -65,11 +66,17 @@ class MapCanvas(object):
                   ('uncert_LE',   (255,   0,   0) ),
                   ('map_bounds',  (175, 175, 175) ),
                   ]
+    map_color_index = {}
+    for i, color in enumerate(map_colors):
+        map_color_index[color[0]] = i+1
 
-    colors  = dict( [(i[1][0], i[0]) for i in enumerate(colors_rgb)] )
-    palette = np.array( [i[1] for i in colors_rgb], dtype=np.uint8 ).reshape((-1,))
-
-    def __init__(self, image_size, land_polygons=None, **kwargs):
+    def __init__(self,
+                 image_size,
+                 land_polygons=None,
+                 map_BB = None,
+                 projection_class=projections.FlatEarthProjection,
+                 image_mode='P',
+                  **kwargs):
         """
         create a new map image from scratch -- specifying the size:
         Only the "Palette" image mode to used for drawing image. 
@@ -92,13 +99,16 @@ class MapCanvas(object):
                    This is used when loading an object from a persisted model
         """
         self.image_size = image_size
-        self.image_mode = kwargs.pop('image_mode', 'P')
+        self.image_mode = image_mode
         
+        if self.image_mode != 'P':
+            raise ValueError("Only paletted images supported for now (image_mode='P')")
+
         self.back_image = None
         
         # optional arguments (kwargs)
         self._land_polygons = land_polygons
-        self.map_BB = kwargs.pop('map_BB', None)    
+        self.map_BB = map_BB    
         
         if self.map_BB is None:
             if self.land_polygons is None:
@@ -106,15 +116,11 @@ class MapCanvas(object):
             else:
                 self.map_BB = self.land_polygons.bounding_box
         
-        projection_class= kwargs.pop('projection_class', projections.FlatEarthProjection)
-        self.projection = projection_class(self.map_BB, self.image_size) # BB will be re-set
+        projection_class = projection_class
+        self.projection = projection_class(self.map_BB,self.image_size) # BB will be re-set
         
         # assorted status flags:
         self.draw_map_bounds = True
-        # self._viewport = kwargs.pop('viewport',None)
-        
-        # if self._viewport is None:
-        #     self.viewport = self.map_BB
         
         self._gnome_id = GnomeId(id=kwargs.pop('id',None))
 
@@ -168,6 +174,15 @@ class MapCanvas(object):
     def land_polygons(self):
         return self._land_polygons
 
+    def set_colors(self, image, colors=None):
+        """
+        set the colors on the image -- this really should be in py_gd..
+        """
+        if colors is None:
+            colors = self.map_colors
+        for color in colors:
+            image.add_color(*color)
+
     def draw_background(self):
         """
         Draws the background image -- just land for now
@@ -181,11 +196,11 @@ class MapCanvas(object):
         Draws the land map to the internal background image.
         
         """
-        back_image = PIL.Image.new(self.image_mode,
-                                        self.image_size,
-                                        color=self.colors['background'])
-        back_image.putpalette(self.palette)
         
+        back_image = py_gd.Image(width=400, height=400,
+                                 preset_colors='none')
+        self.set_colors(back_image)
+
         ##fixme: do we need to keep this around?
         self.back_image = back_image
 
@@ -194,7 +209,7 @@ class MapCanvas(object):
             polygons = self.land_polygons.Copy()
             polygons.TransformData(self.projection.to_pixel_2D)
         
-            drawer = PIL.ImageDraw.Draw(back_image)
+            #drawer = PIL.ImageDraw.Draw(back_image)
 
             #fixme: should we make sure to draw the lakes after the land???
             for p in polygons:
@@ -202,22 +217,26 @@ class MapCanvas(object):
                     if self.draw_map_bounds:
                         #Draw the map bounds polygon
                         poly = np.round(p).astype(np.int32).reshape((-1,)).tolist()
-                        drawer.polygon(poly, outline=self.colors['map_bounds'])
+                        back_image.draw_polygon(poly, line_color='map_bounds')
                 elif p.metadata[1].strip().lower() == "spillablearea":
                     # don't draw the spillable area polygon
                     continue
                 elif p.metadata[2] == "2": #this is a lake
                     poly = np.round(p).astype(np.int32).reshape((-1,)).tolist()
-                    drawer.polygon(poly, fill=self.colors['lake'])
+                    back_image.draw_polygon(poly, fill_color='lake')
                 else:
                     poly = np.round(p).astype(np.int32).reshape((-1,)).tolist()
-                    drawer.polygon(poly, fill=self.colors['land'])
+                    back_image.draw_polygon(poly, fill_color='land')
         return None
     
     def create_foreground_image(self):
-        self.fore_image_array = np.zeros((self.image_size[1],self.image_size[0]), np.uint8)
-        self.fore_image = PIL.Image.fromarray(self.fore_image_array, mode='P')
-        self.fore_image.putpalette(self.palette)
+        #self.fore_image_array = np.zeros((self.image_size[1],self.image_size[0]), np.uint8)
+        #self.fore_image = py_gd.from_array(self.fore_image_array)
+        #self.fore_image.putpalette(self.palette)
+        self.fore_image = py_gd.Image(width=self.image_size[0],
+                                      height=self.image_size[1],
+                                      preset_colors='none')
+        self.set_colors(self.fore_image)
 
     def draw_elements(self, spill):
         """
@@ -228,14 +247,19 @@ class MapCanvas(object):
         ##fixme: add checks for the status flag (beached, etc)!
         if spill.num_elements > 0: # nothing to draw if no elements
             if spill.uncertain:
-                color = self.colors['uncert_LE']
+                color = self.map_color_index['uncert_LE']
             else:
-                color = self.colors['LE']
+                color = self.map_color_index['LE']
                 
             positions = spill['positions']
 
             pixel_pos = self.projection.to_pixel(positions, asint=False)
-            arr = self.fore_image_array
+            
+            # pull an array from the image (copy)
+            arr = np.array(self.fore_image)
+            print "image shape:", self.fore_image.width, self.fore_image.height
+            print "array shape:", arr.shape
+            #arr = self.fore_image_array
 
             # remove points that are off the view port
             on_map = ( (pixel_pos[:,0] > 1) &
@@ -264,14 +288,25 @@ class MapCanvas(object):
             arr[(pixel_pos[not_on_land,1]+0.5).astype(np.int32), (pixel_pos[not_on_land,0]-0.5).astype(np.int32)] = color
             arr[(pixel_pos[not_on_land,1]+0.5).astype(np.int32), (pixel_pos[not_on_land,0]+0.5).astype(np.int32)] = color
 
+            # push the array back to the image (copy)
+            self.fore_image.set_data(arr)
+
 
     def save_background(self, filename, type_in="PNG"):
         print "saving:", filename
         self.back_image.save(filename, type_in)
 
     def save_foreground(self, filename, type_in="PNG"):
-        self.fore_image.save(filename, transparency=self.colors['transparent'])
+        self.fore_image.save(filename, file_type="png")
     
+    def background_as_array(self):
+        arr = np.array(self.back_image)
+        return arr
+
+    def foreground_as_array(self):
+        arr = np.array(self.fore_image)
+        return arr
+
     # Not sure this is required yet
 #    def projection_pickle_to_dict(self):
 #        """ returns a pickled projection object """
@@ -281,61 +316,65 @@ class MapCanvas(object):
 #        """ returns a pickled land_polygons object """
 #        return pickle.dumps(self.land_polygons)
     
-class BW_MapCanvas(MapCanvas):
-    """
-    a version of the map canvas that draws Black and White images
-    (Note -- hard to see -- water color is very, very dark grey!)
-    used to generate the raster maps
-    """
-    background_color = 0
-    land_color       = 1
-    lake_color       = 0 # same as background -- i.e. water.
+# class BW_MapCanvas(MapCanvas):
+#     ## fixme -- any use for this at all?
+#     """
+#     a version of the map canvas that draws Black and White images
+#     (Note -- hard to see -- water color is very, very dark grey!)
+#     used to generate the raster maps
+#     """
+#     background_color = 0
+#     land_color       = 1
+#     lake_color       = 0 # same as background -- i.e. water.
 
-    # a bunch of constants -- maybe they should be settable, but...
-    colors_BW = [ ('transparent', 0 ), # note:transparent not really supported
-                  ('background',  0 ),
-                  ('lake',        0 ),
-                  ('land',        1 ),
-                  ('LE',          255 ),
-                  ('uncert_LE',   255 ),
-                  ('map_bounds',  0 ),
-                  ]
+#     # a bunch of constants -- maybe they should be settable, but...
+#     colors_BW = [ ('transparent', 0 ), # note:transparent not really supported
+#                   ('background',  0 ),
+#                   ('lake',        0 ),
+#                   ('land',        1 ),
+#                   ('LE',          255 ),
+#                   ('uncert_LE',   255 ),
+#                   ('map_bounds',  0 ),
+#                   ]
 
-    colors  = dict( colors_BW )
+#     colors  = dict( colors_BW )
     
-    def __init__(self, image_size, land_polygons=None, projection_class=projections.FlatEarthProjection):
-        """
-        create a new B&W map image from scratch -- specifying the size:
+#     def __init__(self, image_size, land_polygons=None, projection_class=projections.FlatEarthProjection):
+#         """
+#         create a new B&W map image from scratch -- specifying the size:
         
-        :param image_size: (width, height) tuple of the image size
-        :param land_polygons: a PolygonSet (gnome.utilities.geometry.polygons.PolygonSet) used to define the map. 
-                              If this is None, MapCanvas has no land. This can be read in from a BNA file.
-        :param projection_class: gnome.utilities.projections class to use.
+#         :param image_size: (width, height) tuple of the image size
+#         :param land_polygons: a PolygonSet (gnome.utilities.geometry.polygons.PolygonSet) used to define the map. 
+#                               If this is None, MapCanvas has no land. This can be read in from a BNA file.
+#         :param projection_class: gnome.utilities.projections class to use.
         
-        See MapCanvas documentation for remaining valid kwargs.
-        It sets the image_mode = 'L' when calling MapCanvas.__init__
-        """
-        #=======================================================================
-        # self.image_size = image_size
-        # ##note: type "L" because type "1" didn't seem to give the right numpy array
-        # self.back_image = PIL.Image.new('L', self.image_size, color=self.colors['background'])
-        # #self.back_image = PIL.Image.new('L', self.image_size, 1)
-        # self.projection = projection_class(((-180,-85),(180, 85)), self.image_size) # BB will be re-set
-        # self.map_BB = None
-        #=======================================================================
-        MapCanvas.__init__(self, image_size, land_polygons=land_polygons, 
-                           projection_class=projections.FlatEarthProjection, image_mode='L')
+#         See MapCanvas documentation for remaining valid kwargs.
+#         It sets the image_mode = 'L' when calling MapCanvas.__init__
+#         """
+#         #=======================================================================
+#         # self.image_size = image_size
+#         # ##note: type "L" because type "1" didn't seem to give the right numpy array
+#         # self.back_image = PIL.Image.new('L', self.image_size, color=self.colors['background'])
+#         # #self.back_image = PIL.Image.new('L', self.image_size, 1)
+#         # self.projection = projection_class(((-180,-85),(180, 85)), self.image_size) # BB will be re-set
+#         # self.map_BB = None
+#         #=======================================================================
+#         MapCanvas.__init__(self,
+#                            image_size,
+#                            land_polygons=land_polygons, 
+#                            projection_class=projections.FlatEarthProjection,
+#                            image_mode='P')
 
-    def as_array(self):
-        """
-        returns a numpy array of the data in the background image
+#     def as_array(self):
+#         """
+#         returns a numpy array of the data in the background image
         
-        this version returns dtype: np.uint8
+#         this version returns dtype: np.uint8
 
-        """
-        # makes sure the you get a c-contiguous array with width-height right
-        #   (PIL uses the reverse convention)
-        return np.ascontiguousarray(np.asarray(self.back_image, dtype=np.uint8).T)        
+#         """
+#         # makes sure the you get a c-contiguous array with width-height right
+#         #   (PIL uses the reverse convention)
+#         return np.ascontiguousarray(np.asarray(self.back_image, dtype=np.uint8).T)        
     
     
 

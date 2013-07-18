@@ -26,18 +26,18 @@ def test_render():
 
     assert True
 
-def test_render_BW():
-    '''
-    Test the creation of a black and white map with an island inset.
+# def test_render_BW():
+#     '''
+#     Test the creation of a black and white map with an island inset.
 
-    note: it is rendered "almost black" on black...
-    '''
-    polygons = haz_files.ReadBNA(os.path.join(datadir, 'MapBounds_2Spillable2Islands2Lakes.bna'), "PolygonSet")
-    m = map_canvas.BW_MapCanvas( (500,500), land_polygons=polygons)
-    m.draw_background()
-    #m.save_background('BW_LandMap.png') #Write the result to the present working directory as a PNG image file.
+#     note: it is rendered "almost black" on black...
+#     '''
+#     polygons = haz_files.ReadBNA(os.path.join(datadir, 'MapBounds_2Spillable2Islands2Lakes.bna'), "PolygonSet")
+#     m = map_canvas.BW_MapCanvas( (500,500), land_polygons=polygons)
+#     m.draw_background()
+#     #m.save_background('BW_LandMap.png') #Write the result to the present working directory as a PNG image file.
     
-    assert True
+#     assert True
 
 
 def test_basemap_square():
