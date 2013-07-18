@@ -15,9 +15,8 @@ from gnome.spill_container import SpillContainer, TestSpillContainer, SpillConta
 from gnome.spill import Spill, SurfaceReleaseSpill, SubsurfaceReleaseSpill
 from gnome.movers import element_types  # only required to setup data arrays correctly
 
-basic_at = element_types.basic().array_types
-windage_at= element_types.basic().array_types
-windage_at.update(element_types.windage().array_types)
+basic_at = copy.deepcopy(element_types.basic)
+windage_at= dict(basic_at.items() + element_types.windage.items())
 
 def test_simple_init():
     sc = SpillContainer()

@@ -3,6 +3,7 @@ node_modules
 *.swp
 *.so
 *.pyc
+cy_*.c
 *~
 *.idea
 *.ropeproject

@@ -15,9 +15,8 @@ from gnome import basic_types
 from gnome.spill import Spill, FloatingSpill, SurfaceReleaseSpill, SpatialReleaseSpill
 from gnome.movers import element_types  # need this to test Spill functionality
 
-basic_at = element_types.basic().array_types
-windage_at= element_types.basic().array_types
-windage_at.update(element_types.windage().array_types)
+basic_at = dict( element_types.basic.items())
+windage_at= dict( basic_at.items() + element_types.windage.items())
 
 def test_deepcopy():
     """

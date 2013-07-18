@@ -195,7 +195,7 @@ def test_windage_index():
                                                 windage_persist=900)
         sc.spills.add(spill)
     
-    arrays = dict(element_types.basic().array_types.items() + element_types.windage().array_types.items())
+    arrays = dict(element_types.basic.items() + element_types.windage.items())
     sc.prepare_for_model_run(rel_time, arrays)
     sc.release_elements(rel_time, timestep)
     wm = movers.WindMover(environment.ConstantWind(5,0))
@@ -338,19 +338,19 @@ def test_exception_new_from_dict():
 def test_array_types():
     """
     Check the array_types property of WindMover contains 
-    element_types.basic().array_types and element_types.windage().array_types
+    element_types.basic and element_types.windage
     """
     wm = movers.WindMover(environment.Wind(filename=file_)) # WindMover does not modify Wind object!
     wm_array = wm.array_types
     
-    assert len(wm_array) == len(element_types.basic().array_types) + len(element_types.windage().array_types)
+    assert len(wm_array) == len(element_types.basic) + len(element_types.windage)
     
-    for key,val in element_types.basic().array_types.iteritems():
+    for key,val in element_types.basic.iteritems():
         assert key in wm_array
         assert wm_array[key] == val  
         wm_array.pop(key)
     
-    for key,val in element_types.windage().array_types.iteritems():
+    for key,val in element_types.windage.iteritems():
         assert key in wm_array
         assert wm_array[key] == val
         wm_array.pop(key)

@@ -584,7 +584,7 @@ class TestSpillContainer(SpillContainer):
                                                 release_time)
         
         self.spills.add(spill)
-        array_types = dict(element_types.basic().array_types.items() + element_types.windage().array_types.items())
+        array_types = dict(element_types.basic.items() + element_types.windage.items())
         self.prepare_for_model_run( release_time, array_types)
         self.release_elements( release_time, 360)
 

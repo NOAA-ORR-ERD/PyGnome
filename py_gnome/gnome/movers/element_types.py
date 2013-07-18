@@ -1,17 +1,22 @@
 '''
 Module contains types of arrays that a mover can contain based on the data
 it needs for the released elements
+The different types of arrays are stored in a a dict
+
+These dicts are used by movers or others that need access to element_types. If
+these dicts are modified outside the module, then make a copy of the dict 
 '''
+import copy
+
 from gnome import basic_types
 
-class ArrayType(object):#,serializable.Serializable):
+class ArrayType(object):
     """
     Object used to capture attributes of numpy data array for elements
 
     An ArrayType specifies how data arrays associated with elements
     are defined.
-
-    Used by :class:`Spill` and :class:`gnome.spill_container.SpillContainer` 
+ 
     """
     
     def __init__(self, shape, dtype, initial_value=None):
@@ -55,58 +60,31 @@ class ArrayType(object):#,serializable.Serializable):
             return False
         else:
             return True
-        
+
+
+basic = {'positions':ArrayType( (3,), basic_types.world_point_type),
+         'next_positions': ArrayType( (3,), basic_types.world_point_type),
+         'last_water_positions': ArrayType( (3,), basic_types.world_point_type),
+         'status_codes': ArrayType( (), basic_types.status_code_type,basic_types.oil_status.in_water),
+         'spill_num': ArrayType( (), basic_types.id_type, -1)}
+     
     
-class basic(object):
-    """
-    All released elements must contain these 'basic' arrays.
-    """
-    #===========================================================================
-    # _positions_ = ArrayType( (3,), basic_types.world_point_type)
-    # _next_positions_ = ArrayType( (3,), basic_types.world_point_type)
-    # _last_water_positions_ = ArrayType( (3,), basic_types.world_point_type)
-    # _status_codes_ = ArrayType( (), basic_types.status_code_type,
-    #                         basic_types.oil_status.in_water)
-    # _spill_num_ = ArrayType( (), basic_types.id_type)
-    # 
-    # @classmethod
-    # def array_types(cls):
-    #    return {'positions':cls._positions_,
-    #            'next_positions':cls._next_positions_}
-    #===========================================================================
-    
-    @property
-    def array_types(self):
-        """
-        property returns a dict that contains the name of the array for the key and
-        the ArrayType object as the value
-        contains: position, next_position, last_water_position, status_code, spill_num
-        """
-        etypes = {'positions':ArrayType( (3,), basic_types.world_point_type),
-                 'next_positions': ArrayType( (3,), basic_types.world_point_type),
-                 'last_water_positions': ArrayType( (3,), basic_types.world_point_type),
-                 'status_codes': ArrayType( (), basic_types.status_code_type,basic_types.oil_status.in_water),
-                 'spill_num': ArrayType( (), basic_types.id_type, -1)}
-        return etypes
+windage = {'windages':ArrayType( (), basic_types.windage_type)}
         
-class windage(object):
-    @property
-    def array_types(self):
-        """
-        property returns a dict that contains the name of the array for the key and
-        the ArrayType object as the value
-        contains: windage
-        """ 
-        etypes = {'windages':ArrayType( (), basic_types.windage_type)}
-        return etypes
-        
-class subsurface(object):
-    @property
-    def array_types(self):
-        """
-        property returns a dict that contains the name of the array for the key and
-        the ArrayType object as the value
-        contains: water_current 
-        """ 
-        etypes = {'water_currents':ArrayType( (3,), basic_types.water_current_type)}
-        return etypes
+subsurface = {'water_currents':ArrayType( (3,), basic_types.water_current_type)}
+
+#===============================================================================
+# def basic():
+#    return {'positions':ArrayType( (3,), basic_types.world_point_type),
+#            'next_positions': ArrayType( (3,), basic_types.world_point_type),
+#            'last_water_positions': ArrayType( (3,), basic_types.world_point_type),
+#            'status_codes': ArrayType( (), basic_types.status_code_type,basic_types.oil_status.in_water),
+#            'spill_num': ArrayType( (), basic_types.id_type, -1)}
+#     
+#    
+# def windage():
+#    return {'windages':ArrayType( (), basic_types.windage_type)}
+#        
+# def subsurface():
+#    return {'water_currents':ArrayType( (3,), basic_types.water_current_type)}
+#===============================================================================
