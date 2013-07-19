@@ -480,7 +480,7 @@ class MapFromBNA(RasterMap, serializable.Serializable):
     
     def __init__(self,
                  filename,
-                 refloat_halflife, #hours
+                 refloat_halflife=6, #hours
                  raster_size = 1024*1024, # default to 1MB raster
                  **kwargs):
         """
@@ -542,6 +542,12 @@ class MapFromBNA(RasterMap, serializable.Serializable):
 
         ## get the bitmap as a numpy array:
         bitmap_array = canvas.background_as_array()
+        ## convert to simple 1/0 array:
+        np.greater(bitmap_array, 0, bitmap_array) # does it in place
+
+        print "from:", self.filename
+        print "bitmap_array size:", bitmap_array.shape, bitmap_array.dtype
+
         print "bitmap_array:", bitmap_array
         # __init__ the  RasterMap
         RasterMap.__init__(self,

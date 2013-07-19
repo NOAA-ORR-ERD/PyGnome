@@ -197,8 +197,9 @@ class MapCanvas(object):
         
         """
         
-        back_image = py_gd.Image(width=400, height=400,
+        back_image = py_gd.Image(*self.image_size,
                                  preset_colors='none')
+
         self.set_colors(back_image)
 
         ##fixme: do we need to keep this around?
@@ -301,7 +302,10 @@ class MapCanvas(object):
     
     def background_as_array(self):
         arr = np.array(self.back_image)
+        print "image size:", self.back_image.width, self.back_image.height
+        print "array size", arr.shape
         return arr
+
 
     def foreground_as_array(self):
         arr = np.array(self.fore_image)

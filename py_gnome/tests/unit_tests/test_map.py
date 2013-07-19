@@ -332,67 +332,91 @@ class TestRefloat:
         
 
 from gnome.map import MapFromBNA
-class Test_MapfromBNA:
-    bna_map = MapFromBNA(testmap, 6, raster_size=1000)
+
+def test_map_from_bna1():
+    """
+    test to make sure the raster generated from a simple BNA is correct
+    """
+    # very course raster
+    bna_map = MapFromBNA("sample_data/star.bna",
+                          raster_size = 100,
+                          )
+    # four corners should all be water (0)
+    assert bna_map.bitmap[ 0, 0] == 0
+    assert bna_map.bitmap[-1,-1] == 0
+    assert bna_map.bitmap[ 0,-1] == 0
+    assert bna_map.bitmap[-1, 0] == 0
+    # points of the star should be land (1):
+    print bna_map.bitmap.shape
+    print bna_map.bitmap
+    assert bna_map.bitmap[ 1, 4] == 1
+    assert bna_map.bitmap[ 6, 0] == 1
+    assert bna_map.bitmap[ -1, 4] == 1
+    assert bna_map.bitmap[ 1, 4] == 1
     assert False
 
-    def test_map_in_water(self):
-        '''
-        Test whether the location of a particle is in water -- is determined correctly.
-        '''
-        InWater=( -126.78709, 48.1647, 0.0 )
+
+
+# class Test_MapfromBNA:
+#     bna_map = MapFromBNA(testmap, 6, raster_size=1000)
+
+#     def test_map_in_water(self):
+#         '''
+#         Test whether the location of a particle is in water -- is determined correctly.
+#         '''
+#         InWater=( -126.78709, 48.1647, 0.0 )
         
-        assert self.bna_map.in_water(InWater) #Throw an error if the know in-water location returns false.
-        assert not self.bna_map.on_land(InWater)
+#         assert self.bna_map.in_water(InWater) #Throw an error if the know in-water location returns false.
+#         assert not self.bna_map.on_land(InWater)
 
-    def test_map_in_water2(self):
-        InWater = (-126.971456, 47.935608, 0.0) # in water, but inside land Bounding box
-        assert self.bna_map.in_water(InWater) #Throw an error if the know in-water location returns false.
+#     def test_map_in_water2(self):
+#         InWater = (-126.971456, 47.935608, 0.0) # in water, but inside land Bounding box
+#         assert self.bna_map.in_water(InWater) #Throw an error if the know in-water location returns false.
 
-    def test_map_on_land(self):
-        '''
-        Test whether the location of a particle  on land -- is determined correctly.
-        '''
-        OnLand = (-127, 47.8, 0.0)
-        assert self.bna_map.on_land( OnLand )  #Throw an error if the know on-land location returns false.
+#     def test_map_on_land(self):
+#         '''
+#         Test whether the location of a particle  on land -- is determined correctly.
+#         '''
+#         OnLand = (-127, 47.8, 0.0)
+#         assert self.bna_map.on_land( OnLand )  #Throw an error if the know on-land location returns false.
         
-        assert not self.bna_map.in_water( OnLand )  #Throw an error if the know on-land location returns false.
+#         assert not self.bna_map.in_water( OnLand )  #Throw an error if the know on-land location returns false.
 
-    def test_map_in_lake(self):
-        '''
-        Test whether the location of a particle in a lake-- is determined correctly.
-        '''
-        InLake = (-126.8, 47.84, 0.0)
-        assert self.bna_map.in_water( InLake )  #Throw an error if the know on-land location returns false.
-        assert not self.bna_map.on_land( InLake )  #Throw an error if the know on-land location returns false.
+#     def test_map_in_lake(self):
+#         '''
+#         Test whether the location of a particle in a lake-- is determined correctly.
+#         '''
+#         InLake = (-126.8, 47.84, 0.0)
+#         assert self.bna_map.in_water( InLake )  #Throw an error if the know on-land location returns false.
+#         assert not self.bna_map.on_land( InLake )  #Throw an error if the know on-land location returns false.
 
-    def test_map_spillable(self):
-        point = (-126.984472, 48.08106, 0.0) # in water, in spillable
-        assert self.bna_map.allowable_spill_position( point )  #Throw an error if the know on-land location returns false.
+#     def test_map_spillable(self):
+#         point = (-126.984472, 48.08106, 0.0) # in water, in spillable
+#         assert self.bna_map.allowable_spill_position( point )  #Throw an error if the know on-land location returns false.
 
-    def test_map_spillable_lake(self):
-        point = (-126.793592, 47.841064, 0.0) # in lake, should be spillable
-        assert self.bna_map.allowable_spill_position( point )  #Throw an error if the known on-land location returns false.
+#     def test_map_spillable_lake(self):
+#         point = (-126.793592, 47.841064, 0.0) # in lake, should be spillable
+#         assert self.bna_map.allowable_spill_position( point )  #Throw an error if the known on-land location returns false.
     
-    def test_map_not_spillable(self):        
-        point = (-127, 47.8, 0.0) # on land should not be spillable
-        assert not self.bna_map.allowable_spill_position( point )  #Throw an error if the know on-land location returns false.
+#     def test_map_not_spillable(self):        
+#         point = (-127, 47.8, 0.0) # on land should not be spillable
+#         assert not self.bna_map.allowable_spill_position( point )  #Throw an error if the know on-land location returns false.
 
-    def test_map_not_spillable2(self):
-        point = (127.244752, 47.585072, 0.0 ) # in water, but outside spillable area
-        assert not self.bna_map.allowable_spill_position( point )  #Throw an error if the know on-land location returns false.
+#     def test_map_not_spillable2(self):
+#         point = (127.244752, 47.585072, 0.0 ) # in water, but outside spillable area
+#         assert not self.bna_map.allowable_spill_position( point )  #Throw an error if the know on-land location returns false.
     
-    def test_map_not_spillable3(self):
-        point = (127.643856, 47.999608, 0.0) # off the map -- should not be spillable
-        assert not self.bna_map.allowable_spill_position( point )  #Throw an error if the know on-land location returns false.
+#     def test_map_not_spillable3(self):
+#         point = (127.643856, 47.999608, 0.0) # off the map -- should not be spillable
+#         assert not self.bna_map.allowable_spill_position( point )  #Throw an error if the know on-land location returns false.
 
-    def test_map_on_map(self):
-        point = (-126.12336, 47.454164, 0.0)
-        assert self.bna_map.on_map( point )
+#     def test_map_on_map(self):
+#         point = (-126.12336, 47.454164, 0.0)
+#         assert self.bna_map.on_map( point )
 
-    def test_map_off_map(self):
-        point = (-126.097336, 47.43962, 0.0)
-        assert not self.bna_map.on_map( point )
+#     def test_map_off_map(self):
+#         point = (-126.097336, 47.43962, 0.0)
+#         assert not self.bna_map.on_map( point )
 
 
 def test_MapfromBNA_new_from_dict():
