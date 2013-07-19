@@ -8,7 +8,6 @@ import numpy as np
 import gnome
 import gnome.utilities.cache
 
-#from gnome import GnomeId
 from gnome.utilities.time_utils import round_time
 from gnome.utilities.orderedcollection import OrderedCollection
 from gnome.environment import Environment, Wind
