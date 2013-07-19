@@ -637,7 +637,8 @@ class Test_full_move:
 
         map.beach_elements(spill)
         
-        off = np.ones(4,) * basic_types.oil_status.off_maps
+        #off = np.ones(4,) * basic_types.oil_status.off_maps
+        off = np.ones(4,) * basic_types.oil_status.to_be_removed
         assert np.array_equal( spill['status_codes'][0::2], off )
 
         on = np.ones(4,) * basic_types.oil_status.in_water
