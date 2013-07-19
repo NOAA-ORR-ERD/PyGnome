@@ -270,6 +270,8 @@ class RasterMap(GnomeMap):
         """
         
         self._refloat_halflife = refloat_halflife*60.0*60.0 # convert to seconds
+        if bitmap_array.dtype !=np.dtype('uint8'):
+            raise ValueError("wrong data type for bitmap_array: %s"%bitmap_array.dtype)
         self.bitmap = bitmap_array
         self.projection = projection
         
@@ -538,18 +540,14 @@ class MapFromBNA(RasterMap, serializable.Serializable):
 
         canvas = map_canvas.MapCanvas( (w, h), land_polygons=just_land)
         canvas.draw_background()
-        #canvas.save_background("raster_map_test.png")
+        canvas.save_background("bna_map_test%s.png"%self.filename)
 
         ## get the bitmap as a numpy array:
         bitmap_array = canvas.background_as_array()
         ## convert to simple 1/0 array:
-        np.greater(bitmap_array, 0, bitmap_array) # does it in place
+        land = canvas.get_color_index('land')
+        bitmap_array = np.where(bitmap_array==land, np.uint8(1), np.uint8(0))
 
-        print "from:", self.filename
-        print "bitmap_array size:", bitmap_array.shape, bitmap_array.dtype
-
-        print "bitmap_array:", bitmap_array
-        # __init__ the  RasterMap
         RasterMap.__init__(self,
                            refloat_halflife, #hours
                            bitmap_array,

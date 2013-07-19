@@ -26,6 +26,16 @@ def test_render():
 
     assert True
 
+def test_render_star():
+    """
+    tests the ability to render a basemap from a bna
+    """
+    map_canvas.make_map(os.path.join(datadir, 'Star.bna'), 
+                        os.path.join(basedir,"Star_map.png"))
+
+    assert True
+
+
 # def test_render_BW():
 #     '''
 #     Test the creation of a black and white map with an island inset.

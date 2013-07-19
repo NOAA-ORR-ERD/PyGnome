@@ -66,9 +66,6 @@ class MapCanvas(object):
                   ('uncert_LE',   (255,   0,   0) ),
                   ('map_bounds',  (175, 175, 175) ),
                   ]
-    map_color_index = {}
-    for i, color in enumerate(map_colors):
-        map_color_index[color[0]] = i+1
 
     def __init__(self,
                  image_size,
@@ -174,14 +171,20 @@ class MapCanvas(object):
     def land_polygons(self):
         return self._land_polygons
 
-    def set_colors(self, image, colors=None):
+    def get_color_index(self, color):
         """
-        set the colors on the image -- this really should be in py_gd..
+        returns the colr index (index into the pallette) of teh given names color
+
+        :param color: name of color
+        :type color: string
         """
-        if colors is None:
-            colors = self.map_colors
-        for color in colors:
-            image.add_color(*color)
+        if self.back_image is not None:
+            return self.back_image.get_color_index(color)
+        elif self.fore_image is not None:
+            return self.fore_image.get_color_index(color)
+        else:
+            raise NotImplementedError("can't get a colr index if there is no image defined")
+
 
     def draw_background(self):
         """
@@ -198,9 +201,9 @@ class MapCanvas(object):
         """
         
         back_image = py_gd.Image(*self.image_size,
-                                 preset_colors='none')
+                                 preset_colors=None)
 
-        self.set_colors(back_image)
+        back_image.add_colors(self.map_colors)
 
         ##fixme: do we need to keep this around?
         self.back_image = back_image
@@ -227,7 +230,7 @@ class MapCanvas(object):
                     back_image.draw_polygon(poly, fill_color='lake')
                 else:
                     poly = np.round(p).astype(np.int32).reshape((-1,)).tolist()
-                    back_image.draw_polygon(poly, fill_color='land')
+                    back_image.draw_polygon(poly, fill_color='land', line_color='land')# need to draw the ouline, so very thin land gets drawn
         return None
     
     def create_foreground_image(self):
@@ -236,8 +239,8 @@ class MapCanvas(object):
         #self.fore_image.putpalette(self.palette)
         self.fore_image = py_gd.Image(width=self.image_size[0],
                                       height=self.image_size[1],
-                                      preset_colors='none')
-        self.set_colors(self.fore_image)
+                                      preset_colors='transparent')
+        self.fore_image.add_colors(self.map_colors)
 
     def draw_elements(self, spill):
         """
@@ -248,9 +251,9 @@ class MapCanvas(object):
         ##fixme: add checks for the status flag (beached, etc)!
         if spill.num_elements > 0: # nothing to draw if no elements
             if spill.uncertain:
-                color = self.map_color_index['uncert_LE']
+                color = self.fore_image.get_color_index('uncert_LE')
             else:
-                color = self.map_color_index['LE']
+                color = self.fore_image.get_color_index('LE')
                 
             positions = spill['positions']
 
@@ -258,8 +261,6 @@ class MapCanvas(object):
             
             # pull an array from the image (copy)
             arr = np.array(self.fore_image)
-            print "image shape:", self.fore_image.width, self.fore_image.height
-            print "array shape:", arr.shape
             #arr = self.fore_image_array
 
             # remove points that are off the view port
@@ -273,28 +274,27 @@ class MapCanvas(object):
             on_land = spill['status_codes'][on_map] == basic_types.oil_status.on_land
 
             # draw the five "X" pixels for the on_land elements
-            arr[(pixel_pos[on_land,1]).astype(np.int32), (pixel_pos[on_land,0]).astype(np.int32)] = color
-            arr[(pixel_pos[on_land,1]-1).astype(np.int32), (pixel_pos[on_land,0]-1).astype(np.int32)] = color
-            arr[(pixel_pos[on_land,1]-1).astype(np.int32), (pixel_pos[on_land,0]+1).astype(np.int32)] = color
-            arr[(pixel_pos[on_land,1]+1).astype(np.int32), (pixel_pos[on_land,0]-1).astype(np.int32)] = color
-            arr[(pixel_pos[on_land,1]+1).astype(np.int32), (pixel_pos[on_land,0]+1).astype(np.int32)] = color
+            arr[(pixel_pos[on_land,0]).astype(np.int32), (pixel_pos[on_land,1]).astype(np.int32)] = color
+            arr[(pixel_pos[on_land,0]-1).astype(np.int32), (pixel_pos[on_land,1]-1).astype(np.int32)] = color
+            arr[(pixel_pos[on_land,0]-1).astype(np.int32), (pixel_pos[on_land,1]+1).astype(np.int32)] = color
+            arr[(pixel_pos[on_land,0]+1).astype(np.int32), (pixel_pos[on_land,1]-1).astype(np.int32)] = color
+            arr[(pixel_pos[on_land,0]+1).astype(np.int32), (pixel_pos[on_land,1]+1).astype(np.int32)] = color
 
             # draw the four pixels for the elements not on land and not off the map
             off_map = spill['status_codes'][on_map] == basic_types.oil_status.off_maps
             not_on_land = np.logical_and(~on_land, ~off_map)
 
             #note: long-lat backwards for array (vs image)
-            arr[(pixel_pos[not_on_land,1]-0.5).astype(np.int32), (pixel_pos[not_on_land,0]-0.5).astype(np.int32)] = color
-            arr[(pixel_pos[not_on_land,1]-0.5).astype(np.int32), (pixel_pos[not_on_land,0]+0.5).astype(np.int32)] = color
-            arr[(pixel_pos[not_on_land,1]+0.5).astype(np.int32), (pixel_pos[not_on_land,0]-0.5).astype(np.int32)] = color
-            arr[(pixel_pos[not_on_land,1]+0.5).astype(np.int32), (pixel_pos[not_on_land,0]+0.5).astype(np.int32)] = color
+            arr[(pixel_pos[not_on_land,0]-0.5).astype(np.int32), (pixel_pos[not_on_land,1]-0.5).astype(np.int32)] = color
+            arr[(pixel_pos[not_on_land,0]-0.5).astype(np.int32), (pixel_pos[not_on_land,1]+0.5).astype(np.int32)] = color
+            arr[(pixel_pos[not_on_land,0]+0.5).astype(np.int32), (pixel_pos[not_on_land,1]-0.5).astype(np.int32)] = color
+            arr[(pixel_pos[not_on_land,0]+0.5).astype(np.int32), (pixel_pos[not_on_land,1]+0.5).astype(np.int32)] = color
 
             # push the array back to the image (copy)
             self.fore_image.set_data(arr)
 
 
     def save_background(self, filename, type_in="PNG"):
-        print "saving:", filename
         self.back_image.save(filename, type_in)
 
     def save_foreground(self, filename, type_in="PNG"):
@@ -302,8 +302,6 @@ class MapCanvas(object):
     
     def background_as_array(self):
         arr = np.array(self.back_image)
-        print "image size:", self.back_image.width, self.back_image.height
-        print "array size", arr.shape
         return arr
 
 

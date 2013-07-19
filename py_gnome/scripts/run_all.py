@@ -11,6 +11,14 @@ import glob
 
 import script_runner
 
+# list of scripts you dont want to run (it's an "in" test, so you don't need the whole file name.)
+excludes = [#"boston",
+            #"chesapeake_bay",
+            #"long_island",
+            #"guam",
+            #"mariana",
+           ]
+
 #===============================================================================
 # scripts = ['script_boston/script_boston.py',
 #           'script_guam/script_guam.py',
@@ -20,6 +28,9 @@ import script_runner
 #           ]
 #===============================================================================
 scripts = glob.glob(os.path.join(os.path.dirname(__file__),'script_*/script_*.py'))
+
+for exclude in excludes:
+    scripts = [name for name in scripts if exclude not in name]
 
 for script in scripts:
     # clean directories first
