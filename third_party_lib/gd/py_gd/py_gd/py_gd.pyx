@@ -175,15 +175,35 @@ cdef class Image:
     def __repr__(self):
         return "Image(width=%i, height=%i)"%(self.width, self.height)
 
-    #def set_data(self, cnp.ndarray[char, ndim=2, mode='c'] arr not None):
-    def set_data(self, char[:,:] arr not None):
+    # #def set_data(self, cnp.ndarray[char, ndim=2, mode='c'] arr not None):
+    # def set_data(self, char[:, :] arr not None):
+    #     """
+    #     Set the contents of the image from the input array.
+
+    #     array must be the right size and data type (np.uint8)
+
+    #     Note that the array is (height, width) in size, in
+    #     keeping with image storage standards (e.g. PIL)
+
+    #     """
+    #     if arr.shape[0] <> self.height or arr.shape[1] <> self.width:
+    #         raise ValueError("input array must be the same size as image")
+
+    #     cdef unsigned int row, col
+
+    #     # ##copy the data, row by row
+    #     for row in range(self.height):
+    #        memcpy(self._image.pixels[row], &arr[row, 0], self.width)
+    #     return arr
+
+    def set_data(self, char[::1, :] arr not None):
         """
         Set the contents of the image from the input array.
 
-        array must be the right size and data type (np.uint8)
-
+        array must be the right size, data type (np.uint8)
+        , and be fortran-contiguous
         Note that the array is (height, width) in size, in
-        keeping with image storage standards (e.g. PIL)
+        keeping with image storage standards (e.g. PIL), and fortran order.
 
         """
         if arr.shape[0] <> self.height or arr.shape[1] <> self.width:
