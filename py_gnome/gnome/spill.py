@@ -7,6 +7,16 @@ A "spill" is essentially a source of elements. These classes provide
 the logic about where an when the elements are released 
 
 """
+# ## fixme: this needs a lot of re-factoring:
+
+# base Spill class should be simpler
+
+# need an element_type class to captue which data_arrays, etc are needed (or jsut a dict?)
+
+# create_new_elements() should not be a Spill method (maybe Spill_contianer or element_type class)
+# initialize_new_elements shouldn't be here either...
+
+
 import copy
 
 import math
@@ -102,7 +112,16 @@ class Spill(object):
 
     def release_elements(self, current_time, time_step, array_types):
         """
-        probably overridden by a subclass
+        Release any new elements to be added to the SpillContainer
+
+        :param current_time: current time
+        :type current_time: datetime.datetime 
+
+        :param time_step: the time step, sometimes used to decide how many should get released.
+        :type time_step: integer seconds
+
+        :returns : None if there are no new elements released. A dict of arrays if there are new elements
+
         """
         return None
 
