@@ -323,13 +323,11 @@ class Scenario(object):
             return
         
         array_types = {}
-        if len(self.model.movers) == 0:
-            array_types.update(gnome.movers.Mover().array_types) # get the baseline array types required by all movers
-        else:
-            for mover in self.model.movers:
-                mover.prepare_for_model_run()
-                array_types.update(mover.array_types)
         
+        for mover in self.model.movers:
+            mover.prepare_for_model_run()
+            array_types.update(mover.array_types)
+    
         for sc in self.model.spills.items():
            if sc.uncertain:
                data    = gnome.netcdf_outputter.NetCDFOutput.read_data(self._uncertainspill_data, all_data=True)
@@ -338,4 +336,4 @@ class Scenario(object):
                
            sc.current_time_stamp = data.pop('current_time_stamp').item()
            sc._data_arrays = data
-           sc.all_array_types = array_types
+           sc.all_array_types.update(array_types)

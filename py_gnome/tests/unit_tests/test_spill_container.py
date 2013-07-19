@@ -13,10 +13,10 @@ import numpy as np
 from gnome import basic_types
 from gnome.spill_container import SpillContainer, TestSpillContainer, SpillContainerPair
 from gnome.spill import Spill, SurfaceReleaseSpill, SubsurfaceReleaseSpill
-from gnome.movers import element_types  # only required to setup data arrays correctly
+from gnome import element_types  # only required to setup data arrays correctly
 
-basic_at = copy.deepcopy(element_types.basic)
-windage_at= dict(basic_at.items() + element_types.windage.items())
+basic_at = dict(element_types.basic)
+windage_at= dict(basic_at.items() + dict(element_types.windage).items())
 
 def test_simple_init():
     sc = SpillContainer()
@@ -104,9 +104,6 @@ def test_add_data_array_spill_container():
     sc.spills.add(spill)
     sc.prepare_for_model_run( spill.release_time, windage_at)
     sc.release_elements(spill.release_time,1)
-    
-    with pytest.raises(KeyError):
-        sc['test'] = 0
     
     with pytest.raises(ValueError):
         sc['positions'] = np.zeros( len(sc['spill_num'])-1, dtype=np.int)
@@ -225,20 +222,40 @@ def test_data_setting_error3():
     with pytest.raises(ValueError):
         sp['positions'] = new_pos
 
-@pytest.mark.xfail
-def test_data_setting_new():
+
+def test_addto_all_array_types():
     """
-    Should be able to add a new data array
+    Can add a new ArrayType to all_array_types; however, must rewind model
+    to get the 'new_name' array in data_arrays 
     """
-    sp = TestSpillContainer(num_elements =  10)
+    sc = TestSpillContainer(num_elements =  10)
+    sc.all_array_types['new_name'] = element_types.ArrayType((3,), np.float64, 0)
+    
+    # MUST rewind and release elements again to get new_name in data_arrays
+    sc.rewind()
+    sc.release_elements(sc.current_time_stamp, time_step=100)
 
     new_arr = np.ones( (10, 3), dtype=np.float64 )
+    sc['new_name'] = new_arr
 
-    sp['new_name'] = new_arr
+    assert 'new_name' in sc.data_arrays_dict
+    assert sc['new_name'] is new_arr
 
-    assert sp['new_name'] is new_arr
+def test_data_setting_new():
+    """
+    Can add a new item to data_arrays. This will automatically update SpillContainer's
+    all_array_types dict
+    
+    No rewind necessary
+    """
+    sc = TestSpillContainer(num_elements =  10)
 
-@pytest.mark.xfail
+    new_arr = np.ones( (10, 3), dtype=np.float64 )
+    sc['new_name'] = new_arr
+
+    assert 'new_name' in sc.data_arrays_dict
+    assert sc['new_name'] is new_arr
+
 def test_data_setting_new_list():
     """
     Should be able to add a new data that's not a numpy array

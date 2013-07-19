@@ -60,7 +60,10 @@ class ArrayType(object):
             return True
 
 
-""" """
+""" 
+used by spill_container module since these basic arrays are present for every model independent
+of the mover 
+"""
 basic = frozenset([('positions', ArrayType( (3,), basic_types.world_point_type)),
                    ('next_positions', ArrayType( (3,), basic_types.world_point_type)),
                    ('last_water_positions', ArrayType( (3,), basic_types.world_point_type)),
@@ -68,6 +71,9 @@ basic = frozenset([('positions', ArrayType( (3,), basic_types.world_point_type))
                    ('spill_num', ArrayType( (), basic_types.id_type, -1))])
 
 
+"""
+data expected/used by movers 
+"""
 windage = frozenset([('windages',ArrayType( (), basic_types.windage_type))])
 
 ## TODO: Find out if this is still required?        

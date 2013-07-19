@@ -6,7 +6,6 @@ import numpy as np
 
 from gnome import basic_types, GnomeId
 from gnome.utilities import rand, inf_datetime    # not to confuse with python random module
-from gnome.movers import element_types
 from gnome.utilities import time_utils, serializable
 from gnome.cy_gnome.cy_rise_velocity_mover import CyRiseVelocityMover
 
@@ -17,8 +16,6 @@ class Mover(object):
     It defines the interface for a Python mover. The model expects the methods defined here. 
     The get_move(...) method needs to be implemented by the derived class.  
     
-    It uses the mixin element_types.basic to define the basic array_types that all movers need
-    Override the array_types property in children if an additional mixin is used in the child class.
     """
     state = copy.deepcopy(serializable.Serializable.state)
     state.add(update=['on','active_start','active_stop'],
@@ -48,7 +45,7 @@ class Mover(object):
         self.active_start = active_start
         self.active_stop = active_stop
         self._gnome_id = GnomeId(id=kwargs.pop('id',None))
-        self.array_types = copy.deepcopy(element_types.basic)
+        self.array_types = {}   # empty dict since no array_types required for all movers at present
 
     # Methods for active property definition
     @property

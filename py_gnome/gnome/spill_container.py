@@ -13,7 +13,7 @@ import numpy as np
 
 import gnome.spill
 from gnome.utilities.orderedcollection import OrderedCollection
-from gnome import basic_types
+from gnome import basic_types, element_types
 
 class SpillContainerData(object):
     """
@@ -88,18 +88,16 @@ class SpillContainerData(object):
                 raise ValueError("data array must be the same shape as original array")
                     
         else:
-            raise KeyError("{0} cannot be updated, it does not exist in the data arrays".format(data_name) )
-        #=======================================================================
-        # # make sure length(array) equals length of other data_arrays - check against one key
-        # if array.shape == ():
-        #    raise TypeError("0-rank arrays are not valid. If new data is a scalar, enter a list [value]")
-        #    
-        # if len(array) != len(self._data_arrays[self._data_arrays.keys()[0]]):
-        #    raise IndexError("length of new data should match length of existing data_arrays.")
-        #=======================================================================
+           #raise KeyError("{0} cannot be updated, it does not exist in the data arrays".format(data_name) )
+            # make sure length(array) equals length of other data_arrays - check against one key
+            if array.shape == ():
+               raise TypeError("0-rank arrays are not valid. If new data is a scalar, enter a list [value]")
+               
+            if len(array) != len(self._data_arrays[self._data_arrays.keys()[0]]):
+               raise IndexError("length of new data should match length of existing data_arrays.")
         
         self._data_arrays[data_name] = array
-
+    
     def __eq__(self,other):
         """ 
         Compare equality of two SpillContanerData objects
@@ -154,6 +152,11 @@ class SpillContainerData(object):
     def num_elements(self):
         """
         The number of elements currently in the SpillContainer
+        This only returns None for SpillContainerData object is initialized
+        without any data_arrays.
+        
+        If SpillContainer is initialized, all data_arrays exist even if no 
+        elements are released so this will always return a valid int >= 0
         """
         try:
             return len(self['positions']) # positions data array is an array_type for all movers
@@ -187,10 +190,25 @@ class SpillContainer(SpillContainerData):
     def __init__(self, uncertain=False):
         super(SpillContainer, self).__init__(uncertain=uncertain)
         
-        self.all_array_types = {}
+        self.all_array_types = dict(element_types.basic)
         self.spills = OrderedCollection(dtype=gnome.spill.Spill)
         self.rewind()
-    
+        
+    def __setitem__(self, data_name, array):
+        """
+        Invoke baseclass __setitem__ method so the _data_array is set correctly.
+         
+        In addition, create the appropriate ArrayType if it wasn't created by the user. 
+        """
+        super(SpillContainer,self).__setitem__(data_name, array)
+        if data_name not in self.all_array_types:
+            shape = self._data_arrays[data_name].shape
+            dtype = self._data_arrays[data_name].dtype.type
+            self.all_array_types[data_name] = element_types.ArrayType(shape, dtype)
+            
+        #self.reconcile_data_arrays()
+        
+        
     def rewind(self):
         """
         In the rewind operation, we:
@@ -252,12 +270,12 @@ class SpillContainer(SpillContainerData):
             u_sc.spills += sp.uncertain_copy()
         return u_sc
 
-    def prepare_for_model_run(self, current_time, array_types):
+    def prepare_for_model_run(self, current_time, array_types={}):
         """
         called when setting up the model prior to 1st time step 
         """
         self.current_time_stamp = current_time
-        self.all_array_types = array_types
+        self.all_array_types.update(array_types)
         
         # define all data arrays even if no data exists in them
         self._data_arrays = gnome.spill.Spill().create_new_elements(0, self.all_array_types)
@@ -584,8 +602,7 @@ class TestSpillContainer(SpillContainer):
                                                 release_time)
         
         self.spills.add(spill)
-        array_types = dict(element_types.basic.items() + element_types.windage.items())
-        self.prepare_for_model_run( release_time, array_types)
+        self.prepare_for_model_run( release_time, dict(element_types.windage))
         self.release_elements( release_time, 360)
 
 

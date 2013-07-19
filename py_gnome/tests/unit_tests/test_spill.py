@@ -13,10 +13,10 @@ import numpy as np
 
 from gnome import basic_types
 from gnome.spill import Spill, FloatingSpill, SurfaceReleaseSpill, SpatialReleaseSpill
-from gnome.movers import element_types  # need this to test Spill functionality
+from gnome import element_types  # need this to test Spill functionality
 
-basic_at = dict( element_types.basic.items())
-windage_at= dict( basic_at.items() + element_types.windage.items())
+basic_at = dict( element_types.basic)
+windage_at= dict( basic_at.items() + dict(element_types.windage).items())
 
 def test_deepcopy():
     """

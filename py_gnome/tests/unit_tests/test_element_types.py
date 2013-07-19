@@ -6,7 +6,7 @@ are trivial. They are tested in the integrated_tests
 '''
 import numpy as np
 from gnome import basic_types
-from gnome.movers.element_types import ArrayType
+from gnome.element_types import ArrayType
 
 class TestArrayType_eq(object):
     """ 

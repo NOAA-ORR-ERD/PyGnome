@@ -11,7 +11,7 @@ from gnome import basic_types, environment
 from gnome.spill_container import TestSpillContainer
 from gnome.utilities import time_utils, transforms, convert
 from gnome.utilities import projections
-from gnome.movers import element_types
+from gnome import element_types
 
 datadir = os.path.join(os.path.dirname(__file__), r'sample_data')
 file_ = os.path.join(datadir,r'WindDataFromGnome.WND')
@@ -195,8 +195,7 @@ def test_windage_index():
                                                 windage_persist=900)
         sc.spills.add(spill)
     
-    arrays = dict(element_types.basic.items() + element_types.windage.items())
-    sc.prepare_for_model_run(rel_time, arrays)
+    sc.prepare_for_model_run(rel_time, dict(element_types.windage))
     sc.release_elements(rel_time, timestep)
     wm = movers.WindMover(environment.ConstantWind(5,0))
     wm.prepare_for_model_step(sc, timestep, rel_time)
@@ -337,20 +336,14 @@ def test_exception_new_from_dict():
 
 def test_array_types():
     """
-    Check the array_types property of WindMover contains 
-    element_types.basic and element_types.windage
+    Check the array_types property of WindMover contains element_types.windage
     """
     wm = movers.WindMover(environment.Wind(filename=file_)) # WindMover does not modify Wind object!
     wm_array = wm.array_types
     
-    assert len(wm_array) == len(element_types.basic) + len(element_types.windage)
+    assert len(wm_array) == len(element_types.windage)
     
-    for key,val in element_types.basic.iteritems():
-        assert key in wm_array
-        assert wm_array[key] == val  
-        wm_array.pop(key)
-    
-    for key,val in element_types.windage.iteritems():
+    for key,val in dict(element_types.windage).iteritems():
         assert key in wm_array
         assert wm_array[key] == val
         wm_array.pop(key)

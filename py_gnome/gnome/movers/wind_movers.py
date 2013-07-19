@@ -8,10 +8,10 @@ from datetime import datetime
 import numpy as np
 
 from gnome.utilities import time_utils, transforms, convert, serializable
-from gnome.movers import element_types, CyMover
+from gnome.movers import CyMover
 from gnome import basic_types     
 from gnome.cy_gnome import cy_wind_mover,cy_ossm_time,cy_gridwind_mover
-from gnome import environment
+from gnome import environment,element_types
 from gnome.utilities import rand
 
 
@@ -95,7 +95,7 @@ class WindMover(CyMover, serializable.Serializable):
         
         self.wind = wind    
         super(WindMover,self).__init__(**kwargs)
-        self.array_types.update( copy.deepcopy(element_types.windage)) 
+        self.array_types.update( dict(element_types.windage)) 
 
     def __repr__(self):
         """

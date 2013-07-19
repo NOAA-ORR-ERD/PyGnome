@@ -247,13 +247,13 @@ class Model(serializable.Serializable):
          for outputter in self.outputters]
         
         array_types = {}
-        if len(self.movers) == 0:
-            array_types.update(Mover().array_types) # get the baseline array types required by all movers
-        else:
-            for mover in self.movers:
-                mover.prepare_for_model_run()
-                array_types.update(mover.array_types)
-        
+        #if len(self.movers) == 0:
+        #    array_types.update(Mover().array_types) # get the baseline array types required by all movers
+        #else:
+        for mover in self.movers:
+            mover.prepare_for_model_run()
+            array_types.update(mover.array_types)
+    
         # setup the current_time_stamp for the spill_container objects
         for sc in self.spills.items():
             #sc.current_time_stamp = self.model_time

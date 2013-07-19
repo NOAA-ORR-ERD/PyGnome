@@ -558,7 +558,7 @@ def test_release_at_right_time():
                                                     end_release_time=datetime(2013, 1, 1, 6),
                                                     )
     # before the run - no elements present since data_arrays get defined after 1st step (prepare_for_model_run):
-    assert model.spills.items()[0].num_elements is None
+    assert model.spills.items()[0].num_elements == 0
 
     model.step()
     assert model.spills.items()[0].num_elements == 4
