@@ -138,7 +138,7 @@ void WindMover_c::UpdateUncertaintyValues(Seconds elapsedTime)
 	
 	if(!fWindUncertaintyList) return;
 	
-	n= _GetHandleSize((Handle)fWindUncertaintyList)/sizeof(LEWindUncertainRec);
+	n = _GetHandleSize((Handle)fWindUncertaintyList)/sizeof(LEWindUncertainRec);
 	
 	for(i=0;i<n;i++)
 	{
@@ -159,7 +159,7 @@ OSErr WindMover_c::ReallocateUncertainty(int numLEs, short* statusCodes)	// remo
 {
 	long i,numrec=0,uncertListSize,numLESetsStored;
 	OSErr err=0;
-	
+
 	if (numLEs == 0 || ! statusCodes) return -1;	// shouldn't happen
 	
 	if(!fWindUncertaintyList || !fLESetSizes) return 0;	// assume uncertainty is not on
@@ -171,17 +171,17 @@ OSErr WindMover_c::ReallocateUncertainty(int numLEs, short* statusCodes)	// remo
 	if (uncertListSize != numLEs) return -1;
 	if (numLESetsStored != 1) return -1;
 	
-	for (i = 0,numrec=0; i < numLEs ; i++) {
+	for (i = 0; i < numLEs ; i++) {
 		if( statusCodes[i] == OILSTAT_TO_BE_REMOVED)	// for OFF_MAPS, EVAPORATED, etc
 		{
 			//continue;
 		}
 		else {
-			fWindUncertaintyList[numrec] = fWindUncertaintyList[i];
+			(*fWindUncertaintyList)[numrec] = (*fWindUncertaintyList)[i];
 			numrec++;
 		}
 	}
-	
+
 	if (numrec == 0)
 	{	
 		this->DisposeUncertainty();
@@ -190,7 +190,8 @@ OSErr WindMover_c::ReallocateUncertainty(int numLEs, short* statusCodes)	// remo
 	
 	if (numrec < uncertListSize)
 	{
-		(*fLESetSizes)[0] = numrec;
+		//(*fLESetSizes)[0] = numrec;
+		//(*fLESetSizes)[0] = 0;	// index into array, should never change
 		_SetHandleSize((Handle)fWindUncertaintyList,numrec*sizeof(LEWindUncertainRec)); 
 	}
 	
@@ -421,6 +422,7 @@ OSErr WindMover_c::PrepareForModelRun()
 OSErr WindMover_c::PrepareForModelStep(const Seconds& model_time, const Seconds& time_step, bool uncertain, int numLESets, int* LESetsSizesList)
 {
 	OSErr err = 0;
+
 	if (bIsFirstStep)
 		fModelStartTime = model_time;
 	if (uncertain)
@@ -431,7 +433,7 @@ OSErr WindMover_c::PrepareForModelStep(const Seconds& model_time, const Seconds&
 		fUncertaintyDiffusion = sqrt(6*(eddyDiffusion/10000)/time_step); // in m/s, note: DIVIDED by timestep because this is later multiplied by the timestep
 
 	}
-	err = this -> GetTimeValue (model_time,&this->current_time_value);	// AH 07/16/2012
+	err = this -> GetTimeValue (model_time,&this->current_time_value);	
 	if (err) printError("An error occurred in TWindMover::PrepareForModelStep");
 	return err;
 }

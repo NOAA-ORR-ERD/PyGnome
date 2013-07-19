@@ -128,13 +128,13 @@ OSErr CurrentMover_c::ReallocateUncertainty(int numLEs, short* statusCodes)	// r
 	if (uncertListSize != numLEs) return -1;
 	if (numLESetsStored != 1) return -1;
 	
-	for (i = 0,numrec=0; i < numLEs ; i++) {
+	for (i = 0; i < numLEs ; i++) {
 		if( statusCodes[i] == OILSTAT_TO_BE_REMOVED)	// for OFF_MAPS, EVAPORATED, etc
 		{
 			continue;
 		}
 		else {
-			fUncertaintyListH[numrec] = fUncertaintyListH[i];
+			(*fUncertaintyListH)[numrec] = (*fUncertaintyListH)[i];
 			numrec++;
 		}
 	}
@@ -147,7 +147,8 @@ OSErr CurrentMover_c::ReallocateUncertainty(int numLEs, short* statusCodes)	// r
 	
 	if (numrec < uncertListSize)
 	{
-		(*fLESetSizesH)[0] = numrec;
+		//(*fLESetSizesH)[0] = numrec;
+		//(*fLESetSizesH)[0] = 0;	// index into array, should never change
 		_SetHandleSize((Handle)fUncertaintyListH,numrec*sizeof(LEUncertainRec)); 
 	}
 	
