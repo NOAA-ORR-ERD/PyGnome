@@ -348,8 +348,8 @@ class SpillContainer(SpillContainerData):
         """
         if len(self._data_arrays) == 0:
             return  # nothing to do - arrays are not yet defined.
-        to_be_removed = np.where( self['status_codes'] == basic_types.oil_status.to_be_removed)
-        if np.any(to_be_removed):
+        to_be_removed = np.where( self['status_codes'] == basic_types.oil_status.to_be_removed)[0]
+        if len(to_be_removed) > 0:
         	for key in self.all_array_types.keys():
         		self._data_arrays[key] = np.delete( self[key], to_be_removed, axis=0) 
 

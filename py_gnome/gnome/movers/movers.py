@@ -220,7 +220,8 @@ class CyMover(Mover):
 						raise ValueError("The spill container does not have the required data array\n" + err.message)
 					self.mover.model_step_is_done(self.status_codes)
         	else:		
-				self.mover.model_step_is_done()
+				if self.active:
+					self.mover.model_step_is_done()
         else:		
         	if self.active:
         		self.mover.model_step_is_done()
