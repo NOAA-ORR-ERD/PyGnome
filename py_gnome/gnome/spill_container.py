@@ -158,9 +158,10 @@ class SpillContainerData(object):
         If SpillContainer is initialized, all data_arrays exist even if no 
         elements are released so this will always return a valid int >= 0
         """
-        try:
-            return len(self['positions']) # positions data array is an array_type for all movers
-        except:
+        if self._data_arrays.keys():
+            return len(self[self._data_arrays.keys()[0]])
+        else:
+            # should never be the case
             return None
 
     @property
@@ -220,10 +221,8 @@ class SpillContainer(SpillContainerData):
         for spill in self.spills:
             spill.rewind()
         # this should create a full set of zero-sized arrays
-        # it creates a temporary Spill object, it creates all array_types defined in self.all_array_types,
-        # which could be an empty dict
-        #self._data_arrays = {}
-        self._data_arrays = gnome.spill.Spill().create_new_elements(0, self.all_array_types)
+        # gnome.spill.Spill().create_new_elements(0) will return 0 size 'positions' array 
+        self._data_arrays = self.initialize_data_arrays({})
 
 #===============================================================================
 #    def reconcile_data_arrays(self):
@@ -277,8 +276,11 @@ class SpillContainer(SpillContainerData):
         self.current_time_stamp = current_time
         self.all_array_types.update(array_types)
         
+        for spill in self.spills:
+            self.all_array_types.update( spill.array_types)
+        
         # define all data arrays even if no data exists in them
-        self._data_arrays = gnome.spill.Spill().create_new_elements(0, self.all_array_types)
+        self._data_arrays = self.initialize_data_arrays({})
 
     def prepare_for_model_step(self, current_time):
         """
@@ -286,6 +288,31 @@ class SpillContainer(SpillContainerData):
         set the current_time_stamp attribute        
         """
         self.current_time_stamp = current_time
+
+    def initialize_data_arrays(self, spill_data):
+        """
+        initialize data arrays once spill has spawned particles
+        Data arrays are set to their initial_values
+        """
+        arrays = {}
+        
+        if spill_data:
+            num_elements = len(spill_data[spill_data.keys()[0]])
+        else:
+            num_elements = 0
+        
+        # first initialize all arrays
+        for name, array_type in self.all_array_types.iteritems():
+            arrays[name] = np.zeros( (num_elements,)+array_type.shape, dtype=array_type.dtype)
+            if name in spill_data:
+                arrays[name][:] = spill_data.pop(name)
+            else:
+                arrays[name][:] = array_type.initial_value
+        
+        if spill_data:
+            raise KeyError("Key mismatch: spill_data has a {0} key(s), which spill_container's all_data_arrays does not contain".format(spill_data.keys()))
+        
+        return arrays
 
     def release_elements(self, current_time, time_step):
         """
@@ -298,12 +325,15 @@ class SpillContainer(SpillContainerData):
 
         for spill in self.spills:
             if spill.on:
-                new_data = spill.release_elements(current_time,
-                                                  time_step=time_step,
-                                                  array_types=self.all_array_types)
-                if new_data is not None:
+                spill_data = spill.release_elements(current_time,
+                                                  time_step=time_step)
+                # without spill_release, nothing happens!
+                if spill_data is not None:
+                    new_data = self.initialize_data_arrays(spill_data)
                     if 'spill_num' in new_data:
                         new_data['spill_num'][:] = self.spills.index(spill.id, renumber=False)
+                        
+                    # append newly spawned and initialized particles to the data_arrays
                     for name in new_data:
                         if name in self._data_arrays and self._data_arrays[name].shape != ():
                             # concatenate data along the first axis
@@ -602,6 +632,8 @@ class TestSpillContainer(SpillContainer):
                                                 release_time)
         
         self.spills.add(spill)
+        
+        # since surface release spill, just add windage array_type
         self.prepare_for_model_run( release_time, dict(element_types.windage))
         self.release_elements( release_time, 360)
 

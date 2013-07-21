@@ -31,6 +31,8 @@ def test_test_spill_container():
 
     assert np.array_equal( sc['positions'][0], pos )
     assert np.array_equal( sc['positions'][-1], pos )
+    assert sc.all_array_types['status_codes'].initial_value == basic_types.oil_status.in_water
+    assert np.all(sc['status_codes'] == sc.all_array_types['status_codes'].initial_value)
 
 
 ## real tesing involves adding spills!

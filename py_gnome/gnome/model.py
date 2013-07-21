@@ -249,7 +249,7 @@ class Model(serializable.Serializable):
         for mover in self.movers:
             mover.prepare_for_model_run()
             array_types.update(mover.array_types)
-    
+
         # setup the current_time_stamp for the spill_container objects
         for sc in self.spills.items():
             #sc.current_time_stamp = self.model_time
@@ -304,7 +304,11 @@ class Model(serializable.Serializable):
         """
         Loop through movers and call model_step_is_done
         """
-
+        """
+        mover's model_step_is_done should be called before spill_contianer's model_step_is_done.
+        The spill_container's model_step_is_done removes the particles after the mover's resize
+        their uncertainty array. 
+        """
         for mover in self.movers:
             for sc in self.spills.items():	
                 mover.model_step_is_done(sc)	

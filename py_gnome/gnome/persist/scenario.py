@@ -325,8 +325,10 @@ class Scenario(object):
         array_types = {}
         
         for mover in self.model.movers:
-            mover.prepare_for_model_run()
             array_types.update(mover.array_types)
+            
+        for spill in self.model.spills:
+            array_types.update(spill.array_types)
     
         for sc in self.model.spills.items():
            if sc.uncertain:

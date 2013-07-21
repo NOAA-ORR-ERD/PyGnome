@@ -17,7 +17,7 @@ class ArrayType(object):
  
     """
     
-    def __init__(self, shape, dtype, initial_value=None):
+    def __init__(self, shape, dtype, initial_value=0):
         """
         constructor for ArrayType
         
@@ -61,11 +61,16 @@ class ArrayType(object):
 
 
 """ 
+used by spill.py module since spills spawn particles and set their initial positions 
+"""
+positions = frozenset([('positions', ArrayType( (3,), basic_types.world_point_type))])
+
+
+""" 
 used by spill_container module since these basic arrays are present for every model independent
 of the mover 
 """
-basic = frozenset([('positions', ArrayType( (3,), basic_types.world_point_type)),
-                   ('next_positions', ArrayType( (3,), basic_types.world_point_type)),
+basic = frozenset([('next_positions', ArrayType( (3,), basic_types.world_point_type)),
                    ('last_water_positions', ArrayType( (3,), basic_types.world_point_type)),
                    ('status_codes', ArrayType( (), basic_types.status_code_type,basic_types.oil_status.in_water)),
                    ('spill_num', ArrayType( (), basic_types.id_type, -1))])

@@ -22,7 +22,7 @@ import copy
 import math
 from datetime import timedelta
 import numpy as np
-from gnome import basic_types
+from gnome import basic_types, element_types
 from gnome import GnomeId
 from gnome.utilities import serializable
 
@@ -30,7 +30,7 @@ class Spill(object):
     """
     base class for a source of elements
     
-    .. note:: This class is not serializable since it can't be used in PyGnome
+    .. note:: This class is not serializable since it will not be used in PyGnome. It does not release any elements
     """
 
     _update = ['num_elements','on']
@@ -60,6 +60,7 @@ class Spill(object):
         self.num_elements = num_elements
         self.on = on       # sets whether the spill is active or not
         self._gnome_id = GnomeId(id)
+        self.array_types = dict(element_types.positions)
 
     def __deepcopy__(self, memo=None):
         """
@@ -110,7 +111,7 @@ class Spill(object):
         """
         pass
 
-    def release_elements(self, current_time, time_step, array_types):
+    def release_elements(self, current_time, time_step):
         """
         Release any new elements to be added to the SpillContainer
 
@@ -125,18 +126,14 @@ class Spill(object):
         """
         return None
 
-    def create_new_elements(self, num_elements, array_types):
+    def create_new_elements(self, num_elements):
         arrays = {}
 
-        for name, array_type in array_types.iteritems():
+        for name, array_type in self.array_types.iteritems():
             arrays[name] = np.zeros( (num_elements,)+array_type.shape, dtype=array_type.dtype)
-        self.initialize_new_elements(arrays, array_types)
+            arrays[name][:] = array_type.initial_value
         return arrays
-
-    def initialize_new_elements(self, arrays, array_types):
-        for name, array_type in array_types.iteritems():
-            if array_type.initial_value != None:
-                arrays[name][:] = array_type.initial_value
+    
 
 class FloatingSpill(Spill):
     """
@@ -306,7 +303,7 @@ class SurfaceReleaseSpill(FloatingSpill, serializable.Serializable):
         else:
             self._end_release_time = val        
 
-    def release_elements(self, current_time, time_step, array_types):
+    def release_elements(self, current_time, time_step):
         """
         Release any new elements to be added to the SpillContainer
 
@@ -340,7 +337,7 @@ class SurfaceReleaseSpill(FloatingSpill, serializable.Serializable):
 
         if self.delta_release <= 0:
             num = self.num_elements
-            arrays = self.create_new_elements(num, array_types)
+            arrays = self.create_new_elements(num)
             self.num_released = num
             if np.array_equal(self.delta_pos, (0.0,0.0,0.0)):
                 #point release
@@ -364,7 +361,7 @@ class SurfaceReleaseSpill(FloatingSpill, serializable.Serializable):
         num = n_1 - n_0 + 1
         self.num_released = n_1+1 # indexes from zero
         
-        arrays = self.create_new_elements(num, array_types)
+        arrays = self.create_new_elements(num)
 
         #compute the position of the elements:
         if np.array_equal(self.delta_pos, (0.0,0.0,0.0) ):
@@ -448,7 +445,7 @@ class SubsurfaceReleaseSpill(SubsurfaceSpill):
         self.num_released = 0
         self.prev_release_pos = self.start_position
 
-    def release_elements(self, current_time, time_step, array_types):
+    def release_elements(self, current_time, time_step):
         """
         Release any new elements to be added to the SpillContainer
 
@@ -481,7 +478,7 @@ class SubsurfaceReleaseSpill(SubsurfaceSpill):
 
             self.num_released += num
 
-            arrays = self.create_new_elements(num, array_types)
+            arrays = self.create_new_elements(num)
 
             #compute the position of the elements:
             if release_delta == 0: # all released at once:
@@ -561,7 +558,7 @@ class SpatialReleaseSpill(FloatingSpill):
         self.windage_range    = windage_range[0:2]
         self.windage_persist  = windage_persist
 
-    def release_elements(self, current_time, time_step, array_types):
+    def release_elements(self, current_time, time_step):
         """
         Release any new elements to be added to the SpillContainer
 
@@ -584,7 +581,7 @@ class SpatialReleaseSpill(FloatingSpill):
 
         if self.elements_not_released and current_time >= self.release_time:
             self.elements_not_released = False
-            arrays = self.create_new_elements(self.num_elements, array_types)
+            arrays = self.create_new_elements(self.num_elements)
             arrays['positions'][:,:] = self.start_positions
             return arrays
         else:
