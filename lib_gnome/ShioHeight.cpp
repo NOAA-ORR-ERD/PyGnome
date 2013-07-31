@@ -12,6 +12,7 @@
 #ifndef pyGNOME
 #include "CROSS.H"
 #else
+#include "CompFunctions.h"
 #include "Replacements.h"
 #endif
 

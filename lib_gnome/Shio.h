@@ -597,14 +597,15 @@ short GetVelDir(CONSTITUENT *constituent,  // return 1 if flood, -1 if ebb
                 double u,
 				double v);
 
-void Hermite(double v1,     // value at t1
-             double s1,     // slope at t1
-			 double t1,     // time t1
-			 double v2,     // value at t2
-			 double s2,     // slope at t2
-			 double t2,     // time t2
-			 double time,   // time for interpolation
-			 double *vTime);// returns value at time
+// TO BE DELETED
+//void Hermite(double v1,     // value at t1
+//             double s1,     // slope at t1
+//			 double t1,     // time t1
+//			 double v2,     // value at t2
+//			 double s2,     // slope at t2
+//			 double t2,     // time t2
+//			 double time,   // time for interpolation
+//			 double *vTime);// returns value at time
 
 short OffsetReferenceCurve(COMPCURRENTS *AnswerHdl,    // Hdl to reference station heights
 						   CURRENTOFFSET *offset);  
