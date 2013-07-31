@@ -92,7 +92,7 @@ def test_variance1(start_loc, time_step):
     """
     num_le = 1000
     start_time = datetime.datetime(2012,11,10,0)
-    spill = TestSpillContainer(num_le, start_loc, start_time)
+    sc = TestSpillContainer(num_le, start_loc, start_time)
     D = 100000
     num_steps = 10
 
@@ -101,15 +101,15 @@ def test_variance1(start_loc, time_step):
     model_time = start_time
     for i in range(num_steps):
         model_time += datetime.timedelta(seconds=time_step)
-        spill.prepare_for_model_step(model_time, time_step)
-        rand.prepare_for_model_step(spill, time_step, model_time)
-        delta = rand.get_move(spill, time_step, model_time)
+        sc.prepare_for_model_step(model_time)
+        rand.prepare_for_model_step(sc, time_step, model_time)
+        delta = rand.get_move(sc, time_step, model_time)
         #print "delta:", delta
-        spill['positions'] += delta
-        #print spill['positions']
+        sc['positions'] += delta
+        #print sc['positions']
     # compute the variances:
     # convert to meters
-    pos = projections.FlatEarthProjection.lonlat_to_meters(spill['positions'], start_loc)
+    pos = projections.FlatEarthProjection.lonlat_to_meters(sc['positions'], start_loc)
     var = np.var(pos, axis=0)
 
     expected = 2.0 * (D * 1e-4) * num_steps * time_step # D converted to meters^s/s

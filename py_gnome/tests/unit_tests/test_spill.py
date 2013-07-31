@@ -12,27 +12,8 @@ import pytest
 import numpy as np
 
 from gnome import basic_types
-from gnome.spill import Spill, FloatingSpill, SurfaceReleaseSpill, SpatialReleaseSpill, ArrayType
-
-
-def test_init_Spill():
-    """
-    each spill class maintains a static dict of data types referenced by a 'property name'
-    which correspond to the properties that LEs will have when released by the spill
-    """
-    sp = Spill()
-    for k in ('positions', 'next_positions', 'last_water_positions', 'status_codes', 'spill_num',):
-        assert k in sp.array_types
-
-    sp = FloatingSpill()
-    for k in ('positions', 'next_positions', 'last_water_positions', 'status_codes', 'spill_num', 'windages'):
-        assert k in sp.array_types
-
-    # check that the FloatingSpill did not affect the Spill Base class array types
-    sp = Spill()
-    for k in ('positions', 'next_positions', 'last_water_positions', 'status_codes', 'spill_num',):
-        assert k in sp.array_types
-    assert 'windages' not in sp.array_types
+from gnome.spill import (Spill, FloatingSpill, SurfaceReleaseSpill, SpatialReleaseSpill,
+                         SubsurfaceSpill, SubsurfaceReleaseSpill, SpatialReleaseSpill)
 
 
 def test_deepcopy():
@@ -80,32 +61,25 @@ def test_uncertain_copy():
     assert np.array_equal(u_spill.start_position, spill.start_position)
     del spill
     del u_spill
-    #assert False
 
 
-def test_new_elements():
+@pytest.mark.parametrize(("sp_obj", "num_elems"),
+                         [(Spill(), 0), 
+                          (FloatingSpill(), 0), 
+                          (SurfaceReleaseSpill( 5, (0.0, 0.0, 0.0), datetime.now()), 5),
+                          (SubsurfaceSpill(),0),
+                          (SubsurfaceReleaseSpill( 5, (0.0, 0.0, 0.0), datetime.now()), 5),
+                          (SpatialReleaseSpill( (0.0, 0.0, 0.0), datetime.now()), 5)])
+def test_create_new_elements(sp_obj, num_elems):
     """
     see if creating new elements works
     """
-    sp = Spill()
+    arrays = sp_obj.create_new_elements(num_elems)
 
-    arrays = sp.create_new_elements(3)
+    for name,array in arrays.iteritems():
+        assert name in sp_obj.array_types
+        assert len(array) == num_elems
 
-    for array in arrays.values():
-        assert len(array) == 3
-
-
-def test_FloatingSpill():
-    """
-    see if the right arrays get created
-    """
-    sp = FloatingSpill()
-    data = sp.create_new_elements(10)
-    assert 'windages' in data
-
-    assert data['status_codes'].shape == (10,)
-    assert data['positions'].shape == (10,3)
-    assert np.alltrue( data['status_codes'] == basic_types.oil_status.in_water )
 
 
 class Test_SurfaceReleaseSpill(object):
@@ -120,9 +94,8 @@ class Test_SurfaceReleaseSpill(object):
                                  release_time = self.release_time,
                                  )
         arrays = sp.create_new_elements(10)
-        assert arrays['status_codes'].shape == (10,)
         assert arrays['positions'].shape == (10,3)
-        assert np.alltrue( arrays['status_codes'] == basic_types.oil_status.in_water)
+        assert np.alltrue( arrays['positions'] == sp.array_types['positions'].initial_value)
 
     def test_model_run_after_release(self):
         """
@@ -145,7 +118,6 @@ class Test_SurfaceReleaseSpill(object):
         arrays = sp.release_elements(self.release_time, time_step=30*60)
         assert arrays['positions'].shape == (10,3)
         assert np.alltrue( arrays['positions'] == self.start_position )
-        assert np.alltrue( arrays['status_codes'] == basic_types.oil_status.in_water)
 
         assert sp.num_released == self.num_elements
 
@@ -170,7 +142,6 @@ class Test_SurfaceReleaseSpill(object):
         arrays = sp.release_elements(self.release_time+timedelta(seconds=1), timestep)
         assert arrays['positions'].shape == (10,3)
         assert np.alltrue( arrays['positions'] == self.start_position )
-        assert np.alltrue( arrays['status_codes'] == basic_types.oil_status.in_water)
 
         assert sp.num_released == self.num_elements
 
@@ -185,7 +156,6 @@ class Test_SurfaceReleaseSpill(object):
         arrays = sp.release_elements(self.release_time, timestep)
         assert arrays['positions'].shape == (10,3)
         assert np.alltrue( arrays['positions'] == self.start_position )
-        assert np.alltrue( arrays['status_codes'] == basic_types.oil_status.in_water)
 
         assert sp.num_released == self.num_elements
 
@@ -203,7 +173,6 @@ class Test_SurfaceReleaseSpill(object):
         arrays = sp.release_elements(self.release_time, timestep)
         assert arrays['positions'].shape == (self.num_elements,3)
         assert np.alltrue( arrays['positions'] == self.start_position )
-        assert np.alltrue( arrays['status_codes'] == basic_types.oil_status.in_water)
 
     def test_cont_release(self):
         sp = SurfaceReleaseSpill(num_elements = 100,
@@ -255,7 +224,6 @@ class Test_SurfaceReleaseSpill(object):
         arrays = sp.release_elements(self.release_time, timestep)
 
         assert arrays['positions'].shape == (11,3)
-        assert np.alltrue( arrays['status_codes'] == basic_types.oil_status.in_water)
         assert np.array_equal( arrays['positions'][:,0], np.linspace(-128, -129, 11) )
         assert np.array_equal( arrays['positions'][:,1], np.linspace(28, 29, 11) )
 
@@ -275,10 +243,9 @@ class Test_SurfaceReleaseSpill(object):
                                  )
         timestep = 100 * 60       
         #  the full release over one time step(plus a tiny bit to get the last one)
-        arrays = sp.release_elements(self.release_time, timestep+1 )
+        arrays = sp.release_elements(self.release_time, timestep+1)
 
         assert arrays['positions'].shape == (11,3)
-        assert np.alltrue( arrays['status_codes'] == basic_types.oil_status.in_water)
         assert np.array_equal( arrays['positions'][:,0], np.linspace(-128, -129, 11) )
         assert np.array_equal( arrays['positions'][:,1], np.linspace(28, 29, 11) )
 
@@ -302,7 +269,6 @@ class Test_SurfaceReleaseSpill(object):
         arrays = sp.release_elements(self.release_time, 10*60)
 
         assert arrays['positions'].shape == (10,3)
-        assert np.alltrue( arrays['status_codes'] == basic_types.oil_status.in_water)
         assert np.array_equal( arrays['positions'][:,0], lats[:10])
         assert np.array_equal( arrays['positions'][:,1], lons[:10])
         assert sp.num_released == 10
@@ -311,7 +277,6 @@ class Test_SurfaceReleaseSpill(object):
         arrays = sp.release_elements(self.release_time + timedelta(minutes=10), 10*60 )
 
         assert arrays['positions'].shape == (10,3)
-        assert np.alltrue( arrays['status_codes'] == basic_types.oil_status.in_water)
         assert np.array_equal( arrays['positions'][:,0], lats[10:20])
         assert np.array_equal( arrays['positions'][:,1], lons[10:20])
         assert sp.num_released == 20
@@ -564,11 +529,7 @@ def test_SpatialReleaseSpill():
                              )
     data = sp.release_elements(release_time, time_step=600)
 
-    assert 'windages' in data
-
-    assert data['status_codes'].shape == (4,)
     assert data['positions'].shape == (4,3)
-    assert np.alltrue( data['status_codes'] == basic_types.oil_status.in_water )
 
 def test_SpatialReleaseSpill2():
     """
@@ -655,41 +616,6 @@ def test_SurfaceReleaseSpill_from_dict():
         else:
             assert spill.__getattribute__(key) == sp_dict.__getitem__(key)
             
-
-class TestArrayType_eq(object):
-    """ 
-    contains functions that test __eq__ for ArrayType object 
-    """
-    def test_eq_wrong_shape(self):
-        """ array shape is different for two ArrayType objects """
-        positions = ArrayType( (), basic_types.world_point_type)
-        positions2= ArrayType( (3,), basic_types.world_point_type)
-        assert positions != positions2      
-    
-    def test_eq_wrong_dtype(self):
-        """ dtype is different for two ArrayType objects """
-        positions = ArrayType( (3,), basic_types.world_point_type)
-        positions2= ArrayType( (3,), np.int)
-        assert positions != positions2      # wrong dtype
-    
-    def test_eq_wrong_init_value(self):
-        """ initial_value is different for two ArrayType objects """
-        status_codes = ArrayType( (), basic_types.status_code_type, basic_types.oil_status.in_water)
-        status_codes2= ArrayType( (), basic_types.status_code_type)
-        assert status_codes != status_codes2    # no init conditions
-        
-    def test_eq_wrong_attr(self):
-        """ added an attribute so two ArrayType objects are diffferent """
-        positions = ArrayType( (), basic_types.world_point_type)
-        positions2= ArrayType( (3,), basic_types.world_point_type)
-        positions2.test = 'test'
-        assert positions != positions2      # wrong number of attributes
-        
-    def test_eq(self):
-        """ both ArrayType objects are the same """
-        positions = ArrayType( (3,), basic_types.world_point_type)
-        positions2= ArrayType( (3,), basic_types.world_point_type)
-        assert positions == positions2      # wrong shape
 
 if __name__ == "__main__":
     #TC = Test_SurfaceReleaseSpill()

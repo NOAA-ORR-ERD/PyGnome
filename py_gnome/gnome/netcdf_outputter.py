@@ -251,6 +251,9 @@ class NetCDFOutput(Outputter, serializable.Serializable):
         None for defaults because non-default argument cannot follow default argument. Since cache is already 2nd positional argument
         for Renderer object, the required non-default arguments must be defined following 'cache'.
         
+        If uncertainty is on, then UncertainSpillPair object contains identical _data_arrays in both certain and uncertain SpillContainer's,
+        the data itself is different, but they contain the same type of data arrays.
+        
         :param cache=None: Sets the cache object to be used for the data. If None, it will use the one already set up. 
         :type cache: As defined in cache module (gnome.utilities.cache). Currently only ElementCache is defined/used.
         :param model_start_time: (Required) start time of the model run. NetCDF time units calculated with respect to this time.
@@ -260,8 +263,9 @@ class NetCDFOutput(Outputter, serializable.Serializable):
         :param uncertain: Default is False. Model automatically sets this based on whether uncertainty is on or off. If this is
                           True then a uncertain data is written to netcdf_filename + '_uncertain.nc'
         :type uncertain: bool
-        :param spills: If 'all_data' flag is True, then model must provide the model.spills object so NetCDF variables can be
-                       defined for the remaining data arrays. If spills is None, but all_data flag is True, a ValueError will be raised.
+        :param spills: If 'all_data' flag is True, then model must provide the model.spills object (SpillContainerPair object) 
+                       so NetCDF variables can be defined for the remaining data arrays. If spills is None, but all_data flag 
+                       is True, a ValueError will be raised.
                        It does not make sense to write 'all_data' but not provide 'model.spills'. 
         :type spills: gnome.spill_container.SpillContainerPair object. 
         
@@ -325,9 +329,9 @@ class NetCDFOutput(Outputter, serializable.Serializable):
                 if self.all_data:
                     rootgrp.createDimension('world_point', 3)
                     self.arr_types = dict()
-                    for spill in spills:
-                        at = spill.array_types
-                        [self.arr_types.update({key:atype}) for key,atype in at.iteritems() if key not in self.arr_types and key not in self.standard_data]
+
+                    at = spills.items()[0].all_array_types
+                    [self.arr_types.update({key:atype}) for key,atype in at.iteritems() if key not in self.arr_types and key not in self.standard_data]
                     
                     # create variables
                     for key,val in self.arr_types.iteritems():
