@@ -651,6 +651,20 @@ def test_callback_add_mover_midrun():
     # now add another mover and make sure model rewinds
     model.movers += movers.simple_mover.SimpleMover(velocity=(2.0, -2.0, 0.0))
     assert model.current_time_step == -1    
+
+def test_simple_run_no_spills():
+    
+    model = setup_simple_model()
+    
+    for spill in model.spills:
+        del model.spills[spill.id]
+        
+    assert len(model.spills) == 0
+    
+    for step in model:
+        print "just ran time step: %s"%model.current_time_step
+        
+    assert True
     
 if __name__ == "__main__":
     #test_all_movers()
