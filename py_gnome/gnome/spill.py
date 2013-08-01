@@ -175,7 +175,7 @@ class FloatingSpill(Spill):
         self.windage_range = windage_range
         self.windage_persist = windage_persist
 
-class SurfaceReleaseSpill(FloatingSpill, serializable.Serializable):
+class PointSourceRelease(FloatingSpill, serializable.Serializable):
     """
     The primary spill source class  --  a point release of floating
     non-weathering particles, can be instantaneous or continuous, and be
@@ -243,7 +243,7 @@ class SurfaceReleaseSpill(FloatingSpill, serializable.Serializable):
         Remaining kwargs are passed onto base class __init__ using super. 
         See :class:`FloatingSpill` documentation for remaining valid kwargs.
         """
-        super(SurfaceReleaseSpill, self).__init__(windage_range, windage_persist, **kwargs)
+        super(PointSourceRelease, self).__init__(windage_range, windage_persist, **kwargs)
         
         self.num_elements = num_elements
         
@@ -381,7 +381,7 @@ class SurfaceReleaseSpill(FloatingSpill, serializable.Serializable):
         """
         reset to initial conditions -- i.e. nothing released.
         """
-        super(SurfaceReleaseSpill, self).rewind()
+        super(PointSourceRelease, self).rewind()
 
         self.num_released = 0
         self.not_called_yet = True
@@ -400,7 +400,7 @@ class SubsurfaceSpill(Spill):
         # it is not clear yet (to me anyway) what we will want to add to a subsurface spill
 
 
-class SubsurfaceReleaseSpill(SubsurfaceSpill):
+class SubsurfaceRelease(SubsurfaceSpill):
     """
     The second simplest spill source class  --  a point release of underwater
     non-weathering particles
@@ -424,7 +424,7 @@ class SubsurfaceReleaseSpill(SubsurfaceSpill):
         :param end_position=None: optional -- for a moving source, the end position
         :param end_release_time=None: optional -- for a release over time, the end release time
         """
-        super(SubsurfaceReleaseSpill, self).__init__()
+        super(SubsurfaceRelease, self).__init__()
 
         self.num_elements = num_elements
 
@@ -513,13 +513,13 @@ class SubsurfaceReleaseSpill(SubsurfaceSpill):
         """
         rewind to initial conditions -- i.e. nothing released. 
         """
-        super(SubsurfaceReleaseSpill, self).rewind()
+        super(SubsurfaceRelease, self).rewind()
 
         self.num_released = 0
         self.prev_release_pos = self.start_position
 
 
-class SpatialReleaseSpill(FloatingSpill):
+class SpatialRelease(FloatingSpill):
     """
     A simple spill class  --  a release of floating non-weathering particles,
     with their initial positions pre-specified
@@ -545,7 +545,7 @@ class SpatialReleaseSpill(FloatingSpill):
         :type persist: integer secondsDefault 
                         The -1 means the persistence is infinite so it is only set at the beginning of the run.
         """
-        super(SpatialReleaseSpill, self).__init__(windage_range, windage_persist)
+        super(SpatialRelease, self).__init__(windage_range, windage_persist)
         
         self.start_positions = np.asarray(start_positions,
                                           dtype=basic_types.world_point_type).reshape((-1, 3))

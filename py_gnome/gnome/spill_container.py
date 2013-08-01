@@ -627,7 +627,7 @@ class TestSpillContainer(SpillContainer):
         
         super(TestSpillContainer, self).__init__(uncertain=uncertain)
         
-        spill = gnome.spill.SurfaceReleaseSpill(num_elements,
+        spill = gnome.spill.PointSourceRelease(num_elements,
                                                 start_pos,
                                                 release_time)
         

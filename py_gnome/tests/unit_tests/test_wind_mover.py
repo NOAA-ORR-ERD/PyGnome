@@ -188,7 +188,7 @@ def test_windage_index():
     rel_time = datetime(2013,1,1,0,0)
     timestep = 30
     for i in range(2):
-        spill = gnome.spill.SurfaceReleaseSpill(num_elements=5,
+        spill = gnome.spill.PointSourceRelease(num_elements=5,
                                                 start_position=(0.0,0.0,0.0),
                                                 release_time=rel_time + i*timedelta(hours=1),
                                                 windage_range=(i*.01+0.01, i*.01+0.01),
