@@ -16,15 +16,25 @@ the logic about where an when the elements are released
 # create_new_elements() should not be a Spill method (maybe Spill_contianer or element_type class)
 # initialize_new_elements shouldn't be here either...
 
-
+import os   # used to get path to database
 import copy
-
 import math
 from datetime import timedelta
+
 import numpy as np
+
+## fixme: following used by get_oil_props only - may get moved
+import sqlalchemy
+#from sqlalchemy.orm import sessionmaker, scoped_session
+from oillibrary.models import Oil, DBSession
+from hazpy import unit_conversion
+from itertools import chain
+##
+
 from gnome import basic_types, element_types
 from gnome import GnomeId
 from gnome.utilities import serializable
+
 
 class Spill(object):
     """
@@ -39,11 +49,14 @@ class Spill(object):
     state = copy.deepcopy(serializable.Serializable.state)
     state.add( create=_create, update=_update)
 
+    valid_vol_units = list(chain.from_iterable([item[1] for item in unit_conversion.ConvertDataUnits['Volume'].values()]))
+    valid_vol_units.extend(unit_conversion.GetUnitNames('Volume'))
+
     @property
     def id(self):
         return self._gnome_id.id
     
-    def __init__(self, num_elements=0, on=True, id=None):
+    def __init__(self, num_elements=0, on=True, id=None, volume=0, volume_units='m^3'):
         """
         Base spill class. Spill used by a gnome model derive from this base class
         
@@ -60,7 +73,13 @@ class Spill(object):
         self.num_elements = num_elements
         self.on = on       # sets whether the spill is active or not
         self._gnome_id = GnomeId(id)
+        
         self.array_types = dict(element_types.positions)
+        self.oil_props = OilProps('oil_conservative')
+        
+        self._check_units(volume_units)
+        self._volume_units = volume_units
+        self._volume = unit_conversion.convert('Volume', volume_units, 'm^3', volume) 
 
     def __deepcopy__(self, memo=None):
         """
@@ -89,6 +108,47 @@ class Spill(object):
         obj_copy = object.__new__(type(self))
         obj_copy.__dict__ = copy.copy(self.__dict__)
         return obj_copy
+
+    def _check_units(self, units):
+        """
+        Checks the user provided units are in list Wind.valid_vel_units 
+        """
+        if units not in self.valid_vol_units:
+            raise unit_conversion.InvalidUnitError('Volume units must be from following list to be valid: {0}'.format(self.valid_vol_units))
+        
+    @property
+    def volume_units(self):
+        """
+        default units in which volume data is returned
+        """
+        return self._volume_units
+    
+    @volume_units.setter
+    def volume_units(self, units):
+        """
+        set default units in which volume data is returned
+        """
+        self._check_units(units)    # check validity before setting
+        self._volume_units = units
+    
+    def set_volume(self, volume, units):
+        """
+        set volume of spill released. Units are required! 
+        """
+        self._check_units(units)
+        self._volume = unit_conversion.convert('Volume', units, 'm^3', volume)
+        
+    def get_volume(self, units=None):
+        """
+        return the volume released during the spill. The default units for volume are
+        as defined in 'volume_units' property. User can also specify desired output units in the
+        function.
+        """
+        if units is None:
+            return unit_conversion.convert('Volume', 'm^3', self.volume_units, self._volume)
+        else:
+            self._check_units(units)
+            return unit_conversion.convert('Volume', 'm^3', units, self._volume)
 
     def uncertain_copy(self):
         """
@@ -174,6 +234,26 @@ class FloatingSpill(Spill):
         super(FloatingSpill, self).__init__(**kwargs)
         self.windage_range = windage_range
         self.windage_persist = windage_persist
+
+         
+class RiseVelocitySpill(Spill):
+    """
+    Parameters used to compute 
+    """
+    def __init__(self, risevel_dist='uniform', risevel_range=None,  
+                 useDropletSize=False, dropletsize_range=None, dropletsize_distribution=None,
+                 **kwargs):
+        """
+        
+        :param distribution: could be 'uniform' or 'normal'
+        :type distribution: str
+        :param range: for 'uniform' dist, it is [min_val, max_val]. 
+                      For 'normal' dist, it is [mean, sigma] where sigma is 1 standard deviation 
+        """
+        super(DropletSize, self).__init__(**kwargs)
+        self.dropletsize_range = range
+        self.dropletsize_dist = distribution
+        
 
 class SurfaceReleaseSpill(FloatingSpill, serializable.Serializable):
     """
@@ -593,3 +673,82 @@ class SpatialReleaseSpill(FloatingSpill):
         """
         self.elements_not_released = True
         self.not_called_yet = True
+
+
+class OilProps():
+    """
+    Class gets the oil properties in user specified units
+    """
+    # Some standard oils
+    _sample_oils = {'oil_gas': 
+                    {'Oil Name': 'oil_gas','API':unit_conversion.convert('Density', 'gram per cubic centimeter', 'API degree', 0.75)},
+                    
+                    'oil_jetfuels': 
+                    {'Oil Name': 'oil_jetfuels','API':unit_conversion.convert('Density', 'gram per cubic centimeter', 'API degree', 0.81)},
+                    
+                    'oil_diesel': 
+                    {'Oil Name':'oil_diesel','API':unit_conversion.convert('Density', 'gram per cubic centimeter', 'API degree', 0.87)},
+                    
+                    'oil_4': 
+                    {'Oil Name': 'oil_4','API':unit_conversion.convert('Density', 'gram per cubic centimeter', 'API degree', 0.90)},
+                    
+                    'oil_crude': 
+                    {'Oil Name':'oil_crude','API':unit_conversion.convert('Density', 'gram per cubic centimeter', 'API degree', 0.90)},
+                    
+                    'oil_6': 
+                    {'Oil Name':'oil_6','API':unit_conversion.convert('Density', 'gram per cubic centimeter', 'API degree', 0.99)},
+                    
+                    'oil_conservative': 
+                    {'Oil Name':'oil_conservative','API':unit_conversion.convert('Density', 'gram per cubic centimeter', 'API degree', 1)},
+                    
+                    'chemical': 
+                    {'Oil Name':'chemical','API':unit_conversion.convert('Density', 'gram per cubic centimeter', 'API degree', 1)},
+                   }
+    
+    
+    valid_density_units = list(chain.from_iterable([item[1] for item in unit_conversion.ConvertDataUnits['Density'].values()]))
+    valid_density_units.extend(unit_conversion.GetUnitNames('Density'))
+    
+    def __init__(self, oil_name):
+        """
+        Should user be able to provide an oil with density/properties?
+        
+        If oil_name is amongst self._sample_oils dict, then use the properties defined here. 
+        If not, then query the Oil database to check if oil_name exists and get the properties from DB
+        Otherwise define Oil object with 'Oil Name' set to 'unknown' and its 'API' set to '1' 
+        
+        :param oil_name: name of the oil that spilled. If it is one of the names that exist in the oil database, the
+                         associated properties stored in the DB are returned; otherwise, a default set of properties
+                         are returned(?)
+        :type oil_name: str
+        """
+        if oil_name in self._sample_oils:
+            self.oil = Oil( **self._sample_oils[oil_name] )
+        else:
+            db_file = os.path.join( os.path.split( os.path.realpath(__file__))[0], '../../web/adios/OilLibrary/OilLibrary.db')
+            #try:
+            if os.path.exists(db_file):
+                engine = sqlalchemy.create_engine('sqlite:///'+db_file)  # path relative to spill.py
+                DBSession.bind = engine # not sure we want to do it this way - but let's use for now
+                #let's use DBSession defined in oillibrary
+                #session_factory = sessionmaker(bind=engine)
+                #DBSession = scoped_session(session_factory)
+                self.oil = DBSession.query(Oil).filter(Oil.name==oil_name).one()
+                
+            else:
+                raise IOError('OilLibrary database not found at: '.format( db_file) )
+                
+            #except sqlalchemy.orm.exc.NoResultFound, sqlalchemy.orm.exc.MultipleResultsFound:
+            #    props={'Oil Name': 'unknown',
+            #           'API': 1.0}
+            #    self.oil = Oil( **props)
+    
+    def density(self, units='kg/m^3'):
+        """
+        :param units=kg/m^3: optional input if output units should be something other than kg/m^3
+        """
+        if units not in self.valid_density_units:
+            raise unit_conversion.InvalidUnitError('Desired density units must be from following list to be valid: {0}'.format(self.valid_density_units))
+        
+        # since Oil object can have various densities depending on temperature, lets return API in correct units
+        return unit_conversion.convert('Density', 'API degree', units, self.oil.api)
