@@ -276,8 +276,11 @@ class SpillContainer(SpillContainerData):
         self.current_time_stamp = current_time
         self.all_array_types.update(array_types)
         
-        for spill in self.spills:
-            self.all_array_types.update( spill.array_types)
+        if len(self.spills) == 0:
+            self.all_array_types.update( gnome.spill.Spill().array_types )
+        else:
+            for spill in self.spills:
+                self.all_array_types.update( spill.array_types)
         
         # define all data arrays even if no data exists in them
         self._data_arrays = self.initialize_data_arrays({})
@@ -627,7 +630,7 @@ class TestSpillContainer(SpillContainer):
         
         super(TestSpillContainer, self).__init__(uncertain=uncertain)
         
-        spill = gnome.spill.SurfaceReleaseSpill(num_elements,
+        spill = gnome.spill.PointSourceRelease(num_elements,
                                                 start_pos,
                                                 release_time)
         

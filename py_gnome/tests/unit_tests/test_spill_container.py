@@ -12,7 +12,7 @@ import numpy as np
 
 from gnome import basic_types
 from gnome.spill_container import SpillContainer, TestSpillContainer, SpillContainerPair
-from gnome.spill import Spill, SurfaceReleaseSpill, SubsurfaceReleaseSpill
+from gnome.spill import Spill, PointSourceRelease, SubsurfaceRelease
 from gnome import element_types  # only required to setup data arrays correctly
 
 basic_at = dict(element_types.basic)
@@ -41,7 +41,7 @@ def test_one_simple_spill():
     start_position = (23.0, -78.5, 0.0)
     num_elements =  100
     sc = SpillContainer()
-    spill = SurfaceReleaseSpill(num_elements,
+    spill = PointSourceRelease(num_elements,
                                 start_position,
                                 start_time)
     sc.spills.add(spill)
@@ -67,11 +67,11 @@ def test_multiple_spills():
     start_position = (23.0, -78.5, 0.0)
     num_elements =  100
     sc = SpillContainer()
-    spill = SurfaceReleaseSpill(num_elements,
+    spill = PointSourceRelease(num_elements,
                                 start_position,
                                 start_time)
 
-    sp2 = SurfaceReleaseSpill(num_elements,
+    sp2 = PointSourceRelease(num_elements,
                               start_position,
                               start_time2)
 
@@ -99,7 +99,7 @@ def test_multiple_spills():
 
 def test_add_data_array_spill_container():
     """ add a custom data array to spill container and see that it works"""
-    spill = SurfaceReleaseSpill(num_elements=10,
+    spill = PointSourceRelease(num_elements=10,
                                 start_position=(23.0, -78.5, 0.0),
                                 release_time=datetime(2012, 1, 1, 12))
     sc = SpillContainer()
@@ -121,11 +121,11 @@ def test_rewind():
     start_position = (23.0, -78.5, 0.0)
     num_elements =  100
     sc = SpillContainer()
-    spill = SurfaceReleaseSpill(num_elements,
+    spill = PointSourceRelease(num_elements,
                                 start_position,
                                 start_time)
 
-    sp2 = SurfaceReleaseSpill(num_elements,
+    sp2 = PointSourceRelease(num_elements,
                                 start_position,
                                 start_time2)
 
@@ -151,7 +151,7 @@ def test_rewind2():
     sc = SpillContainer()
     spill = Spill(num_elements)
 
-    sp2 = SurfaceReleaseSpill(num_elements,
+    sp2 = PointSourceRelease(num_elements,
                                 start_position,
                                 start_time2)
 
@@ -285,23 +285,23 @@ def test_data_arrays():
     start_position = (23.0, -78.5, 0.0)
     num_elements =  5
     sc = SpillContainer()
-    sp1 = SurfaceReleaseSpill(num_elements,
+    sp1 = PointSourceRelease(num_elements,
                               start_position,
                               start_time1)
 
-    sp2 = SurfaceReleaseSpill(num_elements,
+    sp2 = PointSourceRelease(num_elements,
                               start_position,
                               start_time2)
 
-    sp3 = SurfaceReleaseSpill(num_elements,
+    sp3 = PointSourceRelease(num_elements,
                               start_position,
                               start_time3)
 
-    sp4 = SubsurfaceReleaseSpill(num_elements,
+    sp4 = SubsurfaceRelease(num_elements,
                                  start_position,
                                  start_time4)
 
-    sp5 = SurfaceReleaseSpill(num_elements,
+    sp5 = PointSourceRelease(num_elements,
                               start_position,
                               start_time5)
 
@@ -381,11 +381,11 @@ def test_uncertain_copy():
     num_elements =  100
 
     sc = SpillContainer()
-    spill = SurfaceReleaseSpill(num_elements,
+    spill = PointSourceRelease(num_elements,
                                 start_position,
                                 start_time)
 
-    sp2 = SurfaceReleaseSpill(num_elements,
+    sp2 = PointSourceRelease(num_elements,
                                 start_position2,
                                 start_time2)
 
@@ -446,7 +446,7 @@ def test_ordered_collection_api():
     num_elements =  100
 
     sc = SpillContainer()
-    sc.spills += SurfaceReleaseSpill(num_elements,
+    sc.spills += PointSourceRelease(num_elements,
                                      start_position,
                                      start_time)
     assert len(sc.spills) == 1
@@ -475,23 +475,23 @@ class TestAddSpillContainerPair:
         """
         tests that spills can be added to SpillContainerPair object
         """
-        spill = SurfaceReleaseSpill(self.num_elements, self.start_position, self.start_time)    
-        sp2 = SurfaceReleaseSpill(self.num_elements,self.start_position2,self.start_time2)
+        spill = PointSourceRelease(self.num_elements, self.start_position, self.start_time)    
+        sp2 = PointSourceRelease(self.num_elements,self.start_position2,self.start_time2)
         scp = SpillContainerPair(True)
         
         with pytest.raises(ValueError):
             scp += (spill, sp2, spill)
 
     def test_exception_uncertainty(self):
-        spill = SurfaceReleaseSpill(self.num_elements, self.start_position, self.start_time)    
-        sp2 = SurfaceReleaseSpill(self.num_elements,self.start_position2,self.start_time2)
+        spill = PointSourceRelease(self.num_elements, self.start_position, self.start_time)    
+        sp2 = PointSourceRelease(self.num_elements,self.start_position2,self.start_time2)
         scp = SpillContainerPair(False)
         
         with pytest.raises(ValueError):
             scp += (spill, sp2)
             
     def test_add_spill(self):
-        spill = [SurfaceReleaseSpill(self.num_elements, self.start_position, self.start_time) for i in range(2)]
+        spill = [PointSourceRelease(self.num_elements, self.start_position, self.start_time) for i in range(2)]
         scp = SpillContainerPair(False)
         scp += (spill[0],)
         scp += spill[1]
@@ -502,8 +502,8 @@ class TestAddSpillContainerPair:
         
             
     def test_add_spillpair(self):
-        c_spill = [SurfaceReleaseSpill(self.num_elements, self.start_position, self.start_time) for i in range(2)]    
-        u_spill = [SurfaceReleaseSpill(self.num_elements,self.start_position2,self.start_time2) for i in range(2)]
+        c_spill = [PointSourceRelease(self.num_elements, self.start_position, self.start_time) for i in range(2)]    
+        u_spill = [PointSourceRelease(self.num_elements,self.start_position2,self.start_time2) for i in range(2)]
         scp = SpillContainerPair(True)
         
         for sp_tuple in zip(c_spill, u_spill): 
@@ -520,8 +520,8 @@ class TestAddSpillContainerPair:
             assert spill.id == u_spill[index].id 
 
     def test_to_dict(self):
-        c_spill = [SurfaceReleaseSpill(self.num_elements, self.start_position, self.start_time) for i in range(2)]    
-        u_spill = [SurfaceReleaseSpill(self.num_elements,self.start_position2,self.start_time2) for i in range(2)]
+        c_spill = [PointSourceRelease(self.num_elements, self.start_position, self.start_time) for i in range(2)]    
+        u_spill = [PointSourceRelease(self.num_elements,self.start_position2,self.start_time2) for i in range(2)]
         scp = SpillContainerPair(True)
         
         for sp_tuple in zip(c_spill, u_spill): 
@@ -549,17 +549,17 @@ def test_get_spill_mask():
     start_position = (23.0, -78.5, 0.0)
     num_elements =  5
     sc = SpillContainer()
-    sp0 = SurfaceReleaseSpill(num_elements,
+    sp0 = PointSourceRelease(num_elements,
                               start_position,
                               start_time0)
 
-    sp1 = SurfaceReleaseSpill(num_elements,
+    sp1 = PointSourceRelease(num_elements,
                               start_position,
                               start_time1,
                               end_position=(start_position[0]+0.2, start_position[1]+0.2, 0.0),
                               end_release_time=start_time1 + timedelta(hours=3))
 
-    sp2 = SurfaceReleaseSpill(num_elements,
+    sp2 = PointSourceRelease(num_elements,
                               start_position,
                               start_time2)
 
@@ -656,11 +656,11 @@ def test_model_step_is_done():
     start_position = (23.0, -78.5, 0.0)
     num_elements =  10
     sc = SpillContainer()
-    spill = SurfaceReleaseSpill(num_elements,
+    spill = PointSourceRelease(num_elements,
                                 start_position,
                                 start_time)
 
-    sp2 = SurfaceReleaseSpill(num_elements,
+    sp2 = PointSourceRelease(num_elements,
                               start_position,
                               start_time2)
 
@@ -687,13 +687,13 @@ def test_model_step_is_done():
 
 """ Helper function """
 def get_eq_spills():
-    """ returns a tuple of identical SurfaceReleaseSpill objects """
+    """ returns a tuple of identical PointSourceRelease objects """
     pos = (28.0, -75.0, 0.0)
     num_elements = 10
     release_time = datetime(2000, 1, 1, 1)
     
-    spill = SurfaceReleaseSpill(num_elements, (28, -75, 0), release_time)
-    spill2 = SurfaceReleaseSpill.new_from_dict(spill.to_dict('create'))
+    spill = PointSourceRelease(num_elements, (28, -75, 0), release_time)
+    spill2 = PointSourceRelease.new_from_dict(spill.to_dict('create'))
     
     return (spill, spill2)
     

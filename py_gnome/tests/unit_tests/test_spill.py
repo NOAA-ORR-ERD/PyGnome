@@ -12,8 +12,8 @@ import pytest
 import numpy as np
 
 from gnome import basic_types
-from gnome.spill import (Spill, FloatingSpill, SurfaceReleaseSpill, SpatialReleaseSpill,
-                         SubsurfaceSpill, SubsurfaceReleaseSpill, SpatialReleaseSpill)
+from gnome.spill import (Spill, FloatingSpill, PointSourceRelease, SpatialRelease,
+                         SubsurfaceSpill, SubsurfaceRelease, SpatialRelease)
 
 
 def test_deepcopy():
@@ -47,7 +47,7 @@ def test_uncertain_copy():
     """
     only tests a few things...
     """
-    spill = SurfaceReleaseSpill(num_elements=100,
+    spill = PointSourceRelease(num_elements=100,
                                 start_position = (28, -78, 0.0),
                                 release_time = datetime.now(),
                                 end_position = (29, -79, 0.0),
@@ -66,10 +66,10 @@ def test_uncertain_copy():
 @pytest.mark.parametrize(("sp_obj", "num_elems"),
                          [(Spill(), 0), 
                           (FloatingSpill(), 0), 
-                          (SurfaceReleaseSpill( 5, (0.0, 0.0, 0.0), datetime.now()), 5),
+                          (PointSourceRelease( 5, (0.0, 0.0, 0.0), datetime.now()), 5),
                           (SubsurfaceSpill(),0),
-                          (SubsurfaceReleaseSpill( 5, (0.0, 0.0, 0.0), datetime.now()), 5),
-                          (SpatialReleaseSpill( (0.0, 0.0, 0.0), datetime.now()), 5)])
+                          (SubsurfaceRelease( 5, (0.0, 0.0, 0.0), datetime.now()), 5),
+                          (SpatialRelease( (0.0, 0.0, 0.0), datetime.now()), 5)])
 def test_create_new_elements(sp_obj, num_elems):
     """
     see if creating new elements works
@@ -82,14 +82,14 @@ def test_create_new_elements(sp_obj, num_elems):
 
 
 
-class Test_SurfaceReleaseSpill(object):
+class Test_PointSourceRelease(object):
     num_elements = 10
     start_position = (-128.3, 28.5, 0)
     release_time=datetime(2012, 8, 20, 13)
     timestep = 3600 # one hour in seconds
 
     def test_init(self):
-        sp = SurfaceReleaseSpill(num_elements = self.num_elements,
+        sp = PointSourceRelease(num_elements = self.num_elements,
                                  start_position = self.start_position,
                                  release_time = self.release_time,
                                  )
@@ -103,7 +103,7 @@ class Test_SurfaceReleaseSpill(object):
         is after the release time. This so that if the user sets the model start time after
         the spill, they don't get anything.
         """
-        sp = SurfaceReleaseSpill(num_elements = self.num_elements,
+        sp = PointSourceRelease(num_elements = self.num_elements,
                                  start_position = self.start_position,
                                  release_time = self.release_time,
                                  )
@@ -128,7 +128,7 @@ class Test_SurfaceReleaseSpill(object):
         is after the release time. This so that if the user sets the model start time after
         the spill, they don't get anything.
         """
-        sp = SurfaceReleaseSpill(num_elements = self.num_elements,
+        sp = PointSourceRelease(num_elements = self.num_elements,
                                  start_position = self.start_position,
                                  release_time = self.release_time,
                                  )
@@ -148,7 +148,7 @@ class Test_SurfaceReleaseSpill(object):
 
 
     def test_inst_release(self):
-        sp = SurfaceReleaseSpill(num_elements = self.num_elements,
+        sp = PointSourceRelease(num_elements = self.num_elements,
                                  start_position = self.start_position,
                                  release_time = self.release_time,
                                  )
@@ -175,7 +175,7 @@ class Test_SurfaceReleaseSpill(object):
         assert np.alltrue( arrays['positions'] == self.start_position )
 
     def test_cont_release(self):
-        sp = SurfaceReleaseSpill(num_elements = 100,
+        sp = PointSourceRelease(num_elements = 100,
                                  start_position = self.start_position,
                                  release_time = self.release_time,
                                  end_release_time = self.release_time + timedelta(hours=10),
@@ -215,7 +215,7 @@ class Test_SurfaceReleaseSpill(object):
         assert sp.num_released == 2
 
     def test_inst_line_release(self):
-        sp = SurfaceReleaseSpill(num_elements = 11, # so it's easy to compute where they should be!
+        sp = PointSourceRelease(num_elements = 11, # so it's easy to compute where they should be!
                                  start_position = (-128.0, 28.0, 0),
                                  release_time = self.release_time,
                                  end_position = (-129.0, 29.0, 0)
@@ -235,7 +235,7 @@ class Test_SurfaceReleaseSpill(object):
 
         In this one it all gets released in the first time step.
         """
-        sp = SurfaceReleaseSpill(num_elements = 11, # so it's easy to compute where they should be!
+        sp = PointSourceRelease(num_elements = 11, # so it's easy to compute where they should be!
                                  start_position = (-128.0, 28.0, 0),
                                  release_time = self.release_time,
                                  end_position = (-129.0, 29.0, 0),
@@ -257,7 +257,7 @@ class Test_SurfaceReleaseSpill(object):
 
         first timestep, timestep less than release-time
         """
-        sp = SurfaceReleaseSpill(num_elements = 100, 
+        sp = PointSourceRelease(num_elements = 100, 
                                  start_position = (-128.0, 28.0, 0),
                                  release_time = self.release_time,
                                  end_position = (-129.0, 29.0, 0),
@@ -287,7 +287,7 @@ class Test_SurfaceReleaseSpill(object):
 
         making sure it's right for the full release -- mutiple elements per step
         """
-        sp = SurfaceReleaseSpill(num_elements = 50, 
+        sp = PointSourceRelease(num_elements = 50, 
                                  start_position = (-128.0, 28.0, 0),
                                  release_time = self.release_time,
                                  end_position = (-129.0, 30.0, 0),
@@ -318,7 +318,7 @@ class Test_SurfaceReleaseSpill(object):
 
         making sure it's right for the full release -- less than one elements per step
         """
-        sp = SurfaceReleaseSpill(num_elements = 10, 
+        sp = PointSourceRelease(num_elements = 10, 
                                  start_position = (-128.0, 28.0, 0),
                                  release_time = self.release_time,
                                  end_position = (-129.0, 31.0, 0),
@@ -357,7 +357,7 @@ class Test_SurfaceReleaseSpill(object):
         testing a line release to the north
         making sure it's right for the full release -- multiple elements per step
         """
-        sp = SurfaceReleaseSpill(num_elements = 50, 
+        sp = PointSourceRelease(num_elements = 50, 
                                  start_position = start_position,
                                  release_time = self.release_time,
                                  end_position = end_position,
@@ -389,7 +389,7 @@ class Test_SurfaceReleaseSpill(object):
 
     def test_cont_not_valid_times(self):        
         with pytest.raises(ValueError):
-            sp = SurfaceReleaseSpill(num_elements = 100,
+            sp = PointSourceRelease(num_elements = 100,
                                      start_position = self.start_position,
                                      release_time = self.release_time,
                                      end_release_time = self.release_time - timedelta(seconds=1),
@@ -399,7 +399,7 @@ class Test_SurfaceReleaseSpill(object):
         """
         if end_position = None, then automatically set it to start_position 
         """
-        sp = SurfaceReleaseSpill(num_elements = self.num_elements,
+        sp = PointSourceRelease(num_elements = self.num_elements,
                                  start_position = self.start_position,
                                  release_time = self.release_time,
                                  )
@@ -414,7 +414,7 @@ class Test_SurfaceReleaseSpill(object):
         """
         if end_release_time = None, then automatically set it to release_time
         """
-        sp = SurfaceReleaseSpill(num_elements = self.num_elements,
+        sp = PointSourceRelease(num_elements = self.num_elements,
                                  start_position = self.start_position,
                                  release_time = self.release_time,
                                  )
@@ -446,7 +446,7 @@ def test_single_line(num_elements):
     time_step = timedelta(seconds=10)
     start_pos = np.array((0.0, 0.0, 0.0),)
     end_pos   = np.array((1.0, 2.0, 0.0),)
-    sp = SurfaceReleaseSpill(num_elements = num_elements, 
+    sp = PointSourceRelease(num_elements = num_elements, 
                              start_position = start_pos,
                              release_time = start_time,
                              end_position = end_pos,
@@ -476,7 +476,7 @@ def test_line_release_with_one_element():
     time_step = timedelta(seconds=10)
     start_pos = np.array((0.0, 0.0, 0.0),)
     end_pos   = np.array((1.0, 2.0, 0.0),)
-    sp = SurfaceReleaseSpill(num_elements = 1, 
+    sp = PointSourceRelease(num_elements = 1, 
                              start_position = start_pos,
                              release_time = start_time,
                              end_position = end_pos,
@@ -499,7 +499,7 @@ def test_line_release_with_big_timestep():
     time_step = timedelta(seconds=300)
     start_pos = np.array((0.0, 0.0, 0.0),)
     end_pos   = np.array((1.0, 2.0, 0.0),)
-    sp = SurfaceReleaseSpill(num_elements = 10, 
+    sp = PointSourceRelease(num_elements = 10, 
                              start_position = start_pos,
                              release_time = start_time,
                              end_position = end_pos,
@@ -512,7 +512,7 @@ def test_line_release_with_big_timestep():
     assert np.array_equal( data['positions'][:,0], np.linspace(0.0, 1.0, 10) )
     assert np.array_equal( data['positions'][:,1], np.linspace(0.0, 2.0, 10) )
 
-def test_SpatialReleaseSpill():
+def test_SpatialRelease():
     """
     see if the right arrays get created
     """
@@ -522,7 +522,7 @@ def test_SpatialReleaseSpill():
                         ( 80,    -80,  100.0),
                         )
     release_time = datetime(2012,1,1,1)
-    sp = SpatialReleaseSpill(start_positions,
+    sp = SpatialRelease(start_positions,
                              release_time,
                              windage_range=(0.01, 0.04),
                              windage_persist=900,
@@ -531,7 +531,7 @@ def test_SpatialReleaseSpill():
 
     assert data['positions'].shape == (4,3)
 
-def test_SpatialReleaseSpill2():
+def test_SpatialRelease2():
     """
     make sure they don't release elements twice
     """
@@ -541,7 +541,7 @@ def test_SpatialReleaseSpill2():
                         ( 80,    -80,  100.0),
                         )
     release_time = datetime(2012,1,1,1)
-    sp = SpatialReleaseSpill(start_positions,
+    sp = SpatialRelease(start_positions,
                              release_time,
                              windage_range=(0.01, 0.04),
                              windage_persist=900,
@@ -551,7 +551,7 @@ def test_SpatialReleaseSpill2():
     assert data['positions'].shape == (4,3)
     data = sp.release_elements(release_time+timedelta(hours=1), time_step=600)
 
-def test_SpatialReleaseSpill3():
+def test_SpatialRelease3():
     """
     make sure it doesn't release if the first call is too late
     """
@@ -561,7 +561,7 @@ def test_SpatialReleaseSpill3():
                         ( 80,    -80,  100.0),
                         )
     release_time = datetime(2012,1,1,1)
-    sp = SpatialReleaseSpill(start_positions,
+    sp = SpatialRelease(start_positions,
                              release_time,
                              windage_range=(0.01, 0.04),
                              windage_persist=900,
@@ -579,29 +579,29 @@ def test_SpatialReleaseSpill3():
     data = sp.release_elements(release_time, time_step=600)
     assert data['positions'].shape == (4,3)
 
-def test_SurfaceReleaseSpill_new_from_dict():
+def test_PointSourceRelease_new_from_dict():
     """
     test to_dict function for Wind object
     create a new wind object and make sure it has same properties
     """
-    spill = SurfaceReleaseSpill(num_elements=1000,
+    spill = PointSourceRelease(num_elements=1000,
                                 start_position = (144.664166, 13.441944, 0.0),
                                 release_time = datetime(2013, 2, 13, 9, 0),
                                 end_release_time = datetime(2013, 2, 13, 9, 0) + timedelta(hours=6)
                                 )
     sp_state = spill.to_dict('create')
     print sp_state
-    sp2 = SurfaceReleaseSpill.new_from_dict(sp_state)   # this does not catch two objects with same ID
+    sp2 = PointSourceRelease.new_from_dict(sp_state)   # this does not catch two objects with same ID
     
     assert spill == sp2
      
     
-def test_SurfaceReleaseSpill_from_dict():
+def test_PointSourceRelease_from_dict():
     """
     test from_dict function for Wind object
     update existing wind object from_dict
     """
-    spill = SurfaceReleaseSpill(num_elements=1000,
+    spill = PointSourceRelease(num_elements=1000,
                                 start_position = (144.664166, 13.441944, 0.0),
                                 release_time = datetime(2013, 2, 13, 9, 0),
                                 end_release_time = datetime(2013, 2, 13, 9, 0) + timedelta(hours=6)
@@ -618,6 +618,6 @@ def test_SurfaceReleaseSpill_from_dict():
             
 
 if __name__ == "__main__":
-    #TC = Test_SurfaceReleaseSpill()
+    #TC = Test_PointSourceRelease()
     #TC.test_model_skips_over_release_time()
-    test_SpatialReleaseSpill3()
+    test_SpatialRelease3()
