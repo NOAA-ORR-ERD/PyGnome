@@ -35,18 +35,18 @@ def create_ucode_file(filename,valid=True):
     return ufile
 
 
-# join datadir to path in obj_ inside the test
+''' NOTE: join datadir to path in obj_ inside the test '''
 datadir = os.path.join(os.path.dirname(__file__), r"sample_data")
 obj_ = [(environment.Wind, r'WindDataFromGnome.WND'),
-        (environment.Tide, get_datafile( os.path.join(r'tides',r'CLISShio.txt')) ),
-        (environment.Tide, get_datafile( os.path.join(r'tides',r'TideHdr.FINAL')) ),
-        (movers.CatsMover, get_datafile( os.path.join(r'long_island_sound',r'tidesWAC.CUR')) )
+        (environment.Tide, os.path.join(r'tides',r'CLISShio.txt') ),
+        (environment.Tide, os.path.join(r'tides',r'TideHdr.FINAL') ),
+        (movers.CatsMover, os.path.join(r'long_island_sound',r'tidesWAC.CUR') )
         ]
 
 @pytest.mark.parametrize("test_case", obj_)
 def test_ucode_char_in_filename(test_case):
     # on windows
-    file_ = os.path.join(datadir, test_case[1])
+    file_ = get_datafile( os.path.join(datadir, test_case[1]) )
     # first check that it works with file without adding special character to filename
     test_case[0](filename=file_)
     
