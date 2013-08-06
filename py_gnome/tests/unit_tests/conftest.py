@@ -10,7 +10,7 @@ import numpy as np
 import pytest
 
 from gnome import basic_types
-from gnome.utilities import rand
+from gnome.utilities import rand, remote_data
 
 
 def pytest_sessionstart():
@@ -22,7 +22,7 @@ def pytest_sessionstart():
             from gnome.db.oil_library.initializedb import initialize_sql, load_database
 
             data_dir = get_data_dir()
-            oillib_file = os.path.join(data_dir, r'OilLib.smaller')
+            oillib_file = remote_data.get_datafile( os.path.join(data_dir, r'OilLib.smaller') )
             db_file = os.path.join(data_dir, r'OilLibrary.db')
             sqlalchemy_url = 'sqlite:///{0}'.format(db_file)
             settings = {'sqlalchemy.url': sqlalchemy_url,

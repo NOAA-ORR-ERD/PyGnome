@@ -10,6 +10,7 @@ import sys
 import pytest 
 
 from gnome import environment, movers
+from gnome.utilities.remote_data import get_datafile
 
 def create_ucode_file(filename,valid=True):
     """
@@ -37,9 +38,9 @@ def create_ucode_file(filename,valid=True):
 # join datadir to path in obj_ inside the test
 datadir = os.path.join(os.path.dirname(__file__), r"sample_data")
 obj_ = [(environment.Wind, r'WindDataFromGnome.WND'),
-        (environment.Tide, os.path.join(r'tides',r'CLISShio.txt')),
-        (environment.Tide, os.path.join(r'tides',r'TideHdr.FINAL')),
-        (movers.CatsMover, os.path.join(r'long_island_sound',r'tidesWAC.CUR'))
+        (environment.Tide, get_datafile( os.path.join(r'tides',r'CLISShio.txt')) ),
+        (environment.Tide, get_datafile( os.path.join(r'tides',r'TideHdr.FINAL')) ),
+        (movers.CatsMover, get_datafile( os.path.join(r'long_island_sound',r'tidesWAC.CUR')) )
         ]
 
 @pytest.mark.parametrize("test_case", obj_)
@@ -76,7 +77,7 @@ gridmover_ = [(movers.GridCurrentMover, os.path.join(r'currents',r'ny_cg.nc'), N
 @pytest.mark.parametrize("mover_test", gridmover_)
 def test_ucode_char_in_grid_mover_filename(mover_test):
     # on windows
-    file1_ = os.path.join(datadir, mover_test[1])
+    file1_ = get_datafile( os.path.join(datadir, mover_test[1]) )
     ufile1 = create_ucode_file(file1_)
     invalid_ufile1 = create_ucode_file(file1_, valid=False)  # invalid unicode for windows
     
@@ -85,7 +86,7 @@ def test_ucode_char_in_grid_mover_filename(mover_test):
         ufile2 = None
         invalid_ufile2 = None
     else:
-        file2_ = os.path.join(datadir, mover_test[2])
+        file2_ = get_datafile( os.path.join(datadir, mover_test[2]) )
         ufile2 = create_ucode_file(file2_)
         invalid_ufile2 = create_ucode_file(file2_, valid=False) # invalid unicode for windows
     

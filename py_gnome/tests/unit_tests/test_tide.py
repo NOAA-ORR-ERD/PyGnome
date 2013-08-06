@@ -11,9 +11,10 @@ import gnome
 from gnome import environment, basic_types
 from gnome.spill_container import TestSpillContainer
 from gnome.utilities import time_utils
+from gnome.utilities.remote_data import get_datafile
 
-shio_file = os.path.join( os.path.dirname(__file__), r"sample_data","tides","CLISShio.txt")
-ossm_file = os.path.join( os.path.dirname(__file__), r"sample_data","tides","TideHdr.FINAL")
+shio_file = get_datafile( os.path.join( os.path.dirname(__file__), r"sample_data","tides","CLISShio.txt") )
+ossm_file = get_datafile( os.path.join( os.path.dirname(__file__), r"sample_data","tides","TideHdr.FINAL") )
 
 def test_exceptions():
     """

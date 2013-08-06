@@ -19,7 +19,7 @@ import gnome.spill
 from gnome.spill import SpatialRelease
 import gnome.utilities.map_canvas
 from gnome.utilities.file_tools import haz_files
-from gnome.utilities import inf_datetime
+from gnome.utilities import inf_datetime, remote_data
 
 basedir = os.path.dirname(__file__)
 datadir = os.path.join(basedir, r"sample_data")
@@ -402,7 +402,8 @@ def test_all_movers(start_time, release_delay, duration):
     assert len(model.movers) == 3
     
     # add CATS mover
-    model.movers += movers.CatsMover(os.path.join(datadir, r"long_island_sound/tidesWAC.CUR"))
+    c_data = remote_data.get_datafile( os.path.join(datadir, r"long_island_sound/tidesWAC.CUR") )
+    model.movers += movers.CatsMover( c_data)
     assert len(model.movers) == 4
     
     # run the model all the way...
@@ -599,9 +600,14 @@ def test_callback_add_mover():
     model.movers += movers.simple_mover.SimpleMover(velocity=(1.0, -1.0, 0.0))
     series = np.array( (model.start_time, ( 10,   45) ),  dtype=gnome.basic_types.datetime_value_2d).reshape((1,))
     model.movers += movers.WindMover(environment.Wind(timeseries=series, units='meter per second'))
-    tide_ = environment.Tide(filename=os.path.join( os.path.dirname(__file__), r"sample_data","tides","CLISShio.txt"))
-    model.movers += movers.CatsMover(os.path.join(datadir, r"long_island_sound/tidesWAC.CUR"), tide=tide_)
-    model.movers += movers.CatsMover(os.path.join(datadir, r"long_island_sound/tidesWAC.CUR"))
+    
+    tide_file = remote_data.get_datafile( os.path.join( os.path.dirname(__file__), r"sample_data","tides","CLISShio.txt") )
+    tide_ = environment.Tide(filename=tide_file)
+    
+    d_file = remote_data.get_datafile( os.path.join(datadir, r"long_island_sound/tidesWAC.CUR") )
+    model.movers += movers.CatsMover( d_file, tide=tide_)
+    
+    model.movers += movers.CatsMover( d_file )
     
     for mover in model.movers:
         assert mover.active_start == inf_datetime.InfDateTime('-inf')
@@ -615,10 +621,9 @@ def test_callback_add_mover():
                 assert mover.tide.id in model.environment
         
     
-    # say wind object was added to environment collection, it should not be added again
-    tide_ = environment.Tide(filename=os.path.join( os.path.dirname(__file__), r"sample_data","tides","CLISShio.txt"))
+    # say tide object was added to environment collection, it should not be added again
+    tide_ = environment.Tide( tide_file )
     model.environment += tide_
-    model.movers += movers.CatsMover(os.path.join(datadir, r"long_island_sound/tidesWAC.CUR"), tide=tide_)
     
     assert model.environment[tide_.id] == tide_
     

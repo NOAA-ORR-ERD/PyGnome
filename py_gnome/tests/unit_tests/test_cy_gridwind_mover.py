@@ -9,7 +9,7 @@ import numpy as np
 
 from gnome import basic_types
 from gnome.cy_gnome import cy_gridwind_mover
-from gnome.utilities import time_utils
+from gnome.utilities import time_utils, remote_data
 
 import datetime
 
@@ -84,7 +84,7 @@ class TestGridWindMover():
         time = datetime.datetime(1999, 11, 29, 21)
         self.cm.model_time = time_utils.date_to_sec(time)
         #time_grid_file = r"sample_data/winds/test_wind.cdf"
-        time_grid_file = os.path.join(here, r'sample_data',r'winds',r'test_wind.cdf')
+        time_grid_file = remote_data.get_datafile( os.path.join(here, r'sample_data',r'winds',r'test_wind.cdf') )
         #topology_file = r"sample_data/winds/WindSpeedDirSubsetTop.dat"	# will want a null default
         topology_file = r""	# will want a null default
         self.gcm.text_read(time_grid_file,topology_file)
@@ -110,8 +110,8 @@ class TestGridWindMover():
         self.cm.model_time = time_utils.date_to_sec(time)
         #time_grid_file = r"sample_data/winds/WindSpeedDirSubset.nc"
         #topology_file = r"sample_data/winds/WindSpeedDirSubsetTop.dat"	
-        time_grid_file = os.path.join(here, r'sample_data',r'winds',r'WindSpeedDirSubset.nc')
-        topology_file = os.path.join(here, r'sample_data',r'winds',r'WindSpeedDirSubsetTop.dat')
+        time_grid_file = remote_data.get_datafile( os.path.join(here, r'sample_data',r'winds',r'WindSpeedDirSubset.nc') )
+        topology_file = remote_data.get_datafile( os.path.join(here, r'sample_data',r'winds',r'WindSpeedDirSubsetTop.dat') )
         self.gcm.text_read(time_grid_file,topology_file)
         self.cm.ref[:]['long'] = (-122.934656) #for NWS off CA
         self.cm.ref[:]['lat'] = (38.27594)
@@ -137,11 +137,12 @@ class TestGridWindMover():
         self.cm.model_time = time_utils.date_to_sec(time)
         #time_grid_file = r"sample_data/winds/WindSpeedDirSubset.nc"
         #topology_file = r"sample_data/winds/WindSpeedDirSubsetTop.DAT"	
-        time_grid_file = os.path.join(here, r'sample_data',r'winds',r'WindSpeedDirSubset.nc')
+        time_grid_file = remote_data.get_datafile( os.path.join(here, r'sample_data',r'winds',r'WindSpeedDirSubset.nc') )
         #topology_file = os.path.join(here, r'sample_data',r'winds',r'WindSpeedDirSubsetTop.DAT')
         topology_file = None
-        topology_file2 = os.path.join(here, r'sample_data',r'winds',r'WindSpeedDirSubsetTopNew.dat')
         self.gcm.text_read(time_grid_file,topology_file)
+        
+        topology_file2 = os.path.join(here, r'sample_data',r'winds',r'WindSpeedDirSubsetTopNew.dat')
         self.gcm.export_topology(topology_file2)
         self.cm.ref[:]['long'] = (-122.934656) #for NWS off CA
         self.cm.ref[:]['lat'] = (38.27594)
@@ -193,7 +194,7 @@ class TestGridWindMover():
         #time_grid_file = r"sample_data/winds/gridWindTime.wnd"
         #time_grid_file = r"sample_data/winds/gridwind_ts.wnd"
         #topology_file = r"sample_data/winds/WindSpeedDirSubsetTop.dat"	
-        time_grid_file = os.path.join(here, r'sample_data',r'winds',r'gridwind_ts.wnd')
+        time_grid_file = remote_data.get_datafile( os.path.join(here, r'sample_data',r'winds',r'gridwind_ts.wnd') )
         topology_file = r""	# will want a null default
         self.gcm.text_read(time_grid_file,topology_file)
         #self.cm.ref[:]['long'] = (-9.936358) #for gridWind test

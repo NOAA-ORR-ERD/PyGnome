@@ -10,9 +10,12 @@ import pytest
 from gnome import environment, movers, basic_types
 from gnome.spill_container import TestSpillContainer
 from gnome.utilities import time_utils
+from gnome.utilities.remote_data import get_datafile
 
-curr_file= os.path.join( os.path.dirname(__file__), r"sample_data/long_island_sound/tidesWAC.CUR")
-td = environment.Tide(filename=os.path.join( os.path.dirname(__file__), r"sample_data/long_island_sound/CLISShio.txt"))
+curr_file= get_datafile( os.path.join( os.path.dirname(__file__), r"sample_data/long_island_sound/tidesWAC.CUR") )
+td = environment.Tide(filename=
+                      get_datafile( os.path.join( os.path.dirname(__file__), r"sample_data/long_island_sound/CLISShio.txt"))
+                      )
 
 def test_exceptions():
     """
