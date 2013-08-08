@@ -74,7 +74,7 @@ class Spill(object):
         self.on = on       # sets whether the spill is active or not
         self._gnome_id = GnomeId(id)
         
-        self.array_types = dict(element_types.positions)
+        self.array_types = dict(element_types.spill_data)
         self.oil_props = OilProps('oil_conservative')
         
         self._check_units(volume_units)
@@ -131,12 +131,15 @@ class Spill(object):
         self._check_units(units)    # check validity before setting
         self._volume_units = units
     
-    def set_volume(self, volume, units):
-        """
-        set volume of spill released. Units are required! 
-        """
-        self._check_units(units)
-        self._volume = unit_conversion.convert('Volume', units, 'm^3', volume)
+    # todo: Does setting a volume midway through the run require a rewind??
+    #===========================================================================
+    # def set_volume(self, volume, units):
+    #     """
+    #     set volume of spill released. Units are required! 
+    #     """
+    #     self._check_units(units)
+    #     self._volume = unit_conversion.convert('Volume', units, 'm^3', volume)
+    #===========================================================================
         
     def get_volume(self, units=None):
         """
@@ -191,7 +194,13 @@ class Spill(object):
 
         for name, array_type in self.array_types.iteritems():
             arrays[name] = np.zeros( (num_elements,)+array_type.shape, dtype=array_type.dtype)
-            arrays[name][:] = array_type.initial_value
+            if name == 'mass' and num_elements > 0:
+                # want mass in units of grams
+                _total_mass = self.oil_props.density('kg/m^3') * self.get_volume('m^3') * 1000
+                #_total_mass = unit_conversion.convert('mass', 'kg', 'g', _total_mass)
+                arrays[name][:] = _total_mass/num_elements
+            else:
+                arrays[name][:] = array_type.initial_value
         return arrays
     
 
@@ -240,32 +249,50 @@ class RiseVelocitySpill(Spill):
     """
     Parameters used to compute 
     """
-    def __init__(self, risevel_dist='uniform', risevel_range=None,  
-                 useDropletSize=False, dropletsize_range=None, dropletsize_distribution=None,
+    def __init__(self, distribution='uniform', range=[0, 1],
+                 use_dropletsize = False,
                  **kwargs):
         """
+        todo: Default values??
         
-        :param distribution: could be 'uniform' or 'normal'
+        Similar to the FloatingSpill, this class is used as a mixin' and it simply
+        houses 
+        
+        Can either set the rise velocity parameters to be sampled from a distribution or
+        the droplet size parameters can be sampled from the distribution.
+        
+        if use_dropletsize is False, then use distribution to define rise_vel, otherwise,
+        sample the dropletsize from the distribution.
+        
+        :param risevel_dist: could be 'uniform' or 'normal'
         :type distribution: str
         :param range: for 'uniform' dist, it is [min_val, max_val]. 
                       For 'normal' dist, it is [mean, sigma] where sigma is 1 standard deviation 
         """
         super(DropletSize, self).__init__(**kwargs)
-        self.dropletsize_range = range
-        self.dropletsize_dist = distribution
         
+        self.distribution = distribution
+        self.range = range
+        self._use_dropletsize = use_dropletsize
+        
+        if use_dropletsize:
+            self.array_types.update( element_types.droplet_size )
+        else:
+            self.array_types.update( element_types.rise_vel )
 
-class PointSourceRelease(FloatingSpill, serializable.Serializable):
+
+class PointSourceSpill(Spill):
     """
     The primary spill source class  --  a point release of floating
     non-weathering particles, can be instantaneous or continuous, and be
     released at a single point, or over a line.
-
+    
+    This serves as a base class for PointSourceSurfaceRelease and PointSourceRelease
     """
     _update= ['start_position','release_time','end_position','end_release_time']
     _create= ['num_released', 'not_called_yet', 'prev_release_pos','delta_pos'] # not sure these should be user update able
     _create.extend(_update)
-    state  = copy.deepcopy(FloatingSpill.state)
+    state  = copy.deepcopy(Spill.state)
     state.add(update=_update, create=_create)
     
     @classmethod
@@ -294,8 +321,6 @@ class PointSourceRelease(FloatingSpill, serializable.Serializable):
                  release_time,
                  end_position=None,
                  end_release_time=None,
-                 windage_range=(0.01, 0.04),
-                 windage_persist=900,
                  **kwargs):
         """
         :param num_elements: total number of elements to be released
@@ -468,6 +493,40 @@ class PointSourceRelease(FloatingSpill, serializable.Serializable):
         self.prev_release_pos = self.start_position
 
 
+class PointSourceSurfaceRelease( PointSourceSpill, FloatingSpill, serializable.Serializable):
+    
+    # Let's add all the fields of ancestors - for now aggregate fields here
+    # fixme: need a better way to do this - either put this function inside serializable module or better yet
+    #        think about overriding __new__ in Serializable class to automatically traverse the hierarchy, aggretate the
+    #        fields in the state object and return the object
+    state  = copy.deepcopy( PointSourceSpill.state )
+    [state.add(field) for field in FloatingSpill.state.fields if field not in state.fields]
+    
+    def __init__(self,
+                 num_elements,
+                 start_position,
+                 release_time,
+                 end_position=None,
+                 end_release_time=None,
+                 windage_range=(0.01, 0.04),
+                 windage_persist=900,
+                 **kwargs):
+        
+        
+        if len(start_position) > 2:
+            raise TypeError( "Spill must only define the (long,lat) for start_position and end_position since it is on the Surface" )
+        
+        start_position = np.array( (start_position[0], start_position[1], 0), dtype=basic_types.world_point_type).reshape((3,))
+        
+        if end_position is not None:
+            if len(end_position) > 2:
+                raise TypeError( "Spill must only define the (long,lat) for start_position and end_position since it is on the Surface" )
+        
+            self.end_position = np.array( (end_position[0], end_position[1], 0), dtype=basic_types.world_point_type).reshape((3,))
+
+        super( PointSourceSurfaceRelease, self).__init__()
+        
+
 class SubsurfaceSpill(Spill):
     """
     spill for underwater objects
@@ -475,8 +534,8 @@ class SubsurfaceSpill(Spill):
     all this does is add the 'water_currents' parameter
     """
 
-    def __init__(self):
-        super(SubsurfaceSpill, self).__init__()
+    def __init__(self, **kwargs):
+        super(SubsurfaceSpill, self).__init__(**kwargs)
         # it is not clear yet (to me anyway) what we will want to add to a subsurface spill
 
 
@@ -496,15 +555,17 @@ class SubsurfaceRelease(SubsurfaceSpill):
                  release_time,
                  end_position=None,
                  end_release_time=None,
-                 ):
+                 **kwargs):
         """
         :param num_elements: total number of elements used for this spill
         :param start_position: location the LEs are released (long, lat, z) (floating point)
         :param release_time: time the LEs are released (datetime object)
         :param end_position=None: optional -- for a moving source, the end position
         :param end_release_time=None: optional -- for a release over time, the end release time
+        
+        **kwargs contain keywords passed up the heirarchy
         """
-        super(SubsurfaceRelease, self).__init__()
+        super(SubsurfaceRelease, self).__init__(**kwargs)
 
         self.num_elements = num_elements
 
@@ -610,7 +671,7 @@ class SpatialRelease(FloatingSpill):
                  release_time,
                  windage_range=(0.01, 0.04),
                  windage_persist=900,
-                 ):
+                 **kwargs):
         """
         :param start_positions: locations the LEs are released
         :type start_positions: (num_elements, 3) numpy array of float64 -- (long, lat, z)
@@ -625,7 +686,7 @@ class SpatialRelease(FloatingSpill):
         :type persist: integer secondsDefault 
                         The -1 means the persistence is infinite so it is only set at the beginning of the run.
         """
-        super(SpatialRelease, self).__init__(windage_range, windage_persist)
+        super(SpatialRelease, self).__init__(windage_range, windage_persist, **kwargs)
         
         self.start_positions = np.asarray(start_positions,
                                           dtype=basic_types.world_point_type).reshape((-1, 3))
@@ -742,6 +803,8 @@ class OilProps():
             #    props={'Oil Name': 'unknown',
             #           'API': 1.0}
             #    self.oil = Oil( **props)
+    
+    name = property( lambda self: self.oil.name )
     
     def density(self, units='kg/m^3'):
         """

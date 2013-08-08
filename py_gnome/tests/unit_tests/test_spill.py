@@ -63,13 +63,14 @@ def test_uncertain_copy():
     del u_spill
 
 
+# use units of m^3 for volume
 @pytest.mark.parametrize(("sp_obj", "num_elems"),
-                         [(Spill(), 0), 
-                          (FloatingSpill(), 0), 
-                          (PointSourceRelease( 5, (0.0, 0.0, 0.0), datetime.now()), 5),
-                          (SubsurfaceSpill(),0),
-                          (SubsurfaceRelease( 5, (0.0, 0.0, 0.0), datetime.now()), 5),
-                          (SpatialRelease( (0.0, 0.0, 0.0), datetime.now()), 5)])
+                         [(Spill(), 0), # volume = 0 for this case 
+                          (FloatingSpill( volume=1e-6, volume_units='m^3' ), 0),
+                          (PointSourceRelease( 5, (0.0, 0.0, 0.0), datetime.now(), volume=1e-5, volume_units='m^3' ), 5),
+                          (SubsurfaceSpill( volume=1e-5, volume_units='m^3' ), 0),
+                          (SubsurfaceRelease( 5, (0.0, 0.0, 0.0), datetime.now(), volume=1e-4, volume_units='m^3' ), 5),
+                          (SpatialRelease( (0.0, 0.0, 0.0), datetime.now(), volume=1e-3, volume_units='m^3' ), 5)])
 def test_create_new_elements(sp_obj, num_elems):
     """
     see if creating new elements works
@@ -79,7 +80,21 @@ def test_create_new_elements(sp_obj, num_elems):
     for name,array in arrays.iteritems():
         assert name in sp_obj.array_types
         assert len(array) == num_elems
-
+        
+        if num_elems > 0:
+            if name == 'mass':
+                exp_mass = sp_obj.oil_props.density('g/cm^3')*sp_obj.get_volume('cm^3')
+                assert abs( np.sum( np.sum(array) ) - exp_mass) < 1e-10
+            if name == 'positions':
+                assert np.all( array == (0., 0., 0.) )
+    
+            #===================================================================
+            # print arrays['mass']
+            # print
+            #===================================================================
+            
+    assert sp_obj.oil_props.name == 'oil_conservative'
+    assert sp_obj.oil_props.density('g/cm^3') == 1    # same as water
 
 
 class Test_PointSourceRelease(object):

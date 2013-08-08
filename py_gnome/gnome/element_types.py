@@ -7,6 +7,7 @@ The different types of arrays are stored in a frozenset so they are read only
 The users of this data can convert it to a dict or any other data type that is useful 
 '''
 from gnome import basic_types
+import numpy as np
 
 class ArrayType(object):
     """
@@ -63,8 +64,12 @@ class ArrayType(object):
 """ 
 used by spill.py module since spills spawn particles and set their initial positions 
 """
-positions = frozenset([('positions', ArrayType( (3,), basic_types.world_point_type))])
+spill_data = frozenset([('positions', ArrayType( (3,), basic_types.world_point_type)),
+                        ('mass', ArrayType( (), np.float64 ))])
 
+# droplet_size, rise_vel arrays used by spills
+droplet_size = frozenset([('droplet_size', ArrayType( (), np.float64 ) )])
+rise_vel = frozenset([('rise_vel', ArrayType( (), np.float64 ) )]) 
 
 """ 
 used by spill_container module since these basic arrays are present for every model independent
