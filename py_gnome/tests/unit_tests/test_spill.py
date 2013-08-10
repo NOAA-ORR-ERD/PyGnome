@@ -12,8 +12,8 @@ import pytest
 import numpy as np
 
 from gnome import basic_types
-from gnome.spill import (Spill, FloatingSpill, PointSourceRelease, SpatialRelease,
-                         SubsurfaceSpill, SubsurfaceRelease, SpatialRelease)
+from gnome.spill import (Spill, FloatingSpill, PointSourceSurfaceRelease, SpatialRelease,
+                         SubsurfaceSpill, SubsurfaceRelease, SpatialRelease, OilProps)
 
 
 def test_deepcopy():
@@ -47,7 +47,7 @@ def test_uncertain_copy():
     """
     only tests a few things...
     """
-    spill = PointSourceRelease(num_elements=100,
+    spill = PointSourceSurfaceRelease(num_elements=100,
                                 start_position = (28, -78, 0.0),
                                 release_time = datetime.now(),
                                 end_position = (29, -79, 0.0),
@@ -67,7 +67,7 @@ def test_uncertain_copy():
 @pytest.mark.parametrize(("sp_obj", "num_elems"),
                          [(Spill(), 0), # volume = 0 for this case 
                           (FloatingSpill( volume=1e-6, volume_units='m^3' ), 0),
-                          (PointSourceRelease( 5, (0.0, 0.0, 0.0), datetime.now(), volume=1e-5, volume_units='m^3' ), 5),
+                          (PointSourceSurfaceRelease( 5, (0.0, 0.0, 0.0), datetime.now(), volume=1e-5, volume_units='m^3' ), 5),
                           (SubsurfaceSpill( volume=1e-5, volume_units='m^3' ), 0),
                           (SubsurfaceRelease( 5, (0.0, 0.0, 0.0), datetime.now(), volume=1e-4, volume_units='m^3' ), 5),
                           (SpatialRelease( (0.0, 0.0, 0.0), datetime.now(), volume=1e-3, volume_units='m^3' ), 5)])
@@ -83,7 +83,7 @@ def test_create_new_elements(sp_obj, num_elems):
         
         if num_elems > 0:
             if name == 'mass':
-                exp_mass = sp_obj.oil_props.density('g/cm^3')*sp_obj.get_volume('cm^3')
+                exp_mass = sp_obj.oil_props.get_density('g/cm^3')*sp_obj.get_volume('cm^3')
                 assert abs( np.sum( np.sum(array) ) - exp_mass) < 1e-10
             if name == 'positions':
                 assert np.all( array == (0., 0., 0.) )
@@ -94,17 +94,17 @@ def test_create_new_elements(sp_obj, num_elems):
             #===================================================================
             
     assert sp_obj.oil_props.name == 'oil_conservative'
-    assert sp_obj.oil_props.density('g/cm^3') == 1    # same as water
+    assert sp_obj.oil_props.get_density('g/cm^3') == 1    # same as water
 
 
-class Test_PointSourceRelease(object):
+class Test_PointSourceSurfaceRelease(object):
     num_elements = 10
     start_position = (-128.3, 28.5, 0)
     release_time=datetime(2012, 8, 20, 13)
     timestep = 3600 # one hour in seconds
 
     def test_init(self):
-        sp = PointSourceRelease(num_elements = self.num_elements,
+        sp = PointSourceSurfaceRelease(num_elements = self.num_elements,
                                  start_position = self.start_position,
                                  release_time = self.release_time,
                                  )
@@ -118,7 +118,7 @@ class Test_PointSourceRelease(object):
         is after the release time. This so that if the user sets the model start time after
         the spill, they don't get anything.
         """
-        sp = PointSourceRelease(num_elements = self.num_elements,
+        sp = PointSourceSurfaceRelease(num_elements = self.num_elements,
                                  start_position = self.start_position,
                                  release_time = self.release_time,
                                  )
@@ -143,7 +143,7 @@ class Test_PointSourceRelease(object):
         is after the release time. This so that if the user sets the model start time after
         the spill, they don't get anything.
         """
-        sp = PointSourceRelease(num_elements = self.num_elements,
+        sp = PointSourceSurfaceRelease(num_elements = self.num_elements,
                                  start_position = self.start_position,
                                  release_time = self.release_time,
                                  )
@@ -163,7 +163,7 @@ class Test_PointSourceRelease(object):
 
 
     def test_inst_release(self):
-        sp = PointSourceRelease(num_elements = self.num_elements,
+        sp = PointSourceSurfaceRelease(num_elements = self.num_elements,
                                  start_position = self.start_position,
                                  release_time = self.release_time,
                                  )
@@ -190,7 +190,7 @@ class Test_PointSourceRelease(object):
         assert np.alltrue( arrays['positions'] == self.start_position )
 
     def test_cont_release(self):
-        sp = PointSourceRelease(num_elements = 100,
+        sp = PointSourceSurfaceRelease(num_elements = 100,
                                  start_position = self.start_position,
                                  release_time = self.release_time,
                                  end_release_time = self.release_time + timedelta(hours=10),
@@ -230,7 +230,7 @@ class Test_PointSourceRelease(object):
         assert sp.num_released == 2
 
     def test_inst_line_release(self):
-        sp = PointSourceRelease(num_elements = 11, # so it's easy to compute where they should be!
+        sp = PointSourceSurfaceRelease(num_elements = 11, # so it's easy to compute where they should be!
                                  start_position = (-128.0, 28.0, 0),
                                  release_time = self.release_time,
                                  end_position = (-129.0, 29.0, 0)
@@ -250,7 +250,7 @@ class Test_PointSourceRelease(object):
 
         In this one it all gets released in the first time step.
         """
-        sp = PointSourceRelease(num_elements = 11, # so it's easy to compute where they should be!
+        sp = PointSourceSurfaceRelease(num_elements = 11, # so it's easy to compute where they should be!
                                  start_position = (-128.0, 28.0, 0),
                                  release_time = self.release_time,
                                  end_position = (-129.0, 29.0, 0),
@@ -272,7 +272,7 @@ class Test_PointSourceRelease(object):
 
         first timestep, timestep less than release-time
         """
-        sp = PointSourceRelease(num_elements = 100, 
+        sp = PointSourceSurfaceRelease(num_elements = 100, 
                                  start_position = (-128.0, 28.0, 0),
                                  release_time = self.release_time,
                                  end_position = (-129.0, 29.0, 0),
@@ -302,7 +302,7 @@ class Test_PointSourceRelease(object):
 
         making sure it's right for the full release -- mutiple elements per step
         """
-        sp = PointSourceRelease(num_elements = 50, 
+        sp = PointSourceSurfaceRelease(num_elements = 50, 
                                  start_position = (-128.0, 28.0, 0),
                                  release_time = self.release_time,
                                  end_position = (-129.0, 30.0, 0),
@@ -333,7 +333,7 @@ class Test_PointSourceRelease(object):
 
         making sure it's right for the full release -- less than one elements per step
         """
-        sp = PointSourceRelease(num_elements = 10, 
+        sp = PointSourceSurfaceRelease(num_elements = 10, 
                                  start_position = (-128.0, 28.0, 0),
                                  release_time = self.release_time,
                                  end_position = (-129.0, 31.0, 0),
@@ -372,7 +372,7 @@ class Test_PointSourceRelease(object):
         testing a line release to the north
         making sure it's right for the full release -- multiple elements per step
         """
-        sp = PointSourceRelease(num_elements = 50, 
+        sp = PointSourceSurfaceRelease(num_elements = 50, 
                                  start_position = start_position,
                                  release_time = self.release_time,
                                  end_position = end_position,
@@ -404,7 +404,7 @@ class Test_PointSourceRelease(object):
 
     def test_cont_not_valid_times(self):        
         with pytest.raises(ValueError):
-            sp = PointSourceRelease(num_elements = 100,
+            sp = PointSourceSurfaceRelease(num_elements = 100,
                                      start_position = self.start_position,
                                      release_time = self.release_time,
                                      end_release_time = self.release_time - timedelta(seconds=1),
@@ -414,7 +414,7 @@ class Test_PointSourceRelease(object):
         """
         if end_position = None, then automatically set it to start_position 
         """
-        sp = PointSourceRelease(num_elements = self.num_elements,
+        sp = PointSourceSurfaceRelease(num_elements = self.num_elements,
                                  start_position = self.start_position,
                                  release_time = self.release_time,
                                  )
@@ -429,7 +429,7 @@ class Test_PointSourceRelease(object):
         """
         if end_release_time = None, then automatically set it to release_time
         """
-        sp = PointSourceRelease(num_elements = self.num_elements,
+        sp = PointSourceSurfaceRelease(num_elements = self.num_elements,
                                  start_position = self.start_position,
                                  release_time = self.release_time,
                                  )
@@ -461,7 +461,7 @@ def test_single_line(num_elements):
     time_step = timedelta(seconds=10)
     start_pos = np.array((0.0, 0.0, 0.0),)
     end_pos   = np.array((1.0, 2.0, 0.0),)
-    sp = PointSourceRelease(num_elements = num_elements, 
+    sp = PointSourceSurfaceRelease(num_elements = num_elements, 
                              start_position = start_pos,
                              release_time = start_time,
                              end_position = end_pos,
@@ -491,7 +491,7 @@ def test_line_release_with_one_element():
     time_step = timedelta(seconds=10)
     start_pos = np.array((0.0, 0.0, 0.0),)
     end_pos   = np.array((1.0, 2.0, 0.0),)
-    sp = PointSourceRelease(num_elements = 1, 
+    sp = PointSourceSurfaceRelease(num_elements = 1, 
                              start_position = start_pos,
                              release_time = start_time,
                              end_position = end_pos,
@@ -514,7 +514,7 @@ def test_line_release_with_big_timestep():
     time_step = timedelta(seconds=300)
     start_pos = np.array((0.0, 0.0, 0.0),)
     end_pos   = np.array((1.0, 2.0, 0.0),)
-    sp = PointSourceRelease(num_elements = 10, 
+    sp = PointSourceSurfaceRelease(num_elements = 10, 
                              start_position = start_pos,
                              release_time = start_time,
                              end_position = end_pos,
@@ -594,29 +594,29 @@ def test_SpatialRelease3():
     data = sp.release_elements(release_time, time_step=600)
     assert data['positions'].shape == (4,3)
 
-def test_PointSourceRelease_new_from_dict():
+def test_PointSourceSurfaceRelease_new_from_dict():
     """
     test to_dict function for Wind object
     create a new wind object and make sure it has same properties
     """
-    spill = PointSourceRelease(num_elements=1000,
+    spill = PointSourceSurfaceRelease(num_elements=1000,
                                 start_position = (144.664166, 13.441944, 0.0),
                                 release_time = datetime(2013, 2, 13, 9, 0),
                                 end_release_time = datetime(2013, 2, 13, 9, 0) + timedelta(hours=6)
                                 )
     sp_state = spill.to_dict('create')
     print sp_state
-    sp2 = PointSourceRelease.new_from_dict(sp_state)   # this does not catch two objects with same ID
+    sp2 = PointSourceSurfaceRelease.new_from_dict(sp_state)   # this does not catch two objects with same ID
     
     assert spill == sp2
      
     
-def test_PointSourceRelease_from_dict():
+def test_PointSourceSurfaceRelease_from_dict():
     """
     test from_dict function for Wind object
     update existing wind object from_dict
     """
-    spill = PointSourceRelease(num_elements=1000,
+    spill = PointSourceSurfaceRelease(num_elements=1000,
                                 start_position = (144.664166, 13.441944, 0.0),
                                 release_time = datetime(2013, 2, 13, 9, 0),
                                 end_release_time = datetime(2013, 2, 13, 9, 0) + timedelta(hours=6)
@@ -630,9 +630,50 @@ def test_PointSourceRelease_from_dict():
             np.testing.assert_equal( sp_dict.__getitem__(key), spill.__getattribute__(key) )
         else:
             assert spill.__getattribute__(key) == sp_dict.__getitem__(key)
-            
+
+""" Test OilProps """
+def test_OilProps_exceptions():
+    from sqlalchemy.orm.exc import NoResultFound
+    with pytest.raises(TypeError):
+        OilProps(1)
+    with pytest.raises(NoResultFound):
+        OilProps('test')
+        
+# just doubl check values entered correctly
+@pytest.mark.parametrize(("oil","density","units"), [('oil_gas',         0.75, 'g/cm^3'),
+                                                     ('oil_jetfuels',    0.81, 'g/cm^3'),
+                                                     ('oil_4',           0.90, 'g/cm^3'),
+                                                     ('oil_crude',       0.90, 'g/cm^3'),
+                                                     ('oil_6',           0.99, 'g/cm^3'),
+                                                     ('oil_conservative',   1, 'g/cm^3'),
+                                                     ('chemical',           1, 'g/cm^3')])
+def test_OilProps_sample_oil( oil, density, units):
+    """ compare expected values with values stored in OilProps - make sure data entered correctly and unit conversion is correct """
+    o = OilProps(oil)
+    assert o.get_density(units) == density
+    assert o.name == oil
+
+@pytest.mark.parametrize(("oil","api"), [('FUEL OIL NO.6', 12.3)])            
+def test_OilProps_DBquery(oil, api):
+    """ test dbquery worked for an example like FUEL OIL NO.6 """
+    o = OilProps(oil)
+    assert o.oil.api == api
+    
+def test_OilProps_Oil_object():
+    """ 
+    initialize OilProps from Oil object
+    Construction works fine for empty Oil() object. However, get_density() will throw an error
+    because Oil().api is undefined for this object. It is the user's responsibility to provide a
+    valid (non-empty) Oil object 
+    """
+    from oillibrary.models import Oil
+    o = OilProps(Oil()) # this works since we just require an Oil object, but getting
+    assert isinstance( o.oil, Oil )
+    
+    with pytest.raises(ValueError): 
+        o.get_density()
 
 if __name__ == "__main__":
-    #TC = Test_PointSourceRelease()
+    #TC = Test_PointSourceSurfaceRelease()
     #TC.test_model_skips_over_release_time()
     test_SpatialRelease3()

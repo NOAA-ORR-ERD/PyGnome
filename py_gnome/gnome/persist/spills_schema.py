@@ -46,7 +46,7 @@ class Spill(MappingSchema):
     on = SchemaNode(Bool(), default=True, missing=True)
     num_elements = SchemaNode( Int(), default=1000 )
 
-class PointSourceRelease(Id, Spill):
+class PointSourceSurfaceRelease(Id, Spill):
     """
     Contains properties required by UpdateWindMover and CreateWindMover
     """

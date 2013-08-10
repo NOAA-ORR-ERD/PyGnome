@@ -92,7 +92,7 @@ def test_variance1(start_loc, time_step):
     """
     num_le = 1000
     start_time = datetime.datetime(2012,11,10,0)
-    sc = TestSpillContainer(num_le, start_loc, start_time)
+    sc = TestSpillContainer(num_le, start_loc, start_time, spill_obj=gnome.spill.PointSource3DRelease )
     D = 100000
     num_steps = 10
 

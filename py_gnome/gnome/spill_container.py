@@ -191,7 +191,7 @@ class SpillContainer(SpillContainerData):
     def __init__(self, uncertain=False):
         super(SpillContainer, self).__init__(uncertain=uncertain)
         
-        self.all_array_types = dict(element_types.basic)
+        self.all_array_types = dict(element_types.all_spill_containers)
         self.spills = OrderedCollection(dtype=gnome.spill.Spill)
         self.rewind()
         
@@ -292,28 +292,28 @@ class SpillContainer(SpillContainerData):
         """
         self.current_time_stamp = current_time
 
-    def initialize_data_arrays(self, spill_data):
+    def initialize_data_arrays(self, spill_arrays):
         """
         initialize data arrays once spill has spawned particles
         Data arrays are set to their initial_values
         """
         arrays = {}
         
-        if spill_data:
-            num_elements = len(spill_data[spill_data.keys()[0]])
+        if spill_arrays:
+            num_elements = len(spill_arrays[spill_arrays.keys()[0]])
         else:
             num_elements = 0
         
         # first initialize all arrays
         for name, array_type in self.all_array_types.iteritems():
             arrays[name] = np.zeros( (num_elements,)+array_type.shape, dtype=array_type.dtype)
-            if name in spill_data:
-                arrays[name][:] = spill_data.pop(name)
+            if name in spill_arrays:
+                arrays[name][:] = spill_arrays.pop(name)
             else:
                 arrays[name][:] = array_type.initial_value
         
-        if spill_data:
-            raise KeyError("Key mismatch: spill_data has a {0} key(s), which spill_container's all_data_arrays does not contain".format(spill_data.keys()))
+        if spill_arrays:
+            raise KeyError("Key mismatch: spill_arrays has a {0} key(s), which spill_container's all_data_arrays does not contain".format(spill_arrays.keys()))
         
         return arrays
 
@@ -328,11 +328,11 @@ class SpillContainer(SpillContainerData):
 
         for spill in self.spills:
             if spill.on:
-                spill_data = spill.release_elements(current_time,
+                spill_arrays = spill.release_elements(current_time,
                                                   time_step=time_step)
                 # without spill_release, nothing happens!
-                if spill_data is not None:
-                    new_data = self.initialize_data_arrays(spill_data)
+                if spill_arrays is not None:
+                    new_data = self.initialize_data_arrays(spill_arrays)
                     if 'spill_num' in new_data:
                         new_data['spill_num'][:] = self.spills.index(spill.id, renumber=False)
                         
@@ -622,7 +622,8 @@ class TestSpillContainer(SpillContainer):
                  num_elements=0,
                  start_pos=(0.0, 0.0, 0.0),
                  release_time=datetime.datetime(2000, 1, 1, 1),
-                 uncertain=False):
+                 uncertain=False,
+                 spill_obj = gnome.spill.PointSourceSurfaceRelease):
         """
         initilize a simple spill container (instantaneous point release)
         """
@@ -630,9 +631,9 @@ class TestSpillContainer(SpillContainer):
         
         super(TestSpillContainer, self).__init__(uncertain=uncertain)
         
-        spill = gnome.spill.PointSourceRelease(num_elements,
-                                                start_pos,
-                                                release_time)
+        spill = spill_obj( num_elements,
+                           start_pos,
+                           release_time)
         
         self.spills.add(spill)
         

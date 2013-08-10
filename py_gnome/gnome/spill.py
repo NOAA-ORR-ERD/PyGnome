@@ -56,7 +56,7 @@ class Spill(object):
     def id(self):
         return self._gnome_id.id
     
-    def __init__(self, num_elements=0, on=True, id=None, volume=0, volume_units='m^3'):
+    def __init__(self, num_elements=0, on=True, id=None, volume=0, volume_units='m^3', oil='oil_conservative'):
         """
         Base spill class. Spill used by a gnome model derive from this base class
         
@@ -69,13 +69,24 @@ class Spill(object):
         :type on: bool
         :param id: Unique Id identifying the newly created mover (a UUID as a string), used when loading from a persisted model
         :type id: str
+        :param volume: volume of oil spilled (used to compute mass per particle)
+        :type volume: float
+        :param volume_units=m^3: volume units
+        :type volume_units: str
+        :param oil='oil_conservative': Type of oil spilled. 
+                         If this is a string, or an oillibrary.models.Oil object, then create gnome.spill.OilProps(oil) object
+                         If this is a gnome.spill.OilProps object, then simply instance oil_props variable to it: self.oil_props = oil
+        :type oil: either str, or oillibrary.models.Oil object or gnome.spill.OilProps
         """
         self.num_elements = num_elements
         self.on = on       # sets whether the spill is active or not
         self._gnome_id = GnomeId(id)
         
-        self.array_types = dict(element_types.spill_data)
-        self.oil_props = OilProps('oil_conservative')
+        self.array_types = dict(element_types.all_spills)
+        if isinstance( oil, OilProps):
+            self.oil_props = oil    # OilProps object is already defined and passed in
+        else:
+            self.oil_props = OilProps(oil)  # construct OilProps object from str or from oillibrary.models.Oil object
         
         self._check_units(volume_units)
         self._volume_units = volume_units
@@ -196,7 +207,7 @@ class Spill(object):
             arrays[name] = np.zeros( (num_elements,)+array_type.shape, dtype=array_type.dtype)
             if name == 'mass' and num_elements > 0:
                 # want mass in units of grams
-                _total_mass = self.oil_props.density('kg/m^3') * self.get_volume('m^3') * 1000
+                _total_mass = self.oil_props.get_density('kg/m^3') * self.get_volume('m^3') * 1000
                 #_total_mass = unit_conversion.convert('mass', 'kg', 'g', _total_mass)
                 arrays[name][:] = _total_mass/num_elements
             else:
@@ -249,6 +260,12 @@ class RiseVelocitySpill(Spill):
     """
     Parameters used to compute 
     """
+    _update= ['distribution','range','use_dropletsize']
+    _create= []
+    _create.extend(_update) 
+    state  = copy.deepcopy(Spill.state)
+    state.add(update=_update, create=_create)
+    
     def __init__(self, distribution='uniform', range=[0, 1],
                  use_dropletsize = False,
                  **kwargs):
@@ -269,7 +286,7 @@ class RiseVelocitySpill(Spill):
         :param range: for 'uniform' dist, it is [min_val, max_val]. 
                       For 'normal' dist, it is [mean, sigma] where sigma is 1 standard deviation 
         """
-        super(DropletSize, self).__init__(**kwargs)
+        super(RiseVelocitySpill, self).__init__(**kwargs)
         
         self.distribution = distribution
         self.range = range
@@ -287,7 +304,7 @@ class PointSourceSpill(Spill):
     non-weathering particles, can be instantaneous or continuous, and be
     released at a single point, or over a line.
     
-    This serves as a base class for PointSourceSurfaceRelease and PointSourceRelease
+    This serves as a base class for PointSourceSurfaceRelease and PointSourceSurfaceRelease
     """
     _update= ['start_position','release_time','end_position','end_release_time']
     _create= ['num_released', 'not_called_yet', 'prev_release_pos','delta_pos'] # not sure these should be user update able
@@ -348,7 +365,7 @@ class PointSourceSpill(Spill):
         Remaining kwargs are passed onto base class __init__ using super. 
         See :class:`FloatingSpill` documentation for remaining valid kwargs.
         """
-        super(PointSourceRelease, self).__init__(windage_range, windage_persist, **kwargs)
+        super(PointSourceSpill, self).__init__( **kwargs )
         
         self.num_elements = num_elements
         
@@ -486,7 +503,7 @@ class PointSourceSpill(Spill):
         """
         reset to initial conditions -- i.e. nothing released.
         """
-        super(PointSourceRelease, self).rewind()
+        super(PointSourceSpill, self).rewind()
 
         self.num_released = 0
         self.not_called_yet = True
@@ -500,32 +517,56 @@ class PointSourceSurfaceRelease( PointSourceSpill, FloatingSpill, serializable.S
     #        think about overriding __new__ in Serializable class to automatically traverse the hierarchy, aggretate the
     #        fields in the state object and return the object
     state  = copy.deepcopy( PointSourceSpill.state )
-    [state.add(field) for field in FloatingSpill.state.fields if field not in state.fields]
+    [state.add_field(field) for field in FloatingSpill.state.fields if field not in state.fields]
     
     def __init__(self,
                  num_elements,
                  start_position,
                  release_time,
                  end_position=None,
-                 end_release_time=None,
-                 windage_range=(0.01, 0.04),
-                 windage_persist=900,
+                 #==============================================================
+                 # end_release_time=None,
+                 # windage_range=(0.01, 0.04),
+                 # windage_persist=900,
+                 #==============================================================
                  **kwargs):
         
         
-        if len(start_position) > 2:
-            raise TypeError( "Spill must only define the (long,lat) for start_position and end_position since it is on the Surface" )
+        if len(start_position) == 2:
+            start_position = [start_position[0], start_position[1], 0]
+        elif len(start_position) == 3:
+            if start_position[2] != 0:
+                raise TypeError( "The 'z' coordinate for start_position for this type of release must be 0" )
         
         start_position = np.array( (start_position[0], start_position[1], 0), dtype=basic_types.world_point_type).reshape((3,))
         
         if end_position is not None:
-            if len(end_position) > 2:
-                raise TypeError( "Spill must only define the (long,lat) for start_position and end_position since it is on the Surface" )
+            if len(end_position) == 2:
+                end_position = [end_position[0], end_position[1], 0]
+            elif len(end_position) == 3:
+                if end_position[2] != 0:
+                    raise TypeError( "The 'z' coordinate for end_position for this type of release must be 0" )
         
             self.end_position = np.array( (end_position[0], end_position[1], 0), dtype=basic_types.world_point_type).reshape((3,))
 
-        super( PointSourceSurfaceRelease, self).__init__()
+        super( PointSourceSurfaceRelease, self).__init__( num_elements,
+                                                          start_position,
+                                                          release_time,
+                                                          end_position,
+                                                          **kwargs)
         
+class PointSource3DRelease( PointSourceSpill, FloatingSpill, RiseVelocitySpill, serializable.Serializable):
+    # Let's add all the fields of ancestors - for now aggregate fields here
+    # fixme: need a better way to do this - either put this function inside serializable module or better yet
+    #        think about overriding __new__ in Serializable class to automatically traverse the hierarchy, aggretate the
+    #        fields in the state object and return the object
+    state  = copy.deepcopy( PointSourceSpill.state )
+    [state.add_field(field) for field in FloatingSpill.state.fields if field not in state.fields]
+    [state.add_field(field) for field in RiseVelocitySpill.state.fields if field not in state.fields]
+    
+    def __init__( self, num_elements, start_position, release_time, **kwargs):
+        # simply use this to initialize all other properties of the mixins
+        super(PointSource3DRelease, self).__init__( num_elements, start_position, release_time, **kwargs )
 
 class SubsurfaceSpill(Spill):
     """
@@ -770,46 +811,58 @@ class OilProps():
     valid_density_units = list(chain.from_iterable([item[1] for item in unit_conversion.ConvertDataUnits['Density'].values()]))
     valid_density_units.extend(unit_conversion.GetUnitNames('Density'))
     
-    def __init__(self, oil_name):
+    def __init__(self, oil_):
         """
         Should user be able to provide an oil with density/properties?
         
-        If oil_name is amongst self._sample_oils dict, then use the properties defined here. 
-        If not, then query the Oil database to check if oil_name exists and get the properties from DB
+        If oil_ is amongst self._sample_oils dict, then use the properties defined here. 
+        If not, then query the Oil database to check if oil_ exists and get the properties from DB
         Otherwise define Oil object with 'Oil Name' set to 'unknown' and its 'API' set to '1' 
         
-        :param oil_name: name of the oil that spilled. If it is one of the names that exist in the oil database, the
+        :param oil_: name of the oil that spilled. If it is one of the names that exist in the oil database, the
                          associated properties stored in the DB are returned; otherwise, a default set of properties
                          are returned(?)
-        :type oil_name: str
+        :type oil_: str
         """
-        if oil_name in self._sample_oils:
-            self.oil = Oil( **self._sample_oils[oil_name] )
-        else:
-            db_file = os.path.join( os.path.split( os.path.realpath(__file__))[0], '../../web/adios/OilLibrary/OilLibrary.db')
-            #try:
-            if os.path.exists(db_file):
-                engine = sqlalchemy.create_engine('sqlite:///'+db_file)  # path relative to spill.py
-                DBSession.bind = engine # not sure we want to do it this way - but let's use for now
-                #let's use DBSession defined in oillibrary
-                #session_factory = sessionmaker(bind=engine)
-                #DBSession = scoped_session(session_factory)
-                self.oil = DBSession.query(Oil).filter(Oil.name==oil_name).one()
-                
+        
+        if isinstance( oil_, basestring):
+            if oil_ in self._sample_oils:
+                self.oil = Oil( **self._sample_oils[oil_] )
             else:
-                raise IOError('OilLibrary database not found at: '.format( db_file) )
-                
-            #except sqlalchemy.orm.exc.NoResultFound, sqlalchemy.orm.exc.MultipleResultsFound:
-            #    props={'Oil Name': 'unknown',
-            #           'API': 1.0}
-            #    self.oil = Oil( **props)
+                db_file = os.path.join( os.path.split( os.path.realpath(__file__))[0], '../../web/adios/OilLibrary/OilLibrary.db')
+                if os.path.exists(db_file):
+                    engine = sqlalchemy.create_engine('sqlite:///'+db_file)  # path relative to spill.py
+                    DBSession.bind = engine # not sure we want to do it this way - but let's use for now
+                    #let's use DBSession defined in oillibrary
+                    #session_factory = sessionmaker(bind=engine)
+                    #DBSession = scoped_session(session_factory)
+                    
+                    try:
+                        self.oil = DBSession.query(Oil).filter(Oil.name==oil_).one()
+                    except sqlalchemy.orm.exc.NoResultFound as ex: #or sqlalchemy.orm.exc.MultipleResultsFound as ex:
+                        ex.message = "oil with name '{0}' not found in database. {1}".format(oil_, ex.message)
+                        ex.args = (ex.message,)
+                        raise ex
+                    #    props={'Oil Name': 'unknown',
+                    #           'API': 1.0}
+                    #    self.oil = Oil( **props)
+                else:
+                    raise IOError('OilLibrary database not found at: '.format( db_file) )
+            
+        elif isinstance( oil_, Oil):
+            self.oil = oil_
+        else:
+            raise TypeError( "Initialization requires either a string containing the oil name or a valid oillibrary.models.Oil object")
     
     name = property( lambda self: self.oil.name )
     
-    def density(self, units='kg/m^3'):
+    def get_density(self, units='kg/m^3'):
         """
         :param units=kg/m^3: optional input if output units should be something other than kg/m^3
         """
+        if self.oil.api is None:
+            raise ValueError( "Oil with name '{0}' does not contain 'api' property.".format(self.oil.name)) 
+        
         if units not in self.valid_density_units:
             raise unit_conversion.InvalidUnitError('Desired density units must be from following list to be valid: {0}'.format(self.valid_density_units))
         

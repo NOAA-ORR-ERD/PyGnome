@@ -119,7 +119,7 @@ def test_simple_run_rewind():
     model.movers += a_mover
     assert len(model.movers) == 1
 
-    spill = gnome.spill.PointSourceRelease(num_elements=10,
+    spill = gnome.spill.PointSourceSurfaceRelease(num_elements=10,
                                             start_position = (0.0, 0.0, 0.0),
                                             release_time = start_time,
                                             )
@@ -163,7 +163,7 @@ def test_simple_run_with_map():
     model.movers += a_mover
     assert len(model.movers) == 1
 
-    spill = gnome.spill.PointSourceRelease(num_elements=10,
+    spill = gnome.spill.PointSourceSurfaceRelease(num_elements=10,
                                             start_position = (0.0, 0.0, 0.0),
                                             release_time = start_time,
                                             )
@@ -381,7 +381,7 @@ def test_all_movers(start_time, release_delay, duration):
     start_loc = (1.0, 2.0, 0.0) # random non-zero starting points
     
     # a spill - release after 5 timesteps
-    model.spills += gnome.spill.PointSourceRelease(num_elements=10,
+    model.spills += gnome.spill.PointSourceSurfaceRelease(num_elements=10,
                                                     start_position=start_loc,
                                                     release_time  = start_time + timedelta(seconds=model.time_step*release_delay),
                                                     )
@@ -451,7 +451,7 @@ def test_linearity_of_wind_movers(wind_persist):
     model1.duration = timedelta(hours=1)
     model1.time_step = timedelta(hours = 1)
     model1.start_time = start_time
-    model1.spills += gnome.spill.PointSourceRelease(num_elements=num_LEs,
+    model1.spills += gnome.spill.PointSourceSurfaceRelease(num_elements=num_LEs,
                                                      start_position=(1.,2.,0.),
                                                      release_time  = start_time,
                                                      windage_persist=wind_persist
@@ -462,7 +462,7 @@ def test_linearity_of_wind_movers(wind_persist):
     model2.duration = timedelta(hours=10)
     model2.time_step = timedelta(hours = 1)
     model2.start_time = start_time
-    model2.spills += gnome.spill.PointSourceRelease(num_elements=num_LEs,
+    model2.spills += gnome.spill.PointSourceSurfaceRelease(num_elements=num_LEs,
                                                      start_position=(1.,2.,0.),
                                                      release_time  = start_time,
                                                      windage_persist=wind_persist
@@ -513,12 +513,12 @@ def test_model_release_after_start():
                               )
 
     # add a spill that starts after the run begins.
-    model.spills += gnome.spill.PointSourceRelease(num_elements = 5,
+    model.spills += gnome.spill.PointSourceSurfaceRelease(num_elements = 5,
                                                     start_position = (0, 0, 0),
                                                     release_time=start_time+timedelta(hours=1))
 
     # and another that starts later..
-    model.spills += gnome.spill.PointSourceRelease(num_elements = 4,
+    model.spills += gnome.spill.PointSourceSurfaceRelease(num_elements = 4,
                                                     start_position = (0, 0, 0),
                                                     release_time=start_time+timedelta(hours=2))
 
@@ -552,7 +552,7 @@ def test_release_at_right_time():
                               )
 
     # add a spill that starts right when the run begins
-    model.spills += gnome.spill.PointSourceRelease(num_elements=12,
+    model.spills += gnome.spill.PointSourceSurfaceRelease(num_elements=12,
                                                     start_position=(0, 0, 0),
                                                     release_time=datetime(2013, 1, 1, 0),
                                                     end_release_time=datetime(2013, 1, 1, 6),

@@ -62,29 +62,33 @@ class ArrayType(object):
 
 
 """ 
-used by spill.py module since spills spawn particles and set their initial positions 
+defined and initialized by spill.py module since spills spawn particles and set their initial positions 
 """
-spill_data = frozenset([('positions', ArrayType( (3,), basic_types.world_point_type)),
+all_spills = frozenset([('positions', ArrayType( (3,), basic_types.world_point_type)),
                         ('mass', ArrayType( (), np.float64 ))])
 
+""" 
+defined and initialized by spill_container module since these basic arrays are present for every model independent
+of the mover 
+"""
+all_spill_containers = frozenset([('next_positions', ArrayType( (3,), basic_types.world_point_type)),
+                                  ('last_water_positions', ArrayType( (3,), basic_types.world_point_type)),
+                                  ('status_codes', ArrayType( (), basic_types.status_code_type,basic_types.oil_status.in_water)),
+                                  ('spill_num', ArrayType( (), basic_types.id_type, -1))])
+
+
+"""
+data expected/used/updated by movers 
+arrays are initialized by spill container
+data_arrays are defined in the spill.py module
+"""
+""" ArrayType defined in FloatingSpill and used by WindMover """
+windage = frozenset([('windages',ArrayType( (), basic_types.windage_type))])
+
+""" ArrayType defined in RiseVelocitySpill and used by RiseVelocityMover """
 # droplet_size, rise_vel arrays used by spills
 droplet_size = frozenset([('droplet_size', ArrayType( (), np.float64 ) )])
 rise_vel = frozenset([('rise_vel', ArrayType( (), np.float64 ) )]) 
-
-""" 
-used by spill_container module since these basic arrays are present for every model independent
-of the mover 
-"""
-basic = frozenset([('next_positions', ArrayType( (3,), basic_types.world_point_type)),
-                   ('last_water_positions', ArrayType( (3,), basic_types.world_point_type)),
-                   ('status_codes', ArrayType( (), basic_types.status_code_type,basic_types.oil_status.in_water)),
-                   ('spill_num', ArrayType( (), basic_types.id_type, -1))])
-
-
-"""
-data expected/used by movers 
-"""
-windage = frozenset([('windages',ArrayType( (), basic_types.windage_type))])
 
 ## TODO: Find out if this is still required?        
 #subsurface = {'water_currents':ArrayType( (3,), basic_types.water_current_type)}
