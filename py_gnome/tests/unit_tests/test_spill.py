@@ -639,7 +639,7 @@ def test_OilProps_exceptions():
     with pytest.raises(NoResultFound):
         OilProps('test')
         
-# just doubl check values entered correctly
+# just double check values entered correctly
 @pytest.mark.parametrize(("oil","density","units"), [('oil_gas',         0.75, 'g/cm^3'),
                                                      ('oil_jetfuels',    0.81, 'g/cm^3'),
                                                      ('oil_4',           0.90, 'g/cm^3'),
