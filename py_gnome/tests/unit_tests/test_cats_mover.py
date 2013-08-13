@@ -97,6 +97,7 @@ def test_default_props():
     """
     assert c_cats.scale == False
     assert c_cats.scale_value == 1
+    assert c_cats.scale_refpoint is None
     
 def test_scale():  
     """
@@ -156,7 +157,7 @@ def test_exception_new_from_dict():
     c_cats = movers.CatsMover(curr_file)
     dict_ = c_cats.to_dict('create')
     dict_.update({'tide': td})
-    with pytest.raises(ValueError):
+    with pytest.raises(KeyError):
         c2 = movers.CatsMover.new_from_dict(dict_)
 
 def test_new_from_dict_tide():
