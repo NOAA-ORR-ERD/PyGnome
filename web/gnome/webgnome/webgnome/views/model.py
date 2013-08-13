@@ -58,7 +58,7 @@ def show_model(request):
     default_wind = _default_schema_json(schema.WindSchema)
     default_random_mover = _default_schema_json(schema.RandomMoverSchema)
     default_surface_release_spill = _default_schema_json(
-        schema.SurfaceReleaseSpillSchema)
+        schema.PointSourceReleaseSchema)
     default_map = _default_schema_json(schema.MapSchema)
     default_custom_map = _default_schema_json(schema.CustomMapSchema)
 

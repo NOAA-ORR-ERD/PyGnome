@@ -67,13 +67,13 @@ class WindageRangeSchema(TupleSchema):
     windage_max = SchemaNode(Float())
 
 
-class SurfaceReleaseSpillSchema(spills_schema.SurfaceReleaseSpill):
+class PointSourceReleaseSchema(spills_schema.PointSourceRelease):
     default_name = 'Surface Release Spill'
     name = SchemaNode(String(), default=default_name, missing=default_name)
 
 
-class SurfaceReleaseSpillsSchema(SequenceSchema):
-    spill = SurfaceReleaseSpillSchema()
+class PointSourceReleasesSchema(SequenceSchema):
+    spill = PointSourceReleaseSchema()
 
 
 class WindMoversSchema(SequenceSchema):
@@ -151,7 +151,7 @@ class ModelSchema(MappingSchema):
     duration_hours = SchemaNode(Int(), default=0, validator=Range(min=0))
     uncertain = SchemaNode(Bool(), default=False)
     time_step = SchemaNode(Float(), default=0.1)
-    surface_release_spills = SurfaceReleaseSpillsSchema(
+    surface_release_spills = PointSourceReleasesSchema(
         default=[], missing=drop)
     wind_movers = WindMoversSchema(default=[], missing=drop)
     random_movers = RandomMoversSchema(default=[], missing=drop)
