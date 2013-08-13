@@ -154,7 +154,6 @@ def test_exception_new_from_dict():
     c_cats = movers.CatsMover(curr_file)
     dict_ = c_cats.to_dict('create')
     dict_.update({'tide': td})
-    #with pytest.raises(ValueError):
     with pytest.raises(KeyError):
         c2 = movers.CatsMover.new_from_dict(dict_)
 

@@ -491,9 +491,9 @@ class Serializable(object):
             if hasattr(value, 'to_dict'):
                 value = value.to_dict(do)   # recursively call on contained objects
 
-            # todo: figure out if we need to output properties that are None
-            if value is not None:   # no need to persist None!
+            if value is not None:   # no need to persist properties that are None!
                 data[key] = value
+                
         return data
     
         

@@ -72,8 +72,8 @@ class CatsMover(CyMover, serializable.Serializable):
         self.scale = kwargs.pop('scale', self.mover.scale_type)
         self.scale_value = kwargs.get('scale_value', self.mover.scale_value)
         
-        # todo: no need to check for None if we only persist not None data 
-        if 'scale_refpoint' in kwargs and kwargs['scale_refpoint'] is not None:
+        # todo: no need to check for None since properties that are None are not persisted
+        if 'scale_refpoint' in kwargs:
             self.scale_refpoint = kwargs.pop('scale_refpoint')
         
         if self.scale and self.scale_value != 0.0 and self.scale_refpoint is None:
