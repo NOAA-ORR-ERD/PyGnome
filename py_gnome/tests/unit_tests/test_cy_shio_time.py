@@ -11,8 +11,9 @@ import pytest
 
 import gnome
 from gnome.cy_gnome.cy_shio_time import CyShioTime
+from gnome.utilities.remote_data import get_datafile
 
-shio_file = os.path.join( os.path.dirname(__file__), r"sample_data","tides","CLISShio.txt")
+shio_file = get_datafile( os.path.join( os.path.dirname(__file__), r"sample_data","tides","CLISShio.txt"))
 
 def test_exceptions():
     bad_file = os.path.join(r"sample_data","long_island_sound","CLISShio.txtX")

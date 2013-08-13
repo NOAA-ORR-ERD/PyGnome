@@ -23,7 +23,7 @@ def pytest_sessionstart():
 
             data_dir = get_data_dir()
             oillib_file = remote_data.get_datafile( os.path.join(data_dir, r'OilLib.smaller') )
-            db_file = os.path.join(data_dir, r'OilLibrary.db')
+            db_file = os.path.join(data_dir, r'OilLibrary.db')  # create this database from OilLib.smaller
             sqlalchemy_url = 'sqlite:///{0}'.format(db_file)
             settings = {'sqlalchemy.url': sqlalchemy_url,
                         'oillib.file': oillib_file
