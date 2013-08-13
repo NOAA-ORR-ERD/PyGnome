@@ -8,4 +8,3 @@ from utils cimport ShioTimeValue_c
 
 cdef class CyShioTime:
     cdef ShioTimeValue_c * shio
-    

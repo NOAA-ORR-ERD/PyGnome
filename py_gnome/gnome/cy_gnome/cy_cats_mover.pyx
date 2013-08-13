@@ -36,6 +36,7 @@ cdef class CyCatsMover(cy_mover.CyMover):
         self.cats.scaleType = scale_type
         self.cats.scaleValue = scale_value
         self.cats.fEddyDiffusion = diffusion_coefficient
+        self.cats.refZ = -999 # default to -1
         ## should not have to do this manually.
         ## make-shifting for now.
         #self.cats.fOptimize.isOptimizedForStep = 0
@@ -66,11 +67,15 @@ cdef class CyCatsMover(cy_mover.CyMover):
     property ref_point:
         def __get__(self):
             """
-            returns a tuple 
+            returns the tuple containing (long, lat, z) of reference point if it is defined
+            either by the user or obtained from the Shio object; otherwise it returns None 
             
             todo: make sure this is consistent with the format of CyShioTime.ref_point
             """
-            return (self.cats.refP.pLong/1.e6, self.cats.refP.pLat/1.e6, self.cats.refZ)
+            if self.cats.refZ == -999:
+                return None
+            else:
+                return (self.cats.refP.pLong/1.e6, self.cats.refP.pLat/1.e6, self.cats.refZ)
     
         def __set__(self,ref_point):
             """

@@ -25,18 +25,19 @@ cdef class CyShioTime(object):
         del self.shio
         
     def __init__(self,
-                 path, 
+                 path_, 
                  daylight_savings_off=True,
                  scale_factor = 1):
         """
         Init CyShioTime with defaults
         """
         cdef bytes file_
+        
         self.shio.daylight_savings_off=daylight_savings_off 
         
-        if os.path.exists(path):
-            path = os.path.normcase(path)
-            file_ = to_bytes(unicode(path))
+        if os.path.exists(path_):
+            path_ = os.path.normcase(path_)
+            file_ = to_bytes(unicode(path_))
             err = self.shio.ReadTimeValues(file_)
             if err != 0:
                 raise ValueError("File could not be correctly read by ShioTimeValue_c.ReadTimeValues(...)")
@@ -44,9 +45,10 @@ cdef class CyShioTime(object):
             # also set user_units for base class to -1 (undefined). For Shio, the units don't matter since it returns
             # the values by which the currents should be scaled
             self.shio.SetUserUnits(-1)
+            self.scale_factor = scale_factor
             
         else:
-            raise IOError("No such file: " + path)
+            raise IOError("No such file: " + path_)
     
     
     def set_shio_yeardata_path(self, yeardata_path_):
@@ -79,11 +81,13 @@ cdef class CyShioTime(object):
     
     property filename:
         def __get__(self):
-            cdef bytes fileName
-            fileName = self.shio.fileName
-            return fileName
+            """ 
+            returns full path plus file name for the shio filename 
+            """
+            return <bytes>self.shio.filePath
     
     property scale_factor:
+        """ shio scale_factor """
         def __get__(self):
             return self.shio.fScaleFactor
         def __set__(self,value):
@@ -91,13 +95,42 @@ cdef class CyShioTime(object):
             
     property yeardata:
         def __get__(self):
-            cdef bytes yd_path
-            yd_path = self.shio.fYearDataPath
-            return yd_path
+            """ get path of yeardata files """
+            return <bytes>self.shio.fYearDataPath
         
         def __set__(self, value):
+            """ set path of yeardata files """
             self.set_shio_yeardata_path(value)  # todo: figure out how to change fYearDataPath directly
                 
+    property station_location:
+        def __get__(self):
+            """ get station location as read from file """
+            cdef cnp.ndarray[WorldPoint, ndim=1] wp
+            wp = np.zeros((1,), dtype=basic_types.w_point_2d)
+            
+            wp[0] = self.shio.GetStationLocation()
+            wp['lat'][:] = wp['lat'][:]/1.e6    # correct C++ scaling here
+            wp['long'][:] = wp['long'][:]/1.e6    # correct C++ scaling here
+            
+            g_wp = np.zeros((1,),dtype=basic_types.world_point) 
+            g_wp[0] = (wp['long'],wp['lat'],0)
+            
+            return tuple(g_wp[0])
+    
+    property station:
+        def __get__(self):
+            """ get station name as read from SHIO file """
+            cdef bytes sName
+            sName = self.shio.fStationName
+            return sName
+    
+    property station_type:
+        def __get__(self):
+            """ station type: 'C', 'H', 'P' - not sure what these refer to yet? """
+            cdef bytes sType
+            sType = self.shio.fStationType
+            return sType
+    
     
     def __repr__(self):
         """
@@ -140,40 +173,6 @@ cdef class CyShioTime(object):
                 raise ValueError("Error invoking ShioTimeValue_c.GetTimeValue method in CyShioTime: C++ OSERR = " + str(err))
             
         return vel_rec
-    
-    
-    def get_info(self):
-        """
-        Returns a dict containing sensor info read in from the Shio file
-        
-        this is currently only used for testing
-        """
-        cdef cnp.ndarray[WorldPoint, ndim=1] wp
-        wp = np.zeros((1,), dtype=basic_types.w_point_2d)
-        
-        wp[0] = self.shio.GetStationLocation()
-        wp['lat'][:] = wp['lat'][:]/1.e6    # correct C++ scaling here
-        wp['long'][:] = wp['long'][:]/1.e6    # correct C++ scaling here
-        
-        g_wp = np.zeros((1,),dtype=basic_types.world_point) 
-        g_wp[0] = (wp['long'],wp['lat'],0) 
-        #g_wp[0] = np.around(g_wp[0], 2)
-        
-        # station name
-        cdef bytes sName
-        sName = self.shio.fStationName
-        #sName = sName[:len(sName)-1]
-        
-        # station type
-        cdef bytes sType
-        sType = self.shio.fStationType
-        
-        # Let's create a dict to keep this info
-        info = {'Long': round(g_wp[0]['long'], 2),'Lat': round( g_wp[0]['lat'], 2),
-                'StationName': sName, 'StationType': sType,
-                'DaylightSavingsOff': self.shio.daylight_savings_off}
-        
-        return info
     
     
     def get_ebb_flood(self, modelTime):

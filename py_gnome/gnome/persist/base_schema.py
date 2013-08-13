@@ -40,8 +40,8 @@ class OrderedCollection(MappingSchema):
     
 class LongLat(TupleSchema):
     """only contains 2D (long, lat) positions"""
-    long = SchemaNode( Float() )
-    lat = SchemaNode( Float() )
+    long = SchemaNode( Float())
+    lat = SchemaNode( Float())
     
 class LongLatBounds(SequenceSchema):
     """ used to define bounds on a map """

@@ -328,9 +328,9 @@ class Wind( Environment, serializable.Serializable):
         dict_ = super(Wind,self).to_dict(do)
         
         if do == 'create':
-            if self.filename is None:
-                dict_.pop('filename')
-            else:
+            if self.filename is not None:
+                #dict_.pop('filename')
+            #else:
                 dict_.pop('timeseries')
         
         return dict_
@@ -411,8 +411,7 @@ class Tide(Environment, serializable.Serializable):
             self._user_units = kwargs.pop('units',None)    # not sure what these should be
         else:
             #self.filename = os.path.abspath( filename)
-            self.filename = filename
-            self.cy_obj = self._obj_to_create()
+            self.cy_obj = self._obj_to_create(filename)
             #self.yeardata = os.path.abspath( yeardata ) # set yeardata
             self.yeardata = yeardata # set yeardata
 
@@ -430,12 +429,14 @@ class Tide(Environment, serializable.Serializable):
         self._yeardata = value  # set private variable and also shio object's yeardata path
         if isinstance( self.cy_obj, cy_shio_time.CyShioTime):
             self.cy_obj.set_shio_yeardata_path(value)
+
+    filename = property( lambda self: (self.cy_obj.filename, None)[self.cy_obj.filename == ''])
             
-    def _obj_to_create(self):
+    def _obj_to_create(self, filename):
         """
         open file, read a few lines to determine if it is an ossm file or a shio file
         """
-        fh = open(self.filename, 'r')
+        fh = open(filename, 'r')
         lines = [fh.readline() for i in range(4)]   # depends on line endings - this does not work for '\r'
         
         if len(lines[1]) == 0:
@@ -446,13 +447,14 @@ class Tide(Environment, serializable.Serializable):
             # if this is still 0, then throw an error!
             raise ValueError("This does not appear to be a valid file format that can be read by OSSM or Shio to get tide information")
         
+        # look for following keywords to determine if it is a Shio or OSSM file
         shio_file = ['[StationInfo]', 'Type=', 'Name=', 'Latitude=']
         
         if all( [shio_file[i] == lines[i][:len(shio_file[i])] for i in range(4)]):
-            return cy_shio_time.CyShioTime(self.filename)   
+            return cy_shio_time.CyShioTime(filename)   
         
         elif len(string.split(lines[3],',')) == 7:
             #if float( string.split(lines[3],',')[-1]) != 0.0:    # maybe log / display a warning that v=0 for tide file and will be ignored
-            return cy_ossm_time.CyOSSMTime(self.filename, file_contains=convert.tsformat('uv'))
+            return cy_ossm_time.CyOSSMTime(filename, file_contains=convert.tsformat('uv'))
         else:
             raise ValueError("This does not appear to be a valid file format that can be read by OSSM or Shio to get tide information") 

@@ -1380,6 +1380,7 @@ OSErr ShioTimeValue_c::ReadTimeValues (char *path)
 	if (!path) return -1;
 	
 	strcpy(strLine, path);
+	strcpy(this->filePath,path);
 	SplitPathFile(strLine, this->fileName);
 	
 //	err = ReadFileContents(TERMINATED, 0, 0, path, 0, 0, &f);
