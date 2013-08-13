@@ -10,7 +10,7 @@ from webgnome import util
 from webgnome.schema import (
     ModelSchema,
     WindMoverSchema,
-    SurfaceReleaseSpillSchema,
+    PointSourceReleaseSchema,
     MapSchema,
     CustomMapSchema,
     LocationFileSchema
@@ -90,9 +90,9 @@ class RandomMoverValidator(BaseResourceValidator):
 
 @resource(path='/model/{model_id}/validate/spill/surface_release',
           renderer='gnome_json',
-          description='Validate SurfaceReleaseSpill JSON.')
-class SurfaceReleaseSpillValidator(BaseResourceValidator):
-    schema = SurfaceReleaseSpillSchema
+          description='Validate PointSourceRelease JSON.')
+class PointSourceReleaseValidator(BaseResourceValidator):
+    schema = PointSourceReleaseSchema
 
 
 @resource(path='/model/{model_id}/validate/map', renderer='gnome_json',
