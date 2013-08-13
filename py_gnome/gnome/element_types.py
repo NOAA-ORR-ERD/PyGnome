@@ -80,7 +80,6 @@ all_spill_containers = frozenset([('next_positions', ArrayType( (3,), basic_type
 """
 data expected/used/updated by movers 
 arrays are initialized by spill container
-data_arrays are defined in the spill.py module
 """
 """ ArrayType defined in FloatingSpill and used by WindMover """
 windage = frozenset([('windages',ArrayType( (), basic_types.windage_type))])
