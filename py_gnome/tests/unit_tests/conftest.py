@@ -10,36 +10,6 @@ import numpy as np
 import pytest
 
 from gnome import basic_types
-from gnome.utilities import rand, remote_data
-
-
-def pytest_sessionstart():
-    from py.test import config
-
-    # Only run database setup on master (in case of xdist/multiproc mode)
-    if not hasattr(config, 'slaveinput'):
-        try:
-            from gnome.db.oil_library.initializedb import initialize_sql, load_database
-
-            data_dir = get_data_dir()
-            oillib_file = remote_data.get_datafile( os.path.join(data_dir, r'OilLib.smaller') )
-            db_file = os.path.join(data_dir, r'OilLibrary.db')  # create this database from OilLib.smaller
-            sqlalchemy_url = 'sqlite:///{0}'.format(db_file)
-            settings = {'sqlalchemy.url': sqlalchemy_url,
-                        'oillib.file': oillib_file
-                        }
-            initialize_sql(settings)
-            load_database(settings)
-        except ImportError as ie:
-            print "\nWarning: Required modules for database unit-testing not found."
-            dependant_modules = ('sqlalchemy','zope.sqlalchemy','transaction')
-            print ie
-            print "Also may need:",
-            print '\t {0}\n'.format([m for m in dependant_modules if not m in sys.modules])
-
-def get_data_dir():
-    data_dir = os.path.dirname(__file__)
-    return os.path.join(data_dir, r'sample_data/oil_library')
 
 """
 ====================================
