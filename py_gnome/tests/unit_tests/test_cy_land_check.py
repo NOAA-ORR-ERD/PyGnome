@@ -13,8 +13,8 @@ Designed to be run with py.test
 import pytest
 
 import numpy as np
-from gnome.cy_gnome import cy_land_check as land_check
-#from gnome import land_check
+from gnome.cy_gnome.cy_land_check import overlap_grid, find_first_pixel
+
 
 class Test_overlap_grid():
     m = 100
@@ -24,61 +24,62 @@ class Test_overlap_grid():
         """line totally to the right of the grid"""
         pt1 = (101, 13)
         pt2 = (101, 220)
-        assert not land_check.overlap_grid(self.m, self.n, pt1, pt2)
+        assert not overlap_grid(self.m, self.n, pt1, pt2)
 
     def test_left(self):
         pt1 = (-1, 13)
         pt2 = (-1, 220)
-        assert not land_check.overlap_grid(self.m, self.n, pt1, pt2)
+        assert not overlap_grid(self.m, self.n, pt1, pt2)
 
     def test_over(self):
         pt1 = (10,  210)
         pt2 = (100, 220)
-        assert not land_check.overlap_grid(self.m, self.n, pt1, pt2)
+        assert not overlap_grid(self.m, self.n, pt1, pt2)
 
     def test_under(self):
-        pt1 = (10,  -1)
+        pt1 = (10, -1)
         pt2 = (100, -23)
-        assert not land_check.overlap_grid(self.m, self.n, pt1, pt2)
+        assert not overlap_grid(self.m, self.n, pt1, pt2)
 
     def test_inside(self):
         pt1 = (10, 50)
         pt2 = (90, 150)
-        assert land_check.overlap_grid(self.m, self.n, pt1, pt2)
+        assert overlap_grid(self.m, self.n, pt1, pt2)
 
     def test_cross_top(self):
         pt1 = (50, 50)
         pt2 = (199, 201)
-        assert land_check.overlap_grid(self.m, self.n, pt1, pt2)
+        assert overlap_grid(self.m, self.n, pt1, pt2)
 
     def test_cross_top_right_corner(self):
         pt1 = (95, 205)
         pt2 = (105, 195)
-        assert land_check.overlap_grid(self.m, self.n, pt1, pt2)
+        assert overlap_grid(self.m, self.n, pt1, pt2)
 
     def test_cross_top_right_corner2(self):
         pt2 = (95, 205)
         pt1 = (105, 195)
-        assert land_check.overlap_grid(self.m, self.n, pt1, pt2)
+        assert overlap_grid(self.m, self.n, pt1, pt2)
 
     def test_cross_lower_left(self):
         pt2 = (-1, 3)
         pt1 = (3, -1)
-        assert land_check.overlap_grid(self.m, self.n, pt1, pt2)
+        assert overlap_grid(self.m, self.n, pt1, pt2)
+
     def test_from_lower_left(self):
         pt2 = (-1, -1)
         pt1 = (2, 3)
-        assert land_check.overlap_grid(self.m, self.n, pt1, pt2)
+        assert overlap_grid(self.m, self.n, pt1, pt2)
 
 
-hit_examples = [( ( 5,  5), (15,  5), ( 9,  5), (10,  5) ),
-            ( (15,  5), ( 5,  5), (11,  5), (10,  5) ),
-            ( ( 0,  0), (10,  5), ( 9,  4), (10,  5) ),
-            ( (19,  0), ( 0,  9), (11,  4), (10,  4) ),
-           ]
+hit_examples = [((5, 5), (15, 5), (9, 5), (10, 5)),
+                ((15, 5), (5, 5), (11, 5), (10, 5)),
+                ((0, 0), (10, 5), (9, 4), (10, 5)),
+                ((19, 0), (0, 9), (11, 4), (10, 4)),
+                ]
 
 
-@pytest.mark.parametrize( ('pt1', 'pt2', 'res1', 'res2'), hit_examples )
+@pytest.mark.parametrize(('pt1', 'pt2', 'res1', 'res2'), hit_examples)
 def test_land_cross(pt1, pt2, res1, res2):
     """
     try a single LE that should be crossing land
@@ -92,21 +93,20 @@ def test_land_cross(pt1, pt2, res1, res2):
     #pt1 = ( 5, 5)
     #pt2 = (15, 5)
 
- 
-    result = land_check.find_first_pixel(raster, pt1, pt2)
-        
+    result = find_first_pixel(raster, pt1, pt2)
+
     print result
     assert result[0] == res1
     assert result[1] == res2
 
 
-no_hit_examples = [( ( 5,  5), ( 9,  5) ),
-                   ( (15,  5), (11,  5) ),
-                   ( ( 0,  0), ( 9,  9) ),
+no_hit_examples = [((5, 5), (9, 5)),
+                   ((15, 5), (11, 5)),
+                   ((0, 0), (9, 9)),
                    ]
 
 
-@pytest.mark.parametrize( ('pt1', 'pt2'), no_hit_examples )
+@pytest.mark.parametrize(('pt1', 'pt2'), no_hit_examples)
 def test_land_not_cross(pt1, pt2):
     """
     try a single LE that should be crossing land
@@ -117,19 +117,21 @@ def test_land_not_cross(pt1, pt2):
     # a single skinny vertical line:
     raster[10, :] = 1
 
-    result = land_check.find_first_pixel(raster, pt1, pt2)
-        
-    assert result is None
-        
+    result = find_first_pixel(raster, pt1, pt2)
 
-diag_hit_examples = [( ( 3, 0), ( 0, 3), (2, 1), (1, 1) ),
-                    ( ( 0, 3), ( 3, 0), (1, 2), (2, 2) ),
-                    ( ( 4, 1), ( 0, 4), (3, 2), (2, 2) ),
-                    ( ( 0, 4), ( 4, 1), (2, 3), (3, 3) ),
-                    ( ( 0, 8), ( 9, 0), (3, 5), (4, 4) ),
+    assert result is None
+
+
+diag_hit_examples = [((3, 0), (0, 3), (2, 1), (1, 1)),
+                     ((0, 3), (3, 0), (1, 2), (2, 2)),
+                     ((4, 1), (0, 4), (3, 2), (2, 2)),
+                     ((0, 4), (4, 1), (2, 3), (3, 3)),
+                     ((0, 8), (9, 0), (3, 5), (4, 4)),
                     ]
 
-@pytest.mark.parametrize( ('pt1', 'pt2', 'prev_pt', 'hit_pt'), diag_hit_examples )
+
+@pytest.mark.parametrize(('pt1', 'pt2', 'prev_pt', 'hit_pt'),
+                         diag_hit_examples)
 def test_land_cross_diag(pt1, pt2, prev_pt, hit_pt):
     """
     try a single LE that should be crossing land
@@ -144,19 +146,20 @@ def test_land_cross_diag(pt1, pt2, prev_pt, hit_pt):
     raster[2, 2] = 1
     raster[3, 3] = 1
     raster[4, 4] = 1
- 
-    result = land_check.find_first_pixel(raster, pt1, pt2)
-        
+
+    result = find_first_pixel(raster, pt1, pt2)
+
     print pt1, pt2, prev_pt, hit_pt
     print result
     assert result[0] == prev_pt
     assert result[1] == hit_pt
 
-diag_not_hit_examples = [ ( ( 9, 1), ( 1, 9) ),
-                          ( ( 1, 9), ( 9, 1) ),
+diag_not_hit_examples = [((9, 1), (1, 9)),
+                         ((1, 9), (9, 1)),
                         ]
 
-@pytest.mark.parametrize( ('pt1', 'pt2'), diag_not_hit_examples )
+
+@pytest.mark.parametrize(('pt1', 'pt2'), diag_not_hit_examples)
 def test_land_not_cross_diag(pt1, pt2):
     """
     try a single LE that should be crossing land
@@ -171,16 +174,19 @@ def test_land_not_cross_diag(pt1, pt2):
     raster[2, 2] = 1
     raster[3, 3] = 1
     raster[4, 4] = 1
- 
-    result = land_check.find_first_pixel(raster, pt1, pt2)
+
+    result = find_first_pixel(raster, pt1, pt2)
 
     print pt1, pt2, result
     assert result is None
 
-points_outside_grid = [( ( -5, -5),(  25, 15), (9, 4),(10, 5)), # outside from right
-                      ] 
+points_outside_grid = [  # outside from right
+                       ((-5, -5), (25, 15), (9, 4), (10, 5)),
+                      ]
 
-@pytest.mark.parametrize( ('pt1', 'pt2', 'prev_pt', 'hit_pt'), points_outside_grid )
+
+@pytest.mark.parametrize(('pt1', 'pt2', 'prev_pt', 'hit_pt'),
+                         points_outside_grid)
 def test_points_outside_grid(pt1, pt2, prev_pt, hit_pt):
     """
     try a single LE that should be crossing land
@@ -191,13 +197,14 @@ def test_points_outside_grid(pt1, pt2, prev_pt, hit_pt):
     raster = np.zeros((w, h), dtype=np.uint8)
     # a single skinny vertical line:
     raster[10, :] = 1
- 
-    result = land_check.find_first_pixel(raster, pt1, pt2)
-        
+
+    result = find_first_pixel(raster, pt1, pt2)
+
     print pt1, pt2, prev_pt, hit_pt
     print result
     assert result[0] == prev_pt
     assert result[1] == hit_pt
+
 
 #def test_outside_raster(self):
 #         """
@@ -205,42 +212,41 @@ def test_points_outside_grid(pt1, pt2, prev_pt, hit_pt):
 #         """
 #         map = RasterMap(refloat_halflife = 6, #hours
 #                         bitmap_array= self.raster,
-#                         map_bounds = ( (-50, -30), (-50, 30), (50, 30), (50, -30) ),
+#                         map_bounds = ((-50, -30), (-50, 30),
+#                                       (50, 30), (50, -30)),
 #                         projection=projections.NoProjection(),
 #                         )
-        
+#
 #         # one left to right
 #         # one right to left
 #         # diagonal that doesn't hit
 #         # diagonal that does hit
 #         spill = gnome.spill.Spill(num_LEs=4)
-#         spill['positions']= np.array( ( ( 30.0, 5.0, 0.0), # outside from right
-#                                      ( -5.0, 5.0, 0.0), # outside from left
-#                                      ( 5.0, -5.0, 0.0), # outside from top
-#                                      ( -5.0, -5.0, 0.0), # outside from upper left
-#                                      ), dtype=np.float64) 
-
+#         spill['positions']= np.array(((30.0, 5.0, 0.0), # outside from right
+#                                      (-5.0, 5.0, 0.0), # outside from left
+#                                      (5.0, -5.0, 0.0), # outside from top
+#                                      (-5.0, -5.0, 0.0), # outside from upper left
+#                                      ), dtype=np.float64)
+#
 #         spill['next_positions'] =  np.array( ( (  15.0, 5.0, 0.0),
 #                                      (  5.0, 5.0, 0.0),
 #                                      (  5.0, 15.0, 0.0 ),
 #                                      ( 25.0, 15.0, 0.0 ),
 #                                      ),  dtype=np.float64)
-        
+#
 #         map.beach_elements(spill)
-        
+#
 #         assert np.array_equal( spill['next_positions'], ( ( 15.0, 5.0, 0.0),
 #                                                      ( 5.0, 5.0, 0.0),
 #                                                      ( 5.0, 15.0, 0.0),
 #                                                      (10.0, 5.0, 0.0),
 #                                                      ) )
 #         # just the beached ones
-#         assert np.array_equal( spill['last_water_positions'][3:], ( ( 9.0, 4.0, 0.0),
-#                                                                     ) )
-
-#         assert np.array_equal( spill['status_codes'][3:], ( basic_types.oil_status.on_land,
-#                                                             ) )
-
-
+#         assert np.array_equal(spill['last_water_positions'][3:],
+#                               ((9.0, 4.0, 0.0),))
+#
+#         assert np.array_equal(spill['status_codes'][3:],
+#                               (basic_types.oil_status.on_land,))
 
 
 if __name__ == "__main__":
@@ -252,15 +258,15 @@ if __name__ == "__main__":
     raster[2, 2] = 1
     raster[3, 3] = 1
     raster[4, 4] = 1
- 
+
     pt1 = (0, 8)
     pt2 = (9, 0)
 
     print "checking:"
     print pt1
     print pt2
-    result = land_check.find_first_pixel(raster, pt1, pt2)
-        
+    result = find_first_pixel(raster, pt1, pt2)
+
     print result
 
     pt1 = (pt1[1], pt1[0])
@@ -269,9 +275,6 @@ if __name__ == "__main__":
     print "checking:"
     print pt1
     print pt2
-    result = land_check.find_first_pixel(raster, pt1, pt2)
-        
+    result = find_first_pixel(raster, pt1, pt2)
+
     print result
-
-
-        
