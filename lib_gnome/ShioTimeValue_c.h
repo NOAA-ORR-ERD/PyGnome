@@ -54,15 +54,15 @@ protected:
 	Boolean fHighLowValuesOpen; // for the list
 	Boolean fEbbFloodValuesOpen; // for the list
 	
-	OSErr		GetKeyedValue(CHARH f, char*key, long lineNum, char* strLine,float *** val);
-	OSErr 		GetKeyedValue(CHARH f, char*key, long lineNum, char* strLine,DATA * val);
-	OSErr 		GetKeyedValue(CHARH f, char*key, long lineNum, char* strLine,short * val);
-	OSErr 		GetKeyedValue(CHARH f, char*key, long lineNum, char* strLine,float * val);
-	OSErr 		GetKeyedValue(CHARH f, char*key, long lineNum, char* strLine,double * val);
+	OSErr		GetKeyedValue(CHARH f, const char *key, long lineNum, char *strLine, float ***val);
+	OSErr 		GetKeyedValue(CHARH f, const char *key, long lineNum, char *strLine, DATA *val);
+	OSErr 		GetKeyedValue(CHARH f, const char *key, long lineNum, char *strLine, short *val);
+	OSErr 		GetKeyedValue(CHARH f, const char *key, long lineNum, char *strLine, float *val);
+	OSErr 		GetKeyedValue(CHARH f, const char *key, long lineNum, char *strLine, double *val);
 	OSErr		GetInterpolatedComponent (Seconds forTime, double *value, short index);
 	OSErr		GetTimeChange (long a, long b, Seconds *dt);
 	
-	void 		ProgrammerError(char* routine);
+	void 		ProgrammerError(const char *routine);
 	void 		InitInstanceVariables(void);
 	
 	long 		I_SHIOHIGHLOWS(void);
