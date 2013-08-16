@@ -1,6 +1,7 @@
 import os
 
-import unittest, pytest
+import unittest
+import pytest
 
 sqlalchemy = pytest.importorskip('sqlalchemy')
 zope = pytest.importorskip('zope')
@@ -50,6 +51,7 @@ def make_db():
 
 make_db()
 sqlalchemy_url = 'sqlite:///%s' % (db_file)
+
 
 class BaseTestCase(unittest.TestCase):
     @classmethod
@@ -132,7 +134,7 @@ class OilTestCase(BaseTestCase):
         assert oil.location == u'Sand Point'
         assert oil.field_name == u'Sand Point'
         assert oil.reference == u'Test Oil Reference'
-        assert oil.api ==u'2.68e1'
+        assert oil.api == u'2.68e1'
         assert oil.pour_point_min == u'2.6715e2'
         assert oil.pour_point_min_indicator == None
         assert oil.pour_point_max == u'2.6715e2'
@@ -269,11 +271,11 @@ class KVisTestCase(BaseTestCase):
         assert kvis.meters_squared_per_sec == u'5.59e-5'
         assert kvis.ref_temp == u'2.7315e2'
         assert kvis.weathering == u'0e0'
-    
+
     def test_init_no_args(self):
         kvis_obj = KVis()
         self.add_objs_and_assert_ids(kvis_obj)
-    
+
     def test_init_with_args(self):
         kvis_obj = KVis(**self.get_mock_kvis_file_record())
         self.assert_mock_kvis_object(kvis_obj)
@@ -369,11 +371,11 @@ class IntegrationTestCase(BaseTestCase):
         oil_obj = Oil(**OilTestCase.get_mock_oil_file_record())
         synonym_obj = Synonym('test oil')
 
-        oil_obj.synonyms.append(synonym_obj)  #IGNORE:E1101 - synonyms is a sqlalchemy dynamic property
+        oil_obj.synonyms.append(synonym_obj)
 
         self.add_objs_and_assert_ids([oil_obj, synonym_obj])
-        assert oil_obj.synonyms == [synonym_obj]  #IGNORE:E1101 - synonyms is a sqlalchemy dynamic property
-        assert synonym_obj.oils == [oil_obj]  #IGNORE:E1101 - oils is a sqlalchemy dynamic property
+        assert oil_obj.synonyms == [synonym_obj]
+        assert synonym_obj.oils == [oil_obj]
 
     def test_oils_that_share_a_synonym(self):
         oil_args = OilTestCase.get_mock_oil_file_record()
@@ -383,60 +385,60 @@ class IntegrationTestCase(BaseTestCase):
         oil_obj2 = Oil(**oil_args)
         synonym_obj = Synonym('test oil')
 
-        oil_obj1.synonyms.append(synonym_obj)  #IGNORE:E1101 - synonyms is a sqlalchemy dynamic property
-        oil_obj2.synonyms.append(synonym_obj)  #IGNORE:E1101 - synonyms is a sqlalchemy dynamic property
+        oil_obj1.synonyms.append(synonym_obj)
+        oil_obj2.synonyms.append(synonym_obj)
 
         self.add_objs_and_assert_ids([oil_obj1, oil_obj2, synonym_obj])
-        assert oil_obj1.synonyms == [synonym_obj]  #IGNORE:E1101 - synonyms is a sqlalchemy dynamic property
-        assert oil_obj2.synonyms == [synonym_obj]  #IGNORE:E1101 - synonyms is a sqlalchemy dynamic property
-        assert synonym_obj.oils == [oil_obj1, oil_obj2]  #IGNORE:E1101 - oils is a sqlalchemy dynamic property
+        assert oil_obj1.synonyms == [synonym_obj]
+        assert oil_obj2.synonyms == [synonym_obj]
+        assert synonym_obj.oils == [oil_obj1, oil_obj2]
 
     def test_add_density_to_oil(self):
         oil_obj = Oil(**OilTestCase.get_mock_oil_file_record())
         density_obj = Density(**DensityTestCase.get_mock_density_file_record())
 
-        oil_obj.densities.append(density_obj)  #IGNORE:E1101 - densities is a sqlalchemy dynamic property
+        oil_obj.densities.append(density_obj)
 
         self.add_objs_and_assert_ids([oil_obj, density_obj])
-        assert oil_obj.densities == [density_obj]  #IGNORE:E1101 - synonyms is a sqlalchemy dynamic property
-        assert density_obj.oil == oil_obj  #IGNORE:E1101 - oils is a sqlalchemy dynamic property
+        assert oil_obj.densities == [density_obj]
+        assert density_obj.oil == oil_obj
 
     def test_add_kvis_to_oil(self):
         oil_obj = Oil(**OilTestCase.get_mock_oil_file_record())
         kvis_obj = KVis(**KVisTestCase.get_mock_kvis_file_record())
 
-        oil_obj.kvis.append(kvis_obj)  #IGNORE:E1101 - densities is a sqlalchemy dynamic property
+        oil_obj.kvis.append(kvis_obj)
 
         self.add_objs_and_assert_ids([oil_obj, kvis_obj])
-        assert oil_obj.kvis == [kvis_obj]  #IGNORE:E1101 - synonyms is a sqlalchemy dynamic property
-        assert kvis_obj.oil == oil_obj  #IGNORE:E1101 - oils is a sqlalchemy dynamic property
+        assert oil_obj.kvis == [kvis_obj]
+        assert kvis_obj.oil == oil_obj
 
     def test_add_dvis_to_oil(self):
         oil_obj = Oil(**OilTestCase.get_mock_oil_file_record())
         dvis_obj = DVis(**DVisTestCase.get_mock_dvis_file_record())
 
-        oil_obj.dvis.append(dvis_obj)  #IGNORE:E1101 - densities is a sqlalchemy dynamic property
+        oil_obj.dvis.append(dvis_obj)
 
         self.add_objs_and_assert_ids([oil_obj, dvis_obj])
-        assert oil_obj.dvis == [dvis_obj]  #IGNORE:E1101 - synonyms is a sqlalchemy dynamic property
-        assert dvis_obj.oil == oil_obj  #IGNORE:E1101 - oils is a sqlalchemy dynamic property
+        assert oil_obj.dvis == [dvis_obj]
+        assert dvis_obj.oil == oil_obj
 
     def test_add_cut_to_oil(self):
         oil_obj = Oil(**OilTestCase.get_mock_oil_file_record())
         cut_obj = Cut(**CutTestCase.get_mock_cut_file_record())
 
-        oil_obj.cuts.append(cut_obj)  #IGNORE:E1101 - densities is a sqlalchemy dynamic property
+        oil_obj.cuts.append(cut_obj)
 
         self.add_objs_and_assert_ids([oil_obj, cut_obj])
-        assert oil_obj.cuts == [cut_obj]  #IGNORE:E1101 - synonyms is a sqlalchemy dynamic property
-        assert cut_obj.oil == oil_obj  #IGNORE:E1101 - oils is a sqlalchemy dynamic property
+        assert oil_obj.cuts == [cut_obj]
+        assert cut_obj.oil == oil_obj
 
     def test_add_toxicity_to_oil(self):
         oil_obj = Oil(**OilTestCase.get_mock_oil_file_record())
         toxicity_obj = Toxicity(**ToxicityTestCase.get_mock_toxicity_file_record())
 
-        oil_obj.toxicities.append(toxicity_obj)  #IGNORE:E1101 - densities is a sqlalchemy dynamic property
+        oil_obj.toxicities.append(toxicity_obj)
 
         self.add_objs_and_assert_ids([oil_obj, toxicity_obj])
-        assert oil_obj.toxicities == [toxicity_obj]  #IGNORE:E1101 - synonyms is a sqlalchemy dynamic property
-        assert toxicity_obj.oil == oil_obj  #IGNORE:E1101 - oils is a sqlalchemy dynamic property
+        assert oil_obj.toxicities == [toxicity_obj]
+        assert toxicity_obj.oil == oil_obj
