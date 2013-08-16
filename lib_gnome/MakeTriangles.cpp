@@ -593,7 +593,8 @@ Boolean maketriangles(TopologyHdl *topoHdl, LongPointHdl ptsH, long nv, LONGH bo
 	if (changelist==NULL) {err = memFullErr; goto errRecovery;}
 
 	//InitCoordinates2(x,y,ptsH,nv); 	
-	if (err = InitCoordinates(x,y,ptsH,nv,2)) goto errRecovery; 	
+	if ((err = InitCoordinates(x, y, ptsH, nv, 2)) != 0) goto errRecovery;
+
 	for(i=0;i<ntri;i++){
 		x1= x[g_v1[i]];
 		y1= y[g_v1[i]];
@@ -794,7 +795,8 @@ Boolean maketriangles2(TopologyHdl *topoHdl, LongPointHdl ptsH, long nv, LONGH b
 		nlines++;
 	} 
 	//InitCoordinates1(x,y,ptsH,nv); 	
-	if (err = InitCoordinates(x,y,ptsH,nv,1)) goto errRecovery; 	
+	if ((err = InitCoordinates(x, y, ptsH, nv, 1)) != 0) goto errRecovery;
+
 	/* enter triangle generation loop */
 	// make sure triangles don't have 3 points in the same array row/col in netcdf curvilinear case
 	ntri=-1;
@@ -980,7 +982,8 @@ Boolean maketriangles2(TopologyHdl *topoHdl, LongPointHdl ptsH, long nv, LONGH b
 	if (changelist==NULL) {err = memFullErr; goto errRecovery;}
 
 	//InitCoordinates2(x,y,ptsH,nv); 	
-	if (err = InitCoordinates(x,y,ptsH,nv,2)) goto errRecovery; 	
+	if ((err = InitCoordinates(x, y, ptsH, nv, 2)) != 0) goto errRecovery;
+
 	for(i=0;i<ntri;i++){
 		x1= x[g_v1[i]];
 		y1= y[g_v1[i]];

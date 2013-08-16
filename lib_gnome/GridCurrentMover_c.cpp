@@ -323,7 +323,7 @@ OSErr GridCurrentMover_c::TextRead(char *path, char *topFilePath)
 		if (newTimeGrid) {
 			// TODO: This would be more efficient if IsNetCDFFile() would leave the file
 			//       open and pass back an active ncid
-			err = newTimeGrid->TextRead(filePath,topFilePath);
+			err = newTimeGrid->TextRead(filePath, topFilePath);
 			if(err) return err;
 			this->SetTimeGrid(newTimeGrid);
 		}

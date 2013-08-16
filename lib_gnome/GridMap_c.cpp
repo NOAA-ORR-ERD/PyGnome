@@ -2598,7 +2598,7 @@ OSErr GridMap_c::ReadCATSMap(char *path)
 	
 	if (!path || !path[0]) return 0;
 	
-	if (err = ReadFileContents(TERMINATED,0, 0, path, 0, 0, &f)) {
+	if ((err = ReadFileContents(TERMINATED, 0, 0, path, 0, 0, &f)) != 0) {
 		TechError("GridMap_c::ReadCATSMap()", "ReadFileContents()", err);
 		goto done;
 	}
@@ -2661,8 +2661,10 @@ OSErr GridMap_c::ReadCATSMap(char *path)
 		//if (!haveBoundaryData) {err=-1; strcpy(errmsg,"File must have boundary data to create topology"); goto done;}
 		//DisplayMessage("NEXTMESSAGETEMP");
 		DisplayMessage("Making Triangles");
-		if (err = maketriangles(&topo,pts,numPoints,boundarySegs,numBoundarySegs))  // use maketriangles.cpp
+
+		if ((err = maketriangles(&topo, pts, numPoints, boundarySegs, numBoundarySegs)) != 0)
 			err = -1; // for now we require TTopology
+
 		// code goes here, support Galt style ??
 		DisplayMessage(0);
 		velH = (VelocityFH)_NewHandleClear(sizeof(**velH)*numPoints);
@@ -3584,50 +3586,54 @@ OSErr GridMap_c::SaveAsNetCDF(char *path)
 	if (status != NC_NOERR) {err = -1; goto done;}
 	status = nc_put_att_long (ncid, mesh2_boundary_count_id, "start_index", NC_LONG, 1, &startIndex);
 	if (status != NC_NOERR) {err = -1; goto done;}
-	//	nc_Mesh2_edge_boundary_count=nc_cur.createVariable('Mesh2_edge_boundary_count',np.int,('nMesh2_edge',),zlib=True)
+
+	//nc_Mesh2_edge_boundary_count=nc_cur.createVariable('Mesh2_edge_boundary_count',np.int,('nMesh2_edge',),zlib=True)
 	//nc_Mesh2_edge_boundary_count.cf_role = "edge_type"
 	//nc_Mesh2_edge_boundary_count.long_name = "Defines which boundary the edge is a part of."
 	//nc_Mesh2_edge_boundary_count.start_index = 1
 	//Number the edges by which boundary they belong to... first, second, third....
-        
-/*#In extended .CUR files the first boundary described by the
-#BoundarySegments block is the "outer" boundary and its nodes are
-#listed in counterclockwise order.  Subsequent boundaries are "inner"
-#boundaries (e.g., islands) and their nodes are listed in clockwise
-#order in the .CUR.  Here each boundary is tested for clockwise vs.
-#counterclockwise orientation and the boundary edges flagged
-#accordingly as either inner or outer.*/
- /*       nc_Mesh2_edge_boundary_type_InOrOut=nc_cur.createVariable('Mesh2_edge_boundary_type_InOrOut',np.int,('nMesh2_edge',),zlib=True)
-        nc_Mesh2_edge_boundary_type_InOrOut.cf_role = "edge_type"
-        nc_Mesh2_edge_boundary_type_InOrOut.long_name = "Specifies whether the edge is part of an inner or outer boundary."
-        nc_Mesh2_edge_boundary_type_InOrOut.flag_range = np.arange(0,2,dtype=np.int)
-        nc_Mesh2_edge_boundary_type_InOrOut.flag_values = np.arange(0,2,dtype=np.int)
-        nc_Mesh2_edge_boundary_type_InOrOut.flag_meanings = "outer_boundary inner_boundary"
 
-//if nWaterBound>0:
-//nc_Mesh2_edge_boundary_type_WaterORLand=nc_cur.createVariable('Mesh2_edge_boundary_type_WaterORLand',np.int,('nMesh2_edge',),zlib=True)
-//nc_Mesh2_edge_boundary_type_WaterORLand.cf_role = "edge_type"
-//nc_Mesh2_edge_boundary_type_WaterORLand.long_name = "Specifies whether the edge represents land or water."
-//nc_Mesh2_edge_boundary_type_WaterORLand.flag_range = np.arange(0,2,dtype=np.int)
-//nc_Mesh2_edge_boundary_type_WaterORLand.flag_values = np.arange(0,2,dtype=np.int)
-//nc_Mesh2_edge_boundary_type_WaterORLand.flag_meanings = "land_boundary water_boundary"
-//Mesh2_edge_boundary_type_WaterORLand=np.zeros(nMesh2_edge,dtype=np.int) #Preallocate with zeros, since in most cases the majority of boundary edges will be land.
-//Mesh2_edge_boundary_type_WaterORLand[WaterBoundaries-1]=1 #The water boundary values are the zero-based indices of the end nodes of the water boundary edges. 
+	//# In extended .CUR files the first boundary described by the
+	//# BoundarySegments block is the "outer" boundary and its nodes are
+	//# listed in counterclockwise order.  Subsequent boundaries are "inner"
+	//# boundaries (e.g., islands) and their nodes are listed in clockwise
+	//# order in the .CUR.  Here each boundary is tested for clockwise vs.
+	//# counterclockwise orientation and the boundary edges flagged
+	//# accordingly as either inner or outer.
 
-  //int Mesh2_boundary_types(nMesh2_boundary) ;
-  //Mesh2_boundary_types:cf_role = "boundary_type" ;
-  //Mesh2_boundary_types:long_name = "Classification flag for every edge of each boundary." ;
-  //Mesh2_boundary_types:location = "boundary" ;
-  //Mesh2_boundary_types:flag_range = 0., 1. ;
-  //Mesh2_boundary_types:flag_values = 0., 1. ;
-  //Mesh2_boundary_types:flag_meanings = "closed_boundary open_boundary" ;
+	//nc_Mesh2_edge_boundary_type_InOrOut=nc_cur.createVariable('Mesh2_edge_boundary_type_InOrOut',np.int,('nMesh2_edge',),zlib=True)
+	//nc_Mesh2_edge_boundary_type_InOrOut.cf_role = "edge_type"
+	//nc_Mesh2_edge_boundary_type_InOrOut.long_name = "Specifies whether the edge is part of an inner or outer boundary."
+	//nc_Mesh2_edge_boundary_type_InOrOut.flag_range = np.arange(0,2,dtype=np.int)
+	//nc_Mesh2_edge_boundary_type_InOrOut.flag_values = np.arange(0,2,dtype=np.int)
+	//nc_Mesh2_edge_boundary_type_InOrOut.flag_meanings = "outer_boundary inner_boundary"
+
+	//if nWaterBound>0:
+	//nc_Mesh2_edge_boundary_type_WaterORLand=nc_cur.createVariable('Mesh2_edge_boundary_type_WaterORLand',np.int,('nMesh2_edge',),zlib=True)
+	//nc_Mesh2_edge_boundary_type_WaterORLand.cf_role = "edge_type"
+	//nc_Mesh2_edge_boundary_type_WaterORLand.long_name = "Specifies whether the edge represents land or water."
+	//nc_Mesh2_edge_boundary_type_WaterORLand.flag_range = np.arange(0,2,dtype=np.int)
+	//nc_Mesh2_edge_boundary_type_WaterORLand.flag_values = np.arange(0,2,dtype=np.int)
+	//nc_Mesh2_edge_boundary_type_WaterORLand.flag_meanings = "land_boundary water_boundary"
+	//Mesh2_edge_boundary_type_WaterORLand=np.zeros(nMesh2_edge,dtype=np.int) #Preallocate with zeros, since in most cases the majority of boundary edges will be land.
+	//Mesh2_edge_boundary_type_WaterORLand[WaterBoundaries-1]=1 #The water boundary values are the zero-based indices of the end nodes of the water boundary edges.
+
+	//int Mesh2_boundary_types(nMesh2_boundary) ;
+	//Mesh2_boundary_types:cf_role = "boundary_type" ;
+	//Mesh2_boundary_types:long_name = "Classification flag for every edge of each boundary." ;
+	//Mesh2_boundary_types:location = "boundary" ;
+	//Mesh2_boundary_types:flag_range = 0., 1. ;
+	//Mesh2_boundary_types:flag_values = 0., 1. ;
+	//Mesh2_boundary_types:flag_meanings = "closed_boundary open_boundary" ;
   
-	/*Water boundaries (custom).*/
+	// Water boundaries (custom).
 	landwater_dimid[0] = edge_dim;
+
 	// change to boundary type - boundary_types, 0 closed, 1 open
  	status = nc_def_var(ncid, "Mesh2_boundary_types", NC_LONG, 1, landwater_dimid, &mesh2_landwater_id);
 	if (status != NC_NOERR) {err = -1; goto done;}
-   	status = nc_put_att_text (ncid, mesh2_landwater_id, "long_name", strlen("Classification flag for every edge of each boundary."), "Classification flag for every edge of each boundary.");
+
+	status = nc_put_att_text (ncid, mesh2_landwater_id, "long_name", strlen("Classification flag for every edge of each boundary."), "Classification flag for every edge of each boundary.");
 	if (status != NC_NOERR) {err = -1; goto done;}
 	//status = nc_put_att_text (ncid, mesh2_landwater_id, "cf_role", strlen("edge_type"), "edge_type");
 	//if (status != NC_NOERR) {err = -1; goto done;}

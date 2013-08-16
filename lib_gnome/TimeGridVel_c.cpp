@@ -92,15 +92,15 @@ Boolean IsNetCDFPathsFile (char *path, Boolean *isNetCDFPathsFile, char *fileNam
 	// must start with "NetCDF Files"
 	NthLineInTextNonOptimized (firstPartOfFile, line++, strLine, 512);
 	RemoveLeadingAndTrailingWhiteSpace(strLine);
-	key = "NetCDF Files";
-	if (strncmpnocase (strLine, key, strlen(key)) != 0)
+
+	if (strncmpnocase (strLine, "NetCDF Files", 12) != 0)
 		return false;
 
 	// next line must be "[FILE] <path>"
 	NthLineInTextNonOptimized(firstPartOfFile, line++, strLine, 512); 
 	RemoveLeadingAndTrailingWhiteSpace(strLine);
-	key = "[FILE]";
-	if (strncmpnocase (strLine, key, strlen(key)) != 0)
+
+	if (strncmpnocase (strLine, "[FILE]", 6) != 0)
 		return false;
 	
 	strcpy(fileNamesPath,path); // transfer the input path to this output variable
@@ -7684,7 +7684,7 @@ OSErr TimeGridCurRect_c::ReadInputFileNames(vector<string> &linesInFile, long *l
 	if (fileStanzasFound != numFiles) {
 		err = -1;
 		char msg[256];
-		sprintf(msg, "Expected %d file stanzas, found %d\n", numFiles, fileStanzasFound);
+		sprintf(msg, "Expected %ld file stanzas, found %ld\n", numFiles, fileStanzasFound);
 		printError(msg);
 		goto done;
 	}

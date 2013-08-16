@@ -233,7 +233,7 @@ OSErr NumberIslands(LONGH *islandNumberH, DOUBLEH landmaskH,LONGH landWaterInfo,
 					else
 					{
 						// check for nearest land poly number
-						if (lowestSurroundingNum = CheckSurroundingPoints(maskH,numRows,numCols,i,j)>=3)
+						if ((lowestSurroundingNum = CheckSurroundingPoints(maskH, numRows, numCols, i, j)) >= 3)
 						{
 							INDEXH(maskH,i*numCols+j) = lowestSurroundingNum;
 						}
