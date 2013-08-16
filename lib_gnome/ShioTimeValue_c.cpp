@@ -885,7 +885,7 @@ OSErr ShioTimeValue_c::GetTimeValue(const Seconds& current_time, VelocityRec *va
 				maxMinDeriv = GetDeriv(startHighLowData.time, startHighLowData.height,
 									   endHighLowData.time, endHighLowData.height, midTime);
 				// track largest and save all for left hand list, but only do this first time...
-				if (abs(maxMinDeriv)>largestDeriv) largestDeriv = abs(maxMinDeriv);
+				if (fabs(maxMinDeriv) > largestDeriv) largestDeriv = fabs(maxMinDeriv);
 			}		
 			/////////////////////////////////////////////////
 			// ask for a scale factor if not known from wizard
@@ -1377,10 +1377,15 @@ OSErr ShioTimeValue_c::ReadTimeValues (char *path)
 	timeValues = 0;
 	fileName[0] = 0;
 	
-	if (!path) return -1;
-	
-	strcpy(strLine, path);
-	strcpy(this->filePath,path);
+	if (!path)
+		return -1;
+
+	strncpy(this->filePath, path, kMaxNameLen);
+	this->filePath[kMaxNameLen - 1] = 0;
+
+	strncpy(strLine, path, kMaxNameLen);
+	strLine[kMaxNameLen - 1] = 0;
+
 	SplitPathFile(strLine, this->fileName);
 	
 //	err = ReadFileContents(TERMINATED, 0, 0, path, 0, 0, &f);

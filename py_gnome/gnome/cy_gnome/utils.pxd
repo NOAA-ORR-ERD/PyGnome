@@ -17,8 +17,8 @@ cdef extern from "MemUtils.h":
 Expose DateTime conversion functions from the lib_gnome/StringFunctions.h
 """
 cdef extern from "StringFunctions.h":
-    void DateToSeconds (DateTimeRec *, unsigned long *)
-    void SecondsToDate (unsigned long, DateTimeRec *)
+    void DateToSeconds (DateTimeRec *, Seconds *)
+    void SecondsToDate (Seconds, DateTimeRec *)
 
 """
 Declare methods for interpolation of timeseries from 

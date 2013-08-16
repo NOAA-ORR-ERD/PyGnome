@@ -10,6 +10,7 @@
 #ifndef __TimeGridVel_c__
 #define __TimeGridVel_c__
 
+
 #include "Basics.h"
 #include "TypeDefs.h"
 #include "ExportSymbols.h"
@@ -20,6 +21,7 @@
 #ifndef pyGNOME
 #include "GridVel.h"
 #else
+#include "Replacements.h"
 #include "GridVel_c.h"
 #define TGridVel GridVel_c
 #endif
@@ -38,10 +40,7 @@ typedef struct {
 
 Boolean IsNetCDFFile (char *path, short *gridType);
 Boolean IsNetCDFPathsFile (char *path, Boolean *isNetCDFPathsFile, char *fileNamesPath, short *gridType);
-Boolean IsPtCurFile (char *path);
-Boolean IsGridCurTimeFile (char *path, short *selectedUnits);
 Boolean IsGridWindFile(char *path,short *selectedUnits);
-Boolean IsCATS3DFile (char *path);
 
 class TimeGridVel_c
 {
@@ -95,7 +94,6 @@ public:
 	long 					GetNumFiles();
 	virtual OSErr 		CheckAndScanFile(char *errmsg, const Seconds& model_time);	
 	virtual OSErr	 	SetInterval(char *errmsg, const Seconds& model_time);	
-	//virtual OSErr 		ScanFileForTimes(char *path,Seconds ***timeH,Boolean setStartTime);	
 	
 	virtual Boolean 	CheckInterval(long &timeDataInterval, const Seconds& model_time);	
 	virtual OSErr		TextRead(char *path,char *topFilePath) {return 0;}
@@ -109,8 +107,19 @@ public:
 	void 				ClearLoadedData(LoadedData * dataPtr);
 	void 				DisposeAllLoadedData();
 };
-OSErr 		ScanFileForTimes(char *path,Seconds ***timeH);	
-OSErr 		ScanFileForTimes(char *path,PtCurTimeDataHdl ***timeDataH,Seconds ***timeH);	
+
+
+OSErr ScanFileForTimes(char *path,
+					   Seconds ***timeH);
+OSErr ScanFileForTimes(std::vector<std::string> &linesInFile,
+					   PtCurTimeDataHdl *timeDataH, Seconds ***timeH);
+OSErr ScanFileForTimes(char *path,
+					   PtCurTimeDataHdl *timeDataH, Seconds ***timeH);
+
+bool DateValuesAreMinusOne(DateTimeRec &dateTime);
+bool DateIsValid(DateTimeRec &dateTime);
+void CorrectTwoDigitYear(DateTimeRec &dateTime);
+
 
 class TimeGridVelRect_c : virtual public TimeGridVel_c
 {
@@ -184,8 +193,9 @@ public:
 	void 				GetDepthIndices(long ptIndex, float depthAtPoint, float totalDepth, long *depthIndex1, long *depthIndex2);
 	float		GetTotalDepthFromTriIndex(long triIndex);
 	float		GetTotalDepth(WorldPoint refPoint,long ptIndex);
-	
-	virtual	OSErr 	ReadTopology(char* path);
+
+	virtual	OSErr ReadTopology(std::vector<std::string> &linesInFile);
+	virtual	OSErr ReadTopology(char *path);
 	//virtual	OSErr 	ReadTopology(char* path, TMap **newMap);
 	virtual	OSErr 	ExportTopology(char* path);
 };
@@ -216,8 +226,10 @@ public:
 	virtual long			GetNumDepthLevels();
 	float					GetTotalDepth(WorldPoint refPoint, long triNum);
 	
-	virtual	OSErr 	ReadTopology(char* path);
+	virtual OSErr ReadTopology(std::vector<std::string> &linesInFile);
+	virtual	OSErr ReadTopology(char* path);
 	//virtual	OSErr 	ReadTopology(char* path, TMap **newMap);
+
 	virtual	OSErr 	ExportTopology(char* path);
 };
 
@@ -225,25 +237,35 @@ public:
 class TimeGridCurRect_c : virtual public TimeGridVel_c
 {
 public:
-	
+
 	PtCurTimeDataHdl fTimeDataHdl;	
 	short fUserUnits;
-	
+
 	TimeGridCurRect_c();
 	virtual	~TimeGridCurRect_c() { Dispose (); }
 	virtual void	Dispose();
-	
+
 	virtual ClassID 	GetClassID () { return TYPE_TIMEGRIDCURRECT; }
 	virtual Boolean	IAm(ClassID id) { if(id==TYPE_TIMEGRIDCURRECT) return TRUE; return TimeGridVel_c::IAm(id); }
-	
+
 	VelocityRec 		GetScaledPatValue(const Seconds& model_time, WorldPoint3D p);
-	
-	virtual OSErr		TextRead(char *path,char *topFilePath);
+
+	virtual OSErr TextRead(std::vector<std::string> &linesInFile, std::string containingDir);
+	virtual OSErr TextRead(char *path,char *topFilePath);
+
+	OSErr ReadHeaderLines(std::vector<std::string> &linesInFile,
+						  std::string &containingDir,
+						  WorldRect *bounds);
 	virtual OSErr 		ReadTimeData(long index,VelocityFH *velocityH, char* errmsg);
-	//virtual OSErr		ScanFileForTimes(char *path,PtCurTimeDataHdl *timeDataH,Boolean setStartTime);
 	virtual long		GetNumTimesInFile();
-	OSErr				ReadHeaderLines(char *path, WorldRect *bounds);
-	OSErr			ReadInputFileNames(CHARH fileBufH, long *line, long numFiles, PtCurFileInfoH *inputFilesH, char *pathOfInputfile);
+
+	OSErr ReadInputFileNames(std::vector<std::string> &linesInFile, long *line,
+							 std::string containingDir,
+							 long numFiles, PtCurFileInfoH *inputFilesH);
+	OSErr ReadInputFileNames(CHARH fileBufH, long *line,
+							 long numFiles, PtCurFileInfoH *inputFilesH,
+							 char *pathOfInputfile);
+
 	virtual void		DisposeTimeHdl();
 	virtual OSErr 		CheckAndScanFile(char *errmsg, const Seconds& model_time);	
 	virtual OSErr		GetStartTime(Seconds *startTime);	// switch this to GetTimeValue
@@ -267,15 +289,21 @@ public:
 	
 	VelocityRec 		GetScaledPatValue(const Seconds& model_time, WorldPoint3D p);
 	VelocityRec 		GetScaledPatValue3D(const Seconds& model_time, InterpolationVal interpolationVal,float depth);
+
+	virtual OSErr TextRead(std::vector<std::string> &linesInFile, std::string containingDir);
+	virtual OSErr TextRead(char *path, char *topFilePath);
 	
-	virtual OSErr		TextRead(char *path,char *topFilePath);
-	virtual OSErr 		ReadTimeData(long index,VelocityFH *velocityH, char* errmsg);
-	OSErr				ReadHeaderLine(char *s);
-	OSErr				ReadPtCurVertices(CHARH fileBufH,long *line,LongPointHdl *pointsH,FLOATH *bathymetryH,char* errmsg,long numPoints);
+	OSErr         ReadHeaderLine(std::string &strIn);
+	virtual OSErr ReadTimeData(long index, VelocityFH *velocityH, char *errmsg);
+	OSErr ReadPtCurVertices(std::vector<std::string> &linesInFile, long *line,
+							LongPointHdl *pointsH, FLOATH *bathymetryH, char* errmsg,
+							long numPoints);
 	
-	long					GetNumDepths(void);
-	void 					GetDepthIndices(long ptIndex, float depthAtPoint, long *depthIndex1, long *depthIndex2);
+	long GetNumDepths(void);
+	void GetDepthIndices(long ptIndex, float depthAtPoint, long *depthIndex1, long *depthIndex2);
+
 };
+
 
 class TimeGridWindRect_c : virtual public TimeGridVel_c
 {
@@ -321,9 +349,13 @@ public:
 	OSErr 				ReorderPoints(char* errmsg); 
 	OSErr				GetLatLonFromIndex(long iIndex, long jIndex, WorldPoint *wp);
 
-	virtual	OSErr 	ReadTopology(char* path);
+	virtual	OSErr ReadTopology(std::vector<std::string> &linesInFile);
+	virtual	OSErr ReadTopology(char *path);
+
 	virtual	OSErr 	ExportTopology(char* path);
 };
+
+
 /*class TimeGridWindRectASCII_c : virtual public TimeGridVel_c
 {
 public:
@@ -343,7 +375,6 @@ public:
 	
 	virtual OSErr		TextRead(char *path,char *topFilePath);
 	virtual OSErr 		ReadTimeData(long index,VelocityFH *velocityH, char* errmsg);
-	//virtual OSErr		ScanFileForTimes(char *path,PtCurTimeDataHdl *timeDataH,Boolean setStartTime);
 	virtual long		GetNumTimesInFile();
 	OSErr				ReadHeaderLines(char *path, WorldRect *bounds);
 	OSErr			ReadInputFileNames(CHARH fileBufH, long *line, long numFiles, PtCurFileInfoH *inputFilesH, char *pathOfInputfile);

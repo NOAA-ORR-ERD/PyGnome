@@ -7,6 +7,8 @@
  *
  */
 
+#include <cstdio>
+
 #include "GridMap_c.h"
 #include "TimeGridVel_c.h"
 #include "MemUtils.h"
@@ -14,7 +16,6 @@
 #include "CompFunctions.h"
 #include "DagTreeIO.h"
 #include "netcdf.h"
-#include <stdio.h>
 
 #ifndef pyGNOME
 #include "CROSS.H"
@@ -1554,7 +1555,10 @@ done:
 	return err;
 }
 
-OSErr GridMap_c::SetUpTriangleGrid(long numNodes, long numTri, WORLDPOINTFH vertexPtsH, FLOATH depthPtsH, long *bndry_indices, long *bndry_nums, long *bndry_type, long numBoundaryPts) 
+OSErr GridMap_c::SetUpTriangleGrid(long numNodes, long numTri,
+								   WORLDPOINTFH vertexPtsH, FLOATH depthPtsH,
+								   long *bndry_indices, long *bndry_nums, long *bndry_type,
+								   long numBoundaryPts)
 {
 	OSErr err = 0;
 	char errmsg[256];
@@ -1566,40 +1570,47 @@ OSErr GridMap_c::SetUpTriangleGrid(long numNodes, long numTri, WORLDPOINTFH vert
 	LONGH verdatPtsH = (LONGH)_NewHandleClear(nv * sizeof(**verdatPtsH));
 	LONGH verdatBreakPtsH = (LONGH)_NewHandleClear(nv * sizeof(**verdatBreakPtsH));
 	
-	TopologyHdl topo=0;
-	LongPointHdl pts=0;
+	TopologyHdl topo = 0;
+	LongPointHdl pts = 0;
 	VelocityFH velH = 0;
 	DAGTreeStruct tree;
 	WorldRect triBounds;
-	LONGH waterBoundariesH=0;
-	FLOATH depths=0;
-	
-	TTriGridVel *triGrid = nil;
+	LONGH waterBoundariesH = 0;
+	FLOATH depths = 0;
+
+	TTriGridVel *triGrid = 0;
 	tree.treeHdl = 0;
 	TDagTree *dagTree = 0;
 	
 	Boolean addOne = false;	// for debugging
 	
-	if (!vertFlagsH || !verdatPtsH || !verdatBreakPtsH) {err = memFullErr; goto done;}
+	if (!vertFlagsH || !verdatPtsH || !verdatBreakPtsH) {
+		err = memFullErr;
+		goto done;
+	}
 	
 	// put boundary points into verdat list
 	
 	// code goes here, double check that the water boundary info is also reordered
-	currentBoundary=1;
-	if (bndry_nums[0]==0) addOne = true;	// for debugging
-	for (i = 0; i < numBoundaryPts; i++)
-	{	
-		//short islandNum, index;
+	currentBoundary = 1;
+	if (bndry_nums[0] == 0)
+		addOne = true;	// for debugging
+
+	for (i = 0; i < numBoundaryPts; i++) {
 		long islandNum, index;
+
 		index = bndry_indices[i];
 		islandNum = bndry_nums[i];
-		if (addOne) islandNum++;	// for debugging
-		INDEXH(vertFlagsH,index-1) = 1;	// note that point has been used
-		INDEXH(verdatPtsH,numVerdatPts++) = index-1;	// add to verdat list
-		if (islandNum>currentBoundary)
-		{
+
+		if (addOne)
+			islandNum++;	// for debugging
+
+		INDEXH(vertFlagsH, index - 1) = 1;	// note that point has been used
+		INDEXH(verdatPtsH, numVerdatPts++) = index - 1;	// add to verdat list
+
+		if (islandNum > currentBoundary) {
 			// for verdat file indices are really point numbers, subtract one for actual index
-			INDEXH(verdatBreakPtsH,numVerdatBreakPts++) = i;	// passed a break point
+			INDEXH(verdatBreakPtsH, numVerdatBreakPts++) = i;	// passed a break point
 			currentBoundary++;
 		}
 	}
@@ -1607,108 +1618,116 @@ OSErr GridMap_c::SetUpTriangleGrid(long numNodes, long numTri, WORLDPOINTFH vert
 	
 	// add the rest of the points to the verdat list (these points are the interior points)
 	for(i = 0; i < nv; i++) {
-		if(INDEXH(vertFlagsH,i) == 0)	
-		{
-			INDEXH(verdatPtsH,numVerdatPts++) = i;
-			INDEXH(vertFlagsH,i) = 0; // mark as used
+		if (INDEXH(vertFlagsH, i) == 0) {
+			INDEXH(verdatPtsH, numVerdatPts++) = i;
+			INDEXH(vertFlagsH, i) = 0; // mark as used
 		}
 	}
-	if (numVerdatPts!=nv) 
-	{
+
+	if (numVerdatPts != nv) {
 		printNote("Not all vertex points were used");
 		// shrink handle
-		_SetHandleSize((Handle)verdatPtsH,numVerdatPts*sizeof(long));
+		_SetHandleSize((Handle)verdatPtsH, numVerdatPts * sizeof(long));
 	}
+
 	pts = (LongPointHdl)_NewHandle(sizeof(LongPoint)*(numVerdatPts));
 	depths = (FLOATH)_NewHandle(sizeof(float)*(numVerdatPts));
-	if(pts == nil || depths == nil)
-	{
+	if(pts == 0 || depths == 0) {
 		strcpy(errmsg,"Not enough memory to triangulate data.");
 		return -1;
 	}
 	
-	for (i=0; i<=numVerdatPts; i++)
-	{
+	for (i = 0; i <= numVerdatPts; i++) {
 		long index;
 		float fLong, fLat, fDepth;
 		LongPoint vertex;
 		
-		if(i < numVerdatPts) 
-		{	
-			index = i+1;
-			n = INDEXH(verdatPtsH,i);
-			fLat = INDEXH(vertexPtsH,n).pLat;	
-			fLong = INDEXH(vertexPtsH,n).pLong;
-			vertex.v = (long)(fLat*1e6);
-			vertex.h = (long)(fLong*1e6);
-			
-			fDepth = INDEXH(depthPtsH,n);	
-			INDEXH(pts,i) = vertex;
-			INDEXH(depths,i) = fDepth;
+		if (i < numVerdatPts)  {
+			index = i + 1;
+			n = INDEXH(verdatPtsH, i);
+			fLat = INDEXH(vertexPtsH, n).pLat;
+			fLong = INDEXH(vertexPtsH, n).pLong;
+
+			vertex.v = (long)(fLat * 1e6);
+			vertex.h = (long)(fLong * 1e6);
+
+			fDepth = INDEXH(depthPtsH, n);
+			INDEXH(pts, i) = vertex;
+			INDEXH(depths, i) = fDepth;
 		}
-		else { // the last line should be all zeros
+		else {
+			// the last line should be all zeros
 			index = 0;
 			fLong = fLat = fDepth = 0.0;
 		}
-		/////////////////////////////////////////////////
 	}
+
 	// figure out the bounds
+	cerr << "GridMap_c::SetUpTriangleGrid(): figure out the bounds..." << endl;
 	triBounds = voidWorldRect;
-	if(pts) 
-	{
-		LongPoint	thisLPoint;
-		
-		if(numVerdatPts > 0)
-		{
+	if (pts) {
+		LongPoint thisLPoint;
+
+		if (numVerdatPts > 0) {
 			WorldPoint  wp;
-			for(i=0;i<numVerdatPts;i++)
-			{
-				thisLPoint = INDEXH(pts,i);
+
+			for(i = 0; i < numVerdatPts; i++) {
+				thisLPoint = INDEXH(pts, i);
+
 				wp.pLat = thisLPoint.v;
 				wp.pLong = thisLPoint.h;
+
 				AddWPointToWRect(wp.pLat, wp.pLong, &triBounds);
 			}
 		}
 	}
 	
 	// shrink handle
-	_SetHandleSize((Handle)verdatBreakPtsH,numVerdatBreakPts*sizeof(long));
-	for(i = 0; i < numVerdatBreakPts; i++ )
-	{
+	cerr << "GridMap_c::SetUpTriangleGrid(): shrink verdatBreakPtsH..." << endl;
+	_SetHandleSize((Handle)verdatBreakPtsH, numVerdatBreakPts * sizeof(long));
+	for (i = 0; i < numVerdatBreakPts; i++ ) {
 		INDEXH(verdatBreakPtsH,i)--;
 	}
-	
+
 	DisplayMessage("NEXTMESSAGETEMP");
 	DisplayMessage("Making Triangles");
 	// use new maketriangles to force algorithm to avoid 3 points in the same row or column
+
 	MySpinCursor(); // JLM 8/4/99
-	if (err = maketriangles(&topo,pts,numVerdatPts,verdatBreakPtsH,numVerdatBreakPts))
-		//if (err = maketriangles2(&topo,pts,numVerdatPts,verdatBreakPtsH,numVerdatBreakPts,verdatPtsH,fNumCols_ext))
+
+	cerr << "GridMap_c::SetUpTriangleGrid(): maketriangles()..." << endl;
+	err = maketriangles(&topo, pts, numVerdatPts, verdatBreakPtsH, numVerdatBreakPts);
+	if (err)
 		goto done;
-	
+
 	DisplayMessage("NEXTMESSAGETEMP");
 	DisplayMessage("Making Dag Tree");
+
 	MySpinCursor(); // JLM 8/4/99
+
+	cerr << "GridMap_c::SetUpTriangleGrid(): MakeDagTree()..." << endl;
 	tree = MakeDagTree(topo, (LongPoint**)pts, errmsg); 
+
 	MySpinCursor(); // JLM 8/4/99
-	if (errmsg[0])	
-	{err = -1; goto done;} 
-	// sethandle size of the fTreeH to be tree.fNumBranches, the rest are zeros
+
+	if (errmsg[0]) {
+		err = -1;
+		goto done;
+	}
+
 	_SetHandleSize((Handle)tree.treeHdl,tree.numBranches*sizeof(DAG));
-	/////////////////////////////////////////////////
-	
+
 	triGrid = new TTriGridVel;
-	if (!triGrid)
-	{		
+	if (!triGrid) {
 		err = true;
 		TechError("Error in GridMap_c::ReorderPoints()","new TTriGridVel" ,err);
 		goto done;
 	}
-	
+
 	fGrid = (TTriGridVel*)triGrid;
-	//fGrid = (TTriGridVel3D*)triGrid;
 	
-	triGrid -> SetBounds(triBounds); 
+	cerr << "GridMap_c::SetUpTriangleGrid(): triGrid->SetBounds()..." << endl;
+	triGrid->SetBounds(triBounds);
 	
 	dagTree = new TDagTree(pts,topo,tree.treeHdl,velH,tree.numBranches); 
 	if(!dagTree)
@@ -1731,61 +1750,97 @@ OSErr GridMap_c::SetUpTriangleGrid(long numNodes, long numTri, WORLDPOINTFH vert
 	depths = 0; // because fGrid is now responsible for it
 	//totalDepthH = 0; // because fGrid is now responsible for it
 	
-	/////////////////////////////////////////////////
-	numBoundaryPts = INDEXH(verdatBreakPtsH,numVerdatBreakPts-1)+1;
-	waterBoundariesH = (LONGH)_NewHandle(sizeof(long)*numBoundaryPts);
-	if (!waterBoundariesH) {err = memFullErr; goto done;}
-	
-	for (i=0;i<numBoundaryPts;i++)
-	{
-		INDEXH(waterBoundariesH,i)=1;	// default is land
-		if (bndry_type[i]==1)	
-			INDEXH(waterBoundariesH,i)=2;	// water boundary, this marks start point rather than end point...
+	numBoundaryPts = INDEXH(verdatBreakPtsH, numVerdatBreakPts - 1) + 1;
+	waterBoundariesH = (LONGH)_NewHandle(sizeof(long) * numBoundaryPts);
+	if (!waterBoundariesH) {
+		err = memFullErr;
+		goto done;
+	}
+
+	cerr << "GridMap_c::SetUpTriangleGrid(): set bounday types..." << endl;
+	for (i = 0; i < numBoundaryPts; i++) {
+		INDEXH(waterBoundariesH, i) = 1;	// default is land
+		if (bndry_type[i] == 1)
+			INDEXH(waterBoundariesH, i) = 2;	// water boundary, this marks start point rather than end point...
 	}
 	
-	if (waterBoundariesH)	// maybe assume rectangle grids will have map?
-	{
+	if (waterBoundariesH) {
+		// maybe assume rectangle grids will have map?
 		// maybe move up and have the map read in the boundary information
 		this->SetBoundarySegs(verdatBreakPtsH);	
 		this->SetWaterBoundaries(waterBoundariesH);
 		//this->SetBoundaryPoints(boundaryPtsH);
 		this->SetMapBounds(triBounds);
 	}
-	else
-	{
-		if (waterBoundariesH) {DisposeHandle((Handle)waterBoundariesH); waterBoundariesH=0;}
-		if (verdatBreakPtsH) {DisposeHandle((Handle)verdatBreakPtsH); verdatBreakPtsH=0;}
+	else {
+		if (waterBoundariesH) {
+			DisposeHandle((Handle)waterBoundariesH);
+			waterBoundariesH = 0;
+		}
+		if (verdatBreakPtsH) {
+			DisposeHandle((Handle)verdatBreakPtsH);
+			verdatBreakPtsH = 0;
+		}
+	}
+
+done:
+
+	if (err)
+		printError("Error reordering gridpoints into verdat format");
+
+	if (vertFlagsH) {
+		DisposeHandle((Handle)vertFlagsH);
+		vertFlagsH = 0;
 	}
 	
-	/////////////////////////////////////////////////
-	
-done:
-	if (err) printError("Error reordering gridpoints into verdat format");
-	if (vertFlagsH) {DisposeHandle((Handle)vertFlagsH); vertFlagsH = 0;}
-	
-	if(err)
-	{
-		if(!errmsg[0])
+	if (err) {
+		if (!errmsg[0])
 			strcpy(errmsg,"An error occurred in GridMap_c::SetUpTriangleGrid");
 		printError(errmsg); 
-		if(pts) {DisposeHandle((Handle)pts); pts=0;}
-		if(topo) {DisposeHandle((Handle)topo); topo=0;}
-		if(velH) {DisposeHandle((Handle)velH); velH=0;}
-		if(tree.treeHdl) {DisposeHandle((Handle)tree.treeHdl); tree.treeHdl=0;}
-		if(depths) {DisposeHandle((Handle)depths); depths=0;}
+
+		if (pts) {
+			DisposeHandle((Handle)pts);
+			pts = 0;
+		}
+		if (topo) {
+			DisposeHandle((Handle)topo);
+			topo = 0;
+		}
+		if (velH) {
+			DisposeHandle((Handle)velH);
+			velH = 0;
+		}
+		if (tree.treeHdl) {
+			DisposeHandle((Handle)tree.treeHdl);
+			tree.treeHdl = 0;
+		}
+		if (depths) {
+			DisposeHandle((Handle)depths);
+			depths = 0;
+		}
 		
-		if(fGrid)
-		{
-			fGrid ->Dispose();
+		if (fGrid) {
+			fGrid->Dispose();
 			delete fGrid;
 			fGrid = 0;
 		}
-		if (waterBoundariesH) {DisposeHandle((Handle)waterBoundariesH); waterBoundariesH=0;}
-		if (verdatBreakPtsH) {DisposeHandle((Handle)verdatBreakPtsH); verdatBreakPtsH = 0;}
-		if (verdatPtsH) {DisposeHandle((Handle)verdatPtsH); verdatPtsH = 0;}
+		if (waterBoundariesH) {
+			DisposeHandle((Handle)waterBoundariesH);
+			waterBoundariesH = 0;
+		}
+		if (verdatBreakPtsH) {
+			DisposeHandle((Handle)verdatBreakPtsH);
+			verdatBreakPtsH = 0;
+		}
+		if (verdatPtsH) {
+			DisposeHandle((Handle)verdatPtsH);
+			verdatPtsH = 0;
+		}
 	}
+
 	return err;
 }
+
 
 OSErr GridMap_c::GetPointsAndMask(char *path,DOUBLEH *maskH,WORLDPOINTFH *vertexPointsH, FLOATH *depthPointsH, long *numRows, long *numCols)	
 {
@@ -2072,7 +2127,7 @@ depths:
 			{
 				// grid ordering does matter for creating ptcurmap, assume increases fastest in x/lon, then in y/lat
 				//INDEXH(totalDepthsH,i*lonLength+j) = depth_vals[(latLength-i-1)*lonLength+j];	
-				INDEXH(totalDepthsH,i*lonLength+j) = abs(depth_vals[(latLength-i-1)*lonLength+j]);	
+				INDEXH(totalDepthsH,i*lonLength+j) = fabs(depth_vals[(latLength-i-1)*lonLength+j]);
 			}
 		}
 		*depthPointsH = totalDepthsH;
@@ -2179,131 +2234,198 @@ done:
 	return err;
 }
 
-OSErr GridMap_c::GetPointsAndBoundary(char *path,WORLDPOINTFH *vertexPointsH, FLOATH *depthPtsH, long *numNodes, LONGPTR *boundary_indices, LONGPTR *boundary_nums, LONGPTR *boundary_type, long *numBoundaryPts, LONGPTR *triangle_verts, LONGPTR *triangle_neighbors, long *ntri)
+
+// needs to be updated once triangle grid format is set
+OSErr GridMap_c::GetPointsAndBoundary(char *path,
+									  WORLDPOINTFH *vertexPointsH, FLOATH *depthPtsH, long *numNodes,
+									  LONGPTR *boundary_indices, LONGPTR *boundary_nums, LONGPTR *boundary_type, long *numBoundaryPts,
+									  LONGPTR *triangle_verts, LONGPTR *triangle_neighbors, long *ntri)
 {
-	// needs to be updated once triangle grid format is set
-	
 	OSErr err = 0;
-	long i, numScanned;
-	int status, ncid, nodeid, nbndid, bndid, neleid, latid, lonid, recid, timeid, sigmaid, sigmavarid, depthid, nv_varid, nbe_varid;
+	char errmsg[256] = "";
+	char fileName[64], s[256], topPath[256], outPath[256];
+
+	Boolean bTopFile = false, bTopInfoInFile = false, bVelocitiesOnTriangles = false;
+
+	long i, numScanned, status;
+	int ncid, nodeid, nbndid, bndid, neleid;
+	int nv_varid, nbe_varid;
+	int latid, lonid;
+	int depthid;
+	int recid, timeid, sigmaid, sigmavarid;
 	int curr_ucmp_id, uv_dimid[3], uv_ndims;
-	size_t nodeLength, nbndLength, neleLength, recs, t_len, sigmaLength=0;
 	float timeVal;
+
+	size_t nodeLength, nbndLength, neleLength, recs, t_len, sigmaLength = 0;
+	static size_t latIndex = 0, lonIndex = 0, timeIndex, ptIndex = 0;
+	static size_t pt_count, sigma_count;
+	static size_t bndIndex[2] = {0, 0}, bnd_count[2];
+	static size_t topIndex[2] = {0, 0}, top_count[2];
+
 	//char recname[NC_MAX_NAME], *timeUnits=0;	
-	WORLDPOINTFH vertexPtsH=0;
-	FLOATH totalDepthsH=0;
 	//, sigmaLevelsH=0;
-	float *lat_vals=0,*lon_vals=0,*depth_vals=0;
 	//, *sigma_vals=0;
-	long *bndry_indices=0, *bndry_nums=0, *bndry_type=0, *top_verts=0, *top_neighbors=0;
-	static size_t latIndex=0,lonIndex=0,timeIndex,ptIndex=0,bndIndex[2]={0,0};
-	static size_t pt_count, bnd_count[2], sigma_count,topIndex[2]={0,0}, top_count[2];
+	float *lat_vals = 0, *lon_vals = 0, *depth_vals = 0;
+	long *bndry_indices = 0, *bndry_nums = 0, *bndry_type = 0, *top_verts = 0, *top_neighbors = 0;
 	//Seconds startTime, startTime2;
 	double timeConversion = 1., scale_factor = 1.;
-	char errmsg[256] = "";
-	char fileName[64],s[256],topPath[256], outPath[256];
+	char *modelTypeStr = 0;
+
+	FLOATH totalDepthsH = 0;
+	WORLDPOINTFH vertexPtsH = 0;
 	
-	char *modelTypeStr=0;
-	Boolean bTopFile = false, bTopInfoInFile = false, bVelocitiesOnTriangles = false;
 	
-	if (!path || !path[0]) return 0;
-	//strcpy(fVar.pathName,path);
-	
-	//strcpy(s,path);
-	//SplitPathFile (s, fileName);
-	//strcpy(fVar.userName, fileName); // maybe use a name from the file
-	
+	if (!path || !path[0])
+		return 0;
+
 	status = nc_open(path, NC_NOWRITE, &ncid);
-	//if (status != NC_NOERR) {err = -1; goto done;}
-	if (status != NC_NOERR) /*{err = -1; goto done;}*/
+	if (status != NC_NOERR)
 	{
 #if TARGET_API_MAC_CARBON
 		err = ConvertTraditionalPathToUnixPath((const char *) path, outPath, kMaxNameLen) ;
 		status = nc_open(outPath, NC_NOWRITE, &ncid);
 #endif
-		if (status != NC_NOERR) {err = -1; goto done;}
+		if (status != NC_NOERR) {
+			err = -1;
+			goto done;
+		}
 	}
-	
+
 	status = nc_inq_dimid(ncid, "node", &nodeid); 
-	if (status != NC_NOERR) {err = -1; goto done;}
+	if (status != NC_NOERR) {
+		err = -1;
+		goto done;
+	}
+
 	status = nc_inq_dimlen(ncid, nodeid, &nodeLength);
-	if (status != NC_NOERR) {err = -1; goto done;}
+	if (status != NC_NOERR) {
+		err = -1;
+		goto done;
+	}
+
 	status = nc_inq_dimid(ncid, "nbnd", &nbndid);	
-	if (status != NC_NOERR) {err = -1; goto done;}
+	if (status != NC_NOERR) {
+		err = -1;
+		goto done;
+	}
+
 	status = nc_inq_varid(ncid, "bnd", &bndid);	
-	if (status != NC_NOERR) {err = -1; goto done;}
+	if (status != NC_NOERR) {
+		err = -1;
+		goto done;
+	}
+
 	status = nc_inq_dimlen(ncid, nbndid, &nbndLength);
-	if (status != NC_NOERR) {err = -1; goto done;}
+	if (status != NC_NOERR) {
+		err = -1;
+		goto done;
+	}
 	
 	bnd_count[0] = nbndLength;
 	bnd_count[1] = 1;
-	//bndry_indices = new short[nbndLength]; 
 	bndry_indices = new long[nbndLength]; 
-	//bndry_nums = new short[nbndLength]; 
-	//bndry_type = new short[nbndLength]; 
 	bndry_nums = new long[nbndLength]; 
 	bndry_type = new long[nbndLength]; 
-	if (!bndry_indices || !bndry_nums || !bndry_type) {err = memFullErr; goto done;}
-	//bndIndex[1] = 0;
+	if (!bndry_indices || !bndry_nums || !bndry_type) {
+		err = memFullErr;
+		goto done;
+	}
+
 	bndIndex[1] = 1;	// take second point of boundary segments instead, so that water boundaries work out
-	//status = nc_get_vara_short(ncid, bndid, bndIndex, bnd_count, bndry_indices);
 	status = nc_get_vara_long(ncid, bndid, bndIndex, bnd_count, bndry_indices);
-	if (status != NC_NOERR) {err = -1; goto done;}
+	if (status != NC_NOERR) {
+		err = -1;
+		goto done;
+	}
+
 	bndIndex[1] = 2;
-	//status = nc_get_vara_short(ncid, bndid, bndIndex, bnd_count, bndry_nums);
 	status = nc_get_vara_long(ncid, bndid, bndIndex, bnd_count, bndry_nums);
-	if (status != NC_NOERR) {err = -1; goto done;}
+	if (status != NC_NOERR) {
+		err = -1;
+		goto done;
+	}
+
 	bndIndex[1] = 3;
-	//status = nc_get_vara_short(ncid, bndid, bndIndex, bnd_count, bndry_type);
 	status = nc_get_vara_long(ncid, bndid, bndIndex, bnd_count, bndry_type);
-	if (status != NC_NOERR) {err = -1; goto done;}
+	if (status != NC_NOERR) {
+		err = -1;
+		goto done;
+	}
 	
 	// option to use index values?
 	status = nc_inq_varid(ncid, "lat", &latid);
-	if (status != NC_NOERR) {err = -1; goto done;}
+	if (status != NC_NOERR) {
+		err = -1;
+		goto done;
+	}
+
 	status = nc_inq_varid(ncid, "lon", &lonid);
-	if (status != NC_NOERR) {err = -1; goto done;}
-	
+	if (status != NC_NOERR) {
+		err = -1;
+		goto done;
+	}
+
 	pt_count = nodeLength;
-	vertexPtsH = (WorldPointF**)_NewHandleClear(nodeLength*sizeof(WorldPointF));
-	if (!vertexPtsH) {err = memFullErr; goto done;}
+	vertexPtsH = (WorldPointF**)_NewHandleClear(nodeLength * sizeof(WorldPointF));
+	if (!vertexPtsH) {
+		err = memFullErr;
+		goto done;
+	}
+
 	lat_vals = new float[nodeLength]; 
 	lon_vals = new float[nodeLength]; 
-	if (!lat_vals || !lon_vals) {err = memFullErr; goto done;}
+	if (!lat_vals || !lon_vals) {
+		err = memFullErr;
+		goto done;
+	}
+
 	status = nc_get_vara_float(ncid, latid, &ptIndex, &pt_count, lat_vals);
-	if (status != NC_NOERR) {err = -1; goto done;}
+	if (status != NC_NOERR) {
+		err = -1;
+		goto done;
+	}
+
 	status = nc_get_vara_float(ncid, lonid, &ptIndex, &pt_count, lon_vals);
-	if (status != NC_NOERR) {err = -1; goto done;}
-	
-	status = nc_inq_varid(ncid, "depth", &depthid);	// this is required for a map
-	//if (status != NC_NOERR) {/*fVar.gridType = TWO_D;*/err = -1; goto done;}
-	//if (status != NC_NOERR) {/*err = -1; goto done;*/}
-	//else
-	{	
-		totalDepthsH = (FLOATH)_NewHandleClear(nodeLength*sizeof(float));
-		if (!totalDepthsH) {err = memFullErr; goto done;}
-		if (status != NC_NOERR)
-		{
+	if (status != NC_NOERR) {
+		err = -1;
+		goto done;
+	}
+
+	totalDepthsH = (FLOATH)_NewHandleClear(nodeLength * sizeof(float));
+	if (!totalDepthsH) {
+		err = memFullErr;
+		goto done;
+	}
+
+	status = nc_inq_varid(ncid, "depth", &depthid);
+	if (status == NC_NOERR) {
+		depth_vals = new float[nodeLength];
+		if (!depth_vals) {
+			err = memFullErr;
+			goto done;
 		}
+
+		status = nc_get_vara_float(ncid, depthid, &ptIndex, &pt_count, depth_vals);
+		if (status != NC_NOERR) {
+			err = -1;
+			goto done;
+		}
+
+		status = nc_get_att_double(ncid, depthid, "scale_factor", &scale_factor);
+		if (status != NC_NOERR) {
+			// don't require scale factor
+			}
+	}
+
+	for (i = 0; i < nodeLength; i++) {
+		INDEXH(vertexPtsH, i).pLat = lat_vals[i];
+		INDEXH(vertexPtsH, i).pLong = lon_vals[i];
+		if (depth_vals)
+			INDEXH(totalDepthsH, i) = depth_vals[i];
 		else
-		{
-			depth_vals = new float[nodeLength];
-			if (!depth_vals) {err = memFullErr; goto done;}
-			status = nc_get_vara_float(ncid, depthid, &ptIndex, &pt_count, depth_vals);
-			if (status != NC_NOERR) {err = -1; goto done;}
-			
-			status = nc_get_att_double(ncid, depthid, "scale_factor", &scale_factor);
-			if (status != NC_NOERR) {/*err = -1; goto done;*/}	// don't require scale factor
-		}
+			INDEXH(totalDepthsH, i) = INFINITE_DEPTH;	// let map have infinite depth
 	}
-	
-	for (i=0;i<nodeLength;i++)
-	{
-		INDEXH(vertexPtsH,i).pLat = lat_vals[i];	
-		INDEXH(vertexPtsH,i).pLong = lon_vals[i];
-		if (depth_vals) INDEXH(totalDepthsH,i) = depth_vals[i];
-		else INDEXH(totalDepthsH,i) = INFINITE_DEPTH;	// let map have infinite depth
-	}
+
 	*vertexPointsH	= vertexPtsH;// get first and last, lat/lon values, then last-first/total-1 = dlat/dlon
 	*depthPtsH = totalDepthsH;
 	*numBoundaryPts = nbndLength;
@@ -2315,93 +2437,140 @@ OSErr GridMap_c::GetPointsAndBoundary(char *path,WORLDPOINTFH *vertexPointsH, FL
 	// check if file has topology in it
 	{
 		status = nc_inq_varid(ncid, "nv", &nv_varid); //Navy
-		if (status != NC_NOERR) {/*err = -1; goto done;*/}
-		else
-		{
+		if (status != NC_NOERR) {
+			/*err = -1; goto done;*/
+		}
+		else {
 			status = nc_inq_varid(ncid, "nbe", &nbe_varid); //Navy
-			if (status != NC_NOERR) {/*err = -1; goto done;*/}
-			else bTopInfoInFile = true;
+			if (status != NC_NOERR) {
+				/*err = -1; goto done;*/
+			}
+			else
+				bTopInfoInFile = true;
 		}
 		if (bTopInfoInFile)
 		{
 			status = nc_inq_dimid(ncid, "nele", &neleid);	
-			if (status != NC_NOERR) {err = -1; goto done;}	
+			if (status != NC_NOERR) {
+				err = -1;
+				goto done;
+			}
+
 			status = nc_inq_dimlen(ncid, neleid, &neleLength);
-			if (status != NC_NOERR) {err = -1; goto done;}	
+			if (status != NC_NOERR) {
+				err = -1;
+				goto done;
+			}
+
 			//fNumEles = neleLength;
-			top_verts = new long[neleLength*3]; 
-			if (!top_verts ) {err = memFullErr; goto done;}
-			top_neighbors = new long[neleLength*3]; 
-			if (!top_neighbors ) {err = memFullErr; goto done;}
+			top_verts = new long[neleLength * 3];
+			if (!top_verts) {
+				err = memFullErr;
+				goto done;
+			}
+
+			top_neighbors = new long[neleLength * 3];
+			if (!top_neighbors) {
+				err = memFullErr;
+				goto done;
+			}
+
 			top_count[0] = 3;
 			top_count[1] = neleLength;
+
 			status = nc_get_vara_long(ncid, nv_varid, topIndex, top_count, top_verts);
-			if (status != NC_NOERR) {err = -1; goto done;}
+			if (status != NC_NOERR) {
+				err = -1;
+				goto done;
+			}
+
 			status = nc_get_vara_long(ncid, nbe_varid, topIndex, top_count, top_neighbors);
-			if (status != NC_NOERR) {err = -1; goto done;}
-			
+			if (status != NC_NOERR) {
+				err = -1;
+				goto done;
+			}
+
 			//determine if velocities are on triangles
 			status = nc_inq_varid(ncid, "u", &curr_ucmp_id);
-			if (status != NC_NOERR) {err = -1; goto done;}
+			if (status != NC_NOERR) {
+				err = -1;
+				goto done;
+			}
+
 			status = nc_inq_varndims(ncid, curr_ucmp_id, &uv_ndims);
-			if (status != NC_NOERR) {err = -1; goto done;}
-			
-			status = nc_inq_vardimid (ncid, curr_ucmp_id, uv_dimid);	// see if dimid(1) or (2) == nele or node, depends on uv_ndims
-			if (status==NC_NOERR) 
-			{
-				if (uv_ndims == 3 && uv_dimid[2] == neleid)
-				{bVelocitiesOnTriangles = true;}
-				else if (uv_ndims == 2 && uv_dimid[1] == neleid)
-				{bVelocitiesOnTriangles = true;}
+			if (status != NC_NOERR) {
+				err = -1;
+				goto done;
 			}
 			
+			status = nc_inq_vardimid (ncid, curr_ucmp_id, uv_dimid);	// see if dimid(1) or (2) == nele or node, depends on uv_ndims
+			if (status == NC_NOERR) {
+				if (uv_ndims == 3 && uv_dimid[2] == neleid)
+					bVelocitiesOnTriangles = true;
+				else if (uv_ndims == 2 && uv_dimid[1] == neleid)
+					bVelocitiesOnTriangles = true;
+			}
 		}
 	}
-	
+
 	status = nc_close(ncid);
-	if (status != NC_NOERR) {err = -1; goto done;}
-	
-	//err = this -> SetInterval(errmsg);
-	//if(err) goto done;
-	
-	if (!bndry_indices || !bndry_nums || !bndry_type) {err = memFullErr; goto done;}
-	
+	if (status != NC_NOERR) {
+		err = -1;
+		goto done;
+	}
+
+	if (!bndry_indices || !bndry_nums || !bndry_type) {
+		err = memFullErr;
+		goto done;
+	}
+
 	*boundary_indices = bndry_indices;
 	*boundary_nums = bndry_nums;
 	*boundary_type = bndry_type;
 	
-	if (bVelocitiesOnTriangles)
-	{
-		if (!top_verts || !top_neighbors) {err = memFullErr; goto done;}
+	if (bVelocitiesOnTriangles) {
+		if (!top_verts || !top_neighbors) {
+			err = memFullErr;
+			goto done;
+		}
+
 		*ntri = neleLength;
 		*triangle_verts = top_verts;
 		*triangle_neighbors = top_neighbors;
 	}
+
 depths:
-	if (err) goto done;
-	
-	
-done:
 	if (err)
-	{
+		goto done;
+
+done:
+
+	if (err) {
 		if (!errmsg[0]) 
 			strcpy(errmsg,"Error opening NetCDF file");
 		printNote(errmsg);
-		if(vertexPtsH) {DisposeHandle((Handle)vertexPtsH); vertexPtsH = 0;}
-	if (bndry_indices) delete [] bndry_indices;
-	if (bndry_nums) delete [] bndry_nums;
-	if (bndry_type) delete [] bndry_type;
+		if (vertexPtsH) {
+			DisposeHandle((Handle)vertexPtsH);
+			vertexPtsH = 0;
+		}
+		if (bndry_indices)
+			delete [] bndry_indices;
+		if (bndry_nums)
+			delete [] bndry_nums;
+		if (bndry_type)
+			delete [] bndry_type;
 	}
-	
-	if (lat_vals) delete [] lat_vals;
-	if (lon_vals) delete [] lon_vals;
-	if (depth_vals) delete [] depth_vals;
-	//if (bndry_indices) delete [] bndry_indices;
-	//if (bndry_nums) delete [] bndry_nums;
-	//if (bndry_type) delete [] bndry_type;
-	
+
+	if (lat_vals)
+		delete [] lat_vals;
+	if (lon_vals)
+		delete [] lon_vals;
+	if (depth_vals)
+		delete [] depth_vals;
+
 	return err;
 }
+
 
 OSErr GridMap_c::ReadCATSMap(char *path) 
 {
@@ -2633,201 +2802,203 @@ done:
 	return err;
 }
 
-OSErr GridMap_c::ReadTopology(char* path)
+
+// import NetCDF triangle info so don't have to regenerate
+// this is same as curvilinear mover so may want to combine later
+OSErr GridMap_c::ReadTopology(vector<string> &linesInFile)
 {
-	// import NetCDF triangle info so don't have to regenerate
-	// this is same as curvilinear mover so may want to combine later
-	char s[1024], errmsg[256];
-	long i, numPoints, numTopoPoints, line = 0, numPts;
-	CHARH f = 0;
 	OSErr err = 0;
-	
-	TopologyHdl topo=0;
-	LongPointHdl pts=0;
-	FLOATH depths=0;
+	string currentLine;
+	long line = 0;
+
+	char errmsg[256];
+
+	long numPoints, numTopoPoints, numPts;
+
+	TopologyHdl topo = 0;
+	LongPointHdl pts = 0;
+	FLOATH depths = 0;
 	VelocityFH velH = 0;
 	DAGTreeStruct tree;
 	WorldRect bounds = voidWorldRect;
 	
-	TTriGridVel *triGrid = nil;
+	TTriGridVel *triGrid = 0;
 	tree.treeHdl = 0;
 	TDagTree *dagTree = 0;
 	
-	long numWaterBoundaries=0, numBoundaryPts=0, numBoundarySegs=0;
-	LONGH boundarySegs=0, waterBoundaries=0, boundaryPts=0;
+	long numWaterBoundaries = 0, numBoundaryPts = 0, numBoundarySegs = 0;
+	LONGH boundarySegs = 0, waterBoundaries = 0, boundaryPts = 0;
 	
-	errmsg[0]=0;
-	
-	if (!path || !path[0]) return 0;
-	
-	if (err = ReadFileContents(TERMINATED,0, 0, path, 0, 0, &f)) {
-		TechError("GridMap_c::ReadTopology()", "ReadFileContents()", err);
-		goto done;
-	}
-	
-	_HLock((Handle)f); // JLM 8/4/99
+	errmsg[0] = 0;
 	
 	// No header
 	// start with transformation array and vertices
 	MySpinCursor(); // JLM 8/4/99
-	NthLineInTextOptimized(*f, (line)++, s, 1024); 
-	if(IsTransposeArrayHeaderLine(s,&numPts)) // 
-	{
+
+	currentLine = linesInFile[(line)++];
+	if (IsTransposeArrayHeaderLine(currentLine, numPts)) {
 		LONGH verdatToNetCDFH = 0;
-		if (err = ReadTransposeArray(f,&line,&verdatToNetCDFH,numPts,errmsg)) 
-		{strcpy(errmsg,"Error in ReadTransposeArray"); goto done;}
-		if (verdatToNetCDFH) {DisposeHandle((Handle)verdatToNetCDFH); verdatToNetCDFH=0;}
+
+		err = ReadTransposeArray(linesInFile, &line, &verdatToNetCDFH, numPts, errmsg);
+		if (err) {
+			strcpy(errmsg, "Error in ReadTransposeArray");
+			goto done;
+		}
+
+		if (verdatToNetCDFH) {
+			DisposeHandle((Handle)verdatToNetCDFH);
+			verdatToNetCDFH = 0;
+		}
 	}
-	else 
-		//{err=-1; strcpy(errmsg,"Error in Transpose header line"); goto done;}
-	{
-		//if (!bVelocitiesOnTriangles) {err=-1; strcpy(errmsg,"Error in Transpose header line"); goto done;}
-		//else line--;
+	else {
 		line--;
 	}
-	if(err = ReadTVertices(f,&line,&pts,&depths,errmsg)) goto done;
-	
-	if(pts) 
-	{
-		LongPoint	thisLPoint;
+
+	err = ReadTVertices(linesInFile, &line, &pts, &depths, errmsg);
+	if (err)
+		goto done;
+
+	if (pts) {
+		LongPoint thisLPoint;
 		Boolean needDepths = false;
-		
-		numPts = _GetHandleSize((Handle)pts)/sizeof(LongPoint);
-		if (!depths) 
-		{
-			depths = (FLOATH)_NewHandle(sizeof(FLOATH)*(numPts));
-			if(depths == nil)
-			{
-				strcpy(errmsg,"Not enough memory to read topology file.");
+
+		numPts = _GetHandleSize((Handle)pts) / sizeof(LongPoint);
+		if (!depths) {
+			depths = (FLOATH)_NewHandle(sizeof(FLOATH) * (numPts));
+			if (depths == 0) {
+				strcpy(errmsg, "Not enough memory to read topology file.");
 				goto done;
 			}
+
 			needDepths = true;
 		}
-		if(numPts > 0)
-		{
-			WorldPoint  wp;
-			for(i=0;i<numPts;i++)
-			{
-				thisLPoint = INDEXH(pts,i);
+
+		if (numPts > 0) {
+			WorldPoint wp;
+
+			for (long i = 0; i < numPts; i++) {
+				thisLPoint = INDEXH(pts, i);
 				wp.pLat = thisLPoint.v;
 				wp.pLong = thisLPoint.h;
+
 				AddWPointToWRect(wp.pLat, wp.pLong, &bounds);
-				if (needDepths) INDEXH(depths,i) = INFINITE_DEPTH;
-				
+
+				if (needDepths)
+					INDEXH(depths, i) = INFINITE_DEPTH;
 			}
 		}
 	}
+
 	MySpinCursor();
-	
-	NthLineInTextOptimized(*f, (line)++, s, 1024); 
-	if(IsBoundarySegmentHeaderLine(s,&numBoundarySegs)) // Boundary data from CATs
-	{
+
+	currentLine = linesInFile[(line)++];
+	if (IsBoundarySegmentHeaderLine(currentLine, numBoundarySegs)) {
+		// Boundary data from CATs
 		MySpinCursor();
-		if (numBoundarySegs>0)
-			err = ReadBoundarySegs(f,&line,&boundarySegs,numBoundarySegs,errmsg);
-		if(err) goto done;
-		NthLineInTextOptimized(*f, (line)++, s, 1024); 
+
+		if (numBoundarySegs > 0)
+			err = ReadBoundarySegs(linesInFile, &line, &boundarySegs, numBoundarySegs, errmsg);
+		if (err)
+			goto done;
+
+		currentLine = linesInFile[(line)++];
 	}
-	else
-	{
-		//err = -1;
-		//strcpy(errmsg,"Error in Boundary segment header line");
-		//goto done;
-		// not needed for 2D files, but we require for now
-	}
+
 	MySpinCursor(); // JLM 8/4/99
 	
-	if(IsWaterBoundaryHeaderLine(s,&numWaterBoundaries,&numBoundaryPts)) // Boundary types from CATs
-	{
+	if (IsWaterBoundaryHeaderLine(currentLine, numWaterBoundaries, numBoundaryPts)) {
+		// Boundary types from CATs
 		MySpinCursor();
-		err = ReadWaterBoundaries(f,&line,&waterBoundaries,numWaterBoundaries,numBoundaryPts,errmsg);
-		if(err) goto done;
-		NthLineInTextOptimized(*f, (line)++, s, 1024); 
+
+		err = ReadWaterBoundaries(linesInFile, &line, &waterBoundaries, numWaterBoundaries, numBoundaryPts, errmsg);
+		if (err)
+			goto done;
+
+		currentLine = linesInFile[(line)++];
 	}
-	else
-	{
-		//err = -1;
-		//strcpy(errmsg,"Error in Water boundaries header line");
-		//goto done;
-		// not needed for 2D files, but we require for now
-	}
-	MySpinCursor(); // JLM 8/4/99
-	//NthLineInTextOptimized(*f, (line)++, s, 1024); 
-	
-	if(IsBoundaryPointsHeaderLine(s,&numBoundaryPts)) // Boundary data from CATs
-	{
-		MySpinCursor();
-		if (numBoundaryPts>0)
-			err = ReadBoundaryPts(f,&line,&boundaryPts,numBoundaryPts,errmsg);
-		if(err) goto done;
-		NthLineInTextOptimized(*f, (line)++, s, 1024); 
-	}
-	else
-	{
-		//err = -1;
-		//strcpy(errmsg,"Error in Boundary points header line");
-		//goto done;
-		// not always needed ? probably always needed for curvilinear
-	}
+
 	MySpinCursor(); // JLM 8/4/99
 	
-	if(IsTTopologyHeaderLine(s,&numTopoPoints)) // Topology from CATs
-	{
+	if (IsBoundaryPointsHeaderLine(currentLine, numBoundaryPts)) {
+		// Boundary data from CATs
 		MySpinCursor();
-		err = ReadTTopologyBody(f,&line,&topo,&velH,errmsg,numTopoPoints,FALSE);
-		if(err) goto done;
-		NthLineInTextOptimized(*f, (line)++, s, 1024); 
+
+		if (numBoundaryPts > 0)
+			err = ReadBoundaryPts(linesInFile, &line, &boundaryPts, numBoundaryPts, errmsg);
+		if (err)
+			goto done;
+
+		currentLine = linesInFile[(line)++];
 	}
-	else
-	{
+
+	MySpinCursor(); // JLM 8/4/99
+	
+	if (IsTTopologyHeaderLine(currentLine, numTopoPoints)) {
+		// Topology from CATs
+		MySpinCursor();
+
+		err = ReadTTopologyBody(linesInFile, &line, &topo, &velH, errmsg, numTopoPoints, FALSE);
+		if (err)
+			goto done;
+
+		currentLine = linesInFile[(line)++];
+	}
+	else {
 		err = -1; // for now we require TTopology
 		strcpy(errmsg,"Error in topology header line");
 		if(err) goto done;
 	}
+
 	MySpinCursor(); // JLM 8/4/99
 	
-	
-	//NthLineInTextOptimized(*f, (line)++, s, 1024); 
-	
-	if(IsTIndexedDagTreeHeaderLine(s,&numPoints))  // DagTree from CATs
-	{
+	if (IsTIndexedDagTreeHeaderLine(currentLine, numPoints)) {
+		// DagTree from CATs
 		MySpinCursor();
-		err = ReadTIndexedDagTreeBody(f,&line,&tree,errmsg,numPoints);
-		if(err) goto done;
+
+		err = ReadTIndexedDagTreeBody(linesInFile, &line, &tree, errmsg, numPoints);
+		if (err)
+			goto done;
 	}
-	else
-	{
+	else {
 		err = -1; // for now we require TIndexedDagTree
 		strcpy(errmsg,"Error in dag tree header line");
 		if(err) goto done;
 	}
+
 	MySpinCursor(); // JLM 8/4/99
 	
 	/////////////////////////////////////////////////
 	// if the boundary information is in the file we'll need to create a bathymetry map (required for 3D)
 	
 	// check if bVelocitiesOnTriangles and boundaryPts
-	if (waterBoundaries && boundarySegs)
-	{
+	if (waterBoundaries && boundarySegs) {
 		// maybe move up and have the map read in the boundary information
 		this->SetBoundarySegs(boundarySegs);	
 		this->SetWaterBoundaries(waterBoundaries);
-		if (boundaryPts) this->SetBoundaryPoints(boundaryPts);	
+
+		if (boundaryPts)
+			this->SetBoundaryPoints(boundaryPts);
+
 		this->SetMapBounds(bounds);		
 	}
-	else	// maybe assume rectangle grids will have map?
-	{
-		if (waterBoundaries) {DisposeHandle((Handle)waterBoundaries); waterBoundaries=0;}
-		if (boundarySegs) {DisposeHandle((Handle)boundarySegs); boundarySegs = 0;}
-		if (boundaryPts) {DisposeHandle((Handle)boundaryPts); boundaryPts = 0;}
+	else {
+		// maybe assume rectangle grids will have map?
+		if (waterBoundaries) {
+			DisposeHandle((Handle)waterBoundaries);
+			waterBoundaries = 0;
+		}
+		if (boundarySegs) {
+			DisposeHandle((Handle)boundarySegs);
+			boundarySegs = 0;
+		}
+		if (boundaryPts) {
+			DisposeHandle((Handle)boundaryPts);
+			boundaryPts = 0;
+		}
 	}
 	
-	/////////////////////////////////////////////////
-	
-	
 	triGrid = new TTriGridVel;
-	if (!triGrid)
-	{		
+	if (!triGrid) {
 		err = true;
 		TechError("Error in GridMap_c::ReadTopology()","new TTriGridVel" ,err);
 		goto done;
@@ -2835,57 +3006,89 @@ OSErr GridMap_c::ReadTopology(char* path)
 	
 	fGrid = (TTriGridVel*)triGrid;
 	
-	triGrid -> SetBounds(bounds); 
-	triGrid -> SetDepths(depths);
+	triGrid->SetBounds(bounds);
+	triGrid->SetDepths(depths);
 	
 	dagTree = new TDagTree(pts,topo,tree.treeHdl,velH,tree.numBranches); 
-	if(!dagTree)
-	{
+	if (!dagTree) {
 		printError("Unable to read Extended Topology file.");
 		goto done;
 	}
-	
-	triGrid -> SetDagTree(dagTree);
-	//triGrid -> SetDepths(depths);
+
+	triGrid->SetDagTree(dagTree);
 	
 	pts = 0;	// because fGrid is now responsible for it
 	topo = 0; // because fGrid is now responsible for it
 	tree.treeHdl = 0; // because fGrid is now responsible for it
 	velH = 0; // because fGrid is now responsible for it
-	//depths = 0;
-	
+
 done:
-	
-	//if(depths) {DisposeHandle((Handle)depths); depths=0;}
-	if(f) 
+
+	if (err)
 	{
-		_HUnlock((Handle)f); 
-		DisposeHandle((Handle)f); 
-		f = 0;
-	}
-	
-	if(err)
-	{
-		if(!errmsg[0])
+		if (!errmsg[0])
 			strcpy(errmsg,"An error occurred in GridMap_c::ReadTopology");
 		printError(errmsg); 
-		if(pts) {DisposeHandle((Handle)pts); pts=0;}
-		if(topo) {DisposeHandle((Handle)topo); topo=0;}
-		if(velH) {DisposeHandle((Handle)velH); velH=0;}
-		if(tree.treeHdl) {DisposeHandle((Handle)tree.treeHdl); tree.treeHdl=0;}
-		if(depths) {DisposeHandle((Handle)depths); depths=0;}
-		if(fGrid)
-		{
-			fGrid ->Dispose();
+
+		if (pts) {
+			DisposeHandle((Handle)pts);
+			pts = 0;
+		}
+		if (topo) {
+			DisposeHandle((Handle)topo);
+			topo = 0;
+		}
+		if (velH) {
+			DisposeHandle((Handle)velH);
+			velH = 0;
+		}
+		if (tree.treeHdl) {
+			DisposeHandle((Handle)tree.treeHdl);
+			tree.treeHdl = 0;
+		}
+		if (depths) {
+			DisposeHandle((Handle)depths);
+			depths = 0;
+		}
+		if (fGrid) {
+			fGrid->Dispose();
 			delete fGrid;
 			fGrid = 0;
 		}
-		if (waterBoundaries) {DisposeHandle((Handle)waterBoundaries); waterBoundaries=0;}
-		if (boundarySegs) {DisposeHandle((Handle)boundarySegs); boundarySegs = 0;}
-		if (boundaryPts) {DisposeHandle((Handle)boundaryPts); boundaryPts = 0;}
+		if (waterBoundaries) {
+			DisposeHandle((Handle)waterBoundaries);
+			waterBoundaries = 0;
+		}
+		if (boundarySegs) {
+			DisposeHandle((Handle)boundarySegs);
+			boundarySegs = 0;
+		}
+		if (boundaryPts) {
+			DisposeHandle((Handle)boundaryPts);
+			boundaryPts = 0;
+		}
 	}
+
 	return err;
 }
+
+
+// import NetCDF triangle info so don't have to regenerate
+// this is same as curvilinear mover so may want to combine later
+OSErr GridMap_c::ReadTopology(char *path)
+{
+	string strPath = path;
+
+	if (strPath.size() == 0)
+		return 0;
+
+	vector<string> linesInFile;
+	if (ReadLinesInFile(strPath, linesInFile))
+		return ReadTopology(linesInFile);
+	else
+		return -1;
+}
+
 
 OSErr GridMap_c::ExportTopology(char* path)
 {
@@ -3658,61 +3861,85 @@ done:
 
 OSErr GridMap_c::TextRead(char *path)
 {
-	char s[256],fileName[256];
-	char nameStr [256];
+	OSErr err = 0;
+	char s[256], fileName[256];
+	char nameStr[256];
+	char errmsg[256];
+
 	WorldRect bounds = theWorld;
 	short gridType;
-	char errmsg[256];
-	OSErr err = 0;
 
-	//if (IsPtCurFile (path))
-	if (IsNetCDFFile (path, &gridType))
+	if (IsNetCDFFile(path, &gridType))
 	{
-		strcpy(s,path);
-		SplitPathFile (s, fileName);
+		strcpy(s, path);
+		SplitPathFile(s, fileName);
 		strcat (nameStr, fileName);
-		
-		if (gridType!=REGULAR && gridType!=REGULAR_SWAFS)
+
+		if (gridType != REGULAR &&
+			gridType != REGULAR_SWAFS)
 		{
 			FLOATH depthPtsH = 0;
-			WORLDPOINTFH vertexPtsH=0;
-			long numRows=0, numCols=0, numNodes=0, numTri=0, numBoundaryPts=0;
-			if (gridType == CURVILINEAR)
-			{
+			WORLDPOINTFH vertexPtsH = 0;
+			long numRows = 0, numCols = 0, numNodes = 0, numTri = 0, numBoundaryPts = 0;
+
+			if (gridType == CURVILINEAR) {
 				DOUBLEH maskH = 0;
-				err = this->GetPointsAndMask(path,&maskH,&vertexPtsH,&depthPtsH,&numRows, &numCols);	//Text read	
-				if (!err) err = this->SetUpCurvilinearGrid(maskH,numRows,numCols,vertexPtsH,depthPtsH,errmsg);	//Reorder points
-				if(maskH) {DisposeHandle((Handle)maskH); maskH = 0;}
-			}
-			else if (gridType == TRIANGULAR)
-			{	// check if topology is included
-				LONGPTR bndry_indices=0, bndry_nums=0, bndry_type=0, tri_verts=0, tri_neighbors=0;
-				err = this->GetPointsAndBoundary(path,&vertexPtsH,&depthPtsH, &numNodes, &bndry_indices, &bndry_nums, &bndry_type, &numBoundaryPts, &tri_verts, &tri_neighbors, &numTri);	//Text read	
-				if (!err) 
-				{	// separate points and boundary
-					if (numTri == 0)
-						err = this->SetUpTriangleGrid(numNodes,numTri,vertexPtsH,depthPtsH, bndry_indices, bndry_nums, bndry_type, numBoundaryPts);	//Reorder points
-					else
-						err = this->SetUpTriangleGrid2(numNodes,numTri,vertexPtsH,depthPtsH, bndry_indices, bndry_nums, bndry_type, numBoundaryPts,tri_verts, tri_neighbors);	//Reorder points
+
+				cerr << "GridMap_c::TextRead(): NetCDF curvilinear file..." << endl;
+				err = this->GetPointsAndMask(path, &maskH, &vertexPtsH, &depthPtsH, &numRows, &numCols);	//Text read
+				if (!err)
+					err = this->SetUpCurvilinearGrid(maskH, numRows, numCols, vertexPtsH, depthPtsH, errmsg);	//Reorder points
+
+				if (maskH) {
+					DisposeHandle((Handle)maskH);
+					maskH = 0;
 				}
-				if (bndry_indices) delete [] bndry_indices;
-				if (bndry_nums) delete [] bndry_nums;
-				if (bndry_type) delete [] bndry_type;
-				if (tri_verts) delete [] tri_verts;
-				if (tri_neighbors) delete [] tri_neighbors;
 			}
-			if(vertexPtsH) {DisposeHandle((Handle)vertexPtsH); vertexPtsH = 0;}
-			if(depthPtsH) {DisposeHandle((Handle)depthPtsH); depthPtsH = 0;}
+			else if (gridType == TRIANGULAR) {
+				// check if topology is included
+				LONGPTR bndry_indices = 0, bndry_nums = 0, bndry_type = 0, tri_verts = 0, tri_neighbors = 0;
+
+				err = this->GetPointsAndBoundary(path, &vertexPtsH, &depthPtsH, &numNodes,
+												 &bndry_indices, &bndry_nums, &bndry_type, &numBoundaryPts,
+												 &tri_verts, &tri_neighbors, &numTri);	//Text read
+				if (!err) {
+					// separate points and boundary
+					if (numTri == 0)
+						err = this->SetUpTriangleGrid(numNodes, numTri, vertexPtsH, depthPtsH, bndry_indices, bndry_nums, bndry_type, numBoundaryPts);	//Reorder points
+					else
+						err = this->SetUpTriangleGrid2(numNodes,numTri, vertexPtsH, depthPtsH, bndry_indices, bndry_nums, bndry_type, numBoundaryPts,tri_verts, tri_neighbors);	//Reorder points
+				}
+
+				if (bndry_indices)
+					delete [] bndry_indices;
+				if (bndry_nums)
+					delete [] bndry_nums;
+				if (bndry_type)
+					delete [] bndry_type;
+				if (tri_verts)
+					delete [] tri_verts;
+				if (tri_neighbors)
+					delete [] tri_neighbors;
+			}
+
+			if (vertexPtsH) {
+				DisposeHandle((Handle)vertexPtsH);
+				vertexPtsH = 0;
+			}
+			if (depthPtsH) {
+				DisposeHandle((Handle)depthPtsH);
+				depthPtsH = 0;
+			}
 		}
-		else
-		{
+		else {
 			err = true;
-			sprintf(errmsg,"File %s is a current file and should be input as a universal mover.",fileName);
+			sprintf(errmsg, "File %s is a current file and should be input as a universal mover.", fileName);
 			printNote(errmsg);
 		}
 	}
-	else if (IsCATS3DFile (path))	// for any CATS?
-	{		
+	else if (IsCATS3DFile(path))	// for any CATS?
+	{
+		cerr << "GridMap_c::TextRead(): reading a CATS3D file" << endl;
 		strcpy(s,path);
 		SplitPathFile (s, fileName);
 		strcat (nameStr, fileName);
@@ -3730,6 +3957,7 @@ OSErr GridMap_c::TextRead(char *path)
 	else
 	{
 		{	// check if isTopologyFile()
+			cerr << "GridMap_c::TextRead(): check if it is a topology file..." << endl;
 			err = this -> ReadTopology(path);
 			if(err) 
 			{
@@ -3746,6 +3974,8 @@ OSErr GridMap_c::TextRead(char *path)
 	return err;
 	
 }
+
+
 void GridMap_c::DrawBoundaries(Rect r)
 {
 	long nSegs = GetNumBoundarySegs();	

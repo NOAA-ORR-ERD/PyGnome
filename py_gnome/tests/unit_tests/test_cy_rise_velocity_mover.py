@@ -29,7 +29,7 @@ class TestRiseVelocity():
     cm = CyTestMove()
     rv = CyRiseVelocityMover(water_density=1020, water_viscosity=.000001)
     density = np.zeros((cm.num_le,), dtype=np.double)
-    droplet_size = np.zeros((cm.num_le,), dtype=np.int32)
+    droplet_size = np.zeros((cm.num_le,), dtype=np.double)
 
     # set these values and try with NaNs
     #rise_velocity = np.zeros((cm.num_le,), dtype=np.double)
