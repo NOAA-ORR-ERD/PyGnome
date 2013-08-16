@@ -430,7 +430,7 @@ def test_all_movers(start_time, release_delay, duration):
 
     # add CATS mover
     c_data = get_datafile( os.path.join(datadir, r"long_island_sound/tidesWAC.CUR") )
-    model.movers += movers.CatsMover( c_data)
+    model.movers += CatsMover( c_data)
     assert len(model.movers) == 4
 
     # run the model all the way...
@@ -655,7 +655,7 @@ def test_callback_add_mover():
     # add Movers
     model.movers += SimpleMover(velocity=(1.0, -1.0, 0.0))
     series = np.array( (model.start_time, ( 10,   45) ),  dtype=datetime_value_2d).reshape((1,))
-    model.movers += WindMover(environment.Wind(timeseries=series, units=units))
+    model.movers += WindMover(Wind(timeseries=series, units=units))
     
     tide_file = get_datafile( os.path.join( os.path.dirname(__file__), r"sample_data","tides","CLISShio.txt") )
     tide_ = Tide(filename=tide_file)
@@ -675,14 +675,6 @@ def test_callback_add_mover():
         if isinstance(mover, CatsMover):
             if mover.tide is not None:
                 assert mover.tide.id in model.environment
-        
-    
-    # say tide object was added to environment collection, 
-    # it should not be added again
-    tide_ = Tide( tide_ )
-    model.environment += tide_
-    
-    assert model.environment[tide_.id] == tide_
 
     # Add a mover with user defined active_start / active_stop values
     # - these should not be updated

@@ -57,8 +57,8 @@ def test_tide_create(filename):
     assert new_w == td
     
     
-@pytest.mark.parametrize("filename", [get_datafile( tides_dir, "CLISShio.txt") ), 
-                                      get_datafile( tides_dir, "TideHdr.FINAL") )])
+@pytest.mark.parametrize("filename", [get_datafile( os.path.join( tides_dir, "CLISShio.txt") ), 
+                                      get_datafile( os.path.join( tides_dir, "TideHdr.FINAL") )])
 def test_tide_update(filename):
     """
     Just tests methods don't fail and the schema is properly defined.

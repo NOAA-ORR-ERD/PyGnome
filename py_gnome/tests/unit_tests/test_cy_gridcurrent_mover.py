@@ -61,7 +61,7 @@ class Common():
         ################
         self.ref[:] = 1.
         self.ref[:]['z'] = 0 # on surface by default
-        self.status[:] = basic_types.oil_status.in_water
+        self.status[:] = oil_status.in_water
 
 
 def get_datafiles_in_flist(file_):
@@ -87,7 +87,7 @@ def get_datafiles_in_flist(file_):
 class TestGridCurrentMover():
     cm = Common()
     gcm = CyGridCurrentMover()
-    # delta = np.zeros((cm.num_le,), dtype=basic_types.world_point)
+    # delta = np.zeros((cm.num_le,), dtype=world_point)
 
     def move(self):
         self.gcm.prepare_for_model_run()
@@ -172,9 +172,8 @@ class TestGridCurrentMover():
         self.cm.model_time = time_utils.date_to_sec(time)
 
         time_grid_file = get_datafile( os.path.join(cur_dir, 'ny_cg.nc'))
-        self.gcm.text_read(time_grid_file,topology_file)
+        self.gcm.text_read(time_grid_file,topology_file=None)
 
-        topology_file = None  # will want a null default
         topology_file2 = os.path.join(cur_dir, 'NYTopologyNew.dat')
         self.gcm.export_topology(topology_file2)
         self.cm.ref[:]['long'] = (-74.03988) #for NY
