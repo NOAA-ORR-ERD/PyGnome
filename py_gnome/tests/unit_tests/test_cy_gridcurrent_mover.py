@@ -70,6 +70,11 @@ def get_datafiles_in_flist(file_):
     
     helper function that reads each line of the file_ and gets an files that are defined by 
     [FILE] or [File] from the server
+    
+    NOTE: reading the text file and getting the names of the datafiles on the fly works fine. 
+          It maybe simpler to define a dict containing all files required by these tests including
+          the files listed in flist1.txt, flist2.txt ..currently this is the only place where this 
+          needs to be done
     """
     flist = get_datafile(file_)
     with open(flist, 'r') as fh:
@@ -115,9 +120,8 @@ class TestGridCurrentMover():
         self.cm.model_time = time_utils.date_to_sec(time)
 
         time_grid_file = get_datafile( os.path.join(cur_dir, 'test.cdf'))
-        topology_file = r""  # will want a null default
 
-        self.gcm.text_read(time_grid_file, topology_file)
+        self.gcm.text_read(time_grid_file)
         self.cm.ref[:]['long'] = (3.104588)  # for simple example
         self.cm.ref[:]['lat'] = (52.016468)
         self.check_move()
@@ -254,9 +258,8 @@ class TestGridCurrentMover():
         self.cm.model_time = time_utils.date_to_sec(time)
 
         time_grid_file = get_datafile( os.path.join(cur_dir, 'ptCurNoMap.cur'))
-        topology_file = r""
 
-        self.gcm.text_read(time_grid_file, topology_file)
+        self.gcm.text_read(time_grid_file)
         self.cm.ref[:]['long'] = (-124.686928)  # for ptCur test
         self.cm.ref[:]['lat'] = (48.401124)
         self.check_move()
@@ -280,9 +283,8 @@ class TestGridCurrentMover():
         self.cm.model_time = time_utils.date_to_sec(time)
 
         time_grid_file = get_datafile( os.path.join(cur_dir, 'gridcur_ts.cur'))
-        topology_file = r""
 
-        self.gcm.text_read(time_grid_file, topology_file)
+        self.gcm.text_read(time_grid_file)
         self.cm.ref[:]['long'] = (-119.933264)  # for gridCur test
         self.cm.ref[:]['lat'] = (34.138736)
         self.check_move()

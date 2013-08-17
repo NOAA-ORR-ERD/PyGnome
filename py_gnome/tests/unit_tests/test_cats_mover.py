@@ -16,7 +16,7 @@ from gnome.utilities.remote_data import get_datafile
 here = os.path.dirname(__file__)
 lis_dir = os.path.join(here, 'sample_data', 'long_island_sound')
 
-curr_file = os.path.join(lis_dir, 'tidesWAC.CUR')
+curr_file = get_datafile( os.path.join(lis_dir, 'tidesWAC.CUR'))
 td = Tide(filename=
 	  get_datafile( os.path.join(lis_dir, 'CLISShio.txt'))
 	 )

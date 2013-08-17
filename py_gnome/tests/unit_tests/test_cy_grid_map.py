@@ -31,12 +31,12 @@ class TestGridMap():
         Test a grid map - read and write out
         """
 		#curvilinear grid
-	gcm1 = CyGridMap()
+        gcm1 = CyGridMap()
         grid_map_file = get_datafile( os.path.join(cur_dir, 'ny_cg.nc') )
         gcm1.text_read(grid_map_file)
 
-	#topology_file = os.path.join(cur_dir, 'ny_cg_top.dat')
-	#self.gcm.export_topology(topology_file)
+	    #topology_file = os.path.join(cur_dir, 'ny_cg_top.dat')
+	    #self.gcm.export_topology(topology_file)
         #self.gcm.save_netcdf(netcdf_file)
 
         netcdf_file = os.path.join(cur_dir, 'ny_cg_top.nc')
