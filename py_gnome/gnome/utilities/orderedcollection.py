@@ -49,13 +49,11 @@ class OrderedCollection(object):
             if l__id not in self._index.keys():
                 self._index[l__id] = len(self._elems)
                 self._elems.append(elem)
-            self.fire_event('add', elem)  # fire add event
+                self.fire_event('add', elem)  # fire add event only if elem is not already in the list
             
         elif isinstance(elem, list) and all([isinstance(e, self.dtype) for e in elem]):
             for e in elem:
-                self.add(e)
-                self.fire_event('add', e)  # fire add event
-                
+                self.add(e) # this will call self.fire_event when the object is added to OC
         else:
             raise TypeError('%s: expected %s, got %s' % (self.__class__.__name__, self.dtype, type(elem)))
 
