@@ -14,6 +14,7 @@ import numpy as np
 
 import gnome
 from gnome.environment import Wind
+from gnome.utilities.remote_data import get_datafile
 
 from gnome import scripting
 
@@ -30,7 +31,7 @@ def make_model(images_dir=os.path.join(base_dir,"images")):
                               uncertain = False,
                               )
     
-    mapfile = os.path.join( base_dir, './mariana_island.bna')
+    mapfile = get_datafile( os.path.join( base_dir, './mariana_island.bna'))
     print "adding the map"
     model.map = gnome.map.MapFromBNA(mapfile,
                                      refloat_halflife=6, #hours
@@ -63,7 +64,7 @@ def make_model(images_dir=os.path.join(base_dir,"images")):
     
     print "adding a current mover:"
     ## this is HYCOM currents
-    curr_file=os.path.join( base_dir, r"./HYCOM.nc")
+    curr_file = get_datafile( os.path.join( base_dir, r"./HYCOM.nc"))
     model.movers += gnome.movers.GridCurrentMover(curr_file)
 
     ##

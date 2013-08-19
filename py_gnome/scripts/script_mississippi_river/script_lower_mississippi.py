@@ -15,6 +15,7 @@ import gnome
 from gnome.environment import Wind
 from gnome.utilities import map_canvas
 from gnome.utilities.file_tools import haz_files
+from gnome.utilities.remote_data import get_datafile
 from gnome import scripting
 
 # define base directory
@@ -24,7 +25,7 @@ def make_model(images_dir=os.path.join(base_dir,"images")):
     # create the maps:
     print "creating the maps"
     
-    mapfile = os.path.join( base_dir, './LowerMississippiMap.bna')
+    mapfile = get_datafile( os.path.join( base_dir, './LowerMississippiMap.bna'))
     gnome_map = gnome.map.MapFromBNA(mapfile,
                                      refloat_halflife=6, #hours
                                      )
@@ -70,7 +71,7 @@ def make_model(images_dir=os.path.join(base_dir,"images")):
     
     print "adding a cats mover:"
     
-    curr_file=os.path.join( base_dir, r"LMiss.CUR")
+    curr_file = get_datafile( os.path.join( base_dir, r"LMiss.CUR"))
     c_mover = gnome.movers.CatsMover(curr_file)
     # but do need to scale (based on river stage)
     c_mover.scale = True

@@ -3,17 +3,19 @@
 """
 Script to test GNOME with CH3D data for Pearl Harbor.
 
-
+Returns an empty model if it cannot download the Pearl Harbor maps or datafiles
 """
 
 import os
 import shutil
 from datetime import datetime, timedelta
+from urllib2 import HTTPError
 
 import numpy as np
 
 import gnome
 from gnome.environment import Wind
+from gnome.utilities.remote_data import get_datafile
 
 from gnome import scripting
 
@@ -29,8 +31,13 @@ def make_model(images_dir=os.path.join(base_dir,"images")):
                               time_step = 900, # 15 minutes in seconds
                               uncertain = False,
                               )
-    
-    mapfile = os.path.join( base_dir, './pearl_harbor.bna')
+
+    try:    
+        mapfile = get_datafile( os.path.join( base_dir, './pearl_harbor.bna'))
+    except HTTPError:
+        disp("Could not download Pearl Harbour data from server - returning empty model")
+        return model
+            
     print "adding the map"
     model.map = gnome.map.MapFromBNA(mapfile,
                                      refloat_halflife=1, #hours

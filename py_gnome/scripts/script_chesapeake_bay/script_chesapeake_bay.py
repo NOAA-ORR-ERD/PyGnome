@@ -17,6 +17,7 @@ from gnome.environment import Wind
 
 from gnome.utilities import map_canvas
 from gnome.utilities.file_tools import haz_files
+from gnome.utilities.remote_data import get_datafile
 from gnome import scripting
 
 # define base directory
@@ -32,7 +33,7 @@ def make_model(images_dir=os.path.join(base_dir,"images")):
                               uncertain = False,
                               )
     
-    mapfile = os.path.join( base_dir, './ChesapeakeBay.bna')
+    mapfile = get_datafile( os.path.join( base_dir, './ChesapeakeBay.bna'))
     print "adding the map"
     model.map = gnome.map.MapFromBNA(mapfile,
                                      refloat_halflife=1, #seconds
@@ -77,8 +78,8 @@ def make_model(images_dir=os.path.join(base_dir,"images")):
     
     print "adding a current mover:"
     
-    curr_file=os.path.join( base_dir, r"./ChesapeakeBay.nc")
-    topology_file=os.path.join( base_dir, r"./ChesapeakeBay.DAT")
+    curr_file = get_datafile( os.path.join( base_dir, r"./ChesapeakeBay.nc"))
+    topology_file = get_datafile( os.path.join( base_dir, r"./ChesapeakeBay.DAT"))
     c_mover = gnome.movers.GridCurrentMover(curr_file,topology_file)
     model.movers += c_mover
 
