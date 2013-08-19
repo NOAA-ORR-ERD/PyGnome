@@ -35,7 +35,7 @@ def make_model(images_dir=os.path.join(base_dir,"images")):
     try:    
         mapfile = get_datafile( os.path.join( base_dir, './pearl_harbor.bna'))
     except HTTPError:
-        disp("Could not download Pearl Harbour data from server - returning empty model")
+        print("Could not download Pearl Harbour data from server - returning empty model")
         return model
             
     print "adding the map"
