@@ -10,6 +10,7 @@
 #include "GridWindMover_c.h"
 #ifndef pyGNOME
 #include "CROSS.H"
+#include "TimeGridVel_c.h"
 #else
 #include "Replacements.h"
 #endif
@@ -94,7 +95,7 @@ void GridWindMover_c::ModelStepIsDone()
 }
 
 
-OSErr GridWindMover_c::get_move(int n, unsigned long model_time, unsigned long step_len, WorldPoint3D* ref, WorldPoint3D* delta, double* windages, short* LE_status, LEType spillType, long spill_ID) {	
+OSErr GridWindMover_c::get_move(int n, Seconds model_time, Seconds step_len, WorldPoint3D* ref, WorldPoint3D* delta, double* windages, short* LE_status, LEType spillType, long spill_ID) {
 
 	if(!ref || !delta || !windages) {
 		//cout << "worldpoints array not provided! returning.\n";
@@ -191,65 +192,70 @@ OSErr GridWindMover_c::TextRead(char *path, char *topFilePath)
 {
 	// this code is for curvilinear grids
 	OSErr err = 0;
-	short gridType, selectedUnits;
 	char fileNamesPath[256], filePath[256];
+
+	short gridType, selectedUnits;
 	Boolean isNetCDFPathsFile = false;
-	TimeGridVel *newTimeGrid = nil;
-	
-	
-	strcpy(filePath,path);	// this gets altered in IsNetCDFPathsFile, eventually change that function
-	if (IsNetCDFFile(path, &gridType) || IsNetCDFPathsFile(filePath, &isNetCDFPathsFile, fileNamesPath, &gridType))
+	TimeGridVel *newTimeGrid = 0;
+
+	cerr << "GridWindMover_c::TextRead(): path = " << endl << path << endl;
+
+	// this gets altered in IsNetCDFPathsFile, eventually change that function
+	strcpy(filePath, path);
+	if (IsNetCDFFile(path, &gridType) ||
+		IsNetCDFPathsFile(filePath, &isNetCDFPathsFile, fileNamesPath, &gridType))
 	{
-		if (gridType == CURVILINEAR)
-		{
+		if (gridType == CURVILINEAR) {
 			newTimeGrid = new TimeGridWindCurv();
 		}
-		else
-		{
+		else {
 			newTimeGrid = new TimeGridWindRect();
 		}
-		if (newTimeGrid)
-		{
-	 
+
+		if (newTimeGrid) {
 			 //err = newGridWindMover->InitMover(timeGrid);
 			 //if(err) goto Error;
-			 if (!err) err = newTimeGrid->TextRead(filePath,topFilePath);
-			 if(err) goto Error;
+			 if (!err) {
+				 err = newTimeGrid->TextRead(filePath, topFilePath);
+			 }
+			 if (err)
+				 goto Error;
 			 this->SetTimeGrid(newTimeGrid);
 		}
-		 /////////////////
-		 if (!err && isNetCDFPathsFile)
-		 {
-			 //char errmsg[256];
-			 err = timeGrid->ReadInputFileNames(fileNamesPath);
-			 if(!err) timeGrid->DisposeAllLoadedData();
-			 //if(!err) err = newMover->SetInterval(errmsg); // if set interval here will get error if times are not in model range
-			 if (err) return err;
-		 }
+
+		if (!err && isNetCDFPathsFile)
+		{
+			//char errmsg[256];
+			err = timeGrid->ReadInputFileNames(fileNamesPath);
+			if (!err)
+				timeGrid->DisposeAllLoadedData();
+
+			//if(!err) err = newMover->SetInterval(errmsg); // if set interval here will get error if times are not in model range
+			if (err)
+				return err;
+		}
 	}
-	else if (IsGridWindFile(path,&selectedUnits))
-	 {
-		 char errmsg[256];
-		 newTimeGrid = new TimeGridCurRect();
-		 //timeGrid = new TimeGridVel();
-		 if (newTimeGrid)
-		 {			
-			 //err = this->InitMover(timeGrid);
-			 //if(err) goto Error;
-			 dynamic_cast<TimeGridCurRect*>(newTimeGrid)->fUserUnits = selectedUnits;
-			 err = newTimeGrid->TextRead(path,"");
-			 if(err) goto Error;
-			 this->SetTimeGrid(newTimeGrid);
-			 if (!err) /// JLM 5/3/10
-			 {
-				 //char errmsg[256];
-				 //err = timeGrid->ReadInputFileNames(fileNamesPath);
-				 //if(!err)
-				 timeGrid->DisposeAllLoadedData();
-				 //if(!err) err = timeGrid->SetInterval(errmsg,model->GetModelTime()); // if set interval here will get error if times are not in model range
-			 }
-		 }
-	 }
+	else if (IsGridWindFile(path, &selectedUnits))
+	{
+		char errmsg[256];
+		newTimeGrid = new TimeGridCurRect();
+		//timeGrid = new TimeGridVel();
+		if (newTimeGrid) {
+			//err = this->InitMover(timeGrid);
+			//if(err) goto Error;
+			dynamic_cast<TimeGridCurRect*>(newTimeGrid)->fUserUnits = selectedUnits;
+			err = newTimeGrid->TextRead(path,"");
+			if(err) goto Error;
+			this->SetTimeGrid(newTimeGrid);
+			if (!err) {
+				//char errmsg[256];
+				//err = timeGrid->ReadInputFileNames(fileNamesPath);
+				//if(!err)
+				timeGrid->DisposeAllLoadedData();
+				//if(!err) err = timeGrid->SetInterval(errmsg,model->GetModelTime()); // if set interval here will get error if times are not in model range
+			}
+		}
+	}
 Error: // JLM 	 10/27/98
 	//if(newMover) {newMover->Dispose();delete newMover;newMover = 0;};
 	//return 0;

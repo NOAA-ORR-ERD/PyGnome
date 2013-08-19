@@ -73,7 +73,7 @@ void ShioTimeValue_c::Dispose()
 	this->InitInstanceVariables();
 }
 
-char* GetKeyedLine(CHARH f, char*key, long lineNum, char *strLine)
+char* GetKeyedLine(CHARH f, const char *key, long lineNum, char *strLine)
 {	// copies the next line into strLine
 	// and returns ptr to first char after the key
 	// returns NIL if key does not match
@@ -86,7 +86,7 @@ char* GetKeyedLine(CHARH f, char*key, long lineNum, char *strLine)
 	return p;
 }
 
-OSErr ShioTimeValue_c::GetKeyedValue(CHARH f, char*key, long lineNum, char* strLine,float *** val)
+OSErr ShioTimeValue_c::GetKeyedValue(CHARH f, const char *key, long lineNum, char *strLine, float ***val)
 {
 #define kMaxNumVals 100
 #define kMaxStrChar 32
@@ -126,7 +126,7 @@ done:
 }
 
 
-OSErr ShioTimeValue_c::GetKeyedValue(CHARH f, char*key, long lineNum, char* strLine,DATA * val)
+OSErr ShioTimeValue_c::GetKeyedValue(CHARH f, const char *key, long lineNum, char *strLine, DATA *val)
 {
 	char *p,*p2;
 	OSErr scanErr = 0;
@@ -152,7 +152,7 @@ OSErr ShioTimeValue_c::GetKeyedValue(CHARH f, char*key, long lineNum, char* strL
 	return 0;
 }
 
-OSErr ShioTimeValue_c::GetKeyedValue(CHARH f, char*key, long lineNum, char* strLine,short * val)
+OSErr ShioTimeValue_c::GetKeyedValue(CHARH f, const char *key, long lineNum, char *strLine, short *val)
 {
 	char *p;
 	OSErr scanErr = 0;
@@ -165,7 +165,7 @@ OSErr ShioTimeValue_c::GetKeyedValue(CHARH f, char*key, long lineNum, char* strL
 }
 
 
-OSErr ShioTimeValue_c::GetKeyedValue(CHARH f, char*key, long lineNum, char* strLine,float * val)
+OSErr ShioTimeValue_c::GetKeyedValue(CHARH f, const char *key, long lineNum, char *strLine, float *val)
 {
 	char *p;
 	OSErr scanErr = 0;
@@ -177,7 +177,7 @@ OSErr ShioTimeValue_c::GetKeyedValue(CHARH f, char*key, long lineNum, char* strL
 	return 0;
 }
 
-OSErr ShioTimeValue_c::GetKeyedValue(CHARH f, char*key, long lineNum, char* strLine,double * val)
+OSErr ShioTimeValue_c::GetKeyedValue(CHARH f, const char *key, long lineNum, char *strLine, double *val)
 {
 	char *p;
 	OSErr scanErr = 0;
@@ -885,11 +885,11 @@ OSErr ShioTimeValue_c::GetTimeValue(const Seconds& current_time, VelocityRec *va
 				maxMinDeriv = GetDeriv(startHighLowData.time, startHighLowData.height,
 									   endHighLowData.time, endHighLowData.height, midTime);
 				// track largest and save all for left hand list, but only do this first time...
-				if (abs(maxMinDeriv)>largestDeriv) largestDeriv = abs(maxMinDeriv);
+				if (fabs(maxMinDeriv) > largestDeriv) largestDeriv = fabs(maxMinDeriv);
 			}		
 			/////////////////////////////////////////////////
 			// ask for a scale factor if not known from wizard
-			sprintf(msg,lfFix("The largest calculated derivative was %.4lf"),largestDeriv);
+			sprintf(msg,"The largest calculated derivative was %.4lf", largestDeriv);
 			strcat(msg, ".  Enter scale factor for heights coefficients file : ");
 			if (fScaleFactor==0)
 			{
@@ -1154,7 +1154,9 @@ OSErr ShioTimeValue_c::GetProgressiveWaveValue(const Seconds& forTime, VelocityR
 	(*value).u = 0;
 	(*value).v = 0;
 	
-	if (err = OSSMTimeValue_c::GetTimeValue(forTime,value)) return err;									// minus AH 07/10/2012
+	if ((err = OSSMTimeValue_c::GetTimeValue(forTime,value)) > 0)
+		return err; // minus AH 07/10/2012
+
 	//if (err = OSSMTimeValue_c::GetTimeValue(start_time, end_time, current_time, value)) return err;		// AH 07/10/2012
 	
 	(*value).u = (*value).u * fScaleFactor;	// derivative is zero at the highs and lows
@@ -1328,7 +1330,7 @@ OSErr ShioTimeValue_c::GetLocationInTideCycle(const Seconds& model_time, short *
 	return 0;
 }
 
-void ShioTimeValue_c::ProgrammerError(char* routine)
+void ShioTimeValue_c::ProgrammerError(const char *routine)
 {
 	char str[256];
 	if(routine)  sprintf(str,"Programmer error: can't call %s() for TShioTimeValue objects",routine);
@@ -1372,15 +1374,21 @@ OSErr ShioTimeValue_c::ReadTimeValues (char *path)
 	double value;
 	CONTROLVAR  DatumControls;
 	
-	if (err = OSSMTimeValue_c::InitTimeFunc()) return err;
-	
+	if ((err = OSSMTimeValue_c::InitTimeFunc()) > 0)
+		return err;
+
 	timeValues = 0;
 	fileName[0] = 0;
 	
-	if (!path) return -1;
-	
-	strcpy(strLine, path);
-	strcpy(this->filePath,path);
+	if (!path)
+		return -1;
+
+	strncpy(this->filePath, path, kMaxNameLen);
+	this->filePath[kMaxNameLen - 1] = 0;
+
+	strncpy(strLine, path, kMaxNameLen);
+	strLine[kMaxNameLen - 1] = 0;
+
 	SplitPathFile(strLine, this->fileName);
 	
 //	err = ReadFileContents(TERMINATED, 0, 0, path, 0, 0, &f);
@@ -1447,14 +1455,15 @@ OSErr ShioTimeValue_c::ReadTimeValues (char *path)
 	if(!(p = GetKeyedLine(f,"Name=",lineNum++,strLine)))  goto readError;
 	strncpy(this->fStationName,p,MAXSTATIONNAMELEN);
 	this->fStationName[MAXSTATIONNAMELEN-1] = 0;
-	// 
-	if(err = this->GetKeyedValue(f,"Latitude=",lineNum++,strLine,&this->fLatitude))  goto readError;
-	if(err = this->GetKeyedValue(f,"Longitude=",lineNum++,strLine,&this->fLongitude))  goto readError;
-	//
-	if(!(p = GetKeyedLine(f,"[Constituents]",lineNum++,strLine)))  goto readError;
+
+	if ((err = this->GetKeyedValue(f, "Latitude=", lineNum++, strLine, &this->fLatitude)) > 0)  goto readError;
+	if ((err = this->GetKeyedValue(f, "Longitude=", lineNum++, strLine, &this->fLongitude)) > 0)  goto readError;
+
+	if ((!(p = GetKeyedLine(f, "[Constituents]", lineNum++, strLine))) > 0)  goto readError;
+
 	// code goes here in version 1.2.7 these lines won't be required for height files, but should still allow old format
 	//if(err = this->GetKeyedValue(f,"DatumControls.datum=",lineNum++,strLine,&this->fConstituent.DatumControls.datum))  goto readError;
-	if(err = this->GetKeyedValue(f,"DatumControls.datum=",lineNum++,strLine,&this->fConstituent.DatumControls.datum))  
+	if ((err = this->GetKeyedValue(f, "DatumControls.datum=", lineNum++, strLine, &this->fConstituent.DatumControls.datum)) > 0)
 	{
 		if(this->fStationType=='h' || this->fStationType=='H')
 		{
@@ -1466,53 +1475,53 @@ OSErr ShioTimeValue_c::ReadTimeValues (char *path)
 			goto readError;
 		}
 	}
-	if(err = this->GetKeyedValue(f,"DatumControls.FDir=",lineNum++,strLine,&this->fConstituent.DatumControls.FDir))  goto readError;
-	if(err = this->GetKeyedValue(f,"DatumControls.EDir=",lineNum++,strLine,&this->fConstituent.DatumControls.EDir))  goto readError;
-	if(err = this->GetKeyedValue(f,"DatumControls.L2Flag=",lineNum++,strLine,&this->fConstituent.DatumControls.L2Flag))  goto readError;
-	if(err = this->GetKeyedValue(f,"DatumControls.HFlag=",lineNum++,strLine,&this->fConstituent.DatumControls.HFlag))  goto readError;
-	if(err = this->GetKeyedValue(f,"DatumControls.RotFlag=",lineNum++,strLine,&this->fConstituent.DatumControls.RotFlag))  goto readError;
+	if ((err = this->GetKeyedValue(f, "DatumControls.FDir=", lineNum++, strLine, &this->fConstituent.DatumControls.FDir)) > 0)  goto readError;
+	if ((err = this->GetKeyedValue(f, "DatumControls.EDir=", lineNum++, strLine, &this->fConstituent.DatumControls.EDir)) > 0)  goto readError;
+	if ((err = this->GetKeyedValue(f, "DatumControls.L2Flag=", lineNum++, strLine, &this->fConstituent.DatumControls.L2Flag)) > 0)  goto readError;
+	if ((err = this->GetKeyedValue(f, "DatumControls.HFlag=", lineNum++, strLine, &this->fConstituent.DatumControls.HFlag)) > 0)  goto readError;
+	if ((err = this->GetKeyedValue(f, "DatumControls.RotFlag=", lineNum++, strLine, &this->fConstituent.DatumControls.RotFlag)) > 0)  goto readError;
 	
 skipDatumControls:
-	if(err = this->GetKeyedValue(f,"H=",lineNum++,strLine,&this->fConstituent.H))  goto readError;
-	if(err = this->GetKeyedValue(f,"kPrime=",lineNum++,strLine,&this->fConstituent.kPrime))  goto readError;
+	if ((err = this->GetKeyedValue(f, "H=", lineNum++, strLine, &this->fConstituent.H)) > 0)  goto readError;
+	if ((err = this->GetKeyedValue(f, "kPrime=", lineNum++, strLine, &this->fConstituent.kPrime)) > 0)  goto readError;
 	
-	if(!(p = GetKeyedLine(f,"[Offset]",lineNum++,strLine)))  goto readError;
+	if (!(p = GetKeyedLine(f,"[Offset]",lineNum++,strLine)))  goto readError;
 	
 	switch(this->fStationType)
 	{
-		case 'c': case 'C': 
-			if(err = this->GetKeyedValue(f,"MinBefFloodTime=",lineNum++,strLine,&this->fCurrentOffset.MinBefFloodTime))  goto readError;
-			if(err = this->GetKeyedValue(f,"FloodTime=",lineNum++,strLine,&this->fCurrentOffset.FloodTime))  goto readError;
-			if(err = this->GetKeyedValue(f,"MinBefEbbTime=",lineNum++,strLine,&this->fCurrentOffset.MinBefEbbTime))  goto readError;
-			if(err = this->GetKeyedValue(f,"EbbTime=",lineNum++,strLine,&this->fCurrentOffset.EbbTime))  goto readError;
-			if(err = this->GetKeyedValue(f,"FloodSpdRatio=",lineNum++,strLine,&this->fCurrentOffset.FloodSpdRatio))  goto readError;
-			if(err = this->GetKeyedValue(f,"EbbSpdRatio=",lineNum++,strLine,&this->fCurrentOffset.EbbSpdRatio))  goto readError;
-			if(err = this->GetKeyedValue(f,"MinBFloodSpd=",lineNum++,strLine,&this->fCurrentOffset.MinBFloodSpd))  goto readError;
-			if(err = this->GetKeyedValue(f,"MinBFloodDir=",lineNum++,strLine,&this->fCurrentOffset.MinBFloodDir))  goto readError;
-			if(err = this->GetKeyedValue(f,"MaxFloodSpd=",lineNum++,strLine,&this->fCurrentOffset.MaxFloodSpd))  goto readError;
-			if(err = this->GetKeyedValue(f,"MaxFloodDir=",lineNum++,strLine,&this->fCurrentOffset.MaxFloodDir))  goto readError;
-			if(err = this->GetKeyedValue(f,"MinBEbbSpd=",lineNum++,strLine,&this->fCurrentOffset.MinBEbbSpd))  goto readError;
-			if(err = this->GetKeyedValue(f,"MinBEbbDir=",lineNum++,strLine,&this->fCurrentOffset.MinBEbbDir))  goto readError;
-			if(err = this->GetKeyedValue(f,"MaxEbbSpd=",lineNum++,strLine,&this->fCurrentOffset.MaxEbbSpd))  goto readError;
-			if(err = this->GetKeyedValue(f,"MaxEbbDir=",lineNum++,strLine,&this->fCurrentOffset.MaxEbbDir))  goto readError;
+		case 'c': case 'C':
+			if ((err = this->GetKeyedValue(f, "MinBefFloodTime=", lineNum++, strLine, &this->fCurrentOffset.MinBefFloodTime)) > 0)  goto readError;
+			if ((err = this->GetKeyedValue(f, "FloodTime=", lineNum++, strLine, &this->fCurrentOffset.FloodTime)) > 0)  goto readError;
+			if ((err = this->GetKeyedValue(f, "MinBefEbbTime=", lineNum++, strLine, &this->fCurrentOffset.MinBefEbbTime)) > 0)  goto readError;
+			if ((err = this->GetKeyedValue(f, "EbbTime=", lineNum++, strLine, &this->fCurrentOffset.EbbTime)) > 0)  goto readError;
+			if ((err = this->GetKeyedValue(f, "FloodSpdRatio=", lineNum++, strLine, &this->fCurrentOffset.FloodSpdRatio)) > 0)  goto readError;
+			if ((err = this->GetKeyedValue(f, "EbbSpdRatio=", lineNum++, strLine, &this->fCurrentOffset.EbbSpdRatio)) > 0)  goto readError;
+			if ((err = this->GetKeyedValue(f, "MinBFloodSpd=", lineNum++, strLine, &this->fCurrentOffset.MinBFloodSpd)) > 0)  goto readError;
+			if ((err = this->GetKeyedValue(f, "MinBFloodDir=", lineNum++, strLine, &this->fCurrentOffset.MinBFloodDir)) > 0)  goto readError;
+			if ((err = this->GetKeyedValue(f, "MaxFloodSpd=", lineNum++, strLine, &this->fCurrentOffset.MaxFloodSpd)) > 0)  goto readError;
+			if ((err = this->GetKeyedValue(f, "MaxFloodDir=", lineNum++, strLine, &this->fCurrentOffset.MaxFloodDir)) > 0)  goto readError;
+			if ((err = this->GetKeyedValue(f, "MinBEbbSpd=", lineNum++, strLine, &this->fCurrentOffset.MinBEbbSpd)) > 0)  goto readError;
+			if ((err = this->GetKeyedValue(f, "MinBEbbDir=", lineNum++, strLine, &this->fCurrentOffset.MinBEbbDir)) > 0)  goto readError;
+			if ((err = this->GetKeyedValue(f, "MaxEbbSpd=", lineNum++, strLine, &this->fCurrentOffset.MaxEbbSpd)) > 0)  goto readError;
+			if ((err = this->GetKeyedValue(f, "MaxEbbDir=", lineNum++, strLine, &this->fCurrentOffset.MaxEbbDir)) > 0)  goto readError;
 			SetFileType(SHIOCURRENTSFILE);
 			break;
 		case 'h': case 'H': 
-			if(err = this->GetKeyedValue(f,"HighTime=",lineNum++,strLine,&this->fHeightOffset.HighTime))  goto readError;
-			if(err = this->GetKeyedValue(f,"LowTime=",lineNum++,strLine,&this->fHeightOffset.LowTime))  goto readError;
-			if(err = this->GetKeyedValue(f,"HighHeight_Mult=",lineNum++,strLine,&this->fHeightOffset.HighHeight_Mult))  goto readError;
-			if(err = this->GetKeyedValue(f,"HighHeight_Add=",lineNum++,strLine,&this->fHeightOffset.HighHeight_Add))  goto readError;
-			if(err = this->GetKeyedValue(f,"LowHeight_Mult=",lineNum++,strLine,&this->fHeightOffset.LowHeight_Mult))  goto readError;
-			if(err = this->GetKeyedValue(f,"LowHeight_Add=",lineNum++,strLine,&this->fHeightOffset.LowHeight_Add))  goto readError;
+			if ((err = this->GetKeyedValue(f, "HighTime=", lineNum++, strLine, &this->fHeightOffset.HighTime)) > 0)  goto readError;
+			if ((err = this->GetKeyedValue(f, "LowTime=", lineNum++, strLine, &this->fHeightOffset.LowTime)) > 0)  goto readError;
+			if ((err = this->GetKeyedValue(f, "HighHeight_Mult=", lineNum++, strLine, &this->fHeightOffset.HighHeight_Mult)) > 0)  goto readError;
+			if ((err = this->GetKeyedValue(f, "HighHeight_Add=", lineNum++, strLine, &this->fHeightOffset.HighHeight_Add)) > 0)  goto readError;
+			if ((err = this->GetKeyedValue(f, "LowHeight_Mult=", lineNum++, strLine, &this->fHeightOffset.LowHeight_Mult)) > 0)  goto readError;
+			if ((err = this->GetKeyedValue(f, "LowHeight_Add=", lineNum++, strLine, &this->fHeightOffset.LowHeight_Add)) > 0)  goto readError;
 			SetFileType(SHIOHEIGHTSFILE);
 			break;
 		case 'p': case 'P': 
-			if(err = this->GetKeyedValue(f,"HighTime=",lineNum++,strLine,&this->fHeightOffset.HighTime))  goto readError;
-			if(err = this->GetKeyedValue(f,"LowTime=",lineNum++,strLine,&this->fHeightOffset.LowTime))  goto readError;
-			if(err = this->GetKeyedValue(f,"HighHeight_Mult=",lineNum++,strLine,&this->fHeightOffset.HighHeight_Mult))  goto readError;
-			if(err = this->GetKeyedValue(f,"HighHeight_Add=",lineNum++,strLine,&this->fHeightOffset.HighHeight_Add))  goto readError;
-			if(err = this->GetKeyedValue(f,"LowHeight_Mult=",lineNum++,strLine,&this->fHeightOffset.LowHeight_Mult))  goto readError;
-			if(err = this->GetKeyedValue(f,"LowHeight_Add=",lineNum++,strLine,&this->fHeightOffset.LowHeight_Add))  goto readError;
+			if ((err = this->GetKeyedValue(f, "HighTime=", lineNum++, strLine, &this->fHeightOffset.HighTime)) > 0)  goto readError;
+			if ((err = this->GetKeyedValue(f, "LowTime=", lineNum++, strLine, &this->fHeightOffset.LowTime)) > 0)  goto readError;
+			if ((err = this->GetKeyedValue(f, "HighHeight_Mult=", lineNum++, strLine, &this->fHeightOffset.HighHeight_Mult)) > 0)  goto readError;
+			if ((err = this->GetKeyedValue(f, "HighHeight_Add=", lineNum++, strLine, &this->fHeightOffset.HighHeight_Add)) > 0)  goto readError;
+			if ((err = this->GetKeyedValue(f, "LowHeight_Mult=", lineNum++, strLine, &this->fHeightOffset.LowHeight_Mult)) > 0)  goto readError;
+			if ((err = this->GetKeyedValue(f, "LowHeight_Add=", lineNum++, strLine, &this->fHeightOffset.LowHeight_Add)) > 0)  goto readError;
 			SetFileType(PROGRESSIVETIDEFILE);
 			break;
 	}

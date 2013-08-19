@@ -10,18 +10,17 @@
 #ifndef __gnome_basics__
 #define __gnome_basics__
 
-#define _USE_32BIT_TIME_T	1
+//#define _USE_32BIT_TIME_T	1
 
 #include <cstdlib>
-#include <iostream>
 #include <math.h>
-#include <fstream>
-#include <cstdlib>
 #include <cstring>
 #include <ios>
+#include <iostream>
+#include <fstream>
+#include <vector>
 
 #define nil NULL
-#define noErr 0
 
 #define TRUE 1
 #define FALSE 0
@@ -39,6 +38,10 @@
 	#define DIRDELIMITER ':'		// but why would the DIRDELIMITER look like a drive letter delimiter on a non-windows system?
 	#define NEWDIRDELIMITER '/'
 	#define OPPOSITEDIRDELIMITER '\\'
+#endif
+
+#ifndef noErr
+#define noErr 0
 #endif
 
 #ifdef pyGNOME
@@ -84,7 +87,9 @@ struct Pattern {
 typedef struct Pattern                  Pattern;
 typedef char *OSType;
 typedef void *WindowPtr;
+
 typedef short							OSErr;
+//#define noErr 0
 
 enum {
 	/* Memory Manager errors*/

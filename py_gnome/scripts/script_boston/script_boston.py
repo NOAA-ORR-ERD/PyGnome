@@ -82,7 +82,7 @@ def make_model(images_dir=os.path.join(base_dir,"images")):
     
     print "adding a cats shio mover:"
     
-    curr_file = get_datafile( os.path.join( base_dir, r"./EbbTides.CUR"))
+    curr_file = get_datafile( os.path.join( base_dir, r"./EbbTides.cur"))
     tide_file = get_datafile( os.path.join( base_dir, r"./EbbTidesShio.txt"))
     c_mover = gnome.movers.CatsMover(curr_file, tide=Tide( tide_file))
     c_mover.scale_refpoint = (-70.8875, 42.321333) # this is the value in the file (default)
@@ -94,7 +94,7 @@ def make_model(images_dir=os.path.join(base_dir,"images")):
     print "adding a cats ossm mover:"
     
     ossm_file = get_datafile( os.path.join( base_dir, r"./MerrimackMassCoastOSSM.txt"))
-    curr_file = get_datafile( os.path.join( base_dir, r"./MerrimackMassCoast.CUR"))
+    curr_file = get_datafile( os.path.join( base_dir, r"./MerrimackMassCoast.cur"))
     tide_file = get_datafile( os.path.join( base_dir, "./MerrimackMassCoastOSSM.txt"))
     c_mover = gnome.movers.CatsMover(curr_file, tide=Tide( tide_file))
     # but do need to scale (based on river stage)
@@ -106,7 +106,7 @@ def make_model(images_dir=os.path.join(base_dir,"images")):
     
     print "adding a cats mover:"
     
-    curr_file = get_datafile( os.path.join( base_dir, r"MassBaySewage.CUR"))
+    curr_file = get_datafile( os.path.join( base_dir, r"MassBaySewage.cur"))
     c_mover = gnome.movers.CatsMover(curr_file)
     # but do need to scale (based on river stage)
     c_mover.scale = True

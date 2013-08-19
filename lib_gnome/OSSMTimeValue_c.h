@@ -11,10 +11,16 @@
 #ifndef __OSSMTimeValue_c__
 #define __OSSMTimeValue_c__
 
+#include <vector>
+#include <sstream>
+#include <string>
+
 #include "Basics.h"
 #include "TypeDefs.h"
 #include "TimeValue_c.h"
 #include "ExportSymbols.h"
+
+using namespace std;
 
 class DLL_API OSSMTimeValue_c : virtual public TimeValue_c {
 
@@ -60,7 +66,10 @@ public:
 	virtual void			SetUserUnits(short userUnits){fUserUnits=userUnits;}
 	virtual double			GetMaxValue();
 	virtual OSErr			InitTimeFunc ();
-	virtual OSErr			ReadNDBCWind (char *path, long numHeaderLines);
+
+	virtual OSErr ReadNDBCWind(vector<string> &linesInFile, long numHeaderLines);
+	virtual OSErr ReadNDBCWind(char *path, long numHeaderLines);
+
 	virtual OSErr			ReadNCDCWind (char *path);
 	virtual OSErr			ReadTimeValues (char *path, short format, short unitsIfKnownInAdvance);
 	OSErr					ReadOSSMTimeHeader (char *path);
@@ -70,6 +79,14 @@ public:
 protected:
 	OSErr					GetInterpolatedComponent (Seconds forTime, double *value, short index);
 	OSErr					GetTimeChange (long a, long b, Seconds *dt);
+
+	OSErr ConvertRowValuesToUV(string &value1, string &value2,
+							   short format, double conversionFactor,
+							   double &uOut, double &vOut);
+	bool DateValuesAreZero(DateTimeRec &dateTime);
+	bool DateIsValid(DateTimeRec &dateTime);
+	void CorrectTwoDigitYear(DateTimeRec &dateTime);
+
 
 };
 

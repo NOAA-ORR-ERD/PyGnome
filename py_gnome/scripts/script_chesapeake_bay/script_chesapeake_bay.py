@@ -79,7 +79,7 @@ def make_model(images_dir=os.path.join(base_dir,"images")):
     print "adding a current mover:"
     
     curr_file = get_datafile( os.path.join( base_dir, r"./ChesapeakeBay.nc"))
-    topology_file = get_datafile( os.path.join( base_dir, r"./ChesapeakeBay.DAT"))
+    topology_file = get_datafile( os.path.join( base_dir, r"./ChesapeakeBay.dat"))
     c_mover = gnome.movers.GridCurrentMover(curr_file,topology_file)
     model.movers += c_mover
 

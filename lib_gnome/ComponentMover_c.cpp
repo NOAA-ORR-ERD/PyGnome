@@ -240,7 +240,7 @@ OSErr ComponentMover_c::CalculateAveragedWindsHdl(char *errmsg)
 		}
 		averageSpeed = averageSpeed / averageTimeSteps;
 		// apply power and scale - is this the right order?
-		if (averageSpeed<0) averageSpeed = -1. * pow(abs(averageSpeed),fPowerFactorAveragedWinds);
+		if (averageSpeed<0) averageSpeed = -1. * pow(myfabs(averageSpeed),fPowerFactorAveragedWinds);
 		else
 		/*if (fPowerFactorAveragedWinds!=1.)*/  averageSpeed = pow(averageSpeed,fPowerFactorAveragedWinds); 
 		//for now apply the scale factor in SetOptimizeVariables()

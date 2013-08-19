@@ -36,7 +36,6 @@ cdef class CyGridWindMover(cy_mover.CyMover):
         cdef bytes time_grid, topology
         
         time_grid_file = os.path.normpath(time_grid_file)
-        
         time_grid = to_bytes( unicode(time_grid_file))
         
         if topology_file is None:

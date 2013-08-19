@@ -75,10 +75,11 @@ public:
 	virtual OSErr 		PrepareForModelStep(const Seconds&, const Seconds&, bool, int numLESets, int* LESetsSizesList); // AH 07/10/2012
 	virtual void 		ModelStepIsDone();
 	virtual Boolean		VelocityStrAtPoint(WorldPoint3D wp, char *velStr);
-	virtual	OSErr		TextRead(char* path/*, TMap **newMap*/);
 
-	
-			OSErr		get_move(int n, unsigned long model_time, unsigned long step_len, WorldPoint3D* ref, WorldPoint3D* delta, short* LE_status, LEType spillType, long spill_ID);
+	virtual	OSErr TextRead(vector<string> &linesInFile);
+	virtual	OSErr TextRead(char* path);
+
+	OSErr get_move(int n, Seconds model_time, Seconds step_len, WorldPoint3D* ref, WorldPoint3D* delta, short* LE_status, LEType spillType, long spill_ID);
 
 };
 

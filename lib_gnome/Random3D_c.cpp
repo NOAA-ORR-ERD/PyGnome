@@ -261,7 +261,7 @@ WorldPoint3D Random3D_c::GetMove (const Seconds& model_time, Seconds timeStep,lo
 			 return deltaPoint;
 			}
 			// need to check if it was a giant step and if so throw le randomly back into mixed layer
-			if (abs(deltaPoint.z) > mixedLayerDepth/2. /*|| chemicalSpill*/)	// what constitutes a giant step??
+			if (myfabs(deltaPoint.z) > mixedLayerDepth/2. /*|| chemicalSpill*/)	// what constitutes a giant step??
 			{
 				//deltaPoint.z = GetRandomFloat(0,mixedLayerDepth) - (*theLE).z;
 				deltaPoint.z = GetRandomFloat(eps,mixedLayerDepth) - (*theLE).z;

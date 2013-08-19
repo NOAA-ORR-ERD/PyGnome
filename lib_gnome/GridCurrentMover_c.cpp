@@ -15,6 +15,7 @@
 
 #ifndef pyGNOME
 #include "CROSS.H"
+#include "GridCurMover.h"
 #else
 #include "Replacements.h"
 #endif
@@ -169,22 +170,26 @@ OSErr GridCurrentMover_c::PrepareForModelRun()
 }
 
 
-OSErr GridCurrentMover_c::PrepareForModelStep(const Seconds& model_time, const Seconds& time_step, bool uncertain, int numLESets, int* LESetsSizesList)
+OSErr GridCurrentMover_c::PrepareForModelStep(const Seconds &model_time, const Seconds &time_step,
+											  bool uncertain, int numLESets, int *LESetsSizesList)
 {
-	OSErr err=0;
+	OSErr err = 0;
 	char errmsg[256];
 	
-	errmsg[0]=0;
+	errmsg[0] = 0;
 	
 	if (bIsFirstStep)
 		fModelStartTime = model_time;
-	
-	if (!bActive) return noErr;
-	
-	if (!timeGrid) return -1;
 
-	err = timeGrid -> SetInterval(errmsg, model_time); 
-	if (err) goto done;
+	if (!bActive)
+		return noErr;
+	
+	if (!timeGrid)
+		return -1;
+
+	err = timeGrid->SetInterval(errmsg, model_time);
+	if (err)
+		goto done;
 	
 	if (uncertain)
 	{
@@ -195,12 +200,12 @@ OSErr GridCurrentMover_c::PrepareForModelStep(const Seconds& model_time, const S
 	
 done:
 	
-	if(err)
-	{
-		if(!errmsg[0])
-			strcpy(errmsg,"An error occurred in GridCurrentMover_c::PrepareForModelStep");
+	if (err) {
+		if (!errmsg[0])
+			strcpy(errmsg, "An error occurred in GridCurrentMover_c::PrepareForModelStep");
 		printError(errmsg); 
 	}	
+
 	return err;
 }
 
@@ -212,7 +217,7 @@ void GridCurrentMover_c::ModelStepIsDone()
 }
 
 
-OSErr GridCurrentMover_c::get_move(int n, unsigned long model_time, unsigned long step_len, WorldPoint3D* ref, WorldPoint3D* delta, short* LE_status, LEType spillType, long spill_ID) {	
+OSErr GridCurrentMover_c::get_move(int n, Seconds model_time, Seconds step_len, WorldPoint3D* ref, WorldPoint3D* delta, short* LE_status, LEType spillType, long spill_ID) {
 
 	if(!ref || !delta) {
 		//cout << "worldpoints array not provided! returning.\n";
@@ -301,44 +306,58 @@ OSErr GridCurrentMover_c::TextRead(char *path, char *topFilePath)
 	char fileNamesPath[256], filePath[256];
 	Boolean isNetCDFPathsFile = false;
 	TimeGridVel *newTimeGrid = nil;
-	
+
+	memset(fileNamesPath, 0, 256);
+	memset(filePath, 0, 256);
 	strcpy(filePath,path);	// this gets altered in IsNetCDFPathsFile, eventually change that function
 
-	if (IsNetCDFFile(path, &gridType) || IsNetCDFPathsFile(filePath, &isNetCDFPathsFile, fileNamesPath, &gridType))
+	//  Net CDF is a binary file format, so we will continue to just pass in a path.
+	if (IsNetCDFFile(path, &gridType) ||
+		IsNetCDFPathsFile(filePath, &isNetCDFPathsFile, fileNamesPath, &gridType))
 	{
-		if (gridType == CURVILINEAR)
-		{
+		if (gridType == CURVILINEAR) {
 			newTimeGrid = new TimeGridVelCurv();
 		}
-		else if (gridType == TRIANGULAR)
-		{
+		else if (gridType == TRIANGULAR) {
 			newTimeGrid = new TimeGridVelTri();
 		}
-		
-		else
-		{
+		else {
 			newTimeGrid = new TimeGridVelRect();
 		}
-		if (newTimeGrid)
-		{
-			//err = this->InitMover(timeGrid);
-			//if(err) return err;
-			err = newTimeGrid->TextRead(filePath,topFilePath);
+
+		if (newTimeGrid) {
+			// TODO: This would be more efficient if IsNetCDFFile() would leave the file
+			//       open and pass back an active ncid
+			err = newTimeGrid->TextRead(filePath, topFilePath);
 			if(err) return err;
 			this->SetTimeGrid(newTimeGrid);
 		}
-		if (isNetCDFPathsFile)
-		{
+
+		if (isNetCDFPathsFile) {
 			char errmsg[256];
+
 			err = timeGrid->ReadInputFileNames(fileNamesPath);
-			if (err) return err;
+			if (err)
+				return err;
+
 			timeGrid->DisposeAllLoadedData();
 			//err = ((NetCDFMover*)newMover)->SetInterval(errmsg);	// if set interval here will get error if times are not in model range
-			if(err) return err;
 		}
+
+		return err;
 	}
-	else if (IsPtCurFile(path))
+
+	// All other file formats are line-formatted text files
+	vector<string> linesInFile;
+	if (ReadLinesInFile(path, linesInFile)) {
+		linesInFile = rtrim_empty_lines(linesInFile);
+	}
+	else
+		return -1; // we failed to read in the file.
+
+	if (IsPtCurFile(linesInFile))
 	{
+		cerr << "we are opening a PtCurFile..." << "'" << path << "'" << endl;
 		char errmsg[256];
 
 		newTimeGrid = new TimeGridCurTri();
@@ -359,8 +378,9 @@ OSErr GridCurrentMover_c::TextRead(char *path, char *topFilePath)
 			}
 		}
 	}
-	else if (IsGridCurTimeFile(path,&selectedUnits))
+	else if (IsGridCurTimeFile(linesInFile, &selectedUnits))
 	{
+		cerr << "we are opening a GridCurTimeFile..." << "'" << path << "'" << endl;
 		char errmsg[256];
 		newTimeGrid = new TimeGridCurRect();
 		//timeGrid = new TimeGridVel();
@@ -386,13 +406,16 @@ OSErr GridCurrentMover_c::TextRead(char *path, char *topFilePath)
 	//return 0;
 	return err;
 
-}	
+}
+
+
 VelocityRec GridCurrentMover_c::GetScaledPatValue(const Seconds& model_time, WorldPoint p,Boolean * useEddyUncertainty)
 {
 	VelocityRec v = {0,0};
 	printError("GridCurrentMover_c::GetScaledPatValue is unimplemented");
 	return v;
 }
+
 
 VelocityRec GridCurrentMover_c::GetPatValue(WorldPoint p)
 {
