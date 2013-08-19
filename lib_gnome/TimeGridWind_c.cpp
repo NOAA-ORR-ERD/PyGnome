@@ -132,7 +132,7 @@ scale:
 	return windVelocity;
 }
 
-OSErr TimeGridWindRect_c::TextRead(char *path,char *topFilePath) 
+OSErr TimeGridWindRect_c::TextRead(const char *path, const char *topFilePath)
 {
 	// this code is for regular grids
 	OSErr err = 0;
@@ -657,7 +657,7 @@ scale:
 
 
 // this code is for curvilinear grids
-OSErr TimeGridWindCurv_c::TextRead(char *path, char *topFilePath) // don't want a map  
+OSErr TimeGridWindCurv_c::TextRead(const char *path, const char *topFilePath) // don't want a map
 {
 	OSErr err = 0;
 	char errmsg[256] = "";
@@ -2089,7 +2089,7 @@ done:
 
 
 // import NetCDF curvilinear info so don't have to regenerate
-OSErr TimeGridWindCurv_c::ReadTopology(char *path)
+OSErr TimeGridWindCurv_c::ReadTopology(const char *path)
 {
 	vector<string> linesInFile;
 

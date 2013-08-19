@@ -65,13 +65,18 @@
 Boolean IsNetCDFPathsFile (char *path, Boolean *isNetCDFPathsFile, char *fileNamesPath, short *gridType)
 {
 	OSErr err = noErr;
+	char firstPartOfFile[512], classicPath[256];
+	char strLine[512];
+
 	Boolean	bIsValid = false;
 	long line = 0;
 
-	char strLine[512];
-	char firstPartOfFile[512], classicPath[256];
 	long lenToRead, fileLength;
-	char *key;
+	string key;
+
+	memset(firstPartOfFile, 0, 512);
+	memset(classicPath, 0, 256);
+	memset(strLine, 0, 512);
 
 	*isNetCDFPathsFile = false;
 
@@ -93,24 +98,25 @@ Boolean IsNetCDFPathsFile (char *path, Boolean *isNetCDFPathsFile, char *fileNam
 	NthLineInTextNonOptimized (firstPartOfFile, line++, strLine, 512);
 	RemoveLeadingAndTrailingWhiteSpace(strLine);
 
-	if (strncmpnocase (strLine, "NetCDF Files", 12) != 0)
+	key = "NetCDF Files";
+	if (strncmpnocase(strLine, key.c_str(), key.size()) != 0)
 		return false;
 
 	// next line must be "[FILE] <path>"
 	NthLineInTextNonOptimized(firstPartOfFile, line++, strLine, 512); 
 	RemoveLeadingAndTrailingWhiteSpace(strLine);
 
-	if (strncmpnocase (strLine, "[FILE]", 6) != 0)
+	key = "[FILE]";
+	if (strncmpnocase(strLine, key.c_str(), key.size()) != 0)
 		return false;
+
+	strcpy(fileNamesPath, path); // transfer the input path to this output variable
 	
-	strcpy(fileNamesPath,path); // transfer the input path to this output variable
-	
-	strcpy(path,strLine+strlen(key)); // this is overwriting the input variable (see NOTE above)
+	strcpy(path, strLine + key.size()); // this is overwriting the input variable (see NOTE above)
 	RemoveLeadingAndTrailingWhiteSpace(path);
 	ResolvePathFromInputFile(fileNamesPath,path); // JLM 6/8/10
 
-	cerr << "test file: " << path << endl;
-	if(!FileExists(0,0,path)){
+	if (!FileExists(0, 0, path)) {
 		// tell the user the file does not exist
 		printError("FileExists returned false for the first path listed in the IsNetCDFPathsFile.");
 		return false;
@@ -126,6 +132,7 @@ Boolean IsNetCDFPathsFile (char *path, Boolean *isNetCDFPathsFile, char *fileNam
 	
 	return bIsValid;
 }
+
 
 /////////////////////////////////////////////////
 Boolean IsNetCDFFile (char *path, short *gridType)	
@@ -671,7 +678,7 @@ long TimeGridVelRect_c::GetNumDepthLevelsInFile()
 }
 
 /////////////////////////////////////////////////////////////////
-OSErr TimeGridVelRect_c::TextRead(char *path, char *topFilePath) 
+OSErr TimeGridVelRect_c::TextRead(const char *path, const char *topFilePath)
 {
 	// this code is for regular grids
 	// For regridded data files don't have the real latitude/longitude values
@@ -2450,7 +2457,7 @@ void TimeGridVelCurv_c::GetDepthIndices(long ptIndex, float depthAtPoint, float 
 	}
 }
 
-OSErr TimeGridVelCurv_c::TextRead(char *path, char *topFilePath) 
+OSErr TimeGridVelCurv_c::TextRead(const char *path, const char *topFilePath)
 {
 	// this code is for curvilinear grids
 	OSErr err = 0;
@@ -4973,7 +4980,7 @@ done:
 }
 
 
-OSErr TimeGridVelCurv_c::ReadTopology(char *path)
+OSErr TimeGridVelCurv_c::ReadTopology(const char *path)
 {
 	vector<string> linesInFile;
 
@@ -5650,7 +5657,7 @@ VelocityRec TimeGridVelTri_c::GetScaledPatValue3D(const Seconds& model_time, Int
 	return scaledPatVelocity;
 }
 
-OSErr TimeGridVelTri_c::TextRead(char *path, char *topFilePath) 
+OSErr TimeGridVelTri_c::TextRead(const char *path, const char *topFilePath)
 {
 	// needs to be updated once triangle grid format is set
 
@@ -7282,7 +7289,7 @@ done:
 
 // import NetCDF triangle info so don't have to regenerate
 // this is same as curvilinear mover so may want to combine later
-OSErr TimeGridVelTri_c::ReadTopology(char *path)
+OSErr TimeGridVelTri_c::ReadTopology(const char *path)
 {
 	vector<string> linesInFile;
 
@@ -8261,7 +8268,7 @@ done:
 }
 
 
-OSErr TimeGridCurRect_c::TextRead(char *path, char *topFilePath)
+OSErr TimeGridCurRect_c::TextRead(const char *path, const char *topFilePath)
 {
 	string strPath = path;
 
@@ -9541,7 +9548,7 @@ done:
 }
 
 
-OSErr TimeGridCurTri_c::TextRead(char *path, char *topFilePath)
+OSErr TimeGridCurTri_c::TextRead(const char *path, const char *topFilePath)
 {
 	string strPath = path;
 

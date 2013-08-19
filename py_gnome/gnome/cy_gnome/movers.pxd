@@ -44,7 +44,8 @@ movers:
 cdef extern from "Mover_c.h":
     cdef cppclass Mover_c:
         OSErr PrepareForModelRun()
-        OSErr PrepareForModelStep(Seconds &time, Seconds &time_step, bool uncertain, int numLESets, int* LESetsSizesList)    # currently this happens in C++ get_move command
+        OSErr PrepareForModelStep(Seconds &time, Seconds &time_step,
+                                  bool uncertain, int numLESets, int *LESetsSizesList)    # currently this happens in C++ get_move command
         void ModelStepIsDone()
         OSErr ReallocateUncertainty(int numLEs, short* LE_status)
 

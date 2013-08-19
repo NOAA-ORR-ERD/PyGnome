@@ -170,22 +170,26 @@ OSErr GridCurrentMover_c::PrepareForModelRun()
 }
 
 
-OSErr GridCurrentMover_c::PrepareForModelStep(const Seconds& model_time, const Seconds& time_step, bool uncertain, int numLESets, int* LESetsSizesList)
+OSErr GridCurrentMover_c::PrepareForModelStep(const Seconds &model_time, const Seconds &time_step,
+											  bool uncertain, int numLESets, int *LESetsSizesList)
 {
-	OSErr err=0;
+	OSErr err = 0;
 	char errmsg[256];
 	
-	errmsg[0]=0;
+	errmsg[0] = 0;
 	
 	if (bIsFirstStep)
 		fModelStartTime = model_time;
-	
-	if (!bActive) return noErr;
-	
-	if (!timeGrid) return -1;
 
-	err = timeGrid -> SetInterval(errmsg, model_time); 
-	if (err) goto done;
+	if (!bActive)
+		return noErr;
+	
+	if (!timeGrid)
+		return -1;
+
+	err = timeGrid->SetInterval(errmsg, model_time);
+	if (err)
+		goto done;
 	
 	if (uncertain)
 	{
@@ -196,12 +200,12 @@ OSErr GridCurrentMover_c::PrepareForModelStep(const Seconds& model_time, const S
 	
 done:
 	
-	if(err)
-	{
-		if(!errmsg[0])
-			strcpy(errmsg,"An error occurred in GridCurrentMover_c::PrepareForModelStep");
+	if (err) {
+		if (!errmsg[0])
+			strcpy(errmsg, "An error occurred in GridCurrentMover_c::PrepareForModelStep");
 		printError(errmsg); 
 	}	
+
 	return err;
 }
 
@@ -302,14 +306,15 @@ OSErr GridCurrentMover_c::TextRead(char *path, char *topFilePath)
 	char fileNamesPath[256], filePath[256];
 	Boolean isNetCDFPathsFile = false;
 	TimeGridVel *newTimeGrid = nil;
-	
+
+	memset(fileNamesPath, 0, 256);
+	memset(filePath, 0, 256);
 	strcpy(filePath,path);	// this gets altered in IsNetCDFPathsFile, eventually change that function
 
 	//  Net CDF is a binary file format, so we will continue to just pass in a path.
 	if (IsNetCDFFile(path, &gridType) ||
 		IsNetCDFPathsFile(filePath, &isNetCDFPathsFile, fileNamesPath, &gridType))
 	{
-		cerr << "we are opening a NetCDFFile..." << "'" << path << "'" << endl;
 		if (gridType == CURVILINEAR) {
 			newTimeGrid = new TimeGridVelCurv();
 		}
@@ -330,8 +335,11 @@ OSErr GridCurrentMover_c::TextRead(char *path, char *topFilePath)
 
 		if (isNetCDFPathsFile) {
 			char errmsg[256];
+
 			err = timeGrid->ReadInputFileNames(fileNamesPath);
-			if (err) return err;
+			if (err)
+				return err;
+
 			timeGrid->DisposeAllLoadedData();
 			//err = ((NetCDFMover*)newMover)->SetInterval(errmsg);	// if set interval here will get error if times are not in model range
 		}

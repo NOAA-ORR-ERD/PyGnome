@@ -19,7 +19,7 @@ cdef extern from "TypeDefs.h":
     ctypedef unsigned char Boolean
     ctypedef short OSErr
     ctypedef unsigned long LETYPE
-    ctypedef unsigned long Seconds
+    ctypedef long Seconds
 
 cdef extern from "GEOMETRY.H":
     ctypedef struct WorldPoint:

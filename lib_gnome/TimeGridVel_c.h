@@ -96,7 +96,7 @@ public:
 	virtual OSErr	 	SetInterval(char *errmsg, const Seconds& model_time);	
 	
 	virtual Boolean 	CheckInterval(long &timeDataInterval, const Seconds& model_time);	
-	virtual OSErr		TextRead(const char *path, const char *topFilePath) {return 0;}
+	virtual OSErr		TextRead(const char *path, const char *topFilePath) { cerr << "inline TextRead()...does nothing..." << endl; return 0;}
 	virtual OSErr 		ReadTimeData(long index,VelocityFH *velocityH, char* errmsg) {return 0;}
 	OSErr 				ReadInputFileNames(char *fileNamesPath);
 	//void				SetInputFilesHdl(PtCurFileInfoH inputFilesHdl) {if (fInputFilesHdl) {DisposeHandle((Handle)fInputFilesHdl)} fInputFilesHdl = inputFilesHdl;}
@@ -155,11 +155,13 @@ public:
 
 	virtual double	GetDepthAtIndex(long depthIndex, double totalDepth);
 	float		GetTotalDepth(WorldPoint refPoint, long triNum);
-	virtual OSErr		TextRead(char *path,char *topFilePath);
+
 	virtual OSErr 		ReadTimeData(long index,VelocityFH *velocityH, char* errmsg);
-	
 	virtual long 		GetNumDepthLevelsInFile();	// eventually get rid of this
+	
+	virtual OSErr		TextRead(const char *path, const char *topFilePath);
 };
+
 
 class TimeGridVelCurv_c : virtual public TimeGridVelRect_c
 {
@@ -177,7 +179,6 @@ public:
 	virtual Boolean	IAm(ClassID id) { if(id==TYPE_TIMEGRIDVELCURV) return TRUE; return TimeGridVelRect_c::IAm(id); }
 	
 	LongPointHdl		GetPointsHdl();
-	virtual OSErr		TextRead(char *path,char *topFilePath);
 	OSErr 				ReadTimeData(long index,VelocityFH *velocityH, char* errmsg); 
 	VelocityRec			GetScaledPatValue(const Seconds& model_time, WorldPoint3D refPoint);
 
@@ -195,10 +196,13 @@ public:
 	float		GetTotalDepth(WorldPoint refPoint,long ptIndex);
 
 	virtual	OSErr ReadTopology(std::vector<std::string> &linesInFile);
-	virtual	OSErr ReadTopology(char *path);
-	//virtual	OSErr 	ReadTopology(char* path, TMap **newMap);
-	virtual	OSErr 	ExportTopology(char* path);
+	virtual	OSErr ReadTopology(const char *path);
+
+	virtual	OSErr ExportTopology(char *path);
+
+	virtual OSErr TextRead(const char *path, const char *topFilePath);
 };
+
 
 class TimeGridVelTri_c : virtual public TimeGridVelCurv_c
 {
@@ -216,7 +220,6 @@ public:
 	virtual Boolean	IAm(ClassID id) { if(id==TYPE_TIMEGRIDVELTRI) return TRUE; return TimeGridVelCurv_c::IAm(id); }
 	LongPointHdl			GetPointsHdl();
 	void					GetDepthIndices(long ptIndex, float depthAtPoint, long *depthIndex1, long *depthIndex2);
-	virtual OSErr		TextRead(char *path,char *topFilePath);
 	OSErr 				ReadTimeData(long index,VelocityFH *velocityH, char* errmsg); 
 	VelocityRec 		GetScaledPatValue(const Seconds& model_time, WorldPoint3D refPoint);
 	VelocityRec 		GetScaledPatValue3D(const Seconds& model_time, InterpolationVal interpolationVal,float depth);
@@ -225,13 +228,15 @@ public:
 	
 	virtual long			GetNumDepthLevels();
 	float					GetTotalDepth(WorldPoint refPoint, long triNum);
-	
-	virtual OSErr ReadTopology(std::vector<std::string> &linesInFile);
-	virtual	OSErr ReadTopology(char* path);
-	//virtual	OSErr 	ReadTopology(char* path, TMap **newMap);
 
-	virtual	OSErr 	ExportTopology(char* path);
+	virtual OSErr ReadTopology(std::vector<std::string> &linesInFile);
+	virtual OSErr ReadTopology(const char *path);
+
+	virtual OSErr ExportTopology(char *path);
+
+	virtual OSErr TextRead(const char *path, const char *topFilePath);
 };
+
 
 //#ifndef pyGNOME
 class TimeGridCurRect_c : virtual public TimeGridVel_c
@@ -250,9 +255,6 @@ public:
 
 	VelocityRec 		GetScaledPatValue(const Seconds& model_time, WorldPoint3D p);
 
-	virtual OSErr TextRead(std::vector<std::string> &linesInFile, std::string containingDir);
-	virtual OSErr TextRead(char *path,char *topFilePath);
-
 	OSErr ReadHeaderLines(std::vector<std::string> &linesInFile,
 						  std::string &containingDir,
 						  WorldRect *bounds);
@@ -270,7 +272,11 @@ public:
 	virtual OSErr 		CheckAndScanFile(char *errmsg, const Seconds& model_time);	
 	virtual OSErr		GetStartTime(Seconds *startTime);	// switch this to GetTimeValue
 	virtual OSErr		GetEndTime(Seconds *endTime);
+
+	virtual OSErr TextRead(std::vector<std::string> &linesInFile, std::string containingDir);
+	virtual OSErr TextRead(const char *path, const char *topFilePath);
 };
+
 
 class TimeGridCurTri_c : virtual public TimeGridCurRect_c
 {
@@ -289,9 +295,6 @@ public:
 	
 	VelocityRec 		GetScaledPatValue(const Seconds& model_time, WorldPoint3D p);
 	VelocityRec 		GetScaledPatValue3D(const Seconds& model_time, InterpolationVal interpolationVal,float depth);
-
-	virtual OSErr TextRead(std::vector<std::string> &linesInFile, std::string containingDir);
-	virtual OSErr TextRead(char *path, char *topFilePath);
 	
 	OSErr         ReadHeaderLine(std::string &strIn);
 	virtual OSErr ReadTimeData(long index, VelocityFH *velocityH, char *errmsg);
@@ -302,6 +305,8 @@ public:
 	long GetNumDepths(void);
 	void GetDepthIndices(long ptIndex, float depthAtPoint, long *depthIndex1, long *depthIndex2);
 
+	virtual OSErr TextRead(std::vector<std::string> &linesInFile, std::string containingDir);
+	virtual OSErr TextRead(const char *path, const char *topFilePath);
 };
 
 
@@ -318,10 +323,11 @@ public:
 	
 	VelocityRec 		GetScaledPatValue(const Seconds& model_time, WorldPoint3D p);
 	
-	virtual OSErr		TextRead(char *path,char *topFilePath);
 	virtual OSErr 		ReadTimeData(long index,VelocityFH *velocityH, char* errmsg);
 	
+	virtual OSErr TextRead(const char *path, const char *topFilePath);
 };
+
 
 class TimeGridWindCurv_c : virtual public TimeGridWindRect_c
 {
@@ -343,16 +349,17 @@ public:
 	virtual long 		GetVelocityIndex(WorldPoint wp);
 	virtual LongPoint 	GetVelocityIndices(WorldPoint wp);
 
-	virtual OSErr		TextRead(char *path,char *topFilePath);
 	virtual OSErr 		ReadTimeData(long index,VelocityFH *velocityH, char* errmsg);
 	
 	OSErr 				ReorderPoints(char* errmsg); 
 	OSErr				GetLatLonFromIndex(long iIndex, long jIndex, WorldPoint *wp);
 
-	virtual	OSErr ReadTopology(std::vector<std::string> &linesInFile);
-	virtual	OSErr ReadTopology(char *path);
+	virtual OSErr ReadTopology(std::vector<std::string> &linesInFile);
+	virtual OSErr ReadTopology(const char *path);
 
-	virtual	OSErr 	ExportTopology(char* path);
+	virtual OSErr ExportTopology(char* path);
+
+	virtual OSErr TextRead(const char *path, const char *topFilePath);
 };
 
 
