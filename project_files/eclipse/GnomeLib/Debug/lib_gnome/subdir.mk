@@ -12,6 +12,7 @@ CPP_SRCS += \
 /Users/james.makela/Dev/GNOME/lib_gnome/CurrentMover_c.cpp \
 /Users/james.makela/Dev/GNOME/lib_gnome/DagTree.cpp \
 /Users/james.makela/Dev/GNOME/lib_gnome/DagTreeIO.cpp \
+/Users/james.makela/Dev/GNOME/lib_gnome/GEOMETRY.cpp \
 /Users/james.makela/Dev/GNOME/lib_gnome/GridCurrentMover_c.cpp \
 /Users/james.makela/Dev/GNOME/lib_gnome/GridMapUtils.cpp \
 /Users/james.makela/Dev/GNOME/lib_gnome/GridMap_c.cpp \
@@ -24,12 +25,14 @@ CPP_SRCS += \
 /Users/james.makela/Dev/GNOME/lib_gnome/Mover_c.cpp \
 /Users/james.makela/Dev/GNOME/lib_gnome/OLEList_c.cpp \
 /Users/james.makela/Dev/GNOME/lib_gnome/OSSMTimeValue_c.cpp \
+/Users/james.makela/Dev/GNOME/lib_gnome/OUTILS.cpp \
 /Users/james.makela/Dev/GNOME/lib_gnome/Random3D_c.cpp \
 /Users/james.makela/Dev/GNOME/lib_gnome/RandomVertical_c.cpp \
 /Users/james.makela/Dev/GNOME/lib_gnome/Random_c.cpp \
 /Users/james.makela/Dev/GNOME/lib_gnome/RectGridVeL_c.cpp \
 /Users/james.makela/Dev/GNOME/lib_gnome/RectUtils.cpp \
 /Users/james.makela/Dev/GNOME/lib_gnome/Replacements.cpp \
+/Users/james.makela/Dev/GNOME/lib_gnome/RiseVelocity_c.cpp \
 /Users/james.makela/Dev/GNOME/lib_gnome/ShioCurrent1.cpp \
 /Users/james.makela/Dev/GNOME/lib_gnome/ShioCurrent2.cpp \
 /Users/james.makela/Dev/GNOME/lib_gnome/ShioHeight.cpp \
@@ -55,6 +58,7 @@ OBJS += \
 ./lib_gnome/CurrentMover_c.o \
 ./lib_gnome/DagTree.o \
 ./lib_gnome/DagTreeIO.o \
+./lib_gnome/GEOMETRY.o \
 ./lib_gnome/GridCurrentMover_c.o \
 ./lib_gnome/GridMapUtils.o \
 ./lib_gnome/GridMap_c.o \
@@ -67,12 +71,14 @@ OBJS += \
 ./lib_gnome/Mover_c.o \
 ./lib_gnome/OLEList_c.o \
 ./lib_gnome/OSSMTimeValue_c.o \
+./lib_gnome/OUTILS.o \
 ./lib_gnome/Random3D_c.o \
 ./lib_gnome/RandomVertical_c.o \
 ./lib_gnome/Random_c.o \
 ./lib_gnome/RectGridVeL_c.o \
 ./lib_gnome/RectUtils.o \
 ./lib_gnome/Replacements.o \
+./lib_gnome/RiseVelocity_c.o \
 ./lib_gnome/ShioCurrent1.o \
 ./lib_gnome/ShioCurrent2.o \
 ./lib_gnome/ShioHeight.o \
@@ -98,6 +104,7 @@ CPP_DEPS += \
 ./lib_gnome/CurrentMover_c.d \
 ./lib_gnome/DagTree.d \
 ./lib_gnome/DagTreeIO.d \
+./lib_gnome/GEOMETRY.d \
 ./lib_gnome/GridCurrentMover_c.d \
 ./lib_gnome/GridMapUtils.d \
 ./lib_gnome/GridMap_c.d \
@@ -110,12 +117,14 @@ CPP_DEPS += \
 ./lib_gnome/Mover_c.d \
 ./lib_gnome/OLEList_c.d \
 ./lib_gnome/OSSMTimeValue_c.d \
+./lib_gnome/OUTILS.d \
 ./lib_gnome/Random3D_c.d \
 ./lib_gnome/RandomVertical_c.d \
 ./lib_gnome/Random_c.d \
 ./lib_gnome/RectGridVeL_c.d \
 ./lib_gnome/RectUtils.d \
 ./lib_gnome/Replacements.d \
+./lib_gnome/RiseVelocity_c.d \
 ./lib_gnome/ShioCurrent1.d \
 ./lib_gnome/ShioCurrent2.d \
 ./lib_gnome/ShioHeight.d \
@@ -184,6 +193,13 @@ lib_gnome/DagTree.o: /Users/james.makela/Dev/GNOME/lib_gnome/DagTree.cpp
 	@echo ' '
 
 lib_gnome/DagTreeIO.o: /Users/james.makela/Dev/GNOME/lib_gnome/DagTreeIO.cpp
+	@echo 'Building file: $<'
+	@echo 'Invoking: GCC C++ Compiler'
+	g++ -DpyGNOME=1 -I/Users/james.makela/Dev/GNOME_branch/third_party/x86_64/include -O0 -g3 -Wall -c -fmessage-length=0 -arch i386 -MMD -MP -MF"$(@:%.o=%.d)" -MT"$(@:%.o=%.d)" -o "$@" "$<"
+	@echo 'Finished building: $<'
+	@echo ' '
+
+lib_gnome/GEOMETRY.o: /Users/james.makela/Dev/GNOME/lib_gnome/GEOMETRY.cpp
 	@echo 'Building file: $<'
 	@echo 'Invoking: GCC C++ Compiler'
 	g++ -DpyGNOME=1 -I/Users/james.makela/Dev/GNOME_branch/third_party/x86_64/include -O0 -g3 -Wall -c -fmessage-length=0 -arch i386 -MMD -MP -MF"$(@:%.o=%.d)" -MT"$(@:%.o=%.d)" -o "$@" "$<"
@@ -274,6 +290,13 @@ lib_gnome/OSSMTimeValue_c.o: /Users/james.makela/Dev/GNOME/lib_gnome/OSSMTimeVal
 	@echo 'Finished building: $<'
 	@echo ' '
 
+lib_gnome/OUTILS.o: /Users/james.makela/Dev/GNOME/lib_gnome/OUTILS.cpp
+	@echo 'Building file: $<'
+	@echo 'Invoking: GCC C++ Compiler'
+	g++ -DpyGNOME=1 -I/Users/james.makela/Dev/GNOME_branch/third_party/x86_64/include -O0 -g3 -Wall -c -fmessage-length=0 -arch i386 -MMD -MP -MF"$(@:%.o=%.d)" -MT"$(@:%.o=%.d)" -o "$@" "$<"
+	@echo 'Finished building: $<'
+	@echo ' '
+
 lib_gnome/Random3D_c.o: /Users/james.makela/Dev/GNOME/lib_gnome/Random3D_c.cpp
 	@echo 'Building file: $<'
 	@echo 'Invoking: GCC C++ Compiler'
@@ -310,6 +333,13 @@ lib_gnome/RectUtils.o: /Users/james.makela/Dev/GNOME/lib_gnome/RectUtils.cpp
 	@echo ' '
 
 lib_gnome/Replacements.o: /Users/james.makela/Dev/GNOME/lib_gnome/Replacements.cpp
+	@echo 'Building file: $<'
+	@echo 'Invoking: GCC C++ Compiler'
+	g++ -DpyGNOME=1 -I/Users/james.makela/Dev/GNOME_branch/third_party/x86_64/include -O0 -g3 -Wall -c -fmessage-length=0 -arch i386 -MMD -MP -MF"$(@:%.o=%.d)" -MT"$(@:%.o=%.d)" -o "$@" "$<"
+	@echo 'Finished building: $<'
+	@echo ' '
+
+lib_gnome/RiseVelocity_c.o: /Users/james.makela/Dev/GNOME/lib_gnome/RiseVelocity_c.cpp
 	@echo 'Building file: $<'
 	@echo 'Invoking: GCC C++ Compiler'
 	g++ -DpyGNOME=1 -I/Users/james.makela/Dev/GNOME_branch/third_party/x86_64/include -O0 -g3 -Wall -c -fmessage-length=0 -arch i386 -MMD -MP -MF"$(@:%.o=%.d)" -MT"$(@:%.o=%.d)" -o "$@" "$<"
