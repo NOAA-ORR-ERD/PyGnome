@@ -52,9 +52,8 @@ cdef class CyRandomVerticalMover(cy_mover.CyMover):
                  step_len, 
                  cnp.ndarray[WorldPoint3D, ndim=1] ref_points, 
                  cnp.ndarray[WorldPoint3D, ndim=1] delta, 
-                 cnp.ndarray[cnp.npy_int16] LE_status, 
-                 LEType spill_type, 
-                 long spill_ID):
+                 cnp.ndarray[short] LE_status, 
+                 LEType spill_type):
         """
         .. function:: get_move(self,
                  model_time,
@@ -80,7 +79,7 @@ cdef class CyRandomVerticalMover(cy_mover.CyMover):
         cdef OSErr err
         N = len(ref_points) # set a data type?
             
-        err = self.rand.get_move(N, model_time, step_len, &ref_points[0], &delta[0], <short *>&LE_status[0], spill_type, spill_ID)
+        err = self.rand.get_move(N, model_time, step_len, &ref_points[0], &delta[0], &LE_status[0], spill_type, 0)
         if err == 1:
             raise ValueError("Make sure numpy arrays for ref_points, delta are defined")
         

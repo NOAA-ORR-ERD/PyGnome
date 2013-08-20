@@ -166,8 +166,7 @@ cdef class CyCatsMover(cy_mover.CyMover):
                  cnp.ndarray[WorldPoint3D, ndim=1] ref_points, 
                  cnp.ndarray[WorldPoint3D, ndim=1] delta, 
                  cnp.ndarray[short] LE_status, 
-                 LEType spill_type, 
-                 long spill_ID):
+                 LEType spill_type):
         """
         .. function:: get_move(self,
                  model_time,
@@ -176,8 +175,7 @@ cdef class CyCatsMover(cy_mover.CyMover):
                  cnp.ndarray[WorldPoint3D, ndim=1] delta,
                  cnp.ndarray[cnp.npy_double] windages,
                  cnp.ndarray[short] LE_status,
-                 LEType LE_type,
-                 long spill_ID)
+                 LEType LE_type)
                  
         Invokes the underlying C++ WindMover_c.get_move(...)
         
@@ -197,7 +195,7 @@ cdef class CyCatsMover(cy_mover.CyMover):
             
         N = len(ref_points)
  
-        err = self.cats.get_move(N, model_time, step_len, &ref_points[0], &delta[0], <short *>&LE_status[0], spill_type, spill_ID)
+        err = self.cats.get_move(N, model_time, step_len, &ref_points[0], &delta[0], &LE_status[0], spill_type, 0)
         if err == 1:
             raise ValueError("Make sure numpy arrays for ref_points, delta and windages are defined")
         

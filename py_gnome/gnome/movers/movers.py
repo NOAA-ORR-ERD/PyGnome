@@ -175,8 +175,7 @@ class CyMover(Mover):
                                   self.positions,
                                   self.delta,
                                   self.status_codes,
-                                  self.spill_type,
-                                  0)    # only ever 1 spill_container so this is always 0!
+                                  self.spill_type)
             
         return self.delta.view(dtype=basic_types.world_point_type).reshape((-1,len(basic_types.world_point)))
     

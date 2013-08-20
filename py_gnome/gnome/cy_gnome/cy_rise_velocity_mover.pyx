@@ -67,9 +67,8 @@ cdef class CyRiseVelocityMover(cy_mover.CyMover):
                  cnp.ndarray[cnp.npy_double] rise_velocity,
                  cnp.ndarray[cnp.npy_double] density,
                  cnp.ndarray[cnp.npy_double] droplet_size,
-                 cnp.ndarray[cnp.npy_int16] LE_status,
-                 LEType spill_type,
-                 long spill_ID):
+                 cnp.ndarray[short] LE_status,
+                 LEType spill_type):
         """
         .. function:: get_move(self,
                  model_time,
@@ -80,8 +79,7 @@ cdef class CyRiseVelocityMover(cy_mover.CyMover):
                  cnp.ndarray[cnp.npy_double] density,
                  cnp.ndarray[cnp.npy_int32] droplet_size,
                  np.ndarray[np.npy_int16] LE_status,
-                 LE_type,
-                 spill_ID)
+                 LE_type)
 
         Invokes the underlying C++ RiseVelocity_c.get_move(...)
 
@@ -113,9 +111,9 @@ cdef class CyRiseVelocityMover(cy_mover.CyMover):
                                   &rise_velocity[0],
                                   &density[0],
                                   &droplet_size[0],
-                                  <short *>&LE_status[0],
+                                  &LE_status[0],
                                   spill_type,
-                                  spill_ID)
+                                  0)
 
         if err == 1:
             raise ValueError("Make sure ref_points, delta and rise_velocity are defined")

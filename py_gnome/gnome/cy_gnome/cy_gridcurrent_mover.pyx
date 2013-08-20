@@ -84,9 +84,8 @@ cdef class CyGridCurrentMover(cy_mover.CyMover):
                  step_len,
                  cnp.ndarray[WorldPoint3D, ndim=1] ref_points,
                  cnp.ndarray[WorldPoint3D, ndim=1] delta,
-                 cnp.ndarray[cnp.npy_int16] LE_status,
-                 LEType spill_type,
-                 long spill_ID):
+                 cnp.ndarray[short] LE_status,
+                 LEType spill_type):
         """
         .. function:: get_move(self,
                  model_time,
@@ -94,8 +93,7 @@ cdef class CyGridCurrentMover(cy_mover.CyMover):
                  np.ndarray[WorldPoint3D, ndim=1] ref_points,
                  np.ndarray[WorldPoint3D, ndim=1] delta,
                  np.ndarray[np.npy_int16] LE_status,
-                 LE_type,
-                 spill_ID)
+                 LE_type)
 
         Invokes the underlying C++ GridCurrentMover_c.get_move(...)
 
@@ -117,8 +115,9 @@ cdef class CyGridCurrentMover(cy_mover.CyMover):
         err = self.grid.get_move(N, model_time, step_len,
                                  &ref_points[0],
                                  &delta[0],
-                                 <short *>&LE_status[0],
-                                 spill_type, spill_ID)
+                                 &LE_status[0],
+                                 spill_type,
+                                 0)
         if err == 1:
             raise ValueError("Make sure numpy arrays for ref_points and delta are defined")
 
