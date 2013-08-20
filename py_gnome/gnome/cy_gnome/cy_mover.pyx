@@ -46,7 +46,7 @@ cdef class CyMover(object):
         if self.mover:
             self.mover.PrepareForModelRun()
     
-    def prepare_for_model_step(self, Seconds model_time, Seconds step_len, numSets=0, cnp.ndarray[cnp.npy_long] setSizes=None):
+    def prepare_for_model_step(self, Seconds model_time, Seconds step_len, numSets=0, cnp.ndarray[int] setSizes=None):
         """
         .. function:: prepare_for_model_step(self, model_time, step_len, uncertain)
         
@@ -54,13 +54,15 @@ cdef class CyMover(object):
         
         :param model_time: current model time.
         :param step_len: length of the time step over which the get move will be computed
+        :param numSets: either 0 or 1 if uncertainty is on.
+        :param setSizes: Numpy array containing dtype=int for the size of uncertainty array if numSets is 1
         """
         cdef OSErr err
         if self.mover:
             if numSets == 0:
                 err = self.mover.PrepareForModelStep(model_time, step_len, False, 0, NULL)
             else:
-                err = self.mover.PrepareForModelStep(model_time, step_len, True, numSets, <int *>&setSizes[0])
+                err = self.mover.PrepareForModelStep(model_time, step_len, True, numSets, &setSizes[0])
                 
             if err != 0:
                 """
@@ -68,12 +70,14 @@ cdef class CyMover(object):
                 """
                 raise OSError("PrepareForModelStep returned an error: {0}".format(err))
         
-    def model_step_is_done(self, cnp.ndarray[cnp.npy_int16] LE_status=None):
+    def model_step_is_done(self, cnp.ndarray[short] LE_status=None):
         """
         .. function:: model_step_is_done()
         
         Default call to C++ ModelStepIsDone method
         If model is uncertain remove particles with to_be_removed status from uncertainty array
+        
+        :para LE_status: numpy array containing the LE_status for each released LE.
         """
         cdef OSErr err
         if LE_status is None:
@@ -83,6 +87,6 @@ cdef class CyMover(object):
  
         if self.mover:
             if num_LEs > 0:
-                err = self.mover.ReallocateUncertainty(num_LEs, <short *>&LE_status[0])
+                err = self.mover.ReallocateUncertainty(num_LEs, &LE_status[0])
         if self.mover:
             self.mover.ModelStepIsDone()

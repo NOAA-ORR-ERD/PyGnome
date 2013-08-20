@@ -153,7 +153,7 @@ class CyMover(Mover):
             uncertain_spill_size = np.array( (0,) ) # only useful if spill.uncertain
             if sc.uncertain:
                 uncertain_spill_count = 1
-                uncertain_spill_size = np.array( (sc.num_elements,) )
+                uncertain_spill_size = np.array( (sc.num_elements,), dtype=np.int)
             
             self.mover.prepare_for_model_step( self.datetime_to_seconds(model_time_datetime), time_step, uncertain_spill_count, uncertain_spill_size)
 
