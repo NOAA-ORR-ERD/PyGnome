@@ -4,11 +4,12 @@ Defines test fixtures
 The scope="module" on the fixtures ensures it is only invoked once per test module
 """
 import sys, os
-from datetime import datetime
+from datetime import datetime, timedelta
 
 import numpy as np
 import pytest
 
+import gnome
 from gnome import basic_types
 
 """
@@ -101,6 +102,63 @@ def wind_circ(rq_wind):
     wm  = environment.Wind(timeseries=dtv_rq,format='r-theta',units='meter per second')
     return {'wind':wm, 'rq': dtv_rq, 'uv': dtv_uv}
 
+"""
+End fixtures for testing model
+====================================
+"""
+"""
+====================================
+Sample model fixture currently used by test_netcdf_outputter.py
+"""
+@pytest.fixture(scope="module")
+def sample_model():
+    """ 
+    sample model with no outputter and no spills. Use this as a template for fixtures to add spills
+    Uses:
+        sample_data/MapBounds_Island.bna
+        Contains: gnome.movers.SimpleMover(velocity=(1.0, -1.0, 0.0))
+        duration is 1 hour with 15min intervals so 5 timesteps total, including initial condition
+        model is uncertain and cache is not enabled
+        No spills or outputters defined
+        
+    To use: 
+        add a spill and run
+        
+    :returns: It returns a dict - 
+              {'model':model, 'release_start_pos':start_points,'release_end_pos':end_points}
+              The release_start_pos and release_end_pos can be used by test to define the spill's
+              'start_position' and 'end_position' 
+    """
+    start_time = datetime(2012, 9, 15, 12, 0)
+    
+    # the image output map
+    mapfile = os.path.join(os.path.dirname(__file__),'../sample_data','MapBounds_Island.bna')
+
+    # the land-water map
+    map = gnome.map.MapFromBNA( mapfile,
+                                refloat_halflife=6, #seconds
+                                )
+
+    model = gnome.model.Model(time_step=timedelta(minutes=15), 
+                              start_time=start_time,
+                              duration=timedelta(hours=1),
+                              map=map,
+                              uncertain=True,
+                              cache_enabled=False,)
+
+    model.movers += gnome.movers.SimpleMover(velocity=(1.0, -1.0, 0.0))
+
+    model.uncertain = True
+    
+    start_points = np.zeros((3,) , dtype=np.float64)
+    end_points   =  np.zeros((3,) , dtype=np.float64)
+    
+    start_points[:] = (-127.1, 47.93, 0)
+    end_points[:]   = (-126.5, 48.1, 0)
+    
+    return {'model':model, 'release_start_pos':start_points,'release_end_pos':end_points}
+
+    
 """
 End fixtures for testing model
 ====================================

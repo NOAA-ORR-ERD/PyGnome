@@ -498,6 +498,16 @@ def test_init_SpillContainerPair():
 
     print scp, u_scp
 
+def test_SpillContainerPair_uncertainty():
+    """ test uncertainty property """
+    u_scp = SpillContainerPair(True)
+    u_scp.uncertain = False
+    assert not u_scp.uncertain
+    assert not hasattr(u_scp, '_u_spill_container')
+    
+    u_scp.uncertain = True
+    assert u_scp.uncertain
+    assert hasattr(u_scp, '_u_spill_container')
 
 class TestAddSpillContainerPair:
     start_time = datetime(2012, 1, 1, 12)
@@ -687,12 +697,33 @@ def test_eq_spill_container2():
     assert sc2 == sc1
 
 
+@pytest.mark.xfail
 def test_eq_spill_container_pair():
     """
     SpillContainerPair inherits from SpillContainer so it should
     compute __eq__ and __ne__ in the same way - test it here
+    
+    Incomplete - this doesn't currently work!
+    Test fails if uncertainty is on whether particles are released or not
+    
     """
-    pass
+    (sp1, sp2) = get_eq_spills()
+    scp1 = SpillContainerPair(True) # uncertainty is on
+    scp1.add(sp1)
+    
+    scp2 = SpillContainerPair(True)
+    scp2.add(sp2)
+    
+    assert False
+#===============================================================================
+#     for sc in zip( scp1.items(), scp2.items()):
+#         sc[0].prepare_for_model_run(sp1.release_time, windage_at)
+#         sc[0].release_elements(sp1.release_time, 360)
+#         sc[1].prepare_for_model_run(sp2.release_time, windage_at)
+#         sc[1].release_elements(sp2.release_time, 360)
+# 
+#     assert scp1 == scp2
+#===============================================================================
 
 
 def test_ne_spill_container():

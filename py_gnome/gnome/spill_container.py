@@ -512,14 +512,15 @@ class SpillContainerPair(SpillContainerPairData):
     def uncertain(self, value):
         if type(value) is not bool:
             raise TypeError("uncertain property must be a bool (True/False)")
+        
         if self._uncertain == True and value == False:
+            self._uncertain = value
             del self._u_spill_container  # delete if it exists
             self.rewind()  # Not sure if we want to do this?
         elif self._uncertain == False and value == True:
+            self._uncertain = value
             self._u_spill_container = self._spill_container.uncertain_copy()
             self.rewind()
-
-        self._uncertain = value
 
     def add(self, spill):
         """
