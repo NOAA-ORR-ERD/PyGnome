@@ -71,8 +71,7 @@ class ConstantWind(cy_fixtures.CyTestMove):
                          self.delta,
                          self.windage,
                          self.status,
-                         spill_type.forecast,
-                         0)
+                         spill_type.forecast)
 
     def test_move_uncertain(self):
         """ uncertain LEs """
@@ -84,8 +83,7 @@ class ConstantWind(cy_fixtures.CyTestMove):
                          self.u_delta,
                          self.windage,
                          self.status,
-                         spill_type.uncertainty,
-                         0)
+                         spill_type.uncertainty)
 
 
 class ConstantWindWithOSSM(cy_fixtures.CyTestMove):
@@ -118,8 +116,7 @@ class ConstantWindWithOSSM(cy_fixtures.CyTestMove):
                          self.delta,
                          self.windage,
                          self.status,
-                         spill_type.forecast,
-                         0)
+                         spill_type.forecast)
 
     def test_move_uncertain(self):
         """ invoke get_move (uncertain LEs) """
@@ -131,8 +128,7 @@ class ConstantWindWithOSSM(cy_fixtures.CyTestMove):
                          self.u_delta,
                          self.windage,
                          self.status,
-                         spill_type.uncertainty,
-                         0)
+                         spill_type.uncertainty)
 
 
 class TestConstantWind():
@@ -234,8 +230,7 @@ class TestVariableWind():
                              self.delta,
                              self.cm.windage,
                              self.cm.status,
-                             spill_type.forecast,
-                             0)
+                             spill_type.forecast)
             print self.delta
             assert np.all(self.delta['lat'] != 0)
             assert np.all(self.delta['long'] == 0)
@@ -259,8 +254,7 @@ def test_LE_not_in_water():
                 delta,
                 cm.windage,
                 cm.status,
-                spill_type.forecast,
-                0)
+                spill_type.forecast)
 
     assert np.all(delta['lat'] == 0)
     assert np.all(delta['long'] == 0)

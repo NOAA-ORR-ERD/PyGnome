@@ -110,8 +110,7 @@ cdef class CyWindMover(cy_mover.CyMover):
                  cnp.ndarray[WorldPoint3D, ndim=1] delta,
                  cnp.ndarray[cnp.npy_double] windages,
                  cnp.ndarray[short] LE_status,    # TODO: would be nice if we could define this as LEStatus type
-                 LEType spill_type,
-                 spill_ID):
+                 LEType spill_type):
         """
         .. function:: get_move(self,
                  model_time,
@@ -120,8 +119,7 @@ cdef class CyWindMover(cy_mover.CyMover):
                  cnp.ndarray[WorldPoint3D, ndim=1] delta,
                  cnp.ndarray[cnp.npy_double] windages,
                  cnp.ndarray[cnp.npy_int16] LE_status,
-                 LE_type,
-                 spill_ID)
+                 LE_type)
                  
         Invokes the underlying C++ WindMover_c.get_move(...)
         
@@ -149,7 +147,7 @@ cdef class CyWindMover(cy_mover.CyMover):
                                   &windages[0],
                                   &LE_status[0],
                                   spill_type,
-                                  spill_ID)
+                                  0)
         if err == 1:
             raise ValueError("Make sure numpy arrays for ref_points, delta and windages are defined")
         
