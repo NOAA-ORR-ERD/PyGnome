@@ -15,6 +15,7 @@
 #include "TCATSMover.h"
 #include "TMap.h"
 #include "ObjectUtilsPD.h"
+#include "CompFunctions.h"
 extern TModel *model;
 #else
 #include "Replacements.h"
@@ -79,7 +80,7 @@ double DistFromWPointToSegmentDouble(long pLong, long pLat, long long1, long lat
 	h = sqrt(a * a + b * b);
 	
 	// distance from point to segment
-	numer = abs(a * y - b * x);
+	numer = myfabs(a * y - b * x);
 	dist = numer / h;
 	return dist;
 }

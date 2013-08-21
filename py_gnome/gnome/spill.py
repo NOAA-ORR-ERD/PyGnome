@@ -29,6 +29,7 @@ import sqlalchemy
 from oillibrary.models import Oil, DBSession
 from hazpy import unit_conversion
 from itertools import chain
+from gnome.db.oil_library.initializedb import initialize_sql, load_database
 ##
 
 from gnome import basic_types, element_types
@@ -829,25 +830,32 @@ class OilProps():
             if oil_ in self._sample_oils:
                 self.oil = Oil( **self._sample_oils[oil_] )
             else:
-                db_file = os.path.join( os.path.split( os.path.realpath(__file__))[0], '../../web/adios/OilLibrary/OilLibrary.db')
-                if os.path.exists(db_file):
-                    engine = sqlalchemy.create_engine('sqlite:///'+db_file)  # path relative to spill.py
-                    DBSession.bind = engine # not sure we want to do it this way - but let's use for now
-                    #let's use DBSession defined in oillibrary
-                    #session_factory = sessionmaker(bind=engine)
-                    #DBSession = scoped_session(session_factory)
+                oillib_path = os.path.join( os.path.split( os.path.realpath(__file__))[0], '../../web/adios/OilLibrary')
+                db_file = os.path.join( oillib_path, 'OilLibrary.db')
+                if not os.path.exists(db_file):
+                    oillib_file = os.path.join( oillib_path, 'OilLib')
+                    sqlalchemy_url = 'sqlite:///{0}'.format(db_file)
+                    settings = {'sqlalchemy.url': sqlalchemy_url,
+                                'oillib.file': oillib_file
+                                }
+                    initialize_sql(settings)
+                    load_database(settings)
                     
-                    try:
-                        self.oil = DBSession.query(Oil).filter(Oil.name==oil_).one()
-                    except sqlalchemy.orm.exc.NoResultFound as ex: #or sqlalchemy.orm.exc.MultipleResultsFound as ex:
-                        ex.message = "oil with name '{0}' not found in database. {1}".format(oil_, ex.message)
-                        ex.args = (ex.message,)
-                        raise ex
-                    #    props={'Oil Name': 'unknown',
-                    #           'API': 1.0}
-                    #    self.oil = Oil( **props)
-                else:
-                    raise IOError('OilLibrary database not found at: '.format( db_file) )
+                engine = sqlalchemy.create_engine('sqlite:///'+db_file)  # path relative to spill.py
+                DBSession.bind = engine # not sure we want to do it this way - but let's use for now
+                #let's use DBSession defined in oillibrary
+                #session_factory = sessionmaker(bind=engine)
+                #DBSession = scoped_session(session_factory)
+                
+                try:
+                    self.oil = DBSession.query(Oil).filter(Oil.name==oil_).one()
+                except sqlalchemy.orm.exc.NoResultFound as ex: #or sqlalchemy.orm.exc.MultipleResultsFound as ex:
+                    ex.message = "oil with name '{0}' not found in database. {1}".format(oil_, ex.message)
+                    ex.args = (ex.message,)
+                    raise ex
+                #    props={'Oil Name': 'unknown',
+                #           'API': 1.0}
+                #    self.oil = Oil( **props)
             
         elif isinstance( oil_, Oil):
             self.oil = oil_

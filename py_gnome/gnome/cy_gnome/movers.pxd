@@ -3,6 +3,8 @@ Declare the C++ mover classes from lib_gnome
 """
 from libcpp cimport bool
 
+from libc.stdint cimport int32_t
+
 from type_defs cimport *
 from utils cimport OSSMTimeValue_c  
 
@@ -44,7 +46,8 @@ movers:
 cdef extern from "Mover_c.h":
     cdef cppclass Mover_c:
         OSErr PrepareForModelRun()
-        OSErr PrepareForModelStep(Seconds &time, Seconds &time_step, bool uncertain, int numLESets, int* LESetsSizesList)    # currently this happens in C++ get_move command
+        OSErr PrepareForModelStep(Seconds &time, Seconds &time_step,
+                                  bool uncertain, int numLESets, int32_t *LESetsSizesList)    # currently this happens in C++ get_move command
         void ModelStepIsDone()
         OSErr ReallocateUncertainty(int numLEs, short* LE_status)
 
@@ -83,7 +86,10 @@ cdef extern from "RiseVelocity_c.h":
         RiseVelocity_c() except +
         double water_density
         double water_viscosity
-        OSErr get_move(int n, unsigned long model_time, unsigned long step_len, WorldPoint3D* ref, WorldPoint3D* delta, double* rise_velocity, double* density, long* droplet_size, short* LE_status, LEType spillType, long spillID)        
+        OSErr get_move(int n, unsigned long model_time, unsigned long step_len,
+                       WorldPoint3D* ref, WorldPoint3D* delta,
+                       double* rise_velocity, double* density, double* droplet_size,
+                       short* LE_status, LEType spillType, long spillID)        
         
 cdef extern from "CATSMover_c.h":
    #============================================================================

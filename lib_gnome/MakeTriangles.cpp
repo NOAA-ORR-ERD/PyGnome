@@ -277,7 +277,11 @@ OSErr InitCoordinates(long *x, long *y, LongPointHdl vertices, long nv, short ty
 	double xmin=1e6,xmax=-1e6,ymin=1e6,ymax=-1e6;
 	WORLDPOINTDH coord=0;
 	
-	if(!(coord = (WORLDPOINTDH) _NewHandleClear(sizeof(WorldPointD) * npoints))){printError("Not enough memory in InitCoordinates"); return -1;}
+	if (!(coord = (WORLDPOINTDH) _NewHandleClear(sizeof(WorldPointD) * npoints))) {
+		printError("Not enough memory in InitCoordinates");
+		return -1;
+	}
+
 	for(i=0;i<npoints;i++)
 	{
 		(*coord)[i].pLat = (*vertices)[i].v / 1e6;
@@ -316,7 +320,11 @@ OSErr InitCoordinates(long *x, long *y, LongPointHdl vertices, long nv, short ty
 		else
 			y[i] = round(SF * (1-(*coord)[i].pLat));
 	}
-	if(coord) {DisposeHandle((Handle)coord); coord = 0;}
+	if (coord) {
+		DisposeHandle((Handle)coord);
+		coord = 0;
+	}
+
 	return 0;
 }
 
@@ -339,7 +347,8 @@ Boolean maketriangles(TopologyHdl *topoHdl, LongPointHdl ptsH, long nv, LONGH bo
 	long nzerobytes = nv * sizeof(long);
 	MySegment	*l=0;	
 	//Rect r=MapDrawingRect();
-	TopologyHdl tempTopoHdl=0;
+	TopologyHdl tempTopoHdl = 0;
+
 	//long nbounds = GetNumBoundaries();	// defined in Topology.c
 	/*if(!(p =(long *) _NewPtrClear(sizeof(long)*nv)))goto errRecovery;
 	if(!(l = (MySegment *)_NewPtr(8*nv *sizeof(MySegment))))goto errRecovery;
@@ -351,6 +360,7 @@ Boolean maketriangles(TopologyHdl *topoHdl, LongPointHdl ptsH, long nv, LONGH bo
 	if(!(g_n3 = (long *)_NewPtrClear(sizeof(long) * triscale * nv)))goto errRecovery;
 	if(!(x = (long *)_NewPtrClear(sizeof(long) * nv)))goto errRecovery;
 	if(!(y = (long *)_NewPtrClear(sizeof(long) * nv)))goto errRecovery;*/
+
 	p = (long *)calloc(nv,sizeof(long));
 	if (p==NULL) {err = memFullErr; goto errRecovery;}
 	l = (MySegment *)calloc(8*nv,sizeof(MySegment));
@@ -375,32 +385,41 @@ Boolean maketriangles(TopologyHdl *topoHdl, LongPointHdl ptsH, long nv, LONGH bo
 	//memerr = false;
 
 	//PenNormal();
-	for(;;)
-	{
-		if(segCount==nbounds)break;
-		l[nlines].a=pt;
-		l[nlines].flg=-1;
-		//if(pt== (*gSegs)[segCount]){
-		if(pt == (*boundarySegs)[segCount]){
+	cerr << "nbounds = " << nbounds << endl;
+	for (;;) {
+		if (segCount == nbounds)
+			break;
+		l[nlines].a = pt;
+		l[nlines].flg = -1;
+
+		if (pt == (*boundarySegs)[segCount]) {
 			segCount++;
-			l[nlines].b=segstart;
-			segstart=pt+1;
+			l[nlines].b = segstart;
+			segstart = pt + 1;
 		}
 		else{
-			l[nlines].b=pt+1;
+			l[nlines].b = pt + 1;
 		}		
 		pt++;
 		nlines++;
-	} 
-	//InitCoordinates1(x,y,ptsH,nv); 	
-	if (err = InitCoordinates(x,y,ptsH,nv,1)) goto errRecovery; 	
+	}
+
+	//InitCoordinates1(x,y,ptsH,nv);
+	err = InitCoordinates(x, y, ptsH, nv, 1);
+	if (err != noErr)
+		goto errRecovery;
+
 	/* enter triangle generation loop */
 	// make sure triangles don't have 3 points in the same array row/col in netcdf curvilinear case
-	ntri=-1;
-	for(;;){
-		if(nlines<=0)break;
-		nowlines=nlines;
-		for(i=0;i<nowlines;i++)
+	cerr << "entering triangle generation loop..."<< endl;
+
+	ntri = -1;
+	for (;;) {
+		if (nlines <= 0)
+			break;
+
+		nowlines = nlines;
+		for (i = 0; i < nowlines; i++)
 		{
 			if(l[i].flg==-2)continue;
 			xia = x[l[i].a]; yia = y[l[i].a];
@@ -424,9 +443,13 @@ Boolean maketriangles(TopologyHdl *topoHdl, LongPointHdl ptsH, long nv, LONGH bo
 					if(j>1000 && j%1000 == 0) 
 						MySpinCursor(); 
 					xj = x[j] ; yj = y[j];
-					
-					if(dxi*(yj-yia) > dyi*(xj-xia) && p[j] && 
-								(side=HYPOT(xj-xia,yj-yia) + HYPOT(xj-xib,yj-yib)) < length)	
+					//cerr << "maketriangles():"
+					//	 << " xj = " << xj
+					//	 << " yj = " << yj << endl;
+
+					if (dxi*(yj-yia) > dyi*(xj-xia) &&
+						p[j] &&
+						(side = HYPOT(xj - xia, yj - yia) + HYPOT(xj - xib, yj - yib)) < length)
 					{
 								length=side;
 								pt=j;
@@ -469,7 +492,6 @@ Boolean maketriangles(TopologyHdl *topoHdl, LongPointHdl ptsH, long nv, LONGH bo
 				break;
 			}
 			/* add triangle to triangle list */
-			
 			ntri=ntri+1;
 			if(ntri > triscale*nv)
 			{
@@ -571,7 +593,8 @@ Boolean maketriangles(TopologyHdl *topoHdl, LongPointHdl ptsH, long nv, LONGH bo
 	if (changelist==NULL) {err = memFullErr; goto errRecovery;}
 
 	//InitCoordinates2(x,y,ptsH,nv); 	
-	if (err = InitCoordinates(x,y,ptsH,nv,2)) goto errRecovery; 	
+	if ((err = InitCoordinates(x, y, ptsH, nv, 2)) != 0) goto errRecovery;
+
 	for(i=0;i<ntri;i++){
 		x1= x[g_v1[i]];
 		y1= y[g_v1[i]];
@@ -637,7 +660,9 @@ Boolean maketriangles(TopologyHdl *topoHdl, LongPointHdl ptsH, long nv, LONGH bo
 		if(changeflag==0)break;
 	}
 	
-	if(!(tempTopoHdl = (TopologyHdl)_NewHandleClear(ntri * sizeof(Topology))))goto errRecovery;	// declared in System.c
+	cerr << "num triangles to add = " << ntri << endl;
+	if ((tempTopoHdl = (TopologyHdl)_NewHandleClear(ntri * sizeof(Topology))) == 0)
+		goto errRecovery;	// declared in System.c
 
 	for(i = 0; i < ntri; i ++)
 	{
@@ -770,7 +795,8 @@ Boolean maketriangles2(TopologyHdl *topoHdl, LongPointHdl ptsH, long nv, LONGH b
 		nlines++;
 	} 
 	//InitCoordinates1(x,y,ptsH,nv); 	
-	if (err = InitCoordinates(x,y,ptsH,nv,1)) goto errRecovery; 	
+	if ((err = InitCoordinates(x, y, ptsH, nv, 1)) != 0) goto errRecovery;
+
 	/* enter triangle generation loop */
 	// make sure triangles don't have 3 points in the same array row/col in netcdf curvilinear case
 	ntri=-1;
@@ -956,7 +982,8 @@ Boolean maketriangles2(TopologyHdl *topoHdl, LongPointHdl ptsH, long nv, LONGH b
 	if (changelist==NULL) {err = memFullErr; goto errRecovery;}
 
 	//InitCoordinates2(x,y,ptsH,nv); 	
-	if (err = InitCoordinates(x,y,ptsH,nv,2)) goto errRecovery; 	
+	if ((err = InitCoordinates(x, y, ptsH, nv, 2)) != 0) goto errRecovery;
+
 	for(i=0;i<ntri;i++){
 		x1= x[g_v1[i]];
 		y1= y[g_v1[i]];

@@ -3,6 +3,7 @@ from datetime import datetime
 from gnome.utilities import time_utils
 from gnome import basic_types
 
+
 class CyTestMove(object):
     """
     Test fixture for defining the inputs to for cython get_move
@@ -14,7 +15,7 @@ class CyTestMove(object):
     
     Base class that initializes stuff that is common for multiple cy_wind_mover objects
     """
-    spill_size = np.zeros((1,), dtype=np.int) # number of LEs in 1 uncertainty spill - simple test
+    spill_size = np.zeros((1,), dtype=np.int32) # number of LEs in 1 uncertainty spill - simple test
     def __init__(self, num_le=4):
         self.num_le = 4  # test on 4 LEs
         self.ref  =  np.zeros((self.num_le,), dtype=basic_types.world_point)   # LEs - initial locations

@@ -48,7 +48,7 @@ class Model(serializable.Serializable):
         
         c_spills = dict_.pop('certain_spills')
         if 'uncertain_spills' in dict_.keys():
-            u_spills = self._load_collection(l_spills['uncertain_spills'])
+            u_spills = dict_.pop('uncertain_spills')
             l_spills = zip(c_spills, u_spills)
         else:
             l_spills = c_spills

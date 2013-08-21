@@ -31,6 +31,7 @@ def test_init():
 
     assert True
 
+
 def test_cache_clear_on_delete():
 
     c1 = cache.ElementCache()
@@ -80,6 +81,7 @@ def test_write():
 
     # save it:
     c.save_timestep(0, scp)
+
 
 def test_write_uncert():
     # create a spill_container to save:
@@ -139,7 +141,7 @@ def test_write_and_read_back():
     sc['positions'] *= 1.1
     pos2 = sc['positions'].copy()
     # change time stamp
-    sc.current_time_stamp = dt + tdelta*2
+    sc.current_time_stamp = dt + tdelta * 2
     # save it:
     c.save_timestep(2, scp)
 
@@ -147,7 +149,7 @@ def test_write_and_read_back():
 
     sc2 = c.load_timestep(2)
     assert np.array_equal(sc2._spill_container['positions'], pos2)
-    assert sc2._spill_container.current_time_stamp == dt + tdelta*2
+    assert sc2._spill_container.current_time_stamp == dt + tdelta * 2
 
     sc0 = c.load_timestep(0)
     assert np.array_equal(sc0._spill_container['positions'], pos0)
@@ -159,7 +161,8 @@ def test_write_and_read_back():
 
     sc2 = c.load_timestep(2)
     assert np.array_equal(sc2._spill_container['positions'], pos2)
-    assert sc2._spill_container.current_time_stamp == dt +tdelta*2
+    assert sc2._spill_container.current_time_stamp == dt + tdelta * 2
+
 
 def test_write_and_read_back_uncertain():
     """
@@ -258,6 +261,7 @@ def test_cache_error():
     with pytest.raises(cache.CacheError):
         c.load_timestep(3)
 
+
 def test_rewind():
     """
     test that the cache is cleared out after a rewind call
@@ -317,7 +321,3 @@ def test_rewind():
 #    assert False
 if __name__ == "__main__":
     test_write_and_read_back()
-
-
-
-

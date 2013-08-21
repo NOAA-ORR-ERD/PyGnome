@@ -34,7 +34,7 @@ def random_with_persistance(low, high, persistence=0, time_step=1., array_len=1)
         if array_len == 1:
             return low
         else:
-            x = np.ndarray((array_len,))
+            x = np.ndarray((array_len,), dtype=np.float64)
             x[:] = low
             return x
     

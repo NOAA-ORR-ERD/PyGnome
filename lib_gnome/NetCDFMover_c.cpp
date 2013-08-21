@@ -976,7 +976,7 @@ long NetCDFMover_c::GetNumDepths(void)
 	return numDepths;
 }
 
-OSErr NetCDFMover_c::get_move(int n, unsigned long model_time, unsigned long step_len, WorldPoint3D* ref, WorldPoint3D* delta, short* LE_status, LEType spillType, long spill_ID) {	
+OSErr NetCDFMover_c::get_move(int n, Seconds model_time, Seconds step_len, WorldPoint3D* ref, WorldPoint3D* delta, short* LE_status, LEType spillType, long spill_ID) {
 
 	if(!ref || !delta) {
 		//cout << "worldpoints array not provided! returning.\n";
@@ -1303,7 +1303,7 @@ double NetCDFMover_c::GetDepthAtIndex(long depthIndex, double totalDepth)
 	{
 		sc_r = INDEXH(fDepthLevelsHdl,depthIndex);
 		Cs_r = INDEXH(fDepthLevelsHdl2,depthIndex);
-		depth = abs(totalDepth*(hc*sc_r+totalDepth*Cs_r))/(totalDepth+hc);
+		depth = myfabs(totalDepth*(hc*sc_r+totalDepth*Cs_r))/(totalDepth+hc);
 	}
 	else
 		depth = INDEXH(fDepthLevelsHdl,depthIndex)*totalDepth; // times totalDepth

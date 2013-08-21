@@ -6,54 +6,85 @@
  *  Copyright 2012 __MyCompanyName__. All rights reserved.
  *
  */
+
 #ifdef pyGNOME
+
 #include "Replacements.h"
 #include <fstream>
 #include <ios>
 #include <sys/stat.h>
+#include <vector>
 
-using std::fstream;
-using std::ios;
+#include <numeric>
 
-void DisplayMessage(char *msg) {return;}
+using namespace std;
+using std::cout;
 
-void MySpinCursor(void) { return; }
+void DisplayMessage(const char *msg)
+{
+	return;
+}
 
-void SysBeep(short x) { return; }
+void MySpinCursor(void)
+{
+	return;
+}
 
-Boolean CmdPeriod(void) { return false; }
+void SysBeep(short x)
+{
+	return;
+}
 
-Boolean FileExists(short vRefNum, long dirID, CHARPTR filename)
+Boolean CmdPeriod(void)
+{
+	return false;
+}
+
+Boolean FileExists(short vRefNum, long dirID, const char *filename)
 {
 	struct stat buffer;
- 	return (stat(filename,&buffer)==0);
+ 	return (stat(filename, &buffer) == 0);
 }
 
 OSErr ReadSectionOfFile(short vRefNum, long dirID, CHARPTR name,
-						long offset, long length, VOIDPTR ptr, CHARHP handle) {
-	char c;
-	int x = 0, i = 0;
+						long offset, long length,
+						VOIDPTR ptr, CHARHP handle)
+{
+	// TODO: right now this is a hack.
+	//       we really need to change the API for this function,
+	//       but a lot of stuff is dependant on it being as it is.
+	ios::pos_type localOffset = (ios::pos_type)offset;
+	ios::pos_type localLength = (ios::pos_type)length;
 
 	try {
-		fstream *_ifstream = new fstream(name, ios::in);
-		for(; _ifstream->get(c); x++);
-		delete _ifstream;
-		if(!(x > 0))
-			throw("empty file.\n");
-		_ifstream = new fstream(name, ios::in);
-		for(int k = 0; k < offset; k++) _ifstream->get(c); 
-		if(x > offset+length && length != 0)
-		    x = offset+length;
-		if(handle) {
-			*handle = _NewHandle(x-offset);
-			for(; i < x-offset && _ifstream->get(c); i++)
-				DEREFH(*handle)[i] = c;
-		} 
-		else {
-			for(; i < x-offset && _ifstream->get(c); i++)
-				((char *)ptr)[i] = c;
+		fstream inputFile(name, ios::in|ios::binary);
+
+		if (inputFile.is_open()) {
+			ios::pos_type fileSize = FileSize(inputFile);
+			if(fileSize <= 0)
+				throw("Empty file.\n");
+
+			if (localOffset > fileSize)
+				throw("Trying to read beyond the file size.\n");
+
+			// figure out how many bytes to read
+			if ((localOffset + localLength) > fileSize)
+				localLength = fileSize - localOffset;
+
+			inputFile.seekg(localOffset, ios::beg);
+
+			if(handle) {
+				*handle = _NewHandle((long)localLength);
+				inputFile.read(DEREFH(*handle), localLength);
+			}
+			else {
+				inputFile.read((char *)ptr, localLength);
+			}
+			inputFile.close();
 		}
-		delete _ifstream;
+		else {
+			throw("Unable to open file");
+		}
 	}
 	catch(...) {
 		printError("We are unable to open or read from the file. \nBreaking from ReadSectionOfFile().\n");
@@ -63,63 +94,92 @@ OSErr ReadSectionOfFile(short vRefNum, long dirID, CHARPTR name,
 }
 
 // Make sure terminationFlag can be typed to a Boolean
-OSErr ReadFileContents(short terminationFlag, short vRefNum, long dirID, CHARPTR name,
-					   VOIDPTR ptr, long length, CHARHP handle) {
-	char c;
-	int x = 0, i = 0;
+OSErr ReadFileContents(short terminationFlag, short vRefNum, long dirID,
+					   CHARPTR name, VOIDPTR ptr, long length, CHARHP handle)
+{
+	// TODO: right now this is a hack.
+	//       we really need to change the API for this function,
+	//       but a lot of stuff is dependant on it being as it is.
+	ios::pos_type localLength = (ios::pos_type)length;
 
-	Boolean terminate;
-	if(handle) *handle = 0; 
-	switch(terminationFlag)
-	{
+	bool terminate;
+
+	if (handle) {
+		*handle = 0;
+	}
+
+	switch (terminationFlag) {
 		case TERMINATED:
-			terminate  = true; break;
+			terminate  = true;
+			break;
 		case NONTERMINATED:
-			terminate  = false; break;
+			terminate  = false;
+			break;
 		default:
-			printError("Bad flag in ReadFileContents");return -1;
-	}	
+			printError("Bad flag in ReadFileContents");
+			return -1;
+	}
 
 	try {
-		fstream *_ifstream = new fstream(name, ios::in);
-		for(; _ifstream->get(c); x++);
-		delete _ifstream;
-		if(!(x > 0))
-			throw("empty file.\n");
-		_ifstream = new fstream(name, ios::in);
-		if(x > length && length != 0)
-		    x = length;
-		if(handle) {
-			*handle = _NewHandle(x + (terminate ? 1 : 0));
-			for(; i < x && _ifstream->get(c); i++)
-				DEREFH(*handle)[i] = c;
-		} 
-		else {
-			for(; i < x && _ifstream->get(c); i++)
-				((char *)ptr)[i] = c;
+		fstream inputFile(name, ios::in|ios::binary);
+
+		if (inputFile.is_open()) {
+			ios::pos_type fileSize = FileSize(inputFile);
+
+			if (fileSize <=  0)
+				throw("Empty file.\n");
+
+			if ((localLength == (ios::pos_type)0) ||
+				(localLength > fileSize))
+			{
+				// either we didn't specify a length, or
+				// we specified a length that was bigger than the file.
+				localLength = fileSize;
+			}
+
+			inputFile.seekg(0, ios::beg);
+
+			if(handle) {
+				*handle = _NewHandle((long)localLength + (terminate ? 1 : 0));
+
+				inputFile.read(DEREFH(*handle), localLength);
+			}
+			else {
+				inputFile.read((char *)ptr, localLength);
+			}
+			inputFile.close();
 		}
-		delete _ifstream;
+		else {
+			throw("Unable to open file");
+		}
 	}
 	catch(...) {
 		printError("We are unable to open or read from the file. \nBreaking from ReadSectionOfFile().\n");
 		return true;
 	}
+
 	return false;
 }
 
-OSErr AskUserForUnits(short* selectedUnits,Boolean *userCancel) { return -1; }
 
-OSErr MyGetFileSize(short vRefNum, long dirID, CHARPTR pathName, LONGPTR size) {
-	
-	char c;
-	long x = 0;
+OSErr AskUserForUnits(short *selectedUnits, Boolean *userCancel)
+{
+	return -1;
+}
 
+OSErr MyGetFileSize(short vRefNum, long dirID, CHARPTR pathName, LONGPTR size)
+{
 	try {
-		fstream *_ifstream = new fstream(pathName, ios::in);
-		for(; _ifstream->get(c); x++);
-		delete _ifstream;
-		*size = x;
+		fstream inputFile(pathName, ios::in|ios::binary|ios::ate);
+
+		if (inputFile.is_open()) {
+			*size = (long)inputFile.tellg();
+			inputFile.close();
 		}
+		else {
+			throw("Unable to open file");
+		}
+	}
     catch(...) {
         printError("We are unable to open or read from the file. \nBreaking from MyGetFileSize().\n");
         return true;
@@ -127,92 +187,91 @@ OSErr MyGetFileSize(short vRefNum, long dirID, CHARPTR pathName, LONGPTR size) {
     return false;
 }
 
-void AddDelimiterAtEndIfNeeded(char* str)
-{	// add delimiter at end if the last char is not a delimiter
+// add delimiter at end if the last char is not a delimiter
+void AddDelimiterAtEndIfNeeded(char *str)
+{
 	long len = strlen(str);
-	if(str[len-1] != DIRDELIMITER) 
-	{
+
+	if (str[len - 1] != DIRDELIMITER) {
 		str[len] = DIRDELIMITER;
-		str[len+1] = 0;
+		str[len + 1] = 0;
 	}
 }
 
-Boolean IsPartialPath(char* relativePath)
+Boolean IsPartialPath(char *relativePath)
 {
 	// To simplify scripting, we allow the relative path to use either 
 	// platform delimiter.
+	char delimiter = NEWDIRDELIMITER;
 	char macDelimiter = ':';
 	char ibmDelimiter = '\\';
 	char unixDelimiter = '/';	// handle ./, ../, etc
-	char unixDirectoryUp = '.';	// handle ./, ../, etc
-	char delimiter = NEWDIRDELIMITER;
 	char otherDelimiter;
+
+	char unixDirectoryUp = '.';	// handle ./, ../, etc
 	Boolean isRelativePath;
 	
-	if (IsFullPath(relativePath)) return false;
+	if (IsFullPath(relativePath))
+		return false;
 	
-	if(delimiter == macDelimiter)
+	if (delimiter == macDelimiter)
 		otherDelimiter = ibmDelimiter;
 	else
 		otherDelimiter = macDelimiter;
 	
 	
-	isRelativePath = 	(relativePath[0] == macDelimiter || relativePath[0] == ibmDelimiter || relativePath[0] == unixDirectoryUp);
+	isRelativePath = (relativePath[0] == macDelimiter ||
+					  relativePath[0] == ibmDelimiter ||
+					  relativePath[0] == unixDirectoryUp);
 	
-	return true;	// try if not full path then relative to make sure we get pathname only case
+	return true;
+	// try if not full path then relative to make sure we get pathname only case
 	//return(isRelativePath);
 }
 
-void ResolvePartialPathFromThisFolderPath(char* relativePath,char * thisFolderPath)
+void ResolvePartialPathFromThisFolderPath(char *relativePath, char *thisFolderPath)
 {
 	// To simplify scripting, we allow the relative path to use either 
 	// platform delimiter.
-	char classicDelimiter = ':';
+	char delimiter = NEWDIRDELIMITER;
 	char ibmDelimiter = '\\';
 	char macOrUnixDelimiter = '/';
-	char unixDirectoryUp = '.';	// handle ./, ../, etc
-	char delimiter = NEWDIRDELIMITER;
+	char classicDelimiter = ':';
 	char otherDelimiter;
+
+	char unixDirectoryUp = '.';	// handle ./, ../, etc
 	long numChops = 0;
-	long len,i;
-	char* p;
-	Boolean isRelativePath;
+	long len;
+	char *p;
 	char fullFolderPath[256];
-	
-	
+
 	if(!IsPartialPath(relativePath))
 		return; 
 		
-	strcpy(fullFolderPath,thisFolderPath);
+	strcpy(fullFolderPath, thisFolderPath);
 
-	if(delimiter == macOrUnixDelimiter)
+	if (delimiter == macOrUnixDelimiter)
 		otherDelimiter = ibmDelimiter;
 	else
 		otherDelimiter = macOrUnixDelimiter;
 
 	// substitute to the appropriate delimiter
 	// be careful of the IBM  "C:\" type stings
-	
 	len = strlen(relativePath);
-	for(i = 0; i < len  && relativePath[i]; i++)
-	{
-		if(relativePath[i] == otherDelimiter && relativePath[i+1] != delimiter)
+	for (long i = 0; i < len  && relativePath[i]; i++) {
+		if (relativePath[i] == otherDelimiter && relativePath[i + 1] != delimiter)
 			relativePath[i] = delimiter;
 	}
 	
-	if (relativePath[0]==unixDirectoryUp)
-	{
+	if (relativePath[0] == unixDirectoryUp) {
 		// count the number of directories to chop (# delimiters - 1)
-		for(i = 1; i < len  && relativePath[i] == unixDirectoryUp; i++)
-		{
+		for (long i = 1; i < len  && relativePath[i] == unixDirectoryUp; i++) {
 			numChops++;
 		}
 	}
-	else
-	{
+	else {
 		// count the number of directories to chop (# delimiters - 1), old style
-		for(i = 1; i < len  && relativePath[i] == delimiter; i++)
-		{
+		for (long i = 1; i < len  && relativePath[i] == delimiter; i++) {
 			numChops++;
 		}
 	}
@@ -220,119 +279,228 @@ void ResolvePartialPathFromThisFolderPath(char* relativePath,char * thisFolderPa
 	// to be nice, we will be flexible about whether or not fullFolderPath ends in a DIRDELIMITER.
 	// so chop the delimiter if there is one
 	len = strlen(fullFolderPath);
-	if(len > 0 && fullFolderPath[len-1] == NEWDIRDELIMITER)
-		fullFolderPath[len-1] = 0;// chop this delimiter
+	if (len > 0 && fullFolderPath[len - 1] == NEWDIRDELIMITER)
+		fullFolderPath[len - 1] = 0; // chop this delimiter
 	
-	for(i = 0; i < numChops; i++)
-	{
+	for (long i = 0; i < numChops; i++) {
 		// chop the support files directory, i.e. go up one directory
-		p = strrchr(fullFolderPath,NEWDIRDELIMITER);
-		if(p) *p = 0;
+		p = strrchr(fullFolderPath, NEWDIRDELIMITER);
+		if (p)
+			*p = 0;
 	}
+
 	// add the relative part 
-	if (relativePath[0]==unixDirectoryUp)
-		strcat(fullFolderPath,relativePath + numChops + 1);
-	else
-	{
-		if (relativePath[0]!=delimiter)	// allow for filenames
+	if (relativePath[0] == unixDirectoryUp)
+		strcat(fullFolderPath, relativePath + numChops + 1);
+	else {
+		if (relativePath[0] != delimiter) // allow for filenames
 			AddDelimiterAtEndIfNeeded(fullFolderPath);
-		strcat(fullFolderPath,relativePath + numChops);
+
+		strcat(fullFolderPath, relativePath + numChops);
 	}
 	
 	// finally copy the path back into the input variable 
-	strcpy(relativePath,fullFolderPath);
+	strcpy(relativePath, fullFolderPath);
 }
 
-void ResolvePathFromInputFile(char *pathOfTheInputFile, char* pathToResolve) // JLM 6/8/10
+
+// This function tries to determine whether a path is a valid absolute path,
+// or a path that is relative to a containing directory.
+// If the path is successfully resolved, the resolved form of the path is
+// written to the pathToResolve argument.
+//
+// typically the files are either in directoryOfSaveFile or down one level,
+// but we will try any number of levels
+// example search execution:
+//     inputDir = "."
+//     pathToResolve = "dir1/dir2/file1.txt"
+//
+//     iteration 0:
+//         pathToTry = "./dir1/dir2/file1.txt"
+//     iteration 1:
+//         pathToTry = "./dir2/file1.txt"
+//     iteration 2:
+//         pathToTry = "./file1.txt"
+bool ResolvePath(string &containingDir, string &pathToResolve)
 {
-	// Chris has asked that the input files can use a relative path from the input file.
-	// Previously he was forced to use absolute paths. 
-	// So now, sometimes the path is saved in an input file will just be a file name, 
-	// and sometimes it will have been an absolute path, but the absolute path may have been broken when the file is moved.
-	// Often the referenced files are in a folder with the input file and it is just that the folder has been moved.
-	// This function helps look for these referenced files and changes the input parameter pathToResolveFromInputFile
-	// if it can find the file.
-	// Otherwise pathToResolveFromInputFile will be unchanged.
-	char pathToTry[2*kMaxNameLen] = "",pathToTest[kMaxNameLen], unixPath[kMaxNameLen];
-	char pathToTearApart[kMaxNameLen] = "";
-	char delimiter = NEWDIRDELIMITER;
-	char directoryOfSaveFile[kMaxNameLen];
-	char *p,*q;
-	int i,numDelimiters;
-
-	if(!pathOfTheInputFile)
-	//if(pathOfTheInputFile == NULL)
-		return;
-
-	//if(pathOfTheInputFile[0] == NULL)
-	if(pathOfTheInputFile[0] == 0)
-		return;
-
-	if(!pathToResolve)
-	//if(pathToResolve == NULL)
-		return;
-
-	//if(pathToResolve[0] == NULL)
-	if(pathToResolve[0] == 0)
-		return;
-
-	RemoveLeadingAndTrailingWhiteSpace(pathToResolve);
-
-	if (ConvertIfClassicPath(pathToResolve, unixPath)) strcpy(pathToResolve,unixPath);
-
-	if (IsFullPath(pathToResolve))
-	{
-		if(FileExists(0,0,pathToResolve)) {
-			// no problem, the file exists at the path given
-			//strcpy(pathToResolve,pathToTest);
-			return;
-		}
-	}
-	
-	// otherwise we have to try to find it
-	//////////////////////////////
-
-	///////////////
-
-	// get the directory of the save file
-	strcpy(directoryOfSaveFile,pathOfTheInputFile);
-	p = strrchr(directoryOfSaveFile,NEWDIRDELIMITER);
-	if(p) *(p+1) = 0; // chop off the file name, leave the delimiter
-
-	// First try to resolve relative path to the SaveFile (or whatever has been designated)
-	strcpy(pathToTest,pathToResolve);
-	if(IsPartialPath(pathToTest)) {
-		ResolvePartialPathFromThisFolderPath(pathToTest,directoryOfSaveFile);
+	// test if we got good inputs
+	if (pathToResolve.size() == 0) {
+		cerr << "ResolvePath(): path to resolve is empty" << endl;
+		return false;
 	}
 
-	if(FileExists(0,0,pathToTest)) {
+	if (containingDir.size() == 0) {
+		// we assume the current working directory
+		cerr << "ResolvePath(): containing directory is empty.  Setting to current working directory" << endl;
+		containingDir = '.';
+	}
+
+	string inputPath = containingDir;
+	ConvertPathToCurrentPlatform(trim(inputPath));
+
+	string resolvedPath = pathToResolve;
+	ConvertPathToCurrentPlatform(trim(resolvedPath));
+
+
+	if (FileExists(0, 0, resolvedPath.c_str())) {
 		// no problem, the file exists at the path given
-		strcpy(pathToResolve,pathToTest);
-		return;
+		pathToResolve = resolvedPath;
+		return true;
 	}
 
-	// typically the files are either in directoryOfSaveFile or down one level, but we will try any number of levels
-	q = pathToResolve;
-	for(;;) { // forever
-		// find the next delimiter from left to right
-		// and append that path onto the directoryOfSaveFile
-		strcpy(pathToTry,directoryOfSaveFile);
-		strcat(pathToTry,q);
-		if(strlen(pathToTry) < kMaxNameLen) { // don't try paths that we know are too long for Windows and Mac pascal strings
-			if(FileExists(0,0,pathToTry)) {
-				// we found the file
-				strcpy(pathToResolve,pathToTry);
-				return;
-			}
+	// otherwise we have to try to find it
+	if (!FileExists(0, 0, inputPath.c_str())) {
+		// If the containing directory is not valid, no point going further.
+		cerr << "ResolvePath(): Containing directory is not valid" << endl;
+		return false;
+	}
+	cerr << "ResolvePath(): Our base path: " << inputPath << endl;
+	cerr << "ResolvePath(): Our path to resolve: " << resolvedPath << endl;
+
+	string pathToTry;
+	vector<string> pathComponentsToReference = SplitPath(inputPath);
+	vector<string> pathComponentsToResolve = SplitPath(resolvedPath);
+
+	while (pathComponentsToResolve.size() > 0) {
+		vector<string> concatPath = pathComponentsToReference;
+		concatPath.insert(concatPath.end(),
+						  pathComponentsToResolve.begin(),
+						  pathComponentsToResolve.end());
+
+		string delim;
+		delim += NEWDIRDELIMITER;
+		cerr << "ResolvePath(): Our delimiter is '" << delim << "'"<< endl;
+		pathToTry = join(concatPath, delim);
+		cerr << "ResolvePath(): Trying path " << pathToTry << endl;
+		if (FileExists(0, 0, pathToTry.c_str())) {
+			pathToResolve = pathToTry;
+			return true;
 		}
-		// find the next part of the path to try
-		p = strchr(q,NEWDIRDELIMITER);
-		if(p == 0){
-			break;// no more delimiters
-		}
-		//
-		q = p+1; // the char after the delimiter
-	}	
-	return;	// file not found - may want to return a Boolean or error
+
+		pathComponentsToResolve.erase(pathComponentsToResolve.begin());
+	}
+
+	cerr << "ResolvePath(): Could not resolve path" << endl;
+	return false;
 }
-#endif	
+
+
+// Chris has asked that the input files can use a relative path from the input file.
+// Previously he was forced to use absolute paths.
+// So now, sometimes the path is saved in an input file will just be a file name,
+// and sometimes it will have been an absolute path, but the absolute path
+// may have been broken when the file is moved.
+// Often the referenced files are in a folder with the input file and it is just that
+// the folder has been moved.
+// This function helps look for these referenced files and changes the input parameter
+// pathToResolveFromInputFile if it can find the file.
+// Otherwise pathToResolveFromInputFile will be unchanged.
+void ResolvePathFromInputFile(char *pathOfTheInputFile, char *pathToResolve) // JLM 6/8/10
+{
+	string inputPath = pathOfTheInputFile;
+	string linkedFile = pathToResolve;
+
+	string dir, file;
+	SplitPathIntoDirAndFile(inputPath, dir, file);
+
+	if (ResolvePath(dir, linkedFile)) {
+		strcpy(pathToResolve, linkedFile.c_str());
+	}
+
+	return;
+}
+
+
+bool IsGridCurTimeFile (vector<string> &linesInFile, short *selectedUnitsOut)
+{
+	long lineIdx = 0;
+	string currentLine;
+
+	short selectedUnits = kUndefined;
+	string value1S, value2S;
+
+	// First line, must start with '[GRIDCURTIME] <units>'
+	// <units> == the designation of units for the file.
+	currentLine = trim(linesInFile[lineIdx++]);
+
+	istringstream lineStream(currentLine);
+
+	lineStream >> value1S >> value2S;
+	if (lineStream.fail())
+		return false;
+
+	if (value1S != "[GRIDCURTIME]")
+		return false;
+
+	selectedUnits = StrToSpeedUnits((char *)value2S.c_str());
+	if (selectedUnits == kUndefined)
+		return false;
+
+	*selectedUnitsOut = selectedUnits;
+	
+	return true;
+}
+
+
+Boolean IsGridCurTimeFile(char *path, short *selectedUnitsOut)
+{
+	vector<string> linesInFile;
+
+	if (ReadLinesInFile(path, linesInFile, 10)) {
+		return IsGridCurTimeFile(linesInFile, selectedUnitsOut);
+	}
+	else {
+		return false;
+	}
+}
+
+
+bool IsPtCurFile(vector<string> &linesInFile)
+{
+	string key;
+
+	// First line, must start with [FILETYPE] PTCUR
+	if (ParseKeyedLine(linesInFile[0], "[FILETYPE]", key) && key == "PTCUR")
+		return true;
+	else
+		return false;
+}
+
+Boolean IsPtCurFile(char *path)
+{
+	vector<string> linesInFile;
+
+	if (ReadLinesInFile(path, linesInFile, 1))
+		return IsPtCurFile(linesInFile);
+	else
+		return false;
+}
+
+
+bool IsCATS3DFile(vector<string> &linesInFile)
+{
+	string key;
+
+	// must start with CATS3D
+	if (ParseLine(linesInFile[0], key) && key == "CATS3D")
+		return true;
+	else
+		return false;
+}
+
+Boolean IsCATS3DFile(char *path)
+{
+	string strPath = path;
+
+	if (strPath.size() == 0)
+		return false;
+
+	vector<string> linesInFile;
+	if (ReadLinesInFile(strPath, linesInFile, 1))
+		return IsCATS3DFile(linesInFile);
+
+	else
+		return false;
+}
+
+#endif

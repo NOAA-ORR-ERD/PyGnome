@@ -8,7 +8,7 @@ from webgnome import helpers
 from webgnome.model_manager import (
     ModelManager,
     WebWindMover,
-    WebSurfaceReleaseSpill
+    WebPointSourceRelease
 )
 from webgnome.util import json_date_adapter, gnome_json
 

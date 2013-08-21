@@ -27,6 +27,7 @@ import gnome
 from gnome.environment import Wind, Tide
 from gnome.utilities import map_canvas
 from gnome.utilities.file_tools import haz_files
+from gnome.utilities.remote_data import get_datafile
 from gnome.persist import scenario
 from gnome import scripting
 
@@ -37,7 +38,7 @@ def make_model(images_dir=os.path.join(base_dir,"images")):
     # create the maps:
     print "creating the maps"
     
-    mapfile = os.path.join( base_dir, './MassBayMap.bna')
+    mapfile = get_datafile( os.path.join( base_dir, './MassBayMap.bna'))
     gnome_map = gnome.map.MapFromBNA(mapfile,
                                      refloat_halflife=1, #hours
                                      )
@@ -81,8 +82,9 @@ def make_model(images_dir=os.path.join(base_dir,"images")):
     
     print "adding a cats shio mover:"
     
-    curr_file=os.path.join( base_dir, r"./EbbTides.CUR")
-    c_mover = gnome.movers.CatsMover(curr_file, tide=Tide(os.path.join( base_dir, r"./EbbTidesShio.txt")))
+    curr_file = get_datafile( os.path.join( base_dir, r"./EbbTides.cur"))
+    tide_file = get_datafile( os.path.join( base_dir, r"./EbbTidesShio.txt"))
+    c_mover = gnome.movers.CatsMover(curr_file, tide=Tide( tide_file))
     c_mover.scale_refpoint = (-70.8875, 42.321333) # this is the value in the file (default)
     c_mover.scale = True #default value
     c_mover.scale_value = -1 
@@ -91,9 +93,10 @@ def make_model(images_dir=os.path.join(base_dir,"images")):
     
     print "adding a cats ossm mover:"
     
-    ossm_file = os.path.join( base_dir, r"./MerrimackMassCoastOSSM.txt")
-    curr_file=os.path.join( base_dir, r"./MerrimackMassCoast.CUR")
-    c_mover = gnome.movers.CatsMover(curr_file, tide=Tide(os.path.join( base_dir, "./MerrimackMassCoastOSSM.txt")))
+    ossm_file = get_datafile( os.path.join( base_dir, r"./MerrimackMassCoastOSSM.txt"))
+    curr_file = get_datafile( os.path.join( base_dir, r"./MerrimackMassCoast.cur"))
+    tide_file = get_datafile( os.path.join( base_dir, "./MerrimackMassCoastOSSM.txt"))
+    c_mover = gnome.movers.CatsMover(curr_file, tide=Tide( tide_file))
     # but do need to scale (based on river stage)
     c_mover.scale = True
     c_mover.scale_refpoint = (-70.65,42.58333)
@@ -103,7 +106,7 @@ def make_model(images_dir=os.path.join(base_dir,"images")):
     
     print "adding a cats mover:"
     
-    curr_file=os.path.join( base_dir, r"MassBaySewage.CUR")
+    curr_file = get_datafile( os.path.join( base_dir, r"MassBaySewage.cur"))
     c_mover = gnome.movers.CatsMover(curr_file)
     # but do need to scale (based on river stage)
     c_mover.scale = True

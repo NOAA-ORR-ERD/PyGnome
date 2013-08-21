@@ -26,22 +26,28 @@ class CatsMover(CyMover, serializable.Serializable):
         
         invokes: super(WindMover,cls).new_from_dict(dict_)
         """
-        if 'tide' in dict_ and 'tide' is not None:
-            if dict_.get('tide').id != dict_.pop('tide_id'):
-                raise ValueError("id of tide object does not match the tide_id parameter")
+        if 'tide' in dict_:
+            try:
+                if dict_.get('tide').id != dict_.pop('tide_id'):
+                    raise ValueError("id of tide object does not match the tide_id parameter")
+            except KeyError as ex:
+                ex.args = ("Found 'tide' in dict but no '{0}' key".format(ex.args[0]),)
+                raise ex
                 
         return super(CatsMover,cls).new_from_dict(dict_)
     
     
     def __init__(self, 
                  filename, 
+                 tide=None,
                  **kwargs):
         """
         Uses super to invoke base class __init__ method. 
         
         :param filename: file containing currents patterns for Cats 
         
-        Optional parameters (kwargs)
+        Optional parameters (kwargs). Defaults are defined by CyCatsMover object.
+        
         :param tide: a gnome.environment.Tide object to be attached to CatsMover
         :param scale: a boolean to indicate whether to scale value at reference point or not
         :param scale_value: value used for scaling at reference point
@@ -58,13 +64,20 @@ class CatsMover(CyMover, serializable.Serializable):
         self.mover = cy_cats_mover.CyCatsMover()
         self.mover.text_read(filename)
         
-        self._tide = None   
-        if kwargs.get('tide') is not None:
-            self.tide = kwargs.pop('tide')
+        self._tide = None
+        if tide is not None:   
+            self.tide = tide
+            
         
         self.scale = kwargs.pop('scale', self.mover.scale_type)
         self.scale_value = kwargs.get('scale_value', self.mover.scale_value)
-        self.scale_refpoint = kwargs.pop('scale_refpoint', self.mover.ref_point)
+        
+        # todo: no need to check for None since properties that are None are not persisted
+        if 'scale_refpoint' in kwargs:
+            self.scale_refpoint = kwargs.pop('scale_refpoint')
+        
+        if self.scale and self.scale_value != 0.0 and self.scale_refpoint is None:
+            raise TypeError("Provide a reference point in 'scale_refpoint'.")
         
         super(CatsMover,self).__init__(**kwargs)
         
@@ -83,6 +96,13 @@ class CatsMover(CyMover, serializable.Serializable):
      
     scale_value = property( lambda self: self.mover.scale_value, 
                             lambda self,val: setattr(self.mover, 'scale_value', val) )
+    
+    # a test case for colander.drop
+    #===========================================================================
+    # def scale_refpoint_to_dict(self):
+    #     if self.scale_refpoint is None:
+    #         return (None, None, None)
+    #===========================================================================
     
     def tide_id_to_dict(self):
         if self.tide is None:

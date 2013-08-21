@@ -32,10 +32,19 @@ cdef class CyCatsMover(cy_mover.CyMover):
         self.cats = NULL
     
     def __init__(self, scale_type=0, scale_value=1, diffusion_coefficient=0):
+        """
+        Initialize the CyCatsMover which sets the properties for the underlying C++ CATSMover_c object
+
+        :param scale_type=0: There are 3 options in c++, however only two options are used SCALE_NONE = 0, SCALE_CONSTANT = 1.
+                           The python CatsMover wrapper only sets either 0 or 1. Default is NONE.
+        :param scale_value=1: The value by which to scale the data. By default, this is 1 which means no scaling
+        :param diffusion_coefficient=0: Diffusion coefficient for eddy diffusion. Default is 0.
+        """
         cdef WorldPoint p
         self.cats.scaleType = scale_type
         self.cats.scaleValue = scale_value
         self.cats.fEddyDiffusion = diffusion_coefficient
+        self.cats.refZ = -999 # default to -1
         ## should not have to do this manually.
         ## make-shifting for now.
         #self.cats.fOptimize.isOptimizedForStep = 0
@@ -66,11 +75,15 @@ cdef class CyCatsMover(cy_mover.CyMover):
     property ref_point:
         def __get__(self):
             """
-            returns a tuple 
+            returns the tuple containing (long, lat, z) of reference point if it is defined
+            either by the user or obtained from the Shio object; otherwise it returns None 
             
             todo: make sure this is consistent with the format of CyShioTime.ref_point
             """
-            return (self.cats.refP.pLong/1.e6, self.cats.refP.pLat/1.e6, self.cats.refZ)
+            if self.cats.refZ == -999:
+                return None
+            else:
+                return (self.cats.refP.pLong/1.e6, self.cats.refP.pLat/1.e6, self.cats.refZ)
     
         def __set__(self,ref_point):
             """
@@ -110,6 +123,9 @@ cdef class CyCatsMover(cy_mover.CyMover):
         return info
          
     def set_shio(self, CyShioTime cy_shio):
+        """
+        Takes a CyShioTime object as input and sets C++ Cats mover properties from the Shio object.
+        """
         self.cats.SetTimeDep(cy_shio.shio)
         self.cats.SetRefPosition(cy_shio.shio.GetStationLocation(), 0)
         self.cats.bTimeFileActive = True
@@ -117,11 +133,17 @@ cdef class CyCatsMover(cy_mover.CyMover):
         return True
         
     def set_ossm(self, CyOSSMTime ossm):
+        """
+        Takes a CyOSSMTime object as input and sets C++ Cats mover properties from the OSSM object.
+        """
         self.cats.SetTimeDep(ossm.time_dep)
         self.cats.bTimeFileActive = True   # What is this?
         return True
             
     def text_read(self, fname):
+        """
+        read the current file
+        """
         cdef OSErr err
         cdef bytes path_
         
@@ -131,19 +153,49 @@ cdef class CyCatsMover(cy_mover.CyMover):
         if os.path.exists(path_):
             err = self.cats.TextRead(path_)
             if err != False:
-                raise ValueError("CATSMover.ReadTopology(..) returned an error. OSErr: {0}".format(err))
+                raise ValueError("CATSMover.text_read(..) returned an error. OSErr: {0}".format(err))
         else:
             raise IOError("No such file: " + path_)
         
         return True
     
 
-    def get_move(self, model_time, step_len, cnp.ndarray[WorldPoint3D, ndim=1] ref_points, cnp.ndarray[WorldPoint3D, ndim=1] delta, cnp.ndarray[cnp.npy_int16] LE_status, LEType spill_type, long spill_ID):
+    def get_move(self, 
+                 model_time, 
+                 step_len, 
+                 cnp.ndarray[WorldPoint3D, ndim=1] ref_points, 
+                 cnp.ndarray[WorldPoint3D, ndim=1] delta, 
+                 cnp.ndarray[short] LE_status, 
+                 LEType spill_type):
+        """
+        .. function:: get_move(self,
+                 model_time,
+                 step_len,
+                 cnp.ndarray[WorldPoint3D, ndim=1] ref_points,
+                 cnp.ndarray[WorldPoint3D, ndim=1] delta,
+                 cnp.ndarray[cnp.npy_double] windages,
+                 cnp.ndarray[short] LE_status,
+                 LEType LE_type)
+                 
+        Invokes the underlying C++ WindMover_c.get_move(...)
+        
+        :param model_time: current model time
+        :param step_len: step length over which delta is computed
+        :param ref_points: current locations of LE particles
+        :type ref_points: numpy array of WorldPoint3D
+        :param delta: the change in position of each particle over step_len
+        :type delta: numpy array of WorldPoint3D
+        :param LE_windage: windage to be applied to each particle
+        :type LE_windage: numpy array of numpy.npy_int16
+        :param le_status: status of each particle - movement is only on particles in water
+        :param spill_type: LEType defining whether spill is forecast or uncertain 
+        :returns: none
+        """
         cdef OSErr err
             
         N = len(ref_points)
  
-        err = self.cats.get_move(N, model_time, step_len, &ref_points[0], &delta[0], <short *>&LE_status[0], spill_type, spill_ID)
+        err = self.cats.get_move(N, model_time, step_len, &ref_points[0], &delta[0], &LE_status[0], spill_type, 0)
         if err == 1:
             raise ValueError("Make sure numpy arrays for ref_points, delta and windages are defined")
         
@@ -155,7 +207,7 @@ cdef class CyCatsMover(cy_mover.CyMover):
         
     
     #===========================================================================
-    # TODO: What are these used for and make them into properties
+    # TODO: What are these used for
     # def compute_velocity_scale(self, model_time):
     #    self.mover.ComputeVelocityScale(model_time)
     #    

@@ -1,7 +1,7 @@
 from cornice.resource import resource, view
 
 from webgnome import util
-from webgnome.model_manager import WebSurfaceReleaseSpill
+from webgnome.model_manager import WebPointSourceRelease
 from webgnome import schema
 from webgnome.views.services.base import BaseResource
 
@@ -9,25 +9,25 @@ from webgnome.views.services.base import BaseResource
 @resource(collection_path='/model/{model_id}/spill/surface_release',
           path='/model/{model_id}/spill/surface_release/{id}',
           renderer='gnome_json', description='A surface release spill.')
-class SurfaceReleaseSpill(BaseResource):
+class PointSourceRelease(BaseResource):
 
     @view(validators=util.valid_model_id)
     def collection_get(self):
         """
-        Return a list of existing SurfaceReleaseSpills.
+        Return a list of existing PointSourceReleases.
         """
         data = self.request.validated
         model = data.pop('model')
         model_data = model.to_dict(include_spills=True)
 
-        return schema.SurfaceReleaseSpillsSchema(
+        return schema.PointSourceReleasesSchema(
             model_data['surface_release_spills'])
 
     @view(validators=util.valid_model_id,
-          schema=schema.SurfaceReleaseSpillSchema)
+          schema=schema.PointSourceReleaseSchema)
     def collection_post(self):
         """
-        Create a SurfaceReleaseSpill from a JSON representation.
+        Create a PointSourceRelease from a JSON representation.
         """
         data = self.request.validated
         model = data.pop('model')
@@ -35,28 +35,28 @@ class SurfaceReleaseSpill(BaseResource):
         if 'end_release_time' not in data:
             data['end_release_time'] = data['release_time']
 
-        spill = WebSurfaceReleaseSpill(**data)
+        spill = WebPointSourceRelease(**data)
         model.spills.add(spill)
 
-        return schema.SurfaceReleaseSpillSchema().bind().serialize(
+        return schema.PointSourceReleaseSchema().bind().serialize(
             spill.to_dict(do='create'))
 
     @view(validators=util.valid_spill_id)
     def get(self):
         """
-        Return a JSON representation of the SurfaceReleaseSpill matching the
+        Return a JSON representation of the PointSourceRelease matching the
         ``id`` matchdict value.
         """
         spill = self.request.validated['model'].spills[self.id]
 
-        return schema.SurfaceReleaseSpillSchema().bind().serialize(
+        return schema.PointSourceReleaseSchema().bind().serialize(
             spill.to_dict('create'))
 
     @view(validators=util.valid_spill_id,
-          schema=schema.SurfaceReleaseSpillSchema)
+          schema=schema.PointSourceReleaseSchema)
     def put(self):
         """
-        Update an existing SurfaceReleaseSpill from a JSON representation.
+        Update an existing PointSourceRelease from a JSON representation.
         """
         data = self.request.validated
         model = data.pop('model')
@@ -77,13 +77,13 @@ class SurfaceReleaseSpill(BaseResource):
 
         model.rewind()
 
-        return schema.SurfaceReleaseSpillSchema().bind().serialize(
+        return schema.PointSourceReleaseSchema().bind().serialize(
             spill.to_dict('create'))
 
     @view(validators=util.valid_spill_id)
     def delete(self):
         """
-        Delete a SurfaceReleaseSpill.
+        Delete a PointSourceRelease.
         """
         model = self.request.validated['model']
         model.spills.remove(self.id)
