@@ -291,12 +291,7 @@ class RiseVelocitySpill(Spill):
         
         self.distribution = distribution
         self.range = range
-        self._use_dropletsize = use_dropletsize
-        
-        if use_dropletsize:
-            self.array_types.update( element_types.droplet_size )
-        else:
-            self.array_types.update( element_types.rise_vel )
+        self.use_dropletsize = use_dropletsize
 
 
 class PointSourceSpill(Spill):
