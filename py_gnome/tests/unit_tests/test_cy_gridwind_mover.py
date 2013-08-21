@@ -81,8 +81,7 @@ class TestGridWindMover():
                           self.cm.delta,
                           self.cm.wind,
                           self.cm.status,
-                          spill_type.forecast,
-                          0)
+                          spill_type.forecast)
 
     def check_move(self):
         self.move()

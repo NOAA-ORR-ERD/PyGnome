@@ -21,9 +21,6 @@ def test_import_spill():
     import gnome.spill
 
 
-def test_import_greenwich():
-    import gnome.deprecated.greenwich
-
 ## import the cython extensions:
 
 

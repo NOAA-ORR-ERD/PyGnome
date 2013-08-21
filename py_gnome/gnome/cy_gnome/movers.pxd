@@ -3,6 +3,8 @@ Declare the C++ mover classes from lib_gnome
 """
 from libcpp cimport bool
 
+from libc.stdint cimport int32_t
+
 from type_defs cimport *
 from utils cimport OSSMTimeValue_c  
 
@@ -45,7 +47,7 @@ cdef extern from "Mover_c.h":
     cdef cppclass Mover_c:
         OSErr PrepareForModelRun()
         OSErr PrepareForModelStep(Seconds &time, Seconds &time_step,
-                                  bool uncertain, int numLESets, int *LESetsSizesList)    # currently this happens in C++ get_move command
+                                  bool uncertain, int numLESets, int32_t *LESetsSizesList)    # currently this happens in C++ get_move command
         void ModelStepIsDone()
         OSErr ReallocateUncertainty(int numLEs, short* LE_status)
 

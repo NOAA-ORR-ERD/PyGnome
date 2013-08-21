@@ -150,12 +150,13 @@ class CyMover(Mover):
         super(CyMover,self).prepare_for_model_step(sc, time_step, model_time_datetime)
         if self.active:
             uncertain_spill_count = 0
-            uncertain_spill_size = np.array( (0,) ) # only useful if spill.uncertain
+            uncertain_spill_size = np.array((0,), dtype=np.int32)  # only useful if spill.uncertain
             if sc.uncertain:
                 uncertain_spill_count = 1
-                uncertain_spill_size = np.array( (sc.num_elements,) )
-            
-            self.mover.prepare_for_model_step( self.datetime_to_seconds(model_time_datetime), time_step, uncertain_spill_count, uncertain_spill_size)
+                uncertain_spill_size = np.array((sc.num_elements,),
+                                                dtype=np.int32)
+
+            self.mover.prepare_for_model_step(self.datetime_to_seconds(model_time_datetime), time_step, uncertain_spill_count, uncertain_spill_size)
 
     def get_move(self, sc, time_step, model_time_datetime):
         """
@@ -175,8 +176,7 @@ class CyMover(Mover):
                                   self.positions,
                                   self.delta,
                                   self.status_codes,
-                                  self.spill_type,
-                                  0)    # only ever 1 spill_container so this is always 0!
+                                  self.spill_type)
             
         return self.delta.view(dtype=basic_types.world_point_type).reshape((-1,len(basic_types.world_point)))
     

@@ -45,8 +45,7 @@ class CatsMove(cy_fixtures.CyTestMove):
                           self.ref,
                           self.delta,
                           self.status,
-                          basic_types.spill_type.forecast,
-                          0)
+                          basic_types.spill_type.forecast)
         print
         print self.delta
 
@@ -59,8 +58,7 @@ class CatsMove(cy_fixtures.CyTestMove):
                           self.ref,
                           self.u_delta,
                           self.status,
-                          basic_types.spill_type.uncertainty,
-                          0)
+                          basic_types.spill_type.uncertainty)
         print
         print self.u_delta
 

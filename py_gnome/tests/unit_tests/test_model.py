@@ -13,66 +13,54 @@ from datetime import datetime, timedelta
 import numpy as np
 import pytest
 
+import gnome.map
 from gnome.basic_types import datetime_value_2d
 from gnome.utilities import inf_datetime
-
-import gnome.map
 from gnome.model import Model
 from gnome.spill import SpatialRelease, PointSourceRelease
-
+from gnome.utilities.remote_data import get_datafile
 from gnome.movers.simple_mover import SimpleMover
 from gnome.movers import RandomMover, WindMover, CatsMover
-
 from gnome.environment import Wind, Tide
-from gnome.utilities.remote_data import get_datafile
 
 
 basedir = os.path.dirname(__file__)
 datadir = os.path.join(basedir, r"sample_data")
 testmap = os.path.join(basedir, '../sample_data', 'MapBounds_Island.bna')
 
-
-def setup_simple_model():
+@pytest.fixture(scope="module")
+def model(sample_model):
     """
     utility to setup up a simple, but complete model for tests
     """
+    
+    
     # create a place for test images (cleaning out any old ones)
     images_dir = os.path.join(basedir, "Test_images")
     if os.path.isdir(images_dir):
         shutil.rmtree(images_dir)
     os.mkdir(images_dir)
 
-    start_time = datetime(2012, 9, 15, 12, 0)
+    model = sample_model['model']
+    rel_start_pos = sample_model['release_start_pos']
+    rel_end_pos = sample_model['release_end_pos']
 
-    # the image output map
-    mapfile = testmap
-
-    # the land-water map
-    gnome_map = gnome.map.MapFromBNA(mapfile,
-                                     refloat_halflife=6,  # hours
-                                     )
-
-    renderer = gnome.renderer.Renderer(mapfile,
+    model.cache_enabled = True
+    model.uncertain = False
+    
+    renderer = gnome.renderer.Renderer(model.map.filename,
                                        images_dir,
                                        size=(400, 300))
 
-    model = Model(time_step=timedelta(minutes=15),
-                  start_time=start_time,
-                  duration=timedelta(hours=1),
-                  map=gnome_map,
-                  uncertain=False,
-                  cache_enabled=False,)
-
     model.outputters += renderer
-    model.movers += SimpleMover(velocity=(1.0, -1.0, 0.0))
 
     N = 10  # a line of ten points
-    start_points = np.zeros((N, 3), dtype=np.float64)
-    start_points[:, 0] = np.linspace(-127.1, -126.5, N)
-    start_points[:, 1] = np.linspace(47.93, 48.1, N)
+    line_pos = np.zeros((N, 3), dtype=np.float64)
+    line_pos[:, 0] = np.linspace(rel_start_pos[0], rel_end_pos[0], N)
+    line_pos[:, 1] = np.linspace(rel_start_pos[1], rel_end_pos[1], N)
     #print start_points
-    spill = SpatialRelease(start_positions=start_points,
-                           release_time=start_time,
+    spill = SpatialRelease(start_positions=line_pos,
+                           release_time=model.start_time,
                            )
 
     model.spills += spill
@@ -625,11 +613,11 @@ def test_release_at_right_time():
     assert model.spills.items()[0].num_elements == 12
 
 
-def test_full_run():
+def test_full_run(model):
     """
     test doing a full run
     """
-    model = setup_simple_model()
+    #model = setup_simple_model()
     results = model.full_run()
     print results
 
@@ -689,7 +677,7 @@ def test_callback_add_mover():
     assert model.movers[custom_mover.id].active_stop == active_off
 
 
-def test_callback_add_mover_midrun():
+def test_callback_add_mover_midrun(model):
     """ Test callback after add mover called midway through the run """
     model = Model()
     model.time_step = timedelta(hours=1)
@@ -697,7 +685,7 @@ def test_callback_add_mover_midrun():
     model.start_time = datetime(2012, 1, 1, 0, 0)
     #start_loc = (1.0, 2.0, 0.0)  # random non-zero starting points
 
-    model = setup_simple_model()
+    #model = setup_simple_model()
 
     for i in range(2):
         model.step()
@@ -709,9 +697,9 @@ def test_callback_add_mover_midrun():
     assert model.current_time_step == -1
 
 
-def test_simple_run_no_spills():
+def test_simple_run_no_spills(model):
 
-    model = setup_simple_model()
+    #model = setup_simple_model()
 
     for spill in model.spills:
         del model.spills[spill.id]

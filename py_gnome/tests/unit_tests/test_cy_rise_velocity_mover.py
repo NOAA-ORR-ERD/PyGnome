@@ -47,8 +47,7 @@ class TestRiseVelocity():
                          self.density,
                          self.droplet_size,
                          self.cm.status,
-                         spill_type.forecast,
-                         0)
+                         spill_type.forecast)
 
     def test_move(self):
         """
