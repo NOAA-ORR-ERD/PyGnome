@@ -814,6 +814,9 @@ class OilProps():
     
     def __init__(self, oil_):
         """
+        WIP: THIS CURRENTLY CREATES THE DATABASE FROM OIL_LIBRARY FILE IF IT DOESN'T EXIST. THIS IS LIKELY NOT HOW WE
+        WANT TO IMPLEMENT IN THE LONG TERM - THIS IS JUST A HACK TO TEST ONE APPROACH TO HOW OilProps OBJECT COULD WORK.
+        
         Should user be able to provide an oil with density/properties?
         
         If oil_ is amongst self._sample_oils dict, then use the properties defined here. 
