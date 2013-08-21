@@ -86,4 +86,5 @@ w_point_2d = np.dtype([('long', world_point_type),
 # define it here to keep things consistent
 status_code_type = np.int16
 
+# id_type is dtype for numpy array for 'spill_num'. This is NOT currently passed to C++  
 id_type = np.uint16
