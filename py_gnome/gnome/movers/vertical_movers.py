@@ -2,7 +2,7 @@ import copy
 
 from gnome.utilities import serializable
 from gnome.movers import CyMover
-from gnome.cy_gnome.cy_rise_velocity_mover import CyRiseVelcityMover
+from gnome.cy_gnome.cy_rise_velocity_mover import CyRiseVelocityMover
 from gnome import element_types
                 
 class RiseVelocityMover(CyMover, serializable.Serializable):
@@ -17,6 +17,8 @@ class RiseVelocityMover(CyMover, serializable.Serializable):
     state.add(update=['water_viscosity'], create=['water_viscosity'])
     
     def __init__(self,
+                 water_density=1020,
+                 water_viscosity=1.e-6,
                  **kwargs):
         """
         Uses super to invoke base class __init__ method. 
@@ -29,8 +31,7 @@ class RiseVelocityMover(CyMover, serializable.Serializable):
         Remaining kwargs are passed onto Mover's __init__ using super. 
         See Mover documentation for remaining valid kwargs.
         """
-        self.mover = CyRiseVelocityMover(water_density=kwargs.get('water_density'),
-                                         water_viscosity=kwargs.get('water_viscosity'))
+        self.mover = CyRiseVelocityMover(water_density, water_viscosity)
         super(RiseVelocityMover,self).__init__(**kwargs)
 
     @property
@@ -72,8 +73,7 @@ class RiseVelocityMover(CyMover, serializable.Serializable):
                                   sc['density'],
                                   sc['droplet_size'],
                                   self.status_codes,
-                                  self.spill_type,
-                                  0)    # only ever 1 spill_container so this is always 0!
+                                  self.spill_type)    # only ever 1 spill_container so this is always 0!
             
         return self.delta.view(dtype=basic_types.world_point_type).reshape((-1,len(basic_types.world_point)))
 
