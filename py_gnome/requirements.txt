@@ -1,8 +1,8 @@
 # PyGnome
 setuptools
 numpy>=1.7.0   
-Cython>=0.17.1
-Pyrex>=0.9.8.6
+cython>=0.17.1
+pyrex>=0.9.8.6
 pytest>=2.3.4
 sphinx
 
@@ -11,10 +11,17 @@ sphinx
 netCDF4 
 
 # requires some binary packages
-PIL>=1.1.7
+#PIL>=1.1.7
 
+## hazpy unit_conversion code
 svn+https://svn.orr.noaa.gov/svn/Hazpy/trunk/hazpy.unit_conversion/#egg=hazpy.unit_conversion
+
+## new version of colander -- maybe not needed anymore?
 git+https://github.com/Pylons/colander.git#egg=colander  # need newer version than what is in PyPy
+
+## py_gd : python wrappers for gd lib
+git+https://github.com/NOAA-ORR-ERD/py_gd.git
+
 
 # Oil Library database
 pyramid
