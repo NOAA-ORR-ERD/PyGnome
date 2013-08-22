@@ -2,6 +2,8 @@ import copy
 
 from gnome.utilities import serializable
 from gnome.movers import CyMover
+from gnome.cy_gnome.cy_rise_velocity_mover import CyRiseVelcityMover
+from gnome import element_types
                 
 class RiseVelocityMover(CyMover, serializable.Serializable):
     """
@@ -14,18 +16,21 @@ class RiseVelocityMover(CyMover, serializable.Serializable):
     state.add(update=['water_density'], create=['water_density'])
     state.add(update=['water_viscosity'], create=['water_viscosity'])
     
-    def __init__(self, **kwargs):
+    def __init__(self,
+                 **kwargs):
         """
         Uses super to invoke base class __init__ method. 
         
-        Optional parameters (kwargs)
+        Optional parameters (kwargs) used to initialize CyRiseVelocityMover
+        
         :param water_density: Default is 1020 kg/m3
         :param water_viscosity: Default is 1.e-6
         
         Remaining kwargs are passed onto Mover's __init__ using super. 
         See Mover documentation for remaining valid kwargs.
         """
-        self.mover = CyRiseVelocityMover(water_density=kwargs.pop('water_density',1020),water_viscosity=kwargs.pop('water_viscosity',.000001))
+        self.mover = CyRiseVelocityMover(water_density=kwargs.get('water_density'),
+                                         water_viscosity=kwargs.get('water_viscosity'))
         super(RiseVelocityMover,self).__init__(**kwargs)
 
     @property
