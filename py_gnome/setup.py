@@ -137,9 +137,6 @@ netcdf_lib_files = [os.path.join(netcdf_libs, libfile.format(l))
                     for l in netcdf_names]
 
 
-
-
-
 # the cython extensions to build -- each should correspond to a *.pyx file
 extension_names = ['cy_mover',
                    'cy_helpers',
@@ -269,11 +266,10 @@ elif sys.platform == "win32":
     extensions.append(basic_types_ext)
 
     # we will reference this library when building all other extensions
-    static_lib_files = [os.path.join(target_path(), 'Release',
-                                     'gnome', 'cy_gnome',
+    static_lib_files = [os.path.join(target_path(),
+                                     'Release', 'gnome', 'cy_gnome',
                                      'cy_basic_types.lib')]
     libdirs = []
-
 
 elif sys.platform == "linux2":
 
@@ -334,29 +330,23 @@ elif sys.platform == "linux2":
 
 
 #
-### the "master" extension -- of the extra stuff,
-### so the whole C++ lib will be there for the others
+### All other lib_gnome-based cython extensions.
+### These depend on the successful build of cy_basic_types
 #
-
-# TODO: the extensions below look for the shared object lib_gnome in
-# './build/lib.macosx-10.3-fat-2.7/gnome' and './gnome'
-# Ideally, we should build lib_gnome first and move it
-# to wherever we wish to link from .. currently the build_ext and develop
-# will find and link to the object in different places.
 
 for mod_name in extension_names:
     cy_file = os.path.join("gnome/cy_gnome", mod_name + ".pyx")
     extensions.append(Extension('gnome.cy_gnome.' + mod_name,
-                                 [cy_file],
-                                 language="c++",
-                                 define_macros=macros,
-                                 extra_compile_args=compile_args,
-                                 extra_link_args=link_args,
-                                 libraries=lib,
-                                 library_dirs=libdirs,
-                                 extra_objects=static_lib_files,
-                                 include_dirs=include_dirs,
-                                 )
+                                [cy_file],
+                                language="c++",
+                                define_macros=macros,
+                                extra_compile_args=compile_args,
+                                extra_link_args=link_args,
+                                libraries=lib,
+                                library_dirs=libdirs,
+                                extra_objects=static_lib_files,
+                                include_dirs=include_dirs,
+                                )
                        )
 
 # and platfrom-independent cython extensions:
