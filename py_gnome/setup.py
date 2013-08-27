@@ -94,15 +94,19 @@ if sys.argv.count(config) != 0:
 
 ## setup our environment and architecture
 ## These should be properties that are used by all Extensions
+libfile = ''
+if sys.maxint <= 2147483647:
+    architecture = 'i386'
+else:
+    architecture = 'x86_64'
+
 if sys.platform == 'darwin':
     # for the mac -- decide whether we are 32 bit build
-    if sys.maxint <= 2147483647:
+    if architecture == 'i386':
         #Setting this should force only 32 bit intel build
         os.environ['ARCHFLAGS'] = "-arch i386"
-        architecture = 'i386'
     else:
         os.environ['ARCHFLAGS'] = "-arch x86_64"
-        architecture = 'x86_64'
     libfile = 'lib{0}.a'  # OSX static library filename format
 elif sys.platform == "win32":
     # Distutils normally only works with VS2008.
@@ -113,28 +117,30 @@ elif sys.platform == "win32":
     elif 'VS100COMNTOOLS' in os.environ:
         os.environ['VS90COMNTOOLS'] = os.environ['VS100COMNTOOLS']
 
-    architecture = 'i386'
     libfile = '{0}.lib'  # windows static library filename format
 
 
 ##
-## setup our third party libraries environment
+## setup our third party libraries environment - for Win32/Mac OSX
+## Linux does not use the libraries in third_party_lib. It links against
+## netcdf shared objects installed by apt-get
 ##
-third_party_dir = os.path.join('..', 'third_party_lib')
-
-# the netCDF environment
-netcdf_base = os.path.join(third_party_dir, 'netcdf-4.3',
-                          sys.platform, architecture)
-netcdf_libs = os.path.join(netcdf_base, 'lib')
-netcdf_inc = os.path.join(netcdf_base, 'include')
-
-if sys.platform == 'win32':
-    netcdf_names = ('netcdf',)
-else:
-    netcdf_names = ('hdf5', 'hdf5_hl', 'netcdf', 'netcdf_c++4')
-
-netcdf_lib_files = [os.path.join(netcdf_libs, libfile.format(l))
-                    for l in netcdf_names]
+if sys.platform is "darwin" or "win32":
+    third_party_dir = os.path.join('..', 'third_party_lib')
+    
+    # the netCDF environment
+    netcdf_base = os.path.join(third_party_dir, 'netcdf-4.3',
+                              sys.platform, architecture)
+    netcdf_libs = os.path.join(netcdf_base, 'lib')
+    netcdf_inc = os.path.join(netcdf_base, 'include')
+    
+    if sys.platform == 'win32':
+        netcdf_names = ('netcdf',)
+    else:
+        netcdf_names = ('hdf5', 'hdf5_hl', 'netcdf', 'netcdf_c++4')
+    
+    netcdf_lib_files = [os.path.join(netcdf_libs, libfile.format(l))
+                        for l in netcdf_names]
 
 
 # the cython extensions to build -- each should correspond to a *.pyx file
@@ -223,6 +229,13 @@ static_lib_files = netcdf_lib_files
 # cy_basic_types needs to be imported before any other extensions.
 # This is being done in the gnome/cy_gnome/__init__.py
 
+# JS NOTE: 'darwin' and 'win32' statically link against netcdf library.
+#          On linux, we link against the dynamic netcdf libraries (shared 
+#          objects) since netcdf, hdf5 can be installed with a package manager.
+#          We also don't have the static builds for these.
+#          Also, the static_lib_files only need to be linked against 
+#          lib_gnome in the following Extension.
+
 if sys.platform == "darwin":
 
     basic_types_ext = Extension(r'gnome.cy_gnome.cy_basic_types',
@@ -281,6 +294,8 @@ elif sys.platform == "linux2":
         os.makedirs(build_temp)
 
     ## Not sure calling setup twice is the way to go - but do this for now
+    ## NOTE: This is also linking against the netcdf library (*.so), not
+    ## the static netcdf. We didn't build a NETCDF static library.
     setup(name='pyGnome',  # not required since ext defines this
           cmdclass={'build_ext': build_ext},
           ext_modules=[Extension('gnome.cy_gnome.libgnome',
@@ -344,7 +359,7 @@ for mod_name in extension_names:
                                 extra_link_args=link_args,
                                 libraries=lib,
                                 library_dirs=libdirs,
-                                extra_objects=static_lib_files,
+                                #extra_objects=static_lib_files,
                                 include_dirs=include_dirs,
                                 )
                        )

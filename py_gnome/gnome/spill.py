@@ -31,9 +31,9 @@ import sqlalchemy
 
 # from sqlalchemy.orm import sessionmaker, scoped_session
 
-from oillibrary.models import Oil, DBSession
 from hazpy import unit_conversion
 from itertools import chain
+from gnome.db.oil_library.models import Oil, DBSession
 from gnome.db.oil_library.initializedb import initialize_sql, \
     load_database
 
@@ -1036,7 +1036,7 @@ class OilProps:
             else:
                 oillib_path = \
                     os.path.join(os.path.split(os.path.realpath(__file__))[0],
-                                 '../../web/adios/OilLibrary')
+                                 '../../web/gnome/webgnome/webgnome/data')
                 db_file = os.path.join(oillib_path, 'OilLibrary.db')
                 if not os.path.exists(db_file):
                     oillib_file = os.path.join(oillib_path, 'OilLib')
