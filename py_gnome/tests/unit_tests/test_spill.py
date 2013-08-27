@@ -714,6 +714,9 @@ def test_OilProps_sample_oil( oil, density, units):
     assert o.get_density(units) == density
     assert o.name == oil
 
+# If DB doesn't exist, it could take awhile to create
+# mark this as slow
+@pytest.mark.slow
 @pytest.mark.parametrize(("oil","api"), [('FUEL OIL NO.6', 12.3)])            
 def test_OilProps_DBquery(oil, api):
     """ test dbquery worked for an example like FUEL OIL NO.6 """
@@ -727,7 +730,7 @@ def test_OilProps_Oil_object():
     because Oil().api is undefined for this object. It is the user's responsibility to provide a
     valid (non-empty) Oil object 
     """
-    from oillibrary.models import Oil
+    from gnome.db.oil_library.models import Oil
     o = OilProps(Oil()) # this works since we just require an Oil object, but getting
     assert isinstance( o.oil, Oil )
     
