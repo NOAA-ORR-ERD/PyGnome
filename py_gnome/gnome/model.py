@@ -8,7 +8,6 @@ import numpy as np
 import gnome
 import gnome.utilities.cache
 
-#from gnome import GnomeId
 from gnome.utilities.time_utils import round_time
 from gnome.utilities.orderedcollection import OrderedCollection
 from gnome.environment import Environment, Wind
@@ -49,7 +48,7 @@ class Model(serializable.Serializable):
         
         c_spills = dict_.pop('certain_spills')
         if 'uncertain_spills' in dict_.keys():
-            u_spills = self._load_collection(l_spills['uncertain_spills'])
+            u_spills = dict_.pop('uncertain_spills')
             l_spills = zip(c_spills, u_spills)
         else:
             l_spills = c_spills
@@ -241,15 +240,20 @@ class Model(serializable.Serializable):
         Sets up each mover for the model run
 
         """
-        [mover.prepare_for_model_run() for mover in self.movers]
+        self.spills.rewind()    #why is rewind for spills here?
+        
         [outputter.prepare_for_model_run(self._cache, model_start_time=self.start_time,num_time_steps=self.num_time_steps, uncertain=self.uncertain, spills=self.spills) 
          for outputter in self.outputters]
         
-        self.spills.rewind()
-        
+        array_types = {}
+        for mover in self.movers:
+            mover.prepare_for_model_run()
+            array_types.update(mover.array_types)
+
         # setup the current_time_stamp for the spill_container objects
         for sc in self.spills.items():
-            sc.current_time_stamp = self.model_time
+            #sc.current_time_stamp = self.model_time
+            sc.prepare_for_model_run(self.model_time, array_types)
         
 
     def setup_time_step(self):
@@ -300,7 +304,11 @@ class Model(serializable.Serializable):
         """
         Loop through movers and call model_step_is_done
         """
-
+        """
+        mover's model_step_is_done should be called before spill_contianer's model_step_is_done.
+        The spill_container's model_step_is_done removes the particles after the mover's resize
+        their uncertainty array. 
+        """
         for mover in self.movers:
             for sc in self.spills.items():	
                 mover.model_step_is_done(sc)	

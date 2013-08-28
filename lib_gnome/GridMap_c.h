@@ -11,6 +11,9 @@
 #ifndef __GridMap_c__
 #define __GridMap_c__
 
+#include <string>
+#include <vector>
+
 #include "Basics.h"
 #include "TypeDefs.h"
 #include "RectUtils.h"
@@ -79,8 +82,10 @@ public:
 	OSErr			SetUpTriangleGrid2(long numNodes, long numTri, WORLDPOINTFH vertexPtsH, FLOATH depthPtsH, long *bndry_indices, long *bndry_nums, long *bndry_type, long numBoundaryPts, long *tri_verts, long *tri_neighbors);
 	OSErr			SetUpTriangleGrid(long numNodes, long numTri, WORLDPOINTFH vertexPtsH, FLOATH depthPtsH, long *bndry_indices, long *bndry_nums, long *bndry_type, long numBoundaryPts);
 
+	OSErr ReadTopology(std::vector<std::string> &linesInFile);
+	OSErr ReadTopology(char *path);
+
 	OSErr	TextRead(char *path);
-	OSErr 	ReadTopology(char* path);
 	OSErr	ExportTopology(char* path);
 	OSErr	SaveAsNetCDF(char *path);
 	OSErr	ReadCATSMap(char *path); 

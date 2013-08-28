@@ -11,17 +11,17 @@ designed for py.test
 import os
 import numpy as np
 from gnome.utilities.file_tools import haz_files
-import pytest
 
 ## NOTE: according to:
 ## http://www.softwright.com/faq/support/boundary_file_bna_format.html
-## polygons in BNA shouls have the first and last popint the same. 
+## polygons in BNA shouls have the first and last popint the same.
 ## these tests (Nor the code) do not enforce that, but rather add the extra
 ## point if it's not there
 
 basedir = os.path.dirname(__file__)
+
 #  write a simple test bna file
-file(os.path.join(basedir,'test.bna'), 'w').write( \
+file(os.path.join(basedir, 'test.bna'), 'w').write( \
 '''"Another Name","Another Type", 7
 -81.531753540039,31.134635925293
 -81.531150817871,31.134529113769
@@ -63,12 +63,12 @@ file(os.path.join(basedir,'test.bna'), 'w').write( \
 -81.524009704590,31.121944427490
 -81.523925781250,31.122068405151
 -81.523277282715,31.122261047363
-''')    
+''')
 
-test_bna = os.path.join(basedir,"test.bna")
+test_bna = os.path.join(basedir, "test.bna")
 
 #  write a simple test bna file with invalid data
-file(os.path.join(basedir,'test_bad.bna'), 'w').write( \
+file(os.path.join(basedir, 'test_bad.bna'), 'w').write( \
 '''"An too-small polygon","Another Type", 2
 -81.531753540039,31.134635925293
 -81.531150817871,31.134529113769
@@ -80,14 +80,15 @@ file(os.path.join(basedir,'test_bad.bna'), 'w').write( \
 -81.522483825684,31.121797561646
 ''')
 
-test_bad_bna = os.path.join(basedir,"test_bad.bna")
+test_bad_bna = os.path.join(basedir, "test_bad.bna")
+
 
 class Test_bna_list:
     polys = haz_files.ReadBNA(test_bna)
 
     def test_length(self):
         assert len(self.polys) == 6
-    
+
     def test_type(self):
         assert self.polys[0][1] == 'polygon'
         assert self.polys[1][1] == 'polygon'
@@ -105,20 +106,21 @@ class Test_bna_list:
         assert self.polys[0][3] == 'Another Type'
         assert self.polys[1][3] == '6'
         assert self.polys[2][3] == '1'
-        
+
     def test_points(self):
-        assert np.array_equal( self.polys[0][0],
-                               np.array(((-81.531753540039,31.134635925293),
-                                         (-81.531150817871,31.134529113769),
-                                         (-81.530662536621,31.134353637695),
-                                         (-81.530502319336,31.134126663208),
-                                         (-81.530685424805,31.133970260620),
-                                         (-81.531112670898,31.134040832519),
-                                         )))
+        assert np.array_equal(self.polys[0][0],
+                              np.array(((-81.531753540039, 31.134635925293),
+                                        (-81.531150817871, 31.134529113769),
+                                        (-81.530662536621, 31.134353637695),
+                                        (-81.530502319336, 31.134126663208),
+                                        (-81.530685424805, 31.133970260620),
+                                        (-81.531112670898, 31.134040832519),
+                                        )))
+
     def test_end_points(self):
         for p in self.polys:
             if p[1] == 'polygon' or p[1] == 'polyline':
-                assert not np.array_equal( p[0][0], p[0][-1] )
+                assert not np.array_equal(p[0][0], p[0][-1])
 
     def test_end_points_point(self):
         for p in self.polys:
@@ -126,12 +128,12 @@ class Test_bna_list:
                 assert p[0].shape == (1, 2)
 
     def test_dtype(self):
-        polys = haz_files.ReadBNA(test_bna, polytype = "list", dtype=np.float32)
+        polys = haz_files.ReadBNA(test_bna, polytype="list", dtype=np.float32)
         for p in polys:
             assert p[0].dtype == np.float32
 
 
-class Test_bna_polygonset:    
+class Test_bna_polygonset:
     polys = haz_files.ReadBNA(test_bna, "PolygonSet")
 
     def test_length(self):
@@ -155,8 +157,7 @@ class Test_bna_polygonset:
         assert self.polys[2].metadata[2] == '1'
 
     def test_dtype(self):
-        polys = haz_files.ReadBNA(test_bna, polytype = "PolygonSet", dtype=np.float32)
+        polys = haz_files.ReadBNA(test_bna, polytype="PolygonSet",
+                                  dtype=np.float32)
         for p in polys:
             assert p.dtype == np.float32
-
-        

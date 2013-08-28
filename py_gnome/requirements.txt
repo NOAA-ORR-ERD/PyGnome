@@ -5,6 +5,7 @@ cython>=0.17.1
 pyrex>=0.9.8.6
 pytest>=2.3.4
 sphinx
+progressbar
 
 # requires netcdf-4 binaries to be correctly installed
 # see "third party" for build scripts

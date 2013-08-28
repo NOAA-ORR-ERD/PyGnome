@@ -1,8 +1,12 @@
 #!/usr/bin/env python
 
-from gnome.utilities import transforms
 import numpy as np
-import random
+
+from gnome.utilities.transforms import (r_theta_to_uv_wind,
+                                        uv_to_r_theta_wind,
+                                        r_theta_to_uv_current,
+                                        uv_to_r_theta_current)
+
 import pytest
 
 
@@ -10,60 +14,69 @@ import pytest
 # Defined in conftest.py
 def test_exceptions(invalid_rq):
     with pytest.raises(ValueError):
-        transforms.r_theta_to_uv_wind(invalid_rq['rq'][0])
+        r_theta_to_uv_wind(invalid_rq['rq'][0])
     with pytest.raises(ValueError):
-        transforms.r_theta_to_uv_wind(invalid_rq['rq'][1])
+        r_theta_to_uv_wind(invalid_rq['rq'][1])
     with pytest.raises(ValueError):
-        transforms.r_theta_to_uv_wind(invalid_rq['rq'][2])
-    
+        r_theta_to_uv_wind(invalid_rq['rq'][2])
+
 atol = 1e-14
 rtol = 0
 
-inv_atol = 1e-10    # randomly generate (r,theta), apply transform+inverse and check result is within 1e-10
+# randomly generate (r,theta), apply transform + inverse
+# and check result is within 1e-10
+inv_atol = 1e-10
+
 
 def test_r_theta_to_uv_wind(rq_wind):
-    uv_out = transforms.r_theta_to_uv_wind(rq_wind['rq'])
+    uv_out = r_theta_to_uv_wind(rq_wind['rq'])
     print "actual (u,v): "
     print uv_out
     print "computed (u,v): "
     print rq_wind['uv']
-    assert np.allclose( uv_out, rq_wind['uv'], atol, rtol)
-    
-    
+    assert np.allclose(uv_out, rq_wind['uv'], atol, rtol)
+
+
 def test_uv_to_r_theta_wind(rq_wind):
-    rq_out = transforms.uv_to_r_theta_wind(rq_wind['uv'])
+    rq_out = uv_to_r_theta_wind(rq_wind['uv'])
     print "actual (r,theta): "
     print rq_out
     print "computed (r,theta): "
     print rq_wind['rq']
-    assert np.allclose( rq_out, rq_wind['rq'], atol, rtol)
-    
+    assert np.allclose(rq_out, rq_wind['rq'], atol, rtol)
+
+
 def test_wind_inverse(rq_rand):
     """
-    randomly generates an (r,theta) and applies the transform to convert to (u,v), then back to (r,theta).
+    randomly generates an (r,theta) and applies the transform to
+    convert to (u,v), then back to (r,theta).
     It checks the result is accurate to within 10-10 absolute tolerance
     """
-    rq_out = transforms.uv_to_r_theta_wind( transforms.r_theta_to_uv_wind(rq_rand['rq']))
+    rq_out = uv_to_r_theta_wind(r_theta_to_uv_wind(rq_rand['rq']))
     print "actual (r,theta): "
     print rq_rand['rq']
     print "computed (r,theta): "
     print rq_out
-    assert np.allclose( rq_out, rq_rand['rq'], inv_atol, rtol)
-    
+    assert np.allclose(rq_out, rq_rand['rq'], inv_atol, rtol)
+
+
 def test_r_theta_to_uv_current(rq_curr):
-    uv_out = transforms.r_theta_to_uv_current( rq_curr['rq'])
-    assert np.allclose( uv_out, rq_curr['uv'], atol, rtol)
-    
+    uv_out = r_theta_to_uv_current(rq_curr['rq'])
+    assert np.allclose(uv_out, rq_curr['uv'], atol, rtol)
+
+
 def test_uv_to_r_theta_current(rq_curr):
-    rq_out = transforms.uv_to_r_theta_current( rq_curr['uv'])
-    assert np.allclose( rq_out, rq_curr['rq'], atol, rtol)
-    
+    rq_out = uv_to_r_theta_current(rq_curr['uv'])
+    assert np.allclose(rq_out, rq_curr['rq'], atol, rtol)
+
+
 def test_current_inverse(rq_rand):
     """
-    randomly generates an (r,theta) and applies the transform to convert to (u,v), then back to (r,theta).
+    randomly generates an (r,theta) and applies the transform to
+    convert to (u,v), then back to (r,theta).
     It checks the result is accurate to within 10-10 tolerance
     """
-    rq_out = transforms.uv_to_r_theta_current( transforms.r_theta_to_uv_current(rq_rand['rq']))
+    rq_out = uv_to_r_theta_current(r_theta_to_uv_current(rq_rand['rq']))
     print "actual (r,theta): "
     print rq_rand['rq']
     print "computed (r,theta): "

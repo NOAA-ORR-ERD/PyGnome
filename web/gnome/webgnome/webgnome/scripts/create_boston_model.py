@@ -7,7 +7,7 @@ import numpy
 import sys
 
 from pyramid.paster import bootstrap
-from webgnome import WebSurfaceReleaseSpill, WebWindMover, util
+from webgnome import WebPointSourceRelease, WebWindMover, util
 from webgnome.model_manager import WebRandomMover, WebWind, WebCatsMover
 from webgnome.schema import ModelSchema
 
@@ -101,7 +101,7 @@ def main():
 
     # adding a spill
 
-    spill = WebSurfaceReleaseSpill(num_elements=1000,
+    spill = WebPointSourceRelease(num_elements=1000,
                                    start_position=(
                                        -70.911432, 42.369142, 0.0),
                                    release_time=start_time)

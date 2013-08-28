@@ -15,24 +15,25 @@ cimport numpy as cnp
 # declare the interface to the C code
 cdef extern char c_point_in_poly1(size_t nvert, double *vertices, double *point)
 
+
 @cython.boundscheck(False)
 @cython.wraparound(False)
-def point_in_poly( cnp.ndarray[double, ndim=2, mode="c" ] poly not None,
-                   in_point ):
+def point_in_poly(cnp.ndarray[double, ndim=2, mode="c"] poly not None,
+                   in_point):
     """
     point_in_poly( poly, in_point )
-    
+
     Determines if point is in the polygon -- 1 if it is, 0 if not
-    
+
     :param poly: A Nx2 numpy array of doubles.
-    :param point: A (x,y) sequence of floats (doubles, whatever)    
-    
-    NOTE: points on the boundary are arbitrarily (fp errors..), but consistently
-          considered either in or out, so that a given point should
-          be in only one of two polygons that share a boundary.
-    
+    :param point: A (x,y) sequence of floats (doubles, whatever)
+
+    NOTE: points on the boundary are arbitrarily (fp errors..),
+          but consistently considered either in or out, so that a given point
+          should be in only one of two polygons that share a boundary.
+
     This calls C code I adapted from here:
-    http://www.ecse.rpi.edu/Homepages/wrf/Research/Short_Notes/pnpoly.html    
+    http://www.ecse.rpi.edu/Homepages/wrf/Research/Short_Notes/pnpoly.html
     """
     cdef size_t nvert
     cdef char result
@@ -42,14 +43,15 @@ def point_in_poly( cnp.ndarray[double, ndim=2, mode="c" ] poly not None,
     point[1] = in_point[1]
 
     nvert = poly.shape[0]
-    
-    result = c_point_in_poly1(nvert, &poly[0,0], point)
-    
+
+    result = c_point_in_poly1(nvert, &poly[0, 0], point)
+
     return result
+
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
-def points_in_poly( cnp.ndarray[double, ndim=2, mode="c" ] pgon, points):
+def points_in_poly(cnp.ndarray[double, ndim=2, mode="c"] pgon, points):
     """
     compute whether the points given are in the polygon defined in pgon.
 
@@ -60,18 +62,19 @@ def points_in_poly( cnp.ndarray[double, ndim=2, mode="c" ] pgon, points):
     :type points: NX3 numpy array of (x, y, z) floats
 
     :returns: a boolean array the same length as points
-              if the input is a single point, the result is a scalr python boolean
+              if the input is a single point, the result is a
+              scalr python boolean
 
-    Note: this version takes a 3-d point, even though the third coord is ignored.
-
+    Note: this version takes a 3-d point, even though the third coord
+          is ignored.
     """
-    scalar = ( len(points) == 3 )
+    scalar = (len(points) == 3)
 
-    cdef cnp.ndarray[double, ndim=2, mode="c" ] a_points
+    cdef cnp.ndarray[double, ndim = 2, mode = "c"] a_points
     a_points = np.ascontiguousarray(points, dtype=np.float64).reshape(-1, 3)
 
     ## fixme -- proper way to get np.bool?
-    cdef cnp.ndarray[char, ndim=1, mode="c" ] result = np.zeros((a_points.shape[0],), dtype=np.uint8)
+    cdef cnp.ndarray[char, ndim = 1, mode = "c"] result = np.zeros((a_points.shape[0],), dtype=np.uint8)
 
     cdef unsigned int i, nvert, npoints
 
@@ -79,8 +82,8 @@ def points_in_poly( cnp.ndarray[double, ndim=2, mode="c" ] pgon, points):
     npoints = a_points.shape[0]
 
     for i in range(npoints):
-        result[i] = c_point_in_poly1(nvert, &pgon[0,0], &a_points[i,0])
+        result[i] = c_point_in_poly1(nvert, &pgon[0, 0], &a_points[i, 0])
     if scalar:
-        return bool(result[0]) # to make it a regular python bool
+        return bool(result[0])  # to make it a regular python bool
     else:
-        return result.view(dtype=np.bool) # make it a np.bool array
+        return result.view(dtype=np.bool)  # make it a np.bool array

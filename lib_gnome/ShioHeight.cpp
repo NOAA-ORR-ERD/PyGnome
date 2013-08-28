@@ -12,6 +12,7 @@
 #ifndef pyGNOME
 #include "CROSS.H"
 #else
+#include "CompFunctions.h"
 #include "Replacements.h"
 #endif
 
@@ -547,7 +548,7 @@ short DoOffSetCorrection (COMPHEIGHTS *answers,  // Hdl to reference station hei
 
 {
 	short		NoOfHighsLows,index,errorFlag,flag;
-	long		numOfPoints,i;
+	long		numOfPoints,i,j;
 	double		highOffset,lowOffset,t;
 	double		HighAdd,HighMult;
 	double		LowAdd,LowMult;
@@ -681,7 +682,8 @@ short DoOffSetCorrection (COMPHEIGHTS *answers,  // Hdl to reference station hei
 		LowAdd = htOffset->LowHeight_Add.val;
 	}
 	
-	for(i=0; i<NoOfHighsLows; i++){
+	for(i=0; i<NoOfHighsLows + 2; i++){
+	//for(i=0; i<NoOfHighsLows; i++){
 		
 		if( HLFlagHdl[i] == low){
 			HLTimeHdl[i].val = HLTimeHdl[i].val + lowOffset;
@@ -713,6 +715,14 @@ short DoOffSetCorrection (COMPHEIGHTS *answers,  // Hdl to reference station hei
 	// The points that are at the ends and don't fall
 	// between a high and low will have to be handled as special cases
 	
+
+	// 02/04/2013 - Modified to use hermite interpolation instead of
+    // linear one for multiple and add offest factors
+    // It fixed a "twin peaks bug", but problem peaks may look a little bit "fat" now.
+    // Also Bushy's concern was - hermite may show peaks coming up little early sometimes.
+    // Left hermite for awhile - it looks like it doesn't spoil good stations,
+    // but fixes most bad ones - will see and test more
+
 	numOfPoints = answers->nPts;
 		
 	for (i=0; i<numOfPoints; i++){
@@ -735,19 +745,101 @@ short DoOffSetCorrection (COMPHEIGHTS *answers,  // Hdl to reference station hei
 		if(errorFlag == 0){
 			if(flag==lowToHigh){
 				timeCorrection = lowOffset*w1 + highOffset*w2;
-				HeightCorrectionMult = LowMult*w1 + HighMult*w2;
-				HeightCorrectionAdd = LowAdd*w1 + HighAdd*w2;
+				//HeightCorrectionMult = LowMult*w1 + HighMult*w2;
+				//HeightCorrectionAdd = LowAdd*w1 + HighAdd*w2;
 			}
 			else {
 				timeCorrection = lowOffset*w2 + highOffset*w1;
-				HeightCorrectionMult = LowMult*w2 + HighMult*w1;
-				HeightCorrectionAdd = LowAdd*w2 + HighAdd*w1;
+				//HeightCorrectionMult = LowMult*w2 + HighMult*w1;
+				//HeightCorrectionAdd = LowAdd*w2 + HighAdd*w1;
 			}
 			TimeHdl[i].val = TimeHdl[i].val + timeCorrection;
-			ValHdl[i] = (ValHdl[i]) * HeightCorrectionMult + HeightCorrectionAdd;
+			//ValHdl[i] = (ValHdl[i]) * HeightCorrectionMult + HeightCorrectionAdd;
 		}
 		
 	}
+
+    double *pSlopesMult, *pSlopesAdd;
+
+	pSlopesMult = new double[NoOfHighsLows];    // allocate memeory for slope array
+	pSlopesAdd = new double[NoOfHighsLows];    // allocate memeory for slope array
+
+	pSlopesMult[0]               =0.;			// start point and end point - different case
+	pSlopesAdd[0]                =0.;			// start point and end point - different case
+	pSlopesMult[NoOfHighsLows-1] =0.;			// use slope = 0 for start end end points
+	pSlopesAdd[NoOfHighsLows-1]  =0.;			// use slope = 0 for start end end points
+
+	// calculate slopes
+    for(i=1; i<NoOfHighsLows-1; i++)	    
+    {
+        if(HLFlagHdl[i] == low)
+        {
+            pSlopesMult[i] = ((LowMult - HighMult) / (HLTimeHdl[i].val - HLTimeHdl[i-1].val) +
+                              (HighMult - LowMult) / (HLTimeHdl[i+1].val - HLTimeHdl[i].val)) * .5;
+            pSlopesAdd[i] = ((LowAdd - HighAdd) / (HLTimeHdl[i].val - HLTimeHdl[i-1].val) +
+                             (HighAdd - LowAdd) / (HLTimeHdl[i+1].val - HLTimeHdl[i].val)) * .5;
+        }
+        else
+        {
+            pSlopesMult[i] = ((HighMult - LowMult) / (HLTimeHdl[i].val - HLTimeHdl[i-1].val) +
+                              (LowMult - HighMult) / (HLTimeHdl[i+1].val - HLTimeHdl[i].val)) * .5;
+            pSlopesAdd[i] = ((HighAdd - LowAdd) / (HLTimeHdl[i].val - HLTimeHdl[i-1].val) +
+                             (LowAdd - HighAdd) / (HLTimeHdl[i+1].val - HLTimeHdl[i].val)) * .5;
+        }
+    }
+
+    // for height values do hermite interpolation
+    double dT0, dT1, dSMult0, dSMult1, dSAdd0, dSAdd1;
+
+    // interpolate by hermite
+	for(i=0, j=0; i<numOfPoints && j<NoOfHighsLows; i++)
+	{
+        t = TimeHdl[i].val;
+        
+        if(t > HLTimeHdl[j].val)
+            j++;
+
+        if(j == 0)
+        {
+            dT0 = HLTimeHdl[NoOfHighsLows].val;
+            dT1 = HLTimeHdl[0].val;
+            dSMult0 = 0.;
+            dSMult1 = pSlopesMult[0];
+            dSAdd0 = 0.;
+            dSAdd1 = pSlopesAdd[0];
+        }
+        else
+            if(j == NoOfHighsLows)
+            {
+                dT0 = HLTimeHdl[NoOfHighsLows-1].val;
+                dT1 = HLTimeHdl[NoOfHighsLows+1].val;
+                dSMult0 = pSlopesMult[NoOfHighsLows-1];
+                dSMult1 = 0.;
+                dSAdd0 = pSlopesAdd[NoOfHighsLows-1];
+                dSAdd1 = 0.;
+            }
+            else
+            {
+                dT0 = HLTimeHdl[j-1].val;
+                dT1 = HLTimeHdl[j].val;
+            }
+
+        if(HLFlagHdl[j] == low)
+        {
+            HeightCorrectionMult = Hermite(HighMult, dSMult0, dT0,
+                                           LowMult, dSMult1, dT1, t);
+            HeightCorrectionAdd = Hermite(HighAdd, dSAdd0, dT0,
+                                           LowAdd, dSAdd1, dT1, t);
+        }
+        else
+        {
+            HeightCorrectionMult = Hermite(LowMult, dSMult0, dT0,
+                                           HighMult, dSMult1, dT1, t);
+            HeightCorrectionAdd = Hermite(LowAdd, dSAdd0, dT0,
+                                           HighAdd, dSAdd1, dT1, t);
+        }
+		ValHdl[i] = ValHdl[i] * HeightCorrectionMult + HeightCorrectionAdd;
+    }
 	
 Error:
 	//if(HArrayPtr) DisposePtr((Ptr)HArrayPtr);

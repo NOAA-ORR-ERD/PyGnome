@@ -135,7 +135,7 @@ void SetSign(FLOATPTR n, short code)
 	if (*n == -0.0)
 		*n = 0.0;
 	else {
-		*n = abs(*n);
+		*n = fabs(*n);
 		if (code == 2) *n = -*n;
 	}
 }
@@ -588,13 +588,20 @@ OSErr ScanDepth (char *startChar, double *DepthPtr)
 	return err;
 	
 }
-/**************************************************************************************************/
+
+
+// - expects a number of the form
+//     <number><comma><number>
+// - parses the number values and scales them
+//   up six decimal places.
+// - Populates the LongPoint h and v values
+// example:
+//      Incoming string: "-120.2345,40.345"
+//      LongPoint out: (-120234500, 40345000)
+// JLM, 2/26/99 extended to handle
+// <number><whiteSpace><number>
 OSErr ScanMatrixPt (char *startChar, LongPoint *MatrixLPtPtr)
-{	// expects a number of the form 
-	// <number><comma><number>
-	//e.g.  "-120.2345,40.345"
-	// JLM, 2/26/99 extended to handle
-	// <number><whiteSpace><number>
+{
 	long	deciPlaces, j, k, pairIndex;
 	char	num [64];
 	OSErr	ErrCode = 0;
@@ -715,6 +722,8 @@ OSErr ScanMatrixPt (char *startChar, LongPoint *MatrixLPtPtr)
 	return (ErrCode);
 	
 }
+
+
 /**************************************************************************************************/
 OSErr ScanVelocity (char *startChar, VelocityRec *VelocityPtr, long *scanLength)
 {	// expects a number of the form 
@@ -815,13 +824,12 @@ OSErr ScanVelocity (char *startChar, VelocityRec *VelocityPtr, long *scanLength)
 }
 void CheckYear(short *year)
 {
-	if (*year < 1900)					// two digit date, so fix it
-	{
-		if (*year >= 40 && *year <= 99)	
+	if (*year < 1900) {
+		// two digit date, so fix it
+		if (*year >= 40 && *year <= 99)
 			*year += 1900;
 		else
-			*year += 2000;					// correct for year 2000 (00 to 40)
+			*year += 2000; // correct for year 2000 (00 to 40)
 	}
-	
 }
 

@@ -491,7 +491,9 @@ class Serializable(object):
             if hasattr(value, 'to_dict'):
                 value = value.to_dict(do)   # recursively call on contained objects
 
-            data[key] = value
+            if value is not None:   # no need to persist properties that are None!
+                data[key] = value
+                
         return data
     
         
@@ -570,6 +572,9 @@ class Serializable(object):
         
         self_dict = self.to_dict('create')
         other_dict= other.to_dict('create')
+        
+        if len(self_dict) != len(other_dict):
+            return False
         
         for val in self_dict:
             if not isinstance( self_dict[val], numpy.ndarray):

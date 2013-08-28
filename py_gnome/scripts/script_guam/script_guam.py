@@ -16,6 +16,7 @@ from gnome.environment import Wind, Tide
 
 from gnome.utilities import map_canvas
 from gnome.utilities.file_tools import haz_files
+from gnome.utilities.remote_data import get_datafile
 from gnome import scripting
 
 # define base directory
@@ -33,7 +34,7 @@ def make_model(images_dir=os.path.join(base_dir,"images")):
     
     print "adding the map"
     
-    mapfile = os.path.join( base_dir, './GuamMap.bna')
+    mapfile = get_datafile( os.path.join( base_dir, './GuamMap.bna'))
     model.map = gnome.map.MapFromBNA(mapfile,
                                      refloat_halflife=6, #hours
                                      )
@@ -52,7 +53,7 @@ def make_model(images_dir=os.path.join(base_dir,"images")):
     
     print "adding a spill"
     
-    spill = gnome.spill.SurfaceReleaseSpill(num_elements=1000,
+    spill = gnome.spill.PointSourceSurfaceRelease(num_elements=1000,
                                             start_position = (144.664166, 13.441944, 0.0),
                                             release_time = start_time,
                                             end_release_time = start_time + timedelta(hours=6)
@@ -81,7 +82,7 @@ def make_model(images_dir=os.path.join(base_dir,"images")):
     
     print "adding a cats mover:"
     
-    curr_file=os.path.join( base_dir, r"./OutsideWAC.cur")
+    curr_file = get_datafile( os.path.join( base_dir, r"./OutsideWAC.cur"))
     c_mover = gnome.movers.CatsMover(curr_file)
     c_mover.scale = True
     c_mover.scale_refpoint = (144.601, 13.42)
@@ -90,8 +91,9 @@ def make_model(images_dir=os.path.join(base_dir,"images")):
     
     print "adding a cats shio mover:"
      
-    curr_file=os.path.join( base_dir, r"./WACFloodTide.cur")
-    c_mover = gnome.movers.CatsMover(curr_file, tide=Tide(os.path.join( base_dir, r"./WACFTideShioHts.txt")))
+    curr_file = get_datafile( os.path.join( base_dir, r"./WACFloodTide.cur"))
+    tide_file = get_datafile( os.path.join( base_dir, r"./WACFTideShioHts.txt"))
+    c_mover = gnome.movers.CatsMover(curr_file, tide=Tide(tide_file))
     c_mover.scale_refpoint = (144.621667, 13.45) # this is different from the value in the file!
     c_mover.scale = True #default value
     c_mover.scale_value = 1 #default value

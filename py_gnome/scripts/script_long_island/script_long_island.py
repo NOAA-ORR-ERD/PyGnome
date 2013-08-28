@@ -16,6 +16,7 @@ from gnome.environment import Wind, Tide
 
 from gnome.utilities import map_canvas
 from gnome.utilities.file_tools import haz_files
+from gnome.utilities.remote_data import get_datafile
 from gnome import scripting
 
 # define base directory
@@ -28,7 +29,7 @@ def make_model(images_dir=os.path.join(base_dir,"images") ):
     
     start_time = datetime(2012, 9, 15, 12, 0)
 
-    mapfile = os.path.join( base_dir, './LongIslandSoundMap.BNA')
+    mapfile = get_datafile( os.path.join( base_dir, './LongIslandSoundMap.BNA'))
 
     gnome_map = gnome.map.MapFromBNA(mapfile,
                            refloat_halflife=6, #hours
@@ -59,7 +60,7 @@ def make_model(images_dir=os.path.join(base_dir,"images") ):
     
 
     print "adding a spill"    
-    spill = gnome.spill.SurfaceReleaseSpill(num_elements=1000,
+    spill = gnome.spill.PointSourceSurfaceRelease(num_elements=1000,
                                             start_position = (-72.419992, 41.202120, 0.0),
                                             release_time = start_time,
                                             )
@@ -84,8 +85,9 @@ def make_model(images_dir=os.path.join(base_dir,"images") ):
     model.movers += w_mover
     
     print "adding a cats mover:"
-    curr_file=os.path.join( base_dir, r"./LI_tidesWAC.CUR")
-    c_mover = gnome.movers.CatsMover(curr_file, tide=Tide(os.path.join( base_dir, r"./CLISShio.txt")))
+    curr_file = get_datafile( os.path.join( base_dir, r"./LI_tidesWAC.CUR"))
+    tide_file = get_datafile( os.path.join( base_dir, r"./CLISShio.txt"))
+    c_mover = gnome.movers.CatsMover(curr_file, tide=Tide(tide_file))
     model.movers += c_mover
     model.environment += c_mover.tide 
     

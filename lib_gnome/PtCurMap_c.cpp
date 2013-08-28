@@ -193,7 +193,7 @@ float DistFromWPointToSegment(long pLong, long pLat, long long1, long lat1,
 	h = sqrt(a * a + b * b);
 	
 	// distance from point to segment
-	numer = abs(a * y - b * x);
+	numer = myfabs(a * y - b * x);
 	dist = numer / h;
 	return dist;
 }

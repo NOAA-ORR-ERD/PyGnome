@@ -105,7 +105,7 @@ static Boolean TermsLessThanMax(float cosTerm,float sinTerm,
 	//	sqs = sqrt(speedMax*speedMax - sigma2);
 	//	x = (speedMax-sqs) * cosTerm + sqrt(sqs);	
 	// JLM 9/16/98  x and sqs were not being used
-	return abs(sigmaTheta * sinTerm) <= angleMax;// && (x <= sqrt(3*speedMax));
+	return fabs(sigmaTheta * sinTerm) <= angleMax;// && (x <= sqrt(3*speedMax));
 }
 
 
@@ -138,7 +138,7 @@ void WindMover_c::UpdateUncertaintyValues(Seconds elapsedTime)
 	
 	if(!fWindUncertaintyList) return;
 	
-	n= _GetHandleSize((Handle)fWindUncertaintyList)/sizeof(LEWindUncertainRec);
+	n = _GetHandleSize((Handle)fWindUncertaintyList)/sizeof(LEWindUncertainRec);
 	
 	for(i=0;i<n;i++)
 	{
@@ -171,17 +171,17 @@ OSErr WindMover_c::ReallocateUncertainty(int numLEs, short* statusCodes)	// remo
 	if (uncertListSize != numLEs) return -1;
 	if (numLESetsStored != 1) return -1;
 	
-	for (i = 0,numrec=0; i < numLEs ; i++) {
+	for (i = 0; i < numLEs ; i++) {
 		if( statusCodes[i] == OILSTAT_TO_BE_REMOVED)	// for OFF_MAPS, EVAPORATED, etc
 		{
 			//continue;
 		}
 		else {
-			fWindUncertaintyList[numrec] = fWindUncertaintyList[i];
+			(*fWindUncertaintyList)[numrec] = (*fWindUncertaintyList)[i];
 			numrec++;
 		}
 	}
-	
+
 	if (numrec == 0)
 	{	
 		this->DisposeUncertainty();
@@ -190,7 +190,8 @@ OSErr WindMover_c::ReallocateUncertainty(int numLEs, short* statusCodes)	// remo
 	
 	if (numrec < uncertListSize)
 	{
-		(*fLESetSizes)[0] = numrec;
+		//(*fLESetSizes)[0] = numrec;
+		//(*fLESetSizes)[0] = 0;	// index into array, should never change
 		_SetHandleSize((Handle)fWindUncertaintyList,numrec*sizeof(LEWindUncertainRec)); 
 	}
 	
@@ -421,6 +422,7 @@ OSErr WindMover_c::PrepareForModelRun()
 OSErr WindMover_c::PrepareForModelStep(const Seconds& model_time, const Seconds& time_step, bool uncertain, int numLESets, int* LESetsSizesList)
 {
 	OSErr err = 0;
+
 	if (bIsFirstStep)
 		fModelStartTime = model_time;
 	if (uncertain)
@@ -431,7 +433,7 @@ OSErr WindMover_c::PrepareForModelStep(const Seconds& model_time, const Seconds&
 		fUncertaintyDiffusion = sqrt(6*(eddyDiffusion/10000)/time_step); // in m/s, note: DIVIDED by timestep because this is later multiplied by the timestep
 
 	}
-	err = this -> GetTimeValue (model_time,&this->current_time_value);	// AH 07/16/2012
+	err = this -> GetTimeValue (model_time,&this->current_time_value);	
 	if (err) printError("An error occurred in TWindMover::PrepareForModelStep");
 	return err;
 }
@@ -477,7 +479,7 @@ OSErr WindMover_c::GetTimeValue(const Seconds& current_time, VelocityRec *value)
 // JS 10/8/12: Updated so the input arguments are not char * 
 // NOTE: Some of the input arrays (ref, windages) should be const since you don't want the method to change them;
 // however, haven't gotten const to work well with cython yet so just be careful when changing the input data
-OSErr WindMover_c::get_move(int n, unsigned long model_time, unsigned long step_len, WorldPoint3D* ref, WorldPoint3D* delta, double* windages, short* LE_status, LEType spillType, long spill_ID) {
+OSErr WindMover_c::get_move(int n, Seconds model_time, Seconds step_len, WorldPoint3D* ref, WorldPoint3D* delta, double* windages, short* LE_status, LEType spillType, long spill_ID) {
 		
 	// JS Ques: Is this required? Could cy/python invoke this method without well defined numpy arrays?
 	if(!delta || !ref || !windages) {

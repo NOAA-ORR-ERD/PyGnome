@@ -251,6 +251,9 @@ class NetCDFOutput(Outputter, serializable.Serializable):
         None for defaults because non-default argument cannot follow default argument. Since cache is already 2nd positional argument
         for Renderer object, the required non-default arguments must be defined following 'cache'.
         
+        If uncertainty is on, then UncertainSpillPair object contains identical _data_arrays in both certain and uncertain SpillContainer's,
+        the data itself is different, but they contain the same type of data arrays.
+        
         :param cache=None: Sets the cache object to be used for the data. If None, it will use the one already set up. 
         :type cache: As defined in cache module (gnome.utilities.cache). Currently only ElementCache is defined/used.
         :param model_start_time: (Required) start time of the model run. NetCDF time units calculated with respect to this time.
@@ -260,8 +263,9 @@ class NetCDFOutput(Outputter, serializable.Serializable):
         :param uncertain: Default is False. Model automatically sets this based on whether uncertainty is on or off. If this is
                           True then a uncertain data is written to netcdf_filename + '_uncertain.nc'
         :type uncertain: bool
-        :param spills: If 'all_data' flag is True, then model must provide the model.spills object so NetCDF variables can be
-                       defined for the remaining data arrays. If spills is None, but all_data flag is True, a ValueError will be raised.
+        :param spills: If 'all_data' flag is True, then model must provide the model.spills object (SpillContainerPair object) 
+                       so NetCDF variables can be defined for the remaining data arrays. If spills is None, but all_data flag 
+                       is True, a ValueError will be raised.
                        It does not make sense to write 'all_data' but not provide 'model.spills'. 
         :type spills: gnome.spill_container.SpillContainerPair object. 
         
@@ -325,9 +329,9 @@ class NetCDFOutput(Outputter, serializable.Serializable):
                 if self.all_data:
                     rootgrp.createDimension('world_point', 3)
                     self.arr_types = dict()
-                    for spill in spills:
-                        at = spill.array_types
-                        [self.arr_types.update({key:atype}) for key,atype in at.iteritems() if key not in self.arr_types and key not in self.standard_data]
+
+                    at = spills.items()[0].all_array_types
+                    [self.arr_types.update({key:atype}) for key,atype in at.iteritems() if key not in self.arr_types and key not in self.standard_data]
                     
                     # create variables
                     for key,val in self.arr_types.iteritems():
@@ -367,7 +371,10 @@ class NetCDFOutput(Outputter, serializable.Serializable):
                 pc = rootgrp.variables['particle_count']
                 pc[step_num] = len(sc['status_codes'])
                 
-                """ write keys that don't map directly to sc variable names """
+                """ 
+                write keys that don't map directly to sc variable names
+                ##fixme: this works but would be nice to use a for loop or make it cleaner somehow!?
+                """
                 #ixs = step_num * pc[step_num]   # starting index for writing data in this timestep
                 #ixe = ixs + pc[step_num]        # ending index for writing data in this timestep
                 _end_idx = self._start_idx + pc[step_num]
@@ -376,6 +383,7 @@ class NetCDFOutput(Outputter, serializable.Serializable):
                 rootgrp.variables['depth'][self._start_idx:_end_idx] = sc['positions'][:,2]
                 rootgrp.variables['status'][self._start_idx:_end_idx] = sc['status_codes'][:]
                 rootgrp.variables['id'][self._start_idx:_end_idx] = sc['spill_num'][:]
+                rootgrp.variables['mass'][self._start_idx:_end_idx] = sc['mass'][:]
                 
                 # write remaining data
                 if self.all_data:
@@ -411,12 +419,13 @@ class NetCDFOutput(Outputter, serializable.Serializable):
     def read_data(netcdf_file,index=0, all_data=False):
         """ 
         Read and create standard data arrays for a netcdf file that was created with NetCDFOutput class. Make it a static method
-        since it is indepenedent of an instance of the Outputter. The method is put with this class because the NetCDF
+        since it is independent of an instance of the Outputter. The method is put with this class because the NetCDF
         functionality for PyGnome data with CF standard is captured here.
         
         :param netcdf_file: Name of the NetCDF file from which to read the data
         :type netcdf_file: str
-        :param index: Index of the 'time' variable (or time_step) for which data is desired. Default is 0 so it returns data associated with first timestamp.
+        :param index: Index of the 'time' variable (or time_step) for which data is desired. 
+                      Default is 0 so it returns data associated with first timestamp.
         :type index: int
         :returns: a dict containing 'positions', 'status_codes', 'spill_num'. Currently, this is standard data.
         
@@ -445,18 +454,20 @@ class NetCDFOutput(Outputter, serializable.Serializable):
         arrays_dict['current_time_stamp'] = np.array(c_time)
         
         positions = np.zeros((elem, 3), dtype=gnome.basic_types.world_point_type)
-        status_codes = np.zeros((elem,), dtype=gnome.basic_types.status_code_type)
-        spill_num = np.zeros((elem,), dtype=gnome.basic_types.id_type) 
+        #status_codes = np.zeros((elem,), dtype=gnome.basic_types.status_code_type)
+        #spill_num = np.zeros((elem,), dtype=gnome.basic_types.id_type)
+        #mass = np.zeros((elem,), dtype=gnome.basic_types.id_type)
         
         positions[:,0] = data.variables['longitude'][_start_ix:_stop_ix]
         positions[:,1] = data.variables['latitude'][_start_ix:_stop_ix]
         positions[:,2] = data.variables['depth'][_start_ix:_stop_ix]
-        status_codes[:] = data.variables['status'][_start_ix:_stop_ix]
-        spill_num[:] = data.variables['id'][_start_ix:_stop_ix]
+        #status_codes[:] = data.variables['status'][_start_ix:_stop_ix]
+        #spill_num[:] = data.variables['id'][_start_ix:_stop_ix]
                 
         arrays_dict['positions'] = positions
-        arrays_dict['status_codes'] = status_codes
-        arrays_dict['spill_num'] = spill_num
+        arrays_dict['status_codes'] = data.variables['status'][_start_ix:_stop_ix]
+        arrays_dict['spill_num'] = data.variables['id'][_start_ix:_stop_ix]
+        arrays_dict['mass'] = data.variables['mass'][_start_ix:_stop_ix]
         
         if all_data:    # append remaining data arrays
             excludes = NetCDFOutput.data_vars.keys()

@@ -553,8 +553,8 @@ scale:
 		if(err) timeValue = errVelocity;
 	}
 	
-	scaledPatVelocity.u *= abs(timeValue.u); // magnitude contained in u field only
-	scaledPatVelocity.v *= abs(timeValue.u); 	// multiplying tide by tide, don't want to change phase
+	scaledPatVelocity.u *= myfabs(timeValue.u); // magnitude contained in u field only
+	scaledPatVelocity.v *= myfabs(timeValue.u); 	// multiplying tide by tide, don't want to change phase
 	//scaledPatVelocity.u = timeValue.u; // magnitude contained in u field only
 	//scaledPatVelocity.v = timeValue.v; 	// multiplying tide by tide, don't want to change phase
 	

@@ -37,5 +37,6 @@ def pytest_runtest_setup(item):
         pytest.skip("need --runslow option to run")
         
     # set random seed:
-    print "Seed C++, python, numpy random number generator to 1"
+    # Let's not print anything - it clearly works, its just extra output
+    #print "Seed C++, python, numpy random number generator to 1"
     rand.seed(1)

@@ -438,9 +438,9 @@ class WindMoverServiceTests(FunctionalTestBase, ModelHelperMixin,
         self.testapp.get(mover_url, status=404)
 
 
-class SurfaceReleaseSpillServiceTests(FunctionalTestBase, ModelHelperMixin):
+class PointSourceReleaseServiceTests(FunctionalTestBase, ModelHelperMixin):
     def setUp(self):
-        super(SurfaceReleaseSpillServiceTests, self).setUp()
+        super(PointSourceReleaseServiceTests, self).setUp()
         self.create_model()
         self.collection_url = self.model_url('/spill/surface_release')
 

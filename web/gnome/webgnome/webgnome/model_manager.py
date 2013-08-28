@@ -29,7 +29,7 @@ except ImportError:
 from gnome import basic_types
 from gnome.model import Model
 from gnome.movers import WindMover, RandomMover, CatsMover, GridCurrentMover
-from gnome.spill import SurfaceReleaseSpill
+from gnome.spill import PointSourceRelease
 from gnome.environment import Wind
 from gnome.map import MapFromBNA, GnomeMap
 from gnome.utilities import projections
@@ -136,18 +136,18 @@ class WebGridCurrentMover(BaseWebObject, GridCurrentMover):
         topology_file = os.path.join(base_dir, topology_file)
         super(WebGridCurrentMover, self).__init__(filename, topology_file, *args, **kwargs)
 
-class WebSurfaceReleaseSpill(BaseWebObject, SurfaceReleaseSpill):
+class WebPointSourceRelease(BaseWebObject, PointSourceRelease):
     """
     A subclass of :class:`gnome.movers.WindMover` that provides
     webgnome-specific functionality.
     """
     default_name = 'Spill'
-    state = copy.deepcopy(SurfaceReleaseSpill.state)
+    state = copy.deepcopy(PointSourceRelease.state)
     state.add(create=['name'], update=['name'])
 
     def __init__(self, *args, **kwargs):
         self.is_active = kwargs.pop('is_active', True)
-        super(WebSurfaceReleaseSpill, self).__init__(*args, **kwargs)
+        super(WebPointSourceRelease, self).__init__(*args, **kwargs)
 
     def _reshape(self, lst):
         if lst is None:
@@ -244,7 +244,7 @@ class WebModel(BaseWebObject, Model):
     }
 
     spill_keys = {
-        WebSurfaceReleaseSpill: 'surface_release_spills'
+        WebPointSourceRelease: 'surface_release_spills'
     }
 
     environment_keys = {
@@ -565,7 +565,7 @@ class WebModel(BaseWebObject, Model):
         if surface_spills:
             for spill_data in surface_spills:
                 add_to_collection(self.spills, spill_data,
-                                  WebSurfaceReleaseSpill)
+                                  WebPointSourceRelease)
 
         return self
 

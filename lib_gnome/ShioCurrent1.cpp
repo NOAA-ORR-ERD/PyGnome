@@ -12,6 +12,7 @@
 #ifndef pyGNOME
 #include "CROSS.H"
 #else
+#include "CompFunctions.h"
 #include "Replacements.h"
 #endif
 
@@ -588,7 +589,7 @@ short CurveFitOffsetCurve(COMPCURRENTS *answers,
 // stuff ...
 
 	short errorFlag,flag;
-	long NoOfMaxMins,numOfPoints,i;
+	long NoOfMaxMins,numOfPoints,i,j;
 	double t;
 	short EbbToMinBFlood = 0, MinBFloodToFlood = 1;
 	short FloodToMinBEbb=2, MinBEbbToEbb=3;
@@ -659,12 +660,24 @@ short CurveFitOffsetCurve(COMPCURRENTS *answers,
 	
 	//OK now make copy of reference station data 
 	// use copy instead of original data
+    // 04/16/2013 - G.K. - but do not copy out of sequence points
+	for(i=0, j=0; i<(NoOfMaxMins+2); i++)
+        if(MaxMinTimeHdl[i].flag == 0)
+        {
+		    CArrayPtr[j] = MaxMinHdl[i];
+		    TArrayPtr[j].val = MaxMinTimeHdl[i].val;
+            TArrayPtr[j].flag = MaxMinTimeHdl[i].flag;
+		    OldMaxMinFlagPtr[j] = MaxMinFlagHdl[i];
+            j++;
+	    }	
+    // 04/16/2013 - G.K.:
+   /* NoOfMaxMins = j-2;
 	
 	for (i=0; i< (NoOfMaxMins+2); i++){
 		CArrayPtr[i] = MaxMinHdl[i];
 		TArrayPtr[i].val = MaxMinTimeHdl[i].val;
 		OldMaxMinFlagPtr[i] = MaxMinFlagHdl[i];
-	}	
+	}*/	
 
 
 // ********	
@@ -1000,6 +1013,13 @@ short DoOffSetCurrents (COMPCURRENTS *answers,  // Hdl to reference station heig
 	// Then when we interpolate over the out of sequence
 	// points, we will flag those points so Andy can
 	// use a different line weight to plot with
+
+    // 04/12/2013 - G.K. - actually old code marks out of sequence 
+    // peak points but does nothing with them later - just sets a 
+    // correspondent error flag. Now we will try to interpolate
+    // ones later in CurveFitOffsetCurve(...) function (since curveFitKey 
+    // branch is active here). So commented out setting the error flag.
+
 	#define MAXNUMTRIES 5
 	for(tryFixNum = 0;tryFixNum< MAXNUMTRIES;tryFixNum++)
 	{
@@ -1031,8 +1051,8 @@ short DoOffSetCurrents (COMPCURRENTS *answers,  // Hdl to reference station heig
 				}
 				MaxMinTimeHdl[i].flag = outOfSequenceFlag;
 				MaxMinTimeHdl[i-1].flag = outOfSequenceFlag;
-				errorFlag=29;
-				goto Error;
+				//errorFlag=29;
+				//goto Error;
 			}
 		}
 		if(!changedValue) break; // all values are OK

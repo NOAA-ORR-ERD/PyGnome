@@ -50,6 +50,7 @@ for script in scripts:
     
     # save model state
     saveloc = os.path.join( os.path.dirname(script),'save_model')
+    model.rewind()  # make sure it is rewound so we're not doing a MIDRUN save which does not currently work
     script_runner.save(model, saveloc)
     print "\n completed saving model state for: {0}\n".format(script) 
     

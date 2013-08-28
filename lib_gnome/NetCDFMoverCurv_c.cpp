@@ -760,8 +760,8 @@ void NetCDFMoverCurv_c::GetDepthIndices(long ptIndex, float depthAtPoint, float 
 					Cs_r2 = INDEXH(fDepthLevelsHdl2,indexToDepthData+j-1);
 					//depthAtLevel = abs(hc * (sc_r-Cs_r) + Cs_r * totalDepth);
 					//depthAtNextLevel = abs(hc * (sc_r2-Cs_r2) + Cs_r2 * totalDepth);
-					depthAtLevel = abs(totalDepth*(hc*sc_r+totalDepth*Cs_r))/(totalDepth+hc);
-					depthAtNextLevel = abs(totalDepth*(hc*sc_r2+totalDepth*Cs_r2))/(totalDepth+hc);
+					depthAtLevel = myfabs(totalDepth*(hc*sc_r+totalDepth*Cs_r))/(totalDepth+hc);
+					depthAtNextLevel = myfabs(totalDepth*(hc*sc_r2+totalDepth*Cs_r2))/(totalDepth+hc);
 					if(depthAtLevel<depthAtPoint &&
 					   depthAtPoint<=depthAtNextLevel)
 					{

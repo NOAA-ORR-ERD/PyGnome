@@ -132,7 +132,7 @@ scale:
 	return windVelocity;
 }
 
-OSErr TimeGridWindRect_c::TextRead(char *path,char *topFilePath) 
+OSErr TimeGridWindRect_c::TextRead(const char *path, const char *topFilePath)
 {
 	// this code is for regular grids
 	OSErr err = 0;
@@ -149,12 +149,15 @@ OSErr TimeGridWindRect_c::TextRead(char *path,char *topFilePath)
 	static size_t pt_count[2];
 	Seconds startTime, startTime2;
 	double timeConversion = 1.;
-	char errmsg[256] = "",className[256] = "";
+	char errmsg[256] = "";
 	char fileName[256],s[256],*modelTypeStr=0;
 	char  outPath[256];
 	
-	if (!path || !path[0]) return 0;
-	//strcpy(fPathName,path);
+	if (!path || !path[0])
+		return 0;
+	cerr << "TimeGridWindRect_c::TextRead(): path = " << path << endl;
+
+
 	strcpy(fVar.pathName,path);
 	
 	strcpy(s,path);
@@ -241,7 +244,6 @@ OSErr TimeGridWindRect_c::TextRead(char *path,char *topFilePath)
 			//strcpy(fFileName, modelTypeStr); // maybe use a name from the file
 		}
 	}
-
 	status = nc_inq_dimid(ncid, "lat", &latid); 
 	if (status != NC_NOERR) 
 	{
@@ -651,47 +653,65 @@ scale:
 	return windVelocity;
 	
 }
-OSErr TimeGridWindCurv_c::TextRead(char *path, char *topFilePath) // don't want a map  
+
+
+
+// this code is for curvilinear grids
+OSErr TimeGridWindCurv_c::TextRead(const char *path, const char *topFilePath) // don't want a map
 {
-	// this code is for curvilinear grids
 	OSErr err = 0;
-	long i,j, numScanned, indexOfStart = 0;
+	char errmsg[256] = "";
+	char s[256], topPath[256];
+	char recname[NC_MAX_NAME];
+	char dimname[NC_MAX_NAME];
+	char fileName[256];
+	char outPath[256];
+
+	long i, j, numScanned, indexOfStart = 0;
 	int status, ncid, latIndexid, lonIndexid, latid, lonid, recid, timeid, numdims;
 	size_t latLength, lonLength, recs, t_len, t_len2;
-	float timeVal;
-	char recname[NC_MAX_NAME], *timeUnits=0, month[10];	
-	char dimname[NC_MAX_NAME], s[256], topPath[256];
-	WORLDPOINTFH vertexPtsH=0;
-	float *lat_vals=0,*lon_vals=0,yearShift=0.;
-	static size_t timeIndex,ptIndex[2]={0,0};
+	static size_t timeIndex, ptIndex[2] = {0, 0};
 	static size_t pt_count[2];
-	Seconds startTime, startTime2;
+
+	float timeVal;
 	double timeConversion = 1.;
-	char errmsg[256] = "";
-	char fileName[256],*modelTypeStr=0;
+	Seconds startTime, startTime2;
+
+	char *timeUnits = 0, month[10];
+	float *lat_vals = 0, *lon_vals = 0, yearShift = 0.;
+	char *modelTypeStr = 0;
+	WORLDPOINTFH vertexPtsH = 0;
+
 //#ifndef pyGNOME
 	//Point where;
 	//OSType typeList[] = { 'NULL', 'NULL', 'NULL', 'NULL' };
 	//MySFReply reply;
 //#endif
-	Boolean bTopFile = false, fIsNavy = false;	// for now keep code around but probably don't need Navy curvilinear wind
-	//VelocityFH velocityH = 0;
-	char outPath[256];
-	
-	if (!path || !path[0]) return 0;
-	//strcpy(fPathName,path);
-	strcpy(fVar.pathName,path);
-	
-	strcpy(s,path);
+
+	// for now keep code around but probably don't need Navy curvilinear wind
+	Boolean bTopFile = false, fIsNavy = false;
+
+	if (!path || !path[0])
+		return 0;
+	cerr << "TimeGridWindCurv_c::TextRead(): path = " << path << endl;
+
+	strcpy(fVar.pathName, path);
+	strcpy(s, path);
+
 #ifndef pyGNOME
 	SplitPathFile (s, fileName);
 #else
 	SplitPathFileName (s, fileName);
 #endif
+
 	//strcpy(fFileName, fileName); // maybe use a name from the file
 	strcpy(fVar.userName, fileName); // maybe use a name from the file
 	status = nc_open(path, NC_NOWRITE, &ncid);
-	if (status != NC_NOERR) {err = -1; goto done;}
+	if (status != NC_NOERR) {
+		err = -1;
+		goto done;
+	}
+
 	/*if (status != NC_NOERR) 
 	{
 #if TARGET_API_MAC_CARBON
@@ -700,6 +720,7 @@ OSErr TimeGridWindCurv_c::TextRead(char *path, char *topFilePath) // don't want 
 #endif
 		if (status != NC_NOERR) {err = -1; goto done;}
 	}*/
+
 	// check number of dimensions - 2D or 3D
 	status = nc_inq_ndims(ncid, &numdims);
 	if (status != NC_NOERR) {err = -1; goto done;}
@@ -722,10 +743,12 @@ OSErr TimeGridWindCurv_c::TextRead(char *path, char *topFilePath) // don't want 
 	//if (fIsNavy)
 	{
 		status = nc_inq_dimid(ncid, "time", &recid); //Navy
-		//if (status != NC_NOERR) {err = -1; goto done;}
-		if (status != NC_NOERR) 
-		{	status = nc_inq_unlimdim(ncid, &recid);	// issue of time not being unlimited dimension
-			if (status != NC_NOERR) {err = -1; goto done;}
+		if (status != NC_NOERR) {
+			status = nc_inq_unlimdim(ncid, &recid);	// issue of time not being unlimited dimension
+			if (status != NC_NOERR) {
+				err = -1;
+				goto done;
+			}
 		}			
 	}
 	/*else
@@ -733,7 +756,7 @@ OSErr TimeGridWindCurv_c::TextRead(char *path, char *topFilePath) // don't want 
 	 status = nc_inq_unlimdim(ncid, &recid);	// issue of time not being unlimited dimension
 	 if (status != NC_NOERR) {err = -1; goto done;}
 	 }*/
-	
+
 	//if (fIsNavy)
 	status = nc_inq_varid(ncid, "time", &timeid); 
 	if (status != NC_NOERR) 
@@ -741,258 +764,294 @@ OSErr TimeGridWindCurv_c::TextRead(char *path, char *topFilePath) // don't want 
 		status = nc_inq_varid(ncid, "ProjectionHr", &timeid); 
 		if (status != NC_NOERR) {err = -1; goto done;}
 	}			
-	//	if (status != NC_NOERR) {/*err = -1; goto done;*/timeid=recid;} 
 	
 	//if (!fIsNavy)
 	//status = nc_inq_attlen(ncid, recid, "units", &t_len);	// recid is the dimension id not the variable id
 	//else	// LAS has them in order, and time is unlimited, but variable/dimension names keep changing so leave this way for now
 	status = nc_inq_attlen(ncid, timeid, "units", &t_len);
-	if (status != NC_NOERR) 
-	{
+	if (status != NC_NOERR) {
 		//timeUnits = 0;	// files should always have this info
 		//timeConversion = 3600.;		// default is hours
 		//startTime2 = model->GetStartTime();	// default to model start time
-		err = -1; goto done;
+		err = -1;
+		goto done;
 	}
 	else
 	{
 		DateTimeRec time;
 		char unitStr[24], junk[10];
-		
+
 		timeUnits = new char[t_len+1];
 		//if (!fIsNavy)
 		//status = nc_get_att_text(ncid, recid, "units", timeUnits);	// recid is the dimension id not the variable id
 		//else
+
 		status = nc_get_att_text(ncid, timeid, "units", timeUnits);
-		if (status != NC_NOERR) {err = -1; goto done;} 
+		if (status != NC_NOERR) {
+			err = -1;
+			goto done;
+		}
+
 		timeUnits[t_len] = '\0'; // moved this statement before StringSubstitute, JLM 5/2/10
 		StringSubstitute(timeUnits, ':', ' ');
 		StringSubstitute(timeUnits, '-', ' ');
 		
-		numScanned=sscanf(timeUnits, "%s %s %hd %hd %hd %hd %hd %hd",
-						  unitStr, junk, &time.year, &time.month, &time.day,
-						  &time.hour, &time.minute, &time.second) ;
-		if (numScanned==5)	
-		{time.hour = 0; time.minute = 0; time.second = 0; }
-		else if (numScanned==7) // has two extra time entries ??	
+		numScanned = sscanf(timeUnits, "%s %s %hd %hd %hd %hd %hd %hd",
+							unitStr, junk, &time.year, &time.month, &time.day,
+							&time.hour, &time.minute, &time.second);
+		if (numScanned == 5) {
+			time.hour = 0;
+			time.minute = 0;
 			time.second = 0;
-		else if (numScanned<8)	
-			//else if (numScanned!=8)	
-		{ 
+		}
+		else if (numScanned == 7) {
+			// has two extra time entries ??
+			time.second = 0;
+		}
+		else if (numScanned < 8) {
 			//timeUnits = 0;	// files should always have this info
 			//timeConversion = 3600.;		// default is hours
 			//startTime2 = model->GetStartTime();	// default to model start time
-			err = -1; TechError("TimeGridWindCurv_c::TextRead()", "sscanf() == 8", 0); goto done;
+			err = -1;
+			TechError("TimeGridWindCurv_c::TextRead()", "sscanf() == 8", 0);
+			goto done;
 		}
-		else
-		{
+		else {
 			// code goes here, trouble with the DAYS since 1900 format, since converts to seconds since 1904
-			if (time.year ==1900) {time.year += 40; time.day += 1; /*for the 1900 non-leap yr issue*/ yearShift = 40.;}
+			if (time.year == 1900) {
+				time.year += 40;
+				time.day += 1; /*for the 1900 non-leap yr issue*/
+				yearShift = 40.;
+			}
 			DateToSeconds (&time, &startTime2);	// code goes here, which start Time to use ??
-			if (!strcmpnocase(unitStr,"HOURS") || !strcmpnocase(unitStr,"HOUR"))
+			if (!strcmpnocase(unitStr, "HOURS") || !strcmpnocase(unitStr, "HOUR"))
 				timeConversion = 3600.;
-			else if (!strcmpnocase(unitStr,"MINUTES") || !strcmpnocase(unitStr,"MINUTE"))
+			else if (!strcmpnocase(unitStr, "MINUTES") || !strcmpnocase(unitStr, "MINUTE"))
 				timeConversion = 60.;
-			else if (!strcmpnocase(unitStr,"SECONDS") || !strcmpnocase(unitStr,"SECOND"))
+			else if (!strcmpnocase(unitStr, "SECONDS") || !strcmpnocase(unitStr, "SECOND"))
 				timeConversion = 1.;
-			else if (!strcmpnocase(unitStr,"DAYS") || !strcmpnocase(unitStr,"DAY"))
-				timeConversion = 24.*3600.;
+			else if (!strcmpnocase(unitStr, "DAYS") || !strcmpnocase(unitStr, "DAY"))
+				timeConversion = 24. * 3600.;
 		}
 	} 
 	
-	if (fIsNavy)
-	{
+	if (fIsNavy) {
 		status = nc_inq_dimid(ncid, "gridy", &latIndexid); //Navy
-		if (status != NC_NOERR) {err = -1; goto done;}
+		if (status != NC_NOERR) {
+			err = -1;
+			goto done;
+		}
 		status = nc_inq_dimlen(ncid, latIndexid, &latLength);
-		if (status != NC_NOERR) {err = -1; goto done;}
+		if (status != NC_NOERR) {
+			err = -1;
+			goto done;
+		}
 		status = nc_inq_dimid(ncid, "gridx", &lonIndexid);	//Navy
-		if (status != NC_NOERR) {err = -1; goto done;}
+		if (status != NC_NOERR) {
+			err = -1;
+			goto done;
+		}
 		status = nc_inq_dimlen(ncid, lonIndexid, &lonLength);
-		if (status != NC_NOERR) {err = -1; goto done;}
+		if (status != NC_NOERR) {
+			err = -1;
+			goto done;
+		}
 		// option to use index values?
 		status = nc_inq_varid(ncid, "grid_lat", &latid);
-		if (status != NC_NOERR) {err = -1; goto done;}
+		if (status != NC_NOERR) {
+			err = -1;
+			goto done;
+		}
 		status = nc_inq_varid(ncid, "grid_lon", &lonid);
-		if (status != NC_NOERR) {err = -1; goto done;}
+		if (status != NC_NOERR) {
+			err = -1;
+			goto done;
+		}
 	}
 	else
 	{
-		for (i=0;i<numdims;i++)
-		{
-			if (i == recid) continue;
-			status = nc_inq_dimname(ncid,i,dimname);
-			if (status != NC_NOERR) {err = -1; goto done;}
-			if (!strncmpnocase(dimname,"X",1) || !strncmpnocase(dimname,"LON",3) || !strncmpnocase(dimname,"nx",2))
+		for (i = 0; i < numdims; i++) {
+			if (i == recid)
+				continue;
+
+			status = nc_inq_dimname(ncid, i, dimname);
+			if (status != NC_NOERR) {
+				err = -1;
+				goto done;
+			}
+
+			if (!strncmpnocase(dimname, "X", 1) ||
+				!strncmpnocase(dimname, "LON", 3) ||
+				!strncmpnocase(dimname, "nx", 2))
 			{
 				lonIndexid = i;
 			}
-			if (!strncmpnocase(dimname,"Y",1) || !strncmpnocase(dimname,"LAT",3) || !strncmpnocase(dimname,"ny",2))
+			if (!strncmpnocase(dimname, "Y", 1) ||
+				!strncmpnocase(dimname, "LAT", 3) ||
+				!strncmpnocase(dimname, "ny", 2))
 			{
 				latIndexid = i;
 			}
 		}
 		
 		status = nc_inq_dimlen(ncid, latIndexid, &latLength);
-		if (status != NC_NOERR) {err = -1; goto done;}
+		if (status != NC_NOERR) {
+			err = -1;
+			goto done;
+		}
 		status = nc_inq_dimlen(ncid, lonIndexid, &lonLength);
-		if (status != NC_NOERR) {err = -1; goto done;}
+		if (status != NC_NOERR) {
+			err = -1;
+			goto done;
+		}
 		
 		status = nc_inq_varid(ncid, "LATITUDE", &latid);
-		if (status != NC_NOERR) 
-		{
+		if (status != NC_NOERR) {
 			status = nc_inq_varid(ncid, "lat", &latid);
-			if (status != NC_NOERR) 
-			{
+			if (status != NC_NOERR) {
 				status = nc_inq_varid(ncid, "latitude", &latid);
-				if (status != NC_NOERR) {err = -1; goto done;}
+				if (status != NC_NOERR) {
+					err = -1;
+					goto done;
+				}
 			}
 		}
 		status = nc_inq_varid(ncid, "LONGITUDE", &lonid);
-		if (status != NC_NOERR) 
-		{
+		if (status != NC_NOERR) {
 			status = nc_inq_varid(ncid, "lon", &lonid);
-			if (status != NC_NOERR) 
-			{
+			if (status != NC_NOERR) {
 				status = nc_inq_varid(ncid, "longitude", &lonid);
-				if (status != NC_NOERR) {err = -1; goto done;}
+				if (status != NC_NOERR) {
+					err = -1;
+					goto done;
+				}
 			}
 		}
 	}
 	
 	pt_count[0] = latLength;
 	pt_count[1] = lonLength;
-	vertexPtsH = (WorldPointF**)_NewHandleClear(latLength*lonLength*sizeof(WorldPointF));
-	if (!vertexPtsH) {err = memFullErr; goto done;}
-	lat_vals = new float[latLength*lonLength]; 
-	lon_vals = new float[latLength*lonLength]; 
-	if (!lat_vals || !lon_vals) {err = memFullErr; goto done;}
+	vertexPtsH = (WorldPointF**)_NewHandleClear(latLength * lonLength * sizeof(WorldPointF));
+	if (!vertexPtsH) {
+		err = memFullErr;
+		goto done;
+	}
+
+	lat_vals = new float[latLength * lonLength];
+	lon_vals = new float[latLength * lonLength];
+	if (!lat_vals || !lon_vals) {
+		err = memFullErr;
+		goto done;
+	}
+
 	status = nc_get_vara_float(ncid, latid, ptIndex, pt_count, lat_vals);
-	if (status != NC_NOERR) {err = -1; goto done;}
+	if (status != NC_NOERR) {
+		err = -1;
+		goto done;
+	}
+
 	status = nc_get_vara_float(ncid, lonid, ptIndex, pt_count, lon_vals);
-	if (status != NC_NOERR) {err = -1; goto done;}
-	for (i=0;i<latLength;i++)
-	{
-		for (j=0;j<lonLength;j++)
-		{
+	if (status != NC_NOERR) {
+		err = -1;
+		goto done;
+	}
+
+	for (i = 0; i < latLength; i++) {
+		for (j = 0; j < lonLength; j++) {
 			//if (lat_vals[(latLength-i-1)*lonLength+j]==fill_value)	// this would be an error
 			//lat_vals[(latLength-i-1)*lonLength+j]=0.;
 			//if (lon_vals[(latLength-i-1)*lonLength+j]==fill_value)
 			//lon_vals[(latLength-i-1)*lonLength+j]=0.;
-			INDEXH(vertexPtsH,i*lonLength+j).pLat = lat_vals[(latLength-i-1)*lonLength+j];	
-			INDEXH(vertexPtsH,i*lonLength+j).pLong = lon_vals[(latLength-i-1)*lonLength+j];
+			INDEXH(vertexPtsH,i * lonLength + j).pLat = lat_vals[(latLength - i - 1) * lonLength + j];
+			INDEXH(vertexPtsH,i * lonLength + j).pLong = lon_vals[(latLength - i - 1) * lonLength + j];
 		}
 	}
 	fVertexPtsH	 = vertexPtsH;
 	
 	status = nc_inq_dim(ncid, recid, recname, &recs);
-	if (status != NC_NOERR) {err = -1; goto done;}
-	if (recs<=0) {strcpy(errmsg,"No times in file. Error opening NetCDF wind file"); err =  -1; goto done;}
+	if (status != NC_NOERR) {
+		err = -1;
+		goto done;
+	}
+
+	if (recs <= 0) {
+		strcpy(errmsg, "No times in file. Error opening NetCDF wind file");
+		err = -1;
+		goto done;
+	}
 	
-	fTimeHdl = (Seconds**)_NewHandleClear(recs*sizeof(Seconds));
-	if (!fTimeHdl) {err = memFullErr; goto done;}
-	for (i=0;i<recs;i++)
-	{
+	fTimeHdl = (Seconds**)_NewHandleClear(recs * sizeof(Seconds));
+	if (!fTimeHdl) {
+		err = memFullErr;
+		goto done;
+	}
+
+	for (i = 0; i < recs; i++) {
 		Seconds newTime;
+
 		// possible units are, HOURS, MINUTES, SECONDS,...
 		timeIndex = i;
+
 		//if (!fIsNavy)
 		//status = nc_get_var1_float(ncid, recid, &timeIndex, &timeVal);	// recid is the dimension id not the variable id
 		//else
+
 		status = nc_get_var1_float(ncid, timeid, &timeIndex, &timeVal);
-		if (status != NC_NOERR) {err = -1; goto done;}
-		newTime = RoundDateSeconds(round(startTime2+timeVal*timeConversion));
+		if (status != NC_NOERR) {
+			err = -1;
+			goto done;
+		}
+
+		newTime = RoundDateSeconds(round(startTime2 + timeVal * timeConversion));
 		//INDEXH(fTimeHdl,i) = startTime2+(long)(timeVal*timeConversion -yearShift*3600.*24.*365.25);	// which start time where?
 		//if (i==0) startTime = startTime2+(long)(timeVal*timeConversion -yearShift*3600.*24.*365.25);
-		INDEXH(fTimeHdl,i) = newTime-yearShift*3600.*24.*365.25;	// which start time where?
-		if (i==0) startTime = newTime-yearShift*3600.*24.*365.25;
+		INDEXH(fTimeHdl, i) = newTime - yearShift * 3600. * 24. * 365.25;	// which start time where?
+		if (i == 0)
+			startTime = newTime - yearShift * 3600. * 24. * 365.25;
 	}
 	
 	fNumRows = latLength;
 	fNumCols = lonLength;
 	
 	status = nc_close(ncid);
-	if (status != NC_NOERR) {err = -1; goto done;}
-	
-	// for now ask for an ascii file, output from Topology save option
-	//{if (topFilePath[0]) {err = (dynamic_cast<TimeGridWindCurv*>(this))->ReadTopology(topFilePath); goto done;}}
-	{if (topFilePath[0]) {err = ReadTopology(topFilePath); goto done;}}
-/*#ifndef pyGNOME
-	{
-		short buttonSelected;
-		buttonSelected  = MULTICHOICEALERT(1688,"Do you have an extended topology file to load?",FALSE);
-		switch(buttonSelected){
-			case 1: // there is an extended top file
-				bTopFile = true;
-				break;  
-			case 3: // no extended top file
-				bTopFile = false;
-				break;
-			case 4: // cancel
-				err=-1;// stay at this dialog
-				goto done;
-		}
-	}
-	if(bTopFile)
-	{
-#if TARGET_API_MAC_CARBON
-		mysfpgetfile(&where, "", -1, typeList,
-					 (MyDlgHookUPP)0, &reply, M38c, MakeModalFilterUPP(STDFilter));
-		if (!reply.good)
-		{
-			err = ReorderPoints(errmsg);	
-	 		goto done;
-		}
-		else
-			strcpy(topPath, reply.fullPath);
-		
-#else
-		where = CenteredDialogUpLeft(M38c);
-		sfpgetfile(&where, "",
-				   (FileFilterUPP)0,
-				   -1, typeList,
-				   (DlgHookUPP)0,
-				   &reply, M38c,
-				   (ModalFilterUPP)MakeUPP((ProcPtr)STDFilter, uppModalFilterProcInfo));
-		if (!reply.good) 
-		{
-			err = ReorderPoints(errmsg);	
-	 		goto done;
-		}
-		
-		my_p2cstr(reply.fName);
-		
-#ifdef MAC
-		GetFullPath(reply.vRefNum, 0, (char *)reply.fName, topPath);
-#else
-		strcpy(topPath, reply.fName);
-#endif
-#endif		
-		strcpy (s, topPath);
-		err = (dynamic_cast<TimeGridWindCurv*>(this))->ReadTopology(topPath);	
+	if (status != NC_NOERR) {
+		err = -1;
 		goto done;
 	}
-#endif
- */
+
+	// for now ask for an ascii file, output from Topology save option
+	//{if (topFilePath[0]) {err = (dynamic_cast<TimeGridWindCurv*>(this))->ReadTopology(topFilePath); goto done;}}
+	if (topFilePath[0]) {
+		err = ReadTopology(topFilePath);
+		goto done;
+	}
+
 	err = ReorderPoints(errmsg);	
 	
 done:
-	if (err)
-	{
+	if (err) {
 		printNote("Error opening NetCDF wind file");
-		if(fGrid)
-		{
-			fGrid ->Dispose();
+		if(fGrid) {
+			fGrid->Dispose();
 			delete fGrid;
 			fGrid = 0;
 		}
-		if(vertexPtsH) {DisposeHandle((Handle)vertexPtsH); vertexPtsH = 0;	fVertexPtsH	 = 0;}
+		if (vertexPtsH) {
+			DisposeHandle((Handle)vertexPtsH);
+			vertexPtsH = 0;
+			fVertexPtsH = 0;
+		}
 	}
 	
-	if (timeUnits) delete [] timeUnits;
-	if (lat_vals) delete [] lat_vals;
-	if (lon_vals) delete [] lon_vals;
-	if (modelTypeStr) delete [] modelTypeStr;
+	if (timeUnits)
+		delete [] timeUnits;
+	if (lat_vals)
+		delete [] lat_vals;
+	if (lon_vals)
+		delete [] lon_vals;
+	if (modelTypeStr)
+		delete [] modelTypeStr;
+
 	return err;
 }
 
@@ -1753,158 +1812,160 @@ done:
 	return err;
 }
 
-OSErr TimeGridWindCurv_c::ReadTopology(char* path)
+
+// import NetCDF curvilinear info so don't have to regenerate
+OSErr TimeGridWindCurv_c::ReadTopology(vector<string> &linesInFile)
 {
-	// import NetCDF curvilinear info so don't have to regenerate
-	char s[1024], errmsg[256]/*, s[256], topPath[256]*/;
-	long i, numPoints, numTopoPoints, line = 0, numPts;
-	CHARH f = 0;
 	OSErr err = 0;
-	
-	TopologyHdl topo=0;
-	LongPointHdl pts=0;
-	FLOATH depths=0;
+	string currentLine;
+
+	char s[1024], errmsg[256];
+
+	long i, numPoints, numTopoPoints, line = 0, numPts;
+
+	CHARH f = 0;
+	TopologyHdl topo = 0;
+	LongPointHdl pts = 0;
+	FLOATH depths = 0;
 	VelocityFH velH = 0;
 	DAGTreeStruct tree;
 	WorldRect bounds = voidWorldRect;
-	
-	TTriGridVel *triGrid = nil;
+
+	TTriGridVel *triGrid = 0;
 	tree.treeHdl = 0;
 	TDagTree *dagTree = 0;
-	
+
 	long numWaterBoundaries, numBoundaryPts, numBoundarySegs;
-	LONGH boundarySegs=0, waterBoundaries=0, boundaryPts=0;
-	
-	errmsg[0]=0;
-	
-	
-	if (!path || !path[0]) return 0;
-	
-	if (err = ReadFileContents(TERMINATED,0, 0, path, 0, 0, &f)) {
-		TechError("TimeGridWindCurv_c::ReadTopology()", "ReadFileContents()", err);
-		goto done;
-	}
-	
-	_HLock((Handle)f); // JLM 8/4/99
-	
+	LONGH boundarySegs = 0, waterBoundaries = 0, boundaryPts = 0;
+
+	errmsg[0] = 0;
+
+	MySpinCursor();
+
 	// No header
 	// start with transformation array and vertices
-	MySpinCursor(); // JLM 8/4/99
-	NthLineInTextOptimized(*f, (line)++, s, 1024); 
-	if(IsTransposeArrayHeaderLine(s,&numPts)) // 
-	{
-		if (err = ReadTransposeArray(f,&line,&fVerdatToNetCDFH,numPts,errmsg)) 
-		{strcpy(errmsg,"Error in ReadTransposeArray"); goto done;}
+	currentLine = linesInFile[(line)++];
+	if (IsTransposeArrayHeaderLine(currentLine, numPts)) {
+		err = ReadTransposeArray(linesInFile, &line, &fVerdatToNetCDFH, numPts, errmsg);
+		if (err) {
+			strcpy(errmsg, "Error in ReadTransposeArray");
+			goto done;
+		}
 	}
-	else {err=-1; strcpy(errmsg,"Error in Transpose header line"); goto done;}
-	
-	if(err = ReadTVertices(f,&line,&pts,&depths,errmsg)) goto done;
-	
-	if(pts) 
-	{
-		LongPoint	thisLPoint;
-		
-		numPts = _GetHandleSize((Handle)pts)/sizeof(LongPoint);
-		if(numPts > 0)
-		{
-			WorldPoint  wp;
-			for(i=0;i<numPts;i++)
-			{
-				thisLPoint = INDEXH(pts,i);
+	else {
+		err = -1;
+		strcpy(errmsg, "Error in Transpose header line");
+		goto done;
+	}
+
+	err = ReadTVertices(linesInFile, &line, &pts, &depths, errmsg);
+	if (err)
+		goto done;
+
+	if (pts) {
+		LongPoint thisLPoint;
+
+		numPts = _GetHandleSize((Handle)pts) / sizeof(LongPoint);
+		if (numPts > 0) {
+			WorldPoint wp;
+			for (i = 0; i < numPts; i++) {
+				thisLPoint = INDEXH(pts, i);
+
 				wp.pLat = thisLPoint.v;
 				wp.pLong = thisLPoint.h;
+
 				AddWPointToWRect(wp.pLat, wp.pLong, &bounds);
 			}
 		}
 	}
+
 	MySpinCursor();
-	
-	NthLineInTextOptimized(*f, (line)++, s, 1024); 
+
 	//code goes here, boundary points
-	if(IsBoundarySegmentHeaderLine(s,&numBoundarySegs)) // Boundary data from CATs
-	{
+	currentLine = linesInFile[(line)++];
+	if (IsBoundarySegmentHeaderLine(currentLine, numBoundarySegs)) {
+		// Boundary data from CATs
 		MySpinCursor();
-		if (numBoundarySegs>0)
-			err = ReadBoundarySegs(f,&line,&boundarySegs,numBoundarySegs,errmsg);
-		if(err) goto done;
-		NthLineInTextOptimized(*f, (line)++, s, 1024); 
+
+		if (numBoundarySegs > 0)
+			err = ReadBoundarySegs(linesInFile, &line, &boundarySegs, numBoundarySegs, errmsg);
+		if (err)
+			goto done;
+
+		currentLine = linesInFile[(line)++];
 	}
-	else
-	{
-		//err = -1;
-		//strcpy(errmsg,"Error in Boundary segment header line");
-		//goto done;
-		// not needed for 2D files, but we require for now
-	}
+
 	MySpinCursor(); // JLM 8/4/99
-	
-	if(IsWaterBoundaryHeaderLine(s,&numWaterBoundaries,&numBoundaryPts)) // Boundary types from CATs
-	{
+
+	if (IsWaterBoundaryHeaderLine(currentLine, numWaterBoundaries, numBoundaryPts)) {
+		// Boundary types from CATs
 		MySpinCursor();
-		if (numBoundaryPts>0)
-			err = ReadWaterBoundaries(f,&line,&waterBoundaries,numWaterBoundaries,numBoundaryPts,errmsg);
-		if(err) goto done;
-		NthLineInTextOptimized(*f, (line)++, s, 1024); 
+
+		if (numBoundaryPts > 0)
+			err = ReadWaterBoundaries(linesInFile, &line,
+									  &waterBoundaries,
+									  numWaterBoundaries, numBoundaryPts, errmsg);
+		if (err)
+			goto done;
+		currentLine = linesInFile[(line)++];
 	}
-	else
-	{
-		//err = -1;
-		//strcpy(errmsg,"Error in Water boundaries header line");
-		//goto done;
-		// not needed for 2D files, but we require for now
-	}
+
 	MySpinCursor(); // JLM 8/4/99
-	//NthLineInTextOptimized(*f, (line)++, s, 1024); 
-	
-	if(IsBoundaryPointsHeaderLine(s,&numBoundaryPts)) // Boundary data from CATs
-	{
+
+	if (IsBoundaryPointsHeaderLine(currentLine, numBoundaryPts)) {
+		// Boundary data from CATs
 		MySpinCursor();
-		if (numBoundaryPts>0)
-			err = ReadBoundaryPts(f,&line,&boundaryPts,numBoundaryPts,errmsg);
-		if(err) goto done;
-		NthLineInTextOptimized(*f, (line)++, s, 1024); 
+
+		if (numBoundaryPts > 0)
+			err = ReadBoundaryPts(linesInFile, &line,
+								  &boundaryPts,
+								  numBoundaryPts, errmsg);
+		if (err)
+			goto done;
+		currentLine = linesInFile[(line)++];
 	}
-	else
-	{
-		//err = -1;
-		//strcpy(errmsg,"Error in Boundary segment header line");
-		//goto done;
-		// not always needed ? probably always needed for curvilinear
-	}
+
 	MySpinCursor(); // JLM 8/4/99
-	
-	if(IsTTopologyHeaderLine(s,&numTopoPoints)) // Topology from CATs
-	{
+
+	if (IsTTopologyHeaderLine(currentLine, numTopoPoints)) {
+		// Topology from CATs
 		MySpinCursor();
-		err = ReadTTopologyBody(f,&line,&topo,&velH,errmsg,numTopoPoints,FALSE);
-		if(err) goto done;
-		NthLineInTextOptimized(*f, (line)++, s, 1024); 
+
+		err = ReadTTopologyBody(linesInFile, &line,
+								&topo, &velH,
+								errmsg, numTopoPoints, FALSE);
+		if (err)
+			goto done;
+		currentLine = linesInFile[(line)++];
 	}
-	else
-	{
+	else {
 		err = -1; // for now we require TTopology
 		strcpy(errmsg,"Error in topology header line");
 		if(err) goto done;
 	}
+
 	MySpinCursor(); // JLM 8/4/99
-	
-	
-	//NthLineInTextOptimized(*f, (line)++, s, 1024); 
-	
-	if(IsTIndexedDagTreeHeaderLine(s,&numPoints))  // DagTree from CATs
-	{
+
+
+	if (IsTIndexedDagTreeHeaderLine(currentLine, numPoints)) {
+		// DagTree from CATs
 		MySpinCursor();
-		err = ReadTIndexedDagTreeBody(f,&line,&tree,errmsg,numPoints);
-		if(err) goto done;
+
+		err = ReadTIndexedDagTreeBody(linesInFile, &line,
+									  &tree,
+									  errmsg, numPoints);
+		if (err)
+			goto done;
 	}
-	else
-	{
+	else {
 		err = -1; // for now we require TIndexedDagTree
-		strcpy(errmsg,"Error in dag tree header line");
-		if(err) goto done;
+		strcpy(errmsg, "Error in dag tree header line");
+		if (err)
+			goto done;
 	}
+
 	MySpinCursor(); // JLM 8/4/99
-	
+
 	/////////////////////////////////////////////////
 	// if map information is in the file just toss it
 	/*if (waterBoundaries && (this -> moverMap == model -> uMap))
@@ -1913,93 +1974,129 @@ OSErr TimeGridWindCurv_c::ReadTopology(char* path)
 	 PtCurMap *map = CreateAndInitPtCurMap("Extended Topology",bounds); // the map bounds are the same as the grid bounds
 	 if (!map) {strcpy(errmsg,"Error creating ptcur map"); goto done;}
 	 // maybe move up and have the map read in the boundary information
-	 map->SetBoundarySegs(boundarySegs);	
+	 map->SetBoundarySegs(boundarySegs);
 	 map->SetWaterBoundaries(waterBoundaries);
-	 
+
 	 *newMap = map;
 	 }*/
+
 	{	// wind will always be on another map
-		if (waterBoundaries) {DisposeHandle((Handle)waterBoundaries); waterBoundaries=0;}
-		if (boundarySegs) {DisposeHandle((Handle)boundarySegs); boundarySegs=0;}
-		if (boundaryPts) {DisposeHandle((Handle)boundaryPts); boundaryPts=0;}
+		if (waterBoundaries) {
+			DisposeHandle((Handle)waterBoundaries);
+			waterBoundaries = 0;
+		}
+		if (boundarySegs) {
+			DisposeHandle((Handle)boundarySegs);
+			boundarySegs = 0;
+		}
+		if (boundaryPts) {
+			DisposeHandle((Handle)boundaryPts);
+			boundaryPts = 0;
+		}
 	}
+
 	/*if (!(this -> moverMap == model -> uMap))	// maybe assume rectangle grids will have map?
 	 {
 	 if (waterBoundaries) {DisposeHandle((Handle)waterBoundaries); waterBoundaries=0;}
 	 if (boundarySegs) {DisposeHandle((Handle)boundarySegs); boundarySegs=0;}
 	 }*/
-	
+
 	/////////////////////////////////////////////////
-	
-	
 	triGrid = new TTriGridVel;
-	if (!triGrid)
-	{		
+	if (!triGrid) {
 		err = true;
-		TechError("Error in TimeGridWindCurv_c::ReadTopology()","new TTriGridVel" ,err);
+		TechError("Error in TimeGridWindCurv_c::ReadTopology()", "new TTriGridVel", err);
 		goto done;
 	}
-	
+
 	fGrid = (TTriGridVel*)triGrid;
-	
-	triGrid -> SetBounds(bounds); 
+
+	triGrid->SetBounds(bounds);
 	//triGrid -> SetDepths(depths);
-	
-	dagTree = new TDagTree(pts,topo,tree.treeHdl,velH,tree.numBranches); 
-	if(!dagTree)
-	{
+
+	dagTree = new TDagTree(pts, topo, tree.treeHdl, velH, tree.numBranches);
+	if (!dagTree) {
 		err = -1;
 		printError("Unable to read Extended Topology file.");
 		goto done;
 	}
-	
-	triGrid -> SetDagTree(dagTree);
-	
+
+	triGrid->SetDagTree(dagTree);
+
 	pts = 0;	// because fGrid is now responsible for it
 	topo = 0; // because fGrid is now responsible for it
 	tree.treeHdl = 0; // because fGrid is now responsible for it
 	velH = 0; // because fGrid is now responsible for it
 	//depths = 0;
-	
+
 done:
-	
-	if(depths) {DisposeHandle((Handle)depths); depths=0;}
-	if(f) 
-	{
-		_HUnlock((Handle)f); 
-		DisposeHandle((Handle)f); 
+
+	if (depths) {
+		DisposeHandle((Handle)depths);
+		depths = 0;
+	}
+	if (f) {
+		_HUnlock((Handle)f);
+		DisposeHandle((Handle)f);
 		f = 0;
 	}
-	
-	if(err)
-	{
-		if(!errmsg[0])
-			strcpy(errmsg,"An error occurred in TimeGridWindCurv_c::ReadTopology");
-		printError(errmsg); 
-		if(pts) {DisposeHandle((Handle)pts); pts=0;}
-		if(topo) {DisposeHandle((Handle)topo); topo=0;}
-		if(velH) {DisposeHandle((Handle)velH); velH=0;}
-		if(depths) {DisposeHandle((Handle)depths); depths=0;}
-		if(tree.treeHdl) {DisposeHandle((Handle)tree.treeHdl); tree.treeHdl=0;}
-		
-		if(fGrid)
-		{
-			fGrid ->Dispose();
+
+	if (err) {
+		if (!errmsg[0])
+			strcpy(errmsg, "An error occurred in TimeGridWindCurv_c::ReadTopology");
+		printError(errmsg);
+		if (pts) {
+			DisposeHandle((Handle)pts);
+			pts = 0;
+		}
+		if (topo) {
+			DisposeHandle((Handle)topo);
+			topo = 0;
+		}
+		if (velH) {
+			DisposeHandle((Handle)velH);
+			velH = 0;
+		}
+		if (depths) {
+			DisposeHandle((Handle)depths);
+			depths = 0;
+		}
+		if (tree.treeHdl) {
+			DisposeHandle((Handle)tree.treeHdl);
+			tree.treeHdl = 0;
+		}
+		if (fGrid) {
+			fGrid->Dispose();
 			delete fGrid;
 			fGrid = 0;
 		}
-		/*if (*newMap) 
-		 {
-		 (*newMap)->Dispose();
-		 delete *newMap;
-		 *newMap=0;
-		 }*/
-		if (waterBoundaries) {DisposeHandle((Handle)waterBoundaries); waterBoundaries=0;}
-		if (boundarySegs) {DisposeHandle((Handle)boundarySegs); boundarySegs = 0;}
-		if (boundaryPts) {DisposeHandle((Handle)boundaryPts); boundaryPts = 0;}
+		if (waterBoundaries) {
+			DisposeHandle((Handle)waterBoundaries);
+			waterBoundaries = 0;
+		}
+		if (boundarySegs) {
+			DisposeHandle((Handle)boundarySegs);
+			boundarySegs = 0;
+		}
+		if (boundaryPts) {
+			DisposeHandle((Handle)boundaryPts);
+			boundaryPts = 0;
+		}
 	}
+
 	return err;
 }
+
+
+// import NetCDF curvilinear info so don't have to regenerate
+OSErr TimeGridWindCurv_c::ReadTopology(const char *path)
+{
+	vector<string> linesInFile;
+
+	ReadLinesInFile(path, linesInFile);
+	return ReadTopology(linesInFile);
+}
+
 
 OSErr TimeGridWindCurv_c::GetLatLonFromIndex(long iIndex, long jIndex, WorldPoint *wp)
 {

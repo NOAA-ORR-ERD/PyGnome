@@ -36,7 +36,6 @@ cdef class CyGridWindMover(cy_mover.CyMover):
         cdef bytes time_grid, topology
         
         time_grid_file = os.path.normpath(time_grid_file)
-        
         time_grid = to_bytes( unicode(time_grid_file))
         
         if topology_file is None:
@@ -77,8 +76,7 @@ cdef class CyGridWindMover(cy_mover.CyMover):
                  cnp.ndarray[WorldPoint3D, ndim=1] delta, 
                  cnp.ndarray[cnp.npy_double] windages,
                  cnp.ndarray[cnp.npy_int16] LE_status, 
-                 LEType spill_type, 
-                 long spill_ID):
+                 LEType spill_type):
         """
         .. function:: get_move(self,
                  model_time,
@@ -87,8 +85,7 @@ cdef class CyGridWindMover(cy_mover.CyMover):
                  np.ndarray[WorldPoint3D, ndim=1] delta,
                  np.ndarray[np.npy_double] windages,
                  np.ndarray[np.npy_int16] LE_status,
-                 LE_type,
-                 spill_ID)
+                 LE_type)
                  
         Invokes the underlying C++ GridWindMover_c.get_move(...)
         
@@ -107,7 +104,7 @@ cdef class CyGridWindMover(cy_mover.CyMover):
         cdef OSErr err
         N = len(ref_points) 
 
-        err = self.grid.get_move(N, model_time, step_len, &ref_points[0], &delta[0], &windages[0], <short *>&LE_status[0], spill_type, spill_ID)
+        err = self.grid.get_move(N, model_time, step_len, &ref_points[0], &delta[0], &windages[0], <short *>&LE_status[0], spill_type, 0)
         if err == 1:
             raise ValueError("Make sure numpy arrays for ref_points and delta are defined")
         

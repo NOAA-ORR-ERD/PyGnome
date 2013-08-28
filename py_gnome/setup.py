@@ -21,9 +21,10 @@ It needs to be imported before any other extensions
 
 ## NOTE: this works with "distribute" package, but not with setuptools.
 import os
+import sys
+import sysconfig
 import glob
 import shutil
-import sys
 
 # to support "develop" mode:
 from setuptools import setup, find_packages
@@ -32,6 +33,20 @@ from distutils.extension import Extension
 from Cython.Distutils import build_ext
 
 import numpy as np
+
+
+def target_dir(name):
+    '''Returns the name of a distutils build directory'''
+    f = '{dirname}.{platform}-{version[0]}.{version[1]}'
+    return f.format(dirname=name,
+                    platform=sysconfig.get_platform(),
+                    version=sys.version_info)
+
+
+def target_path(name='temp'):
+    '''returns the full build path'''
+    return os.path.join('build', target_dir(name))
+
 
 if "clean" in "".join(sys.argv[1:]):
     target = 'clean'
@@ -53,7 +68,6 @@ if "cleanall" in "".join(sys.argv[1:]):
         for file_ in glob.glob(files_):
             print "Deleting auto-generated files: {0}".format(file_)
             os.remove(file_)
-
 
     rm_dir = ['pyGnome.egg-info', 'build']
     for dir_ in rm_dir:
@@ -78,10 +92,55 @@ if sys.argv.count(config) != 0:
     sys.argv.remove(config)
 
 
-# for the mac -- forcing 32 bit only builds
+## setup our environment and architecture
+## These should be properties that are used by all Extensions
+libfile = ''
+if sys.maxint <= 2147483647:
+    architecture = 'i386'
+else:
+    architecture = 'x86_64'
+
 if sys.platform == 'darwin':
-    #Setting this should force only 32 bit intel build
-    os.environ['ARCHFLAGS'] = "-arch i386"
+    # for the mac -- decide whether we are 32 bit build
+    if architecture == 'i386':
+        #Setting this should force only 32 bit intel build
+        os.environ['ARCHFLAGS'] = "-arch i386"
+    else:
+        os.environ['ARCHFLAGS'] = "-arch x86_64"
+    libfile = 'lib{0}.a'  # OSX static library filename format
+elif sys.platform == "win32":
+    # Distutils normally only works with VS2008.
+    # this is to trick it into seeing VS2010 or VS2012
+    # We will prefer VS2012, then VS2010
+    if 'VS110COMNTOOLS' in os.environ:
+        os.environ['VS90COMNTOOLS'] = os.environ['VS110COMNTOOLS']
+    elif 'VS100COMNTOOLS' in os.environ:
+        os.environ['VS90COMNTOOLS'] = os.environ['VS100COMNTOOLS']
+
+    libfile = '{0}.lib'  # windows static library filename format
+
+
+##
+## setup our third party libraries environment - for Win32/Mac OSX
+## Linux does not use the libraries in third_party_lib. It links against
+## netcdf shared objects installed by apt-get
+##
+if sys.platform is "darwin" or "win32":
+    third_party_dir = os.path.join('..', 'third_party_lib')
+    
+    # the netCDF environment
+    netcdf_base = os.path.join(third_party_dir, 'netcdf-4.3',
+                              sys.platform, architecture)
+    netcdf_libs = os.path.join(netcdf_base, 'lib')
+    netcdf_inc = os.path.join(netcdf_base, 'include')
+    
+    if sys.platform == 'win32':
+        netcdf_names = ('netcdf',)
+    else:
+        netcdf_names = ('hdf5', 'hdf5_hl', 'netcdf', 'netcdf_c++4')
+    
+    netcdf_lib_files = [os.path.join(netcdf_libs, libfile.format(l))
+                        for l in netcdf_names]
 
 
 # the cython extensions to build -- each should correspond to a *.pyx file
@@ -143,6 +202,7 @@ cpp_files = ['RectGridVeL_c.cpp',
 cpp_code_dir = os.path.join('..', 'lib_gnome')
 cpp_files = [os.path.join(cpp_code_dir, f) for f in cpp_files]
 
+
 ## setting the "pyGNOME" define so that conditional compilation
 ## in the cpp files is done right.
 macros = [('pyGNOME', 1), ]
@@ -153,13 +213,15 @@ extensions = []
 
 lib = []
 libdirs = []
-static_lib_files = []
 link_args = []
 
 # List of include directories for cython code.
 # append to this list as needed for each platform
-include_dirs = [cpp_code_dir, np.get_include(), '.']
-
+include_dirs = [cpp_code_dir,
+                np.get_include(),
+                netcdf_inc,
+                '.']
+static_lib_files = netcdf_lib_files
 
 # build cy_basic_types along with lib_gnome so we can use distutils
 # for building everything
@@ -167,14 +229,14 @@ include_dirs = [cpp_code_dir, np.get_include(), '.']
 # cy_basic_types needs to be imported before any other extensions.
 # This is being done in the gnome/cy_gnome/__init__.py
 
-if sys.platform == "darwin":
-    architecture = os.environ['ARCHFLAGS'].split()[1]
-    include_dirs.append('../third_party/%s/include' % architecture)
-    third_party_lib_dir = '../third_party/%s/lib' % architecture
+# JS NOTE: 'darwin' and 'win32' statically link against netcdf library.
+#          On linux, we link against the dynamic netcdf libraries (shared 
+#          objects) since netcdf, hdf5 can be installed with a package manager.
+#          We also don't have the static builds for these.
+#          Also, the static_lib_files only need to be linked against 
+#          lib_gnome in the following Extension.
 
-    static_lib_names = ('hdf5', 'hdf5_hl', 'netcdf', 'netcdf_c++4')
-    static_lib_files = [os.path.join(third_party_lib_dir, 'lib%s.a' % l)
-                        for l in static_lib_names]
+if sys.platform == "darwin":
 
     basic_types_ext = Extension(r'gnome.cy_gnome.cy_basic_types',
             ['gnome/cy_gnome/cy_basic_types.pyx'] + cpp_files,
@@ -189,83 +251,19 @@ if sys.platform == "darwin":
     extensions.append(basic_types_ext)
     static_lib_files = []
 
-
-elif sys.platform == "linux2":
-
-    ## for some reason I have to create build/temp.linux-i686-2.7
-    ## else the compile fails saying temp.linux-i686-2.7 is not found
-    ## required for develop or install mode
-    build_temp = './build/temp.linux-i686-2.7' 
-    if 'clean' not in sys.argv[1] and not os.path.exists('./build/temp.linux-i686-2.7'):
-        os.makedirs(build_temp)    
-   
-    ## Not sure calling setup twice is the way to go - but do this for now
-    setup(name='pyGnome', # not required since ext defines this
-          cmdclass={'build_ext': build_ext},
-          ext_modules=[Extension('gnome.cy_gnome.libgnome',
-                                 cpp_files,
-                                 language='c++',
-                                 define_macros=macros,
-                                 libraries=['netcdf'],
-                                 include_dirs=[ cpp_code_dir],
-                                 )])
-  
-    ## in install mode, it compiles and builds libgnome inside lib.linux-i686-2.7/gnome/cy_gnome
-    ## this should be moved to build/temp.linux-i686-2.7 so cython files build and link properly
-    if 'install' in sys.argv[1]:
-        bdir = glob.glob(os.path.join('build/*/gnome/cy_gnome','libgnome.so'))
-        if len(bdir) > 1:
-            raise Exception("Found more than one libgnome.so library during install mode in 'build/*/gnome/cy_gnome'")
-        if len(bdir) == 0:
-            raise Exception("Did not find libgnome.so library during install mode in 'build/*/gnome/cy_gnome'")
-        
-        libpath = os.path.dirname( bdir[0])
-
-    else:
-        libpath = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'gnome', 'cy_gnome')
-    
-    ## Need this for finding lib during linking and at runtime
-    ## using -rpath to define runtime path. Use $ORIGIN to define libgnome.so relative to cy_*.so
-    os.environ['LDFLAGS'] = "-L{0} -Wl,-rpath='$ORIGIN'".format(libpath)
-
-    ## End building C++ shared object
-    lib = ['gnome']
-    basic_types_ext = Extension(r'gnome.cy_gnome.cy_basic_types',
-                                ['gnome/cy_gnome/cy_basic_types.pyx'],
-                                language='c++',
-                                define_macros=macros,
-                                extra_compile_args=compile_args,
-                                libraries=lib,
-                                include_dirs=include_dirs,
-                                )
-
-    extensions.append(basic_types_ext)
-
 elif sys.platform == "win32":
-    # Distutils normally only works with VS2008.
-    # this is to trick it into seeing VS2010 or VS2012
-    # We will prefer VS2012, then VS2010
-    if 'VS110COMNTOOLS' in os.environ:
-        os.environ['VS90COMNTOOLS'] = os.environ['VS110COMNTOOLS']
-    elif 'VS100COMNTOOLS' in os.environ:
-        os.environ['VS90COMNTOOLS'] = os.environ['VS100COMNTOOLS']
-
     # build our compile arguments
     macros.append(('_EXPORTS', 1))
     macros.append(('_CRT_SECURE_NO_WARNINGS', 1))
-    compile_args = ['/EHsc']
-    include_dirs.append(os.path.join('..', 'third_party_lib', 'netcdf-4.3'))
-    include_dirs.append(os.path.join('..', 'third_party_lib', 'win32_headers')) #Zelenke
 
-    # build our linking arguments
-    netcdf_dir = os.path.join('..', 'third_party_lib', 'netcdf-4.3',
-                              'win32', 'i386')
-    libdirs.append(netcdf_dir)
+    compile_args = ['/EHsc']
+
     link_args.append('/MANIFEST')
 
-    static_lib_names = ('netcdf',)
-    static_lib_files = [os.path.join(netcdf_dir, '%s.lib' % l)
-                        for l in static_lib_names]
+    include_dirs.append(os.path.join(third_party_dir, 'win32_headers'))
+
+    # build our linking arguments
+    libdirs.append(netcdf_libs)
 
     basic_types_ext = Extension(r'gnome.cy_gnome.cy_basic_types',
             [r'gnome\cy_gnome\cy_basic_types.pyx'] + cpp_files,
@@ -281,43 +279,100 @@ elif sys.platform == "win32":
     extensions.append(basic_types_ext)
 
     # we will reference this library when building all other extensions
-    static_lib_files = [os.path.join('build', 'temp.win32-2.7', 'Release',
-                                     'gnome', 'cy_gnome',
+    static_lib_files = [os.path.join(target_path(),
+                                     'Release', 'gnome', 'cy_gnome',
                                      'cy_basic_types.lib')]
     libdirs = []
 
+elif sys.platform == "linux2":
+
+    ## for some reason I have to create build/temp.linux-i686-2.7
+    ## else the compile fails saying temp.linux-i686-2.7 is not found
+    ## required for develop or install mode
+    build_temp = target_path()
+    if 'clean' not in sys.argv[1] and not os.path.exists(build_temp):
+        os.makedirs(build_temp)
+
+    ## Not sure calling setup twice is the way to go - but do this for now
+    ## NOTE: This is also linking against the netcdf library (*.so), not
+    ## the static netcdf. We didn't build a NETCDF static library.
+    setup(name='pyGnome',  # not required since ext defines this
+          cmdclass={'build_ext': build_ext},
+          ext_modules=[Extension('gnome.cy_gnome.libgnome',
+                                 cpp_files,
+                                 language='c++',
+                                 define_macros=macros,
+                                 libraries=['netcdf'],
+                                 include_dirs=[cpp_code_dir],
+                                 )])
+
+    ## In install mode, it compiles and builds libgnome inside
+    ## lib.linux-i686-2.7/gnome/cy_gnome
+    ## This should be moved to build/temp.linux-i686-2.7 so cython files
+    ## build and link properly
+    if 'install' in sys.argv[1]:
+        bdir = glob.glob(os.path.join('build/*/gnome/cy_gnome', 'libgnome.so'))
+        if len(bdir) > 1:
+            raise Exception("Found more than one libgnome.so library" \
+                            " during install mode in 'build/*/gnome/cy_gnome'")
+        if len(bdir) == 0:
+            raise Exception("Did not find libgnome.so library during install" \
+                            " mode in 'build/*/gnome/cy_gnome'")
+
+        libpath = os.path.dirname(bdir[0])
+
+    else:
+        libpath = os.path.join(os.path.abspath(os.path.dirname(__file__)),
+                               'gnome', 'cy_gnome')
+
+    ## Need this for finding lib during linking and at runtime
+    ## using -rpath to define runtime path. Use $ORIGIN to define libgnome.so
+    ## relative to cy_*.so
+    os.environ['LDFLAGS'] = "-L{0} -Wl,-rpath='$ORIGIN'".format(libpath)
+
+    ## End building C++ shared object
+    lib = ['gnome']
+    basic_types_ext = Extension(r'gnome.cy_gnome.cy_basic_types',
+                                ['gnome/cy_gnome/cy_basic_types.pyx'],
+                                language='c++',
+                                define_macros=macros,
+                                extra_compile_args=compile_args,
+                                libraries=lib,
+                                include_dirs=include_dirs,
+                                )
+
+    extensions.append(basic_types_ext)
+
 
 #
-### the "master" extension -- of the extra stuff,
-### so the whole C++ lib will be there for the others
+### All other lib_gnome-based cython extensions.
+### These depend on the successful build of cy_basic_types
 #
-
-# TODO: the extensions below look for the shared object lib_gnome in
-# './build/lib.macosx-10.3-fat-2.7/gnome' and './gnome'
-# Ideally, we should build lib_gnome first and move it
-# to wherever we wish to link from .. currently the build_ext and develop
-# will find and link to the object in different places.
 
 for mod_name in extension_names:
     cy_file = os.path.join("gnome/cy_gnome", mod_name + ".pyx")
     extensions.append(Extension('gnome.cy_gnome.' + mod_name,
-                                 [cy_file],
-                                 language="c++",
-                                 define_macros=macros,
-                                 extra_compile_args=compile_args,
-                                 extra_link_args=link_args,
-                                 libraries=lib,
-                                 library_dirs=libdirs,
-                                 extra_objects=static_lib_files,
-                                 include_dirs=include_dirs,
-                                 )
+                                [cy_file],
+                                language="c++",
+                                define_macros=macros,
+                                extra_compile_args=compile_args,
+                                extra_link_args=link_args,
+                                libraries=lib,
+                                library_dirs=libdirs,
+                                #extra_objects=static_lib_files,
+                                include_dirs=include_dirs,
+                                )
                        )
 
 # and platfrom-independent cython extensions:
-extensions.append( Extension("gnome.utilities.geometry.cy_point_in_polygon",
-                             sources=["gnome/utilities/geometry/cy_point_in_polygon.pyx",
-                                      "gnome/utilities/geometry/c_point_in_polygon.c"],
-                             include_dirs=[np.get_include()],
+# well...not entirely platform-independant.  We need to pass the link_args
+poly_cypath = os.path.join('gnome', 'utilities', 'geometry')
+sources = [os.path.join(poly_cypath, 'cy_point_in_polygon.pyx'),
+           os.path.join(poly_cypath, 'c_point_in_polygon.c')]
+extensions.append(Extension("gnome.utilities.geometry.cy_point_in_polygon",
+                            sources=sources,
+                            include_dirs=[np.get_include()],
+                            extra_link_args=link_args,
                             )
                   )
 

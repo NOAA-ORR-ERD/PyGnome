@@ -64,3 +64,6 @@ Hydrology file would also contain uv format
 """
 ts_format = enum(magnitude_direction=M19MAGNITUDEDIRECTION,
                    uv=M19REALREAL)
+
+cdef Seconds temp
+seconds = type(temp)

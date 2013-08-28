@@ -7,12 +7,16 @@
  *
  */
 
+#include <math.h>
+#include <float.h>
+#include <istream>
+#include <iostream>
+#include <sstream>
+
 #include "TimeGridVel_c.h"
 #include "netcdf.h"
 #include "CompFunctions.h"
 #include "StringFunctions.h"
-#include <math.h>
-#include <float.h>
 #include "DagTreeIO.h"
 #include "OUTILS.H"	// for the units
 
@@ -22,157 +26,97 @@
 #include "Replacements.h"
 #endif
 
-using std::cout;
 
-/////////////////////////////////////////////////
-Boolean IsGridCurTimeFile (char *path, short *selectedUnitsP)
+/*bool IsGridCurTimeFile (vector<string> &linesInFile, short *selectedUnitsOut)
 {
-	Boolean bIsValid = false;
-	OSErr	err = noErr;
-	long line;
-	char strLine [256];
-	char firstPartOfFile [256];
-	long lenToRead,fileLength;
-	short selectedUnits = kUndefined, numScanned;
-	char unitsStr[64], gridcurStr[64];
-	
-	err = MyGetFileSize(0,0,path,&fileLength);
-	if(err) return false;
-	
-	lenToRead = _min(256,fileLength);
-	
-	err = ReadSectionOfFile(0,0,path,0,lenToRead,firstPartOfFile,0);
-	firstPartOfFile[lenToRead-1] = 0; // make sure it is a cString
-	if (!err)
-	{	// must start with [GRIDCURTIME]
-		char * strToMatch = "[GRIDCURTIME]";
-		NthLineInTextNonOptimized (firstPartOfFile, line = 0, strLine, 256);
-		if (!strncmp (strLine,strToMatch,strlen(strToMatch)))
-		{
-			bIsValid = true;
-			*selectedUnitsP = selectedUnits;
-			numScanned = sscanf(strLine,"%s%s",gridcurStr,unitsStr);
-			if(numScanned != 2) { selectedUnits = kUndefined; goto done; }
-			RemoveLeadingAndTrailingWhiteSpace(unitsStr);
-			selectedUnits = StrToSpeedUnits(unitsStr);// note we are not supporting cm/sec in gnome
-		}
-	}
-	
-done:
-	if(bIsValid)
-	{
-		*selectedUnitsP = selectedUnits;
-	}
-	return bIsValid;
-}
+	long lineIdx = 0;
+	string currentLine;
 
-/////////////////////////////////////////////////
-Boolean IsPtCurFile (char *path)
-{
-	Boolean	bIsValid = false;
-	OSErr	err = noErr;
-	long line;
-	char	strLine [256];
-	char	firstPartOfFile [256];
-	long lenToRead,fileLength;
-	
-	err = MyGetFileSize(0,0,path,&fileLength);
-	if(err) return false;
-	
-	lenToRead = _min(256,fileLength);
-	
-	err = ReadSectionOfFile(0,0,path,0,lenToRead,firstPartOfFile,0);
-	firstPartOfFile[lenToRead-1] = 0; // make sure it is a cString
-	if (!err)
-	{	// must start with [FILETYPE] PTCUR
-		char * strToMatch = "[FILETYPE]\tPTCUR";
-		NthLineInTextNonOptimized (firstPartOfFile, line = 0, strLine, 256);
-		if (!strncmp (strLine,strToMatch,strlen(strToMatch)))
-			bIsValid = true;
-	}
-	
-	return bIsValid;
-}
+	short selectedUnits = kUndefined;
+	string value1S, value2S;
 
-/////////////////////////////////////////////////
-Boolean IsCATS3DFile (char *path)
-{
-	Boolean	bIsValid = false;
-	OSErr	err = noErr;
-	long line;
-	char	strLine [256];
-	char	firstPartOfFile [256];
-	long lenToRead,fileLength;
-	
-	err = MyGetFileSize(0,0,path,&fileLength);
-	if(err) return false;
-	
-	lenToRead = _min(256,fileLength);
-	
-	err = ReadSectionOfFile(0,0,path,0,lenToRead,firstPartOfFile,0);
-	firstPartOfFile[lenToRead-1] = 0; // make sure it is a cString
-	if (!err)
-	{	// must start with CATS3D
-		char * strToMatch = "CATS3D";
-		NthLineInTextNonOptimized (firstPartOfFile, line = 0, strLine, 256);
-		if (!strncmp (strLine,strToMatch,strlen(strToMatch)))
-			bIsValid = true;
-	}
-	
-	return bIsValid;
-}
+	// First line, must start with '[GRIDCURTIME] <units>'
+	// <units> == the designation of units for the file.
+	currentLine = trim(linesInFile[lineIdx++]);
 
-/////////////////////////////////////////////////
+	istringstream lineStream(currentLine);
+
+	lineStream >> value1S >> value2S;
+	if (lineStream.fail())
+		return false;
+
+	if (value1S != "[GRIDCURTIME]")
+		return false;
+
+	selectedUnits = StrToSpeedUnits((char *)value2S.c_str());
+	if (selectedUnits == kUndefined)
+		return false;
+
+	*selectedUnitsOut = selectedUnits;
+	
+	return true;
+}*/
+
+
+// NOTE!! if the input variable path does point to a NetCDFPaths file,
+// the input variable is overwritten with the path to the first NetCDF file.
+// The original input value of path is copied to fileNamesPath in such a case.
+// If the input variable does not point to a NetCDFPaths file, the input path is left unchanged.
 Boolean IsNetCDFPathsFile (char *path, Boolean *isNetCDFPathsFile, char *fileNamesPath, short *gridType)
 {
-	// NOTE!! if the input variable path does point to a NetCDFPaths file, 
-	// the input variable is overwritten with the path to the first NetCDF file.
-	// The original input value of path is copied to fileNamesPath in such a case.
-	// If the input vatiable does not point to a NetCDFPaths file, the input path is left unchanged.
+	OSErr err = noErr;
+	char firstPartOfFile[512], classicPath[256];
+	char strLine[512];
+
 	Boolean	bIsValid = false;
-	OSErr	err = noErr;
 	long line = 0;
-	char	strLine [512];
-	char	firstPartOfFile [512], classicPath[256];
-	long lenToRead,fileLength;
-	char *key;
-	
+
+	long lenToRead, fileLength;
+	string key;
+
+	memset(firstPartOfFile, 0, 512);
+	memset(classicPath, 0, 256);
+	memset(strLine, 0, 512);
+
 	*isNetCDFPathsFile = false;
-	
-	err = MyGetFileSize(0,0,path,&fileLength);
-	if(err) return false;
-	
-	lenToRead = _min(512,fileLength);
-	
-	err = ReadSectionOfFile(0,0,path,0,lenToRead,firstPartOfFile,0);
-	firstPartOfFile[lenToRead-1] = 0; // make sure it is a cString
-	
-	if(err) {
+
+	err = MyGetFileSize(0, 0, path, &fileLength);
+	if (err)
+		return false;
+
+	lenToRead = _min(512, fileLength);
+
+	err = ReadSectionOfFile(0, 0, path, 0, lenToRead, firstPartOfFile, 0);
+	firstPartOfFile[lenToRead - 1] = 0; // make sure it is a cString
+
+	if (err) {
 		// should we report the file i/o err to the user here ?
 		return false;
 	}
-	
+
 	// must start with "NetCDF Files"
 	NthLineInTextNonOptimized (firstPartOfFile, line++, strLine, 512);
 	RemoveLeadingAndTrailingWhiteSpace(strLine);
+
 	key = "NetCDF Files";
-	if (strncmpnocase (strLine, key, strlen(key)) != 0)
+	if (strncmpnocase(strLine, key.c_str(), key.size()) != 0)
 		return false;
-	
+
 	// next line must be "[FILE] <path>"
 	NthLineInTextNonOptimized(firstPartOfFile, line++, strLine, 512); 
 	RemoveLeadingAndTrailingWhiteSpace(strLine);
+
 	key = "[FILE]";
-	if (strncmpnocase (strLine, key, strlen(key)) != 0)
+	if (strncmpnocase(strLine, key.c_str(), key.size()) != 0)
 		return false;
+
+	strcpy(fileNamesPath, path); // transfer the input path to this output variable
 	
-	strcpy(fileNamesPath,path); // transfer the input path to this output variable
-	
-	strcpy(path,strLine+strlen(key)); // this is overwriting the input variable (see NOTE above)
+	strcpy(path, strLine + key.size()); // this is overwriting the input variable (see NOTE above)
 	RemoveLeadingAndTrailingWhiteSpace(path);
 	ResolvePathFromInputFile(fileNamesPath,path); // JLM 6/8/10
-	
-	if(!FileExists(0,0,path)){
+
+	if (!FileExists(0, 0, path)) {
 		// tell the user the file does not exist
 		printError("FileExists returned false for the first path listed in the IsNetCDFPathsFile.");
 		return false;
@@ -189,35 +133,40 @@ Boolean IsNetCDFPathsFile (char *path, Boolean *isNetCDFPathsFile, char *fileNam
 	return bIsValid;
 }
 
+
 /////////////////////////////////////////////////
 Boolean IsNetCDFFile (char *path, short *gridType)	
 {
 	// separate into IsNetCDFFile and GetGridType
-	Boolean	bIsValid = false;
 	OSErr err = noErr;
-	long line;
+	Boolean	bIsValid = false;
 	char strLine [512], outPath[256];
-	char firstPartOfFile [512], *modelTypeStr=0, *gridTypeStr=0, *sourceStr=0/*, *historyStr=0*/;
-	long lenToRead,fileLength;
+	char firstPartOfFile[512];
+
+	long line;
+	long lenToRead, fileLength;
 	int status, ncid;
 	size_t t_len, t_len2;
+	char *modelTypeStr = 0, *gridTypeStr = 0, *sourceStr = 0;
+
+	err = MyGetFileSize(0, 0, path, &fileLength);
+	if (err)
+		return false;
 	
-	err = MyGetFileSize(0,0,path,&fileLength);
-	if(err) return false;
+	lenToRead = _min(512, fileLength);
 	
-	lenToRead = _min(512,fileLength);
-	
-	err = ReadSectionOfFile(0,0,path,0,lenToRead,firstPartOfFile,0);
-	firstPartOfFile[lenToRead-1] = 0; // make sure it is a cString
-	if (!err)
-	{	// must start with "CDF
-		NthLineInTextNonOptimized (firstPartOfFile, line = 0, strLine, 512);
+	err = ReadSectionOfFile(0, 0, path, 0, lenToRead, firstPartOfFile, 0);
+	firstPartOfFile[lenToRead - 1] = 0; // make sure it is a cString
+	if (!err) {
+		// must start with "CDF
+		NthLineInTextNonOptimized(firstPartOfFile, line = 0, strLine, 512);
 		if (!strncmp (firstPartOfFile, "CDF", 3))
 			bIsValid = true;
 	}
-	
-	if (!bIsValid) return false;
-	
+
+	if (!bIsValid)
+		return false;
+
 	// need a global attribute to identify grid type - this won't work for non Navy regular grid
 	status = nc_open(path, NC_NOWRITE, &ncid);
 	if (status != NC_NOERR) /*{*gridType = CURVILINEAR; goto done;}*/	// this should probably be an error
@@ -308,6 +257,8 @@ Boolean IsNetCDFFile (char *path, short *gridType)
 		//*gridType = CURVILINEAR;
 		*gridType = REGULAR; // change default to REGULAR - 1/29/09
 	
+	nc_close(ncid);
+
 done:
 	if (modelTypeStr) delete [] modelTypeStr;	
 	if (gridTypeStr) delete [] gridTypeStr;	
@@ -346,7 +297,8 @@ TimeGridVel_c::TimeGridVel_c ()
 	fInputFilesHdl = 0;	// for multiple files case
 	
 	fAllowExtrapolationInTime = false;
-	
+
+	fNumCols = fNumRows = 0;
 }
 
 void TimeGridVel_c::Dispose ()
@@ -372,103 +324,118 @@ long TimeGridVel_c::GetNumTimesInFile()
 {
 	long numTimes = 0;
 	
-	if (fTimeHdl) numTimes = _GetHandleSize((Handle)fTimeHdl)/sizeof(**fTimeHdl);
+	if (fTimeHdl)
+		numTimes = _GetHandleSize((Handle)fTimeHdl)/sizeof(**fTimeHdl);
+
 	return numTimes;     
 }
 
 long TimeGridVel_c::GetNumFiles()
 {
 	long numFiles = 0;
-	
-	if (fInputFilesHdl) numFiles = _GetHandleSize((Handle)fInputFilesHdl)/sizeof(**fInputFilesHdl);
-	return numFiles;     
+
+	if (fInputFilesHdl)
+		numFiles = _GetHandleSize((Handle)fInputFilesHdl) / sizeof(**fInputFilesHdl);
+
+	return numFiles;
 }
 
 
 Boolean TimeGridVel_c::CheckInterval(long &timeDataInterval, const Seconds& model_time)
 {
-	Seconds time =  model_time, startTime, endTime;	
+	Seconds time = model_time, startTime, endTime;
 	
-	long i,numTimes,numFiles = GetNumFiles();
+	long i, numTimes, numFiles = GetNumFiles();
 	
-	numTimes = this -> GetNumTimesInFile(); 
-	if (numTimes==0) {timeDataInterval = 0; return false;}	// really something is wrong, no data exists
+	numTimes = this->GetNumTimesInFile();
+	cerr << "CheckInterval(): numTimes = " << numTimes << endl;
+	if (numTimes == 0) {
+		// really something is wrong, no data exists
+		timeDataInterval = 0;
+		return false;
+	}
 	
 	// check for constant current
-	if (numTimes==1 && !(GetNumFiles()>1)) 
-	{
+	if (numTimes == 1 && !(GetNumFiles() > 1)) {
 		timeDataInterval = -1; // some flag here
-		if(fStartData.timeIndex==0 && fStartData.dataHdl)
+		if (fStartData.timeIndex == 0 && fStartData.dataHdl)
 			return true;
 		else
 			return false;
 	}
 	
-	if(fStartData.timeIndex!=UNASSIGNEDINDEX && fEndData.timeIndex!=UNASSIGNEDINDEX)
+	if (fStartData.timeIndex != UNASSIGNEDINDEX &&
+		fEndData.timeIndex != UNASSIGNEDINDEX)
 	{
-		if (time>=((*fTimeHdl)[fStartData.timeIndex] + fTimeShift) && time<=((*fTimeHdl)[fEndData.timeIndex] + fTimeShift))
-		{	// we already have the right interval loaded
+		if (time >= ((*fTimeHdl)[fStartData.timeIndex] + fTimeShift) &&
+			time <= ((*fTimeHdl)[fEndData.timeIndex] + fTimeShift))
+		{
+			// we already have the right interval loaded
 			timeDataInterval = fEndData.timeIndex;
 			return true;
 		}
 	}
 	
-	if (GetNumFiles()>1 && fOverLap)
-	{	
-		if (time>=fOverLapStartTime + fTimeShift && time<=(*fTimeHdl)[fEndData.timeIndex] + fTimeShift)
-			return true;	// we already have the right interval loaded, time is in between two files
-		else fOverLap = false;
+	if (GetNumFiles() > 1 && fOverLap) {
+		if (time >= fOverLapStartTime + fTimeShift &&
+			time <= (*fTimeHdl)[fEndData.timeIndex] + fTimeShift)
+			return true; // we already have the right interval loaded, time is in between two files
+		else
+			fOverLap = false;
 	}
-	
-	//for (i=0;i<numTimes;i++) 
-	for (i=0;i<numTimes-1;i++) 
-	{	// find the time interval
-		if (time>=((*fTimeHdl)[i] + fTimeShift) && time<=((*fTimeHdl)[i+1] + fTimeShift))
+
+	for (i = 0; i < numTimes - 1; i++) {
+		// find the time interval
+		if (time >= ((*fTimeHdl)[i] + fTimeShift) &&
+			time <= ((*fTimeHdl)[i + 1] + fTimeShift))
 		{
-			timeDataInterval = i+1; // first interval is between 0 and 1, and so on
+			timeDataInterval = i + 1; // first interval is between 0 and 1, and so on
 			return false;
 		}
-	}	
+	}
+
 	// don't allow time before first or after last
-	if (time<((*fTimeHdl)[0] + fTimeShift)) 
-	{
+	if (time < ((*fTimeHdl)[0] + fTimeShift)) {
 		// if number of files > 1 check that first is the one loaded
 		timeDataInterval = 0;
-		if (numFiles > 0)
-		{
-			//startTime = (*fInputFilesHdl)[0].startTime + fTimeShift;
+		if (numFiles > 0) {
 			startTime = (*fInputFilesHdl)[0].startTime;
 			if ((*fTimeHdl)[0] != startTime)
 				return false;
 		}
-		if (fAllowExtrapolationInTime && fEndData.timeIndex == UNASSIGNEDINDEX && !(fStartData.timeIndex == UNASSIGNEDINDEX))	// way to recognize last interval is set
+		if (fAllowExtrapolationInTime &&
+			fEndData.timeIndex == UNASSIGNEDINDEX &&
+			!(fStartData.timeIndex == UNASSIGNEDINDEX))	// way to recognize last interval is set
 		{
 			//check if time > last model time in all files
 			//timeDataInterval = 1;
 			return true;
 		}
 	}
-	if (time>((*fTimeHdl)[numTimes-1] + fTimeShift) )
+
+	if (time > ((*fTimeHdl)[numTimes - 1] + fTimeShift) )
+	{
 		// code goes here, check if this is last time in all files and user has set flag to continue
 		// then if last time is loaded as start time and nothing as end time this is right interval
-	{
 		// if number of files > 1 check that last is the one loaded
 		timeDataInterval = numTimes;
-		if (numFiles > 0)
-		{
-			//endTime = (*fInputFilesHdl)[numFiles-1].endTime + fTimeShift;
-			endTime = (*fInputFilesHdl)[numFiles-1].endTime;
-			if ((*fTimeHdl)[numTimes-1] != endTime)
+
+		if (numFiles > 0) {
+			endTime = (*fInputFilesHdl)[numFiles - 1].endTime;
+			if ((*fTimeHdl)[numTimes - 1] != endTime)
 				return false;
 		}
-		if (fAllowExtrapolationInTime && fEndData.timeIndex == UNASSIGNEDINDEX && !(fStartData.timeIndex == UNASSIGNEDINDEX))	// way to recognize last interval is set
+
+		if (fAllowExtrapolationInTime &&
+			fEndData.timeIndex == UNASSIGNEDINDEX &&
+			!(fStartData.timeIndex == UNASSIGNEDINDEX))	// way to recognize last interval is set
 		{
 			//check if time > last model time in all files
 			return true;
 		}
 	}
+
 	return false;
-	
 }
 
 void TimeGridVel_c::DisposeTimeHdl()
@@ -498,143 +465,209 @@ void TimeGridVel_c::ClearLoadedData(LoadedData *dataPtr)
 // for now leave this part out of the python and let the file path list be passed in
 OSErr TimeGridVel_c::ReadInputFileNames(char *fileNamesPath)
 {
+	OSErr err = 0;
+	char errmsg[256] = "";
+	char s[1024], path[256], outPath[256], classicPath[kMaxNameLen];
+	long i, numScanned, line = 0, numFiles, numLinesInText;
+
 	// for netcdf files, header file just has the paths, the start and end times will be read from the files
-	long i,numScanned,line=0, numFiles, numLinesInText;
 	DateTimeRec time;
 	Seconds timeSeconds;
-	OSErr err = 0;
-	char s[1024], path[256], outPath[256], classicPath[kMaxNameLen];
 	CHARH fileBufH = 0;
 	PtCurFileInfoH inputFilesHdl = 0;
+
 	int status, ncid, recid, timeid;
 	size_t recs, t_len, t_len2;
 	double timeVal;
-	char recname[NC_MAX_NAME], *timeUnits=0;	
+	char recname[NC_MAX_NAME], *timeUnits = 0;
 	static size_t timeIndex;
 	Seconds startTime2;
 	double timeConversion = 1.;
-	char errmsg[256] = "";
-	
-	if (err = ReadFileContents(TERMINATED,0, 0, fileNamesPath, 0, 0, &fileBufH)) goto done;
-	
+
+	if ((err = ReadFileContents(TERMINATED, 0, 0, fileNamesPath, 0, 0, &fileBufH)) != noErr)
+		goto done;
+
 	numLinesInText = NumLinesInText(*fileBufH);
 	numFiles = numLinesInText - 1;	// subtract off the header
-	inputFilesHdl = (PtCurFileInfoH)_NewHandle(sizeof(PtCurFileInfo)*numFiles);
-	if(!inputFilesHdl) {TechError("TimeGridVel::ReadInputFileNames()", "_NewHandle()", 0); err = memFullErr; goto done;}
+
+	inputFilesHdl = (PtCurFileInfoH)_NewHandle(sizeof(PtCurFileInfo) * numFiles);
+	if (!inputFilesHdl) {
+		TechError("TimeGridVel::ReadInputFileNames()", "_NewHandle()", 0);
+		err = memFullErr;
+		goto done;
+	}
+
 	NthLineInTextNonOptimized(*fileBufH, (line)++, s, 1024); 	// header line
-	for (i=0;i<numFiles;i++)	// should count files as go along
+	for (i = 0; i < numFiles; i++)
 	{
-		NthLineInTextNonOptimized(*fileBufH, (line)++, s, 1024); 	// check it is a [FILE] line
-		//strcpy((*inputFilesHdl)[i].pathName,s+strlen("[FILE]\t"));
+		// should count files as go along
+
+		// check it is a [FILE] line
+		NthLineInTextNonOptimized(*fileBufH, (line)++, s, 1024);
 		RemoveLeadingAndTrailingWhiteSpace(s);
-		strcpy((*inputFilesHdl)[i].pathName,s+strlen("[FILE] "));
+
+		strcpy((*inputFilesHdl)[i].pathName, s + strlen("[FILE] "));
 		RemoveLeadingAndTrailingWhiteSpace((*inputFilesHdl)[i].pathName);
-		ResolvePathFromInputFile(fileNamesPath,(*inputFilesHdl)[i].pathName); // JLM 6/8/10
-		//strcpy(path,(*inputFilesHdl)[i].pathName);
-		if((*inputFilesHdl)[i].pathName[0] && FileExists(0,0,(*inputFilesHdl)[i].pathName))
+		ResolvePathFromInputFile(fileNamesPath, (*inputFilesHdl)[i].pathName); // JLM 6/8/10
+
+		if ((*inputFilesHdl)[i].pathName[0] &&
+			FileExists(0, 0, (*inputFilesHdl)[i].pathName))
 		{
+
 #if TARGET_API_MAC_CARBON
+			// Developers use the Carbon APIs to port their "classic" Mac software to the Mac OS X platform
+			// at this time, we probably should just convert the software to normal C++ idioms.
 			err = ConvertTraditionalPathToUnixPath((const char *) (*inputFilesHdl)[i].pathName, outPath, kMaxNameLen) ;
 			status = nc_open(outPath, NC_NOWRITE, &ncid);
 			strcpy((*inputFilesHdl)[i].pathName,outPath);
 #endif
+
 			strcpy(path,(*inputFilesHdl)[i].pathName);
 			status = nc_open(path, NC_NOWRITE, &ncid);
-			if (status != NC_NOERR) /*{err = -1; goto done;}*/
-			{
-				if (status != NC_NOERR) {err = -2; goto done;}
+			if (status != NC_NOERR) {
+				err = -2;
+				goto done;
 			}
-			
+
 			status = nc_inq_dimid(ncid, "time", &recid); 
-			if (status != NC_NOERR) 
-			{
+			if (status != NC_NOERR) {
 				status = nc_inq_unlimdim(ncid, &recid);	// maybe time is unlimited dimension
-				if (status != NC_NOERR) {err = -2; goto done;}
+				if (status != NC_NOERR) {
+					err = -2;
+					goto done;
+				}
+			}
+
+			status = nc_inq_varid(ncid, "time", &timeid); 
+			if (status != NC_NOERR) {
+				err = -2;
+				goto done;
 			}
 			
-			status = nc_inq_varid(ncid, "time", &timeid); 
-			if (status != NC_NOERR) {err = -2; goto done;} 
-			
-			/////////////////////////////////////////////////
 			status = nc_inq_attlen(ncid, timeid, "units", &t_len);
-			if (status != NC_NOERR) 
-			{
-				err = -2; goto done;
+			if (status != NC_NOERR) {
+				err = -2;
+				goto done;
 			}
 			else
 			{
 				DateTimeRec time;
 				char unitStr[24], junk[10];
 				
-				timeUnits = new char[t_len+1];
+				timeUnits = new char[t_len + 1];
+
 				status = nc_get_att_text(ncid, timeid, "units", timeUnits);
-				if (status != NC_NOERR) {err = -2; goto done;} 
+				if (status != NC_NOERR) {
+					err = -2;
+					goto done;
+				}
+
 				timeUnits[t_len] = '\0'; // moved this statement before StringSubstitute, JLM 5/2/10
 				StringSubstitute(timeUnits, ':', ' ');
 				StringSubstitute(timeUnits, '-', ' ');
 				
-				numScanned=sscanf(timeUnits, "%s %s %hd %hd %hd %hd %hd %hd",
-								  unitStr, junk, &time.year, &time.month, &time.day,
-								  &time.hour, &time.minute, &time.second) ;
-				if (numScanned==5)	
-				{time.hour = 0; time.minute = 0; time.second = 0; }
-				else if (numScanned==7)	time.second = 0;
-				else if (numScanned<8)	
-					//if (numScanned!=8)	
-				{ err = -1; TechError("TimeGridVel::ReadInputFileNames()", "sscanf() == 8", 0); goto done; }
-				DateToSeconds (&time, &startTime2);	// code goes here, which start Time to use ??
-				if (!strcmpnocase(unitStr,"HOURS") || !strcmpnocase(unitStr,"HOUR"))
+				numScanned = sscanf(timeUnits, "%s %s %hd %hd %hd %hd %hd %hd",
+									unitStr, junk, &time.year, &time.month, &time.day,
+									&time.hour, &time.minute, &time.second) ;
+				if (numScanned == 5) {
+					time.hour = 0;
+					time.minute = 0;
+					time.second = 0;
+				}
+				else if (numScanned == 7)
+					time.second = 0;
+				else if (numScanned < 8) {
+					err = -1;
+					TechError("TimeGridVel::ReadInputFileNames()", "sscanf() == 8", 0);
+					goto done;
+				}
+
+				// code goes here, which start Time to use ??
+				DateToSeconds (&time, &startTime2);
+				if (!strcmpnocase(unitStr, "HOURS") || !strcmpnocase(unitStr, "HOUR"))
 					timeConversion = 3600.;
-				else if (!strcmpnocase(unitStr,"MINUTES") || !strcmpnocase(unitStr,"MINUTE"))
+				else if (!strcmpnocase(unitStr, "MINUTES") || !strcmpnocase(unitStr, "MINUTE"))
 					timeConversion = 60.;
-				else if (!strcmpnocase(unitStr,"SECONDS") || !strcmpnocase(unitStr,"SECOND"))
+				else if (!strcmpnocase(unitStr, "SECONDS") || !strcmpnocase(unitStr, "SECOND"))
 					timeConversion = 1.;
-				else if (!strcmpnocase(unitStr,"DAYS") || !strcmpnocase(unitStr,"DAY"))
-					timeConversion = 24*3600.;
-			} 
-			
-			status = nc_inq_dim(ncid, recid, recname, &recs);
-			if (status != NC_NOERR) {err = -2; goto done;}
-			{
-				Seconds newTime;
-				// possible units are, HOURS, MINUTES, SECONDS,...
-				timeIndex = 0;	// first time
-				status = nc_get_var1_double(ncid, timeid, &timeIndex, &timeVal);
-				if (status != NC_NOERR) {strcpy(errmsg,"Error reading times from NetCDF file"); printError(errmsg); err = -1; goto done;}
-				newTime = RoundDateSeconds(round(startTime2+timeVal*timeConversion));
-				(*inputFilesHdl)[i].startTime = newTime;
-				timeIndex = recs-1;	// last time
-				status = nc_get_var1_double(ncid, timeid, &timeIndex, &timeVal);
-				if (status != NC_NOERR) {strcpy(errmsg,"Error reading times from NetCDF file"); printError(errmsg); err = -1; goto done;}
-				newTime = RoundDateSeconds(round(startTime2+timeVal*timeConversion));
-				(*inputFilesHdl)[i].endTime = newTime;
+				else if (!strcmpnocase(unitStr, "DAYS") || !strcmpnocase(unitStr, "DAY"))
+					timeConversion = 24 * 3600.;
 			}
+
+			status = nc_inq_dim(ncid, recid, recname, &recs);
+			if (status != NC_NOERR) {
+				err = -2;
+				goto done;
+			}
+
+			Seconds newTime;
+			// possible units are, HOURS, MINUTES, SECONDS,...
+			timeIndex = 0;	// first time
+
+			status = nc_get_var1_double(ncid, timeid, &timeIndex, &timeVal);
+			if (status != NC_NOERR) {
+				strcpy(errmsg, "Error reading times from NetCDF file");
+				printError(errmsg);
+				err = -1;
+				goto done;
+			}
+
+			newTime = RoundDateSeconds(round(startTime2 + timeVal * timeConversion));
+			(*inputFilesHdl)[i].startTime = newTime;
+			timeIndex = recs - 1;	// last time
+
+			status = nc_get_var1_double(ncid, timeid, &timeIndex, &timeVal);
+			if (status != NC_NOERR) {
+				strcpy(errmsg, "Error reading times from NetCDF file");
+				printError(errmsg);
+				err = -1;
+				goto done;
+			}
+
+			newTime = RoundDateSeconds(round(startTime2 + timeVal * timeConversion));
+			(*inputFilesHdl)[i].endTime = newTime;
+
 			status = nc_close(ncid);
-			if (status != NC_NOERR) {err = -2; goto done;}
+			if (status != NC_NOERR) {
+				err = -2;
+				goto done;
+			}
 		}	
-		else 
-		{
+		else {
 			char msg[256];
-			sprintf(msg,"PATH to NetCDF data File does not exist.%s%s",NEWLINESTRING,(*inputFilesHdl)[i].pathName);
+			sprintf(msg, "PATH to NetCDF data File does not exist.%s%s", NEWLINESTRING, (*inputFilesHdl)[i].pathName);
 			printError(msg);
 			err = true;
 			goto done;
 		}
-		
-		
 	}
-	if(fInputFilesHdl) {DisposeHandle((Handle)fInputFilesHdl); fInputFilesHdl=0;}	// so could replace list
+
+	if (fInputFilesHdl) {
+		// so could replace list
+		DisposeHandle((Handle)fInputFilesHdl);
+		fInputFilesHdl = 0;
+	}
 	fInputFilesHdl = inputFilesHdl;
 	
 done:
-	if(fileBufH) { DisposeHandle((Handle)fileBufH); fileBufH = 0;}
-	if (err)
-	{
-		if (err==-2) {printError("Error reading netCDF file");}
-		if(inputFilesHdl) {DisposeHandle((Handle)inputFilesHdl); inputFilesHdl=0;}
+	if (fileBufH) {
+		DisposeHandle((Handle)fileBufH);
+		fileBufH = 0;
 	}
+
+	if (err) {
+		if (err == -2) {
+			printError("Error reading netCDF file");
+		}
+		if (inputFilesHdl) {
+			DisposeHandle((Handle)inputFilesHdl);
+			inputFilesHdl = 0;
+		}
+	}
+
 	return err;
 }
+
 
 long TimeGridVelRect_c::GetNumDepthLevelsInFile()
 {
@@ -645,7 +678,7 @@ long TimeGridVelRect_c::GetNumDepthLevelsInFile()
 }
 
 /////////////////////////////////////////////////////////////////
-OSErr TimeGridVelRect_c::TextRead(char *path, char *topFilePath) 
+OSErr TimeGridVelRect_c::TextRead(const char *path, const char *topFilePath)
 {
 	// this code is for regular grids
 	// For regridded data files don't have the real latitude/longitude values
@@ -668,7 +701,8 @@ OSErr TimeGridVelRect_c::TextRead(char *path, char *topFilePath)
 	char fileName[256],s[256],*modelTypeStr=0,outPath[256];
 	Boolean bStartTimeYearZero = false;
 	
-	if (!path || !path[0]) return 0;
+	if (!path || !path[0])
+		return 0;
 	strcpy(fVar.pathName,path);
 	
 	strcpy(s,path);
@@ -680,23 +714,21 @@ OSErr TimeGridVelRect_c::TextRead(char *path, char *topFilePath)
 	if (status != NC_NOERR) {err = -1; goto done;}
 	
 	status = nc_inq_dimid(ncid, "time", &recid); //Navy
-	if (status != NC_NOERR) 
-	{
+	if (status != NC_NOERR) {
 		status = nc_inq_unlimdim(ncid, &recid);	// issue of time not being unlimited dimension
 		if (status != NC_NOERR || recid==-1) {err = -1; goto done;}
 	}
-	
+
 	status = nc_inq_varid(ncid, "time", &timeid); 
 	if (status != NC_NOERR) {status = nc_inq_varid(ncid, "TIME", &timeid);if (status != NC_NOERR) {err = -1; goto done;} } 	// for Ferret files, everything is in CAPS
 	/////////////////////////////////////////////////
 	
 	status = nc_inq_attlen(ncid, timeid, "units", &t_len);
-	if (status != NC_NOERR) 
-	{
-		err = -1; goto done;
+	if (status != NC_NOERR) {
+		err = -1;
+		goto done;
 	}
-	else
-	{
+	else {
 		DateTimeRec time;
 		char unitStr[24], junk[10];
 		
@@ -731,9 +763,15 @@ OSErr TimeGridVelRect_c::TextRead(char *path, char *topFilePath)
 	
 	// probably don't need this field anymore
 	status = nc_inq_attlen(ncid,NC_GLOBAL,"generating_model",&t_len2);
-	if (status != NC_NOERR) {status = nc_inq_attlen(ncid,NC_GLOBAL,"generator",&t_len2); if (status != NC_NOERR) {fIsNavy = false; /*goto done;*/}}	// will need to split for regridded or non-Navy cases
-	else 
-	{
+	if (status != NC_NOERR) {
+		// will need to split for regridded or non-Navy cases
+		status = nc_inq_attlen(ncid, NC_GLOBAL, "generator", &t_len2);
+		if (status != NC_NOERR) {
+			fIsNavy = false;
+			/*goto done;*/
+		}
+	}
+	else {
 		fIsNavy = true;
 		// may only need to see keyword is there, since already checked grid type
 		modelTypeStr = new char[t_len2+1];
@@ -921,13 +959,13 @@ LAS:
 	bounds.loLat = ((startLat-dLat/2.))*1e6;
 	bounds.hiLat = ((endLat+dLat/2.))*1e6;
 	
-	if (startLon>180.)	// need to decide how to handle hawaii...
-	{
+	if (startLon>180.) {
+		// need to decide how to handle hawaii...
 		bounds.loLong = (((startLon-dLon/2.)-360.))*1e6;
 		bounds.hiLong = (((endLon+dLon/2.)-360.))*1e6;
 	}
-	else
-	{	// if endLon>180 ask user if he wants to shift
+	else {
+		// if endLon>180 ask user if he wants to shift
 		/*if (endLon>180.)	// if endLon>180 ask user if he wants to shift (e.g. a Hawaii ncom subset might be 170 to 220, but bna is around -180)
 		{
 			short buttonSelected;
@@ -996,6 +1034,7 @@ done:
 	if (timeUnits) delete [] timeUnits;
 	return err;
 }
+
 
 OSErr TimeGridVelRect_c::ReadTimeData(long index,VelocityFH *velocityH, char* errmsg) 
 {
@@ -1203,67 +1242,67 @@ done:
 
 OSErr TimeGridVel_c::SetInterval(char *errmsg, const Seconds& model_time)
 {
-	long timeDataInterval = 0;
-	Boolean intervalLoaded = this -> CheckInterval(timeDataInterval, model_time);	
-	long indexOfStart = timeDataInterval-1;
-	long indexOfEnd = timeDataInterval;
-	long numTimesInFile = this -> GetNumTimesInFile();
 	OSErr err = 0;
-	
-	strcpy(errmsg,"");
-	
-	if(intervalLoaded) 
+
+	long timeDataInterval = 0;
+	Boolean intervalLoaded = this->CheckInterval(timeDataInterval, model_time);
+	long indexOfStart = timeDataInterval - 1;
+	long indexOfEnd = timeDataInterval;
+	long numTimesInFile = this->GetNumTimesInFile();
+
+	errmsg[0] = 0;
+
+	if (intervalLoaded)
 		return 0;
-	
-	//sprintf(errmsg,"Time interval = %ld\n",timeDataInterval);
-	//printNote(errmsg);
+
 	// check for constant current 
-	if(numTimesInFile==1 && !(GetNumFiles()>1))	//or if(timeDataInterval==-1) 
+	if (numTimesInFile == 1 && !(GetNumFiles() > 1))
+		//or if(timeDataInterval==-1)
 	{
 		indexOfStart = 0;
 		indexOfEnd = UNASSIGNEDINDEX;	// should already be -1
 	}
-	
-	if(timeDataInterval == 0 && fAllowExtrapolationInTime)
-	{
+
+	if (timeDataInterval == 0 && fAllowExtrapolationInTime) {
 		indexOfStart = 0;
 		indexOfEnd = -1;
 	}
 
-	if(timeDataInterval == 0 || timeDataInterval == numTimesInFile /*|| (timeDataInterval==1 && fAllowExtrapolationInTime)*/)
-	{	// before the first step in the file
-		
-		if (GetNumFiles()>1)
-		{
-			if ((err = CheckAndScanFile(errmsg, model_time)) || fOverLap) goto done;	
+	cerr << "timeDataInterval: " << timeDataInterval << endl;
+	if (timeDataInterval == 0 || timeDataInterval == numTimesInFile)
+	{
+
+		cerr << "GetNumFiles(): " << GetNumFiles() << endl;
+		// before the first step in the file
+		if (GetNumFiles() > 1) {
+			if ((err = CheckAndScanFile(errmsg, model_time)) || fOverLap)
+				goto done;
 			
-			intervalLoaded = this -> CheckInterval(timeDataInterval, model_time);	
+			intervalLoaded = this->CheckInterval(timeDataInterval, model_time);
 			
-			indexOfStart = timeDataInterval-1;
+			indexOfStart = timeDataInterval - 1;
 			indexOfEnd = timeDataInterval;
-			numTimesInFile = this -> GetNumTimesInFile();
-			if (fAllowExtrapolationInTime && (timeDataInterval==numTimesInFile || timeDataInterval == 0))
+			numTimesInFile = this->GetNumTimesInFile();
+			if (fAllowExtrapolationInTime &&
+				(timeDataInterval == numTimesInFile || timeDataInterval == 0))
 			{
-				if(intervalLoaded) 
+				if (intervalLoaded)
 					return 0;
 				indexOfEnd = -1;
-				if (timeDataInterval == 0) indexOfStart = 0;	// if we allow extrapolation we need to load the first time
+				if (timeDataInterval == 0)
+					indexOfStart = 0;	// if we allow extrapolation we need to load the first time
 			}
 		}
-		else
-		{
-			if (fAllowExtrapolationInTime && timeDataInterval == numTimesInFile) 
-			{
+		else {
+			if (fAllowExtrapolationInTime && timeDataInterval == numTimesInFile) {
 				fStartData.timeIndex = numTimesInFile-1;//check if time > last model time in all files
 				fEndData.timeIndex = UNASSIGNEDINDEX;//check if time > last model time in all files
 			}
-			else if (fAllowExtrapolationInTime && timeDataInterval == 0) 
-			{
+			else if (fAllowExtrapolationInTime && timeDataInterval == 0) {
 				fStartData.timeIndex = 0;//check if time > last model time in all files
 				fEndData.timeIndex = UNASSIGNEDINDEX;//check if time > last model time in all files
 			}
-			else
-			{
+			else {
 				err = -1;
 				strcpy(errmsg,"Time outside of interval being modeled");
 				goto done;
@@ -1320,17 +1359,18 @@ done:
 
 OSErr TimeGridVel_c::CheckAndScanFile(char *errmsg, const Seconds& model_time)
 {
+	OSErr err = 0;
 	Seconds time = model_time, startTime, endTime, lastEndTime, testTime, firstStartTime; 
 	
-	long i,numFiles = GetNumFiles();
-	OSErr err = 0;
-	
-	errmsg[0]=0;
+	long i, numFiles = GetNumFiles();
+
+	errmsg[0] = 0;
+
 	if (fEndData.timeIndex!=UNASSIGNEDINDEX)
 		testTime = (*fTimeHdl)[fEndData.timeIndex];	// currently loaded end time
 	
 	firstStartTime = (*fInputFilesHdl)[0].startTime + fTimeShift;
-	for (i=0;i<numFiles;i++)
+	for (i = 0; i < numFiles; i++)
 	{
 		startTime = (*fInputFilesHdl)[i].startTime + fTimeShift;
 		endTime = (*fInputFilesHdl)[i].endTime + fTimeShift;
@@ -1367,7 +1407,9 @@ OSErr TimeGridVel_c::CheckAndScanFile(char *errmsg, const Seconds& model_time)
 				
 				DisposeLoadedData(&fEndData);
 				strcpy(fVar.pathName,(*fInputFilesHdl)[fileNum-1].pathName);
-				if (err = this -> ReadTimeData(GetNumTimesInFile()-1,&fStartData.dataHdl,errmsg)) return err;
+				err = this->ReadTimeData(GetNumTimesInFile() - 1, &fStartData.dataHdl, errmsg);
+				if (err)
+					return err;
 			}
 			fStartData.timeIndex = UNASSIGNEDINDEX;
 			//if(fTimeHdl) {DisposeHandle((Handle)fTimeHdl); fTimeHdl=0;}
@@ -1398,7 +1440,9 @@ OSErr TimeGridVel_c::CheckAndScanFile(char *errmsg, const Seconds& model_time)
 				
 				DisposeLoadedData(&fEndData);
 				strcpy(fVar.pathName,(*fInputFilesHdl)[i-1].pathName);
-				if (err = this -> ReadTimeData(GetNumTimesInFile()-1,&fStartData.dataHdl,errmsg)) return err;	
+				err = this->ReadTimeData(GetNumTimesInFile() - 1, &fStartData.dataHdl, errmsg);
+				if (err)
+					return err;
 			}
 			fStartData.timeIndex = UNASSIGNEDINDEX;
 			//if(fTimeHdl) {DisposeHandle((Handle)fTimeHdl); fTimeHdl=0;}
@@ -1440,112 +1484,6 @@ OSErr TimeGridVel_c::CheckAndScanFile(char *errmsg, const Seconds& model_time)
 	return -1;	
 }
 
-//OSErr TimeGridVel_c::ScanFileForTimes(char *path,Seconds ***timeH,Boolean setStartTime)
-OSErr ScanFileForTimes(char *path,Seconds ***timeH)
-{
-	OSErr err = 0;
-	long i,numScanned,line=0;
-	DateTimeRec time;
-	Seconds timeSeconds;
-	char s[1024], outPath[256];
-	CHARH fileBufH = 0;
-	int status, ncid, recid, timeid;
-	size_t recs, t_len, t_len2;
-	double timeVal;
-	char recname[NC_MAX_NAME], *timeUnits=0;	
-	static size_t timeIndex;
-	Seconds startTime2;
-	double timeConversion = 1.;
-	char errmsg[256] = "";
-	Seconds **timeHdl = 0;
-	
-	status = nc_open(path, NC_NOWRITE, &ncid);
-	// code goes here, will need to resolve file paths to unix paths in readinputfilenames
-	if (status != NC_NOERR) /*{err = -1; goto done;}*/
-	{
-#if TARGET_API_MAC_CARBON
-		err = ConvertTraditionalPathToUnixPath((const char *) path, outPath, kMaxNameLen) ;
-		status = nc_open(outPath, NC_NOWRITE, &ncid);
-#endif
-		if (status != NC_NOERR) {err = -1; goto done;}
-	}
-	
-	status = nc_inq_dimid(ncid, "time", &recid); 
-	if (status != NC_NOERR) 
-	{
-		status = nc_inq_unlimdim(ncid, &recid);	// maybe time is unlimited dimension
-		if (status != NC_NOERR) {err = -1; goto done;}
-	}
-	
-	status = nc_inq_varid(ncid, "time", &timeid); 
-	if (status != NC_NOERR) {err = -1; goto done;} 
-	
-	/////////////////////////////////////////////////
-	status = nc_inq_attlen(ncid, timeid, "units", &t_len);
-	if (status != NC_NOERR) 
-	{
-		err = -1; goto done;
-	}
-	else
-	{
-		DateTimeRec time;
-		char unitStr[24], junk[10];
-		
-		timeUnits = new char[t_len+1];
-		status = nc_get_att_text(ncid, timeid, "units", timeUnits);
-		if (status != NC_NOERR) {err = -2; goto done;} 
-		timeUnits[t_len] = '\0'; // moved this statement before StringSubstitute, JLM 5/2/10
-		StringSubstitute(timeUnits, ':', ' ');
-		StringSubstitute(timeUnits, '-', ' ');
-		
-		numScanned=sscanf(timeUnits, "%s %s %hd %hd %hd %hd %hd %hd",
-						  unitStr, junk, &time.year, &time.month, &time.day,
-						  &time.hour, &time.minute, &time.second) ;
-		if (numScanned==5)	
-		{time.hour = 0; time.minute = 0; time.second = 0; }
-		else if (numScanned==7)	time.second = 0;
-		else if (numScanned<8)	
-			//if (numScanned!=8)	
-		{ err = -1; TechError("TimeGridVel::ScanFileForTimes()", "sscanf() == 8", 0); goto done; }
-		DateToSeconds (&time, &startTime2);	// code goes here, which start Time to use ??
-		if (!strcmpnocase(unitStr,"HOURS") || !strcmpnocase(unitStr,"HOUR"))
-			timeConversion = 3600.;
-		else if (!strcmpnocase(unitStr,"MINUTES") || !strcmpnocase(unitStr,"MINUTE"))
-			timeConversion = 60.;
-		else if (!strcmpnocase(unitStr,"SECONDS") || !strcmpnocase(unitStr,"SECOND"))
-			timeConversion = 1.;
-		else if (!strcmpnocase(unitStr,"DAYS") || !strcmpnocase(unitStr,"DAY"))
-			timeConversion = 24*3600.;
-	} 
-	
-	status = nc_inq_dim(ncid, recid, recname, &recs);
-	if (status != NC_NOERR) {err = -2; goto done;}
-	timeHdl = (Seconds**)_NewHandleClear(recs*sizeof(Seconds));
-	if (!timeHdl) {err = memFullErr; goto done;}
-	for (i=0;i<recs;i++)
-	{
-		Seconds newTime;
-		// possible units are, HOURS, MINUTES, SECONDS,...
-		timeIndex = i;
-		status = nc_get_var1_double(ncid, timeid, &timeIndex, &timeVal);
-		if (status != NC_NOERR) {strcpy(errmsg,"Error reading times from NetCDF file"); err = -2; goto done;}
-		newTime = RoundDateSeconds(round(startTime2+timeVal*timeConversion));
-		INDEXH(timeHdl,i) = newTime;	// which start time where?
-	}
-	*timeH = timeHdl;
-	status = nc_close(ncid);
-	if (status != NC_NOERR) {err = -2; goto done;}
-	
-	
-done:
-	if (err)
-	{
-		if (err==-2) {printError("Error reading times from NetCDF file");}
-		if (timeHdl) {DisposeHandle((Handle)timeHdl); timeHdl=0;}
-	}
-	return err;
-}
-
 long TimeGridVelRect_c::GetNumDepthLevels()
 {
 	long numDepthLevels = 0;
@@ -1560,9 +1498,9 @@ long TimeGridVelRect_c::GetNumDepthLevels()
 		size_t sigmaLength=0;
 		strcpy(path,fVar.pathName);
 		if (!path || !path[0]) return -1;
-		
+
 		status = nc_open(path, NC_NOWRITE, &ncid);
-		if (status != NC_NOERR) 
+		if (status != NC_NOERR)
 		{
 #if TARGET_API_MAC_CARBON
 			err = ConvertTraditionalPathToUnixPath((const char *) path, outPath, kMaxNameLen) ;
@@ -1570,11 +1508,11 @@ long TimeGridVelRect_c::GetNumDepthLevels()
 #endif
 			if (status != NC_NOERR) {err = -1; return -1;}
 		}
-		status = nc_inq_dimid(ncid, "sigma", &sigmaid); 	
-		if (status != NC_NOERR) 
+		status = nc_inq_dimid(ncid, "sigma", &sigmaid);
+		if (status != NC_NOERR)
 		{
 			numDepthLevels = 1;	// check for zgrid option here
-		}	
+		}
 		else
 		{
 			status = nc_inq_varid(ncid, "sigma", &sigmavarid); //Navy
@@ -1584,7 +1522,7 @@ long TimeGridVelRect_c::GetNumDepthLevels()
 			numDepthLevels = sigmaLength;
 		}
 	}
-	return numDepthLevels;     
+	return numDepthLevels;
 }
 
 long TimeGridVelRect_c::GetNumDepths(void)
@@ -1599,25 +1537,25 @@ VelocityRec TimeGridVelRect_c::GetScaledPatValue(const Seconds& model_time, Worl
 {	// pull out the getpatval part
 	double timeAlpha, depthAlpha;
 	float topDepth, bottomDepth;
-	long index; 
+	long index;
 	long depthIndex1,depthIndex2;	// default to -1?
 	Seconds startTime,endTime;
 	char errmsg[256];
-	
+
 	VelocityRec	scaledPatVelocity = {0.,0.};
 	OSErr err = 0;
 	
 	index = GetVelocityIndex(refPoint.p);  // regular grid
 	
 	if (refPoint.z>0 && fVar.gridType==TWO_D)
-	{		
-		if (fAllowVerticalExtrapolationOfCurrents && fMaxDepthForExtrapolation >= refPoint.z) 
+	{
+		if (fAllowVerticalExtrapolationOfCurrents && fMaxDepthForExtrapolation >= refPoint.z)
 		{
 			// fall through to get the velocity
 		}
 		else
 		{	// may allow 3D currents later
-			return scaledPatVelocity; 
+			return scaledPatVelocity;
 		}
 	}
 	
@@ -1631,11 +1569,11 @@ VelocityRec TimeGridVelRect_c::GetScaledPatValue(const Seconds& model_time, Worl
 		depthAlpha = (bottomDepth - refPoint.z)/(double)(bottomDepth - topDepth);
 	}
 	
-	// Check for constant current 
+	// Check for constant current
 	if((GetNumTimesInFile()==1 && !(GetNumFiles()>1)) || (fEndData.timeIndex == UNASSIGNEDINDEX && model_time > ((*fTimeHdl)[fStartData.timeIndex] + fTimeShift) && fAllowExtrapolationInTime) || (fEndData.timeIndex == UNASSIGNEDINDEX && model_time < ((*fTimeHdl)[fStartData.timeIndex] + fTimeShift) && fAllowExtrapolationInTime))
 	{
 		// Calculate the interpolated velocity at the point
-		if (index >= 0) 
+		if (index >= 0)
 		{
 			if(depthIndex2==UNASSIGNEDINDEX) // surface velocity or special cases
 			{
@@ -1853,7 +1791,7 @@ double TimeGridVelRect_c::GetDepthAtIndex(long depthIndex, double totalDepth)
 	{
 		sc_r = INDEXH(fDepthLevelsHdl,depthIndex);
 		Cs_r = INDEXH(fDepthLevelsHdl2,depthIndex);
-		depth = abs(totalDepth*(hc*sc_r+totalDepth*Cs_r))/(totalDepth+hc);
+		depth = fabs(totalDepth*(hc*sc_r+totalDepth*Cs_r))/(totalDepth+hc);
 	}
 	else
 		depth = INDEXH(fDepthLevelsHdl,depthIndex)*totalDepth; // times totalDepth
@@ -1975,6 +1913,8 @@ TimeGridVelRect_c::TimeGridVelRect_c () : TimeGridVel_c()
 	fAllowVerticalExtrapolationOfCurrents = false;
 	fMaxDepthForExtrapolation = 0.;	// assume 2D is just surface
 	
+	fFileScaleFactor = 1.0;
+
 }
 
 void TimeGridVelRect_c::Dispose ()
@@ -2238,25 +2178,23 @@ void TimeGridVelCurv_c::GetDepthIndices(long ptIndex, float depthAtPoint, float 
 	 totalDepth = INDEXH(fDepthsH,ptIndex);
 	 }
 	 else*/
-	if (totalDepth==0)
-	{
+	if (totalDepth == 0) {
 		*depthIndex1 = indexToDepthData;
 		*depthIndex2 = UNASSIGNEDINDEX;
 		return;
 	}
-	
-	if (fDepthLevelsHdl && numDepthLevels>0) 
-	{
+
+	if (fDepthLevelsHdl && numDepthLevels > 0) {
 		/*if (fVar.gridType==MULTILAYER)
 		 totalDepth = INDEXH(fDepthLevelsHdl,numDepthLevels-1);*/
 		// otherwise it's SIGMA_ROMS
 	}
-	else
-	{
+	else {
 		*depthIndex1 = indexToDepthData;
 		*depthIndex2 = UNASSIGNEDINDEX;
 		return;
 	}
+
 	switch(fVar.gridType) 
 	{	// function should not be called for TWO_D, haven't used BAROTROPIC yet
 			/*case TWO_D:	// no depth data
@@ -2460,8 +2398,8 @@ void TimeGridVelCurv_c::GetDepthIndices(long ptIndex, float depthAtPoint, float 
 					Cs_r2 = INDEXH(fDepthLevelsHdl2,indexToDepthData+j-1);
 					//depthAtLevel = abs(hc * (sc_r-Cs_r) + Cs_r * totalDepth);
 					//depthAtNextLevel = abs(hc * (sc_r2-Cs_r2) + Cs_r2 * totalDepth);
-					depthAtLevel = abs(totalDepth*(hc*sc_r+totalDepth*Cs_r))/(totalDepth+hc);
-					depthAtNextLevel = abs(totalDepth*(hc*sc_r2+totalDepth*Cs_r2))/(totalDepth+hc);
+					depthAtLevel = fabs(totalDepth*(hc*sc_r+totalDepth*Cs_r))/(totalDepth+hc);
+					depthAtNextLevel = fabs(totalDepth*(hc*sc_r2+totalDepth*Cs_r2))/(totalDepth+hc);
 					if(depthAtLevel<depthAtPoint &&
 					   depthAtPoint<=depthAtNextLevel)
 					{
@@ -2519,32 +2457,38 @@ void TimeGridVelCurv_c::GetDepthIndices(long ptIndex, float depthAtPoint, float 
 	}
 }
 
-OSErr TimeGridVelCurv_c::TextRead(char *path, char *topFilePath) 
+OSErr TimeGridVelCurv_c::TextRead(const char *path, const char *topFilePath)
 {
 	// this code is for curvilinear grids
 	OSErr err = 0;
-	long i,j,k, numScanned, indexOfStart = 0;
+	char errmsg[256] = "";
+	char s[256], topPath[256], outPath[256];
+	char fileName[256];
+	char recname[NC_MAX_NAME];
+	char dimname[NC_MAX_NAME];
+
+	long i, j, k, numScanned, indexOfStart = 0;
 	int status, ncid, latIndexid, lonIndexid, latid, lonid, recid, timeid, sigmaid, sigmavarid, sigmavarid2, hcvarid, depthid, depthdimid, depthvarid, mask_id, numdims;
-	size_t latLength, lonLength, recs, t_len, t_len2, sigmaLength=0;
-	float startLat,startLon,endLat,endLon,hc_param=0.;
-	char recname[NC_MAX_NAME], *timeUnits=0;	
-	char dimname[NC_MAX_NAME], s[256], topPath[256], outPath[256];
-	WORLDPOINTFH vertexPtsH=0;
-	FLOATH totalDepthsH=0, sigmaLevelsH=0;
-	float yearShift=0.;
-	double *lat_vals=0,*lon_vals=0,timeVal;
-	float *depth_vals=0,*sigma_vals=0,*sigma_vals2=0;
-	static size_t latIndex=0,lonIndex=0,timeIndex,ptIndex[2]={0,0},sigmaIndex=0;
+	size_t latLength, lonLength, recs, t_len, t_len2, sigmaLength = 0;
+	static size_t mask_index[] = {0, 0};
+	static size_t mask_count[2];
+	static size_t latIndex = 0, lonIndex = 0, timeIndex, ptIndex[2] = {0, 0}, sigmaIndex = 0;
 	static size_t pt_count[2], sigma_count;
+
+	float startLat, startLon, endLat, endLon, hc_param = 0.;
+	char *timeUnits = 0;
+	float yearShift = 0.;
+	double *lat_vals = 0, *lon_vals = 0, timeVal;
+	float *depth_vals = 0, *sigma_vals = 0, *sigma_vals2 = 0;
 	Seconds startTime, startTime2;
 	double timeConversion = 1., scale_factor = 1.;
-	char errmsg[256] = "";
-	char fileName[256],*modelTypeStr=0;
+	char *modelTypeStr = 0;
 	Boolean isLandMask = true/*, isCoopsMask = false*/;
-	static size_t mask_index[] = {0,0};
-	static size_t mask_count[2];
 	double *landmask = 0; 
-	DOUBLEH landmaskH=0;
+
+	DOUBLEH landmaskH = 0;
+	FLOATH totalDepthsH = 0, sigmaLevelsH = 0;
+	WORLDPOINTFH vertexPtsH = 0;
 	
 	if (!path || !path[0]) return 0;
 	strcpy(fVar.pathName,path);
@@ -2873,7 +2817,7 @@ OSErr TimeGridVelCurv_c::TextRead(char *path, char *topFilePath)
 	
 	// either file is sent in ( output from Topology save option) or Topology needs to be generated
 	if (topFilePath[0]) 
-	{	
+	{
 		err = (dynamic_cast<TimeGridVelCurv*>(this))->ReadTopology(topFilePath); 
 		goto depths;
 	}
@@ -2900,8 +2844,8 @@ depths:
 		{
 			for (j=0;j<lonLength;j++)
 			{
-				INDEXH(totalDepthsH,i*lonLength+j) = abs(depth_vals[(latLength-i-1)*lonLength+j]) * scale_factor;	
-				INDEXH(fDepthsH,i*lonLength+j) = abs(depth_vals[(latLength-i-1)*lonLength+j]) * scale_factor;	
+				INDEXH(totalDepthsH,i*lonLength+j) = fabs(depth_vals[(latLength-i-1)*lonLength+j]) * scale_factor;
+				INDEXH(fDepthsH,i*lonLength+j) = fabs(depth_vals[(latLength-i-1)*lonLength+j]) * scale_factor;
 			}
 		}
 	}
@@ -2922,7 +2866,7 @@ depths:
 				if (fVar.gridType == SIGMA_ROMS)
 					INDEXH(fDepthLevelsHdl,i) = sigma;
 				else
-					INDEXH(fDepthLevelsHdl,i) = abs(sigma);
+					INDEXH(fDepthLevelsHdl,i) = fabs(sigma);
 			}
 			
 		}
@@ -3028,28 +2972,30 @@ done:
 OSErr TimeGridVelCurv_c::ReadTimeData(long index,VelocityFH *velocityH, char* errmsg) 
 {
 	OSErr err = 0;
-	long i,j,k;
 	char path[256], outPath[256];
-	char *velUnits=0; 
+
+	long i, j, k;
 	int status, ncid, numdims;
 	int curr_ucmp_id, curr_vcmp_id, curr_wcmp_id, angle_id, mask_id, uv_ndims;
-	static size_t curr_index[] = {0,0,0,0}, angle_index[] = {0,0};
-	static size_t curr_count[4], angle_count[2];
-	size_t velunit_len;
-	double *curr_uvals = 0,*curr_vvals = 0, *curr_wvals = 0, fill_value=-1e+34, test_value=8e+10;
-	double *landmask = 0, velConversion=1.;
-	double *angle_vals = 0,debug_mask;
-	long totalNumberOfVels = fNumRows * fNumCols * fVar.maxNumDepths;
-	VelocityFH velH = 0;
-	FLOATH wvelH = 0;
 	long latlength = fNumRows, numtri = 0;
 	long lonlength = fNumCols;
-	double scale_factor = 1.,angle = 0.,u_grid,v_grid;
+	long totalNumberOfVels = fNumRows * fNumCols * fVar.maxNumDepths;
 	long numDepths = fVar.maxNumDepths;	// assume will always have full set of depths at each point for now
+	size_t velunit_len;
+	static size_t curr_index[] = {0, 0, 0, 0}, angle_index[] = {0, 0};
+	static size_t curr_count[4], angle_count[2];
+
+	double scale_factor = 1., angle = 0., u_grid, v_grid;
+	char *velUnits = 0;
+	double *curr_uvals = 0, *curr_vvals = 0, *curr_wvals = 0, fill_value = -1e+34, test_value = 8e+10;
+	double *landmask = 0, velConversion = 1.;
+	double *angle_vals = 0, debug_mask;
+
+	VelocityFH velH = 0;
+	FLOATH wvelH = 0;
 	Boolean bRotated = true, isLandMask = true, bIsWVel = false;
 	
-	errmsg[0]=0;
-	
+	errmsg[0] = 0;
 	
 	strcpy(path,fVar.pathName);
 	if (!path || !path[0]) return -1;
@@ -4788,249 +4734,260 @@ long TimeGridVelCurv_c::GetNumDepthLevels()
 	return numDepthLevels;     
 }
 
-OSErr TimeGridVelCurv_c::ReadTopology(char* path)
+
+
+// import NetCDF curvilinear info so don't have to regenerate
+OSErr TimeGridVelCurv_c::ReadTopology(vector<string> &linesInFile)
 {
-	// import NetCDF curvilinear info so don't have to regenerate
-	char s[1024], errmsg[256]/*, s[256], topPath[256]*/;
-	long i, numPoints, numTopoPoints, line = 0, numPts;
-	CHARH f = 0;
 	OSErr err = 0;
-	
-	TopologyHdl topo=0;
-	LongPointHdl pts=0;
-	FLOATH depths=0;
+	char errmsg[256];
+
+	string currentLine;
+	long numPoints, numTopoPoints, line = 0, numPts;
+
+	TopologyHdl topo = 0;
+	LongPointHdl pts = 0;
+	FLOATH depths = 0;
 	VelocityFH velH = 0;
 	DAGTreeStruct tree;
 	WorldRect bounds = voidWorldRect;
-	
-	TTriGridVel *triGrid = nil;
+
+	TTriGridVel *triGrid = 0;
 	tree.treeHdl = 0;
 	TDagTree *dagTree = 0;
-	
+
 	long numWaterBoundaries, numBoundaryPts, numBoundarySegs;
-	LONGH boundarySegs=0, waterBoundaries=0, boundaryPts=0;
-	
-	errmsg[0]=0;
-	
-	if (!path || !path[0]) return 0;
-	
-	if (err = ReadFileContents(TERMINATED,0, 0, path, 0, 0, &f)) {
-		TechError("TimeGridVelCurv::ReadTopology()", "ReadFileContents()", err);
-		goto done;
-	}
-	
-	_HLock((Handle)f); // JLM 8/4/99
-	
+	LONGH boundarySegs = 0, waterBoundaries = 0, boundaryPts = 0;
+
+	errmsg[0] = 0;
+
 	// No header
 	// start with transformation array and vertices
 	MySpinCursor(); // JLM 8/4/99
-	NthLineInTextOptimized(*f, (line)++, s, 1024); 
-	if(IsTransposeArrayHeaderLine(s,&numPts)) // 
-	{
-		if (err = ReadTransposeArray(f,&line,&fVerdatToNetCDFH,numPts,errmsg)) 
-		{strcpy(errmsg,"Error in ReadTransposeArray"); goto done;}
+
+	currentLine = linesInFile[line++];
+	if (IsTransposeArrayHeaderLine(currentLine, numPts)) {
+		err = ReadTransposeArray(linesInFile, &line, &fVerdatToNetCDFH, numPts, errmsg);
+		if (err) {
+			strcpy(errmsg, "Error in ReadTransposeArray");
+			goto done;
+		}
 	}
-	else {err=-1; strcpy(errmsg,"Error in Transpose header line"); goto done;}
-	
-	if(err = ReadTVertices(f,&line,&pts,&depths,errmsg)) goto done;
-	
-	if(pts) 
-	{
-		LongPoint	thisLPoint;
-		
-		numPts = _GetHandleSize((Handle)pts)/sizeof(LongPoint);
-		if(numPts > 0)
-		{
-			WorldPoint  wp;
-			for(i=0;i<numPts;i++)
-			{
-				thisLPoint = INDEXH(pts,i);
+	else {
+		err = -1;
+		strcpy(errmsg, "Error in Transpose header line");
+		goto done;
+	}
+
+	err = ReadTVertices(linesInFile, &line, &pts, &depths, errmsg);
+	if (err)
+		goto done;
+
+	if (pts) {
+		LongPoint thisLPoint;
+
+		numPts = _GetHandleSize((Handle)pts) / sizeof(LongPoint);
+		if (numPts > 0) {
+			WorldPoint wp;
+			for (long i = 0; i < numPts; i++) {
+				thisLPoint = INDEXH(pts, i);
+
 				wp.pLat = thisLPoint.v;
 				wp.pLong = thisLPoint.h;
+
 				AddWPointToWRect(wp.pLat, wp.pLong, &bounds);
 			}
 		}
 	}
+
 	MySpinCursor();
-	
-	NthLineInTextOptimized(*f, (line)++, s, 1024); 
-	if(IsBoundarySegmentHeaderLine(s,&numBoundarySegs)) // Boundary data from CATs
-	{
+
+	currentLine = linesInFile[line++];
+
+	if (IsBoundarySegmentHeaderLine(currentLine, numBoundarySegs)) {
+		// Boundary data from CATs
 		MySpinCursor();
-		if (numBoundarySegs>0)
-			err = ReadBoundarySegs(f,&line,&boundarySegs,numBoundarySegs,errmsg);
-		if(err) goto done;
-		NthLineInTextOptimized(*f, (line)++, s, 1024); 
+
+		if (numBoundarySegs > 0)
+			err = ReadBoundarySegs(linesInFile, &line, &boundarySegs, numBoundarySegs, errmsg);
+		if (err)
+			goto done;
+
+		currentLine = linesInFile[line++];
 	}
-	else
-	{
-		//err = -1;
-		//strcpy(errmsg,"Error in Boundary segment header line");
-		//goto done;
-		// not needed for 2D files, but we require for now
-	}
+
 	MySpinCursor(); // JLM 8/4/99
-	
-	if(IsWaterBoundaryHeaderLine(s,&numWaterBoundaries,&numBoundaryPts)) // Boundary types from CATs
-	{
+
+	if (IsWaterBoundaryHeaderLine(currentLine, numWaterBoundaries, numBoundaryPts)) {
+		// Boundary types from CATs
 		MySpinCursor();
-		if (numBoundaryPts>0)
-			err = ReadWaterBoundaries(f,&line,&waterBoundaries,numWaterBoundaries,numBoundaryPts,errmsg);
-		if(err) goto done;
-		NthLineInTextOptimized(*f, (line)++, s, 1024); 
+
+		if (numBoundaryPts > 0)
+			err = ReadWaterBoundaries(linesInFile, &line, &waterBoundaries,
+									  numWaterBoundaries, numBoundaryPts, errmsg);
+		if (err)
+			goto done;
+
+		currentLine = linesInFile[line++];
 	}
-	else
-	{
-		//err = -1;
-		//strcpy(errmsg,"Error in Water boundaries header line");
-		//goto done;
-		// not needed for 2D files, but we require for now
-	}
+
 	MySpinCursor(); // JLM 8/4/99
-	//NthLineInTextOptimized(*f, (line)++, s, 1024); 
-	
-	if(IsBoundaryPointsHeaderLine(s,&numBoundaryPts)) // Boundary data from CATs
-	{
+
+	if (IsBoundaryPointsHeaderLine(currentLine, numBoundaryPts)) {
+		// Boundary data from CATs
 		MySpinCursor();
-		if (numBoundaryPts>0)
-			err = ReadBoundaryPts(f,&line,&boundaryPts,numBoundaryPts,errmsg);
-		if(err) goto done;
-		NthLineInTextOptimized(*f, (line)++, s, 1024); 
+
+		if (numBoundaryPts > 0)
+			err = ReadBoundaryPts(linesInFile, &line, &boundaryPts, numBoundaryPts, errmsg);
+		if (err)
+			goto done;
+
+		currentLine = linesInFile[line++];
 	}
-	else
-	{
-		//err = -1;
-		//strcpy(errmsg,"Error in Boundary segment header line");
-		//goto done;
-		// not always needed ? probably always needed for curvilinear
-	}
+
 	MySpinCursor(); // JLM 8/4/99
-	
-	if(IsTTopologyHeaderLine(s,&numTopoPoints)) // Topology from CATs
-	{
+
+	if (IsTTopologyHeaderLine(currentLine, numTopoPoints)) {
+		// Topology from CATs
 		MySpinCursor();
-		err = ReadTTopologyBody(f,&line,&topo,&velH,errmsg,numTopoPoints,FALSE);
-		if(err) goto done;
-		NthLineInTextOptimized(*f, (line)++, s, 1024); 
+
+		err = ReadTTopologyBody(linesInFile, &line, &topo, &velH,
+								errmsg, numTopoPoints, FALSE);
+		if (err)
+			goto done;
+
+		currentLine = linesInFile[line++];
 	}
-	else
-	{
+	else {
 		err = -1; // for now we require TTopology
-		strcpy(errmsg,"Error in topology header line");
-		if(err) goto done;
-	}
-	MySpinCursor(); // JLM 8/4/99
-	
-	
-	//NthLineInTextOptimized(*f, (line)++, s, 1024); 
-	
-	if(IsTIndexedDagTreeHeaderLine(s,&numPoints))  // DagTree from CATs
-	{
-		MySpinCursor();
-		err = ReadTIndexedDagTreeBody(f,&line,&tree,errmsg,numPoints);
-		if(err) goto done;
-	}
-	else
-	{
-		err = -1; // for now we require TIndexedDagTree
-		strcpy(errmsg,"Error in dag tree header line");
-		if(err) goto done;
-	}
-	MySpinCursor(); // JLM 8/4/99
-	
-	/////////////////////////////////////////////////
-	// code goes here, do we want to store the grid boundary and land/water information?
-	/*if (waterBoundaries && waterBoundaries && boundaryPts)
-	 {
-	 //PtCurMap *map = CreateAndInitPtCurMap(fVar.userName,bounds); // the map bounds are the same as the grid bounds
-	 PtCurMap *map = CreateAndInitPtCurMap("Extended Topology",bounds); // the map bounds are the same as the grid bounds
-	 if (!map) {strcpy(errmsg,"Error creating ptcur map"); goto done;}
-	 // maybe move up and have the map read in the boundary information
-	 map->SetBoundarySegs(boundarySegs);	
-	 map->SetBoundaryPoints(boundaryPts);	
-	 map->SetWaterBoundaries(waterBoundaries);
-	 
-	 *newMap = map;
-	 }	
-	 else*/	
-	{
-		if (waterBoundaries) {DisposeHandle((Handle)waterBoundaries); waterBoundaries=0;}
-		if (boundarySegs) {DisposeHandle((Handle)boundarySegs); boundarySegs=0;}
-		if (boundaryPts) {DisposeHandle((Handle)boundaryPts); boundaryPts=0;}
-	}
-	
-	/////////////////////////////////////////////////
-	
-	
-	triGrid = new TTriGridVel;
-	if (!triGrid)
-	{		
-		err = true;
-		TechError("Error in TimeGridVelCurv::ReadTopology()","new TTriGridVel" ,err);
+		strcpy(errmsg, "Error in topology header line");
 		goto done;
 	}
-	
+
+	MySpinCursor(); // JLM 8/4/99
+
+	if (IsTIndexedDagTreeHeaderLine(currentLine, numPoints)) {
+		// DagTree from CATs
+		MySpinCursor();
+
+		err = ReadTIndexedDagTreeBody(linesInFile, &line, &tree, errmsg, numPoints);
+		if (err)
+			goto done;
+	}
+	else {
+		err = -1; // for now we require TIndexedDagTree
+		strcpy(errmsg, "Error in dag tree header line");
+		goto done;
+	}
+
+	MySpinCursor(); // JLM 8/4/99
+
+	/////////////////////////////////////////////////
+	// code goes here, do we want to store the grid boundary and land/water information?
+	if (waterBoundaries) {
+		DisposeHandle((Handle)waterBoundaries);
+		waterBoundaries = 0;
+	}
+	if (boundarySegs) {
+		DisposeHandle((Handle)boundarySegs);
+		boundarySegs = 0;
+	}
+	if (boundaryPts) {
+		DisposeHandle((Handle)boundaryPts);
+		boundaryPts = 0;
+	}
+
+	triGrid = new TTriGridVel;
+	if (!triGrid) {
+		err = true;
+		TechError("Error in TimeGridVelCurv::ReadTopology()", "new TTriGridVel", err);
+		goto done;
+	}
+
 	fGrid = (TTriGridVel*)triGrid;
-	
-	triGrid -> SetBounds(bounds); 
+
+	triGrid->SetBounds(bounds);
 	this->SetGridBounds(bounds);
 	//triGrid -> SetDepths(depths);
-	
-	dagTree = new TDagTree(pts,topo,tree.treeHdl,velH,tree.numBranches); 
-	if(!dagTree)
-	{
+
+	dagTree = new TDagTree(pts, topo, tree.treeHdl, velH, tree.numBranches);
+	if (!dagTree) {
 		err = -1;
 		printError("Unable to read Extended Topology file.");
 		goto done;
 	}
-	
-	triGrid -> SetDagTree(dagTree);
-	
+
+	triGrid->SetDagTree(dagTree);
+
 	pts = 0;	// because fGrid is now responsible for it
 	topo = 0; // because fGrid is now responsible for it
 	tree.treeHdl = 0; // because fGrid is now responsible for it
 	velH = 0; // because fGrid is now responsible for it
 	//depths = 0;
-	
+
 done:
-	
-	if(depths) {DisposeHandle((Handle)depths); depths=0;}
-	if(f) 
-	{
-		_HUnlock((Handle)f); 
-		DisposeHandle((Handle)f); 
-		f = 0;
+
+	if (depths) {
+		DisposeHandle((Handle)depths);
+		depths = 0;
 	}
-	
-	if(err)
+
+	if (err)
 	{
-		if(!errmsg[0])
-			strcpy(errmsg,"An error occurred in TimeGridVelCurv::ReadTopology");
-		printError(errmsg); 
-		if(pts) {DisposeHandle((Handle)pts); pts=0;}
-		if(topo) {DisposeHandle((Handle)topo); topo=0;}
-		if(velH) {DisposeHandle((Handle)velH); velH=0;}
-		if(depths) {DisposeHandle((Handle)depths); depths=0;}
-		if(tree.treeHdl) {DisposeHandle((Handle)tree.treeHdl); tree.treeHdl=0;}
-		
-		if(fGrid)
-		{
-			fGrid ->Dispose();
+		if (!errmsg[0])
+			strcpy(errmsg, "An error occurred in TimeGridVelCurv::ReadTopology");
+		printError(errmsg);
+		if (pts) {
+			DisposeHandle((Handle)pts);
+			pts = 0;
+		}
+		if (topo) {
+			DisposeHandle((Handle)topo);
+			topo = 0;
+		}
+		if (velH) {
+			DisposeHandle((Handle)velH);
+			velH = 0;
+		}
+		if (depths) {
+			DisposeHandle((Handle)depths);
+			depths = 0;
+		}
+		if (tree.treeHdl) {
+			DisposeHandle((Handle)tree.treeHdl);
+			tree.treeHdl = 0;
+		}
+		if (fGrid) {
+			fGrid->Dispose();
 			delete fGrid;
 			fGrid = 0;
 		}
-		/*if (*newMap) 
-		 {
-		 (*newMap)->Dispose();
-		 delete *newMap;
-		 *newMap=0;
-		 }*/
-		if (waterBoundaries) {DisposeHandle((Handle)waterBoundaries); waterBoundaries=0;}
-		if (boundarySegs) {DisposeHandle((Handle)boundarySegs); boundarySegs = 0;}
-		if (boundaryPts) {DisposeHandle((Handle)boundaryPts); boundaryPts = 0;}
+		if (waterBoundaries) {
+			DisposeHandle((Handle)waterBoundaries);
+			waterBoundaries = 0;
+		}
+		if (boundarySegs) {
+			DisposeHandle((Handle)boundarySegs);
+			boundarySegs = 0;
+		}
+		if (boundaryPts) {
+			DisposeHandle((Handle)boundaryPts);
+			boundaryPts = 0;
+		}
 	}
+
 	return err;
 }
+
+
+OSErr TimeGridVelCurv_c::ReadTopology(const char *path)
+{
+	vector<string> linesInFile;
+
+	ReadLinesInFile(path, linesInFile);
+	return ReadTopology(linesInFile);
+}
+
 
 OSErr TimeGridVelCurv_c::ExportTopology(char* path)
 {
@@ -5562,10 +5519,12 @@ VelocityRec TimeGridVelTri_c::GetScaledPatValue3D(const Seconds& model_time, Int
  		pt2depthIndex1 = ptIndex2;	pt2depthIndex2 = -1;
  		pt3depthIndex1 = ptIndex3;	pt3depthIndex2 = -1;
  	}
-	
+
  	// the contributions from each point will default to zero if the depth indicies
 	// come back negative (ie the LE depth is out of bounds at the grid point)
-	if(GetNumTimesInFile()==1 && !(GetNumFiles()>1) || (fEndData.timeIndex == UNASSIGNEDINDEX && model_time > ((*fTimeHdl)[fStartData.timeIndex] + fTimeShift) && fAllowExtrapolationInTime) || (fEndData.timeIndex == UNASSIGNEDINDEX && model_time < ((*fTimeHdl)[fStartData.timeIndex] + fTimeShift) && fAllowExtrapolationInTime))
+	if ((GetNumTimesInFile() == 1 && !(GetNumFiles() > 1)) ||
+		(fEndData.timeIndex == UNASSIGNEDINDEX && model_time > ((*fTimeHdl)[fStartData.timeIndex] + fTimeShift) && fAllowExtrapolationInTime) ||
+		(fEndData.timeIndex == UNASSIGNEDINDEX && model_time < ((*fTimeHdl)[fStartData.timeIndex] + fTimeShift) && fAllowExtrapolationInTime))
 	{
 		if (pt1depthIndex1!=-1)
 		{
@@ -5698,236 +5657,365 @@ VelocityRec TimeGridVelTri_c::GetScaledPatValue3D(const Seconds& model_time, Int
 	return scaledPatVelocity;
 }
 
-OSErr TimeGridVelTri_c::TextRead(char *path, char *topFilePath) 
+OSErr TimeGridVelTri_c::TextRead(const char *path, const char *topFilePath)
 {
 	// needs to be updated once triangle grid format is set
-	
+
 	OSErr err = 0;
-	long i, numScanned;
-	int status, ncid, nodeid, nbndid, bndid, neleid, latid, lonid, recid, timeid, sigmaid, sigmavarid, depthid, nv_varid, nbe_varid;
-	int curr_ucmp_id, uv_dimid[3], uv_ndims;
-	size_t nodeLength, nbndLength, neleLength, recs, t_len, sigmaLength=0;
-	float timeVal;
-	char recname[NC_MAX_NAME], *timeUnits=0, *topOrder=0;;	
-	WORLDPOINTFH vertexPtsH=0;
-	FLOATH totalDepthsH=0, sigmaLevelsH=0;
-	float *lat_vals=0,*lon_vals=0,*depth_vals=0, *sigma_vals=0;
-	long *bndry_indices=0, *bndry_nums=0, *bndry_type=0, *top_verts=0, *top_neighbors=0;
-	static size_t latIndex=0,lonIndex=0,timeIndex,ptIndex=0,bndIndex[2]={0,0};
-	static size_t pt_count, bnd_count[2], sigma_count,topIndex[2]={0,0}, top_count[2];
-	Seconds startTime, startTime2;
-	double timeConversion = 1., scale_factor = 1.;
 	char errmsg[256] = "";
-	char fileName[256],s[256],topPath[256], outPath[256];
-	
-	char *modelTypeStr=0;
+	char fileName[256], s[256], topPath[256], outPath[256];
+	char recname[NC_MAX_NAME];
+	long i, numScanned;
+
+	int status;
+	int ncid, nodeid, nbndid, bndid, neleid, latid, lonid, recid, timeid, sigmaid, sigmavarid, depthid;
+	int nv_varid, nbe_varid;
+	int curr_ucmp_id, uv_dimid[3], uv_ndims;
+
+	char *timeUnits = 0, *topOrder = 0;;
+	float *lat_vals = 0, *lon_vals = 0, *depth_vals = 0, *sigma_vals = 0;
+	long *bndry_indices = 0, *bndry_nums = 0, *bndry_type = 0, *top_verts = 0, *top_neighbors = 0;
+	double timeConversion = 1., scale_factor = 1.;
+	float timeVal;
+	Seconds startTime, startTime2;
+
+	size_t nodeLength, nbndLength, neleLength, recs, t_len, sigmaLength = 0;
+	static size_t latIndex = 0, lonIndex = 0, timeIndex, ptIndex = 0;
+	static size_t pt_count, sigma_count;
+	static size_t bnd_count[2], top_count[2];
+	static size_t bndIndex[2] = {0, 0};
+	static size_t topIndex[2] = {0, 0};
+
+	FLOATH totalDepthsH = 0, sigmaLevelsH = 0;
+	WORLDPOINTFH vertexPtsH = 0;
+
+	char *modelTypeStr = 0;
 	Boolean bTopInfoInFile = false, isCCW = true;
-	
-	if (!path || !path[0]) return 0;
-	strcpy(fVar.pathName,path);
-	
-	strcpy(s,path);
-	//SplitPathFile (s, fileName);
+
+	cerr << ">> TimeGridVelTri_c::TextRead()" << endl;
+	if (!path || !path[0])
+		return 0;
+	strcpy(fVar.pathName, path);
+
+	strcpy(s, path);
 	SplitPathFileName (s, fileName);
 	strcpy(fVar.userName, fileName); // maybe use a name from the file
-	
+
 	status = nc_open(path, NC_NOWRITE, &ncid);
-	if (status != NC_NOERR) {err = -1; goto done;}
-	/*if (status != NC_NOERR) 
-	{	
-#if TARGET_API_MAC_CARBON
-		err = ConvertTraditionalPathToUnixPath((const char *) path, outPath, kMaxNameLen) ;
-		status = nc_open(outPath, NC_NOWRITE, &ncid);
-#endif
-		if (status != NC_NOERR) {err = -1; goto done;}
-	}*/
-	
+	if (status != NC_NOERR) {
+		err = -1;
+		goto done;
+	}
+
 	status = nc_inq_dimid(ncid, "time", &recid); 
-	if (status != NC_NOERR) 
-	{
+	if (status != NC_NOERR) {
 		status = nc_inq_unlimdim(ncid, &recid);	// maybe time is unlimited dimension
-		if (status != NC_NOERR) {err = -1; goto done;}
+		if (status != NC_NOERR) {
+			err = -1;
+			goto done;
+		}
 	}
-	
+
 	status = nc_inq_varid(ncid, "time", &timeid); 
-	if (status != NC_NOERR) {err = -1; goto done;} 
-	
-	status = nc_inq_attlen(ncid, timeid, "units", &t_len);
-	if (status != NC_NOERR) 
-	{
-		err = -1; goto done;
+	if (status != NC_NOERR) {
+		err = -1;
+		goto done;
 	}
-	else
-	{
+
+	status = nc_inq_attlen(ncid, timeid, "units", &t_len);
+	if (status != NC_NOERR) {
+		err = -1;
+		goto done;
+	}
+	else {
 		DateTimeRec time;
 		char unitStr[24], junk[10];
-		
-		timeUnits = new char[t_len+1];
-		//status = nc_get_att_text(ncid, recid, "units", timeUnits);// recid is the dimension id not the variable id
+
+		timeUnits = new char[t_len + 1];
+
 		status = nc_get_att_text(ncid, timeid, "units", timeUnits);
-		if (status != NC_NOERR) {err = -1; goto done;} 
+		if (status != NC_NOERR) {
+			err = -1;
+			goto done;
+		}
+
 		timeUnits[t_len] = '\0'; // moved this statement before StringSubstitute, JLM 5/2/10
 		StringSubstitute(timeUnits, ':', ' ');
 		StringSubstitute(timeUnits, '-', ' ');
 		
-		numScanned=sscanf(timeUnits, "%s %s %hd %hd %hd %hd %hd %hd",
-						  unitStr, junk, &time.year, &time.month, &time.day,
-						  &time.hour, &time.minute, &time.second) ;
-		if (numScanned==5)	
-		{time.hour = 0; time.minute = 0; time.second = 0; }
-		else if (numScanned==7) // has two extra time entries ??	
+		numScanned = sscanf(timeUnits, "%s %s %hd %hd %hd %hd %hd %hd",
+							unitStr, junk, &time.year, &time.month, &time.day,
+							&time.hour, &time.minute, &time.second);
+		if (numScanned == 5) {
+			time.hour = 0;
+			time.minute = 0;
 			time.second = 0;
-		else if (numScanned<8) // has two extra time entries ??	
-			//if (numScanned<8) // has two extra time entries ??	
-		{ err = -1; TechError("TimeGridVelTri_c::TextRead()", "sscanf() == 8", 0); goto done; }
-		DateToSeconds (&time, &startTime2);	// code goes here, which start Time to use ??
-		if (!strcmpnocase(unitStr,"HOURS") || !strcmpnocase(unitStr,"HOUR"))
+		}
+		else if (numScanned == 7) // has two extra time entries ??
+			time.second = 0;
+		else if (numScanned < 8) {
+			// has two extra time entries ??
+			err = -1;
+			TechError("TimeGridVelTri_c::TextRead()", "sscanf() == 8", 0);
+			goto done;
+		}
+
+		DateToSeconds(&time, &startTime2);	// code goes here, which start Time to use ??
+		if (!strcmpnocase(unitStr, "HOURS") || !strcmpnocase(unitStr, "HOUR"))
 			timeConversion = 3600.;
-		else if (!strcmpnocase(unitStr,"MINUTES") || !strcmpnocase(unitStr,"MINUTE"))
+		else if (!strcmpnocase(unitStr, "MINUTES") || !strcmpnocase(unitStr, "MINUTE"))
 			timeConversion = 60.;
-		else if (!strcmpnocase(unitStr,"SECONDS") || !strcmpnocase(unitStr,"SECOND"))
+		else if (!strcmpnocase(unitStr, "SECONDS") || !strcmpnocase(unitStr, "SECOND"))
 			timeConversion = 1.;
-		else if (!strcmpnocase(unitStr,"DAYS") || !strcmpnocase(unitStr,"DAY"))
-			timeConversion = 24*3600.;
-	} 
-	
+		else if (!strcmpnocase(unitStr, "DAYS") || !strcmpnocase(unitStr, "DAY"))
+			timeConversion = 24 * 3600.;
+	}
+
 	status = nc_inq_dimid(ncid, "node", &nodeid); 
-	if (status != NC_NOERR) {err = -1; goto done;}
+	if (status != NC_NOERR) {
+		err = -1;
+		goto done;
+	}
+
 	status = nc_inq_dimlen(ncid, nodeid, &nodeLength);
-	if (status != NC_NOERR) {err = -1; goto done;}
+	if (status != NC_NOERR) {
+		err = -1;
+		goto done;
+	}
+
 	status = nc_inq_dimid(ncid, "nbnd", &nbndid);	
-	if (status != NC_NOERR) {err = -1; goto done;}
+	if (status != NC_NOERR) {
+		err = -1;
+		goto done;
+	}
+
 	status = nc_inq_varid(ncid, "bnd", &bndid);	
-	if (status != NC_NOERR) {err = -1; goto done;}
+	if (status != NC_NOERR) {
+		err = -1;
+		goto done;
+	}
+
 	status = nc_inq_dimlen(ncid, nbndid, &nbndLength);
-	if (status != NC_NOERR) {err = -1; goto done;}
-	
+	if (status != NC_NOERR) {
+		err = -1;
+		goto done;
+	}
+
 	bnd_count[0] = nbndLength;
 	bnd_count[1] = 1;
 	bndry_indices = new long[nbndLength]; 
 	bndry_nums = new long[nbndLength]; 
 	bndry_type = new long[nbndLength]; 
-	if (!bndry_indices || !bndry_nums || !bndry_type) {err = memFullErr; goto done;}
+	if (!bndry_indices || !bndry_nums || !bndry_type) {
+		err = memFullErr;
+		goto done;
+	}
+
 	bndIndex[1] = 1;	// take second point of boundary segments instead, so that water boundaries work out
 	status = nc_get_vara_long(ncid, bndid, bndIndex, bnd_count, bndry_indices);
-	if (status != NC_NOERR) {err = -1; goto done;}
+	if (status != NC_NOERR) {
+		err = -1;
+		goto done;
+	}
+
 	bndIndex[1] = 2;
 	status = nc_get_vara_long(ncid, bndid, bndIndex, bnd_count, bndry_nums);
-	if (status != NC_NOERR) {err = -1; goto done;}
+	if (status != NC_NOERR) {
+		err = -1;
+		goto done;
+	}
+
 	bndIndex[1] = 3;
 	status = nc_get_vara_long(ncid, bndid, bndIndex, bnd_count, bndry_type);
-	if (status != NC_NOERR) {err = -1; goto done;}
-	
-	//status = nc_inq_dimid(ncid, "nele", &neleid);	
-	//if (status != NC_NOERR) {err = -1; goto done;}	// not using these right now so not required
-	//status = nc_inq_dimlen(ncid, neleid, &neleLength);
-	//if (status != NC_NOERR) {err = -1; goto done;}	// not using these right now so not required
-	
+	if (status != NC_NOERR) {
+		err = -1;
+		goto done;
+	}
+
 	status = nc_inq_dimid(ncid, "sigma", &sigmaid); 	
 	if (status != NC_NOERR) 
 	{
 		status = nc_inq_dimid(ncid, "zloc", &sigmaid); 	
-		if (status != NC_NOERR) 
-		{
+		if (status != NC_NOERR) {
 			fVar.gridType = TWO_D; /*err = -1; goto done;*/
 		}
-		else
-		{	// might change names to depth rather than sigma here
+		else {
+			// might change names to depth rather than sigma here
 			status = nc_inq_varid(ncid, "zloc", &sigmavarid); //Navy
-			if (status != NC_NOERR) {err = -1; goto done;}
+			if (status != NC_NOERR) {
+				err = -1;
+				goto done;
+			}
+
 			status = nc_inq_dimlen(ncid, sigmaid, &sigmaLength);
-			if (status != NC_NOERR) {err = -1; goto done;}
+			if (status != NC_NOERR) {
+				err = -1;
+				goto done;
+			}
+
 			fVar.gridType = MULTILAYER;
 			fVar.maxNumDepths = sigmaLength;
 			sigma_vals = new float[sigmaLength];
-			if (!sigma_vals) {err = memFullErr; goto done;}
+			if (!sigma_vals) {
+				err = memFullErr;
+				goto done;
+			}
+
 			sigma_count = sigmaLength;
 			status = nc_get_vara_float(ncid, sigmavarid, &ptIndex, &sigma_count, sigma_vals);
-			if (status != NC_NOERR) {err = -1; goto done;}
+			if (status != NC_NOERR) {
+				err = -1;
+				goto done;
+			}
+
 			fDepthLevelsHdl = (FLOATH)_NewHandleClear(sigmaLength * sizeof(float));
-			if (!fDepthLevelsHdl) {err = memFullErr; goto done;}
-			for (i=0;i<sigmaLength;i++)
-			{
-				INDEXH(fDepthLevelsHdl,i) = (float)sigma_vals[i];
+			if (!fDepthLevelsHdl) {
+				err = memFullErr;
+				goto done;
+			}
+
+			for (long i = 0; i < sigmaLength; i++) {
+				INDEXH(fDepthLevelsHdl, i) = (float)sigma_vals[i];
 			}
 			fNumDepthLevels = sigmaLength;	//  here also do we want all depths?
 			// once depth is read in 
 		}
 	}	// check for zgrid option here
-	else
-	{
+	else {
 		status = nc_inq_varid(ncid, "sigma", &sigmavarid); //Navy
-		if (status != NC_NOERR) {err = -1; goto done;}
+		if (status != NC_NOERR) {
+			err = -1;
+			goto done;
+		}
+
 		status = nc_inq_dimlen(ncid, sigmaid, &sigmaLength);
-		if (status != NC_NOERR) {err = -1; goto done;}
+		if (status != NC_NOERR) {
+			err = -1;
+			goto done;
+		}
+
 		fVar.gridType = SIGMA;
 		fVar.maxNumDepths = sigmaLength;
 		sigma_vals = new float[sigmaLength];
-		if (!sigma_vals) {err = memFullErr; goto done;}
+		if (!sigma_vals) {
+			err = memFullErr;
+			goto done;
+		}
+
 		sigma_count = sigmaLength;
 		status = nc_get_vara_float(ncid, sigmavarid, &ptIndex, &sigma_count, sigma_vals);
-		if (status != NC_NOERR) {err = -1; goto done;}
+		if (status != NC_NOERR) {
+			err = -1;
+			goto done;
+		}
 		// once depth is read in 
 	}
-	
+
 	// option to use index values?
 	status = nc_inq_varid(ncid, "lat", &latid);
-	if (status != NC_NOERR) {err = -1; goto done;}
+	if (status != NC_NOERR) {
+		err = -1;
+		goto done;
+	}
+
 	status = nc_inq_varid(ncid, "lon", &lonid);
-	if (status != NC_NOERR) {err = -1; goto done;}
-	
+	if (status != NC_NOERR) {
+		err = -1;
+		goto done;
+	}
+
 	pt_count = nodeLength;
-	vertexPtsH = (WorldPointF**)_NewHandleClear(nodeLength*sizeof(WorldPointF));
-	if (!vertexPtsH) {err = memFullErr; goto done;}
+	vertexPtsH = (WorldPointF**)_NewHandleClear(nodeLength * sizeof(WorldPointF));
+	if (!vertexPtsH) {
+		err = memFullErr;
+		goto done;
+	}
+
 	lat_vals = new float[nodeLength]; 
 	lon_vals = new float[nodeLength]; 
-	if (!lat_vals || !lon_vals) {err = memFullErr; goto done;}
+	if (!lat_vals || !lon_vals) {
+		err = memFullErr;
+		goto done;
+	}
+
 	status = nc_get_vara_float(ncid, latid, &ptIndex, &pt_count, lat_vals);
-	if (status != NC_NOERR) {err = -1; goto done;}
+	if (status != NC_NOERR) {
+		err = -1;
+		goto done;
+	}
+
 	status = nc_get_vara_float(ncid, lonid, &ptIndex, &pt_count, lon_vals);
-	if (status != NC_NOERR) {err = -1; goto done;}
+	if (status != NC_NOERR) {
+		err = -1;
+		goto done;
+	}
 	
 	status = nc_inq_varid(ncid, "depth", &depthid);	// this is required for sigma or multilevel grids
-	if (status != NC_NOERR) {fVar.gridType = TWO_D;/*err = -1; goto done;*/}
-	else
-	{	
-		totalDepthsH = (FLOATH)_NewHandleClear(nodeLength*sizeof(float));
-		if (!totalDepthsH) {err = memFullErr; goto done;}
+	if (status != NC_NOERR) {
+		fVar.gridType = TWO_D;
+	}
+	else {
+		totalDepthsH = (FLOATH)_NewHandleClear(nodeLength * sizeof(float));
+		if (!totalDepthsH) {
+			err = memFullErr;
+			goto done;
+		}
+
 		depth_vals = new float[nodeLength];
-		if (!depth_vals) {err = memFullErr; goto done;}
+		if (!depth_vals) {
+			err = memFullErr;
+			goto done;
+		}
+
 		status = nc_get_vara_float(ncid, depthid, &ptIndex, &pt_count, depth_vals);
-		if (status != NC_NOERR) {err = -1; goto done;}
-		
+		if (status != NC_NOERR) {
+			err = -1;
+			goto done;
+		}
+
 		status = nc_get_att_double(ncid, depthid, "scale_factor", &scale_factor);
-		if (status != NC_NOERR) {/*err = -1; goto done;*/}	// don't require scale factor
+		if (status != NC_NOERR) {
+			/*err = -1; goto done;*/
+			// don't require scale factor
+		}
 		
 	}
 	
-	for (i=0;i<nodeLength;i++)
-	{
+	for (long i = 0; i < nodeLength; i++) {
 		INDEXH(vertexPtsH,i).pLat = lat_vals[i];	
 		INDEXH(vertexPtsH,i).pLong = lon_vals[i];
 	}
 	fVertexPtsH	 = vertexPtsH;// get first and last, lat/lon values, then last-first/total-1 = dlat/dlon
 	
 	status = nc_inq_dim(ncid, recid, recname, &recs);
-	if (status != NC_NOERR) {err = -1; goto done;}
-	fTimeHdl = (Seconds**)_NewHandleClear(recs*sizeof(Seconds));
-	if (!fTimeHdl) {err = memFullErr; goto done;}
-	for (i=0;i<recs;i++)
-	{
+	if (status != NC_NOERR) {
+		err = -1;
+		goto done;
+	}
+
+	fTimeHdl = (Seconds**)_NewHandleClear(recs * sizeof(Seconds));
+	if (!fTimeHdl) {
+		err = memFullErr;
+		goto done;
+	}
+
+	for (long i = 0; i < recs; i++) {
 		Seconds newTime;
 		// possible units are, HOURS, MINUTES, SECONDS,...
 		timeIndex = i;
-		//status = nc_get_var1_float(ncid, recid, &timeIndex, &timeVal);	// recid is the dimension id not the variable id
+
 		status = nc_get_var1_float(ncid, timeid, &timeIndex, &timeVal);
-		if (status != NC_NOERR) {strcpy(errmsg,"Error reading times from NetCDF file"); err = -1; goto done;}
-		newTime = RoundDateSeconds(round(startTime2+timeVal*timeConversion));
-		//newTime = startTime2+timeVal*timeConversion;
-		INDEXH(fTimeHdl,i) = newTime;	// which start time where?
-		if (i==0) startTime = newTime + fTimeShift;
-		//INDEXH(fTimeHdl,i) = startTime2+timeVal*timeConversion;	// which start time where?
-		//if (i==0) startTime = startTime2+timeVal*timeConversion + fTimeShift;
+		if (status != NC_NOERR) {
+			strcpy(errmsg, "Error reading times from NetCDF file");
+			err = -1;
+			goto done;
+		}
+
+		newTime = RoundDateSeconds(round(startTime2 + timeVal * timeConversion));
+
+		INDEXH(fTimeHdl, i) = newTime;	// which start time where?
+		if (i == 0)
+			startTime = newTime + fTimeShift;
 	}
 	
 	fNumNodes = nodeLength;
@@ -5935,18 +6023,27 @@ OSErr TimeGridVelTri_c::TextRead(char *path, char *topFilePath)
 	// check if file has topology in it
 	{
 		status = nc_inq_varid(ncid, "nv", &nv_varid); //Navy
-		if (status != NC_NOERR) {/*err = -1; goto done;*/}
-		else
-		{
+		if (status != NC_NOERR) {
+			/*err = -1;
+			 *  goto done;*/
+		}
+		else {
 			status = nc_inq_varid(ncid, "nbe", &nbe_varid); //Navy
-			if (status != NC_NOERR) {/*err = -1; goto done;*/}
-			else 
-			{
+			if (status != NC_NOERR) {
+				/*err = -1;
+				 *  goto done;*/
+			}
+			else {
 				bTopInfoInFile = true;
 				status = nc_inq_attlen(ncid, nbe_varid, "order", &t_len);
-				topOrder = new char[t_len+1];
+				topOrder = new char[t_len + 1];
+
 				status = nc_get_att_text(ncid, nbe_varid, "order", topOrder);
-				if (status != NC_NOERR) {isCCW = false;} // for now to suppport old FVCOM
+				if (status != NC_NOERR) {
+					// for now to suppport old FVCOM
+					isCCW = false;
+				}
+
 				topOrder[t_len] = '\0'; 
 				if (!strncmpnocase (topOrder, "CW", 2))
 					isCCW = false;
@@ -5958,108 +6055,165 @@ OSErr TimeGridVelTri_c::TextRead(char *path, char *topFilePath)
 		if (bTopInfoInFile)
 		{
 			status = nc_inq_dimid(ncid, "nele", &neleid);	
-			if (status != NC_NOERR) {err = -1; goto done;}	
+			if (status != NC_NOERR) {
+				err = -1;
+				goto done;
+			}
+
 			status = nc_inq_dimlen(ncid, neleid, &neleLength);
-			if (status != NC_NOERR) {err = -1; goto done;}	
+			if (status != NC_NOERR) {
+				err = -1;
+				goto done;
+			}
+
 			fNumEles = neleLength;
+
 			top_verts = new long[neleLength*3]; 
-			if (!top_verts ) {err = memFullErr; goto done;}
-			top_neighbors = new long[neleLength*3]; 
-			if (!top_neighbors ) {err = memFullErr; goto done;}
+			if (!top_verts ) {
+				err = memFullErr;
+				goto done;
+			}
+
+			top_neighbors = new long[neleLength * 3];
+			if (!top_neighbors ) {
+				err = memFullErr;
+				goto done;
+			}
+
 			top_count[0] = 3;
 			top_count[1] = neleLength;
+
 			status = nc_get_vara_long(ncid, nv_varid, topIndex, top_count, top_verts);
-			if (status != NC_NOERR) {err = -1; goto done;}
+			if (status != NC_NOERR) {
+				err = -1;
+				goto done;
+			}
+
 			status = nc_get_vara_long(ncid, nbe_varid, topIndex, top_count, top_neighbors);
-			if (status != NC_NOERR) {err = -1; goto done;}
-			
+			if (status != NC_NOERR) {
+				err = -1;
+				goto done;
+			}
+
 			//determine if velocities are on triangles
 			status = nc_inq_varid(ncid, "u", &curr_ucmp_id);
-			if (status != NC_NOERR) {err = -1; goto done;}
-			status = nc_inq_varndims(ncid, curr_ucmp_id, &uv_ndims);
-			if (status != NC_NOERR) {err = -1; goto done;}
-			
-			status = nc_inq_vardimid (ncid, curr_ucmp_id, uv_dimid);	// see if dimid(1) or (2) == nele or node, depends on uv_ndims
-			if (status==NC_NOERR) 
-			{
-				if (uv_ndims == 3 && uv_dimid[2] == neleid)
-				{bVelocitiesOnTriangles = true;}
-				else if (uv_ndims == 2 && uv_dimid[1] == neleid)
-				{bVelocitiesOnTriangles = true;}
+			if (status != NC_NOERR) {
+				err = -1;
+				goto done;
 			}
-			
+
+			status = nc_inq_varndims(ncid, curr_ucmp_id, &uv_ndims);
+			if (status != NC_NOERR) {
+				err = -1;
+				goto done;
+			}
+
+			// see if dimid(1) or (2) == nele or node, depends on uv_ndims
+			status = nc_inq_vardimid (ncid, curr_ucmp_id, uv_dimid);
+			if (status == NC_NOERR) {
+				if (uv_ndims == 3 && uv_dimid[2] == neleid) {
+					bVelocitiesOnTriangles = true;
+				}
+				else if (uv_ndims == 2 && uv_dimid[1] == neleid) {
+					bVelocitiesOnTriangles = true;
+				}
+			}
 		}
 	}
-	
+
 	status = nc_close(ncid);
-	if (status != NC_NOERR) {err = -1; goto done;}
+	if (status != NC_NOERR) {
+		err = -1;
+		goto done;
+	}
 	
-	if (!bndry_indices || !bndry_nums || !bndry_type) {err = memFullErr; goto done;}
-	
-	
+	if (!bndry_indices || !bndry_nums || !bndry_type) {
+		err = memFullErr;
+		goto done;
+	}
+
 	// look for topology in the file
-	if (topFilePath[0]) 
-	{
-		err = (dynamic_cast<TimeGridVelTri*>(this))->ReadTopology(topFilePath); 
+	if (topFilePath[0]) {
+		cerr << "TimeGridVelTri_c::TextRead(): calling ReadTopology('" << topFilePath << "')" << endl;
+		err = (dynamic_cast<TimeGridVelTri *>(this))->ReadTopology(topFilePath);
 		goto depths;
 	}
 	
-	if (bTopInfoInFile/*bVelocitiesOnTriangles*/)
-		err = ReorderPoints2(bndry_indices,bndry_nums,bndry_type,nbndLength,top_verts,top_neighbors,neleLength,isCCW);	 
+	if (bTopInfoInFile)
+		err = ReorderPoints2(bndry_indices, bndry_nums, bndry_type, nbndLength,
+							 top_verts, top_neighbors, neleLength, isCCW);
 	else
-		err = ReorderPoints(bndry_indices,bndry_nums,bndry_type,nbndLength);	 
-	
+		err = ReorderPoints(bndry_indices, bndry_nums, bndry_type, nbndLength);
+
 depths:
-	if (err) goto done;
+
+	if (err)
+		goto done;
 	// also translate to fDepthDataInfo and fDepthsH here, using sigma or zgrid info
 	
-	if (totalDepthsH)
-	{
-		for (i=0; i<fNumNodes; i++)
-		{
-			long n;			
-			n = i;
-			if (n<0 || n>= fNumNodes) {printError("indices messed up"); err=-1; goto done;}
-			INDEXH(totalDepthsH,i) = depth_vals[n] * scale_factor;
+	if (totalDepthsH) {
+		for (long i = 0; i < fNumNodes; i++) {
+			long n = i;
+			if (n < 0 || n >= fNumNodes) {
+				printError("indices messed up");
+				err = -1;
+				goto done;
+			}
+
+			INDEXH(totalDepthsH, i) = depth_vals[n] * scale_factor;
 		}
 		//((TTriGridVel*)fGrid)->SetDepths(totalDepthsH);
 	}
 	
 	// CalculateVerticalGrid(sigmaLength,sigmaLevelsH,totalDepthsH);	// maybe multigrid
 	{
-		long j,index = 0;
+		long j, index = 0;
+
 		fDepthDataInfo = (DepthDataInfoH)_NewHandle(sizeof(**fDepthDataInfo)*fNumNodes);
-		if(!fDepthDataInfo){TechError("TimeGridVelTri_c::TextRead()", "_NewHandle()", 0); err = memFullErr; goto done;}
+		if (!fDepthDataInfo) {
+			TechError("TimeGridVelTri_c::TextRead()", "_NewHandle()", 0);
+			err = memFullErr;
+			goto done;
+		}
+
 		//if (fVar.gridType==TWO_D || fVar.gridType==MULTILAYER) 
-		if (fVar.gridType==TWO_D) 
-		{
-			if (totalDepthsH) 
-			{
-				fDepthsH = (FLOATH)_NewHandleClear(nodeLength*sizeof(float));
-				if (!fDepthsH) {TechError("TimeGridVelTri_c::TextRead()", "_NewHandle()", 0); err = memFullErr; goto done;}
-				for (i=0; i<fNumNodes; i++)
-				{
+		if (fVar.gridType == TWO_D) {
+			if (totalDepthsH) {
+				fDepthsH = (FLOATH)_NewHandleClear(nodeLength * sizeof(float));
+				if (!fDepthsH) {
+					TechError("TimeGridVelTri_c::TextRead()", "_NewHandle()", 0);
+					err = memFullErr;
+					goto done;
+				}
+
+				for (long i = 0; i < fNumNodes; i++) {
 					(*fDepthsH)[i] = (*totalDepthsH)[i];
 				}
 			}
 			//fDepthsH = totalDepthsH;	// may be null, call it barotropic if depths exist??
 		}	
 		// assign arrays
-		else
-		{	//TWO_D grid won't need fDepthsH
-			fDepthsH = (FLOATH)_NewHandle(sizeof(float)*fNumNodes*fVar.maxNumDepths);
-			if(!fDepthsH){TechError("TimeGridVelTri_c::TextRead()", "_NewHandle()", 0); err = memFullErr; goto done;}
-			
+		else {
+			//TWO_D grid won't need fDepthsH
+			fDepthsH = (FLOATH)_NewHandle(sizeof(float) * fNumNodes * fVar.maxNumDepths);
+			if (!fDepthsH) {
+				TechError("TimeGridVelTri_c::TextRead()", "_NewHandle()", 0);
+				err = memFullErr;
+				goto done;
+			}
 		}
+
 		// code goes here, if velocities on triangles need to interpolate total depth I think, or use this differently
-		for (i=0;i<fNumNodes;i++)
+		for (long i = 0; i < fNumNodes; i++)
 		{
 			// might want to order all surface depths, all sigma1, etc., but then indexToDepthData wouldn't work
 			// have 2D case, zgrid case as well
-			if (fVar.gridType==TWO_D)
-			{
-				if (totalDepthsH) (*fDepthDataInfo)[i].totalDepth = (*totalDepthsH)[i];
-				else (*fDepthDataInfo)[i].totalDepth = -1;	// no depth data
+			if (fVar.gridType == TWO_D) {
+				if (totalDepthsH)
+					(*fDepthDataInfo)[i].totalDepth = (*totalDepthsH)[i];
+				else
+					(*fDepthDataInfo)[i].totalDepth = -1;	// no depth data
+
 				(*fDepthDataInfo)[i].indexToDepthData = i;
 				(*fDepthDataInfo)[i].numDepths = 1;
 			}
@@ -6070,69 +6224,88 @@ depths:
 			 (*fDepthDataInfo)[i].indexToDepthData = 0;
 			 (*fDepthDataInfo)[i].numDepths = sigmaLength;
 			 }*/
-			else
-			{
+			else {
 				(*fDepthDataInfo)[i].totalDepth = (*totalDepthsH)[i];
 				(*fDepthDataInfo)[i].indexToDepthData = index;
 				(*fDepthDataInfo)[i].numDepths = sigmaLength;
-				for (j=0;j<sigmaLength;j++)
-				{
-					//(*fDepthsH)[index+j] = (*totalDepthsH)[i]*(1-(*sigmaLevelsH)[j]);
-					//if (fVar.gridType==MULTILAYER) (*fDepthsH)[index+j] = (*totalDepthsH)[i]*(j);	// check this
-					if (fVar.gridType==MULTILAYER) /*(*fDepthsH)[index+j] = (sigma_vals[j]);*/	// check this, measured from the bottom
+
+				for (long j = 0; j < sigmaLength; j++) {
+					if (fVar.gridType == MULTILAYER) {
+						// check this, measured from the bottom
 						// since depth is measured from bottom should recalculate the depths for each point
-					{
 						if (( (*totalDepthsH)[i] - sigma_vals[sigmaLength - j - 1]) >= 0) 
-							(*fDepthsH)[index+j] = (*totalDepthsH)[i] - sigma_vals[sigmaLength - j - 1] ; 
-						else (*fDepthsH)[index+j] = (*totalDepthsH)[i]+1;
+							(*fDepthsH)[index + j] = (*totalDepthsH)[i] - sigma_vals[sigmaLength - j - 1] ;
+						else
+							(*fDepthsH)[index + j] = (*totalDepthsH)[i] + 1;
 					}
-					else (*fDepthsH)[index+j] = (*totalDepthsH)[i]*(1-sigma_vals[j]);
-					//(*fDepthsH)[j*fNumNodes+i] = totalDepthsH[i]*(1-sigmaLevelsH[j]);
+					else
+						(*fDepthsH)[index + j] = (*totalDepthsH)[i] * (1 - sigma_vals[j]);
 				}
-				index+=sigmaLength;
+				index += sigmaLength;
 			}
 		}
 	}
-	if (totalDepthsH)	// why is this here twice?
-	{
-		for (i=0; i<fNumNodes; i++)
-		{
+	if (totalDepthsH) {
+		// why is this here twice?
+		for (long i = 0; i < fNumNodes; i++) {
 			long n = i;
 			
-			if (fVerdatToNetCDFH) n = INDEXH(fVerdatToNetCDFH,i);
-			if (n<0 || n>= fNumNodes) {printError("indices messed up"); err=-1; goto done;}
-			INDEXH(totalDepthsH,i) = depth_vals[n] * scale_factor;
+			if (fVerdatToNetCDFH)
+				n = INDEXH(fVerdatToNetCDFH, i);
+
+			if (n < 0 || n >= fNumNodes) {
+				printError("indices messed up");
+				err = -1;
+				goto done;
+			}
+
+			INDEXH(totalDepthsH, i) = depth_vals[n] * scale_factor;
 		}
-		(dynamic_cast<TTriGridVel*>(fGrid))->SetDepths(totalDepthsH);
+		(dynamic_cast<TTriGridVel *>(fGrid))->SetDepths(totalDepthsH);
 	}
 	
 done:
-	if (err)
-	{
-		if (!errmsg[0]) 
-			strcpy(errmsg,"Error opening NetCDF file");
+	if (err) {
+		if (!errmsg[0])
+			strcpy(errmsg, "Error opening NetCDF file");
 		printNote(errmsg);
-		//printNote("Error opening NetCDF file");
-		if(fGrid)
-		{
-			fGrid ->Dispose();
+
+		if (fGrid) {
+			fGrid->Dispose();
 			delete fGrid;
 			fGrid = 0;
 		}
-		if(vertexPtsH) {DisposeHandle((Handle)vertexPtsH); vertexPtsH = 0;	fVertexPtsH	 = 0;}
-		if(sigmaLevelsH) {DisposeHandle((Handle)sigmaLevelsH); sigmaLevelsH = 0;}
+
+		if (vertexPtsH) {
+			DisposeHandle((Handle)vertexPtsH);
+			vertexPtsH = 0;
+			fVertexPtsH = 0;
+		}
+
+		if (sigmaLevelsH) {
+			DisposeHandle((Handle)sigmaLevelsH);
+			sigmaLevelsH = 0;
+		}
 	}
-	//printNote("NetCDF triangular grid model current mover is not yet implemented");
 	
-	if (timeUnits) delete [] timeUnits;
-	if (lat_vals) delete [] lat_vals;
-	if (lon_vals) delete [] lon_vals;
-	if (depth_vals) delete [] depth_vals;
-	if (sigma_vals) delete [] sigma_vals;
-	if (bndry_indices) delete [] bndry_indices;
-	if (bndry_nums) delete [] bndry_nums;
-	if (bndry_type) delete [] bndry_type;
-	if (topOrder) delete [] topOrder;
+	if (timeUnits)
+		delete [] timeUnits;
+	if (lat_vals)
+		delete [] lat_vals;
+	if (lon_vals)
+		delete [] lon_vals;
+	if (depth_vals)
+		delete [] depth_vals;
+	if (sigma_vals)
+		delete [] sigma_vals;
+	if (bndry_indices)
+		delete [] bndry_indices;
+	if (bndry_nums)
+		delete [] bndry_nums;
+	if (bndry_type)
+		delete [] bndry_type;
+	if (topOrder)
+		delete [] topOrder;
 	
 	return err;
 }
@@ -6714,9 +6887,11 @@ OSErr TimeGridVelTri_c::ReorderPoints(long *bndry_indices, long *bndry_nums, lon
 	DisplayMessage("Making Triangles");
 	// use new maketriangles to force algorithm to avoid 3 points in the same row or column
 	MySpinCursor(); // JLM 8/4/99
-	if (err = maketriangles(&topo,pts,numVerdatPts,verdatBreakPtsH,numVerdatBreakPts))
+
+	err = maketriangles(&topo, pts, numVerdatPts, verdatBreakPtsH, numVerdatBreakPts);
+	if (err)
 		goto done;
-	
+
 	DisplayMessage("NEXTMESSAGETEMP");
 	DisplayMessage("Making Dag Tree");
 	MySpinCursor(); // JLM 8/4/99
@@ -6872,256 +7047,258 @@ long TimeGridVelTri_c::GetNumDepthLevels()
 	return numDepthLevels;     
 }
 
-OSErr TimeGridVelTri_c::ReadTopology(char* path)
+
+// import NetCDF triangle info so don't have to regenerate
+// this is same as curvilinear mover so may want to combine later
+OSErr TimeGridVelTri_c::ReadTopology(vector<string> &linesInFile)
 {
-	// import NetCDF triangle info so don't have to regenerate
-	// this is same as curvilinear mover so may want to combine later
-	char s[1024], errmsg[256];
-	long i, numPoints, numTopoPoints, line = 0, numPts;
-	CHARH f = 0;
 	OSErr err = 0;
-	
-	TopologyHdl topo=0;
-	LongPointHdl pts=0;
-	FLOATH depths=0;
+	char errmsg[256];
+
+	string currentLine;
+	long i, numPoints, numTopoPoints, line = 0, numPts;
+	long numWaterBoundaries, numBoundaryPts, numBoundarySegs;
+
+	TopologyHdl topo = 0;
+	LongPointHdl pts = 0;
+	FLOATH depths = 0;
 	VelocityFH velH = 0;
 	DAGTreeStruct tree;
 	WorldRect bounds = voidWorldRect;
-	
-	TTriGridVel *triGrid = nil;
+
+	TTriGridVel *triGrid = 0;
 	tree.treeHdl = 0;
 	TDagTree *dagTree = 0;
-	
-	long numWaterBoundaries, numBoundaryPts, numBoundarySegs;
-	LONGH boundarySegs=0, waterBoundaries=0, boundaryPts=0;
-	
-	errmsg[0]=0;
-	
-	if (!path || !path[0]) return 0;
-	
-	if (err = ReadFileContents(TERMINATED,0, 0, path, 0, 0, &f)) {
-		TechError("TimeGridVelTri::ReadTopology()", "ReadFileContents()", err);
-		goto done;
-	}
-	
-	_HLock((Handle)f); // JLM 8/4/99
-	
+
+	LONGH boundarySegs = 0, waterBoundaries = 0, boundaryPts = 0;
+
+	errmsg[0] = 0;
+
+	MySpinCursor(); // JLM 8/4/99
+
 	// No header
 	// start with transformation array and vertices
-	MySpinCursor(); // JLM 8/4/99
-	NthLineInTextOptimized(*f, (line)++, s, 1024); 
-	if(IsTransposeArrayHeaderLine(s,&numPts)) // 
-	{
-		if (err = ReadTransposeArray(f,&line,&fVerdatToNetCDFH,numPts,errmsg)) 
-		{strcpy(errmsg,"Error in ReadTransposeArray"); goto done;}
+
+	currentLine = linesInFile[line++];
+	if (IsTransposeArrayHeaderLine(currentLine, numPts)) {
+		err = ReadTransposeArray(linesInFile, &line, &fVerdatToNetCDFH, numPts, errmsg);
+		if (err) {
+			strcpy(errmsg, "Error in ReadTransposeArray");
+			goto done;
+		}
 	}
-	else 
-		//{err=-1; strcpy(errmsg,"Error in Transpose header line"); goto done;}
-	{
-		//if (!bVelocitiesOnTriangles) {err=-1; strcpy(errmsg,"Error in Transpose header line"); goto done;}
-		//else line--;
+	else {
 		line--;
 	}
-	if(err = ReadTVertices(f,&line,&pts,&depths,errmsg)) goto done;
-	
-	if(pts) 
-	{
-		LongPoint	thisLPoint;
+
+	err = ReadTVertices(linesInFile, &line, &pts, &depths, errmsg);
+	if (err)
+		goto done;
+
+	if (pts) {
+		LongPoint thisLPoint;
 		
-		numPts = _GetHandleSize((Handle)pts)/sizeof(LongPoint);
-		if(numPts > 0)
-		{
-			WorldPoint  wp;
-			for(i=0;i<numPts;i++)
-			{
-				thisLPoint = INDEXH(pts,i);
+		numPts = _GetHandleSize((Handle)pts) / sizeof(LongPoint);
+		if (numPts > 0) {
+			WorldPoint wp;
+			for (long i = 0; i < numPts; i++) {
+				thisLPoint = INDEXH(pts, i);
+
 				wp.pLat = thisLPoint.v;
 				wp.pLong = thisLPoint.h;
+
 				AddWPointToWRect(wp.pLat, wp.pLong, &bounds);
 			}
 		}
 	}
+
 	MySpinCursor();
-	
-	NthLineInTextOptimized(*f, (line)++, s, 1024); 
-	if(IsBoundarySegmentHeaderLine(s,&numBoundarySegs)) // Boundary data from CATs
-	{
+
+	currentLine = linesInFile[line++];
+	if (IsBoundarySegmentHeaderLine(currentLine, numBoundarySegs)) {
+		// Boundary data from CATs
 		MySpinCursor();
-		if (numBoundarySegs>0)
-			err = ReadBoundarySegs(f,&line,&boundarySegs,numBoundarySegs,errmsg);
-		if(err) goto done;
-		NthLineInTextOptimized(*f, (line)++, s, 1024); 
+
+		if (numBoundarySegs > 0)
+			err = ReadBoundarySegs(linesInFile, &line, &boundarySegs, numBoundarySegs, errmsg);
+		if (err)
+			goto done;
+
+		currentLine = linesInFile[line++];
 	}
-	else
-	{
-		//err = -1;
-		//strcpy(errmsg,"Error in Boundary segment header line");
-		//goto done;
-		// not needed for 2D files, but we require for now
-	}
+
 	MySpinCursor(); // JLM 8/4/99
 	
-	if(IsWaterBoundaryHeaderLine(s,&numWaterBoundaries,&numBoundaryPts)) // Boundary types from CATs
-	{
+	if (IsWaterBoundaryHeaderLine(currentLine, numWaterBoundaries, numBoundaryPts)) {
+		// Boundary types from CATs
 		MySpinCursor();
-		err = ReadWaterBoundaries(f,&line,&waterBoundaries,numWaterBoundaries,numBoundaryPts,errmsg);
-		if(err) goto done;
-		NthLineInTextOptimized(*f, (line)++, s, 1024); 
+
+		err = ReadWaterBoundaries(linesInFile, &line, &waterBoundaries, numWaterBoundaries, numBoundaryPts, errmsg);
+		if (err)
+			goto done;
+
+		currentLine = linesInFile[line++];
 	}
-	else
-	{
-		//err = -1;
-		//strcpy(errmsg,"Error in Water boundaries header line");
-		//goto done;
-		// not needed for 2D files, but we require for now
-	}
+
 	MySpinCursor(); // JLM 8/4/99
-	//NthLineInTextOptimized(*f, (line)++, s, 1024); 
-	
-	if(IsBoundaryPointsHeaderLine(s,&numBoundaryPts)) // Boundary data from CATs
-	{
+
+	if (IsBoundaryPointsHeaderLine(currentLine, numBoundaryPts)) {
+		// Boundary data from CATs
 		MySpinCursor();
-		if (numBoundaryPts>0)
-			err = ReadBoundaryPts(f,&line,&boundaryPts,numBoundaryPts,errmsg);
-		if(err) goto done;
-		NthLineInTextOptimized(*f, (line)++, s, 1024); 
+
+		if (numBoundaryPts > 0)
+			err = ReadBoundaryPts(linesInFile, &line, &boundaryPts, numBoundaryPts, errmsg);
+		if (err)
+			goto done;
+
+		currentLine = linesInFile[line++];
 	}
-	else
-	{
-		//err = -1;
-		//strcpy(errmsg,"Error in Boundary points header line");
-		//goto done;
-		// not always needed ? probably always needed for curvilinear
-	}
+
 	MySpinCursor(); // JLM 8/4/99
-	
-	if(IsTTopologyHeaderLine(s,&numTopoPoints)) // Topology from CATs
-	{
+
+	if (IsTTopologyHeaderLine(currentLine, numTopoPoints)) {
+		// Topology from CATs
 		MySpinCursor();
-		err = ReadTTopologyBody(f,&line,&topo,&velH,errmsg,numTopoPoints,FALSE);
-		if(err) goto done;
-		NthLineInTextOptimized(*f, (line)++, s, 1024); 
+
+		err = ReadTTopologyBody(linesInFile, &line, &topo, &velH, errmsg, numTopoPoints, FALSE);
+		if (err)
+			goto done;
+
+		currentLine = linesInFile[line++];
 	}
-	else
-	{
+	else {
 		err = -1; // for now we require TTopology
-		strcpy(errmsg,"Error in topology header line");
-		if(err) goto done;
+		strcpy(errmsg, "Error in topology header line");
+		goto done;
 	}
+
 	MySpinCursor(); // JLM 8/4/99
-	
-	
-	//NthLineInTextOptimized(*f, (line)++, s, 1024); 
-	
-	if(IsTIndexedDagTreeHeaderLine(s,&numPoints))  // DagTree from CATs
-	{
+
+	if (IsTIndexedDagTreeHeaderLine(currentLine, numPoints)) {
+		// DagTree from CATs
 		MySpinCursor();
-		err = ReadTIndexedDagTreeBody(f,&line,&tree,errmsg,numPoints);
-		if(err) goto done;
+
+		err = ReadTIndexedDagTreeBody(linesInFile, &line, &tree, errmsg, numPoints);
+		if (err)
+			goto done;
 	}
-	else
-	{
+	else {
 		err = -1; // for now we require TIndexedDagTree
-		strcpy(errmsg,"Error in dag tree header line");
-		if(err) goto done;
+		strcpy(errmsg, "Error in dag tree header line");
+		goto done;
 	}
+
 	MySpinCursor(); // JLM 8/4/99
 	
 	/////////////////////////////////////////////////
 	// code goes here, do we want to store grid boundary and land/water information?
 	// check if bVelocitiesOnTriangles and boundaryPts
-	/*if (waterBoundaries && boundarySegs)
-	 {
-	 //PtCurMap *map = CreateAndInitPtCurMap(fVar.userName,bounds); // the map bounds are the same as the grid bounds
-	 PtCurMap *map = CreateAndInitPtCurMap("Extended Topology",bounds); // the map bounds are the same as the grid bounds
-	 if (!map) {strcpy(errmsg,"Error creating ptcur map"); goto done;}
-	 // maybe move up and have the map read in the boundary information
-	 map->SetBoundarySegs(boundarySegs);	
-	 map->SetWaterBoundaries(waterBoundaries);
-	 //if (bVelocitiesOnTriangles && boundaryPts) map->SetBoundaryPoints(boundaryPts);	
-	 if (boundaryPts) map->SetBoundaryPoints(boundaryPts);	
-	 
-	 *newMap = map;
-	 }	
-	 else*/	
-	{
-		if (waterBoundaries) {DisposeHandle((Handle)waterBoundaries); waterBoundaries=0;}
-		if (boundarySegs) {DisposeHandle((Handle)boundarySegs); boundarySegs = 0;}
-		if (boundaryPts) {DisposeHandle((Handle)boundaryPts); boundaryPts = 0;}
+	if (waterBoundaries) {
+		DisposeHandle((Handle)waterBoundaries);
+		waterBoundaries = 0;
 	}
-	
-	/////////////////////////////////////////////////
-	
-	
+	if (boundarySegs) {
+		DisposeHandle((Handle)boundarySegs);
+		boundarySegs = 0;
+	}
+	if (boundaryPts) {
+		DisposeHandle((Handle)boundaryPts);
+		boundaryPts = 0;
+	}
+
 	triGrid = new TTriGridVel;
-	if (!triGrid)
-	{		
+	if (!triGrid) {
 		err = true;
-		TechError("Error in TimeGridVelTri::ReadTopology()","new TTriGridVel" ,err);
+		TechError("Error in TimeGridVelTri::ReadTopology()", "new TTriGridVel", err);
 		goto done;
 	}
 	
 	fGrid = (TTriGridVel*)triGrid;
 	
-	triGrid -> SetBounds(bounds); 
+	triGrid->SetBounds(bounds);
 	this->SetGridBounds(bounds);
 	
-	dagTree = new TDagTree(pts,topo,tree.treeHdl,velH,tree.numBranches); 
-	if(!dagTree)
-	{
+	dagTree = new TDagTree(pts, topo, tree.treeHdl, velH, tree.numBranches);
+	if (!dagTree) {
+		err = -1;
 		printError("Unable to read Extended Topology file.");
 		goto done;
 	}
 	
-	triGrid -> SetDagTree(dagTree);
-	//triGrid -> SetDepths(depths);
+	triGrid->SetDagTree(dagTree);
 	
 	pts = 0;	// because fGrid is now responsible for it
 	topo = 0; // because fGrid is now responsible for it
 	tree.treeHdl = 0; // because fGrid is now responsible for it
 	velH = 0; // because fGrid is now responsible for it
-	//depths = 0;
-	
+
 done:
-	
-	if(depths) {DisposeHandle((Handle)depths); depths=0;}
-	if(f) 
-	{
-		_HUnlock((Handle)f); 
-		DisposeHandle((Handle)f); 
-		f = 0;
+
+	if (depths) {
+		DisposeHandle((Handle)depths);
+		depths = 0;
 	}
 	
-	if(err)
-	{
-		if(!errmsg[0])
+	if (err) {
+		if (!errmsg[0])
 			strcpy(errmsg,"An error occurred in TimeGridVelTri::ReadTopology");
 		printError(errmsg); 
-		if(pts) {DisposeHandle((Handle)pts); pts=0;}
-		if(topo) {DisposeHandle((Handle)topo); topo=0;}
-		if(velH) {DisposeHandle((Handle)velH); velH=0;}
-		if(tree.treeHdl) {DisposeHandle((Handle)tree.treeHdl); tree.treeHdl=0;}
-		if(depths) {DisposeHandle((Handle)depths); depths=0;}
-		if(fGrid)
-		{
-			fGrid ->Dispose();
+
+		if (pts) {
+			DisposeHandle((Handle)pts);
+			pts = 0;
+		}
+		if (topo) {
+			DisposeHandle((Handle)topo);
+			topo = 0;
+		}
+		if (velH) {
+			DisposeHandle((Handle)velH);
+			velH = 0;
+		}
+		if (tree.treeHdl) {
+			DisposeHandle((Handle)tree.treeHdl);
+			tree.treeHdl = 0;
+		}
+		if (depths) {
+			DisposeHandle((Handle)depths);
+			depths = 0;
+		}
+		if (fGrid) {
+			fGrid->Dispose();
 			delete fGrid;
 			fGrid = 0;
 		}
-		/*if (*newMap) 
-		 {
-		 (*newMap)->Dispose();
-		 delete *newMap;
-		 *newMap=0;
-		 }*/
-		if (waterBoundaries) {DisposeHandle((Handle)waterBoundaries); waterBoundaries=0;}
-		if (boundarySegs) {DisposeHandle((Handle)boundarySegs); boundarySegs = 0;}
-		if (boundaryPts) {DisposeHandle((Handle)boundaryPts); boundaryPts = 0;}
+		if (waterBoundaries) {
+			DisposeHandle((Handle)waterBoundaries);
+			waterBoundaries = 0;
+		}
+		if (boundarySegs) {
+			DisposeHandle((Handle)boundarySegs);
+			boundarySegs = 0;
+		}
+		if (boundaryPts) {
+			DisposeHandle((Handle)boundaryPts);
+			boundaryPts = 0;
+		}
 	}
+
 	return err;
 }
 
-OSErr TimeGridVelTri_c::ExportTopology(char* path)
+
+// import NetCDF triangle info so don't have to regenerate
+// this is same as curvilinear mover so may want to combine later
+OSErr TimeGridVelTri_c::ReadTopology(const char *path)
+{
+	vector<string> linesInFile;
+
+	ReadLinesInFile(path, linesInFile);
+	return ReadTopology(linesInFile);
+}
+
+
+OSErr TimeGridVelTri_c::ExportTopology(char *path)
 {
 	// export NetCDF triangle info so don't have to regenerate each time
 	// same as curvilinear so may want to combine at some point
@@ -7131,7 +7308,7 @@ OSErr TimeGridVelTri_c::ExportTopology(char* path)
 	double x,y,z=0;
 	char buffer[512],hdrStr[64],topoStr[128];
 	TopologyHdl topH=0;
-	TTriGridVel* triGrid = 0;	
+	TTriGridVel* triGrid = 0;
 	TDagTree* dagTree = 0;
 	LongPointHdl ptsH=0;
 	FLOATH depthsH=0;
@@ -7140,28 +7317,28 @@ OSErr TimeGridVelTri_c::ExportTopology(char* path)
 	FILE *fp = fopen(path, "w");
 	//BFPB bfpb;
 	//PtCurMap *map = GetPtCurMap();
-	
+
 	triGrid = dynamic_cast<TTriGridVel*>(this->fGrid);
 	if (!triGrid) {printError("There is no topology to export"); return -1;}
 	dagTree = triGrid->GetDagTree();
-	if (dagTree) 
+	if (dagTree)
 	{
 		ptsH = dagTree->GetPointsHdl();
 		topH = dagTree->GetTopologyHdl();
 		treeH = dagTree->GetDagTreeHdl();
 	}
-	else 
+	else
 	{
 		printError("There is no topology to export");
 		return -1;
 	}
 	depthsH = ((TTriGridVel*)triGrid)->GetDepths();
-	if(!ptsH || !topH || !treeH) 
+	if(!ptsH || !topH || !treeH)
 	{
 		printError("There is no topology to export");
 		return -1;
 	}
-	
+
 	//if (moverMap->IAm(TYPE_PTCURMAP))
 	/*if (map)
 	{
@@ -7420,94 +7597,140 @@ long TimeGridCurRect_c::GetNumTimesInFile()
 	return numTimes;     
 }
 
-OSErr TimeGridCurRect_c::ReadInputFileNames(CHARH fileBufH, long *line, long numFiles, PtCurFileInfoH *inputFilesH, char *pathOfInputfile)
+
+// iterate the lines in our fileBuf
+// for each [FILE] stanza set:
+//     - resolve the file path relative to the input file
+//     - populate the indexed PtCurFileInfo struct
+// return the PtCurFileInfo structures in the inputFilesH argument
+OSErr TimeGridCurRect_c::ReadInputFileNames(vector<string> &linesInFile, long *line,
+											string containingDir,
+											long numFiles, PtCurFileInfoH *inputFilesH)
 {
-	long i,numScanned;
-	DateTimeRec time;
-	Seconds timeSeconds;
 	OSErr err = 0;
-	char s[1024], classicPath[256];
-	
-	PtCurFileInfoH inputFilesHdl = (PtCurFileInfoH)_NewHandle(sizeof(PtCurFileInfo)*numFiles);
-	if(!inputFilesHdl) {TechError("TimeGridCurRect_c::ReadInputFileNames()", "_NewHandle()", 0); err = memFullErr; goto done;}
-	for (i=0;i<numFiles;i++)	// should count files as go along, and check that they exist ?
+	istringstream lineStream;
+
+	long fileStanzasFound = 0;
+
+	Seconds timeSeconds;
+
+	// allocate our PtCurFileInfo structs
+	PtCurFileInfoH inputFilesHdl = (PtCurFileInfoH)_NewHandle(sizeof(PtCurFileInfo) * numFiles);
+	if (!inputFilesHdl) {
+		TechError("TimeGridCurRect_c::ReadInputFileNames()", "_NewHandle()", 0);
+		err = memFullErr;
+		goto done;
+	}
+
+	for (long i = 0;
+		 i < numFiles && *line < linesInFile.size();
+		 i++)
 	{
-		NthLineInTextNonOptimized(*fileBufH, (*line)++, s, 1024); 	// check it is a [FILE] line
-		//strcpy((*inputFilesHdl)[i].pathName,s+strlen("[FILE]\t"));
-		RemoveLeadingAndTrailingWhiteSpace(s);
-		strcpy((*inputFilesHdl)[i].pathName,s+strlen("[FILE] "));
-		RemoveLeadingAndTrailingWhiteSpace((*inputFilesHdl)[i].pathName);
-		// allow for a path relative to the GNOME directory
-		ResolvePathFromInputFile(pathOfInputfile,(*inputFilesHdl)[i].pathName); // JLM 6/8/10, we need to pass in the input file path so we can use it here
-		
-		if((*inputFilesHdl)[i].pathName[0] && FileExists(0,0,(*inputFilesHdl)[i].pathName))
-		{
-			//
-		}	
-		else 
-		{
-			char msg[256];
-			sprintf(msg,"PATH to data File does not exist.%s%s",NEWLINESTRING,(*inputFilesHdl)[i].pathName);
-			printError(msg);
-			err = true;
+		string key, file;
+		DateTimeRec timeRec;
+
+		// first line should be a [FILE] line
+		if (!ParseKeyedLine(linesInFile[(*line)++], "[FILE]", file)) {
+			err = -1;
+			TechError("TimeGridCurRect_c::ReadInputFileNames()", "failed to scan linked file", 0);
 			goto done;
 		}
-		
-		
-		NthLineInTextNonOptimized(*fileBufH, (*line)++, s, 1024); // check it is a [STARTTIME] line
-		RemoveLeadingAndTrailingWhiteSpace(s);
-		
-		numScanned=sscanf(s+strlen("[STARTTIME]"), "%hd %hd %hd %hd %hd",
-						  &time.day, &time.month, &time.year,
-						  &time.hour, &time.minute) ;
-		if (numScanned!= 5)
-		{ err = -1; TechError("TimeGridCurRect_c::ReadInputFileNames()", "sscanf() == 5", 0); goto done; }
+		else {
+			// process our linked file
+			if (!ResolvePath(containingDir, file)) {
+				char msg[256];
+				sprintf(msg, "PATH to data File does not exist.%s%s", NEWLINESTRING, file.c_str());
+				printError(msg);
+				err = true;
+				goto done;
+			}
+
+			strcpy((*inputFilesHdl)[i].pathName, file.c_str());
+		}
+
+		// next line is a [STARTTIME] line
+		if (!ParseKeyedLine(linesInFile[(*line)++], "[STARTTIME]", timeRec)) {
+			err = -1;
+			TechError("TimeGridCurRect_c::ReadInputFileNames()", "scan line is not a [STARTTIME]", 0);
+			goto done;
+		}
+
 		// not allowing constant current in separate file
-		//if (time.day == time.month == time.year == time.hour == time.minute == -1)
-		if (time.day == -1 && time.month == -1 && time.year == -1 && time.hour == -1 && time.minute == -1)
-		{
+		if (DateValuesAreMinusOne(timeRec)) {
 			timeSeconds = CONSTANTCURRENT;
 		}
-		else // time varying current
-		{
-			CheckYear(&time.year);
-			
-			time.second = 0;
-			DateToSeconds (&time, &timeSeconds);
+		else {
+			// time varying current
+			CorrectTwoDigitYear(timeRec);
+			timeRec.second = 0;
+			DateToSeconds (&timeRec, &timeSeconds);
 		}
 		(*inputFilesHdl)[i].startTime = timeSeconds;
-		
-		NthLineInTextNonOptimized(*fileBufH, (*line)++, s, 1024); // check it is an [ENDTIME] line
-		RemoveLeadingAndTrailingWhiteSpace(s);
-		
-		numScanned=sscanf(s+strlen("[ENDTIME]"), "%hd %hd %hd %hd %hd",
-						  &time.day, &time.month, &time.year,
-						  &time.hour, &time.minute) ;
-		if (numScanned!= 5)
-		{ err = -1; TechError("TimeGridCurRect_c::ReadInputFileNames()", "sscanf() == 5", 0); goto done; }
-		if (time.day == -1 && time.month == -1 && time.year == -1 && time.hour == -1 && time.minute == -1)
-			//if (time.day == time.month == time.year == time.hour == time.minute == -1)
-		{
+
+		// next line is an [ENDTIME] line
+		if (!ParseKeyedLine(linesInFile[(*line)++], "[ENDTIME]", timeRec)) {
+			err = -1;
+			TechError("TimeGridCurRect_c::ReadInputFileNames()", "scan line is not a [ENDTIME]", 0);
+			goto done;
+		}
+
+		if (DateValuesAreMinusOne(timeRec)) {
 			timeSeconds = CONSTANTCURRENT;
 		}
-		else // time varying current
-		{
-			CheckYear(&time.year);
-			
-			time.second = 0;
-			DateToSeconds (&time, &timeSeconds);
+		else {
+			// time varying current
+			CorrectTwoDigitYear(timeRec);
+			timeRec.second = 0;
+			DateToSeconds (&timeRec, &timeSeconds);
 		}
 		(*inputFilesHdl)[i].endTime = timeSeconds;
+
+		fileStanzasFound++;
 	}
+
+	if (fileStanzasFound != numFiles) {
+		err = -1;
+		char msg[256];
+		sprintf(msg, "Expected %ld file stanzas, found %ld\n", numFiles, fileStanzasFound);
+		printError(msg);
+		goto done;
+	}
+
 	*inputFilesH = inputFilesHdl;
-	
+
 done:
-	if (err)
-	{
-		if(inputFilesHdl) {DisposeHandle((Handle)inputFilesHdl); inputFilesHdl=0;}
+
+	if (err) {
+		if (inputFilesHdl) {
+			DisposeHandle((Handle)inputFilesHdl);
+			inputFilesHdl = 0;
+		}
 	}
+
 	return err;
 }
+
+
+// iterate the lines in our fileBuf
+// for each [FILE] stanza set:
+//     - resolve the file path relative to the input file
+//     - populate the indexed PtCurFileInfo struct
+OSErr TimeGridCurRect_c::ReadInputFileNames(CHARH fileBufH, long *line,
+											long numFiles, PtCurFileInfoH *inputFilesH,
+											char *pathOfInputFile)
+{
+	vector<string> linesInBuffer;
+
+	ReadLinesInBuffer(fileBufH, linesInBuffer);
+
+	string inputFile = pathOfInputFile;
+	string dir, file;
+	SplitPathIntoDirAndFile(inputFile, dir, file);
+
+	return ReadInputFileNames(linesInBuffer, line, dir,
+							  numFiles, inputFilesH);
+}
+
 
 OSErr TimeGridCurRect_c::GetStartTime(Seconds *startTime)
 {
@@ -7529,162 +7752,223 @@ OSErr TimeGridCurRect_c::GetEndTime(Seconds *endTime)
 	return 0;
 }
 
-//OSErr GridCurMover::ScanFileForTimes(char *path, PtCurTimeDataHdl *timeDataH,Boolean setStartTime)
-OSErr ScanFileForTimes(char *path, PtCurTimeDataHdl *timeDataH, Seconds ***timeH/*, Boolean setStartTime*/)
-{
-	// scan through the file looking for times "[TIME "  (close file if necessary...)
-	
-	OSErr err = 0;
-	CHARH h = 0;
-	char *sectionOfFile = 0;
-	
-	long fileLength,lengthRemainingToScan,offset;
-	long lengthToRead,lengthOfPartToScan,numTimeBlocks=0;
-	long i, numScanned;
-	DateTimeRec time;
-	Seconds timeSeconds;	
-	
-	// allocate an empty handle
-	PtCurTimeDataHdl timeDataHdl;
-	timeDataHdl = (PtCurTimeDataHdl)_NewHandle(0);
-	if(!timeDataHdl) {TechError("GridCurMover::ScanFileForTimes()", "_NewHandle()", 0); err = memFullErr; goto done;}
 
-	// allocate an empty handle
-	Seconds **timeHdl;
-	timeHdl = (Seconds**)_NewHandle(0);
-	if(!timeHdl) {TechError("GridCurMover::ScanFileForTimes()", "_NewHandle()", 0); err = memFullErr; goto done;}
-	
-	// think in terms of 100K blocks, allocate 101K, read 101K, scan 100K
-	
-#define kGridCurFileBufferSize  100000 // code goes here, increase to 100K or more
-#define kGridCurFileBufferExtraCharSize  256
-	
-	err = MyGetFileSize(0,0,path,&fileLength);
-	if(err) goto done;
-	
-	offset = 0;
-	lengthRemainingToScan = fileLength - 5;
-	
-	// loop until whole file is read 
-	
-	h = (CHARH)_NewHandle(2* kGridCurFileBufferSize+1);
-	if(!h){TechError("GridCurMover::TextRead()", "_NewHandle()", 0); err = memFullErr; goto done;}
-	
-	_HLock((Handle)h);
-	sectionOfFile = *h;
-	
-	while (lengthRemainingToScan>0)
+
+
+
+//OSErr TimeGridVel_c::ScanFileForTimes(char *path,Seconds ***timeH,Boolean setStartTime)
+OSErr ScanFileForTimes(char *path,Seconds ***timeH)
+{
+	OSErr err = 0;
+	long i,numScanned,line=0;
+	DateTimeRec time;
+	Seconds timeSeconds;
+	char s[1024], outPath[256];
+	CHARH fileBufH = 0;
+	int status, ncid, recid, timeid;
+	size_t recs, t_len, t_len2;
+	double timeVal;
+	char recname[NC_MAX_NAME], *timeUnits=0;
+	static size_t timeIndex;
+	Seconds startTime2;
+	double timeConversion = 1.;
+	char errmsg[256] = "";
+	Seconds **timeHdl = 0;
+
+	status = nc_open(path, NC_NOWRITE, &ncid);
+	// code goes here, will need to resolve file paths to unix paths in readinputfilenames
+	if (status != NC_NOERR) /*{err = -1; goto done;}*/
 	{
-		if(lengthRemainingToScan > 2* kGridCurFileBufferSize)
-		{
-			lengthToRead = kGridCurFileBufferSize + kGridCurFileBufferExtraCharSize; 
-			lengthOfPartToScan = kGridCurFileBufferSize; 		
-		}
-		else
-		{
-			// deal with it in one piece
-			// just read the rest of the file
-			lengthToRead = fileLength - offset;
-			lengthOfPartToScan = lengthToRead - 5; 
-		}
-		
-		err = ReadSectionOfFile(0,0,path,offset,lengthToRead,sectionOfFile,0);
-		if(err || !h) goto done;
-		sectionOfFile[lengthToRead] = 0; // make it a C string
-		
-		lengthRemainingToScan -= lengthOfPartToScan;
-		
-		
-		// scan 100K chars of the buffer for '['
-		for(i = 0; i < lengthOfPartToScan; i++)
-		{
-			if(	sectionOfFile[i] == '[' 
-			   && sectionOfFile[i+1] == 'T'
-			   && sectionOfFile[i+2] == 'I'
-			   && sectionOfFile[i+3] == 'M'
-			   && sectionOfFile[i+4] == 'E')
-			{
-				// read and record the time and filePosition
-				PtCurTimeData timeData;
-				memset(&timeData,0,sizeof(timeData));
-				timeData.fileOffsetToStartOfData = i + offset;
-				
-				if (numTimeBlocks > 0) 
-				{
-					(*timeDataHdl)[numTimeBlocks-1].lengthOfData = i+offset - (*timeDataHdl)[numTimeBlocks-1].fileOffsetToStartOfData;					
-				}
-				// some sort of a scan
-				numScanned=sscanf(sectionOfFile+i+6, "%hd %hd %hd %hd %hd",
-								  &time.day, &time.month, &time.year,
-								  &time.hour, &time.minute) ;
-				if (numScanned != 5)
-				{ err = -1; TechError("GridCurMover::TextRead()", "sscanf() == 5", 0); goto done; }
-				// check for constant current
-				if (time.day == -1 && time.month == -1 && time.year == -1 && time.hour == -1 && time.minute == -1)
-					//if (time.day == time.month == time.year == time.hour == time.minute == -1)
-				{
-					timeSeconds = CONSTANTCURRENT;
-					//setStartTime = false;
-				}
-				else // time varying current
-				{
-					if (time.year < 1900)					// two digit date, so fix it
-					{
-						if (time.year >= 40 && time.year <= 99)	
-							time.year += 1900;
-						else
-							time.year += 2000;					// correct for year 2000 (00 to 40)
-					}
-					
-					time.second = 0;
-					DateToSeconds (&time, &timeSeconds);
-				}
-				
-				timeData.time = timeSeconds;
-				
-				// if we don't know the number of times ahead of time
-				_SetHandleSize((Handle) timeDataHdl, (numTimeBlocks+1)*sizeof(timeData));
-				if (_MemError()) { TechError("GridCurMover::TextRead()", "_SetHandleSize()", 0); goto done; }
-				_SetHandleSize((Handle) timeHdl, (numTimeBlocks+1)*sizeof(Seconds));
-				if (_MemError()) { TechError("GridCurMover::TextRead()", "_SetHandleSize()", 0); goto done; }
-				/*if (numTimeBlocks==0 && setStartTime) 
-				{	// set the default times to match the file
-					model->SetModelTime(timeSeconds);
-					model->SetStartTime(timeSeconds);
-					model->NewDirtNotification(DIRTY_RUNBAR); // must reset the runbar
-				}*/
-				//(*timeDataHdl)[numTimeBlocks++] = timeData;				
-				(*timeDataHdl)[numTimeBlocks] = timeData;				
-				(*timeHdl)[numTimeBlocks] = timeData.time;		
-				numTimeBlocks++;
-			}
-		}
-		offset += lengthOfPartToScan;
+#if TARGET_API_MAC_CARBON
+		err = ConvertTraditionalPathToUnixPath((const char *) path, outPath, kMaxNameLen) ;
+		status = nc_open(outPath, NC_NOWRITE, &ncid);
+#endif
+		if (status != NC_NOERR) {err = -1; goto done;}
 	}
-	if (numTimeBlocks > 0)  // last block goes to end of file
+
+	status = nc_inq_dimid(ncid, "time", &recid);
+	if (status != NC_NOERR)
 	{
-		(*timeDataHdl)[numTimeBlocks-1].lengthOfData = fileLength - (*timeDataHdl)[numTimeBlocks-1].fileOffsetToStartOfData;				
+		status = nc_inq_unlimdim(ncid, &recid);	// maybe time is unlimited dimension
+		if (status != NC_NOERR) {err = -1; goto done;}
 	}
-	*timeDataH = timeDataHdl;
+
+	status = nc_inq_varid(ncid, "time", &timeid);
+	if (status != NC_NOERR) {err = -1; goto done;}
+
+	/////////////////////////////////////////////////
+	status = nc_inq_attlen(ncid, timeid, "units", &t_len);
+	if (status != NC_NOERR)
+	{
+		err = -1; goto done;
+	}
+	else
+	{
+		DateTimeRec time;
+		char unitStr[24], junk[10];
+
+		timeUnits = new char[t_len+1];
+		status = nc_get_att_text(ncid, timeid, "units", timeUnits);
+		if (status != NC_NOERR) {err = -2; goto done;}
+		timeUnits[t_len] = '\0'; // moved this statement before StringSubstitute, JLM 5/2/10
+		StringSubstitute(timeUnits, ':', ' ');
+		StringSubstitute(timeUnits, '-', ' ');
+
+		numScanned=sscanf(timeUnits, "%s %s %hd %hd %hd %hd %hd %hd",
+						  unitStr, junk, &time.year, &time.month, &time.day,
+						  &time.hour, &time.minute, &time.second) ;
+		if (numScanned==5)
+		{time.hour = 0; time.minute = 0; time.second = 0; }
+		else if (numScanned==7)	time.second = 0;
+		else if (numScanned<8)
+			//if (numScanned!=8)
+		{ err = -1; TechError("TimeGridVel::ScanFileForTimes()", "sscanf() == 8", 0); goto done; }
+		DateToSeconds (&time, &startTime2);	// code goes here, which start Time to use ??
+		if (!strcmpnocase(unitStr,"HOURS") || !strcmpnocase(unitStr,"HOUR"))
+			timeConversion = 3600.;
+		else if (!strcmpnocase(unitStr,"MINUTES") || !strcmpnocase(unitStr,"MINUTE"))
+			timeConversion = 60.;
+		else if (!strcmpnocase(unitStr,"SECONDS") || !strcmpnocase(unitStr,"SECOND"))
+			timeConversion = 1.;
+		else if (!strcmpnocase(unitStr,"DAYS") || !strcmpnocase(unitStr,"DAY"))
+			timeConversion = 24*3600.;
+	}
+
+	status = nc_inq_dim(ncid, recid, recname, &recs);
+	if (status != NC_NOERR) {err = -2; goto done;}
+	timeHdl = (Seconds**)_NewHandleClear(recs*sizeof(Seconds));
+	if (!timeHdl) {err = memFullErr; goto done;}
+	for (i=0;i<recs;i++)
+	{
+		Seconds newTime;
+		// possible units are, HOURS, MINUTES, SECONDS,...
+		timeIndex = i;
+		status = nc_get_var1_double(ncid, timeid, &timeIndex, &timeVal);
+		if (status != NC_NOERR) {strcpy(errmsg,"Error reading times from NetCDF file"); err = -2; goto done;}
+		newTime = RoundDateSeconds(round(startTime2+timeVal*timeConversion));
+		INDEXH(timeHdl,i) = newTime;	// which start time where?
+	}
 	*timeH = timeHdl;
-	
-	
-	
+	status = nc_close(ncid);
+	if (status != NC_NOERR) {err = -2; goto done;}
+
+
 done:
-	
-	if(h) {
-		_HUnlock((Handle)h); 
-		DisposeHandle((Handle)h); 
-		h = 0;
-	}
 	if (err)
 	{
-		if(timeDataHdl) {DisposeHandle((Handle)timeDataHdl); timeDataHdl=0;}
-		if(timeHdl) {DisposeHandle((Handle)timeHdl); timeHdl=0;}
+		if (err==-2) {printError("Error reading times from NetCDF file");}
+		if (timeHdl) {DisposeHandle((Handle)timeHdl); timeHdl=0;}
 	}
 	return err;
 }
-OSErr TimeGridCurRect_c::CheckAndScanFile(char *errmsg, const Seconds& model_time)
+
+
+
+OSErr ScanFileForTimes(vector<string> &linesInFile,
+					   PtCurTimeDataHdl *timeDataH, Seconds ***timeH)
+{
+	// scan through the file looking for times "[TIME "
+	OSErr err = 0;
+
+	long numTimeBlocks = 0;
+	Seconds timeSeconds;
+
+	// allocate an empty timeData handle
+	PtCurTimeDataHdl timeDataHdl;
+	timeDataHdl = (PtCurTimeDataHdl)_NewHandle(0);
+	if (!timeDataHdl) {
+		TechError("GridCurMover::ScanFileForTimes()", "_NewHandle()", 0);
+		err = memFullErr;
+		goto done;
+	}
+
+	// allocate an empty time handle
+	Seconds **timeHdl;
+	timeHdl = (Seconds**)_NewHandle(0);
+	if (!timeHdl) {
+		TechError("GridCurMover::ScanFileForTimes()", "_NewHandle()", 0);
+		err = memFullErr;
+		goto done;
+	}
+
+	// loop until whole file is read
+	for (long i = 0; i < linesInFile.size(); i++)
+	{
+		string key;
+		DateTimeRec timeRec;
+
+		if (!ParseKeyedLine(linesInFile[i], "[TIME]", timeRec)) {
+			continue;
+		}
+		else {
+			PtCurTimeData timeData;
+			timeData.fileOffsetToStartOfData = i;
+
+			// check for constant current
+			if (DateValuesAreMinusOne(timeRec)) {
+				timeSeconds = CONSTANTCURRENT;
+			}
+			else {
+				// time varying current
+				CorrectTwoDigitYear(timeRec);
+				timeRec.second = 0;
+				DateToSeconds (&timeRec, &timeSeconds);
+			}
+
+			timeData.time = timeSeconds;
+
+			// we can now add a timeData object to our object handles
+			numTimeBlocks++;
+
+			// if we don't know the number of times ahead of timeRec
+			_SetHandleSize((Handle) timeDataHdl, (numTimeBlocks) * sizeof(timeData));
+			if (_MemError()) {
+				TechError("ScanFileForTimes()", "_SetHandleSize()", 0);
+				goto done;
+			}
+			_SetHandleSize((Handle) timeHdl, (numTimeBlocks) * sizeof(Seconds));
+			if (_MemError()) {
+				TechError("ScanFileForTimes()", "_SetHandleSize()", 0);
+				goto done;
+			}
+
+			// read and record the timeRec
+			(*timeDataHdl)[numTimeBlocks - 1] = timeData;
+			(*timeHdl)[numTimeBlocks - 1] = timeData.time;
+		}
+	}
+
+	*timeDataH = timeDataHdl;
+	*timeH = timeHdl;
+
+done:
+
+	if (err) {
+		if (timeDataHdl) {
+			DisposeHandle((Handle)timeDataHdl);
+			timeDataHdl = 0;
+		}
+		if (timeHdl) {
+			DisposeHandle((Handle)timeHdl);
+			timeHdl = 0;
+		}
+	}
+
+	return err;
+}
+
+
+OSErr ScanFileForTimes(char *path,
+					   PtCurTimeDataHdl *timeDataH, Seconds ***timeH)
+{
+	vector<string> linesInFile;
+
+	ReadLinesInFile(path, linesInFile);
+	return ScanFileForTimes(linesInFile, timeDataH, timeH);
+}
+
+
+OSErr TimeGridCurRect_c::CheckAndScanFile(char *errmsg, const Seconds &model_time)
 {
 	Seconds time = model_time, startTime, endTime, lastEndTime, testTime; // AH 07/17/2012
 	
@@ -7730,7 +8014,10 @@ OSErr TimeGridCurRect_c::CheckAndScanFile(char *errmsg, const Seconds& model_tim
 				err = ScanFileForTimes((*fInputFilesHdl)[fileNum-1].pathName,&fTimeDataHdl,&fTimeHdl);	// AH 07/17/2012
 				DisposeLoadedData(&fEndData);
 				strcpy(fVar.pathName,(*fInputFilesHdl)[fileNum-1].pathName);
-				if (err = this -> ReadTimeData(GetNumTimesInFile()-1,&fStartData.dataHdl,errmsg)) return err;
+
+				err = this -> ReadTimeData(GetNumTimesInFile()-1,&fStartData.dataHdl,errmsg);
+				if (err)
+					return err;
 			}
 			fStartData.timeIndex = UNASSIGNEDINDEX;
 			//if(fTimeDataHdl) {DisposeHandle((Handle)fTimeDataHdl); fTimeDataHdl=0;}
@@ -7759,7 +8046,10 @@ OSErr TimeGridCurRect_c::CheckAndScanFile(char *errmsg, const Seconds& model_tim
 				err = ScanFileForTimes((*fInputFilesHdl)[i-1].pathName,&fTimeDataHdl,&fTimeHdl);	// AH 07/17/2012
 				DisposeLoadedData(&fEndData);
 				strcpy(fVar.pathName,(*fInputFilesHdl)[i-1].pathName);
-				if (err = this -> ReadTimeData(GetNumTimesInFile()-1,&fStartData.dataHdl,errmsg)) return err;	
+
+				err = this->ReadTimeData(GetNumTimesInFile() - 1, &fStartData.dataHdl, errmsg);
+				if (err)
+					return err;
 			}
 			fStartData.timeIndex = UNASSIGNEDINDEX;
 			//if(fTimeDataHdl) {DisposeHandle((Handle)fTimeDataHdl); fTimeDataHdl=0;}
@@ -7780,30 +8070,24 @@ OSErr TimeGridCurRect_c::CheckAndScanFile(char *errmsg, const Seconds& model_tim
 	//return err;
 }
 
-OSErr TimeGridCurRect_c::ReadHeaderLines(char *path, WorldRect *bounds)
+
+OSErr TimeGridCurRect_c::ReadHeaderLines(vector<string> &linesInFile,
+										 string &containingDir,
+										 WorldRect *bounds)
 {
-	char s[256], classicPath[256];
-	long line = 0;
-	CHARH f = 0;
 	OSErr err = 0;
-	long /*numLines,*/numScanned;
+	long line = 0;
+
+	string currentLine;
+	string linkedFile;
+
 	double dLon,dLat,oLon,oLat;
 	double lowLon,lowLat,highLon,highLat;
 	Boolean velAtCenter = 0;
 	Boolean velAtCorners = 0;
-	//long numLinesInText, headerLines = 8;
 	
-	if (!path) return -1;
-	
-	if (err = ReadFileContents(TERMINATED,0, 0, path, 0, 0, &f)) goto done;
-	//numLinesInText = NumLinesInText(*f);
-	////
-	// read the header
-	///////////////////////
-	/////////////////////////////////////////////////
-	NthLineInTextOptimized(*f, line++, s, 256); // gridcur header
-	if(fUserUnits == kUndefined)
-	{	
+	if (fUserUnits == kUndefined) {
+
 #ifdef pyGNOME	// get rid of this and require units in file
 		fUserUnits = kKnots;
 #else
@@ -7815,186 +8099,149 @@ OSErr TimeGridCurRect_c::ReadHeaderLines(char *path, WorldRect *bounds)
 		fUserUnits = selectedUnits;
 #endif
 	}
-	
-	//
-	NthLineInTextOptimized(*f, line++, s, 256); 
-	if(!strstr(s,"NUMROWS")) { err = -2; goto done; }
-	numScanned = sscanf(s+strlen("NUMROWS"),"%ld",&fNumRows);
-	if(numScanned != 1 || fNumRows <= 0) { err = -2; goto done; }
-	//
-	NthLineInTextOptimized(*f, line++, s, 256); 
-	if(!strstr(s,"NUMCOLS")) { err = -2; goto done; }
-	numScanned = sscanf(s+strlen("NUMCOLS"),"%ld",&fNumCols);
-	if(numScanned != 1 || fNumCols <= 0) { err = -2; goto done; }
-	//
-	NthLineInTextOptimized(*f, line++, s, 256); 
-	
-	if(s[0]=='S') // check if lat/long given as corner point and increment, and read in
-	{
-		if(!strstr(s,"STARTLAT")) { err = -2; goto done; }
-		numScanned = sscanf(s+strlen("STARTLAT"),lfFix("%lf"),&oLat);
-		if(numScanned != 1 ) { err = -2; goto done; }
-		//
-		NthLineInTextOptimized(*f, line++, s, 256); 
-		if(!strstr(s,"STARTLONG")) { err = -2; goto done; }
-		numScanned = sscanf(s+strlen("STARTLONG"),lfFix("%lf"),&oLon);
-		if(numScanned != 1 ) { err = -2; goto done; }
-		//
-		NthLineInTextOptimized(*f, line++, s, 256); 
-		if(!strstr(s,"DLAT")) { err = -2; goto done; }
-		numScanned = sscanf(s+strlen("DLAT"),lfFix("%lf"),&dLat);
-		if(numScanned != 1 || dLat <= 0) { err = -2; goto done; }
-		//
-		NthLineInTextOptimized(*f, line++, s, 256); 
-		if(!strstr(s,"DLONG")) { err = -2; goto done; }
-		numScanned = sscanf(s+strlen("DLONG"),lfFix("%lf"),&dLon);
-		if(numScanned != 1 || dLon <= 0) { err = -2; goto done; }
-		
-		velAtCorners=true;
-		//
+
+	line++; // skip past the header line
+
+	if (!ParseKeyedLine(linesInFile[line++], "NUMROWS", fNumRows)) {
+		cerr << "TimeGridCurRect_c::ReadHeaderLines(): failed getting num rows..." << endl;
+		err = -2;
+		goto done;
 	}
-	else if(s[0]=='L') // check if lat/long bounds given, and read in
-	{
-		if(!strstr(s,"LOLAT")) { err = -2; goto done; }
-		numScanned = sscanf(s+strlen("LOLAT"),lfFix("%lf"),&lowLat);
-		if(numScanned != 1 ) { err = -2; goto done; }
-		//
-		NthLineInTextOptimized(*f, line++, s, 256); 
-		if(!strstr(s,"HILAT")) { err = -2; goto done; }
-		numScanned = sscanf(s+strlen("HILAT"),lfFix("%lf"),&highLat);
-		if(numScanned != 1 ) { err = -2; goto done; }
-		//
-		NthLineInTextOptimized(*f, line++, s, 256); 
-		if(!strstr(s,"LOLONG")) { err = -2; goto done; }
-		numScanned = sscanf(s+strlen("LOLONG"),lfFix("%lf"),&lowLon);
-		if(numScanned != 1 ) { err = -2; goto done; }
-		//
-		NthLineInTextOptimized(*f, line++, s, 256); 
-		if(!strstr(s,"HILONG")) { err = -2; goto done; }
-		numScanned = sscanf(s+strlen("HILONG"),lfFix("%lf"),&highLon);
-		if(numScanned != 1 ) { err = -2; goto done; }
-		
-		velAtCenter=true;
+
+	if (!ParseKeyedLine(linesInFile[line++], "NUMCOLS", fNumCols)) {
+		err = -2;
+		goto done;
 	}
-	else {err = -2; goto done; }
-	//
-	//NthLineInTextOptimized(*f, line++, s, 256); // row col u v header
-	//
-	
+
+	currentLine = linesInFile[line++];
+	if (ParseKeyedLine(currentLine, "STARTLAT", oLat)) {
+		// lat/long given as corner point and increment
+		if (!ParseKeyedLine(linesInFile[line++], "STARTLONG", oLon)) {
+			err = -2;
+			goto done;
+		}
+
+		if (!ParseKeyedLine(linesInFile[line++], "DLAT", dLat)) {
+			err = -2;
+			goto done;
+		}
+
+		if (!ParseKeyedLine(linesInFile[line++], "DLONG", dLon)) {
+			err = -2;
+			goto done;
+		}
+
+		velAtCorners = true;
+	}
+	else if (ParseKeyedLine(currentLine, "LOLAT", lowLat)) {
+		// lat/long bounds given as lo/hi
+		if (!ParseKeyedLine(linesInFile[line++], "HILAT", highLat)) {
+			err = -2;
+			goto done;
+		}
+
+		if (!ParseKeyedLine(linesInFile[line++], "LOLONG", lowLon)) {
+			err = -2;
+			goto done;
+		}
+
+		if (!ParseKeyedLine(linesInFile[line++], "HILONG", highLon)) {
+			err = -2;
+			goto done;
+		}
+
+		velAtCenter = true;
+	}
+	else {
+		err = -2;
+		goto done;
+	}
+
 	// check hemisphere stuff here , code goes here
-	if(velAtCenter)
+	if (velAtCenter) {
+		(*bounds).loLat = lowLat * 1000000;
+		(*bounds).hiLat = highLat * 1000000;
+		(*bounds).loLong = lowLon * 1000000;
+		(*bounds).hiLong = highLon * 1000000;
+	}
+	else if (velAtCorners) {
+		(*bounds).loLat = round((oLat - dLat / 2.0) * 1000000);
+		(*bounds).hiLat = round((oLat + (fNumRows - 1) * dLat + dLat / 2.0) * 1000000);
+		(*bounds).loLong = round((oLon - dLon / 2.0) * 1000000);
+		(*bounds).hiLong = round((oLon + (fNumCols - 1) * dLon + dLon / 2.0) * 1000000);
+	}
+
+	// skip past any blank or [USERDATA] lines
+	currentLine = trim(linesInFile[line++]);
+	while (currentLine.size() == 0 ||
+		   currentLine.substr(0, 2) == "[U")
 	{
-		(*bounds).loLat = lowLat*1000000;
-		(*bounds).hiLat = highLat*1000000;
-		(*bounds).loLong = lowLon*1000000;
-		(*bounds).hiLong = highLon*1000000;
+		currentLine = trim(linesInFile[line++]);
 	}
-	else if(velAtCorners)
-	{
-		(*bounds).loLat = round((oLat - dLat/2.0)*1000000);
-		(*bounds).hiLat = round((oLat + (fNumRows-1)*dLat + dLat/2.0)*1000000);
-		(*bounds).loLong = round((oLon - dLon/2.0)*1000000);
-		(*bounds).hiLong = round((oLon + (fNumCols-1)*dLon + dLon/2.0)*1000000);
-	}
-	//numLines = numLinesInText - headerLines;	// allows user to leave out land points within grid (or standing water)
-	
-	NthLineInTextOptimized(*f, (line)++, s, 256);
-	RemoveLeadingAndTrailingWhiteSpace(s);
-	while ((s[0]=='[' && s[1]=='U') || s[0]==0)
-	{	// [USERDATA] lines, and blank lines, generalize to anything but [FILE] ?
-		NthLineInTextOptimized(*f, (line)++, s, 256);
-		RemoveLeadingAndTrailingWhiteSpace(s);
-	}
-	if(!strstr(s,"[FILE]")) 
-	{	// single file
-		
-		err = ScanFileForTimes(path,&fTimeDataHdl,&fTimeHdl);	// AH 07/17/2012
-		
-		if (err) goto done;
-	}
-	else
-	{	// multiple files
-		char errmsg[256];
-		long numLinesInText = NumLinesInText(*f);
-		long numFiles = (numLinesInText - (line - 1))/3;	// 3 lines for each file - filename, starttime, endtime
-		//strcpy(fPathName,s+strlen("[FILE]\t"));
-		strcpy(fVar.pathName,s+strlen("[FILE] "));
-		//sprintf(errmsg,"pathName = %s\n",fVar.pathName);
-		//printNote(errmsg);
-		RemoveLeadingAndTrailingWhiteSpace(fVar.pathName);
-		ResolvePathFromInputFile(path,fVar.pathName); // JLM 6/8/10
-		//sprintf(errmsg,"pathName = %s\n",path);
-		//printNote(errmsg);
-		//sprintf(errmsg,"resolved pathName = %s\n",fVar.pathName);
-		//printNote(errmsg);
-		if(fVar.pathName[0] && FileExists(0,0,fVar.pathName))
-		{
-			err = ScanFileForTimes(fVar.pathName,&fTimeDataHdl,&fTimeHdl);	// AH 07/17/2012
-			
-			if (err) goto done;
-			// code goes here, maybe do something different if constant current
+
+
+	if (ParseKeyedLine(currentLine, "[FILE]", linkedFile)) {
+		// one or more linked files
+		// 3 lines for each file - filename, starttime, endtime
+		long numLinesInText = linesInFile.size();
+		long numFiles = (numLinesInText - (line - 1)) / 3;
+
+		if (ResolvePath(containingDir, linkedFile)) {
+			strcpy(fVar.pathName, linkedFile.c_str());
+
+			err = ScanFileForTimes(fVar.pathName, &fTimeDataHdl, &fTimeHdl);
+			if (err)
+				goto done;
+
 			line--;
-			err = /*dynamic_cast<TimeGridCurRect*>(this)->*/ReadInputFileNames(f,&line,numFiles,&fInputFilesHdl,path);
-		}	
-		else 
-		{
+			err = ReadInputFileNames(linesInFile, &line, containingDir,
+									  numFiles, &fInputFilesHdl);
+		}
+		else {
 			char msg[256];
-			sprintf(msg,"PATH to GridCur data File does not exist.%s%s",NEWLINESTRING,fVar.pathName);
+			sprintf(msg, "Linked GridCur data File could not be resolved.%s%s",
+					NEWLINESTRING, linkedFile.c_str());
 			printError(msg);
 			err = true;
 		}
-		
-		/*err = ScanFileForTimes(fPathName,&fTimeDataHdl,true);
-		 if (err) goto done;
-		 line--;
-		 err = ReadInputFileNames(f,&line,numFiles,&fInputFilesHdl,path);*/
+	}
+	else {
+		// single file
+		err = ScanFileForTimes(linesInFile, &fTimeDataHdl, &fTimeHdl);
+		if (err)
+			goto done;
 	}
 	
 done:
-	if(f) { DisposeHandle((Handle)f); f = 0;}
-	if(err)
-	{
-		if(err==memFullErr)
+
+	if (err) {
+		if (err == memFullErr)
 			TechError("TRectGridVel::ReadGridCurFile()", "_NewHandleClear()", 0); 
 		else
 			printError("Unable to read GridCur file.");
 	}
+
 	return err;
 }
 
-OSErr TimeGridCurRect_c::TextRead(char *path, char *topFilePath) 
+
+OSErr TimeGridCurRect_c::TextRead(vector<string> &linesInFile,
+								  string containingDir)
 {
-	WorldRect bounds;
 	OSErr err = 0;
-	char pathName[256];
 	
-	TRectGridVel *rectGrid = nil;
-	
-	if (!path || !path[0]) return 0;
-	
-	//strcpy(fPathName,path);
-	strcpy(fVar.pathName,path);
-	
-	//strcpy(pathName,fPathName);
-	//SplitPathFile(pathName,fFileName);
-	strcpy(pathName,fVar.pathName);
-#ifndef pyGNOME
-	SplitPathFile(pathName,fVar.userName);	// code goes here, this won't work on unix paths
-#else
-	SplitPathFileName (pathName, fVar.userName);
-#endif
+	WorldRect bounds;
+	TRectGridVel *rectGrid = 0;
+
 	// code goes here, we need to worry about really big files
 	
 	// do the readgridcur file stuff, store numrows, numcols, return the bounds
-	err = this -> ReadHeaderLines(path,&bounds);
+	err = this->ReadHeaderLines(linesInFile, containingDir, &bounds);
 	if(err)
 		goto done;
-	
-	/////////////////////////////////////////////////
-	
+
 	rectGrid = new TRectGridVel;
-	if (!rectGrid)
-	{		
+	if (!rectGrid) {
 		err = true;
 		TechError("Error in GridCurMover::TextRead()","new TRectGridVel" ,err);
 		goto done;
@@ -8002,183 +8249,176 @@ OSErr TimeGridCurRect_c::TextRead(char *path, char *topFilePath)
 	
 	fGrid = (TGridVel*)rectGrid;
 	
-	rectGrid -> SetBounds(bounds); 
+	rectGrid->SetBounds(bounds);
 	this->SetGridBounds(bounds);
-	
-	// scan through the file looking for "[TIME ", then read and record the time, filePosition, and length of data
-	// consider the possibility of multiple files
-	/*NthLineInTextOptimized(*f, (line)++, s, 256); 
-	 if(!strstr(s,"[FILE]")) 
-	 {	// single file
-	 err = ScanFileForTimes(path,&fTimeDataHdl,true);
-	 if (err) goto done;
-	 }
-	 else
-	 {	// multiple files
-	 long numLinesInText = NumLinesInText(*f);
-	 long numFiles = (numLinesInText - (line - 1))/3;	// 3 lines for each file - filename, starttime, endtime
-	 strcpy(fPathName,s+strlen("[FILE]\t"));
-	 err = ScanFileForTimes(fPathName,&fTimeDataHdl,true);
-	 if (err) goto done;
-	 line--;
-	 err = ReadInputFileNames(f,&line,numFiles,&fInputFilesHdl,path);
-	 }*/
-	
-	//err = ScanFileForTimes(path,&fTimeDataHdl);
-	//if (err) goto done;
-	
 	
 done:
 	
-	if(err)
-	{
+	if (err) {
 		printError("An error occurred in GridCurMover::TextRead"); 
-		if(fGrid)
-		{
-			fGrid ->Dispose();
+		if (fGrid) {
+			fGrid->Dispose();
 			delete fGrid;
 			fGrid = 0;
 		}
 	}
-	return err;
-	
+
 	// rest of file (i.e. velocity data) is read as needed
+	return err;
 }
 
-OSErr TimeGridCurRect_c::ReadTimeData(long index,VelocityFH *velocityH, char* errmsg) 
+
+OSErr TimeGridCurRect_c::TextRead(const char *path, const char *topFilePath)
 {
-	char s[256], path[256]; 
-	long i,line = 0;
-	long offset,lengthToRead;
-	CHARH h = 0;
-	char *sectionOfFile = 0;
-	char *strToMatch = 0;
-	long len,numScanned;
-	VelocityFH velH = 0;
-	long totalNumberOfVels = fNumRows * fNumCols;
-	long numLinesInBlock;
-	
+	string strPath = path;
+
+	if (strPath.size() == 0)
+		return 0;
+	strcpy(fVar.pathName, strPath.c_str());
+
+	string dir, file;
+	SplitPathIntoDirAndFile(strPath, dir, file);
+
+
+	vector<string> linesInFile;
+	if (ReadLinesInFile(strPath, linesInFile)) {
+		return TextRead(linesInFile, dir);
+	}
+	else {
+		return false;
+	}
+}
+
+
+OSErr TimeGridCurRect_c::ReadTimeData(long index,
+									  VelocityFH *velocityH,
+									  char *errmsg)
+{
 	OSErr err = 0;
+
+	string path = fVar.pathName;
+	vector<string> linesInFile;
+	istringstream lineStream;
+	long line;
+	string key;
+
+	long totalNumberOfVels = fNumRows * fNumCols;
+
+	VelocityFH velH = 0;
 	DateTimeRec time;
 	Seconds timeSeconds;
-	errmsg[0]=0;
-	
-	strcpy(path,fVar.pathName);
-	if (!path || !path[0]) return -1;
-	
-	lengthToRead = (*fTimeDataHdl)[index].lengthOfData;
-	offset = (*fTimeDataHdl)[index].fileOffsetToStartOfData;
-	
-	h = (CHARH)_NewHandle(lengthToRead+1);
-	if(!h){TechError("TimeGridCurRect_c::ReadTimeData()", "_NewHandle()", 0); err = memFullErr; goto done;}
-	
-	_HLock((Handle)h);
-	sectionOfFile = *h;			
-	
-	err = ReadSectionOfFile(0,0,path,offset,lengthToRead,sectionOfFile,0);
-	if(err || !h) 
-	{
-		char firstPartOfLine[128];
-		sprintf(errmsg,"Unable to open data file:%s",NEWLINESTRING);
-		strncpy(firstPartOfLine,path,120);
-		strcpy(firstPartOfLine+120,"...");
-		strcat(errmsg,firstPartOfLine);
+
+	errmsg[0] = 0;
+
+	if (path.size() == 0)
+		return -1;
+
+	if (!ReadLinesInFile(path, linesInFile)) {
+		return -1;
+	}
+	line = (*fTimeDataHdl)[index].fileOffsetToStartOfData;
+
+	// some other way to calculate
+	velH = (VelocityFH)_NewHandleClear(sizeof(**velH) * totalNumberOfVels);
+	if (!velH) {
+		TechError("TimeGridCurRect_c::ReadTimeData()", "_NewHandle()", 0);
+		err = memFullErr;
 		goto done;
 	}
-	sectionOfFile[lengthToRead] = 0; // make it a C string
-	numLinesInBlock = NumLinesInText(sectionOfFile);
-	
-	// some other way to calculate
-	velH = (VelocityFH)_NewHandleClear(sizeof(**velH)*totalNumberOfVels);
-	if(!velH){TechError("TimeGridCurRect_c::ReadTimeData()", "_NewHandle()", 0); err = memFullErr; goto done;}
-	
-	strToMatch = "[TIME]";
-	len = strlen(strToMatch);
-	NthLineInTextOptimized (sectionOfFile, line = 0, s, 256);
-	if(!strncmp(s,strToMatch,len)) 
-	{
-		numScanned=sscanf(s+len, "%hd %hd %hd %hd %hd",
-						  &time.day, &time.month, &time.year,
-						  &time.hour, &time.minute) ;
-		if (numScanned!= 5)
-		{ err = -1; TechError("TimeGridCurRect_c::ReadTimeData()", "sscanf() == 5", 0); goto done; }
-		// check for constant current
-		if (time.day == -1 && time.month == -1 && time.year == -1 && time.hour == -1 && time.minute == -1)
-			//if (time.year == time.month == time.day == time.hour == time.minute == -1) 
-		{
-			timeSeconds = CONSTANTCURRENT;
-		}
-		else // time varying current
-		{
-			if (time.year < 1900)					// two digit date, so fix it
-			{
-				if (time.year >= 40 && time.year <= 99)	
-					time.year += 1900;
-				else
-					time.year += 2000;					// correct for year 2000 (00 to 40)
-			}
-			
-			time.second = 0;
-			DateToSeconds (&time, &timeSeconds);
-		}
-		
-		// check time is correct
-		if (timeSeconds!=(*fTimeDataHdl)[index].time)
-		{ err = -1;  strcpy(errmsg,"Can't read data - times in the file have changed."); goto done; }
-		line++;
+
+	if (!ParseKeyedLine(linesInFile[line++], "[TIME]", time)) {
+		err = -1;
+		TechError("TimeGridCurRect_c::ReadTimeData()", "failed to scan [TIME] row", 0);
+		goto done;
 	}
-	
+
+	// check for constant current
+	if (DateValuesAreMinusOne(time)) {
+		timeSeconds = CONSTANTCURRENT;
+	}
+	else {
+		CorrectTwoDigitYear(time);
+		time.second = 0;
+		DateToSeconds(&time, &timeSeconds);
+	}
+
+	// check time is correct
+	if (timeSeconds != (*fTimeDataHdl)[index].time) {
+		err = -1;
+		strcpy(errmsg, "Can't read data - times in the file have changed.");
+		goto done;
+	}
+
 	// allow to omit areas of the grid with zero velocity, use length of data info
-	//for(i=0;i<totalNumberOfVels;i++) // interior points
-	for(i=0;i<numLinesInBlock-1;i++) // lines of data
+	while (line < linesInFile.size())
 	{
 		VelocityRec vel;
-		long rowNum,colNum;
-		long index;
-		
-		NthLineInTextOptimized(sectionOfFile, line++, s, 256); 	// in theory should run out of lines eventually
-		RemoveLeadingAndTrailingWhiteSpace(s);
-		if(s[0] == 0) continue; // it's a blank line, allow this and skip the line
-		numScanned = sscanf(s,lfFix("%ld %ld %lf %lf"),&rowNum,&colNum,&vel.u,&vel.v);
-		if(numScanned != 4 
-		   || rowNum <= 0 || rowNum > fNumRows
-		   || colNum <= 0 || colNum > fNumCols
-		   )
-		{ 
-			err = -1;  
-			char firstPartOfLine[128];
-			sprintf(errmsg,"Unable to read velocity data from line %ld:%s",line,NEWLINESTRING);
-			strncpy(firstPartOfLine,s,120);
-			strcpy(firstPartOfLine+120,"...");
-			strcat(errmsg,firstPartOfLine);
-			goto done; 
+ 		long rowNum, colNum, index;
+
+		if (linesInFile[line].size() == 0) {
+			// it's a blank line, allow this and skip the line
+			line++;
+			continue;
 		}
-		index = (rowNum -1) * fNumCols + colNum-1;
+
+		lineStream.str(linesInFile[line++]);
+		lineStream.clear();
+		lineStream >> rowNum >> colNum >> vel.u >> vel.v;
+		if (lineStream.fail())
+		{
+			// did we run into the next [TIME] stanza?
+			lineStream.clear();
+			lineStream >> key;
+			if (lineStream.fail() || key != "[TIME]" ) {
+				// anything other than a time stanza is not allowed
+				char firstPartOfLine[128];
+				sprintf(errmsg, "TimeGridCurRect_c::ReadTimeData(): Unable to read velocity data from line %ld:%s", line, NEWLINESTRING);
+				strncpy(firstPartOfLine, lineStream.str().c_str(), 120);
+				strcpy(firstPartOfLine + 120, "...");
+				strcat(errmsg, firstPartOfLine);
+				err = -1;
+				goto done;
+			}
+			else {
+				break;  // we are at the end of the current time data block
+			}
+		}
+
+		if (rowNum <= 0 || rowNum > fNumRows ||
+			colNum <= 0 || colNum > fNumCols)
+		{
+			char firstPartOfLine[128];
+			sprintf(errmsg, "TimeGridCurRect_c::ReadTimeData(): velocity data out of bounds in line %ld:%s", line, NEWLINESTRING);
+			strncpy(firstPartOfLine, lineStream.str().c_str(), 120);
+			strcpy(firstPartOfLine + 120, "...");
+			strcat(errmsg, firstPartOfLine);
+			err = -1;
+			goto done;
+		}
+
+		index = (rowNum - 1) * fNumCols + colNum - 1;
 		(*velH)[index].u = vel.u; // units ??? assumed m/s
 		(*velH)[index].v = vel.v; 
 	}
+
 	*velocityH = velH;
 	
 done:
-	
-	if(h) {
-		_HUnlock((Handle)h); 
-		DisposeHandle((Handle)h); 
-		h = 0;
-	}
-	
-	
-	if(err)
-	{
-		if(!errmsg[0])
-			strcpy(errmsg,"An error occurred in TimeGridCurRect_c::ReadTimeData");
+
+	if (err) {
+		if (!errmsg[0])
+			strcpy(errmsg, "An error occurred in TimeGridCurRect_c::ReadTimeData");
 		//printError(errmsg); // This alert causes a freeze up...
 		// We don't want to put up an error message here because it can lead to an infinite loop of messages.
-		if(velH) {DisposeHandle((Handle)velH); velH = 0;}
+		if (velH) {
+			DisposeHandle((Handle)velH);
+			velH = 0;
+		}
 	}
+
 	return err;
-	
 }
+
 
 TimeGridCurTri_c::TimeGridCurTri_c () : TimeGridCurRect_c()
 {
@@ -8224,6 +8464,8 @@ TimeGridCurTri_c::TimeGridCurTri_c () : TimeGridCurRect_c()
 	
 	//SetClassName (name); // short file name
 }
+
+
 long TimeGridCurTri_c::GetNumDepths(void)
 {
 	long numDepths = 0;
@@ -8231,6 +8473,8 @@ long TimeGridCurTri_c::GetNumDepths(void)
 	
 	return numDepths;
 }
+
+
 void TimeGridCurTri_c::Dispose ()
 {
 	if(fDepthsH) {DisposeHandle((Handle)fDepthsH); fDepthsH=0;}
@@ -8238,6 +8482,8 @@ void TimeGridCurTri_c::Dispose ()
 	
 	TimeGridCurRect_c::Dispose ();
 }
+
+
 void TimeGridCurTri_c::GetDepthIndices(long ptIndex, float depthAtPoint, long *depthIndex1, long *depthIndex2)
 {
 	long indexToDepthData = (*fDepthDataInfo)[ptIndex].indexToDepthData;
@@ -8311,6 +8557,8 @@ void TimeGridCurTri_c::GetDepthIndices(long ptIndex, float depthAtPoint, long *d
 			break;
 	}
 }
+
+
 VelocityRec TimeGridCurTri_c::GetScaledPatValue(const Seconds& model_time, WorldPoint3D refPoint)
 {
 	double timeAlpha, depth = refPoint.z;
@@ -8550,519 +8798,503 @@ VelocityRec TimeGridCurTri_c::GetScaledPatValue3D(const Seconds& model_time,Inte
 	return scaledPatVelocity;
 }
 
-/////////////////////////////////////////////////////////////////
-OSErr TimeGridCurTri_c::ReadHeaderLine(char *s)
+
+// interpret the incoming line as a header line in the format
+// '[<name>] <value>'
+// <name> == the name of the data item
+// <value> == the value of the data item
+OSErr TimeGridCurTri_c::ReadHeaderLine(string &strIn)
 {
-	char msg[512],str[256];
-	char gridType[24],boundary[24];
-	char *strToMatch = 0;
-	long len,numScanned,longVal;
-	double val=0.;
-	if(s[0] != '[')
+	string msg;
+	string boundary;
+
+	double value = 0., thickness;
+
+	string key, valueStr;
+
+	if(strIn[0] != '[')
 		return -1; // programmer error
-	
-	switch(s[1]) {
+
+	istringstream lineStream(strIn);
+	lineStream >> key;
+	if (lineStream.fail()) {
+		return -1; // programmer error
+	}
+
+	switch(key[1]) {
 		case 'C':
-			strToMatch = "[CURSCALE]\t";
-			len = strlen(strToMatch);
-			if(!strncmp(s,strToMatch,len)) {
-				numScanned = sscanf(s+len,lfFix("%lf"),&val);
-				if (numScanned != 1 || val <= 0.0)
+			if (key == "[CURSCALE]") {
+				lineStream >> fVar.fileScaleFactor;
+				if (lineStream.fail()) {
 					goto BadValue; 
-				//fVar.curScale = val;
-				fVar.fileScaleFactor = val;
+				}
 				return 0; // no error
 			}
 			break;
-			
 		case 'F':
-			strToMatch = "[FILETYPE]";
-			if(!strncmp(s,strToMatch,strlen(strToMatch))) {
+			if (key == "[FILETYPE]") {
 				return 0; // no error, already dealt with this
 			}
 			break;
-			
 		case 'G':
-			strToMatch = "[GRIDTYPE]\t";
-			len = strlen(strToMatch);
-			if(!strncmp(s,strToMatch,len)) {
-				numScanned = sscanf(s+len,"%s",gridType);
-				if (numScanned != 1)
-					goto BadValue; 
-				if (!strncmp(gridType,"2D",strlen("2D")))
-					fVar.gridType = TWO_D;
-				else
-				{
-					// code goes here, deal with bottom boundary condition
-					if (!strncmp(gridType,"BAROTROPIC",strlen("BAROTROPIC")))
-						fVar.gridType = BAROTROPIC;
-					else if (!strncmp(gridType,"SIGMA",strlen("SIGMA")))
-						fVar.gridType = SIGMA;
-					else if (!strncmp(gridType,"MULTILAYER",strlen("MULTILAYER")))
-						fVar.gridType = MULTILAYER;
-					numScanned = sscanf(s+len+strlen(gridType),lfFix("%s%lf"),boundary,&val);
-					if (numScanned < 1 || val < 0.)
-						goto BadValue; 	
-					// check on FREESLIP vs NOSLIP
-					fVar2.bLayerThickness = val;
+			if (key == "[GRIDTYPE]") {
+				lineStream >> valueStr;
+				if (lineStream.fail()) {
+					goto BadValue;
 				}
-				return 0; // no error
+				if (valueStr == "2D") {
+					fVar.gridType = TWO_D;
+					return 0;
+				}
+				else {
+					if (valueStr == "BAROTROPIC")
+						fVar.gridType = BAROTROPIC;
+					else if (valueStr == "SIGMA")
+						fVar.gridType = SIGMA;
+					else if (valueStr == "MULTILAYER")
+						fVar.gridType = MULTILAYER;
+					else
+						goto BadValue;
+
+					lineStream >> boundary >> thickness;
+					if (lineStream.fail()) {
+						goto BadValue;
+					}
+					fVar2.bLayerThickness = thickness;
+
+					return 0; // no error
+				}
 			}
 			break;
-			
 		case 'N':
-			strToMatch = "[NAME]\t";
-			len = strlen(strToMatch);
-			if(!strncmp(s,strToMatch,len)) {
-				//strncpy(fVar.userName,s+len,kPtCurUserNameLen);
-				//fVar.userName[kPtCurUserNameLen-1] = 0;
-				// increased the size of userName
-				strncpy(fVar.userName,s+len,kMaxNameLen);
-				fVar.userName[kMaxNameLen-1] = 0;
+			if (key == "[NAME]") {
+				lineStream.getline(fVar.userName, kMaxNameLen);
 				return 0; // no error
 			}
 			break;
-			
 		case 'M':
-			strToMatch = "[MAXNUMDEPTHS]\t";
-			len = strlen(strToMatch);
-			if(!strncmp(s,strToMatch,len)) {
-				numScanned = sscanf(s+len,"%ld",&longVal);
-				//if (numScanned != 1 || longVal <= 0.0)
-				if (numScanned != 1 || longVal < 0.0)
+			if (key == "[MAXNUMDEPTHS]") {
+				lineStream >> fVar.maxNumDepths;
+				if (lineStream.fail()) {
 					goto BadValue; 
-				fVar.maxNumDepths = longVal;
+				}
+
 				return 0; // no error
 			}
 			break;
-			
 		case 'U':
-			///
-			strToMatch = "[UNCERTALONG]\t";
-			len = strlen(strToMatch);
-			if(!strncmp(s,strToMatch,len)) {
-				numScanned = sscanf(s+len,lfFix("%lf"),&val);
-				if (numScanned != 1 || val <= 0.0)
+			if (key == "[UNCERTALONG]") {
+				lineStream >> fVar2.alongCurUncertainty;
+				if (lineStream.fail()) {
 					goto BadValue; 
-				fVar2.alongCurUncertainty = val;
+				}
+
 				return 0; // no error
 			}
-			///
-			strToMatch = "[UNCERTCROSS]\t";
-			len = strlen(strToMatch);
-			if(!strncmp(s,strToMatch,len)) {
-				numScanned = sscanf(s+len,lfFix("%lf"),&val);
-				if (numScanned != 1 || val <= 0.0)
+			else if (key == "[UNCERTCROSS]") {
+				lineStream >> fVar2.crossCurUncertainty;
+				if (lineStream.fail()) {
 					goto BadValue; 
-				fVar2.crossCurUncertainty = val;
+				}
+
 				return 0; // no error
 			}
-			///
-			strToMatch = "[UNCERTMIN]\t";
-			len = strlen(strToMatch);
-			if(!strncmp(s,strToMatch,len)) {
-				numScanned = sscanf(s+len,lfFix("%lf"),&val);
-				if (numScanned != 1 || val <= 0.0)
+			else if (key == "[UNCERTMIN]") {
+				lineStream >> fVar2.uncertMinimumInMPS;
+				if (lineStream.fail()) {
 					goto BadValue; 
-				//fVar.uncertMinimumInMPS = val;
+				}
+
 				return 0; // no error
 			}
-			///
-			strToMatch = "[USERDATA]";
-			if(!strncmp(s,strToMatch,strlen(strToMatch))) {
+			else if (key == "[USERDATA]") {
 				return 0; // no error, but nothing to do
 			}
 			break;
-			
+		default:
+			// if we get here, we did not recognize the string
+			msg = "Unrecognized line:\n";
+			msg += strIn.substr(0, 255);
+
+			printError((char*)msg.c_str());
+			return -1;
+			break;
 	}
-	// if we get here, we did not recognize the string
-	strncpy(str,s,255);
-	strcpy(str+250,"..."); // cute trick
-	sprintf(msg,"Unrecognized line:%s%s",NEWLINESTRING,str);
-	printError(msg);
-	
-	return -1;
-	
+
 BadValue:
-	strncpy(str,s,255);
-	strcpy(str+250,"..."); // cute trick
-	sprintf(msg,"Bad value:%s%s",NEWLINESTRING,str);
-	printError(msg);
+	msg = "Bad value:\n";
+	msg += strIn.substr(0, 255);
+
+	printError((char*)msg.c_str());
 	return -1;
-	
 }
 
-OSErr TimeGridCurTri_c::ReadPtCurVertices(CHARH fileBufH,long *line,LongPointHdl *pointsH,FLOATH *bathymetryH,char* errmsg,long numPoints)
+
 // Note: '*line' must contain the line# at which the vertex data begins
+OSErr TimeGridCurTri_c::ReadPtCurVertices(vector<string> &linesInFile,
+										  long *line,
+										  LongPointHdl *pointsH,
+										  FLOATH *bathymetryH,
+										  char *errmsg, long numPoints)
 {
-	LongPointHdl ptsH = nil;
+	OSErr err = -1;
+	string currentLine;
+	long index = 0;
+
+	LongPointHdl ptsH = 0;
 	FLOATH depthsH = 0, bathymetryHdl = 0;
 	DepthDataInfoH depthDataInfo = 0;
-	OSErr err=-1;
-	char *s;
-	long i,index = 0;
-	
-	strcpy(errmsg,""); // clear it
+
+	// initialize our arguments
+	errmsg[0] = 0;
 	*pointsH = 0;
-	
-	ptsH = (LongPointHdl)_NewHandle(sizeof(LongPoint)*(numPoints));
-	if(ptsH == nil)
-	{
+
+	ptsH = (LongPointHdl)_NewHandle(sizeof(LongPoint) * (numPoints));
+	if (ptsH == 0) {
 		strcpy(errmsg,"Not enough memory to read PtCur file.");
 		return -1;
 	}
 	
-	bathymetryHdl = (FLOATH)_NewHandle(sizeof(float)*(numPoints));
-	if(bathymetryHdl == nil)
-	{
+	bathymetryHdl = (FLOATH)_NewHandle(sizeof(float) * (numPoints));
+	if (bathymetryHdl == 0) {
 		strcpy(errmsg,"Not enough memory to read PtCur file.");
 		return -1;
 	}
 	
-	if (fVar.gridType != TWO_D) // have depth info
-	{	
+	if (fVar.gridType != TWO_D) {
+		// have depth info
 		depthsH = (FLOATH)_NewHandle(0);
-		if(!depthsH) {TechError("PtCurMover::ReadPtCurVertices()", "_NewHandle()", 0); err = memFullErr; goto done;}
-		
-	}
-	
-	depthDataInfo = (DepthDataInfoH)_NewHandle(sizeof(**depthDataInfo)*numPoints);
-	if(!depthDataInfo){TechError("PtCurMover::ReadPtCurVertices()", "_NewHandle()", 0); err = memFullErr; goto done;}
-	
-	s = new char[(fVar.maxNumDepths+4)*64]; // large enough to hold ptNum, vertex, total depth, and all depths
-	if(!s) {TechError("PtCurMover::ReadPtCurVertices()", "new[]", 0); err = memFullErr; goto done;}
-	
-	for(i=0;i<numPoints;i++)
-	{
-		LongPoint vertex;
-		NthLineInTextOptimized(*fileBufH, (*line)++, s, (fVar.maxNumDepths+4)*64); 
-		
-		char* token = strtok(s,PTCUR_DELIM_STR); // points to ptNum	 - skip over (maybe check...)
-		token = strtok(NULL,PTCUR_DELIM_STR); // points to x
-		
-		err = ScanMatrixPt(token,&vertex);
-		if(err)
-		{
-			char firstPartOfLine[128];
-			sprintf(errmsg,"Unable to read vertex data from line %ld:%s",*line,NEWLINESTRING);
-			strncpy(firstPartOfLine,s,120);
-			strcpy(firstPartOfLine+120,"...");
-			strcat(errmsg,firstPartOfLine);
+		if (!depthsH) {
+			TechError("PtCurMover::ReadPtCurVertices()", "_NewHandle()", 0);
+			err = memFullErr;
 			goto done;
 		}
 		
-		// should be (*ptsH)[ptNum-1] or track the original indices 
-		(*ptsH)[i].h = vertex.h;
-		(*ptsH)[i].v = vertex.v;
-		
-		if (fVar.gridType != TWO_D) // have depth info
-		{
-			double depth;
-			long numDepths = 0;
-			(*depthDataInfo)[i].indexToDepthData = index;
-			
-			token = strtok(NULL,PTCUR_DELIM_STR); // points to y
-			
-			while (numDepths!=fVar.maxNumDepths+1)
-			{
-				token = strtok(NULL,PTCUR_DELIM_STR); // points to a depth
-				err = ScanDepth(token,&depth);
-				if(err)
-				{
-					char firstPartOfLine[128];
-					sprintf(errmsg,"Unable to read depth data from line %ld:%s",*line,NEWLINESTRING);
-					strncpy(firstPartOfLine,s,120);
-					strcpy(firstPartOfLine+120,"...");
-					strcat(errmsg,firstPartOfLine);
-					goto done;
-				}
-				
-				if (depth==-1) break; // no more depths
-				if (numDepths==0) // first one is actual depth at the location
-				{
-					(*depthDataInfo)[i].totalDepth = depth;
-					(*bathymetryHdl)[i] = depth;
-				}
-				else
-				{
-					// since we don't know the number of depths ahead of time
-					_SetHandleSize((Handle) depthsH, (index+numDepths)*sizeof(**depthsH));
-					if (_MemError()) { TechError("PtCurMover::ReadPtCurVertices()", "_SetHandleSize()", 0); goto done; }
-					(*depthsH)[index+numDepths-1] = depth; 
-				}
-				numDepths++;
-			}
-			if (numDepths==1) // first one is actual depth at the location
-			{
-				(*depthDataInfo)[i].numDepths = numDepths;
-				//(*depthDataInfo)[i].indexToDepthData = i;			
-				index+=numDepths;
-			}
-			else
-			{
-				numDepths--; // don't count the actual depth
-				(*depthDataInfo)[i].numDepths = numDepths;
-				index+=numDepths;
-			}
+	}
+	
+	depthDataInfo = (DepthDataInfoH)_NewHandle(sizeof(**depthDataInfo) * numPoints);
+	if (!depthDataInfo) {
+		TechError("PtCurMover::ReadPtCurVertices()", "_NewHandle()", 0);
+		err = memFullErr;
+		goto done;
+	}
+	
+	for (long i = 0; i < numPoints; i++)
+	{
+		long ptNum;
+		double h, v;
+
+		currentLine = linesInFile[(*line)++];
+
+		std::replace(currentLine.begin(), currentLine.end(), ',', ' ');
+
+		istringstream lineStream(currentLine);
+		lineStream >> ptNum >> h >> v;
+		if (lineStream.fail()) {
+			sprintf(errmsg, "Unable to read data (ptNum, h, v) from line %ld:\n", *line);
+			goto done;
 		}
-		else // 2D, no depth info
-		{
-			(*depthDataInfo)[i].indexToDepthData = i;			
+
+		// we will scale our numbers up 6 decimal places
+		// just like ScanMatrixPt() did.
+		h *= 1e6;
+		v *= 1e6;
+
+		(*ptsH)[i].h = (long)h;
+		(*ptsH)[i].v = (long)v;
+
+		if (fVar.gridType == TWO_D) {
+			// 2D, no depth info
+			(*depthDataInfo)[i].indexToDepthData = i;
 			(*depthDataInfo)[i].numDepths = 1;	// surface velocity only
 			(*depthDataInfo)[i].totalDepth = -1;	// unknown
 			(*bathymetryHdl)[i] = -1;	// don't we always have bathymetry?
 		}
+		else {
+			// have depth info
+			double depth;
+			long numDepths = 0;
+
+			(*depthDataInfo)[i].indexToDepthData = index;
+
+			while (numDepths <= fVar.maxNumDepths) {
+				lineStream >> depth;
+				if (lineStream.fail()) {
+					sprintf(errmsg, "Unable to read depth data from line %ld:\n", *line);
+					goto done;
+				}
+
+				if (depth == -1)
+					break; // no more depths
+
+				if (numDepths == 0) {
+					// first one is actual depth at the location
+					(*depthDataInfo)[i].totalDepth = depth;
+					(*bathymetryHdl)[i] = depth;
+				}
+				else {
+					// since we don't know the number of depths ahead of time
+					_SetHandleSize((Handle) depthsH, (index + numDepths) * sizeof(**depthsH));
+					if (_MemError()) {
+						TechError("PtCurMover::ReadPtCurVertices()", "_SetHandleSize()", 0);
+						goto done;
+					}
+					(*depthsH)[index + numDepths - 1] = depth;
+				}
+				numDepths++;
+			}
+
+			if (numDepths == 1) {
+				// first one is actual depth at the location
+				(*depthDataInfo)[i].numDepths = numDepths;
+				index += numDepths;
+			}
+			else {
+				numDepths--; // don't count the actual depth
+				(*depthDataInfo)[i].numDepths = numDepths;
+				index += numDepths;
+			}
+		}
 	}
-	
+
 	*pointsH = ptsH;
 	fDepthsH = depthsH;
 	fDepthDataInfo = depthDataInfo;
 	*bathymetryH = bathymetryHdl;
 	err = noErr;
-	
-	
+
 done:
-	
-	if(s) {delete[] s;  s = 0;}
-	if(err) 
-	{
-		if(ptsH) {DisposeHandle((Handle)ptsH); ptsH = 0;}
-		if(depthsH) {DisposeHandle((Handle)depthsH); depthsH = 0;}
-		if(depthDataInfo) {DisposeHandle((Handle)depthDataInfo); depthDataInfo = 0;}
-		if(bathymetryHdl) {DisposeHandle((Handle)bathymetryHdl); bathymetryHdl = 0;}
+
+	if (err) {
+		if (ptsH) {
+			DisposeHandle((Handle)ptsH);
+			ptsH = 0;
+		}
+		if (depthsH) {
+			DisposeHandle((Handle)depthsH);
+			depthsH = 0;
+		}
+		if (depthDataInfo) {
+			DisposeHandle((Handle)depthDataInfo);
+			depthDataInfo = 0;
+		}
+		if (bathymetryHdl) {
+			DisposeHandle((Handle)bathymetryHdl);
+			bathymetryHdl = 0;
+		}
 	}
+
 	return err;		
 }
 
-OSErr TimeGridCurTri_c::ReadTimeData(long index,VelocityFH *velocityH, char* errmsg) 
+
+OSErr TimeGridCurTri_c::ReadTimeData(long index,
+									 VelocityFH *velocityH,
+									 char* errmsg)
 {
-	char s[256], path[256]; 
-	long i,j,line = 0;
-	long offset,lengthToRead;
-	CHARH h = 0;
-	char *sectionOfFile = 0;
-	char *strToMatch = 0;
-	long len,numScanned;
-	VelocityFH velH = 0;
+	OSErr err = 0;
+
+	string path = fVar.pathName;
+	vector<string> linesInFile;
+	string currentLine;
+
+
+	long line = 0;
+	long len;
 	long totalNumberOfVels = 0;
 	long numDepths = 1;
-	
+	long numPoints;
+	char *sectionOfFile = 0;
+	char *strToMatch = 0;
+
+	CHARH h = 0;
+	VelocityFH velH = 0;
 	LongPointHdl ptsHdl = 0;
-	TTriGridVel* triGrid = dynamic_cast<TTriGridVel*> (fGrid); // don't think need 3D here
-	
-	OSErr err = 0;
+	TTriGridVel *triGrid = dynamic_cast<TTriGridVel*> (fGrid); // don't think need 3D here
+
 	DateTimeRec time;
 	Seconds timeSeconds;
-	long numPoints; 
-	errmsg[0]=0;
-	
-	strcpy(path,fVar.pathName);
-	//strnzcpy (path, fVar.pathName, kMaxNameLen - 1);
-	if (!path || !path[0]) return -1;
-	
-	lengthToRead = (*fTimeDataHdl)[index].lengthOfData;
-	offset = (*fTimeDataHdl)[index].fileOffsetToStartOfData;
-	
-	ptsHdl = triGrid -> GetPointsHdl();
-	if(ptsHdl)
-		numPoints = _GetHandleSize((Handle)ptsHdl)/sizeof(**ptsHdl);
-	else 
-	{err=-1; goto done;} // no data
+
+	errmsg[0] = 0;
+
+	if (path.size() == 0)
+		return -1;
+
+	if (!ReadLinesInFile(path, linesInFile)) {
+		return -1;
+	}
+	line = (*fTimeDataHdl)[index].fileOffsetToStartOfData;
 	
 	
-	h = (CHARH)_NewHandle(lengthToRead+1);
-	if(!h){TechError("PtCurMover::ReadTimeData()", "_NewHandle()", 0); err = memFullErr; goto done;}
-	
-	_HLock((Handle)h);
-	sectionOfFile = *h;			
-	
-	err = ReadSectionOfFile(0,0,path,offset,lengthToRead,sectionOfFile,0);
-	if(err || !h) 
-	{
-		char firstPartOfLine[128];
-		sprintf(errmsg,"Unable to open data file:%s",NEWLINESTRING);
-		strncpy(firstPartOfLine,path,120);
-		strcpy(firstPartOfLine+120,"...");
-		strcat(errmsg,firstPartOfLine);
+	ptsHdl = triGrid->GetPointsHdl();
+	if (ptsHdl)
+		numPoints = _GetHandleSize((Handle)ptsHdl) / sizeof(**ptsHdl);
+	else {
+		err = -1;
 		goto done;
 	}
-	sectionOfFile[lengthToRead] = 0; // make it a C string
-	
-	totalNumberOfVels = (*fDepthDataInfo)[numPoints-1].indexToDepthData+(*fDepthDataInfo)[numPoints-1].numDepths;
-	if(totalNumberOfVels<numPoints) {err=-1; goto done;} // must have at least full set of 2D velocity data
-	velH = (VelocityFH)_NewHandle(sizeof(**velH)*totalNumberOfVels);
-	if(!velH){TechError("PtCurMover::ReadTimeData()", "_NewHandle()", 0); err = memFullErr; goto done;}
-	
-	strToMatch = "[TIME]";
-	len = strlen(strToMatch);
-	NthLineInTextOptimized (sectionOfFile, line = 0, s, 256);
-	if(!strncmp(s,strToMatch,len)) 
-	{
-		numScanned=sscanf(s+len, "%hd %hd %hd %hd %hd",
-						  &time.day, &time.month, &time.year,
-						  &time.hour, &time.minute) ;
-		if (numScanned!= 5)
-		{ err = -1; TechError("PtCurMover::ReadTimeData()", "sscanf() == 5", 0); goto done; }
-		// check for constant current
-		if (time.day == -1 && time.month == -1 && time.year == -1 && time.hour == -1 && time.minute == -1)
-			//if (time.year == time.month == time.day == time.hour == time.minute == -1) 
-		{
-			timeSeconds = CONSTANTCURRENT;
-		}
-		else // time varying current
-		{
-			if (time.year < 1900)					// two digit date, so fix it
-			{
-				if (time.year >= 40 && time.year <= 99)	
-					time.year += 1900;
-				else
-					time.year += 2000;					// correct for year 2000 (00 to 40)
-			}
-			
-			time.second = 0;
-			DateToSeconds (&time, &timeSeconds);
-		}
-		
-		// check time is correct
-		if (timeSeconds!=(*fTimeDataHdl)[index].time)
-		{ err = -1;  strcpy(errmsg,"Can't read data - times in the file have changed."); goto done; }
-		line++;
+
+	totalNumberOfVels = (*fDepthDataInfo)[numPoints - 1].indexToDepthData
+					  + (*fDepthDataInfo)[numPoints - 1].numDepths;
+	if (totalNumberOfVels < numPoints) {
+		// must have at least full set of 2D velocity data
+		err = -1;
+		goto done;
 	}
-	
-	
-	for(i=0;i<fVar2.numLandPts;i++)	// zero out boundary velocity
-	{
+
+	velH = (VelocityFH)_NewHandle(sizeof(**velH) * totalNumberOfVels);
+	if (!velH) {
+		TechError("PtCurMover::ReadTimeData()", "_NewHandle()", 0);
+		err = memFullErr;
+		goto done;
+	}
+
+	if (!ParseKeyedLine(linesInFile[line++], "[TIME]", time)) {
+		err = -1;
+		TechError("TimeGridCurRect_c::ReadTimeData()", "failed to scan [TIME] row", 0);
+		goto done;
+	}
+
+	// check for constant current
+	if (DateValuesAreMinusOne(time)) {
+		timeSeconds = CONSTANTCURRENT;
+	}
+	else {
+		CorrectTwoDigitYear(time);
+		time.second = 0;
+		DateToSeconds(&time, &timeSeconds);
+	}
+
+	// check time is correct
+	if (timeSeconds != (*fTimeDataHdl)[index].time) {
+		err = -1;
+		strcpy(errmsg, "Can't read data - times in the file have changed.");
+		goto done;
+	}
+
+	for (long i = 0; i < fVar2.numLandPts; i++) {
+		// zero out boundary velocity
 		numDepths = (*fDepthDataInfo)[i].numDepths;
-		for(j=0;j<numDepths;j++) 
-		{
+		for (long j = 0; j < numDepths; j++) {
 			(*velH)[(*fDepthDataInfo)[i].indexToDepthData+j].u = 0.0;
 			(*velH)[(*fDepthDataInfo)[i].indexToDepthData+j].v = 0.0;
 		}
 	}
 	
-	for(i=fVar2.numLandPts;i<numPoints;i++) // interior points
-	{
-		VelocityRec vel;
-		char *startScan;
-		long scanLength,stringIndex=0;
+	for (long i = fVar2.numLandPts; i < numPoints; i++) {
+		// interior points
+		long scanLength, stringIndex = 0;
 		numDepths = (*fDepthDataInfo)[i].numDepths;
+		char *startScan;
+
+		VelocityRec vel;
 		
-		char *s1 = new char[numDepths*64];
-		if(!s1) {TechError("PtCurMover::ReadTimeData()", "new[]", 0); err = memFullErr; goto done;}
+		char *s1 = new char[numDepths * 64];
+		if (!s1) {
+			TechError("PtCurMover::ReadTimeData()", "new[]", 0);
+			err = memFullErr;
+			goto done;
+		}
 		
-		NthLineInTextOptimized (sectionOfFile, line, s1, numDepths*64);
-		startScan = &s1[stringIndex];
+		currentLine = linesInFile[line];
 		
-		for(j=0;j<numDepths;j++) 
-		{
-			err = ScanVelocity(startScan,&vel,&scanLength); 
-			// ScanVelocity is faster than scanf, but doesn't handle scientific notation. Try a scanf on error.
-			if (err)
-			{
-				if(sscanf(&s1[stringIndex],lfFix("%lf%lf"),&vel.u,&vel.v) < 2)
-				{
-					char firstPartOfLine[128];
-					sprintf(errmsg,"Unable to read velocity data from line %ld:%s",line,NEWLINESTRING);
-					strncpy(firstPartOfLine,s1,120);
-					strcpy(firstPartOfLine+120,"...");
-					strcat(errmsg,firstPartOfLine);
-					delete[] s1; s1=0;
-					goto done;
-				}
-				err = 0;
+		istringstream lineStream(currentLine);
+
+		for (long j = 0; j < numDepths; j++) {
+			if (!ParseLine(lineStream, vel)) {
+				sprintf(errmsg, "TimeGridCurTri_c::ReadTimeData(): Unable to read velocity data from line %ld:%s",
+						line, NEWLINESTRING);
+				delete[] s1;
+				s1 = 0;
+				goto done;
 			}
+
 			(*velH)[(*fDepthDataInfo)[i].indexToDepthData+j].u = vel.u; 
 			(*velH)[(*fDepthDataInfo)[i].indexToDepthData+j].v = vel.v; 
-			stringIndex += scanLength;
-			startScan = &s1[stringIndex];
 		}
+
 		line++;
-		delete[] s1; s1=0;
+		delete[] s1;
+		s1 = 0;
 	}
+
 	*velocityH = velH;
-	
+
 done:
-	
-	if(h) {
+
+	if (h) {
 		_HUnlock((Handle)h); 
 		DisposeHandle((Handle)h); 
 		h = 0;
 	}
-	
-	
-	if(err)
-	{
-		if(!errmsg[0])
+
+	if (err) {
+		if (!errmsg[0])
 			strcpy(errmsg,"An error occurred in PtCurMover::ReadTimeData");
 		//printError(errmsg); // This alert causes a freeze up...
 		// We don't want to put up an error message here because it can lead to an infinite loop of messages.
-		if(velH) {DisposeHandle((Handle)velH); velH = 0;}
+		if (velH) {
+			DisposeHandle((Handle)velH);
+			velH = 0;
+		}
 	}
+
 	return err;
-	
 }
 
-OSErr TimeGridCurTri_c::TextRead(char *path, char *topFilePath) 
+
+OSErr TimeGridCurTri_c::TextRead(vector<string> &linesInFile,
+								 string containingDir)
 {
-	char s[1024], errmsg[256], classicPath[256];
-	long i, numPoints, numTopoPoints, line = 0;
-	CHARH f = 0;
+	char errmsg[256];
 	OSErr err = 0;
-	
-	TopologyHdl topo=0;
-	LongPointHdl pts=0;
+	string currentLine;
+
+	long numPoints, numTopoPoints, line = 0;
+
+	TopologyHdl topo = 0;
+	LongPointHdl pts = 0;
 	FLOATH bathymetryH = 0;
 	VelocityFH velH = 0;
 	DAGTreeStruct tree;
 	WorldRect bounds;
-	
-	TTriGridVel *triGrid = nil;
+
+	TTriGridVel *triGrid = 0;
 	tree.treeHdl = 0;
 	TDagTree *dagTree = 0;
-	
+
 	long numWaterBoundaries, numBoundaryPts, numBoundarySegs;
-	LONGH boundarySegs=0, waterBoundaries=0;
+	LONGH boundarySegs = 0, waterBoundaries = 0;
 	Boolean haveBoundaryData = false;
-	
-	errmsg[0]=0;
-	
-	
-	if (!path || !path[0]) return 0;
-	
-	strcpy(fVar.pathName,path);
-	
+
+	errmsg[0] = 0;
+
 	// code goes here, we need to worry about really big files
-	
-	if (err = ReadFileContents(TERMINATED,0, 0, path, 0, 0, &f)) {
-		TechError("PtCurMover::TextRead()", "ReadFileContents()", err);
-		goto done;
-	}
-	
-	_HLock((Handle)f); // JLM 8/4/99
-	
+
 	// code goes here, worry about really long lines in the file
-	
-	// read header here
-	for (i = 0 ; TRUE ; i++) {
-		NthLineInTextOptimized(*f, line++, s, 1024); 
-		if(s[0] != '[')
+
+	// read past the header
+	for (long i = 0; i < linesInFile.size(); i++) {
+		currentLine = trim(linesInFile[line++]);
+		if (currentLine[0] != '[')
 			break;
-		err = this -> ReadHeaderLine(s);
-		if(err)
+		err = this->ReadHeaderLine(currentLine);
+		if (err)
 			goto done;
 	}
-	
+
 	// option to read in exported topology or just require cut and paste into file	
 	// read triangle/topology info if included in file, otherwise calculate
-	
-	if(IsPtCurVerticesHeaderLine(s,&numPoints,&fVar2.numLandPts))	// Points in Galt format
-	{
+
+	// Points in Galt format
+	if (IsPtCurVerticesHeaderLine(currentLine, numPoints, fVar2.numLandPts)) {
 		MySpinCursor();
-		err = ReadPtCurVertices(f,&line,&pts,&bathymetryH,errmsg,numPoints);
-		if(err) goto done;
+
+		err = ReadPtCurVertices(linesInFile, &line, &pts, &bathymetryH, errmsg, numPoints);
+		if (err)
+			goto done;
 	}
-	else
-	{
+	else {
 		err = -1; 
 		printError("Unable to read PtCur Triangle Velocity file."); 
 		goto done;
@@ -9071,17 +9303,14 @@ OSErr TimeGridCurTri_c::TextRead(char *path, char *topFilePath)
 	// figure out the bounds
 	bounds = voidWorldRect;
 	long numPts;
-	if(pts) 
-	{
-		LongPoint	thisLPoint;
+	if (pts) {
+		LongPoint thisLPoint;
 		
-		numPts = _GetHandleSize((Handle)pts)/sizeof(LongPoint);
-		if(numPts > 0)
-		{
-			WorldPoint  wp;
-			for(i=0;i<numPts;i++)
-			{
-				thisLPoint = INDEXH(pts,i);
+		numPts = _GetHandleSize((Handle)pts) / sizeof(LongPoint);
+		if (numPts > 0) {
+			WorldPoint wp;
+			for (long i = 0; i < numPts; i++) {
+				thisLPoint = INDEXH(pts, i);
 				wp.pLat = thisLPoint.v;
 				wp.pLong = thisLPoint.h;
 				AddWPointToWRect(wp.pLat, wp.pLong, &bounds);
@@ -9090,201 +9319,281 @@ OSErr TimeGridCurTri_c::TextRead(char *path, char *topFilePath)
 	}
 	
 	MySpinCursor();
-	NthLineInTextOptimized(*f, (line)++, s, 1024); 
+	currentLine = linesInFile[(line)++];
 	
-	if(IsBoundarySegmentHeaderLine(s,&numBoundarySegs)) // Boundary data from CATs
-	{
+	if (IsBoundarySegmentHeaderLine(currentLine, numBoundarySegs)) {
+		// Boundary data from CATs
 		MySpinCursor();
-		err = ReadBoundarySegs(f,&line,&boundarySegs,numBoundarySegs,errmsg);
-		if(err) goto done;
-		NthLineInTextOptimized(*f, (line)++, s, 1024); 
+
+		err = ReadBoundarySegs(linesInFile, &line, &boundarySegs, numBoundarySegs, errmsg);
+		if (err)
+			goto done;
+
+		currentLine = linesInFile[(line)++];
 		haveBoundaryData = true;
 	}
-	else
-	{
-		haveBoundaryData = false;
+	else {
 		// not needed for 2D files, unless there is no topo - store a flag
+		haveBoundaryData = false;
 	}
+
 	MySpinCursor(); // JLM 8/4/99
-	
-	if(IsWaterBoundaryHeaderLine(s,&numWaterBoundaries,&numBoundaryPts)) // Boundary types from CATs
-	{
+
+	// Boundary types from CATs
+	if (IsWaterBoundaryHeaderLine(currentLine, numWaterBoundaries, numBoundaryPts)) {
 		MySpinCursor();
-		err = ReadWaterBoundaries(f,&line,&waterBoundaries,numWaterBoundaries,numBoundaryPts,errmsg);
-		if(err) goto done;
-		NthLineInTextOptimized(*f, (line)++, s, 1024); 
+		err = ReadWaterBoundaries(linesInFile, &line,
+								  &waterBoundaries,
+								  numWaterBoundaries, numBoundaryPts,
+								  errmsg);
+		if (err)
+			goto done;
+
+		currentLine = linesInFile[(line)++];
 	}
-	else
-	{
+	else {
 		// not needed for 2D files
 	}
+
 	MySpinCursor(); // JLM 8/4/99
-	//NthLineInTextOptimized(*f, (line)++, s, 1024); 
 	
-	if(IsTTopologyHeaderLine(s,&numTopoPoints)) // Topology from CATs
-	{
+	if (IsTTopologyHeaderLine(currentLine, numTopoPoints)) {
+		// Topology from CATs
 		MySpinCursor();
-		err = ReadTTopologyBody(f,&line,&topo,&velH,errmsg,numTopoPoints,FALSE);
-		if(err) goto done;
-		NthLineInTextOptimized(*f, (line)++, s, 1024); 
+
+		err = ReadTTopologyBody(linesInFile, &line, &topo, &velH, errmsg, numTopoPoints, false);
+		if (err)
+			goto done;
+
+		currentLine = linesInFile[(line)++];
 	}
-	else
-	{
-		if (!haveBoundaryData) {err=-1; strcpy(errmsg,"File must have boundary data to create topology"); goto done;}
-		//DisplayMessage("NEXTMESSAGETEMP");
+	else {
+		if (!haveBoundaryData) {
+			err = -1;
+			strcpy(errmsg, "File must have boundary data to create topology");
+			goto done;
+		}
 		DisplayMessage("Making Triangles\n");
-		
-		if (err = maketriangles(&topo,pts,numPoints,boundarySegs,numBoundarySegs))  // use maketriangles.cpp
+
+		// use maketriangles.cpp
+		err = maketriangles(&topo, pts, numPoints, boundarySegs, numBoundarySegs);
+		if (err)
 			err = -1; // for now we require TTopology
+
 		// code goes here, support Galt style ??
-		//DisplayMessage(0);
 		DisplayMessage("\n");
-		if(err) goto done;
+		if (err)
+			goto done;
 	}
 	MySpinCursor(); // JLM 8/4/99
 	
-	//NthLineInTextOptimized(*f, (line)++, s, 1024); 
-	
-	if(IsTIndexedDagTreeHeaderLine(s,&numPoints))  // DagTree from CATs
-	{
+	if (IsTIndexedDagTreeHeaderLine(currentLine, numPoints)) {
+		// DagTree from CATs
 		MySpinCursor();
-		err = ReadTIndexedDagTreeBody(f,&line,&tree,errmsg,numPoints);
-		if(err) goto done;
+
+		err = ReadTIndexedDagTreeBody(linesInFile, &line, &tree, errmsg, numPoints);
+		if (err)
+			goto done;
 	}
-	else
-	{
-		//DisplayMessage("NEXTMESSAGETEMP");
+	else {
 		DisplayMessage("Making Dag Tree\n");
-		tree = MakeDagTree(topo, (LongPoint**)pts, errmsg); // use CATSDagTree.cpp and my_build_list.h
-		//DisplayMessage(0);
+
+		// use CATSDagTree.cpp and my_build_list.h
+		tree = MakeDagTree(topo, (LongPoint**)pts, errmsg);
+
 		DisplayMessage("\n");
-		if (errmsg[0])	
+
+		if (errmsg[0]) {
 			err = -1; // for now we require TIndexedDagTree
+			goto done;
+		}
+
 		// code goes here, support Galt style ??
-		if(err) goto done;
 	}
-	MySpinCursor(); // JLM 8/4/99
-	
+
+	MySpinCursor();
+
 	/////////////////////////////////////////////////
 	// if the boundary information is in the file we'll need to create a bathymetry map (required for 3D)
 	
-	// code goes here, do we want to store the grid boundaries and land/water information?
-	/*if (waterBoundaries && (this -> moverMap == model -> uMap || fVar.gridType != TWO_D))
-	{
-		//PtCurMap *map = CreateAndInitPtCurMap(fVar.userName,bounds); // the map bounds are the same as the grid bounds
-		PtCurMap *map = CreateAndInitPtCurMap(fVar.pathName,bounds); // the map bounds are the same as the grid bounds
-		if (!map) goto done;
-		// maybe move up and have the map read in the boundary information
-		map->SetBoundarySegs(boundarySegs);	
-		map->SetWaterBoundaries(waterBoundaries);
-		
-		*newMap = map;
+	if (boundarySegs) {
+		DisposeHandle((Handle)boundarySegs);
+		boundarySegs = 0;
 	}
-	else*/
-	{
-		if (boundarySegs){DisposeHandle((Handle)boundarySegs); boundarySegs=0;}
-		if (waterBoundaries){DisposeHandle((Handle)waterBoundaries); waterBoundaries=0;}
+	if (waterBoundaries) {
+		DisposeHandle((Handle)waterBoundaries);
+		waterBoundaries = 0;
 	}
-	
-	/////////////////////////////////////////////////	
-	
+
 	triGrid = new TTriGridVel;
-	if (!triGrid)
-	{		
+	if (!triGrid) {
 		err = true;
-		TechError("Error in TimeGridCurTri_c::TextRead()","new TTriGridVel" ,err);
+		TechError("Error in TimeGridCurTri_c::TextRead()","new TTriGridVel", err);
 		goto done;
 	}
-	
+
 	fGrid = (TGridVel*)triGrid;
-	
-	triGrid -> SetBounds(bounds); 
+
+	triGrid->SetBounds(bounds);
 	this->SetGridBounds(bounds);
-	
-	dagTree = new TDagTree(pts,topo,tree.treeHdl,velH,tree.numBranches); 
-	if(!dagTree)
-	{
+
+	dagTree = new TDagTree(pts, topo, tree.treeHdl, velH, tree.numBranches);
+	if (!dagTree) {
 		printError("Unable to read Triangle Velocity file.");
 		goto done;
 	}
-	
-	triGrid -> SetDagTree(dagTree);
+
+	triGrid->SetDagTree(dagTree);
 	//if (fDepthsH) triGrid->SetBathymetry(fDepthsH);	// maybe set both?
-	if (bathymetryH) triGrid->SetDepths(bathymetryH);	// want just the bottom depths not all levels, so not fDepthsH
-	
+	if (bathymetryH)
+		triGrid->SetDepths(bathymetryH); // want just the bottom depths not all levels, so not fDepthsH
+
 	pts = 0;	// because fGrid is now responsible for it
 	topo = 0; // because fGrid is now responsible for it
 	tree.treeHdl = 0; // because fGrid is now responsible for it
 	velH = 0; // because fGrid is now responsible for it
 	bathymetryH = 0; // because fGrid is now responsible for it
-	
-	
+
+
 	// scan through the file looking for "[TIME ", then read and record the time, filePosition, and length of data
 	// consider the possibility of multiple files
-	NthLineInTextOptimized(*f, (line)++, s, 1024); 
-	if(!strstr(s,"[FILE]")) 
-	{	// single file
-		//err = ScanFileForTimes(path,&fTimeDataHdl,true);	
-		err = ScanFileForTimes(path,&fTimeDataHdl,&fTimeHdl);	
-		
-		if (err) goto done;
+	currentLine = linesInFile[(line)++];
+
+	if (currentLine.find("[FILE]", 0, 6) == string::npos) {
+		err = ScanFileForTimes(linesInFile, &fTimeDataHdl, &fTimeHdl);
+		if (err)
+			goto done;
 	}
-	else
-	{	// multiple files
-		long numLinesInText = NumLinesInText(*f);
-		long numFiles = (numLinesInText - (line - 1))/3;	// 3 lines for each file - filename, starttime, endtime
-		strcpy(fVar.pathName,s+strlen("[FILE]\t"));
-		ResolvePathFromInputFile(path,fVar.pathName); // JLM 6/8/10
-		//err = ScanFileForTimes(fVar.pathName,&fTimeDataHdl,true);	
-		err = ScanFileForTimes(fVar.pathName,&fTimeDataHdl,&fTimeHdl);	
-		
-		if (err) goto done;
+	else {
+		string key, linkedFile;
+
+		// Alright, we are assuming all the rest of the file contains sets
+		// of 3 stanzas in the form
+		//     [FILE]	<filename>
+		//     [STARTTIME]   <starttime>
+		//     [ENDTIME] <endtime>
+		// We assume that there are no empty lines in between the sets
+		// thus, the naive calculation below.
+		long numLinesInText = linesInFile.size();
+		long numFiles = (numLinesInText - (line - 1)) / 3;
+
+		istringstream lineStream(currentLine);
+		lineStream >> key >> linkedFile;
+
+		// process our linked file
+		if (!ResolvePath(containingDir, linkedFile)) {
+			char msg[256];
+			sprintf(msg, "PATH to data File does not exist.%s%s", NEWLINESTRING, linkedFile.c_str());
+			printError(msg);
+			err = true;
+			goto done;
+		}
+		strcpy(fVar.pathName, linkedFile.c_str());
+
+		err = ScanFileForTimes(fVar.pathName, &fTimeDataHdl, &fTimeHdl);
+		if (err)
+			goto done;
+
 		// code goes here, maybe do something different if constant current
 		line--;
-		err = ReadInputFileNames(f,&line,numFiles,&fInputFilesHdl,path);
+
+		err = ReadInputFileNames(linesInFile, &line, containingDir,
+				  numFiles, &fInputFilesHdl);
 	}
-	//err = ScanFileForTimes(path,&fTimeDataHdl);
-	//if (err) goto done;
-	
-	
-	
+
 done:
-	
-	if(f) 
-	{
-		_HUnlock((Handle)f); 
-		DisposeHandle((Handle)f); 
-		f = 0;
-	}
-	
-	if(err)
-	{
-		if(!errmsg[0])
+
+	if (err) {
+		if (!errmsg[0])
 			strcpy(errmsg,"An error occurred in PtCurMover::TextRead");
 		printError(errmsg); 
-		if(pts) {DisposeHandle((Handle)pts); pts=0;}
-		if(topo) {DisposeHandle((Handle)topo); topo=0;}
-		if(velH) {DisposeHandle((Handle)velH); velH=0;}
-		if(bathymetryH) {DisposeHandle((Handle)bathymetryH); bathymetryH=0;}
-		if(tree.treeHdl) {DisposeHandle((Handle)tree.treeHdl); tree.treeHdl=0;}
-		if(fGrid)
-		{
+
+		if (pts) {
+			DisposeHandle((Handle)pts);
+			pts = 0;
+		}
+		if (topo) {
+			DisposeHandle((Handle)topo);
+			topo = 0;
+		}
+		if (velH) {
+			DisposeHandle((Handle)velH);
+			velH = 0;
+		}
+		if (bathymetryH) {
+			DisposeHandle((Handle)bathymetryH);
+			bathymetryH = 0;
+		}
+		if (tree.treeHdl) {
+			DisposeHandle((Handle)tree.treeHdl);
+			tree.treeHdl = 0;
+		}
+		if (fGrid) {
 			fGrid ->Dispose();
 			delete fGrid;
 			fGrid = 0;
 		}
-		/*if (*newMap) 
-		{
-			(*newMap)->Dispose();
-			delete *newMap;
-			*newMap=0;
-		}*/
-		if (boundarySegs){DisposeHandle((Handle)boundarySegs); boundarySegs=0;}
-		if (waterBoundaries){DisposeHandle((Handle)waterBoundaries); waterBoundaries=0;}
+		if (boundarySegs) {
+			DisposeHandle((Handle)boundarySegs);
+			boundarySegs = 0;
+		}
+		if (waterBoundaries){
+			DisposeHandle((Handle)waterBoundaries);
+			waterBoundaries = 0;
+		}
 	}
-	return err;
-	
+
 	// rest of file (i.e. velocity data) is read as needed
+	return err;
+}
+
+
+OSErr TimeGridCurTri_c::TextRead(const char *path, const char *topFilePath)
+{
+	string strPath = path;
+
+	if (strPath.size() == 0)
+		return 0;
+	strcpy(fVar.pathName, strPath.c_str());
+
+	string dir, file;
+	SplitPathIntoDirAndFile(strPath, dir, file);
+
+
+	vector<string> linesInFile;
+	if (ReadLinesInFile(strPath, linesInFile)) {
+		return TextRead(linesInFile, dir);
+	}
+	else {
+		return false;
+	}
+}
+
+// some extra functions that are not attached to any class
+bool DateValuesAreMinusOne(DateTimeRec &dateTime)
+{
+	return 	(dateTime.day == -1 && dateTime.month == -1 && dateTime.year == -1 &&
+			dateTime.hour == -1 && dateTime.minute == -1);
+
+}
+
+
+bool DateIsValid(DateTimeRec &dateTime)
+{
+	return (dateTime.day >= 1 && dateTime.day <= 31 &&
+			dateTime.month >= 1 && dateTime.month <= 12);
+}
+
+
+void CorrectTwoDigitYear(DateTimeRec &dateTime)
+{
+	if (dateTime.year < 1900) {
+		// two digit date, so fix it
+		if (dateTime.year >= 40 && dateTime.year <= 99)
+			dateTime.year += 1900;
+		else
+			dateTime.year += 2000; // correct for year 2000 (00 to 40)
+	}
 }
 
 //#endif

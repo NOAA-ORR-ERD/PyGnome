@@ -16,11 +16,10 @@ cdef extern from "Basics.h":
     ctypedef CHARH Handle
 
 cdef extern from "TypeDefs.h":
-    ctypedef unsigned long LETYPE    
-    ctypedef unsigned long Seconds
-    ctypedef unsigned char    Boolean
-    ctypedef short    OSErr
+    ctypedef unsigned char Boolean
+    ctypedef short OSErr
     ctypedef unsigned long LETYPE
+    ctypedef long Seconds
 
 cdef extern from "GEOMETRY.H":
     ctypedef struct WorldPoint:

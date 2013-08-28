@@ -5,9 +5,8 @@ test code for the Outputter classes
 
 
 """
-import pytest
-
 import gnome
+
 
 def test_base():
     """
@@ -24,7 +23,5 @@ def test_base():
     assert True
 
 
-
 if __name__ == "__main__":
     pass
-
