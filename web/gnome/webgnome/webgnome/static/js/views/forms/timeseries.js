@@ -78,9 +78,7 @@ define([
             form.find('.direction').val(direction.toFixed(2));
         },
 
-        /*
-         Set all fields for which a default value exists.
-         */
+        // Set all fields for which a default value exists.
         setAddFormDefaults: function() {
             var timeseries = this.model.get('timeseries');
 
@@ -102,6 +100,8 @@ define([
 
             this.getElementByName('speed', form).val(data[1]);
             this.getElementByName('direction', form).val(data[2]);
+
+            this.compass.compassUI('update', {direction: data[2], speed: data[1]});
         },
     });
 
@@ -112,9 +112,7 @@ define([
             ConstantWindTimeseriesView.__super__.initialize.apply(this, arguments);
         },
 
-        /*
-         Get wind timeseries values needed to save a constant wind mover.
-         */
+        // Get wind timeseries values needed to save a constant wind mover.
         getData: function() {
             var form = this.getAddForm();
             var speed = this.getElementByName('speed', form);
@@ -171,6 +169,17 @@ define([
             this.compass.compassUI('reset');
             this.compassDialog.removeClass('hidden');
             this.compassDialog.dialog('open');
+
+            // now that it is open, we update the control
+            var direction = this.$el.find('.direction').val();
+            var speed = this.$el.find('.speed').val();
+
+            if (!speed) {
+                return;
+            }
+
+            this.compass.compassUI('update', {direction: direction, speed: speed});
+            console.log('updateCompass', this, direction, speed);
         },
 
         hideCompass: function() {
@@ -301,13 +310,9 @@ define([
             return value;
         },
 
-        /*
-         Search `timeseries` array for a value whose datetime matches `datetime`.
-
-         Skip any duplicate found at index `ignoreId`.
-
-         Return an array containing the index of each duplicate found.
-         */
+        // Search `timeseries` array for a value whose datetime matches `datetime`.
+        // Skip any duplicate found at index `ignoreId`.
+        // Return an array containing the index of each duplicate found.
         findDuplicates: function(timeseries, datetime, ignoreIndex) {
             var duplicateIndexes = [];
 
