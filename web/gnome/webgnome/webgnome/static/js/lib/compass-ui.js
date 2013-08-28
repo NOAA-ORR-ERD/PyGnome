@@ -19,26 +19,24 @@
       }
 
       // update the plugin properties
-      // TODO: Finish this.
       if (options === 'update') {
           if (!this.frontcanv) {
               return;
           }
 
           this.resetCanvas();
-          return;
 
           var newDirection = parseInt(arg.direction);
           var newSpeed = parseInt(arg.speed);
-          var coordinates = this.polarToCartesian(newDirection, newSpeed);
+          var coordinates = this.flipXY(this.polarToCartesian(newDirection, newSpeed));
 
-          coordinates.x /= this.frontcanv.px_per_unit;
-          coordinates.y /= this.frontcanv.px_per_unit;
+          coordinates.x *= this.frontcanv.px_per_unit;
+          coordinates.y *= -this.frontcanv.px_per_unit;
 
           coordinates.x += this.frontcanv.width / 2;
           coordinates.y += this.frontcanv.height / 2;
 
-          _this.drawArrow(this.frontcanv, coordinates.x, coordinates.y);
+          _this.drawArrow(coordinates);
           return;
       }
 
@@ -46,18 +44,24 @@
         'arrow-direction' : 'out',
         // we can optionally set a function which translates the angle to its nearest cardinal value
         'cardinal-name' : function(angle) {
-          var dirNames = ['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW'];
-          return dirNames[Math.floor((+(angle)+360/32)/(360/16.0)%16)];
+          var dirNames = ['N', 'NNE', 'NE', 'ENE',
+                          'E', 'ESE', 'SE', 'SSE',
+                          'S', 'SSW', 'SW', 'WSW',
+                          'W', 'WNW', 'NW', 'NNW'];
+          return dirNames[Math.floor((+(angle) + 360 / 32) / (360 / 16.0) % 16)];
         },
         // we can optionally set a function which translates the cardinal direction to its angle
         'cardinal-angle' : function(name) {
-          var dirNames = ['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW'];
+          var dirNames = ['N', 'NNE', 'NE', 'ENE',
+                          'E', 'ESE', 'SE', 'SSE',
+                          'S', 'SSW', 'SW', 'WSW',
+                          'W', 'WNW', 'NW', 'NNW'];
           var idx = dirNames.indexOf(name.toUpperCase())
           if (idx === -1) {
             return null;
           }
           else {
-            return (360.0/16)*idx
+            return (360.0 / 16) * idx
           }
         },
         // we can optionally set a function which happens on a move
@@ -70,25 +74,37 @@
           if (!this.frontcanv) {
               return;
           }
+
           this.frontcanv.getContext('2d').clearRect(
               0, 0, this.frontcanv.width, this.frontcanv.height);
       }
 
       this.polarToCartesian = function(angle, magnitude) {
-        var rangle = angle * Math.PI / 180;
-        return {
-            x: -magnitude * Math.sin(rangle),
-            y: -magnitude * Math.cos(rangle)
-        }
+    	  var radians = angle * Math.PI / 180;
+    	  return {
+    		  x: magnitude * Math.cos(radians),
+    		  y: magnitude * Math.sin(radians)
+    	  }
       }
 
-      // TODO: Can we use this.frontcanv instead of accepting a `canvas` argument?
-      this.drawArrow = function(canvas, xcurr, ycurr) {
+      this.flipXY = function(coords) {
+    	  var tmp = coords.x;
+    	  coords.x = coords.y;
+    	  coords.y = tmp;
+
+    	  return coords
+      }
+
+      this.drawArrow = function(coords) {
+    	  var canvas = this.frontcanv
           var ctx = canvas.getContext('2d');
-          var xmag = (xcurr - canvas.width / 2);
-          var ymag = -(ycurr - canvas.height / 2);
+
+          var xmag = (coords.x - canvas.width / 2);
+          var ymag = -(coords.y - canvas.height / 2);
+
           canvas.pmag = Math.sqrt(Math.pow(xmag, 2) + Math.pow(ymag, 2));
           canvas.pmag /= canvas.px_per_unit;
+
           // Convert degrees to radians
           canvas.pangle = Math.atan2(xmag, ymag) * 180 / Math.PI;
           if (canvas.pangle < 0) {
@@ -100,18 +116,20 @@
           ctx.clearRect(0, 0, canvas.width, canvas.height);
           ctx.beginPath();
           ctx.moveTo(canvas.width / 2, canvas.height / 2);
-          ctx.lineTo(xcurr, ycurr);
+          ctx.lineTo(coords.x, coords.y);
           ctx.stroke();
           ctx.closePath();
 
           // draw our arrow point
           ctx.beginPath();
-          if (canvas.parentElement.settings && canvas.parentElement.settings['arrow-direction'] === 'in') {
+          if (canvas.parentElement.settings &&
+        	  canvas.parentElement.settings['arrow-direction'] === 'in')
+          {
               ctx.translate(canvas.width / 2, canvas.height / 2);
               ctx.rotate((canvas.pangle + 180) * Math.PI / 180);
           }
           else {
-              ctx.translate(xcurr, ycurr);
+              ctx.translate(coords.x, coords.y);
               ctx.rotate(canvas.pangle * Math.PI / 180);
           }
           ctx.moveTo(0, 0);
@@ -122,19 +140,24 @@
           ctx.lineTo(0, 8);
           ctx.stroke();
           ctx.closePath();
-          if (canvas.parentElement.settings && canvas.parentElement.settings['arrow-direction'] === 'in') {
+
+          if (canvas.parentElement.settings &&
+        	  canvas.parentElement.settings['arrow-direction'] === 'in')
+          {
               ctx.rotate(-(canvas.pangle + 180) * Math.PI / 180);
               ctx.translate(-canvas.width / 2, -canvas.height / 2);
           }
           else {
               ctx.rotate(-canvas.pangle * Math.PI / 180);
-              ctx.translate(-xcurr, -ycurr);
+              ctx.translate(-coords.x, -coords.y);
           }
           ctx.beginPath();
           ctx.closePath();
 
           // pass our values to the configured move function
-          if (canvas.parentElement.settings && canvas.parentElement.settings['move'] != null) {
+          if (canvas.parentElement.settings &&
+        	  canvas.parentElement.settings['move'] != null)
+          {
               canvas.parentElement.settings['move'](canvas.pmag, canvas.pangle);
           }
       }
@@ -156,6 +179,7 @@
           G_vmlCanvasManager.initElement(this.backcanv);
         }
       }
+
       var backcanv = this.backcanv;
       backcanv.width = $(this).width();
       backcanv.height = $(this).height();
@@ -170,6 +194,7 @@
           G_vmlCanvasManager.initElement(this.frontcanv);
         }
       }
+
       var frontcanv = this.frontcanv;
       frontcanv.width = $(this).width();
       frontcanv.height = $(this).height();
@@ -183,81 +208,89 @@
       // here we draw the background canvas
       //
       var ctx = backcanv.getContext('2d');
-      var maxradius = ((backcanv.width > backcanv.height) ? backcanv.height/2-1: backcanv.width/2-1)* 0.75;
+      var maxradius = ((backcanv.width > backcanv.height)
+    		  			? backcanv.height / 2 - 1
+    		  			: backcanv.width / 2 - 1) * 0.75;
 
       // here is the backround white target
       ctx.beginPath();
-      ctx.arc(backcanv.width/2, backcanv.height/2,
-                   maxradius,
-                   0, Math.PI*2, true);
+      ctx.arc(backcanv.width / 2, backcanv.height / 2,
+    		  maxradius, 0, Math.PI * 2, true);
       ctx.closePath();
       ctx.fillStyle = 'rgba(255, 255, 255, .8)'
       ctx.fill();
 
       // here are the concentric circles in the target
       // TODO: Add a setting for scale.
-      frontcanv.px_per_unit = maxradius/50;
+      frontcanv.px_per_unit = maxradius / 50;
       ctx.beginPath();
-      for (var i = maxradius/5; i <= maxradius; i += maxradius/5) {
-        ctx.moveTo(backcanv.width/2+i, backcanv.height/2);
-        ctx.arc(backcanv.width/2, backcanv.height/2,
-                i,
-                0, 2*Math.PI);
+
+      for (var i = maxradius / 5; i <= maxradius; i += maxradius / 5) {
+        ctx.moveTo(backcanv.width / 2 + i, backcanv.height / 2);
+        ctx.arc(backcanv.width / 2, backcanv.height / 2,
+                i, 0, 2 * Math.PI);
       }
       ctx.closePath();
       ctx.stroke();
 
       // here are the direction indicator letters
       ctx.fillStyle = 'rgba(0, 0, 0, .8)'
-      ctx.translate(backcanv.width/2, backcanv.height/2);
-      var fontsize = backcanv.height/20+1;
-      var fontpad = backcanv.height/50;
+      ctx.translate(backcanv.width / 2, backcanv.height / 2);
+      var fontsize = backcanv.height / 20 + 1;
+      var fontpad = backcanv.height / 50;
+
       if (window['G_vmlCanvasManager'] != undefined) {
         ctx.font= 'bold ' + fontsize + 'px Optimer';
       }
       else {
         ctx.font= 'bold ' + fontsize + 'px Times New Roman';
       }
-      ctx.fillText('N', -5, -((backcanv.height/2)-fontsize));
-      ctx.fillText('S', -5, (backcanv.height/2)-fontpad);
-      ctx.fillText('W', -(backcanv.width/2-fontpad), 5);
-      ctx.fillText('E', (backcanv.width/2-fontsize), 5);
+
+      ctx.fillText('N', -5, -((backcanv.height / 2) - fontsize));
+      ctx.fillText('S', -5, (backcanv.height / 2) - fontpad);
+      ctx.fillText('W', -(backcanv.width / 2 - fontpad), 5);
+      ctx.fillText('E', (backcanv.width / 2 - fontsize), 5);
 
       var numAngles = 8;
       for (var i = 0; i < numAngles; i++) {
-        var angleSize = 360/numAngles;
-        var txt = (angleSize*i).toString();
+        var angleSize = 360 / numAngles;
+        var txt = (angleSize * i).toString();
         var txtWidth = ctx.measureText(txt).width;
-        ctx.fillText(txt, -txtWidth/2, -(backcanv.height/2-(fontsize*2)-fontpad+1));
-        ctx.rotate(angleSize*Math.PI/180);
+        ctx.fillText(txt, -txtWidth / 2,
+        		     -(backcanv.height / 2 - (fontsize * 2) - fontpad + 1));
+        ctx.rotate(angleSize * Math.PI / 180);
       }
-
 
       //
       // here we draw the front canvas
       // which we will be drawing on
       //
       ctx = frontcanv.getContext('2d');
-      ctx.fillRect(20,20,150,100);
-      ctx.clearRect(20,20,150,100);
+      ctx.fillRect(20, 20, 150, 100);
+      ctx.clearRect(20, 20, 150, 100);
 
       frontcanv.pressed = false;
       frontcanv.moved = false;
 
       $(frontcanv).mousedown(function (ev) {
-        this.pressed = true;
-        // XXX: Do these values get used?
-        if (ev.originalEvent['layerX'] != undefined) {
-          this.x0 = ev.originalEvent.layerX;
-          this.y0 = ev.originalEvent.layerY;
-        }
-        else {
-          // in IE, we use this property
-          this.x0 = ev.originalEvent.x;
-          this.y0 = ev.originalEvent.y;
-        }
+    	  this.pressed = true;
+    	  var coordinates;
+    	  // XXX: Do these values get used?
+    	  if (ev.originalEvent['layerX'] != undefined) {
+    		  coordinates = {
+    				  x: ev.originalEvent.layerX,
+    				  y: ev.originalEvent.layerY
+    		  }
+    	  }
+    	  else {
+    		  // in IE, we use this property
+    		  coordinates = {
+    				  x: ev.originalEvent.x,
+    				  y: ev.originalEvent.y
+    		  }
+    	  }
 
-        _this.drawArrow(this, this.x0, this.y0);
+    	  _this.drawArrow(coordinates);
       });
 
       $(frontcanv).mousemove(function (ev) {
@@ -265,26 +298,32 @@
           return;
         }
         this.moved = true;
-        var xcurr, ycurr;
+        var coordinates;
 
         if (ev.originalEvent['layerX'] != undefined) {
-          xcurr = ev.originalEvent.layerX;
-          ycurr = ev.originalEvent.layerY;
+  		  coordinates = {
+				  x: ev.originalEvent.layerX,
+				  y: ev.originalEvent.layerY
+		  }
         }
         else {
           // in IE, we use this property
-          xcurr = ev.originalEvent.x;
-          ycurr = ev.originalEvent.y;
+  		  coordinates = {
+				  x: ev.originalEvent.x,
+				  y: ev.originalEvent.y
+		  }
         }
 
-        _this.drawArrow(this, xcurr, ycurr);
+        _this.drawArrow(coordinates);
       });
 
       $(frontcanv).mouseup(function (ev) {
         if (this.pressed && this.moved) {
 
           // pass our values to the configured change function
-          if (this.parentElement.settings && this.parentElement.settings['change'] != null) {
+          if (this.parentElement.settings &&
+        	  this.parentElement.settings['change'] != null)
+          {
             this.parentElement.settings['change'](this.pmag, this.pangle);
           }
         }
