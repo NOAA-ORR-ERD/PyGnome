@@ -31,6 +31,7 @@ oil_to_synonym = Table('oil_to_synonym', Base.metadata,
         Column('synonym_id', Integer, ForeignKey('synonyms.id')),
         )
 
+
 class Oil(Base):
     __tablename__ = 'oils'
     id = Column(Integer, primary_key=True)
@@ -82,12 +83,18 @@ class Oil(Base):
     koy = Column(Float(53))
 
     # relationship fields
-    synonyms = relationship('Synonym', secondary=oil_to_synonym, backref='oils')
-    densities = relationship('Density', backref='oil', cascade="all, delete, delete-orphan")
-    kvis = relationship('KVis', backref='oil', cascade="all, delete, delete-orphan")
-    dvis = relationship('DVis', backref='oil', cascade="all, delete, delete-orphan")
-    cuts = relationship('Cut', backref='oil', cascade="all, delete, delete-orphan")
-    toxicities = relationship('Toxicity', backref='oil', cascade="all, delete, delete-orphan")
+    synonyms = relationship('Synonym', secondary=oil_to_synonym,
+                            backref='oils')
+    densities = relationship('Density', backref='oil',
+                             cascade="all, delete, delete-orphan")
+    kvis = relationship('KVis', backref='oil',
+                        cascade="all, delete, delete-orphan")
+    dvis = relationship('DVis', backref='oil',
+                        cascade="all, delete, delete-orphan")
+    cuts = relationship('Cut', backref='oil',
+                        cascade="all, delete, delete-orphan")
+    toxicities = relationship('Toxicity', backref='oil',
+                              cascade="all, delete, delete-orphan")
 
     def __init__(self, **kwargs):
         self.name = kwargs.get('Oil Name')
@@ -102,9 +109,10 @@ class Oil(Base):
         # pour_point_min can have the following values
         #     '<' which means "less than" the max value
         #     '>' which means "greater than" the max value
-        #     ''  which means no value.  Max should also have no value in this case
+        #     ''  which means no value.  Max should also have no value
+        #         in this case
         # So it is not possible for a column to be a float and a string too.
-        if kwargs.get('Pour Point Min (K)') in ('<','>'):
+        if kwargs.get('Pour Point Min (K)') in ('<', '>'):
             self.pour_point_min_indicator = kwargs.get('Pour Point Min (K)')
             self.pour_point_min = None
         else:
@@ -121,7 +129,7 @@ class Oil(Base):
         self.emuls_constant_max = kwargs.get('Emuls Constant Max')
 
         # same kind of weird behavior as pour point...
-        if kwargs.get('Flash Point Min (K)') in ('<','>'):
+        if kwargs.get('Flash Point Min (K)') in ('<', '>'):
             self.flash_point_min_indicator = kwargs.get('Flash Point Min (K)')
             self.flash_point_min = None
         else:
@@ -166,16 +174,16 @@ class Oil(Base):
             If we are using dynamic viscosities, we calculate the
             kinematic viscosity from the density that is closest
             to the respective reference temperature
-            TODO: Chris would like calculated properties, at least the very complex,
-                  to be moved to a subclass
-                  - maybe we create a class like OilProperties(Oil) that is either
-                    derived from Oil or contains an oil object.
+            TODO: Chris would like calculated properties, at least the
+                  very complex ones, to be moved to a subclass
+                  - maybe we create a class like OilProperties(Oil) that is
+                    either derived from Oil or contains an oil object.
         '''
         # first we get the kinematic viscosities if they exist
         ret = []
         if self.kvis:
             ret = [(k.meters_squared_per_sec, k.ref_temp,
-                    0.0 if k.weathering==None else k.weathering)
+                    0.0 if k.weathering == None else k.weathering)
                     for k in self.kvis]
         if self.dvis:
             # If we have any DVis records, we need to get the
@@ -187,7 +195,7 @@ class Oil(Base):
             # There are lots of oil entries where the dvis do not have
             # matching densities for (temp, weathering)
             densities = [(d.kg_per_m_cubed, d.ref_temp,
-                         0.0 if d.weathering==None else d.weathering)
+                         0.0 if d.weathering == None else d.weathering)
                          for d in self.densities]
             for v, t, w in [(d.kg_per_msec, d.ref_temp, d.weathering)
                             for d in self.dvis]:
@@ -196,7 +204,7 @@ class Oil(Base):
                 # if we already have a KVis at the same
                 # (temperature, weathering), we do not need
                 # another one
-                if len([vv for vv in ret if vv[1]==t and vv[2]==w]) > 0:
+                if len([vv for vv in ret if vv[1] == t and vv[2] == w]) > 0:
                     continue
 
                 # grab the densities with matching weathering
@@ -206,11 +214,11 @@ class Oil(Base):
                 if len(dlist) == 0:
                     continue
                 # grab the density with the closest temperature
-                density = sorted(dlist, key=lambda x:x[1])[0][0]
+                density = sorted(dlist, key=lambda x: x[1])[0][0]
                 # kvis = dvis/density
-                ret.append(((v/density),t,w))
+                ret.append(((v / density), t, w))
         ret.sort(key=lambda x: (x[2], x[1]))
-        kwargs = ['(m^2/s)','Ref Temp (K)','Weathering']
+        kwargs = ['(m^2/s)', 'Ref Temp (K)', 'Weathering']
         # caution: although we will have a list of real
         #          KVis objects, they are not persisted
         #          in the database.
@@ -219,7 +227,6 @@ class Oil(Base):
 
     def __repr__(self):
         return "<Oil('%s')>" % (self.name)
-
 
 
 class Synonym(Base):
@@ -233,10 +240,11 @@ class Synonym(Base):
     def __repr__(self):
         return "<Synonym('%s')>" % (self.name)
 
+
 class Density(Base):
     __tablename__ = 'densities'
     id = Column(Integer, primary_key=True)
-    oil_id  = Column(Integer, ForeignKey('oils.id'))
+    oil_id = Column(Integer, ForeignKey('oils.id'))
 
     # demographics
     kg_per_m_cubed = Column(Float(53))
@@ -251,10 +259,11 @@ class Density(Base):
     def __repr__(self):
         return "<Density('%s')>" % (self.id)
 
+
 class KVis(Base):
     __tablename__ = 'kvis'
     id = Column(Integer, primary_key=True)
-    oil_id  = Column(Integer, ForeignKey('oils.id'))
+    oil_id = Column(Integer, ForeignKey('oils.id'))
 
     # demographics
     meters_squared_per_sec = Column(Float(53))
@@ -269,10 +278,11 @@ class KVis(Base):
     def __repr__(self):
         return "<KVIs('%s')>" % (self.id)
 
+
 class DVis(Base):
     __tablename__ = 'dvis'
     id = Column(Integer, primary_key=True)
-    oil_id  = Column(Integer, ForeignKey('oils.id'))
+    oil_id = Column(Integer, ForeignKey('oils.id'))
 
     # demographics
     kg_per_msec = Column(Float(53))
@@ -287,10 +297,11 @@ class DVis(Base):
     def __repr__(self):
         return "<DVIs('%s')>" % (self.id)
 
+
 class Cut(Base):
     __tablename__ = 'cuts'
     id = Column(Integer, primary_key=True)
-    oil_id  = Column(Integer, ForeignKey('oils.id'))
+    oil_id = Column(Integer, ForeignKey('oils.id'))
 
     # demographics
     vapor_temp = Column(Float(53))
@@ -305,13 +316,14 @@ class Cut(Base):
     def __repr__(self):
         return "<Cut('%s')>" % (self.id)
 
+
 class Toxicity(Base):
     __tablename__ = 'toxicities'
     id = Column(Integer, primary_key=True)
-    oil_id  = Column(Integer, ForeignKey('oils.id'))
+    oil_id = Column(Integer, ForeignKey('oils.id'))
 
     # demographics
-    tox_type = Column(Enum('EC','LC'), nullable=False)
+    tox_type = Column(Enum('EC', 'LC'), nullable=False)
     species = Column(String(16))
     after_24_hours = Column(Float(53))
     after_48_hours = Column(Float(53))
@@ -326,4 +338,3 @@ class Toxicity(Base):
 
     def __repr__(self):
         return "<Toxicity('%s')>" % (self.id)
-
