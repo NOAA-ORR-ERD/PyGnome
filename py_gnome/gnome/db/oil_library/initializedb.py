@@ -1,4 +1,5 @@
-import sys, os
+import sys
+import os
 import transaction
 from .oil_library_parse import OilLibraryFile
 
@@ -21,10 +22,12 @@ from .models import (
     Toxicity,
     )
 
+
 def initialize_sql(settings):
     engine = engine_from_config(settings, 'sqlalchemy.')
     DBSession.configure(bind=engine)
-    Base.metadata.create_all(engine) #@UndefinedVariableFromImport
+    Base.metadata.create_all(engine)
+
 
 def load_database(settings):
     with transaction.manager:
@@ -45,15 +48,18 @@ def load_database(settings):
         sys.stderr.write('Adding new records to database')
         rowcount = 0
         for r in fd.readlines():
+            if len(r) < 10:
+                print 'got record:', r
             # 3a. for each row, we populate the Oil object
-            add_oil_object(session, fd.file_columns, r)    
+            add_oil_object(session, fd.file_columns, r)
             if rowcount % 100 == 0:
                 sys.stderr.write('.')
             rowcount += 1
         print 'finished!!!  %d rows processed.' % (rowcount)
 
+
 def purge_old_records(session):
-    oilobjs = session.query(Oil).filter(Oil.custom==False)
+    oilobjs = session.query(Oil).filter(Oil.custom == False)
     rowcount = 0
     for o in oilobjs:
         session.delete(o)
@@ -63,10 +69,11 @@ def purge_old_records(session):
     transaction.commit()
     return rowcount
 
+
 def add_oil_object(session, file_columns, row_data):
     row_dict = dict(zip(file_columns, row_data))
     transaction.begin()
-    oil = Oil(**row_dict) #IGNORE:W0142
+    oil = Oil(**row_dict)
 
     add_synonyms(session, oil, row_dict)
     add_densities(oil, row_dict)
@@ -79,21 +86,23 @@ def add_oil_object(session, file_columns, row_data):
     session.add(oil)
     transaction.commit()
 
+
 def add_synonyms(session, oil, row_dict):
     if row_dict.get('Synonyms'):
         for s in row_dict.get('Synonyms').split(','):
             s = s.strip()
             if len(s) > 0:
-                synonyms = session.query(Synonym).filter(Synonym.name==s).all()
+                synonyms = session.query(Synonym).filter(Synonym.name == s).all()
                 if len(synonyms) > 0:
                     # we link the existing synonym object
-                    oil.synonyms.append(synonyms[0]) #IGNORE:E1101
+                    oil.synonyms.append(synonyms[0])
                 else:
                     # we add a new synonym object
-                    oil.synonyms.append(Synonym(s)) #IGNORE:E1101
+                    oil.synonyms.append(Synonym(s))
+
 
 def add_densities(oil, row_dict):
-    for i in range(1,5):
+    for i in range(1, 5):
         kg_m3 = 'Density#%d (kg/m^3)' % (i)
         ref_temp = 'Density#%d Ref Temp (K)' % (i)
         w = 'Density#%d Weathering' % (i)
@@ -103,10 +112,11 @@ def add_densities(oil, row_dict):
             densityargs[ref_temp[10:]] = row_dict.get(ref_temp)
             densityargs[w[10:]] = row_dict.get(w)
             #print densityargs
-            oil.densities.append(Density(**densityargs)) #IGNORE:E1101
+            oil.densities.append(Density(**densityargs))
+
 
 def add_kinematic_viscosities(oil, row_dict):
-    for i in range(1,7):
+    for i in range(1, 7):
         m2_s = 'KVis#%d (m^2/s)' % (i)
         ref_temp = 'KVis#%d Ref Temp (K)' % (i)
         w = 'KVis#%d Weathering' % (i)
@@ -116,10 +126,11 @@ def add_kinematic_viscosities(oil, row_dict):
             kvisargs[ref_temp[7:]] = row_dict.get(ref_temp)
             kvisargs[w[7:]] = row_dict.get(w)
             #print kvisargs
-            oil.kvis.append(KVis(**kvisargs)) #IGNORE:E1101
+            oil.kvis.append(KVis(**kvisargs))
+
 
 def add_dynamic_viscosities(oil, row_dict):
-    for i in range(1,7):
+    for i in range(1, 7):
         kg_ms = 'DVis#%d (kg/ms)' % (i)
         ref_temp = 'DVis#%d Ref Temp (K)' % (i)
         w = 'DVis#%d Weathering' % (i)
@@ -129,10 +140,11 @@ def add_dynamic_viscosities(oil, row_dict):
             dvisargs[ref_temp[7:]] = row_dict.get(ref_temp)
             dvisargs[w[7:]] = row_dict.get(w)
             #print dvisargs
-            oil.dvis.append(DVis(**dvisargs)) #IGNORE:E1101
+            oil.dvis.append(DVis(**dvisargs))
+
 
 def add_distillation_cuts(oil, row_dict):
-    for i in range(1,16):
+    for i in range(1, 16):
         vapor_temp = 'Cut#%d Vapor Temp (K)' % (i)
         liquid_temp = 'Cut#%d Liquid Temp (K)' % (i)
         fraction = 'Cut#%d Fraction' % (i)
@@ -143,10 +155,11 @@ def add_distillation_cuts(oil, row_dict):
             cutargs[liquid_temp[lbl_offset:]] = row_dict.get(liquid_temp)
             cutargs[fraction[lbl_offset:]] = row_dict.get(fraction)
             #print cutargs
-            oil.cuts.append(Cut(**cutargs)) #IGNORE:E1101
+            oil.cuts.append(Cut(**cutargs))
+
 
 def add_toxicity_effective_concentrations(oil, row_dict):
-    for i in range(1,4):
+    for i in range(1, 4):
         species = 'Tox_EC(%d)Species' % (i)
         hour24 = 'Tox_EC(%d)24h' % (i)
         hour48 = 'Tox_EC(%d)48h' % (i)
@@ -160,10 +173,11 @@ def add_toxicity_effective_concentrations(oil, row_dict):
             toxargs[hour48[lbl_offset:]] = row_dict.get(hour48)
             toxargs[hour96[lbl_offset:]] = row_dict.get(hour96)
             #print toxargs
-            oil.toxicities.append(Toxicity(**toxargs)) #IGNORE:E1101
+            oil.toxicities.append(Toxicity(**toxargs))
+
 
 def add_toxicity_lethal_concentrations(oil, row_dict):
-    for i in range(1,4):
+    for i in range(1, 4):
         species = 'Tox_LC(%d)Species' % (i)
         hour24 = 'Tox_LC(%d)24h' % (i)
         hour48 = 'Tox_LC(%d)48h' % (i)
@@ -177,15 +191,15 @@ def add_toxicity_lethal_concentrations(oil, row_dict):
             toxargs[hour48[lbl_offset:]] = row_dict.get(hour48)
             toxargs[hour96[lbl_offset:]] = row_dict.get(hour96)
             #print toxargs
-            oil.toxicities.append(Toxicity(**toxargs)) #IGNORE:E1101
-
+            oil.toxicities.append(Toxicity(**toxargs))
 
 
 def usage(argv):
     cmd = os.path.basename(argv[0])
     print('usage: %s <config_uri>\n'
-          '(example: "%s development.ini")' % (cmd, cmd)) 
+          '(example: "%s development.ini")' % (cmd, cmd))
     sys.exit(1)
+
 
 def main():
     if len(sys.argv) != 2:
@@ -194,5 +208,5 @@ def main():
     setup_logging(config_uri)
 
     settings = get_appsettings(config_uri)
-    initialize_sql(settings)    
+    initialize_sql(settings)
     load_database(settings)

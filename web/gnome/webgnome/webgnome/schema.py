@@ -67,7 +67,7 @@ class WindageRangeSchema(TupleSchema):
     windage_max = SchemaNode(Float())
 
 
-class PointSourceReleaseSchema(spills_schema.PointSourceRelease):
+class PointSourceReleaseSchema(spills_schema.PointSourceSurfaceRelease):
     default_name = 'Surface Release Spill'
     name = SchemaNode(String(), default=default_name, missing=default_name)
 

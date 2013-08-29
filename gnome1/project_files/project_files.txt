@@ -1,0 +1,9 @@
+These are project files for building gui_gnome
+on Windows (VisualStudio) and Mac (Xcode)
+
+It references:
+ ../../lib_gnome: this is used by both gui_gnome + py_gnome
+
+ ../../third_party_lib/.: it links against the netcdf libraries
+
+ ../third_party_lib: qt and shapelib are specific to gui_gnome

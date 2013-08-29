@@ -29,7 +29,7 @@ except ImportError:
 from gnome import basic_types
 from gnome.model import Model
 from gnome.movers import WindMover, RandomMover, CatsMover, GridCurrentMover
-from gnome.spill import PointSourceRelease
+from gnome.spill import PointSourceSurfaceRelease
 from gnome.environment import Wind
 from gnome.map import MapFromBNA, GnomeMap
 from gnome.utilities import projections
@@ -136,13 +136,13 @@ class WebGridCurrentMover(BaseWebObject, GridCurrentMover):
         topology_file = os.path.join(base_dir, topology_file)
         super(WebGridCurrentMover, self).__init__(filename, topology_file, *args, **kwargs)
 
-class WebPointSourceRelease(BaseWebObject, PointSourceRelease):
+class WebPointSourceRelease(BaseWebObject, PointSourceSurfaceRelease):
     """
     A subclass of :class:`gnome.movers.WindMover` that provides
     webgnome-specific functionality.
     """
     default_name = 'Spill'
-    state = copy.deepcopy(PointSourceRelease.state)
+    state = copy.deepcopy(PointSourceSurfaceRelease.state)
     state.add(create=['name'], update=['name'])
 
     def __init__(self, *args, **kwargs):

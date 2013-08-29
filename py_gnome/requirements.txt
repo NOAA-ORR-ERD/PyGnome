@@ -16,9 +16,10 @@ netCDF4
 
 ## hazpy unit_conversion code
 svn+https://svn.orr.noaa.gov/svn/Hazpy/trunk/hazpy.unit_conversion/#egg=hazpy.unit_conversion
-
-## new version of colander -- maybe not needed anymore?
-git+https://github.com/Pylons/colander.git#egg=colander  # need newer version than what is in PyPy
+# Latest colander appears to be broken for us
+# Use specified commit for now till this is resolved
+#git+https://github.com/Pylons/colander.git#egg=colander  # need newer version than what is in PyPy
+git+https://github.com/Pylons/colander.git@5816554a6f0c0f025922dd03d1518de361a9f0ed#egg=colander-dev
 
 ## py_gd : python wrappers for gd lib
 git+https://github.com/NOAA-ORR-ERD/py_gd.git
