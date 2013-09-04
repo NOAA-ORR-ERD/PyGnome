@@ -7,10 +7,10 @@ import pytest
 from gnome.db.oil_library.oil_props import OilProps
 
 """ Test OilProps """
+# If DB doesn't exist, it could take awhile to create - mark this as slow
+@pytest.mark.slow
 def test_OilProps_exceptions():
     from sqlalchemy.orm.exc import NoResultFound
-    #with pytest.raises(TypeError):
-    #    OilProps(1)
     with pytest.raises(NoResultFound):
         OilProps('test')
         
