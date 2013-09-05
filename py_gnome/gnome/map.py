@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 
 ###fixme:
 ### needs some re-catoring -- more clear distiction between public and
