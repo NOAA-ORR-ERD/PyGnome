@@ -1,15 +1,18 @@
-#!/usr/bin/env python
+
 from datetime import datetime
 from time import gmtime
-from uuid import uuid1,UUID
+from uuid import uuid1, UUID
 import copy
 
 from gnome.basic_types import enum
 
+
 class GnomeId(object):
+
     """
     A class for assigning a unique ID for an object
     """
+
     _id = None
 
     def __init__(self, id=None):
@@ -17,15 +20,16 @@ class GnomeId(object):
         Sets the ID of the object. 
         :param id: (optional) input valid UUID to set
         """
-        
+
         if id is not None:
             if isinstance(id, basestring):
-                UUID(id) # throws an error if not a valid UUID
+                UUID(id)  # throws an error if not a valid UUID
             elif isinstance(id, UUID):
                 id = str(id)
             else:
-                raise ValueError('id cannot be set. It is not a UUID object, nor a valid UUID in string format')
-            
+                raise ValueError('id cannot be set. It is not a UUID object, nor a valid UUID in string format'
+                                 )
+
             self._id = id
         else:
             self.__create_new_id()
@@ -37,6 +41,7 @@ class GnomeId(object):
 
         :return: a unique ID assigned during construction
         """
+
         return self._id
 
     def __create_new_id(self):
@@ -46,6 +51,7 @@ class GnomeId(object):
         Used only for deep copy. 
         Used to make a new object which is a copy of the original.
         """
+
         self._id = str(uuid1())
 
     def __deepcopy__(self, memo=None):
@@ -60,6 +66,7 @@ class GnomeId(object):
  
         Despite what that thread says for __copy__, the built-in deepcopy() ends up using recursion
         """
+
         obj_copy = object.__new__(type(self))
         obj_copy.__dict__ = copy.deepcopy(self.__dict__, memo)
         obj_copy.__create_new_id()
@@ -69,8 +76,10 @@ class GnomeId(object):
         """
         might as well have copy, too.
         """
+
         obj_copy = object.__new__(type(self))
         obj_copy.__dict__ = copy.copy(self.__dict__)
         obj_copy.__create_new_id()
         return obj_copy
-    
+
+

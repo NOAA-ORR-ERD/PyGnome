@@ -9,14 +9,16 @@ module to define classes for GNOME output:
   - saving to other formats ?
 
 """
+
 import os
 
-from gnome.utilities.map_canvas import  MapCanvas
+from gnome.utilities.map_canvas import MapCanvas
 from gnome.utilities import projections
 from gnome.utilities.file_tools import haz_files
 
 
 class Outputter(object):
+
     """
     base class for all outputters
     """
@@ -27,6 +29,7 @@ class Outputter(object):
 
         write the ouput here
         """
+
         pass
 
     def prepare_for_model_run(self, **kwargs):
@@ -34,6 +37,7 @@ class Outputter(object):
         This method gets called by the model at the beginning of a new run. 
         Do what you need to do to prepare.
         """
+
         pass
 
     def prepare_for_model_step(self):
@@ -41,6 +45,7 @@ class Outputter(object):
         This method gets called by the model at the beginning of each time step. 
         Do what you need to do to prepare for a new model step
         """
+
         pass
 
     def model_step_is_done(self):
@@ -48,7 +53,8 @@ class Outputter(object):
         This method gets called by the model when after everything else is done
         in a time step. Put any code need for clean-up, etc.
         """
-        pass 
+
+        pass
 
     def rewind(self):
         """
@@ -56,4 +62,7 @@ class Outputter(object):
 
         do what needs to be done to reset the outputter
         """
-        pass 
+
+        pass
+
+
