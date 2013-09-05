@@ -5,6 +5,7 @@ test code for the Outputter classes
 
 
 """
+
 import gnome
 
 
@@ -12,6 +13,7 @@ def test_base():
     """
     test the base class
     """
+
     outputter = gnome.outputter.Outputter()
 
     outputter.write_output(3)
@@ -23,5 +25,5 @@ def test_base():
     assert True
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     pass

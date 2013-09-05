@@ -1,11 +1,9 @@
 #!/usr/bin/env python
 
-
 """
 Test code for the BBox Object
 
 """
-
 
 import unittest
 
@@ -13,6 +11,7 @@ from gnome.utilities.geometry.BBox import *
 
 
 class testCreator(unittest.TestCase):
+
     def testCreates(self):
         B = BBox(((0, 0), (5, 5)))
         self.failUnless(isinstance(B, BBox))
@@ -47,22 +46,30 @@ class testCreator(unittest.TestCase):
         self.failUnlessRaises(ValueError, BBox, (0, 0, 1, -6))
 
     def testMinMax3(self):
+
         # OK to have a zero-sized BB
+
         B = BBox(((0, 0), (0, 5)))
         self.failUnless(isinstance(B, BBox))
 
     def testMinMax4(self):
+
         # OK to have a zero-sized BB
-        B = BBox(((10.0, -34), (10.0, -34.0)))
+
+        B = BBox(((10., -34), (10., -34.0)))
         self.failUnless(isinstance(B, BBox))
 
     def testMinMax5(self):
+
         # OK to have a tiny BB
+
         B = BBox(((0, 0), (1e-20, 5)))
         self.failUnless(isinstance(B, BBox))
 
     def testMinMax6(self):
+
         # Should catch tiny difference
+
         self.failUnlessRaises(ValueError, BBox, ((0, 0), (-1e-20, 5)))
 
 
@@ -74,19 +81,23 @@ class testAsBBox(unittest.TestCase):
         self.failUnless(B is C)
 
     def testPassThrough2(self):
-        B = (((0, 0), (5, 5)))
+        B = ((0, 0), (5, 5))
         C = asBBox(B)
         self.failIf(B is C)
 
     def testPassArray(self):
+
         # Different data type
-        A = np.array((((0, 0), (5, 5))))
+
+        A = np.array(((0, 0), (5, 5)))
         C = asBBox(A)
         self.failIf(A is C)
 
     def testPassArray2(self):
+
         # same data type -- should be a view
-        A = np.array((((0, 0), (5, 5))), np.float_)
+
+        A = np.array(((0, 0), (5, 5)), np.float_)
         C = asBBox(A)
         A[0, 0] = -10
         self.failUnless(C[0, 0] == A[0, 0])
@@ -181,49 +192,51 @@ class testIntersect(unittest.TestCase):
 
 
 class testEquality(unittest.TestCase):
+
     def testSame(self):
-        B = BBox(((1.0, 2.0), (5.0, 10.0)))
-        C = BBox(((1.0, 2.0), (5.0, 10.0)))
+        B = BBox(((1.0, 2.0), (5., 10.)))
+        C = BBox(((1.0, 2.0), (5., 10.)))
         self.failUnless(B == C)
 
     def testIdentical(self):
-        B = BBox(((1.0, 2.0), (5.0, 10.0)))
+        B = BBox(((1.0, 2.0), (5., 10.)))
         self.failUnless(B == B)
 
     def testNotSame(self):
-        B = BBox(((1.0, 2.0), (5.0, 10.0)))
-        C = BBox(((1.0, 2.0), (5.0, 10.1)))
+        B = BBox(((1.0, 2.0), (5., 10.)))
+        C = BBox(((1.0, 2.0), (5., 10.1)))
         self.failIf(B == C)
 
     def testWithArray(self):
-        B = BBox(((1.0, 2.0), (5.0, 10.0)))
-        C = np.array(((1.0, 2.0), (5.0, 10.0)))
+        B = BBox(((1.0, 2.0), (5., 10.)))
+        C = np.array(((1.0, 2.0), (5., 10.)))
         self.failUnless(B == C)
 
     def testWithArray2(self):
-        B = BBox(((1.0, 2.0), (5.0, 10.0)))
-        C = np.array(((1.0, 2.0), (5.0, 10.0)))
+        B = BBox(((1.0, 2.0), (5., 10.)))
+        C = np.array(((1.0, 2.0), (5., 10.)))
         self.failUnless(C == B)
 
     def testWithArray3(self):
-        B = BBox(((1.0, 2.0), (5.0, 10.0)))
-        C = np.array(((1.01, 2.0), (5.0, 10.0)))
+        B = BBox(((1.0, 2.0), (5., 10.)))
+        C = np.array(((1.01, 2.0), (5., 10.)))
         self.failIf(C == B)
 
 
 class testInside(unittest.TestCase):
+
     def testSame(self):
-        B = BBox(((1.0, 2.0), (5.0, 10.0)))
-        C = BBox(((1.0, 2.0), (5.0, 10.0)))
+        B = BBox(((1.0, 2.0), (5., 10.)))
+        C = BBox(((1.0, 2.0), (5., 10.)))
         self.failUnless(B.Inside(C))
 
     def testPoint(self):
-        B = BBox(((1.0, 2.0), (5.0, 10.0)))
+        B = BBox(((1.0, 2.0), (5., 10.)))
         C = BBox(((3.0, 4.0), (3.0, 4.0)))
         self.failUnless(B.Inside(C))
 
     def testPointOutside(self):
-        B = BBox(((1.0, 2.0), (5.0, 10.0)))
+        B = BBox(((1.0, 2.0), (5., 10.)))
         C = BBox(((-3.0, 4.0), (0.10, 4.0)))
         self.failIf(B.Inside(C))
 
@@ -269,8 +282,9 @@ class testInside(unittest.TestCase):
 
 
 class testPointInside(unittest.TestCase):
+
     def testPointIn(self):
-        B = BBox(((1.0, 2.0), (5.0, 10.0)))
+        B = BBox(((1.0, 2.0), (5., 10.)))
         P = (3.0, 4.0)
         self.failUnless(B.PointInside(P))
 
@@ -315,92 +329,72 @@ class testPointInside(unittest.TestCase):
         self.failIf(B.PointInside(P))
 
     def testPointOnTopLine(self):
-        B = BBox(((1.0, 2.0), (5.0, 10.0)))
-        P = (3.0, 10.0)
+        B = BBox(((1.0, 2.0), (5., 10.)))
+        P = (3.0, 10.)
         self.failUnless(B.PointInside(P))
 
     def testPointLeftTopLine(self):
-        B = BBox(((1.0, 2.0), (5.0, 10.0)))
-        P = (-3.0, 10.0)
+        B = BBox(((1.0, 2.0), (5., 10.)))
+        P = (-3.0, 10.)
         self.failIf(B.PointInside(P))
 
     def testPointOnBottomLine(self):
-        B = BBox(((1.0, 2.0), (5.0, 10.0)))
-        P = (3.0, 5.0)
+        B = BBox(((1.0, 2.0), (5., 10.)))
+        P = (3.0, 5.)
         self.failUnless(B.PointInside(P))
 
     def testPointOnLeft(self):
-        B = BBox(((-10.0, -10.0), (-1.0, -1.0)))
-        P = (-10, -5.0)
+        B = BBox(((-10., -10.), (-1.0, -1.0)))
+        P = (-10, -5.)
         self.failUnless(B.PointInside(P))
 
     def testPointOnRight(self):
-        B = BBox(((-10.0, -10.0), (-1.0, -1.0)))
-        P = (-1, -5.0)
+        B = BBox(((-10., -10.), (-1.0, -1.0)))
+        P = (-1, -5.)
         self.failUnless(B.PointInside(P))
 
     def testPointOnBottomRight(self):
-        B = BBox(((-10.0, -10.0), (-1.0, -1.0)))
-        P = (-1, -10.0)
+        B = BBox(((-10., -10.), (-1.0, -1.0)))
+        P = (-1, -10.)
         self.failUnless(B.PointInside(P))
 
 
 class testFromPoints(unittest.TestCase):
 
     def testCreate(self):
-        Pts = np.array(((5, 2),
-                        (3, 4),
-                        (1, 6),
-                        ),
-                       np.float_)
+        Pts = np.array(((5, 2), (3, 4), (1, 6)), np.float_)
         B = fromPoints(Pts)
-        #B = BBox( ( (1.0, 2.0), (5.0, 10.0) ) )
-        self.failUnless(B[0, 0] == 1.0 and
-                        B[0, 1] == 2.0 and
-                        B[1, 0] == 5.0 and
-                        B[1, 1] == 6.0
-                        )
+
+        # B = BBox( ( (1.0, 2.0), (5.0, 10.0) ) )
+
+        self.failUnless(B[0, 0] == 1.0 and B[0, 1] == 2.0 and B[1, 0]
+                        == 5. and B[1, 1] == 6.0)
 
     def testCreateInts(self):
-        Pts = np.array(((5, 2),
-                        (3, 4),
-                        (1, 6),
-                        ))
+        Pts = np.array(((5, 2), (3, 4), (1, 6)))
         B = fromPoints(Pts)
-        self.failUnless(B[0, 0] == 1.0 and
-                        B[0, 1] == 2.0 and
-                        B[1, 0] == 5.0 and
-                        B[1, 1] == 6.0
-                        )
+        self.failUnless(B[0, 0] == 1.0 and B[0, 1] == 2.0 and B[1, 0]
+                        == 5. and B[1, 1] == 6.0)
 
     def testSinglePoint(self):
         Pts = np.array((5, 2), np.float_)
         B = fromPoints(Pts)
-        self.failUnless(B[0, 0] == 5.0 and
-                        B[0, 1] == 2.0 and
-                        B[1, 0] == 5.0 and
-                        B[1, 1] == 2.0
-                        )
+        self.failUnless(B[0, 0] == 5. and B[0, 1] == 2.0 and B[1, 0]
+                        == 5. and B[1, 1] == 2.0)
 
     def testListTuples(self):
-        Pts = [(3, 6.5),
-               (13, 43.2),
-               (-4.32, -4),
-               (65, -23),
-               (-0.0001, 23.432),
-               ]
+        Pts = [(3, 6.5), (13, 43.2), (-4.32, -4), (65, -23), (-0.0001,
+               23.432)]
         B = fromPoints(Pts)
-        self.failUnless(B[0, 0] == -4.32 and
-                        B[0, 1] == -23.0 and
-                        B[1, 0] == 65.0 and
-                        B[1, 1] == 43.2
-                        )
+        self.failUnless(B[0, 0] == -4.32 and B[0, 1] == -23.0 and B[1,
+                        0] == 65.0 and B[1, 1] == 43.2)
 
 
 class testMerge(unittest.TestCase):
+
     A = BBox(((-23.5, 456), (56, 532.0)))
     B = BBox(((-20.3, 460), (54, 465)))  # B should be completely inside A
-    C = BBox(((-23.5, 456), (58, 540.0)))  # up and to the right or A
+    C = BBox(((-23.5, 456), (58, 540.)))  # up and to the right or A
     D = BBox(((-26.5, 12), (56, 532.0)))
 
     def testInside(self):
@@ -425,7 +419,8 @@ class testMerge(unittest.TestCase):
 
 
 class testWidthHeight(unittest.TestCase):
-    B = BBox(((1.0, 2.0), (5.0, 10.0)))
+
+    B = BBox(((1.0, 2.0), (5., 10.)))
 
     def testWidth(self):
         self.failUnless(self.B.Width == 4.0)
@@ -447,7 +442,8 @@ class testWidthHeight(unittest.TestCase):
 
 
 class testCenter(unittest.TestCase):
-    B = BBox(((1.0, 2.0), (5.0, 10.0)))
+
+    B = BBox(((1.0, 2.0), (5., 10.)))
 
     def testCenter(self):
         self.failUnless((self.B.Center == (3.0, 6.0)).all())
@@ -460,24 +456,27 @@ class testCenter(unittest.TestCase):
 
 
 class testBBarray(unittest.TestCase):
-    BBarray = np.array((((-23.5, 456), (56, 532.0)),
-                        ((-20.3, 460), (54, 465)),
-                        ((-23.5, 456), (58, 540.0)),
-                        ((-26.5,  12), (56, 532.0)),
-                       ),
-                       dtype=np.float)
-    BB = asBBox(((-26.5,  12.), (58., 540.)))
+
+    BBarray = np.array((((-23.5, 456), (56, 532.0)), ((-20.3, 460),
+                       (54, 465)), ((-23.5, 456), (58, 540.)), ((-26.5,
+                       12), (56, 532.0))), dtype=np.float)
+    BB = asBBox(((-26.5, 12.), (58., 540.)))
 
     def testJoin(self):
         BB = fromBBArray(self.BBarray)
-        msg = "Wrong BB was created. It was:\n{0}\nit should have been:\n{1}"
+        msg = \
+            '''Wrong BB was created. It was:
+{0}
+it should have been:
+{1}'''
         self.failUnless(BB == self.BB, msg.format(BB, self.BB))
 
 
 class testNullBBox(unittest.TestCase):
+
     B1 = NullBBox()
     B2 = NullBBox()
-    B3 = BBox(((1.0, 2.0), (5.0, 10.0)))
+    B3 = BBox(((1.0, 2.0), (5., 10.)))
 
     def testValues(self):
         self.failUnless(np.alltrue(np.isnan(self.B1)))
@@ -489,20 +488,25 @@ class testNullBBox(unittest.TestCase):
         self.failUnless((self.B1 == self.B2) == True)
 
     def testNotEquals(self):
-        msg = 'NotEquals failed for\n{0},\n {1}:{2}'
+        msg = '''NotEquals failed for
+{0},
+ {1}:{2}'''
         self.failUnless((self.B1 == self.B3) == False,
-                        msg.format(self.B1, self.B3, (self.B1 == self.B3)))
+                        msg.format(self.B1, self.B3, self.B1
+                        == self.B3))
 
     def testNotEquals2(self):
-        msg = 'NotEquals failed for\n{0},\n {1}:{2}'
+        msg = '''NotEquals failed for
+{0},
+ {1}:{2}'''
         self.failUnless((self.B3 == self.B1) == False,
-                        msg.format(self.B3, self.B1, (self.B3 == self.B1)))
+                        msg.format(self.B3, self.B1, self.B3
+                        == self.B1))
 
     def testMerge(self):
         C = self.B1.copy()
         C.Merge(self.B3)
-        self.failUnless(C == self.B3,
-                        "merge failed, got: %s" % C)
+        self.failUnless(C == self.B3, 'merge failed, got: %s' % C)
 
     def testOverlaps(self):
         self.failUnless(self.B1.Overlaps(self.B3) == False)
@@ -512,9 +516,10 @@ class testNullBBox(unittest.TestCase):
 
 
 class testInfBBox(unittest.TestCase):
+
     B1 = InfBBox()
     B2 = InfBBox()
-    B3 = BBox(((1.0, 2.0), (5.0, 10.0)))
+    B3 = BBox(((1.0, 2.0), (5., 10.)))
     NB = NullBBox()
 
     def testValues(self):
@@ -528,26 +533,30 @@ class testInfBBox(unittest.TestCase):
 
     def testNotEquals(self):
         print (self.B1 == self.B3) == False
-        msg = 'NotEquals failed for\n{0},\n {1}:{2}'
+        msg = '''NotEquals failed for
+{0},
+ {1}:{2}'''
         self.failUnless((self.B1 == self.B3) == False,
-                        msg.format(self.B1, self.B3, (self.B1 == self.B3)))
+                        msg.format(self.B1, self.B3, self.B1
+                        == self.B3))
 
     def testNotEquals2(self):
-        msg = 'NotEquals failed for\n{0},\n {1}:{2}'
+        msg = '''NotEquals failed for
+{0},
+ {1}:{2}'''
         self.failUnless((self.B3 == self.B1) == False,
-                        msg.format(self.B3, self.B1, (self.B3 == self.B1)))
+                        msg.format(self.B3, self.B1, self.B3
+                        == self.B1))
 
     def testMerge(self):
         C = self.B1.copy()
         C.Merge(self.B3)
-        self.failUnless(C == self.B2,
-                        "merge failed, got: %s" % C)
+        self.failUnless(C == self.B2, 'merge failed, got: %s' % C)
 
     def testMerge2(self):
         C = self.B3.copy()
         C.Merge(self.B1)
-        self.failUnless(C == self.B1,
-                        "merge failed, got: %s" % C)
+        self.failUnless(C == self.B1, 'merge failed, got: %s' % C)
 
     def testOverlaps(self):
         self.failUnless(self.B1.Overlaps(self.B2) == True)
@@ -566,32 +575,32 @@ class testInfBBox(unittest.TestCase):
 
 
 class testSides(unittest.TestCase):
-    B = BBox(((1.0, 2.0), (5.0, 10.0)))
+
+    B = BBox(((1.0, 2.0), (5., 10.)))
 
     def testLeft(self):
         self.failUnless(self.B.Left == 1.0)
 
     def testRight(self):
-        self.failUnless(self.B.Right == 5.0)
+        self.failUnless(self.B.Right == 5.)
 
     def testBottom(self):
         self.failUnless(self.B.Bottom == 2.0)
 
     def testTop(self):
-        self.failUnless(self.B.Top == 10.0)
+        self.failUnless(self.B.Top == 10.)
 
 
 class testAsPoly(unittest.TestCase):
+
     B = BBox(((5, 0), (10, 20)))
-    corners = np.array([(5., 0.),
-                        (5., 20.),
-                        (10., 20.),
-                        (10.,  0.)], dtype=np.float64)
+    corners = np.array([(5., 0.), (5., 20.), (10., 20.), (10., 0.)],
+                       dtype=np.float64)
 
     def testCorners(self):
         print self.B.AsPoly()
         self.failUnless(np.array_equal(self.B.AsPoly(), self.corners))
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     unittest.main()

@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+
 """
 
 Tests of the cython land-check code used in the map code.
@@ -16,12 +17,14 @@ import numpy as np
 from gnome.cy_gnome.cy_land_check import overlap_grid, find_first_pixel
 
 
-class Test_overlap_grid():
+class Test_overlap_grid:
+
     m = 100
     n = 200
 
     def test_right(self):
         """line totally to the right of the grid"""
+
         pt1 = (101, 13)
         pt2 = (101, 220)
         assert not overlap_grid(self.m, self.n, pt1, pt2)
@@ -32,7 +35,7 @@ class Test_overlap_grid():
         assert not overlap_grid(self.m, self.n, pt1, pt2)
 
     def test_over(self):
-        pt1 = (10,  210)
+        pt1 = (10, 210)
         pt2 = (100, 220)
         assert not overlap_grid(self.m, self.n, pt1, pt2)
 
@@ -72,26 +75,33 @@ class Test_overlap_grid():
         assert overlap_grid(self.m, self.n, pt1, pt2)
 
 
-hit_examples = [((5, 5), (15, 5), (9, 5), (10, 5)),
-                ((15, 5), (5, 5), (11, 5), (10, 5)),
-                ((0, 0), (10, 5), (9, 4), (10, 5)),
-                ((19, 0), (0, 9), (11, 4), (10, 4)),
-                ]
+hit_examples = [((5, 5), (15, 5), (9, 5), (10, 5)), ((15, 5), (5, 5),
+                (11, 5), (10, 5)), ((0, 0), (10, 5), (9, 4), (10, 5)),
+                ((19, 0), (0, 9), (11, 4), (10, 4))]
 
 
 @pytest.mark.parametrize(('pt1', 'pt2', 'res1', 'res2'), hit_examples)
-def test_land_cross(pt1, pt2, res1, res2):
+def test_land_cross(
+    pt1,
+    pt2,
+    res1,
+    res2,
+    ):
     """
     try a single LE that should be crossing land
     """
+
     # a very simple raster:
-    w, h = 20, 10
+
+    (w, h) = (20, 10)
     raster = np.zeros((w, h), dtype=np.uint8)
+
     # a single skinny vertical line:
+
     raster[10, :] = 1
 
-    #pt1 = ( 5, 5)
-    #pt2 = (15, 5)
+    # pt1 = ( 5, 5)
+    # pt2 = (15, 5)
 
     result = find_first_pixel(raster, pt1, pt2)
 
@@ -99,11 +109,8 @@ def test_land_cross(pt1, pt2, res1, res2):
     assert result[0] == res1
     assert result[1] == res2
 
-
-no_hit_examples = [((5, 5), (9, 5)),
-                   ((15, 5), (11, 5)),
-                   ((0, 0), (9, 9)),
-                   ]
+no_hit_examples = [((5, 5), (9, 5)), ((15, 5), (11, 5)), ((0, 0), (9,
+                   9))]
 
 
 @pytest.mark.parametrize(('pt1', 'pt2'), no_hit_examples)
@@ -111,36 +118,46 @@ def test_land_not_cross(pt1, pt2):
     """
     try a single LE that should be crossing land
     """
+
     # a very simple raster:
-    w, h = 20, 10
+
+    (w, h) = (20, 10)
     raster = np.zeros((w, h), dtype=np.uint8)
+
     # a single skinny vertical line:
+
     raster[10, :] = 1
 
     result = find_first_pixel(raster, pt1, pt2)
 
     assert result is None
 
-
-diag_hit_examples = [((3, 0), (0, 3), (2, 1), (1, 1)),
-                     ((0, 3), (3, 0), (1, 2), (2, 2)),
-                     ((4, 1), (0, 4), (3, 2), (2, 2)),
-                     ((0, 4), (4, 1), (2, 3), (3, 3)),
-                     ((0, 8), (9, 0), (3, 5), (4, 4)),
-                    ]
+diag_hit_examples = [((3, 0), (0, 3), (2, 1), (1, 1)), ((0, 3), (3, 0),
+                     (1, 2), (2, 2)), ((4, 1), (0, 4), (3, 2), (2, 2)),
+                     ((0, 4), (4, 1), (2, 3), (3, 3)), ((0, 8), (9, 0),
+                     (3, 5), (4, 4))]
 
 
 @pytest.mark.parametrize(('pt1', 'pt2', 'prev_pt', 'hit_pt'),
                          diag_hit_examples)
-def test_land_cross_diag(pt1, pt2, prev_pt, hit_pt):
+def test_land_cross_diag(
+    pt1,
+    pt2,
+    prev_pt,
+    hit_pt,
+    ):
     """
     try a single LE that should be crossing land
     with a diagonal land line..
     """
+
     # a very simple raster:
-    w, h = 10, 10
+
+    (w, h) = (10, 10)
     raster = np.zeros((w, h), dtype=np.uint8)
+
     # a single skinny digonal line part way:
+
     raster[0, 0] = 1
     raster[1, 1] = 1
     raster[2, 2] = 1
@@ -154,9 +171,7 @@ def test_land_cross_diag(pt1, pt2, prev_pt, hit_pt):
     assert result[0] == prev_pt
     assert result[1] == hit_pt
 
-diag_not_hit_examples = [((9, 1), (1, 9)),
-                         ((1, 9), (9, 1)),
-                        ]
+diag_not_hit_examples = [((9, 1), (1, 9)), ((1, 9), (9, 1))]
 
 
 @pytest.mark.parametrize(('pt1', 'pt2'), diag_not_hit_examples)
@@ -165,10 +180,14 @@ def test_land_not_cross_diag(pt1, pt2):
     try a single LE that should be crossing land
     with a diagonal land line..
     """
+
     # a very simple raster:
-    w, h = 10, 10
+
+    (w, h) = (10, 10)
     raster = np.zeros((w, h), dtype=np.uint8)
+
     # a single skinny diagonal line part way:
+
     raster[0, 0] = 1
     raster[1, 1] = 1
     raster[2, 2] = 1
@@ -180,22 +199,29 @@ def test_land_not_cross_diag(pt1, pt2):
     print pt1, pt2, result
     assert result is None
 
-points_outside_grid = [  # outside from right
-                       ((-5, -5), (25, 15), (9, 4), (10, 5)),
-                      ]
+points_outside_grid = [((-5, -5), (25, 15), (9, 4), (10, 5))]  # outside from right
 
 
 @pytest.mark.parametrize(('pt1', 'pt2', 'prev_pt', 'hit_pt'),
                          points_outside_grid)
-def test_points_outside_grid(pt1, pt2, prev_pt, hit_pt):
+def test_points_outside_grid(
+    pt1,
+    pt2,
+    prev_pt,
+    hit_pt,
+    ):
     """
     try a single LE that should be crossing land
     with points starting or ending outside grid
     """
+
     # a very simple raster:
-    w, h = 20, 10
+
+    (w, h) = (20, 10)
     raster = np.zeros((w, h), dtype=np.uint8)
+
     # a single skinny vertical line:
+
     raster[10, :] = 1
 
     result = find_first_pixel(raster, pt1, pt2)
@@ -205,8 +231,7 @@ def test_points_outside_grid(pt1, pt2, prev_pt, hit_pt):
     assert result[0] == prev_pt
     assert result[1] == hit_pt
 
-
-#def test_outside_raster(self):
+# def test_outside_raster(self):
 #         """
 #         test LEs starting form outside the raster bounds
 #         """
@@ -248,11 +273,12 @@ def test_points_outside_grid(pt1, pt2, prev_pt, hit_pt):
 #         assert np.array_equal(spill['status_codes'][3:],
 #                               (basic_types.oil_status.on_land,))
 
-
-if __name__ == "__main__":
-    w, h = 10, 10
+if __name__ == '__main__':
+    (w, h) = (10, 10)
     raster = np.zeros((w, h), dtype=np.uint8)
+
     # a single skinny diagonal line part way:
+
     raster[0, 0] = 1
     raster[1, 1] = 1
     raster[2, 2] = 1
@@ -262,7 +288,7 @@ if __name__ == "__main__":
     pt1 = (0, 8)
     pt2 = (9, 0)
 
-    print "checking:"
+    print 'checking:'
     print pt1
     print pt2
     result = find_first_pixel(raster, pt1, pt2)
@@ -272,7 +298,7 @@ if __name__ == "__main__":
     pt1 = (pt1[1], pt1[0])
     pt2 = (pt2[1], pt2[0])
 
-    print "checking:"
+    print 'checking:'
     print pt1
     print pt2
     result = find_first_pixel(raster, pt1, pt2)

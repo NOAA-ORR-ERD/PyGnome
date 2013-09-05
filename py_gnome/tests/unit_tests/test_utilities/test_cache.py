@@ -5,6 +5,7 @@ unit tests for the cache system
 
 designed to be run with py.test
 """
+
 import os
 
 import numpy as np
@@ -16,9 +17,11 @@ import pytest
 import gnome
 from gnome.utilities import cache
 
-from gnome.spill_container import TestSpillContainer, SpillContainerPairData
+from gnome.spill_container import TestSpillContainer, \
+    SpillContainerPairData
 
 # some sample datetimes for tests:
+
 dt = datetime(2013, 4, 15, 12)
 tdelta = timedelta(hours=1)
 
@@ -27,6 +30,7 @@ def test_init():
     """
     can we even create one?
     """
+
     c = cache.ElementCache()
 
     assert True
@@ -65,44 +69,57 @@ def test_cache_clear_on_delete():
     del c1
     assert not os.path.isdir(d1)
 
+
 def test_write():
+
     # create a spill_container to save:
-    sc = TestSpillContainer(num_elements= 10,
-                            start_pos = (3.14, 2.72, 1.2),
+
+    sc = TestSpillContainer(num_elements=10, start_pos=(3.14, 2.72,
+                            1.2),
                             spill_obj=gnome.spill.PointSource3DRelease)
+
     # add a timestamp:
+
     sc.current_time_stamp = dt
 
     # put it in a SpillContainerPair
+
     scp = SpillContainerPairData(sc)
 
-    #create a cache object:
+    # create a cache object:
+
     c = cache.ElementCache()
 
     # save it:
+
     c.save_timestep(0, scp)
 
 
 def test_write_uncert():
+
     # create a spill_container to save:
-    sc = TestSpillContainer(num_elements= 10,
-                            start_pos = (3.14, 2.72, 1.2),
-                            spill_obj=gnome.spill.PointSource3DRelease
-                            )
-    u_sc = TestSpillContainer(num_elements= 10,
-                             start_pos = (4.14, 3.72, 2.2),
-                             uncertain=True,
-                             spill_obj=gnome.spill.PointSource3DRelease)
+
+    sc = TestSpillContainer(num_elements=10, start_pos=(3.14, 2.72,
+                            1.2),
+                            spill_obj=gnome.spill.PointSource3DRelease)
+    u_sc = TestSpillContainer(num_elements=10, start_pos=(4.14, 3.72,
+                              2.2), uncertain=True,
+                              spill_obj=gnome.spill.PointSource3DRelease)
+
     # add a timestamp:
+
     sc.current_time_stamp = dt
 
     # put it in a SpillContainerPair
+
     scp = SpillContainerPairData(sc, u_sc)
 
-    #create a cache object:
+    # create a cache object:
+
     c = cache.ElementCache()
 
     # save it:
+
     c.save_timestep(0, scp)
 
 
@@ -112,37 +129,51 @@ def test_write_and_read_back():
 
     no uncertainty
     """
-    #create a cache object:
+
+    # create a cache object:
+
     c = cache.ElementCache()
 
     # create a spill_container to save:
-    sc = TestSpillContainer(num_elements= 10,
-                            start_pos = (3.14, 2.72, 1.2),
-                            spill_obj=gnome.spill.PointSource3DRelease
-                            )
+
+    sc = TestSpillContainer(num_elements=10, start_pos=(3.14, 2.72,
+                            1.2),
+                            spill_obj=gnome.spill.PointSource3DRelease)
+
     # add a timestamp:
+
     sc.current_time_stamp = dt
 
     # put it in a SpillContainerPair
+
     scp = SpillContainerPairData(sc)
 
     # make a copy of positons for later testing
+
     pos0 = sc['positions'].copy()
     c.save_timestep(0, scp)
 
     # change things...
+
     sc['positions'] += 1.1
     pos1 = sc['positions'].copy()
+
     # change time stamp
+
     sc.current_time_stamp = dt + tdelta
     c.save_timestep(1, scp)
 
     # change things...
+
     sc['positions'] *= 1.1
     pos2 = sc['positions'].copy()
+
     # change time stamp
+
     sc.current_time_stamp = dt + tdelta * 2
+
     # save it:
+
     c.save_timestep(2, scp)
 
     # read them back
@@ -170,27 +201,32 @@ def test_write_and_read_back_uncertain():
 
     with uncertainty
     """
-    #create a cache object:
+
+    # create a cache object:
+
     c = cache.ElementCache()
 
     # create a spill_container to save:
-    sc = TestSpillContainer(num_elements= 10,
-                            start_pos = (3.14, 2.72, 1.2),
+
+    sc = TestSpillContainer(num_elements=10, start_pos=(3.14, 2.72,
+                            1.2),
                             spill_obj=gnome.spill.PointSource3DRelease)
-    u_sc = TestSpillContainer(num_elements= 10,
-                              start_pos = (4.14, 3.72, 2.2),
-                              uncertain=True,
+    u_sc = TestSpillContainer(num_elements=10, start_pos=(4.14, 3.72,
+                              2.2), uncertain=True,
                               spill_obj=gnome.spill.PointSource3DRelease)
 
     # put it in a SpillContainerPair
+
     scp = SpillContainerPairData(sc, u_sc)
 
     # make a copy of positons for later testing
+
     pos0 = sc['positions'].copy()
     u_pos0 = u_sc['positions'].copy()
     c.save_timestep(0, scp)
 
     # change things...
+
     sc['positions'] += 1.1
     u_sc['positions'] += 1.1
     pos1 = sc['positions'].copy()
@@ -198,9 +234,12 @@ def test_write_and_read_back_uncertain():
     c.save_timestep(1, scp)
 
     # change things...
+
     sc['positions'] *= 1.1
     pos2 = sc['positions'].copy()
+
     # save it:
+
     c.save_timestep(2, scp)
 
     # read them back
@@ -221,42 +260,54 @@ def test_read_back_from_memory():
     """
     test reading back the last item from the memory cache
     """
-    #create a cache object:
+
+    # create a cache object:
+
     c = cache.ElementCache()
 
     # create a spill_container to save:
-    sc = TestSpillContainer(num_elements= 10,
-                            start_pos = (3.14, 2.72, 1.2),
+
+    sc = TestSpillContainer(num_elements=10, start_pos=(3.14, 2.72,
+                            1.2),
                             spill_obj=gnome.spill.PointSource3DRelease)
+
     # put it in a SpillContainerPair
+
     scp = SpillContainerPairData(sc)
 
     c.save_timestep(0, scp)
 
     # change things...
+
     sc['positions'] += 1.1
     c.save_timestep(1, scp)
 
     # clear the cache files (private API...)
+
     cache.clean_up_cache(dir_name=c._cache_dir)
 
     # with cache cleared, this shouldn't load
+
     with pytest.raises(cache.CacheError):
-         c.load_timestep(0)
+        c.load_timestep(0)
 
     # but this should
+
     scp1 = c.load_timestep(1)
-     
+
     print scp1
     print scp1._spill_container._data_arrays
-    assert np.array_equal(scp1._spill_container['positions'], sc['positions'])
+    assert np.array_equal(scp1._spill_container['positions'],
+                          sc['positions'])
 
 
 def test_cache_error():
     """
     you should get an exception when you ask for somethign not there
     """
-    #create a cache object:
+
+    # create a cache object:
+
     c = cache.ElementCache()
     with pytest.raises(cache.CacheError):
         c.load_timestep(3)
@@ -266,25 +317,30 @@ def test_rewind():
     """
     test that the cache is cleared out after a rewind call
     """
-    #create a cache object:
+
+    # create a cache object:
+
     c = cache.ElementCache()
 
     # create a set of spill_container to save:
-    sc = TestSpillContainer(num_elements= 10,
-                            start_pos = (3.14, 2.72, 1.2),
+
+    sc = TestSpillContainer(num_elements=10, start_pos=(3.14, 2.72,
+                            1.2),
                             spill_obj=gnome.spill.PointSource3DRelease)
-    u_sc = TestSpillContainer(num_elements= 10,
-                              start_pos = (4.14, 3.72, 2.2),
-                              uncertain=True,
+    u_sc = TestSpillContainer(num_elements=10, start_pos=(4.14, 3.72,
+                              2.2), uncertain=True,
                               spill_obj=gnome.spill.PointSource3DRelease)
 
     # put it in a SpillContainerPair
+
     scp = SpillContainerPairData(sc, u_sc)
 
     # save it
+
     c.save_timestep(0, scp)
 
     # change things and save again
+
     sc['positions'] += 1.1
     u_sc['positions'] += 1.1
     pos1 = sc['positions'].copy()
@@ -292,9 +348,12 @@ def test_rewind():
     c.save_timestep(1, scp)
 
     # change things and save again
+
     sc['positions'] *= 1.1
     pos2 = sc['positions'].copy()
+
     # save it:
+
     c.save_timestep(2, scp)
 
     # read them back, just to make sure
@@ -305,8 +364,11 @@ def test_rewind():
     sc2 = c.load_timestep(2)
 
     # rewind
+
     c.rewind()
+
     # make sure nothing is there:
+
     with pytest.raises(cache.CacheError):
         c.load_timestep(0)
     with pytest.raises(cache.CacheError):
@@ -315,9 +377,11 @@ def test_rewind():
         c.load_timestep(2)
 
     # make sure it works again:
+
     c.save_timestep(0, scp)
 
 
 #    assert False
-if __name__ == "__main__":
+
+if __name__ == '__main__':
     test_write_and_read_back()

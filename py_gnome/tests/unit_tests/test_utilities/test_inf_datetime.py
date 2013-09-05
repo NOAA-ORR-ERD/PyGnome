@@ -6,7 +6,8 @@ tests for InfDateTime: special datetime object with -inf and inf times
 
 import pytest
 
-from gnome.utilities.inf_datetime import InfTime, MinusInfTime, InfDateTime
+from gnome.utilities.inf_datetime import InfTime, MinusInfTime, \
+    InfDateTime
 
 
 def test_init():
@@ -55,10 +56,11 @@ def test_init_fail3():
 def test_iso_format():
     dt = InfDateTime(2012, 10, 20)
 
-    assert dt.isoformat() == "2012-10-20T00:00:00"
+    assert dt.isoformat() == '2012-10-20T00:00:00'
 
 
 # tests for the InfTime object
+
 def test_Inf_init():
     dt = InfTime()
 
@@ -132,6 +134,7 @@ def test_Inf_less_equal():
 
 
 # tests for the MinusInfTime object
+
 def test_MinusInf_init():
     dt = MinusInfTime()
 
@@ -205,8 +208,8 @@ def test_MinusInf_less_equal():
 
 
 def test_negate():
-    assert isinstance((-InfTime()), MinusInfTime)
-    assert isinstance((-MinusInfTime()), InfTime)
+    assert isinstance(-InfTime(), MinusInfTime)
+    assert isinstance(-MinusInfTime(), InfTime)
 
 
 def test_compare():
@@ -221,6 +224,9 @@ def test_compare():
 
 
 def test_isoformat():
-    assert InfDateTime("inf").isoformat() == "inf"
-    assert InfDateTime("-inf").isoformat() == "-inf"
-    assert InfDateTime(2013, 4, 20, 5, 23).isoformat() == "2013-04-20T05:23:00"
+    assert InfDateTime('inf').isoformat() == 'inf'
+    assert InfDateTime('-inf').isoformat() == '-inf'
+    assert InfDateTime(2013, 4, 20, 5, 23).isoformat() \
+        == '2013-04-20T05:23:00'
+
+

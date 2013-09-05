@@ -3,11 +3,11 @@ Created on Mar 25, 2013
 
 Unit Tests for classes in serializable module
 '''
+
 import pytest
 
 from gnome.utilities.serializable import State, Field
 
-''' State object tests '''
 update = ['test0', 'test1', 'test2']
 read = ['read']
 create = ['create']
@@ -28,17 +28,23 @@ def test_init_exceptions():
         state.add(test=['test'])  # 'test' is not a keyword
 
     with pytest.raises(AttributeError):
+
         # read and read/write props must be disjoint
+
         state.add(update=['test'], read=['test'])
 
     s = State(update=['update'], read=['read'], create=['create'])
 
     with pytest.raises(AttributeError):
+
         # test is not a valid attribute of Field outside what get_names expects
+
         s.get_names('test')
 
     with pytest.raises(ValueError):
+
         # no Field object with this name
+
         s.remove('xyz')
 
     with pytest.raises(ValueError):
@@ -48,6 +54,7 @@ def test_init_exceptions():
 
 def test_state_init_field():
     ''' test init if a single Field object is given as opposed to a list '''
+
     state = State(field=Field('field0', create=True))
     assert len(state.fields) == 1
 
@@ -56,9 +63,10 @@ def test_state_init():
     '''
     Test initialization of state
     '''
+
     state = State(read=read, update=update, create=create,
-                  field=[Field('field0', read=True),
-                         Field('field1', create=True)])
+                  field=[Field('field0', read=True), Field('field1',
+                  create=True)])
 
     all_fields = []
     all_fields.extend(create)
@@ -75,6 +83,7 @@ def test_state_add():
 
     >>> state = State(read=read, update=update, create=create)
     """
+
     state = State()
     state.add(read=read, update=update, create=create)
 
@@ -101,6 +110,7 @@ def test_state_add_field():
     Tests the add_field functionality to add a field to state object.
     This can also be a list of field objects.
     """
+
     state = State()
     state.add_field(Field('test'))
 
@@ -138,6 +148,7 @@ def test_state_remove():
     """
     tests the removal of a field by name
     """
+
     state = State(read=read, update=update, create=create)
     state.remove('test0')
     assert state.get_field_by_name('test0') == []
@@ -147,6 +158,7 @@ def test_state_remove_list():
     """
     tests removal of multiple fields by a list of names
     """
+
     state = State(read=read, update=update, create=create)
     state.remove(['test0', 'create'])
     assert state.get_field_by_name('test0') == []
@@ -160,6 +172,7 @@ def test_state_get_field_by_name():
     Manipulating this object will change the state of the object
     stored in state.fields list.
     """
+
     state = State(read=read, update=update, create=create)
     field = state.get_field_by_name('test0')
     assert field.name == 'test0'
@@ -172,6 +185,7 @@ def test_state_get_field_by_name_list():
     """
     tests a list of field objects can be obtained by get_field_by_name
     """
+
     state = State(read=read, update=update, create=create)
     names = ['test0', 'read', 'test1']
 
@@ -188,6 +202,7 @@ def test_state_get_field_by_name_list():
             assert field.create
 
         # make sure there is only one field for each name
+
         names.remove(field.name)
 
 
@@ -197,6 +212,7 @@ def test_get_field_by_attribute():
     set to True.
     get_field_by_attribute function
     """
+
     state = State(read=read, update=update, create=create)
     state.add_field(Field('test', isdatafile=True))
 
@@ -217,6 +233,7 @@ def test_state_get_names():
     """
     tests get_names function to get the names based on attributes
     """
+
     state = State(read=read, update=update, create=create)
     r_ = state.get_names('read')
     u_ = state.get_names('update')
@@ -234,6 +251,7 @@ def test_state_get_names_list():
     """
     tests get_names function to get the names based on attributes
     """
+
     state = State(read=read, update=update, create=create)
     check = []
     check.extend(read)
@@ -247,8 +265,10 @@ def test_state_get_names_list():
 
 def test_update():
     """ tests that field's are updated correctly """
+
     state = State(read=read, create=create, update=update)
-    state.update(['read', 'test0'], read=False, update=True, isdatafile=True)
+    state.update(['read', 'test0'], read=False, update=True,
+                 isdatafile=True)
 
     for field in state.fields:
         if field.name not in ['read', 'test0']:
@@ -270,6 +290,7 @@ def test_update_exceptions():
     test exceptions are raised if update and read are both True
     for a field
     """
+
     state = State(read=read, create=create, update=update)
     with pytest.raises(AttributeError):
         state.update(['read', 'test0'], update=True)
@@ -281,19 +302,21 @@ def test_update_exceptions():
         state.update(['read', 'test0'], read=True)
 
 
-""" Field object tests """
-
-
 def test_field_eq():
     """ tests equality of Field object """
+
     assert Field('test') == Field('test')
 
     # all fields must match for equality
+
     assert Field('test') != Field('test', isdatafile=True)
 
 
 def test_repr_str():
     """ tests repr and str work """
+
     repr(Field('test'))
     str(Field('test'))
     assert True
+
+
