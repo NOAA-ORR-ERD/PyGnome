@@ -4,22 +4,27 @@ from gnome.utilities import serializable
 from gnome.movers import CyMover
 from gnome.cy_gnome.cy_rise_velocity_mover import CyRiseVelocityMover
 from gnome import element_types
-                
+
+
 class RiseVelocityMover(CyMover, serializable.Serializable):
+
     """
     This mover class inherits from CyMover and contains CyRiseVelocityMover
 
     The real work is done by CyRiseVelocityMover.
     CyMover sets everything up that is common to all movers.
     """
+
     state = copy.deepcopy(CyMover.state)
     state.add(update=['water_density'], create=['water_density'])
     state.add(update=['water_viscosity'], create=['water_viscosity'])
-    
-    def __init__(self,
-                 water_density=1020,
-                 water_viscosity=1.e-6,
-                 **kwargs):
+
+    def __init__(
+        self,
+        water_density=1020,
+        water_viscosity=1.e-6,
+        **kwargs
+        ):
         """
         Uses super to invoke base class __init__ method. 
         
@@ -31,18 +36,22 @@ class RiseVelocityMover(CyMover, serializable.Serializable):
         Remaining kwargs are passed onto Mover's __init__ using super. 
         See Mover documentation for remaining valid kwargs.
         """
+
         self.mover = CyRiseVelocityMover(water_density, water_viscosity)
-        super(RiseVelocityMover,self).__init__(**kwargs)
+        super(RiseVelocityMover, self).__init__(**kwargs)
 
     @property
     def water_density(self):
         return self.mover.water_density
+
     @property
     def water_viscosity(self):
         return self.mover.water_viscosity
+
     @water_density.setter
     def water_density(self, value):
         self.mover.water_density = value
+
     @water_viscosity.setter
     def water_viscosity(self, value):
         self.mover.water_viscosity = value
@@ -52,9 +61,17 @@ class RiseVelocityMover(CyMover, serializable.Serializable):
         .. todo:: 
             We probably want to include more information.
         """
-        return "RiseVelocityMover(water_density=%s,water_viscosity=%s,active_start=%s, active_stop=%s, on=%s)" % (self.water_density,self.water_viscosity,self.active_start, self.active_stop, self.on)
 
-    def get_move(self, sc, time_step, model_time_datetime):
+        return 'RiseVelocityMover(water_density=%s,water_viscosity=%s,active_start=%s, active_stop=%s, on=%s)' \
+            % (self.water_density, self.water_viscosity,
+               self.active_start, self.active_stop, self.on)
+
+    def get_move(
+        self,
+        sc,
+        time_step,
+        model_time_datetime,
+        ):
         """
         Override base class functionality because mover has a different get_move signature
         
@@ -62,18 +79,23 @@ class RiseVelocityMover(CyMover, serializable.Serializable):
         :param time_step: time step in seconds
         :param model_time_datetime: current time of the model as a date time object
         """
+
         self.prepare_data_for_get_move(sc, model_time_datetime)
-        
-        if self.active and len(self.positions) > 0: 
-            self.mover.get_move(  self.model_time,
-                                  time_step, 
-                                  self.positions,
-                                  self.delta,
-                                  sc['rise_velocity'],
-                                  sc['density'],
-                                  sc['droplet_size'],
-                                  self.status_codes,
-                                  self.spill_type)    # only ever 1 spill_container so this is always 0!
-            
-        return self.delta.view(dtype=basic_types.world_point_type).reshape((-1,len(basic_types.world_point)))
+
+        if self.active and len(self.positions) > 0:
+            self.mover.get_move(  # only ever 1 spill_container so this is always 0!
+                self.model_time,
+                time_step,
+                self.positions,
+                self.delta,
+                sc['rise_velocity'],
+                sc['density'],
+                sc['droplet_size'],
+                self.status_codes,
+                self.spill_type,
+                )
+
+        return self.delta.view(dtype=basic_types.world_point_type).reshape((-1,
+                len(basic_types.world_point)))
+
 
