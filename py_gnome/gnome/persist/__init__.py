@@ -11,7 +11,7 @@ monkey_patch_colander.apply()
 Define a dict that maps the py_gnome classes or modules to schema modules.
 The class names of the schema corresponds with the pyGnome class name.
 
-For instance, 
+For instance,
 gnome.model.Model has a corresponding schema gnome.persist.model_schema.Model
 
 This dict just tells us for each pyGnome module or class, where to look for
