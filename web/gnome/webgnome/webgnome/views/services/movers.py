@@ -1,3 +1,4 @@
+
 from cornice.resource import resource, view
 
 from gnome.persist import movers_schema
@@ -24,8 +25,8 @@ class WindMover(BaseResource):
         mover = WebWindMover(**data)
         mover.wind = self.request.validated['wind']
         model.movers.add(mover)
-        mover_data = mover.to_dict(do='create')
 
+        mover_data = mover.to_dict(do='create')
         return schema.WindMoverSchema().bind().serialize(mover_data)
 
     @view(validators=util.valid_model_id)
@@ -82,9 +83,8 @@ class WindMover(BaseResource):
           path='/model/{model_id}/mover/random/{id}',
           renderer='gnome_json', description='A random mover.')
 class RandomMover(BaseResource):
-    optional_fields = ['active_start', 'active_stop']
-
-    @view(validators=util.valid_model_id, schema=schema.RandomMoverSchema)
+    @view(validators=util.valid_model_id,
+          schema=schema.RandomMoverSchema)
     def collection_post(self):
         """
         Create a :class:`model_manager.WebRandomMover` from a JSON
@@ -95,8 +95,8 @@ class RandomMover(BaseResource):
         mover = WebRandomMover(**data)
         model.movers.add(mover)
 
-        return schema.RandomMoverSchema().bind().serialize(
-            mover.to_dict(do='create'))
+        mover_data = mover.to_dict(do='create')
+        return schema.RandomMoverSchema().bind().serialize(mover_data)
 
     @view(validators=util.valid_model_id)
     def collection_get(self):
@@ -105,8 +105,8 @@ class RandomMover(BaseResource):
         """
         data = self.request.validated
         model = data.pop('model')
-        model_data = model.to_dict(include_movers=True)
 
+        model_data = model.to_dict(include_movers=True)
         return schema.RandomMoverSchema().bind().serialize(
             model_data['random_movers'])
 
@@ -117,7 +117,10 @@ class RandomMover(BaseResource):
         matching the ``id`` matchdict value.
         """
         model = self.request.validated.pop('model')
-        return model.movers.get(self.id).to_dict()
+        mover = model.movers.get(self.id)
+        mover_data = mover.to_dict('create')
+
+        return schema.RandomMoverSchema().bind().serialize(mover_data)
 
     @view(validators=util.valid_mover_id, schema=schema.RandomMoverSchema)
     def put(self):
@@ -137,4 +140,4 @@ class RandomMover(BaseResource):
         """
         Delete a :class:`model_manager.WebRandomMover`.
         """
-        self.request.validated['model'].movers.remove(self.id)       
+        self.request.validated['model'].movers.remove(self.id)

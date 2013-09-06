@@ -20,14 +20,14 @@ class Mover(object):
     state = copy.deepcopy(serializable.Serializable.state)
     state.add(update=['on','active_start','active_stop'],
               create=['on','active_start','active_stop'],
-              read=['active'] )
-    
+              read=['active'])
+
     def __init__(self, **kwargs):   # default min + max values for timespan
         """
         Initialize default Mover parameters
-        
+
         All parameters are optional (kwargs)
-        
+
         :param on: boolean as to whether the object is on or not. Default is on
         :param active_start: datetime when the mover should be active
         :param active_stop: datetime after which the mover should be inactive
@@ -35,17 +35,20 @@ class Mover(object):
                    This is used when loading an object from a persisted model
         """
         self._active = True  # initialize to True, though this is set in prepare_for_model_step for each step
-        self.on = kwargs.pop('on',True)  # turn the mover on / off for the run
+        self.on = kwargs.pop('on', True)  # turn the mover on / off for the run
         active_start = kwargs.pop('active_start', inf_datetime.InfDateTime('-inf'))
-        active_stop  = kwargs.pop('active_stop', inf_datetime.InfDateTime('inf'))
-        
+        active_stop = kwargs.pop('active_stop', inf_datetime.InfDateTime('inf'))
+
         if active_stop <= active_start:
-            raise ValueError("active_start should be a python datetime object strictly smaller than active_stop")
-        
+            msg = 'active_start {0} should be smaller than active_stop {1}'
+            raise ValueError(msg.format(active_start, active_stop))
+
         self.active_start = active_start
         self.active_stop = active_stop
-        self._gnome_id = GnomeId(id=kwargs.pop('id',None))
-        self.array_types = {}   # empty dict since no array_types required for all movers at present
+        self._gnome_id = GnomeId(id=kwargs.pop('id', None))
+
+        # empty dict since no array_types required for all movers at present
+        self.array_types = {}
 
     # Methods for active property definition
     @property

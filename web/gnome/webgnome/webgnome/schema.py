@@ -88,9 +88,9 @@ class MapSchema(map_schema.MapFromBNA):
     default_name = 'Map'
     refloat_halflife = SchemaNode(Float(), default=6 * 3600)  # seconds
     name = SchemaNode(String(), default=default_name, missing=default_name)
-    filename = SchemaNode(String(), default=None, missing=drop)
+    filename = SchemaNode(String(), missing=drop)
     map_bounds = LongLatBounds(default=[], missing=drop)
-    background_image_url = SchemaNode(String(), default=None, missing=drop)
+    background_image_url = SchemaNode(String(), missing=drop)
 
 
 # Input values GOODS expects for the `resolution` field on a custom map form.

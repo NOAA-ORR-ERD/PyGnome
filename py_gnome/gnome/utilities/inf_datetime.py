@@ -3,26 +3,28 @@
 """
 special datetime objects with -inf and inf times
 
-These are not real dateteim object -- simply something that can be compared with one
+These are not real datetime objects -- simply something that can be compared
+with one
 
-Note: this is very liberal with comparisons -- essetniall a infitinty tiem object is
-greater than anything, so no checkign to see what you are comparing too..
+Note: this is very liberal with comparisons -- essentially an infinity
+time object is greater than anything, so no checking to see what you are
+comparing to..
 
-Also special constructor for a real datetime that won't allow values out of range for this application
+Also special constructor for a real datetime that won't allow values out of
+range for this application
 """
 
 import datetime
 
 ## minimum and maximum valid datetime values
-min_datetime = datetime.datetime(1970, 1, 1) 
+min_datetime = datetime.datetime(1970, 1, 1)
 max_datetime = datetime.datetime(2038, 01, 19)
-
 
 
 class InfTime(object):
     """
     class representing time into infinity
-    
+
     compares as greater than any datetime (or any other object..)
     """
 
@@ -35,13 +37,13 @@ class InfTime(object):
     def isoformat(self):
         return "inf"
 
-    def __lt__( self, other):
+    def __lt__(self, other):
             """
             an InfTime object is never less than any other object
             """
             return False
 
-    def __le__( self, other):
+    def __le__(self, other):
             """
             an InfTime object is never less than or equal to any
             other object otehr than itself.
@@ -50,7 +52,8 @@ class InfTime(object):
                 return True
             else:
                 return False
-    def __eq__( self, other):
+
+    def __eq__(self, other):
             """
             an InfTime object is only equal to itself
             """
@@ -59,7 +62,7 @@ class InfTime(object):
             else:
                 return False
 
-    def __ne__( self, other):
+    def __ne__(self, other):
             """
             an InfTime object is only equal to itself
             """
@@ -68,16 +71,17 @@ class InfTime(object):
             else:
                 return True
 
-    def __gt__( self, other):
+    def __gt__(self, other):
             """
-            an InfTime object is greater than eveything except another InfTime object
+            an InfTime object is greater than eveything except another
+            InfTime object
             """
             if isinstance(other, InfTime):
                 return False
             else:
                 return True
 
-    def __ge__( self, other):
+    def __ge__(self, other):
             """
             an InfTime object is greater or equal to anything
             """
@@ -93,7 +97,7 @@ class InfTime(object):
 class MinusInfTime(object):
     """
     class representing time from infinity in the past
-    
+
     compares as less than any datetime (or any other object)
     """
 
