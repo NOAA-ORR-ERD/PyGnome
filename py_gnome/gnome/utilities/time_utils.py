@@ -10,6 +10,7 @@ import datetime
 import time
 import numpy
 
+
 def date_to_sec(date_time):
     """
     :param date_time: Either a python datetime object or a numpy array of dtype=datetime or dtype=numpy.datetime64
@@ -20,17 +21,19 @@ def date_to_sec(date_time):
     
     The epoch is as defined in python: Jan 1, 1970
     """
-    d_array = numpy.asarray(date_time, dtype='datetime64[s]').reshape(-1)
+
+    d_array = numpy.asarray(date_time, dtype='datetime64[s]'
+                            ).reshape(-1)
     t_array = numpy.zeros(numpy.shape(d_array), dtype=numpy.uint32)
-    
+
     for li in range(len(d_array)):
         date = d_array[li].astype(object)
         temp = list(date.timetuple())
-        temp[-1] = 0 
+        temp[-1] = 0
         t_array[li] = time.mktime(temp)
-        
-    return ( len(t_array)==1 and t_array[0].astype(object) or t_array )
-        
+
+    return len(t_array) == 1 and t_array[0].astype(object) or t_array
+
 
 def sec_to_date(seconds):
     """
@@ -44,15 +47,17 @@ def sec_to_date(seconds):
     
     Note: Functionality broken up into time_utils.sec_to_timestruct(...) to test
     that it works in the same way as the lib_gnome C++ cython wrapper 
-    """   
+    """
+
     t_array = numpy.asarray(seconds, dtype=numpy.uint32).reshape(-1)
     d_array = numpy.zeros(numpy.shape(t_array), dtype='datetime64[s]')
-    
-    for li in range(len(t_array)):    
+
+    for li in range(len(t_array)):
         t = sec_to_timestruct(t_array[li])
         d_array[li] = datetime.datetime(*t[:6])
-    return ( len(d_array)==1 and d_array[0].astype(object) or d_array )
-    
+    return len(d_array) == 1 and d_array[0].astype(object) or d_array
+
+
 def sec_to_timestruct(seconds):
     """
     :param seconds: time in seconds
@@ -65,18 +70,20 @@ def sec_to_timestruct(seconds):
     If tm_dst = 1 (by default), then subtract 1 hour and set this flag to 0
     Returns a time.struct_time
     """
+
     lt = list(time.localtime(seconds))
     if lt[-1] != 0:
         lt[-1] = 0
-        if lt[3] == 0:  # roll clock back by an hour for daylight savings correction 
+        if lt[3] == 0:  # roll clock back by an hour for daylight savings correction
             lt[2] -= 1
             lt[3] = 23
         else:
             lt[3] -= 1
-    
+
     return time.struct_time(lt)
 
-def round_time(dt=None, roundTo=60): # IGNORE:W0621
+
+def round_time(dt=None, roundTo=60):  # IGNORE:W0621
     """
     Round a datetime object or numpy array to any time laps in seconds
 
@@ -89,33 +96,44 @@ def round_time(dt=None, roundTo=60): # IGNORE:W0621
     
     found on : http://stackoverflow.com
     """
-    if dt is None :
+
+    if dt is None:
         dt = datetime.datetime.now()
-    
+
     dt = numpy.asarray(dt, dtype='datetime64[s]').reshape(-1)
 
-    
     for li in range(len(dt)):
         date = dt[li].astype(object)
         seconds = (date - date.min).seconds
-        rounding= (seconds+roundTo/2) // roundTo * roundTo
+        rounding = (seconds + roundTo / 2) // roundTo * roundTo
+
         # // is a floor division, not a comment on following line:
-        dt[li] = date + datetime.timedelta(0,rounding-seconds,-date.microsecond)
 
-    return ( len(dt)==1 and dt[0].astype(object) or dt )
+        dt[li] = date + datetime.timedelta(0, rounding - seconds,
+                -date.microsecond)
+
+    return len(dt) == 1 and dt[0].astype(object) or dt
 
 
-if __name__ == "__main__":
-    
-    dt = datetime.datetime(2012,12,31,23,44,59,1234)
-    print "a datetime:"
+if __name__ == '__main__':
+
+    dt = datetime.datetime(
+        2012,
+        12,
+        31,
+        23,
+        44,
+        59,
+        1234,
+        )
+    print 'a datetime:'
     print dt
-    print "rounded to 1 hour:"
-    print round_time(dt, roundTo=60*60)
+    print 'rounded to 1 hour:'
+    print round_time(dt, roundTo=60 * 60)
 
-    print "rounded to 30 minutes:"
-    print round_time(dt, roundTo=30*60)
+    print 'rounded to 30 minutes:'
+    print round_time(dt, roundTo=30 * 60)
 
-    print "rounded to one day:"
-    print round_time(dt, roundTo=3600*60*60)
+    print 'rounded to one day:'
+    print round_time(dt, roundTo=3600 * 60 * 60)
 

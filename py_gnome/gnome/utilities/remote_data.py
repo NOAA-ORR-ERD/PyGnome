@@ -1,10 +1,12 @@
 '''
 Download data from remote server
 '''
+
 import os
 import urllib2
 
-from progressbar import ProgressBar, Percentage, FileTransferSpeed, ETA, Bar
+from progressbar import ProgressBar, Percentage, FileTransferSpeed, \
+    ETA, Bar
 
 data_server = 'http://gnome.orr.noaa.gov/py_gnome_testdata'
 CHUNKSIZE = 1024 * 1024  # read 1 MB at a time
@@ -29,31 +31,47 @@ def get_datafile(file_):
     :returns: returns the string 'file_' once it has been downloaded to
               user specified location
     """
+
     if os.path.exists(file_):
         return file_
     else:
+
         # download file, then return file_ path
+
         (path_, fname) = os.path.split(file_)
         try:
             resp = urllib2.urlopen(os.path.join(data_server, fname))
-        except urllib2.HTTPError as ex:
-            ex.msg = "{0}. '{1}' not found on server or server is down".format(ex.msg, fname)
+        except urllib2.HTTPError, ex:
+            ex.msg = \
+                "{0}. '{1}' not found on server or server is down".format(ex.msg,
+                    fname)
             raise ex
 
         # progress bar
-        widgets = [fname + ':      ', Percentage(), ' ',
-                   Bar(), ' ', ETA(), ' ',
-                   FileTransferSpeed()]
+
+        widgets = [
+            fname + ':      ',
+            Percentage(),
+            ' ',
+            Bar(),
+            ' ',
+            ETA(),
+            ' ',
+            FileTransferSpeed(),
+            ]
         pbar = ProgressBar(widgets=widgets,
-                           maxval=int(resp.info().getheader('Content-Length'))).start()
+                           maxval=int(resp.info().getheader('Content-Length'
+                           ))).start()
 
         if not os.path.exists(path_):
             os.makedirs(path_)
 
         sz_read = 0
         with open(file_, 'wb') as fh:
+
             # while sz_read < resp.info().getheader('Content-Length')
             # goes into infinite recursion so break loop for len(data) == 0
+
             while True:
                 data = resp.read(CHUNKSIZE)
 
@@ -67,3 +85,5 @@ def get_datafile(file_):
 
         pbar.finish()
         return file_
+
+

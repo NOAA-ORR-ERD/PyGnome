@@ -1,5 +1,6 @@
 import numpy as np
 
+
 def r_theta_to_uv_current(r_theta):
     """
     Converts array of current values given with magnitude, direction into (u,v) wind values.
@@ -11,9 +12,12 @@ def r_theta_to_uv_current(r_theta):
                     Theta is in degrees between 0 and 360.
     :returns: NX2 numpy array containing the corresponding uv cartesian velocity vector
     """
-    xform = np.matrix([(-1., 0.), (0.,-1.)])
-    uv = np.dot( r_theta_to_uv_wind(r_theta).view(dtype=np.matrix), xform)
+
+    xform = np.matrix([(-1., 0.), (0., -1.)])
+    uv = np.dot(r_theta_to_uv_wind(r_theta).view(dtype=np.matrix),
+                xform)
     return np.asarray(uv)
+
 
 def uv_to_r_theta_current(uv):
     """
@@ -25,9 +29,11 @@ def uv_to_r_theta_current(uv):
     :param uv: NX2 numpy array, where each row corresponds with a velocity vector 
     :returns: NX2 numpy array containing polar coordinates r_theta 
     """
-    xform = np.matrix([(-1., 0.), (0.,-1.)])
-    uv = np.dot( np.matrix(uv.reshape(-1,2)), xform)
+
+    xform = np.matrix([(-1., 0.), (0., -1.)])
+    uv = np.dot(np.matrix(uv.reshape(-1, 2)), xform)
     return uv_to_r_theta_wind(uv)
+
 
 def r_theta_to_uv_wind(r_theta):
     """
@@ -40,24 +46,29 @@ def r_theta_to_uv_wind(r_theta):
                     Theta is in degrees between 0 and 360.
     :returns: NX2 numpy array containing the corresponding uv cartesian velocity vector
     """
-    r_theta = np.asarray(r_theta, dtype=np.float64).reshape(-1,2)
-    if np.any(r_theta[:,1] > 360) or np.any(r_theta[:,1] < 0):
-        raise ValueError("input angle in r_theta[:,1] must be between 0 and 360")
-    
-    if np.any(r_theta[:,0] < 0):
-        raise ValueError("input magnitude in r_theta[:,0] must be greater than, equal to 0")
-    
-    rq = np.array(r_theta) 
-    rq[:,1] = np.deg2rad(rq[:,1])
-    
+
+    r_theta = np.asarray(r_theta, dtype=np.float64).reshape(-1, 2)
+    if np.any(r_theta[:, 1] > 360) or np.any(r_theta[:, 1] < 0):
+        raise ValueError('input angle in r_theta[:,1] must be between 0 and 360'
+                         )
+
+    if np.any(r_theta[:, 0] < 0):
+        raise ValueError('input magnitude in r_theta[:,0] must be greater than, equal to 0'
+                         )
+
+    rq = np.array(r_theta)
+    rq[:, 1] = np.deg2rad(rq[:, 1])
+
     uv = np.zeros_like(rq)
-    uv[:,0] = np.round( rq[:,0]*np.sin(rq[:,1]), decimals=14)
-    uv[:,1] = np.round( rq[:,0]*np.cos(rq[:,1]), decimals=14)
-    
+    uv[:, 0] = np.round(rq[:, 0] * np.sin(rq[:, 1]), decimals=14)
+    uv[:, 1] = np.round(rq[:, 0] * np.cos(rq[:, 1]), decimals=14)
+
     # create matrix so -1*0 = 0 and not -0 and let's not screw up original
-    uv = np.asarray( -1*uv.view(dtype=np.matrix) )
-    
+
+    uv = np.asarray(-1 * uv.view(dtype=np.matrix))
+
     return uv
+
 
 def uv_to_r_theta_wind(uv):
     """
@@ -69,14 +80,21 @@ def uv_to_r_theta_wind(uv):
     :param uv: NX2 numpy array, where each row corresponds with a velocity vector 
     :returns: NX2 numpy array containing polar coordinates r_theta 
     """
-    uv = np.asarray(uv, dtype=np.float64).reshape(-1,2)
-    r_theta = np.zeros_like(uv) 
-    r_theta[:,0] = np.apply_along_axis(np.linalg.norm, 1, uv)
-    
-    #NOTE: Since desired angle is different from the angle that arctan2 outputs;
+
+    uv = np.asarray(uv, dtype=np.float64).reshape(-1, 2)
+    r_theta = np.zeros_like(uv)
+    r_theta[:, 0] = np.apply_along_axis(np.linalg.norm, 1, uv)
+
+    # NOTE: Since desired angle is different from the angle that arctan2 outputs;
     #      the uv array is transformed (multiply by -1) and atan2 is called with (u,v)
     #      Only to ensure we get the angle per the Wind convention
-    uv = np.asarray( -1*np.matrix(uv))  # create new uv object
-    r_theta[:,1] = (np.rad2deg(np.arctan2(uv[:,0], uv[:,1])) + 360) % 360   # 0 to 360
-    #return np.asarray(r_theta)
+
+    uv = np.asarray(-1 * np.matrix(uv))  # create new uv object
+    r_theta[:, 1] = (np.rad2deg(np.arctan2(uv[:, 0], uv[:, 1])) + 360) \
+        % 360  # 0 to 360
+
+    # return np.asarray(r_theta)
+
     return r_theta
+
+
