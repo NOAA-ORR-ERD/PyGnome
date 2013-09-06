@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 """
 Point in Polygon code.
 """

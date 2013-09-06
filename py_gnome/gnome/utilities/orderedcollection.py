@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 
 
 class OrderedCollection(object):

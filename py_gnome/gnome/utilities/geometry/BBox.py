@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 """
 A Bounding Box object and assorted utilities , subclassed from a numpy array
 

@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 """
 Module to hold classes and supporting code for projections used in GNOME.
 

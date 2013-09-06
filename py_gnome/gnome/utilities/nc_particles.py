@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 """
 module for manipulating netcdf particle files
 
