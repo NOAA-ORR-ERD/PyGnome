@@ -4,11 +4,12 @@ Download data from remote server
 
 import os
 import urllib2
+from urlparse import urljoin
 
 from progressbar import ProgressBar, Percentage, FileTransferSpeed, \
     ETA, Bar
 
-data_server = 'http://gnome.orr.noaa.gov/py_gnome_testdata'
+data_server = 'http://gnome.orr.noaa.gov/py_gnome_testdata/'
 CHUNKSIZE = 1024 * 1024  # read 1 MB at a time
 
 
@@ -40,7 +41,7 @@ def get_datafile(file_):
 
         (path_, fname) = os.path.split(file_)
         try:
-            resp = urllib2.urlopen(os.path.join(data_server, fname))
+            resp = urllib2.urlopen(urljoin(data_server, fname))
         except urllib2.HTTPError, ex:
             ex.msg = \
                 "{0}. '{1}' not found on server or server is down".format(ex.msg,
