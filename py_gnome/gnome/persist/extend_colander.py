@@ -13,6 +13,10 @@ import gnome.basic_types
 from gnome.utilities import inf_datetime
 
 
+"""
+Following extend colander's basic types for serialization/deserialization
+"""
+
 class LocalDateTime(DateTime):
 
     def __init__(self, *args, **kwargs):
@@ -47,8 +51,9 @@ class DefaultTuple(Tuple):
     """
     A Tuple subclass that provides defaults from child nodes.
 
-    Required because Tuple returns `colander.null` by default when ``appstruct``
-    is not provided, instead of creating a Tuple of default values.
+    Required because Tuple returns `colander.null` by default
+    when ``appstruct`` is not provided, instead of creating a Tuple of
+    default values.
     """
 
     def serialize(self, node, appstruct):
@@ -79,8 +84,7 @@ class DatetimeValue2dArray(Sequence):
             series.append((dt, wind_value[1][0], wind_value[1][1]))
         appstruct = series
 
-        return super(DatetimeValue2dArray, self).serialize(node,
-                appstruct)
+        return super(DatetimeValue2dArray, self).serialize(node, appstruct)
 
     def deserialize(self, node, cstruct):
         if cstruct is null:
@@ -89,7 +93,7 @@ class DatetimeValue2dArray(Sequence):
         items = super(DatetimeValue2dArray, self).deserialize(node,
                 cstruct, accept_scalar=False)
         num_timeseries = len(items)
-        timeseries = numpy.zeros((num_timeseries, ),
+        timeseries = numpy.zeros((num_timeseries,),
                                  dtype=gnome.basic_types.datetime_value_2d)
 
         for (idx, value) in enumerate(items):
@@ -113,9 +117,14 @@ class TimeDelta(Float):
         sec = super(TimeDelta, self).deserialize(*args, **kwargs)
         return datetime.timedelta(seconds=sec)
 
+"""
+Following define new schemas for above custom types. This is so serialize/deserialize 
+is called correctly.
+
+Specifically a new DefaultTypeSchema and a DatetimeValue2dArraySchema
+"""
 
 class DefaultTupleSchema(TupleSchema):
-
     schema_type = DefaultTuple
 
 

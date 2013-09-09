@@ -41,7 +41,21 @@ define([
                 target = this.$el.find(target);
             }
 
-            if (!datetime || target.length === 0) {
+            if (target.length === 0) {
+            	// invalid target.  Do nothing
+                return;
+            }
+
+            // datetime could be null or...
+            // datetime could be a string with 'inf' or '-inf' or...
+            // datetime could be an invalid Moment object or...
+            // datetime could be a good Moment object
+            // Note: should be try to handle valid date strings?
+            if (!datetime ||
+            	datetime.constructor === String ||
+            	datetime.format('YY') == 'NaN')
+            {
+            	// datetime is invalid.  Do nothing.
                 return;
             }
 

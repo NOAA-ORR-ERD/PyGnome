@@ -94,17 +94,8 @@ define([
             // correct option in the wind_id select.
             this.model.trigger('change:wind_id');
 
-            var activeStart = this.model.get('active_start');
-            var activeStop = this.model.get('active_stop');
-
-            // TODO: Is this really how we want to handle this, or should the
-            // model return a special datetime for -inf and inf?
-            if (activeStart != '-inf') {
-                this.setDateFields('.active_start_container', activeStart);
-            }
-            if (activeStop != 'inf') {
-                this.setDateFields('.active_stop_container', activeStop);
-            }
+            this.setDateFields('.active_start_container', this.model.get('active_start'));
+            this.setDateFields('.active_stop_container', this.model.get('active_stop'));
         },
 
         validator: models.WindMoverValidator,

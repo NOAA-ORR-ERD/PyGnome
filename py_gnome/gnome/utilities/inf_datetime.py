@@ -3,12 +3,15 @@
 """
 special datetime objects with -inf and inf times
 
-These are not real dateteim object -- simply something that can be compared with one
+These are not real datetime objects -- simply something that can be compared
+with one
 
-Note: this is very liberal with comparisons -- essetniall a infitinty tiem object is
-greater than anything, so no checkign to see what you are comparing too..
+Note: this is very liberal with comparisons -- essentially an infinity
+time object is greater than anything, so no checking to see what you are
+comparing to..
 
-Also special constructor for a real datetime that won't allow values out of range for this application
+Also special constructor for a real datetime that won't allow values out of
+range for this application
 """
 
 import datetime
@@ -19,11 +22,11 @@ min_datetime = datetime.datetime(1970, 01, 01)
 max_datetime = datetime.datetime(2038, 01, 19)
 
 
-class InfTime(object):
 
+class InfTime(object):
     """
     class representing time into infinity
-    
+
     compares as greater than any datetime (or any other object..)
     """
 
@@ -102,7 +105,7 @@ class MinusInfTime(object):
 
     """
     class representing time from infinity in the past
-    
+
     compares as less than any datetime (or any other object)
     """
 

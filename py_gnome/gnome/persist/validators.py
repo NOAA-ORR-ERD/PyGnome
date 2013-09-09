@@ -10,8 +10,10 @@ import time
 import numpy
 from colander import Invalid, OneOf
 
-import gnome.basic_types
-from gnome.utilities import inf_datetime
+from colander import (Invalid, OneOf)
+
+from gnome.utilities.inf_datetime import InfTime, MinusInfTime
+
 
 
 def positive(node, value):
@@ -21,20 +23,19 @@ def positive(node, value):
 
 def convertible_to_seconds(node, value):
     """ validate only datetime objects """
-
-    if isinstance(value, inf_datetime.MinusInfTime) \
-        or isinstance(value, inf_datetime.InfTime):
+    if isinstance(value, MinusInfTime) or isinstance(value, InfTime):
         return
 
     try:
         time.mktime(list(value.timetuple()))
-    except (OverflowError, ValueError), e:
+    except (OverflowError, ValueError) as e:
         raise Invalid(node, 'Invalid date.')
 
 
 def no_duplicate_datetime(node, values):
     """
-    Check for duplicate datetime values in numpy structured array like datetime_value_2d
+    Check for duplicate datetime values in numpy structured array like
+    datetime_value_2d
     Reject ``values`` if it contains duplicates.
     """
 
@@ -46,27 +47,22 @@ def no_duplicate_datetime(node, values):
     num_dups = len(values) - len(unique)
 
     if num_dups:
-        raise Invalid(node,
-                      'Duplicate time entries are not allowed. Found %s duplicates.'
-                       % num_dups)
-
+        raise Invalid(
+            node, 'Duplicate time entries are not allowed. Found %s duplicates.' % num_dups)
 
 def ascending_datetime(node, values):
     """
-    Check the datetime values in numpy structured array (like datetime_value_2d)
+    Check the datetime values in numpy structured array
+    (like datetime_value_2d)
     are in ascending order
     """
 
     # check to make sure the time values are in ascending order
-
-    if numpy.any(values['time'][numpy.argsort(values['time'])]
-                 != values['time']):
-        raise Invalid(node,
-                      'The datetime values in the timeseries must be in ascending order'
-                      )
+    if numpy.any( values['time'][numpy.argsort( values['time'])] != values['time']):
+        raise Invalid(node, 'The datetime values in the timeseries must be in ascending order')
 
 
-# ===============================================================================
+#===============================================================================
 # def degrees_true(node, direction):
 #    if 0 > direction > 360:
 #        raise Invalid(
@@ -96,4 +92,4 @@ def ascending_datetime(node, values):
 #        degrees_true(node, float(value))
 #    except ValueError:
 #        cardinal_direction(node, value.upper())
-# ===============================================================================
+#===============================================================================
