@@ -342,7 +342,7 @@ elif sys.platform == "linux2":
                                 )
 
     extensions.append(basic_types_ext)
-
+    static_lib_files = []
 
 #
 ### All other lib_gnome-based cython extensions.
@@ -359,7 +359,7 @@ for mod_name in extension_names:
                                 extra_link_args=link_args,
                                 libraries=lib,
                                 library_dirs=libdirs,
-                                #extra_objects=static_lib_files,
+                                extra_objects=static_lib_files,
                                 include_dirs=include_dirs,
                                 )
                        )
