@@ -1579,7 +1579,8 @@ OSErr NetCDFMoverCurv_c::ReorderPointsNoMask(TMap **newMap, char* errmsg)
 	DAGTreeStruct tree;
 	WorldRect triBounds;
 	
-	TTriGridVel *triGrid = nil;
+	//TTriGridVel *triGrid = nil;
+	TTriGridVel3D *triGrid = nil;
 	tree.treeHdl = 0;
 	TDagTree *dagTree = 0;
 	
@@ -1833,7 +1834,8 @@ OSErr NetCDFMoverCurv_c::ReorderPointsNoMask(TMap **newMap, char* errmsg)
 	
 	/////////////////////////////////////////////////
 	
-	triGrid = new TTriGridVel;
+	//triGrid = new TTriGridVel;
+	triGrid = new TTriGridVel3D;
 	if (!triGrid)
 	{		
 		err = true;
@@ -1841,7 +1843,8 @@ OSErr NetCDFMoverCurv_c::ReorderPointsNoMask(TMap **newMap, char* errmsg)
 		goto done;
 	}
 	
-	fGrid = (TTriGridVel*)triGrid;
+	fGrid = (TTriGridVel3D*)triGrid;
+	//fGrid = (TTriGridVel*)triGrid;
 	
 	triGrid -> SetBounds(triBounds); 
 	dagTree = new TDagTree(pts,topo,tree.treeHdl,velH,tree.numBranches); 
@@ -1946,7 +1949,8 @@ OSErr NetCDFMoverCurv_c::ReorderPointsCOOPSMask(DOUBLEH landmaskH, TMap **newMap
 	SegInfoHdl segList = 0;
 	LONGH flagH = 0;
 	
-	TTriGridVel *triGrid = nil;
+	//TTriGridVel *triGrid = nil;
+	TTriGridVel3D *triGrid = nil;
 	tree.treeHdl = 0;
 	TDagTree *dagTree = 0;
 	
@@ -2456,7 +2460,7 @@ setFields:
 	
 	/////////////////////////////////////////////////
 	
-	triGrid = new TTriGridVel;
+	triGrid = new TTriGridVel3D;
 	if (!triGrid)
 	{		
 		err = true;
@@ -2464,7 +2468,7 @@ setFields:
 		goto done;
 	}
 	
-	fGrid = (TTriGridVel*)triGrid;
+	fGrid = (TTriGridVel3D*)triGrid;
 	
 	triGrid -> SetBounds(triBounds); 
 	dagTree = new TDagTree(pts,topo,tree.treeHdl,velH,tree.numBranches); 

@@ -1038,7 +1038,7 @@ OSErr Model_c::GetTotalBudgetTableHdl(short desiredMassVolUnits, BudgetTableData
 	double density;
 	BudgetTableData budgetTable; 
 	BudgetTableDataH thisBudgetTableH = 0, totalBudgetTableH = 0;
-	long sizeOfBudgetHdl, sizeOfTotalBudgetHdl = 0;
+	long sizeOfBudgetHdl = 0, sizeOfTotalBudgetHdl = 0;
 	short massunits;
 	Boolean convertMassUnits = false;
 	OSErr err = 0;
@@ -1047,12 +1047,16 @@ OSErr Model_c::GetTotalBudgetTableHdl(short desiredMassVolUnits, BudgetTableData
 	{
 		model->LESetsList->GetListItem((Ptr)&thisLEList, i);
 		if(thisLEList -> GetLEType() == UNCERTAINTY_LE ) continue;
+		if(!(thisLEList -> IsActive()) ) continue;
 		
 		massunits = (dynamic_cast<TOLEList*>(thisLEList)) -> GetMassUnits();
 		density =  (dynamic_cast<TOLEList*>(thisLEList)) -> fSetSummary.density;	
 		if (massunits!=desiredMassVolUnits) convertMassUnits = true;
 		thisBudgetTableH = (dynamic_cast<TOLEList*>(thisLEList)) -> GetBudgetTable();
-		if (thisBudgetTableH) sizeOfBudgetHdl = _GetHandleSize((Handle)thisBudgetTableH)/sizeof(BudgetTableData);
+		if (thisBudgetTableH) 
+			sizeOfBudgetHdl = _GetHandleSize((Handle)thisBudgetTableH)/sizeof(BudgetTableData);
+		else 
+			continue;	// skip this list
 		if (totalBudgetTableH)
 		{
 			sizeOfTotalBudgetHdl = _GetHandleSize((Handle)totalBudgetTableH)/sizeof(BudgetTableData);

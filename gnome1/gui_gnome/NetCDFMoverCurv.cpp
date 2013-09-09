@@ -1421,9 +1421,9 @@ void NetCDFMoverCurv::Draw(Rect r, WorldRect view)
 				{ptIndex = -1; continue;}
 				
 				if (bIsCOOPSWaterMask) ptIndex = INDEXH(fVerdatToNetCDFH,i);
-				totalDepth = GetTotalDepth(wp,ptIndex);
 	 			if (amtOfDepthData>0 && ptIndex>=0)
 				{
+					totalDepth = GetTotalDepth(wp,ptIndex);
 					if (totalDepth==-1)
 					{
 						depthIndex1 = -1; depthIndex2 = -1;
