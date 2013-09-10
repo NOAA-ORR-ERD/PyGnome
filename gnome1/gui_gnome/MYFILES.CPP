@@ -18,12 +18,13 @@ typedef struct {
 
 static VolumeInfo volumes[26];
 
-Boolean FileExists(short vRefNum, long dirID, CHARPTR filename)
+//Boolean FileExists(short vRefNum, long dirID, CHARPTR filename)
+Boolean FileExists(short vRefNum, long dirID, const char *filename)
 {
 	OSErr err = 0;
 	char filePath[256], tempFilePath[256];
 	////////
-	if(model && model->fWizard && model->fWizard->PathIsWizardResource(filename))
+	if(model && model->fWizard && model->fWizard->PathIsWizardResource((char*)filename))
 	{	// wizard support, JLM 7/25/00
 		return TRUE;
 	}

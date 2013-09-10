@@ -693,8 +693,8 @@ depths:
 				//lat_vals[(latLength-i-1)*lonLength+j]=0.;
 				//if (lon_vals[(latLength-i-1)*lonLength+j]==fill_value)
 				//lon_vals[(latLength-i-1)*lonLength+j]=0.;
-				INDEXH(totalDepthsH,i*lonLength+j) = abs(depth_vals[(latLength-i-1)*lonLength+j]) * scale_factor;	
-				INDEXH(fDepthsH,i*lonLength+j) = abs(depth_vals[(latLength-i-1)*lonLength+j]) * scale_factor;	
+				INDEXH(totalDepthsH,i*lonLength+j) = fabs(depth_vals[(latLength-i-1)*lonLength+j]) * scale_factor;	
+				INDEXH(fDepthsH,i*lonLength+j) = fabs(depth_vals[(latLength-i-1)*lonLength+j]) * scale_factor;	
 			}
 		}
 		//((TTriGridVel3D*)fGrid)->SetDepths(totalDepthsH);
@@ -718,7 +718,7 @@ depths:
 				if (fVar.gridType == SIGMA_ROMS)
 					INDEXH(fDepthLevelsHdl,i) = sigma;
 				else
-					INDEXH(fDepthLevelsHdl,i) = abs(sigma);
+					INDEXH(fDepthLevelsHdl,i) = fabs(sigma);
 			}
 			
 		}

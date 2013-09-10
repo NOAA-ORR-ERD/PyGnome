@@ -5212,7 +5212,7 @@ Boolean WorldPointNearSegment(long pLong, long pLat,
 	h = sqrt(a * a + b * b);
 	
 	// distance from point to segment
-	numer = abs(a * y - b * x);
+	numer = fabs(a * y - b * x);
 	dist = numer / h;
 	dummy = dist; // see comment below
 	

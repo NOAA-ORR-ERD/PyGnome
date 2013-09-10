@@ -163,5 +163,6 @@ bool ReadLinesInBuffer(CHARH fileBufH, vector<string> &stringList, size_t linesT
 void ConvertDriveLetterToUnixStyle(string &pathPart);
 void SplitPathIntoDirAndFile(string &path, string &dir, string &file);
 void ConvertPathToCurrentPlatform(string inputPath);
+bool ResolvePath(string &containingDir, string &pathToResolve);
 
 #endif

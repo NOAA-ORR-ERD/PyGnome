@@ -33,6 +33,6 @@ class TShioTimeValue : virtual public ShioTimeValue_c, public TOSSMTimeValue
 };
 
 Boolean IsShioFile(char* path);
-char* GetKeyedLine(CHARH f, char*key, long lineNum, char *strLine);
+char* GetKeyedLine(CHARH f, const char*key, long lineNum, char *strLine);
 
 #endif

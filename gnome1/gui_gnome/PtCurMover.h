@@ -8,7 +8,8 @@
 #include "GridVel.h"
 #include "PtCurMover_c.h"
 
-//Boolean IsPtCurFile (char *path);
+Boolean IsPtCurFile (char *path);
+bool IsPtCurFile(std::vector<std::string> &linesInFile);
 //Boolean IsPtCurVerticesHeaderLine(char *s, long* numPts, long* numLandPts);
 //OSErr ScanDepth (char *startChar, double *DepthPtr);
 //void CheckYear(short *year);

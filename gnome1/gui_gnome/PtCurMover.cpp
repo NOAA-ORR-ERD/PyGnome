@@ -28,7 +28,17 @@
 		I_PTCURMINCURRENT
 		};
 */
-/*Boolean IsPtCurFile (char *path)
+bool IsPtCurFile(vector<string> &linesInFile)
+{
+	string key;
+
+	// First line, must start with [FILETYPE] PTCUR
+	if (ParseKeyedLine(linesInFile[0], "[FILETYPE]", key) && key == "PTCUR")
+		return true;
+	else
+		return false;
+}
+Boolean IsPtCurFile (char *path)
 {
 	Boolean	bIsValid = false;
 	OSErr	err = noErr;
@@ -53,7 +63,7 @@
 	}
 	
 	return bIsValid;
-}*/
+}
 
 /////////////////////////////////////////////////
 

@@ -27,36 +27,6 @@
 #endif
 
 
-/*bool IsGridCurTimeFile (vector<string> &linesInFile, short *selectedUnitsOut)
-{
-	long lineIdx = 0;
-	string currentLine;
-
-	short selectedUnits = kUndefined;
-	string value1S, value2S;
-
-	// First line, must start with '[GRIDCURTIME] <units>'
-	// <units> == the designation of units for the file.
-	currentLine = trim(linesInFile[lineIdx++]);
-
-	istringstream lineStream(currentLine);
-
-	lineStream >> value1S >> value2S;
-	if (lineStream.fail())
-		return false;
-
-	if (value1S != "[GRIDCURTIME]")
-		return false;
-
-	selectedUnits = StrToSpeedUnits((char *)value2S.c_str());
-	if (selectedUnits == kUndefined)
-		return false;
-
-	*selectedUnitsOut = selectedUnits;
-	
-	return true;
-}*/
-
 
 // NOTE!! if the input variable path does point to a NetCDFPaths file,
 // the input variable is overwritten with the path to the first NetCDF file.

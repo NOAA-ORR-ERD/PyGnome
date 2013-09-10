@@ -3215,7 +3215,7 @@ OSErr WizardFile::EvaluateBasicBlock(char* str,long maxStrLen,EvaluationType eva
 				switch(firstWord[0])
 				{
 					case 'A': case 'a':
-						if(!strcmpnocase(firstWord,"abs")) { z = abs(val); goto evalZ;}
+						if(!strcmpnocase(firstWord,"abs")) { z = fabs(val); goto evalZ;}
 						if(!strcmpnocase(firstWord,"acos")) { z = acos(val); goto evalZ;}
 						if(!strcmpnocase(firstWord,"asin")) { z = asin(val); goto evalZ;}
 						if(!strcmpnocase(firstWord,"atan")) { z = atan(val); goto evalZ;}

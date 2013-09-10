@@ -902,9 +902,9 @@ OSErr TShioTimeValue::ReadTimeValues (char *path, short format, short unitsIfKno
 	
 	lineNum = 0;
 	// first line
-	if(!(p = GetKeyedLine(f,"[StationInfo]",lineNum++,strLine)))  goto readError;
+	if(!(p = GetKeyedLine(f, "[StationInfo]",lineNum++,strLine)))  goto readError;
 	// 2nd line
-	if(!(p = GetKeyedLine(f,"Type=",lineNum++,strLine)))  goto readError;
+	if(!(p = GetKeyedLine(f, "Type=",lineNum++,strLine)))  goto readError;
 	switch(p[0])
 	{
 			//case 'c': case 'C': this->fStationType = 'C'; break;
@@ -955,14 +955,14 @@ OSErr TShioTimeValue::ReadTimeValues (char *path, short format, short unitsIfKno
 		default:	goto readError; 	
 	}
 	// 3nd line
-	if(!(p = GetKeyedLine(f,"Name=",lineNum++,strLine)))  goto readError;
+	if(!(p = GetKeyedLine(f, "Name=",lineNum++,strLine)))  goto readError;
 	strncpy(this->fStationName,p,MAXSTATIONNAMELEN);
 	this->fStationName[MAXSTATIONNAMELEN-1] = 0;
 	// 
 	if(err = this->GetKeyedValue(f,"Latitude=",lineNum++,strLine,&this->fLatitude))  goto readError;
 	if(err = this->GetKeyedValue(f,"Longitude=",lineNum++,strLine,&this->fLongitude))  goto readError;
 	//
-	if(!(p = GetKeyedLine(f,"[Constituents]",lineNum++,strLine)))  goto readError;
+	if(!(p = GetKeyedLine(f, "[Constituents]",lineNum++,strLine)))  goto readError;
 	// code goes here in version 1.2.7 these lines won't be required for height files, but should still allow old format
 	//if(err = this->GetKeyedValue(f,"DatumControls.datum=",lineNum++,strLine,&this->fConstituent.DatumControls.datum))  goto readError;
 	if(err = this->GetKeyedValue(f,"DatumControls.datum=",lineNum++,strLine,&this->fConstituent.DatumControls.datum))  
@@ -987,7 +987,7 @@ skipDatumControls:
 	if(err = this->GetKeyedValue(f,"H=",lineNum++,strLine,&this->fConstituent.H))  goto readError;
 	if(err = this->GetKeyedValue(f,"kPrime=",lineNum++,strLine,&this->fConstituent.kPrime))  goto readError;
 	
-	if(!(p = GetKeyedLine(f,"[Offset]",lineNum++,strLine)))  goto readError;
+	if(!(p = GetKeyedLine(f, "[Offset]",lineNum++,strLine)))  goto readError;
 	
 	switch(this->fStationType)
 	{

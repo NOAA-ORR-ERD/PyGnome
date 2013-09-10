@@ -79,7 +79,6 @@ void AddDelimiterAtEndIfNeeded(char* str);
 Boolean IsPartialPath(char* relativePath);
 void ResolvePartialPathFromThisFolderPath(char* relativePath,char * thisFolderPath);
 
-bool ResolvePath(string &containingDir, string &pathToResolve);
 void ResolvePathFromInputFile(char *pathOfTheInputFile, char* pathToResolve); 
 
 bool IsPtCurFile(std::vector<std::string> &linesInFile);

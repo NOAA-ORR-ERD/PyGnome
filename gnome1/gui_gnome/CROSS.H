@@ -38,7 +38,8 @@ OSErr DoPrintFunction(short function, Boolean *accepted);
 #endif
 OSErr PrintFred(Ptr title, long iconNum, Handle textHnd, short printingFont, short printingSize);
 OSErr PrintText(char *title, Handle textHnd, short ICONid);
-Boolean FileExists(short vRefNum, long dirID, CHARPTR fileName);
+//Boolean FileExists(short vRefNum, long dirID, CHARPTR fileName);
+Boolean FileExists(short vRefNum, long dirID, const char *fileName);
 Boolean FolderExists(short vRefNum, long dirID, CHARPTR folderName);
 OSErr AddFolderIfMissing(long vRefNum, long parentDirID, char *name, long *dirID);
 
