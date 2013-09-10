@@ -1406,7 +1406,7 @@ OSErr ShioTimeValue_c::ReadTimeValues (char *path)
 		_ifstream = new fstream(path, ios::in);
 		for(; i < x && _ifstream->get(c); i++)
 			DEREFH(f)[i] = c;
-		
+		delete _ifstream;
 	} catch(...) {
 		
 		printError("We are unable to open or read from the shio tides file. \nBreaking from ShioTimeValue_c::ReadTimeValues().");

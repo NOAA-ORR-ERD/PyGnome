@@ -85,7 +85,7 @@ class Model(serializable.Serializable):
         Initializes a model. All arguments have a default.
 
         :param time_step=timedelta(minutes=15): model time step in seconds or as a timedelta object
-        :param start_time=datetime.now(): start time of model, datetime object
+        :param start_time=datetime.now(): start time of model, datetime object. default to now, rounded to the nearest hour
         :param duration=timedelta(days=1): how long to run the model, a timedelta object
         :param map=gnome.map.GnomeMap(): the land-water map, default is a map with no land-water
         :param uncertain=False: flag for setting uncertainty
@@ -93,9 +93,6 @@ class Model(serializable.Serializable):
         :param id: Unique Id identifying the newly created mover (a UUID as a string). 
                    This is used when loading an object from a persisted model
         """
-
-                                                              # default to now, rounded to the nearest hour
-
         self.__restore__(
             time_step,
             start_time,
