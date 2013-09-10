@@ -28,7 +28,7 @@ cdef class CyShioTime(object):
         del self.shio
 
     def __init__(self,
-                 path,
+                 path_,
                  daylight_savings_off=True,
                  scale_factor=1):
         """
@@ -37,9 +37,9 @@ cdef class CyShioTime(object):
         cdef bytes file_
         self.shio.daylight_savings_off = daylight_savings_off
 
-        if os.path.exists(path):
-            path = os.path.normcase(path)
-            file_ = to_bytes(unicode(path))
+        if os.path.exists(path_):
+            path_= os.path.normpath(path_)
+            file_ = to_bytes(unicode(path_))
             err = self.shio.ReadTimeValues(file_)
             if err != 0:
                 raise ValueError("File could not be correctly read by ShioTimeValue_c.ReadTimeValues(...)")
@@ -50,7 +50,7 @@ cdef class CyShioTime(object):
             self.scale_factor = scale_factor
 
         else:
-            raise IOError("No such file: " + path)
+            raise IOError("No such file: " + path_)
 
     def set_shio_yeardata_path(self, yeardata_path_):
         """
