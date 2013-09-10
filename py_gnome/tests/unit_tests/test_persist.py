@@ -90,19 +90,17 @@ def make_model(images_dir, uncertain=False):
 
     d_file1 = get_datafile(os.path.join(datafiles, './EbbTides.cur'))
     
-    # JS: CURRENTLY THE FOLLOWING RESOURCE IS NOT RELEASED BY SOME CODE SO
-    #     CLEANUP FAILS WHICH MEANS TESTS FAIL.
-    #     I THINK THE PROBLEM LIES IN ShioTimeValue_c::ReadTimeValues() function
-    #d_file2 = get_datafile(os.path.join(datafiles, './EbbTidesShio.txt'))
-    #c_mover = gnome.movers.CatsMover(d_file1,
-    #        tide=gnome.environment.Tide(d_file2))
+
+    d_file2 = get_datafile(os.path.join(datafiles, './EbbTidesShio.txt'))
+    c_mover = gnome.movers.CatsMover(d_file1,
+            tide=gnome.environment.Tide(d_file2))
     
-    c_mover = gnome.movers.CatsMover(d_file1)
     c_mover.scale_refpoint = (-70.8875, 42.321333)  # this is the value in the file (default)
     c_mover.scale = True  # default value
     c_mover.scale_value = -1
+    
+    # tide object automatically gets added by model
     model.movers += c_mover
-    #model.environment += c_mover.tide  # todo: cannot add this till environment base class is created
 
     print 'adding a cats ossm mover:'
 
