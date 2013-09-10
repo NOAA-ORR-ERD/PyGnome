@@ -96,7 +96,7 @@ public:
 	virtual OSErr	 	SetInterval(char *errmsg, const Seconds& model_time);	
 	
 	virtual Boolean 	CheckInterval(long &timeDataInterval, const Seconds& model_time);	
-	virtual OSErr		TextRead(const char *path, const char *topFilePath) { cerr << "inline TextRead()...does nothing..." << endl; return 0;}
+	virtual OSErr		TextRead(const char *path, const char *topFilePath) {return 0;}
 	virtual OSErr 		ReadTimeData(long index,VelocityFH *velocityH, char* errmsg) {return 0;}
 	OSErr 				ReadInputFileNames(char *fileNamesPath);
 	//void				SetInputFilesHdl(PtCurFileInfoH inputFilesHdl) {if (fInputFilesHdl) {DisposeHandle((Handle)fInputFilesHdl)} fInputFilesHdl = inputFilesHdl;}
@@ -392,4 +392,5 @@ public:
 };*/
 
 //#endif	
+
 #endif

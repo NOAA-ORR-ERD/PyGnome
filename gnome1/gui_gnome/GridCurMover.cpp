@@ -59,8 +59,37 @@ void GridCurMover::Dispose ()
 	TCATSMover::Dispose ();
 }
 
+bool IsGridCurTimeFile (vector<string> &linesInFile, short *selectedUnitsOut)
+{
+	long lineIdx = 0;
+	string currentLine;
 
-/*Boolean IsGridCurTimeFile (char *path, short *selectedUnitsP)
+	short selectedUnits = kUndefined;
+	string value1S, value2S;
+
+	// First line, must start with '[GRIDCURTIME] <units>'
+	// <units> == the designation of units for the file.
+	currentLine = trim(linesInFile[lineIdx++]);
+
+	istringstream lineStream(currentLine);
+
+	lineStream >> value1S >> value2S;
+	if (lineStream.fail())
+		return false;
+
+	if (value1S != "[GRIDCURTIME]")
+		return false;
+
+	selectedUnits = StrToSpeedUnits((char *)value2S.c_str());
+	if (selectedUnits == kUndefined)
+		return false;
+
+	*selectedUnitsOut = selectedUnits;
+	
+	return true;
+}
+
+Boolean IsGridCurTimeFile (char *path, short *selectedUnitsP)
 {
 	Boolean bIsValid = false;
 	OSErr	err = noErr;
@@ -99,7 +128,7 @@ done:
 		*selectedUnitsP = selectedUnits;
 	}
 	return bIsValid;
-}*/
+}
 
 /////////////////////////////////////////////////
 /////////////////////////////////////////////////

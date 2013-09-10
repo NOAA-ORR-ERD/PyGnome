@@ -2556,7 +2556,7 @@ depths:
 			{
 				// grid ordering does matter for creating ptcurmap, assume increases fastest in x/lon, then in y/lat
 				//INDEXH(totalDepthsH,i*lonLength+j) = depth_vals[(latLength-i-1)*lonLength+j];	
-				INDEXH(totalDepthsH,i*lonLength+j) = abs(depth_vals[(latLength-i-1)*lonLength+j]);	
+				INDEXH(totalDepthsH,i*lonLength+j) = fabs(depth_vals[(latLength-i-1)*lonLength+j]);	
 			}
 		}
 		*depthPointsH = totalDepthsH;

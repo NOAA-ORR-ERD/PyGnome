@@ -10,8 +10,12 @@
 #include "GridVel.h"
 #include "PtCurMover.h"
 #include "TWindMover.h"
+#include <vector>
+using namespace std;
 
-//Boolean IsGridCurTimeFile (char *path, short *selectedUnits);
+Boolean IsGridCurTimeFile (char *path, short *selectedUnits);
+bool IsGridCurTimeFile (std::vector<std::string> &linesInFile, short *selectedUnitsOut);
+
 
 class GridCurMover : virtual public GridCurMover_c,  public TCATSMover
 {

@@ -2312,6 +2312,72 @@ void ConvertPathToCurrentPlatform(string inputPath)
 	inputPath = std::accumulate( pathParts.begin(), pathParts.end(), delim);
 }
 
+bool ResolvePath(string &containingDir, string &pathToResolve)
+{
+	// test if we got good inputs
+	if (pathToResolve.size() == 0) {
+		cerr << "ResolvePath(): path to resolve is empty" << endl;
+		return false;
+	}
+	
+	if (containingDir.size() == 0) {
+		// we assume the current working directory
+		cerr << "ResolvePath(): containing directory is empty.  Setting to current working directory" << endl;
+		containingDir = '.';
+	}
+	
+	string inputPath = containingDir;
+	ConvertPathToCurrentPlatform(trim(inputPath));
+	
+	string resolvedPath = pathToResolve;
+	ConvertPathToCurrentPlatform(trim(resolvedPath));
+	
+	
+	//if (FileExists(0, 0, (char *)resolvedPath.c_str())) {
+	if (FileExists(0, 0, resolvedPath.c_str())) {
+		// no problem, the file exists at the path given
+		pathToResolve = resolvedPath;
+		return true;
+	}
+	
+	// otherwise we have to try to find it
+	//if (!FileExists(0, 0, (char *)inputPath.c_str())) {
+	if (!FileExists(0, 0, inputPath.c_str())) {
+		// If the containing directory is not valid, no point going further.
+		cerr << "ResolvePath(): Containing directory is not valid" << endl;
+		return false;
+	}
+	cerr << "ResolvePath(): Our base path: " << inputPath << endl;
+	cerr << "ResolvePath(): Our path to resolve: " << resolvedPath << endl;
+	
+	string pathToTry;
+	vector<string> pathComponentsToReference = SplitPath(inputPath);
+	vector<string> pathComponentsToResolve = SplitPath(resolvedPath);
+	
+	while (pathComponentsToResolve.size() > 0) {
+		vector<string> concatPath = pathComponentsToReference;
+		concatPath.insert(concatPath.end(),
+						  pathComponentsToResolve.begin(),
+						  pathComponentsToResolve.end());
+		
+		string delim;
+		delim += NEWDIRDELIMITER;
+		cerr << "ResolvePath(): Our delimiter is '" << delim << "'"<< endl;
+		pathToTry = join(concatPath, delim);
+		cerr << "ResolvePath(): Trying path " << pathToTry << endl;
+		//if (FileExists(0, 0, (char *) pathToTry.c_str())) {
+		if (FileExists(0, 0, pathToTry.c_str())) {
+			pathToResolve = pathToTry;
+			return true;
+		}
+		
+		pathComponentsToResolve.erase(pathComponentsToResolve.begin());
+	}
+	
+	cerr << "ResolvePath(): Could not resolve path" << endl;
+	return false;
+}
+
 
 //
 //  end JLM new file handling functions.

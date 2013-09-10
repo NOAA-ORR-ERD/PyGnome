@@ -531,7 +531,7 @@ OSErr ADCPTimeValue::ReadTimeValues (char *path, short format, short unitsIfKnow
 			memset(&pair,0,sizeof(pair));
 			DateToSeconds (&time, &pair.time);	// subtract GMT offset here?? convert from hours to seconds
 			pair.time = pair.time - fGMTOffset*3600.;
-			if (abs(u)>500.) {u=0.;v=0.;w=0.;}	// they are using -3276.8 as a fill value
+			if (fabs(u)>500.) {u=0.;v=0.;w=0.;}	// they are using -3276.8 as a fill value
 			pair.value.u = u*conversionFactor;
 			pair.value.v = v*conversionFactor;
 			pair.value.w = w*conversionFactor;
