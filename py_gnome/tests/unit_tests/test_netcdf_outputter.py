@@ -44,9 +44,7 @@ def model(sample_model, request):
     def cleanup():
         """ cleanup outputters was added to sample_model and delete files """
 
-        print '''
-Cleaning up %s
-''' % model
+        print '''Cleaning up %s''' % model
         o_put = None
         for outputter in model.outputters:
             if isinstance(outputter,

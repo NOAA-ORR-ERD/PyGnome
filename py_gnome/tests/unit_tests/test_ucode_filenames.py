@@ -91,7 +91,6 @@ def test_ucode_char_in_grid_mover_filename(mover_test):
     ufile1 = create_ucode_file(file1_)
 
     # invalid unicode for windows
-
     invalid_ufile1 = create_ucode_file(file1_, valid=False)
 
     if mover_test[2] is None:
@@ -103,15 +102,18 @@ def test_ucode_char_in_grid_mover_filename(mover_test):
         ufile2 = create_ucode_file(file2_)
 
         # invalid unicode for windows
-
         invalid_ufile2 = create_ucode_file(file2_, valid=False)
 
     mover_test[0](file1_, file2_)
+    
+    # valid unicode names should work for both systems
+    mover_test[0](ufile1, ufile2)
 
     if sys.platform == 'win32':
         with pytest.raises(UnicodeEncodeError):
             mover_test[0](invalid_ufile1, invalid_ufile2)
     elif sys.platform == 'darwin':
+        # todo: also need a test case for linux2
         mover_test[0](invalid_ufile1, invalid_ufile2)
 
     print '{0}({1},{2}) passed the test'.format(mover_test[0],

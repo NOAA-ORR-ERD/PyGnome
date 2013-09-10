@@ -45,6 +45,7 @@ def test_properties_read_from_file():
     """ read only properties """
 
     shio = CyShioTime(shio_file)
+    print shio.filename
     with open(shio_file) as fh:
         data = fh.read()
 
@@ -85,8 +86,10 @@ def test_yeardata():
     shio = CyShioTime(shio_file)
     assert shio.yeardata == ''
     yd = os.path.join(os.path.dirname(gnome.__file__), 'data',
-                      'yeardata/')
+                      'yeardata')
     shio.yeardata = yd
-    assert shio.yeardata == yd
+    # shio puts a trailing slash at the end that is platform dependent
+    # so compare the names without the platform dependent trailing slash
+    assert shio.yeardata[:-1] == yd
 
 
