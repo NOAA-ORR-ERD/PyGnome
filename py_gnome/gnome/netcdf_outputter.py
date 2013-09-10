@@ -518,55 +518,54 @@ class NetCDFOutput(Outputter, serializable.Serializable):
             raise IOError('File not found: {0}'.format(netcdf_file))
 
         arrays_dict = dict()
-        data = nc.Dataset(netcdf_file)
-
-        _start_ix = 0
-        for idx in range(index):
-            _start_ix += data.variables['particle_count'][idx]
-
-        _stop_ix = _start_ix + data.variables['particle_count'][index]
-        elem = data.variables['particle_count'][index]
-
-        time_ = data.variables['time']
-        c_time = nc.num2date(time_[index], time_.units,
-                             calendar=time_.calendar)
-        arrays_dict['current_time_stamp'] = np.array(c_time)
-
-        positions = np.zeros((elem, 3),
-                             dtype=gnome.basic_types.world_point_type)
-
-        # status_codes = np.zeros((elem,), dtype=gnome.basic_types.status_code_type)
-        # spill_num = np.zeros((elem,), dtype=gnome.basic_types.id_type)
-        # mass = np.zeros((elem,), dtype=gnome.basic_types.id_type)
-
-        positions[:, 0] = (data.variables['longitude'
-                           ])[_start_ix:_stop_ix]
-        positions[:, 1] = (data.variables['latitude'
-                           ])[_start_ix:_stop_ix]
-        positions[:, 2] = (data.variables['depth'])[_start_ix:_stop_ix]
-
-        # status_codes[:] = data.variables['status'][_start_ix:_stop_ix]
-        # spill_num[:] = data.variables['id'][_start_ix:_stop_ix]
-
-        arrays_dict['positions'] = positions
-        arrays_dict['status_codes'] = (data.variables['status'
-                ])[_start_ix:_stop_ix]
-        arrays_dict['spill_num'] = (data.variables['id'
-                                    ])[_start_ix:_stop_ix]
-        arrays_dict['mass'] = (data.variables['mass'
+        with nc.Dataset(netcdf_file) as data:
+            _start_ix = 0
+            for idx in range(index):
+                _start_ix += data.variables['particle_count'][idx]
+    
+            _stop_ix = _start_ix + data.variables['particle_count'][index]
+            elem = data.variables['particle_count'][index]
+    
+            time_ = data.variables['time']
+            c_time = nc.num2date(time_[index], time_.units,
+                                 calendar=time_.calendar)
+            arrays_dict['current_time_stamp'] = np.array(c_time)
+    
+            positions = np.zeros((elem, 3),
+                                 dtype=gnome.basic_types.world_point_type)
+    
+            # status_codes = np.zeros((elem,), dtype=gnome.basic_types.status_code_type)
+            # spill_num = np.zeros((elem,), dtype=gnome.basic_types.id_type)
+            # mass = np.zeros((elem,), dtype=gnome.basic_types.id_type)
+    
+            positions[:, 0] = (data.variables['longitude'
                                ])[_start_ix:_stop_ix]
-
-        if all_data:  # append remaining data arrays
-            excludes = NetCDFOutput.data_vars.keys()
-            excludes.extend(['time', 'particle_count'])
-
-            for key in data.variables.keys():
-                if key not in excludes:
-                    if key in arrays_dict.keys():
-                        raise ValueError('Error in read_data. {0} is already added to arrays_dict - trying to add it again'.format(key))
-
-                    arrays_dict[key] = \
-                        (data.variables[key])[_start_ix:_stop_ix]
+            positions[:, 1] = (data.variables['latitude'
+                               ])[_start_ix:_stop_ix]
+            positions[:, 2] = (data.variables['depth'])[_start_ix:_stop_ix]
+    
+            # status_codes[:] = data.variables['status'][_start_ix:_stop_ix]
+            # spill_num[:] = data.variables['id'][_start_ix:_stop_ix]
+    
+            arrays_dict['positions'] = positions
+            arrays_dict['status_codes'] = (data.variables['status'
+                    ])[_start_ix:_stop_ix]
+            arrays_dict['spill_num'] = (data.variables['id'
+                                        ])[_start_ix:_stop_ix]
+            arrays_dict['mass'] = (data.variables['mass'
+                                   ])[_start_ix:_stop_ix]
+    
+            if all_data:  # append remaining data arrays
+                excludes = NetCDFOutput.data_vars.keys()
+                excludes.extend(['time', 'particle_count'])
+    
+                for key in data.variables.keys():
+                    if key not in excludes:
+                        if key in arrays_dict.keys():
+                            raise ValueError('Error in read_data. {0} is already added to arrays_dict - trying to add it again'.format(key))
+    
+                        arrays_dict[key] = \
+                            (data.variables[key])[_start_ix:_stop_ix]
 
         return arrays_dict
 
