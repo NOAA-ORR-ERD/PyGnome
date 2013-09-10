@@ -10,15 +10,14 @@ progressbar
 # requires netcdf-4 binaries to be correctly installed
 netCDF4 
 
-# requires some binary packages
+# requires binary packages
 PIL>=1.1.7
 
-svn+https://svn.orr.noaa.gov/svn/Hazpy/trunk/hazpy.unit_conversion/#egg=hazpy.unit_conversion
+git+https://github.com/NOAA-ORR-ERD/hazpy.unit_conversion.git#egg=hazpy.unit_conversion
 
-# Latest colander appears to be broken for us
-# Use specified commit for now till this is resolved
-#git+https://github.com/Pylons/colander.git#egg=colander  # need newer version than what is in PyPy
-#git+https://github.com/Pylons/colander.git@5816554a6f0c0f025922dd03d1518de361a9f0ed#egg=colander-dev
+# Use specified commit 
+# git+https://github.com/Pylons/colander.git@5816554a6f0c0f025922dd03d1518de361a9f0ed#egg=colander-dev
+# Latest colander is working with py_gnome
 git+https://github.com/Pylons/colander.git#egg=colander
 
 # Oil Library database
