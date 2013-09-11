@@ -92,7 +92,7 @@ also documents the minimum version number:
 6. Desired version of [netCDF4](http://www.lfd.uci.edu/~gohlke/pythonlibs/#netcdf4) 
 
 The remaining dependencies are python packages and can be installed using pip install -r requirements.txt  
-See [Build PyGnome/WebGnome](/GNOME2#build-pygnomewebgnome) section below.
+See [Build PyGnome/WebGnome](https://github.com/NOAA-ORR-ERD/GNOME2#build-pygnomewebgnome) section below.
 
 ### Build PyGnome/WebGnome ###
 
