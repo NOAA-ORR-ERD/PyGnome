@@ -13,35 +13,47 @@ import shutil
 import netCDF4 as nc
 
 import gnome
+from gnome.netcdf_outputter import NetCDFOutput
 
-from gnome.persist import modules_dict, environment_schema, \
-    model_schema, movers_schema, spills_schema, map_schema, \
-    outputters_schema
+from gnome.persist import (
+    modules_dict,
+    environment_schema,
+    model_schema,
+    movers_schema,
+    spills_schema,
+    map_schema,
+    outputters_schema)
 
 
 class Scenario(object):
 
-    """ Create a class that contains functionality to load/save a model scenario"""
+    """ 
+    Create a class that contains functionality to load/save a model scenario
+    """
 
     def __init__(self, saveloc, model=None):
         """
-        Constructor for a Scenario object. It's main function is to either 'save' and model
-        or to 'load' an already existing model. If a model is loaded from saveloc, the 'model'
-        attribute will contain the re-created model object.
+        Constructor for a Scenario object. It's main function is to either 
+        'save' and model or to 'load' an already existing model. If a model is
+        loaded from saveloc, the 'model' attribute will contain the re-created
+        model object.
         
-        All object's being persisted must use the serializable.Serializable class as a mixin or they
-        must define the same methods/attributes.
+        All object's being persisted must use the serializable.Serializable
+        class as a mixin or they must define the same methods/attributes.
         
-        :param saveloc: A valid directory. Model files are either persisted here or a new model is re-created from the files stored here.
+        :param saveloc: A valid directory. Model files are either persisted
+                        here or a new model is re-created from the files
+                        stored here.
         :type saveloc: A path as a string or unicode
-        :param model: A model object. Only required if save method will be invoked.
+        :param model: A model object. Only required if save method is invoked.
         :type model: gnome.model.Model object
         
         .. note:: If user wants to save a scenario, then model must be set
         """
 
         if not os.path.exists(saveloc):
-            raise ValueError('Invalid location for saving scenario. {0} does not exist'.format(saveloc))
+            raise ValueError('Invalid location for saving scenario. {0} does'\
+                             ' not exist'.format(saveloc))
 
         self.saveloc = saveloc
         self.model = model
@@ -52,12 +64,13 @@ class Scenario(object):
     def save(self):
         """
         Method used to save the model state to saveloc
-        It saves the state of each object, including the model in JSON format in *.txt files.
+        It saves the state of each object, including the model in JSON format
+        in *.txt files.
         """
 
         if self.model is None:
-            raise AttributeError('A model needs to be defined before it can be saved'
-                                 )
+            raise AttributeError('A model needs to be defined before it'\
+                                 ' can be saved')
 
         dict_ = self.model.to_dict('create')
         self._save_json_to_file(self.dict_to_json(dict_), self.model)
@@ -73,13 +86,14 @@ class Scenario(object):
         for sc in self.model.spills.items():
             self._save_collection(sc.spills)
 
-        if self.model.current_time_step > -1:  # persist model state since middle of run
+        # persist model state since middle of run
+        if self.model.current_time_step > -1:  
             self._save_spill_data()
 
     def load(self):
         """
-        reconstruct the model from saveloc. It stores the re-created model inside 'model'
-        attribute. Function also returns the recreated model.
+        reconstruct the model from saveloc. It stores the re-created model
+        inside 'model' attribute. Function also returns the recreated model.
         
         :returns: a model object re-created from the save files
         """
@@ -87,7 +101,7 @@ class Scenario(object):
         model_dict = self.load_model_dict()
 
         # pop lists that correspond with ordered collections
-        # create a list of the associated objects and put it back into model_dict
+        # create a list of associated objects and put it back into model_dict
 
         l_movers = model_dict.pop('movers')
         l_environment = model_dict.pop('environment')
@@ -115,9 +129,12 @@ class Scenario(object):
 
     def dict_to_json(self, dict_):
         """ 
-        convert the dict returned by object's to_dict method to valid json format via colander schema
+        convert the dict returned by object's to_dict method to valid json
+        format via colander schema
         
-        It uses the modules_dict defined in gnome.persist to find the correct schema module.
+        It uses the modules_dict defined in gnome.persist to find the correct
+        schema module.
+        
         :param dict_: dictionary returned by object's to_dict method.
         :type dict_: dictionary containing object properties
         """
@@ -131,8 +148,9 @@ class Scenario(object):
 
     def _save_collection(self, coll_):
         """
-        Function loops over an orderedcollection or any other iterable containing a list of objects. 
-        It calls the to_dict method for each object, then converts it o valid json (dict_to_json),
+        Function loops over an orderedcollection or any other iterable
+        containing a list of objects. It calls the to_dict method for each
+        object, then converts it o valid json (dict_to_json),
         and finally saves it to file (_save_json_to_file)
         
         :param coll_: ordered collection or iterable
@@ -158,9 +176,10 @@ class Scenario(object):
 
     def _move_data_file(self, to_json):
         """
-        Look at state attribute of object. Find all fields with 'isdatafile' attribute as True.
-        If there is a key in to_json corresponding with 'name' of the fields with True 'isdatafile' attribute
-        then move that datafile and update the key in the to_json to point to new location
+        Look at state attribute of object. Find all fields with 'isdatafile'
+        attribute as True. If there is a key in to_json corresponding with
+        'name' of the fields with True 'isdatafile' attribute then move that
+        datafile and update the key in the to_json to point to new location
         """
 
         state = eval('{0}.state'.format(to_json['obj_type']))
@@ -180,7 +199,8 @@ class Scenario(object):
     def json_to_dict(self, json_):
         """
         Function used when loading a model scenario. 
-        convert the dict returned by object's to_dict method to valid json format via colander schema
+        convert the dict returned by object's to_dict method to valid json
+        format via colander schema
         
         :param json_: dict containing json_ data
         """
@@ -194,7 +214,8 @@ class Scenario(object):
 
     def dict_to_obj(self, obj_dict):
         """ 
-        create object from a dict. The dict contains (keyword,value) pairs used to create new object 
+        create object from a dict. The dict contains (keyword,value) pairs
+        used to create new object 
         """
 
         type_ = obj_dict.pop('obj_type')
@@ -212,9 +233,11 @@ class Scenario(object):
         model_file = glob.glob(os.path.join(self.saveloc, 'Model_*.txt'
                                ))
         if model_file == []:
-            raise ValueError('No Model_*.txt files find in {0}'.format(self.saveloc))
+            raise ValueError('No Model_*.txt files find in {0}'\
+                             .format(self.saveloc))
         elif len(model_file) > 1:
-            raise ValueError("multiple Model_*.txt files found in {0}. Please provide 'filename'".format(self.saveloc))
+            raise ValueError("multiple Model_*.txt files found in {0}. Please"\
+                             " provide 'filename'".format(self.saveloc))
         else:
             model_file = model_file[0]
 
@@ -234,9 +257,10 @@ class Scenario(object):
         return model_dict
 
     def _load_json_from_file(self, fname):
-        """ Look at state attribute of object. Find all fields with 'isdatafiel' attribute as True.
-        If there is a key in json_data corresponding with 'name' of the fields with True 'isdatafile' attribute,
-        then append the saveloc path to the value """
+        """ Look at state attribute of object. Find all fields with
+        'isdatafile' attribute as True. If there is a key in json_data
+        corresponding with 'name' of the fields with True 'isdatafile'
+        attribute, then append the saveloc path to the value """
 
         with open(fname, 'r') as infile:
             json_data = json.load(infile)
@@ -253,17 +277,19 @@ class Scenario(object):
 
     def _find_and_load_json_file(self, id_):
         """
-        Given the id of the object, find the *_{id}.txt file that contains json of the object and load it. 
+        Given the id of the object, find the *_{id}.txt file that contains
+        json of the object and load it. 
         """
 
         obj_file = glob.glob(os.path.join(self.saveloc,
                              '*_{0}.txt'.format(id_)))
         if len(obj_file) == 0:
-            raise IOError('No filename containing *_{0}.txt found in {1}'.format(id_,
-                          os.path.abspath('.')))
+            msg = 'No filename containing *_{0}.txt found in {1}'
+            raise IOError(msg.format(id_,os.path.abspath('.')))
         elif len(obj_file) > 1:
-            raise IOError('Cannot have two objects with same Id. Multiple filenames containing *_{0}.txt found in {1}'.format(id_,
-                          os.path.abspath(self.saveloc)))
+            msg = 'Cannot have two objects with same Id. Multiple'\
+                  ' filenames containing *_{0}.txt found in {1}'
+            raise IOError(msg.format(id_,os.path.abspath(self.saveloc)))
 
         obj_file = obj_file[0]
         obj_json = self._load_json_from_file(os.path.abspath(obj_file))
@@ -271,16 +297,19 @@ class Scenario(object):
 
     def _load_collection(self, coll_dict):
         """
-        Load collection - dict contains the output of OrderedCollection.to_dict()
+        Load collection - dict contains output of OrderedCollection.to_dict()
+        
         'dtype' - currently not used for anything
-        'id_list' - for each object in list, use this to find and load the json file, convert it to 
-                    a valid dict, then create a new object using new_from_dict
-                    'id_list' contains a list of tuples (object_type, id of object)
+        'id_list' - for each object in list, use this to find and load the
+                    json file, convert it to a valid dict, then create a new
+                    object using new_from_dict 'id_list' contains a list of
+                    tuples (object_type, id of object)
         
         :returns: a list of objects corresponding with the data in 'id_list'
         
-        .. note:: while this applies to ordered collections. It can work for any iterable that contains
-                  'id_list' in the dict with above format.
+        .. note:: while this applies to ordered collections. It can work for
+                  any iterable that contains 'id_list' in the dict with above
+                  format.
         """
 
         obj_list = []
@@ -294,14 +323,17 @@ class Scenario(object):
 
     def _load_movers_collection(self, movers_dict, l_env):
         """
-        add movers to the model - dict contains the output of OrderedCollection.to_dict()
-        'dtype' - not used for anything
-        'id_list' - for each object in list, use this to find and load the json file, convert it to 
-                    a valid dict, then create a new object using new_from_dict
-                    'id_list' contains a list of tuples (object_type, id of object)
+        add movers to the model - dict contains the output of
+        OrderedCollection.to_dict()
         
-        .. note:: If Wind object and Tide object are present, the objects must be created and part of
-        a list passed in as l_env
+        'dtype' - not used for anything
+        'id_list' - for each object in list, use this to find and load the json
+                    file, convert it to a valid dict, then create a new object
+                    using new_from_dict 'id_list' contains a list of tuples
+                    (object_type, id of object)
+        
+        .. note:: If Wind object and Tide object are present, the objects must
+                  be created and part of a list passed in as l_env
         """
 
         obj_list = []
@@ -333,19 +365,20 @@ class Scenario(object):
 
         obj = [obj for obj in list_ if id in obj.id]
         if len(obj) == 0:
-            raise ValueError('List does not contain an object with id: {0}'.format(id))
+            msg = 'List does not contain an object with id: {0}'
+            raise ValueError(msg.format(id))
 
         if len(obj) > 1:
-            raise ValueError('List contains more than one object with id: {0}'.format(id))
+            msg = 'List contains more than one object with id: {0}'
+            raise ValueError(msg.format(id))
 
         return obj[0]
 
     def _save_spill_data(self):
         """ save the data arrays for current timestep to NetCDF """
 
-        nc_out = \
-            gnome.netcdf_outputter.NetCDFOutput(self._certainspill_data,
-                all_data=True, cache=self.model._cache)
+        nc_out = NetCDFOutput(self._certainspill_data,
+                              all_data=True, cache=self.model._cache)
         nc_out.prepare_for_model_run(model_start_time=self.model.start_time,
                 num_time_steps=1, uncertain=self.model.uncertain,
                 spills=self.model.spills)
@@ -368,13 +401,11 @@ class Scenario(object):
 
         for sc in self.model.spills.items():
             if sc.uncertain:
-                data = \
-                    gnome.netcdf_outputter.NetCDFOutput.read_data(self._uncertainspill_data,
-                        all_data=True)
+                data = NetCDFOutput.read_data(self._uncertainspill_data,
+                                              all_data=True)
             else:
-                data = \
-                    gnome.netcdf_outputter.NetCDFOutput.read_data(self._certainspill_data,
-                        all_data=True)
+                data = NetCDFOutput.read_data(self._certainspill_data,
+                                              all_data=True)
 
             sc.current_time_stamp = data.pop('current_time_stamp'
                     ).item()
