@@ -51,6 +51,49 @@ For Linux use appropriate package manager (apt-get on ubuntu) to download/instal
 
 4. npm is a javascript package manager used by webgnome  
 
+### Windows 7 (32-bit, using VS-2008) ###
+
+- PyGnome requires PIL. 
+  It statically links against netcdf-3, included with PyGnome source code
+
+Binary dependencies for PyGnome are obtained from
+[Chris Gohlke's website](http://www.lfd.uci.edu/~gohlke/pythonlibs/).
+
+#### Binary Dependencies ####
+
+Download and install [Python 2.7.5](http://www.python.org/download/)  
+Make sure all binaries are consistent for your Pyton install.
+For instance, binaries ending in *win32-py2.7.exe are for Python 2.7.* (32-bit) 
+From [Chris Gohlke's website](http://www.lfd.uci.edu/~gohlke/pythonlibs/) download/install 
+following packages also listed in GNOME2/py_gnome/requirements.txt. The requirements.txt
+also documents the minimum version number:  
+
+1. [setuptools](http://www.lfd.uci.edu/~gohlke/pythonlibs/#setuptools)
+2. [pip](http://www.lfd.uci.edu/~gohlke/pythonlibs/#pip)
+   - test pip installed correctly - on command line invoke pip command.  
+     This should give usage information for 'pip'.  
+     pip list will show installed packages.  
+     ```
+         $ pip  
+         Usage:  
+           pip &lt;command&gt; [options]  
+            
+         Commands:  
+           install                     Install packages.  
+           ...  
+           
+         $ pip list  
+         pip (1.4.1)  
+         setuptools (1.1.4)  
+     ```
+3. [numpy-MKL](http://www.lfd.uci.edu/~gohlke/pythonlibs/#numpy)
+4. [Cython](http://www.lfd.uci.edu/~gohlke/pythonlibs/#cython)
+5. Install [PIL](http://www.pythonware.com/products/pil/) instead of Pillow
+6. Desired version of [netCDF4](http://www.lfd.uci.edu/~gohlke/pythonlibs/#netcdf4) 
+
+The remaining dependencies are python packages and can be installed using pip install -r requirements.txt  
+See [Build PyGnome/WebGnome](/GNOME2#build-pygnomewebgnome) section below.
+
 ### Build PyGnome/WebGnome ###
 
 Since this is development work, it might be a good to create and run this in a virtual environment.
