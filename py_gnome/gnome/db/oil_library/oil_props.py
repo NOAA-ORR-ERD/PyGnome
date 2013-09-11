@@ -22,6 +22,7 @@ from itertools import chain
 from gnome.db.oil_library.models import Oil, DBSession
 from gnome.db.oil_library.initializedb import initialize_sql, \
     load_database
+from gnome.utilities.remote_data import get_datafile
 
 
 # Some standard oils - scope is module level, non-public
@@ -56,21 +57,30 @@ _sample_oils = {
                  'gram per cubic centimeter', 'API degree', 1)},
     }
 
-""" currently, the DB is created and stored locally - use this for testing """
+""" 
+currently, the DB is stored locally - use this for now till we have
+a persistent DB that we can query 
+"""
 _oillib_path = os.path.join(os.path.split(os.path.realpath(__file__))[0],
                            '../../../../web/gnome/webgnome/webgnome/data')
 _db_file = os.path.join(_oillib_path, 'OilLibrary.db')
 
-def _db_from_flatfile():
-    """ 
-    creates the sqllite database from the OilLib flatfile 
-    """
-    oillib_file = os.path.join(_oillib_path, 'OilLib')
-    sqlalchemy_url = 'sqlite:///{0}'.format(_db_file)
-    settings = {'sqlalchemy.url': sqlalchemy_url,
-            'oillib.file': oillib_file}
-    initialize_sql(settings)
-    load_database(settings)
+# No need to create DB, we'll just download the DB file from remote server:
+# (http://gnome.orr.noaa.gov/py_gnome_testdata/)
+# At some point, DB will be persisted on server and we just need to
+# query it. At no point should this be creating the DB.
+#==============================================================================
+# def _db_from_flatfile():
+#     """ 
+#     creates the sqllite database from the OilLib flatfile 
+#     """
+#     oillib_file = os.path.join(_oillib_path, 'OilLib')
+#     sqlalchemy_url = 'sqlite:///{0}'.format(_db_file)
+#     settings = {'sqlalchemy.url': sqlalchemy_url,
+#             'oillib.file': oillib_file}
+#     initialize_sql(settings)
+#     load_database(settings)
+#==============================================================================
     
 def get_oil(oil_name):
     """
@@ -111,16 +121,19 @@ def get_oil(oil_name):
 
     else:
         if not os.path.exists(_db_file):            
-            _db_from_flatfile()
-        else:
-            # not sure we want to do it this way - but let's use for now
-            engine = sqlalchemy.create_engine('sqlite:///'+ _db_file)
-            
-            # let's use global DBSession defined in oillibrary
-            DBSession.bind = engine
+            #_db_from_flatfile()
+            get_datafile(_db_file)
         
-            # session_factory = sessionmaker(bind=engine)
-            # DBSession = scoped_session(session_factory)
+        # not sure we want to do it this way - but let's use for now
+        engine = sqlalchemy.create_engine('sqlite:///'+ _db_file)
+        
+        # let's use global DBSession defined in oillibrary
+        # alternatively, we could define a new scoped_session
+        # Not sure what's the proper way yet but this needs
+        # to be revisited at some point.
+        # session_factory = sessionmaker(bind=engine)
+        # DBSession = scoped_session(session_factory)
+        DBSession.bind = engine
 
         try:
             return DBSession.query(Oil).filter(Oil.name == oil_name).one()

@@ -7,9 +7,6 @@ import pytest
 from gnome.db.oil_library.oil_props import OilProps
 
 
-# If DB doesn't exist, it could take awhile to create - mark this as slow
-
-@pytest.mark.slow
 def test_OilProps_exceptions():
     from sqlalchemy.orm.exc import NoResultFound
     with pytest.raises(NoResultFound):
@@ -38,9 +35,6 @@ def test_OilProps_sample_oil(oil, density, units):
     assert o.name == oil
 
 
-# If DB doesn't exist, it could take awhile to create - mark this as slow
-
-@pytest.mark.slow
 @pytest.mark.parametrize(('oil', 'api'), [('FUEL OIL NO.6', 12.3)])
 def test_OilProps_DBquery(oil, api):
     """ test dbquery worked for an example like FUEL OIL NO.6 """
