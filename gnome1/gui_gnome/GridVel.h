@@ -8,6 +8,7 @@
 #include "GridVel_c.h"
 #include "TriGridVel_c.h"
 #include "TriGridVel3D_c.h"
+#include "MemUtils.h"
 
 #ifdef __cplusplus
 extern "C" {

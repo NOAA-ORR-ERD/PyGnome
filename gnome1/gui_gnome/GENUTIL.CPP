@@ -1193,6 +1193,7 @@ OSErr ReadFileContents(short terminationFlag, short vRefNum, long dirID, CHARPTR
 				((char *)ptr)[i] = c;
 			if (terminate) ((char *)ptr)[x] = 0;
 		}
+		delete _ifstream;
 	}
 	catch(...) {
 		//printError("We are unable to open or read from the file. \nBreaking from ReadSectionOfFile().\n");
@@ -1343,6 +1344,7 @@ OSErr ReadSectionOfFile(short vRefNum, long dirID, CHARPTR name,
 			for(; i < x-offset && _ifstream->get(c); i++)
 				((char *)ptr)[i] = c;
 		}
+		delete _ifstream;
 	}
 	catch(...) {
 		//printError("We are unable to open or read from the file. \nBreaking from ReadSectionOfFile().\n");
