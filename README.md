@@ -20,6 +20,14 @@ http://response.restoration.noaa.gov/gnome
 
 ## Installation in Development Mode ##
 
+Since this is development work, it might be good to create and run this in a virtual environment.
+[Virtual env](http://www.virtualenv.org/en/latest/) and 
+[Virtual env wrapper](http://virtualenvwrapper.readthedocs.org/en/latest/) eases management of virtual envs.  
+
+A virtualenv is *not required* to run PyGnome or WebGnome.
+Depending on your access level/permissions, you may require a virtualenv if you cannot 
+install python packages in the global site-packages. 
+
 ### Linux (Tested in 32-bit, raring 13.04) ###
 
 - PyGnome uses NetCDF and also currently uses PIL. 
@@ -50,6 +58,28 @@ For Linux use appropriate package manager (apt-get on ubuntu) to download/instal
     libxml2-def, libxslt1-dev
 
 4. npm is a javascript package manager used by webgnome  
+
+5. The following python packages, documented in PyGnome's requirements.txt,
+   may need to be manually installed. Binaries for 
+   [Numpy](http://packages.ubuntu.com/raring/python/python-numpy) and 
+   [Cython](http://packages.ubuntu.com/raring/python/cython) can be installed using apt-get. 
+   Current binaries for these are sufficiently new: (Numpy >=1.7.0) and (Cython >= 0.17.1).  
+
+   If you use virtualenv and apt-get to install these system site packages.
+   Remember to use the [--system-site-packages](https://pypi.python.org/pypi/virtualenv)
+   option when creating a new virtualenv so the system packages are available in the virtualenv.
+
+   Alternatively, pip install should also work. 
+   The following builds the latest packages in your virtualenv once the above dependencies are met.
+   ```
+        $ pip install numpy
+        $ pip install cython
+        $ pip install netCDF4
+        $ pip install PIL
+   ```
+
+The remaining dependencies are python packages and can be installed using pip install -r requirements.txt  
+See [Build PyGnome/WebGnome](https://github.com/NOAA-ORR-ERD/GNOME2#build-pygnomewebgnome) section below.
 
 ### Windows 7 (32-bit, using VS-2008) ###
 
@@ -95,12 +125,6 @@ The remaining dependencies are python packages and can be installed using pip in
 See [Build PyGnome/WebGnome](https://github.com/NOAA-ORR-ERD/GNOME2#build-pygnomewebgnome) section below.
 
 ### Build PyGnome/WebGnome ###
-
-Since this is development work, it might be a good to create and run this in a virtual environment.
-
-[Virtual env](http://www.virtualenv.org/en/latest/)  
-[Virtual env wrapper](http://virtualenvwrapper.readthedocs.org/en/latest/) eases management of virtual envs  
-A virtualenv is *not required* to run PyGnome or WebGnome.
 
 1. Clone GNOME2 (following is for cloning over https):  
 ```
