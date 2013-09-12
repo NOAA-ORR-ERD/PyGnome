@@ -607,11 +607,12 @@ void TCATSMover3D::Draw(Rect r, WorldRect view)
 }
 
 /////////////////////////////////////////////////////////////////
-OSErr TCATSMover3D::TextRead(char *path, TMap **newMap) 
+OSErr TCATSMover3D::TextRead(vector<string> &linesInFile, TMap **newMap) 
 {
 	char s[1024], errmsg[256];
 	long i, numPoints, line = 0;
-	CHARH f = 0;
+	string currentLine;
+	//CHARH f = 0;
 	OSErr err = 0;
 	
 	TopologyHdl topo=0;
@@ -631,7 +632,7 @@ OSErr TCATSMover3D::TextRead(char *path, TMap **newMap)
 	errmsg[0]=0;
 	
 	
-	if (!path || !path[0]) return 0;
+	/*if (!path || !path[0]) return 0;
 	
 	if (err = ReadFileContents(TERMINATED,0, 0, path, 0, 0, &f)) {
 		TechError("TCATSMover3D::TextRead()", "ReadFileContents()", err);
@@ -639,15 +640,19 @@ OSErr TCATSMover3D::TextRead(char *path, TMap **newMap)
 	}
 	
 	_HLock((Handle)f); 
-	
+	*/
 	MySpinCursor(); 
-	NthLineInTextOptimized(*f, (line)++, s, 1024); 
-	NthLineInTextOptimized(*f, (line)++, s, 1024); 
+	currentLine = linesInFile[line++];
+	currentLine = linesInFile[line++];
+	//NthLineInTextOptimized(*f, (line)++, s, 1024); 
+	//NthLineInTextOptimized(*f, (line)++, s, 1024); 
 	
-	if(IsTVerticesHeaderLine(s, &numPoints))
+	if(IsTVerticesHeaderLine(currentLine, numPoints))
+	//if(IsTVerticesHeaderLine(s, &numPoints))
 	{
 		MySpinCursor();
-		err = ReadTVerticesBody(f,&line,&pts,&depths,errmsg,numPoints,true);
+		//err = ReadTVerticesBody(f,&line,&pts,&depths,errmsg,numPoints,true);
+		err = ReadTVerticesBody(linesInFile,&line,&pts,&depths,errmsg,numPoints,true);
 		if(err) goto done;
 	}
 	else
@@ -656,14 +661,18 @@ OSErr TCATSMover3D::TextRead(char *path, TMap **newMap)
 		goto done;
 	}
 	MySpinCursor();
-	NthLineInTextOptimized(*f, (line)++, s, 1024); 
+	//NthLineInTextOptimized(*f, (line)++, s, 1024); 
+	currentLine = linesInFile[line++];
 	
-	if(IsBoundarySegmentHeaderLine(s,&numBoundarySegs)) // Boundary data from CATS
+	//if(IsBoundarySegmentHeaderLine(s,&numBoundarySegs)) // Boundary data from CATS
+	if(IsBoundarySegmentHeaderLine(currentLine,numBoundarySegs)) // Boundary data from CATS
 	{
 		MySpinCursor();
-		err = ReadBoundarySegs(f,&line,&boundarySegs,numBoundarySegs,errmsg);
+		//err = ReadBoundarySegs(f,&line,&boundarySegs,numBoundarySegs,errmsg);
+		err = ReadBoundarySegs(linesInFile,&line,&boundarySegs,numBoundarySegs,errmsg);
 		if(err) goto done;
-		NthLineInTextOptimized(*f, (line)++, s, 1024); 
+		//NthLineInTextOptimized(*f, (line)++, s, 1024); 
+		currentLine = linesInFile[line++];
 	}
 	else
 	{
@@ -672,12 +681,15 @@ OSErr TCATSMover3D::TextRead(char *path, TMap **newMap)
 	}
 	MySpinCursor(); 
 	
-	if(IsWaterBoundaryHeaderLine(s,&numWaterBoundaries,&numBoundaryPts)) // Boundary types from CATS
+	//if(IsWaterBoundaryHeaderLine(s,&numWaterBoundaries,&numBoundaryPts)) // Boundary types from CATS
+	if(IsWaterBoundaryHeaderLine(currentLine,numWaterBoundaries,numBoundaryPts)) // Boundary types from CATS
 	{
 		MySpinCursor();
-		err = ReadWaterBoundaries(f,&line,&waterBoundaries,numWaterBoundaries,numBoundaryPts,errmsg);
+		//err = ReadWaterBoundaries(f,&line,&waterBoundaries,numWaterBoundaries,numBoundaryPts,errmsg);
+		err = ReadWaterBoundaries(linesInFile,&line,&waterBoundaries,numWaterBoundaries,numBoundaryPts,errmsg);
 		if(err) goto done;
-		NthLineInTextOptimized(*f, (line)++, s, 1024); 
+		//NthLineInTextOptimized(*f, (line)++, s, 1024); 
+		currentLine = linesInFile[line++];
 	}
 	else
 	{
@@ -685,10 +697,12 @@ OSErr TCATSMover3D::TextRead(char *path, TMap **newMap)
 		goto done;
 	}
 	
-	if(IsTTopologyHeaderLine(s,&numPoints)) // Topology from CATS
+	//if(IsTTopologyHeaderLine(s,&numPoints)) // Topology from CATS
+	if(IsTTopologyHeaderLine(currentLine,numPoints)) // Topology from CATS
 	{
 		MySpinCursor();
-		err = ReadTTopologyBody(f,&line,&topo,&velH,errmsg,numPoints,TRUE);
+		//err = ReadTTopologyBody(f,&line,&topo,&velH,errmsg,numPoints,TRUE);
+		err = ReadTTopologyBody(linesInFile,&line,&topo,&velH,errmsg,numPoints,TRUE);
 		if(err) goto done;
 	}
 	/*else
@@ -721,12 +735,15 @@ OSErr TCATSMover3D::TextRead(char *path, TMap **newMap)
 	MySpinCursor(); // JLM 8/4/99
 	
 	
-	NthLineInTextOptimized(*f, (line)++, s, 1024); 
+	//NthLineInTextOptimized(*f, (line)++, s, 1024); 
+	currentLine = linesInFile[line++];
 	
-	if(IsTIndexedDagTreeHeaderLine(s,&numPoints))  // DagTree from CATS
+	//if(IsTIndexedDagTreeHeaderLine(s,&numPoints))  // DagTree from CATS
+	if(IsTIndexedDagTreeHeaderLine(currentLine,numPoints))  // DagTree from CATS
 	{
 		MySpinCursor();
-		err = ReadTIndexedDagTreeBody(f,&line,&tree,errmsg,numPoints);
+		//err = ReadTIndexedDagTreeBody(f,&line,&tree,errmsg,numPoints);
+		err = ReadTIndexedDagTreeBody(linesInFile,&line,&tree,errmsg,numPoints);
 		if(err) goto done;
 	}
 	/*else
@@ -775,7 +792,10 @@ OSErr TCATSMover3D::TextRead(char *path, TMap **newMap)
 	//if (waterBoundaries /*&& (this -> moverMap == model -> uMap || fVar.gridType != TWO_D)*/)
 	if (waterBoundaries && (this -> moverMap == model -> uMap /*|| fVar.gridType != TWO_D*/))
 	{
-		PtCurMap *map = CreateAndInitPtCurMap(path,bounds); // the map bounds are the same as the grid bounds
+		char fileName[kMaxNameLen];
+		//PtCurMap *map = CreateAndInitPtCurMap(path,bounds); // the map bounds are the same as the grid bounds
+		GetClassName(fileName);
+		PtCurMap *map = CreateAndInitPtCurMap(fileName,bounds); // the map bounds are the same as the grid bounds
 		if (!map) goto done;
 		// maybe move up and have the map read in the boundary information
 		map->SetBoundarySegs(boundarySegs);	
@@ -824,12 +844,12 @@ OSErr TCATSMover3D::TextRead(char *path, TMap **newMap)
 	
 done:
 	
-	if(f) 
+	/*if(f) 
 	{
 		_HUnlock((Handle)f); 
 		DisposeHandle((Handle)f); 
 		f = 0;
-	}
+	}*/
 	
 	if(err)
 	{
@@ -857,6 +877,22 @@ done:
 		if(waterBoundaries)DisposeHandle((Handle)waterBoundaries);
 	}
 	return err;
+}
+
+OSErr TCATSMover3D::TextRead(const char *path, TMap **newMap)
+{
+	vector<string> linesInFile;
+	char outPath[kMaxNameLen];
+	OSErr err = 0;
+#ifdef TARGET_API_MAC_CARBON
+	if (IsClassicPath((char*)path))
+	{
+		err = ConvertTraditionalPathToUnixPath(path, outPath, kMaxNameLen) ;
+		if (!err) strcpy((char*)path,outPath);
+	}
+#endif
+	ReadLinesInFile(path, linesInFile);
+	return TextRead(linesInFile, newMap);
 }
 
 
@@ -1121,12 +1157,14 @@ OSErr TCATSMover3D::CreateRefinedGrid (Boolean askForFile, char* givenPath, char
 	}
 }
 /**************************************************************************************************/
-OSErr TCATSMover3D::ReadTopology(char* path, TMap **newMap)
+//OSErr TCATSMover3D::ReadTopology(char* path, TMap **newMap)
+OSErr TCATSMover3D::ReadTopology(vector<string> &linesInFile, TMap **newMap)
 {
 	// import PtCur triangle info so don't have to regenerate
 	char s[1024], errmsg[256];
 	long i, numPoints, numTopoPoints, line = 0, numPts;
-	CHARH f = 0;
+	string currentLine;
+	//CHARH f = 0;
 	OSErr err = 0;
 	
 	TopologyHdl topo=0;
@@ -1145,7 +1183,7 @@ OSErr TCATSMover3D::ReadTopology(char* path, TMap **newMap)
 	
 	errmsg[0]=0;
 	
-	if (!path || !path[0]) return 0;
+	/*if (!path || !path[0]) return 0;
 	
 	if (err = ReadFileContents(TERMINATED,0, 0, path, 0, 0, &f)) {
 		TechError("TCATSMover3D::ReadTopology()", "ReadFileContents()", err);
@@ -1153,9 +1191,11 @@ OSErr TCATSMover3D::ReadTopology(char* path, TMap **newMap)
 	}
 	
 	_HLock((Handle)f); // JLM 8/4/99
-	
+	*/
 	MySpinCursor(); // JLM 8/4/99
-	if(err = ReadTVertices(f,&line,&pts,&depths,errmsg)) goto done;
+	currentLine = linesInFile[line++];
+	//if(err = ReadTVertices(f,&line,&pts,&depths,errmsg)) goto done;
+	if(err = ReadTVertices(linesInFile,&line,&pts,&depths,errmsg)) goto done;
 	
 	if(pts) 
 	{
@@ -1176,14 +1216,18 @@ OSErr TCATSMover3D::ReadTopology(char* path, TMap **newMap)
 	}
 	MySpinCursor();
 	
-	NthLineInTextOptimized(*f, (line)++, s, 1024); 
-	if(IsBoundarySegmentHeaderLine(s,&numBoundarySegs)) // Boundary data from CATs
+	//NthLineInTextOptimized(*f, (line)++, s, 1024); 
+	currentLine = linesInFile[line++];
+	//if(IsBoundarySegmentHeaderLine(s,&numBoundarySegs)) // Boundary data from CATs
+	if(IsBoundarySegmentHeaderLine(currentLine,numBoundarySegs)) // Boundary data from CATs
 	{
 		MySpinCursor();
 		if (numBoundarySegs>0)
-			err = ReadBoundarySegs(f,&line,&boundarySegs,numBoundarySegs,errmsg);
+			//err = ReadBoundarySegs(f,&line,&boundarySegs,numBoundarySegs,errmsg);
+			err = ReadBoundarySegs(linesInFile,&line,&boundarySegs,numBoundarySegs,errmsg);
 		if(err) goto done;
-		NthLineInTextOptimized(*f, (line)++, s, 1024); 
+		//NthLineInTextOptimized(*f, (line)++, s, 1024); 
+		currentLine = linesInFile[line++];
 	}
 	else
 	{
@@ -1194,12 +1238,15 @@ OSErr TCATSMover3D::ReadTopology(char* path, TMap **newMap)
 	}
 	MySpinCursor(); // JLM 8/4/99
 	
-	if(IsWaterBoundaryHeaderLine(s,&numWaterBoundaries,&numBoundaryPts)) // Boundary types from CATs
+	//if(IsWaterBoundaryHeaderLine(s,&numWaterBoundaries,&numBoundaryPts)) // Boundary types from CATs
+	if(IsWaterBoundaryHeaderLine(currentLine,numWaterBoundaries,numBoundaryPts)) // Boundary types from CATs
 	{
 		MySpinCursor();
-		err = ReadWaterBoundaries(f,&line,&waterBoundaries,numWaterBoundaries,numBoundaryPts,errmsg);
+		//err = ReadWaterBoundaries(f,&line,&waterBoundaries,numWaterBoundaries,numBoundaryPts,errmsg);
+		err = ReadWaterBoundaries(linesInFile,&line,&waterBoundaries,numWaterBoundaries,numBoundaryPts,errmsg);
 		if(err) goto done;
-		NthLineInTextOptimized(*f, (line)++, s, 1024); 
+		//NthLineInTextOptimized(*f, (line)++, s, 1024); 
+		currentLine = linesInFile[line++];
 	}
 	else
 	{
@@ -1211,12 +1258,15 @@ OSErr TCATSMover3D::ReadTopology(char* path, TMap **newMap)
 	MySpinCursor(); // JLM 8/4/99
 	//NthLineInTextOptimized(*f, (line)++, s, 1024); 
 	
-	if(IsTTopologyHeaderLine(s,&numTopoPoints)) // Topology from CATs
+	//if(IsTTopologyHeaderLine(s,&numTopoPoints)) // Topology from CATs
+	if(IsTTopologyHeaderLine(currentLine,numTopoPoints)) // Topology from CATs
 	{
 		MySpinCursor();
-		err = ReadTTopologyBody(f,&line,&topo,&velH,errmsg,numTopoPoints,FALSE);
+		//err = ReadTTopologyBody(f,&line,&topo,&velH,errmsg,numTopoPoints,FALSE);
+		err = ReadTTopologyBody(linesInFile,&line,&topo,&velH,errmsg,numTopoPoints,FALSE);
 		if(err) goto done;
-		NthLineInTextOptimized(*f, (line)++, s, 1024); 
+		//NthLineInTextOptimized(*f, (line)++, s, 1024); 
+		currentLine = linesInFile[line++];
 	}
 	else
 	{
@@ -1229,10 +1279,12 @@ OSErr TCATSMover3D::ReadTopology(char* path, TMap **newMap)
 	
 	//NthLineInTextOptimized(*f, (line)++, s, 1024); 
 	
-	if(IsTIndexedDagTreeHeaderLine(s,&numPoints))  // DagTree from CATs
+	//if(IsTIndexedDagTreeHeaderLine(s,&numPoints))  // DagTree from CATs
+	if(IsTIndexedDagTreeHeaderLine(currentLine,numPoints))  // DagTree from CATs
 	{
 		MySpinCursor();
-		err = ReadTIndexedDagTreeBody(f,&line,&tree,errmsg,numPoints);
+		//err = ReadTIndexedDagTreeBody(f,&line,&tree,errmsg,numPoints);
+		err = ReadTIndexedDagTreeBody(linesInFile,&line,&tree,errmsg,numPoints);
 		if(err) goto done;
 	}
 	else
@@ -1299,12 +1351,12 @@ OSErr TCATSMover3D::ReadTopology(char* path, TMap **newMap)
 done:
 	
 	if(depths) {DisposeHandle((Handle)depths); depths=0;}
-	if(f) 
+	/*if(f) 
 	{
 		_HUnlock((Handle)f); 
 		DisposeHandle((Handle)f); 
 		f = 0;
-	}
+	}*/
 	
 	if(err)
 	{
@@ -1332,6 +1384,22 @@ done:
 		if (boundarySegs) {DisposeHandle((Handle)boundarySegs); boundarySegs = 0;}
 	}
 	return err;
+}
+
+OSErr TCATSMover3D::ReadTopology(const char *path, TMap **newMap)
+{
+	vector<string> linesInFile;
+	char outPath[kMaxNameLen];
+	OSErr err = 0;
+#ifdef TARGET_API_MAC_CARBON
+	if (IsClassicPath((char*)path))
+	{
+		err = ConvertTraditionalPathToUnixPath(path, outPath, kMaxNameLen) ;
+		if (!err) strcpy((char*)path,outPath);
+	}
+#endif
+	ReadLinesInFile(path, linesInFile);
+	return ReadTopology(linesInFile, newMap);
 }
 
 OSErr TCATSMover3D::ExportTopology(char* path)
