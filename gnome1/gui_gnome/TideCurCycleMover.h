@@ -27,7 +27,8 @@ class TideCurCycleMover : virtual public TideCurCycleMover_c,  public TCATSMover
 	//virtual OSErr		TextRead(char *path, TMap **newMap);
 	virtual OSErr		TextRead(char *path, TMap **newMap, char *topFilePath);
 	
-	virtual	OSErr		ReadTopology(char* path, TMap **newMap);
+	virtual	OSErr		ReadTopology(vector<string> &linesInFile, TMap **newMap);
+	virtual	OSErr		ReadTopology(const char* path, TMap **newMap);
 	virtual OSErr		ExportTopology(char* path);
 	
 
