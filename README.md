@@ -38,10 +38,10 @@ For Linux use appropriate package manager (apt-get on ubuntu) to download/instal
 #### Binary Dependencies ####
 
 1. Python Imaging Library (PIL) requires:  
-    libjpg-dev, libfrreetype6-dev, zlib1g-dev
+    `$ sudo apt-get install libjpeg-dev libfreetype6-dev zlib1g-dev`
    
    Use apt-get to build dependencies for PIL  
-    `$ sudo apt-get build-dep python-imaging`
+    `$ sudo apt-get install build-dep python-imaging`
 
    This did not build symlinks to libraries for me in /usr/lib, so had to
    manually create them:  
@@ -51,13 +51,15 @@ For Linux use appropriate package manager (apt-get on ubuntu) to download/instal
     $ sudo ln -s /usr/lib/`uname -i`-linux-gnu/libz.so /usr/lib/  
 ```
     
-2. netCDF4 python module requires NetCDF libraries:  
-    libhdf5-serial-dev, libnetcdf
+2. netCDF4 python module requires NetCDF libraries: libhdf5-serial-dev, libnetcdf-dev
 
-3. libxml used by webgnome requires:  
-    libxml2-def, libxslt1-dev
+3. libxml used by webgnome requires: libxml2-dev, libxslt1-dev
 
-4. npm is a javascript package manager used by webgnome  
+4. npm is a javascript package manager used by webgnome
+
+```
+    $ sudo apt-get install libhdf5-serial-dev libnetcdf-dev libxml2-dev libxslt1-dev npm
+```
 
 5. The following python packages, documented in PyGnome's requirements.txt,
    may need to be manually installed. Binaries for 
