@@ -1714,20 +1714,47 @@ done:
 	return err;
 }
 
-OSErr TideCurCycleMover::ReadTopology(const char *path, TMap **newMap)
+OSErr TideCurCycleMover::ReadTopology(char *path, TMap **newMap)
+//OSErr TideCurCycleMover::ReadTopology(const char *path, TMap **newMap)
 {
 	vector<string> linesInFile;
 	char outPath[kMaxNameLen];
+	CHARH fileBufH = 0;
+	vector<string> linesInBuffer;
 	OSErr err = 0;
-#ifdef TARGET_API_MAC_CARBON
+	
+	if (!path || !path[0]) return 0;
+	 
+	// this supports reading from resource for location files
+	if (err = ReadFileContents(TERMINATED,0, 0, path, 0, 0, &fileBufH)) {
+		 TechError("TideCurCycleMover::ReadTopology()", "ReadFileContents()", err);
+		 goto done;
+	}
+	 
+	_HLock((Handle)fileBufH); // JLM 8/4/99
+	 
+	ReadLinesInBuffer(fileBufH, linesInBuffer);	
+	err = ReadTopology(linesInBuffer, newMap);
+done:
+	if(fileBufH) 
+	{
+		_HUnlock((Handle)fileBufH); 
+		DisposeHandle((Handle)fileBufH); 
+		fileBufH = 0;
+	}
+	return err;
+
+/*#ifdef TARGET_API_MAC_CARBON
 	if (IsClassicPath((char*)path))
 	{
 		err = ConvertTraditionalPathToUnixPath(path, outPath, kMaxNameLen) ;
 		if (!err) strcpy((char*)path,outPath);
+		else goto done;
 	}
 #endif
+	// Note, this doesn't work for resources in Location Files...
 	ReadLinesInFile(path, linesInFile);
-	return ReadTopology(linesInFile, newMap);
+	return ReadTopology(linesInFile, newMap);*/
 }
 
 OSErr TideCurCycleMover::ExportTopology(char* path)

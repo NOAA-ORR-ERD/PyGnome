@@ -889,6 +889,7 @@ OSErr TCATSMover3D::TextRead(const char *path, TMap **newMap)
 	{
 		err = ConvertTraditionalPathToUnixPath(path, outPath, kMaxNameLen) ;
 		if (!err) strcpy((char*)path,outPath);
+		else return err;
 	}
 #endif
 	ReadLinesInFile(path, linesInFile);
@@ -1396,6 +1397,7 @@ OSErr TCATSMover3D::ReadTopology(const char *path, TMap **newMap)
 	{
 		err = ConvertTraditionalPathToUnixPath(path, outPath, kMaxNameLen) ;
 		if (!err) strcpy((char*)path,outPath);
+		else return err;
 	}
 #endif
 	ReadLinesInFile(path, linesInFile);
