@@ -28,7 +28,8 @@ public:
 	virtual Boolean		IAm(ClassID id) { if(id==TYPE_CATSMOVER3D) return TRUE; return TCATSMover::IAm(id); }
 	virtual Boolean		IAmA3DMover(){return true;}
 	virtual Boolean 	OkToAddToUniversalMap();
-	OSErr				TextRead(char *path, TMap **newMap); 
+	OSErr				TextRead(vector<string> &linesInFile, TMap **newMap); 
+	OSErr				TextRead(const char *path, TMap **newMap); 
 	OSErr 				ImportGrid(char *path); 
 	OSErr 				CreateRefinedGrid (Boolean askForFile, char* givenPath, char* givenFileName);
 	
@@ -46,7 +47,9 @@ public:
 	//		virtual OSErr 		AddItem (ListItem item);
 	//virtual OSErr 		SettingsItem (ListItem item);
 	//virtual OSErr 		DeleteItem (ListItem item);
-	virtual	OSErr 	ReadTopology(char* path, TMap **newMap);
+	//virtual	OSErr 	ReadTopology(char* path, TMap **newMap);
+	virtual	OSErr 	ReadTopology(const char* path, TMap **newMap);
+	virtual OSErr	ReadTopology(vector<string> &linesInFile, TMap **newMap);
 	virtual	OSErr 	ExportTopology(char* path);
 	
 };

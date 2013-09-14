@@ -37,37 +37,55 @@ class Scenario(object):
         'save' and model or to 'load' an already existing model. If a model is
         loaded from saveloc, the 'model' attribute will contain the re-created
         model object.
+
+        'saveloc' is given as /path_to_save_directory/save_directory
+        if /path_to_save_directory does not exist, then a ValueError is raised
+        if save_directory does not exist, it is created and is empty
+        
+        If save_directory exists but is not empty, then the save() method
+        will clobber all the files in here. The save_directory only contains
+        all the files associated with a single PyGnome Model 
         
         All object's being persisted must use the serializable.Serializable
         class as a mixin or they must define the same methods/attributes.
         
         :param saveloc: A valid directory. Model files are either persisted
                         here or a new model is re-created from the files
-                        stored here.
+                        stored here. The files are clobbered when save() is
+                        called.
         :type saveloc: A path as a string or unicode
         :param model: A model object. Only required if save method is invoked.
         :type model: gnome.model.Model object
         
         .. note:: If user wants to save a scenario, then model must be set
         """
-
+        (path_, savedir) = os.path.split(saveloc)
+        if not os.path.exists(path_):
+            raise ValueError("{0} does not exist. \nCannot create '{1}'"\
+                             .format(path_, savedir))
         if not os.path.exists(saveloc):
-            raise ValueError('Invalid location for saving scenario. {0} does'\
-                             ' not exist'.format(saveloc))
+            os.mkdir(saveloc)
 
         self.saveloc = saveloc
         self.model = model
         self._certainspill_data = os.path.join(self.saveloc,
                 'spills_data_arrays.nc')
-        self._uncertainspill_data = None  # will be updated when _certainspill_data is saved
+        
+        # will be updated when _certainspill_data is saved
+        self._uncertainspill_data = None  
 
     def save(self):
         """
         Method used to save the model state to saveloc
         It saves the state of each object, including the model in JSON format
-        in *.txt files.
+        in *.json files.
+        
+        Clobber any existing files in 'saveloc'. It will only contain the
+        files associated with 'model' that user wishes to save.
         """
-
+        
+        self._empty_save_dir()
+        
         if self.model is None:
             raise AttributeError('A model needs to be defined before it'\
                                  ' can be saved')
@@ -168,7 +186,7 @@ class Scenario(object):
         """
 
         fname = os.path.join(self.saveloc,
-                             '{0}_{1}.txt'.format(obj.__class__.__name__,
+                             '{0}_{1}.json'.format(obj.__class__.__name__,
                              obj.id))
         data = self._move_data_file(data)  # if there is a
         with open(fname, 'w') as outfile:
@@ -225,18 +243,18 @@ class Scenario(object):
 
     def load_model_dict(self):
         """ 
-        Load model dict from *.txt file. 
+        Load model dict from *.json file. 
         Pop 'map' key, create 'map' object and add to model dict. 
         This dict is used in Model.new_from_dict(dict_) to create new Model 
         """
 
-        model_file = glob.glob(os.path.join(self.saveloc, 'Model_*.txt'
+        model_file = glob.glob(os.path.join(self.saveloc, 'Model_*.json'
                                ))
         if model_file == []:
-            raise ValueError('No Model_*.txt files find in {0}'\
+            raise ValueError('No Model_*.json files find in {0}'\
                              .format(self.saveloc))
         elif len(model_file) > 1:
-            raise ValueError("multiple Model_*.txt files found in {0}. Please"\
+            raise ValueError("multiple Model_*.json files found in {0}. Please"\
                              " provide 'filename'".format(self.saveloc))
         else:
             model_file = model_file[0]
@@ -277,18 +295,18 @@ class Scenario(object):
 
     def _find_and_load_json_file(self, id_):
         """
-        Given the id of the object, find the *_{id}.txt file that contains
+        Given the id of the object, find the *_{id}.json file that contains
         json of the object and load it. 
         """
 
         obj_file = glob.glob(os.path.join(self.saveloc,
-                             '*_{0}.txt'.format(id_)))
+                             '*_{0}.json'.format(id_)))
         if len(obj_file) == 0:
-            msg = 'No filename containing *_{0}.txt found in {1}'
+            msg = 'No filename containing *_{0}.json found in {1}'
             raise IOError(msg.format(id_,os.path.abspath('.')))
         elif len(obj_file) > 1:
             msg = 'Cannot have two objects with same Id. Multiple'\
-                  ' filenames containing *_{0}.txt found in {1}'
+                  ' filenames containing *_{0}.json found in {1}'
             raise IOError(msg.format(id_,os.path.abspath(self.saveloc)))
 
         obj_file = obj_file[0]
@@ -411,5 +429,20 @@ class Scenario(object):
                     ).item()
             sc._data_arrays = data
             sc.all_array_types.update(array_types)
-
-
+            
+    def _empty_save_dir(self):
+        '''
+        Remove all files, directories under self.saveloc
+        
+        First clean out directory, then add new save files
+        This should only be called by self.save()
+        '''
+        (dirpath, dirnames, filenames) = os.walk(self.saveloc).next()
+        
+        if dirnames:
+            for dir_ in dirnames:
+                shutil.rmtree(os.path.join(dirpath, dir_))
+                
+        if filenames:
+            for file_ in filenames:
+                os.remove(os.path.join(dirpath,file_))

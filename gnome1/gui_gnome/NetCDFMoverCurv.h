@@ -19,6 +19,9 @@
 #ifndef __NetCDFMoverCurv__
 #define __NetCDFMoverCurv__
 
+#include <vector>
+using namespace std;
+
 #include "NetCDFMoverCurv_c.h"
 #include "NetCDFMover.h"
 
@@ -38,8 +41,9 @@ public:
 	virtual OSErr		TextRead(char *path,TMap **newMap,char *topFilePath);
 	virtual OSErr 		ReadTimeData(long index,VelocityFH *velocityH, char* errmsg); 
 	
-	virtual	OSErr 	ReadTopology(char* path, TMap **newMap);
-	virtual	OSErr 	ExportTopology(char* path);
+	virtual	OSErr		ReadTopology(vector<string> &linesInFile, TMap **newMap);
+	virtual	OSErr		ReadTopology(const char* path, TMap **newMap);
+	virtual	OSErr		ExportTopology(char* path);
 	//OSErr 				ReadTransposeArray(CHARH fileBufH,long *line,LONGH *transposeArray,long numPts,char* errmsg);
 	// list display methods
 	virtual OSErr 		CheckAndPassOnMessage(TModelMessage *message);	

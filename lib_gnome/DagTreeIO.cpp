@@ -153,10 +153,12 @@ OSErr ReadTVerticesBody(vector<string> &linesInFile, long *line,
 
 	currentLine = linesInFile[(*line)++];
 	if (!ParseLine(currentLine, x, y, z))
+	{
 		wantDepths = false;	// in case any current files don't have depth data, it's usually not used
-	else if (!ParseLine(currentLine, x, y)) {
+		if (!ParseLine(currentLine, x, y)) {
 		sprintf(errmsg, "Unable to read vertex data from line %ld:%s", *line, NEWLINESTRING);
-		goto done;
+			goto done;
+		}
 	}
 
 	(*ptsH)[0].h = 1000000 * x;

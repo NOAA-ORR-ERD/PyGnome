@@ -35,7 +35,8 @@ public:
 	virtual OSErr		TextRead(char *path,TMap **newMap,char *topFilePath);
 	virtual OSErr 		ReadTimeData(long index,VelocityFH *velocityH, char* errmsg); 
 	
-	virtual	OSErr 	ReadTopology(char* path, TMap **newMap);
+	virtual	OSErr		ReadTopology(vector<string> &linesInFile, TMap **newMap);
+	virtual	OSErr		ReadTopology(const char* path, TMap **newMap);
 	virtual 	OSErr 	ExportTopology(char* path);
 	
 	// list display methods

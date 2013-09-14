@@ -311,7 +311,7 @@ OSErr GridCurrentMover_c::TextRead(char *path, char *topFilePath)
 	memset(filePath, 0, 256);
 	strcpy(filePath,path);	// this gets altered in IsNetCDFPathsFile, eventually change that function
 
-	//  Net CDF is a binary file format, so we will continue to just pass in a path.
+	//  NetCDF is a binary file format, so we will continue to just pass in a path.
 	if (IsNetCDFFile(path, &gridType) ||
 		IsNetCDFPathsFile(filePath, &isNetCDFPathsFile, fileNamesPath, &gridType))
 	{

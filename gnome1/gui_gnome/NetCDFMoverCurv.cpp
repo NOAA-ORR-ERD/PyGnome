@@ -2044,12 +2044,14 @@ done:
 	
 }*/
 
-OSErr NetCDFMoverCurv::ReadTopology(char* path, TMap **newMap)
+//OSErr NetCDFMoverCurv::ReadTopology(char* path, TMap **newMap)
+OSErr NetCDFMoverCurv::ReadTopology(vector<string> &linesInFile, TMap **newMap)
 {
 	// import NetCDF curvilinear info so don't have to regenerate
 	char s[1024], errmsg[256]/*, s[256], topPath[256]*/;
 	long i, numPoints, numTopoPoints, line = 0, numPts;
-	CHARH f = 0;
+	string currentLine;
+	//CHARH f = 0;
 	OSErr err = 0;
 	
 	TopologyHdl topo=0;
@@ -2066,42 +2068,9 @@ OSErr NetCDFMoverCurv::ReadTopology(char* path, TMap **newMap)
 	long numWaterBoundaries, numBoundaryPts, numBoundarySegs;
 	LONGH boundarySegs=0, waterBoundaries=0, boundaryPts=0;
 	
-	//Point where;
-	//OSType typeList[] = { 'NULL', 'NULL', 'NULL', 'NULL' };
-	//MySFReply reply;
-	
 	errmsg[0]=0;
 	
-	
-	/*where = CenteredDialogUpLeft(M38c);
-	 sfpgetfile(&where, "",
-	 (FileFilterUPP)0,
-	 -1, typeList,
-	 (DlgHookUPP)0,
-	 &reply, M38c,
-	 (ModalFilterUPP)MakeUPP((ProcPtr)STDFilter, uppModalFilterProcInfo));
-	 if (!reply.good) 
-	 {
-	 //err = ReorderPoints(fStartData.dataHdl,newMap,errmsg);	// if u, v input separately only do this once?
-	 //goto done;
-	 return -1;
-	 }
-	 
-	 my_p2cstr(reply.fName);
-	 
-	 #ifdef MAC
-	 GetFullPath(reply.vRefNum, 0, (char *)reply.fName, topPath);
-	 #else
-	 strcpy(topPath, reply.fName);
-	 #endif
-	 
-	 strcpy (s, topPath);
-	 //err = ReadTopology(topPath,newMap);	// newMap here
-	 goto done;
-	 //SplitPathFile (s, fileName);*/
-	
-	
-	if (!path || !path[0]) return 0;
+	/*if (!path || !path[0]) return 0;
 	
 	if (err = ReadFileContents(TERMINATED,0, 0, path, 0, 0, &f)) {
 		TechError("NetCDFMover::ReadTopology()", "ReadFileContents()", err);
@@ -2109,19 +2078,23 @@ OSErr NetCDFMoverCurv::ReadTopology(char* path, TMap **newMap)
 	}
 	
 	_HLock((Handle)f); // JLM 8/4/99
-	
+	*/
 	// No header
 	// start with transformation array and vertices
 	MySpinCursor(); // JLM 8/4/99
-	NthLineInTextOptimized(*f, (line)++, s, 1024); 
-	if(IsTransposeArrayHeaderLine(s,&numPts)) // 
+	currentLine = linesInFile[line++];
+	//NthLineInTextOptimized(*f, (line)++, s, 1024); 
+	//if(IsTransposeArrayHeaderLine(s,&numPts)) // 
+	if(IsTransposeArrayHeaderLine(currentLine,numPts)) // 
 	{
-		if (err = ReadTransposeArray(f,&line,&fVerdatToNetCDFH,numPts,errmsg)) 
+		//if (err = ReadTransposeArray(f,&line,&fVerdatToNetCDFH,numPts,errmsg)) 
+		if (err = ReadTransposeArray(linesInFile,&line,&fVerdatToNetCDFH,numPts,errmsg)) 
 		{strcpy(errmsg,"Error in ReadTransposeArray"); goto done;}
 	}
 	else {err=-1; strcpy(errmsg,"Error in Transpose header line"); goto done;}
 	
-	if(err = ReadTVertices(f,&line,&pts,&depths,errmsg)) goto done;
+	//if(err = ReadTVertices(f,&line,&pts,&depths,errmsg)) goto done;
+	if(err = ReadTVertices(linesInFile,&line,&pts,&depths,errmsg)) goto done;
 	
 	if(pts) 
 	{
@@ -2142,14 +2115,18 @@ OSErr NetCDFMoverCurv::ReadTopology(char* path, TMap **newMap)
 	}
 	MySpinCursor();
 	
-	NthLineInTextOptimized(*f, (line)++, s, 1024); 
-	if(IsBoundarySegmentHeaderLine(s,&numBoundarySegs)) // Boundary data from CATs
+	currentLine = linesInFile[line++];
+	//NthLineInTextOptimized(*f, (line)++, s, 1024); 
+	//if(IsBoundarySegmentHeaderLine(s,&numBoundarySegs)) // Boundary data from CATs
+	if(IsBoundarySegmentHeaderLine(currentLine,numBoundarySegs)) // Boundary data from CATs
 	{
 		MySpinCursor();
 		if (numBoundarySegs>0)
-			err = ReadBoundarySegs(f,&line,&boundarySegs,numBoundarySegs,errmsg);
+			//err = ReadBoundarySegs(f,&line,&boundarySegs,numBoundarySegs,errmsg);
+			err = ReadBoundarySegs(linesInFile,&line,&boundarySegs,numBoundarySegs,errmsg);
 		if(err) goto done;
-		NthLineInTextOptimized(*f, (line)++, s, 1024); 
+		//NthLineInTextOptimized(*f, (line)++, s, 1024); 
+		currentLine = linesInFile[line++];
 	}
 	else
 	{
@@ -2160,13 +2137,16 @@ OSErr NetCDFMoverCurv::ReadTopology(char* path, TMap **newMap)
 	}
 	MySpinCursor(); // JLM 8/4/99
 	
-	if(IsWaterBoundaryHeaderLine(s,&numWaterBoundaries,&numBoundaryPts)) // Boundary types from CATs
+	//if(IsWaterBoundaryHeaderLine(s,&numWaterBoundaries,&numBoundaryPts)) // Boundary types from CATs
+	if(IsWaterBoundaryHeaderLine(currentLine,numWaterBoundaries,numBoundaryPts)) // Boundary types from CATs
 	{
 		MySpinCursor();
 		if (numBoundaryPts>0)
-			err = ReadWaterBoundaries(f,&line,&waterBoundaries,numWaterBoundaries,numBoundaryPts,errmsg);
+			//err = ReadWaterBoundaries(f,&line,&waterBoundaries,numWaterBoundaries,numBoundaryPts,errmsg);
+			err = ReadWaterBoundaries(linesInFile,&line,&waterBoundaries,numWaterBoundaries,numBoundaryPts,errmsg);
 		if(err) goto done;
-		NthLineInTextOptimized(*f, (line)++, s, 1024); 
+		//NthLineInTextOptimized(*f, (line)++, s, 1024); 
+		currentLine = linesInFile[line++];
 	}
 	else
 	{
@@ -2178,13 +2158,16 @@ OSErr NetCDFMoverCurv::ReadTopology(char* path, TMap **newMap)
 	MySpinCursor(); // JLM 8/4/99
 	//NthLineInTextOptimized(*f, (line)++, s, 1024); 
 	
-	if(IsBoundaryPointsHeaderLine(s,&numBoundaryPts)) // Boundary data from CATs
+	//if(IsBoundaryPointsHeaderLine(s,&numBoundaryPts)) // Boundary data from CATs
+	if(IsBoundaryPointsHeaderLine(currentLine,numBoundaryPts)) // Boundary data from CATs
 	{
 		MySpinCursor();
 		if (numBoundaryPts>0)
-			err = ReadBoundaryPts(f,&line,&boundaryPts,numBoundaryPts,errmsg);
+			//err = ReadBoundaryPts(f,&line,&boundaryPts,numBoundaryPts,errmsg);
+			err = ReadBoundaryPts(linesInFile,&line,&boundaryPts,numBoundaryPts,errmsg);
 		if(err) goto done;
-		NthLineInTextOptimized(*f, (line)++, s, 1024); 
+		//NthLineInTextOptimized(*f, (line)++, s, 1024); 
+		currentLine = linesInFile[line++];
 	}
 	else
 	{
@@ -2195,12 +2178,15 @@ OSErr NetCDFMoverCurv::ReadTopology(char* path, TMap **newMap)
 	}
 	MySpinCursor(); // JLM 8/4/99
 	
-	if(IsTTopologyHeaderLine(s,&numTopoPoints)) // Topology from CATs
+	//if(IsTTopologyHeaderLine(s,&numTopoPoints)) // Topology from CATs
+	if(IsTTopologyHeaderLine(currentLine,numTopoPoints)) // Topology from CATs
 	{
 		MySpinCursor();
-		err = ReadTTopologyBody(f,&line,&topo,&velH,errmsg,numTopoPoints,FALSE);
+		//err = ReadTTopologyBody(f,&line,&topo,&velH,errmsg,numTopoPoints,FALSE);
+		err = ReadTTopologyBody(linesInFile,&line,&topo,&velH,errmsg,numTopoPoints,FALSE);
 		if(err) goto done;
-		NthLineInTextOptimized(*f, (line)++, s, 1024); 
+		//NthLineInTextOptimized(*f, (line)++, s, 1024); 
+		currentLine = linesInFile[line++];
 	}
 	else
 	{
@@ -2213,10 +2199,12 @@ OSErr NetCDFMoverCurv::ReadTopology(char* path, TMap **newMap)
 	
 	//NthLineInTextOptimized(*f, (line)++, s, 1024); 
 	
-	if(IsTIndexedDagTreeHeaderLine(s,&numPoints))  // DagTree from CATs
+	//if(IsTIndexedDagTreeHeaderLine(s,&numPoints))  // DagTree from CATs
+	if(IsTIndexedDagTreeHeaderLine(currentLine,numPoints))  // DagTree from CATs
 	{
 		MySpinCursor();
-		err = ReadTIndexedDagTreeBody(f,&line,&tree,errmsg,numPoints);
+		//err = ReadTIndexedDagTreeBody(f,&line,&tree,errmsg,numPoints);
+		err = ReadTIndexedDagTreeBody(linesInFile,&line,&tree,errmsg,numPoints);
 		if(err) goto done;
 	}
 	else
@@ -2286,12 +2274,12 @@ OSErr NetCDFMoverCurv::ReadTopology(char* path, TMap **newMap)
 done:
 	
 	if(depths) {DisposeHandle((Handle)depths); depths=0;}
-	if(f) 
+	/*if(f) 
 	{
 		_HUnlock((Handle)f); 
 		DisposeHandle((Handle)f); 
 		f = 0;
-	}
+	}*/
 	
 	if(err)
 	{
@@ -2320,6 +2308,50 @@ done:
 		if (boundarySegs) {DisposeHandle((Handle)boundarySegs); boundarySegs = 0;}
 		if (boundaryPts) {DisposeHandle((Handle)boundaryPts); boundaryPts = 0;}
 	}
+	return err;
+}
+
+OSErr NetCDFMoverCurv::ReadTopology(const char *path, TMap **newMap)
+{
+	// note the commented out code would be needed for a topology file in a resource (if we made a location file with a netcdf file...)
+	vector<string> linesInFile;
+	char outPath[kMaxNameLen];
+	//CHARH fileBufH = 0;
+	//vector<string> linesInBuffer;
+	OSErr err = 0;
+	
+	//if (!path || !path[0]) return 0;
+	
+	// this supports reading from resource for location files
+	/*if (err = ReadFileContents(TERMINATED,0, 0, path, 0, 0, &fileBufH)) {
+		TechError("TideCurCycleMover::ReadTopology()", "ReadFileContents()", err);
+		goto done;
+	}
+	
+	_HLock((Handle)fileBufH); // JLM 8/4/99
+	
+	ReadLinesInBuffer(fileBufH, linesInBuffer);	
+	err = ReadTopology(linesInBuffer, newMap);
+	 */
+#ifdef TARGET_API_MAC_CARBON
+	 if (IsClassicPath((char*)path))
+	 {
+		 err = ConvertTraditionalPathToUnixPath(path, outPath, kMaxNameLen) ;
+		 if (!err) strcpy((char*)path,outPath);
+		 else return err;
+	 }
+#endif
+	 // Note, this doesn't work for resources in Location Files...
+	 ReadLinesInFile(path, linesInFile);
+	 err = ReadTopology(linesInFile, newMap);
+	
+//done:
+	/*if(fileBufH) 
+	{
+		_HUnlock((Handle)fileBufH); 
+		DisposeHandle((Handle)fileBufH); 
+		fileBufH = 0;
+	}*/
 	return err;
 }
 
