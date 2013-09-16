@@ -2,9 +2,9 @@
 """
 spill_container.py
 
-Impliments a container for spills -- keeps all the data from each spill in one set of arrays
-The spills themselves provide the arrays themselves (adding more each time LEs are released)
-This is the "magic" class -- it handles the smart allocation of arrays, etc.
+Implements a container for spills -- keeps all the data from each spill in one
+set of arrays. The spills themselves provide some of the arrays themselves
+(adding more each time LEs are released).
 """
 import datetime
 
@@ -14,11 +14,12 @@ import gnome.spill
 from gnome.utilities.orderedcollection import OrderedCollection
 from gnome import basic_types, element_types
 
+
 class SpillContainerData(object):
     """
     A really simple SpillContainer -- holds the data arrays,
     but doesn't manage spills, etc.
-    
+
     Think of it as a read-only SpillContainer.
 
     Designed primarily to hold data retrieved from cache
@@ -29,30 +30,35 @@ class SpillContainerData(object):
         Initialize a SimpleSpillContainer.
 
         :param uncertain=False: flag indicating whether this holds uncertainty
-                                elements or not 
-        :param data_arrays=None: A dict of all the data arrays you want to hold.
-                                 NOTE: no error checking! they should be correctly
-                                       aligned, etc.
+                                elements or not
+        :param data_arrays=None: A dict of all the data arrays you want to hold
+                                 NOTE: no error checking! they should be
+                                       correctly aligned, etc.
 
-        The common use-case for this is for loading from cache for re-rendering, etc.
+        The common use-case for this is for loading from cache for
+        re-rendering, etc.
         """
-        self.uncertain = uncertain   # uncertainty spill - same information as basic_types.spill_type
+        # uncertainty spill - same information as basic_types.spill_type
+        self.uncertain = uncertain
         self.on = True       # sets whether the spill is active or not
-        
+
         if not data_arrays:
             data_arrays = {}
         self._data_arrays = data_arrays
         self.current_time_stamp = None
-        # following internal variable is used when comparing two SpillContainer objects
-        # when testing the data arrays are equal, use this tolerance with numpy.allclose() method
-        # default is to make it 0 so arrays must match exactly. This will not be true when state is stored
-        # midway through the run since positions are stored as single dtype as opposed to double
-        self._array_allclose_atol = 0  
+
+        # following internal variable is used when comparing two SpillContainer
+        # objects. When testing the data arrays are equal, use this tolerance
+        # with numpy.allclose() method. Default is to make it 0 so arrays must
+        # match exactly. This will not be true when state is stored midway
+        # through the run since positions are stored as single dtype as opposed
+        # to double
+        self._array_allclose_atol = 0
 
     def __getitem__(self, data_name):
         """
         The basic way to access data for the LEs
-        
+
         :param data_name: the name of the array to be returned
 
         example:  a_spill_container['positions'] give you the
@@ -61,100 +67,109 @@ class SpillContainerData(object):
         :raises KeyError: raised if the data is not there
         """
         return self._data_arrays[data_name]
-    
+
     def __setitem__(self, data_name, array):
         """
         sets the data item
-        
+
         careful! -- this should probably only be used for testing!
         as all arrays need to be compatible
-        
+
         It will be checked to at least be size-consistent with the rest of the
         data, and type-consistent if the data array is being replaced
-        
-        It will not allow user to add a new data_array - only existing data_arrays
-        can be modified. All data_arrays are defined in prepare_for_model_run
+
+        It will not allow user to add a new data_array - only existing
+        data_arrays can be modified.
+        All data_arrays are defined in prepare_for_model_run
         """
 
         array = np.asarray(array)
-        
+
         if data_name in self._data_arrays:
-            # if the array is already here, the type should match        
-            if array.dtype !=  self._data_arrays[data_name].dtype:
+            # if the array is already here, the type should match
+            if array.dtype != self._data_arrays[data_name].dtype:
                 raise ValueError("new data array must be the same type")
-            # and the shape should match    
-            if array.shape !=  self._data_arrays[data_name].shape:
-                raise ValueError("data array must be the same shape as original array")
-                    
+            # and the shape should match
+            if array.shape != self._data_arrays[data_name].shape:
+                msg = "data array must be the same shape as original array"
+                raise ValueError(msg)
+
         else:
-           #raise KeyError("{0} cannot be updated, it does not exist in the data arrays".format(data_name) )
-            # make sure length(array) equals length of other data_arrays - check against one key
+            # make sure length(array) equals length of other data_arrays.
+            # check against one key
             if array.shape == ():
-               raise TypeError("0-rank arrays are not valid. If new data is a scalar, enter a list [value]")
-               
-            if len(array) != len(self._data_arrays[self._data_arrays.keys()[0]]):
-               raise IndexError("length of new data should match length of existing data_arrays.")
-        
+                raise TypeError("0-rank arrays are not valid. "\
+                               "If new data is a scalar, enter a list [value]")
+
+            if (len(array) !=
+                len(self._data_arrays[self._data_arrays.keys()[0]])):
+                raise IndexError("length of new data should match length of"\
+                                 " existing data_arrays.")
+
         self._data_arrays[data_name] = array
-    
-    def __eq__(self,other):
-        """ 
+
+    def __eq__(self, other):
+        """
         Compare equality of two SpillContanerData objects
         """
         if type(self) != type(other):
             return False
-        
+
         if len(self.__dict__) != len(other.__dict__):
             return False
-        
+
         # check key/val that are not dicts
         val_is_dict = []
         for key, val in self.__dict__.iteritems():
             """ compare dict not including _data_arrays """
             if isinstance(val, dict):
                 val_is_dict.append(key)
-                
+
             elif val != other.__dict__[key]:
                 return False
-            
+
         # check key, val that are dicts
         for item in val_is_dict:
             if len(self.__dict__[item]) != len(other.__dict__[item]):
-                return False    # dicts should contain the same number of keys,values
-            
-            for key,val in self.__dict__[item].iteritems():
+                # dicts should contain the same number of keys,values
+                return False
+
+            for key, val in self.__dict__[item].iteritems():
                 if isinstance(val, np.ndarray):
-                    # np.allclose will not work for scalar array so when key is current_time_stamp, need to do something else
-                    if len(val.shape) == 0: 
+                    # np.allclose will not work for scalar array so when key is
+                    # current_time_stamp, need to do something else
+                    if len(val.shape) == 0:
                         if val != other.__dict__[item][key]:
-                            return False 
+                            return False
                     else:
-                        # we know it is an array, not a scalar in an array - allclose will work
-                        if not np.allclose(val, other.__dict__[item][key], 0, self._array_allclose_atol):
+                        # we know it is an array, not a scalar in an
+                        # array - allclose will work
+                        if not np.allclose(val, other.__dict__[item][key], 
+                                           0, self._array_allclose_atol):
                             return False
                 else:
                     if val != other.__dict__[item][key]:
                         return False
-                
+
         return True
-    
+
     def __ne__(self, other):
-        """ 
+        """
         Compare inequality (!=) of two SpillContanerData objects
         """
         if self == other:
             return False
         else:
             return True
-                
+
     @property
     def num_elements(self):
         """
         The number of elements currently in the SpillContainer
         This only returns None for SpillContainerData object is initialized
         without any data_arrays.
-        
-        If SpillContainer is initialized, all data_arrays exist even if no 
+
+        If SpillContainer is initialized, all data_arrays exist even if no
         elements are released so this will always return a valid int >= 0
         """
         if self._data_arrays.keys():
@@ -166,64 +181,68 @@ class SpillContainerData(object):
     @property
     def data_arrays_dict(self):
         """
-        Returns a dict of the all the data arrays 
+        Returns a dict of the all the data arrays
         """
-        ## this is a property in case we want change the internal implementation
+        # this is a property in case we want change the internal implementation
         return self._data_arrays
 
 
 class SpillContainer(SpillContainerData):
     """
-    Container class for all spills -- it takes care of capturing the released LEs from
-    all the spills, putting them all in a single set of arrays.
-    
+    Container class for all spills -- it takes care of capturing the released
+    LEs from all the spills, putting them all in a single set of arrays.
+
     Many of the "fields" associated with a collection of elements are optional,
     or used only by some movers, so only the ones required will be requested
     by each mover.
-    
+
     The data for the elements is stored in the _data_arrays dict. They can be
     accessed by indexing. For example:
-     
-    positions = spill_container['positions'] : returns a (num_LEs, 3) array of world_point_types
+
+    positions = spill_container['positions'] : returns a (num_LEs, 3) array of
+    world_point_types
     """
-    
+
     def __init__(self, uncertain=False):
         super(SpillContainer, self).__init__(uncertain=uncertain)
-        
+
         self.all_array_types = dict(element_types.all_spill_containers)
         self.spills = OrderedCollection(dtype=gnome.spill.Spill)
         self.rewind()
-        
+
     def __setitem__(self, data_name, array):
         """
-        Invoke baseclass __setitem__ method so the _data_array is set correctly.
-         
-        In addition, create the appropriate ArrayType if it wasn't created by the user. 
+        Invoke baseclass __setitem__ method so the _data_array is set correctly
+
+        In addition, create the appropriate ArrayType if it wasn't created by
+        the user.
         """
-        super(SpillContainer,self).__setitem__(data_name, array)
+        super(SpillContainer, self).__setitem__(data_name, array)
         if data_name not in self.all_array_types:
             shape = self._data_arrays[data_name].shape
             dtype = self._data_arrays[data_name].dtype.type
-            self.all_array_types[data_name] = element_types.ArrayType(shape, dtype)
-            
+            self.all_array_types[data_name] = element_types.ArrayType(shape,
+                                                                      dtype)
+
         #self.reconcile_data_arrays()
-        
-        
+
     def rewind(self):
         """
         In the rewind operation, we:
         - rewind all the spills
         - purge the data arrays
           - we gather data arrays for each contained spill
-          - the stored arrays are cleared, then replaced with appropriate empty arrays
+          - the stored arrays are cleared, then replaced with appropriate
+            empty arrays
         """
         for spill in self.spills:
             spill.rewind()
         # this should create a full set of zero-sized arrays
-        # gnome.spill.Spill().create_new_elements(0) will return 0 size 'positions' array 
+        # gnome.spill.Spill().create_new_elements(0) will return 0 size
+        # 'positions' array
         self._data_arrays = self.initialize_data_arrays({})
 
-#===============================================================================
+#==============================================================================
 #    def reconcile_data_arrays(self):
 #        self.update_all_array_types()
 # 
@@ -244,14 +263,14 @@ class SpillContainer(SpillContainerData):
 #        for k in self._data_arrays.keys()[:]:
 #           if k not in self.all_array_types:
 #               del self._data_arrays[k]
-#===============================================================================
+#==============================================================================
 
-    #===========================================================================
+    #==========================================================================
     # def update_all_array_types(self):
     #    self.all_array_types = {}
     #    for spill in self.spills:
     #        self.all_array_types.update(spill.array_types)
-    #===========================================================================
+    #==========================================================================
 
     def get_spill_mask(self, spill):
         return self['spill_num'] == self.spills.index(spill.id)
@@ -270,24 +289,24 @@ class SpillContainer(SpillContainerData):
 
     def prepare_for_model_run(self, current_time, array_types={}):
         """
-        called when setting up the model prior to 1st time step 
+        called when setting up the model prior to 1st time step
         """
         self.current_time_stamp = current_time
         self.all_array_types.update(array_types)
-        
+
         if len(self.spills) == 0:
-            self.all_array_types.update( gnome.spill.Spill().array_types )
+            self.all_array_types.update(gnome.spill.Spill().array_types)
         else:
             for spill in self.spills:
-                self.all_array_types.update( spill.array_types)
-        
+                self.all_array_types.update(spill.array_types)
+
         # define all data arrays even if no data exists in them
         self._data_arrays = self.initialize_data_arrays({})
 
     def prepare_for_model_step(self, current_time):
         """
         Called at the beginning of a time step
-        set the current_time_stamp attribute        
+        set the current_time_stamp attribute
         """
         self.current_time_stamp = current_time
 
@@ -297,23 +316,26 @@ class SpillContainer(SpillContainerData):
         Data arrays are set to their initial_values
         """
         arrays = {}
-        
+
         if spill_arrays:
             num_elements = len(spill_arrays[spill_arrays.keys()[0]])
         else:
             num_elements = 0
-        
+
         # first initialize all arrays
         for name, array_type in self.all_array_types.iteritems():
-            arrays[name] = np.zeros( (num_elements,)+array_type.shape, dtype=array_type.dtype)
+            arrays[name] = np.zeros((num_elements,) + array_type.shape,
+                                     dtype=array_type.dtype)
             if name in spill_arrays:
                 arrays[name][:] = spill_arrays.pop(name)
             else:
                 arrays[name][:] = array_type.initial_value
-        
+
         if spill_arrays:
-            raise KeyError("Key mismatch: spill_arrays has a {0} key(s), which spill_container's all_data_arrays does not contain".format(spill_arrays.keys()))
-        
+            raise KeyError("Key mismatch: spill_arrays has a {0} key(s),"\
+                           "  which spill_container's all_data_arrays does"\
+                           " not contain".format(spill_arrays.keys()))
+
         return arrays
 
     def release_elements(self, current_time, time_step):
@@ -333,34 +355,40 @@ class SpillContainer(SpillContainerData):
                 if spill_arrays is not None:
                     new_data = self.initialize_data_arrays(spill_arrays)
                     if 'spill_num' in new_data:
-                        new_data['spill_num'][:] = self.spills.index(spill.id, renumber=False)
-                        
-                    # append newly spawned and initialized particles to the data_arrays
+                        new_data['spill_num'][:] = self.spills.index(spill.id,
+                                                               renumber=False)
+
+                    # append newly spawned and initialized particles to the
+                    # data_arrays
                     for name in new_data:
-                        if name in self._data_arrays and self._data_arrays[name].shape != ():
+                        if (name in self._data_arrays and
+                            self._data_arrays[name].shape != ()):
                             # concatenate data along the first axis
-                            self._data_arrays[name] = np.r_[ self._data_arrays[name], new_data[name] ]
+                            self._data_arrays[name] = np.r_[ self._data_arrays[name],
+                                                            new_data[name] ]
                         else:
                             self._data_arrays[name] = new_data[name]
 
     def model_step_is_done(self):
         """
         Called at the end of a time step
-        Need to remove particles marked as to_be_removed...        
+        Need to remove particles marked as to_be_removed...
         """
         if len(self._data_arrays) == 0:
             return  # nothing to do - arrays are not yet defined.
-        to_be_removed = np.where( self['status_codes'] == basic_types.oil_status.to_be_removed)[0]
+        to_be_removed = np.where(self['status_codes'] ==
+                                 basic_types.oil_status.to_be_removed)[0]
         if len(to_be_removed) > 0:
-        	for key in self.all_array_types.keys():
-        		self._data_arrays[key] = np.delete( self[key], to_be_removed, axis=0) 
-
+            for key in self.all_array_types.keys():
+                self._data_arrays[key] = np.delete(self[key], to_be_removed,
+                                                   axis=0)
 
     def __str__(self):
-        msg = "gnome.spill_container.SpillContainer\nspill LE attributes: %s" % self._data_arrays.keys()
+        msg = ("gnome.spill_container.SpillContainer\nspill LE attributes: %s"
+               % self._data_arrays.keys())
         return msg
 
-    __repr__ = __str__  # should write a better one, I suppose
+    __repr__ = __str__
 
 
 class SpillContainerPairData(object):
@@ -368,7 +396,7 @@ class SpillContainerPairData(object):
     A really simple SpillContainerPair
       - holds SpillContainerPairData objects,
         but doen't manage spills, etc.
-    
+
     Think of it as a read-only SpillContainerPair.
 
     Designed primarily to hold data retrieved from cache
@@ -378,11 +406,11 @@ class SpillContainerPairData(object):
         """
         initialize object with the spill_containers passed in.
         """
-        
+
         if sc.uncertain:
             raise ValueError("sc is an uncertain SpillContainer")
-        self._spill_container = sc  # name mangling just to make it more difficult for user to find
-        
+        self._spill_container = sc
+
         if u_sc is None:
             self._uncertain = False
         else:
@@ -425,60 +453,58 @@ class SpillContainerPairData(object):
     def LE_data(self):
         data = self._spill_container._data_arrays.keys()
         data.append('current_time_stamp')
-        return data    
-    
+        return data
+
     def LE(self, prop_name, uncertain=False):
         if uncertain:
             if prop_name == 'current_time_stamp':
                 return self._u_spill_container.current_time_stamp
-            
+
             return self._u_spill_container[prop_name]
         else:
             if prop_name == 'current_time_stamp':
                 return self._spill_container.current_time_stamp
-            
+
             return self._spill_container[prop_name]
 
-    def __eq__(self,other):
-        """ 
+    def __eq__(self, other):
+        """
         Compare equality of two SpillContainerPairData objects
         """
         if type(self) != type(other):
             return False
-        
+
         if self.uncertain != other.uncertain:
             return False
-        
-        for sc in zip(self.items(),other.items()):
+
+        for sc in zip(self.items(), other.items()):
             if sc[0] != sc[1]:
                 return False
-                
+
         return True
-    
+
     def __ne__(self, other):
-        """ 
+        """
         Compare inequality (!=) of two SpillContainerPairData objects
         """
         if self == other:
             return False
         else:
             return True
-     
+
 
 class SpillContainerPair(SpillContainerPairData):
     """
-    Container holds two SpillContainers, one contains the certain spills while the other contains
-    uncertainty spills if model uncertainty is on.
+    Container holds two SpillContainers, one contains the certain spills while
+    the other contains uncertainty spills if model uncertainty is on.
     """
     def __init__(self, uncertain=False):
         """
-        initialize object: 
+        initialize object:
         init spill_container, _uncertain and u_spill_container if uncertain
 
-        Note: all operations like add, remove, replace and __iter__ are exposed to user
-        for the spill_container.spills OrderedCollection
-
-        Since spill_container.spills are 
+        Note: all operations like add, remove, replace and __iter__ are exposed
+        to user for the spill_container.spills OrderedCollection
         """
         sc = SpillContainer()
         if uncertain:
@@ -500,7 +526,8 @@ class SpillContainerPair(SpillContainerPairData):
         """
         unambiguous repr
         """
-        info = "{0.__class__},\n  uncertain={0.uncertain}\n  Spills: {1}".format(self, self._spill_container.spills)
+        info = ("{0.__class__},\n  uncertain={0.uncertain}\n  Spills: {1}"
+                .format(self, self._spill_container.spills))
         return info
 
     @property
@@ -511,7 +538,7 @@ class SpillContainerPair(SpillContainerPairData):
     def uncertain(self, value):
         if type(value) is not bool:
             raise TypeError("uncertain property must be a bool (True/False)")
-        
+
         if self._uncertain == True and value == False:
             self._uncertain = value
             del self._u_spill_container  # delete if it exists
@@ -523,37 +550,34 @@ class SpillContainerPair(SpillContainerPairData):
 
     def add(self, spill):
         """
-        add spill to spill_container and make copy in u_spill_container if uncertainty is on
-        
+        add spill to spill_container and make copy in u_spill_container if
+        uncertainty is on
+
         Overload add method so it can take a tuple (spill, uncertain_spill)
-        If a tuple is given, the uncertain_spill must have the same spill number  
         """
         if isinstance(spill, tuple):
             if self.uncertain:
                 if len(spill) != 2:
-                    raise ValueError("You can only add a tuple containing a certain/uncertain spill pair (spill, uncertain_spill)")
+                    raise ValueError("You can only add a tuple containing a"\
+                                     " certain/uncertain spill pair"\
+                                     " (spill, uncertain_spill)")
                 self._u_spill_container.spills += spill[1]
             else:
                 if len(spill) != 1:
-                    raise ValueError("Uncertainty is off. Tuple must only contain (certain_spill,)")
-            
-            # TODO: currently, currently all spills have the same initial_value for spill_num since it is class variable 
-            # make sure spills.spill_num.initial_value is the same for both
-            #if spill[0].spill_num.initial_value != spill[1].spill_num.initial_value:
-            #    raise ValueError("The initial_value for spill_num should be the same for both spills.")
+                    raise ValueError("Uncertainty is off. Tuple must only"\
+                                     " contain (certain_spill,)")
+
             self._spill_container.spills += spill[0]
-                
+
         else:
             self._spill_container.spills += spill
-            #spill.spill_num.initial_value = self._spill_container.spills.index(spill.id, renumber=False)
             if self.uncertain:
-                # todo: make sure spill_num for copied spill are the same as original
                 self._u_spill_container.spills += spill.uncertain_copy()
 
     def remove(self, ident):
         """
-        remove object from spill_container.spills and the corresponding uncertainty spill
-        as well
+        remove object from spill_container.spills and the corresponding
+        uncertainty spill as well
         """
         if self.uncertain:
             idx = self._spill_container.spills.index(ident)
@@ -583,62 +607,61 @@ class SpillContainerPair(SpillContainerPairData):
             yield self.__getitem__(sp.id)
 
     def __len__(self):
-        """        
-        It refers to the total number of spills that have been added
-        The uncertain and certain spill containers will contain the same number of spills
-        return the length of spill_container.spills
         """
-        return len(self._spill_container.spills)    
+        It refers to the total number of spills that have been added
+        The uncertain and certain spill containers will contain the same number
+        of spills return the length of spill_container.spills
+        """
+        return len(self._spill_container.spills)
 
     def __contains__(self, ident):
         """
-        looks to see if ident which is the id of a spill belongs in the _spill_container.spills 
-        OrderedCollection
+        looks to see if ident which is the id of a spill belongs in the
+        _spill_container.spills OrderedCollection
         """
         return ident in self._spill_container.spills
-
 
     def to_dict(self):
         """
         takes the instance of SpillContainerPair class and outputs a dict with:
-            'certain_spills': call to_dict() on spills ordered collection stored in certain spill container
-            
+            'certain_spills': call to_dict() on spills ordered collection
+            stored in certain spill container
+
         if uncertain, then also return:
-            'uncertain_spills': call to_dict() on spills ordered collection stored in uncertain spill container
+            'uncertain_spills': call to_dict() on spills ordered collection
+            stored in uncertain spill container
         """
-        dict_ = {'certain_spills':self._spill_container.spills.to_dict()}
+        dict_ = {'certain_spills': self._spill_container.spills.to_dict()}
         if self.uncertain:
-            dict_.update({'uncertain_spills':self._u_spill_container.spills.to_dict()})
-            
+            dict_.update({'uncertain_spills':
+                          self._u_spill_container.spills.to_dict()})
+
         return dict_
+
 
 class TestSpillContainer(SpillContainer):
     """
     A really simple spill container, pre-initialized with LEs at a point.
-    
-    This makes it easy to use for tesing other classes -- movers, maps, etc.
+
+    This makes it easy to use for testing other classes -- movers, maps, etc.
     """
     def __init__(self,
                  num_elements=0,
                  start_pos=(0.0, 0.0, 0.0),
                  release_time=datetime.datetime(2000, 1, 1, 1),
                  uncertain=False,
-                 spill_obj = gnome.spill.PointSourceSurfaceRelease):
+                 spill_obj=gnome.spill.PointSourceSurfaceRelease):
         """
-        initilize a simple spill container (instantaneous point release)
+        initialize a simple spill container (instantaneous point release)
         """
-        from gnome.movers import element_types  # only required to setup data arrays correctly
-        
         super(TestSpillContainer, self).__init__(uncertain=uncertain)
-        
-        spill = spill_obj( num_elements,
-                           start_pos,
-                           release_time)
-        
+
+        spill = spill_obj(num_elements,
+                          start_pos,
+                          release_time)
+
         self.spills.add(spill)
-        
+
         # since surface release spill, just add windage array_type
-        self.prepare_for_model_run( release_time, dict(element_types.windage))
-        self.release_elements( release_time, 360)
-
-
+        self.prepare_for_model_run(release_time, dict(element_types.windage))
+        self.release_elements(release_time, 360)
