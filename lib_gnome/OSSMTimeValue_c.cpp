@@ -789,7 +789,7 @@ OSErr OSSMTimeValue_c::ReadTimeValues(char *path, short format, short unitsIfKno
 	if (!path)
 		return 0;
 
-	cerr << "path = " << path << endl;
+	//cerr << "path = " << path << endl;
 
 	strncpy(s, path, 512);
 	s[511] = 0;

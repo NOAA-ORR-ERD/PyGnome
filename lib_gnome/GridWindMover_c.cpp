@@ -198,7 +198,7 @@ OSErr GridWindMover_c::TextRead(char *path, char *topFilePath)
 	Boolean isNetCDFPathsFile = false;
 	TimeGridVel *newTimeGrid = 0;
 
-	cerr << "GridWindMover_c::TextRead(): path = " << endl << path << endl;
+	//cerr << "GridWindMover_c::TextRead(): path = " << endl << path << endl;
 
 	// this gets altered in IsNetCDFPathsFile, eventually change that function
 	strcpy(filePath, path);

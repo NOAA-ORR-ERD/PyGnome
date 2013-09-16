@@ -385,7 +385,7 @@ Boolean maketriangles(TopologyHdl *topoHdl, LongPointHdl ptsH, long nv, LONGH bo
 	//memerr = false;
 
 	//PenNormal();
-	cerr << "nbounds = " << nbounds << endl;
+	//cerr << "nbounds = " << nbounds << endl;
 	for (;;) {
 		if (segCount == nbounds)
 			break;
@@ -411,7 +411,7 @@ Boolean maketriangles(TopologyHdl *topoHdl, LongPointHdl ptsH, long nv, LONGH bo
 
 	/* enter triangle generation loop */
 	// make sure triangles don't have 3 points in the same array row/col in netcdf curvilinear case
-	cerr << "entering triangle generation loop..."<< endl;
+	//cerr << "entering triangle generation loop..."<< endl;
 
 	ntri = -1;
 	for (;;) {
@@ -660,7 +660,7 @@ Boolean maketriangles(TopologyHdl *topoHdl, LongPointHdl ptsH, long nv, LONGH bo
 		if(changeflag==0)break;
 	}
 	
-	cerr << "num triangles to add = " << ntri << endl;
+	//cerr << "num triangles to add = " << ntri << endl;
 	if ((tempTopoHdl = (TopologyHdl)_NewHandleClear(ntri * sizeof(Topology))) == 0)
 		goto errRecovery;	// declared in System.c
 

@@ -309,8 +309,8 @@ bool ParseKeyedLine(const string &strIn, const string &key,
 	}
 
 	if (tempKey != key) {
-		cerr << "string (" << tempKey
-			 << ") does not match (" << key << ")." << endl;
+		//cerr << "string (" << tempKey
+			 //<< ") does not match (" << key << ")." << endl;
 		return false;
 	}
 
@@ -2306,7 +2306,7 @@ void ConvertPathToCurrentPlatform(string inputPath)
 {
 	std::vector<std::string> pathParts = SplitPath(inputPath);
 	ConvertDriveLetterToUnixStyle(pathParts[0]);
-	cerr << "ConvertPathToCurrentPlatform(): " << pathParts.size() << " path components." << endl;
+	//cerr << "ConvertPathToCurrentPlatform(): " << pathParts.size() << " path components." << endl;
 	std::string delim;
 	delim += NEWDIRDELIMITER;
 	inputPath = std::accumulate( pathParts.begin(), pathParts.end(), delim);
@@ -2322,7 +2322,7 @@ bool ResolvePath(string &containingDir, string &pathToResolve)
 	
 	if (containingDir.size() == 0) {
 		// we assume the current working directory
-		cerr << "ResolvePath(): containing directory is empty.  Setting to current working directory" << endl;
+		//cerr << "ResolvePath(): containing directory is empty.  Setting to current working directory" << endl;
 		containingDir = '.';
 	}
 	
@@ -2347,8 +2347,8 @@ bool ResolvePath(string &containingDir, string &pathToResolve)
 		cerr << "ResolvePath(): Containing directory is not valid" << endl;
 		return false;
 	}
-	cerr << "ResolvePath(): Our base path: " << inputPath << endl;
-	cerr << "ResolvePath(): Our path to resolve: " << resolvedPath << endl;
+	//cerr << "ResolvePath(): Our base path: " << inputPath << endl;
+	//cerr << "ResolvePath(): Our path to resolve: " << resolvedPath << endl;
 	
 	string pathToTry;
 	vector<string> pathComponentsToReference = SplitPath(inputPath);
@@ -2362,9 +2362,9 @@ bool ResolvePath(string &containingDir, string &pathToResolve)
 		
 		string delim;
 		delim += NEWDIRDELIMITER;
-		cerr << "ResolvePath(): Our delimiter is '" << delim << "'"<< endl;
+		//cerr << "ResolvePath(): Our delimiter is '" << delim << "'"<< endl;
 		pathToTry = join(concatPath, delim);
-		cerr << "ResolvePath(): Trying path " << pathToTry << endl;
+		//cerr << "ResolvePath(): Trying path " << pathToTry << endl;
 		//if (FileExists(0, 0, (char *) pathToTry.c_str())) {
 		if (FileExists(0, 0, pathToTry.c_str())) {
 			pathToResolve = pathToTry;

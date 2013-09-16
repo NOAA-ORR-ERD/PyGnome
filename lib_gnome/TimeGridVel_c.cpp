@@ -318,7 +318,7 @@ Boolean TimeGridVel_c::CheckInterval(long &timeDataInterval, const Seconds& mode
 	long i, numTimes, numFiles = GetNumFiles();
 	
 	numTimes = this->GetNumTimesInFile();
-	cerr << "CheckInterval(): numTimes = " << numTimes << endl;
+	//cerr << "CheckInterval(): numTimes = " << numTimes << endl;
 	if (numTimes == 0) {
 		// really something is wrong, no data exists
 		timeDataInterval = 0;
@@ -1238,11 +1238,11 @@ OSErr TimeGridVel_c::SetInterval(char *errmsg, const Seconds& model_time)
 		indexOfEnd = -1;
 	}
 
-	cerr << "timeDataInterval: " << timeDataInterval << endl;
+	//cerr << "timeDataInterval: " << timeDataInterval << endl;
 	if (timeDataInterval == 0 || timeDataInterval == numTimesInFile)
 	{
 
-		cerr << "GetNumFiles(): " << GetNumFiles() << endl;
+		//cerr << "GetNumFiles(): " << GetNumFiles() << endl;
 		// before the first step in the file
 		if (GetNumFiles() > 1) {
 			if ((err = CheckAndScanFile(errmsg, model_time)) || fOverLap)
@@ -5662,7 +5662,7 @@ OSErr TimeGridVelTri_c::TextRead(const char *path, const char *topFilePath)
 	char *modelTypeStr = 0;
 	Boolean bTopInfoInFile = false, isCCW = true;
 
-	cerr << ">> TimeGridVelTri_c::TextRead()" << endl;
+	//cerr << ">> TimeGridVelTri_c::TextRead()" << endl;
 	if (!path || !path[0])
 		return 0;
 	strcpy(fVar.pathName, path);
@@ -6104,7 +6104,7 @@ OSErr TimeGridVelTri_c::TextRead(const char *path, const char *topFilePath)
 
 	// look for topology in the file
 	if (topFilePath[0]) {
-		cerr << "TimeGridVelTri_c::TextRead(): calling ReadTopology('" << topFilePath << "')" << endl;
+		//cerr << "TimeGridVelTri_c::TextRead(): calling ReadTopology('" << topFilePath << "')" << endl;
 		err = (dynamic_cast<TimeGridVelTri *>(this))->ReadTopology(topFilePath);
 		goto depths;
 	}
@@ -8073,7 +8073,7 @@ OSErr TimeGridCurRect_c::ReadHeaderLines(vector<string> &linesInFile,
 	line++; // skip past the header line
 
 	if (!ParseKeyedLine(linesInFile[line++], "NUMROWS", fNumRows)) {
-		cerr << "TimeGridCurRect_c::ReadHeaderLines(): failed getting num rows..." << endl;
+		//cerr << "TimeGridCurRect_c::ReadHeaderLines(): failed getting num rows..." << endl;
 		err = -2;
 		goto done;
 	}

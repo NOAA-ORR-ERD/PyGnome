@@ -155,7 +155,7 @@ OSErr TimeGridWindRect_c::TextRead(const char *path, const char *topFilePath)
 	
 	if (!path || !path[0])
 		return 0;
-	cerr << "TimeGridWindRect_c::TextRead(): path = " << path << endl;
+	//cerr << "TimeGridWindRect_c::TextRead(): path = " << path << endl;
 
 
 	strcpy(fVar.pathName,path);
@@ -682,18 +682,12 @@ OSErr TimeGridWindCurv_c::TextRead(const char *path, const char *topFilePath) //
 	char *modelTypeStr = 0;
 	WORLDPOINTFH vertexPtsH = 0;
 
-//#ifndef pyGNOME
-	//Point where;
-	//OSType typeList[] = { 'NULL', 'NULL', 'NULL', 'NULL' };
-	//MySFReply reply;
-//#endif
-
 	// for now keep code around but probably don't need Navy curvilinear wind
 	Boolean bTopFile = false, fIsNavy = false;
 
 	if (!path || !path[0])
 		return 0;
-	cerr << "TimeGridWindCurv_c::TextRead(): path = " << path << endl;
+	//cerr << "TimeGridWindCurv_c::TextRead(): path = " << path << endl;
 
 	strcpy(fVar.pathName, path);
 	strcpy(s, path);
@@ -711,15 +705,6 @@ OSErr TimeGridWindCurv_c::TextRead(const char *path, const char *topFilePath) //
 		err = -1;
 		goto done;
 	}
-
-	/*if (status != NC_NOERR) 
-	{
-#if TARGET_API_MAC_CARBON
-		err = ConvertTraditionalPathToUnixPath((const char *) path, outPath, kMaxNameLen) ;
-		status = nc_open(outPath, NC_NOWRITE, &ncid);
-#endif
-		if (status != NC_NOERR) {err = -1; goto done;}
-	}*/
 
 	// check number of dimensions - 2D or 3D
 	status = nc_inq_ndims(ncid, &numdims);
@@ -751,11 +736,6 @@ OSErr TimeGridWindCurv_c::TextRead(const char *path, const char *topFilePath) //
 			}
 		}			
 	}
-	/*else
-	 {
-	 status = nc_inq_unlimdim(ncid, &recid);	// issue of time not being unlimited dimension
-	 if (status != NC_NOERR) {err = -1; goto done;}
-	 }*/
 
 	//if (fIsNavy)
 	status = nc_inq_varid(ncid, "time", &timeid); 

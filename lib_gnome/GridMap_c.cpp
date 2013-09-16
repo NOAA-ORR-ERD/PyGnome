@@ -1663,7 +1663,7 @@ OSErr GridMap_c::SetUpTriangleGrid(long numNodes, long numTri,
 	}
 
 	// figure out the bounds
-	cerr << "GridMap_c::SetUpTriangleGrid(): figure out the bounds..." << endl;
+	//cerr << "GridMap_c::SetUpTriangleGrid(): figure out the bounds..." << endl;
 	triBounds = voidWorldRect;
 	if (pts) {
 		LongPoint thisLPoint;
@@ -1683,7 +1683,7 @@ OSErr GridMap_c::SetUpTriangleGrid(long numNodes, long numTri,
 	}
 	
 	// shrink handle
-	cerr << "GridMap_c::SetUpTriangleGrid(): shrink verdatBreakPtsH..." << endl;
+	//cerr << "GridMap_c::SetUpTriangleGrid(): shrink verdatBreakPtsH..." << endl;
 	_SetHandleSize((Handle)verdatBreakPtsH, numVerdatBreakPts * sizeof(long));
 	for (i = 0; i < numVerdatBreakPts; i++ ) {
 		INDEXH(verdatBreakPtsH,i)--;
@@ -1695,7 +1695,7 @@ OSErr GridMap_c::SetUpTriangleGrid(long numNodes, long numTri,
 
 	MySpinCursor(); // JLM 8/4/99
 
-	cerr << "GridMap_c::SetUpTriangleGrid(): maketriangles()..." << endl;
+	//cerr << "GridMap_c::SetUpTriangleGrid(): maketriangles()..." << endl;
 	err = maketriangles(&topo, pts, numVerdatPts, verdatBreakPtsH, numVerdatBreakPts);
 	if (err)
 		goto done;
@@ -1705,7 +1705,7 @@ OSErr GridMap_c::SetUpTriangleGrid(long numNodes, long numTri,
 
 	MySpinCursor(); // JLM 8/4/99
 
-	cerr << "GridMap_c::SetUpTriangleGrid(): MakeDagTree()..." << endl;
+	//cerr << "GridMap_c::SetUpTriangleGrid(): MakeDagTree()..." << endl;
 	tree = MakeDagTree(topo, (LongPoint**)pts, errmsg); 
 
 	MySpinCursor(); // JLM 8/4/99
@@ -1726,7 +1726,7 @@ OSErr GridMap_c::SetUpTriangleGrid(long numNodes, long numTri,
 
 	fGrid = (TTriGridVel*)triGrid;
 	
-	cerr << "GridMap_c::SetUpTriangleGrid(): triGrid->SetBounds()..." << endl;
+	//cerr << "GridMap_c::SetUpTriangleGrid(): triGrid->SetBounds()..." << endl;
 	triGrid->SetBounds(triBounds);
 	
 	dagTree = new TDagTree(pts,topo,tree.treeHdl,velH,tree.numBranches); 
@@ -1757,7 +1757,7 @@ OSErr GridMap_c::SetUpTriangleGrid(long numNodes, long numTri,
 		goto done;
 	}
 
-	cerr << "GridMap_c::SetUpTriangleGrid(): set bounday types..." << endl;
+	//cerr << "GridMap_c::SetUpTriangleGrid(): set bounday types..." << endl;
 	for (i = 0; i < numBoundaryPts; i++) {
 		INDEXH(waterBoundariesH, i) = 1;	// default is land
 		if (bndry_type[i] == 1)
@@ -3891,7 +3891,7 @@ OSErr GridMap_c::TextRead(char *path)
 			if (gridType == CURVILINEAR) {
 				DOUBLEH maskH = 0;
 
-				cerr << "GridMap_c::TextRead(): NetCDF curvilinear file..." << endl;
+				//cerr << "GridMap_c::TextRead(): NetCDF curvilinear file..." << endl;
 				err = this->GetPointsAndMask(path, &maskH, &vertexPtsH, &depthPtsH, &numRows, &numCols);	//Text read
 				if (!err)
 					err = this->SetUpCurvilinearGrid(maskH, numRows, numCols, vertexPtsH, depthPtsH, errmsg);	//Reorder points
@@ -3945,7 +3945,7 @@ OSErr GridMap_c::TextRead(char *path)
 	}
 	else if (IsCATS3DFile(path))	// for any CATS?
 	{
-		cerr << "GridMap_c::TextRead(): reading a CATS3D file" << endl;
+		//cerr << "GridMap_c::TextRead(): reading a CATS3D file" << endl;
 		strcpy(s,path);
 		SplitPathFile (s, fileName);
 		strcat (nameStr, fileName);
@@ -3963,7 +3963,7 @@ OSErr GridMap_c::TextRead(char *path)
 	else
 	{
 		{	// check if isTopologyFile()
-			cerr << "GridMap_c::TextRead(): check if it is a topology file..." << endl;
+			//cerr << "GridMap_c::TextRead(): check if it is a topology file..." << endl;
 			err = this -> ReadTopology(path);
 			if(err) 
 			{

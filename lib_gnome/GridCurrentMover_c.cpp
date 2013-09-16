@@ -357,7 +357,7 @@ OSErr GridCurrentMover_c::TextRead(char *path, char *topFilePath)
 
 	if (IsPtCurFile(linesInFile))
 	{
-		cerr << "we are opening a PtCurFile..." << "'" << path << "'" << endl;
+		//cerr << "we are opening a PtCurFile..." << "'" << path << "'" << endl;
 		char errmsg[256];
 
 		newTimeGrid = new TimeGridCurTri();
@@ -380,7 +380,7 @@ OSErr GridCurrentMover_c::TextRead(char *path, char *topFilePath)
 	}
 	else if (IsGridCurTimeFile(linesInFile, &selectedUnits))
 	{
-		cerr << "we are opening a GridCurTimeFile..." << "'" << path << "'" << endl;
+		//cerr << "we are opening a GridCurTimeFile..." << "'" << path << "'" << endl;
 		char errmsg[256];
 		newTimeGrid = new TimeGridCurRect();
 		//timeGrid = new TimeGridVel();
