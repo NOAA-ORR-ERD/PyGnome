@@ -220,7 +220,8 @@ std::vector<std::string> &rtrim_empty_lines(std::vector<std::string> &lines)
 
 	while(i != lines.begin()) {
 		if (i->size() == 0)
-			lines.erase(i);
+			//lines.erase(i);	// this just makes the line empty but doesn't remove it
+			i = lines.erase(i);
 		else
 			break;
 

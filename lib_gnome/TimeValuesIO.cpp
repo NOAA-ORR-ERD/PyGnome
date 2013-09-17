@@ -141,7 +141,7 @@ bool IsNDBCWindFile(vector<string> &linesInFile, long *numHeaderLines)
 	if (linesInFile.size() == 0)
 		return false;
 
-	*numHeaderLines = 1;
+	*numHeaderLines = 0;	// if we return false don't set this value
 
 	currentLine = trim(linesInFile[0]);
 
@@ -149,8 +149,10 @@ bool IsNDBCWindFile(vector<string> &linesInFile, long *numHeaderLines)
 		*numHeaderLines = 2;
 		return true;
 	}
-	else if (currentLine == "YYYY" || currentLine == "YY")
+	else if (currentLine == "YYYY" || currentLine == "YY") {
+		*numHeaderLines = 1;
 		return true;
+	}
 
 	return false;
 }
@@ -217,10 +219,10 @@ bool IsHydrologyFile(vector<string> &linesInFile)
 				   currentLine.end(),
 				   currentLine.begin(),
 				   ::tolower);
-	if (currentLine == "cfs" ||
+	if (!(currentLine == "cfs" ||
 		currentLine == "kcfs" ||
 		currentLine == "cms" ||
-		currentLine == "kcms")
+		currentLine == "kcms"))
 	{
 		return false;
 	}

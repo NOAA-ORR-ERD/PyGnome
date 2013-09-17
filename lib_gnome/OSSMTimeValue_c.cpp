@@ -774,7 +774,7 @@ OSErr OSSMTimeValue_c::ReadTimeValues(char *path, short format, short unitsIfKno
 	TimeValuePair pair;
 
 	bool askForUnits = true;
-	bool isHydrologyFile = false;
+	bool isHydrologyFile = false, isLongWindFile = false;
 	bool dataInGMT = false;
 	
 	if ((err = TimeValue_c::InitTimeFunc()) != noErr)
@@ -833,19 +833,26 @@ OSErr OSSMTimeValue_c::ReadTimeValues(char *path, short format, short unitsIfKno
 		// units/format always the same
 	}
 	
-	if (IsLongWindFile(linesInFile, &selectedUnits, &dataInGMT)) {
+	if( numLines >= 5)
+	{
+		if (IsLongWindFile(linesInFile, &selectedUnits, &dataInGMT)) {
 			askForUnits = false;
 			numHeaderLines = 5;
+			isLongWindFile = true;
+		}
 	}
-	else if (IsOSSMTimeFile(linesInFile, &selectedUnits)) {
-		numHeaderLines = 3;
-		ReadOSSMTimeHeader(path);
-	}
-	else if ((isHydrologyFile = IsHydrologyFile(linesInFile)) == true) {
-		// ask for scale factor, but not units
-		SetFileType(HYDROLOGYFILE);
-		numHeaderLines = 3;
-		selectedUnits = kMetersPerSec;	// so conversion factor is 1
+	if(numLines >= 3 && !isLongWindFile)
+	{
+		if (IsOSSMTimeFile(linesInFile, &selectedUnits)) {
+			numHeaderLines = 3;
+			ReadOSSMTimeHeader(path);
+		}
+		else if ((isHydrologyFile = IsHydrologyFile(linesInFile)) == true) {
+			// ask for scale factor, but not units
+			SetFileType(HYDROLOGYFILE);
+			numHeaderLines = 3;
+			selectedUnits = kMetersPerSec;	// so conversion factor is 1
+		}
 	}
 
 	if (selectedUnits == kUndefined )
