@@ -296,6 +296,25 @@ bool ParseKeyedLine(const string &strIn, const string &key,
 }
 
 bool ParseKeyedLine(const string &strIn, const string &key,
+					short &out1)
+{
+	string tempKey;
+	short value;
+	
+	istringstream lineStream(strIn);
+	
+	lineStream >> tempKey >> value;
+	if (lineStream.fail())
+		return false;
+	
+	if (tempKey != key)
+		return false;
+	
+	out1 = value;
+	return true;
+}
+
+bool ParseKeyedLine(const string &strIn, const string &key,
 					long &out1)
 {
 	string tempKey;

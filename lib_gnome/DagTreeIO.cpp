@@ -111,7 +111,10 @@ OSErr ReadTIndexedDagTree(CHARH fileBufH,long *line,DAGTreeStruct *dagTree,char*
 
 bool IsTVerticesHeaderLine(const string &strIn, long &numPts)
 {
-	return ParseKeyedLine(strIn, "Vertices", numPts);
+	string strInLowerCase = strIn;
+	transform(strInLowerCase.begin(), strInLowerCase.end(), strInLowerCase.begin(), ::tolower);	// shoudn't be case sensitive
+	//return ParseKeyedLine(strIn, "Vertices", numPts);
+	return ParseKeyedLine(strInLowerCase, "vertices", numPts);
 }
 
 Boolean IsTVerticesHeaderLine(const char *s, long *numPts)
@@ -647,7 +650,10 @@ checkTriPts:
 
 bool IsPtCurVerticesHeaderLine(const string &strIn, long &numPts, long &numLandPts)
 {
-	return ParseKeyedLine(strIn, "Vertices", numPts, numLandPts);
+	string strInLowerCase = strIn;
+	transform(strInLowerCase.begin(), strInLowerCase.end(), strInLowerCase.begin(), ::tolower);	// shoudn't be case sensitive
+	//return ParseKeyedLine(strIn, "Vertices", numPts, numLandPts);
+	return ParseKeyedLine(strInLowerCase, "vertices", numPts, numLandPts);
 }
 
 Boolean IsPtCurVerticesHeaderLine(const char *s, long *numPts, long *numLandPts)

@@ -980,6 +980,23 @@ resource 'DLOG' (3300, "M33: NetCDFMover Settings") {
 #endif
 };
 
+resource 'DLOG' (3400, "M34: TriCurMover Settings") {
+	{53, 14, 453, 800},
+#ifdef MPW
+	noGrowDocProc,
+#else
+	kWindowMovableModalDialogProc,
+#endif
+	invisible,
+	noGoAway,
+	0x0,
+	3400,
+	"TriCurMover Settings"
+#ifndef MPW
+	, centerMainScreen
+#endif
+};
+
 resource 'DLOG' (1688, "Have Topology File ?", purgeable, preload) {
 	{42, 2, 180, 435},
 #ifdef MPW
