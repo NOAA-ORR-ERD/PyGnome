@@ -20,8 +20,9 @@ from gnome.spill import Spill, PointSourceSurfaceRelease, \
 # only required to setup data arrays correctly
 
 from gnome import element_types
+from gnome.element_types import ArrayType
 
-basic_at = dict(element_types.all_spill_containers)
+basic_at = dict(element_types.spill_container)
 windage_at = dict(basic_at.items()
                   + dict(element_types.windage).items())
 
@@ -40,10 +41,8 @@ def test_test_spill_container():
 
     assert np.array_equal(sc['positions'][0], pos)
     assert np.array_equal(sc['positions'][-1], pos)
-    assert sc.all_array_types['status_codes'].initial_value \
-        == oil_status.in_water
     assert np.all(sc['status_codes']
-                  == sc.all_array_types['status_codes'].initial_value)
+                  == sc.element_types['status_codes'].array_type.initial_value)
 
 
 ## real testing involves adding spills!
@@ -248,15 +247,15 @@ def test_data_setting_error3():
         sp['positions'] = new_pos
 
 
-def test_addto_all_array_types():
+def test_addto_element_types():
     """
     Can add a new ArrayType to all_array_types; however, must rewind model
     to get the 'new_name' array in data_arrays
     """
 
     sc = TestSpillContainer(num_elements=10)
-    sc.all_array_types['new_name'] = element_types.ArrayType((3, ),
-            np.float64, 0)
+    sc.element_types['new_name'] = element_types.ElementType(ArrayType((3,),
+                                                                np.float64, 0))
 
     # MUST rewind and release elements again to get new_name in data_arrays
 
@@ -524,8 +523,8 @@ def test_init_SpillContainerPair():
     all this does is test that it can be initilized
     """
 
-    scp = SpillContainerPair()
-    u_scp = SpillContainerPair(True)
+    SpillContainerPair()
+    SpillContainerPair(True)
 
     assert True
 
@@ -745,10 +744,10 @@ def test_eq_spill_container_pair():
     """
     SpillContainerPair inherits from SpillContainer so it should
     compute __eq__ and __ne__ in the same way - test it here
-    
+
     Incomplete - this doesn't currently work!
     Test fails if uncertainty is on whether particles are released or not
-    
+
     """
 
     (sp1, sp2) = get_eq_spills()
@@ -761,7 +760,7 @@ def test_eq_spill_container_pair():
     assert False
 
 
-# ===============================================================================
+# =============================================================================
 #     for sc in zip( scp1.items(), scp2.items()):
 #         sc[0].prepare_for_model_run(sp1.release_time, windage_at)
 #         sc[0].release_elements(sp1.release_time, 360)
@@ -769,7 +768,7 @@ def test_eq_spill_container_pair():
 #         sc[1].release_elements(sp2.release_time, 360)
 #
 #     assert scp1 == scp2
-# ===============================================================================
+# =============================================================================
 
 def test_ne_spill_container():
     """ test two spill containers are not equal """
@@ -842,7 +841,6 @@ def test_model_step_is_done():
 def get_eq_spills():
     """ returns a tuple of identical PointSourceSurfaceRelease objects """
 
-    pos = (28.0, -75.0, 0.0)
     num_elements = 10
     release_time = datetime(2000, 1, 1, 1)
 
