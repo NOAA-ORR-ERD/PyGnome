@@ -33,7 +33,7 @@ class Spill(object):
 
     """
     base class for a source of elements
-    
+
     .. note:: This class is not serializable since it will not be used in 
               PyGnome. It does not release any elements
     """
@@ -64,37 +64,37 @@ class Spill(object):
         ):
         """
         Base spill class. Spill used by a gnome model derive from this class
-        
+
         :param num_elements: number of LEs - default is 0.
         :type num_elements: int
-        
+
         Optional parameters (kwargs):
-        
+
         :param on: Toggles the spill on/off (bool). Default is 'on'.
         :type on: bool
-        :param id: Unique Id identifying the newly created mover (a UUID as a 
+        :param id: Unique Id identifying the newly created mover (a UUID as a
             string), used when loading from a persisted model
         :type id: str
         :param volume: oil spilled volume (used to compute mass per particle)
         :type volume: float
         :param volume_units=m^3: volume units
         :type volume_units: str
-        :param oil='oil_conservative': Type of oil spilled. 
-            If this is a string, or an oillibrary.models.Oil object, then 
-            create gnome.spill.OilProps(oil) object. If this is a 
-            gnome.spill.OilProps object, then simply instance oil_props 
+        :param oil='oil_conservative': Type of oil spilled.
+            If this is a string, or an oillibrary.models.Oil object, then
+            create gnome.spill.OilProps(oil) object. If this is a
+            gnome.spill.OilProps object, then simply instance oil_props
             variable to it: self.oil_props = oil
-        :type oil: either str, or oillibrary.models.Oil object or 
+        :type oil: either str, or oillibrary.models.Oil object or
             gnome.spill.OilProps
         """
 
         self.num_elements = num_elements
         # sets whether the spill is active or not
-        self.on = on  
+        self.on = on
         self._gnome_id = GnomeId(id)
 
-        self.array_types = dict(element_types.all_spills)
-        self.oil_props = OilProps(oil)  
+        self.element_types = dict(element_types.spill)
+        self.oil_props = OilProps(oil)
 
         self._check_units(volume_units)
         self._volume_units = volume_units
@@ -105,19 +105,19 @@ class Spill(object):
         """
         the deepcopy implementation
 
-        we need this, as we don't want the spill_nums copied, but do want 
+        we need this, as we don't want the spill_nums copied, but do want
         everything else.
 
         got the method from:
 
         http://stackoverflow.com/questions/3253439/python-copy-how-to-inherit-the-default-copying-behaviour
 
-        Despite what that thread says for __copy__, the built-in deepcopy() 
+        Despite what that thread says for __copy__, the built-in deepcopy()
         ends up using recursion
         """
 
         obj_copy = object.__new__(type(self))
-        
+
         # recursively calls deepcopy on GnomeId object
         obj_copy.__dict__ = copy.deepcopy(self.__dict__, memo)  
         return obj_copy
@@ -125,11 +125,11 @@ class Spill(object):
     def __copy__(self):
         """
         Make a shallow copy of the object
-        
+
         It makes a shallow copy of all attributes defined in __dict__
-        Since it is a shallow copy of the dict, the _gnome_id object is not 
+        Since it is a shallow copy of the dict, the _gnome_id object is not
         copied, but merely referenced
-        This seems to be standard python copy behavior so leave as is. 
+        This seems to be standard python copy behavior so leave as is.
         """
 
         obj_copy = object.__new__(type(self))
@@ -138,7 +138,7 @@ class Spill(object):
 
     def _check_units(self, units):
         """
-        Checks the user provided units are in list Wind.valid_vel_units 
+        Checks the user provided units are in list Wind.valid_vel_units
         """
 
         if units not in self.valid_vol_units:
@@ -150,7 +150,6 @@ class Spill(object):
         """
         default units in which volume data is returned
         """
-
         return self._volume_units
 
     @volume_units.setter
@@ -158,7 +157,6 @@ class Spill(object):
         """
         set default units in which volume data is returned
         """
-
         self._check_units(units)  # check validity before setting
         self._volume_units = units
 
@@ -174,8 +172,8 @@ class Spill(object):
 
     def get_volume(self, units=None):
         """
-        return the volume released during the spill. The default units for 
-        volume are as defined in 'volume_units' property. User can also specify 
+        return the volume released during the spill. The default units for
+        volume are as defined in 'volume_units' property. User can also specify
         desired output units in the function.
         """
 
@@ -203,9 +201,9 @@ class Spill(object):
 
     def rewind(self):
         """
-        rewinds the Spill to original status (before anything has been 
+        rewinds the Spill to original status (before anything has been
         released).
-        
+
         Nothing needs to be done for the base class, but this method will be
         overloaded by subclasses and defined to fit their implementation
         """
@@ -233,20 +231,34 @@ class Spill(object):
     def create_new_elements(self, num_elements):
         arrays = {}
 
-        for (name, array_type) in self.array_types.iteritems():
-            arrays[name] = np.zeros((num_elements, )
-                                    + array_type.shape,
-                                    dtype=array_type.dtype)
+        for name, elem in self.element_types.iteritems():
+            # Initialize data_arrays with 0 length
+            arrays[name] = elem.initialize(num_elements, elem.array_type)
+
             if name == 'mass' and num_elements > 0:
 
                 # want mass in units of grams
                 _total_mass = self.oil_props.get_density('kg/m^3') \
                     * self.get_volume('m^3') * 1000
-                # _total_mass = unit_conversion.convert('mass', 'kg', 'g', _total_mass)
 
                 (arrays[name])[:] = _total_mass / num_elements
-            else:
-                (arrays[name])[:] = array_type.initial_value
+
+#==============================================================================
+#         for (name, array_type) in self.array_types.iteritems():
+#             arrays[name] = np.zeros((num_elements, )
+#                                     + array_type.shape,
+#                                     dtype=array_type.dtype)
+#             if name == 'mass' and num_elements > 0:
+# 
+#                 # want mass in units of grams
+#                 _total_mass = self.oil_props.get_density('kg/m^3') \
+#                     * self.get_volume('m^3') * 1000
+#                 # _total_mass = unit_conversion.convert('mass', 'kg', 'g', _total_mass)
+# 
+#                 (arrays[name])[:] = _total_mass / num_elements
+#             else:
+#                 (arrays[name])[:] = array_type.initial_value
+#==============================================================================
         return arrays
 
 

@@ -206,7 +206,7 @@ class SpillContainer(SpillContainerData):
     def __init__(self, uncertain=False):
         super(SpillContainer, self).__init__(uncertain=uncertain)
 
-        self.all_array_types = dict(element_types.all_spill_containers)
+        self.element_types = dict(element_types.spill_container)
         self.spills = OrderedCollection(dtype=gnome.spill.Spill)
         self.rewind()
 
@@ -218,10 +218,10 @@ class SpillContainer(SpillContainerData):
         the user.
         """
         super(SpillContainer, self).__setitem__(data_name, array)
-        if data_name not in self.all_array_types:
+        if data_name not in self.element_types:
             shape = self._data_arrays[data_name].shape
             dtype = self._data_arrays[data_name].dtype.type
-            self.all_array_types[data_name] = element_types.ArrayType(shape,
+            self.element_types[data_name] = element_types.ArrayType(shape,
                                                                       dtype)
 
         #self.reconcile_data_arrays()
@@ -237,10 +237,9 @@ class SpillContainer(SpillContainerData):
         """
         for spill in self.spills:
             spill.rewind()
-        # this should create a full set of zero-sized arrays
-        # gnome.spill.Spill().create_new_elements(0) will return 0 size
-        # 'positions' array
-        self._data_arrays = self.initialize_data_arrays({})
+        # create a full set of zero-sized arrays. If we rewound, something
+        # must have changed
+        self.initialize_data_arrays()
 
 #==============================================================================
 #    def reconcile_data_arrays(self):
@@ -248,7 +247,7 @@ class SpillContainer(SpillContainerData):
 # 
 #        # if a spill was added with new properties, we need to
 #        # create the new property and back-fill the array
-#        for name, dtype in self.all_array_types.iteritems():
+#        for name, dtype in self.element_types.iteritems():
 #            if name not in self._data_arrays:
 #                array_type = dict( ((name, dtype),) )
 #                data_arrays = gnome.spill.Spill().create_new_elements(self.num_elements, array_type)
@@ -261,15 +260,15 @@ class SpillContainer(SpillContainerData):
 #        # if a spill was deleted, it may have had properties
 #        # that are not needed anymore
 #        for k in self._data_arrays.keys()[:]:
-#           if k not in self.all_array_types:
+#           if k not in self.element_types:
 #               del self._data_arrays[k]
 #==============================================================================
 
     #==========================================================================
     # def update_all_array_types(self):
-    #    self.all_array_types = {}
+    #    self.element_types = {}
     #    for spill in self.spills:
-    #        self.all_array_types.update(spill.array_types)
+    #        self.element_types.update(spill.array_types)
     #==========================================================================
 
     def get_spill_mask(self, spill):
@@ -287,21 +286,25 @@ class SpillContainer(SpillContainerData):
             u_sc.spills += sp.uncertain_copy()
         return u_sc
 
-    def prepare_for_model_run(self, current_time, array_types={}):
+    def prepare_for_model_run(self, current_time, element_types={}):
         """
         called when setting up the model prior to 1st time step
         """
         self.current_time_stamp = current_time
-        self.all_array_types.update(array_types)
+        self.element_types.update(element_types)
 
         if len(self.spills) == 0:
-            self.all_array_types.update(gnome.spill.Spill().array_types)
+            self.element_types.update(gnome.spill.Spill().element_types)
         else:
             for spill in self.spills:
-                self.all_array_types.update(spill.array_types)
+                self.element_types.update(spill.element_types)
 
-        # define all data arrays even if no data exists in them
-        self._data_arrays = self.initialize_data_arrays({})
+        # define all data arrays before the run begins even if dict is not
+        # empty. No need to keep arrays for movers that were deleted since
+        # deletion of mover does not cause a rewind.
+        # For the case when model is rewound, then a mover is deleted. The
+        # associated data_arrays should be removed.
+        self.initialize_data_arrays()
 
     def prepare_for_model_step(self, current_time):
         """
@@ -310,33 +313,44 @@ class SpillContainer(SpillContainerData):
         """
         self.current_time_stamp = current_time
 
-    def initialize_data_arrays(self, spill_arrays):
+    def initialize_data_arrays(self):
+        """
+        initialize_data_arrays() is called without input data during rewind
+        and prepare_for_model_run to define all data arrays. At this time the
+        arrays are empty.
+        """
+        for name, elem in self.element_types.iteritems():
+            # Initialize data_arrays with 0 length
+            self._data_arrays[name] = elem.initialize(0, elem.array_type)
+
+    def _append_data_arrays(self, spill_arrays, spill):
         """
         initialize data arrays once spill has spawned particles
         Data arrays are set to their initial_values
+
+        :param spill_arrays: numpy arrays for 'position' and 'mass'
+            element_types. These are returned by release_elements() of spill
+            object
+        :param spill: Spill which released the spill_arrays
+
         """
-        arrays = {}
 
-        if spill_arrays:
-            num_elements = len(spill_arrays[spill_arrays.keys()[0]])
-        else:
-            num_elements = 0
+        num_elements = len(spill_arrays[spill_arrays.keys()[0]])
 
-        # first initialize all arrays
-        for name, array_type in self.all_array_types.iteritems():
-            arrays[name] = np.zeros((num_elements,) + array_type.shape,
-                                     dtype=array_type.dtype)
-            if name in spill_arrays:
-                arrays[name][:] = spill_arrays.pop(name)
-            else:
-                arrays[name][:] = array_type.initial_value
+        for name, elem_type in self.element_types.iteritems():
+            # initialize all arrays even if 0 length
+            self._data_arrays[name] = np.r_[self._data_arrays[name],
+                                    elem_type.initialize(num_elements,
+                                    elem_type.array_type)]
 
-        if spill_arrays:
-            raise KeyError("Key mismatch: spill_arrays has a {0} key(s),"\
-                           "  which spill_container's all_data_arrays does"\
-                           " not contain".format(spill_arrays.keys()))
-
-        return arrays
+            if num_elements > 0:
+                if name in spill_arrays:
+                    self._data_arrays[name][-num_elements:] = (spill_arrays
+                                                                .pop(name))
+                if name == 'spill_num':
+                    self._data_arrays[name][-num_elements:] = \
+                                            self.spills.index(spill.id,
+                                                           renumber=False)
 
     def release_elements(self, current_time, time_step):
         """
@@ -351,23 +365,9 @@ class SpillContainer(SpillContainerData):
             if spill.on:
                 spill_arrays = spill.release_elements(current_time,
                                                   time_step=time_step)
-                # without spill_release, nothing happens!
-                if spill_arrays is not None:
-                    new_data = self.initialize_data_arrays(spill_arrays)
-                    if 'spill_num' in new_data:
-                        new_data['spill_num'][:] = self.spills.index(spill.id,
-                                                               renumber=False)
-
-                    # append newly spawned and initialized particles to the
-                    # data_arrays
-                    for name in new_data:
-                        if (name in self._data_arrays and
-                            self._data_arrays[name].shape != ()):
-                            # concatenate data along the first axis
-                            self._data_arrays[name] = np.r_[ self._data_arrays[name],
-                                                            new_data[name] ]
-                        else:
-                            self._data_arrays[name] = new_data[name]
+                if spill_arrays:
+                    # call append_data_arrays if particles are released
+                    self._append_data_arrays(spill_arrays, spill)
 
     def model_step_is_done(self):
         """
@@ -379,7 +379,7 @@ class SpillContainer(SpillContainerData):
         to_be_removed = np.where(self['status_codes'] ==
                                  basic_types.oil_status.to_be_removed)[0]
         if len(to_be_removed) > 0:
-            for key in self.all_array_types.keys():
+            for key in self.element_types.keys():
                 self._data_arrays[key] = np.delete(self[key], to_be_removed,
                                                    axis=0)
 
