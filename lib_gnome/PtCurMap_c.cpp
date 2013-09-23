@@ -90,6 +90,7 @@ PtCurMap_c::PtCurMap_c(char* name, WorldRect bounds) : Map_c(name, bounds)
 	
 	fBitMapBounds = bounds;
 	fUseBitMapBounds = false;
+	bDrawBitMapBounds = false;
 	
 	fWaveHtInput = 0;	// default compute from wind speed
 	
