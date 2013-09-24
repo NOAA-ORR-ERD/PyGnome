@@ -260,27 +260,6 @@ class Spill(object):
         sc['mass'][-self._num_new_particles:] = (_total_mass /
                                                  self._num_new_particles)
 
-#==============================================================================
-#     def create_new_elements(self, num_elements):
-#         arrays = {}
-# 
-#         for name, elem in self.element_types.iteritems():
-#             # Initialize data_arrays with 0 length
-#             arrays[name] = elem.initialize(num_elements, elem.array_type)
-# 
-#             if name == 'mass' and num_elements > 0:
-# 
-#                 # want mass in units of grams
-#                 _total_mass = self.oil_props.get_density('kg/m^3') \
-#                     * self.get_volume('m^3') * 1000
-# 
-#                 (arrays[name])[:] = _total_mass / num_elements
-#==============================================================================
-
-        #======================================================================
-        # return arrays
-        #======================================================================
-
 
 class FloatingSpill(Spill):
 

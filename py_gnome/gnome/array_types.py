@@ -89,24 +89,6 @@ class ArrayType(object):
         else:
             return True
 
-#==============================================================================
-# all_spills = frozenset([('positions', ArrayType((3, ),
-#                        basic_types.world_point_type)), ('mass',
-#                        ArrayType((), np.float64))])
-# 
-# all_spill_containers = frozenset([('next_positions', ArrayType((3, ),
-#                                  basic_types.world_point_type)),
-#                                  ('last_water_positions', ArrayType((3,
-#                                  ), basic_types.world_point_type)),
-#                                  ('status_codes', ArrayType((),
-#                                  basic_types.status_code_type,
-#                                  basic_types.oil_status.in_water)),
-#                                  ('spill_num', ArrayType((),
-#                                  basic_types.id_type, -1))])
-#
-# windage = frozenset([('windages', ArrayType((),
-#                     basic_types.windage_type))])
-#==============================================================================
 
 Mover = {'positions': ArrayType((3,), world_point_type),
          'mass': ArrayType((), np.float64),

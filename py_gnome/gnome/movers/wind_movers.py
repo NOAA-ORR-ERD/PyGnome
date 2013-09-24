@@ -13,7 +13,7 @@ from gnome.movers import CyMover
 from gnome import basic_types
 from gnome.cy_gnome.cy_wind_mover import CyWindMover
 from gnome.cy_gnome.cy_gridwind_mover import CyGridWindMover
-from gnome import environment, element_types
+from gnome import environment, array_types
 from gnome.utilities import rand
 
 
@@ -26,8 +26,8 @@ class WindMover(CyMover, serializable.Serializable):
     The real work is done by the cy_wind_mover.CyWindMover object.  CyMover
     sets everything up that is common to all movers.
 
-    In addition to base class element_types.basic, also use the
-    element_types.windage mixin since WindMover requires a windage array
+    In addition to base class array_types.basic, also use the
+    array_types.windage dict since WindMover requires a windage array
     """
     _update = ['uncertain_duration', 'uncertain_time_delay',
                'uncertain_speed_scale', 'uncertain_angle_scale']
@@ -101,7 +101,7 @@ class WindMover(CyMover, serializable.Serializable):
 
         self.wind = wind
         super(WindMover, self).__init__(**kwargs)
-        self.element_types.update(dict(element_types.windage))
+        self.array_types.update(dict(array_types.windage))
 
     def __repr__(self):
         """

@@ -9,7 +9,7 @@ from hazpy import unit_conversion
 from gnome.basic_types import datetime_value_2d, ts_format
 
 from gnome import environment
-from gnome import element_types
+from gnome import array_types
 
 from gnome.utilities.projections import FlatEarthProjection
 from gnome.utilities.time_utils import date_to_sec, sec_to_date
@@ -256,7 +256,7 @@ def test_windage_index():
                 * .01 + .01), windage_persist=900)
         sc.spills.add(spill)
 
-    sc.prepare_for_model_run(rel_time, dict(element_types.windage))
+    sc.prepare_for_model_run(rel_time, dict(array_types.windage))
     sc.release_elements(rel_time, timestep)
     wm = WindMover(environment.ConstantWind(5, 0))
     wm.prepare_for_model_step(sc, timestep, rel_time)
@@ -449,7 +449,7 @@ def test_exception_new_from_dict():
 
 def test_array_types():
     """
-    Check the array_types property of WindMover contains element_types.windage
+    Check the array_types property of WindMover contains array_types.windage
     """
 
     # WindMover does not modify Wind object!
@@ -457,9 +457,9 @@ def test_array_types():
     wm = WindMover(environment.Wind(filename=file_))
     wm_array = wm.array_types
 
-    assert len(wm_array) == len(element_types.windage)
+    assert len(wm_array) == len(array_types.windage)
 
-    for (key, val) in dict(element_types.windage).iteritems():
+    for (key, val) in dict(array_types.windage).iteritems():
         assert key in wm_array
         assert wm_array[key] == val
         wm_array.pop(key)

@@ -393,7 +393,7 @@ class NetCDFOutput(Outputter, serializable.Serializable):
                     rootgrp.createDimension('world_point', 3)
                     self.arr_types = dict()
 
-                    at = spills.items()[0].element_types
+                    at = spills.items()[0].array_types
                     [self.arr_types.update({key: atype}) for (key,
                      atype) in at.iteritems() if key
                      not in self.arr_types and key

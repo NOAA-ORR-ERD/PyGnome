@@ -12,7 +12,7 @@ import numpy as np
 
 import gnome.spill
 from gnome.utilities.orderedcollection import OrderedCollection
-from gnome import basic_types, element_types
+from gnome import basic_types, array_types
 
 
 class SpillContainerData(object):
@@ -206,7 +206,7 @@ class SpillContainer(SpillContainerData):
     def __init__(self, uncertain=False):
         super(SpillContainer, self).__init__(uncertain=uncertain)
 
-        self.element_types = dict(element_types.spill_container)
+        self.array_types = {}
         self.spills = OrderedCollection(dtype=gnome.spill.Spill)
         self.rewind()
 
@@ -218,10 +218,10 @@ class SpillContainer(SpillContainerData):
         the user.
         """
         super(SpillContainer, self).__setitem__(data_name, array)
-        if data_name not in self.element_types:
+        if data_name not in self.array_types:
             shape = self._data_arrays[data_name].shape
             dtype = self._data_arrays[data_name].dtype.type
-            self.element_types[data_name] = element_types.ArrayType(shape,
+            self.array_types[data_name] = array_types.ArrayType(shape,
                                                                       dtype)
 
         #self.reconcile_data_arrays()
@@ -247,7 +247,7 @@ class SpillContainer(SpillContainerData):
 # 
 #        # if a spill was added with new properties, we need to
 #        # create the new property and back-fill the array
-#        for name, dtype in self.element_types.iteritems():
+#        for name, dtype in self.array_types.iteritems():
 #            if name not in self._data_arrays:
 #                array_type = dict( ((name, dtype),) )
 #                data_arrays = gnome.spill.Spill().create_new_elements(self.num_elements, array_type)
@@ -260,15 +260,15 @@ class SpillContainer(SpillContainerData):
 #        # if a spill was deleted, it may have had properties
 #        # that are not needed anymore
 #        for k in self._data_arrays.keys()[:]:
-#           if k not in self.element_types:
+#           if k not in self.array_types:
 #               del self._data_arrays[k]
 #==============================================================================
 
     #==========================================================================
     # def update_all_array_types(self):
-    #    self.element_types = {}
+    #    self.array_types = {}
     #    for spill in self.spills:
-    #        self.element_types.update(spill.array_types)
+    #        self.array_types.update(spill.array_types)
     #==========================================================================
 
     def get_spill_mask(self, spill):
@@ -286,18 +286,18 @@ class SpillContainer(SpillContainerData):
             u_sc.spills += sp.uncertain_copy()
         return u_sc
 
-    def prepare_for_model_run(self, current_time, element_types={}):
+    def prepare_for_model_run(self, current_time, array_types={}):
         """
         called when setting up the model prior to 1st time step
         """
         self.current_time_stamp = current_time
-        self.element_types.update(element_types)
+        self.array_types.update(array_types)
 
         if len(self.spills) == 0:
-            self.element_types.update(gnome.spill.Spill().element_types)
+            self.array_types.update(gnome.spill.Spill().array_types)
         else:
             for spill in self.spills:
-                self.element_types.update(spill.element_types)
+                self.array_types.update(spill.array_types)
 
         # define all data arrays before the run begins even if dict is not
         # empty. No need to keep arrays for movers that were deleted since
@@ -319,7 +319,7 @@ class SpillContainer(SpillContainerData):
         and prepare_for_model_run to define all data arrays. At this time the
         arrays are empty.
         """
-        for name, elem in self.element_types.iteritems():
+        for name, elem in self.array_types.iteritems():
             # Initialize data_arrays with 0 length
             self._data_arrays[name] = elem.initialize(0, elem.array_type)
 
@@ -329,7 +329,7 @@ class SpillContainer(SpillContainerData):
         Data arrays are set to their initial_values
 
         :param spill_arrays: numpy arrays for 'position' and 'mass'
-            element_types. These are returned by release_elements() of spill
+            array_types. These are returned by release_elements() of spill
             object
         :param spill: Spill which released the spill_arrays
 
@@ -337,7 +337,7 @@ class SpillContainer(SpillContainerData):
 
         num_elements = len(spill_arrays[spill_arrays.keys()[0]])
 
-        for name, elem_type in self.element_types.iteritems():
+        for name, elem_type in self.array_types.iteritems():
             # initialize all arrays even if 0 length
             self._data_arrays[name] = np.r_[self._data_arrays[name],
                                     elem_type.initialize(num_elements,
@@ -379,7 +379,7 @@ class SpillContainer(SpillContainerData):
         to_be_removed = np.where(self['status_codes'] ==
                                  basic_types.oil_status.to_be_removed)[0]
         if len(to_be_removed) > 0:
-            for key in self.element_types.keys():
+            for key in self.array_types.keys():
                 self._data_arrays[key] = np.delete(self[key], to_be_removed,
                                                    axis=0)
 
@@ -663,5 +663,5 @@ class TestSpillContainer(SpillContainer):
         self.spills.add(spill)
 
         # since surface release spill, just add windage array_type
-        self.prepare_for_model_run(release_time, dict(element_types.windage))
+        self.prepare_for_model_run(release_time, dict(array_types.windage))
         self.release_elements(release_time, 360)

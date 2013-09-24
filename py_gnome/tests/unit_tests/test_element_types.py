@@ -1,7 +1,7 @@
 '''
 Unit test the classes in elementy_types module
 
-Only contains tests for ArrayType since the remaining element_types classes
+Only contains tests for ArrayType since the remaining array_types classes
 are trivial. They are tested in the integrated_tests
 '''
 
@@ -10,7 +10,7 @@ import numpy as np
 from gnome.basic_types import world_point_type, oil_status, \
     status_code_type
 
-from gnome.element_types import ArrayType
+from gnome.array_types import ArrayType
 
 
 class TestArrayType_eq(object):

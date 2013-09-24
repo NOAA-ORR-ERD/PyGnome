@@ -2,7 +2,7 @@ import copy
 
 import numpy as np
 
-from gnome import basic_types, GnomeId, element_types
+from gnome import basic_types, GnomeId, array_types
 from gnome.utilities import inf_datetime
 from gnome.utilities import time_utils, serializable
 from gnome.cy_gnome.cy_rise_velocity_mover import CyRiseVelocityMover
@@ -54,7 +54,7 @@ class Mover(object):
         self._gnome_id = GnomeId(id=kwargs.pop('id', None))
 
         # empty dict since no array_types required for all movers at present
-        self.element_types = dict(element_types.Mover)
+        self.array_types = dict(array_types.Mover)
         self.array_types = {}
 
     # Methods for active property definition

@@ -19,12 +19,12 @@ from gnome.spill import Spill, PointSourceSurfaceRelease, \
 
 # only required to setup data arrays correctly
 
-from gnome import element_types
-from gnome.element_types import ArrayType
+from gnome import array_types
+from gnome.array_types import ArrayType
 
-basic_at = dict(element_types.spill_container)
+basic_at = dict(array_types.spill_container)
 windage_at = dict(basic_at.items()
-                  + dict(element_types.windage).items())
+                  + dict(array_types.windage).items())
 
 
 def test_simple_init():
@@ -42,7 +42,7 @@ def test_test_spill_container():
     assert np.array_equal(sc['positions'][0], pos)
     assert np.array_equal(sc['positions'][-1], pos)
     assert np.all(sc['status_codes']
-                  == sc.element_types['status_codes'].array_type.initial_value)
+                  == sc.array_types['status_codes'].array_type.initial_value)
 
 
 ## real testing involves adding spills!
@@ -247,14 +247,14 @@ def test_data_setting_error3():
         sp['positions'] = new_pos
 
 
-def test_addto_element_types():
+def test_addto_array_types():
     """
     Can add a new ArrayType to all_array_types; however, must rewind model
     to get the 'new_name' array in data_arrays
     """
 
     sc = TestSpillContainer(num_elements=10)
-    sc.element_types['new_name'] = element_types.ElementType(ArrayType((3,),
+    sc.array_types['new_name'] = array_types.ElementType(ArrayType((3,),
                                                                 np.float64, 0))
 
     # MUST rewind and release elements again to get new_name in data_arrays

@@ -3,7 +3,7 @@ import copy
 from gnome.utilities import serializable
 from gnome.movers import CyMover
 from gnome.cy_gnome.cy_rise_velocity_mover import CyRiseVelocityMover
-from gnome import element_types
+from gnome import array_types
 
 
 class RiseVelocityMover(CyMover, serializable.Serializable):
