@@ -17,17 +17,6 @@ from gnome.basic_types import (
 import numpy as np
 
 
-def initialize_zeros(num_elements, array_type):
-    arr = np.zeros((num_elements,) + array_type.shape, dtype=array_type.dtype)
-    arr[:] = array_type.initial_value
-    return arr
-
-
-def initialize_rise_vel_random_dist():
-    """
-    """
-    pass
-
 class ArrayType(object):
 
     """
@@ -50,14 +39,25 @@ class ArrayType(object):
         :type shape: tuple of integers
         :param dtype: numpy datatype contained in array
         :type dtype: numpy dtype
-        :param initial_value: initialize array to this value
-        :type initial_value: numpy array of size: shape(:-1) (ie. the shape of
-                             a single element)
         """
 
         self.shape = shape
         self.dtype = dtype
         self.initial_value = initial_value
+
+    def initialize(self, num_elements, spill):
+        """
+        Initialize a numpy array with the dtype and shape specified. The length
+        of the array is given by num_elements and spill is given as input if
+        the initialize function needs information about the spill to initialize
+
+        :param num_elements:
+        :param spill:
+        """
+        arr = np.zeros((num_elements,) + self.shape, dtype=self.dtype)
+        if self.initial_value != 0:
+            arr[:] = self.initial_value
+        return arr
 
     def __eq__(self, other):
         """" Equality of two ArrayType objects """
@@ -89,15 +89,6 @@ class ArrayType(object):
         else:
             return True
 
-
-class ElementType(object):
-    """
-    Element Type
-    """
-    def __init__(self, array_type, init_func=initialize_zeros):
-        self.array_type = array_type
-        self.initialize = init_func
-
 #==============================================================================
 # all_spills = frozenset([('positions', ArrayType((3, ),
 #                        basic_types.world_point_type)), ('mass',
@@ -117,32 +108,22 @@ class ElementType(object):
 #                     basic_types.windage_type))])
 #==============================================================================
 
-spill = {'positions': ElementType(
-                        array_type=ArrayType((3,), world_point_type),),
-         'mass': ElementType(array_type=ArrayType((), np.float64))
+Mover = {'positions': ArrayType((3,), world_point_type),
+         'mass': ArrayType((), np.float64),
+         'next_positions': ArrayType((3,), world_point_type),
+         'last_water_positions': ArrayType((3,), world_point_type),
+         'status_codes': ArrayType((), status_code_type,
+                                   oil_status.in_water),
+         'spill_num': ArrayType((), id_type, -1)
         }
 
-spill_container = {'next_positions':
-                          ElementType(array_type=ArrayType((3,),
-                                                           world_point_type)),
-                    'last_water_positions':
-                          ElementType(array_type=ArrayType((3,),
-                                                           world_point_type)),
-                    'status_codes':
-                          ElementType(array_type=ArrayType((),
-                                                        status_code_type,
-                                                        oil_status.in_water)),
-                    'spill_num':
-                          ElementType(array_type=ArrayType((), id_type, -1))
-                    }
-
-windage = {'windages': ElementType(array_type=ArrayType((), windage_type))}
+WindMover = {'windages': ArrayType((), windage_type)}
 
 # droplet_size, rise_vel arrays used by spills
 
 #droplet_size = frozenset([('droplet_size', ArrayType((), np.float64))])
 #rise_vel = frozenset([('rise_vel', ArrayType((), np.float64))])
-rise_vel = {'rise_vel': ElementType(array_type=ArrayType((), np.float64))}
+RiseVelocityMover = {'rise_vel': ArrayType((), np.float64)}
 
 ## TODO: Find out if this is still required?
 # subsurface = {'water_currents':ArrayType( (3,), basic_types.water_current_type)}
