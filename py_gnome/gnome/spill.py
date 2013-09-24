@@ -13,9 +13,8 @@ spill.py - An implementation of the spill class(s)
 A "spill" is essentially a source of elements. These classes provide
 the logic about where an when the elements are released 
 
-"""  # used to get path to database
+"""
 
-import os
 import copy
 from datetime import timedelta
 from itertools import chain
@@ -23,7 +22,7 @@ from itertools import chain
 import numpy as np
 from hazpy import unit_conversion
 
-from gnome import basic_types, element_types
+from gnome import basic_types
 from gnome import GnomeId
 from gnome.utilities import serializable
 from gnome.db.oil_library.oil_props import OilProps
@@ -93,7 +92,6 @@ class Spill(object):
         self.on = on
         self._gnome_id = GnomeId(id)
 
-        self.element_types = dict(element_types.spill)
         self.oil_props = OilProps(oil)
 
         self._check_units(volume_units)
@@ -210,56 +208,78 @@ class Spill(object):
 
         pass
 
-    def release_elements(self, current_time, time_step):
+    def num_elements_to_release(self, current_time, time_step):
         """
-        Release any new elements to be added to the SpillContainer
+        Determines the number of elements to be released during:
+        current_time + time_step
 
-        :param current_time: current time
-        :type current_time: datetime.datetime 
-
-        :param time_step: the time step, sometimes used to decide how many 
-            should get released.
-        :type time_step: integer seconds
-
-        :returns : None if there are no new elements released. A dict of arrays
-            if there are new elements
-
+        :param current_time:
+        :param time_step:
+        :returns: the number of elements that will be released. This is taken
+            by SpillContainer to initialize all data_arrays.
         """
+        pass
 
-        return None
+    def init_released_elements(self, current_time, time_step, sc):
+        """
+        SpillContainer will release elements and initialize all data_arrays
+        to default initial value. The SpillContainer gets passed as input and
+        the data_arrays for 'position', 'mass' get initialized correctly.
 
-    def create_new_elements(self, num_elements):
-        arrays = {}
-
-        for name, elem in self.element_types.iteritems():
-            # Initialize data_arrays with 0 length
-            arrays[name] = elem.initialize(num_elements, elem.array_type)
-
-            if name == 'mass' and num_elements > 0:
-
-                # want mass in units of grams
-                _total_mass = self.oil_props.get_density('kg/m^3') \
-                    * self.get_volume('m^3') * 1000
-
-                (arrays[name])[:] = _total_mass / num_elements
+        The base class implementation initializes the 'mass' data_array
+        """
+        self._init_mass(sc)
 
 #==============================================================================
-#         for (name, array_type) in self.array_types.iteritems():
-#             arrays[name] = np.zeros((num_elements, )
-#                                     + array_type.shape,
-#                                     dtype=array_type.dtype)
+#     def release_elements(self, current_time, time_step):
+#         """
+#         Release any new elements to be added to the SpillContainer
+# 
+#         :param current_time: current time
+#         :type current_time: datetime.datetime 
+# 
+#         :param time_step: the time step, sometimes used to decide how many 
+#             should get released.
+#         :type time_step: integer seconds
+# 
+#         :returns : None if there are no new elements released. A dict of arrays
+#             if there are new elements
+# 
+#         """
+# 
+#         return None
+#==============================================================================
+
+    def _init_mass(self, sc):
+        """
+        initialize 'mass' data array for the newly released particles
+        """
+        # mass is in units of grams
+        _total_mass = self.oil_props.get_density('kg/m^3') \
+                    * self.get_volume('m^3') * 1000
+        sc['mass'][-self._num_new_particles:] = (_total_mass /
+                                                 self._num_new_particles)
+
+#==============================================================================
+#     def create_new_elements(self, num_elements):
+#         arrays = {}
+# 
+#         for name, elem in self.element_types.iteritems():
+#             # Initialize data_arrays with 0 length
+#             arrays[name] = elem.initialize(num_elements, elem.array_type)
+# 
 #             if name == 'mass' and num_elements > 0:
 # 
 #                 # want mass in units of grams
 #                 _total_mass = self.oil_props.get_density('kg/m^3') \
 #                     * self.get_volume('m^3') * 1000
-#                 # _total_mass = unit_conversion.convert('mass', 'kg', 'g', _total_mass)
 # 
 #                 (arrays[name])[:] = _total_mass / num_elements
-#             else:
-#                 (arrays[name])[:] = array_type.initial_value
 #==============================================================================
-        return arrays
+
+        #======================================================================
+        # return arrays
+        #======================================================================
 
 
 class FloatingSpill(Spill):
@@ -367,8 +387,8 @@ class PointSourceSpill(Spill):
     The primary spill source class  --  a point release of floating
     non-weathering particles, can be instantaneous or continuous, and be
     released at a single point, or over a line.
-    
-    This serves as a base class for PointSourceSurfaceRelease and 
+
+    This serves as a base class for PointSourceSurfaceRelease and
     PointSourceSurfaceRelease
     """
 
@@ -382,7 +402,7 @@ class PointSourceSpill(Spill):
 
     @classmethod
     def new_from_dict(cls, dict_):
-        """ 
+        """
         create object using the same settings as persisted object.
         In addition, set the state of other properties after initialization
         """
@@ -438,48 +458,47 @@ class PointSourceSpill(Spill):
             the beginning of the run.
         :type windage_persist: integer seconds
 
-        Remaining kwargs are passed onto base class __init__ using super. 
+        Remaining kwargs are passed onto base class __init__ using super.
         See :class:`FloatingSpill` documentation for remaining valid kwargs.
         """
 
         super(PointSourceSpill, self).__init__(**kwargs)
 
         self.num_elements = num_elements
-
         self.release_time = release_time
+
         if end_release_time is None:
             # also sets self._end_release_time
-            self.end_release_time = release_time  
+            self.end_release_time = release_time
         else:
             if release_time > end_release_time:
-                raise ValueError('end_release_time must be greater than \
-                    release_time')
+                raise ValueError('end_release_time must be greater than'
+                    ' release_time')
             self.end_release_time = end_release_time
 
-        if end_position is None:
-            end_position = start_position  # also sets self._end_position
+        if self.release_time == self.end_release_time:
+            self._init_positions = self._init_positions_instantaneous_release
+        else:
+            self._init_positions = self._init_positions_timevarying_release
+
+        if not end_position:
+            # also sets self._end_position
+            end_position = start_position
+
         self.start_position = np.array(start_position,
                 dtype=basic_types.world_point_type).reshape((3, ))
         self.end_position = np.array(end_position,
                 dtype=basic_types.world_point_type).reshape((3, ))
-        if self.num_elements == 1:
-            self.delta_pos = np.array((0.0, 0.0, 0.0),
-                    dtype=basic_types.world_point_type)
-        else:
-            self.delta_pos = (self.end_position - self.start_position) \
-                / (self.num_elements - 1)
+
+        # only needs to be computed once
+        self.delta_pos = ((self.end_position - self.start_position) /
+                          max(1, self.num_elements - 1))
+
         self.delta_release = (self.end_release_time
                               - self.release_time).total_seconds()
-        self.start_position = np.asarray(start_position,
-                dtype=basic_types.world_point_type).reshape((3, ))
-        self.end_position = np.asarray(end_position,
-                dtype=basic_types.world_point_type).reshape((3, ))
 
-        # self.positions.initial_value = self.start_position
-
-        # self.windage_range    = windage_range[0:2]
-        # self.windage_persist  = windage_persist
-
+        # number of new particles released at each timestep
+        self._num_new_particles = 0
         self.num_released = 0
         self.not_called_yet = True
         self.prev_release_pos = self.start_position.copy()
@@ -506,106 +525,216 @@ class PointSourceSpill(Spill):
         else:
             self._end_release_time = val
 
-    def release_elements(self, current_time, time_step):
-        """
-        Release any new elements to be added to the SpillContainer
-
-        :param current_time: current time
-        :type current_time: datetime.datetime 
-
-        :param time_step: the time step, sometimes used to decide how many
-            should get released.
-        :type time_step: integer seconds
-
-        :returns : None if there are no new elements released. A dict of arrays
-            if there are new elements
-        """
-
+    def num_elements_to_release(self, current_time, time_step):
         if self.num_released >= self.num_elements:
-
             # nothing left to release
-
             return None
 
         if current_time > self.release_time and self.not_called_yet:
-
             # NOTE: JS - July 16th, 2013
             # This is intentional but needs to be revisited. If model run
             # begins after the release_time, then do not release any elements!
             # first call after release time -- don't release anything
             # self.not_called_yet = False
-
             return None
-
-        # it's been called before the release_time
 
         self.not_called_yet = False
 
+        # it's been called before the release_time
         if current_time + timedelta(seconds=time_step) \
             <= self.release_time:  # don't want to barely pick it up...
-
             # not there yet...
-
             print 'not time to release yet'
             return None
 
-        if self.delta_release <= 0:
-            num = self.num_elements
-            arrays = self.create_new_elements(num)
-            self.num_released = num
-            if np.array_equal(self.delta_pos, (0.0, 0.0, 0.0)):
+        delta_release = (self.end_release_time
+                              - self.release_time).total_seconds()
+        # instantaneous release. All particles released at this timestep
+        if delta_release <= 0:
+            self._num_new_particles = self.num_elements
+            return self._num_new_particles
 
-                # point release
-
-                arrays['positions'][:, :] = self.start_position
-            else:
-                arrays['positions'][:, 0] = \
-                    np.linspace(self.start_position[0],
-                                self.end_position[0], num)
-                arrays['positions'][:, 1] = \
-                    np.linspace(self.start_position[1],
-                                self.end_position[1], num)
-                arrays['positions'][:, 2] = \
-                    np.linspace(self.start_position[2],
-                                self.end_position[2], num)
-            return arrays
-
+        # time varying release
         n_0 = self.num_released  # always want to start at previous released
 
         # index of end of current time step
         # a tiny bit to make it open on the right.
         n_1 = int(((current_time - self.release_time).total_seconds()
-                  + time_step) / self.delta_release
-                  * (self.num_elements - 1)) 
+                  + time_step) / delta_release
+                  * (self.num_elements - 1))
 
         n_1 = min(n_1, self.num_elements - 1)  # don't want to go over the end.
         if n_1 == self.num_released - 1:  # indexes from zero
-
             # none to release this time step
-
             return None
 
-        num = n_1 - n_0 + 1
-        self.num_released = n_1 + 1  # indexes from zero
+        # JS: not sure why we want to release 1 extra particle?
+        # but leave algorithm as it is. Since n_0 = 0 at first iteration,
+        # _num_new_particles at 1st step is 1 more than _num_new_particles in
+        # subsequent steps for a fixed time_step
+        self._num_new_particles = n_1 - n_0 + 1
+        return self._num_new_particles
 
-        arrays = self.create_new_elements(num)
+    def _init_positions_instantaneous_release(
+        self,
+        current_time,
+        time_step,
+        sc):
+        """
+        initialize all elements in the very first instant (timestep) of the run
+        The particles can be released at a single 'point' or along a 'line'
 
-        # compute the position of the elements:
+        For each axis (x,y,z), it evenly spaces all elements along a line:
+            np.linspace( self.start_position, self.end_position,
+                         self._num_new_particles)
 
-        if np.array_equal(self.delta_pos, (0.0, 0.0, 0.0)):
-
+        If self.start_position == self.end_position, then all particles are
+        released at self.start_position.
+        """
+        if self.start_position == self.end_position:
             # point release
-
-            arrays['positions'][:, :] = self.start_position
+            sc['positions'][-self._num_new_particles:, :] = self.start_position
         else:
-            n = np.arange(n_0, n_1 + 1).reshape((-1, 1))
-            if self.num_elements == 1:  # special case this one
-                pos = np.array([self.start_position])
-            else:
-                pos = self.start_position + n * self.delta_pos
-            arrays['positions'] = pos
+            # line release
+            sc['positions'][-self._num_new_particles:, 0] = \
+                np.linspace(self.start_position[0],
+                            self.end_position[0],
+                            self._num_new_particles)
+            sc['positions'][-self._num_new_particles:, 1] = \
+                np.linspace(self.start_position[1],
+                            self.end_position[1],
+                            self._num_new_particles)
+            sc['positions'][-self._num_new_particles:, 2] = \
+                np.linspace(self.start_position[2],
+                            self.end_position[2],
+                            self._num_new_particles)
 
-        return arrays
+        # expect self.num_released to be 0 before the instantaneous release
+        self.num_released += self._num_new_particles
+        self._num_new_particles = 0
+
+    def _init_positions_timevarying_release(self, current_time, time_step, sc):
+        """
+        Time varying release of particles. Initialize particles as they are
+        released in each timestep
+        """
+
+        if self.start_position == self.end_position:
+            # point release
+            sc['positions'][-self._num_new_particles:] = self.start_position
+        else:
+            # continuous line release
+            n_0 = self.num_released
+            n_1 = self.num_released + self._num_new_particles
+            n = np.arange(n_0, n_1).reshape((-1, 1))
+            sc['positions'][-self._num_new_particles:] = \
+                self.start_position + n * self.delta_pos
+
+        self.num_released += self._num_new_particles
+        self._num_new_particles = 0  # reset this to 0
+
+#==============================================================================
+#     def release_elements(self, current_time, time_step):
+#         """
+#         Release any new elements to be added to the SpillContainer
+# 
+#         :param current_time: current time
+#         :type current_time: datetime.datetime
+# 
+#         :param time_step: the time step, sometimes used to decide how many
+#             should get released.
+#         :type time_step: integer seconds
+# 
+#         :returns : None if there are no new elements released. A dict of arrays
+#             if there are new elements
+#         """
+# 
+#         if self.num_released >= self.num_elements:
+# 
+#             # nothing left to release
+# 
+#             return None
+# 
+#         if current_time > self.release_time and self.not_called_yet:
+# 
+#             # NOTE: JS - July 16th, 2013
+#             # This is intentional but needs to be revisited. If model run
+#             # begins after the release_time, then do not release any elements!
+#             # first call after release time -- don't release anything
+#             # self.not_called_yet = False
+# 
+#             return None
+# 
+#         # it's been called before the release_time
+# 
+#         self.not_called_yet = False
+# 
+#         if current_time + timedelta(seconds=time_step) \
+#             <= self.release_time:  # don't want to barely pick it up...
+# 
+#             # not there yet...
+# 
+#             print 'not time to release yet'
+#             return None
+# 
+#         if self.delta_release <= 0:
+#             num = self.num_elements
+#             arrays = self.create_new_elements(num)
+#             self.num_released = num
+#             if np.array_equal(self.delta_pos, (0.0, 0.0, 0.0)):
+# 
+#                 # point release
+# 
+#                 arrays['positions'][:, :] = self.start_position
+#             else:
+#                 arrays['positions'][:, 0] = \
+#                     np.linspace(self.start_position[0],
+#                                 self.end_position[0], num)
+#                 arrays['positions'][:, 1] = \
+#                     np.linspace(self.start_position[1],
+#                                 self.end_position[1], num)
+#                 arrays['positions'][:, 2] = \
+#                     np.linspace(self.start_position[2],
+#                                 self.end_position[2], num)
+#             return arrays
+# 
+#         n_0 = self.num_released  # always want to start at previous released
+# 
+#         # index of end of current time step
+#         # a tiny bit to make it open on the right.
+#         n_1 = int(((current_time - self.release_time).total_seconds()
+#                   + time_step) / self.delta_release
+#                   * (self.num_elements - 1)) 
+# 
+#         n_1 = min(n_1, self.num_elements - 1)  # don't want to go over the end.
+#         if n_1 == self.num_released - 1:  # indexes from zero
+# 
+#             # none to release this time step
+# 
+#             return None
+# 
+#         num = n_1 - n_0 + 1
+#         self.num_released = n_1 + 1  # indexes from zero
+# 
+#         arrays = self.create_new_elements(num)
+# 
+#         # compute the position of the elements:
+# 
+#         if np.array_equal(self.delta_pos, (0.0, 0.0, 0.0)):
+# 
+#             # point release
+# 
+#             arrays['positions'][:, :] = self.start_position
+#         else:
+#             n = np.arange(n_0, n_1 + 1).reshape((-1, 1))
+#             if self.num_elements == 1:  # special case this one
+#                 pos = np.array([self.start_position])
+#             else:
+#                 pos = self.start_position + n * self.delta_pos
+#             arrays['positions'] = pos
+# 
+#         return arrays
+#==============================================================================
 
     def rewind(self):
         """
@@ -743,7 +872,7 @@ class SubsurfaceRelease(SubsurfaceSpill):
             position
         :param end_release_time=None: optional -- for a release over time, the
             end release time
-        
+
         **kwargs contain keywords passed up the heirarchy
         """
 
