@@ -23,7 +23,10 @@ using namespace std;
 
 bool IsTIndexedDagTreeHeaderLine(const string &strIn, long &numRecs)
 {
-	return ParseKeyedLine(strIn, "DAGTree", numRecs);
+	string strInLowerCase = strIn;
+	transform(strInLowerCase.begin(), strInLowerCase.end(), strInLowerCase.begin(), ::tolower);	// shoudn't be case sensitive
+	//return ParseKeyedLine(strIn, "DAGTree", numRecs);
+	return ParseKeyedLine(strInLowerCase, "dagtree", numRecs);
 }
 
 Boolean IsTIndexedDagTreeHeaderLine(const char *s, long *numRecs)
@@ -111,7 +114,10 @@ OSErr ReadTIndexedDagTree(CHARH fileBufH,long *line,DAGTreeStruct *dagTree,char*
 
 bool IsTVerticesHeaderLine(const string &strIn, long &numPts)
 {
-	return ParseKeyedLine(strIn, "Vertices", numPts);
+	string strInLowerCase = strIn;
+	transform(strInLowerCase.begin(), strInLowerCase.end(), strInLowerCase.begin(), ::tolower);	// shoudn't be case sensitive
+	//return ParseKeyedLine(strIn, "Vertices", numPts);
+	return ParseKeyedLine(strInLowerCase, "vertices", numPts);
 }
 
 Boolean IsTVerticesHeaderLine(const char *s, long *numPts)
@@ -270,7 +276,10 @@ OSErr ReadTVertices(CHARH fileBufH, long *line, LongPointHdl *pointsH, FLOATH *d
 
 bool IsTTopologyHeaderLine(const string &strIn, long &numPts)
 {
-	return ParseKeyedLine(strIn, "Topology", numPts);
+	string strInLowerCase = strIn;
+	transform(strInLowerCase.begin(), strInLowerCase.end(), strInLowerCase.begin(), ::tolower);	// shoudn't be case sensitive
+	//return ParseKeyedLine(strIn, "Topology", numPts);
+	return ParseKeyedLine(strInLowerCase, "topology", numPts);
 }
 
 Boolean IsTTopologyHeaderLine(char *s, long *numPts)
@@ -647,7 +656,10 @@ checkTriPts:
 
 bool IsPtCurVerticesHeaderLine(const string &strIn, long &numPts, long &numLandPts)
 {
-	return ParseKeyedLine(strIn, "Vertices", numPts, numLandPts);
+	string strInLowerCase = strIn;
+	transform(strInLowerCase.begin(), strInLowerCase.end(), strInLowerCase.begin(), ::tolower);	// shoudn't be case sensitive
+	//return ParseKeyedLine(strIn, "Vertices", numPts, numLandPts);
+	return ParseKeyedLine(strInLowerCase, "vertices", numPts, numLandPts);
 }
 
 Boolean IsPtCurVerticesHeaderLine(const char *s, long *numPts, long *numLandPts)
@@ -661,7 +673,10 @@ bool IsWaterBoundaryHeaderLine(const string &strIn,
 							   long &numWaterBoundaries,
 							   long &numBoundaryPts)
 {
-	return ParseKeyedLine(strIn, "WaterBoundaries", numWaterBoundaries, numBoundaryPts);
+	string strInLowerCase = strIn;
+	transform(strInLowerCase.begin(), strInLowerCase.end(), strInLowerCase.begin(), ::tolower);	// shoudn't be case sensitive
+	//return ParseKeyedLine(strIn, "WaterBoundaries", numWaterBoundaries, numBoundaryPts);
+	return ParseKeyedLine(strInLowerCase, "waterboundaries", numWaterBoundaries, numBoundaryPts);
 }
 
 Boolean IsWaterBoundaryHeaderLine(const char *s,
@@ -675,7 +690,10 @@ Boolean IsWaterBoundaryHeaderLine(const char *s,
 
 bool IsBoundarySegmentHeaderLine(const string &strIn, long &numBoundarySegs)
 {
-	return ParseKeyedLine(strIn, "BoundarySegments", numBoundarySegs);
+	string strInLowerCase = strIn;
+	transform(strInLowerCase.begin(), strInLowerCase.end(), strInLowerCase.begin(), ::tolower);	// shoudn't be case sensitive
+	//return ParseKeyedLine(strIn, "BoundarySegments", numBoundarySegs);
+	return ParseKeyedLine(strInLowerCase, "boundarysegments", numBoundarySegs);
 }
 
 Boolean IsBoundarySegmentHeaderLine(const char *s, long *numBoundarySegs)
@@ -687,7 +705,10 @@ Boolean IsBoundarySegmentHeaderLine(const char *s, long *numBoundarySegs)
 
 bool IsBoundaryPointsHeaderLine(const string &strIn, long &numBoundaryPts)
 {
-	return ParseKeyedLine(strIn, "BoundaryPoints", numBoundaryPts);
+	string strInLowerCase = strIn;
+	transform(strInLowerCase.begin(), strInLowerCase.end(), strInLowerCase.begin(), ::tolower);	// shoudn't be case sensitive
+	//return ParseKeyedLine(strIn, "BoundaryPoints", numBoundaryPts);
+	return ParseKeyedLine(strInLowerCase, "boundarypoints", numBoundaryPts);
 }
 
 Boolean IsBoundaryPointsHeaderLine(const char *s, long *numBoundaryPts)
@@ -889,7 +910,10 @@ OSErr ReadBoundaryPts(CHARH fileBufH, long *line,
 
 bool IsTransposeArrayHeaderLine(const string &strIn, long &numPts)
 {
-	return ParseKeyedLine(strIn, "TransposeArray", numPts);
+	string strInLowerCase = strIn;
+	transform(strInLowerCase.begin(), strInLowerCase.end(), strInLowerCase.begin(), ::tolower);	// shoudn't be case sensitive
+	//return ParseKeyedLine(strIn, "TransposeArray", numPts);
+	return ParseKeyedLine(strInLowerCase, "transposearray", numPts);
 }
 
 Boolean IsTransposeArrayHeaderLine(const char *s, long *numPts)

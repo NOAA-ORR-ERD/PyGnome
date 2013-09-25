@@ -44,6 +44,8 @@ std::string join(const std::vector<std::string> &v, const std::string &delim);
 bool ParseKeyedLine(const std::string &strIn, const std::string &key,
 					std::string &out);
 bool ParseKeyedLine(const std::string &strIn, const std::string &key,
+					short &out1);
+bool ParseKeyedLine(const std::string &strIn, const std::string &key,
 					long &out1);
 bool ParseKeyedLine(const std::string &strIn, const std::string &key,
 					double &out1);

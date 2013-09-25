@@ -1422,7 +1422,22 @@ BadValue:
 /////////////////////////////////////////////////
 #define TRICUR_DELIM_STR " \t"
 
-Boolean IsTriCurVerticesHeaderLine(char *s, long* numPts)
+bool IsTriCurVerticesHeaderLine(const string &strIn, long &numPts)
+{
+	string strInLowerCase = strIn;
+	transform(strInLowerCase.begin(), strInLowerCase.end(), strInLowerCase.begin(), ::tolower);	// shoudn't be case sensitive
+	//return ParseKeyedLine(strIn, "Vertices", numPts, numLandPts);
+	return ParseKeyedLine(strInLowerCase, "vertices", numPts);
+}
+
+Boolean IsTriCurVerticesHeaderLine(const char *s, long *numPts)
+{
+	string strIn = s;
+	return IsTriCurVerticesHeaderLine(strIn, *numPts);
+}
+
+
+/*Boolean IsTriCurVerticesHeaderLine(char *s, long* numPts)
 {
 	char* token = strtok(s,TRICUR_DELIM_STR);
 	*numPts = 0;
@@ -1439,17 +1454,20 @@ Boolean IsTriCurVerticesHeaderLine(char *s, long* numPts)
 	}
 	
 	return TRUE;
-}
+}*/
 
 /////////////////////////////////////////////////////////////////
-OSErr TriCurMover::ReadTriCurVertices(CHARH fileBufH,long *line,LongPointHdl *pointsH, FLOATH *totalDepthH,char* errmsg,long numPoints)
+// Note: '*line' must contain the line# at which the vertex data begins
+OSErr TriCurMover::ReadTriCurVertices(vector<string> &linesInFile, long *line, LongPointHdl *pointsH, FLOATH *totalDepthH, char *errmsg, long numPoints)
+//OSErr TriCurMover::ReadTriCurVertices(CHARH fileBufH,long *line,LongPointHdl *pointsH, FLOATH *totalDepthH,char* errmsg,long numPoints)
 // Note: '*line' must contain the line# at which the vertex data begins
 {
 	LongPointHdl ptsH = nil;
 	FLOATH depthsH = 0;
 	DepthDataInfoH depthDataInfo = 0;
 	OSErr err=-1;
-	char s[256];
+	string currentLine;
+	//char s[256];
 	long i,index = 0;
 	double depth;
 	
@@ -1468,14 +1486,32 @@ OSErr TriCurMover::ReadTriCurVertices(CHARH fileBufH,long *line,LongPointHdl *po
 	
 	for(i=0;i<numPoints;i++)
 	{
-		LongPoint vertex;
-		NthLineInTextOptimized(*fileBufH, (*line)++, s, 256); 
+		long ptNum;
+		double h, v, depth;
+		//LongPoint vertex;
+		//NthLineInTextOptimized(*fileBufH, (*line)++, s, 256); 
+		currentLine = linesInFile[(*line)++];
 		
-		char* token = strtok(s,TRICUR_DELIM_STR); // points to ptNum	 - skip over (maybe check...)
-		token = strtok(NULL,TRICUR_DELIM_STR); // points to x
+		std::replace(currentLine.begin(), currentLine.end(), ',', ' ');
 		
-		err = ScanMatrixPt(token,&vertex);
-		if(err)
+		istringstream lineStream(currentLine);
+		lineStream >> ptNum >> h >> v >> depth;
+		if (lineStream.fail()) {
+			sprintf(errmsg, "Unable to read data (ptNum, h, v) from line %ld:\n", *line);
+			goto done;
+		}
+		
+		h *= 1e6;
+		v *= 1e6;
+		
+		(*ptsH)[i].h = (long)h;
+		(*ptsH)[i].v = (long)v;
+		
+		//char* token = strtok(s,TRICUR_DELIM_STR); // points to ptNum	 - skip over (maybe check...)
+		//token = strtok(NULL,TRICUR_DELIM_STR); // points to x
+		
+		//err = ScanMatrixPt(token,&vertex);
+		/*if(err)
 		{
 			char firstPartOfLine[128];
 			sprintf(errmsg,"Unable to read vertex data from line %ld:%s",*line,NEWLINESTRING);
@@ -1483,17 +1519,17 @@ OSErr TriCurMover::ReadTriCurVertices(CHARH fileBufH,long *line,LongPointHdl *po
 			strcpy(firstPartOfLine+120,"...");
 			strcat(errmsg,firstPartOfLine);
 			goto done;
-		}
+		}*/
 		
 		// should be (*ptsH)[ptNum-1] or track the original indices 
-		(*ptsH)[i].h = vertex.h;
-		(*ptsH)[i].v = vertex.v;
+		//(*ptsH)[i].h = vertex.h;
+		//(*ptsH)[i].v = vertex.v;
 		
-		token = strtok(NULL,TRICUR_DELIM_STR); // points to y		
-		token = strtok(NULL,TRICUR_DELIM_STR); // points to a depth
+		//token = strtok(NULL,TRICUR_DELIM_STR); // points to y		
+		//token = strtok(NULL,TRICUR_DELIM_STR); // points to a depth
 		
-		err = ScanDepth(token,&depth);
-		if(err)
+		//err = ScanDepth(token,&depth);
+		/*if(err)
 		{
 			char firstPartOfLine[128];
 			sprintf(errmsg,"Unable to read depth data from line %ld:%s",*line,NEWLINESTRING);
@@ -1501,7 +1537,7 @@ OSErr TriCurMover::ReadTriCurVertices(CHARH fileBufH,long *line,LongPointHdl *po
 			strcpy(firstPartOfLine+120,"...");
 			strcat(errmsg,firstPartOfLine);
 			goto done;
-		}
+		}*/
 		
 		(*depthsH)[i] = depth; 	// may want to calculate all the sigma levels once here
 	}
@@ -1522,24 +1558,22 @@ done:
 }
 
 /////////////////////////////////////////////////////////////////
+/*bool IsBaromodesInputValuesHeaderLine(const string &strIn, short &modelType)
+{
+	string strInLowerCase = strIn;
+	transform(strInLowerCase.begin(), strInLowerCase.end(), strInLowerCase.begin(), ::tolower);	// shoudn't be case sensitive
+	//return ParseKeyedLine(strIn, "Input Values", modelType);
+	return ParseKeyedLine(strInLowerCase, "input values", modelType);
+}
+
+Boolean IsBaromodesInputValuesHeaderLine(const char *s, short *modelType)
+{
+	string strIn = s;
+	return IsBaromodesInputValuesHeaderLine(strIn, *modelType);
+}
+*/
 Boolean IsBaromodesInputValuesHeaderLine(char *s, short* modelType)
 {
-	// note this method requires a dummy line in ptcur file or else the next line is garbled or skipped
-	/*char* token = strtok(s,TRICUR_DELIM_STR);
-	 *modelType = 0;
-	 if(!token || strncmpnocase(token,"Input Values",strlen("Input Values")) != 0)
-	 {
-	 return FALSE;
-	 }
-	 
-	 token = strtok(NULL,TRICUR_DELIM_STR);
-	 
-	 if(!token || sscanf(token,"%hd",modelType) != 1)
-	 {
-	 return FALSE;
-	 }
-	 
-	 return TRUE;*/
 	char* strToMatch = "Input Values";
 	long numScanned, len = strlen(strToMatch);
 	if(!strncmpnocase(s,strToMatch,len)) {
@@ -1552,12 +1586,17 @@ Boolean IsBaromodesInputValuesHeaderLine(char *s, short* modelType)
 	return TRUE; 
 }
 
-OSErr TriCurMover::ReadBaromodesInputValues(CHARH fileBufH,long *line,BaromodesParameters *inputValues,char* errmsg,short modelType)
+OSErr TriCurMover::ReadBaromodesInputValues(vector<string> &linesInFile,long *line,BaromodesParameters *inputValues,char* errmsg,short modelType)
+//OSErr TriCurMover::ReadBaromodesInputValues(CHARH fileBufH,long *line,BaromodesParameters *inputValues,char* errmsg,short modelType)
 {
 	
 	BaromodesParameters inputParameters;
 	OSErr err=0;
 	char s[256];
+	string currentLine;
+	const char * cStr;
+	char *strDup;
+	string sshFilePathStr,pycFilePathStr,curFilePathStr,lldFilePathStr,uldFilePathStr;
 	char sshFilePath[256],pycFilePath[256],curFilePath[256],lldFilePath[256],uldFilePath[256];
 	double scaleVel,bottomBL,upperEddyVisc,lowerEddyVisc,upperDens,lowerDens;
 	long i, numScanned;
@@ -1567,21 +1606,33 @@ OSErr TriCurMover::ReadBaromodesInputValues(CHARH fileBufH,long *line,BaromodesP
 	
 	memset(&inputParameters,0,sizeof(inputParameters));
 	
-	NthLineInTextOptimized(*fileBufH, (*line)++, s, 256); 
-	if(!strstr(s,"Scale velocity:")) { err = -2; goto done; }
+	currentLine = linesInFile[(*line)++];
+	//NthLineInTextOptimized(*fileBufH, (*line)++, s, 256); 
+	//if(!strstr(s,"Scale velocity:")) { err = -2; goto done; }
+	strDup = strdup(currentLine.c_str());	
+	strcpy(s,strDup);
+	//if (!ParseKeyedLine(currentLine,"Scale velocity:",scaleVel)){ err = -2; goto done; }
 	numScanned = sscanf(s+strlen("Scale velocity:"),lfFix("%lf"),&scaleVel);
 	if(numScanned != 1 ) { err = -2; goto done; }
 	inputParameters.scaleVel = scaleVel;
 	
-	NthLineInTextOptimized(*fileBufH, (*line)++, s, 256); 
+	//NthLineInTextOptimized(*fileBufH, (*line)++, s, 256); 
+	currentLine = linesInFile[(*line)++];
+	strDup = strdup(currentLine.c_str());	
+	strcpy(s,strDup);
+	//if (!ParseKeyedLine(currentLine,"Bottom BL thickness:",bottomBL)){ err = -2; goto done; }
 	if(!strstr(s,"Bottom BL thickness:")) { err = -2; goto done; }
 	numScanned = sscanf(s+strlen("Bottom BL thickness:"),lfFix("%lf"),&bottomBL);
 	if(numScanned != 1 ) { err = -2; goto done; }
 	inputParameters.bottomBLThickness = bottomBL;
 	
-	NthLineInTextOptimized(*fileBufH, (*line)++, s, 256); 
+	//NthLineInTextOptimized(*fileBufH, (*line)++, s, 256); 
+	currentLine = linesInFile[(*line)++];
+	strDup = strdup(currentLine.c_str());	
+	strcpy(s,strDup);
 	if(!strstr(s,"Upper (or only) eddy viscosity:")) { err = -2; goto done; }
 	numScanned = sscanf(s+strlen("Upper (or only) eddy viscosity:"),lfFix("%lf"),&upperEddyVisc);
+	//if (!ParseKeyedLine(currentLine,"Upper (or only) eddy viscosity:",upperEddyVisc)){ err = -2; goto done; }
 	if(numScanned != 1 ) { err = -2; goto done; }
 	inputParameters.upperEddyViscosity = upperEddyVisc;
 	
@@ -1591,27 +1642,43 @@ OSErr TriCurMover::ReadBaromodesInputValues(CHARH fileBufH,long *line,BaromodesP
 	
 	if (modelType==TWOLAYER_CONSTDENS || modelType==TWOLAYER_VARDENS)
 	{
-		NthLineInTextOptimized(*fileBufH, (*line)++, s, 256); 
+		//NthLineInTextOptimized(*fileBufH, (*line)++, s, 256); 
+		currentLine = linesInFile[(*line)++];
+		strDup = strdup(currentLine.c_str());	
+		strcpy(s,strDup);
 		if(!strstr(s,"Lower eddy viscosity:")) { err = -2; goto done; }
 		numScanned = sscanf(s+strlen("Lower eddy viscosity:"),lfFix("%lf"),&lowerEddyVisc);
+		//if (!ParseKeyedLine(currentLine,"Lower eddy viscosity",lowerEddyVisc)){ err = -2; goto done; }
 		if(numScanned != 1 ) { err = -2; goto done; }
 		inputParameters.lowerEddyViscosity = lowerEddyVisc;
 		
 		(*inputValues).lowerEddyViscosity = inputParameters.lowerEddyViscosity;
 	}
-	NthLineInTextOptimized(*fileBufH, (*line)++, s, 256); 
+	//NthLineInTextOptimized(*fileBufH, (*line)++, s, 256); 
+	currentLine = linesInFile[(*line)++];
+	strDup = strdup(currentLine.c_str());	
+	strcpy(s,strDup);
 	if(!strstr(s,"Current file:")) { err = -2; goto done; }
 	//numScanned = sscanf(s+strlen("Current file:"),lfFix("%lf"),&lowerEddyVisc);
 	//if(numScanned != 1 ) { err = -2; goto done; }
 	strcpy(curFilePath,s+strlen("Current file:"));
+	//if (!ParseKeyedLine(currentLine,"Current file:",curFilePathStr)){ err = -2; goto done; }
+	//cStr = curFilePathStr.c_str();
+	//strcpy(curFilePath,(char *)cStr);
 	RemoveLeadingAndTrailingWhiteSpace(curFilePath);
 	strcpy(inputParameters.curFilePathName,curFilePath);
 	
-	NthLineInTextOptimized(*fileBufH, (*line)++, s, 256); 
+	//NthLineInTextOptimized(*fileBufH, (*line)++, s, 256); 
+	currentLine = linesInFile[(*line)++];
+	strDup = strdup(currentLine.c_str());	
+	strcpy(s,strDup);
 	if(!strstr(s,"Sea surface heights file:")) { err = -2; goto done; }
 	//numScanned = sscanf(s+strlen("Sea surface heights file:"),lfFix("%lf"),&lowerEddyVisc);
 	//if(numScanned != 1 ) { err = -2; goto done; }
 	strcpy(sshFilePath,s+strlen("Sea surface heights file:"));
+	//if (!ParseKeyedLine(currentLine,"Sea surface heights file:",sshFilePathStr)){ err = -2; goto done; }
+	//cStr = sshFilePathStr.c_str();
+	//strcpy(sshFilePath,(char *)cStr);
 	RemoveLeadingAndTrailingWhiteSpace(sshFilePath);
 	strcpy(inputParameters.sshFilePathName,sshFilePath);
 	
@@ -1620,7 +1687,11 @@ OSErr TriCurMover::ReadBaromodesInputValues(CHARH fileBufH,long *line,BaromodesP
 	
 	if (modelType==ONELAYER_CONSTDENS)
 	{
-		NthLineInTextOptimized(*fileBufH, (*line)++, s, 256); 
+		//NthLineInTextOptimized(*fileBufH, (*line)++, s, 256); 
+		currentLine = linesInFile[(*line)++];
+		strDup = strdup(currentLine.c_str());	
+		strcpy(s,strDup);
+		//if (!ParseKeyedLine(currentLine,"Density:",upperDens)){ err = -2; goto done; }
 		if(!strstr(s,"Density:")) { err = -2; goto done; }
 		numScanned = sscanf(s+strlen("Density:"),lfFix("%lf"),&upperDens);
 		if(numScanned != 1 ) { err = -2; goto done; }
@@ -1630,11 +1701,17 @@ OSErr TriCurMover::ReadBaromodesInputValues(CHARH fileBufH,long *line,BaromodesP
 	}
 	else if (modelType==ONELAYER_VARDENS)
 	{
-		NthLineInTextOptimized(*fileBufH, (*line)++, s, 256); 
+		//NthLineInTextOptimized(*fileBufH, (*line)++, s, 256); 
+		currentLine = linesInFile[(*line)++];
+		strDup = strdup(currentLine.c_str());	
+		strcpy(s,strDup);
 		if(!strstr(s,"Single layer density file:")) { err = -2; goto done; }
 		//numScanned = sscanf(s+strlen("Sea surface heights file:"),lfFix("%lf"),&lowerEddyVisc);
 		//if(numScanned != 1 ) { err = -2; goto done; }
 		strcpy(uldFilePath,s+strlen("Single layer density file:"));
+		//if (!ParseKeyedLine(currentLine,"Single layer density file:",uldFilePathStr)){ err = -2; goto done; }
+		//cStr = uldFilePathStr.c_str();
+		//strcpy(uldFilePath,(char *)cStr);
 		RemoveLeadingAndTrailingWhiteSpace(uldFilePath);
 		strcpy(inputParameters.uldFilePathName,uldFilePath);
 		
@@ -1642,11 +1719,17 @@ OSErr TriCurMover::ReadBaromodesInputValues(CHARH fileBufH,long *line,BaromodesP
 	}
 	else 	// 2 layer models
 	{
-		NthLineInTextOptimized(*fileBufH, (*line)++, s, 256); 
+		//NthLineInTextOptimized(*fileBufH, (*line)++, s, 256); 
+		currentLine = linesInFile[(*line)++];
+		strDup = strdup(currentLine.c_str());	
+		strcpy(s,strDup);
 		if(!strstr(s,"Pycnocline file:")) { err = -2; goto done; }
 		//numScanned = sscanf(s+strlen("Sea surface heights file:"),lfFix("%lf"),&lowerEddyVisc);
 		//if(numScanned != 1 ) { err = -2; goto done; }
 		strcpy(pycFilePath,s+strlen("Pycnocline file:"));
+		//if (!ParseKeyedLine(currentLine,"Pycnocline file:",pycFilePathStr)){ err = -2; goto done; }
+		//cStr = pycFilePathStr.c_str();
+		//strcpy(pycFilePath,(char *)cStr);
 		RemoveLeadingAndTrailingWhiteSpace(pycFilePath);
 		strcpy(inputParameters.pycFilePathName,pycFilePath);
 		
@@ -1654,14 +1737,22 @@ OSErr TriCurMover::ReadBaromodesInputValues(CHARH fileBufH,long *line,BaromodesP
 		
 		if (modelType==TWOLAYER_CONSTDENS)
 		{
-			NthLineInTextOptimized(*fileBufH, (*line)++, s, 256); 
+			//NthLineInTextOptimized(*fileBufH, (*line)++, s, 256); 
+			currentLine = linesInFile[(*line)++];
+			strDup = strdup(currentLine.c_str());	
+			strcpy(s,strDup);
 			if(!strstr(s,"Upper layer density:")) { err = -2; goto done; }
+			//if (!ParseKeyedLine(currentLine,"Upper layer density:",upperDens)){ err = -2; goto done; }
 			numScanned = sscanf(s+strlen("Upper layer density:"),lfFix("%lf"),&upperDens);
 			if(numScanned != 1 ) { err = -2; goto done; }
 			inputParameters.upperLevelDensity = upperDens;
 			
-			NthLineInTextOptimized(*fileBufH, (*line)++, s, 256); 
+			currentLine = linesInFile[(*line)++];
+			strDup = strdup(currentLine.c_str());	
+			strcpy(s,strDup);
+			//NthLineInTextOptimized(*fileBufH, (*line)++, s, 256); 
 			if(!strstr(s,"Lower layer density:")) { err = -2; goto done; }
+			//if (!ParseKeyedLine(currentLine,"Lower layer density:",lowerDens)){ err = -2; goto done; }
 			numScanned = sscanf(s+strlen("Lower layer density:"),lfFix("%lf"),&lowerDens);
 			if(numScanned != 1 ) { err = -2; goto done; }
 			inputParameters.lowerLevelDensity = lowerDens;
@@ -1671,19 +1762,31 @@ OSErr TriCurMover::ReadBaromodesInputValues(CHARH fileBufH,long *line,BaromodesP
 		}
 		else if (modelType==TWOLAYER_VARDENS)
 		{
-			NthLineInTextOptimized(*fileBufH, (*line)++, s, 256); 
+			//NthLineInTextOptimized(*fileBufH, (*line)++, s, 256); 
+			currentLine = linesInFile[(*line)++];
+			strDup = strdup(currentLine.c_str());	
+			strcpy(s,strDup);
 			if(!strstr(s,"Upper layer density file:")) { err = -2; goto done; }
 			//numScanned = sscanf(s+strlen("Sea surface heights file:"),lfFix("%lf"),&lowerEddyVisc);
 			//if(numScanned != 1 ) { err = -2; goto done; }
 			strcpy(uldFilePath,s+strlen("Upper layer density file:"));
+			//if (!ParseKeyedLine(currentLine,"Upper layer density file:",uldFilePathStr)){ err = -2; goto done; }
+			//cStr = uldFilePathStr.c_str();
+			//strcpy(uldFilePath,(char *)cStr);
 			RemoveLeadingAndTrailingWhiteSpace(uldFilePath);
 			strcpy(inputParameters.uldFilePathName,uldFilePath);
 			
-			NthLineInTextOptimized(*fileBufH, (*line)++, s, 256); 
+			//NthLineInTextOptimized(*fileBufH, (*line)++, s, 256); 
+			currentLine = linesInFile[(*line)++];
+			strDup = strdup(currentLine.c_str());	
+			strcpy(s,strDup);
 			if(!strstr(s,"Lower layer density file:")) { err = -2; goto done; }
 			//numScanned = sscanf(s+strlen("Sea surface heights file:"),lfFix("%lf"),&lowerEddyVisc);
 			//if(numScanned != 1 ) { err = -2; goto done; }
 			strcpy(lldFilePath,s+strlen("Lower layer density file:"));
+			//if (!ParseKeyedLine(currentLine,"Lower layer density file:",lldFilePathStr)){ err = -2; goto done; }
+			//cStr = lldFilePathStr.c_str();
+			//strcpy(lldFilePath,(char *)cStr);
 			RemoveLeadingAndTrailingWhiteSpace(lldFilePath);
 			strcpy(inputParameters.lldFilePathName,lldFilePath);
 			
@@ -1706,24 +1809,23 @@ done:
 	return err;		
 }
 /////////////////////////////////////////////////////////////////
-Boolean IsCentroidDepthsHeaderLine(char *s, long* numPts)
+bool IsCentroidDepthsHeaderLine(const string &strIn, long &numPts)
+{
+	string strInLowerCase = strIn;
+	transform(strInLowerCase.begin(), strInLowerCase.end(), strInLowerCase.begin(), ::tolower);	// shoudn't be case sensitive
+	//return ParseKeyedLine(strIn, "Vertices", numPts, numLandPts);
+	return ParseKeyedLine(strInLowerCase, "centroiddepths", numPts);
+}
+
+Boolean IsCentroidDepthsHeaderLine(const char *s, long *numPts)
+{
+	string strIn = s;
+	return IsCentroidDepthsHeaderLine(strIn, *numPts);
+}
+
+/*Boolean IsCentroidDepthsHeaderLine(char *s, long* numPts)
 {
 	// note this method requires a dummy line in ptcur file or else the next line is garbled or skipped
-	/*char* token = strtok(s,TRICUR_DELIM_STR);
-	 *numPts = 0;
-	 if(!token || strncmpnocase(token,"CentroidDepths",strlen("CentroidDepths")) != 0)
-	 {
-	 return FALSE;
-	 }
-	 
-	 token = strtok(NULL,TRICUR_DELIM_STR);
-	 
-	 if(!token || sscanf(token,"%ld",numPts) != 1)
-	 {
-	 return FALSE;
-	 }
-	 
-	 return TRUE;*/
 	char* strToMatch = "CentroidDepths";
 	long numScanned, len = strlen(strToMatch);
 	if(!strncmpnocase(s,strToMatch,len)) {
@@ -1734,16 +1836,18 @@ Boolean IsCentroidDepthsHeaderLine(char *s, long* numPts)
 	else
 		return FALSE;
 	return TRUE; 
-}
+}*/
 
-OSErr TriCurMover::ReadCentroidDepths(CHARH fileBufH,long *line,long numTris,char* errmsg)
+//OSErr TriCurMover::ReadCentroidDepths(CHARH fileBufH,long *line,long numTris,char* errmsg)
+OSErr TriCurMover::ReadCentroidDepths(vector<string> &linesInFile,long *line,long numTris,char* errmsg)
 // Note: '*line' must contain the line# at which the vertex data begins
 {
 	FLOATH depthsH = 0;
 	DepthDataInfoH depthDataInfo = 0;
 	OSErr err=-1;
+	string currentLine;
 	//char s[256];
-	char *s;
+	//char *s;
 	long i,index = 0;
 	double depth;
 	//long numDepths = fVar.maxNumDepths;	//for now
@@ -1760,20 +1864,31 @@ OSErr TriCurMover::ReadCentroidDepths(CHARH fileBufH,long *line,long numTris,cha
 	depthDataInfo = (DepthDataInfoH)_NewHandle(sizeof(**depthDataInfo)*numTris);
 	if(!depthDataInfo){TechError("TriCurMover::ReadCentroidDepths()", "_NewHandle()", 0); err = memFullErr; goto done;}
 	
-	//s = new char[(fVar.maxNumDepths+4)*64]; // large enough to hold ptNum, vertex, total depth, and all depths
-	s = new char[(fVar.maxNumDepths+1)*64]; // large enough to hold total depth and all depths
-	if(!s) {TechError("TriCurMover::ReadCentroidDepths()", "new[]", 0); err = memFullErr; goto done;}
+
+	//s = new char[(fVar.maxNumDepths+1)*64]; // large enough to hold total depth and all depths
+	//if(!s) {TechError("TriCurMover::ReadCentroidDepths()", "new[]", 0); err = memFullErr; goto done;}
 	
 	for(i=0;i<numTris;i++)
 	{
 		long numDepths = 0;
-		NthLineInTextOptimized(*fileBufH, (*line)++, s, (fVar.maxNumDepths+1)*64); 
+		currentLine = linesInFile[(*line)++];
+
+		std::replace(currentLine.begin(), currentLine.end(), ',', ' ');
+		
+		istringstream lineStream(currentLine);
+		lineStream >>depth;
+		if (lineStream.fail()) {
+			sprintf(errmsg, "Unable to read data (depth) from line %ld:\n", *line);
+			goto done;
+		}
+		
+		//NthLineInTextOptimized(*fileBufH, (*line)++, s, (fVar.maxNumDepths+1)*64); 
 		//NthLineInTextOptimized(*fileBufH, (*line)++, s, 256); 
 		//if (sscanf(s,lfFix("%lf"),&depth) < 1) err = true;
 		
-		char* token = strtok(s,TRICUR_DELIM_STR); 	// points to a depth	
-		err = ScanDepth(token,&depth);
-		if(err)
+		//char* token = strtok(s,TRICUR_DELIM_STR); 	// points to a depth	
+		//err = ScanDepth(token,&depth);
+		/*if(err)
 		{
 			char firstPartOfLine[128];
 			sprintf(errmsg,"Unable to read depth data from line %ld:%s",*line,NEWLINESTRING);
@@ -1781,7 +1896,7 @@ OSErr TriCurMover::ReadCentroidDepths(CHARH fileBufH,long *line,long numTris,cha
 			strcpy(firstPartOfLine+120,"...");
 			strcat(errmsg,firstPartOfLine);
 			goto done;
-		}
+		}*/
 		
 		(*depthDataInfo)[i].indexToDepthData = index;
 		(*depthDataInfo)[i].totalDepth = depth;
@@ -1792,9 +1907,15 @@ OSErr TriCurMover::ReadCentroidDepths(CHARH fileBufH,long *line,long numTris,cha
 		if (fVar.maxNumDepths == 1) numDepths = 1;
 		while (numDepths!=fVar.maxNumDepths)
 		{
-			token = strtok(NULL,TRICUR_DELIM_STR); // points to a depth
-			err = ScanDepth(token,&depth);
-			if(err)
+			lineStream >> depth;
+			if (lineStream.fail()) {
+				sprintf(errmsg, "Unable to read depth data from line %ld:\n", *line);
+				goto done;
+			}
+			
+			//token = strtok(NULL,TRICUR_DELIM_STR); // points to a depth
+			//err = ScanDepth(token,&depth);
+			/*if(err)
 			{
 				char firstPartOfLine[128];
 				sprintf(errmsg,"Unable to read depth data from line %ld:%s",*line,NEWLINESTRING);
@@ -1802,7 +1923,7 @@ OSErr TriCurMover::ReadCentroidDepths(CHARH fileBufH,long *line,long numTris,cha
 				strcpy(firstPartOfLine+120,"...");
 				strcat(errmsg,firstPartOfLine);
 				goto done;
-			}
+			}*/
 			
 			if (depth==-1) break; // no more depths
 			/*if (numDepths==0) // first one is actual depth at the location
@@ -1833,7 +1954,7 @@ OSErr TriCurMover::ReadCentroidDepths(CHARH fileBufH,long *line,long numTris,cha
 	
 done:
 	
-	if(s) {delete[] s;  s = 0;}
+	//if(s) {delete[] s;  s = 0;}
 	if(err) 
 	{
 		if(depthDataInfo) {DisposeHandle((Handle)depthDataInfo); depthDataInfo = 0;}
@@ -1843,7 +1964,21 @@ done:
 }
 
 /////////////////////////////////////////////////////////////////
-Boolean IsSigmaLevelsHeaderLine(char *s, long* numPts)
+bool IsSigmaLevelsHeaderLine(const string &strIn, long &numPts)
+{
+	string strInLowerCase = strIn;
+	transform(strInLowerCase.begin(), strInLowerCase.end(), strInLowerCase.begin(), ::tolower);	// shoudn't be case sensitive
+	//return ParseKeyedLine(strIn, "Vertices", numPts, numLandPts);
+	return ParseKeyedLine(strInLowerCase, "sigmalevels", numPts);
+}
+
+Boolean IsSigmaLevelsHeaderLine(const char *s, long *numPts)
+{
+	string strIn = s;
+	return IsSigmaLevelsHeaderLine(strIn, *numPts);
+}
+
+/*Boolean IsSigmaLevelsHeaderLine(char *s, long* numPts)
 {
 	char* token = strtok(s,TRICUR_DELIM_STR);
 	*numPts = 0;
@@ -1860,14 +1995,16 @@ Boolean IsSigmaLevelsHeaderLine(char *s, long* numPts)
 	}
 	
 	return TRUE;
-}
+}*/
 
-OSErr TriCurMover::ReadSigmaLevels(CHARH fileBufH,long *line,FLOATH *sigmaLevels,long numLevels,char* errmsg)
+//OSErr TriCurMover::ReadSigmaLevels(CHARH fileBufH,long *line,FLOATH *sigmaLevels,long numLevels,char* errmsg)
+OSErr TriCurMover::ReadSigmaLevels(vector<string> &linesInFile,long *line,FLOATH *sigmaLevels,long numLevels,char* errmsg)
 // Note: '*line' must contain the line# at which the vertex data begins
 {
 	FLOATH sigmaLevelsH = 0;
 	OSErr err=-1;
-	char s[256];
+	string currentLine;
+	//char s[256];
 	long i;
 	double sigmaLevel;
 	//long numDepths = fVar.maxNumDepths;	//for now
@@ -1879,14 +2016,23 @@ OSErr TriCurMover::ReadSigmaLevels(CHARH fileBufH,long *line,FLOATH *sigmaLevels
 	
 	for(i=0;i<numLevels;i++)
 	{
-		NthLineInTextOptimized(*fileBufH, (*line)++, s, 256); 
+		//NthLineInTextOptimized(*fileBufH, (*line)++, s, 256); 
+		currentLine = linesInFile[(*line)++];
 		//if (sscanf(s,lfFix("%lf"),&sigmaLevel) < 1) err = true;
 		
-		char* token = strtok(s,TRICUR_DELIM_STR); 		
-		//token = strtok(NULL,PTCUR_DELIM_STR); // points to a depth
-		err = ScanDepth(token,&sigmaLevel);
+		std::replace(currentLine.begin(), currentLine.end(), ',', ' ');
 		
-		if(err)
+		istringstream lineStream(currentLine);
+		lineStream >> sigmaLevel;
+		if (lineStream.fail()) {
+			sprintf(errmsg, "Unable to read data (sigmaLevel) from line %ld:\n", *line);
+			goto done;
+		}
+		
+		//char* token = strtok(s,TRICUR_DELIM_STR); 		
+		//err = ScanDepth(token,&sigmaLevel);
+		
+		/*if(err)
 		{
 			char firstPartOfLine[128];
 			sprintf(errmsg,"Unable to read depth data from line %ld:%s",*line,NEWLINESTRING);
@@ -1895,7 +2041,7 @@ OSErr TriCurMover::ReadSigmaLevels(CHARH fileBufH,long *line,FLOATH *sigmaLevels
 			strcat(errmsg,firstPartOfLine);
 			goto done;
 		}
-		
+		*/
 		(*sigmaLevelsH)[i] = sigmaLevel;
 	}
 	
@@ -1913,11 +2059,14 @@ done:
 }
 
 
-OSErr TriCurMover::TextRead(char *path, TMap **newMap) 
+//OSErr TriCurMover::TextRead(char *path, TMap **newMap) 
+OSErr TriCurMover::TextRead(vector<string> &linesInFile, TMap **newMap) 
 {
 	char s[1024], errmsg[256], copyPath[256];
+	char *cStr;
 	long i, numPoints, numTopoPoints = 0, line = 0;
-	CHARH f = 0;
+	string currentLine;
+	//CHARH f = 0;
 	OSErr err = 0;
 	
 	TopologyHdl topo=0;
@@ -1944,7 +2093,7 @@ OSErr TriCurMover::TextRead(char *path, TMap **newMap)
 	errmsg[0]=0;
 	
 	
-	if (!path || !path[0]) return 0;
+	/*if (!path || !path[0]) return 0;
 	
 	strcpy(fVar.pathName,path);
 	
@@ -1956,16 +2105,22 @@ OSErr TriCurMover::TextRead(char *path, TMap **newMap)
 	}
 	
 	_HLock((Handle)f); // JLM 8/4/99
-	
+	*/
 	// code goes here, worry about really long lines in the file
 	
 	// read header here
-	strcpy(copyPath,path);
-	SplitPathFile(copyPath,fVar.userName);
+	//strcpy(copyPath,path);
+	//SplitPathFile(copyPath,fVar.userName);
+
 	//fVar.userName[kPtCurUserNameLen-1] = 0;
 	for (i = 0 ; TRUE ; i++) {
-		NthLineInTextOptimized(*f, line++, s, 1024); 
-		if(s[0] != '[')
+		currentLine = linesInFile[line++];
+		//strcpy(s,(char *)currentLine);
+		const char * cStr = currentLine.c_str();
+		strcpy(s,(char *)cStr);
+		//NthLineInTextOptimized(*f, line++, s, 1024); 
+		if(currentLine[0] != '[')
+		//if(s[0] != '[')
 			break;
 		err = this -> ReadHeaderLine(s);
 		if(err)
@@ -1981,15 +2136,20 @@ OSErr TriCurMover::TextRead(char *path, TMap **newMap)
 	// option to read in exported topology or just require cut and paste into file	
 	// read triangle/topology info if included in file, otherwise calculate
 	
-	if(IsBaromodesInputValuesHeaderLine(s,&modelType))	// Additional header info about what parameters were used in Baromodes
+	cStr = strdup(currentLine.c_str());	
+
+	if(IsBaromodesInputValuesHeaderLine(cStr,&modelType))	// Additional header info about what parameters were used in Baromodes
+	//if(IsBaromodesInputValuesHeaderLine(currentLine,modelType))	// Additional header info about what parameters were used in Baromodes
 	{
 		MySpinCursor();
-		err = ReadBaromodesInputValues(f,&line,&inputValues,errmsg,modelType);
+		//err = ReadBaromodesInputValues(f,&line,&inputValues,errmsg,modelType);
+		err = ReadBaromodesInputValues(linesInFile,&line,&inputValues,errmsg,modelType);
 		if(err) goto done;
 		inputValues.modelType = modelType;	// 
 		SetInputValues(inputValues);
 		MySpinCursor();
-		NthLineInTextOptimized(*f, (line)++, s, 1024); 
+		//NthLineInTextOptimized(*f, (line)++, s, 1024); 
+		currentLine = linesInFile[line++];
 	}
 	else
 	{	// backward compatibility, allow old format
@@ -1997,10 +2157,13 @@ OSErr TriCurMover::TextRead(char *path, TMap **newMap)
 		SetInputValues(inputValues);
 	}
 	
-	if(IsTriCurVerticesHeaderLine(s,&numPoints))	// Points in Galt format - can probably use old format now
+	
+	//if(IsTriCurVerticesHeaderLine(s,&numPoints))	// Points in Galt format - can probably use old format now
+	if(IsTriCurVerticesHeaderLine(currentLine,numPoints))	// Points in Galt format - can probably use old format now
 	{
 		MySpinCursor();
-		err = ReadTriCurVertices(f,&line,&pts,&totalDepthH,errmsg,numPoints);
+		//err = ReadTriCurVertices(f,&line,&pts,&totalDepthH,errmsg,numPoints);
+		err = ReadTriCurVertices(linesInFile,&line,&pts,&totalDepthH,errmsg,numPoints);
 		if(err) goto done;
 	}
 	else
@@ -2032,14 +2195,18 @@ OSErr TriCurMover::TextRead(char *path, TMap **newMap)
 	}
 	
 	MySpinCursor();
-	NthLineInTextOptimized(*f, (line)++, s, 1024); 
+	//NthLineInTextOptimized(*f, (line)++, s, 1024); 
+	currentLine = linesInFile[line++];
 	
-	if(IsBoundarySegmentHeaderLine(s,&numBoundarySegs)) // Boundary data from CATs
+	//if(IsBoundarySegmentHeaderLine(s,&numBoundarySegs)) // Boundary data from CATs
+	if(IsBoundarySegmentHeaderLine(currentLine,numBoundarySegs)) // Boundary data from CATs
 	{
 		MySpinCursor();
-		err = ReadBoundarySegs(f,&line,&boundarySegs,numBoundarySegs,errmsg);
+		//err = ReadBoundarySegs(f,&line,&boundarySegs,numBoundarySegs,errmsg);
+		err = ReadBoundarySegs(linesInFile,&line,&boundarySegs,numBoundarySegs,errmsg);
 		if(err) goto done;
-		NthLineInTextOptimized(*f, (line)++, s, 1024); 
+		//NthLineInTextOptimized(*f, (line)++, s, 1024); 
+		currentLine = linesInFile[line++];
 		haveBoundaryData = true;
 	}
 	else
@@ -2049,12 +2216,15 @@ OSErr TriCurMover::TextRead(char *path, TMap **newMap)
 	}
 	MySpinCursor(); // JLM 8/4/99
 	
-	if(IsWaterBoundaryHeaderLine(s,&numWaterBoundaries,&numBoundaryPts)) // Boundary types from CATs
+	//if(IsWaterBoundaryHeaderLine(s,&numWaterBoundaries,&numBoundaryPts)) // Boundary types from CATs
+	if(IsWaterBoundaryHeaderLine(currentLine,numWaterBoundaries,numBoundaryPts)) // Boundary types from CATs
 	{
 		MySpinCursor();
-		err = ReadWaterBoundaries(f,&line,&waterBoundaries,numWaterBoundaries,numBoundaryPts,errmsg);
+		//err = ReadWaterBoundaries(f,&line,&waterBoundaries,numWaterBoundaries,numBoundaryPts,errmsg);
+		err = ReadWaterBoundaries(linesInFile,&line,&waterBoundaries,numWaterBoundaries,numBoundaryPts,errmsg);
 		if(err) goto done;
-		NthLineInTextOptimized(*f, (line)++, s, 1024); 
+		//NthLineInTextOptimized(*f, (line)++, s, 1024); 
+		currentLine = linesInFile[line++];
 	}
 	else
 	{
@@ -2064,12 +2234,15 @@ OSErr TriCurMover::TextRead(char *path, TMap **newMap)
 	MySpinCursor(); // JLM 8/4/99
 	//NthLineInTextOptimized(*f, (line)++, s, 1024); 
 	
-	if(IsTTopologyHeaderLine(s,&numTopoPoints)) // Topology from CATs
+	//if(IsTTopologyHeaderLine(s,&numTopoPoints)) // Topology from CATs
+	if(IsTTopologyHeaderLine(currentLine,numTopoPoints)) // Topology from CATs
 	{
 		MySpinCursor();
-		err = ReadTTopologyBody(f,&line,&topo,&velH,errmsg,numTopoPoints,FALSE);
+		//rr = ReadTTopologyBody(f,&line,&topo,&velH,errmsg,numTopoPoints,FALSE);
+		err = ReadTTopologyBody(linesInFile,&line,&topo,&velH,errmsg,numTopoPoints,FALSE);
 		if(err) goto done;
-		NthLineInTextOptimized(*f, (line)++, s, 1024); 
+		//NthLineInTextOptimized(*f, (line)++, s, 1024); 
+		currentLine = linesInFile[line++];
 	}
 	else
 	{
@@ -2087,12 +2260,15 @@ OSErr TriCurMover::TextRead(char *path, TMap **newMap)
 	
 	//NthLineInTextOptimized(*f, (line)++, s, 1024); 
 	
-	if(IsTIndexedDagTreeHeaderLine(s,&numPoints))  // DagTree from CATs
+	//if(IsTIndexedDagTreeHeaderLine(s,&numPoints))  // DagTree from CATs
+	if(IsTIndexedDagTreeHeaderLine(currentLine,numPoints))  // DagTree from CATs
 	{
 		MySpinCursor();
-		err = ReadTIndexedDagTreeBody(f,&line,&tree,errmsg,numPoints);
+		//err = ReadTIndexedDagTreeBody(f,&line,&tree,errmsg,numPoints);
+		err = ReadTIndexedDagTreeBody(linesInFile,&line,&tree,errmsg,numPoints);
 		if(err) goto done;
-		NthLineInTextOptimized(*f, (line)++, s, 1024); 
+		//NthLineInTextOptimized(*f, (line)++, s, 1024); 
+		currentLine = linesInFile[line++];
 	}
 	else
 	{
@@ -2111,14 +2287,17 @@ OSErr TriCurMover::TextRead(char *path, TMap **newMap)
 	MySpinCursor();
 	//NthLineInTextOptimized(*f, (line)++, s, 1024); 
 	
-	if(IsCentroidDepthsHeaderLine(s,&numTris)) // Boundary data from CATs
+	//if(IsCentroidDepthsHeaderLine(s,&numTris)) // Boundary data from CATs
+	if(IsCentroidDepthsHeaderLine(currentLine,numTris)) // Boundary data from CATs
 	{
 		// check numTris matches numTopoPoints
 		MySpinCursor();
 		//err = ReadCentroidDepths(f,&line,&centroidDepths,numTris,errmsg);
-		err = ReadCentroidDepths(f,&line,numTris,errmsg);
+		//err = ReadCentroidDepths(f,&line,numTris,errmsg);
+		err = ReadCentroidDepths(linesInFile,&line,numTris,errmsg);
 		if(err) {/*printError("Error reading centroid data");*/ goto done;}
-		NthLineInTextOptimized(*f, (line)++, s, 1024); 
+		//NthLineInTextOptimized(*f, (line)++, s, 1024); 
+		currentLine = linesInFile[line++];
 		haveCentroidDepths = true;
 	}
 	else
@@ -2137,11 +2316,13 @@ OSErr TriCurMover::TextRead(char *path, TMap **newMap)
 	MySpinCursor();
 	//NthLineInTextOptimized(*f, (line)++, s, 1024); 
 	
-	if(IsSigmaLevelsHeaderLine(s,&numLevels)) // If the same everywhere don't need all the depth levels above
+	//if(IsSigmaLevelsHeaderLine(s,&numLevels)) // If the same everywhere don't need all the depth levels above
+	if(IsSigmaLevelsHeaderLine(currentLine,numLevels)) // If the same everywhere don't need all the depth levels above
 	{
 		// maybe this is an option if centroid block is missing, pieces can be calculated
 		MySpinCursor();
-		err = ReadSigmaLevels(f,&line,&sigmaLevelsH,numLevels,errmsg);
+		//err = ReadSigmaLevels(f,&line,&sigmaLevelsH,numLevels,errmsg);
+		err = ReadSigmaLevels(linesInFile,&line,&sigmaLevelsH,numLevels,errmsg);
 		//err = ReadSigmaLevels(f,&line,numLevels,errmsg);
 		if(err) {/*printError("Error reading sigma level header line");*/ goto done;}
 		//NthLineInTextOptimized(*f, (line)++, s, 1024); 
@@ -2231,7 +2412,7 @@ OSErr TriCurMover::TextRead(char *path, TMap **newMap)
 	//NthLineInTextOptimized(*f, (line)++, s, 1024); 
 	//if(!strstr(s,"[FILE]")) 
 	//{	// single file
-	err = ScanFileForTimes(path,&fTimeDataHdl,true);	// minus AH 07/17/2012
+	err = ScanFileForTimes(fVar.pathName,&fTimeDataHdl,true);	// minus AH 07/17/2012
 	
 	if (err) goto done;
 	//}
@@ -2254,12 +2435,12 @@ OSErr TriCurMover::TextRead(char *path, TMap **newMap)
 	
 done:
 	
-	if(f) 
+	/*if(f) 
 	{
 		_HUnlock((Handle)f); 
 		DisposeHandle((Handle)f); 
 		f = 0;
-	}
+	}*/
 	
 	if(err)
 	{
@@ -2290,6 +2471,31 @@ done:
 	return err;
 	
 	// rest of file (i.e. velocity data) is read as needed
+}
+
+OSErr TriCurMover::TextRead(const char *path, TMap **newMap)
+{
+	vector<string> linesInFile;
+	char outPath[kMaxNameLen], copyPath[kMaxNameLen];
+	OSErr err = 0;
+
+	if (!path || !path[0]) return 0;
+	
+	strcpy(fVar.pathName,path);
+	
+	strcpy(copyPath,path);
+	SplitPathFile(copyPath,fVar.userName);
+
+#ifdef TARGET_API_MAC_CARBON
+	if (IsClassicPath((char*)path))
+	{
+		err = ConvertTraditionalPathToUnixPath(path, outPath, kMaxNameLen) ;
+		if (!err) strcpy((char*)path,outPath);
+		else return err;
+	}
+#endif
+	ReadLinesInFile(path, linesInFile);
+	return TextRead(linesInFile, newMap);
 }
 
 /*OSErr TriCurMover::ReadInputFileNames(CHARH fileBufH, long *line, long numFiles, PtCurFileInfoH *inputFilesH)
