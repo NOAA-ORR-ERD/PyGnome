@@ -216,6 +216,7 @@ WorldPoint3D Random3D_c::GetMove (const Seconds& model_time, Seconds timeStep,lo
 		deltaPoint.p.pLat  = dLat  * 1000000;
 		
 		if (map) water_density = map->fWaterDensity/1000.;	// kg/m^3 to g/cm^3
+		else water_density = water_density / 1000.;	// otherwise it's in the wrong units
 		//water_density = ((PtCurMap*)moverMap)->fWaterDensity/1000.;	// kg/m^3 to g/cm^3
 		// check that depth at point is greater than mixed layer depth, else bottom threshold is the depth
 		if (map) depthAtPoint = map->DepthAtPoint(refPoint);	// or check rand instead
