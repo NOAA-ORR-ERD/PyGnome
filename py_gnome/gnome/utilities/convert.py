@@ -1,9 +1,7 @@
 """
 Helper classes to do common tasks in pyGnome like;
-- convert_formats to convert datetime_value to time_value_pair 
+- convert_formats to convert datetime_value to time_value_pair
 """
-
-import sys
 
 from gnome.utilities import time_utils, transforms
 from gnome import basic_types
@@ -12,15 +10,17 @@ import numpy as np
 
 def to_time_value_pair(datetime_value_2d, in_ts_format):
     """
-    converts a numpy array containing basic_types.datetime_value_2d in user specified basic_types.ts_format
-    into a time_value_pair array 
-    
+    converts a numpy array containing basic_types.datetime_value_2d in
+    user specified basic_types.ts_format into a time_value_pair array
+
     :param datetime_value_2d: numpy array of type basic_types.datetime_value_2d
-    :param in_ts_format: format of the array. Can be defined by a string 'r-theta', 'uv' or by an integer
-                         defined by one of the options given in basic_types.ts_format
+    :param in_ts_format: format of the array. Can be defined by a string
+                         'r-theta', 'uv' or by an integer defined by one of the
+                         options given in basic_types.ts_format
     """
 
-    if datetime_value_2d.dtype is not basic_types.datetime_value_2d:
+    #print (datetime_value_2d.dtype, basic_types.datetime_value_2d)
+    if datetime_value_2d.dtype != basic_types.datetime_value_2d:
         raise ValueError('Method expects a numpy array containing basic_types.datetime_value_2d'
                          )
 
@@ -54,14 +54,16 @@ def to_time_value_pair(datetime_value_2d, in_ts_format):
 
 def to_datetime_value_2d(time_value_pair, out_ts_format):
     """
-    converts a numpy array containing basic_types.time_value_pair to a numpy array containing basic_types.datetime_value_2d
-    in user specified basic_types.ts_format 
-    
+    converts a numpy array containing basic_types.time_value_pair to a
+    numpy array containing basic_types.datetime_value_2d in user specified
+    basic_types.ts_format
+
     :param time_value_pair: numpy array of type basic_types.time_value_pair
-    :param out_ts_format: desired format of the array defined by one of the options given in basic_types.ts_format
+    :param out_ts_format: desired format of the array defined by one of the
+                          options given in basic_types.ts_format
     """
 
-    if time_value_pair.dtype is not basic_types.time_value_pair:
+    if time_value_pair.dtype != basic_types.time_value_pair:
         raise ValueError('Method expects a numpy array containing basic_types.time_value_pair'
                          )
 
