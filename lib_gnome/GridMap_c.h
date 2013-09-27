@@ -14,6 +14,8 @@
 #include <string>
 #include <vector>
 
+using namespace std;
+
 #include "Basics.h"
 #include "TypeDefs.h"
 #include "RectUtils.h"
@@ -88,6 +90,7 @@ public:
 	OSErr	TextRead(char *path);
 	OSErr	ExportTopology(char* path);
 	OSErr	SaveAsNetCDF(char *path);
+	OSErr	ReadCATSMap(vector<string> &linesInFile); 
 	OSErr	ReadCATSMap(char *path); 
 	OSErr	GetPointsAndMask(char *path,DOUBLEH *maskH,WORLDPOINTFH *vertexPtsH, FLOATH *depthPtsH, long *numRows, long *numCols);	
 	//OSErr	GetPointsAndBoundary2(char *path,long *numTri,WORLDPOINTFH *vertexPtsH, FLOATH *depthPtsH, long *bndry_indices, long *bndry_nums, long *bndry_type, long numBoundaryPts, long *tri_verts, long *tri_neighbors, long ntri);
