@@ -92,10 +92,30 @@ if sys.argv.count(config) != 0:
     sys.argv.remove(config)
 
 
+## 64 bit Windows Notes:
+##     The following batch commands will be needed to setup the
+##     64 bit compile environment.
+##
+##     - cmd /E:ON /V:ON /T:0E /K "C:\Program Files\Microsoft SDKs\Windows\v7.0\Bin\SetEnv.cmd"
+##     - "C:\Program Files (x86)\Microsoft Visual Studio 9.0\VC\bin\vcvars64.bat"
+##
+##     We may want to script these, but for now we can just manually run them
+##     on the command line.
+##     SetEnv.cmd makes use of delayed environment variable expansion, and we
+##     might not even be able to automate it without a rewrite of the script.
+##     Also, there will be some warning messages caused
+##     by our inability to read the registry.  Ignore these for now.
+##
+##     With the environment setup, all our sources are compiling, but we are
+##     failing to link because we netCDF library is 32 bit (I believe).
+##     Added third_party_lib/win32/x86_64/netcdf.lib
+##     Adding the netCDF bin directory and the dependency bin directory
+##     to the Path variable 
+
 ## setup our environment and architecture
 ## These should be properties that are used by all Extensions
 libfile = ''
-if sys.maxint <= 2147483647:
+if sys.maxsize <= 2 ** 32:
     architecture = 'i386'
 else:
     architecture = 'x86_64'
@@ -127,18 +147,18 @@ elif sys.platform == "win32":
 ##
 if sys.platform is "darwin" or "win32":
     third_party_dir = os.path.join('..', 'third_party_lib')
-    
+
     # the netCDF environment
     netcdf_base = os.path.join(third_party_dir, 'netcdf-4.3',
                               sys.platform, architecture)
     netcdf_libs = os.path.join(netcdf_base, 'lib')
     netcdf_inc = os.path.join(netcdf_base, 'include')
-    
+
     if sys.platform == 'win32':
         netcdf_names = ('netcdf',)
     else:
         netcdf_names = ('hdf5', 'hdf5_hl', 'netcdf', 'netcdf_c++4')
-    
+
     netcdf_lib_files = [os.path.join(netcdf_libs, libfile.format(l))
                         for l in netcdf_names]
 
@@ -230,10 +250,10 @@ static_lib_files = netcdf_lib_files
 # This is being done in the gnome/cy_gnome/__init__.py
 
 # JS NOTE: 'darwin' and 'win32' statically link against netcdf library.
-#          On linux, we link against the dynamic netcdf libraries (shared 
+#          On linux, we link against the dynamic netcdf libraries (shared
 #          objects) since netcdf, hdf5 can be installed with a package manager.
 #          We also don't have the static builds for these.
-#          Also, the static_lib_files only need to be linked against 
+#          Also, the static_lib_files only need to be linked against
 #          lib_gnome in the following Extension.
 
 if sys.platform == "darwin":
