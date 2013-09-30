@@ -2267,7 +2267,6 @@ OSErr GridMap_c::GetPointsAndBoundary(char *path,
 	//, *sigma_vals=0;
 	float *lat_vals = 0, *lon_vals = 0, *depth_vals = 0;
 	long *bndry_indices = 0, *bndry_nums = 0, *bndry_type = 0, *top_verts = 0, *top_neighbors = 0;
-	//Seconds startTime, startTime2;
 	double timeConversion = 1., scale_factor = 1.;
 	char *modelTypeStr = 0;
 
@@ -2430,8 +2429,6 @@ OSErr GridMap_c::GetPointsAndBoundary(char *path,
 	*depthPtsH = totalDepthsH;
 	*numBoundaryPts = nbndLength;
 	*numNodes = nodeLength;
-	//status = nc_inq_dim(ncid, recid, recname, &recs);
-	//if (status != NC_NOERR) {err = -1; goto done;}
 	
 	
 	// check if file has topology in it
@@ -2572,13 +2569,11 @@ done:
 }
 
 
-//OSErr GridMap_c::ReadCATSMap(char *path) 
 OSErr GridMap_c::ReadCATSMap(vector<string> &linesInFile) 
 {
-	char s[1024], errmsg[256];
+	char errmsg[256];
 	long i, numPoints, line = 0;
 	string currentLine;
-	//CHARH f = 0;
 	OSErr err = 0;
 	
 	TopologyHdl topo=0;
@@ -2597,27 +2592,14 @@ OSErr GridMap_c::ReadCATSMap(vector<string> &linesInFile)
 	
 	errmsg[0]=0;
 	
-	
-	/*if (!path || !path[0]) return 0;
-	
-	if ((err = ReadFileContents(TERMINATED, 0, 0, path, 0, 0, &f)) != 0) {
-		TechError("GridMap_c::ReadCATSMap()", "ReadFileContents()", err);
-		goto done;
-	}
-	
-	_HLock((Handle)f); 
-	*/
 	MySpinCursor(); 
+
 	currentLine = linesInFile[(line)++];
 	currentLine = linesInFile[(line)++];
-	//NthLineInTextOptimized(*f, (line)++, s, 1024); 
-	//NthLineInTextOptimized(*f, (line)++, s, 1024); 
 	
-	//if(IsTVerticesHeaderLine(s, &numPoints))
 	if(IsTVerticesHeaderLine(currentLine, numPoints))
 	{
 		MySpinCursor();
-		//err = ReadTVerticesBody(f,&line,&pts,&depths,errmsg,numPoints,true);
 		err = ReadTVerticesBody(linesInFile,&line,&pts,&depths,errmsg,numPoints,true);
 		if(err) goto done;
 	}
@@ -2627,17 +2609,14 @@ OSErr GridMap_c::ReadCATSMap(vector<string> &linesInFile)
 		goto done;
 	}
 	MySpinCursor();
-	//NthLineInTextOptimized(*f, (line)++, s, 1024); 
+
 	currentLine = linesInFile[(line)++];
 	
-	//if(IsBoundarySegmentHeaderLine(s,&numBoundarySegs)) // Boundary data from CATS
 	if(IsBoundarySegmentHeaderLine(currentLine,numBoundarySegs)) // Boundary data from CATS
 	{
 		MySpinCursor();
-		//err = ReadBoundarySegs(f,&line,&boundarySegs,numBoundarySegs,errmsg);
 		err = ReadBoundarySegs(linesInFile,&line,&boundarySegs,numBoundarySegs,errmsg);
 		if(err) goto done;
-		//NthLineInTextOptimized(*f, (line)++, s, 1024); 
 		currentLine = linesInFile[(line)++];
 	}
 	else
@@ -2647,14 +2626,11 @@ OSErr GridMap_c::ReadCATSMap(vector<string> &linesInFile)
 	}
 	MySpinCursor(); 
 	
-	//if(IsWaterBoundaryHeaderLine(s,&numWaterBoundaries,&numBoundaryPts)) // Boundary types from CATS
 	if(IsWaterBoundaryHeaderLine(currentLine,numWaterBoundaries,numBoundaryPts)) // Boundary types from CATS
 	{
 		MySpinCursor();
-		//err = ReadWaterBoundaries(f,&line,&waterBoundaries,numWaterBoundaries,numBoundaryPts,errmsg);
 		err = ReadWaterBoundaries(linesInFile,&line,&waterBoundaries,numWaterBoundaries,numBoundaryPts,errmsg);
 		if(err) goto done;
-		//NthLineInTextOptimized(*f, (line)++, s, 1024); 
 		currentLine = linesInFile[(line)++];
 	}
 	else
@@ -2663,24 +2639,19 @@ OSErr GridMap_c::ReadCATSMap(vector<string> &linesInFile)
 		goto done;
 	}
 	
-	//if(IsTTopologyHeaderLine(s,&numPoints)) // Topology from CATS
 	if(IsTTopologyHeaderLine(currentLine,numPoints)) // Topology from CATS
 	{
 		MySpinCursor();
-		//err = ReadTTopologyBody(f,&line,&topo,&velH,errmsg,numPoints,TRUE);
 		err = ReadTTopologyBody(linesInFile,&line,&topo,&velH,errmsg,numPoints,TRUE);
 		if(err) goto done;
 	}
 	else
 	{
-		//if (!haveBoundaryData) {err=-1; strcpy(errmsg,"File must have boundary data to create topology"); goto done;}
-		//DisplayMessage("NEXTMESSAGETEMP");
 		DisplayMessage("Making Triangles");
 
 		if ((err = maketriangles(&topo, pts, numPoints, boundarySegs, numBoundarySegs)) != 0)
 			err = -1; // for now we require TTopology
 
-		// code goes here, support Galt style ??
 		DisplayMessage(0);
 		velH = (VelocityFH)_NewHandleClear(sizeof(**velH)*numPoints);
 		if(!velH)
@@ -2697,27 +2668,21 @@ OSErr GridMap_c::ReadCATSMap(vector<string> &linesInFile)
 	}
 	MySpinCursor(); // JLM 8/4/99
 	
-	
-	//NthLineInTextOptimized(*f, (line)++, s, 1024); 
 	currentLine = linesInFile[(line)++];
 	
-	//if(IsTIndexedDagTreeHeaderLine(s,&numPoints))  // DagTree from CATS
 	if(IsTIndexedDagTreeHeaderLine(currentLine,numPoints))  // DagTree from CATS
 	{
 		MySpinCursor();
-		//err = ReadTIndexedDagTreeBody(f,&line,&tree,errmsg,numPoints);
 		err = ReadTIndexedDagTreeBody(linesInFile,&line,&tree,errmsg,numPoints);
 		if(err) goto done;
 	}
 	else
 	{
-		//DisplayMessage("NEXTMESSAGETEMP");
 		DisplayMessage("Making Dag Tree");
 		tree = MakeDagTree(topo, (LongPoint**)pts, errmsg); // use CATSDagTree.cpp and my_build_list.h
 		DisplayMessage(0);
 		if (errmsg[0])	
 			err = -1; // for now we require TIndexedDagTree
-		// code goes here, support Galt style ??
 		if(err) goto done;
 	}
 	MySpinCursor(); // JLM 8/4/99
@@ -2793,13 +2758,6 @@ OSErr GridMap_c::ReadCATSMap(vector<string> &linesInFile)
 	
 done:
 	
-	/*if(f) 
-	{
-		_HUnlock((Handle)f); 
-		DisposeHandle((Handle)f); 
-		f = 0;
-	}*/
-	
 	if(err)
 	{
 		if(!errmsg[0])
@@ -2838,8 +2796,7 @@ OSErr GridMap_c::ReadCATSMap(char *path)
 	}
 }
 
-// import NetCDF triangle info so don't have to regenerate
-// this is same as curvilinear mover so may want to combine later
+// import map from a topology file so don't have to regenerate
 OSErr GridMap_c::ReadTopology(vector<string> &linesInFile)
 {
 	OSErr err = 0;
@@ -3017,7 +2974,7 @@ OSErr GridMap_c::ReadTopology(vector<string> &linesInFile)
 		this->SetMapBounds(bounds);		
 	}
 	else {
-		// maybe assume rectangle grids will have map?
+		// should this be an error?
 		if (waterBoundaries) {
 			DisposeHandle((Handle)waterBoundaries);
 			waterBoundaries = 0;
@@ -3108,8 +3065,7 @@ done:
 }
 
 
-// import NetCDF triangle info so don't have to regenerate
-// this is same as curvilinear mover so may want to combine later
+// import map from a topology file so don't have to regenerate
 OSErr GridMap_c::ReadTopology(char *path)
 {
 	string strPath = path;
@@ -3127,8 +3083,7 @@ OSErr GridMap_c::ReadTopology(char *path)
 
 OSErr GridMap_c::ExportTopology(char* path)
 {
-	// export NetCDF curvilinear info so don't have to regenerate each time
-	// move to NetCDFMover so Tri can use it too
+	// export bounday info from map so don't have to regenerate each time
 	
 	OSErr err = 0;
 	long numTriangles, numBranches, nver, nBoundarySegs=0, nWaterBoundaries=0, nBoundaryPts;
@@ -3143,7 +3098,6 @@ OSErr GridMap_c::ExportTopology(char* path)
 	DAGHdl		treeH = 0;
 	LONGH	boundarySegmentsH = 0, boundaryTypeH = 0, boundaryPointsH = 0;
 	FILE *fp = fopen(path, "w");
-	//BFPB bfpb;
 	
 	triGrid = dynamic_cast<TTriGridVel*>(this->fGrid);
 	if (!triGrid) {printError("There is no topology to export"); return -1;}
@@ -3196,26 +3150,16 @@ OSErr GridMap_c::ExportTopology(char* path)
 	 }*/
 	
 	nver = _GetHandleSize((Handle)ptsH)/sizeof(**ptsH);
-	//fprintf(outfile,"Vertices\t%ld\t%ld\n",nver,numBoundaryPts);	// total vertices and number of boundary points
 	sprintf(hdrStr,"Vertices\t%ld\n",nver);	// total vertices
-	//strcpy(buffer,hdrStr);
-	//if (err = WriteMacValue(&bfpb, buffer, strlen(buffer))) goto done;
 	fwrite(hdrStr,sizeof(char),strlen(hdrStr),fp);
 	sprintf(hdrStr,"%ld\t%ld\n",nver,nver);	// junk line
-	//strcpy(buffer,hdrStr);
-	//if (err = WriteMacValue(&bfpb, buffer, strlen(buffer))) goto done;
 	fwrite(hdrStr,sizeof(char),strlen(hdrStr),fp);
 	for(i=0;i<nver;i++)
 	{	
 		x = (*ptsH)[i].h/1000000.0;
 		y =(*ptsH)[i].v/1000000.0;
 		z = (*depthsH)[i];
-		//sprintf(topoStr,"%ld\t%lf\t%lf\t%lf\n",i+1,x,y,(*gDepths)[i]);
-		//sprintf(topoStr,"%ld\t%lf\t%lf\n",i+1,x,y);
-		//sprintf(topoStr,"%lf\t%lf\n",x,y);
 		sprintf(topoStr,"%lf\t%lf\t%lf\n",x,y,z);
-		//strcpy(buffer,topoStr);
-		//if (err = WriteMacValue(&bfpb, buffer, strlen(buffer))) goto done;
 		fwrite(topoStr,sizeof(char),strlen(topoStr),fp);
 	}
 	//boundary points - an optional handle, only for curvilinear case
@@ -3223,17 +3167,11 @@ OSErr GridMap_c::ExportTopology(char* path)
 	if (boundarySegmentsH) 
 	{
 		nBoundarySegs = _GetHandleSize((Handle)boundarySegmentsH)/sizeof(long);
-		//fprintf(outfile,"Vertices\t%ld\t%ld\n",nver,numBoundaryPts);	// total vertices and number of boundary points
 		sprintf(hdrStr,"BoundarySegments\t%ld\n",nBoundarySegs);	// total vertices
-		//strcpy(buffer,hdrStr);
-		//if (err = WriteMacValue(&bfpb, buffer, strlen(buffer))) goto done;
 		fwrite(hdrStr,sizeof(char),strlen(hdrStr),fp);
 		for(i=0;i<nBoundarySegs;i++)
 		{	
-			//sprintf(topoStr,"%ld\n",(*boundarySegmentsH)[i]);
 			sprintf(topoStr,"%ld\n",(*boundarySegmentsH)[i]+1);	// when reading in subtracts 1
-			//strcpy(buffer,topoStr);
-			//if (err = WriteMacValue(&bfpb, buffer, strlen(buffer))) goto done;
 			fwrite(topoStr,sizeof(char),strlen(topoStr),fp);
 		}
 	}
@@ -3241,23 +3179,17 @@ OSErr GridMap_c::ExportTopology(char* path)
 	if (boundaryTypeH) 
 	{
 		nBoundarySegs = _GetHandleSize((Handle)boundaryTypeH)/sizeof(long);	// should be same size as previous handle
-		//fprintf(outfile,"Vertices\t%ld\t%ld\n",nver,numBoundaryPts);	// total vertices and number of boundary points
 		for(i=0;i<nBoundarySegs;i++)
 		{	
 			if ((*boundaryTypeH)[i]==2) nWaterBoundaries++;
 		}
 		sprintf(hdrStr,"WaterBoundaries\t%ld\t%ld\n",nWaterBoundaries,nBoundarySegs);	
-		//strcpy(buffer,hdrStr);
-		//if (err = WriteMacValue(&bfpb, buffer, strlen(buffer))) goto done;
 		fwrite(hdrStr,sizeof(char),strlen(hdrStr),fp);
 		for(i=0;i<nBoundarySegs;i++)
 		{	
 			if ((*boundaryTypeH)[i]==2)
-				//sprintf(topoStr,"%ld\n",(*boundaryTypeH)[i]);
 			{
 				sprintf(topoStr,"%ld\n",i);
-				//strcpy(buffer,topoStr);
-				//if (err = WriteMacValue(&bfpb, buffer, strlen(buffer))) goto done;
 				fwrite(topoStr,sizeof(char),strlen(topoStr),fp);
 			}
 		}
@@ -3268,21 +3200,15 @@ OSErr GridMap_c::ExportTopology(char* path)
 	{
 		nBoundaryPts = _GetHandleSize((Handle)boundaryPointsH)/sizeof(long);	// should be same size as previous handle
 		sprintf(hdrStr,"BoundaryPoints\t%ld\n",nBoundaryPts);	// total boundary points
-		//strcpy(buffer,hdrStr);
-		//if (err = WriteMacValue(&bfpb, buffer, strlen(buffer))) goto done;
 		fwrite(hdrStr,sizeof(char),strlen(hdrStr),fp);
 		for(i=0;i<nBoundaryPts;i++)
 		{	
 			sprintf(topoStr,"%ld\n",(*boundaryPointsH)[i]);	// when reading in subtracts 1
-			//strcpy(buffer,topoStr);
-			//if (err = WriteMacValue(&bfpb, buffer, strlen(buffer))) goto done;
 			fwrite(topoStr,sizeof(char),strlen(topoStr),fp);
 		}
 	}
 	numTriangles = _GetHandleSize((Handle)topH)/sizeof(**topH);
 	sprintf(hdrStr,"Topology\t%ld\n",numTriangles);
-	//strcpy(buffer,hdrStr);
-	//if (err = WriteMacValue(&bfpb, buffer, strlen(buffer))) goto done;
 	fwrite(hdrStr,sizeof(char),strlen(hdrStr),fp);
 	for(i = 0; i< numTriangles;i++)
 	{
@@ -3296,32 +3222,24 @@ OSErr GridMap_c::ExportTopology(char* path)
 				v1, v2, v3, n1, n2, n3);
 		
 		/////
-		//strcpy(buffer,topoStr);
-		//if (err = WriteMacValue(&bfpb, buffer, strlen(buffer))) goto done;
 		fwrite(topoStr,sizeof(char),strlen(topoStr),fp);
 	}
 	
 	numBranches = _GetHandleSize((Handle)treeH)/sizeof(**treeH);
 	sprintf(hdrStr,"DAGTree\t%ld\n",dagTree->fNumBranches);
-	//strcpy(buffer,hdrStr);
-	//if (err = WriteMacValue(&bfpb, buffer, strlen(buffer))) goto done;
 	fwrite(hdrStr,sizeof(char),strlen(hdrStr),fp);
 	
 	for(i = 0; i<dagTree->fNumBranches; i++)
 	{
 		sprintf(topoStr,"%ld\t%ld\t%ld\n",(*treeH)[i].topoIndex,(*treeH)[i].branchLeft,(*treeH)[i].branchRight);
-		//strcpy(buffer,topoStr);
-		//if (err = WriteMacValue(&bfpb, buffer, strlen(buffer))) goto done;
 		fwrite(topoStr,sizeof(char),strlen(topoStr),fp);
 	}
 	
 done:
 	// 
-	//FSCloseBuf(&bfpb);
 	fclose(fp);
 	if(err) {	
 		printError("Error writing topology");
-		//(void)hdelete(0, 0, path); // don't leave them with a partial file
 	}
 	return err;
 }
@@ -3924,7 +3842,6 @@ OSErr GridMap_c::TextRead(char *path)
 			if (gridType == CURVILINEAR) {
 				DOUBLEH maskH = 0;
 
-				//cerr << "GridMap_c::TextRead(): NetCDF curvilinear file..." << endl;
 				err = this->GetPointsAndMask(path, &maskH, &vertexPtsH, &depthPtsH, &numRows, &numCols);	//Text read
 				if (!err)
 					err = this->SetUpCurvilinearGrid(maskH, numRows, numCols, vertexPtsH, depthPtsH, errmsg);	//Reorder points
@@ -3978,7 +3895,6 @@ OSErr GridMap_c::TextRead(char *path)
 	}
 	else if (IsCATS3DFile(path))	// for any CATS?
 	{
-		//cerr << "GridMap_c::TextRead(): reading a CATS3D file" << endl;
 		strcpy(s,path);
 		SplitPathFile (s, fileName);
 		strcat (nameStr, fileName);
@@ -3996,14 +3912,12 @@ OSErr GridMap_c::TextRead(char *path)
 	else
 	{
 		{	// check if isTopologyFile()
-			//cerr << "GridMap_c::TextRead(): check if it is a topology file..." << endl;
 			err = this -> ReadTopology(path);
 			if(err) 
 			{
 				//return err;
 			}
 		}
-		//err = true;
 		if (err)
 		{
 			sprintf(errmsg,"File %s is not a recognizable map file.",fileName);
