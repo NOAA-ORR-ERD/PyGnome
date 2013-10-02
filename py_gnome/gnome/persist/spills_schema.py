@@ -45,9 +45,11 @@ class Spill(MappingSchema):
 
     on = SchemaNode(Bool(), default=True, missing=True)
     num_elements = SchemaNode(Int(), default=1000)
+    windage_range = Windage(default=(0.01, 0.04))
+    windage_persist = SchemaNode(Float(), default=900)
 
 
-class PointSourceSurfaceRelease(Id, Spill):
+class PointLineSource(Id, Spill):
 
     """
     Contains properties required by UpdateWindMover and CreateWindMover
@@ -59,8 +61,6 @@ class PointSourceSurfaceRelease(Id, Spill):
     end_position = WorldPoint(missing=drop)
     end_release_time = SchemaNode(LocalDateTime(), missing=drop,
                                   validator=convertible_to_seconds)
-    windage_range = Windage(default=(0.01, 0.04))
-    windage_persist = SchemaNode(Float(), default=900)
 
     # following will be used when restoring a saved scenario that is
     # partially run
@@ -71,7 +71,3 @@ class PointSourceSurfaceRelease(Id, Spill):
     # Not sure how this will work w/ WebGnome
 
     prev_release_pos = WorldPoint(missing=drop)
-
-    delta_pos = WorldPoint(missing=drop)
-
-

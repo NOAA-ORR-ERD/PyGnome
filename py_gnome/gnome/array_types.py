@@ -45,7 +45,16 @@ class ArrayType(object):
         self.dtype = dtype
         self.initial_value = initial_value
 
-    def initialize(self, num_elements, spill):
+    def initialize_null(self):
+        """
+        initialize array with 0 elements. Used so SpillContainer can
+        initializes all arrays with 0 elements. Used when the model is rewound.
+        The purpose is to show all data_arrays even if model is not yet running
+        or no particles have been released
+        """
+        return self.initialize(0)
+
+    def initialize(self, num_elements):
         """
         Initialize a numpy array with the dtype and shape specified. The length
         of the array is given by num_elements and spill is given as input if
@@ -90,21 +99,33 @@ class ArrayType(object):
             return True
 
 
-Mover = {'positions': ArrayType((3,), world_point_type),
-         'mass': ArrayType((), np.float64),
-         'next_positions': ArrayType((3,), world_point_type),
-         'last_water_positions': ArrayType((3,), world_point_type),
-         'status_codes': ArrayType((), status_code_type,
-                                   oil_status.in_water),
-         'spill_num': ArrayType((), id_type, -1)
-        }
+class IdArrayType(ArrayType):
+    """
+    The 'id' array assigns a unique int for every particle released.
+    """
+    def initialize(self, num_elements):
+        array = np.arange(self.initial_value,
+                          num_elements + self.initial_value)
+        self.initial_value += num_elements
+        return array
+
+
+SpillContiner = {'positions': ArrayType((3,), world_point_type),
+                 'next_positions': ArrayType((3,), world_point_type),
+                 'last_water_positions': ArrayType((3,), world_point_type),
+                 'status_codes': ArrayType((), status_code_type,
+                                           oil_status.in_water),
+                 'spill_num': ArrayType((), id_type, -1),
+                 'id': IdArrayType((), np.uint32)}
+
+
+# No weatherer or mover defines this at present
+mass = {'mass': ArrayType((), np.float64)}
+
 
 WindMover = {'windages': ArrayType((), windage_type)}
 
-# droplet_size, rise_vel arrays used by spills
 
-#droplet_size = frozenset([('droplet_size', ArrayType((), np.float64))])
-#rise_vel = frozenset([('rise_vel', ArrayType((), np.float64))])
 RiseVelocityMover = {'rise_vel': ArrayType((), np.float64)}
 
 ## TODO: Find out if this is still required?

@@ -77,7 +77,7 @@ class NetCDFOutput(Outputter, serializable.Serializable):
     var['units'] = 'grams'
     data_vars['mass'] = copy.deepcopy(var)
 
-    # age
+    # age?
 
     var.clear()
     var['dtype'] = np.int32
@@ -85,17 +85,8 @@ class NetCDFOutput(Outputter, serializable.Serializable):
     var['units'] = 'seconds'
     data_vars['age'] = copy.deepcopy(var)
 
-    # flag
-
-    var.clear()
-    var['dtype'] = np.int8
-    var['long_name'] = 'particle status flag'
-    var['valid_range'] = [0, 5]
-    var['flag_values'] = ([1, 2, 3, 4], )
-    var['flag_meanings'] = 'on_land off_maps evaporated below_surface'
-    data_vars['flag'] = copy.deepcopy(var)
-
     # status
+    # todo: update to read status flag from basic_types.oil_status
 
     var['long_name'] = 'particle status flag'
     var['valid_range'] = [0, 10]
@@ -104,13 +95,22 @@ class NetCDFOutput(Outputter, serializable.Serializable):
         '2:in_water 3:on_land 7:off_maps 10:evaporated'
     data_vars['status'] = copy.deepcopy(var)
 
-    # id
+    # id - id of particle
 
     var.clear()
-    var['dtype'] = np.uint8
+    var['dtype'] = np.uint32
     var['long_name'] = 'particle ID'
     var['units'] = '1'
     data_vars['id'] = copy.deepcopy(var)
+
+    # spill_num - spill to which the particle belongs
+
+    var.clear()
+    var['dtype'] = np.uint8
+    var['long_name'] = 'spill to which the particle belongs'
+    var['units'] = '1'
+    data_vars['spill_num'] = copy.deepcopy(var)
+
 
     del var  # only used during initialization - no need to keep around
 
@@ -123,7 +123,6 @@ class NetCDFOutput(Outputter, serializable.Serializable):
         'spill_num',
         'age',
         'mass',
-        'flag',
         ]
 
     # define state for serialization
@@ -456,7 +455,7 @@ class NetCDFOutput(Outputter, serializable.Serializable):
                  ])[self._start_idx:_end_idx] = sc['positions'][:, 2]
                 (rootgrp.variables['status'
                  ])[self._start_idx:_end_idx] = (sc['status_codes'])[:]
-                (rootgrp.variables['id'])[self._start_idx:_end_idx] = \
+                (rootgrp.variables['spill_num'])[self._start_idx:_end_idx] = \
                     (sc['spill_num'])[:]
                 (rootgrp.variables['mass'])[self._start_idx:_end_idx] = \
                     (sc['mass'])[:]
