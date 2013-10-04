@@ -110,13 +110,13 @@ class IdArrayType(ArrayType):
         return array
 
 
-SpillContiner = {'positions': ArrayType((3,), world_point_type),
-                 'next_positions': ArrayType((3,), world_point_type),
-                 'last_water_positions': ArrayType((3,), world_point_type),
-                 'status_codes': ArrayType((), status_code_type,
-                                           oil_status.in_water),
-                 'spill_num': ArrayType((), id_type, -1),
-                 'id': IdArrayType((), np.uint32)}
+SpillContainer = {'positions': ArrayType((3,), world_point_type),
+                  'next_positions': ArrayType((3,), world_point_type),
+                  'last_water_positions': ArrayType((3,), world_point_type),
+                  'status_codes': ArrayType((), status_code_type,
+                                            oil_status.in_water),
+                  'spill_num': ArrayType((), id_type, -1),
+                  'id': IdArrayType((), np.uint32)}
 
 
 # No weatherer or mover defines this at present

@@ -37,8 +37,6 @@ def mock_append_data_arrays(array_types, num_elements, data_arrays={}):
     """
     array_types = dict(array_types)
     data_arrays = copy.deepcopy(data_arrays)
-    if num_elements is None:
-        num_elements = 0    # just initializes null arrays
 
     for name, array_type in array_types.iteritems():
         # initialize null arrays so they exist before appending

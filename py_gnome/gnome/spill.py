@@ -354,7 +354,7 @@ class PointLineSource(Spill, serializable.Serializable):
             self.set_newparticle_values = \
                 self._init_positions_timevarying_release
 
-        if not end_position:
+        if end_position is None:
             # also sets self._end_position
             end_position = start_position
 
@@ -403,7 +403,7 @@ class PointLineSource(Spill, serializable.Serializable):
         """
         if self.num_released >= self.num_elements:
             # nothing left to release
-            return None
+            return 0
 
         if current_time > self.release_time and self.not_called_yet:
             # NOTE: JS - July 16th, 2013
@@ -411,7 +411,7 @@ class PointLineSource(Spill, serializable.Serializable):
             # begins after the release_time, then do not release any elements!
             # first call after release time -- don't release anything
             # self.not_called_yet = False
-            return None
+            return 0
 
         self.not_called_yet = False
 
@@ -420,7 +420,7 @@ class PointLineSource(Spill, serializable.Serializable):
             <= self.release_time:  # don't want to barely pick it up...
             # not there yet...
             print 'not time to release yet'
-            return None
+            return 0
 
         delta_release = (self.end_release_time
                               - self.release_time).total_seconds()
@@ -440,7 +440,7 @@ class PointLineSource(Spill, serializable.Serializable):
         n_1 = min(n_1, self.num_elements - 1)  # don't want to go over the end.
         if n_1 == self.num_released - 1:  # indexes from zero
             # none to release this time step
-            return None
+            return 0
 
         # JS: not sure why we want to release 1 extra particle?
         # but leave algorithm as it is. Since n_0 = 0 at first iteration,

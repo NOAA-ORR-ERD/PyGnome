@@ -206,7 +206,7 @@ class SpillContainer(SpillContainerData):
     def __init__(self, uncertain=False):
         super(SpillContainer, self).__init__(uncertain=uncertain)
 
-        self.array_types = dict(array_types.SpillContiner)
+        self.array_types = dict(array_types.SpillContainer)
         self.spills = OrderedCollection(dtype=gnome.spill.Spill)
         self.rewind()
 
@@ -316,7 +316,7 @@ class SpillContainer(SpillContainerData):
             if spill.on:
                 num_released = spill.num_elements_to_release(current_time,
                                                              time_step)
-                if num_released:
+                if num_released > 0:
                     # update 'spill_num' ArrayType's initial_value so it
                     # corresponds with spill number for this set of released
                     # particles - just another way to set value of spill_num
