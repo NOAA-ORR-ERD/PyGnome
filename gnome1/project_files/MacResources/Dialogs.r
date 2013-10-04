@@ -2460,10 +2460,10 @@ resource 'DITL' (5000, "M50:  TMap Settings") {
 			"hours"
 		},
 		/* [10] */
-		{111, 17, 128, 236},
+		{111, 17, 128, 476},
 		CheckBox {
 			enabled,
-			"Change Bitmap Bounds"
+			"Restrict model domain to refine land mask (bitmap) resolution"
 		},
 		/* [11] */
 		{141, 47, 157, 112},

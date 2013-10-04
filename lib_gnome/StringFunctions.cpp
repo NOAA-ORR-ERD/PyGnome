@@ -220,7 +220,8 @@ std::vector<std::string> &rtrim_empty_lines(std::vector<std::string> &lines)
 
 	while(i != lines.begin()) {
 		if (i->size() == 0)
-			lines.erase(i);
+			//lines.erase(i);	// this just makes the line empty but doesn't remove it
+			i = lines.erase(i);
 		else
 			break;
 
@@ -291,6 +292,25 @@ bool ParseKeyedLine(const string &strIn, const string &key,
 		return false;
 
 	out = value;
+	return true;
+}
+
+bool ParseKeyedLine(const string &strIn, const string &key,
+					short &out1)
+{
+	string tempKey;
+	short value;
+	
+	istringstream lineStream(strIn);
+	
+	lineStream >> tempKey >> value;
+	if (lineStream.fail())
+		return false;
+	
+	if (tempKey != key)
+		return false;
+	
+	out1 = value;
 	return true;
 }
 

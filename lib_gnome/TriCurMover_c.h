@@ -25,7 +25,7 @@
 #endif
 
 Boolean IsTriCurFile (char *path);
-Boolean IsTriCurVerticesHeaderLine(char *s, long* numPts);
+Boolean IsTriCurVerticesHeaderLine(const char *s, long* numPts);
 
 enum {ONELAYER_CONSTDENS=1, ONELAYER_VARDENS, TWOLAYER_CONSTDENS, TWOLAYER_VARDENS};	// gridtypes
 

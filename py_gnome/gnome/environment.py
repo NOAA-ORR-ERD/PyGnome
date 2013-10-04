@@ -255,7 +255,7 @@ class Wind(Environment, serializable.Serializable):
         """
 
         try:
-            if timeseries.dtype is not basic_types.datetime_value_2d:
+            if timeseries.dtype != basic_types.datetime_value_2d:
 
                 # Both 'is' or '==' work in this case.  There is only one
                 # instance of basic_types.datetime_value_2d.

@@ -5454,6 +5454,20 @@ OSErr TModel::HandleCreateSpillMessage(TModelMessage *message)
 		if(bWantEndRelPosition && !IsAllowableSpillPoint(endRelPos)){				
 			printError("This map has not been set up for spills in the area of your release end position."); 
 			goto done;}
+
+		if (z > 0)
+		{
+			TMap *map = Get3DMap();
+			double botZ = INFINITE_DEPTH;
+			if (map) botZ = map->DepthAtPoint(startRelPos) ;
+			if (z > botZ)	
+			{
+				char errStr[64];
+				sprintf(errStr,"The spill depth cannot be greater than total depth which is %g meters.",botZ);
+				printError(errStr);
+				goto done;
+			}
+		}
 	}
 	
 	// set the spill
@@ -5480,7 +5494,8 @@ OSErr TModel::HandleCreateSpillMessage(TModelMessage *message)
 		summary.endRelTime = endRelTime;
 		summary.bWantEndRelTime = (endRelTime != startRelTime);
 		
-		summary.z = 0.0;
+		//summary.z = 0.0;
+		summary.z = z;
 		summary.density = GetPollutantDensity(summary.pollutantType);
 		summary.ageInHrsWhenReleased = 0;
 	
@@ -5984,6 +5999,20 @@ OSErr TModel::HandleRunSpillMessage(TModelMessage *message)
 		if(bWantEndRelPosition && !IsAllowableSpillPoint(endRelPos)){				
 			printError("This map has not been set up for spills in the area of your release end position."); 
 			goto done;}
+			
+		if (z > 0)
+		{
+			TMap *map = Get3DMap();
+			double botZ = INFINITE_DEPTH;
+			if (map) botZ = map->DepthAtPoint(startRelPos) ;
+			if (z > botZ)	
+			{
+				char errStr[64];
+				sprintf(errStr,"The spill depth cannot be greater than total depth which is %g meters.",botZ);
+				printError(errStr);
+				goto done;
+			}
+		}
 	}
 	
 	
@@ -6009,7 +6038,8 @@ OSErr TModel::HandleRunSpillMessage(TModelMessage *message)
 		summary.endRelTime = endRelTime;
 		summary.bWantEndRelTime = (endRelTime != startRelTime);
 		
-		summary.z = 0.0;
+		//summary.z = 0.0;
+		summary.z = z;
 		summary.density = GetPollutantDensity(summary.pollutantType);
 		summary.ageInHrsWhenReleased = 0;
 	

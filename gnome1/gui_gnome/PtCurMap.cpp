@@ -578,6 +578,7 @@ PtCurMap::PtCurMap(char* name, WorldRect bounds) : TMap(name, bounds)
 
 	fBitMapBounds = bounds;
 	fUseBitMapBounds = false;
+	bDrawBitMapBounds = false;
 	
 	fWaveHtInput = 0;	// default compute from wind speed
 	
@@ -1722,7 +1723,8 @@ void  PtCurMap::FindNearestBoundary(Point where, long *verNum, long *segNo)
 	} 
 }
 
-#define PtCurMapReadWriteVersion 4	// increase to add shoreline select fields 9/9/08
+#define PtCurMapReadWriteVersion 5	// restricting bitmap bounds added 9/20/13
+//#define PtCurMapReadWriteVersion 4	// increase to add shoreline select fields 9/9/08
 //#define PtCurMapReadWriteVersion 3	// increase to add dispersed oil fields 3/27/08
 OSErr PtCurMap::Write(BFPB *bfpb)
 {
@@ -1860,6 +1862,12 @@ OSErr PtCurMap::Write(BFPB *bfpb)
 		if (err = WriteMacValue(bfpb, val)) return err;
 	}
 	
+	{	// restricting bitmap bounds added 9/20/13
+		if (err = WriteMacValue(bfpb,fBitMapBounds)) return err;
+		if (err = WriteMacValue(bfpb, fUseBitMapBounds)) return err;
+		if (err = WriteMacValue(bfpb, bDrawBitMapBounds)) return err;
+	}
+
 	//fSegSelectedH = 0;
 	//fSelectedBeachHdl = 0;	//not sure if both are needed
 	//fSelectedBeachFlagHdl = 0;
@@ -2048,6 +2056,18 @@ OSErr PtCurMap::Read(BFPB *bfpb)
 			}
 		}
 	}
+	if (version > 4)
+	{
+		if (err = ReadMacValue(bfpb,&fBitMapBounds)) return err;
+		if (err = ReadMacValue(bfpb, &fUseBitMapBounds)) return err;
+		if (err = ReadMacValue(bfpb, &bDrawBitMapBounds)) return err;
+	}
+	else
+	{
+		fBitMapBounds = GetMapBounds();	// make sure default values are set
+		fUseBitMapBounds = false;
+		bDrawBitMapBounds = false;
+	}
 	//////////////////
 	// now reconstruct the offscreen Land and Water bitmaps
 	///////////////////
@@ -2091,6 +2111,8 @@ long PtCurMap::GetListLength()
 
 		count++; // bitmap-visible-box
 
+		if (fUseBitMapBounds) count++;
+		
 		if(this->ThereIsADispersedSpill()) count++; // draw contours
 		if(this->ThereIsADispersedSpill()) count++; // set contours
 		if(this->ThereIsADispersedSpill()) count++; // draw legend
@@ -2162,6 +2184,19 @@ ListItem PtCurMap::GetNthListItem(long n, short indent, short *style, char *text
 		return item;
 	}
 	n -= 1;
+	
+	if(fUseBitMapBounds)
+	{
+		if (n == 0) {
+			item.indent++;
+			item.index = I_PDRAWRESTRICTEDBITMAP;
+			item.bullet = bDrawBitMapBounds ? BULLET_FILLEDBOX : BULLET_EMPTYBOX;
+			strcpy(text, "Show Restricted Bitmap Domain");
+			
+			return item;
+		}
+		n -= 1;
+	}
 	
 	if(this ->ThereIsADispersedSpill())
 	{
@@ -2347,6 +2382,9 @@ Boolean PtCurMap::ListClick(ListItem item, Boolean inBullet, Boolean doubleClick
 				bDrawLandBitMap = !bDrawLandBitMap;
 				bDrawWaterBitMap = !bDrawWaterBitMap;
 				model->NewDirtNotification(DIRTY_MAPDRAWINGRECT); return TRUE;
+			case I_PDRAWRESTRICTEDBITMAP:
+				bDrawBitMapBounds = !bDrawBitMapBounds;
+				model->NewDirtNotification(DIRTY_MAPDRAWINGRECT); return TRUE;
 			case I_PSHOWSURFACELES:
 				bShowSurfaceLEs = !bShowSurfaceLEs;
 				model->NewDirtNotification(DIRTY_MAPDRAWINGRECT); return TRUE;
@@ -2492,6 +2530,7 @@ Boolean PtCurMap::FunctionEnabled(ListItem item, short buttonID)
 			}
 			break;
 		case I_PDRAWLANDWATERBITMAP:
+		case I_PDRAWRESTRICTEDBITMAP:
 		case I_PDRAWCONTOURS:
 		case I_PSHOWLEGEND:
 		case I_PSHOWSURFACELES:
@@ -2798,6 +2837,14 @@ void PtCurMap::Draw(Rect r, WorldRect view)
 		
 	if (this -> bDrawLandBitMap && onQuickDrawPlane)
 		DrawDIBImage(DARKGREEN,&fLandBitmap,m);
+		
+	if (bDrawBitMapBounds)
+	{
+		Rect m;
+		WorldRect restrictedBounds =  this -> GetMapBounds();
+		m = WorldToScreenRect(restrictedBounds,view,r);
+		if (fUseBitMapBounds) MyFrameRect(&m);
+	}
 		
 	//////
 	

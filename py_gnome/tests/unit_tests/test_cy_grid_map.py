@@ -64,6 +64,24 @@ class TestGridMap:
         gcm2.save_netcdf(netcdf_file)
 
 
+    def test_grid_map_cats(self):
+        """
+        Test a grid map - read and write out
+        """
+
+        # triangle grid
+
+        gcm3 = CyGridMap()
+        grid_map_file = get_datafile(os.path.join(cur_dir, 'BigCombinedwMap.cur'
+                ))
+        gcm3.text_read(grid_map_file)
+
+        topology_file = os.path.join( cur_dir, 'BigCombinedTop.dat')
+        gcm3.export_topology(topology_file)
+
+        #netcdf_file = os.path.join(cur_dir, 'BigCombinedTop.nc')
+        #gcm3.save_netcdf(netcdf_file)
+
 if __name__ == '__main__':
     tgm = TestGridMap()
     tgm.test_grid_map_curv()

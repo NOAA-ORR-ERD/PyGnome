@@ -149,7 +149,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="..\gui_gnome;..\lib_gnome;WinResources;&quot;..\third_party_lib\qt libraries\CIncludes&quot;;&quot;..\third_party_lib\\netcdf-3&quot;;&quot;..\third_party_lib\qt libraries\Libraries&quot;;..\project_files\WinResources"
+				AdditionalIncludeDirectories="..\gui_gnome;..\..\lib_gnome;WinResources;&quot;..\third_party_lib\qt libraries\CIncludes&quot;;&quot;..\..\third_party_lib\netcdf-3&quot;;&quot;..\third_party_lib\qt libraries\Libraries&quot;;..\project_files\WinResources"
 				PreprocessorDefinitions="_DEBUG;OSSM;WIN32;_WINDOWS;IBM;_CRT_SECURE_NO_DEPRECATE;_USE_32BIT_TIME_T"
 				MinimalRebuild="true"
 				RuntimeLibrary="1"
@@ -177,7 +177,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="odbc32.lib odbccp32.lib ..\third_party_lib\netcdf-3\win32\i386\netcdfs.lib &quot;..\third_party_lib\qt libraries\libraries\qtmlclient.lib&quot;"
+				AdditionalDependencies="odbc32.lib odbccp32.lib ..\..\third_party_lib\netcdf-3\win32\i386\netcdfs.lib &quot;..\third_party_lib\qt libraries\libraries\qtmlclient.lib&quot;"
 				OutputFile=".\Debug\Gnome.exe"
 				LinkIncremental="1"
 				SuppressStartupBanner="true"
@@ -223,635 +223,567 @@
 			Name="Source Files"
 			Filter="cpp;c;cxx;rc;def;r;odl;hpj;bat;for;f90"
 			>
-			<File
-				RelativePath=".\WinResources\OSSM.rc"
-				>
-			</File>
 			<Filter
 				Name="lib_gnome"
 				>
 				<File
-					RelativePath="..\lib_gnome\ADCPMover_b.h"
+					RelativePath="..\..\lib_gnome\ADCPMover_c.cpp"
 					>
 				</File>
 				<File
-					RelativePath="..\lib_gnome\ADCPMover_c.cpp"
+					RelativePath="..\..\lib_gnome\ADCPMover_c.h"
 					>
 				</File>
 				<File
-					RelativePath="..\lib_gnome\ADCPMover_c.h"
+					RelativePath="..\..\lib_gnome\ADCPTimeValue_c.cpp"
 					>
 				</File>
 				<File
-					RelativePath="..\lib_gnome\ADCPTimeValue_b.h"
+					RelativePath="..\..\lib_gnome\ADCPTimeValue_c.h"
 					>
 				</File>
 				<File
-					RelativePath="..\lib_gnome\ADCPTimeValue_c.cpp"
+					RelativePath="..\..\lib_gnome\Basics.h"
 					>
 				</File>
 				<File
-					RelativePath="..\lib_gnome\ADCPTimeValue_c.h"
+					RelativePath="..\..\lib_gnome\CATSMover3D_c.cpp"
 					>
 				</File>
 				<File
-					RelativePath="..\lib_gnome\Basics.h"
+					RelativePath="..\..\lib_gnome\CATSMover3D_c.h"
 					>
 				</File>
 				<File
-					RelativePath="..\lib_gnome\CATSMover3D_b.h"
+					RelativePath="..\..\lib_gnome\CATSMover_c.cpp"
 					>
 				</File>
 				<File
-					RelativePath="..\lib_gnome\CATSMover3D_c.cpp"
+					RelativePath="..\..\lib_gnome\CATSMover_c.h"
 					>
 				</File>
 				<File
-					RelativePath="..\lib_gnome\CATSMover3D_c.h"
+					RelativePath="..\..\lib_gnome\ClassID_c.cpp"
 					>
 				</File>
 				<File
-					RelativePath="..\lib_gnome\CATSMover_c.cpp"
+					RelativePath="..\..\lib_gnome\ClassID_c.h"
 					>
 				</File>
 				<File
-					RelativePath="..\lib_gnome\CATSMover_c.h"
+					RelativePath="..\..\lib_gnome\CMap2.cpp"
 					>
 				</File>
 				<File
-					RelativePath="..\lib_gnome\ClassID_b.h"
+					RelativePath="..\..\lib_gnome\CMap2.h"
 					>
 				</File>
 				<File
-					RelativePath="..\lib_gnome\ClassID_c.cpp"
+					RelativePath="..\..\lib_gnome\CMapLayer_c.cpp"
 					>
 				</File>
 				<File
-					RelativePath="..\lib_gnome\ClassID_c.h"
+					RelativePath="..\..\lib_gnome\CMYLIST.CPP"
 					>
 				</File>
 				<File
-					RelativePath="..\lib_gnome\CMap2.cpp"
+					RelativePath="..\..\lib_gnome\CMYLIST.H"
 					>
 				</File>
 				<File
-					RelativePath="..\lib_gnome\CMap2.h"
+					RelativePath="..\..\lib_gnome\CompFunctions.cpp"
 					>
 				</File>
 				<File
-					RelativePath="..\lib_gnome\CMapLayer_c.cpp"
+					RelativePath="..\..\lib_gnome\CompFunctions.h"
 					>
 				</File>
 				<File
-					RelativePath="..\lib_gnome\CMYLIST.CPP"
+					RelativePath="..\..\lib_gnome\ComponentMover_c.cpp"
 					>
 				</File>
 				<File
-					RelativePath="..\lib_gnome\CMYLIST.H"
+					RelativePath="..\..\lib_gnome\ComponentMover_c.h"
 					>
 				</File>
 				<File
-					RelativePath="..\lib_gnome\CompFunctions.cpp"
+					RelativePath="..\..\lib_gnome\CompoundMap_c.cpp"
 					>
 				</File>
 				<File
-					RelativePath="..\lib_gnome\CompFunctions.h"
+					RelativePath="..\..\lib_gnome\CompoundMap_c.h"
 					>
 				</File>
 				<File
-					RelativePath="..\lib_gnome\ComponentMover_b.h"
+					RelativePath="..\..\lib_gnome\CompoundMover_c.cpp"
 					>
 				</File>
 				<File
-					RelativePath="..\lib_gnome\ComponentMover_c.cpp"
+					RelativePath="..\..\lib_gnome\CompoundMover_c.h"
 					>
 				</File>
 				<File
-					RelativePath="..\lib_gnome\ComponentMover_c.h"
+					RelativePath="..\..\lib_gnome\CurrentMover_c.cpp"
 					>
 				</File>
 				<File
-					RelativePath="..\lib_gnome\CompoundMap_c.cpp"
+					RelativePath="..\..\lib_gnome\CurrentMover_c.h"
 					>
 				</File>
 				<File
-					RelativePath="..\lib_gnome\CompoundMap_c.h"
+					RelativePath="..\..\lib_gnome\DagStruct.h"
 					>
 				</File>
 				<File
-					RelativePath="..\lib_gnome\CompoundMover_b.h"
+					RelativePath="..\..\lib_gnome\DagTree.cpp"
 					>
 				</File>
 				<File
-					RelativePath="..\lib_gnome\CompoundMover_c.cpp"
+					RelativePath="..\..\lib_gnome\DagTree.h"
 					>
 				</File>
 				<File
-					RelativePath="..\lib_gnome\CompoundMover_c.h"
+					RelativePath="..\..\lib_gnome\DagTreeIO.cpp"
 					>
 				</File>
 				<File
-					RelativePath="..\lib_gnome\CurrentMover_b.h"
+					RelativePath="..\..\lib_gnome\DagTreeIO.h"
 					>
 				</File>
 				<File
-					RelativePath="..\lib_gnome\CurrentMover_c.cpp"
+					RelativePath="..\..\lib_gnome\ExportSymbols.h"
 					>
 				</File>
 				<File
-					RelativePath="..\lib_gnome\CurrentMover_c.h"
+					RelativePath="..\..\lib_gnome\GENDEFS.H"
 					>
 				</File>
 				<File
-					RelativePath="..\lib_gnome\DagStruct.h"
+					RelativePath="..\..\lib_gnome\GEOMETR2.CPP"
 					>
 				</File>
 				<File
-					RelativePath="..\lib_gnome\DagTree.cpp"
+					RelativePath="..\..\lib_gnome\GEOMETRY.cpp"
 					>
 				</File>
 				<File
-					RelativePath="..\lib_gnome\DagTree.h"
+					RelativePath="..\..\lib_gnome\GEOMETRY.H"
 					>
 				</File>
 				<File
-					RelativePath="..\lib_gnome\DagTreeIO.cpp"
+					RelativePath="..\..\lib_gnome\GridCurMover_c.cpp"
 					>
 				</File>
 				<File
-					RelativePath="..\lib_gnome\DagTreeIO.h"
+					RelativePath="..\..\lib_gnome\GridCurMover_c.h"
 					>
 				</File>
 				<File
-					RelativePath="..\lib_gnome\GENDEFS.H"
+					RelativePath="..\..\lib_gnome\GridCurrentMover_c.cpp"
 					>
 				</File>
 				<File
-					RelativePath="..\lib_gnome\GEOMETR2.CPP"
+					RelativePath="..\..\lib_gnome\GridCurrentMover_c.h"
 					>
 				</File>
 				<File
-					RelativePath="..\lib_gnome\GEOMETRY.CPP"
+					RelativePath="..\..\lib_gnome\GridMap_c.cpp"
 					>
 				</File>
 				<File
-					RelativePath="..\lib_gnome\GEOMETRY.H"
+					RelativePath="..\..\lib_gnome\GridMap_c.h"
 					>
 				</File>
 				<File
-					RelativePath="..\lib_gnome\GridCurMover_b.h"
+					RelativePath="..\..\lib_gnome\GridMapUtils.cpp"
 					>
 				</File>
 				<File
-					RelativePath="..\lib_gnome\GridCurMover_c.cpp"
+					RelativePath="..\..\lib_gnome\GridMapUtils.h"
 					>
 				</File>
 				<File
-					RelativePath="..\lib_gnome\GridCurMover_c.h"
+					RelativePath="..\..\lib_gnome\GridVel_c.h"
 					>
 				</File>
 				<File
-					RelativePath="..\lib_gnome\GridCurrentMover_c.cpp"
+					RelativePath="..\..\lib_gnome\GridWindMover_c.cpp"
 					>
 				</File>
 				<File
-					RelativePath="..\lib_gnome\GridCurrentMover_c.h"
+					RelativePath="..\..\lib_gnome\GridWindMover_c.h"
 					>
 				</File>
 				<File
-					RelativePath="..\lib_gnome\GridMap_c.cpp"
+					RelativePath="..\..\lib_gnome\GridWndMover_c.cpp"
 					>
 				</File>
 				<File
-					RelativePath="..\lib_gnome\GridMap_c.h"
+					RelativePath="..\..\lib_gnome\GridWndMover_c.h"
 					>
 				</File>
 				<File
-					RelativePath="..\lib_gnome\GridMapUtils.cpp"
+					RelativePath="..\..\lib_gnome\LEList_c.cpp"
 					>
 				</File>
 				<File
-					RelativePath="..\lib_gnome\GridMapUtils.h"
+					RelativePath="..\..\lib_gnome\LEList_c.h"
 					>
 				</File>
 				<File
-					RelativePath="..\lib_gnome\GridVel_c.h"
+					RelativePath="..\..\lib_gnome\LocaleWizard_c.cpp"
 					>
 				</File>
 				<File
-					RelativePath="..\lib_gnome\GridWindMover_b.h"
+					RelativePath="..\..\lib_gnome\LocaleWizard_c.h"
 					>
 				</File>
 				<File
-					RelativePath="..\lib_gnome\GridWindMover_c.cpp"
+					RelativePath="..\..\lib_gnome\MakeDagTree.cpp"
 					>
 				</File>
 				<File
-					RelativePath="..\lib_gnome\GridWindMover_c.h"
+					RelativePath="..\..\lib_gnome\MakeTriangles.cpp"
 					>
 				</File>
 				<File
-					RelativePath="..\lib_gnome\GridWndMover_c.cpp"
+					RelativePath="..\..\lib_gnome\Map3D_c.cpp"
 					>
 				</File>
 				<File
-					RelativePath="..\lib_gnome\GridWndMover_c.h"
+					RelativePath="..\..\lib_gnome\Map3D_c.h"
 					>
 				</File>
 				<File
-					RelativePath="..\lib_gnome\LEList_c.cpp"
+					RelativePath="..\..\lib_gnome\Map_c.cpp"
 					>
 				</File>
 				<File
-					RelativePath="..\lib_gnome\LEList_c.h"
+					RelativePath="..\..\lib_gnome\Map_c.h"
 					>
 				</File>
 				<File
-					RelativePath="..\lib_gnome\LocaleWizard_c.cpp"
+					RelativePath="..\..\lib_gnome\MapUtils.cpp"
 					>
 				</File>
 				<File
-					RelativePath="..\lib_gnome\LocaleWizard_c.h"
+					RelativePath="..\..\lib_gnome\MapUtils.h"
 					>
 				</File>
 				<File
-					RelativePath="..\lib_gnome\MakeDagTree.cpp"
+					RelativePath="..\..\lib_gnome\MemUtils.cpp"
 					>
 				</File>
 				<File
-					RelativePath="..\lib_gnome\MakeTriangles.cpp"
+					RelativePath="..\..\lib_gnome\MemUtils.h"
 					>
 				</File>
 				<File
-					RelativePath="..\lib_gnome\Map3D_c.cpp"
+					RelativePath="..\..\lib_gnome\Model_c.cpp"
 					>
 				</File>
 				<File
-					RelativePath="..\lib_gnome\Map3D_c.h"
+					RelativePath="..\..\lib_gnome\Model_c.h"
 					>
 				</File>
 				<File
-					RelativePath="..\lib_gnome\Map_c.cpp"
+					RelativePath="..\..\lib_gnome\Mover_c.cpp"
 					>
 				</File>
 				<File
-					RelativePath="..\lib_gnome\Map_c.h"
+					RelativePath="..\..\lib_gnome\Mover_c.h"
 					>
 				</File>
 				<File
-					RelativePath="..\lib_gnome\MapUtils.cpp"
+					RelativePath="..\..\lib_gnome\my_build_list.h"
 					>
 				</File>
 				<File
-					RelativePath="..\lib_gnome\MapUtils.h"
+					RelativePath="..\..\lib_gnome\MYRANDOM.CPP"
 					>
 				</File>
 				<File
-					RelativePath="..\lib_gnome\MemUtils.cpp"
+					RelativePath="..\..\lib_gnome\MYRANDOM.H"
 					>
 				</File>
 				<File
-					RelativePath="..\lib_gnome\MemUtils.h"
+					RelativePath="..\..\lib_gnome\NetCDFMover_c.cpp"
 					>
 				</File>
 				<File
-					RelativePath="..\lib_gnome\Model_c.cpp"
+					RelativePath="..\..\lib_gnome\NetCDFMover_c.h"
 					>
 				</File>
 				<File
-					RelativePath="..\lib_gnome\Model_c.h"
+					RelativePath="..\..\lib_gnome\NetCDFMoverCurv_c.cpp"
 					>
 				</File>
 				<File
-					RelativePath="..\lib_gnome\Mover_b.h"
+					RelativePath="..\..\lib_gnome\NetCDFMoverCurv_c.h"
 					>
 				</File>
 				<File
-					RelativePath="..\lib_gnome\Mover_c.cpp"
+					RelativePath="..\..\lib_gnome\NetCDFMoverTri_c.cpp"
 					>
 				</File>
 				<File
-					RelativePath="..\lib_gnome\Mover_c.h"
+					RelativePath="..\..\lib_gnome\NetCDFMoverTri_c.h"
 					>
 				</File>
 				<File
-					RelativePath="..\lib_gnome\my_build_list.h"
+					RelativePath="..\..\lib_gnome\NetCDFWindMover_c.cpp"
 					>
 				</File>
 				<File
-					RelativePath="..\lib_gnome\MYRANDOM.CPP"
+					RelativePath="..\..\lib_gnome\NetCDFWindMover_c.h"
 					>
 				</File>
 				<File
-					RelativePath="..\lib_gnome\MYRANDOM.H"
+					RelativePath="..\..\lib_gnome\NetCDFWindMoverCurv_c.cpp"
 					>
 				</File>
 				<File
-					RelativePath="..\lib_gnome\netcdf.h"
+					RelativePath="..\..\lib_gnome\NetCDFWindMoverCurv_c.h"
 					>
 				</File>
 				<File
-					RelativePath="..\lib_gnome\NetCDFMover_b.h"
+					RelativePath="..\..\lib_gnome\ObjectUtils.h"
 					>
 				</File>
 				<File
-					RelativePath="..\lib_gnome\NetCDFMover_c.cpp"
+					RelativePath="..\..\lib_gnome\OLEList_c.cpp"
 					>
 				</File>
 				<File
-					RelativePath="..\lib_gnome\NetCDFMover_c.h"
+					RelativePath="..\..\lib_gnome\OLEList_c.h"
 					>
 				</File>
 				<File
-					RelativePath="..\lib_gnome\NetCDFMoverCurv_c.cpp"
+					RelativePath=".\WinResources\OSSM.rc"
 					>
 				</File>
 				<File
-					RelativePath="..\lib_gnome\NetCDFMoverCurv_c.h"
+					RelativePath="..\..\lib_gnome\OSSMTimeValue_c.cpp"
 					>
 				</File>
 				<File
-					RelativePath="..\lib_gnome\NetCDFMoverTri_b.h"
+					RelativePath="..\..\lib_gnome\OSSMTimeValue_c.h"
 					>
 				</File>
 				<File
-					RelativePath="..\lib_gnome\NetCDFMoverTri_c.cpp"
+					RelativePath="..\..\lib_gnome\OSSMWeatherer_c.cpp"
 					>
 				</File>
 				<File
-					RelativePath="..\lib_gnome\NetCDFMoverTri_c.h"
+					RelativePath="..\..\lib_gnome\OSSMWeatherer_c.h"
 					>
 				</File>
 				<File
-					RelativePath="..\lib_gnome\NetCDFWindMover_b.h"
+					RelativePath="..\..\lib_gnome\OUTILS.cpp"
 					>
 				</File>
 				<File
-					RelativePath="..\lib_gnome\NetCDFWindMover_c.cpp"
+					RelativePath="..\..\lib_gnome\OUTILS.H"
 					>
 				</File>
 				<File
-					RelativePath="..\lib_gnome\NetCDFWindMover_c.h"
+					RelativePath="..\..\lib_gnome\PtCurMap_c.cpp"
 					>
 				</File>
 				<File
-					RelativePath="..\lib_gnome\NetCDFWindMoverCurv_b.h"
+					RelativePath="..\..\lib_gnome\PtCurMap_c.h"
 					>
 				</File>
 				<File
-					RelativePath="..\lib_gnome\NetCDFWindMoverCurv_c.cpp"
+					RelativePath="..\..\lib_gnome\PtCurMover_c.cpp"
 					>
 				</File>
 				<File
-					RelativePath="..\lib_gnome\NetCDFWindMoverCurv_c.h"
+					RelativePath="..\..\lib_gnome\PtCurMover_c.h"
 					>
 				</File>
 				<File
-					RelativePath="..\lib_gnome\ObjectUtils.h"
+					RelativePath="..\..\lib_gnome\Random3D_c.cpp"
 					>
 				</File>
 				<File
-					RelativePath="..\lib_gnome\OLEList_c.cpp"
+					RelativePath="..\..\lib_gnome\Random3D_c.h"
 					>
 				</File>
 				<File
-					RelativePath="..\lib_gnome\OLEList_c.h"
+					RelativePath="..\..\lib_gnome\Random_c.cpp"
 					>
 				</File>
 				<File
-					RelativePath="..\lib_gnome\OSSMTimeValue_b.h"
+					RelativePath="..\..\lib_gnome\Random_c.h"
 					>
 				</File>
 				<File
-					RelativePath="..\lib_gnome\OSSMTimeValue_c.cpp"
+					RelativePath="..\..\lib_gnome\RandomVertical_c.cpp"
 					>
 				</File>
 				<File
-					RelativePath="..\lib_gnome\OSSMTimeValue_c.h"
+					RelativePath="..\..\lib_gnome\RandomVertical_c.h"
 					>
 				</File>
 				<File
-					RelativePath="..\lib_gnome\OSSMWeatherer_c.cpp"
+					RelativePath="..\..\lib_gnome\RectGridVeL_c.cpp"
 					>
 				</File>
 				<File
-					RelativePath="..\lib_gnome\OSSMWeatherer_c.h"
+					RelativePath="..\..\lib_gnome\RectGridVeL_c.h"
 					>
 				</File>
 				<File
-					RelativePath="..\lib_gnome\OUTILS.CPP"
+					RelativePath="..\..\lib_gnome\RectUtils.cpp"
 					>
 				</File>
 				<File
-					RelativePath="..\lib_gnome\OUTILS.H"
+					RelativePath="..\..\lib_gnome\RectUtils.h"
 					>
 				</File>
 				<File
-					RelativePath="..\lib_gnome\PtCurMap_c.cpp"
+					RelativePath="..\..\lib_gnome\Replacements.cpp"
 					>
 				</File>
 				<File
-					RelativePath="..\lib_gnome\PtCurMap_c.h"
+					RelativePath="..\..\lib_gnome\Replacements.h"
 					>
 				</File>
 				<File
-					RelativePath="..\lib_gnome\PtCurMover_c.cpp"
+					RelativePath="..\..\lib_gnome\RiseVelocity_c.cpp"
 					>
 				</File>
 				<File
-					RelativePath="..\lib_gnome\PtCurMover_c.h"
+					RelativePath="..\..\lib_gnome\RiseVelocity_c.h"
 					>
 				</File>
 				<File
-					RelativePath="..\lib_gnome\Random3D_b.h"
+					RelativePath="..\..\lib_gnome\Shio.h"
 					>
 				</File>
 				<File
-					RelativePath="..\lib_gnome\Random3D_c.cpp"
+					RelativePath="..\..\lib_gnome\ShioCurrent1.cpp"
 					>
 				</File>
 				<File
-					RelativePath="..\lib_gnome\Random3D_c.h"
+					RelativePath="..\..\lib_gnome\ShioCurrent2.cpp"
 					>
 				</File>
 				<File
-					RelativePath="..\lib_gnome\Random_b.h"
+					RelativePath="..\..\lib_gnome\ShioHeight.cpp"
 					>
 				</File>
 				<File
-					RelativePath="..\lib_gnome\Random_c.cpp"
+					RelativePath="..\..\lib_gnome\ShioTimeValue_c.cpp"
 					>
 				</File>
 				<File
-					RelativePath="..\lib_gnome\Random_c.h"
+					RelativePath="..\..\lib_gnome\ShioTimeValue_c.h"
 					>
 				</File>
 				<File
-					RelativePath="..\lib_gnome\RectGridVeL_c.cpp"
+					RelativePath="..\..\lib_gnome\StringFunctions.cpp"
 					>
 				</File>
 				<File
-					RelativePath="..\lib_gnome\RectGridVeL_c.h"
+					RelativePath="..\..\lib_gnome\StringFunctions.h"
 					>
 				</File>
 				<File
-					RelativePath="..\lib_gnome\RectUtils.cpp"
+					RelativePath="..\..\lib_gnome\TideCurCycleMover_c.cpp"
 					>
 				</File>
 				<File
-					RelativePath="..\lib_gnome\RectUtils.h"
+					RelativePath="..\..\lib_gnome\TideCurCycleMover_c.h"
 					>
 				</File>
 				<File
-					RelativePath="..\lib_gnome\Replacements.cpp"
+					RelativePath="..\..\lib_gnome\TimeGridVel_c.cpp"
 					>
 				</File>
 				<File
-					RelativePath="..\lib_gnome\Replacements.h"
+					RelativePath="..\..\lib_gnome\TimeGridVel_c.h"
 					>
 				</File>
 				<File
-					RelativePath="..\lib_gnome\Shio.h"
+					RelativePath="..\..\lib_gnome\TimeGridWind_c.cpp"
 					>
 				</File>
 				<File
-					RelativePath="..\lib_gnome\ShioCurrent1.cpp"
+					RelativePath="..\..\lib_gnome\TimeGridWind_c.h"
 					>
 				</File>
 				<File
-					RelativePath="..\lib_gnome\ShioCurrent2.cpp"
+					RelativePath="..\..\lib_gnome\TimeValue_c.cpp"
 					>
 				</File>
 				<File
-					RelativePath="..\lib_gnome\ShioHeight.cpp"
+					RelativePath="..\..\lib_gnome\TimeValue_c.h"
 					>
 				</File>
 				<File
-					RelativePath="..\lib_gnome\ShioTimeValue_c.cpp"
+					RelativePath="..\..\lib_gnome\TimeValuesIO.cpp"
 					>
 				</File>
 				<File
-					RelativePath="..\lib_gnome\ShioTimeValue_c.h"
+					RelativePath="..\..\lib_gnome\TimeValuesIO.h"
 					>
 				</File>
 				<File
-					RelativePath="..\lib_gnome\StringFunctions.cpp"
+					RelativePath="..\..\lib_gnome\TriCurMover_c.cpp"
 					>
 				</File>
 				<File
-					RelativePath="..\lib_gnome\StringFunctions.h"
+					RelativePath="..\..\lib_gnome\TriCurMover_c.h"
 					>
 				</File>
 				<File
-					RelativePath="..\lib_gnome\TideCurCycleMover_b.h"
+					RelativePath="..\..\lib_gnome\TriGridVel3D_c.cpp"
 					>
 				</File>
 				<File
-					RelativePath="..\lib_gnome\TideCurCycleMover_c.cpp"
+					RelativePath="..\..\lib_gnome\TriGridVel3D_c.h"
 					>
 				</File>
 				<File
-					RelativePath="..\lib_gnome\TideCurCycleMover_c.h"
+					RelativePath="..\..\lib_gnome\TriGridVel_c.cpp"
 					>
 				</File>
 				<File
-					RelativePath="..\lib_gnome\TimeGridVel_c.cpp"
+					RelativePath="..\..\lib_gnome\TriGridVel_c.h"
 					>
 				</File>
 				<File
-					RelativePath="..\lib_gnome\TimeGridVel_c.h"
+					RelativePath="..\..\lib_gnome\TypeDefs.h"
 					>
 				</File>
 				<File
-					RelativePath="..\lib_gnome\TimeGridWind_c.cpp"
+					RelativePath="..\..\lib_gnome\Units.h"
 					>
 				</File>
 				<File
-					RelativePath="..\lib_gnome\TimeGridWind_c.h"
+					RelativePath="..\..\lib_gnome\VectMap_c.cpp"
 					>
 				</File>
 				<File
-					RelativePath="..\lib_gnome\TimeValue_b.h"
+					RelativePath="..\..\lib_gnome\VectMap_c.h"
 					>
 				</File>
 				<File
-					RelativePath="..\lib_gnome\TimeValue_c.cpp"
+					RelativePath="..\..\lib_gnome\Weatherer_c.cpp"
 					>
 				</File>
 				<File
-					RelativePath="..\lib_gnome\TimeValue_c.h"
+					RelativePath="..\..\lib_gnome\Weatherer_c.h"
 					>
 				</File>
 				<File
-					RelativePath="..\lib_gnome\TimeValuesIO.cpp"
+					RelativePath="..\..\lib_gnome\WindMover_c.cpp"
 					>
 				</File>
 				<File
-					RelativePath="..\lib_gnome\TimeValuesIO.h"
-					>
-				</File>
-				<File
-					RelativePath="..\lib_gnome\TriCurMover_b.h"
-					>
-				</File>
-				<File
-					RelativePath="..\lib_gnome\TriCurMover_c.cpp"
-					>
-				</File>
-				<File
-					RelativePath="..\lib_gnome\TriCurMover_c.h"
-					>
-				</File>
-				<File
-					RelativePath="..\lib_gnome\TriGridVel3D_c.cpp"
-					>
-				</File>
-				<File
-					RelativePath="..\lib_gnome\TriGridVel3D_c.h"
-					>
-				</File>
-				<File
-					RelativePath="..\lib_gnome\TriGridVel_c.cpp"
-					>
-				</File>
-				<File
-					RelativePath="..\lib_gnome\TriGridVel_c.h"
-					>
-				</File>
-				<File
-					RelativePath="..\lib_gnome\TypeDefs.h"
-					>
-				</File>
-				<File
-					RelativePath="..\lib_gnome\Units.h"
-					>
-				</File>
-				<File
-					RelativePath="..\lib_gnome\VectMap_c.cpp"
-					>
-				</File>
-				<File
-					RelativePath="..\lib_gnome\VectMap_c.h"
-					>
-				</File>
-				<File
-					RelativePath="..\lib_gnome\Weatherer_c.cpp"
-					>
-				</File>
-				<File
-					RelativePath="..\lib_gnome\Weatherer_c.h"
-					>
-				</File>
-				<File
-					RelativePath="..\lib_gnome\WindMover_b.h"
-					>
-				</File>
-				<File
-					RelativePath="..\lib_gnome\WindMover_c.cpp"
-					>
-				</File>
-				<File
-					RelativePath="..\lib_gnome\WindMover_c.h"
+					RelativePath="..\..\lib_gnome\WindMover_c.h"
 					>
 				</File>
 			</Filter>

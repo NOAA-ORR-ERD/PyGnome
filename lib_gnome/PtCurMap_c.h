@@ -60,6 +60,7 @@ public:
 	
 	WorldRect		fBitMapBounds;
 	Boolean			fUseBitMapBounds;
+	Boolean			bDrawBitMapBounds;
 	
 	double			*fTriAreaArray;
 	//long			*fDepthSliceArray;	// number of LEs in each layer (1m) of depth slice

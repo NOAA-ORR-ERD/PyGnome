@@ -2,6 +2,9 @@
 #ifndef __TriCurMover__
 #define __TriCurMover__
 
+#include <vector>
+using namespace std;
+
 #include "Earl.h"
 #include "TypeDefs.h"
 #include "TriCurMover_c.h"
@@ -21,16 +24,18 @@ class TriCurMover : virtual public TriCurMover_c,  public TCurrentMover
 	// I/O methods
 	virtual OSErr 		Read (BFPB *bfpb); 	// read from current position
 	virtual OSErr 		Write (BFPB *bfpb); // write to  current position
-	
-	virtual OSErr		TextRead(char *path, TMap **newMap);
+
+	virtual OSErr		TextRead(vector<string> &linesInFile, TMap **newMap); 
+	virtual OSErr		TextRead(const char *path, TMap **newMap);
 	//OSErr 				ReadTriCurVertices(CHARH fileBufH,long *line,LongPointHdl *pointsH,char* errmsg,long numPoints);
-	OSErr 				ReadTriCurVertices(CHARH fileBufH,long *line,LongPointHdl *pointsH,FLOATH *totalDepthH,char* errmsg,long numPoints);
+	//OSErr 				ReadTriCurVertices(CHARH fileBufH,long *line,LongPointHdl *pointsH,FLOATH *totalDepthH,char* errmsg,long numPoints);
+	OSErr				ReadTriCurVertices(vector<string> &linesInFile, long *line, LongPointHdl *pointsH, FLOATH *bathymetryH, char *errmsg, long numPoints);
 	OSErr 				ReadTriCurDepths(CHARH fileBufH,long *line,LongPointHdl *pointsH,char* errmsg,long numPoints);
 	OSErr 				ReadHeaderLine(char *s);
-	OSErr 				ReadBaromodesInputValues(CHARH fileBufH,long *line,BaromodesParameters *inputValues,char* errmsg,short modelType);
+	OSErr 				ReadBaromodesInputValues(vector<string> &linesInFile,long *line,BaromodesParameters *inputValues,char* errmsg,short modelType);
 	OSErr 				ScanFileForTimes(char *path,PtCurTimeDataHdl *timeDataHdl,Boolean setStartTime);	// AH 07/17/2012
-	OSErr 				ReadCentroidDepths(CHARH fileBufH,long *line,long numTris,/*FLOATH *centroidDepthsH,*/char* errmsg);
-	OSErr 				ReadSigmaLevels(CHARH fileBufH,long *line,FLOATH *sigmaLevelsH,long numLevels,char* errmsg);
+	OSErr 				ReadCentroidDepths(vector<string> &linesInFile,long *line,long numTris,/*FLOATH *centroidDepthsH,*/char* errmsg);
+	OSErr 				ReadSigmaLevels(vector<string> &linesInFile,long *line,FLOATH *sigmaLevelsH,long numLevels,char* errmsg);
 	//virtual OSErr 		CheckAndScanFile(char *errmsg, const Seconds& start_time, const Seconds& model_time);	// AH 07/17/2012
 	//OSErr 				ReadInputFileNames(CHARH fileBufH, long *line, long numFiles, PtCurFileInfoH *inputFilesH);
 	

@@ -1311,10 +1311,26 @@ OSErr PtCurMover::TextRead(char *path, TMap **newMap)
 	LONGH boundarySegs=0, waterBoundaries=0;
 	Boolean haveBoundaryData = false;
 
+	vector<string> linesInFile;
+	string currentLine;
+	const char * cStr;	
+	char outPath[kMaxNameLen];
 	errmsg[0]=0;
 		
 
 	if (!path || !path[0]) return 0;
+	
+#ifdef TARGET_API_MAC_CARBON
+	if (IsClassicPath((char*)path))
+	{
+		err = ConvertTraditionalPathToUnixPath(path, outPath, kMaxNameLen) ;
+		//if (!err) strcpy((char*)path,outPath);
+		if (err) return err;
+	}
+#else
+	strcpy(outPath,path);
+#endif
+	ReadLinesInFile(outPath, linesInFile);
 	
 	strcpy(fVar.pathName,path);
 	
@@ -1446,6 +1462,7 @@ OSErr PtCurMover::TextRead(char *path, TMap **newMap)
 		err = -1; // for now we require TIndexedDagTree
 		// code goes here, support Galt style ??
 		if(err) goto done;
+		line--;	// will update the line below
 	}
 	MySpinCursor(); // JLM 8/4/99
 	
@@ -1504,7 +1521,10 @@ OSErr PtCurMover::TextRead(char *path, TMap **newMap)
 
 	// scan through the file looking for "[TIME ", then read and record the time, filePosition, and length of data
 	// consider the possibility of multiple files
-	NthLineInTextOptimized(*f, (line)++, s, 1024); 
+	//NthLineInTextOptimized(*f, (line)++, s, 1024); 
+	currentLine = linesInFile[line++];
+	cStr = currentLine.c_str();
+	strcpy(s,(char *)cStr);
 	if(!strstr(s,"[FILE]")) 
 	{	// single file
 		err = ScanFileForTimes(path,&fTimeDataHdl,true);	// AH 07/17/2012

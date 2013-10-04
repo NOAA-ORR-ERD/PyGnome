@@ -928,12 +928,52 @@ OSErr NetCDFMover::Read(BFPB *bfpb)
 			for (i = 0 ; i < numFiles ; i++) {
 				if (err = ReadMacValue(bfpb, fileInfo.pathName, kMaxNameLen)) goto done;
 				ResolvePath(fileInfo.pathName); // JLM 6/3/10
+				// code goes here, check the path (or get an error returned...) and ask user to find it, but not every time...
+				if (!fileInfo.pathName[0] || !FileExists(0,0,fileInfo.pathName)) 
+					bPathIsValid = false;	// if any one can not be found try to re-load the file list
+				else bPathIsValid = true;
 				if (err = ReadMacValue(bfpb, &fileInfo.startTime)) goto done;
 				if (err = ReadMacValue(bfpb, &fileInfo.endTime)) goto done;
 				INDEXH(fInputFilesHdl,i) = fileInfo;
 			}
 			if (err = ReadMacValue(bfpb, &fOverLap)) return err;
 			if (err = ReadMacValue(bfpb, &fOverLapStartTime)) return err;
+		}
+		// otherwise ask the user, trusting that user actually chooses the same data file (should insist name is the same?)
+		if(!bPathIsValid)
+		{
+			if(fInputFilesHdl) {DisposeHandle((Handle)fInputFilesHdl); fInputFilesHdl=0;}
+			Point where;
+			OSType typeList[] = { 'NULL', 'NULL', 'NULL', 'NULL' };
+			MySFReply reply;
+			where = CenteredDialogUpLeft(M38c);
+			char newPath[kMaxNameLen], s[kMaxNameLen];
+			//sprintf(msg,"This save file references a wind file list which cannot be found.  Please find the file \"%s\".",fPathName);printNote(msg);
+			sprintf(msg,"This save file references a current file list which cannot be found.  Please find the file.");printNote(msg);
+#if TARGET_API_MAC_CARBON
+			mysfpgetfile(&where, "", -1, typeList,
+						 (MyDlgHookUPP)0, &reply, M38c, MakeModalFilterUPP(STDFilter));
+			if (!reply.good) return USERCANCEL;
+			strcpy(newPath, reply.fullPath);
+#else
+			sfpgetfile(&where, "",
+					   (FileFilterUPP)0,
+					   -1, typeList,
+					   (DlgHookUPP)0,
+					   &reply, M38c,
+					   (ModalFilterUPP)MakeUPP((ProcPtr)STDFilter, uppModalFilterProcInfo));
+			//if (!reply.good) return 0;	// just keep going...
+			if (reply.good)
+			{
+				my_p2cstr(reply.fName);
+#ifdef MAC
+				GetFullPath(reply.vRefNum, 0, (char *)reply.fName, newPath);
+#else
+				strcpy(newPath, reply.fName);
+#endif
+			}
+#endif
+			err = ReadInputFileNames(newPath);
 		}
 	}
 	
