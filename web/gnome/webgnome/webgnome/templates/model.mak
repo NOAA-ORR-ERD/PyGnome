@@ -62,33 +62,6 @@
             </ul>
         </li>
     </ul>
-              <div class="btn-toolbar" >
-                <div class="btn-group">
-                </div>
-                <div class="btn-group">
-                </div>
-                <div class="btn-group">
-##                    <a class="btn disabled" id="hand-button" href="javascript:"><i class="icon-hand-up"></i></a>
-##                    <a class="btn disabled" id="zoom-in-button" href="javascript:"><i class="icon-zoom-in"></i></a>
-##                    <a class="btn disabled" id="zoom-out-button" href="javascript:"><i class="icon-zoom-out"></i></a>
-##                    <a class="btn disabled" id="move-button" href="javascript:"><i class="icon-move"></i></a>
-##                    <a class="btn disabled" id="spill-button" href="javascript:"><i class="icon-tint"></i></a>
-                </div>
-                <div class="btn-group">
-                    <a class="btn" id="resize-button" href="javascript:"><i class="icon-resize-small"></i></a>
-                    <a class="btn" id="fullscreen-button" href="javascript:"><i class="icon-fullscreen"></i></a>
-                    <a class="btn disabled" id="back-button" href="javascript:"><i class="icon-fast-backward"></i></a>
-
-                    <div class="btn disabled" id="slider-container">
-                        <span id="time">00:00</span>
-
-                        <div id="slider"><div id="slider-shaded"></div></div>
-                    </div>
-                    <a class="btn" id="play-button" href="javascript:"><i class="icon-play"></i></a>
-                    <a class="btn disabled" id="pause-button" href="javascript:"><i class="icon-pause"></i></a>
-                    <a class="btn disabled" id="forward-button" href="javascript:"><i class="icon-fast-forward"></i></a>
-                </div>
-            </div>
 </%block>
 
 <%block name="sidebar">
@@ -124,6 +97,34 @@
 
     <div id="main-content" class="row">
         <div id="model" class='section hidden'>
+		    <div class="btn-toolbar" >
+		        <div class="btn-group">
+		        </div>
+		        <div class="btn-group">
+		        </div>
+		        <div class="btn-group">
+		##          <a class="btn disabled" id="hand-button" href="javascript:"><i class="icon-hand-up"></i></a>
+		##          <a class="btn disabled" id="zoom-in-button" href="javascript:"><i class="icon-zoom-in"></i></a>
+		##          <a class="btn disabled" id="zoom-out-button" href="javascript:"><i class="icon-zoom-out"></i></a>
+		##          <a class="btn disabled" id="move-button" href="javascript:"><i class="icon-move"></i></a>
+		##          <a class="btn disabled" id="spill-button" href="javascript:"><i class="icon-tint"></i></a>
+		        </div>
+		        <div class="btn-group">
+		            <a class="btn" id="resize-button" href="javascript:"><i class="icon-resize-small"></i></a>
+		            <a class="btn" id="fullscreen-button" href="javascript:"><i class="icon-fullscreen"></i></a>
+		            <a class="btn disabled" id="back-button" href="javascript:"><i class="icon-fast-backward"></i></a>
+
+		            <div class="btn disabled" id="slider-container">
+		                        <span id="time">00:00</span>
+
+		                        <div id="slider"><div id="slider-shaded"></div></div>
+		            </div>
+
+		            <a class="btn" id="play-button" href="javascript:"><i class="icon-play"></i></a>
+		            <a class="btn disabled" id="pause-button" href="javascript:"><i class="icon-pause"></i></a>
+		            <a class="btn disabled" id="forward-button" href="javascript:"><i class="icon-fast-forward"></i></a>
+		        </div>
+		    </div>
 
             <div id="leaflet-map"> </div>
             <div class="current-coordinates"></div>
