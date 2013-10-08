@@ -175,6 +175,23 @@ def wind_circ(rq_wind):
 
 
 @pytest.fixture(scope='module')
+def sample_spatial_release():
+    """
+    creates an example SpatialRelease object with
+    start_positions: ((0., 0., 0.), (28.0, -75.0, 0.), (-15, 12, 4.0),
+                   (80, -80, 100.0))
+    release_time: datetime(2012, 1, 1, 1)
+    :returns: a tuple containing (spill, start_positions). start_positions
+        should be equal to spill.start_positions
+    """
+    from gnome.spill import SpatialRelease
+    start_positions = ((0., 0., 0.), (28.0, -75.0, 0.), (-15, 12, 4.0),
+                   (80, -80, 100.0))
+    sp = SpatialRelease(start_positions, release_time=datetime(2012, 1, 1, 1))
+    return (sp, start_positions)
+
+
+@pytest.fixture(scope='module')
 def sample_model():
     """
     sample model with no outputter and no spills. Use this as a template for

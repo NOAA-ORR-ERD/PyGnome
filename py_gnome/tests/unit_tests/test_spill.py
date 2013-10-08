@@ -695,78 +695,82 @@ def release_elements(sp, release_time, time_step, data_arrays={}):
 
 
 """ conditions for SpatialRelease """
-start_positions = ((0., 0., 0.), (28.0, -75.0, 0.), (-15, 12, 4.0),
-                   (80, -80, 100.0))
-sp = SpatialRelease(start_positions, release_time=datetime(2012, 1, 1, 1))
 
 
-def test_SpatialRelease_rewind():
-    """ test rewind sets state to original """
-    sp.rewind()
-    assert sp.num_released == 0
-    assert sp.start_time_invalid == True
+class TestSpatialRelease:
+    @pytest.fixture(autouse=True)
+    def setup(self, sample_spatial_release):
+        """
+        define common use attributes here.
+        rewind the model. Fixture is a function argument only for this function
+        autouse means it is used by all test functions without explicitly
+        stating it as a function argument
+        After each test, the autouse fixture setup is called so self.sp and
+        self.start_positions get defined
+        """
+        #if not hasattr(self, 'sp'):
+        self.sp = sample_spatial_release[0]
+        self.start_positions = sample_spatial_release[1]
+        self.sp.rewind()
 
+    def test_SpatialRelease_rewind(self):
+        """ test rewind sets state to original """
+        assert self.sp.num_released == 0
+        assert self.sp.start_time_invalid == True
 
-def test_SpatialRelease_0_elements():
-    """
-    if current_time + timedelta(seconds=time_step) <= self.release_time,
-    then do not release any more elements
-    """
-    sp.rewind()
-    num = sp.num_elements_to_release(sp.release_time - timedelta(seconds=600),
-                                     600)
-    assert num == 0
+    def test_SpatialRelease_0_elements(self):
+        """
+        if current_time + timedelta(seconds=time_step) <= self.release_time,
+        then do not release any more elements
+        """
+        num = self.sp.num_elements_to_release(self.sp.release_time -
+                                              timedelta(seconds=600), 600)
+        assert num == 0
 
+        self.sp.rewind()
 
-def test_SpatialRelease():
-    """
-    see if the right arrays get created
-    """
-    (data_arrays, num) = release_elements(sp, sp.release_time, 600)
+        # first call after release_time
+        num = self.sp.num_elements_to_release(self.sp.release_time +
+                                              timedelta(seconds=1), 600)
+        assert num == 0
 
-    assert (sp.num_released == sp.num_elements and
-            sp.num_elements == num)
-    assert np.alltrue(data_arrays['positions'] == start_positions)
+        # still shouldn't release
+        num = self.sp.num_elements_to_release(self.sp.release_time +
+                                              timedelta(hours=1), 600)
+        assert num == 0
 
+        self.sp.rewind()
 
-def test_SpatialRelease_inst_release_twice():
-    """
-    make sure they don't release elements twice
-    """
-    sp.rewind()
+        # now it should:
+        (data_arrays, num) = release_elements(self.sp, self.sp.release_time,
+                                              600)
+        assert np.alltrue(data_arrays['positions'] == self.start_positions)
 
-    (data_arrays, num) = release_elements(sp, sp.release_time, 600)
-    assert (sp.num_released == sp.num_elements and
-            sp.num_elements == num)
+    def test_SpatialRelease(self):
+        """
+        see if the right arrays get created
+        """
+        (data_arrays, num) = release_elements(self.sp, self.sp.release_time,
+                                              600)
 
-    (data_arrays, num) = release_elements(sp,
-                                    sp.release_time + timedelta(seconds=600),
-                                    600, data_arrays)
-    assert np.alltrue(data_arrays['positions'] == start_positions)
-    assert num == 0
+        assert (self.sp.num_released == self.sp.num_elements and
+                self.sp.num_elements == num)
+        assert np.alltrue(data_arrays['positions'] == self.start_positions)
 
+    def test_SpatialRelease_inst_release_twice(self):
+        """
+        make sure they don't release elements twice
+        """
+        (data_arrays, num) = release_elements(self.sp, self.sp.release_time,
+                                              600)
+        assert (self.sp.num_released == self.sp.num_elements and
+                self.sp.num_elements == num)
 
-def test_SpatialRelease3():
-    """
-    make sure it doesn't release if the first call is too late
-    """
-    sp.rewind()
-
-    # first call after release_time
-    num = sp.num_elements_to_release(sp.release_time + timedelta(seconds=1),
-                                     time_step=600)
-    assert num == 0
-
-    # still shouldn't release
-    num = sp.num_elements_to_release(sp.release_time + timedelta(hours=1),
-                                     time_step=600)
-    assert num == 0
-
-    sp.rewind()
-
-    # now it should:
-    (data_arrays, num) = release_elements(sp, sp.release_time, 600)
-    assert np.alltrue(data_arrays['positions'] == start_positions)
+        (data_arrays, num) = release_elements(self.sp, self.sp.release_time +
+                                              timedelta(seconds=600), 600,
+                                              data_arrays)
+        assert np.alltrue(data_arrays['positions'] == self.start_positions)
+        assert num == 0
 
 
 # def test_PointSourceSurfaceRelease_new_from_dict():
