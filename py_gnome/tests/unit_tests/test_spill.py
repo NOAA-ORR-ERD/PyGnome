@@ -12,7 +12,8 @@ import pytest
 import numpy as np
 
 from gnome.spill import (Spill,
-                         PointLineSource)
+                         PointLineSource,
+                         SpatialRelease)
     #SpatialRelease, SubsurfaceSpill, \
     #SubsurfaceRelease, SpatialRelease
 from gnome import array_types
@@ -122,12 +123,16 @@ class Test_PointLineSource:
         # updated after set_newparticle_values is called
         assert prev_num_rel == sp.num_released
 
-        data_arrays = mock_append_data_arrays(arr_types, num, data_arrays)
-
         if num > 0:
             # only invoked if particles are released
+            data_arrays = mock_append_data_arrays(arr_types, num, data_arrays)
             sp.set_newparticle_values(num, release_time, timestep, data_arrays)
             assert sp.num_released == prev_num_rel + expected_num_released
+        else:
+            # initialize all data arrays even if no particles are released
+            if data_arrays == {}:
+                data_arrays = mock_append_data_arrays(arr_types, num,
+                                                      data_arrays)
 
         assert data_arrays['positions'].shape == (sp.num_released, 3)
 
@@ -557,7 +562,7 @@ class Test_PointLineSource:
         assert sp.release_time == sp.end_release_time
 
 
-""" A few more line release tests """
+""" A few more line release (PointLineSource) tests """
 num_elems = (
     (998, ),
     (100, ),
@@ -668,79 +673,102 @@ def test_line_release_with_big_timestep():
         assert np.allclose(data_arrays['positions'][:, ix],
                      np.linspace(start_pos[ix], end_pos[ix], sp.num_elements))
 
-""" end line release tests"""
+""" end line release (PointLineSource) tests"""
 
 
-# 
-# def test_SpatialRelease():
-#     """
-#     see if the right arrays get created
-#     """
-# 
-#     start_positions = ((0., 0., 0.), (28.0, -75.0, 0.), (-15, 12, 4.0),
-#                        (80, -80, 100.0))
-# 
-#     release_time = datetime(2012, 1, 1, 1)
-#     sp = SpatialRelease(start_positions, release_time,
-#                         windage_range=(0.01, 0.04), windage_persist=900)
-#     data = sp.release_elements(release_time, time_step=600)
-# 
-#     assert data['positions'].shape == (4, 3)
-# 
-# 
-# def test_SpatialRelease2():
-#     """
-#     make sure they don't release elements twice
-#     """
-# 
-#     start_positions = ((0., 0., 0.), (28.0, -75.0, 0.), (-15, 12, 4.0),
-#                        (80, -80, 100.0))
-# 
-#     release_time = datetime(2012, 1, 1, 1)
-# 
-#     sp = SpatialRelease(start_positions, release_time,
-#                         windage_range=(0.01, 0.04), windage_persist=900)
-# 
-#     data = sp.release_elements(release_time, time_step=600)
-# 
-#     assert data['positions'].shape == (4, 3)
-#     data = sp.release_elements(release_time + timedelta(hours=1),
-#                                time_step=600)
-# 
-# 
-# def test_SpatialRelease3():
-#     """
-#     make sure it doesn't release if the first call is too late
-#     """
-# 
-#     start_positions = ((0., 0., 0.), (28.0, -75.0, 0.), (-15, 12, 4.0),
-#                        (80, -80, 100.0))
-# 
-#     release_time = datetime(2012, 1, 1, 1)
-# 
-#     sp = SpatialRelease(start_positions, release_time,
-#                         windage_range=(0.01, 0.04), windage_persist=900)
-# 
-#     # first call after release_time
-# 
-#     data = sp.release_elements(release_time + timedelta(seconds=1),
-#                                time_step=600)
-#     assert data is None
-# 
-#     # still shouldn't release
-# 
-#     data = sp.release_elements(release_time + timedelta(hours=1),
-#                                time_step=600)
-#     assert data is None
-# 
-#     sp.rewind()
-# 
-#     # now it should:
-# 
-#     data = sp.release_elements(release_time, time_step=600)
-#     assert data['positions'].shape == (4, 3)
-# 
-# 
+def release_elements(sp, release_time, time_step, data_arrays={}):
+    """
+    Common code for all spatial release tests
+    """
+    num = sp.num_elements_to_release(release_time, time_step)
+
+    if num > 0:
+        # release elements and set their initial values
+        data_arrays = mock_append_data_arrays(arr_types, num, data_arrays)
+        sp.set_newparticle_values(num, release_time, time_step, data_arrays)
+    else:
+        if data_arrays == {}:
+            # initialize arrays w/ 0 elements if nothing is released
+            data_arrays = mock_append_data_arrays(arr_types, 0, data_arrays)
+
+    return (data_arrays, num)
+
+
+""" conditions for SpatialRelease """
+start_positions = ((0., 0., 0.), (28.0, -75.0, 0.), (-15, 12, 4.0),
+                   (80, -80, 100.0))
+sp = SpatialRelease(start_positions, release_time=datetime(2012, 1, 1, 1))
+
+
+def test_SpatialRelease_rewind():
+    """ test rewind sets state to original """
+    sp.rewind()
+    assert sp.num_released == 0
+    assert sp.start_time_invalid == True
+
+
+def test_SpatialRelease_0_elements():
+    """
+    if current_time + timedelta(seconds=time_step) <= self.release_time,
+    then do not release any more elements
+    """
+    sp.rewind()
+    num = sp.num_elements_to_release(sp.release_time - timedelta(seconds=600),
+                                     600)
+    assert num == 0
+
+
+def test_SpatialRelease():
+    """
+    see if the right arrays get created
+    """
+    (data_arrays, num) = release_elements(sp, sp.release_time, 600)
+
+    assert (sp.num_released == sp.num_elements and
+            sp.num_elements == num)
+    assert np.alltrue(data_arrays['positions'] == start_positions)
+
+
+def test_SpatialRelease_inst_release_twice():
+    """
+    make sure they don't release elements twice
+    """
+    sp.rewind()
+
+    (data_arrays, num) = release_elements(sp, sp.release_time, 600)
+    assert (sp.num_released == sp.num_elements and
+            sp.num_elements == num)
+
+    (data_arrays, num) = release_elements(sp,
+                                    sp.release_time + timedelta(seconds=600),
+                                    600, data_arrays)
+    assert np.alltrue(data_arrays['positions'] == start_positions)
+    assert num == 0
+
+
+def test_SpatialRelease3():
+    """
+    make sure it doesn't release if the first call is too late
+    """
+    sp.rewind()
+
+    # first call after release_time
+    num = sp.num_elements_to_release(sp.release_time + timedelta(seconds=1),
+                                     time_step=600)
+    assert num == 0
+
+    # still shouldn't release
+    num = sp.num_elements_to_release(sp.release_time + timedelta(hours=1),
+                                     time_step=600)
+    assert num == 0
+
+    sp.rewind()
+
+    # now it should:
+    (data_arrays, num) = release_elements(sp, sp.release_time, 600)
+    assert np.alltrue(data_arrays['positions'] == start_positions)
+
+
 # def test_PointSourceSurfaceRelease_new_from_dict():
 #     """
 #     test to_dict function for Wind object

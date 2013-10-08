@@ -53,6 +53,7 @@ class PointLineSource(Id, Spill):
 
     """
     Contains properties required by UpdateWindMover and CreateWindMover
+    todo: also need a way to persist list of element_types
     """
 
     start_position = WorldPoint()
@@ -64,10 +65,8 @@ class PointLineSource(Id, Spill):
 
     # following will be used when restoring a saved scenario that is
     # partially run
-
     num_released = SchemaNode(Int(), missing=drop)
-    not_called_yet = SchemaNode(Bool(), missing=drop)
+    start_time_invalid = SchemaNode(Bool(), missing=drop)
 
     # Not sure how this will work w/ WebGnome
-
     prev_release_pos = WorldPoint(missing=drop)
