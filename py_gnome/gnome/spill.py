@@ -452,7 +452,7 @@ class PointLineSource(Spill, serializable.Serializable):
         if current_time + timedelta(seconds=time_step) \
             <= self.release_time:  # don't want to barely pick it up...
             # not there yet...
-            print 'not time to release yet'
+            #print 'not time to release yet'
             return 0
 
         delta_release = (self.end_release_time
