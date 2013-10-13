@@ -294,10 +294,7 @@ class Model(serializable.Serializable):
         # setup the current_time_stamp for the spill_container objects
 
         for sc in self.spills.items():
-
-            # sc.current_time_stamp = self.model_time
-
-            sc.prepare_for_model_run(self.model_time, array_types)
+            sc.prepare_for_model_run(array_types)
 
     def setup_time_step(self):
         """

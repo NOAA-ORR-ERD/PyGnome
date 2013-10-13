@@ -2,10 +2,21 @@
 Module contains array types that a mover can contain based on the data
 it needs for the released elements.
 
-The different types of arrays are stored in a frozenset so they are read only
+The different types of arrays are stored in a dict
 
 The users of this data can convert it to a dict or any other data type that is
 useful
+
+Since the values in the dict are ArrayType objects, they are mutable.
+** NOTE: **
+    If a class that uses any array_types dict updates the properties of the
+    ArrayType stored in the dict, it will be updates for all users of that
+    dict.
+
+    For instance: If the WindMover that uses array_types.WindMover updates
+    the properties of 'windages' ArrayType, it will change it universally since
+    array_types.WindMover['windages'] is mutable.
+** You have been warned! **
 '''
 
 from gnome.basic_types import (
@@ -106,7 +117,6 @@ class IdArrayType(ArrayType):
     def initialize(self, num_elements):
         array = np.arange(self.initial_value,
                           num_elements + self.initial_value)
-        self.initial_value += num_elements
         return array
 
 

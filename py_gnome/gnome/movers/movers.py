@@ -201,7 +201,7 @@ class CyMover(Mover):
             uncertain_spill_size = np.array((0, ), dtype=np.int32)
             if sc.uncertain:
                 uncertain_spill_count = 1
-                uncertain_spill_size = np.array((sc.num_elements, ),
+                uncertain_spill_size = np.array((sc.num_released, ),
                         dtype=np.int32)
 
             self.mover.prepare_for_model_step(

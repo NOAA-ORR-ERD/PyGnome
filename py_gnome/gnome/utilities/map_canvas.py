@@ -257,22 +257,22 @@ class MapCanvas(object):
                 mode='P')
         self.fore_image.putpalette(self.palette)
 
-    def draw_elements(self, spill):
+    def draw_elements(self, sc):
         """
         Draws the individual elements to a foreground image
-        
-        :param spill: a spill object to draw
+
+        :param sc: a SpillContainer object to draw
         """
 
         # #fixme: add checks for the status flag (beached, etc)!
 
-        if spill.num_elements > 0:  # nothing to draw if no elements
-            if spill.uncertain:
+        if sc.num_released > 0:  # nothing to draw if no elements
+            if sc.uncertain:
                 color = self.colors['uncert_LE']
             else:
                 color = self.colors['LE']
 
-            positions = spill['positions']
+            positions = sc['positions']
 
             pixel_pos = self.projection.to_pixel(positions, asint=False)
             arr = self.fore_image_array
@@ -286,7 +286,7 @@ class MapCanvas(object):
 
             # which ones are on land?
 
-            on_land = spill['status_codes'][on_map] \
+            on_land = sc['status_codes'][on_map] \
                 == basic_types.oil_status.on_land
 
             # draw the five "X" pixels for the on_land elements
@@ -304,7 +304,7 @@ class MapCanvas(object):
 
             # draw the four pixels for the elements not on land and not off the map
 
-            off_map = spill['status_codes'][on_map] \
+            off_map = sc['status_codes'][on_map] \
                 == basic_types.oil_status.off_maps
             not_on_land = np.logical_and(~on_land, ~off_map)
 

@@ -101,7 +101,7 @@ class WindMover(CyMover, serializable.Serializable):
 
         self.wind = wind
         super(WindMover, self).__init__(**kwargs)
-        self.array_types.update(dict(array_types.windage))
+        self.array_types.update(dict(array_types.WindMover))
 
     def __repr__(self):
         """
@@ -185,7 +185,8 @@ class WindMover(CyMover, serializable.Serializable):
                 model_time_datetime)
 
         # if no particles released, then no need for windage
-        if sc.num_elements is None or sc.num_elements == 0:
+        # todo: revisit this since sc.num_released shouldn't be None
+        if sc.num_released is None  or sc.num_released == 0:
             return
 
         for spill in sc.spills:

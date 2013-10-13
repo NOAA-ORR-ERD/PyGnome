@@ -144,7 +144,7 @@ class SpillContainerData(object):
                     else:
                         # we know it is an array, not a scalar in an
                         # array - allclose will work
-                        if not np.allclose(val, other.__dict__[item][key], 
+                        if not np.allclose(val, other.__dict__[item][key],
                                            0, self._array_allclose_atol):
                             return False
                 else:
@@ -163,14 +163,17 @@ class SpillContainerData(object):
             return True
 
     @property
-    def num_elements(self):
+    def num_released(self):
         """
         The number of elements currently in the SpillContainer
-        This only returns None for SpillContainerData object is initialized
-        without any data_arrays.
 
         If SpillContainer is initialized, all data_arrays exist even if no
         elements are released so this will always return a valid int >= 0
+
+        This only returns None for SpillContainerData object is initialized
+        without any data_arrays.
+
+        todo: Will we ever return None?
         """
         if self._data_arrays.keys():
             return len(self[self._data_arrays.keys()[0]])
@@ -205,9 +208,13 @@ class SpillContainer(SpillContainerData):
 
     def __init__(self, uncertain=False):
         super(SpillContainer, self).__init__(uncertain=uncertain)
-
-        self.array_types = dict(array_types.SpillContainer)
         self.spills = OrderedCollection(dtype=gnome.spill.Spill)
+
+        # create a new dict from array_types.SpillContainer
+        # This is so original dict is not updated if we update this dict
+        # However, note that updating the values in this dict will change
+        # original, since the ArrayType objects are mutable
+        self.array_types = dict(array_types.SpillContainer)
         self.rewind()
 
     def __setitem__(self, data_name, array):
@@ -219,10 +226,9 @@ class SpillContainer(SpillContainerData):
         """
         super(SpillContainer, self).__setitem__(data_name, array)
         if data_name not in self.array_types:
-            shape = self._data_arrays[data_name].shape
+            shape = self._data_arrays[data_name].shape[1:]
             dtype = self._data_arrays[data_name].dtype.type
-            self.array_types[data_name] = array_types.ArrayType(shape,
-                                                                      dtype)
+            self.array_types[data_name] = array_types.ArrayType(shape, dtype)
 
         #self.reconcile_data_arrays()
 
@@ -256,11 +262,10 @@ class SpillContainer(SpillContainerData):
             u_sc.spills += sp.uncertain_copy()
         return u_sc
 
-    def prepare_for_model_run(self, current_time, array_types={}):
+    def prepare_for_model_run(self, array_types={}):
         """
         called when setting up the model prior to 1st time step
         """
-        self.current_time_stamp = current_time
         self.array_types.update(array_types)
 
         # define all data arrays before the run begins even if dict is not
@@ -324,11 +329,17 @@ class SpillContainer(SpillContainerData):
                     self.array_types['spill_num'].initial_value = \
                                     self.spills.index(spill.id,
                                                       renumber=False)
+                    # unique identifier for each new element released
+                    # this adjusts the array_types initial_value since the
+                    # initialize function just calls:
+                    #  range(initial_value, num_released + initial_value)
+                    self.array_types['id'].initial_value = \
+                        len(self['spill_num'])
 
                     # append to data arrays
                     self._append_data_arrays(num_released)
-                    spill.set_values(current_time, time_step,
-                                     self._data_arrays)
+                    spill.set_newparticle_values(num_released, current_time,
+                                                 time_step, self._data_arrays)
 
     def model_step_is_done(self):
         """
