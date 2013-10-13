@@ -582,19 +582,19 @@ def test_single_line(num_elements):
     is less than one, one and more than one per time step.
     """
     print 'using num_elements:', num_elements
-    start_time = datetime(2012, 1, 1)
-    end_time = start_time + timedelta(seconds=100)
+    release_time = datetime(2012, 1, 1)
+    end_time = release_time + timedelta(seconds=100)
     time_step = timedelta(seconds=10)
     start_pos = np.array((0., 0., 0.))
     end_pos = np.array((1.0, 2.0, 0.))
 
     sp = PointLineSource(num_elements=num_elements,
                          start_position=start_pos,
-                         release_time=start_time,
+                         release_time=release_time,
                          end_position=end_pos,
                          end_release_time=end_time)
 
-    time = start_time
+    time = release_time
     data_arrays = {}
     while time <= end_time + time_step * 2:
         #data = sp.release_elements(time, time_step.total_seconds())
@@ -621,24 +621,24 @@ def test_line_release_with_one_element():
     one element with a line release
     -- doesn't really make sense, but it shouldn't crash
     """
-    start_time = datetime(2012, 1, 1)
-    end_time = start_time + timedelta(seconds=100)
+    release_time = datetime(2012, 1, 1)
+    end_time = release_time + timedelta(seconds=100)
     time_step = timedelta(seconds=10)
     start_pos = np.array((0., 0., 0.))
     end_pos = np.array((1.0, 2.0, 0.))
 
     sp = PointLineSource(num_elements=1,
                                    start_position=start_pos,
-                                   release_time=start_time,
+                                   release_time=release_time,
                                    end_position=end_pos,
                                    end_release_time=end_time)
 
-    num = sp.num_elements_to_release(start_time, time_step.total_seconds())
+    num = sp.num_elements_to_release(release_time, time_step.total_seconds())
     data_arrays = mock_append_data_arrays(arr_types, num)
 
     assert num == 1
 
-    sp.set_newparticle_values(num, start_time, time_step.total_seconds(),
+    sp.set_newparticle_values(num, release_time, time_step.total_seconds(),
                                       data_arrays)
     assert sp.num_released == 1
     assert np.array_equal(data_arrays['positions'], [start_pos])
@@ -648,24 +648,24 @@ def test_line_release_with_big_timestep():
     """
     a line release: where the timestep spans before to after the release time
     """
-    start_time = datetime(2012, 1, 1)
-    end_time = start_time + timedelta(seconds=100)
+    release_time = datetime(2012, 1, 1)
+    end_time = release_time + timedelta(seconds=100)
     time_step = timedelta(seconds=300)
     start_pos = np.array((0., 0., 0.))
     end_pos = np.array((1.0, 2.0, 0.))
 
     sp = PointLineSource(num_elements=10,
                          start_position=start_pos,
-                         release_time=start_time,
+                         release_time=release_time,
                          end_position=end_pos,
                          end_release_time=end_time)
 
-    num = sp.num_elements_to_release(start_time - timedelta(seconds=100),
+    num = sp.num_elements_to_release(release_time - timedelta(seconds=100),
                                      time_step.total_seconds())
     assert num == sp.num_elements
 
     data_arrays = mock_append_data_arrays(arr_types, num)
-    sp.set_newparticle_values(num, start_time - timedelta(seconds=100),
+    sp.set_newparticle_values(num, release_time - timedelta(seconds=100),
                               time_step.total_seconds(), data_arrays)
 
     # all axes should release particles with same, evenly spaced delta_position
@@ -825,4 +825,4 @@ if __name__ == '__main__':
     # TC = Test_PointSourceSurfaceRelease()
     # TC.test_model_skips_over_release_time()
 
-    test_SpatialRelease3()
+    test_line_release_with_big_timestep()

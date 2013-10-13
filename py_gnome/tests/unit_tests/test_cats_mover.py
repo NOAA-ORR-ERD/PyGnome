@@ -10,9 +10,10 @@ import pytest
 
 from gnome.movers import CatsMover
 from gnome.environment import Tide
-from gnome.spill_container import TestSpillContainer
 from gnome.utilities import time_utils
 from gnome.utilities.remote_data import get_datafile
+
+from conftest import sample_sc_release
 
 here = os.path.dirname(__file__)
 lis_dir = os.path.join(here, 'sample_data', 'long_island_sound')
@@ -64,7 +65,7 @@ def test_loop():
     also checks the motion is same for all LEs
     """
 
-    pSpill = TestSpillContainer(num_le, start_pos, rel_time)
+    pSpill = sample_sc_release(num_le, start_pos, rel_time)
     cats = CatsMover(curr_file, tide=td)
     delta = _certain_loop(pSpill, cats)
 
@@ -83,8 +84,8 @@ def test_uncertain_loop():
     checks there is non-zero motion.
     """
 
-    pSpill = TestSpillContainer(num_le, start_pos, rel_time,
-                                uncertain=True)
+    pSpill = sample_sc_release(num_le, start_pos, rel_time,
+                               uncertain=True)
     cats = CatsMover(curr_file, tide=td)
     u_delta = _uncertain_loop(pSpill, cats)
 

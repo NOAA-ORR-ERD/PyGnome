@@ -19,7 +19,7 @@ from gnome.basic_types import oil_status
 from gnome.renderer import Renderer
 from gnome.utilities.projections import GeoProjection
 
-from gnome.spill_container import TestSpillContainer
+from conftest import sample_sc_release
 
 here = os.path.dirname(__file__)
 output_dir = os.path.join(here, r"renderer_output_dir")
@@ -80,25 +80,25 @@ def test_render_elements():
     lon = random.uniform(min_lon, max_lon, (N, ))
     lat = random.uniform(min_lat, max_lat, (N, ))
 
-    # create a spill
+    # create a sc
 
-    spill = TestSpillContainer(num_elements=N)
-    spill['positions'][:, 0] = lon
-    spill['positions'][:, 1] = lat
+    sc = sample_sc_release(num_elements=N)
+    sc['positions'][:, 0] = lon
+    sc['positions'][:, 1] = lat
 
     r.create_foreground_image()
-    r.draw_elements(spill)
+    r.draw_elements(sc)
 
-    # create an uncertainty spill
+    # create an uncertainty sc
 
     lon = random.uniform(min_lon, max_lon, (N, ))
     lat = random.uniform(min_lat, max_lat, (N, ))
 
-    spill = TestSpillContainer(num_elements=N, uncertain=True)
-    spill['positions'][:, 0] = lon
-    spill['positions'][:, 1] = lat
+    sc = sample_sc_release(num_elements=N, uncertain=True)
+    sc['positions'][:, 0] = lon
+    sc['positions'][:, 1] = lat
 
-    r.draw_elements(spill)
+    r.draw_elements(sc)
 
     # save the image
 
@@ -126,33 +126,33 @@ def test_render_beached_elements():
     lon = random.uniform(min_lon, max_lon, (N, ))
     lat = random.uniform(min_lat, max_lat, (N, ))
 
-    # create a spill
+    # create a sc
 
-    spill = TestSpillContainer(num_elements=N)
-    spill['positions'][:, 0] = lon
-    spill['positions'][:, 1] = lat
+    sc = sample_sc_release(num_elements=N)
+    sc['positions'][:, 0] = lon
+    sc['positions'][:, 1] = lat
 
     # make half of them on land
 
-    spill['status_codes'][::2] = oil_status.on_land
+    sc['status_codes'][::2] = oil_status.on_land
 
     r.create_foreground_image()
-    r.draw_elements(spill)
+    r.draw_elements(sc)
 
-    # create an uncertainty spill
+    # create an uncertainty sc
 
     lon = random.uniform(min_lon, max_lon, (N, ))
     lat = random.uniform(min_lat, max_lat, (N, ))
 
-    spill = TestSpillContainer(num_elements=N, uncertain=True)
-    spill['positions'][:, 0] = lon
-    spill['positions'][:, 1] = lat
+    sc = sample_sc_release(num_elements=N, uncertain=True)
+    sc['positions'][:, 0] = lon
+    sc['positions'][:, 1] = lat
 
     # make half of them on land
 
-    spill['status_codes'][::2] = oil_status.on_land
+    sc['status_codes'][::2] = oil_status.on_land
 
-    r.draw_elements(spill)
+    r.draw_elements(sc)
 
     # save the image
 

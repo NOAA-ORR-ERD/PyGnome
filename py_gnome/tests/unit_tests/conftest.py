@@ -2,7 +2,8 @@
 Defines test fixtures as well as functions that are used by multiple tests
 and test modules
 
-The scope="module" on the fixtures ensures it is only invoked once per test module
+The scope="module" on the fixtures ensures it is only invoked once per test
+module
 """
 
 import os
@@ -47,6 +48,35 @@ def mock_append_data_arrays(array_types, num_elements, data_arrays={}):
         data_arrays[name] = np.r_[data_arrays[name], arr]
 
     return data_arrays
+
+
+def sample_sc_release(num_elements=10,
+    start_pos=(0.0, 0.0, 0.0),
+    release_time=datetime(2000, 1, 1, 1),
+    uncertain=False,
+    time_step=360,
+    spill=None,
+    array_types=dict(gnome.array_types.WindMover),
+    current_time=None):
+    """
+    initiailize a spill of type spill_obj, add it to a SpillContainer.
+    Invoke prepare_for_model_step and release_elements on SpillContainer, then
+    return the spill container object
+    """
+    if spill is None:
+        spill = gnome.spill.PointLineSource(num_elements, start_pos,
+                                            release_time)
+    if current_time is None:
+        current_time = spill.release_time
+
+    sc = gnome.spill_container.SpillContainer(uncertain)
+    sc.spills.add(spill)
+
+    # used for testing so just assume there is a Windage array
+    sc.prepare_for_model_run(array_types)
+    sc.prepare_for_model_step(current_time)
+    sc.release_elements(current_time, time_step)
+    return sc
 
 
 @pytest.fixture(scope='module')
@@ -215,7 +245,7 @@ def sample_model():
         the spill's 'start_position' and 'end_position'
     """
 
-    start_time = datetime(2012, 9, 15, 12, 0)
+    release_time = datetime(2012, 9, 15, 12, 0)
 
     # the image output map
 
@@ -228,7 +258,7 @@ def sample_model():
 
     model = gnome.model.Model(
         time_step=timedelta(minutes=15),
-        start_time=start_time,
+        release_time=release_time,
         duration=timedelta(hours=1),
         map=map_,
         uncertain=True,

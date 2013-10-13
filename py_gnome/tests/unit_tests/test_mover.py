@@ -6,7 +6,7 @@ Just simpler to do the testing here
 from datetime import datetime, timedelta
 
 from gnome import movers
-from gnome.spill_container import TestSpillContainer
+from conftest import sample_sc_release
 
 import pytest
 
@@ -37,7 +37,7 @@ def test_active():
 
     time_step = 15 * 60  # seconds
     model_time = datetime(2012, 8, 20, 13)
-    sc = TestSpillContainer(1, (0, 0, 0))  # no used for anything
+    sc = sample_sc_release(1, (0, 0, 0))  # no used for anything
 
     mv = movers.Mover()
     mv.prepare_for_model_step(sc, time_step, model_time)

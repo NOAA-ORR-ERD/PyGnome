@@ -18,7 +18,7 @@ from gnome.utilities.projections import NoProjection
 
 from gnome.map import MapFromBNA, RasterMap
 
-from gnome.spill_container import TestSpillContainer
+from conftest import sample_sc_release
 
 basedir = os.path.dirname(__file__)
 datadir = os.path.join(basedir, r"sample_data")
@@ -321,7 +321,7 @@ class TestRefloat:
                     (-50, 30), (50, 30), (50, -30)))  # hours
 
     num_les = 1000
-    spill = TestSpillContainer(num_les)
+    spill = sample_sc_release(num_les)
     orig_pos = np.random.uniform(0, num_les, spill['positions'].shape)
     last_water = (1., 2., 0.)
 
@@ -588,7 +588,7 @@ class Test_full_move:
                          map_bounds=((-50, -30), (-50, 30), (50, 30),
                          (50, -30)), projection=NoProjection())  # hours
 
-        spill = TestSpillContainer(1)
+        spill = sample_sc_release(1)
 
         spill['positions'] = np.array(((5.0, 5.0, 0.), ),
                 dtype=np.float64)
@@ -619,7 +619,7 @@ class Test_full_move:
         # one diagonal upper left to lower right
         # one diagonal upper right to lower left
 
-        spill = TestSpillContainer(4)
+        spill = sample_sc_release(4)
 
         spill['positions'] = np.array(((5.0, 5.0, 0.), (15.0, 5.0, 0.),
                 (0., 0., 0.), (19.0, 0., 0.)), dtype=np.float64)
@@ -651,7 +651,7 @@ class Test_full_move:
         # diagonal that doesn't hit
         # diagonal that does hit
 
-        spill = TestSpillContainer(4)
+        spill = sample_sc_release(4)
 
         spill['positions'] = np.array(((5.0, 5.0, 0.), (15.0, 5.0, 0.),
                 (0., 0., 0.), (19.0, 0., 0.)), dtype=np.float64)
@@ -688,7 +688,7 @@ class Test_full_move:
         # diagonal that does hit
         # spill = gnome.spill.Spill(num_LEs=4)
 
-        spill = TestSpillContainer(4)
+        spill = sample_sc_release(4)
         spill['positions'] = np.array(((30.0, 5.0, 0.), (-5.0, 5.0,
                 0.), (5.0, -5.0, 0.), (-5.0, -5.0, 0.)),
                 dtype=np.float64)  # outside right
@@ -725,7 +725,7 @@ class Test_full_move:
                          map_bounds=((-50, -30), (-50, 30), (50, 30),
                          (50, -30)), projection=NoProjection())  # hours
 
-        spill = TestSpillContainer(8)
+        spill = sample_sc_release(8)
         spill['positions'] = np.array((
             (45.0, 25.0, 0.),
             (45.0, 25.0, 0.),

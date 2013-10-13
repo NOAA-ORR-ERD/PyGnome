@@ -14,7 +14,7 @@ from gnome.movers import RandomMover
 from gnome.utilities.time_utils import sec_to_date, date_to_sec
 from gnome.utilities.projections import FlatEarthProjection
 
-from gnome.spill_container import TestSpillContainer
+from conftest import sample_sc_release
 
 import pytest
 
@@ -81,7 +81,7 @@ class TestRandomMover:
         Simply tests the method executes without exceptions
         """
 
-        pSpill = TestSpillContainer(self.num_le, self.start_pos)
+        pSpill = sample_sc_release(self.num_le, self.start_pos)
         self.mover.prepare_for_model_step(pSpill, self.time_step,
                 self.model_time)
         assert True
@@ -105,8 +105,7 @@ def test_variance1(start_loc, time_step):
 
     num_le = 1000
     start_time = datetime.datetime(2012, 11, 10, 0)
-    sc = TestSpillContainer(num_le, start_loc, start_time,
-                            spill_obj=gnome.spill.PointSource3DRelease)
+    sc = sample_sc_release(num_le, start_loc, start_time)
     D = 100000
     num_steps = 10
 

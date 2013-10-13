@@ -17,8 +17,9 @@ import pytest
 import gnome
 from gnome.utilities import cache
 
-from gnome.spill_container import TestSpillContainer, \
-    SpillContainerPairData
+from gnome.spill_container import SpillContainerPairData
+
+from ..conftest import sample_sc_release
 
 # some sample datetimes for tests:
 
@@ -74,9 +75,7 @@ def test_write():
 
     # create a spill_container to save:
 
-    sc = TestSpillContainer(num_elements=10, start_pos=(3.14, 2.72,
-                            1.2),
-                            spill_obj=gnome.spill.PointSource3DRelease)
+    sc = sample_sc_release(num_elements=10, start_pos=(3.14, 2.72, 1.2))
 
     # add a timestamp:
 
@@ -99,12 +98,9 @@ def test_write_uncert():
 
     # create a spill_container to save:
 
-    sc = TestSpillContainer(num_elements=10, start_pos=(3.14, 2.72,
-                            1.2),
-                            spill_obj=gnome.spill.PointSource3DRelease)
-    u_sc = TestSpillContainer(num_elements=10, start_pos=(4.14, 3.72,
-                              2.2), uncertain=True,
-                              spill_obj=gnome.spill.PointSource3DRelease)
+    sc = sample_sc_release(num_elements=10, start_pos=(3.14, 2.72, 1.2))
+    u_sc = sample_sc_release(num_elements=10, start_pos=(4.14, 3.72, 2.2),
+                             uncertain=True)
 
     # add a timestamp:
 
@@ -136,9 +132,7 @@ def test_write_and_read_back():
 
     # create a spill_container to save:
 
-    sc = TestSpillContainer(num_elements=10, start_pos=(3.14, 2.72,
-                            1.2),
-                            spill_obj=gnome.spill.PointSource3DRelease)
+    sc = sample_sc_release(num_elements=10, start_pos=(3.14, 2.72, 1.2))
 
     # add a timestamp:
 
@@ -208,12 +202,9 @@ def test_write_and_read_back_uncertain():
 
     # create a spill_container to save:
 
-    sc = TestSpillContainer(num_elements=10, start_pos=(3.14, 2.72,
-                            1.2),
-                            spill_obj=gnome.spill.PointSource3DRelease)
-    u_sc = TestSpillContainer(num_elements=10, start_pos=(4.14, 3.72,
-                              2.2), uncertain=True,
-                              spill_obj=gnome.spill.PointSource3DRelease)
+    sc = sample_sc_release(num_elements=10, start_pos=(3.14, 2.72, 1.2))
+    u_sc = sample_sc_release(num_elements=10, start_pos=(4.14, 3.72, 2.2),
+                             uncertain=True)
 
     # put it in a SpillContainerPair
 
@@ -267,9 +258,7 @@ def test_read_back_from_memory():
 
     # create a spill_container to save:
 
-    sc = TestSpillContainer(num_elements=10, start_pos=(3.14, 2.72,
-                            1.2),
-                            spill_obj=gnome.spill.PointSource3DRelease)
+    sc = sample_sc_release(num_elements=10, start_pos=(3.14, 2.72, 1.2))
 
     # put it in a SpillContainerPair
 
@@ -324,12 +313,9 @@ def test_rewind():
 
     # create a set of spill_container to save:
 
-    sc = TestSpillContainer(num_elements=10, start_pos=(3.14, 2.72,
-                            1.2),
-                            spill_obj=gnome.spill.PointSource3DRelease)
-    u_sc = TestSpillContainer(num_elements=10, start_pos=(4.14, 3.72,
-                              2.2), uncertain=True,
-                              spill_obj=gnome.spill.PointSource3DRelease)
+    sc = sample_sc_release(num_elements=10, start_pos=(3.14, 2.72, 1.2))
+    u_sc = sample_sc_release(num_elements=10, start_pos=(4.14, 3.72, 2.2),
+                             uncertain=True)
 
     # put it in a SpillContainerPair
 

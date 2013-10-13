@@ -6,7 +6,8 @@ import pytest
 from datetime import datetime
 
 from gnome.movers import RiseVelocityMover
-from gnome.spill_container import TestSpillContainer
+
+from conftest import sample_sc_release
 
 
 def test_init():
@@ -34,8 +35,8 @@ def test_props():
 
 time_step = 15 * 60  # seconds
 rel_time = datetime(2012, 8, 20, 13)  # yyyy/month/day/hr/min/sec
-sc = TestSpillContainer(5, (3., 6., 0.), rel_time, uncertain=False)
-u_sc = TestSpillContainer(5, (3., 6., 0.), rel_time, uncertain=True)
+sc = sample_sc_release(5, (3., 6., 0.), rel_time, uncertain=False)
+u_sc = sample_sc_release(5, (3., 6., 0.), rel_time, uncertain=True)
 model_time = rel_time
 
 

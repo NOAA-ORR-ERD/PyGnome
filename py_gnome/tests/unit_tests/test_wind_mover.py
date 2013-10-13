@@ -19,8 +19,10 @@ from gnome.utilities import convert
 from gnome.movers import WindMover, constant_wind_mover, \
     wind_mover_from_file
 
-from gnome.spill import PointSourceSurfaceRelease
-from gnome.spill_container import SpillContainer, TestSpillContainer
+from gnome.spill import PointLineSource
+from gnome.spill_container import SpillContainer
+
+from conftest import sample_sc_release
 
 datadir = os.path.join(os.path.dirname(__file__), r'sample_data')
 file_ = os.path.join(datadir, r'WindDataFromGnome.WND')
@@ -148,7 +150,7 @@ class TestWindMover:
 
     time_step = 15 * 60  # seconds
     rel_time = datetime(2012, 8, 20, 13)  # yyyy/month/day/hr/min/sec
-    sc = TestSpillContainer(5, (3., 6., 0.), rel_time)
+    sc = sample_sc_release(5, (3., 6., 0.), rel_time)
     model_time = rel_time
 
     time_val = np.array((rel_time, (2., 25.)),
@@ -231,7 +233,7 @@ class TestWindMover:
         # expected move
 
         uv = r_theta_to_uv_wind(self.time_val['value'])
-        exp = np.zeros((self.sc.num_elements, 3))
+        exp = np.zeros((self.sc.num_released, 3))
         exp[:, 0] = self.sc['windages'] * uv[0, 0] * self.time_step  # 'u'
         exp[:, 1] = self.sc['windages'] * uv[0, 1] * self.time_step  # 'v'
 
@@ -250,13 +252,13 @@ def test_windage_index():
     rel_time = datetime(2013, 1, 1, 0, 0)
     timestep = 30
     for i in range(2):
-        spill = PointSourceSurfaceRelease(num_elements=5,
+        spill = PointLineSource(num_elements=5,
                 start_position=(0., 0., 0.), release_time=rel_time + i
                 * timedelta(hours=1), windage_range=(i * .01 + .01, i
                 * .01 + .01), windage_persist=900)
         sc.spills.add(spill)
 
-    sc.prepare_for_model_run(rel_time, dict(array_types.windage))
+    sc.prepare_for_model_run(dict(array_types.WindMover))
     sc.release_elements(rel_time, timestep)
     wm = WindMover(environment.ConstantWind(5, 0))
     wm.prepare_for_model_step(sc, timestep, rel_time)
@@ -300,7 +302,7 @@ def test_timespan():
 
     # fixme: what to do about persistance?
 
-    sc = TestSpillContainer(5, start_pos, rel_time)
+    sc = sample_sc_release(5, start_pos, rel_time)
     sc.release_elements(datetime.now(), time_step=100)
 
     # model_time = time_utils.sec_to_date(time_utils.date_to_sec(rel_time) + 1)
@@ -349,7 +351,7 @@ def test_active():
 
     # fixme: what to do about persistance?
 
-    sc = TestSpillContainer(5, start_pos, rel_time)
+    sc = sample_sc_release(5, start_pos, rel_time)
     sc.release_elements(datetime.now(), time_step=100)
 
     # model_time = time_utils.sec_to_date(time_utils.date_to_sec(rel_time) + 1)
@@ -388,7 +390,7 @@ def test_constant_wind_mover():
 
     wm = constant_wind_mover(10, 45, units='m/s')
 
-    sc = TestSpillContainer(1)
+    sc = sample_sc_release(1)
 
     print wm
     print repr(wm.wind)
@@ -449,7 +451,7 @@ def test_exception_new_from_dict():
 
 def test_array_types():
     """
-    Check the array_types property of WindMover contains array_types.windage
+    Check the array_types property of WindMover contains array_types.WindMover
     """
 
     # WindMover does not modify Wind object!
@@ -457,9 +459,9 @@ def test_array_types():
     wm = WindMover(environment.Wind(filename=file_))
     wm_array = wm.array_types
 
-    assert len(wm_array) == len(array_types.windage)
+    assert len(wm_array) == len(array_types.WindMover)
 
-    for (key, val) in dict(array_types.windage).iteritems():
+    for (key, val) in dict(array_types.WindMover).iteritems():
         assert key in wm_array
         assert wm_array[key] == val
         wm_array.pop(key)
