@@ -208,13 +208,7 @@ def test_write_output_standard(model):
 
                 # check time
 
-                assert scp.LE('current_time_stamp', uncertain) \
-                    == time_[step]
-
-                # check standard variables
-                # assert np.all( scp.LE('positions',uncertain)[:,0] == data.variables['longitude'][idx[step]:idx[step+1]] )
-                # assert np.all( scp.LE('positions',uncertain)[:,1] == data.variables['latitude'][idx[step]:idx[step+1]] )
-                # assert np.all( scp.LE('positions',uncertain)[:,2] == data.variables['depth'][idx[step]:idx[step+1]] )
+                assert scp.LE('current_time_stamp', uncertain) == time_[step]
 
                 assert np.allclose(scp.LE('positions', uncertain)[:,
                                    0], (data.variables['longitude'
@@ -253,23 +247,26 @@ def test_write_output_standard(model):
 
             print 'data in model matches output in {0}'.format(file_)
 
-        # 2nd time around, we are looking at uncertain filename so toggle uncertain flag
+        # 2nd time around, we are looking at uncertain filename so toggle
+        # uncertain flag
 
         uncertain = True
 
 
 def test_write_output_all_data(model):
-    """ 
+    """
     rewind model defined by model fixture.
     invoke model.step() till model runs all 5 steps
-    
-    For each step, compare the non-standard variables in the model.cache to the data read back in from netcdf files.
-    Compare uncertain and uncertain data.
-    
-    Only compare the remaining data not already checked in test_write_output_standard
+
+    For each step, compare the non-standard variables in the model.cache to the
+    data read back in from netcdf files. Compare uncertain and uncertain data.
+
+    Only compare the remaining data not already checked in
+    test_write_output_standard
     """
 
-    # check contents of netcdf File at multiple time steps (there should only be 1!)
+    # check contents of netcdf File at multiple time steps (there should only
+    # be 1!)
 
     model.rewind()
     o_put = [model.outputters[outputter.id] for outputter in
@@ -296,7 +293,8 @@ def test_write_output_all_data(model):
                                 idx[step + 1], :] == scp.LE(key,
                                 uncertain))
 
-        # 2nd time around, we are looking at uncertain filename so toggle uncertain flag
+        # 2nd time around, we are looking at uncertain filename so toggle
+        # uncertain flag
 
         uncertain = True
 
@@ -328,7 +326,8 @@ def test_write_output_post_run(model):
     if model.uncertain:
         assert os.path.exists(o_put._u_netcdf_filename)
 
-    model.outputters += o_put  # add this back in so cleanup script deletes the *.nc files that were generated
+    # add this back in so cleanup script deletes the generated *.nc files
+    model.outputters += o_put
 
 
 def test_run_without_spills(model):
@@ -344,15 +343,15 @@ def test_run_without_spills(model):
 
 
 def test_read_standard_arrays(model):
-    """ 
-    tests the data returned by read_data is correct when `all_data` flag is False.
-    It is only reading the standard_data_arrays 
+    """
+    tests the data returned by read_data is correct when `all_data` flag is
+    False. It is only reading the standard_data_arrays
     """
 
     model.rewind()
     _run_model(model)
 
-    # check contents of netcdf File at multiple time steps (there should only be 1!)
+    # check contents of netcdf File at multiple time steps (should only be 1!)
 
     o_put = [model.outputters[outputter.id] for outputter in
              model.outputters if isinstance(outputter, NetCDFOutput)][0]
@@ -372,8 +371,6 @@ def test_read_standard_arrays(model):
                 == nc_data['current_time_stamp'].item()
 
             # check standard variables
-            # assert np.all( scp.LE('positions',uncertain)[:,0] == nc_data['positions'] )
-
             assert np.allclose(scp.LE('positions', uncertain),
                                nc_data['positions'], rtol, atol)
             assert np.all(scp.LE('spill_num', uncertain)[:]
@@ -393,15 +390,15 @@ def test_read_standard_arrays(model):
 
         print 'data in model matches output in {0}'.format(file_)
 
-        # 2nd time around, we are looking at uncertain filename so toggle uncertain flag
+        # 2nd time around, look at uncertain filename so toggle uncertain flag
 
         uncertain = True
 
 
 def test_read_all_arrays(model):
-    """ 
-    tests the data returned by read_data is correct when `all_data` flag is True.
-    It is only reading the standard_data_arrays 
+    """
+    tests the data returned by read_data is correct when `all_data` flag is
+    True. It is only reading the standard_data_arrays
     """
 
     model.rewind()
@@ -431,11 +428,9 @@ def test_read_all_arrays(model):
                     assert np.all(scp.LE(key, uncertain)[:]
                                   == nc_data[key])
 
-                # print ("SpillContainerPair `{0}` data array matches data stored in NetCDF file `{1}` for step `{2}`".format(key,file_,step))
-
         print 'data in model matches output in {0}'.format(file_)
 
-        # 2nd time around, we are looking at uncertain filename so toggle uncertain flag
+        # 2nd time around, look at uncertain filename so toggle uncertain flag
 
         uncertain = True
 
@@ -448,5 +443,3 @@ def _run_model(model):
             model.step()
         except StopIteration:
             break
-
-
