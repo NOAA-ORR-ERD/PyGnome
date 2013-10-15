@@ -262,10 +262,18 @@ class SpillContainer(SpillContainerData):
             u_sc.spills += sp.uncertain_copy()
         return u_sc
 
-    def prepare_for_model_run(self, array_types={}):
+    def prepare_for_model_run(self, current_time=None, array_types={}):
         """
         called when setting up the model prior to 1st time step
+        This is considered 0th timestep by model
+
+        Make current_time optional since SpillContainer doesn't require it
+        especially for 0th step; however, the model needs to set it because
+        it will write_output() after each step. The data_arrays along with
+        the current_time_stamp must be set in order to write_output()
         """
+        if current_time is not None:
+            self.current_time_stamp = current_time
         self.array_types.update(array_types)
 
         # define all data arrays before the run begins even if dict is not

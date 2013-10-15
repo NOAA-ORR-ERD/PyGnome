@@ -21,9 +21,9 @@ class WindMover(CyMover, serializable.Serializable):
 
     """
     Python wrapper around the Cython wind_mover module.
-    This class inherits from CyMover and contains cy_wind_mover.CyWindMover
+    This class inherits from CyMover and contains CyWindMover
 
-    The real work is done by the cy_wind_mover.CyWindMover object.  CyMover
+    The real work is done by the CyWindMover object.  CyMover
     sets everything up that is common to all movers.
 
     In addition to base class array_types.basic, also use the
@@ -322,7 +322,7 @@ class GridWindMover(CyMover, serializable.Serializable):
         # is wind_file and topology_file is stored with cy_gridwind_mover?
         self.wind_file = wind_file
         self.topology_file = topology_file
-        self.mover = cy_gridwind_mover.CyGridWindMover()
+        self.mover = CyGridWindMover()
         self.mover.text_read(wind_file, topology_file)
 
 #         self.mover = CyGridWindMover(uncertain_duration=uncertain_duration,

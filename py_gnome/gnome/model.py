@@ -281,10 +281,12 @@ class Model(serializable.Serializable):
 
         self.spills.rewind()  # why is rewind for spills here?
 
-        [outputter.prepare_for_model_run(self._cache,
-         model_start_time=self.start_time,
-         num_time_steps=self.num_time_steps, uncertain=self.uncertain,
-         spills=self.spills) for outputter in self.outputters]
+        for outputter in self.outputters:
+            outputter.prepare_for_model_run(self._cache,
+                                            model_start_time=self.start_time,
+                                            num_time_steps=self.num_time_steps,
+                                            uncertain=self.uncertain,
+                                            spills=self.spills)
 
         array_types = {}
         for mover in self.movers:
@@ -294,7 +296,7 @@ class Model(serializable.Serializable):
         # setup the current_time_stamp for the spill_container objects
 
         for sc in self.spills.items():
-            sc.prepare_for_model_run(array_types)
+            sc.prepare_for_model_run(self.model_time, array_types)
 
     def setup_time_step(self):
         """
@@ -329,7 +331,7 @@ class Model(serializable.Serializable):
 
         if len(self.spills) > 0:  # can this check be removed?
             for sc in self.spills.items():
-                if sc.num_elements > 0:  # can this check be removed?
+                if sc.num_released > 0:  # can this check be removed?
 
                     # possibly refloat elements
 

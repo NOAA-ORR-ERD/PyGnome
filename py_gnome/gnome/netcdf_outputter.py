@@ -20,22 +20,27 @@ class NetCDFOutput(Outputter, serializable.Serializable):
     """
     A NetCDFOutput object is used to write the model's data to a NetCDF file.
     It inherits from Outputter class and implements the same interface.
-    
-    This class is meant to be used within the Model, to be added to list of outputters.
-    
+
+    This class is meant to be used within the Model, to be added to list of
+    outputters.
+
     >>> model = gnome.model.Model(...)
-    >>> model.outputters += gnome.netcdf_outputter.NetCDFOutput(os.path.join(base_dir,'sample_model.nc'), all_data=True)
-    
-    'all_data' flag is used to either output all the data arrays defined in model.spills or only the standard data.
-               
-               
+    >>> model.outputters += gnome.netcdf_outputter.NetCDFOutput(
+                os.path.join(base_dir,'sample_model.nc'), all_data=True)
+
+    'all_data' flag is used to either output all the data arrays defined in
+    model.spills or only the standard data.
+
+
     .. note::
-       cf_attributes and data_vars are static members. cf_attributes is a dict that contains the global attributes per CF convention
-       data_vars is a dict used to define NetCDF variables. 
-       There is also a list called 'standard_data'. Since the names of the netcdf variables are different from the names in the 
-       SpillContainer data_arrays, this simply lists the names of data_arrays that are part of standard data. When writing 'all_data',
-       these data arrays are skipped.
-    
+       cf_attributes and data_vars are static members. cf_attributes is a dict
+       that contains the global attributes per CF convention
+       data_vars is a dict used to define NetCDF variables.
+       There is also a list called 'standard_data'. Since the names of the
+       netcdf variables are different from the names in the SpillContainer
+       data_arrays, this simply lists the names of data_arrays that are part of
+       standard data. When writing 'all_data', these data arrays are skipped.
+
     """
 
     cf_attributes = {
@@ -70,12 +75,11 @@ class NetCDFOutput(Outputter, serializable.Serializable):
     var['axis'] = 'z positive down'
     data_vars['depth'] = copy.deepcopy(var)
 
-    # mass
-
-    var.clear()
-    var['dtype'] = np.float32
-    var['units'] = 'grams'
-    data_vars['mass'] = copy.deepcopy(var)
+    # mass - is this part of standard output?
+    #var.clear()
+    #var['dtype'] = np.float32
+    #var['units'] = 'grams'
+    #data_vars['mass'] = copy.deepcopy(var)
 
     # age?
 
@@ -111,7 +115,6 @@ class NetCDFOutput(Outputter, serializable.Serializable):
     var['units'] = '1'
     data_vars['spill_num'] = copy.deepcopy(var)
 
-
     del var  # only used during initialization - no need to keep around
 
     # This is data that has already been written in standard format
@@ -121,14 +124,15 @@ class NetCDFOutput(Outputter, serializable.Serializable):
         'current_time_stamp',
         'status_codes',
         'spill_num',
+        'id',
         'age',
-        'mass',
+        #'mass',
         ]
 
     # define state for serialization
 
     state = copy.deepcopy(serializable.Serializable.state)
-    state.add_field([  # this data file should not be moved to save file location!
+    state.add_field([  # data file should not be moved to save file location!
         serializable.Field('netcdf_filename', create=True,
                            update=True),
         serializable.Field('all_data', create=True, update=True),
@@ -149,11 +153,10 @@ class NetCDFOutput(Outputter, serializable.Serializable):
         obj = cls(**dict_)
 
         if _middle_of_run is None or _start_idx is None:
-            raise KeyError('Expected netcdf_outputter to contain keys _middle_of_run and _start_idx'
-                           )
+            raise KeyError('Expected netcdf_outputter to contain keys'
+                           ' _middle_of_run and _start_idx')
 
         # If prepare_for_model_run is called, these will be reset
-
         obj._middle_of_run = _middle_of_run
         obj._start_idx = _start_idx
         return obj
@@ -163,15 +166,16 @@ class NetCDFOutput(Outputter, serializable.Serializable):
         netcdf_filename,
         cache=None,
         all_data=False,
-        format='NETCDF4',
+        netcdf_format='NETCDF4',
         compress=True,
         id=None,
         ):
         """
-        .. function:: __init__(netcdf_filename, cache=None, all_data=False, id=None)
-        
+        .. function:: __init__(netcdf_filename, cache=None, all_data=False,
+                               id=None)
+
         Constructor for Net_CDFOutput object.
-        
+
         :param netcdf_filename: Required parameter. The filename in which to store the NetCDF data. 
         :type netcdf_filename: str. or unicode
         :param cache: A cache object. Default is None, but this is required before calling write_output. 
@@ -193,7 +197,7 @@ class NetCDFOutput(Outputter, serializable.Serializable):
 
         self.all_data = all_data
         self.arr_types = None  # this is only updated in prepare_for_model_run if all_data is True
-        self._format = format
+        self._format = netcdf_format
         self._compress = compress
 
         self._start_idx = 0  # need to keep track of starting index for writing data since variable number of particles are released
@@ -457,8 +461,10 @@ class NetCDFOutput(Outputter, serializable.Serializable):
                  ])[self._start_idx:_end_idx] = (sc['status_codes'])[:]
                 (rootgrp.variables['spill_num'])[self._start_idx:_end_idx] = \
                     (sc['spill_num'])[:]
-                (rootgrp.variables['mass'])[self._start_idx:_end_idx] = \
-                    (sc['mass'])[:]
+                (rootgrp.variables['id'])[self._start_idx:_end_idx] = \
+                    (sc['id'])[:]
+                #(rootgrp.variables['mass'])[self._start_idx:_end_idx] = \
+                #    (sc['mass'])[:]
 
                 # write remaining data
 
@@ -549,10 +555,11 @@ class NetCDFOutput(Outputter, serializable.Serializable):
             arrays_dict['positions'] = positions
             arrays_dict['status_codes'] = (data.variables['status'
                     ])[_start_ix:_stop_ix]
-            arrays_dict['spill_num'] = (data.variables['id'
-                                        ])[_start_ix:_stop_ix]
-            arrays_dict['mass'] = (data.variables['mass'
-                                   ])[_start_ix:_stop_ix]
+            arrays_dict['spill_num'] = (data.variables['spill_num'
+                    ])[_start_ix:_stop_ix]
+            arrays_dict['id'] = (data.variables['id'])[_start_ix:_stop_ix]
+            #arrays_dict['mass'] = (data.variables['mass'
+            #                       ])[_start_ix:_stop_ix]
     
             if all_data:  # append remaining data arrays
                 excludes = NetCDFOutput.data_vars.keys()
