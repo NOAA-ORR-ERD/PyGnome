@@ -12,7 +12,6 @@ import numpy as np
 import pytest
 
 import gnome
-from gnome import movers
 from gnome.persist.scenario import Scenario
 from gnome.utilities.remote_data import get_datafile
 
@@ -28,9 +27,9 @@ if os.path.exists(saveloc_):
 
 
 @pytest.fixture(scope='module')
-def images_dir(request):        
+def images_dir(request):
     '''
-    create images dir 
+    create images dir
     '''
     images_dir = os.path.join(datafiles, 'images')
     if os.path.exists(images_dir):
@@ -50,7 +49,7 @@ def make_model(images_dir, uncertain=False):
       - random mover
       - cats shio mover
       - cats ossm mover
-      - plain cats mover 
+      - plain cats mover
     '''
     mapfile = get_datafile(os.path.join(datafiles, './MassBayMap.bna'))
 
@@ -69,13 +68,13 @@ def make_model(images_dir, uncertain=False):
 
     print 'adding a spill'
     model.spills += \
-        gnome.spill.PointSourceSurfaceRelease(num_elements=1000,
+        gnome.spill.PointLineSource(num_elements=1000,
             start_position=(144.664166, 13.441944, 0.0),
             release_time=start_time, end_release_time=start_time
             + timedelta(hours=6))
 
     # need a scenario for SimpleMover
-    # model.movers += movers.simple_mover.SimpleMover(velocity=(1.0, -1.0, 0.0))
+    # model.movers += SimpleMover(velocity=(1.0, -1.0, 0.0))
 
     print 'adding a RandomMover:'
     model.movers += gnome.movers.RandomMover(diffusion_coef=100000)
@@ -95,16 +94,14 @@ def make_model(images_dir, uncertain=False):
     print 'adding a cats shio mover:'
 
     d_file1 = get_datafile(os.path.join(datafiles, './EbbTides.cur'))
-    
-
     d_file2 = get_datafile(os.path.join(datafiles, './EbbTidesShio.txt'))
     c_mover = gnome.movers.CatsMover(d_file1,
             tide=gnome.environment.Tide(d_file2))
-    
+
     # c_mover.scale_refpoint should automatically get set from tide object
     c_mover.scale = True  # default value
     c_mover.scale_value = -1
-    
+
     # tide object automatically gets added by model
     model.movers += c_mover
 
@@ -128,21 +125,23 @@ def make_model(images_dir, uncertain=False):
     c_mover = gnome.movers.CatsMover(d_file1)
     c_mover.scale = True  # but do need to scale (based on river stage)
     c_mover.scale_refpoint = (-70.78333, 42.39333)
-    c_mover.scale_value = .04  # the scale factor is 0 if user inputs no sewage outfall effects
+
+    # the scale factor is 0 if user inputs no sewage outfall effects
+    c_mover.scale_value = .04
     model.movers += c_mover
     return model
 
 
 def test_init_exception():
     with pytest.raises(ValueError):
-        Scenario(os.path.join(saveloc_,'x','junk'))
+        Scenario(os.path.join(saveloc_, 'x', 'junk'))
 
 
 def test_dir_gets_created(images_dir):
     assert not os.path.exists(saveloc_)
     Scenario(os.path.join(saveloc_))
     assert os.path.exists(saveloc_)
-    
+
 
 def test_exception_no_model_to_load(images_dir):
     '''
@@ -247,7 +246,7 @@ def test_save_load_midrun_no_movers(images_dir, uncertain):
 
     for sc in zip(model.spills.items(), model2.spills.items()):
         # need to change both atol since reading persisted data
-        sc[0]._array_allclose_atol = 1e-5  
+        sc[0]._array_allclose_atol = 1e-5
         sc[1]._array_allclose_atol = 1e-5
 
     assert model.spills == model2.spills

@@ -10,32 +10,33 @@ import netCDF4 as nc
 import pytest
 
 import gnome
+from gnome.netcdf_outputter import NetCDFOutput
 
 base_dir = os.path.dirname(__file__)
 
 
 @pytest.fixture(scope='module')
 def model(sample_model, request):
-    """ 
-    use fixture model_surface_release_spill and add a few things to it for the test
-    
-    This fixtures adds another spill (PointSourceSurfaceRelease) and a netcdf outputter
-    to the model. 
-    It also adds a cleanup function that deletes the netcdf files after upon test completion.
+    """
+    use fixture model_surface_release_spill and add a few things to it for the
+    test
+
+    This fixtures adds another spill (PointLineSource) and a netcdf outputter
+    to the model. It also adds a cleanup function that deletes the netcdf files
+    after upon test completion.
     """
 
     model = sample_model['model']
 
     model.cache_enabled = True  # let's enable cache
 
-    model.outputters += \
-        gnome.netcdf_outputter.NetCDFOutput(os.path.join(base_dir,
-            u'sample_model.nc'))
+    model.outputters += NetCDFOutput(os.path.join(base_dir,
+                                                  u'sample_model.nc'))
 
     model.movers += gnome.movers.RandomMover(diffusion_coef=100000)
 
     model.spills += \
-        gnome.spill.PointSourceSurfaceRelease(num_elements=5,
+        gnome.spill.PointLineSource(num_elements=5,
             start_position=sample_model['release_start_pos'],
             release_time=model.start_time,
             end_release_time=model.start_time + model.duration,
@@ -47,30 +48,31 @@ def model(sample_model, request):
         print '''Cleaning up %s''' % model
         o_put = None
         for outputter in model.outputters:
-            if isinstance(outputter,
-                          gnome.netcdf_outputter.NetCDFOutput):  # there should only be 1!
-                o_put = model.outputters[outputter.id]
+            # there should only be 1!
+            #if isinstance(outputter, NetCDFOutput):
+            o_put = model.outputters[outputter.id]
+            if hasattr(o_put, 'netcdf_filename'):
+                if os.path.exists(o_put.netcdf_filename):
+                    os.remove(o_put.netcdf_filename)
 
-        if os.path.exists(o_put.netcdf_filename):
-            os.remove(o_put.netcdf_filename)
-
-        if os.path.exists(o_put._u_netcdf_filename):
-            os.remove(o_put._u_netcdf_filename)
+                if os.path.exists(o_put._u_netcdf_filename):
+                    os.remove(o_put._u_netcdf_filename)
 
     request.addfinalizer(cleanup)
     return model
 
 
 def test_init_exceptions():
-    """ 
-    test exceptions raised during __init__ 
+    """
+    test exceptions raised during __init__
     """
 
     with pytest.raises(ValueError):
-        gnome.netcdf_outputter.NetCDFOutput(os.path.abspath(os.path.dirname(__file__)))  # must be filename, not dir name
+        # must be filename, not dir name
+        NetCDFOutput(os.path.abspath(os.path.dirname(__file__)))
 
     with pytest.raises(ValueError):
-        gnome.netcdf_outputter.NetCDFOutput('junk_path_to_file/file.nc')  # invalid path
+        NetCDFOutput('junk_path_to_file/file.nc')  # invalid path
 
 
 def test_exceptions():
@@ -79,7 +81,7 @@ def test_exceptions():
     # Test exceptions raised after object creation
 
     t_file = os.path.join(base_dir, 'temp.nc')
-    netcdf = gnome.netcdf_outputter.NetCDFOutput(t_file)
+    netcdf = NetCDFOutput(t_file)
     with pytest.raises(TypeError):
         netcdf.prepare_for_model_run(num_time_steps=4)
 
@@ -116,16 +118,15 @@ def test_exceptions():
 
 def test_exceptions_middle_of_run(model):
     """
-    Test attribute exceptions are called when changing parameters in middle of run for
-    'all_data' and 'netcdf_filename' 
+    Test attribute exceptions are called when changing parameters in middle of
+    run for 'all_data' and 'netcdf_filename'
     """
 
     model.rewind()
     model.step()
 
     o_put = [model.outputters[outputter.id] for outputter in
-             model.outputters if isinstance(outputter,
-             gnome.netcdf_outputter.NetCDFOutput)][0]
+             model.outputters if isinstance(outputter, NetCDFOutput)][0]
 
     assert o_put.middle_of_run
 
@@ -147,15 +148,15 @@ def test_exceptions_middle_of_run(model):
 
 
 def test_prepare_for_model_run(model):
-    """ 
-    use model fixture. 
+    """
+    use model fixture.
     Call prepare_for_model_run for netcdf_outputter
-    
-    Simply asserts the correct files are created and no errors are raised. 
+
+    Simply asserts the correct files are created and no errors are raised.
     """
 
     for outputter in model.outputters:
-        if isinstance(outputter, gnome.netcdf_outputter.NetCDFOutput):  # there should only be 1!
+        if isinstance(outputter, NetCDFOutput):  # there should only be 1!
             o_put = model.outputters[outputter.id]
 
     model.rewind()
@@ -170,25 +171,24 @@ def test_prepare_for_model_run(model):
 
 
 def test_write_output_standard(model):
-    """ 
+    """
     rewind model defined by model fixture.
     invoke model.step() till model runs all 5 steps
-    
-    For each step, compare the standard variables in the model.cache to the data read back in from netcdf files.
-    Compare uncertain and uncertain data.
-    
-    Since 'latitude', 'longitude' and 'depth' are float 32 while the data in cache is float64, use np.allclose to
-    check it is within 1e-5 tolerance.
+
+    For each step, compare the standard variables in the model.cache to the
+    data read back in from netcdf files. Compare uncertain and uncertain data.
+
+    Since 'latitude', 'longitude' and 'depth' are float 32 while the data in
+    cache is float64, use np.allclose to check it is within 1e-5 tolerance.
     """
 
     model.rewind()
     _run_model(model)
 
-    # check contents of netcdf File at multiple time steps (there should only be 1!)
-
+    # check contents of netcdf File at multiple time steps
+    # (there should only be 1!)
     o_put = [model.outputters[outputter.id] for outputter in
-             model.outputters if isinstance(outputter,
-             gnome.netcdf_outputter.NetCDFOutput)][0]
+             model.outputters if isinstance(outputter, NetCDFOutput)][0]
 
     atol = 1e-5
     rtol = 0
@@ -230,6 +230,9 @@ def test_write_output_standard(model):
                                    atol)
 
                 assert np.all(scp.LE('spill_num', uncertain)[:]
+                              == (data.variables['spill_num'
+                              ])[idx[step]:idx[step + 1]])
+                assert np.all(scp.LE('id', uncertain)[:]
                               == (data.variables['id'
                               ])[idx[step]:idx[step + 1]])
                 assert np.all(scp.LE('status_codes', uncertain)[:]
@@ -270,8 +273,7 @@ def test_write_output_all_data(model):
 
     model.rewind()
     o_put = [model.outputters[outputter.id] for outputter in
-             model.outputters if isinstance(outputter,
-             gnome.netcdf_outputter.NetCDFOutput)][0]
+             model.outputters if isinstance(outputter, NetCDFOutput)][0]
     o_put.all_data = True  # write all data
 
     _run_model(model)
@@ -307,8 +309,7 @@ def test_write_output_post_run(model):
     model.rewind()
 
     o_put = [model.outputters[outputter.id] for outputter in
-             model.outputters if isinstance(outputter,
-             gnome.netcdf_outputter.NetCDFOutput)][0]
+             model.outputters if isinstance(outputter, NetCDFOutput)][0]
     o_put.all_data = False
 
     del model.outputters[o_put.id]  # remove from list of outputters
@@ -354,8 +355,7 @@ def test_read_standard_arrays(model):
     # check contents of netcdf File at multiple time steps (there should only be 1!)
 
     o_put = [model.outputters[outputter.id] for outputter in
-             model.outputters if isinstance(outputter,
-             gnome.netcdf_outputter.NetCDFOutput)][0]
+             model.outputters if isinstance(outputter, NetCDFOutput)][0]
 
     atol = 1e-5
     rtol = 0
@@ -364,9 +364,7 @@ def test_read_standard_arrays(model):
     for file_ in (o_put.netcdf_filename, o_put._u_netcdf_filename):
         for step in range(model.num_time_steps):
             scp = model._cache.load_timestep(step)
-            nc_data = \
-                gnome.netcdf_outputter.NetCDFOutput.read_data(file_,
-                    step)
+            nc_data = NetCDFOutput.read_data(file_, step)
 
             # check time
 
@@ -408,8 +406,7 @@ def test_read_all_arrays(model):
 
     model.rewind()
     o_put = [model.outputters[outputter.id] for outputter in
-             model.outputters if isinstance(outputter,
-             gnome.netcdf_outputter.NetCDFOutput)][0]
+             model.outputters if isinstance(outputter, NetCDFOutput)][0]
     o_put.all_data = True
 
     _run_model(model)
@@ -421,9 +418,7 @@ def test_read_all_arrays(model):
     for file_ in (o_put.netcdf_filename, o_put._u_netcdf_filename):
         for step in range(model.num_time_steps):
             scp = model._cache.load_timestep(step)
-            nc_data = \
-                gnome.netcdf_outputter.NetCDFOutput.read_data(file_,
-                    step, all_data=True)
+            nc_data = NetCDFOutput.read_data(file_, step, all_data=True)
 
             for key in scp.LE_data:
                 if key == 'current_time_stamp':

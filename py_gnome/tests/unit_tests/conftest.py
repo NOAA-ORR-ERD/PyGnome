@@ -258,7 +258,7 @@ def sample_model():
 
     model = gnome.model.Model(
         time_step=timedelta(minutes=15),
-        release_time=release_time,
+        start_time=release_time,
         duration=timedelta(hours=1),
         map=map_,
         uncertain=True,
