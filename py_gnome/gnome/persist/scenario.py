@@ -414,9 +414,6 @@ class Scenario(object):
         for mover in self.model.movers:
             array_types.update(mover.array_types)
 
-        for spill in self.model.spills:
-            array_types.update(spill.array_types)
-
         for sc in self.model.spills.items():
             if sc.uncertain:
                 data = NetCDFOutput.read_data(self._uncertainspill_data,
@@ -425,11 +422,10 @@ class Scenario(object):
                 data = NetCDFOutput.read_data(self._certainspill_data,
                                               all_data=True)
 
-            sc.current_time_stamp = data.pop('current_time_stamp'
-                    ).item()
+            sc.current_time_stamp = data.pop('current_time_stamp').item()
             sc._data_arrays = data
-            sc.all_array_types.update(array_types)
-            
+            sc._array_types.update(array_types)
+
     def _empty_save_dir(self):
         '''
         Remove all files, directories under self.saveloc

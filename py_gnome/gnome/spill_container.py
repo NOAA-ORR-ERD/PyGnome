@@ -6,13 +6,12 @@ Implements a container for spills -- keeps all the data from each spill in one
 set of arrays. The spills themselves provide some of the arrays themselves
 (adding more each time LEs are released).
 """
-import datetime
-
 import numpy as np
 
 import gnome.spill
 from gnome.utilities.orderedcollection import OrderedCollection
-from gnome import basic_types, array_types
+from gnome import basic_types
+import gnome.array_types
 
 
 class SpillContainerData(object):
@@ -210,11 +209,11 @@ class SpillContainer(SpillContainerData):
         super(SpillContainer, self).__init__(uncertain=uncertain)
         self.spills = OrderedCollection(dtype=gnome.spill.Spill)
 
-        # create a new dict from array_types.SpillContainer
+        # create a new dict from _array_types.SpillContainer
         # This is so original dict is not updated if we update this dict
         # However, note that updating the values in this dict will change
         # original, since the ArrayType objects are mutable
-        self.array_types = dict(array_types.SpillContainer)
+        self._array_types = dict(gnome.array_types.SpillContainer)
         self.rewind()
 
     def __setitem__(self, data_name, array):
@@ -225,17 +224,33 @@ class SpillContainer(SpillContainerData):
         the user.
         """
         super(SpillContainer, self).__setitem__(data_name, array)
-        if data_name not in self.array_types:
+        if data_name not in self._array_types:
             shape = self._data_arrays[data_name].shape[1:]
             dtype = self._data_arrays[data_name].dtype.type
-            self.array_types[data_name] = array_types.ArrayType(shape, dtype)
+            self._array_types[data_name] = gnome.array_types.ArrayType(shape,
+                                                                       dtype)
 
-        #self.reconcile_data_arrays()
+    @property
+    def array_types(self):
+        # copy internal dict object and return to user. The values in the dict
+        # are ArrayType objects - they are mutable and their properties can
+        # be changed.
+        # Use prepare_for_model_run() to add key, values in the beginning but
+        # not in middle of run.
+        # Default key, values defined in array_types.SpillContainer cannot
+        # be added/deleted.
+        return dict(self._array_types)
 
     def rewind(self):
         """
         In the rewind operation, we:
         - rewind all the spills
+        - restore array_types to contain only array_types.SpillContainer
+          - movers/weatherers could have been deleted and we don't want to
+            carry associated data_arrays
+          - prepare_for_model_run() will be called before the next run and
+            new arrays can be given
+
         - purge the data arrays
           - we gather data arrays for each contained spill
           - the stored arrays are cleared, then replaced with appropriate
@@ -245,6 +260,9 @@ class SpillContainer(SpillContainerData):
             spill.rewind()
         # create a full set of zero-sized arrays. If we rewound, something
         # must have changed
+        if self._array_types != gnome.array_types.SpillContainer:
+            self._array_types = dict(gnome.array_types.SpillContainer)
+
         self.initialize_data_arrays()
 
     def get_spill_mask(self, spill):
@@ -262,7 +280,7 @@ class SpillContainer(SpillContainerData):
             u_sc.spills += sp.uncertain_copy()
         return u_sc
 
-    def prepare_for_model_run(self, current_time=None, array_types={}):
+    def prepare_for_model_run(self, current_time, array_types={}):
         """
         called when setting up the model prior to 1st time step
         This is considered 0th timestep by model
@@ -272,9 +290,14 @@ class SpillContainer(SpillContainerData):
         it will write_output() after each step. The data_arrays along with
         the current_time_stamp must be set in order to write_output()
         """
-        if current_time is not None:
-            self.current_time_stamp = current_time
-        self.array_types.update(array_types)
+        self.current_time_stamp = current_time
+
+        # Question - should we purge any new arrays that were added in previous
+        # call to prepare_for_model_run()?
+        # I think so, we should start w/ a clean state
+        if self._array_types != gnome.array_types.SpillContainer:
+            self._array_types = dict(gnome.array_types.SpillContainer)
+        self._array_types.update(array_types)
 
         # define all data arrays before the run begins even if dict is not
         # empty. No need to keep arrays for movers that were deleted.
@@ -296,7 +319,7 @@ class SpillContainer(SpillContainerData):
         and prepare_for_model_run to define all data arrays. At this time the
         arrays are empty.
         """
-        for name, elem in self.array_types.iteritems():
+        for name, elem in self._array_types.iteritems():
             # Initialize data_arrays with 0 elements
             self._data_arrays[name] = elem.initialize_null()
 
@@ -306,13 +329,13 @@ class SpillContainer(SpillContainerData):
         Data arrays are set to their initial_values
 
         :param spill_arrays: numpy arrays for 'position' and 'mass'
-            array_types. These are returned by release_elements() of spill
+            _array_types. These are returned by release_elements() of spill
             object
         :param spill: Spill which released the spill_arrays
 
         """
 
-        for name, array_type in self.array_types.iteritems():
+        for name, array_type in self._array_types.iteritems():
             # initialize all arrays even if 0 length
             self._data_arrays[name] = np.r_[self._data_arrays[name],
                                     array_type.initialize(num_released)]
@@ -334,14 +357,14 @@ class SpillContainer(SpillContainerData):
                     # corresponds with spill number for this set of released
                     # particles - just another way to set value of spill_num
                     # correctly
-                    self.array_types['spill_num'].initial_value = \
+                    self._array_types['spill_num'].initial_value = \
                                     self.spills.index(spill.id,
                                                       renumber=False)
                     # unique identifier for each new element released
-                    # this adjusts the array_types initial_value since the
+                    # this adjusts the _array_types initial_value since the
                     # initialize function just calls:
                     #  range(initial_value, num_released + initial_value)
-                    self.array_types['id'].initial_value = \
+                    self._array_types['id'].initial_value = \
                         len(self['spill_num'])
 
                     # append to data arrays
@@ -359,7 +382,7 @@ class SpillContainer(SpillContainerData):
         to_be_removed = np.where(self['status_codes'] ==
                                  basic_types.oil_status.to_be_removed)[0]
         if len(to_be_removed) > 0:
-            for key in self.array_types.keys():
+            for key in self._array_types.keys():
                 self._data_arrays[key] = np.delete(self[key], to_be_removed,
                                                    axis=0)
 
@@ -617,38 +640,3 @@ class SpillContainerPair(SpillContainerPairData):
                           self._u_spill_container.spills.to_dict()})
 
         return dict_
-
-
-class TestSpillContainer(SpillContainer):
-    """
-    A really simple spill container, pre-initialized with LEs at a point.
-
-    It initializes a SpillContainer, adds a spill,
-    invokes prepare_for_model_run(release_time, array_types),
-    then releases elements - relaese_elements(release_time, time_step)
-
-    This makes it easy to use for testing other classes -- movers, maps, etc.
-    By default, it assumes tests will use a WindMover so 'windages' array
-    is provided to SpillContainer().prepare_for_model_run(..)
-    """
-    def __init__(self,
-                 num_elements=0,
-                 start_pos=(0.0, 0.0, 0.0),
-                 release_time=datetime.datetime(2000, 1, 1, 1),
-                 uncertain=False,
-                 spill_obj=gnome.spill.PointLineSource,
-                 array_types=dict(array_types.WindMover)):
-        """
-        initialize a simple spill container (instantaneous point release)
-        """
-        super(TestSpillContainer, self).__init__(uncertain=uncertain)
-
-        spill = spill_obj(num_elements,
-                          start_pos,
-                          release_time)
-
-        self.spills.add(spill)
-
-        # used for testing so just assume there is a Windage array
-        self.prepare_for_model_run(release_time, array_types)
-        self.release_elements(release_time, 360)
