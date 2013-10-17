@@ -258,7 +258,8 @@ def test_windage_index():
                 * .01 + .01), windage_persist=900)
         sc.spills.add(spill)
 
-    sc.prepare_for_model_run(dict(array_types.WindMover))
+    sc.prepare_for_model_run(rel_time,
+                             array_types=dict(array_types.WindMover))
     sc.release_elements(rel_time, timestep)
     wm = WindMover(environment.ConstantWind(5, 0))
     wm.prepare_for_model_step(sc, timestep, rel_time)

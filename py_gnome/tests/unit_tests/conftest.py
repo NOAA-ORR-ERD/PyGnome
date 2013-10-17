@@ -56,7 +56,7 @@ def sample_sc_release(num_elements=10,
     uncertain=False,
     time_step=360,
     spill=None,
-    array_types=dict(gnome.array_types.WindMover),
+    arr_types=dict(gnome.array_types.WindMover),
     current_time=None):
     """
     initiailize a spill of type spill_obj, add it to a SpillContainer.
@@ -73,7 +73,7 @@ def sample_sc_release(num_elements=10,
     sc.spills.add(spill)
 
     # used for testing so just assume there is a Windage array
-    sc.prepare_for_model_run(array_types)
+    sc.prepare_for_model_run(spill.release_time, arr_types)
     sc.prepare_for_model_step(current_time)
     sc.release_elements(current_time, time_step)
     return sc

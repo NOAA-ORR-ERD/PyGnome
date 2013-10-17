@@ -35,9 +35,10 @@ def test_simple_init():
 
 
 ### Helper functions ###
-def assert_dataarray_shapes(sc):
+def assert_dataarray_shape_size(sc):
     for key, val in sc.array_types.iteritems():
         assert sc[key].shape == (sc.num_released,) + val.shape
+        assert sc[key].dtype == val.dtype
 
     assert np.all(sc['status_codes']
                       == sc.array_types['status_codes'].initial_value)
@@ -46,7 +47,7 @@ def assert_dataarray_shapes(sc):
 
 def assert_sc_single_spill(sc):
     """ standard asserts for a SpillContainer with a single spill """
-    assert_dataarray_shapes(sc)
+    assert_dataarray_shape_size(sc)
     assert np.all(sc['spill_num'] == sc['spill_num'][0])
 
     # only one spill in SpillContainer
@@ -78,7 +79,7 @@ def test_one_simple_spill(spill):
     sc.spills.add(spill)
     time_step = 3600
 
-    sc.prepare_for_model_run(windage_at)
+    sc.prepare_for_model_run(spill.release_time, windage_at)
     num_steps = ((spill.end_release_time -
                   spill.release_time).seconds / time_step + 1)
 
@@ -118,7 +119,7 @@ def test_multiple_spills(uncertain):
     num_steps = ((spills[-1].end_release_time -
                   spills[-1].release_time).seconds / time_step + 1)
 
-    sc.prepare_for_model_run(windage_at)
+    sc.prepare_for_model_run(release_time, windage_at)
 
     for step in range(num_steps):
         current_time = release_time + timedelta(seconds=time_step * step)
@@ -127,7 +128,7 @@ def test_multiple_spills(uncertain):
         assert sc.current_time_stamp == current_time
 
     assert sc.num_released == spills[0].num_elements * len(spills)
-    assert_dataarray_shapes(sc)
+    assert_dataarray_shape_size(sc)
 
     sc.spills.remove(spills[0].id)
 
@@ -137,7 +138,7 @@ def test_multiple_spills(uncertain):
 
     # however, the data arrays of released particles should be unchanged
     assert sc.num_released == spill.num_elements * len(spills)
-    assert_dataarray_shapes(sc)
+    assert_dataarray_shape_size(sc)
 
 
 def test_rewind():
@@ -158,7 +159,7 @@ def test_rewind():
               PointLineSource(num_elements, start_position, release_time2)]
     sc.spills.add(spills)
 
-    sc.prepare_for_model_run(dict(array_types.WindMover))
+    sc.prepare_for_model_run(release_time, windage_at)
 
     for time in [release_time, release_time2]:
         sc.prepare_for_model_step(time)
@@ -170,7 +171,7 @@ def test_rewind():
 
     sc.rewind()
     assert sc.num_released == 0
-    assert_dataarray_shapes(sc)
+    assert_dataarray_shape_size(sc)
     for spill in spills:
         assert spill.num_released == 0
         assert spill.start_time_invalid
@@ -239,30 +240,6 @@ def test_data_setting_wrong_shape_error():
         sc['positions'] = new_pos
 
 
-@pytest.mark.xfail
-def test_addto_array_types():
-    """
-    Can add a new ArrayType to all_array_types; however, must rewind model
-    to get the 'new_name' array in data_arrays
-    todo: revisit this!
-    """
-
-    sc = sample_sc_release()
-    sc.array_types['new_name'] = array_types.ArrayType((3,), np.float64, 0)
-
-    # MUST rewind and release elements again to get new_name in data_arrays
-
-    sc.rewind()
-    sc.release_elements(sc.current_time_stamp, time_step=100)
-
-    new_arr = np.ones((10, 3), dtype=np.float64)
-    sc['new_name'] = new_arr
-
-    assert 'new_name' in sc.data_arrays_dict
-    assert sc['new_name'] is new_arr
-    assert False
-
-
 def test_data_setting_new():
     """
     Can add a new item to data_arrays. This will automatically update
@@ -283,7 +260,7 @@ def test_data_setting_new():
     assert 'new_name' in sc.data_arrays_dict
     assert 'new_name' in sc.array_types
     assert sc['new_name'] is new_arr
-    assert_dataarray_shapes(sc)
+    assert_dataarray_shape_size(sc)
 
     # now release remaining particles and check to see new_name is populated
     # with zeros - default initial_value
@@ -293,7 +270,7 @@ def test_data_setting_new():
     sc.release_elements(spill.release_time + time_step, time_step.seconds)
     new_released = sc.num_released - released
 
-    assert_dataarray_shapes(sc)     # check shape is consistent for all arrays
+    assert_dataarray_shape_size(sc)     # check shape is consistent for all arrays
     assert sc.num_released == spill.num_elements     # release all elements
     assert np.all(sc['new_name'][-new_released:] ==  # initialized to 0!
                   (0.0, 0.0, 0.0))
@@ -303,145 +280,98 @@ def test_data_setting_new_list():
     """
     Should be able to add a new data that's not a numpy array
     """
+    sc = sample_sc_release()
 
-    sp = sample_sc_release()
+    new_arr = range(sc.num_released)
 
-    new_arr = range(sp.num_released)
+    sc['new_name'] = new_arr
 
-    sp['new_name'] = new_arr
+    assert np.array_equal(sc['new_name'], new_arr)
+    assert_dataarray_shape_size(sc)
 
-    assert np.array_equal(sp['new_name'], new_arr)
 
-
-@pytest.mark.xfail
-def test_data_arrays():
+class TestAddArrayTypes:
     """
-    SpillContainer manages a number of numpy arrays that represent the
-    properties of the LEs that have been released by the contained spills.
-    Here we test that the data arrays are behaving as expected.
+    Cannot add to array_types dict directly.
+    - Must either add key, value in prepare_for_model_run()
+    - or add a new data_array and an associated ArrayType object will be
+      inferred and created
     """
-
-    start_time1 = datetime(2012, 1, 1, 12)
-    start_time2 = datetime(2012, 1, 2, 12)
-    start_time3 = datetime(2012, 1, 3, 12)
-    start_time4 = datetime(2012, 1, 4, 12)
-    start_time5 = datetime(2012, 1, 5, 12)
-    start_position = (23.0, -78.5, 0.0)
-    num_elements = 5
     sc = SpillContainer()
-    sp1 = PointLineSource(num_elements, start_position,
-                                    start_time1)
+    new_at = array_types.ArrayType((3,), np.float64, 0)
 
-    sp2 = PointLineSource(num_elements, start_position,
-                                    start_time2)
+    def default_arraytypes(self):
+        """ return array_types back to baseline for SpillContainer """
+        self.sc.prepare_for_model_run(release_time)  # set to anything 
+        assert self.sc.array_types == array_types.SpillContainer
 
-    sp3 = PointLineSource(num_elements, start_position,
-                                    start_time3)
+    def test_no_addto_array_types(self):
+        """
+        Cannot add a new ArrayType directly via SpillContainer's array_types
+        property
+        """
+        self.default_arraytypes()
+        self.sc.array_types['new_name'] = self.new_at
 
-    sp4 = SubsurfaceRelease(num_elements, start_position, start_time4)
+        assert 'new_name' not in self.sc.array_types
 
-    sp5 = PointLineSource(num_elements, start_position,
-                                    start_time5)
+    def test_addto_array_types_prepare_for_model_run(self):
+        """
+        Can add a new array type via prepare_for_model_run()
+        at the beginning of the run
+        """
+        self.default_arraytypes()
+        self.sc.prepare_for_model_run(release_time,  # set to any value
+                                      array_types={'new_name': self.new_at})
+        assert 'new_name' in self.sc.array_types
 
-    sc.spills += [sp1, sp2, sp3]
+    def test_addto_array_types_via_data_array(self):
+        """
+        can also add a new data array in the middle of the run, which will
+        infer the array_type and add it to array_types dict. This is so in the
+        next release, the data is correctly initialized for new array.
+        The user is basically responsible for 'backfilling' the data for newly
+        added array.
+        """
+        self.default_arraytypes()
 
-    print sc.spills
+        # this will add a new array type
+        new_arr = np.ones((len(self.sc['positions']), 3),
+                          dtype=self.new_at.dtype)
+        self.sc['new_name'] = new_arr
+        assert 'new_name' in self.sc.array_types
 
-    # as we move forward in time, the spills will release LEs
-    # in an expected way
 
-    sc.prepare_for_model_run(windage_at)
-    sc.release_elements(start_time1, time_step=100)
+def test_array_types_reset():
+    """
+    check the array_types are reset on rewind() and in
+    prepare_for_model_run()
+    """
+    sc = SpillContainer()
+    sc.prepare_for_model_run(release_time,  # set to any datetime
+                             array_types=windage_at)
 
-    assert sc['positions'].shape == (num_elements, 3)
-    assert sc['last_water_positions'].shape == (num_elements, 3)
-    assert sc['windages'].shape == (num_elements, )  # it should be there.
-    with pytest.raises(KeyError):
+    assert 'windages' in sc.array_types
 
-        # it shouldn't be there.
+    sc.rewind()
+    assert 'windages' not in sc.array_types
+    assert sc.array_types == array_types.SpillContainer
 
-        assert sc['water_currents'].shape == (num_elements, 3)
+    sc.prepare_for_model_run(release_time,  # set to any datetime
+                             array_types=windage_at)
+    assert 'windages' in sc.array_types
 
-    sc.release_elements(start_time1 + timedelta(hours=24),
-                        time_step=100)
-
-    assert sc['positions'].shape == (num_elements * 2, 3)
-    assert sc['last_water_positions'].shape == (num_elements * 2, 3)
-    assert sc['windages'].shape == (num_elements * 2, )  # it should be there.
-
-    with pytest.raises(KeyError):
-
-        # it shouldn't be there.
-
-        assert sc['water_currents'].shape == (num_elements * 2, 3)
-
-    sc.release_elements(start_time2 + timedelta(hours=24),
-                        time_step=100)
-
-    assert sc['positions'].shape == (num_elements * 3, 3)
-    assert sc['last_water_positions'].shape == (num_elements * 3, 3)
-    assert sc['windages'].shape == (num_elements * 3, )  # it should be there.
-
-    with pytest.raises(KeyError):
-
-        # it shouldn't be there.
-
-        assert sc['water_currents'].shape == (num_elements * 3, 3)
-
-    # - When we delete a spill, the previously released LEs from that spill
-    #   will stay in the data arrays
-    # - All LEs, including from the deleted spill, will maintain their
-    #   spill_num property.
-    # - When a spill is added with new properties, new items representing
-    #   those properties will be created in the data arrays and back-filled
-    #   to accommodate the previously released LEs
-
-    del sc.spills[sp2.id]
-    sc.spills += sp4
-    sc.release_elements(start_time3 + timedelta(hours=24),
-                        time_step=100)
-
-    assert sc['positions'].shape == (num_elements * 4, 3)
-    assert sc['last_water_positions'].shape == (num_elements * 4, 3)
-    assert sc['windages'].shape == (num_elements * 4, )
-
-    # new property should be there with the right shape.
-
-    assert sc['water_currents'].shape == (num_elements * 4, 3)
-
-    # All spill_nums, even the ones that were deleted
-
-    assert set(sc['spill_num']) == set([0, 1, 2, 3])
-
-    # - When we delete a spill, any properties that are not needed by the still
-    #   existing spills will be purged.  This purging will happen on the next
-    #   release after the delete.
-
-    del sc.spills[sp4.id]
-    sc.spills += sp5
-    sc.release_elements(start_time4 + timedelta(hours=24),
-                        time_step=100)
-
-    assert sc['positions'].shape == (num_elements * 5, 3)
-    assert sc['last_water_positions'].shape == (num_elements * 5, 3)
-    assert sc['windages'].shape == (num_elements * 5, )
-
-    with pytest.raises(KeyError):
-
-        # extra property from deleted spill should go away
-
-        assert sc['water_currents'].shape == (num_elements * 5, 3)
-
-    # All spill_nums, even the ones that were deleted
-
-    assert set(sc['spill_num']) == set([0, 1, 2, 3, 4])
+    # now if we invoke prepare_for_model_run without giving it any array_types
+    # it should reset the dict to default values
+    sc.prepare_for_model_run(release_time)   # set to any datetime
+    assert 'windages' not in sc.array_types
+    assert sc.array_types == array_types.SpillContainer
 
 
 def test_uncertain_copy():
     """
     test whether creating an uncertain copy of a spill_container works
     """
-
     release_time = datetime(2012, 1, 1, 12)
     start_time2 = datetime(2012, 1, 2, 12)
 
@@ -753,36 +683,44 @@ def test_eq_allclose_spill_container():
     assert sc2 == sc1
 
 
-@pytest.mark.xfail
-def test_eq_spill_container_pair():
+@pytest.mark.parametrize("uncertain", [False, True])
+def test_eq_spill_container_pair(uncertain):
     """
     SpillContainerPair inherits from SpillContainer so it should
     compute __eq__ and __ne__ in the same way - test it here
 
     Incomplete - this doesn't currently work!
     Test fails if uncertainty is on whether particles are released or not
+    This is because 'id' of uncertain spills do not match and one should not
+    expect them to match.
 
+    todo: remove 'id' property as a check for equality. This requires changes
+          in persisting logic. Update persistence then revisit this test
+          and simplify it
     """
-
     (sp1, sp2) = get_eq_spills()
-    scp1 = SpillContainerPair(True)  # uncertainty is on
+    scp1 = SpillContainerPair(uncertain)  # uncertainty is on
     scp1.add(sp1)
 
-    scp2 = SpillContainerPair(True)
-    scp2.add(sp2)
+    scp2 = SpillContainerPair(uncertain)
+    if uncertain:
+        u_sp1 = [scp1.items()[1].spills[spill.id] for spill in
+                 scp1.items()[1].spills][0]
 
-    assert False
+        u_sp2 = PointLineSource.new_from_dict(u_sp1.to_dict('create'))
 
+        scp2.add((sp2, u_sp2))
+    else:
+        scp2.add(sp2)
 
-# =============================================================================
-#     for sc in zip( scp1.items(), scp2.items()):
-#         sc[0].prepare_for_model_run(windage_at)
-#         sc[0].release_elements(sp1.release_time, 360)
-#         sc[1].prepare_for_model_run(windage_at)
-#         sc[1].release_elements(sp2.release_time, 360)
-#
-#     assert scp1 == scp2
-# =============================================================================
+    for sc in zip(scp1.items(), scp2.items()):
+        sc[0].prepare_for_model_run(sp1.release_time, array_types=windage_at)
+        sc[0].release_elements(sp1.release_time, 360)
+        sc[1].prepare_for_model_run(sp2.release_time, array_types=windage_at)
+        sc[1].release_elements(sp2.release_time, 360)
+
+    assert scp1 == scp2
+
 
 def test_ne_spill_container():
     """ test two spill containers are not equal """
