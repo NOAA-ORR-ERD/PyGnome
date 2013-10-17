@@ -55,7 +55,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
 
     # for now subsurface spill stays on initial layer - will need diffusion and rise velocity - wind doesn't act
 
-    spill = gnome.spill.PointSourceSurfaceRelease(num_elements=1000,
+    spill = gnome.spill.PointLineSource(num_elements=1000,
             start_position=(-76.126872, 37.680952, 0.0),
             release_time=start_time)  # start_position = (-76.126872, 37.680952, 5.0),
 

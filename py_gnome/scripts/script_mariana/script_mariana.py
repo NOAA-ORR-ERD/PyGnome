@@ -77,17 +77,17 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     print 'adding four spill'
 
     model.spills += \
-        gnome.spill.PointSourceSurfaceRelease(num_elements=250,
+        gnome.spill.PointLineSource(num_elements=250,
             start_position=(145.25, 15.0, 0.0), release_time=start_time)
     model.spills += \
-        gnome.spill.PointSourceSurfaceRelease(num_elements=250,
+        gnome.spill.PointLineSource(num_elements=250,
             start_position=(146.25, 15.0, 0.0), release_time=start_time)
     model.spills += \
-        gnome.spill.PointSourceSurfaceRelease(num_elements=250,
+        gnome.spill.PointLineSource(num_elements=250,
             start_position=(145.75, 15.25, 0.0),
             release_time=start_time)
     model.spills += \
-        gnome.spill.PointSourceSurfaceRelease(num_elements=250,
+        gnome.spill.PointLineSource(num_elements=250,
             start_position=(145.75, 14.75, 0.0),
             release_time=start_time)
 

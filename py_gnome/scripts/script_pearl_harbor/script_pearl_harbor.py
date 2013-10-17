@@ -96,7 +96,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     print 'adding spill'
 
     model.spills += \
-        gnome.spill.PointSourceSurfaceRelease(num_elements=1000,
+        gnome.spill.PointLineSource(num_elements=1000,
             start_position=(-157.97064, 21.331524, 0.0),
             release_time=start_time)
 
