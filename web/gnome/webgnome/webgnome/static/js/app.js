@@ -665,8 +665,9 @@ define([
         useFullscreen: function() {
             var _this = this;
             this.mapControlView.switchToFullscreen();
-            $('#content').removeClass('span9').addClass('span11');
-            $(this.sidebarEl).hide('slow', function() {
+            $(this.sidebarEl).animate( { width: ["toggle", "easeOutExpo"]
+            							}, 500, "linear", function() {
+            	$('#content').removeClass('span9').addClass('span11');
                 _this.mapView.updateSize();
                 if (_this.mapView.backgroundOverlay) {
                     _this.mapView.setNewViewport();
