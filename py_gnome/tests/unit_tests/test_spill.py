@@ -12,10 +12,8 @@ import pytest
 import numpy as np
 
 from gnome.spill import (Spill,
-                         PointLineSource,
-                         SpatialRelease)
-    #SpatialRelease, SubsurfaceSpill, \
-    #SubsurfaceRelease, SpatialRelease
+                         PointLineSource)
+
 from gnome import array_types
 
 from conftest import mock_append_data_arrays
