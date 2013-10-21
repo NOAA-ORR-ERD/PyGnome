@@ -10,7 +10,10 @@ import copy
 import numpy as np
 import pytest
 
-from gnome.basic_types import oil_status, id_type, world_point_type
+from gnome.basic_types import (oil_status,
+                               world_point_type,
+                               id_type,
+                               windage_type)
 from gnome.spill_container import SpillContainer, SpillContainerPair
 from gnome.spill import PointLineSource
 
@@ -20,8 +23,10 @@ from conftest import sample_sc_release
 from gnome import array_types
 
 
+# additional array_type for testing spill_container functionality
+windage_at = {'windages': array_types.ArrayType((), windage_type)}
+
 # Sample data for creating spill
-windage_at = dict(array_types.WindMover)
 num_elements = 100
 start_position = (23.0, -78.5, 0.0)
 release_time = datetime(2012, 1, 1, 12)
@@ -270,7 +275,7 @@ def test_data_setting_new():
     sc.release_elements(spill.release_time + time_step, time_step.seconds)
     new_released = sc.num_released - released
 
-    assert_dataarray_shape_size(sc)     # check shape is consistent for all arrays
+    assert_dataarray_shape_size(sc)  # shape is consistent for all arrays
     assert sc.num_released == spill.num_elements     # release all elements
     assert np.all(sc['new_name'][-new_released:] ==  # initialized to 0!
                   (0.0, 0.0, 0.0))
@@ -290,6 +295,9 @@ def test_data_setting_new_list():
     assert_dataarray_shape_size(sc)
 
 
+sc_default_array_types = SpillContainer().array_types
+
+
 class TestAddArrayTypes:
     """
     Cannot add to array_types dict directly.
@@ -302,8 +310,9 @@ class TestAddArrayTypes:
 
     def default_arraytypes(self):
         """ return array_types back to baseline for SpillContainer """
-        self.sc.prepare_for_model_run(release_time)  # set to anything 
-        assert self.sc.array_types == array_types.SpillContainer
+        self.sc.rewind()
+        self.sc.prepare_for_model_run(release_time)  # set to anything
+        assert self.sc.array_types == sc_default_array_types
 
     def test_no_addto_array_types(self):
         """
@@ -344,8 +353,7 @@ class TestAddArrayTypes:
 
 def test_array_types_reset():
     """
-    check the array_types are reset on rewind() and in
-    prepare_for_model_run()
+    check the array_types are reset on rewind() only
     """
     sc = SpillContainer()
     sc.prepare_for_model_run(release_time,  # set to any datetime
@@ -355,17 +363,16 @@ def test_array_types_reset():
 
     sc.rewind()
     assert 'windages' not in sc.array_types
-    assert sc.array_types == array_types.SpillContainer
+    assert sc.array_types == sc_default_array_types
 
     sc.prepare_for_model_run(release_time,  # set to any datetime
                              array_types=windage_at)
     assert 'windages' in sc.array_types
 
     # now if we invoke prepare_for_model_run without giving it any array_types
-    # it should reset the dict to default values
+    # it should not reset the dict to default
     sc.prepare_for_model_run(release_time)   # set to any datetime
-    assert 'windages' not in sc.array_types
-    assert sc.array_types == array_types.SpillContainer
+    assert 'windages' in sc.array_types
 
 
 def test_uncertain_copy():

@@ -56,7 +56,8 @@ def sample_sc_release(num_elements=10,
     uncertain=False,
     time_step=360,
     spill=None,
-    arr_types=dict(gnome.array_types.WindMover),
+    arr_types={'windages': gnome.array_types.ArrayType((),
+                                                basic_types.windage_type)},
     current_time=None):
     """
     initiailize a spill of type spill_obj, add it to a SpillContainer.
