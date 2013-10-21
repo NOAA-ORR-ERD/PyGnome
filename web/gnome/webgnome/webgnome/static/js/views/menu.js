@@ -2,8 +2,7 @@ define([
     'jquery',
     'lib/underscore',
     'lib/backbone',
-    'lib/bootstrap-collapse',
-    'lib/bootstrap-dropdown',
+    '//netdna.bootstrapcdn.com/bootstrap/3.0.0/js/bootstrap.min.js',
  ], function($, _, Backbone) {
     /*
      `MenuView` handles the drop-down menus on the top of the page. The object

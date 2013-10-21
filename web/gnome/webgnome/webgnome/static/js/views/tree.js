@@ -45,14 +45,30 @@ define([
          */
         resize: function() {
             var windowHeight = $(window).height();
-            var navbarHeight = $('.navbar').height();
+            var navbarBorderRadius = 4;
+            var navbarHeight = $('.navbar').height() + navbarBorderRadius;
+            var newSidebarHeight = windowHeight - navbarHeight;
+
+            // the sidebar-container inside the sidebar has
+            // top padding.  I can't see a way to query this,
+            // so we just add a static value.
+            var sbContainerPadding = 14;
+
+            // the btn-toolbar inside the sidebar exists, but has
+            // a height of 0 when first rendering the page
+            if ($('#sidebar div.btn-toolbar').height() > 0) {
+            	var sbButtonGroupHeight = $('#sidebar div.btn-toolbar').height();
+            }
+            else {
+            	var sbButtonGroupHeight = 34;
+            }
+
             var tree = $('#tree');
             var sidebar = $('#sidebar');
             var treeHeight = tree.height();
             var treeHeightDiff = sidebar.height() - treeHeight;
-            var newSidebarHeight = windowHeight - navbarHeight;
             sidebar.height(newSidebarHeight);
-            tree.height(newSidebarHeight - treeHeightDiff);
+            tree.height(newSidebarHeight - sbButtonGroupHeight - sbContainerPadding);
         },
 
         setupDynatree: function() {

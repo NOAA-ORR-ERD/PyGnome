@@ -254,7 +254,9 @@ define([
         },
 
         setLeafletMapSize: function() {
-            var mapHeight = $(window).height() - $('.navbar').height() - $('.model .btn-toolbar').height() - 90;
+            var navbarBorderRadius = 4;
+            var navbarHeight = $('.navbar').height() + navbarBorderRadius;
+            var mapHeight = $(window).height() - navbarHeight - $('.model .btn-toolbar').height() - 90;
             $('#leaflet-map').height(mapHeight);
             this.updateSize();
         },

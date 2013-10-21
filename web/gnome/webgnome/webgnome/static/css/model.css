@@ -13,7 +13,7 @@ ul.dynatree-container {
 }
 
 #slider-container {
-    width: 158px;
+    width: 188px;
     cursor: default;
     color: #333;
     opacity: 1;
@@ -163,6 +163,7 @@ legend {
     width: 100px;
 }
 
+.direction,
 .speed {
     width: 80px;
 }

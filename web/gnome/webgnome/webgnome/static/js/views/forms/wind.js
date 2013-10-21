@@ -8,7 +8,7 @@ define([
     'views/forms/modal',
     'views/forms/timeseries',
     'lib/moment',
-    'lib/bootstrap-tab',
+    '//netdna.bootstrapcdn.com/bootstrap/3.0.0/js/bootstrap.min.js',
     'lib/jquery.imagesloaded.min',
     'lib/gmaps'
 ], function($, _, Backbone, models, base_view, base_form, modal, timeseries) {

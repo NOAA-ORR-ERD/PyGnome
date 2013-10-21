@@ -45,6 +45,14 @@ define([
                 handles: 'e, w'
             });
 
+            this.collapseSidebarEl = '#collapse-sidebar-button';
+            this.expandSidebarEl = '#expand-sidebar-button';
+            $(this.expandSidebarEl).hide();
+
+            $(this.collapseSidebarEl).click(this.useFullscreen);
+
+            $(this.expandSidebarEl).click(this.disableFullscreen);
+
             this.treeView = new views.TreeView({
                 treeEl: "#tree",
                 stepGenerator: this.stepGenerator,
@@ -155,9 +163,10 @@ define([
             this.mapControlView.on(views.MapControlView.SLIDER_CHANGED, this.sliderChanged);
             this.mapControlView.on(views.MapControlView.BACK_BUTTON_CLICKED, this.rewind);
             this.mapControlView.on(views.MapControlView.FORWARD_BUTTON_CLICKED, this.jumpToLastFrame);
+            this.mapControlView.on(views.MapControlView.SPILL_BUTTON_CLICKED, this.enableSpillDrawing);
+
             this.mapControlView.on(views.MapControlView.FULLSCREEN_BUTTON_CLICKED, this.useFullscreen);
             this.mapControlView.on(views.MapControlView.RESIZE_BUTTON_CLICKED, this.disableFullscreen);
-            this.mapControlView.on(views.MapControlView.SPILL_BUTTON_CLICKED, this.enableSpillDrawing);
 
             this.mapView.on(views.MapView.PLAYING_FINISHED, this.stopAnimation);
             this.mapView.on(views.MapView.FRAME_CHANGED, this.frameChanged);
@@ -665,27 +674,47 @@ define([
         useFullscreen: function() {
             var _this = this;
             this.mapControlView.switchToFullscreen();
-            $(this.sidebarEl).animate( { width: ["toggle", "easeOutExpo"]
+            this.sbUncollapsedWidth = $(this.sidebarEl).width();
+            this.sbUncollapsedHeight = $(this.sidebarEl).height();
+            $(this.sidebarEl).animate( { width: "40px",
             							}, 500, "linear", function() {
-            	$('#content').removeClass('span9').addClass('span11');
+            	$('#content').removeClass('col-md-9').addClass('col-md-11');
                 _this.mapView.updateSize();
                 if (_this.mapView.backgroundOverlay) {
                     _this.mapView.setNewViewport();
                 }
+                //_this.treeView.resize();
             });
+            $(this.collapseSidebarEl).hide();
+            $(this.expandSidebarEl).show();
         },
 
         disableFullscreen: function() {
             var _this = this;
             this.mapControlView.switchToNormalScreen();
             $(this.sidebarEl).removeClass('hidden');
-            $('#content').removeClass('span11').addClass('span9');
-            $(this.sidebarEl).show('slow', function() {
-                _this.mapView.updateSize();
-                if (_this.mapView.backgroundOverlay) {
-                    _this.mapView.setNewViewport();
-                }
-            });
+            $('#content').removeClass('col-md-11').addClass('col-md-9');
+            if (this.sbUncollapsedWidth) {
+                $(this.sidebarEl).animate( { width: this.sbUncollapsedWidth + "px",
+                							 height: this.sbUncollapsedHeight + "px",
+											}, 500, "linear", function() {
+					_this.mapView.updateSize();
+					if (_this.mapView.backgroundOverlay) {
+						_this.mapView.setNewViewport();
+					}
+	                _this.treeView.resize();
+				});
+            }
+            else {
+            	$(this.sidebarEl).show('slow', function() {
+            		_this.mapView.updateSize();
+            		if (_this.mapView.backgroundOverlay) {
+            			_this.mapView.setNewViewport();
+            		}
+            	});
+            }
+            $(this.expandSidebarEl).hide();
+            $(this.collapseSidebarEl).show();
         },
 
         enableSpillDrawing: function() {

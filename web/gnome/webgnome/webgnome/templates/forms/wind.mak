@@ -2,7 +2,7 @@
 <%page args="form_id"/>
 
 <div class="wind form page hide" id="${form_id}">
-    <form action="" class="form-horizontal" method="POST">
+    <form role="form" action="" class="form-horizontal" method="POST">
         <div class="wind-header clearfix">
             ${defs.form_control(h.text('name', data_value='wind.name'),
                 label='Name', inline=True)}
