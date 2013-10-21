@@ -168,7 +168,8 @@ class Model(serializable.Serializable):
         # clear the cache:
 
         self._cache.rewind()
-        [outputter.rewind() for outputter in self.outputters]
+        for outputter in self.outputters:
+            outputter.rewind()
 
 #    def write_from_cache(self, filetype='netcdf', time_step='all'):
 #        """

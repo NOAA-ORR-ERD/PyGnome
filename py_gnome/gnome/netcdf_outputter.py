@@ -11,6 +11,7 @@ import netCDF4 as nc
 import numpy as np
 
 import gnome
+from gnome.basic_types import oil_status
 from gnome.outputter import Outputter
 from gnome.utilities import serializable, time_utils
 
@@ -76,10 +77,11 @@ class NetCDFOutput(Outputter, serializable.Serializable):
     data_vars['depth'] = copy.deepcopy(var)
 
     # mass - is this part of standard output?
-    #var.clear()
-    #var['dtype'] = np.float32
-    #var['units'] = 'grams'
-    #data_vars['mass'] = copy.deepcopy(var)
+
+    var.clear()
+    var['dtype'] = np.float32
+    var['units'] = 'grams'
+    data_vars['mass'] = copy.deepcopy(var)
 
     # age?
 
@@ -94,9 +96,12 @@ class NetCDFOutput(Outputter, serializable.Serializable):
 
     var['long_name'] = 'particle status flag'
     var['valid_range'] = [0, 10]
-    var['flag_values'] = ([2, 3, 7, 10], )
+    var['flag_values'] = ([oil_status.in_water, oil_status.on_land,
+                           oil_status.off_maps, oil_status.evaporated], )
     var['flag_meanings'] = \
-        '2:in_water 3:on_land 7:off_maps 10:evaporated'
+        '{0}:in_water {1}:on_land {2}:off_maps {3}:evaporated'.format(
+                                    oil_status.in_water, oil_status.on_land,
+                                    oil_status.off_maps, oil_status.evaporated)
     data_vars['status'] = copy.deepcopy(var)
 
     # id - id of particle
@@ -125,8 +130,8 @@ class NetCDFOutput(Outputter, serializable.Serializable):
         'status_codes',
         'spill_num',
         'id',
+        'mass',
         'age',
-        #'mass',
         ]
 
     # define state for serialization
@@ -451,28 +456,28 @@ class NetCDFOutput(Outputter, serializable.Serializable):
                 # ixe = ixs + pc[step_num]        # ending index for writing data in this timestep
 
                 _end_idx = self._start_idx + pc[step_num]
-                (rootgrp.variables['longitude'
-                 ])[self._start_idx:_end_idx] = sc['positions'][:, 0]
-                (rootgrp.variables['latitude'
-                 ])[self._start_idx:_end_idx] = sc['positions'][:, 1]
-                (rootgrp.variables['depth'
-                 ])[self._start_idx:_end_idx] = sc['positions'][:, 2]
-                (rootgrp.variables['status'
-                 ])[self._start_idx:_end_idx] = (sc['status_codes'])[:]
-                (rootgrp.variables['spill_num'])[self._start_idx:_end_idx] = \
-                    (sc['spill_num'])[:]
-                (rootgrp.variables['id'])[self._start_idx:_end_idx] = \
-                    (sc['id'])[:]
-                #(rootgrp.variables['mass'])[self._start_idx:_end_idx] = \
-                #    (sc['mass'])[:]
+                rootgrp.variables['longitude'][self._start_idx:_end_idx] = \
+                    sc['positions'][:, 0]
+                rootgrp.variables['latitude'][self._start_idx:_end_idx] = \
+                    sc['positions'][:, 1]
+                rootgrp.variables['depth'][self._start_idx:_end_idx] = \
+                    sc['positions'][:, 2]
+                rootgrp.variables['status'][self._start_idx:_end_idx] = \
+                    sc['status_codes'][:]
+                rootgrp.variables['spill_num'][self._start_idx:_end_idx] = \
+                    sc['spill_num'][:]
+                rootgrp.variables['id'][self._start_idx:_end_idx] = \
+                    sc['id'][:]
+                rootgrp.variables['mass'][self._start_idx:_end_idx] = \
+                    sc['mass'][:]
 
                 # write remaining data
 
                 if self.all_data:
                     for (key, val) in self.arr_types.iteritems():
                         if len(val.shape) == 0:
-                            (rootgrp.variables[key])[self._start_idx:_end_idx] = \
-                                sc[key]
+                            rootgrp.variables[key][self._start_idx:
+                                    _end_idx] = sc[key]
                         else:
                             rootgrp.variables[key][self._start_idx:
                                     _end_idx, :] = sc[key]
@@ -543,23 +548,20 @@ class NetCDFOutput(Outputter, serializable.Serializable):
             # spill_num = np.zeros((elem,), dtype=gnome.basic_types.id_type)
             # mass = np.zeros((elem,), dtype=gnome.basic_types.id_type)
     
-            positions[:, 0] = (data.variables['longitude'
-                               ])[_start_ix:_stop_ix]
-            positions[:, 1] = (data.variables['latitude'
-                               ])[_start_ix:_stop_ix]
-            positions[:, 2] = (data.variables['depth'])[_start_ix:_stop_ix]
+            positions[:, 0] = data.variables['longitude'][_start_ix:_stop_ix]
+            positions[:, 1] = data.variables['latitude'][_start_ix:_stop_ix]
+            positions[:, 2] = data.variables['depth'][_start_ix:_stop_ix]
     
             # status_codes[:] = data.variables['status'][_start_ix:_stop_ix]
             # spill_num[:] = data.variables['id'][_start_ix:_stop_ix]
     
             arrays_dict['positions'] = positions
-            arrays_dict['status_codes'] = (data.variables['status'
-                    ])[_start_ix:_stop_ix]
-            arrays_dict['spill_num'] = (data.variables['spill_num'
-                    ])[_start_ix:_stop_ix]
-            arrays_dict['id'] = (data.variables['id'])[_start_ix:_stop_ix]
-            #arrays_dict['mass'] = (data.variables['mass'
-            #                       ])[_start_ix:_stop_ix]
+            arrays_dict['status_codes'] = (data.variables['status']
+                [_start_ix:_stop_ix])
+            arrays_dict['spill_num'] = (data.variables['spill_num']
+                [_start_ix:_stop_ix])
+            arrays_dict['id'] = data.variables['id'][_start_ix:_stop_ix]
+            arrays_dict['mass'] = data.variables['mass'][_start_ix:_stop_ix]
     
             if all_data:  # append remaining data arrays
                 excludes = NetCDFOutput.data_vars.keys()

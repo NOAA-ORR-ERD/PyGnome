@@ -39,10 +39,6 @@ class WindMover(CyMover, serializable.Serializable):
     state = copy.deepcopy(CyMover.state)
     state.add(read=_read, update=_update, create=_create)
 
-    array_types = {'windages': ArrayType((), basic_types.windage_type),
-                   'windage_range': ArrayType((2,), np.float64),
-                   'windage_persist': ArrayType((), np.int)}
-
     @classmethod
     def new_from_dict(cls, dict_):
         """
@@ -106,6 +102,10 @@ class WindMover(CyMover, serializable.Serializable):
 
         self.wind = wind
         super(WindMover, self).__init__(**kwargs)
+        self.array_types.update(
+                  {'windages': ArrayType((), basic_types.windage_type),
+                   'windage_range': ArrayType((2,), np.float64),
+                   'windage_persist': ArrayType((), np.int)})
 
     def __repr__(self):
         """

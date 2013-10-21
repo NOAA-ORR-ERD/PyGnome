@@ -58,7 +58,8 @@ class Spill(object):
         on=True,
         volume=None,
         volume_units='m^3',
-        mass=1,
+        mass=None,
+        mass_units='g',
         oil='oil_conservative',
         windage_range=(0.01, 0.04),
         windage_persist=900,
@@ -93,15 +94,15 @@ class Spill(object):
         :type windage_range: a tuple of size 2 (min, max)
         :param id: Unique Id identifying the newly created mover (a UUID as a
             string), used when loading from a persisted model
-        :param element_types=None: list of various element_types that are
+        :param element_type=None: list of various element_type that are
             released. These are spill specific properties of the elements.
-        :type element_types: list of gnome.element_type.* objects
+        :type element_type: list of gnome.element_type.* objects
         """
 
         self.num_elements = num_elements
         self.on = on    # spill is active or not
 
-        # volume, type of oil spilled
+        # mass/volume, type of oil spilled
         self._check_units(volume_units)
         self._volume_units = volume_units
         self._volume = volume
@@ -115,7 +116,7 @@ class Spill(object):
         self.windage_persist = windage_persist
 
         self._gnome_id = GnomeId(id)
-        self.element_types = element_types
+        self.element_type = element_type
 
         # number of new particles released at each timestep
         self.num_released = 0
@@ -286,12 +287,12 @@ class Spill(object):
             latest num_new_particles that are released
         :type data_arrays: dict containing numpy arrays for values
 
-        Also, the set_newparticle_values() method for all element_types gets
+        Also, the set_newparticle_values() method for all element_type gets
         called so each element_type sets the values for its own data correctly
         """
-        for elem_type in self.element_types:
-            elem_type.set_newparticle_values(num_new_particles, self,
-                                             data_arrays)
+        #self.element_type.set_newparticle_values(num_new_particles, self,
+        #                                     data_arrays)
+        pass
 
 
 class PointLineSource(Spill, serializable.Serializable):
