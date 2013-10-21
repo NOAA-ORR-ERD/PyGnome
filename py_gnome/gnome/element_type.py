@@ -5,13 +5,16 @@ These are properties that are spill specific like:
   'subsurface_dist' element_types would contain rise velocity distribution info
   'nonweathering' element_types would set use_droplet_size flag to False
   'weathering' element_types would set use_droplet_size flag to True
+
+  'SubsurfaceRiseVelDist' element_types would contain rise velocity
+      distribution info
 '''
 from gnome import array_types
 import numpy as np
 
 
-class SubsurfaceRiseVelDist(object):
-    def __init__(self, distribution='uniform', range=[0, 1]):
+class RiseVelDist_initializer(object):
+    def __init__(self, distribution='uniform', params=[0, 1]):
         """
         Set the rise velocity parameters to be sampled from a distribution.
 
@@ -20,7 +23,7 @@ class SubsurfaceRiseVelDist(object):
         :param risevel_dist: could be 'uniform' or 'normal'
         :type distribution: str
 
-        :param range: for 'uniform' dist, it is [min_val, max_val].
+        :param params: for 'uniform' dist, it is [min_val, max_val].
             For 'normal' dist, it is [mean, sigma] where sigma is
             1 standard deviation
         """
@@ -30,10 +33,10 @@ class SubsurfaceRiseVelDist(object):
                              " 'normal' distribution is implemented")
 
         self.distribution = distribution
-        self.range = range
+        self.params = params
 
         # should be only one key in dict, 'rise_vel'
-        self.key = array_types.RiseVelocityMover.keys()[0]
+        self.key = array_types.rise_vel.keys()[0]
 
     def set_newparticle_values(self, num_new_particles, spill, data_arrays):
         """
@@ -44,15 +47,31 @@ class SubsurfaceRiseVelDist(object):
 
         if self.distribution == 'uniform':
             data_arrays[self.key][-num_new_particles:] = np.random.uniform(
-                                                        self.range[0],
-                                                        self.range[1],
+                                                        self.params[0],
+                                                        self.params[1],
                                                         num_new_particles)
         elif self.distribution == 'normal':
             data_arrays[self.key][-num_new_particles:] = np.random.normal(
-                                                        self.range[0],
-                                                        self.range[1],
+                                                        self.params[0],
+                                                        self.params[1],
                                                         num_new_particles)
 
+
+class RiseVelWindageOil(object):
+    def __init__(self):
+        self.initializers = {'rise_vel': RiseVelDist_initializer}
+
+    def set_newparticle_values(self, num_new_particles, spill, data_arrays):
+        #======================================================================
+        # for key, value in self.initializers.iteritems():
+        #     if key in data_arrays:
+        #         self.initializers[key].set_newparticle_values(self,
+        #                                 num_new_particles, spill, data_arrays)
+        #======================================================================
+
+        for key, val in data_arrays.iteritems():
+            self.initializers[key].set_newparticle_values(self,
+                                    num_new_particles, spill, val)
 
 #==============================================================================
 # class MassFromTotalVolume(object):
@@ -65,14 +84,14 @@ class SubsurfaceRiseVelDist(object):
 #         mass units are 'grams'
 #         """
 #         self.key = dict(array_types.mass).keys()
-# 
+#  
 #     def set_values(self, num_elements, spill, sc):
 #         if self.key not in sc:
 #             return
-# 
+#  
 #         if spill.volume is None:
 #             raise ValueError("")
-# 
+#  
 #         _total_mass = spill.oil_props.get_density('kg/m^3') \
 #             * self.get_volume('m^3') * 1000
 #         sc[key][-num_elements:] = _total_mass / num_elements
