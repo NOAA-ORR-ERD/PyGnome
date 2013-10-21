@@ -16,11 +16,11 @@ class TestSubsurfaceRiseVelDist:
     arr_types = dict(RiseVelocityMover)
     s = SubsurfaceRiseVelDist()
 
-    def setup_helper(self, num_elems=0, dist='uniform', range=[0, 1],
+    def setup_helper(self, num_elems=0, dist='uniform', params=[0, 1],
                      d_arrays={}):
         """ put all the common setup calls for tests here"""
         self.s.distribution = dist
-        self.s.range = range
+        self.s.params = params
         self.data_arrays = mock_append_data_arrays(self.arr_types, num_elems,
                                                    d_arrays)
         self.zero_rise_vel = np.copy(self.data_arrays['rise_vel'])
@@ -33,7 +33,7 @@ class TestSubsurfaceRiseVelDist:
             SubsurfaceRiseVelDist(distribution='binomial')
 
         assert self.s.distribution == 'uniform'
-        assert self.s.range[0] == 0 and self.s.range[1] == 1
+        assert self.s.params[0] == 0 and self.s.params[1] == 1
 
     def test_setup_helper(self):
         self.setup_helper(10)
