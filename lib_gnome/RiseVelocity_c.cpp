@@ -116,19 +116,57 @@ WorldPoint3D RiseVelocity_c::GetMove(const Seconds &model_time, Seconds timeStep
 	double g = 9.8;
 	//double dLong, dLat, z, verticalDiffusionCoefficient, mixedLayerDepth = 10.;
 	//WorldPoint refPoint = (*theLE).p;	
-
+	Boolean useGaltAlgorithm = false;
 	// for now not implementing uncertainty
 
-	// do we check if z = 0 here?
-	//if (isnan((*theLE).riseVelocity)) (*theLE).riseVelocity = (2.*g/9.)*(1.-(*theLE).density/water_density)*((*theLE).dropletSize*1e-6/2.)*((*theLE).dropletSize*1e-6/2)/water_viscosity;	
-	if (isnan((*theLE).riseVelocity)) {
-		(*theLE).riseVelocity = (2. * g / 9.) *
-								(1. - (*theLE).density * 1000 / water_density) *
-								((*theLE).dropletSize * 1e-6 / 2.) *
-								((*theLE).dropletSize * 1e-6 / 2) /
-								water_viscosity;
-	}
 
+	//code goes here, move rise velocity calculation outside mover
+	if (!isnan((*theLE).riseVelocity)){deltaPoint.z = -1. * ((*theLE).riseVelocity)*timeStep; return deltaPoint;}
+		
+	if (useGaltAlgorithm)
+	{
+		double dfac = g*(water_density-(*theLE).density*1000) / water_density;	// buoyancy term
+		double d1 = .002, d2 = .01;	// upper limit for Stoke's law cut; lower limit for Form drag
+		water_viscosity = 1.3e-6;	// water viscosity in mks units (for temp = 10 deg C)
+		double scaled_dropletSize = ((*theLE).dropletSize - d1) / (d2 - d1);	// droplet diameter scaled to (d2-d1) interval
+		double a1, a2, a3, a4, c0, c1, c2, c3;
+		
+		if (scaled_dropletSize < 0.)
+		{
+			double ds = scaled_dropletSize * (d2 -d1) + d1;
+			(*theLE).riseVelocity = dfac*ds*ds / (18.*water_viscosity);
+		}
+		if (scaled_dropletSize >= 1.0)
+		{
+			double df = scaled_dropletSize * (d2 -d1) + d1;
+			(*theLE).riseVelocity = sqrt(8.0*dfac*df/3.0);
+		}
+		a1 = dfac*d1*d1 / (18.*water_viscosity);
+		a2 = a1*(d2-d1) / (2.0*d1);
+		a3 = sqrt(8.0*dfac*d2/3.0);
+		a4 = a3*(d2-d1) / (2.0*d2);
+		c3 = 2.0*a1 + a2 - 2.0*a3 + a4;
+		c2 = -3.0*a1 -2.0*a2 + 3.0*a3 - a4;
+		c1 = a2;
+		c0 = a1;
+		
+		(*theLE).riseVelocity = ((c3*scaled_dropletSize + c2)*scaled_dropletSize + c1)*scaled_dropletSize + c0;
+									
+		
+	}
+	else 
+	{
+
+		// do we check if z = 0 here?
+		//if (isnan((*theLE).riseVelocity)) (*theLE).riseVelocity = (2.*g/9.)*(1.-(*theLE).density/water_density)*((*theLE).dropletSize*1e-6/2.)*((*theLE).dropletSize*1e-6/2)/water_viscosity;	
+		if (isnan((*theLE).riseVelocity)) {
+			(*theLE).riseVelocity = (2. * g / 9.) *
+									(1. - (*theLE).density * 1000 / water_density) *
+									((*theLE).dropletSize * 1e-6 / 2.) *
+									((*theLE).dropletSize * 1e-6 / 2) /
+									water_viscosity;
+		}
+	}
 	//deltaPoint.z = -1. * ((*theLE).riseVelocity*CMTOMETERS)*timeStep;	// assuming we add dz to the point, check units...
 	deltaPoint.z = -1. * ((*theLE).riseVelocity)*timeStep;	// assuming we add dz to the point, check units...
 
