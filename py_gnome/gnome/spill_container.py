@@ -10,8 +10,11 @@ import numpy as np
 
 import gnome.spill
 from gnome.utilities.orderedcollection import OrderedCollection
-from gnome import basic_types
-import gnome.array_types
+from gnome.basic_types import (world_point_type,
+                               status_code_type,
+                               oil_status,
+                               id_type,)
+from gnome.array_types import ArrayType, IdArrayType
 
 
 class SpillContainerData(object):
@@ -37,7 +40,7 @@ class SpillContainerData(object):
         The common use-case for this is for loading from cache for
         re-rendering, etc.
         """
-        # uncertainty spill - same information as basic_types.spill_type
+
         self.uncertain = uncertain
         self.on = True       # sets whether the spill is active or not
 
@@ -208,13 +211,14 @@ class SpillContainer(SpillContainerData):
     def __init__(self, uncertain=False):
         super(SpillContainer, self).__init__(uncertain=uncertain)
         self.spills = OrderedCollection(dtype=gnome.spill.Spill)
-
-        # create a new dict from _array_types.SpillContainer
-        # This is so original dict is not updated if we update this dict
-        # However, note that updating the values in this dict will change
-        # original, since the ArrayType objects are mutable
-        self._array_types = dict(gnome.array_types.SpillContainer)
         self.rewind()
+
+        # don't want user to add to array_types in middle of run. Since its
+        # not possible to throw an error in this case, let's just make it a
+        # bit difficult to do.
+        # dict must be updated via prepar_for_model_run() only at beginning of
+        # run. Make self._array_types an an instance variable
+        self._reset_array_types()
 
     def __setitem__(self, data_name, array):
         """
@@ -230,22 +234,34 @@ class SpillContainer(SpillContainerData):
             self._array_types[data_name] = gnome.array_types.ArrayType(shape,
                                                                        dtype)
 
+    def _reset_array_types(self):
+        """
+        reset _array_types dict so it contains default keys/values
+        """
+        self._array_types = {'positions': ArrayType((3,), world_point_type),
+                    'next_positions': ArrayType((3,), world_point_type),
+                    'last_water_positions': ArrayType((3,), world_point_type),
+                    'status_codes': ArrayType((), status_code_type,
+                                              oil_status.in_water),
+                    'spill_num': ArrayType((), id_type, -1),
+                    'id': IdArrayType((), np.uint32),
+                    'mass': ArrayType((), np.float64, 1)}
+
     @property
     def array_types(self):
-        # copy internal dict object and return to user. The values in the dict
-        # are ArrayType objects - they are mutable and their properties can
-        # be changed.
-        # Use prepare_for_model_run() to add key, values in the beginning but
-        # not in middle of run.
-        # Default key, values defined in array_types.SpillContainer cannot
-        # be added/deleted.
+        """
+        user can modify ArrayType initial_value in middle of run. Changing
+        the shape should throw an error. Change the dtype at your own risk.
+        This returns a new dict so user cannot add/delete an ArrayType in
+        middle of run. Use prepare_for_model_run() to do add an ArrayType.
+        """
         return dict(self._array_types)
 
     def rewind(self):
         """
         In the rewind operation, we:
         - rewind all the spills
-        - restore array_types to contain only array_types.SpillContainer
+        - restore _array_types to contain only defaults
           - movers/weatherers could have been deleted and we don't want to
             carry associated data_arrays
           - prepare_for_model_run() will be called before the next run and
@@ -259,10 +275,8 @@ class SpillContainer(SpillContainerData):
         for spill in self.spills:
             spill.rewind()
         # create a full set of zero-sized arrays. If we rewound, something
-        # must have changed
-        if self._array_types != gnome.array_types.SpillContainer:
-            self._array_types = dict(gnome.array_types.SpillContainer)
-
+        # must have changed so let's get back to default _array_types
+        self._reset_array_types()
         self.initialize_data_arrays()
 
     def get_spill_mask(self, spill):
@@ -294,16 +308,9 @@ class SpillContainer(SpillContainerData):
 
         # Question - should we purge any new arrays that were added in previous
         # call to prepare_for_model_run()?
-        # I think so, we should start w/ a clean state
-        if self._array_types != gnome.array_types.SpillContainer:
-            self._array_types = dict(gnome.array_types.SpillContainer)
+        # No! If user made modifications to _array_types before running model,
+        # let's keep those. A rewind will reset data_arrays.
         self._array_types.update(array_types)
-
-        # define all data arrays before the run begins even if dict is not
-        # empty. No need to keep arrays for movers that were deleted.
-        # Deletion of mover does not cause a rewind.
-        # For the case when model is rewound, then a mover is deleted. The
-        # associated data_arrays should be removed.
         self.initialize_data_arrays()
 
     def prepare_for_model_step(self, current_time):
@@ -328,10 +335,8 @@ class SpillContainer(SpillContainerData):
         initialize data arrays once spill has spawned particles
         Data arrays are set to their initial_values
 
-        :param spill_arrays: numpy arrays for 'position' and 'mass'
-            _array_types. These are returned by release_elements() of spill
-            object
-        :param spill: Spill which released the spill_arrays
+        :param num_released: number of particles released
+        :type num_released: int
 
         """
 
@@ -380,7 +385,7 @@ class SpillContainer(SpillContainerData):
         if len(self._data_arrays) == 0:
             return  # nothing to do - arrays are not yet defined.
         to_be_removed = np.where(self['status_codes'] ==
-                                 basic_types.oil_status.to_be_removed)[0]
+                                 oil_status.to_be_removed)[0]
         if len(to_be_removed) > 0:
             for key in self._array_types.keys():
                 self._data_arrays[key] = np.delete(self[key], to_be_removed,

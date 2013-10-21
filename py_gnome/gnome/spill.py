@@ -58,11 +58,12 @@ class Spill(object):
         on=True,
         volume=None,
         volume_units='m^3',
+        mass=1,
         oil='oil_conservative',
         windage_range=(0.01, 0.04),
         windage_persist=900,
         id=None,
-        element_types=[]
+        element_type=None   # todo: need a default here?
         ):
         """
         Base spill class. Spill used by a gnome model derive from this class

@@ -13,8 +13,9 @@ from gnome.movers import CyMover
 from gnome import basic_types
 from gnome.cy_gnome.cy_wind_mover import CyWindMover
 from gnome.cy_gnome.cy_gridwind_mover import CyGridWindMover
-from gnome import environment, array_types
+from gnome import environment
 from gnome.utilities import rand
+from gnome.array_types import ArrayType
 
 
 class WindMover(CyMover, serializable.Serializable):
@@ -37,6 +38,10 @@ class WindMover(CyMover, serializable.Serializable):
 
     state = copy.deepcopy(CyMover.state)
     state.add(read=_read, update=_update, create=_create)
+
+    array_types = {'windages': ArrayType((), basic_types.windage_type),
+                   'windage_range': ArrayType((2,), np.float64),
+                   'windage_persist': ArrayType((), np.int)}
 
     @classmethod
     def new_from_dict(cls, dict_):
@@ -101,7 +106,6 @@ class WindMover(CyMover, serializable.Serializable):
 
         self.wind = wind
         super(WindMover, self).__init__(**kwargs)
-        self.array_types.update(dict(array_types.WindMover))
 
     def __repr__(self):
         """
