@@ -6,7 +6,7 @@ define([
     'views/forms/modal',
     'views/forms/base',
     'views/forms/wind',
-    'lib/bootstrap-tab',
+    '//netdna.bootstrapcdn.com/bootstrap/3.0.0/js/bootstrap.min.js',
 ], function($, _, Backbone, models, modal, base, wind) {
     /*
      `WindMoverFormView` handles the WindMover form.

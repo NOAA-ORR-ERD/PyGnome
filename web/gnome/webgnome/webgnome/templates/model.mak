@@ -1,11 +1,19 @@
 <%inherit file="base.mak"/>
 
-<%block name="extra_head">
-    <link rel="stylesheet" href='/static/css/leaflet.css'/>
-    <link rel="stylesheet" href='/static/css/leaflet.draw.css'/>
-    <link rel='stylesheet' type='text/css' href='/static/css/skin/ui.dynatree.css'>
-    <link rel='stylesheet' type='text/css' href='/static/css/model.css'>
+<%block name="third_party_css">
+    <link href="/static/css/custom-theme/jquery-ui-1.8.16.custom.css" rel="stylesheet"/>
 
+	<link href="//netdna.bootstrapcdn.com/bootstrap/3.0.0/css/bootstrap.css" rel="stylesheet">
+    <link href="//netdna.bootstrapcdn.com/bootstrap/3.0.0/css/bootstrap-glyphicons.css" rel="stylesheet">
+    <link href="//netdna.bootstrapcdn.com/bootstrap/3.0.0/css/bootstrap-theme.css" rel="stylesheet">
+
+    <link href='/static/css/leaflet.css' rel="stylesheet"/>
+    <link href='/static/css/leaflet.draw.css' rel="stylesheet"/>
+
+    <link href='/static/css/skin/ui.dynatree.css' rel='stylesheet' type='text/css'/>
+</%block>
+
+<%block name="third_party_js">
     ## HTML 5 and IE-specific shims. Not sure why they're called "shivs" ...
     <!--[if lt IE 9]>
         <!--<script src="/static/js/lib/excanvas.compiled.js"></script>-->
@@ -13,6 +21,8 @@
         <script src="/static/js/lib/html5shiv.js"></script>
         <script src="/static/js/lib/indexOfShiv.js"></script>
     <![endif]-->
+
+	<script src="//netdna.bootstrapcdn.com/bootstrap/3.0.0/js/bootstrap.min.js"></script>
 
     ## TODO: Add these as RequireJS dependencies.
     <script src="/static/js/lib/leaflet-src.js"></script>
@@ -24,113 +34,112 @@
     <script src="/static/js/config.js"></script>
 </%block>
 
+<%block name="extra_head">
+    <link href='/static/css/model.css' rel='stylesheet' type='text/css'/>
+</%block>
+
 <%block name="navbar">
-    <ul class="nav" role="navigation">
-        <li class="dropdown">
-            <a id="file-drop" href="javascript:" role="button" class="dropdown-toggle" data-toggle="dropdown">Model<b class="caret"></b></a>
-            <ul class="dropdown-menu" role="menu" aria-labelledby="file-drop">
-                <li><a tabindex="-1" id="menu-new" href="javascript:">New</a></li>
-                <li><a tabindex="-1" href="javascript:">Load from file</a></li>
-                <li class="dropdown-submenu"><a tabindex="-1" href="javascript:">Load example...</a>
-                    <ul class="dropdown-menu">
-                        % for location_file in location_files:
-                            <li><a tabindex="-1" class='location-file-item'
-                                   data-location='${location_file['filename']}'
-                                   href="javascript:">${location_file['name']}</a>
-                            </li>
-                        % endfor
-                    </ul>
-                </li>
-                <li><a tabindex="-1" href="javascript:">Save</a></li>
-                <li class="divider"></li>
-                <li><a tabindex="-1" href="javascript:">Preferences</a></li>
-            </ul>
-        </li>
-        <li class="dropdown">
-            <a id="run-drop" href="javascript:" role="button" class="dropdown-toggle" data-toggle="dropdown">Run<b class="caret"></b></a>
-            <ul class="dropdown-menu" role="menu" aria-labelledby="run-drop">
-                <li><a tabindex="-1" id="menu-run" href="javascript:">Run</a></li>
-                <li><a tabindex="-1" id="menu-step" href="javascript:">Step</a></li>
-                <li><a tabindex="-1" id="menu-run-until" href="javascript:">Run Until...</a></li>
-            </ul>
-        </li>
-        <li class="dropdown">
-            <a id="help-drop" href="javascript:" role="button" class="dropdown-toggle" data-toggle="dropdown">Help<b class="caret"></b></a>
-            <ul class="dropdown-menu" role="menu" aria-labelledby="help-drop">
-                <li><a tabindex="-1" target="window" href="javascript:">About</a></li>
-                <li><a tabindex="-1" href="javascript:">Tutorial</a></li>
-            </ul>
-        </li>
-    </ul>
+	<div class="collapse navbar-collapse navbar-ex1-collapse">
+	    <ul class="nav navbar-nav">
+	        <li class="dropdown">
+	            <a id="file-drop" class="dropdown-toggle" href="javascript:" data-toggle="dropdown">Model <b class="caret"></b></a>
+	            <ul class="dropdown-menu">
+	                <li><a id="menu-new" href="javascript:">New</a></li>
+	                <li><a href="javascript:">Load from file</a></li>
+	                <li class="dropdown-submenu">
+		                	<a href="javascript:" >Load example</a>
+		                    <ul class="dropdown-menu">
+		                        % for location_file in location_files:
+		                            <li>
+		                            	<a class='location-file-item'
+		                                   data-location='${location_file['filename']}'
+		                                   href="javascript:">${location_file['name']}</a>
+		                            </li>
+		                        % endfor
+		                    </ul>
+	                </li>
+	                <li><a href="javascript:">Save</a></li>
+	                <li class="divider"></li>
+	                <li><a href="javascript:">Preferences</a></li>
+	            </ul>
+	        </li>
+	        <li class="dropdown">
+	            <a id="run-drop" class="dropdown-toggle" href="javascript:" data-toggle="dropdown">Run <b class="caret"></b></a>
+	            <ul class="dropdown-menu">
+	                <li><a id="menu-run" href="javascript:">Run</a></li>
+	                <li><a id="menu-step" href="javascript:">Step</a></li>
+	                <li><a id="menu-run-until" href="javascript:">Run Until...</a></li>
+	            </ul>
+	        </li>
+	        <li class="dropdown">
+	            <a id="help-drop" class="dropdown-toggle" href="javascript:" data-toggle="dropdown">Help <b class="caret"></b></a>
+	            <ul class="dropdown-menu">
+	                <li><a target="window" href="javascript:">About</a></li>
+	                <li><a href="javascript:">Tutorial</a></li>
+	            </ul>
+	        </li>
+	    </ul>
+	</div>
 </%block>
 
 <%block name="sidebar">
-     <div class="container sidebar-toolbar">
       <div class="btn-toolbar">
         <div class="btn-group">
-            <a class="btn" id="add-button" href="javascript:"><i class="icon-plus-sign"></i></a>
-            <a class="btn disabled" id="remove-button" href="javascript:"><i class="icon-minus-sign"></i></a>
-            <a class="btn disabled" id="settings-button" href="javascript:"><i class="icon-wrench"></i></a>
+            <button type="button" class="btn btn-default" id="collapse-sidebar-button">
+            	<i class="glyphicon glyphicon-resize-small"></i>
+            </button>
+            <button type="button" class="btn btn-default" id="expand-sidebar-button">
+            	<i class="glyphicon glyphicon-fullscreen"></i>
+            </button>
+        </div>
+        <div class="btn-group pull-right">
+            <button type="button" class="btn btn-default" id="add-button">
+            	<i class="glyphicon glyphicon-plus-sign"></i>
+            </button>
+            <button type="button" class="btn btn-default disabled" id="remove-button">
+            	<i class="glyphicon glyphicon-minus-sign"></i>
+            </button>
+            <button type="button" class="btn btn-default disabled" id="settings-button">
+            	<i class="glyphicon glyphicon-wrench"></i>
+            </button>
         </div>
       </div>
-    </div>
-    <div id="tree"> </div>
+    <div id="tree" class="panel"> </div>
 </%block>
 
 <%block name="content">
-    <div class="container">
-      <div class="messages">
-          <div class="alert alert-success ${'' if success else 'hidden'}">
-              <button type="button" class="close" data-dismiss="alert">× </button>
-              <span class='message'>${success if success else ''}</span>
-          </div>
-          <div class="alert alert-warning ${'' if warning else 'hidden'}">
-              <button type="button" class="close" data-dismiss="alert">× </button>
-              <strong>Warning!</strong> <span class="message">${warning if warning else ''}</span>
-          </div>
-           <div class="alert alert-error ${'' if error else 'hidden'}">
-              <button type="button" class="close" data-dismiss="alert">× </button>
-              <strong>Error!</strong> <span class="message">${error if error else ''}</span>
-          </div>
-      </div>
-    </div>
-
     <div id="main-content" class="row">
-        <div id="model" class='section hidden'>
-		    <div class="btn-toolbar" >
-		        <div class="btn-group">
-		        </div>
-		        <div class="btn-group">
-		        </div>
-		        <div class="btn-group">
-		##          <a class="btn disabled" id="hand-button" href="javascript:"><i class="icon-hand-up"></i></a>
-		##          <a class="btn disabled" id="zoom-in-button" href="javascript:"><i class="icon-zoom-in"></i></a>
-		##          <a class="btn disabled" id="zoom-out-button" href="javascript:"><i class="icon-zoom-out"></i></a>
-		##          <a class="btn disabled" id="move-button" href="javascript:"><i class="icon-move"></i></a>
-		##          <a class="btn disabled" id="spill-button" href="javascript:"><i class="icon-tint"></i></a>
-		        </div>
-		        <div class="btn-group">
-		            <a class="btn" id="resize-button" href="javascript:"><i class="icon-resize-small"></i></a>
-		            <a class="btn" id="fullscreen-button" href="javascript:"><i class="icon-fullscreen"></i></a>
-		            <a class="btn disabled" id="back-button" href="javascript:"><i class="icon-fast-backward"></i></a>
+	        <div id="model" class='section hidden'>
 
-		            <div class="btn disabled" id="slider-container">
-		                        <span id="time">00:00</span>
+			    <div class="btn-toolbar" >
+			        <div class="btn-group">
+			            <button type="button" class="btn btn-default disabled" id="back-button">
+			            	<i class="glyphicon glyphicon-fast-backward"></i>
+			            </button>
 
-		                        <div id="slider"><div id="slider-shaded"></div></div>
-		            </div>
+			            <div type="button" class="btn btn-default disabled" id="slider-container">
+			                        <span id="time">00:00</span>
 
-		            <a class="btn" id="play-button" href="javascript:"><i class="icon-play"></i></a>
-		            <a class="btn disabled" id="pause-button" href="javascript:"><i class="icon-pause"></i></a>
-		            <a class="btn disabled" id="forward-button" href="javascript:"><i class="icon-fast-forward"></i></a>
-		        </div>
-		    </div>
+			                        <div id="slider"><div id="slider-shaded"></div></div>
+			            </div>
 
-            <div id="leaflet-map"> </div>
-            <div class="current-coordinates"></div>
-            <div id="map" class="hidden"></div>
-            <div class="placeholder"></div>
-        </div>
+			            <button type="button" class="btn btn-default" id="play-button">
+			            	<i class="glyphicon glyphicon-play"></i>
+			            </button>
+			            <button type="button" class="btn btn-default disabled" id="pause-button">
+			            	<i class="glyphicon glyphicon-pause"></i>
+			            </button>
+			            <button type="button" class="btn btn-default disabled" id="forward-button">
+			            	<i class="glyphicon glyphicon-fast-forward"></i>
+			            </button>
+			        </div>
+			    </div>
+
+	            <div class="panel" id="leaflet-map"> </div>
+	            <div class="current-coordinates"></div>
+	            <div id="map" class="hidden"></div>
+	            <div class="placeholder"></div>
+	        </div>
 
         <div id="splash-page" class='section hidden'>
              <img alt="GNOME model output depicting relative distribution of oil."
@@ -169,6 +178,23 @@
         <div id="location-file-map" class='section hidden'>
             <div id="map_canvas"></div>
         </div>
+    </div>
+
+    <div class="container">
+      <div class="messages">
+          <div class="alert alert-success ${'' if success else 'hidden'}">
+              <button type="button" class="close" data-dismiss="alert">× </button>
+              <span class='message'>${success if success else ''}</span>
+          </div>
+          <div class="alert alert-warning ${'' if warning else 'hidden'}">
+              <button type="button" class="close" data-dismiss="alert">× </button>
+              <strong>Warning!</strong> <span class="message">${warning if warning else ''}</span>
+          </div>
+           <div class="alert alert-error ${'' if error else 'hidden'}">
+              <button type="button" class="close" data-dismiss="alert">× </button>
+              <strong>Error!</strong> <span class="message">${error if error else ''}</span>
+          </div>
+      </div>
     </div>
 
     <div id="modal-container">
