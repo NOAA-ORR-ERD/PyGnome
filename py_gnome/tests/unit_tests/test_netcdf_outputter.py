@@ -210,40 +210,32 @@ def test_write_output_standard(model):
 
                 assert scp.LE('current_time_stamp', uncertain) == time_[step]
 
-                assert np.allclose(scp.LE('positions', uncertain)[:,
-                                   0], (data.variables['longitude'
-                                   ])[idx[step]:idx[step + 1]], rtol,
-                                   atol)
-                assert np.allclose(scp.LE('positions', uncertain)[:,
-                                   1], (data.variables['latitude'
-                                   ])[idx[step]:idx[step + 1]], rtol,
-                                   atol)
-                assert np.allclose(scp.LE('positions', uncertain)[:,
-                                   2], (data.variables['depth'
-                                   ])[idx[step]:idx[step + 1]], rtol,
-                                   atol)
+                assert np.allclose(scp.LE('positions', uncertain)[:, 0],
+                        (data.variables['longitude'])[idx[step]:idx[step + 1]],
+                        rtol, atol)
+                assert np.allclose(scp.LE('positions', uncertain)[:, 1],
+                        (data.variables['latitude'])[idx[step]:idx[step + 1]],
+                        rtol, atol)
+                assert np.allclose(scp.LE('positions', uncertain)[:, 2],
+                        (data.variables['depth'])[idx[step]:idx[step + 1]],
+                        rtol, atol)
 
-                assert np.all(scp.LE('spill_num', uncertain)[:]
-                              == (data.variables['spill_num'
-                              ])[idx[step]:idx[step + 1]])
-                assert np.all(scp.LE('id', uncertain)[:]
-                              == (data.variables['id'
-                              ])[idx[step]:idx[step + 1]])
-                assert np.all(scp.LE('status_codes', uncertain)[:]
-                              == (data.variables['status'
-                              ])[idx[step]:idx[step + 1]])
+                assert np.all(scp.LE('spill_num', uncertain)[:] ==
+                        (data.variables['spill_num'])[idx[step]:idx[step + 1]])
+                assert np.all(scp.LE('id', uncertain)[:] == 
+                              (data.variables['id'])[idx[step]:idx[step + 1]])
+                assert np.all(scp.LE('status_codes', uncertain)[:] ==
+                        (data.variables['status'])[idx[step]:idx[step + 1]])
 
                 # flag variable is not currently set or checked
 
                 if 'mass' in scp.LE_data:
-                    assert np.all(scp.LE('mass', uncertain)[:]
-                                  == (data.variables['mass'
-                                  ])[idx[step]:idx[step + 1]])
+                    assert np.all(scp.LE('mass', uncertain)[:] ==
+                        (data.variables['mass'])[idx[step]:idx[step + 1]])
 
                 if 'age' in scp.LE_data:
-                    assert np.all(scp.LE('age', uncertain)[:]
-                                  == (data.variables['age'
-                                  ])[idx[step]:idx[step + 1]])
+                    assert np.all(scp.LE('age', uncertain)[:] ==
+                        (data.variables['age'])[idx[step]:idx[step + 1]])
 
             print 'data in model matches output in {0}'.format(file_)
 

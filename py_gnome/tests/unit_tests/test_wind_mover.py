@@ -6,7 +6,7 @@ import pytest
 
 from hazpy import unit_conversion
 
-from gnome.basic_types import datetime_value_2d, ts_format
+from gnome.basic_types import datetime_value_2d, ts_format, windage_type
 
 from gnome import environment
 from gnome import array_types
@@ -21,6 +21,7 @@ from gnome.movers import WindMover, constant_wind_mover, \
 
 from gnome.spill import PointLineSource
 from gnome.spill_container import SpillContainer
+from gnome.array_types import ArrayType
 
 from conftest import sample_sc_release
 
@@ -258,8 +259,9 @@ def test_windage_index():
                 * .01 + .01), windage_persist=900)
         sc.spills.add(spill)
 
+    windage = {'windages': ArrayType((), windage_type)}
     sc.prepare_for_model_run(rel_time,
-                             array_types=dict(array_types.WindMover))
+                             array_types=windage)
     sc.release_elements(rel_time, timestep)
     wm = WindMover(environment.ConstantWind(5, 0))
     wm.prepare_for_model_step(sc, timestep, rel_time)
@@ -458,17 +460,9 @@ def test_array_types():
     # WindMover does not modify Wind object!
 
     wm = WindMover(environment.Wind(filename=file_))
-    wm_array = wm.array_types
-
-    assert len(wm_array) == len(array_types.WindMover)
-
-    for (key, val) in dict(array_types.WindMover).iteritems():
-        assert key in wm_array
-        assert wm_array[key] == val
-        wm_array.pop(key)
-
-    assert len(wm_array) == 0
-
+    assert 'windages' in wm.array_types
+    assert 'windage_range' in wm.array_types
+    assert 'windage_persist' in wm.array_types
 
 def _defaults(wm):
     """
