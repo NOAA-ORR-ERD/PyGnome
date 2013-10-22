@@ -17,7 +17,7 @@ define([
     var MapFormView = modal.JQueryUIModalFormView.extend({
         initialize: function() {
             this.options.dialog = _.extend({
-                height: 200,
+                height: 220,
                 width: 425
             }, this.options.dialog);
 

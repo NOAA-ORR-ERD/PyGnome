@@ -38,9 +38,16 @@ class NwsWind(BaseResource):
 
         try:
             doc = etree.fromstring(r.content)
+
             times = [n.text for n in doc.xpath('data/time-layout/start-valid-time')]
             speeds = [n.text for n in doc.xpath("data/parameters/wind-speed[@type='sustained']/value")]
             directions = [n.text for n in doc.xpath("data/parameters/direction[@type='wind']/value")]
+
+            # create timeseries records and prune the
+            # ones that have None values
+            ts = zip(times, speeds, directions)
+            ts = [r for r in ts if r[1] is not None and r[2] is not None]
+
             description = [n.text for n in doc.xpath('data/location/description')]
             description += [n.text for n in doc.xpath('data/location/area-description')]
         except etree.XMLSyntaxError:
@@ -48,13 +55,14 @@ class NwsWind(BaseResource):
             logger.exception(message)
             return self.error(500, message)
 
+
         wind_data = {
             'latitude': coordinates['lat'],
             'longitude': coordinates['long'],
             'source_type': 'nws',
             'description': ' '.join(description),
             'units': 'knots',
-            'timeseries': zip(times, speeds, directions)
+            'timeseries': ts
         }
 
         try:
