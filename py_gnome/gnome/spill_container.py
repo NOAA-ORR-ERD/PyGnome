@@ -14,7 +14,7 @@ from gnome.basic_types import (world_point_type,
                                status_code_type,
                                oil_status,
                                id_type,)
-from gnome.array_types import ArrayType, IdArrayType
+import gnome.array_types
 
 
 class SpillContainerData(object):
@@ -238,14 +238,13 @@ class SpillContainer(SpillContainerData):
         """
         reset _array_types dict so it contains default keys/values
         """
-        self._array_types = {'positions': ArrayType((3,), world_point_type),
-                    'next_positions': ArrayType((3,), world_point_type),
-                    'last_water_positions': ArrayType((3,), world_point_type),
-                    'status_codes': ArrayType((), status_code_type,
-                                              oil_status.in_water),
-                    'spill_num': ArrayType((), id_type, -1),
-                    'id': IdArrayType((), np.uint32),
-                    'mass': ArrayType((), np.float64, 1)}
+        self._array_types = {'positions': gnome.array_types.positions,
+                'next_positions': gnome.array_types.next_positions,
+                'last_water_positions': gnome.array_types.last_water_positions,
+                'status_codes': gnome.array_types.status_codes,
+                'spill_num': gnome.array_types.spill_num,
+                'id': gnome.array_types.id,
+                'mass': gnome.array_types.mass}
 
     @property
     def array_types(self):

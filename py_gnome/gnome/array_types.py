@@ -1,27 +1,32 @@
 '''
-Module contains array types that a mover can contain based on the data
-it needs for the released elements.
+Module contains array types that a mover may need based on the data
+movers needs
 
-Since the values in the dict are ArrayType objects, they are mutable.
 ** NOTE: **
-    If a class that uses any array_types dict updates the properties of the
-    ArrayType stored in the dict, it will be updates for all users of that
-    dict.
+    These are global declarations
 
     For instance: If the WindMover that uses array_types.WindMover updates
-    the properties of 'windages' ArrayType, it will change it universally since
-    array_types.WindMover['windages'] is mutable.
-** You have been warned! **
+    the properties of 'windages' ArrayType, it will change it universally.
+
+    The user/mover should not need to change dtype or shape internally. If
+    these need to change, it should be done here.
+
+    The initial_value can be changed by movers since that's only used when
+    elements are released. For most arrays, that is currently 0.
+
+    As a convention, when a dict defines these array_types, best to use the
+    name of the array_type as the 'key'. When other modules, primarily
+    element_type, look for numpy array in data_arrays with associated
+    array_types, it will assume the 'key' is the name of the array_types.
+
 '''
 
-#==============================================================================
-# from gnome.basic_types import (
-#     world_point_type,
-#     windage_type,
-#     status_code_type,
-#     oil_status,
-#     id_type)
-#==============================================================================
+from gnome.basic_types import (
+    world_point_type,
+    windage_type,
+    status_code_type,
+    oil_status,
+    id_type)
 import numpy as np
 
 
@@ -117,37 +122,20 @@ class IdArrayType(ArrayType):
         return array
 
 
+# Required array types - dict defined by SpillContainer
+positions = ArrayType((3,), world_point_type)
+next_positions = ArrayType((3,), world_point_type)
+last_water_positions = ArrayType((3,), world_point_type)
+status_codes = ArrayType((), status_code_type, oil_status.in_water)
+spill_num = ArrayType((), id_type, -1)
+id = IdArrayType((), np.uint32)
+mass = ArrayType((), np.float64)
 
-
-#==============================================================================
-# # Required array types - dict defined by SpillContainer
-# positions = ArrayType((3,), world_point_type)
-# next_positions = ArrayType((3,), world_point_type)
-# last_water_positions = ArrayType((3,), world_point_type)
-# status_codes = ArrayType((), status_code_type, oil_status.in_water)
-# spill_num = ArrayType((), id_type, -1)
-# id = IdArrayType((), np.uint32)
-# mass = ArrayType((), np.float64)
-# 
-# 
-# def required_arraytypes_dict():
-#     """
-#     Returns a dict of required array types
-#     """
-#     return {'positions': positions,
-#             'next_positions': next_positions,
-#             'last_water_positions': last_water_positions,
-#             'status_codes': status_codes,
-#             'spill_num': spill_num,
-#             'id': id,
-#             'mass': mass}
-# 
-# # ArrayTypes required by movers. dict defined by movers
-# windages = ArrayType((), windage_type)
-# windage_range = ArrayType((2,), np.float64)
-# windage_persist = ArrayType((), np.int)
-# rise_vel = ArrayType((), np.float64)
-#==============================================================================
+# ArrayTypes required by movers. dict defined by movers
+windages = ArrayType((), windage_type)
+windage_range = ArrayType((2,), np.float64)
+windage_persist = ArrayType((), np.int)
+rise_vel = ArrayType((), np.float64)
 
 ## TODO: Find out if this is still required?
 # water_currents = ArrayType( (3,), basic_types.water_current_type)
