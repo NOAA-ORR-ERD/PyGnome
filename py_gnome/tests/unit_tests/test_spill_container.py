@@ -24,7 +24,7 @@ from gnome import array_types
 
 
 # additional array_type for testing spill_container functionality
-windage_at = {'windages': array_types.ArrayType((), windage_type)}
+windage_at = {'windages': array_types.windages}
 
 # Sample data for creating spill
 num_elements = 100

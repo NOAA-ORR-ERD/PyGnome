@@ -14,8 +14,7 @@ import numpy as np
 from gnome.spill import (Spill,
                          PointLineSource)
 
-from gnome.array_types import ArrayType
-from gnome.basic_types import world_point_type
+import gnome.array_types
 
 from conftest import mock_append_data_arrays
 
@@ -23,7 +22,7 @@ from conftest import mock_append_data_arrays
 # Used to mock SpillContainer functionality of creating/appending data_arrays
 # Only care about 'positions' array type for all spills, no need to define
 # and carry remaining numpy arrays
-arr_types = {'positions': ArrayType((3,), world_point_type)}
+arr_types = {'positions': gnome.array_types.positions}
 
 
 def test_deepcopy():
