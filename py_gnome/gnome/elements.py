@@ -4,16 +4,67 @@ These are properties that are spill specific like:
   'floating' element_types would contain windage_range, windage_persist
   'subsurface_dist' element_types would contain rise velocity distribution info
   'nonweathering' element_types would set use_droplet_size flag to False
-  'weathering' element_types would set use_droplet_size flag to True
-
-  'SubsurfaceRiseVelDist' element_types would contain rise velocity
-      distribution info
+  'weathering' element_types would use droplet_size, densities, mass?
 '''
 from gnome import array_types
 import numpy as np
 
 
-class RiseVelDist_initializer(object):
+"""
+Initializers for various element types
+Each initializer only sets the value for a single numpy array
+"""
+
+
+class InitConstantWindageRange(object):
+    """
+    initialize floating elements with windage range information
+    """
+    def __init__(self, windage_range=[0.01, 0.04]):
+        self.windage_range = windage_range
+
+    def initialize(self, num_new_particles, spill, data_arrays):
+        """
+        Since windages exists in data_arrays, so must windage_range and
+        windage_persist if this initializer is used/called
+        """
+        data_arrays['windage_range'][-num_new_particles:, :] = \
+            self.windage_range
+
+
+class InitConstantWindagePersist(object):
+    """
+    initialize floating elements with windage persistance information
+    """
+    def __init__(self, windage_persist=900):
+        self.windage_persist = windage_persist
+
+    def initialize(self, num_new_particles, spill, data_arrays):
+        """
+        Since windages exists in data_arrays, so must windage_range and
+        windage_persist if this initializer is used/called
+        """
+        data_arrays['windage_persist'][-num_new_particles:] = \
+            self.windage_persist
+
+
+class InitMassFromVolume(object):
+    """
+    This could also go into ArrayType's initialize method if we pass
+    spill as input to initialize method
+    """
+    def initialize(self, num_new_particles, spill, data_arrays):
+        if spill.volume is None:
+            raise ValueError('volume attribute of spill is None - cannot'
+                             ' compute mass without volume')
+
+        _total_mass = spill.oil_props.get_density('kg/m^3') \
+            * spill.get_volume('m^3') * 1000
+        data_arrays['mass'][-num_new_particles:] = (_total_mass /
+                                                    num_new_particles)
+
+
+class InitRiseVelFromDist(object):
     def __init__(self, distribution='uniform', params=[0, 1]):
         """
         Set the rise velocity parameters to be sampled from a distribution.
@@ -35,64 +86,47 @@ class RiseVelDist_initializer(object):
         self.distribution = distribution
         self.params = params
 
-        # should be only one key in dict, 'rise_vel'
-        self.key = array_types.rise_vel.keys()[0]
-
-    def set_newparticle_values(self, num_new_particles, spill, data_arrays):
+    def initialize(self, num_new_particles, spill, data_arrays):
         """
         if 'rise_vel' exists in SpillContainer's data_arrays, then define
         """
-        if self.key not in data_arrays or num_new_particles == 0:
-            return
-
         if self.distribution == 'uniform':
-            data_arrays[self.key][-num_new_particles:] = np.random.uniform(
+            data_arrays['rise_vel'][-num_new_particles:] = np.random.uniform(
                                                         self.params[0],
                                                         self.params[1],
                                                         num_new_particles)
         elif self.distribution == 'normal':
-            data_arrays[self.key][-num_new_particles:] = np.random.normal(
+            data_arrays['rise_vel'][-num_new_particles:] = np.random.normal(
                                                         self.params[0],
                                                         self.params[1],
                                                         num_new_particles)
 
+""" ElementType classes"""
 
-class RiseVelWindageOil(object):
+
+class ElementType(object):
     def __init__(self):
-        self.initializers = {'rise_vel': RiseVelDist_initializer}
+        self.initializers = {}
 
     def set_newparticle_values(self, num_new_particles, spill, data_arrays):
-        #======================================================================
-        # for key, value in self.initializers.iteritems():
-        #     if key in data_arrays:
-        #         self.initializers[key].set_newparticle_values(self,
-        #                                 num_new_particles, spill, data_arrays)
-        #======================================================================
+        if num_new_particles > 0:
+            for key in data_arrays:
+                if key in self.initializers:
+                    self.initializers[key].initialize(num_new_particles, spill,
+                                                      data_arrays)
 
-        for key, val in data_arrays.iteritems():
-            self.initializers[key].set_newparticle_values(self,
-                                    num_new_particles, spill, val)
 
-#==============================================================================
-# class MassFromTotalVolume(object):
-#     """
-#     This could also go into ArrayType's initialize method if we pass
-#     spill as input to initialize method
-#     """
-#     def __init__(self):
-#         """
-#         mass units are 'grams'
-#         """
-#         self.key = dict(array_types.mass).keys()
-#  
-#     def set_values(self, num_elements, spill, sc):
-#         if self.key not in sc:
-#             return
-#  
-#         if spill.volume is None:
-#             raise ValueError("")
-#  
-#         _total_mass = spill.oil_props.get_density('kg/m^3') \
-#             * self.get_volume('m^3') * 1000
-#         sc[key][-num_elements:] = _total_mass / num_elements
-#==============================================================================
+class Floating(ElementType):
+    def __init__(self):
+        """
+        Mover should define windages, windage_range and windage_persist
+        """
+        self.initializers = {'windage_range': InitConstantWindageRange(),
+                             'windage_persist': InitConstantWindagePersist()}
+
+
+class FloatingMassFromVolume():
+    def __init__(self):
+        self.initializers = {'windage_range': InitConstantWindageRange(),
+                             'windage_persist': InitConstantWindagePersist(),
+                             'mass': InitMassFromVolume()}

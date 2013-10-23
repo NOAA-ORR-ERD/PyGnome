@@ -104,7 +104,7 @@ class Spill(object):
 
         # mass/volume, type of oil spilled
         self._check_units(volume_units)
-        self._volume_units = volume_units
+        self._volume_units = volume_units   # user defined for display
         self._volume = volume
         if volume is not None:
             self._volume = unit_conversion.convert('Volume', volume_units,
@@ -190,7 +190,8 @@ class Spill(object):
         self._volume_units = units
 
     # returns the volume in volume_units specified by user
-    volume = property(lambda self: self.get_volume())
+    volume = property(lambda self: self.get_volume(),
+                      lambda self, value: self.set_volume(value, 'm^3'))
 
     def get_volume(self, units=None):
         """
@@ -208,6 +209,16 @@ class Spill(object):
             self._check_units(units)
             return unit_conversion.convert('Volume', 'm^3', units,
                     self._volume)
+
+    def set_volume(self, volume, units):
+        """
+        set the volume released during the spill. The default units for
+        volume are as defined in 'volume_units' property. User can also specify
+        desired output units in the function.
+        """
+        self._check_units(units)
+        self._volume = unit_conversion.convert('Volume', units, 'm^3', volume)
+        self.volume_units = units
 
     def uncertain_copy(self):
         """
@@ -290,9 +301,9 @@ class Spill(object):
         Also, the set_newparticle_values() method for all element_type gets
         called so each element_type sets the values for its own data correctly
         """
-        #self.element_type.set_newparticle_values(num_new_particles, self,
-        #                                     data_arrays)
-        pass
+        if self.element_type is not None:
+            self.element_type.set_newparticle_values(num_new_particles, self,
+                                                 data_arrays)
 
 
 class PointLineSource(Spill, serializable.Serializable):
