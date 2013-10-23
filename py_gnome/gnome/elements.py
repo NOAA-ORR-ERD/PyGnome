@@ -6,7 +6,6 @@ These are properties that are spill specific like:
   'nonweathering' element_types would set use_droplet_size flag to False
   'weathering' element_types would use droplet_size, densities, mass?
 '''
-from gnome import array_types
 import numpy as np
 
 
@@ -130,3 +129,11 @@ class FloatingMassFromVolume():
         self.initializers = {'windage_range': InitConstantWindageRange(),
                              'windage_persist': InitConstantWindagePersist(),
                              'mass': InitMassFromVolume()}
+
+
+class FloatingMassFromVolumeRiseVel():
+    def __init__(self):
+        self.initializers = {'windage_range': InitConstantWindageRange(),
+                             'windage_persist': InitConstantWindagePersist(),
+                             'mass': InitMassFromVolume(),
+                             'rise_vel': InitRiseVelFromDist()}
