@@ -77,7 +77,8 @@
 </%def>
 
 
-<%def name="form_control(field, help_text=None, label=None, label_class=None,
+<%def name="form_control(field, field_id=None, help_text=None,
+                         label=None, label_class=None,
                          hidden=False, extra_classes=None, inline=False)">
     <%doc>
         Render a Bootstrap form control around ``field``.
@@ -94,11 +95,11 @@
                 % if help_text:
                     ${help_text | n}
                 % endif
-                <a href="#" class="icon-warning-sign error" title="error"></a>
+                <a href="#" class="glyphicon glyphicon-warning-sign error" title="error"></a>
             </span>
         </span>
     % else:
-        <div class="control-group ${'hidden' if hidden else ''}
+        <div class="form-group ${'hidden' if hidden else ''}
                     % if extra_classes:
                         % for cls in extra_classes:
                             ${cls}
@@ -107,17 +108,21 @@
                     ">
 
             % if label:
-                <label class="control-label ${label_class}"> ${label} </label>
+                % if field_id:
+                    <label class="col-md-2 control-label" for="${field_id}"> ${label} </label>
+                % else:
+                    <label class="col-md-2 control-label"> ${label} </label>
+                % endif
             % endif
 
-            <div class="controls">
+            <div class="col-md-6">
                 ${field | n}
                 <span class="help-inline">
                      % if help_text:
                         ${help_text | n}
                      % endif
 
-                    <a href="#" class="icon-warning-sign error" title="error"></a>
+                    <a href="#" class="glyphicon glyphicon-warning-sign error" title="error"></a>
                 </span>
             </div>
         </div>
@@ -128,7 +133,7 @@
 <%def name="datetime_control(date_name, value=None, date_label=None,
                              date_class='date input-small',
                              date_help_text=None, hour_value=None,
-                             hour_label=None, hour_name='hour', hour_class='hour',
+                             hour_label='Time (24-hr)', hour_name='hour', hour_class='hour',
                              minute_value=None, minute_label=None,
                              minute_class='minute', minute_name='minute',
                              time_help_text=None, date_id=None)">
@@ -143,7 +148,7 @@
     %>
 
     <div class="${date_name}_container">
-     ${form_control(field, date_help_text, date_label)}
+     ${form_control(field, help_text=date_help_text, label=date_label)}
      ${time_control(hour_value if hour_value else hour,
                     minute_value if minute_value else minute,
                     hour_label, hour_name, hour_class, minute_label,
@@ -152,7 +157,7 @@
 </%def>
 
 
-<%def name="time_control(hour=None, minute=None, hour_label='Time (24-hour): ',
+<%def name="time_control(hour=None, minute=None, hour_label='Time (24-hr)',
                          hour_name='hour', hour_class='hour', minute_label=None,
                          minute_name='minute', minute_class='minute',
                          help_text=None)">
@@ -160,9 +165,9 @@
         Render a Bootstrap form control for a :class:`datetime.datetime` value,
         displaying only the time values (hour and minute).
     </%doc>
-    <div class="control-group">
+    <div class="form-group">
         % if hour_label:
-            <label class="control-label">${hour_label}</label>
+            <label class="col-md-2 control-label">${hour_label}</label>
         % endif
 
         <div class="controls">

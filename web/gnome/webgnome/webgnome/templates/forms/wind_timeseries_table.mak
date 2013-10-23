@@ -21,8 +21,13 @@
     <td class="time-series-time">{{- time }}</td>
     <td class="time-series-speed">{{- speed }}</td>
     <td class="time-series-direction">{{- direction }} &deg;</td>
-    <td><a href="javascript:" class="edit-time"><i class="icon-edit"></i></a>
-        <a href="javascript:" class="delete-time"><i class="icon-trash"></i></a>
+    <td>
+    	<button type="button" class="btn btn-info btn-xs edit-time">
+    	    <i class="glyphicon glyphicon-edit"></i>
+    	</button>
+    	<button type="button" class="btn btn-warning btn-xs delete-time">
+    	    <i class="glyphicon glyphicon-trash"></i>
+    	</button>
     </td>
 </tr>
 </script>

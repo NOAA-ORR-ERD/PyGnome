@@ -8,7 +8,7 @@ define([
     'lib/jquery.ui',
     'lib/jquery.fileupload',
     'lib/jquery.iframe-transport',
-    'lib/bootstrap.file-input',
+    '//netdna.bootstrapcdn.com/bootstrap/3.0.0/js/bootstrap.min.js',
 ], function($, _, Backbone, models, modal) {
 
     /*
@@ -17,7 +17,7 @@ define([
     var MapFormView = modal.JQueryUIModalFormView.extend({
         initialize: function() {
             this.options.dialog = _.extend({
-                height: 200,
+                height: 220,
                 width: 425
             }, this.options.dialog);
 

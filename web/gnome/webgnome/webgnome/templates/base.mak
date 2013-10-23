@@ -9,49 +9,50 @@
 	    <meta name="description" content="">
 	    <meta name="author" content="">
 
-	    <link href="/static/css/bootstrap.css" rel="stylesheet">
-	    <link href="/static/css/bootstrap-responsive.css" rel="stylesheet">
-	    <link href="/static/css/custom-theme/jquery-ui-1.8.16.custom.css" rel="stylesheet">
+		<%block name="third_party_css"/>
+
+		<%block name="third_party_js"/>
+
 	    <link href="/static/css/base.css" rel="stylesheet">
 
 	    <%block name="extra_head"/>
+
 	    <link rel="shortcut icon" href="ico/favicon.ico">
 	</head>
 
 	<body>
 
-		##<div class="navbar navbar-fixed-top">
-		<div class="navbar">
-		    <div class="navbar-inner">
-		        <div class="container-fluid">
-		           <a class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse">
-		                <span class="icon-bar"></span>
-		                <span class="icon-bar"></span>
-		                <span class="icon-bar"></span>
-		            </a>
-		            <a class="brand" href="/">WebGNOME</a>
-		            <div class="nav-collapse collapse">
-		                <%block name="navbar"/>
-		            </div><!--/.nav-collapse -->
-		        </div>
-		    </div>
-		</div>
+		<nav class="navbar navbar-default" role="navigation">
+	        <div class="navbar-header">
+	           <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-ex1-collapse">
+	           	    <span class="sr-only">Toggle navigation</span>
+	                <span class="icon-bar"></span>
+	                <span class="icon-bar"></span>
+	                <span class="icon-bar"></span>
+	            </button>
 
-		<div class="container-fluid outer-wrapper">
-		    <div class="row-fluid inner-wrapper">
+	            <a class="navbar-brand" href="#">WebGNOME</a>
+
+	        </div>
+
+            <%block name="navbar"/>
+		</nav>
+
+		<div class="container">
+		    <div class="row">
 		        <div class="hidden" id="sidebar">
 		            <div id="sidebar-container">
 		                <%block name="sidebar"/>
 		            </div>
 		        </div>
-		        <div class="span9" id="content">
+		        <div class="panel" id="content">
 		            <%block name="content"/>
 		        </div>
 		    </div>
 		</div>
 
 		<footer>
-		    <div class="container-fluid">
+		    <div class="container">
 		    </div>
 		</footer>
 

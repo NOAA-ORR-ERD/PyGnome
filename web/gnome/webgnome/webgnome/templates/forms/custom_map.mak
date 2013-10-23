@@ -3,7 +3,7 @@
 <div class="custom-map form page hide" id="add-custom-map" title="Add Custom Map">
     <form action="" class="form-horizontal" method="POST">
         <div class="page-body">
-            <div class="span3">
+            <div class="col-md-5">
                 <%
                     name = h.text('name', data_value='map.name', class_='input-small')
                     refloat_halflife = h.text('refloat_halflife',
@@ -26,7 +26,7 @@
                 ${defs.form_control(h.select('resolution', 'i', options, data_value='map.resolution', class_='map-resolution'),
                                     label='Resolution')}
             </div>
-            <div class="span3">
+            <div class="col-md-6">
                 <div id="custom-map"></div>
             </div>
         </div>

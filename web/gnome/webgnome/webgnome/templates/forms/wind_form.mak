@@ -13,19 +13,19 @@
             variable_id = '%s_variable' % form_id
         %>
         <div id="${constant_id}" class="constant-wind">
-            <div class="span3 add-time-forms">
+            <div class="col-md-4 add-time-forms">
                 <div class='time-form add-time-form'>
                     <%include file="timeseries_value.mak"/>
                 </div>
             </div>
 
-            <div class="span2">
+            <div class="col-md-4">
                 <div id="${constant_id}_compass" class="compass"></div>
             </div>
         </div>
 
         <div id="${variable_id}" class="variable-wind hidden">
-            <div class="span3 add-time-forms">
+            <div class="col-md-5 add-time-forms">
                 <div class='time-form add-time-form'>
                     <%include file="add_wind_timeseries_form.mak" args="form_id=variable_id"/>
                 </div>

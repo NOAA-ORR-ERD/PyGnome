@@ -2,7 +2,7 @@
 
 <% from webgnome.model_manager import WebWind %>
 
-<div class="span3">
+<div class="col-md-5">
     ${defs.form_control(h.select('source_type', 'manual',
         WebWind.source_types, class_='input-medium',
         data_value='wind.source_type'),
@@ -29,12 +29,12 @@
 
     <div class='control-group'>
         <div class="controls">
-            <button class="btn query-source" data-disabled='wind:isManual < wind.source_type'>Get Latest</button>
+            <button class="btn btn-success query-source" data-disabled='wind:isManual < wind.source_type'>Get Latest</button>
         </div>
     </div>
 </div>
 
-<div class="span3">
+<div class="col-md-3">
     <div class="nws-map-container" data-show='wind:isNws < wind.source_type'>
         <div class="nws-map-canvas"></div>
     </div>

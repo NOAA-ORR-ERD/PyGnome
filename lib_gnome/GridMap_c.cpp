@@ -724,6 +724,8 @@ done:
 	if (segUsed) {DisposeHandle((Handle)segUsed); segUsed = 0;}
 	if (segList) {DisposeHandle((Handle)segList); segList = 0;}
 	if (flagH) {DisposeHandle((Handle)flagH); flagH = 0;}
+	if (verdatPtsH) {DisposeHandle((Handle)verdatPtsH); verdatPtsH = 0;}
+	if (maskH2) {DisposeHandle((Handle)maskH2); maskH2 = 0;}
 	
 	if(err)
 	{
@@ -742,11 +744,11 @@ done:
 			delete fGrid;
 			fGrid = 0;
 		}
-		if (landWaterInfo) {DisposeHandle((Handle)landWaterInfo); landWaterInfo=0;}
-		if (ptIndexHdl) {DisposeHandle((Handle)ptIndexHdl); ptIndexHdl = 0;}
-		if (gridCellInfo) {DisposeHandle((Handle)gridCellInfo); gridCellInfo = 0;}
-		if (verdatPtsH) {DisposeHandle((Handle)verdatPtsH); verdatPtsH = 0;}
-		if (maskH2) {DisposeHandle((Handle)maskH2); maskH2 = 0;}
+		//if (landWaterInfo) {DisposeHandle((Handle)landWaterInfo); landWaterInfo=0;}
+		//if (ptIndexHdl) {DisposeHandle((Handle)ptIndexHdl); ptIndexHdl = 0;}
+		//if (gridCellInfo) {DisposeHandle((Handle)gridCellInfo); gridCellInfo = 0;}
+		//if (verdatPtsH) {DisposeHandle((Handle)verdatPtsH); verdatPtsH = 0;}	
+		//if (maskH2) {DisposeHandle((Handle)maskH2); maskH2 = 0;}	
 		
 		if (boundaryPtsH) {DisposeHandle((Handle)boundaryPtsH); boundaryPtsH = 0;}
 		if (boundaryEndPtsH) {DisposeHandle((Handle)boundaryEndPtsH); boundaryEndPtsH = 0;}
@@ -1255,6 +1257,8 @@ done:
 	if (segUsed) {DisposeHandle((Handle)segUsed); segUsed = 0;}
 	if (segList) {DisposeHandle((Handle)segList); segList = 0;}
 	if (flagH) {DisposeHandle((Handle)flagH); flagH = 0;}
+	if (verdatPtsH) {DisposeHandle((Handle)verdatPtsH); verdatPtsH = 0;}
+	if (maskH2) {DisposeHandle((Handle)maskH2); maskH2 = 0;}
 	
 	if(err)
 	{
@@ -1273,11 +1277,11 @@ done:
 			delete fGrid;
 			fGrid = 0;
 		}
-		if (landWaterInfo) {DisposeHandle((Handle)landWaterInfo); landWaterInfo=0;}
-		if (ptIndexHdl) {DisposeHandle((Handle)ptIndexHdl); ptIndexHdl = 0;}
-		if (gridCellInfo) {DisposeHandle((Handle)gridCellInfo); gridCellInfo = 0;}
-		if (verdatPtsH) {DisposeHandle((Handle)verdatPtsH); verdatPtsH = 0;}
-		if (maskH2) {DisposeHandle((Handle)maskH2); maskH2 = 0;}
+		//if (landWaterInfo) {DisposeHandle((Handle)landWaterInfo); landWaterInfo=0;}
+		//if (ptIndexHdl) {DisposeHandle((Handle)ptIndexHdl); ptIndexHdl = 0;}
+		//if (gridCellInfo) {DisposeHandle((Handle)gridCellInfo); gridCellInfo = 0;}
+		//if (verdatPtsH) {DisposeHandle((Handle)verdatPtsH); verdatPtsH = 0;}
+		//if (maskH2) {DisposeHandle((Handle)maskH2); maskH2 = 0;}
 		
 		if (boundaryPtsH) {DisposeHandle((Handle)boundaryPtsH); boundaryPtsH = 0;}
 		if (boundaryEndPtsH) {DisposeHandle((Handle)boundaryEndPtsH); boundaryEndPtsH = 0;}
@@ -1793,6 +1797,11 @@ done:
 		vertFlagsH = 0;
 	}
 	
+	if (verdatPtsH) {	// this is not saved as a field
+		DisposeHandle((Handle)verdatPtsH);
+		verdatPtsH = 0;
+	}
+	
 	if (err) {
 		if (!errmsg[0])
 			strcpy(errmsg,"An error occurred in GridMap_c::SetUpTriangleGrid");
@@ -1832,10 +1841,10 @@ done:
 			DisposeHandle((Handle)verdatBreakPtsH);
 			verdatBreakPtsH = 0;
 		}
-		if (verdatPtsH) {
+		/*if (verdatPtsH) {
 			DisposeHandle((Handle)verdatPtsH);
 			verdatPtsH = 0;
-		}
+		}*/
 	}
 
 	return err;

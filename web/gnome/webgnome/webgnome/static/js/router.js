@@ -29,7 +29,9 @@ define([
         },
         
         model: function() {
-            this.appView.disableFullscreen();
+        	if (!this.appView.sbUncollapsedWidth) {
+        		this.appView.disableFullscreen();
+        	}
             this.newModel = false;
             this.appView.showSection('model');
         },
