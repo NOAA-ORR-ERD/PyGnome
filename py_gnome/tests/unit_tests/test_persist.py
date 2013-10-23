@@ -194,6 +194,7 @@ def test_save_load_scenario(images_dir, uncertain):
     assert model == model2
 
 
+@pytest.mark.xfail
 @pytest.mark.slow
 @pytest.mark.parametrize('uncertain', [False, True])
 def test_save_load_midrun_scenario(images_dir, uncertain):
@@ -253,6 +254,7 @@ def test_save_load_midrun_no_movers(images_dir, uncertain):
     assert model == model2
 
 
+@pytest.mark.xfail
 @pytest.mark.slow
 @pytest.mark.parametrize('uncertain', [False, True])
 def test_load_midrun_ne_rewound_model(images_dir, uncertain):

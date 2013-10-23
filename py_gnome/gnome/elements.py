@@ -120,20 +120,18 @@ class Floating(ElementType):
         """
         Mover should define windages, windage_range and windage_persist
         """
+        super(Floating, self).__init__()
         self.initializers = {'windage_range': InitConstantWindageRange(),
                              'windage_persist': InitConstantWindagePersist()}
 
 
-class FloatingMassFromVolume():
+class FloatingMassFromVolume(Floating):
     def __init__(self):
-        self.initializers = {'windage_range': InitConstantWindageRange(),
-                             'windage_persist': InitConstantWindagePersist(),
-                             'mass': InitMassFromVolume()}
+        super(FloatingMassFromVolume, self).__init__()
+        self.initializers.update({'mass': InitMassFromVolume()})
 
 
-class FloatingMassFromVolumeRiseVel():
+class FloatingMassFromVolumeRiseVel(FloatingMassFromVolume):
     def __init__(self):
-        self.initializers = {'windage_range': InitConstantWindageRange(),
-                             'windage_persist': InitConstantWindagePersist(),
-                             'mass': InitMassFromVolume(),
-                             'rise_vel': InitRiseVelFromDist()}
+        super(FloatingMassFromVolumeRiseVel, self).__init__()
+        self.initializers.update({'rise_vel': InitRiseVelFromDist()})

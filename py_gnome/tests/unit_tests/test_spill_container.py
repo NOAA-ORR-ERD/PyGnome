@@ -477,18 +477,20 @@ arr_types = {'windage_range': array_types.windage_range,
 
 
 @pytest.mark.parametrize(("elem_type", "arr_types"),
-        [((el, elements.FloatingMassFromVolumeRiseVel()), arr_types)
-         ])
+        [((el, elements.FloatingMassFromVolumeRiseVel()), arr_types)])
 def test_element_types(elem_type, arr_types):
     sc = SpillContainer()
     spills = [PointLineSource(num_elements,
                               start_position,
                               release_time,
-                              element_type=elem_type[0]),
+                              element_type=elem_type[0],
+                              volume=10),
               PointLineSource(num_elements, start_position,
                               release_time + timedelta(hours=1),
                               end_position, end_release_time,
-                              element_type=elem_type[1])]
+                              element_type=elem_type[1],
+                              volume=10)
+              ]
     sc.spills.add(spills)
     time_step = 3600
     num_steps = 4   # just run for 4 steps
@@ -507,7 +509,7 @@ def test_element_types(elem_type, arr_types):
         spill_mask = sc.get_spill_mask(spill)
 
         for key in spill.element_type.initializers:
-            if key in sc.data_arrays:
+            if key in sc.data_arrays_dict:
                 if key == 'windage_range':
                     assert (np.all(sc[key][spill_mask] ==
                         spill.element_type.initializers[key].windage_range))
@@ -518,7 +520,7 @@ def test_element_types(elem_type, arr_types):
                     assert (np.all(sc[key][spill_mask]) >=
                         spill.element_type.initializers[key].params[0])
                     assert (np.all(sc[key][spill_mask]) <=
-                        spill.element_type.initializers[key].params[10])
+                        spill.element_type.initializers[key].params[1])
 
 
 """ SpillContainerPairData tests """
