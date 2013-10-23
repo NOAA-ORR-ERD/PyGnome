@@ -12,16 +12,13 @@ import pytest
 
 from gnome.basic_types import (oil_status,
                                world_point_type,
-                               id_type,
-                               windage_type)
+                               id_type)
 from gnome.spill_container import SpillContainer, SpillContainerPair
 from gnome.spill import PointLineSource
+from gnome import array_types
+from gnome import elements
 
 from conftest import sample_sc_release
-
-# only required to setup data arrays correctly
-from gnome import array_types
-
 
 # additional array_type for testing spill_container functionality
 windage_at = {'windages': array_types.windages}
@@ -466,12 +463,70 @@ def test_ordered_collection_api():
     assert len(sc.spills) == 1
 
 
+""" tests w/ element types set for two spills """
+el = elements.FloatingMassFromVolumeRiseVel()
+el.initializers['windage_range'].windage_range = [0.02, 0.02]
+el.initializers['windage_persist'].windage_persist = 0
+el.initializers['rise_vel'].params = [1, 10]
+
+# no need to include windages since it does not have an initializer and we
+# are not testing the WindMover's functionality to set 'windages'
+arr_types = {'windage_range': array_types.windage_range,
+             'windage_persist': array_types.windage_persist,
+             'rise_vel': array_types.rise_vel}
+
+
+@pytest.mark.parametrize(("elem_type", "arr_types"),
+        [((el, elements.FloatingMassFromVolumeRiseVel()), arr_types)
+         ])
+def test_element_types(elem_type, arr_types):
+    sc = SpillContainer()
+    spills = [PointLineSource(num_elements,
+                              start_position,
+                              release_time,
+                              element_type=elem_type[0]),
+              PointLineSource(num_elements, start_position,
+                              release_time + timedelta(hours=1),
+                              end_position, end_release_time,
+                              element_type=elem_type[1])]
+    sc.spills.add(spills)
+    time_step = 3600
+    num_steps = 4   # just run for 4 steps
+    sc.prepare_for_model_run(release_time, arr_types)
+
+    for step in range(num_steps):
+        current_time = release_time + timedelta(seconds=time_step * step)
+        sc.prepare_for_model_step(current_time)
+        sc.release_elements(current_time, time_step)
+        assert sc.current_time_stamp == current_time
+
+    # after all steps, check that the element_type parameters were initialized
+    # correctly
+    for spill in sc.spills:
+        spill.element_type
+        spill_mask = sc.get_spill_mask(spill)
+
+        for key in spill.element_type.initializers:
+            if key in sc.data_arrays:
+                if key == 'windage_range':
+                    assert (np.all(sc[key][spill_mask] ==
+                        spill.element_type.initializers[key].windage_range))
+                elif key == 'windage_persist':
+                    assert (np.all(sc[key][spill_mask] ==
+                        spill.element_type.initializers[key].windage_persist))
+                elif key == 'rise_vel':
+                    assert (np.all(sc[key][spill_mask]) >=
+                        spill.element_type.initializers[key].params[0])
+                    assert (np.all(sc[key][spill_mask]) <=
+                        spill.element_type.initializers[key].params[10])
+
+
 """ SpillContainerPairData tests """
 
 
 def test_init_SpillContainerPair():
     """
-    all this does is test that it can be initilized
+    all this does is test that it can be initialized
     """
 
     SpillContainerPair()
