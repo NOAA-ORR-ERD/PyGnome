@@ -21,7 +21,7 @@ def test_exceptions():
     """
 
     with pytest.raises(ValueError):
-        CyRandomMover(diffusion_coef=0)
+        CyRandomMover(diffusion_coef=-.0001)
 
 
 class TestRandom:

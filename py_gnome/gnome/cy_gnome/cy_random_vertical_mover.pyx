@@ -25,27 +25,43 @@ cdef class CyRandomVerticalMover(cy_mover.CyMover):
         del self.mover
         self.rand = NULL
         
-    def __init__(self, vertical_diffusion_coef=5):
+    def __init__(self, vertical_diffusion_coef_above_ml=5, vertical_diffusion_coef_below_ml=.11):
         """
-        Default vertical_diffusion_coef = 5 [cm**2/sec]
+        Default vertical_diffusion_coef_above_ml = 5 [cm**2/sec]
+        Default vertical_diffusion_coef_below_ml = .11 [cm**2/sec]
         """
-        if vertical_diffusion_coef <= 0:
-            raise ValueError("CyRandomVerticalMover must have a value greater than or equal to 0 for vertical_diffusion_coef")
+        if vertical_diffusion_coef_above_ml < 0:
+            raise ValueError("CyRandomVerticalMover must have a value greater than or equal to 0 for vertical_diffusion_coef above mixed layer")
         
-        self.rand.fVerticalDiffusionCoefficient = vertical_diffusion_coef
+        if vertical_diffusion_coef_below_ml < 0:
+            raise ValueError("CyRandomVerticalMover must have a value greater than or equal to 0 for vertical_diffusion_coef below mixed layer")
+
+        self.rand.fVerticalDiffusionCoefficient = vertical_diffusion_coef_above_ml
+        self.rand.fVerticalBottomDiffusionCoefficient = vertical_diffusion_coef_below_ml
     
-    property vertical_diffusion_coef:
+    property vertical_diffusion_coef_above_ml:
         def __get__(self):
             return self.rand.fVerticalDiffusionCoefficient
         
         def __set__(self, value):
+            if value < 0:
+                raise ValueError("CyRandomVerticalMover must have a value greater than or equal to 0 for vertical_diffusion_coef above mixed layer")
             self.rand.fVerticalDiffusionCoefficient = value
+
+    property vertical_diffusion_coef_below_ml:
+        def __get__(self):
+            return self.rand.fVerticalBottomDiffusionCoefficient
+        
+        def __set__(self, value):
+            if value < 0:
+                raise ValueError("CyRandomVerticalMover must have a value greater than or equal to 0 for vertical_diffusion_coef below mixed layer")
+            self.rand.fVerticalBottomDiffusionCoefficient = value
 
     def __repr__(self):
         """
         unambiguous repr of object, reuse for str() method
         """
-        return "CyRandomVerticalMover(vertical_diffusion_coef=%s)" % self.vertical_diffusion_coef
+        return "CyRandomVerticalMover(vertical_diffusion_coef=%s)" % self.vertical_diffusion_coef_above_ml
     
     def get_move(self, 
                  model_time, 

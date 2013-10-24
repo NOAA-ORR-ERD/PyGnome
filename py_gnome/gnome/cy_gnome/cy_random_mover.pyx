@@ -29,7 +29,7 @@ cdef class CyRandomMover(cy_mover.CyMover):
         """
         Default diffusion_coef = 100,000 [cm**2/sec]
         """
-        if diffusion_coef <= 0:
+        if diffusion_coef < 0:
             raise ValueError("CyRandomMover must have a value greater than or equal to 0 for diffusion_coef")
         
         self.rand.fDiffusionCoefficient = diffusion_coef
@@ -39,6 +39,8 @@ cdef class CyRandomMover(cy_mover.CyMover):
             return self.rand.fDiffusionCoefficient
         
         def __set__(self, value):
+            if value < 0:
+                raise ValueError("CyRandomMover must have a value greater than or equal to 0 for diffusion_coef")
             self.rand.fDiffusionCoefficient = value
 
     def __repr__(self):

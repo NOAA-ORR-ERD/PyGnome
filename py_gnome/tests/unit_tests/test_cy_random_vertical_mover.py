@@ -21,14 +21,15 @@ def test_exceptions():
     """
 
     with pytest.raises(ValueError):
-        CyRandomVerticalMover(vertical_diffusion_coef=0)
+        CyRandomVerticalMover(vertical_diffusion_coef_above_ml=-1000)
 
 
 class TestRandomVertical:
 
-    msg = 'vertical_diffusion_coef = {0.vertical_diffusion_coef}'
+    msg = 'vertical_diffusion_coef_above_ml = {0.vertical_diffusion_coef_above_ml},vertical_diffusion_coef_below_ml = {0.vertical_diffusion_coef_below_ml}'
     cm = cy_fixtures.CyTestMove()
-    rm = CyRandomVerticalMover(vertical_diffusion_coef=5)
+    cm.ref['z'][:]=.1
+    rm = CyRandomVerticalMover(vertical_diffusion_coef_above_ml=5,vertical_diffusion_coef_below_ml=.11)
 
     def move(self, delta):
         self.rm.prepare_for_model_run()
@@ -65,10 +66,24 @@ class TestRandomVertical:
         ensure no move for 0 vertical diffusion coefficient
         """
 
-        self.rm.vertical_diffusion_coef = 0
+        self.rm.vertical_diffusion_coef_above_ml = 0
+        self.rm.vertical_diffusion_coef_below_ml = 0
         new_delta = np.zeros((self.cm.num_le, ), dtype=world_point)
         self.move(new_delta)
-        self.rm.vertical_diffusion_coef = 5
+        self.rm.vertical_diffusion_coef_above_ml = 5
+        self.rm.vertical_diffusion_coef_below_ml = .11
+        assert np.all(new_delta.view(dtype=np.double).reshape(1, -1)
+                      == 0)
+
+    def test_surface_particles(self):
+        """
+        ensure no move for surface particles
+        """
+
+    	self.cm.ref['z'][:]=0
+        new_delta = np.zeros((self.cm.num_le, ), dtype=world_point)
+        self.move(new_delta)
+    	self.cm.ref['z'][:]=.1
         assert np.all(new_delta.view(dtype=np.double).reshape(1, -1)
                       == 0)
 
@@ -85,8 +100,8 @@ class TestRandomVertical:
         print
         print self.msg.format(self.rm) + ' get_move output:'
         print delta.view(dtype=np.float64).reshape(-1, 3)
-        self.rm.vertical_diffusion_coef = 10
-        assert self.rm.vertical_diffusion_coef == 10
+        self.rm.vertical_diffusion_coef_above_ml = 10
+        assert self.rm.vertical_diffusion_coef_above_ml == 10
 
         srand(1)
         new_delta = np.zeros((self.cm.num_le, ), dtype=world_point)
@@ -103,7 +118,7 @@ class TestRandomVertical:
         # assert np.all(delta['lat'] != new_delta['lat'])
         # assert np.all(delta['long'] != new_delta['long'])
 
-        self.rm.vertical_diffusion_coef = 5  # reset it
+        self.rm.vertical_diffusion_coef_above_ml = 5  # reset it
 
     def test_seed(self):
         """

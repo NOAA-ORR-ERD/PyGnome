@@ -11,6 +11,7 @@
 #include "CompFunctions.h"
 #include "GEOMETRY.H"
 #include "Units.h"
+#include "Replacements.h"
 
 using namespace std;
 
@@ -59,6 +60,87 @@ void RiseVelocity_c::ModelStepIsDone()
 	//memset(&fOptimize,0,sizeof(fOptimize));
 }
 
+double GetRiseVelocity(double le_density, double le_droplet_size, double water_viscosity, double water_density)
+{
+	double g = 9.8, riseVelocity=0.;
+	
+	double dfac = g*(water_density-le_density) / water_density;	// buoyancy term
+	double d1 = .0002, d2 = .01;	// upper limit for Stoke's law cut; lower limit for Form drag
+	//water_viscosity = 1.3e-6;	// water viscosity in mks units (for temp = 10 deg C)
+	double scaled_dropletSize = (le_droplet_size - d1) / (d2 - d1);	// droplet diameter scaled to (d2-d1) interval
+	double a1, a2, a3, a4, c0, c1, c2, c3;
+	
+	// check inputs are ok? (water_density>le_density...)
+	if (scaled_dropletSize < 0.)	// special case where d is in Stoke's drift range
+	{
+		double ds = scaled_dropletSize * (d2 -d1) + d1;
+		riseVelocity = dfac*ds*ds / (18.*water_viscosity);
+	}
+	else if (scaled_dropletSize >= 1.0)	// special case where d is in form drag range
+	{
+		double df = scaled_dropletSize * (d2 - d1) + d1;
+		riseVelocity = sqrt(8.0*dfac*df/3.0);
+	}
+	else 
+	{
+		a1 = dfac*d1*d1 / (18.*water_viscosity);
+		a2 = a1*(d2-d1) / (2.0*d1);
+		a3 = sqrt(8.0*dfac*d2/3.0);
+		a4 = a3*(d2-d1) / (2.0*d2);
+		c3 = 2.0*a1 + a2 - 2.0*a3 + a4;
+		c2 = -3.0*a1 -2.0*a2 + 3.0*a3 - a4;
+		c1 = a2;
+		c0 = a1;
+		
+		riseVelocity = ((c3*scaled_dropletSize + c2)*scaled_dropletSize + c1)*scaled_dropletSize + c0;
+	}
+
+	return riseVelocity;
+}
+
+double GetRiseVelocityDerivative(double oil_density, double water_viscosity, double water_density, double droplet_size)
+{
+	double g = 9.8, dfac = g * (water_density-oil_density) / water_density;	// buoyancy term
+	double a1, a2, a3, a4, c1, c2, c3;
+	double d1 = .0002, d2 = .01;	// upper limit for Stoke's law cut; lower limit for Form drag
+	
+	if (droplet_size<0.)	// special case where d is in stokes drift range
+	{
+		double ds = droplet_size * (d2-d1) + d1;
+		return 2.0*dfac*ds / (18.*water_viscosity);
+	}
+	if (droplet_size>=1.0)	// special case where d is in form drag range
+	{
+		double df = droplet_size * (d2-d1) + d1;
+		return sqrt(8.0*dfac*df / 3.0) / (2.0*df);
+	}
+	a1 = dfac*d1*d1 / (18.*water_viscosity);
+	a2 = a1*(d2-d1) / (2.0*d1);
+	a3 = sqrt(8.0*dfac*d2 / 3.0);
+	a4 = a3 * (d2-d1) / (2.0*d2);
+	c3 = 2.0 * a1 + a2 - 2.0*a3 + a4;
+	c2 = -3.0*a1 - 2.0*a2 + 3.0*a3 - a4;
+	c1 = a2;
+	
+	return (3.0*c3*droplet_size + 2.0*c2)*droplet_size + c1;
+	
+}
+
+double GetDropletSize(double riseVelocity, double water_viscosity, double water_density, double oil_density)
+{
+	double y0 = .5, y1 = 1.0, chk = 1.0;
+	int i=0;
+	
+	while(chk>.00005)
+	{
+		y1 = y0 + (riseVelocity - GetRiseVelocity(oil_density, water_viscosity, water_density, y0)) 
+					/ GetRiseVelocityDerivative(oil_density, water_viscosity, water_density, y0);
+		chk = fabs(y1-y0);
+		i++;
+		if (i>25) break;
+	}
+	return y1;
+}
 
 OSErr RiseVelocity_c::get_move(int n, unsigned long model_time, unsigned long step_len,
 							   WorldPoint3D *ref, WorldPoint3D *delta,
@@ -113,60 +195,28 @@ WorldPoint3D RiseVelocity_c::GetMove(const Seconds &model_time, Seconds timeStep
 									 long setIndex, long leIndex, LERec *theLE, LETYPE leType)
 {
 	WorldPoint3D deltaPoint = { {0, 0}, 0.};
-	double g = 9.8;
-	//double dLong, dLat, z, verticalDiffusionCoefficient, mixedLayerDepth = 10.;
-	//WorldPoint refPoint = (*theLE).p;	
-	Boolean useGaltAlgorithm = false;
+	//double g = 9.8;
 	// for now not implementing uncertainty
 
-
-	//code goes here, move rise velocity calculation outside mover
-	if (!isnan((*theLE).riseVelocity)){deltaPoint.z = -1. * ((*theLE).riseVelocity)*timeStep; return deltaPoint;}
-		
-	if (useGaltAlgorithm)
-	{
-		double dfac = g*(water_density-(*theLE).density*1000) / water_density;	// buoyancy term
-		double d1 = .002, d2 = .01;	// upper limit for Stoke's law cut; lower limit for Form drag
-		water_viscosity = 1.3e-6;	// water viscosity in mks units (for temp = 10 deg C)
-		double scaled_dropletSize = ((*theLE).dropletSize - d1) / (d2 - d1);	// droplet diameter scaled to (d2-d1) interval
-		double a1, a2, a3, a4, c0, c1, c2, c3;
-		
-		if (scaled_dropletSize < 0.)
-		{
-			double ds = scaled_dropletSize * (d2 -d1) + d1;
-			(*theLE).riseVelocity = dfac*ds*ds / (18.*water_viscosity);
-		}
-		if (scaled_dropletSize >= 1.0)
-		{
-			double df = scaled_dropletSize * (d2 -d1) + d1;
-			(*theLE).riseVelocity = sqrt(8.0*dfac*df/3.0);
-		}
-		a1 = dfac*d1*d1 / (18.*water_viscosity);
-		a2 = a1*(d2-d1) / (2.0*d1);
-		a3 = sqrt(8.0*dfac*d2/3.0);
-		a4 = a3*(d2-d1) / (2.0*d2);
-		c3 = 2.0*a1 + a2 - 2.0*a3 + a4;
-		c2 = -3.0*a1 -2.0*a2 + 3.0*a3 - a4;
-		c1 = a2;
-		c0 = a1;
-		
-		(*theLE).riseVelocity = ((c3*scaled_dropletSize + c2)*scaled_dropletSize + c1)*scaled_dropletSize + c0;
-									
-		
+	// riseVelocity should be a temporary field ?	
+	if (isnan((*theLE).riseVelocity))
+	{	// use Galt's algorithm to calculate rise velocity
+		(*theLE).riseVelocity = GetRiseVelocity((*theLE).density*1000, (*theLE).dropletSize*1e-6, water_viscosity, water_density);
 	}
-	else 
-	{
-
-		// do we check if z = 0 here?
-		//if (isnan((*theLE).riseVelocity)) (*theLE).riseVelocity = (2.*g/9.)*(1.-(*theLE).density/water_density)*((*theLE).dropletSize*1e-6/2.)*((*theLE).dropletSize*1e-6/2)/water_viscosity;	
-		if (isnan((*theLE).riseVelocity)) {
-			(*theLE).riseVelocity = (2. * g / 9.) *
-									(1. - (*theLE).density * 1000 / water_density) *
-									((*theLE).dropletSize * 1e-6 / 2.) *
-									((*theLE).dropletSize * 1e-6 / 2) /
-									water_viscosity;
-		}
+	
+	// old way - just covers small droplets
+	/*
+	// do we check if z = 0 here?
+	//if (isnan((*theLE).riseVelocity)) (*theLE).riseVelocity = (2.*g/9.)*(1.-(*theLE).density/water_density)*((*theLE).dropletSize*1e-6/2.)*((*theLE).dropletSize*1e-6/2)/water_viscosity;	
+	if (isnan((*theLE).riseVelocity)) {
+		(*theLE).riseVelocity = (2. * g / 9.) *
+								(1. - (*theLE).density * 1000 / water_density) *
+								((*theLE).dropletSize * 1e-6 / 2.) *
+								((*theLE).dropletSize * 1e-6 / 2) /
+								water_viscosity;
 	}
+	*/
+	
 	//deltaPoint.z = -1. * ((*theLE).riseVelocity*CMTOMETERS)*timeStep;	// assuming we add dz to the point, check units...
 	deltaPoint.z = -1. * ((*theLE).riseVelocity)*timeStep;	// assuming we add dz to the point, check units...
 
