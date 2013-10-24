@@ -67,8 +67,8 @@ class RandomVerticalMover(CyMover, serializable.Serializable):
     """
 
     state = copy.deepcopy(CyMover.state)
-    state.add(update=['vertical_diffusion_coef_above_ml','vertical_diffusion_coef_below_ml'],
-              create=['vertical_diffusion_coef_above_ml','vertical_diffusion_coef_below_ml'])
+    state.add(update=['vertical_diffusion_coef_above_ml','vertical_diffusion_coef_below_ml','mixed_layer_depth'],
+              create=['vertical_diffusion_coef_above_ml','vertical_diffusion_coef_below_ml','mixed_layer_depth'])
 
     def __init__(self, **kwargs):
         """
@@ -77,6 +77,7 @@ class RandomVerticalMover(CyMover, serializable.Serializable):
         Optional parameters (kwargs)
         :param vertical_diffusion_coef_above_ml: Vertical diffusion coefficient for random diffusion above the mixed layer. Default is 5 cm2/s
         :param vertical_diffusion_coef_below_ml: Vertical diffusion coefficient for random diffusion below the mixed layer. Default is .11 cm2/s
+        :param mixed_layer_depth: Mixed layer depth. Default is 10 meters.
         
         Remaining kwargs are passed onto Mover's __init__ using super. 
         See Mover documentation for remaining valid kwargs.
@@ -84,7 +85,7 @@ class RandomVerticalMover(CyMover, serializable.Serializable):
 
         self.mover = \
             CyRandomVerticalMover(vertical_diffusion_coef_above_ml=kwargs.pop('vertical_diffusion_coef_above_ml'
-                                  , 5),vertical_diffusion_coef_below_ml=kwargs.pop('vertical_diffusion_coef_below_ml',.11))
+                                  , 5),vertical_diffusion_coef_below_ml=kwargs.pop('vertical_diffusion_coef_below_ml',.11),mixed_layer_depth=kwargs.pop('mixed_layer_depth',10.))
         super(RandomVerticalMover, self).__init__(**kwargs)
 
     @property
@@ -93,6 +94,9 @@ class RandomVerticalMover(CyMover, serializable.Serializable):
     @property
     def vertical_diffusion_coef_below_ml(self):
         return self.mover.vertical_diffusion_coef_below_ml
+    @property
+    def mixed_layer_depth(self):
+        return self.mover.mixed_layer_depth
 
     @vertical_diffusion_coef_above_ml.setter
     def vertical_diffusion_coef_above_ml(self, value):
@@ -100,6 +104,9 @@ class RandomVerticalMover(CyMover, serializable.Serializable):
     @vertical_diffusion_coef_below_ml.setter
     def vertical_diffusion_coef_below_ml(self, value):
         self.mover.vertical_diffusion_coef_below_ml = value
+    @mixed_layer_depth.setter
+    def mixed_layer_depth(self, value):
+        self.mover.mixed_layer_depth = value
 
     def __repr__(self):
         """
@@ -107,8 +114,8 @@ class RandomVerticalMover(CyMover, serializable.Serializable):
             We probably want to include more information.
         """
 
-        return 'RandomVerticalMover(vertical_diffusion_coef_above_ml=%s,vertical_diffusion_coef_below_ml=%s,active_start=%s, active_stop=%s, on=%s)' \
-            % (self.vertical_diffusion_coef_above_ml, self.vertical_diffusion_coef_below_ml, self.active_start,
+        return 'RandomVerticalMover(vertical_diffusion_coef_above_ml=%s,vertical_diffusion_coef_below_ml=%s,mixed_layer_depth=%s,active_start=%s, active_stop=%s, on=%s)' \
+            % (self.vertical_diffusion_coef_above_ml, self.vertical_diffusion_coef_below_ml, self.mixed_layer_depth, self.active_start,
                self.active_stop, self.on)
 
 

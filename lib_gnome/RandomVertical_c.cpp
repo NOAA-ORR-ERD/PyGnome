@@ -34,6 +34,7 @@ void RandomVertical_c::Init()
 {
 	fVerticalDiffusionCoefficient = 5; //  cm**2/sec	
 	fVerticalBottomDiffusionCoefficient = .11; //  cm**2/sec, Bushy suggested a larger default	
+	fMixedLayerDepth = 10.; // meters
 	//fHorizontalDiffusionCoefficient = 126; //  cm**2/sec	
 	bUseDepthDependentDiffusion = false;
 	//memset(&fOptimize,0,sizeof(fOptimize));
@@ -119,10 +120,11 @@ WorldPoint3D RandomVertical_c::GetMove (const Seconds& model_time, Seconds timeS
 
 	//if ((*theLE).z==0)	return deltaPoint;
 	// will need a flag to check if LE is supposed to stay on the surface or can be diffused below	
+	// will want to be able to set mixed layer depth, but have a local value that can be changed
 	if ((*theLE).z>0)	// only apply vertical diffusion if there are particles below surface
 	{
 		double verticalDiffusionCoefficient;
-		double mixedLayerDepth=10., totalLEDepth, depthAtPoint=INFINITE_DEPTH;
+		double mixedLayerDepth=fMixedLayerDepth, totalLEDepth, depthAtPoint=INFINITE_DEPTH;
 		float eps = 1.e-6;
 		// diffusion coefficient is O(1) vs O(100000) for horizontal / vertical diffusion
 		// vertical is 3-5 cm^2/s, divide by sqrt of 10^5
@@ -159,6 +161,7 @@ WorldPoint3D RandomVertical_c::GetMove (const Seconds& model_time, Seconds timeS
 					// or just let it go and deal with it later? then it will go into full water column...
 			}
 		}
+		if (mixedLayerDepth==depthAtPoint) return deltaPoint;	// in this case don't need to do anything more
 		z = deltaPoint.z;	// will add this on to the next move
 		// now apply below mixed layer depth diffusion to all particles above and below
 		if (fVerticalBottomDiffusionCoefficient==0/* && z==0*/) return deltaPoint;
