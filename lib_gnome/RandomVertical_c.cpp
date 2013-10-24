@@ -108,6 +108,7 @@ double GetDepthAtPoint(WorldPoint p)
 {
 	//will need bathymetry information
 	double depthAtPt = INFINITE_DEPTH;
+	return depthAtPt;
 }
 
 WorldPoint3D RandomVertical_c::GetMove (const Seconds& model_time, Seconds timeStep,long setIndex,long leIndex,LERec *theLE,LETYPE leType)
