@@ -133,7 +133,7 @@
 <%def name="datetime_control(date_name, value=None, date_label=None,
                              date_class='date input-small',
                              date_help_text=None, hour_value=None,
-                             hour_label='Time (24-hr): ', hour_name='hour', hour_class='hour',
+                             hour_label='Time (24-hr)', hour_name='hour', hour_class='hour',
                              minute_value=None, minute_label=None,
                              minute_class='minute', minute_name='minute',
                              time_help_text=None, date_id=None)">
@@ -157,7 +157,7 @@
 </%def>
 
 
-<%def name="time_control(hour=None, minute=None, hour_label='Time (24-hour): ',
+<%def name="time_control(hour=None, minute=None, hour_label='Time (24-hr)',
                          hour_name='hour', hour_class='hour', minute_label=None,
                          minute_name='minute', minute_class='minute',
                          help_text=None)">

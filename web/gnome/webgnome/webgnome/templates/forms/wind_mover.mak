@@ -28,7 +28,7 @@
                     <div class="tab-content">
                         <div class="tab-pane active"  id="${wind_form_id}_data">
                             <div class="row">
-                                <div class="span7 wind-header">
+                                <div class="col-md-7 wind-header">
                                   ${defs.form_control(h.select('wind_id', 'new', (('new', 'New Wind'),),
                                     class_='input-medium',
                                     data_value='mover.wind_id'),
@@ -51,21 +51,20 @@
                                 <hr style="margin: 10px 10px 10px;"/>
 
                                 <div id="${constant_id}" class="constant-wind">
-                                    <div class="span3 add-time-forms">
+                                    <div class="col-md-4 add-time-forms">
                                         <div class='time-form add-time-form'>
                                                 <%include file="timeseries_value.mak"/>
                                         </div>
                                     </div>
 
-                                    <div class="span2">
-                                        <div id="${constant_id}_compass"
-                                             class="compass"></div>
+                                    <div class="col-md-4">
+                                        <div id="${constant_id}_compass" class="compass"></div>
                                     </div>
                                 </div>
 
                                 <div id="${variable_id}"
                                      class="variable-wind hidden">
-                                    <div class="span3 add-time-forms">
+                                    <div class="col-md-5 add-time-forms">
                                         <div class='time-form add-time-form'>
                                                 <%include file="add_wind_timeseries_form.mak" args="form_id=variable_id"/>
                                         </div>

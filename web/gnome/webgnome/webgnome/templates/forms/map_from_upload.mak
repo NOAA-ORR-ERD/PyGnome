@@ -1,9 +1,9 @@
 <%namespace name="defs" file="../defs.mak"/>
 
 <div class="map form page hide" id='add-map-from-upload' title="Add Map">
-    <form action="" class="form-horizontal" method="POST" enctype="multipart/form-data">
+    <form class="form-horizontal" role="form" action="" method="POST" enctype="multipart/form-data">
         <div class="page-body">
-            <div class="span4">
+            <div class="col-md-8">
                 <%
                     name = h.text('name', data_value='map.name')
                     refloat_halflife = h.text('refloat_halflife',

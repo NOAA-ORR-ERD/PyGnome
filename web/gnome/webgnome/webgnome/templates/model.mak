@@ -109,37 +109,70 @@
 
 <%block name="content">
     <div id="main-content" class="row">
-	        <div id="model" class='section hidden'>
 
-			    <div class="btn-toolbar" >
-			        <div class="btn-group">
-			            <button type="button" class="btn btn-default disabled" id="back-button">
-			            	<i class="glyphicon glyphicon-fast-backward"></i>
-			            </button>
+    	<div id="carousel-app-views" class="carousel slide" data-interval="0">
+    		<!-- Indicators -->
+    		<ol class="carousel-indicators">
+    			<li data-target="#carousel-app-views" data-slide-to="0" class="active"></li>
+    			<li data-target="#carousel-app-views" data-slide-to="1"></li>
+    		</ol>
 
-			            <div type="button" class="btn btn-default disabled" id="slider-container">
-			                        <span id="time">00:00</span>
+    		<!-- Wrapper for slides -->
+    		<div class="carousel-inner">
+    			<div class="item active">
 
-			                        <div id="slider"><div id="slider-shaded"></div></div>
-			            </div>
+			        <div id="model" class='section hidden'>
 
-			            <button type="button" class="btn btn-default" id="play-button">
-			            	<i class="glyphicon glyphicon-play"></i>
-			            </button>
-			            <button type="button" class="btn btn-default disabled" id="pause-button">
-			            	<i class="glyphicon glyphicon-pause"></i>
-			            </button>
-			            <button type="button" class="btn btn-default disabled" id="forward-button">
-			            	<i class="glyphicon glyphicon-fast-forward"></i>
-			            </button>
+					    <div class="btn-toolbar" >
+					        <div class="btn-group">
+					            <button type="button" class="btn btn-default disabled" id="back-button">
+					            	<i class="glyphicon glyphicon-fast-backward"></i>
+					            </button>
+
+					            <div type="button" class="btn btn-default disabled" id="slider-container">
+					                        <span id="time">00:00</span>
+
+					                        <div id="slider"><div id="slider-shaded"></div></div>
+					            </div>
+
+					            <button type="button" class="btn btn-default" id="play-button">
+					            	<i class="glyphicon glyphicon-play"></i>
+					            </button>
+					            <button type="button" class="btn btn-default disabled" id="pause-button">
+					            	<i class="glyphicon glyphicon-pause"></i>
+					            </button>
+					            <button type="button" class="btn btn-default disabled" id="forward-button">
+					            	<i class="glyphicon glyphicon-fast-forward"></i>
+					            </button>
+					        </div>
+					    </div>
+
+			            <div class="panel" id="leaflet-map"> </div>
+			            <div class="current-coordinates"></div>
+			            <div id="map" class="hidden"></div>
+			            <div class="placeholder"></div>
 			        </div>
-			    </div>
 
-	            <div class="panel" id="leaflet-map"> </div>
-	            <div class="current-coordinates"></div>
-	            <div id="map" class="hidden"></div>
-	            <div class="placeholder"></div>
-	        </div>
+    				<div class="carousel-caption">
+    					Map View
+    				</div>
+    			</div> <!-- end first item -->
+				<div class="item">
+					<img src="http://placehold.it/900x500" alt="">
+					<div class="carousel-caption">
+						Reports View (None Yet...)
+					</div>
+				</div>  <!-- end second item -->
+    		</div>
+
+    		<!-- Controls -->
+##    		<a class="left carousel-control" href="#carousel-app-views" data-slide="prev">
+##    			<span class="icon-prev"></span>
+##    		</a>
+    		<a class="right carousel-control" href="#carousel-app-views" data-slide="next">
+    			<span class="icon-next"></span>
+    		</a>
+    	</div> <!-- end carousel -->
 
         <div id="splash-page" class='section hidden'>
              <img alt="GNOME model output depicting relative distribution of oil."
