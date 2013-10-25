@@ -22,8 +22,7 @@ from itertools import chain
 import numpy as np
 from hazpy import unit_conversion
 
-from gnome import basic_types
-from gnome import GnomeId
+from gnome import basic_types, elements, GnomeId
 from gnome.utilities import serializable
 from gnome.db.oil_library.oil_props import OilProps
 
@@ -37,7 +36,7 @@ class Spill(object):
               PyGnome. It does not release any elements
     """
 
-    _update = ['num_elements', 'on', 'windage_range', 'windage_persist']
+    _update = ['num_elements', 'on']
     _create = ['num_released', 'start_time_invalid']
     _create.extend(_update)
     state = copy.deepcopy(serializable.Serializable.state)
@@ -61,10 +60,10 @@ class Spill(object):
         mass=None,
         mass_units='g',
         oil='oil_conservative',
-        windage_range=(0.01, 0.04),
-        windage_persist=900,
+        windage_range=None,
+        windage_persist=None,
+        element_type=None,
         id=None,
-        element_type=None   # todo: need a default here?
         ):
         """
         Base spill class. Spill used by a gnome model derive from this class
@@ -112,11 +111,24 @@ class Spill(object):
 
         self.oil_props = OilProps(oil)
 
-        self.windage_range = windage_range
-        self.windage_persist = windage_persist
-
         self._gnome_id = GnomeId(id)
+        if element_type is None:
+            element_type = elements.Floating()
+
         self.element_type = element_type
+
+        if windage_range is not None:
+            if 'windage_range' not in self.element_type.initializers:
+                raise TypeError("'windage_range' cannot be set for specified"
+                                " element_type: {0}".format(element_type))
+
+            (self.element_type.initializers['windage_range']).windage_range = \
+                windage_range
+        if windage_persist is not None:
+            if 'windage_persist' not in self.element_type.initializers:
+                raise TypeError("'windage_persist' cannot be set for specified"
+                                " element_type: {0}".format(element_type))
+            (self.element_type.initializers['windage_persist']).windage_persist = windage_persist
 
         # number of new particles released at each timestep
         self.num_released = 0
@@ -336,8 +348,6 @@ class PointLineSource(Spill, serializable.Serializable):
             release_time=dict_.pop('release_time'),
             end_position=dict_.pop('end_position', None),
             end_release_time=dict_.pop('end_release_time', None),
-            windage_range=dict_.pop('windage_range'),
-            windage_persist=dict_.pop('windage_persist'),
             id=dict_.pop('id'),
             )
 

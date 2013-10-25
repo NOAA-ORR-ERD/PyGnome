@@ -197,10 +197,12 @@ class WindMover(CyMover, serializable.Serializable):
             spill_mask = sc.get_spill_mask(spill)
             if np.any(spill_mask):
                 sc['windages'][spill_mask] = \
-                    rand.random_with_persistance(spill.windage_range[0],
-                        spill.windage_range[1], spill.windage_persist,
-                        time_step,
-                        array_len=np.count_nonzero(spill_mask))
+                    rand.random_with_persistance(
+                                    sc['windage_range'][spill_mask, 0],
+                                    sc['windage_range'][spill_mask, 1],
+                                    sc['windage_persist'][spill_mask],
+                                    time_step,
+                                    array_len=np.count_nonzero(spill_mask))
 
     def get_move(
         self,
@@ -411,10 +413,12 @@ class GridWindMover(CyMover, serializable.Serializable):
             spill_mask = sc.get_spill_mask(spill)
             if np.any(spill_mask):
                 sc['windages'][spill_mask] = \
-                    rand.random_with_persistance(spill.windage_range[0],
-                        spill.windage_range[1], spill.windage_persist,
-                        time_step,
-                        array_len=np.count_nonzero(spill_mask))
+                    rand.random_with_persistance(
+                                    sc['windage_range'][0, spill_mask],
+                                    sc['windage_range'][1, spill_mask],
+                                    sc['windage_persist'][spill_mask],
+                                    time_step,
+                                    array_len=np.count_nonzero(spill_mask))
 
     def get_move(
         self,
