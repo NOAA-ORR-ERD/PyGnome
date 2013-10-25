@@ -13,7 +13,7 @@ import numpy as np
 
 from gnome.spill import (Spill,
                          PointLineSource)
-
+from gnome.elements import ElementType
 import gnome.array_types
 
 from conftest import mock_append_data_arrays
@@ -23,6 +23,32 @@ from conftest import mock_append_data_arrays
 # Only care about 'positions' array type for all spills, no need to define
 # and carry remaining numpy arrays
 arr_types = {'positions': gnome.array_types.positions}
+
+
+@pytest.mark.parametrize(("windage_range", "windage_persist"),
+                         [(None, None),
+                          ([0.02, 0.03], 0)
+                          ])
+def test_init(windage_range, windage_persist):
+    spill = Spill(10, windage_range=windage_range,
+                  windage_persist=windage_persist)
+    if windage_range is None:
+        windage_range = [0.01, 0.04]
+    if windage_persist is None:
+        windage_persist = 900
+
+    assert np.all(spill.element_type.initializers['windage_range'].windage_range
+                  == windage_range)
+    assert (spill.element_type.initializers['windage_persist'].windage_persist
+            == windage_persist)
+
+
+def test_init_exceptions():
+    with pytest.raises(TypeError):
+        Spill(10, element_type=ElementType(), windage_range=[0.01, 0.04])
+
+    with pytest.raises(TypeError):
+        Spill(10, element_type=ElementType(), windage_persist=0)
 
 
 def test_deepcopy():

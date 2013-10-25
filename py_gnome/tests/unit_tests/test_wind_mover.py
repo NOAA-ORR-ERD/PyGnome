@@ -259,7 +259,9 @@ def test_windage_index():
                 * .01 + .01), windage_persist=900)
         sc.spills.add(spill)
 
-    windage = {'windages': ArrayType((), windage_type)}
+    windage = {'windages': array_types.windages,
+               'windage_range': array_types.windage_range,
+               'windage_persist': array_types.windage_persist}
     sc.prepare_for_model_run(rel_time,
                              array_types=windage)
     sc.release_elements(rel_time, timestep)
@@ -278,8 +280,9 @@ def test_windage_index():
         for sp in sc.spills:
             mask = sc.get_spill_mask(sp)
             if np.any(mask):
-                assert np.all(sc['windages'][mask]
-                              == sp.windage_range[0])
+                assert np.all(sc['windages'][mask] ==
+                              (sp.element_type.initializers["windage_range"].
+                              windage_range[0]))
 
     # only 1st sc is released
 
@@ -463,6 +466,7 @@ def test_array_types():
     assert 'windages' in wm.array_types
     assert 'windage_range' in wm.array_types
     assert 'windage_persist' in wm.array_types
+
 
 def _defaults(wm):
     """

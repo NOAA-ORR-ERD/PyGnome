@@ -13,48 +13,72 @@ from gnome.cy_gnome.cy_helpers import rand
 import pytest
 
 
-def test_exceptions():
+@pytest.mark.parametrize(("low", "high"),
+                         [(1, 0),
+                          (1., 0.),
+                          ([1, 2], [0, 1])])
+def test_exceptions(low, high):
     """
     Test exceptions
     """
 
     with pytest.raises(ValueError):
-        random_with_persistance(1, 0)
-        random_with_persistance(1, 0, 0, 0)
+        random_with_persistance(low, high)
 
 
-def test_random_with_persistance_scalar():
+@pytest.mark.parametrize(("low", "high", "persist", "array_len"),
+                   [(0, 10, None, None),
+                    (0, 10,  0, 10),
+                    ([1, 3], [5, 6], None, None),
+                    ((1, 3), (5, 6), (0, 0), 5),  # should ignore array_len
+                    (np.asarray([1., 3.]), np.asarray([4., 7.]), None, None)])
+def test_random_with_0_persistance(low, high, persist, array_len):
     """
     Since numbers are randomly generated, can only test
     array length
     """
+    x = random_with_persistance(low, high, persist, array_len=array_len)
+    if isinstance(low, int) or isinstance(low, float):
+        if (array_len is None):
+            assert x >= low and x <= high
+            assert isinstance(x, float)
+            return
+        else:
+            assert len(x) == array_len
 
-    x = random_with_persistance(0, 10)
-    assert x >= 0 and x <= 10
-    assert isinstance(x, float)
+    # assertion if an array is returned
+    assert np.all(x >= low) and np.all(x <= high)
 
 
-def test_random_with_persistance_array():
+@pytest.mark.parametrize(("low", "high", "persist"),
+                   [(1, 4, 100),
+                    ((1, 3), (5, 6), (0, 100)),  # should ignore array_len
+                    ])
+def test_random_with_non_zero_persistence(low, high, persist):
     """
-    Test so the output is a numpy array of random numbers
+    Checks that everything works with non-zero persistence
+    For an array, it also checks that if an element has non-zero persistence,
+    the random number generated for it is within its [low, high] bounds
     """
+    x = random_with_persistance(low, high, persist)
+    if isinstance(persist, tuple):
+        mask = (persist == 0)
+        assert x[mask] >= low[mask]
+        assert x[mask] <= high[mask]
 
-    x = random_with_persistance(0, 10, 900, 60, 100)
-    assert len(x) == 100
-    assert isinstance(x, np.ndarray)
+    assert True
 
 
-def test_random_with_persistance_low_equals_high():
+@pytest.mark.parametrize(("low", "high"), [(10, 10), ([0, 1], [0, 1])])
+def test_random_with_persistance_low_equals_high(low, high):
     """
     if low==high, then return low - deterministic output
     """
-
-    x = random_with_persistance(10, 10, 900, 60)
-    assert x == 10
-
-    y = random_with_persistance(10, 10, 900, 60, array_len=100)
-    assert len(y) == 100
-    assert np.all(y == 10)
+    x = random_with_persistance(low, high, 900, 60)
+    if isinstance(low, int) or isinstance(low, float):
+        assert x is low
+    else:
+        assert np.all(x == low)
 
 
 def test_set_seed():
@@ -76,5 +100,3 @@ def test_set_seed():
     assert xi == xf
     assert np.all(ai == af)
     assert ci == cf
-
-

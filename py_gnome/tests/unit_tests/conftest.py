@@ -56,7 +56,7 @@ def sample_sc_release(num_elements=10,
     uncertain=False,
     time_step=360,
     spill=None,
-    arr_types={'windages': gnome.array_types.windages},
+    arr_types=None,
     current_time=None):
     """
     initiailize a spill of type spill_obj, add it to a SpillContainer.
@@ -68,6 +68,12 @@ def sample_sc_release(num_elements=10,
                                             release_time)
     if current_time is None:
         current_time = spill.release_time
+
+    if arr_types is None:
+        # default always has standard windage parameters required by wind_mover
+        arr_types = {'windages': gnome.array_types.windages,
+                     'windage_range': gnome.array_types.windage_range,
+                     'windage_persist': gnome.array_types.windage_persist}
 
     sc = gnome.spill_container.SpillContainer(uncertain)
     sc.spills.add(spill)
