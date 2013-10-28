@@ -14,71 +14,62 @@ import pytest
 
 
 @pytest.mark.parametrize(("low", "high"),
-                         [(1, 0),
-                          (1., 0.),
+                         [([1], [0]),
                           ([1, 2], [0, 1])])
 def test_exceptions(low, high):
     """
     Test exceptions
     """
-
+    arr = np.zeros((len(low),), dtype=np.float64)
     with pytest.raises(ValueError):
-        random_with_persistance(low, high)
+        random_with_persistance(low, high, arr)
 
 
-@pytest.mark.parametrize(("low", "high", "persist", "array_len"),
-                   [(0, 10, None, None),
-                    (0, 10,  0, 10),
-                    ([1, 3], [5, 6], None, None),
-                    ((1, 3), (5, 6), (0, 0), 5),  # should ignore array_len
-                    (np.asarray([1., 3.]), np.asarray([4., 7.]), None, None)])
-def test_random_with_0_persistance(low, high, persist, array_len):
+@pytest.mark.parametrize(("low", "high", "array", "persist", "timestep"),
+                   [([0], [10], None, None, 1),
+                    ([1, 3], [5, 6], None, None, 1),
+                    ((1, 3), (5, 6), np.zeros((2,), dtype=float), (-1, 1), 1),
+                    (np.asarray([1., 3.]), np.asarray([4., 7.]),
+                     np.zeros((2,), dtype=np.float64),
+                     np.asarray([100, 0]), 100)
+                     ])
+def test_random_with_persistance(low, high, array, persist, timestep):
     """
     Since numbers are randomly generated, can only test
     array length
     """
-    x = random_with_persistance(low, high, persist, array_len=array_len)
-    if isinstance(low, int) or isinstance(low, float):
-        if (array_len is None):
-            assert x >= low and x <= high
-            assert isinstance(x, float)
-            return
-        else:
-            assert len(x) == array_len
+    if array is None:
+        array = random_with_persistance(low, high, array, persist,
+                                        time_step=timestep)
+    else:
+        random_with_persistance(low, high, array, persist, time_step=timestep)
 
-    # assertion if an array is returned
-    assert np.all(x >= low) and np.all(x <= high)
+    # persist set to timestep
+    if persist is None:
+        assert np.all(array >= low) and np.all(array <= high)
+    else:
+        # do not update values if persist < 0
+        low = np.asarray(low)
+        high = np.asarray(high)
+        persist = np.asarray(persist)
+        assert array[persist <= 0] == 0
 
-
-@pytest.mark.parametrize(("low", "high", "persist"),
-                   [(1, 4, 100),
-                    ((1, 3), (5, 6), (0, 100)),  # should ignore array_len
-                    ])
-def test_random_with_non_zero_persistence(low, high, persist):
-    """
-    Checks that everything works with non-zero persistence
-    For an array, it also checks that if an element has non-zero persistence,
-    the random number generated for it is within its [low, high] bounds
-    """
-    x = random_with_persistance(low, high, persist)
-    if isinstance(persist, tuple):
-        mask = (persist == 0)
-        assert x[mask] >= low[mask]
-        assert x[mask] <= high[mask]
-
-    assert True
+        # for persist == timestep, output is within [low, high] bounds
+        eq_mask = [persist == timestep]
+        if np.any(eq_mask):
+            assert (array[eq_mask] >= low[eq_mask] and
+                    array[eq_mask] <= high[eq_mask])
 
 
-@pytest.mark.parametrize(("low", "high"), [(10, 10), ([0, 1], [0, 1])])
+@pytest.mark.parametrize(("low", "high"),
+                         [([10], [10]),
+                          ([0, 1], [0, 1])])
 def test_random_with_persistance_low_equals_high(low, high):
     """
     if low==high, then return low - deterministic output
     """
-    x = random_with_persistance(low, high, 900, 60)
-    if isinstance(low, int) or isinstance(low, float):
-        assert x is low
-    else:
-        assert np.all(x == low)
+    x = random_with_persistance(low, high)
+    assert np.all(x == low)
 
 
 def test_set_seed():

@@ -9,8 +9,7 @@ import pytest
 from gnome.array_types import (windages, windage_range, windage_persist,
                                mass,
                                rise_vel)
-from gnome.elements import (InitConstantWindageRange,
-                            InitConstantWindagePersist,
+from gnome.elements import (InitWindagesConstantParams,
                             InitMassFromVolume,
                             InitRiseVelFromDist)
 from gnome.spill import Spill
@@ -19,9 +18,9 @@ from conftest import mock_append_data_arrays
 
 
 """ Helper functions """
-# define dicts, each one with single key to make testing easier
-windage_range_array = {'windage_range': windage_range}
-windage_persist_array = {'windage_persist': windage_persist}
+windages = {'windages': windages,
+            'windage_range': windage_range,
+            'windage_persist': windage_persist}
 mass_array = {'mass': mass}
 rise_vel_array = {'rise_vel': rise_vel}
 num_elems = 10
@@ -37,8 +36,8 @@ def assert_dataarray_shape_size(arr_types, data_arrays, num_released):
 
 
 @pytest.mark.parametrize(("fcn", "arr_types", "spill"),
-                [(InitConstantWindageRange(), windage_range_array, None),
-                 (InitConstantWindagePersist(), windage_persist_array, None),
+                [(InitWindagesConstantParams(), windages, None),
+                 (InitWindagesConstantParams(), windages, None),
                  (InitMassFromVolume(), mass_array, Spill(volume=10)),
                  (InitRiseVelFromDist(), rise_vel_array, None),
                  (InitRiseVelFromDist('normal'), rise_vel_array, None),
@@ -68,25 +67,41 @@ def test_correct_particles_set_by_initializers(fcn, arr_types, spill):
         assert np.any(0 != data_arrays[key][-num_elems:])
 
 
-@pytest.mark.parametrize(("fcn", "array"),
-            [(InitConstantWindageRange(), windage_range_array),
-             (InitConstantWindageRange([0.02, 0.03]), windage_range_array),
-             (InitConstantWindagePersist(), windage_persist_array),
-             (InitConstantWindagePersist(0), windage_persist_array)])
-def test_initailize_InitConstantWindageRange(fcn, array):
-    """
-    tests initialize method
-    """
-    data_arrays = mock_append_data_arrays(array, num_elems)
-    fcn.initialize(num_elems, None, data_arrays)
-    assert_dataarray_shape_size(array, data_arrays, num_elems)
+class TestInitConstantWindageRange:
+    @pytest.mark.parametrize(("fcn", "array"),
+            [(InitWindagesConstantParams(), windages),
+             (InitWindagesConstantParams([0.02, 0.03]), windages),
+             (InitWindagesConstantParams(), windages),
+             (InitWindagesConstantParams(windage_persist=-1), windages)])
+    def test_initailize_InitConstantWindageRange(self, fcn, array):
+        """
+        tests initialize method
+        """
+        data_arrays = mock_append_data_arrays(array, num_elems)
+        fcn.initialize(num_elems, None, data_arrays)
+        assert_dataarray_shape_size(array, data_arrays, num_elems)
 
-    """ assert depending on array given as input """
-    key = array.keys()[0]
-    if key == 'windage_range':
-        assert np.all(data_arrays[key] == fcn.windage_range)
-    else:
+        assert np.all(data_arrays['windage_range'] == fcn.windage_range)
         assert np.all(data_arrays['windage_persist'] == fcn.windage_persist)
+        np.all(data_arrays['windages'] != 0)
+        np.all(data_arrays['windages'] >= data_arrays['windage_range'][:, 0])
+        np.all(data_arrays['windages'] <= data_arrays['windage_range'][:, 1])
+
+    def test_exceptions(self):
+        bad_wr = [-1, 0]
+        bad_wp = 0
+        obj = InitWindagesConstantParams()
+        with pytest.raises(ValueError):
+            InitWindagesConstantParams(windage_range=bad_wr)
+
+        with pytest.raises(ValueError):
+            InitWindagesConstantParams(windage_persist=bad_wp)
+
+        with pytest.raises(ValueError):
+            obj.windage_range = bad_wr
+
+        with pytest.raises(ValueError):
+            obj.windage_persist = bad_wp
 
 
 def test_initailize_InitMassFromVolume():
