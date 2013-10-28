@@ -1,8 +1,8 @@
 """
 rand.py
 
-Contains functions for adding randomness - added 'g' for gnome random, not to confuse with standard
-python random functions 
+Contains functions for adding randomness - not to
+confuse with standard python random functions
 """
 
 import numpy as np
@@ -11,28 +11,32 @@ from gnome.cy_gnome import cy_helpers
 import random
 
 
-##fixme: change this to take the windage array as input parameter, then change in place
-
 def random_with_persistance(
     low,
     high,
+    array=None,  # update this array, if provided
     persistence=None,
     time_step=1.,
-    array_len=None,
     ):
     """
     Used by gnome to generate a randomness between low and high, which is
     persistent for duration time_step
 
-    :param low: lower bound for random number - could be an array, tuple, list
-    :param high: upper bound for random number - could be an array, tuple, list
+    :param low: lower bound for random number; should be an array, tuple, list
+    :param high: upper bound for random number; should be an array, tuple, list
+    :param array: array to be updated. Must be same length as 'low', 'high',
+        'persistence'. Default is None in which case the computed array is
+        simply returned
     :param time_step: step size for the simulation in seconds.
     :param persistence: in seconds. Since we add randomness for each timestep,
         the persistence parameter is used to make the randomness invariant to
         size of time_step. Default is None. If persistence is None, it gets set
-        to either 0 or a an array of 0s of len(high)
+        equal to 'time_step'. If persistence < 0 for any elements, their values
+        are not updated in the 'array'
 
-    Note: persistence and time_step should be in the same units
+    :returns: returns 'array' with newly computed values
+
+    Note: persistence and time_step should be in the same time units
           Assumes both low and high are int/float or arrays, lists, tuples.
           For lists, arrays, tuples - it converts input to numpy array with
           dtype=float
@@ -42,67 +46,71 @@ def random_with_persistance(
           all 3 parameters for each element of the array.
     """
 
-    msg = ('The lower bound for random_with_persistance must be less than or'
-           ' equal to upper bound')
+    # make copies since we don't want to change the original arrays
+    low = np.copy(low)
+    high = np.copy(high)
 
-    if isinstance(low, int) or isinstance(low, float):
-        # this is only used if high and low are scalars
-        # would be better to have common code for persistence > 0 but
-        # this seemed like the easiest way
-        inp_isarray = False
-        if (high < low):
-            raise ValueError(msg)
-        if low == high:
-            return low
-
-        if persistence is not None and persistence > 0:
-            orig = high - low
-            l__range = orig * sqrt(persistence / float(time_step))
-            mean = (high + low) / 2.
-
-            # update the bounds for generating the random number
-            low = mean - l__range / 2.
-            high = mean + l__range / 2.
-
+    if array is None:
+        array = np.zeros(len(low,), dtype=float)
     else:
-        inp_isarray = True
+        if not isinstance(array, np.ndarray):
+            raise ValueError("If an 'array' is provided for computed values,"
+                    " it must be a numpy array")
 
-        arr_len_msg = ("Length of 'low', 'high' and 'persistence' arrays"
-                       " should be equal")
-        if (len(high) != len(low)):
-            raise ValueError(arr_len_msg)
+    # exceptions
+    len_msg = ("Length of 'low', 'high' and 'persistence' arrays"
+               " should be equal")
 
-        high = np.asarray(high, dtype=float)
-        low = np.asarray(low, dtype=float)
+    if persistence is not None:
+        persistence = np.asarray(persistence)
+        if (len(high) != len(persistence)):
+            raise ValueError(len_msg)
 
-        if np.all(high < low):
-            raise ValueError(msg)
+    if (len(high) != len(low)):
+        raise ValueError(len_msg)
 
-        if np.all(low == high):
-            return low  # ignore array_len parameter
+    if np.any(high < low):
+        raise ValueError('The lower bound for random_with_persistance must be'
+                '  less than or equal to upper bound for all array elements')
 
-        if persistence is not None:
-            persistence = np.asarray(persistence, dtype=float)
-            if (len(high) != len(persistence)):
-                raise ValueError(arr_len_msg)
+    if np.all(low == high):
+        array[:] = low[:]
 
-            mask = (persistence > 0)
+    if persistence is None:
+        """
+        if persistence == time_step, then no need to scale the [low, high]
+        interval
+        """
+        array[:] = np.random.uniform(low, high)
+        print array
+    else:
+        """
+        if persistence == time_step, then no need to scale the [low, high]
+        interval
+        """
+        u_mask = (persistence > 0)  # update mask for values to be changed
 
-            if np.any(mask):
-                orig = high[mask] - low[mask]
-                l__range = orig * np.sqrt(persistence[mask] / float(time_step))
-                mean = (high[mask] + low[mask]) / 2.
+        if np.any(u_mask):
+            if np.any(persistence[u_mask] != time_step):
+                """
+                only need to do the following for persistence values !=
+                time_step. For persistence == time_step, the newly computed
+                'low' and 'high' are unchanged so it is alright to recompute.
+                Recomputing for elements with persistence == time_step for
+                numpy arrays should still be very efficient and code is more
+                readable.
+                """
+                orig = high[u_mask] - low[u_mask]
+                l__range = orig * np.sqrt(persistence[u_mask] / float(time_step))
+                mean = (high[u_mask] + low[u_mask]) / 2.
 
                 # update the bounds for generating the random number
-                low[mask] = mean - l__range / 2.
-                high[mask] = mean + l__range / 2.
+                low[u_mask] = mean - l__range / 2.
+                high[u_mask] = mean + l__range / 2.
 
-    # should an error be thrown if low < 0?
+            array[u_mask] = np.random.uniform(low[u_mask], high[u_mask])
 
-    if inp_isarray:
-        return np.random.uniform(low, high)
-    else:
-        return np.random.uniform(low, high, array_len)
+    return array
 
 
 def seed(seed=1):

@@ -7,44 +7,94 @@ These are properties that are spill specific like:
   'weathering' element_types would use droplet_size, densities, mass?
 '''
 import numpy as np
-
+from gnome.utilities.rand import random_with_persistance
 
 """
 Initializers for various element types
-Each initializer only sets the value for a single numpy array
 """
 
 
-class InitConstantWindageRange(object):
-    """
-    initialize floating elements with windage range information
-    """
-    def __init__(self, windage_range=[0.01, 0.04]):
+#==============================================================================
+# class InitConstantWindageRange(object):
+#     """
+#     initialize floating elements with windage range information
+#     """
+#     def __init__(self, windage_range=[0.01, 0.04]):
+#         self.windage_range = windage_range
+# 
+#     def initialize(self, num_new_particles, spill, data_arrays):
+#         """
+#         Since windages exists in data_arrays, so must windage_range and
+#         windage_persist if this initializer is used/called
+#         """
+#         data_arrays['windage_range'][-num_new_particles:, :] = \
+#             self.windage_range
+# 
+# 
+# class InitConstantWindagePersist(object):
+#     """
+#     initialize floating elements with windage persistance information
+#     """
+#     def __init__(self, windage_persist=900):
+#         self.windage_persist = windage_persist
+#         if windage_persist == 0:
+#             raise TypeError("'windage_range' cannot be 0. For infinite windage"
+#                 " windage_range == -1, otherwise windag_range > 0.")
+# 
+#     def initialize(self, num_new_particles, spill, data_arrays):
+#         """
+#         Since windages exists in data_arrays, so must windage_range and
+#         windage_persist if this initializer is used/called
+#         """
+#         data_arrays['windage_persist'][-num_new_particles:] = \
+#             self.windage_persist
+#==============================================================================
+
+
+class InitWindagesConstantParams(object):
+    def __init__(self, windage_range=[0.01, 0.04], windage_persist=900):
+        self.windage_persist = windage_persist
         self.windage_range = windage_range
 
+    @property
+    def windage_persist(self):
+        return self._windage_persist
+
+    @windage_persist.setter
+    def windage_persist(self, val):
+        if val == 0:
+            raise ValueError("'windage_persist' cannot be 0. For infinite"
+                " windage, windage_persist=-1 otherwise windage_persist > 0.")
+        self._windage_persist = val
+
+    @property
+    def windage_range(self):
+        return self._windage_range
+
+    @windage_range.setter
+    def windage_range(self, val):
+        if np.any(np.asarray(val) < 0):
+            raise ValueError("'windage_range' > [0, 0]. Nominal values vary"
+                " between 1% to 4%, so default windage_range = [0.01, 0.04]")
+        self._windage_range = val
+
     def initialize(self, num_new_particles, spill, data_arrays):
         """
         Since windages exists in data_arrays, so must windage_range and
         windage_persist if this initializer is used/called
         """
-        data_arrays['windage_range'][-num_new_particles:, :] = \
-            self.windage_range
-
-
-class InitConstantWindagePersist(object):
-    """
-    initialize floating elements with windage persistance information
-    """
-    def __init__(self, windage_persist=900):
-        self.windage_persist = windage_persist
-
-    def initialize(self, num_new_particles, spill, data_arrays):
-        """
-        Since windages exists in data_arrays, so must windage_range and
-        windage_persist if this initializer is used/called
-        """
+        data_arrays['windage_range'][-num_new_particles:, 0] = \
+            self.windage_range[0]
+        data_arrays['windage_range'][-num_new_particles:, 1] = \
+            self.windage_range[1]
         data_arrays['windage_persist'][-num_new_particles:] = \
             self.windage_persist
+
+        # initialize all windages - ignore persistence during initialization
+        random_with_persistance(
+                    data_arrays['windage_range'][-num_new_particles:][:, 0],
+                    data_arrays['windage_range'][-num_new_particles:][:, 1],
+                    data_arrays['windages'][-num_new_particles:])
 
 
 class InitMassFromVolume(object):
@@ -119,10 +169,10 @@ class Floating(ElementType):
     def __init__(self):
         """
         Mover should define windages, windage_range and windage_persist
+        For this ElementType, all three must be defined!
         """
         super(Floating, self).__init__()
-        self.initializers = {'windage_range': InitConstantWindageRange(),
-                             'windage_persist': InitConstantWindagePersist()}
+        self.initializers = {'windages': InitWindagesConstantParams()}
 
 
 class FloatingMassFromVolume(Floating):
