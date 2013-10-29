@@ -1,7 +1,12 @@
 '''
 Test various element types available for the Spills
+Element Types are very simple classes. They simply define the initializers.
+These are also tested in the test_spill_container module since it allows for
+more comprehensive testing
 '''
 import copy
+from datetime import timedelta
+
 import numpy as np
 import pytest
 
@@ -11,8 +16,13 @@ from gnome.array_types import (windages, windage_range, windage_persist,
                                rise_vel)
 from gnome.elements import (InitWindagesConstantParams,
                             InitMassFromVolume,
-                            InitRiseVelFromDist)
+                            InitRiseVelFromDist,
+                            Floating,
+                            FloatingMassFromVolume,
+                            FloatingWithRiseVel,
+                            FloatingMassFromVolumeRiseVel)
 from gnome.spill import Spill
+from gnome import array_types
 
 from conftest import mock_append_data_arrays
 
@@ -146,4 +156,55 @@ def test_initialize_InitRiseVelFromDist_normal():
     assert np.all(0 != data_arrays['rise_vel'])
 
 
-""" Element Types """
+""" Element Types"""
+# all array_types corresponding with elem_t above
+arr_types = {'windages': array_types.windages,
+             'windage_range': array_types.windage_range,
+             'windage_persist': array_types.windage_persist,
+             'rise_vel': array_types.rise_vel}
+
+inp_params = [((Floating(), FloatingMassFromVolume()), arr_types),
+              ((Floating(), FloatingWithRiseVel()), arr_types),
+              ((Floating(), FloatingMassFromVolumeRiseVel()), arr_types)]
+
+
+@pytest.mark.parametrize(("elem_type", "arr_types"), inp_params)
+def test_element_types(elem_type, arr_types, sample_sc_no_uncertainty):
+    """
+    Tests that the data_arrays associated with the spill_container's
+    initializers get initialized to non-zero values
+    uses sample_sc_no_uncertainty fixture defined in conftest.py
+    """
+    sc = sample_sc_no_uncertainty
+    release_t = None
+    for idx, spill in enumerate(sc.spills):
+        spill.num_elements = 20
+        spill.element_type = elem_type[idx]
+
+        if release_t is None:
+            release_t = spill.release_time
+
+        # set release time based on earliest release spill
+        if spill.release_time < release_t:
+            release_t = spill.release_time
+
+    time_step = 3600
+    num_steps = 4   # just run for 4 steps
+    sc.prepare_for_model_run(release_t, arr_types)
+
+    for step in range(num_steps):
+        current_time = release_t + timedelta(seconds=time_step * step)
+        sc.prepare_for_model_step(current_time)
+        sc.release_elements(current_time, time_step)
+        assert sc.current_time_stamp == current_time
+
+        for spill in sc.spills:
+            spill.element_type
+            spill_mask = sc.get_spill_mask(spill)
+            if np.any(spill_mask):
+                for key in arr_types:
+                    if (key in spill.element_type.initializers or
+                        key in ['windage_range', 'windage_persist']):
+                        assert np.all(sc[key][spill_mask] != 0)
+                    else:
+                        assert np.all(sc[key][spill_mask] == 0)

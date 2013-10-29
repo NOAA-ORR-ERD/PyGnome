@@ -228,6 +228,41 @@ def sample_spatial_release():
 
 
 @pytest.fixture(scope='module')
+def sample_sc_no_uncertainty():
+    """
+    Sample spill container with 2 PointLineSource spills:
+
+    - release_time for 2nd spill is 1 hour delayed
+    - 2nd spill takes 4 hours to release and end_position is different so it
+      is a time varying, line release
+    - both have a volume of 10 and default element_type
+
+    Nothing is released. This module simply defines a SpillContainer, adds
+    the two spills and returns it. It is used in test_spill_container.py
+    and test_elements.py so defined as a fixture.
+    """
+    sc = gnome.spill_container.SpillContainer()
+    # Sample data for creating spill
+    num_elements = 100
+    start_position = (23.0, -78.5, 0.0)
+    release_time = datetime(2012, 1, 1, 12)
+    end_position = (24.0, -79.5, 1.0)
+    end_release_time = datetime(2012, 1, 1, 12) + timedelta(hours=4)
+
+    spills = [gnome.spill.PointLineSource(num_elements,
+                              start_position,
+                              release_time,
+                              volume=10),
+              gnome.spill.PointLineSource(num_elements, start_position,
+                              release_time + timedelta(hours=1),
+                              end_position, end_release_time,
+                              volume=10),
+              ]
+    sc.spills.add(spills)
+    return sc
+
+
+@pytest.fixture(scope='module')
 def sample_model():
     """
     sample model with no outputter and no spills. Use this as a template for

@@ -471,8 +471,6 @@ el.initializers['windages'].windage_range = [0.02, 0.02]
 el.initializers['windages'].windage_persist = -1
 el.initializers['rise_vel'].params = [1, 10]
 
-# no need to include windages since it does not have an initializer and we
-# are not testing the WindMover's functionality to set 'windages'
 arr_types = {'windages': array_types.windages,
              'windage_range': array_types.windage_range,
              'windage_persist': array_types.windage_persist,
@@ -481,26 +479,30 @@ arr_types = {'windages': array_types.windages,
 
 @pytest.mark.parametrize(("elem_type", "arr_types"),
         [((el, elements.FloatingMassFromVolumeRiseVel()), arr_types)])
-def test_element_types(elem_type, arr_types):
-    sc = SpillContainer()
-    spills = [PointLineSource(num_elements,
-                              start_position,
-                              release_time,
-                              element_type=elem_type[0],
-                              volume=10),
-              PointLineSource(num_elements, start_position,
-                              release_time + timedelta(hours=1),
-                              end_position, end_release_time,
-                              element_type=elem_type[1],
-                              volume=10)
-              ]
-    sc.spills.add(spills)
+def test_element_types(elem_type, arr_types, sample_sc_no_uncertainty):
+    """
+    Tests that the spill_container's data_arrays associated with initializers
+    are correctly setup for each spill
+    uses sample_sc_no_uncertainty fixture defined in conftest.py
+    """
+    sc = sample_sc_no_uncertainty
+    release_t = None
+    for idx, spill in enumerate(sc.spills):
+        spill.element_type = elem_type[idx]
+
+        if release_t is None:
+            release_t = spill.release_time
+
+        # set release time based on earliest release spill
+        if spill.release_time < release_t:
+            release_t = spill.release_time
+
     time_step = 3600
     num_steps = 4   # just run for 4 steps
-    sc.prepare_for_model_run(release_time, arr_types)
+    sc.prepare_for_model_run(release_t, arr_types)
 
     for step in range(num_steps):
-        current_time = release_time + timedelta(seconds=time_step * step)
+        current_time = release_t + timedelta(seconds=time_step * step)
         sc.prepare_for_model_step(current_time)
         sc.release_elements(current_time, time_step)
         assert sc.current_time_stamp == current_time
