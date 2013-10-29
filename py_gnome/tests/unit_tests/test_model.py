@@ -493,7 +493,7 @@ def test_all_movers(start_time, release_delay, duration):
 
 # 0 is infinite persistence
 
-@pytest.mark.parametrize('wind_persist', [0, 900, 5])
+@pytest.mark.parametrize('wind_persist', [-1, 900, 5])
 def test_linearity_of_wind_movers(wind_persist):
     """
     WindMover is defined as a linear operation - defining a model
@@ -567,17 +567,16 @@ def test_linearity_of_wind_movers(wind_persist):
     # look at the mean of the position vector. Assume m1 is truth
     # and m2 is approximation - look at the absolute error between
     # mean position of m2 in the 2 norm.
-    # rel_mean_error = np.linalg.norm(np.mean(model2.spills.LE('positions'), 0) - np.mean(model1.spills.LE('positions'), 0))
+    # rel_mean_error =(np.linalg.norm(np.mean(model2.spills.LE('positions'), 0)
+    #                  - np.mean(model1.spills.LE('positions'), 0)))
     # assert rel_mean_error <= 0.5
 
-    # Similary look at absolute error in variance of position of m2
+    # Similarly look at absolute error in variance of position of m2
     # in the 2 norm.
 
-    rel_var_error = np.linalg.norm(np.var(model2.spills.LE('positions'
-                                   ), 0)
-                                   - np.var(model1.spills.LE('positions'
-                                   ), 0))
-    assert rel_var_error <= 0.001
+    rel_var_error = np.linalg.norm(np.var(model2.spills.LE('positions'), 0)
+                                   - np.var(model1.spills.LE('positions'), 0))
+    assert rel_var_error <= 0.0015
 
 
 def test_model_release_after_start():

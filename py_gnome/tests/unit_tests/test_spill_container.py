@@ -21,7 +21,9 @@ from gnome import elements
 from conftest import sample_sc_release
 
 # additional array_type for testing spill_container functionality
-windage_at = {'windages': array_types.windages}
+windage_at = {'windages': array_types.windages,
+              'windage_range': array_types.windage_range,
+              'windage_persist': array_types.windage_persist}
 
 # Sample data for creating spill
 num_elements = 100
@@ -465,13 +467,14 @@ def test_ordered_collection_api():
 
 """ tests w/ element types set for two spills """
 el = elements.FloatingMassFromVolumeRiseVel()
-el.initializers['windage_range'].windage_range = [0.02, 0.02]
-el.initializers['windage_persist'].windage_persist = 0
+el.initializers['windages'].windage_range = [0.02, 0.02]
+el.initializers['windages'].windage_persist = -1
 el.initializers['rise_vel'].params = [1, 10]
 
 # no need to include windages since it does not have an initializer and we
 # are not testing the WindMover's functionality to set 'windages'
-arr_types = {'windage_range': array_types.windage_range,
+arr_types = {'windages': array_types.windages,
+             'windage_range': array_types.windage_range,
              'windage_persist': array_types.windage_persist,
              'rise_vel': array_types.rise_vel}
 
@@ -763,6 +766,13 @@ def test_eq_spill_container_pair(uncertain):
           and simplify it
     """
     (sp1, sp2) = get_eq_spills()
+
+    # windages array will not match after elements are released so lets not
+    # add any more types to data_arrays for this test. Just look at base
+    # array_types for SpillContainer's and ensure the data matches for them
+    sp1.element_type = elements.ElementType()
+    sp2.element_type = elements.ElementType()
+
     scp1 = SpillContainerPair(uncertain)  # uncertainty is on
     scp1.add(sp1)
 
@@ -778,9 +788,9 @@ def test_eq_spill_container_pair(uncertain):
         scp2.add(sp2)
 
     for sc in zip(scp1.items(), scp2.items()):
-        sc[0].prepare_for_model_run(sp1.release_time, array_types=windage_at)
+        sc[0].prepare_for_model_run(sp1.release_time)
         sc[0].release_elements(sp1.release_time, 360)
-        sc[1].prepare_for_model_run(sp2.release_time, array_types=windage_at)
+        sc[1].prepare_for_model_run(sp2.release_time)
         sc[1].release_elements(sp2.release_time, 360)
 
     assert scp1 == scp2

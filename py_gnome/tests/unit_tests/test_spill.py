@@ -27,7 +27,7 @@ arr_types = {'positions': gnome.array_types.positions}
 
 @pytest.mark.parametrize(("windage_range", "windage_persist"),
                          [(None, None),
-                          ([0.02, 0.03], 0)
+                          ([0.02, 0.03], -1)
                           ])
 def test_init(windage_range, windage_persist):
     spill = Spill(10, windage_range=windage_range,
@@ -37,9 +37,9 @@ def test_init(windage_range, windage_persist):
     if windage_persist is None:
         windage_persist = 900
 
-    assert np.all(spill.element_type.initializers['windage_range'].windage_range
+    assert np.all(spill.element_type.initializers['windages'].windage_range
                   == windage_range)
-    assert (spill.element_type.initializers['windage_persist'].windage_persist
+    assert (spill.element_type.initializers['windages'].windage_persist
             == windage_persist)
 
 
@@ -95,7 +95,7 @@ def test_uncertain_copy():
         end_position=(29, -79, 0.),
         end_release_time=datetime.now() + timedelta(hours=24),
         windage_range=(.02, .03),
-        windage_persist=0,
+        windage_persist=-1,
         )
 
     u_spill = spill.uncertain_copy()

@@ -281,7 +281,7 @@ def test_windage_index():
             mask = sc.get_spill_mask(sp)
             if np.any(mask):
                 assert np.all(sc['windages'][mask] ==
-                              (sp.element_type.initializers["windage_range"].
+                              (sp.element_type.initializers["windages"].
                               windage_range[0]))
 
     # only 1st sc is released

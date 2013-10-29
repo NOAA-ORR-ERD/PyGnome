@@ -40,7 +40,7 @@ def model(sample_model, request):
             start_position=sample_model['release_start_pos'],
             release_time=model.start_time,
             end_release_time=model.start_time + model.duration,
-            windage_persist=0)
+            windage_persist=-1)
 
     def cleanup():
         """ cleanup outputters was added to sample_model and delete files """
