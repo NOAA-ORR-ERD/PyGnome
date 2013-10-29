@@ -181,6 +181,12 @@ class FloatingMassFromVolume(Floating):
         self.initializers.update({'mass': InitMassFromVolume()})
 
 
+class FloatingWithRiseVel(Floating):
+    def __init__(self):
+        super(FloatingWithRiseVel, self).__init__()
+        self.initializers.update({'rise_vel': InitRiseVelFromDist()})
+
+
 class FloatingMassFromVolumeRiseVel(FloatingMassFromVolume):
     def __init__(self):
         super(FloatingMassFromVolumeRiseVel, self).__init__()
