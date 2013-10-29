@@ -137,7 +137,7 @@ def test_exceptions_middle_of_run(model):
         o_put.all_data = True
 
     with pytest.raises(AttributeError):
-        o_put.format = 'NETCDF3_CLASSIC'
+        o_put.netcdf_format = 'NETCDF3_CLASSIC'
 
     with pytest.raises(AttributeError):
         o_put.compress = False
