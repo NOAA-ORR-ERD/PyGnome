@@ -1,5 +1,6 @@
 '''
-NetCDF outputter - follows the interface defined by gnome.Outputter for a NetCDF output writer
+NetCDF outputter - follows the interface defined by gnome.Outputter for a
+NetCDF output writer
 '''
 
 import copy
@@ -181,15 +182,20 @@ class NetCDFOutput(Outputter, serializable.Serializable):
 
         Constructor for Net_CDFOutput object.
 
-        :param netcdf_filename: Required parameter. The filename in which to store the NetCDF data. 
+        :param netcdf_filename: Required parameter. The filename in which to
+            store the NetCDF data.
         :type netcdf_filename: str. or unicode
-        :param cache: A cache object. Default is None, but this is required before calling write_output. 
-                      This will generally be set automatically by the model.
-        :type cache: As defined in cache module (gnome.utilities.cache). Currently only ElementCache is defined/used.
-        :param all_data: If true, write all data to NetCDF, otherwise write only standard data. Default is False.
+        :param cache: A cache object. Default is None, but this is required
+            before calling write_output. This will generally be set
+            automatically by the model.
+        :type cache: As defined in cache module (gnome.utilities.cache).
+            Currently only ElementCache is defined/used.
+        :param all_data: If true, write all data to NetCDF, otherwise write
+            only standard data. Default is False.
         :type all_data: bool
-        :param id: Unique Id identifying the newly created mover (a UUID as a string). 
-                   This is used when loading an object from a persisted state. User should never have to set this.
+        :param id: Unique Id identifying the newly created mover (a UUID as a
+            string). This is used when loading an object from a persisted
+            state. User should never have to set this.
         """
 
         self._check_netcdf_filename(netcdf_filename)
@@ -198,14 +204,20 @@ class NetCDFOutput(Outputter, serializable.Serializable):
         self._uncertain = False
         self._u_netcdf_filename = None
 
-        self._middle_of_run = False  # flag to keep track of state of the object - is True after calling prepare_for_model_run
+        # flag to keep track of state of the object - is True after calling
+        # prepare_for_model_run
+        self._middle_of_run = False
 
         self.all_data = all_data
-        self.arr_types = None  # this is only updated in prepare_for_model_run if all_data is True
+
+        # this is only updated in prepare_for_model_run if all_data is True
+        self.arr_types = None
         self._format = netcdf_format
         self._compress = compress
 
-        self._start_idx = 0  # need to keep track of starting index for writing data since variable number of particles are released
+        # need to keep track of starting index for writing data since variable
+        # number of particles are released
+        self._start_idx = 0
 
         self._gnome_id = gnome.GnomeId(id)
 
@@ -228,8 +240,8 @@ class NetCDFOutput(Outputter, serializable.Serializable):
     @netcdf_filename.setter
     def netcdf_filename(self, new_name):
         if self.middle_of_run:
-            raise AttributeError('This attribute cannot be changed in the middle of a run'
-                                 )
+            raise AttributeError('This attribute cannot be changed in the'
+                                 ' middle of a run')
         else:
             self._check_netcdf_filename(new_name)
             self._netcdf_filename = new_name
@@ -241,8 +253,8 @@ class NetCDFOutput(Outputter, serializable.Serializable):
     @all_data.setter
     def all_data(self, value):
         if self.middle_of_run:
-            raise AttributeError('This attribute cannot be changed in the middle of a run'
-                                 )
+            raise AttributeError('This attribute cannot be changed in the'
+                                 ' middle of a run')
         else:
             self._all_data = value
 
@@ -253,20 +265,20 @@ class NetCDFOutput(Outputter, serializable.Serializable):
     @compress.setter
     def compress(self, value):
         if self.middle_of_run:
-            raise AttributeError('This attribute cannot be changed in the middle of a run'
-                                 )
+            raise AttributeError('This attribute cannot be changed in the'
+                                 ' middle of a run')
         else:
             self._compress = value
 
     @property
-    def format(self):
+    def netcdf_format(self):
         return self._format
 
-    @format.setter
-    def format(self, value):
+    @netcdf_format.setter
+    def netcdf_format(self, value):
         if self.middle_of_run:
-            raise AttributeError('This attribute cannot be changed in the middle of a run'
-                                 )
+            raise AttributeError('This attribute cannot be changed in the'
+                                 ' middle of a run')
         else:
             self._format = value
 
@@ -274,23 +286,27 @@ class NetCDFOutput(Outputter, serializable.Serializable):
         """ basic checks to make sure the netcdf_filename is valid """
 
         if os.path.isdir(netcdf_filename):
-            raise ValueError('netcdf_filename must be a file not a directory.'
-                             )
+            raise ValueError('netcdf_filename must be a file not a directory.')
 
-        if not os.path.exists(os.path.realpath(os.path.dirname(netcdf_filename))):
-            raise ValueError('{0} does not appear to be a valid path'.format(os.path.dirname(netcdf_filename)))
+        if not os.path.exists(os.path.realpath(
+                                            os.path.dirname(netcdf_filename))):
+            raise ValueError('{0} does not appear to be a valid'
+                             ' path'.format(os.path.dirname(netcdf_filename)))
 
     def _nc_file_exists_error(self, file_):
-        """ 
-        invoked by prepare_for_model_run. If file already exists, it will raise this error.
-        
-        Do this in prepare_for_model_run, because user may want to define the model and run it in batch mode. This 
-        will allow netcdf_outputter to be created, but the first time it tries to write this file, it will check
-        and raise an error if file exists 
+        """
+        invoked by prepare_for_model_run. If file already exists, it will raise
+        this error.
+
+        Do this in prepare_for_model_run, because user may want to define the
+        model and run it in batch mode. This will allow netcdf_outputter to be
+        created, but the first time it tries to write this file, it will check
+        and raise an error if file exists
         """
 
         if os.path.exists(file_):
-            raise ValueError('{0} file exists. Enter a filename that does not exist in which to save data.'.format(file_))
+            raise ValueError('{0} file exists. Enter a filename that does not'
+                ' exist in which to save data.'.format(file_))
 
     def prepare_for_model_run(
         self,
@@ -301,49 +317,63 @@ class NetCDFOutput(Outputter, serializable.Serializable):
         spills=None,
         **kwargs
         ):
-        """ 
-        .. function:: prepare_for_model_run(cache=None, model_start_time=None, num_time_steps=None, uncertain=False, spills=None, **kwargs)
-        
-        Write global attributes and define dimensions and variables for NetCDF file. This must be done in prepare_for_model_run
-        because if model state changes, it is rewound and re-run from the beginning.
-        
-        This takes more than standard 'cache' argument. Some of these are required arguments - they contain 
-        None for defaults because non-default argument cannot follow default argument. Since cache is already 2nd positional argument
-        for Renderer object, the required non-default arguments must be defined following 'cache'.
-        
-        If uncertainty is on, then UncertainSpillPair object contains identical _data_arrays in both certain and uncertain SpillContainer's,
-        the data itself is different, but they contain the same type of data arrays.
-        
-        :param cache=None: Sets the cache object to be used for the data. If None, it will use the one already set up. 
-        :type cache: As defined in cache module (gnome.utilities.cache). Currently only ElementCache is defined/used.
-        :param model_start_time: (Required) start time of the model run. NetCDF time units calculated with respect to this time.
+        """
+        .. function:: prepare_for_model_run(cache=None, model_start_time=None,
+                num_time_steps=None, uncertain=False, spills=None, **kwargs)
+
+        Write global attributes and define dimensions and variables for NetCDF
+        file. This must be done in prepare_for_model_run because if model state
+        changes, it is rewound and re-run from the beginning.
+
+        This takes more than standard 'cache' argument. Some of these are
+        required arguments - they contain None for defaults because non-default
+        argument cannot follow default argument. Since cache is already 2nd
+        positional argument for Renderer object, the required non-default
+        arguments must be defined following 'cache'.
+
+        If uncertainty is on, then UncertainSpillPair object contains
+        identical _data_arrays in both certain and uncertain SpillContainer's,
+        the data itself is different, but they contain the same type of data
+        arrays.
+
+        :param cache=None: Sets the cache object to be used for the data.
+            If None, it will use the one already set up.
+        :type cache: As defined in cache module (gnome.utilities.cache).
+            Currently only ElementCache is defined/used.
+        :param model_start_time: (Required) start time of the model run. NetCDF
+            time units calculated with respect to this time.
         :type model_start_time: datetime.datetime object
-        :param num_time_steps: (Required) total number of time steps for the run. Currently this is known and fixed.
+        :param num_time_steps: (Required) total number of time steps for the
+            run. Currently this is known and fixed.
         :type num_time_steps: int
-        :param uncertain: Default is False. Model automatically sets this based on whether uncertainty is on or off. If this is
-                          True then a uncertain data is written to netcdf_filename + '_uncertain.nc'
+        :param uncertain: Default is False. Model automatically sets this based
+            on whether uncertainty is on or off. If this is True then a
+            uncertain data is written to netcdf_filename + '_uncertain.nc'
         :type uncertain: bool
-        :param spills: If 'all_data' flag is True, then model must provide the model.spills object (SpillContainerPair object) 
-                       so NetCDF variables can be defined for the remaining data arrays. If spills is None, but all_data flag 
-                       is True, a ValueError will be raised.
-                       It does not make sense to write 'all_data' but not provide 'model.spills'. 
-        :type spills: gnome.spill_container.SpillContainerPair object. 
-        
-        .. note:: 
-        Does not take any other input arguments; however, to keep the interface the same for all outputters,
-        define **kwargs incase future outputters require different arguments.
+        :param spills: If 'all_data' flag is True, then model must provide the
+            model.spills object (SpillContainerPair object) so NetCDF variables
+            can be defined for the remaining data arrays. If spills is None,
+            but all_data flag is True, a ValueError will be raised. It does not
+            make sense to write 'all_data' but not provide 'model.spills'.
+        :type spills: gnome.spill_container.SpillContainerPair object.
+
+        .. note::
+        Does not take any other input arguments; however, to keep the interface
+            the same for all outputters, define **kwargs incase future
+            outputters require different arguments.
         """
 
         if cache is not None:
             self.cache = cache
 
         if model_start_time is None or num_time_steps is None:
-            raise TypeError('model_start_time and num_time_steps cannot be NoneType'
-                            )
+            raise TypeError('model_start_time and num_time_steps cannot be'
+                            ' NoneType')
 
         if self.all_data and spills is None:
-            raise ValueError("'all_data' flag is True, however spills is None. Please provide valid model.spills so we know which additional data to write."
-                             )
+            raise ValueError("'all_data' flag is True, however spills is None."
+                " Please provide valid model.spills so we know which"
+                " additional data to write.")
 
         self._uncertain = uncertain
 
@@ -374,9 +404,8 @@ class NetCDFOutput(Outputter, serializable.Serializable):
 
                 time_ = rootgrp.createVariable('time', np.double,
                         ('time', ), zlib=self._compress)
-                time_.units = \
-                    'seconds since {0}'.format(model_start_time.isoformat().replace('T'
-                        , ' '))
+                time_.units = 'seconds since {0}'.format(
+                            model_start_time.isoformat().replace('T', ' '))
                 time_.long_name = 'time'
                 time_.standard_name = 'time'
                 time_.calendar = 'gregorian'
@@ -389,8 +418,9 @@ class NetCDFOutput(Outputter, serializable.Serializable):
                 pc.ragged_row_count = 'particle count at nth timestep'
 
                 for (key, val) in self.data_vars.iteritems():
+                    # don't pop since it maybe required twice
                     var = rootgrp.createVariable(key, val.get('dtype'),
-                            ('data', ), zlib=self._compress)  # don't pop since it maybe required twice
+                            ('data', ), zlib=self._compress)
 
                     # iterate over remaining attributes
 
@@ -418,23 +448,26 @@ class NetCDFOutput(Outputter, serializable.Serializable):
                                     ('data', 'world_point'),
                                     zlib=self._compress)
                         else:
-                            raise ValueError('{0} has an undefined dimension: {1}'.format(key,
-                                    val.shape))
+                            raise ValueError('{0} has an undefined dimension:'
+                                             ' {1}'.format(key, val.shape))
 
-        self._start_idx = 0  # need to keep track of starting index for writing data since variable number of particles are released
+        # need to keep track of starting index for writing data since variable
+        # number of particles are released
+        self._start_idx = 0
         self._middle_of_run = True
 
     def write_output(self, step_num):
-        """ 
+        """
         write NetCDF output at the end of the step
-        
-        :param step_num: The model's current timestep for which data is being written. model.current_time_step
+
+        :param step_num: The model's current timestep for which data is being
+            written. model.current_time_step
         :type step_num: int
         """
 
         if self.cache is None:
-            raise ValueError('cache object is not defined. It is required prior to calling write_output'
-                             )
+            raise ValueError('cache object is not defined. It is required'
+                             ' prior to calling write_output')
 
         for sc in self.cache.load_timestep(step_num).items():
             if sc.uncertain and self._u_netcdf_filename is not None:
@@ -451,9 +484,6 @@ class NetCDFOutput(Outputter, serializable.Serializable):
                                 ].calendar)
                 pc = rootgrp.variables['particle_count']
                 pc[step_num] = len(sc['status_codes'])
-
-                # ixs = step_num * pc[step_num]   # starting index for writing data in this timestep
-                # ixe = ixs + pc[step_num]        # ending index for writing data in this timestep
 
                 _end_idx = self._start_idx + pc[step_num]
                 rootgrp.variables['longitude'][self._start_idx:_end_idx] = \
@@ -488,9 +518,9 @@ class NetCDFOutput(Outputter, serializable.Serializable):
                 self._u_netcdf_filename), 'time_stamp': time_stamp}
 
     def rewind(self):
-        """ 
-        if rewound, delete both the files and expect prepare_for_model_run to be called since
-        rewind means start from beginning. 
+        """
+        if rewound, delete both the files and expect prepare_for_model_run to
+        be called since rewind means start from beginning.
         """
 
         if os.path.exists(self.netcdf_filename):
@@ -505,23 +535,31 @@ class NetCDFOutput(Outputter, serializable.Serializable):
 
     @staticmethod
     def read_data(netcdf_file, index=0, all_data=False):
-        """ 
-        Read and create standard data arrays for a netcdf file that was created with NetCDFOutput class. Make it a static method
-        since it is independent of an instance of the Outputter. The method is put with this class because the NetCDF
-        functionality for PyGnome data with CF standard is captured here.
-        
+        """
+        Read and create standard data arrays for a netcdf file that was created
+        with NetCDFOutput class. Make it a static method since it is
+        independent of an instance of the Outputter. The method is put with
+        this class because the NetCDF functionality for PyGnome data with CF
+        standard is captured here.
+
         :param netcdf_file: Name of the NetCDF file from which to read the data
         :type netcdf_file: str
-        :param index: Index of the 'time' variable (or time_step) for which data is desired. 
-                      Default is 0 so it returns data associated with first timestamp.
+        :param index: Index of the 'time' variable (or time_step) for which
+            data is desired. Default is 0 so it returns data associated with
+            first timestamp.
         :type index: int
-        :returns: a dict containing 'positions', 'status_codes', 'spill_num'. Currently, this is standard data.
-        
-        Standard data arrays are numpy arrays of size N, where N is number of particles released at time step of interest:
-            'current_time_stamp': datetime object associated with this data 
-            'positions'         : NX3 array. Corresponds with NetCDF variables 'longitude', 'latitude', 'depth'
-            'status_codes'      : NX1 array. Corresponds with NetCDF variable 'status'
-            'spill_num'         : NX1 array. Corresponds with NetCDF variable 'id'
+        :returns: a dict containing 'positions', 'status_codes', 'spill_num'.
+            Currently, this is standard data.
+
+        Standard data arrays are numpy arrays of size N, where N is number of
+        particles released at time step of interest:
+            'current_time_stamp': datetime object associated with this data
+            'positions'         : NX3 array. Corresponds with NetCDF variables
+                                  'longitude', 'latitude', 'depth'
+            'status_codes'      : NX1 array. Corresponds with NetCDF variable
+                                  'status'
+            'spill_num'         : NX1 array. Corresponds with NetCDF variable
+                                  'id'
         """
 
         if not os.path.exists(netcdf_file):
@@ -532,29 +570,22 @@ class NetCDFOutput(Outputter, serializable.Serializable):
             _start_ix = 0
             for idx in range(index):
                 _start_ix += data.variables['particle_count'][idx]
-    
+
             _stop_ix = _start_ix + data.variables['particle_count'][index]
             elem = data.variables['particle_count'][index]
-    
+
             time_ = data.variables['time']
             c_time = nc.num2date(time_[index], time_.units,
                                  calendar=time_.calendar)
             arrays_dict['current_time_stamp'] = np.array(c_time)
-    
+
             positions = np.zeros((elem, 3),
                                  dtype=gnome.basic_types.world_point_type)
-    
-            # status_codes = np.zeros((elem,), dtype=gnome.basic_types.status_code_type)
-            # spill_num = np.zeros((elem,), dtype=gnome.basic_types.id_type)
-            # mass = np.zeros((elem,), dtype=gnome.basic_types.id_type)
-    
+
             positions[:, 0] = data.variables['longitude'][_start_ix:_stop_ix]
             positions[:, 1] = data.variables['latitude'][_start_ix:_stop_ix]
             positions[:, 2] = data.variables['depth'][_start_ix:_stop_ix]
-    
-            # status_codes[:] = data.variables['status'][_start_ix:_stop_ix]
-            # spill_num[:] = data.variables['id'][_start_ix:_stop_ix]
-    
+
             arrays_dict['positions'] = positions
             arrays_dict['status_codes'] = (data.variables['status']
                 [_start_ix:_stop_ix])
@@ -562,19 +593,19 @@ class NetCDFOutput(Outputter, serializable.Serializable):
                 [_start_ix:_stop_ix])
             arrays_dict['id'] = data.variables['id'][_start_ix:_stop_ix]
             arrays_dict['mass'] = data.variables['mass'][_start_ix:_stop_ix]
-    
+
             if all_data:  # append remaining data arrays
                 excludes = NetCDFOutput.data_vars.keys()
                 excludes.extend(['time', 'particle_count'])
-    
+
                 for key in data.variables.keys():
                     if key not in excludes:
                         if key in arrays_dict.keys():
-                            raise ValueError('Error in read_data. {0} is already added to arrays_dict - trying to add it again'.format(key))
-    
+                            raise ValueError('Error in read_data. {0} is'
+                                ' already added to arrays_dict - trying to'
+                                ' add it again'.format(key))
+
                         arrays_dict[key] = \
                             (data.variables[key])[_start_ix:_stop_ix]
 
         return arrays_dict
-
-
