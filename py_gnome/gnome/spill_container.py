@@ -218,7 +218,7 @@ class SpillContainer(SpillContainerData):
         # bit difficult to do.
         # dict must be updated via prepar_for_model_run() only at beginning of
         # run. Make self._array_types an an instance variable
-        self._reset_array_types()
+        self._reset_arrays()
 
     def __setitem__(self, data_name, array):
         """
@@ -234,7 +234,7 @@ class SpillContainer(SpillContainerData):
             self._array_types[data_name] = gnome.array_types.ArrayType(shape,
                                                                        dtype)
 
-    def _reset_array_types(self):
+    def _reset_arrays(self):
         """
         reset _array_types dict so it contains default keys/values
         """
@@ -245,6 +245,7 @@ class SpillContainer(SpillContainerData):
                 'spill_num': gnome.array_types.spill_num,
                 'id': gnome.array_types.id,
                 'mass': gnome.array_types.mass}
+        self._data_arrays = {}
 
     @property
     def array_types(self):
@@ -275,7 +276,7 @@ class SpillContainer(SpillContainerData):
             spill.rewind()
         # create a full set of zero-sized arrays. If we rewound, something
         # must have changed so let's get back to default _array_types
-        self._reset_array_types()
+        self._reset_arrays()
         self.initialize_data_arrays()
 
     def get_spill_mask(self, spill):

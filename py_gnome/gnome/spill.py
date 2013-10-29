@@ -118,17 +118,18 @@ class Spill(object):
         self.element_type = element_type
 
         if windage_range is not None:
-            if 'windage_range' not in self.element_type.initializers:
+            if 'windages' not in self.element_type.initializers:
                 raise TypeError("'windage_range' cannot be set for specified"
                                 " element_type: {0}".format(element_type))
-
-            (self.element_type.initializers['windage_range']).windage_range = \
+            (self.element_type.initializers['windages']).windage_range = \
                 windage_range
+
         if windage_persist is not None:
-            if 'windage_persist' not in self.element_type.initializers:
+            if 'windages' not in self.element_type.initializers:
                 raise TypeError("'windage_persist' cannot be set for specified"
                                 " element_type: {0}".format(element_type))
-            (self.element_type.initializers['windage_persist']).windage_persist = windage_persist
+            (self.element_type.initializers['windages']).windage_persist = \
+                windage_persist
 
         # number of new particles released at each timestep
         self.num_released = 0
