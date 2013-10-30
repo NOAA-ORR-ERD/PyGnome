@@ -3,7 +3,8 @@ import copy
 from gnome.utilities import serializable
 from gnome.movers import CyMover
 from gnome.cy_gnome.cy_rise_velocity_mover import CyRiseVelocityMover
-from gnome import array_types
+from gnome.array_types import rise_vel
+from gnome.basic_types import world_point, world_point_type
 
 
 class RiseVelocityMover(CyMover, serializable.Serializable):
@@ -26,19 +27,20 @@ class RiseVelocityMover(CyMover, serializable.Serializable):
         **kwargs
         ):
         """
-        Uses super to invoke base class __init__ method. 
-        
+        Uses super to invoke base class __init__ method.
+
         Optional parameters (kwargs) used to initialize CyRiseVelocityMover
-        
+
         :param water_density: Default is 1020 kg/m3
         :param water_viscosity: Default is 1.e-6
-        
-        Remaining kwargs are passed onto Mover's __init__ using super. 
+
+        Remaining kwargs are passed onto Mover's __init__ using super.
         See Mover documentation for remaining valid kwargs.
         """
 
         self.mover = CyRiseVelocityMover(water_density, water_viscosity)
         super(RiseVelocityMover, self).__init__(**kwargs)
+        self.array_types.update({'rise_vel': rise_vel})
 
     @property
     def water_density(self):
@@ -58,13 +60,14 @@ class RiseVelocityMover(CyMover, serializable.Serializable):
 
     def __repr__(self):
         """
-        .. todo:: 
+        .. todo::
             We probably want to include more information.
         """
 
-        return 'RiseVelocityMover(water_density=%s,water_viscosity=%s,active_start=%s, active_stop=%s, on=%s)' \
-            % (self.water_density, self.water_viscosity,
-               self.active_start, self.active_stop, self.on)
+        return ('RiseVelocityMover(water_density={0}, water_viscosity={1},'
+                ' active_start={2}, active_stop={3},'
+                ' on={4})').format(self.water_density, self.water_viscosity,
+                                self.active_start, self.active_stop, self.on)
 
     def get_move(
         self,
@@ -73,29 +76,26 @@ class RiseVelocityMover(CyMover, serializable.Serializable):
         model_time_datetime,
         ):
         """
-        Override base class functionality because mover has a different get_move signature
-        
+        Override base class functionality because mover has a different
+        get_move signature
+
         :param sc: an instance of the gnome.SpillContainer class
         :param time_step: time step in seconds
-        :param model_time_datetime: current time of the model as a date time object
+        :param model_time_datetime: current time of the model as a date time
+            object
         """
 
         self.prepare_data_for_get_move(sc, model_time_datetime)
 
         if self.active and len(self.positions) > 0:
-            self.mover.get_move(  # only ever 1 spill_container so this is always 0!
-                self.model_time,
+            self.mover.get_move(self.model_time,
                 time_step,
                 self.positions,
                 self.delta,
-                sc['rise_velocity'],
-                sc['density'],
-                sc['droplet_size'],
+                sc['rise_vel'],
                 self.status_codes,
                 self.spill_type,
                 )
 
-        return self.delta.view(dtype=basic_types.world_point_type).reshape((-1,
-                len(basic_types.world_point)))
-
-
+        return self.delta.view(dtype=world_point_type).reshape((-1,
+                len(world_point)))

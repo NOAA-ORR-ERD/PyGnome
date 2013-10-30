@@ -114,7 +114,7 @@ class InitMassFromVolume(object):
 
 
 class InitRiseVelFromDist(object):
-    def __init__(self, distribution='uniform', params=[0, 1]):
+    def __init__(self, distribution='uniform', params=[0, .1]):
         """
         Set the rise velocity parameters to be sampled from a distribution.
 

@@ -34,7 +34,8 @@ cdef class CyRiseVelocityMover(cy_mover.CyMover):
         if water_density <= 0:
             raise ValueError("CyRiseVelocityMover: water_density must be >= 0")
         if water_viscosity <= 0:
-            raise ValueError("CyRiseVelocityMover: water_viscosity must be >= 0")
+            raise ValueError("CyRiseVelocityMover: water_viscosity must"
+                             " be >= 0")
 
         self.rise_vel.water_density = water_density
         self.rise_vel.water_viscosity = water_viscosity
@@ -57,7 +58,8 @@ cdef class CyRiseVelocityMover(cy_mover.CyMover):
         """
         unambiguous repr of object, reuse for str() method
         """
-        return "CyRiseVelocityMover(water_density=%s,water_viscosity=%s)" % (self.water_density, self.water_viscosity)
+        return "CyRiseVelocityMover(water_density=%s,water_viscosity=%s)" % \
+                (self.water_density, self.water_viscosity)
 
     def get_move(self,
                  model_time,
@@ -65,8 +67,6 @@ cdef class CyRiseVelocityMover(cy_mover.CyMover):
                  cnp.ndarray[WorldPoint3D, ndim=1] ref_points,
                  cnp.ndarray[WorldPoint3D, ndim=1] delta,
                  cnp.ndarray[cnp.npy_double] rise_velocity,
-                 cnp.ndarray[cnp.npy_double] density,
-                 cnp.ndarray[cnp.npy_double] droplet_size,
                  cnp.ndarray[short] LE_status,
                  LEType spill_type):
         """
@@ -103,6 +103,12 @@ cdef class CyRiseVelocityMover(cy_mover.CyMover):
         cdef OSErr err
         N = len(ref_points)  # set a data type?
 
+        cdef cnp.ndarray[cnp.npy_float64, ndim=1] density
+        cdef cnp.ndarray[cnp.npy_float64, ndim=1] droplet_size
+
+        density = np.zeros((N,), dtype=np.float64)
+        droplet_size = np.zeros((N,), dtype=np.float64)
+
         err = self.rise_vel.get_move(N,
                                   model_time,
                                   step_len,
@@ -116,7 +122,8 @@ cdef class CyRiseVelocityMover(cy_mover.CyMover):
                                   0)
 
         if err == 1:
-            raise ValueError("Make sure ref_points, delta and rise_velocity are defined")
+            raise ValueError("Make sure ref_points, delta and rise_velocity"
+                             " are defined")
 
         """
         Can probably raise this error before calling the C++ code,
@@ -125,5 +132,5 @@ cdef class CyRiseVelocityMover(cy_mover.CyMover):
         if err == 2:
             msg = "{0}: expected '{1}', got '{2}'"
             raise ValueError(msg.format('get_move()',
-                                        "spill_type=('forecast','uncertainty')",
-                                        spill_type))
+                                    "spill_type=('forecast','uncertainty')",
+                                    spill_type))
