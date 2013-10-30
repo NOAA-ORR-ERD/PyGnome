@@ -34,6 +34,9 @@ from Cython.Distutils import build_ext
 
 import numpy as np
 
+# could run setup from anywhere
+(SETUP_PATH, SETUP_FILE) = os.path.split(sys.argv[0])
+
 
 def target_dir(name):
     '''Returns the name of a distutils build directory'''
@@ -153,8 +156,25 @@ if sys.platform is "darwin" or "win32":
                               sys.platform, architecture)
     netcdf_libs = os.path.join(netcdf_base, 'lib')
     netcdf_inc = os.path.join(netcdf_base, 'include')
+    win_dlls = os.path.join(netcdf_base, 'bin')
 
     if sys.platform == 'win32':
+        # also copy the netcdf *.dlls to cy_gnome directory
+        cwd = os.getcwd()
+        dlls_path = os.path.join(cwd, SETUP_PATH, win_dlls)
+
+        for dll in glob.glob(os.path.join(dlls_path,'*.dll')):
+            dlls_dst = os.path.join(cwd, SETUP_PATH, 'gnome/cy_gnome/')
+
+            if sys.argv[1] == 'cleanall' or sys.argv[1] == 'clean':
+                (x_, dll_name) = os.path.split(dll)
+                rm_dll = os.path.join(dlls_dst, dll_name)
+                os.remove(rm_dll)
+                print "deleted: " + rm_dll
+            else:
+                print "copy: " + dll + " to: " + dlls_dst
+                shutil.copy(dll, dlls_dst)
+
         netcdf_names = ('netcdf',)
     else:
         netcdf_names = ('hdf5', 'hdf5_hl', 'netcdf', 'netcdf_c++4')
