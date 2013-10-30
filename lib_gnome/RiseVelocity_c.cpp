@@ -144,14 +144,13 @@ double GetDropletSize(double riseVelocity, double water_viscosity, double water_
 
 OSErr RiseVelocity_c::get_move(int n, unsigned long model_time, unsigned long step_len,
 							   WorldPoint3D *ref, WorldPoint3D *delta,
-							   double *rise_velocity, double *density, double *droplet_size,
+							   double *rise_velocity,
 							   short *LE_status, LEType spillType, long spill_ID)
 {
 	// JS Ques: Is this required? Could cy/python invoke this method without well defined numpy arrays?
-	if (!delta || !ref || !rise_velocity || !density || !droplet_size) {
+	if (!delta || !ref || !rise_velocity) {
 		cerr << "(delta, ref, rise_velocity, density, droplet_size) = ("
-			 << delta << "," << ref << "," << rise_velocity << ","
-			 << density << "," << droplet_size << ")" << endl;
+			 << delta << "," << ref << "," << rise_velocity << ")" << endl;
 		return 1;
 	}
 
@@ -174,17 +173,15 @@ OSErr RiseVelocity_c::get_move(int n, unsigned long model_time, unsigned long st
 		rec.z = ref[i].z;
 
 		rec.riseVelocity = rise_velocity[i];
-		rec.density = density[i];
-		rec.dropletSize = (long)droplet_size[i];	// code goes here, droplet size long or double?
 
 		// let's do the multiply by 1000000 here - this is what gnome expects
-		rec.p.pLat *= 1e6;	// really only need this for the latitude
+		//rec.p.pLat *= 1e6;	// not using the lat, lon at this point
 		//rec.p.pLong*= 1000000;
 
 		delta[i] = this->GetMove(model_time, step_len, spill_ID, i, &rec, spillType);
 
-		delta[i].p.pLat /= 1e6;
-		delta[i].p.pLong /= 1e6;
+		//delta[i].p.pLat /= 1e6;
+		//delta[i].p.pLong /= 1e6;
 	}
 
 	return noErr;
@@ -195,30 +192,9 @@ WorldPoint3D RiseVelocity_c::GetMove(const Seconds &model_time, Seconds timeStep
 									 long setIndex, long leIndex, LERec *theLE, LETYPE leType)
 {
 	WorldPoint3D deltaPoint = { {0, 0}, 0.};
-	//double g = 9.8;
 	// for now not implementing uncertainty
 
-	// riseVelocity should be a temporary field ?	
-	if (isnan((*theLE).riseVelocity))
-	{	// use Galt's algorithm to calculate rise velocity
-		(*theLE).riseVelocity = GetRiseVelocity((*theLE).density*1000, (*theLE).dropletSize*1e-6, water_viscosity, water_density);
-	}
-	
-	// old way - just covers small droplets
-	/*
-	// do we check if z = 0 here?
-	//if (isnan((*theLE).riseVelocity)) (*theLE).riseVelocity = (2.*g/9.)*(1.-(*theLE).density/water_density)*((*theLE).dropletSize*1e-6/2.)*((*theLE).dropletSize*1e-6/2)/water_viscosity;	
-	if (isnan((*theLE).riseVelocity)) {
-		(*theLE).riseVelocity = (2. * g / 9.) *
-								(1. - (*theLE).density * 1000 / water_density) *
-								((*theLE).dropletSize * 1e-6 / 2.) *
-								((*theLE).dropletSize * 1e-6 / 2) /
-								water_viscosity;
-	}
-	*/
-	
-	//deltaPoint.z = -1. * ((*theLE).riseVelocity*CMTOMETERS)*timeStep;	// assuming we add dz to the point, check units...
-	deltaPoint.z = -1. * ((*theLE).riseVelocity)*timeStep;	// assuming we add dz to the point, check units...
+	deltaPoint.z = -1. * ((*theLE).riseVelocity)*timeStep;	// assuming we add dz to the point, check units (assuming m/s)
 
 	return deltaPoint;
 }

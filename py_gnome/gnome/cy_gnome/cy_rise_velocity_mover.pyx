@@ -76,8 +76,6 @@ cdef class CyRiseVelocityMover(cy_mover.CyMover):
                  np.ndarray[WorldPoint3D, ndim=1] ref_points,
                  np.ndarray[WorldPoint3D, ndim=1] delta,
                  cnp.ndarray[cnp.npy_double] rise_velocity,
-                 cnp.ndarray[cnp.npy_double] density,
-                 cnp.ndarray[cnp.npy_int32] droplet_size,
                  np.ndarray[np.npy_int16] LE_status,
                  LE_type)
 
@@ -90,10 +88,6 @@ cdef class CyRiseVelocityMover(cy_mover.CyMover):
         :param delta: the change in position of each particle over step_len
         :type delta: numpy array of WorldPoint3D
         :param rise_velocity: rise_velocity to be applied to each particle
-                              (if not NaN)
-        :param density: density used to calculate rise_velocity if necessary
-        :param droplet_size: droplet_size used to calculate rise_velocity
-                             if necessary
         :param le_status: status of each particle - movement is only
                           on particles in water
         :param spill_type: LEType defining whether spill is forecast
@@ -103,20 +97,12 @@ cdef class CyRiseVelocityMover(cy_mover.CyMover):
         cdef OSErr err
         N = len(ref_points)  # set a data type?
 
-        cdef cnp.ndarray[cnp.npy_float64, ndim=1] density
-        cdef cnp.ndarray[cnp.npy_float64, ndim=1] droplet_size
-
-        density = np.zeros((N,), dtype=np.float64)
-        droplet_size = np.zeros((N,), dtype=np.float64)
-
         err = self.rise_vel.get_move(N,
                                   model_time,
                                   step_len,
                                   &ref_points[0],
                                   &delta[0],
                                   &rise_velocity[0],
-                                  &density[0],
-                                  &droplet_size[0],
                                   &LE_status[0],
                                   spill_type,
                                   0)

@@ -132,32 +132,6 @@ class TestRiseVelocity:
         assert np.all(new_delta.view(dtype=np.double).reshape(1, -1)
                       == 0)
 
-    # JS: Why are we passing in nan?
-    @pytest.mark.xfail
-    def test_nan_rise_velocity(self):
-        """
-        ensure no move for 0 rise velocity
-        """
-
-        self.rise_velocity[:] = np.nan
-        #self.droplet_size[:] = 70
-        #self.density[:] = .9
-
-        print 'rise_velocity  = '
-        print self.rise_velocity
-        new_delta = np.zeros((self.cm.num_le, ), dtype=world_point)
-        self.move(new_delta)
-
-        print 'rise_velocity  = '
-        print self.rise_velocity
-        print new_delta.view(dtype=np.float64).reshape(-1, 3)
-
-        # assert np.all(new_delta.view(dtype=np.double).reshape(1,-1) != 0)
-
-        assert np.all(new_delta['lat'] == 0)
-        assert np.all(new_delta['long'] == 0)
-        assert np.all(new_delta['z'] != 0)
-
     def _diff(self, delta, new_delta):
         """
         gives the norm of the (delta-new_delta)

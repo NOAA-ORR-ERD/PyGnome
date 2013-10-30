@@ -92,8 +92,8 @@ OSErr RandomVertical_c::get_move(int n, Seconds model_time, Seconds step_len, Wo
 		rec.z = ref[i].z;
 		
 		// let's do the multiply by 1000000 here - this is what gnome expects
-		rec.p.pLat *= 1000000;	// really only need this for the latitude
-		//rec.p.pLong*= 1000000;
+		rec.p.pLat *= 1000000;	
+		rec.p.pLong*= 1000000;
 		
 		delta[i] = this->GetMove(model_time, step_len, spill_ID, i, prec, spillType);
 		
