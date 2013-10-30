@@ -50,10 +50,10 @@
 									<listOptionValue builtIn="false" value="pyGNOME=1"/>
 								</option>
 								<option id="gnu.cpp.compiler.option.include.paths.1187349220" name="Include paths (-I)" superClass="gnu.cpp.compiler.option.include.paths" valueType="includePath">
-									<listOptionValue builtIn="false" value="/Users/james.makela/Dev/GNOME_branch/third_party/x86_64/include"/>
+									<listOptionValue builtIn="false" value="/Users/james.makela/Dev/GNOME2/third_party_lib/netcdf-4.3/darwin/x86_64/include"/>
 								</option>
 								<option id="gnu.cpp.compiler.option.preprocessor.preprocess.1370314026" name="Preprocess only (-E)" superClass="gnu.cpp.compiler.option.preprocessor.preprocess" value="false" valueType="boolean"/>
-								<option id="gnu.cpp.compiler.option.other.other.421287599" superClass="gnu.cpp.compiler.option.other.other" value="-c -fmessage-length=0 -arch i386" valueType="string"/>
+								<option id="gnu.cpp.compiler.option.other.other.421287599" name="Other flags" superClass="gnu.cpp.compiler.option.other.other" value="-c -fmessage-length=0 -arch i386" valueType="string"/>
 								<inputType id="cdt.managedbuild.tool.gnu.cpp.compiler.input.1315087000" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.input"/>
 							</tool>
 							<tool id="cdt.managedbuild.tool.gnu.c.compiler.macosx.so.debug.493210573" name="GCC C Compiler" superClass="cdt.managedbuild.tool.gnu.c.compiler.macosx.so.debug">

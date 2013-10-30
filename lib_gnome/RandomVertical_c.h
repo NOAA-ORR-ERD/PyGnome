@@ -21,6 +21,7 @@ public:
 	double fVerticalDiffusionCoefficient; //cm**2/s
 	double fHorizontalDiffusionCoefficient; //cm**2/s
 	double fVerticalBottomDiffusionCoefficient; //cm**2/s
+	double fMixedLayerDepth;	// meters
 	Boolean bUseDepthDependentDiffusion;
 	//TR_OPTIMZE fOptimize; // this does not need to be saved to the save file
 	

@@ -34,6 +34,7 @@ void RandomVertical_c::Init()
 {
 	fVerticalDiffusionCoefficient = 5; //  cm**2/sec	
 	fVerticalBottomDiffusionCoefficient = .11; //  cm**2/sec, Bushy suggested a larger default	
+	fMixedLayerDepth = 10.; // meters
 	//fHorizontalDiffusionCoefficient = 126; //  cm**2/sec	
 	bUseDepthDependentDiffusion = false;
 	//memset(&fOptimize,0,sizeof(fOptimize));
@@ -103,92 +104,109 @@ OSErr RandomVertical_c::get_move(int n, Seconds model_time, Seconds step_len, Wo
 	return noErr;
 }
 
+double GetDepthAtPoint(WorldPoint p)
+{
+	//will need bathymetry information
+	double depthAtPt = INFINITE_DEPTH;
+	return depthAtPt;
+}
+
 WorldPoint3D RandomVertical_c::GetMove (const Seconds& model_time, Seconds timeStep,long setIndex,long leIndex,LERec *theLE,LETYPE leType)
 {
-	double		dLong, dLat, z, verticalDiffusionCoefficient, mixedLayerDepth=10.;
+	double	dLong, dLat, z = 0;
 	WorldPoint3D	deltaPoint = {0,0,0.};
 	WorldPoint refPoint = (*theLE).p;	
-	float rand1,rand2, r, w;
-	//double 	diffusionCoefficient;
-	
-	//if (deltaPoint.z == 0) return deltaPoint;	// allow for surface LEs ?
-	
-	// for now not implementing uncertainty
-	
-	/*if ((*theLE).dispersionStatus==HAVE_DISPERSED || (*theLE).dispersionStatus==HAVE_DISPERSED_NAT || (*theLE).z>0)	// only apply vertical diffusion if there are particles below surface
+	float rand1,rand2,r,w;
+	OSErr err = 0;
+
+	//if ((*theLE).z==0)	return deltaPoint;
+	// will need a flag to check if LE is supposed to stay on the surface or can be diffused below	
+	// will want to be able to set mixed layer depth, but have a local value that can be changed
+	if ((*theLE).z>0)	// only apply vertical diffusion if there are particles below surface
 	{
-		double g = 9.8, buoyancy = 0.;
-		double horizontalDiffusionCoefficient, verticalDiffusionCoefficient;
-		double mixedLayerDepth=10., totalLEDepth, breakingWaveHeight=1., depthAtPoint=INFINITE_DEPTH;
-		double karmen = .4, rho_a = 1.29, rho_w = 1030., dragCoeff, tau, uStar;
-		float water_density=1020.,water_viscosity = 1.e-6,eps = 1.e-6;
-		TWindMover *wind = model -> GetWindMover(false);
-		Boolean alreadyLeaked = false;
-		Boolean subsurfaceSpillStartPosition = !((*theLE).dispersionStatus==HAVE_DISPERSED || (*theLE).dispersionStatus==HAVE_DISPERSED_NAT);
-		Boolean chemicalSpill = ((*theLE).pollutantType==CHEMICAL);
+		double verticalDiffusionCoefficient;
+		double mixedLayerDepth=fMixedLayerDepth, totalLEDepth, depthAtPoint=INFINITE_DEPTH;
+		float eps = 1.e-6;
 		// diffusion coefficient is O(1) vs O(100000) for horizontal / vertical diffusion
 		// vertical is 3-5 cm^2/s, divide by sqrt of 10^5
-		PtCurMap *map = GetPtCurMap();
 		
-		//defaults
-		//fWaterDensity = 1020;
-		//fMixedLayerDepth = 10.;	//meters
-		//fBreakingWaveHeight = 1.;	// meters
-		//depthAtPoint=5000.;	// allow no bathymetry
-		if (map) breakingWaveHeight = map->GetBreakingWaveHeight();	// meters
-		if (map) mixedLayerDepth = map->fMixedLayerDepth;	// meters
-		if (bUseDepthDependentDiffusion)
-		{	
-			VelocityRec windVel;
-			double vel;
-			if (wind) err = wind -> GetTimeValue(model_time,&windVel);	// minus AH 07/10/2012
-			if (err || !wind) 
-			{
-				//printNote("Depth dependent diffusion requires a wind");
-				vel = 5;	// instead should have a minimum diffusion coefficient 5cm2/s
-			}
-			else 
-				vel = sqrt(windVel.u*windVel.u + windVel.v*windVel.v);	// m/s
-			dragCoeff = (.8+.065*vel)*.001;
-			tau = rho_a*dragCoeff*vel*vel;
-			uStar = sqrt(tau/rho_w);
-			//verticalDiffusionCoefficient = sqrt(2.*(.4*.00138*500/10000.)*timeStep);	// code goes here, use wind speed, other data
-			if ((*theLE).z <= 1.5 * breakingWaveHeight)
-				//verticalDiffusionCoefficient = sqrt(2.*(karmen*uStar*1.5/10000.)*timeStep);	
-				//verticalDiffusionCoefficient = sqrt(2.*(karmen*uStar*1.5)*timeStep);	
-				verticalDiffusionCoefficient = sqrt(2.*(karmen*uStar*1.5*breakingWaveHeight)*timeStep);	
-			else if ((*theLE).z <= mixedLayerDepth)
-				//verticalDiffusionCoefficient = sqrt(2.*(karmen*uStar*(*theLE).z/10000.)*timeStep);	
-				verticalDiffusionCoefficient = sqrt(2.*(karmen*uStar*(*theLE).z)*timeStep);	
-			else if ((*theLE).z > mixedLayerDepth)
-			{
-				//verticalDiffusionCoefficient = sqrt(2.*.000011/10000.*timeStep);
-				// code goes here, allow user to set this - is this different from fVerticalBottomDiffusionCoefficient which is used for leaking?
-				verticalDiffusionCoefficient = sqrt(2.*.000011*timeStep);
-				alreadyLeaked = true;
-			}
-		}
-		else*/
+		// instead diffuse particles above MLD, reflect if necessary and then apply bottom diffusion to all particles
+		// then check top and bottom. Still need to consider what to do with large steps - put randomly into mixed layer / water column ?
+		depthAtPoint = GetDepthAtPoint(refPoint);
+		if (depthAtPoint <= 0) depthAtPoint = INFINITE_DEPTH;	// this should be taken care of in GetDepthAtPoint	
+		// if (depthAtPoint < eps) // should this be an error?
+		if (z<=mixedLayerDepth)
 		{
-			if ((*theLE).z > mixedLayerDepth /*&& !chemicalSpill*/)
+			if (fVerticalDiffusionCoefficient==0) return deltaPoint;	
+			verticalDiffusionCoefficient = sqrt(2.*(fVerticalDiffusionCoefficient/10000.)*timeStep);
+			GetRandomVectorInUnitCircle(&rand1,&rand2);
+			r = sqrt(rand1*rand1+rand2*rand2);
+			w = sqrt(-2*log(r)/r);
+			// both rand1*w and rand2*w are normal random vars
+			deltaPoint.z = rand1*w*verticalDiffusionCoefficient;
+			//z = deltaPoint.z;	// will add this on to the next move
+			
+			// check that depth at point is greater than mixed layer depth, else bottom threshold is the depth
+			//depthAtPoint = GetDepthAtPoint(refPoint);	
+			
+			if (depthAtPoint < mixedLayerDepth) mixedLayerDepth = depthAtPoint;
+				
+			// also should handle non-dispersed subsurface spill
+			totalLEDepth = (*theLE).z+deltaPoint.z;
+			
+			if (totalLEDepth>mixedLayerDepth) 
 			{
-				//verticalDiffusionCoefficient = sqrt(2.*.000011/10000.*timeStep);	
-				verticalDiffusionCoefficient = sqrt(2.*.000011*timeStep);	// particles that leaked through
-				//alreadyLeaked = true;
+				deltaPoint.z = mixedLayerDepth - (totalLEDepth - mixedLayerDepth) - (*theLE).z; // reflect about mixed layer depth
+				// check if went above surface and put randomly into mixed layer
+				if ((*theLE).z+deltaPoint.z <= 0) deltaPoint.z = GetRandomFloat(eps,mixedLayerDepth) - (*theLE).z;	
+					// or just let it go and deal with it later? then it will go into full water column...
 			}
-			else
-				verticalDiffusionCoefficient = sqrt(2.*(fVerticalDiffusionCoefficient/10000.)*timeStep);
 		}
+		if (mixedLayerDepth==depthAtPoint) return deltaPoint;	// in this case don't need to do anything more
+		z = deltaPoint.z;	// will add this on to the next move
+		// now apply below mixed layer depth diffusion to all particles above and below
+		if (fVerticalBottomDiffusionCoefficient==0/* && z==0*/) return deltaPoint;
+		verticalDiffusionCoefficient = sqrt(2.*fVerticalBottomDiffusionCoefficient/10000.*timeStep);
 		GetRandomVectorInUnitCircle(&rand1,&rand2);
 		r = sqrt(rand1*rand1+rand2*rand2);
 		w = sqrt(-2*log(r)/r);
 		// both rand1*w and rand2*w are normal random vars
 		deltaPoint.z = rand1*w*verticalDiffusionCoefficient;
-		//z = deltaPoint.z;
-				
-	//}
-	//else
-		//deltaPoint.z = 0.;	
+		
+		z = z + deltaPoint.z;	// add move to previous move if any
+		totalLEDepth = (*theLE).z+z;
+		// if LE has gone above surface reflect
+		if (totalLEDepth==0) 
+		{	
+			deltaPoint.z = eps - (*theLE).z; 
+			return deltaPoint;
+		}
+		if (totalLEDepth<0) 
+		{	
+			deltaPoint.z = - totalLEDepth - (*theLE).z;	// reflect below surface
+			totalLEDepth = (*theLE).z + deltaPoint.z;
+			if (totalLEDepth > depthAtPoint) 
+				deltaPoint.z = GetRandomFloat(eps,depthAtPoint-eps) - (*theLE).z;
+			return deltaPoint;
+		}
+		if (totalLEDepth==depthAtPoint) 
+		{	
+			deltaPoint.z = (depthAtPoint - eps) - (*theLE).z; 
+			return deltaPoint;
+		}
+		if (totalLEDepth > depthAtPoint) 
+		{
+			// reflect above bottom
+			deltaPoint.z = depthAtPoint - (totalLEDepth - depthAtPoint) - (*theLE).z; 
+			totalLEDepth = (*theLE).z + deltaPoint.z;
+			if (totalLEDepth <= 0) 
+				// put randomly into water column
+				deltaPoint.z = GetRandomFloat(eps,depthAtPoint-eps) - (*theLE).z;
+			return deltaPoint;
+		}
+	}
+	else
+		deltaPoint.z = 0.;	
 	
 	return deltaPoint;
 }
