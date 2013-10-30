@@ -57,6 +57,7 @@ def sample_sc_release(num_elements=10,
     time_step=360,
     spill=None,
     arr_types=None,
+    element_type=None,
     current_time=None):
     """
     initiailize a spill of type spill_obj, add it to a SpillContainer.
@@ -66,6 +67,9 @@ def sample_sc_release(num_elements=10,
     if spill is None:
         spill = gnome.spill.PointLineSource(num_elements, start_pos,
                                             release_time)
+    if element_type is not None:
+        spill.element_type = element_type
+
     if current_time is None:
         current_time = spill.release_time
 

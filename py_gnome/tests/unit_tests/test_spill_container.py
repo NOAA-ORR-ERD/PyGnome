@@ -522,10 +522,10 @@ def test_element_types(elem_type, arr_types, sample_sc_no_uncertainty):
                     assert (np.all(sc[key][spill_mask] ==
                         spill.element_type.initializers[key].windage_persist))
                 elif key == 'rise_vel':
-                    assert (np.all(sc[key][spill_mask]) >=
-                        spill.element_type.initializers[key].params[0])
-                    assert (np.all(sc[key][spill_mask]) <=
-                        spill.element_type.initializers[key].params[1])
+                    assert (np.all(sc[key][spill_mask] >=
+                        spill.element_type.initializers[key].params[0]))
+                    assert (np.all(sc[key][spill_mask] <=
+                        spill.element_type.initializers[key].params[1]))
 
 
 """ SpillContainerPairData tests """
