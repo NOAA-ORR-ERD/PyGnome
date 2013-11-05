@@ -20,8 +20,8 @@ def test_init():
     """
 
     r = RiseVelocityMover()
-    assert r.water_density == 1020
-    assert r.water_viscosity == 1.e-6
+    #assert r.water_density == 1020
+    #assert r.water_viscosity == 1.e-6
 
 
 def test_props():
@@ -30,11 +30,11 @@ def test_props():
     """
 
     r = RiseVelocityMover()
-    r.water_density = 1
-    r.water_viscosity = 1.1e-6
+    #r.water_density = 1
+    #r.water_viscosity = 1.1e-6
 
-    assert r.water_density == 1
-    assert r.water_viscosity == 1.1e-6
+    #assert r.water_density == 1
+    #assert r.water_viscosity == 1.1e-6
 
 
 time_step = 15 * 60  # seconds

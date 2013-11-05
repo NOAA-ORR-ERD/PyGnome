@@ -18,8 +18,8 @@
 class DLL_API RiseVelocity_c : virtual public Mover_c {
 
 public:
-	double water_density;
-	double water_viscosity;
+	//double water_density;
+	//double water_viscosity;
 
 #ifndef pyGNOME
 	RiseVelocity_c (TMap *owner, char *name);

@@ -86,8 +86,8 @@ cdef extern from "RandomVertical_c.h":
 cdef extern from "RiseVelocity_c.h":
     cdef cppclass RiseVelocity_c(Mover_c):
         RiseVelocity_c() except +
-        double water_density
-        double water_viscosity
+        #double water_density
+        #double water_viscosity
         OSErr get_move(int n, unsigned long model_time, unsigned long step_len,
                        WorldPoint3D* ref, WorldPoint3D* delta,
                        double* rise_velocity,
