@@ -57,7 +57,7 @@ _sample_oils = {
                  'gram per cubic centimeter', 'API degree', 1)},
     }
 
-""" 
+"""
 currently, the DB is stored locally - use this for now till we have
 a persistent DB that we can query 
 """
