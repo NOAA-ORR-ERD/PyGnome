@@ -124,10 +124,8 @@ also documents the minimum version number:
 4. [Cython](http://www.lfd.uci.edu/~gohlke/pythonlibs/#cython)
 5. Install [PIL](http://www.pythonware.com/products/pil/) instead of Pillow
 6. 32-bit 1.0.6 version of [netCDF4](http://www.lfd.uci.edu/~gohlke/pythonlibs/#netcdf4)
-
-For WebGnome, the following two binary packages can be installed from C. Gohlke's website:
-7. [lxml] (http://www.lfd.uci.edu/~gohlke/pythonlibs/#lxml)
-8. [python-cjson] (http://www.lfd.uci.edu/~gohlke/pythonlibs/#python-cjson)
+7. [lxml] (http://www.lfd.uci.edu/~gohlke/pythonlibs/#lxml) - required for webgnome
+8. [python-cjson] (http://www.lfd.uci.edu/~gohlke/pythonlibs/#python-cjson) - required for webgnom
 
 The remaining dependencies are python packages and can be installed using pip install -r requirements.txt  
 See [Build PyGnome/WebGnome](https://github.com/NOAA-ORR-ERD/GNOME2#build-pygnomewebgnome) section below.
