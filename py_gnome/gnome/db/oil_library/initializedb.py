@@ -1,14 +1,9 @@
 import sys
-import os
 import transaction
+
 from .oil_library_parse import OilLibraryFile
 
 from sqlalchemy import engine_from_config
-
-from pyramid.paster import (
-    get_appsettings,
-    setup_logging,
-    )
 
 from .models import (
     DBSession,
@@ -192,21 +187,3 @@ def add_toxicity_lethal_concentrations(oil, row_dict):
             toxargs[hour96[lbl_offset:]] = row_dict.get(hour96)
             #print toxargs
             oil.toxicities.append(Toxicity(**toxargs))
-
-
-def usage(argv):
-    cmd = os.path.basename(argv[0])
-    print('usage: %s <config_uri>\n'
-          '(example: "%s development.ini")' % (cmd, cmd))
-    sys.exit(1)
-
-
-def main():
-    if len(sys.argv) != 2:
-        usage(sys.argv)
-    config_uri = sys.argv[1]
-    setup_logging(config_uri)
-
-    settings = get_appsettings(config_uri)
-    initialize_sql(settings)
-    load_database(settings)
