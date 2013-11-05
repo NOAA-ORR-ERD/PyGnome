@@ -80,10 +80,12 @@ For Linux use appropriate package manager (apt-get on ubuntu) to download/instal
         $ pip install PIL
    ```
 
+6. python-cjson is a webgnome dependency that can be pip installed. Currently commented in requirements.txt
+
 The remaining dependencies are python packages and can be installed using pip install -r requirements.txt  
 See [Build PyGnome/WebGnome](https://github.com/NOAA-ORR-ERD/GNOME2#build-pygnomewebgnome) section below.
 
-### Windows 7 (32-bit, using VS-2008) ###
+### Windows 7 (32-bit, using VS-2008 express edition) ###
 
 - PyGnome requires PIL. 
   It statically links against netcdf-3, included with PyGnome source code
@@ -121,7 +123,9 @@ also documents the minimum version number:
 3. [numpy-MKL](http://www.lfd.uci.edu/~gohlke/pythonlibs/#numpy)
 4. [Cython](http://www.lfd.uci.edu/~gohlke/pythonlibs/#cython)
 5. Install [PIL](http://www.pythonware.com/products/pil/) instead of Pillow
-6. Desired version of [netCDF4](http://www.lfd.uci.edu/~gohlke/pythonlibs/#netcdf4) 
+6. 32-bit 1.0.6 version of [netCDF4](http://www.lfd.uci.edu/~gohlke/pythonlibs/#netcdf4)
+7. [lxml] (http://www.lfd.uci.edu/~gohlke/pythonlibs/#lxml) - required for webgnome
+8. [python-cjson] (http://www.lfd.uci.edu/~gohlke/pythonlibs/#python-cjson) - required for webgnom
 
 The remaining dependencies are python packages and can be installed using pip install -r requirements.txt  
 See [Build PyGnome/WebGnome](https://github.com/NOAA-ORR-ERD/GNOME2#build-pygnomewebgnome) section below.

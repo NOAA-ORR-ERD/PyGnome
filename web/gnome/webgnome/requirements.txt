@@ -1,22 +1,39 @@
+# Documents the packages required for PyGnome
+#
+## BINARY dependencies: cannot be pip installed
+##    Following packages requires something more than pip install
+##    since they have binary dependencies. Following packages are commented
+##    so pip does not try to install them. Please look at install directions
+##    in README.md for instructions on installing for your OS.
+#
+#lxml
+#python-cjson    # 1.0.5
+#
+## End Binary packages ##
+
 requests
-lxml
 pytz
-python-dateutil==2.1
-WebHelpers2
-python-cjson==1.0.5
-pyramid==1.4a1
-nose==1.2.1
-WTForms==1.0.2
-waitress==0.8.1
-Sphinx==1.1.3
-Fabric==1.4.3
-WebTest==1.4.0
-repoze.profile==1.4
-beautifulsoup4==4.1.3
+python-dateutil # 2.1
+
+# since this is still beta release, need version for pip to find it
+WebHelpers2>=2.0b3
+
+pyramid
+nose            # 1.2.1
+WTForms         # 1.0.2
+waitress        # 0.8.1
+Sphinx          # 1.1.3
+Fabric          # 1.4.3
+WebTest         # 1.4.0
+repoze.profile  # 1.4
+beautifulsoup4  # 4.1.3
 coverage
 
 git+https://github.com/abrookins/hammer.git@0.1.1#egg=hammer
 
 #git+https://github.com/abrookins/cornice.git@fixes#egg=cornice
 git+https://github.com/mozilla-services/cornice.git#egg=cornice
+
+# Colander is also a dependency in PyGnome - make sure this is
+# consistent with colander required/used by PyGnome
 git+https://github.com/Pylons/colander.git#egg=colander

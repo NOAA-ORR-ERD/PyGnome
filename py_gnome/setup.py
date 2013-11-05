@@ -34,6 +34,9 @@ from Cython.Distutils import build_ext
 
 import numpy as np
 
+# could run setup from anywhere
+(SETUP_PATH, SETUP_FILE) = os.path.split(sys.argv[0])
+
 
 def target_dir(name):
     '''Returns the name of a distutils build directory'''
@@ -155,6 +158,39 @@ if sys.platform is "darwin" or "win32":
     netcdf_inc = os.path.join(netcdf_base, 'include')
 
     if sys.platform == 'win32':
+        # also copy the netcdf *.dlls to cy_gnome directory
+        # On windows the dlls have the same names for those used by python's
+        # netCDF4 module and PyGnome modules. For PyGnome, we had the latest
+        # netcdf dlls from UCARR site but this was giving DLL import errors.
+        # The netcdf dlls that come with Python's netCDF4 module (C. Gohlke's site)
+        # were different from the netcdf4 DLLs we got from UCARR.
+        # For now, third_party_lib contains the DLLs installed in site-packages
+        # from C. Gohlke's site.
+        #
+        # Alternatively, we could also look for python netCDF4 package and copy DLLs from site-packages.
+        # This way the DLLs used and loaded by PyGnome are the same as the DLL used and
+        # expected by netCDF4. PyGnome loads the DLL with cy_basic_types.pyd and it also
+        # imports netCDF4 when netcdf_outputters module is imported - this was causing the
+        # previous conflict. The DLL loaded in memory should be consistent - that's the best
+        # understanding of current issue!
+        # STILL WORKING ON A MORE PERMANENT SOLUTION
+        win_dlls = os.path.join(netcdf_base, 'bin')
+        cwd = os.getcwd()
+        dlls_path = os.path.join(cwd, SETUP_PATH, win_dlls)
+
+        for dll in glob.glob(os.path.join(dlls_path,'*.dll')):
+            dlls_dst = os.path.join(cwd, SETUP_PATH, 'gnome/cy_gnome/')
+
+            if sys.argv[1] == 'cleanall' or sys.argv[1] == 'clean':
+                (x_, dll_name) = os.path.split(dll)
+                rm_dll = os.path.join(dlls_dst, dll_name)
+                if os.path.exists(rm_dll):
+                    os.remove(rm_dll)
+                    print "deleted: " + rm_dll
+            else:
+                print "copy: " + dll + " to: " + dlls_dst
+                shutil.copy(dll, dlls_dst)
+
         netcdf_names = ('netcdf',)
     else:
         netcdf_names = ('hdf5', 'hdf5_hl', 'netcdf', 'netcdf_c++4')

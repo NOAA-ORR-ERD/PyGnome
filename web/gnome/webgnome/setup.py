@@ -47,7 +47,7 @@ setup(name='webgnome',
       [paste.app_factory]
       main = webgnome:main
       [console_scripts]
-      initialize_webgnome_db = gnome.db.oil_library.initializedb:main
+      initialize_webgnome_db = webgnome.scripts.initialize_oil_db:main
       create_location_file = webgnome.scripts.create_location_file:main
       clean_model_images = webgnome.scripts.clean_model_images:main
       clean_file_uploads = webgnome.scripts.clean_file_uploads:main
