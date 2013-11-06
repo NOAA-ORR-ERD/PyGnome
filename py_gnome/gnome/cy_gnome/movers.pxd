@@ -53,7 +53,12 @@ cdef extern from "Mover_c.h":
 
 cdef extern from "CurrentMover_c.h":
     cdef cppclass CurrentMover_c(Mover_c):
-        pass
+        double fDuration
+        double fUncertainStartTime
+        double fUpCurUncertainty
+        double fDownCurUncertainty
+        double fRightCurUncertainty
+        double fLeftCurUncertainty
 
 cdef extern from "WindMover_c.h":
     cdef cppclass WindMover_c(Mover_c):

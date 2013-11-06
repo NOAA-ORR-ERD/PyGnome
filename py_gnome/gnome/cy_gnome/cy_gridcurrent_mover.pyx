@@ -14,25 +14,25 @@ cdef extern from *:
 
 cdef class CyGridCurrentMover(cy_mover.CyMover):
 
-    cdef GridCurrentMover_c *grid
+    cdef GridCurrentMover_c *grid_current
 
     def __cinit__(self):
         self.mover = new GridCurrentMover_c()
-        self.grid = dynamic_cast_ptr(self.mover)
+        self.grid_current = dynamic_cast_ptr(self.mover)
 
     def __dealloc__(self):
         del self.mover
-        self.grid = NULL
+        self.grid_current = NULL
 
 #     def set_time_grid(self, time_grid_file, topology_file):
-#         self.grid.fIsOptimizedForStep = 0
+#         self.grid_current.fIsOptimizedForStep = 0
 #         #cdef TimeGridVel_c *time_grid
 #         cdef TimeGridVelCurv_c *time_grid
 #         time_grid = new TimeGridVelCurv_c()
 #         #time_grid = new TimeGridVel_c()
 #         if (time_grid.TextRead(time_grid_file, topology_file) == -1):
 #             return False
-#         self.grid.SetTimeGrid(time_grid)
+#         self.grid_current.fIsOptimizedForStep = 0
 #         return True
 
     def text_read(self, time_grid_file, topology_file=None):
@@ -47,11 +47,11 @@ cdef class CyGridCurrentMover(cy_mover.CyMover):
         time_grid = to_bytes(unicode(time_grid_file))
 
         if topology_file is None:
-            err = self.grid.TextRead(time_grid, '')
+            err = self.grid_current.TextRead(time_grid, '')
         else:
             topology_file = os.path.normpath(topology_file)
             topology = to_bytes(unicode(topology_file))
-            err = self.grid.TextRead(time_grid, topology)
+            err = self.grid_current.TextRead(time_grid, topology)
 
         if err != 0:
             """
@@ -68,7 +68,7 @@ cdef class CyGridCurrentMover(cy_mover.CyMover):
         cdef OSErr err
         topology_file = os.path.normpath(topology_file)
         topology_file = to_bytes(unicode(topology_file))
-        err = self.grid.ExportTopology(topology_file)
+        err = self.grid_current.ExportTopology(topology_file)
         if err != 0:
             """
             For now just raise an OSError - until the types of possible errors
@@ -76,8 +76,88 @@ cdef class CyGridCurrentMover(cy_mover.CyMover):
             """
             raise OSError("GridCurrentMover_c.ExportTopology returned an error.")
 
-    def __init__(self):
-        self.grid.fIsOptimizedForStep = 0
+    def __init__(self, current_scale=1, uncertain_duration=24*3600, uncertain_time_delay=0, 
+                 uncertain_along = .5, uncertain_cross = .25):
+        """
+        .. function:: __init__(self, current_scale=1, uncertain_duration=24*3600, uncertain_time_delay=0,
+                 uncertain_along = .5, uncertain_cross = .25)
+        
+        initialize a grid current mover
+        
+        :param uncertain_duation: time in seconds after which the uncertainty values are updated
+        :param uncertain_time_delay: wait this long after model_start_time to turn on uncertainty
+        :param uncertain_cross: used in uncertainty computation, perpendicular to current flow
+        :param uncertain_along: used in uncertainty computation, parallel to current flow
+        :param current_scale: scale factor applied to current values
+        
+        """
+        self.grid_current.fVar.curScale = current_scale
+        #self.grid_current.fVar.durationInHrs = uncertain_duration
+        self.grid_current.fDuration = uncertain_duration
+        #self.grid_current.fVar.startTimeInHrs = uncertain_time_delay
+        self.grid_current.fUncertainStartTime = uncertain_time_delay
+        #self.grid_current.fVar.crossCurUncertainty = uncertain_cross
+        #self.grid_current.fVar.alongCurUncertainty = uncertain_along
+        self.grid_current.fDownCurUncertainty = -1*uncertain_along
+        self.grid_current.fUpCurUncertainty = uncertain_along
+        self.grid_current.fLeftCurUncertainty = -1*uncertain_cross
+        self.grid_current.fRightCurUncertainty = uncertain_cross
+        
+        self.grid_current.fIsOptimizedForStep = 0
+
+    def __repr__(self):
+        """
+        unambiguous repr of object, reuse for str() method
+        """
+        info = "CyGridCurrentMover(uncertain_duration=%s,uncertain_time_delay=%s,uncertain_along=%s,uncertain_cross=%s)" \
+        % (self.grid_current.fDuration, self.grid_current.fUncertainStartTime, self.grid_current.fUpCurUncertainty, self.grid_current.fRightCurUncertainty)
+        return info
+      
+    def __str__(self):
+        """Return string representation of this object"""
+        
+        info  = "CyGridCurrentMover object - \n  uncertain_duration: %s \n  uncertain_time_delay: %s \n  uncertain_along: %s\n  uncertain_cross: %s" \
+        % (self.grid_current.fDuration, self.grid_current.fUncertainStartTime, self.grid_current.fUpCurUncertainty, self.grid_current.fRightCurUncertainty)
+        
+        return info
+        
+    property current_scale:
+        def __get__(self):
+            return self.grid_current.fVar.curScale
+        
+        def __set__(self, value):
+            self.grid_current.fVar.curScale = value
+        
+    property uncertain_duration:
+        def __get__(self):
+            return self.grid_current.fDuration
+        
+        def __set__(self,value):
+            self.grid_current.fDuration = value
+    
+    property uncertain_time_delay:
+        def __get__(self):
+            return self.grid_current.fUncertainStartTime
+        
+        def __set__(self, value):
+            self.grid_current.fUncertainStartTime = value
+    
+    property uncertain_cross:
+        def __get__(self):
+            return self.grid_current.fRightCurUncertainty
+        
+        def __set__(self, value):
+            self.grid_current.fRightCurUncertainty = value
+            self.grid_current.fLeftCurUncertainty = -1.*value
+    
+    property uncertain_along:
+        def __get__(self):
+            return self.grid_current.fUpCurUncertainty
+        
+        def __set__(self, value):
+            self.grid_current.fUpCurUncertainty = value
+            self.grid_current.fDownCurUncertainty = -1.*value
+        
 
     def get_move(self,
                  model_time,
@@ -112,7 +192,7 @@ cdef class CyGridCurrentMover(cy_mover.CyMover):
         cdef OSErr err
         N = len(ref_points)
 
-        err = self.grid.get_move(N, model_time, step_len,
+        err = self.grid_current.get_move(N, model_time, step_len,
                                  &ref_points[0],
                                  &delta[0],
                                  &LE_status[0],
