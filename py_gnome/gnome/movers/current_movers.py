@@ -4,6 +4,7 @@ Movers using currents and tides as forcing functions
 
 import os
 import copy
+from datetime import datetime, timedelta
 
 from gnome.movers import CyMover
 from gnome import environment
@@ -178,11 +179,11 @@ class GridCurrentMover(CyMover, serializable.Serializable):
         self,
         filename,
         topology_file=None,
-        current_scale=1,
-        uncertain_duration=24*3600,
-        uncertain_time_delay=0,
-        uncertain_along=0.5,
-        uncertain_cross=.25,
+#         current_scale=1,
+#         uncertain_duration=timedelta(hours=24),
+#         uncertain_time_delay=timedelta(hours=0),
+#         uncertain_along=0.5,
+#         uncertain_cross=.25,
         **kwargs
         ):
         """
@@ -217,8 +218,8 @@ class GridCurrentMover(CyMover, serializable.Serializable):
         #self.mover = cy_gridcurrent_mover.CyGridCurrentMover()
         self.mover = \
         cy_gridcurrent_mover.CyGridCurrentMover(current_scale=kwargs.pop('current_scale', 1),
-             uncertain_duration=kwargs.pop('uncertain_duration', 24*3600),
-             uncertain_time_delay=kwargs.pop('uncertain_time_delay', 0),
+             uncertain_duration=3600.*kwargs.pop('uncertain_duration', 24),
+             uncertain_time_delay=3600.*kwargs.pop('uncertain_time_delay', 0),
              uncertain_along=kwargs.pop('uncertain_along', 0.5),
              uncertain_cross=kwargs.pop('uncertain_cross', 0.25))
 
@@ -256,15 +257,15 @@ class GridCurrentMover(CyMover, serializable.Serializable):
     # Define properties using lambda functions: uses lambda function, which are
     #accessible via fget/fset as follows:
     uncertain_duration = property(lambda self: \
-                                  self.mover.uncertain_duration,
+                                  self.mover.uncertain_duration/3600.,
                                   lambda self, val: setattr(self.mover,
-                                  'uncertain_duration', val))
+                                  'uncertain_duration', val*3600.))
 
     uncertain_time_delay = property(lambda self: \
-                                    self.mover.uncertain_time_delay,
+                                    self.mover.uncertain_time_delay/3600.,
                                     lambda self, val: \
                                     setattr(self.mover,
-                                    'uncertain_time_delay', val))
+                                    'uncertain_time_delay', val*3600.))
 
     uncertain_cross = property(lambda self: \
             self.mover.uncertain_cross, lambda self, val: \
