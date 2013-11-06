@@ -21,7 +21,6 @@ from gnome.movers import WindMover, constant_wind_mover, \
 
 from gnome.spill import PointLineSource
 from gnome.spill_container import SpillContainer
-from gnome.array_types import ArrayType
 
 from conftest import sample_sc_release
 
@@ -98,12 +97,17 @@ def test_properties(wind_circ):
     wm.uncertain_duration = 1
     wm.uncertain_time_delay = 2
     wm.uncertain_speed_scale = 3
-    wm.uncertain_angle_scale = 4
+    wm.set_uncertain_angle(4, 'deg')
 
     assert wm.uncertain_duration == 1
     assert wm.uncertain_time_delay == 2
     assert wm.uncertain_speed_scale == 3
     assert wm.uncertain_angle_scale == 4
+    assert wm.uncertain_angle_units == 'deg'
+
+    wm.set_uncertain_angle(.04, 'rad')
+    assert wm.uncertain_angle_scale == 0.04
+    assert wm.uncertain_angle_units == 'rad'
 
 
 def test_update_wind(wind_circ):
@@ -475,10 +479,11 @@ def _defaults(wm):
     """
 
     assert wm.active == True  # timespan is as big as possible
-    assert wm.uncertain_duration == 10800
+    assert wm.uncertain_duration == 24
     assert wm.uncertain_time_delay == 0
     assert wm.uncertain_speed_scale == 2
     assert wm.uncertain_angle_scale == 0.4
+    assert wm.uncertain_angle_units == 'rad'
 
 
 def _get_timeseries_from_cpp(windmover):
@@ -520,5 +525,3 @@ def _assert_timeseries_equivalence(cpp_timeseries, wind_ts):
     assert np.all(cpp_timeseries['time'] == wind_ts['time'])
     assert np.allclose(cpp_timeseries['value'], wind_ts['value'], atol,
                        rtol)
-
-

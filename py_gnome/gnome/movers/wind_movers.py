@@ -5,6 +5,7 @@ Movers using wind as the forcing function
 import os
 import copy
 from datetime import datetime
+import math
 
 import numpy as np
 
@@ -18,69 +19,28 @@ from gnome.utilities import rand
 import gnome.array_types
 
 
-class WindMover(CyMover, serializable.Serializable):
+class WindMoversBase(CyMover):
+    state = copy.deepcopy(serializable.Serializable.state)
+    state.add(update=['uncertain_duration', 'uncertain_time_delay',
+                      'uncertain_speed_scale'],
+              create=['uncertain_duration', 'uncertain_time_delay',
+                      'uncertain_speed_scale', 'uncertain_angle_scale',
+                      'uncertain_angle_units'],
+              read=['uncertain_angle_scale'])
 
-    """
-    Python wrapper around the Cython wind_mover module.
-    This class inherits from CyMover and contains CyWindMover
-
-    The real work is done by the CyWindMover object.  CyMover
-    sets everything up that is common to all movers.
-
-    In addition to base class array_types.basic, also use the
-    array_types.windage dict since WindMover requires a windage array
-    """
-    _update = ['uncertain_duration', 'uncertain_time_delay',
-               'uncertain_speed_scale', 'uncertain_angle_scale']
-    _create = ['wind_id']
-    _read = ['wind_id']
-    _create.extend(_update)
-
-    state = copy.deepcopy(CyMover.state)
-    state.add(read=_read, update=_update, create=_create)
-
-    @classmethod
-    def new_from_dict(cls, dict_):
+    def __init__(self,
+        uncertain_duration=24,
+        uncertain_time_delay=0,
+        uncertain_speed_scale=2.,
+        uncertain_angle_scale=0.4,
+        uncertain_angle_units='rad',
+        **kwargs):
         """
-        define in WindMover and check wind_id matches wind
+        This is simply a base class for WindMover and GridWindMover for the
+        common properties.
 
-        invokes: super(WindMover,cls).new_from_dict(dict\_)
-        """
-
-        wind_id = dict_.pop('wind_id')
-        if dict_.get('wind').id != wind_id:
-            raise ValueError('id of wind object does not match the wind_id'\
-                             ' parameter')
-
-        return super(WindMover, cls).new_from_dict(dict_)
-
-    def wind_id_to_dict(self):
-        """
-        used only for storing state so no wind_id_from_dict is defined. This
-        is not a read/write attribute. Only defined for serializable_state
-        """
-
-        return self.wind.id
-
-    def from_dict(self, dict_):
-        """
-        For updating the object from dictionary
-
-        'wind' object is not part of the state since it is not serialized/
-        deserialized; however, user can still update the wind attribute with a
-        new Wind object. That must be poped out of the dict() here, then call
-        super to process the standard dict\_
-        """
-
-        self.wind = dict_.pop('wind', self.wind)
-
-        super(WindMover, self).from_dict(dict_)
-
-    def __init__(self, wind, **kwargs):
-        """
-        Uses super to call CyMover base class __init__
-
-        :param wind: wind object -- provides the wind time series for the mover
+        The classes that inherit from this should define the self.mover object
+        correctly so it has the required attributes.
 
         Optional parameters (kwargs):
 
@@ -88,87 +48,77 @@ class WindMover(CyMover, serializable.Serializable):
                                    windage get re-set
         :param uncertain_time_delay: when does the uncertainly kick in.
         :param uncertain_speed_scale: Scale for uncertainty in wind speed
+            non-dimensional number
         :param uncertain_angle_scale: Scale for uncertainty in wind direction
+            'deg' or 'rad'
+        :param uncertain_angle_units: 'rad' or 'deg'. These are the units for
+            the uncertain_angle_scale.
 
-        Remaining kwargs are passed onto Mover's __init__ using super.
-        See Mover documentation for remaining valid kwargs.
+        It calls super in the __init__ method
         """
+        self.uncertain_duration = uncertain_duration
+        self.uncertain_time_delay = uncertain_time_delay
+        self.uncertain_speed_scale = uncertain_speed_scale
 
-        self.mover = \
-        CyWindMover(uncertain_duration=kwargs.pop('uncertain_duration', 10800),
-             uncertain_time_delay=kwargs.pop('uncertain_time_delay', 0),
-             uncertain_speed_scale=kwargs.pop('uncertain_speed_scale', 2.),
-             uncertain_angle_scale=kwargs.pop('uncertain_angle_scale', 0.4))
+        # also sets self._uncertain_angle_units
+        self.set_uncertain_angle(uncertain_angle_scale, uncertain_angle_units)
 
-        self.wind = wind
-        super(WindMover, self).__init__(**kwargs)
-        self.array_types.update(
-                  {'windages': gnome.array_types.windages,
-                   'windage_range': gnome.array_types.windage_range,
-                   'windage_persist': gnome.array_types.windage_persist})
+        super(WindMoversBase, self).__init__(**kwargs)
 
-    def __repr__(self):
-        """
-        .. todo::
-            We probably want to include more information.
-        """
-
-        info = \
-            'WindMover( wind=<wind_object>, uncertain_duration='\
-            + '{0.uncertain_duration},' \
-            + 'uncertain_time_delay={0.uncertain_time_delay}, '\
-            + 'uncertain_speed_scale={0.uncertain_speed_scale}, ' \
-            + 'uncertain_angle_scale={0.uncertain_angle_scale}, '\
-            + 'active_start={1.active_start}, active_stop={1.active_stop}, '\
-            + 'on={1.on})'
-        return info.format(self.mover, self)
-
-    def __str__(self):
-        info = \
-            "WindMover - current state." \
-            + " See 'wind' object for wind conditions:\n" \
-            + '  uncertain_duration={0.uncertain_duration}\n' \
-            + '  uncertain_time_delay={0.uncertain_time_delay}\n' \
-            + '  uncertain_speed_scale={0.uncertain_speed_scale}\n' \
-            + '  uncertain_angle_scale={0.uncertain_angle_scale}' \
-            + '  active_start time={1.active_start}' \
-            + '  active_stop time={1.active_stop}' \
-            + '  current on/off status={1.on}'
-        return info.format(self.mover, self)
-
-    @property
-    def wind(self):
-        return self._wind
-
-    @wind.setter
-    def wind(self, value):
-        if not isinstance(value, environment.Wind):
-            raise TypeError('wind must be of type environment.Wind')
-        else:
-            # update reference to underlying cython object
-            self._wind = value
-            self.mover.set_ossm(self.wind.ossm)
-
-    # Define properties using lambda functions: uses lambda function,
-    # which are accessible via fget/fset as follows:
-    uncertain_duration = property(lambda self: \
-                                  self.mover.uncertain_duration,
-                                  lambda self, val: setattr(self.mover,
-                                  'uncertain_duration', val))
-
-    uncertain_time_delay = property(lambda self: \
-                                    self.mover.uncertain_time_delay,
-                                    lambda self, val: \
-                                    setattr(self.mover,
-                                    'uncertain_time_delay', val))
-
+    # no conversion necessary - simply sets/gets the stored value
     uncertain_speed_scale = property(lambda self: \
             self.mover.uncertain_speed_scale, lambda self, val: \
             setattr(self.mover, 'uncertain_speed_scale', val))
 
-    uncertain_angle_scale = property(lambda self: \
-            self.mover.uncertain_angle_scale, lambda self, val: \
-            setattr(self.mover, 'uncertain_angle_scale', val))
+    @property
+    def uncertain_duration(self):
+        return self.mover.uncertain_duration / 3600.0
+
+    @uncertain_duration.setter
+    def uncertain_duration(self, val):
+        self.mover.uncertain_duration = val * 3600.0
+
+    @property
+    def uncertain_time_delay(self):
+        return self.mover.uncertain_time_delay / 3600.0
+
+    @uncertain_time_delay.setter
+    def uncertain_time_delay(self, val):
+        self.mover.uncertain_time_delay = val * 3600.0
+
+    @property
+    def uncertain_angle_units(self):
+        """
+        units specified by the user when setting the uncertain_angle:
+        set_uncertain_angle()
+        """
+        return self._uncertain_angle_units
+
+    @property
+    def uncertain_angle_scale(self):
+        """
+        read only - this is set when set_uncertain_angle() is called
+        It returns the angle in 'uncertain_angle_units'
+        """
+        if self.uncertain_angle_units == 'deg':
+            return self.mover.uncertain_angle_scale * 180.0 / math.pi
+        else:
+            return self.mover.uncertain_angle_scale
+
+    def set_uncertain_angle(self, val, units):
+        """
+        this must be a function because user must provide units with value
+        """
+        if units not in ['deg', 'rad']:
+            raise ValueError("units for uncertain angle can be either"
+                             " 'deg' or 'rad'")
+
+        if units == 'deg':  # convert to radians
+            self.mover.uncertain_angle_scale = val * math.pi / 180.0
+        else:
+            self.mover.uncertain_angle_scale = val
+
+        self._uncertain_angle_units = units
 
     def prepare_for_model_step(
         self,
@@ -185,7 +135,7 @@ class WindMover(CyMover, serializable.Serializable):
         :param model_time_datetime: current time of model as a date time object
         """
 
-        super(WindMover, self).prepare_for_model_step(sc, time_step,
+        super(WindMoversBase, self).prepare_for_model_step(sc, time_step,
                 model_time_datetime)
 
         # if no particles released, then no need for windage
@@ -235,6 +185,123 @@ class WindMover(CyMover, serializable.Serializable):
         return self.delta.view(dtype=basic_types.world_point_type).reshape((-1,
                 len(basic_types.world_point)))
 
+    def _state_as_str(self):
+        """
+        Returns a string containing properties of object.
+        This can be called by __repr__ or __str__ to display props
+        """
+        info = \
+              '  uncertain_duration={0.uncertain_duration}\n' \
+            + '  uncertain_time_delay={0.uncertain_time_delay}\n' \
+            + '  uncertain_speed_scale={0.uncertain_speed_scale}\n' \
+            + '  uncertain_angle_scale={0.uncertain_angle_scale}\n' \
+            + "  uncertain_angle_units='{0.uncertain_angle_units}'\n" \
+            + '  active_start time={1.active_start}\n' \
+            + '  active_stop time={1.active_stop}\n' \
+            + '  current on/off status={1.on}\n'
+        return info.format(self, self)
+
+
+class WindMover(WindMoversBase, serializable.Serializable):
+
+    """
+    Python wrapper around the Cython wind_mover module.
+    This class inherits from CyMover and contains CyWindMover
+
+    The real work is done by the CyWindMover object.  CyMover
+    sets everything up that is common to all movers.
+
+    In addition to base class array_types.basic, also use the
+    array_types.windage dict since WindMover requires a windage array
+    """
+    state = copy.deepcopy(WindMoversBase.state)
+    state.add(read=['wind_id'], create=['wind_id'])
+
+    @classmethod
+    def new_from_dict(cls, dict_):
+        """
+        define in WindMover and check wind_id matches wind
+
+        invokes: super(WindMover,cls).new_from_dict(dict\_)
+        """
+
+        wind_id = dict_.pop('wind_id')
+        if dict_.get('wind').id != wind_id:
+            raise ValueError('id of wind object does not match the wind_id'\
+                             ' parameter')
+        return super(WindMover, cls).new_from_dict(dict_)
+
+    def wind_id_to_dict(self):
+        """
+        used only for storing state so no wind_id_from_dict is defined. This
+        is not a read/write attribute. Only defined for serializable_state
+        """
+
+        return self.wind.id
+
+    def from_dict(self, dict_):
+        """
+        For updating the object from dictionary
+
+        'wind' object is not part of the state since it is not serialized/
+        deserialized; however, user can still update the wind attribute with a
+        new Wind object. That must be poped out of the dict() here, then call
+        super to process the standard dict\_
+        """
+
+        self.wind = dict_.pop('wind', self.wind)
+
+        super(WindMover, self).from_dict(dict_)
+
+    def __init__(self, wind, **kwargs):
+        """
+        Uses super to call CyMover base class __init__
+
+        :param wind: wind object -- provides the wind time series for the mover
+
+        Remaining kwargs are passed onto WindMoversBase __init__ using super.
+        See Mover documentation for remaining valid kwargs.
+        """
+
+        self.mover = CyWindMover()
+        self.wind = wind
+
+        # set optional attributes
+        super(WindMover, self).__init__(**kwargs)
+        self.array_types.update(
+                  {'windages': gnome.array_types.windages,
+                   'windage_range': gnome.array_types.windage_range,
+                   'windage_persist': gnome.array_types.windage_persist})
+
+    def __repr__(self):
+        """
+        .. todo::
+            We probably want to include more information.
+        """
+
+        info = 'WindMover(\n{0})'.format(self._state_as_str())
+        return info
+
+    def __str__(self):
+        info = \
+            "WindMover - current state." \
+            + " See 'wind' object for wind conditions:\n" \
+            + "{0}".format(self._state_as_str())
+        return info
+
+    @property
+    def wind(self):
+        return self._wind
+
+    @wind.setter
+    def wind(self, value):
+        if not isinstance(value, environment.Wind):
+            raise TypeError('wind must be of type environment.Wind')
+        else:
+            # update reference to underlying cython object
+            self._wind = value
+            self.mover.set_ossm(self.wind.ossm)
+
 
 def wind_mover_from_file(filename, **kwargs):
     """
@@ -278,17 +345,9 @@ def constant_wind_mover(speed, direction, units='m/s'):
     return w_mover
 
 
-class GridWindMover(CyMover, serializable.Serializable):
+class GridWindMover(WindMoversBase, serializable.Serializable):
 
-    _update = ['uncertain_duration', 'uncertain_time_delay',
-               'uncertain_speed_scale', 'uncertain_angle_scale']
-
-    # _create = ['wind_file', 'topology_file']
-    # _read = ['wind_file', 'topology_file']
-    # _create.extend(_update)
-
-    state = copy.deepcopy(CyMover.state)
-    state.add(update=_update, create=_update)
+    state = copy.deepcopy(WindMoversBase.state)
     state.add_field([serializable.Field('wind_file', create=True,
                     read=True, isdatafile=True),
                     serializable.Field('topology_file', create=True,
@@ -298,21 +357,14 @@ class GridWindMover(CyMover, serializable.Serializable):
         self,
         wind_file,
         topology_file=None,
-        uncertain_duration=10800,
-        uncertain_time_delay=0,
-        uncertain_speed_scale=2.,
-        uncertain_angle_scale=0.4,
         **kwargs
         ):
         """
-        :param active_start: datetime when the mover should be active
-        :param active_stop: datetime after which the mover should be inactive
-        :param uncertain_duration: (seconds) how often does a given uncertian
-                                   windage get re-set
-        :param uncertain_time_delay: when does the uncertainly kick in.
-        :param uncertain_speed_scale: Scale for uncertainty in wind speed
-        :param uncertain_angle_scale: Scale for uncertainty in wind direction
+        :param wind_file: file containing wind data on a grid
+        :param topology_file: Default is None. If topology file exists, pass
+            it in
 
+        Pass optional arguments to base class
         uses super: super(GridWindMover,self).__init__(**kwargs)
         """
 
@@ -329,14 +381,9 @@ class GridWindMover(CyMover, serializable.Serializable):
         self.wind_file = wind_file
         self.topology_file = topology_file
         self.mover = CyGridWindMover()
-        self.mover.text_read(wind_file, topology_file)
-
-#         self.mover = CyGridWindMover(uncertain_duration=uncertain_duration,
-#                                  uncertain_time_delay=uncertain_time_delay,
-#                                  uncertain_speed_scale=uncertain_speed_scale,
-#                                  uncertain_angle_scale=uncertain_angle_scale)
-
         super(GridWindMover, self).__init__(**kwargs)
+
+        self.mover.text_read(wind_file, topology_file)
 
     def __repr__(self):
         """
@@ -344,112 +391,13 @@ class GridWindMover(CyMover, serializable.Serializable):
             We probably want to include more information.
         """
 
-        info = \
-            'GridWindMover( uncertain_duration={0.uncertain_duration},' \
-            + 'uncertain_time_delay={0.uncertain_time_delay}, '\
-            + 'uncertain_speed_scale={0.uncertain_speed_scale}, ' \
-            + 'uncertain_angle_scale={0.uncertain_angle_scale}, '\
-            + 'active_start={1.active_start}, active_stop={1.active_stop}, '\
-            + 'on={1.on})'
-        return info.format(self.mover, self)
+        info = 'GridWindMover(\n{0})'.format(self._state_as_str())
+        return info
 
     def __str__(self):
         info = 'GridWindMover - current state.\n' \
-            + '  uncertain_duration={0.uncertain_duration}\n' \
-            + '  uncertain_time_delay={0.uncertain_time_delay}\n' \
-            + '  uncertain_speed_scale={0.uncertain_speed_scale}\n' \
-            + '  uncertain_angle_scale={0.uncertain_angle_scale}' \
-            + '  active_start time={1.active_start}' \
-            + '  active_stop time={1.active_stop}' \
-            + '  current on/off status={1.on}'
-        return info.format(self.mover, self)
-
-    # Define properties using lambda functions: uses lambda function, which are
-    #accessible via fget/fset as follows:
-    uncertain_duration = property(lambda self: \
-                                  self.mover.uncertain_duration,
-                                  lambda self, val: setattr(self.mover,
-                                  'uncertain_duration', val))
-
-    uncertain_time_delay = property(lambda self: \
-                                    self.mover.uncertain_time_delay,
-                                    lambda self, val: \
-                                    setattr(self.mover,
-                                    'uncertain_time_delay', val))
-
-    uncertain_speed_scale = property(lambda self: \
-            self.mover.uncertain_speed_scale, lambda self, val: \
-            setattr(self.mover, 'uncertain_speed_scale', val))
-
-    uncertain_angle_scale = property(lambda self: \
-            self.mover.uncertain_angle_scale, lambda self, val: \
-            setattr(self.mover, 'uncertain_angle_scale', val))
-
-    def prepare_for_model_step(
-        self,
-        sc,
-        time_step,
-        model_time_datetime,
-        ):
-        """
-        Call base class method using super and also update windage for this
-        timestep
-
-        :param sc: an instance of gnome.spill_container.SpillContainer class
-        :param time_step: time step in seconds
-        :param model_time_datetime: current model time
-        :type model_time: datetime object
-        """
-
-        super(GridWindMover, self).prepare_for_model_step(sc,
-                time_step, model_time_datetime)
-
-        # if no particles released, then no need for windage
-
-        if len(sc['positions']) == 0:
-            return
-
-        for spill in sc.spills:
-            spill_mask = sc.get_spill_mask(spill)
-            if np.any(spill_mask):
-                rand.random_with_persistance(
-                                sc['windage_range'][spill_mask, 0],
-                                sc['windage_range'][spill_mask, 1],
-                                sc['windages'][spill_mask],
-                                sc['windage_persist'][spill_mask],
-                                time_step)
-
-    def get_move(
-        self,
-        sc,
-        time_step,
-        model_time_datetime,
-        ):
-        """
-        Override base class functionality because mover has a different
-        get_move signature
-
-        :param sc: an instance of the gnome.SpillContainer class
-        :param time_step: timestep in seconds
-        :param model_time_datetime: current model time as datetime object
-        :type model_time: datetime
-        """
-
-        self.prepare_data_for_get_move(sc, model_time_datetime)
-
-        if self.active and len(self.positions) > 0:
-            self.mover.get_move(
-                self.model_time,
-                time_step,
-                self.positions,
-                self.delta,
-                sc['windages'],
-                self.status_codes,
-                self.spill_type,
-                )
-
-        return self.delta.view(dtype=basic_types.world_point_type).reshape((-1,
-                len(basic_types.world_point)))
+            + "{0}".format(self._state_as_str())
+        return info
 
     def export_topology(self, topology_file):
         """
