@@ -361,8 +361,8 @@ class GridWindMover(WindMoversBase, serializable.Serializable):
         ):
         """
         :param wind_file: file containing wind data on a grid
-        :param topology_file: Default is None. If topology file exists, pass
-            it in
+        :param topology_file: Default is None. When exporting topology, it
+            is stored in this file
 
         Pass optional arguments to base class
         uses super: super(GridWindMover,self).__init__(**kwargs)

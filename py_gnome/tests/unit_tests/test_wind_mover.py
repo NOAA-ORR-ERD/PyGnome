@@ -6,7 +6,9 @@ import pytest
 
 from hazpy import unit_conversion
 
-from gnome.basic_types import datetime_value_2d, ts_format, windage_type
+from gnome.basic_types import (datetime_value_2d,
+                               ts_format,
+                               world_point_type)
 
 from gnome import environment
 from gnome import array_types
@@ -17,31 +19,45 @@ from gnome.utilities.transforms import r_theta_to_uv_wind
 from gnome.utilities import convert
 
 from gnome.movers import WindMover, constant_wind_mover, \
-    wind_mover_from_file
+    wind_mover_from_file, GridWindMover
 
-from gnome.spill import PointLineSource
+from gnome.spill import PointLineSource, SpatialRelease
 from gnome.spill_container import SpillContainer
+from gnome.utilities.remote_data import get_datafile
 
 from conftest import sample_sc_release
 
+""" WindMover tests """
+
 datadir = os.path.join(os.path.dirname(__file__), r'sample_data')
 file_ = os.path.join(datadir, r'WindDataFromGnome.WND')
+grid_file = get_datafile(os.path.join(datadir, 'winds/test_wind.cdf'))
 
 
-def test_exceptions():
+@pytest.mark.parametrize(("obj"), [(WindMover), (GridWindMover)])
+def test_exceptions(obj):
     """
     Test ValueError exception thrown if improper input arguments
     """
-
     with pytest.raises(TypeError):
-        WindMover()
+        obj()
 
     with pytest.raises(ValueError):
-        wind = environment.Wind(filename=file_)
-        now = datetime.now()
-        WindMover(wind, active_start=now, active_stop=now)
+        WindMover(environment.Wind(filename=file_),
+                  uncertain_angle_units='xyz')
+
+    with pytest.raises(ValueError):
+        #gw = GridWindMover(grid_file, uncertain_angle_units='xyz')
+        gw = GridWindMover(grid_file)   # todo: why does this fail
+        gw.set_uncertain_angle(.4, 'xyz')
 
     with pytest.raises(TypeError):
+        """
+        violates duck typing so may want to remove. Though current WindMover's
+        backend cython object looks for C++ OSSM object which is embedded in
+        environment.Wind object which is why this check was enforced. Can be
+        re-evaluated if there is a need.
+        """
         WindMover(wind=10)
 
 
@@ -152,13 +168,10 @@ class TestWindMover:
     """
     gnome.WindMover() test
     """
-
     time_step = 15 * 60  # seconds
-    rel_time = datetime(2012, 8, 20, 13)  # yyyy/month/day/hr/min/sec
-    sc = sample_sc_release(5, (3., 6., 0.), rel_time)
-    model_time = rel_time
-
-    time_val = np.array((rel_time, (2., 25.)),
+    model_time = datetime(2012, 8, 20, 13)  # yyyy/month/day/hr/min/sec
+    sc = sample_sc_release(5, (3., 6., 0.), model_time)
+    time_val = np.array((model_time, (2., 25.)),
                         dtype=datetime_value_2d).reshape(1)
     wind = environment.Wind(timeseries=time_val,
                             units='meter per second')
@@ -182,11 +195,11 @@ class TestWindMover:
 
         self.sc.prepare_for_model_step(self.model_time)
         self.wm.prepare_for_model_step(self.sc, self.time_step,
-                self.model_time)
+                                       self.model_time)
 
         for ix in range(2):
-            curr_time = sec_to_date(date_to_sec(self.model_time)
-                                    + self.time_step * ix)
+            curr_time = sec_to_date(date_to_sec(self.model_time) +
+                                    self.time_step * ix)
             delta = self.wm.get_move(self.sc, self.time_step, curr_time)
             actual = self._expected_move()
 
@@ -214,8 +227,7 @@ class TestWindMover:
         self.wm.model_step_is_done()
 
     def test_get_move_exceptions(self):
-        curr_time = sec_to_date(date_to_sec(self.model_time)
-                                + self.time_step)
+        curr_time = sec_to_date(date_to_sec(self.model_time) + self.time_step)
         tmp_windages = self.sc._data_arrays['windages']
         del self.sc._data_arrays['windages']
         with pytest.raises(KeyError):
@@ -242,8 +254,7 @@ class TestWindMover:
         exp[:, 0] = self.sc['windages'] * uv[0, 0] * self.time_step  # 'u'
         exp[:, 1] = self.sc['windages'] * uv[0, 1] * self.time_step  # 'v'
 
-        xform = FlatEarthProjection.meters_to_lonlat(exp,
-                self.sc['positions'])
+        xform = FlatEarthProjection.meters_to_lonlat(exp, self.sc['positions'])
         return xform
 
 
@@ -470,6 +481,44 @@ def test_array_types():
     assert 'windages' in wm.array_types
     assert 'windage_range' in wm.array_types
     assert 'windage_persist' in wm.array_types
+
+"""
+GridWindMover tests - test all methods and attributes work. The results
+of the get_move are tested in test_cy_gridwind_mover.py
+"""
+
+
+class TestGridWindMover:
+    # defined in test_cy_gridwind
+    time_step = 15 * 60  # seconds
+    model_time = datetime(1999, 11, 29, 21)
+    sc = sample_sc_release(4,
+            release_time=model_time,
+            spill=SpatialRelease((np.zeros((4, 3), dtype=world_point_type) +
+                                     (3.104588, 52.016468, 0.0)), model_time))
+    gwm = GridWindMover(grid_file)
+
+    def test_string_repr_no_errors(self):
+        print
+        print '======================'
+        print 'repr(WindMover): '
+        print repr(self.gwm)
+        print
+        print 'str(WindMover): '
+        print str(self.gwm)
+        assert True
+
+    @pytest.mark.slow
+    def test_calls_in_one_step(self):
+        self.gwm.prepare_for_model_run()
+
+        self.sc.prepare_for_model_step(self.model_time)
+        self.gwm.prepare_for_model_step(self.sc, self.time_step,
+                                        self.model_time)
+        delta = self.gwm.get_move(self.sc, self.time_step, self.model_time)
+        self.gwm.model_step_is_done()
+
+        assert np.all(delta[:, :2] != 0)
 
 
 def _defaults(wm):
