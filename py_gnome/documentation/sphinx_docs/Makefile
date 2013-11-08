@@ -164,4 +164,4 @@ gh-pages:
 	sphinx-build -b html $(DOCS_SOURCE) .
 	#rm -rf ./py_gnome	# not sure we need to remove this?
 	git add -A
-	git commit -m "Generated gh-pages for `git log master -1 --pretty=short --abbrev-commit`"
+	git commit -m "Generated gh-pages for `git log master -1 --pretty=short --abbrev-commit`" && git push origin gh-pages; git checkout master
