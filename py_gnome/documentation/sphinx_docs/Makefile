@@ -15,8 +15,7 @@ ALLSPHINXOPTS   = -d $(BUILDDIR)/doctrees $(PAPEROPT_$(PAPER)) $(SPHINXOPTS) .
 I18NSPHINXOPTS  = $(PAPEROPT_$(PAPER)) $(SPHINXOPTS) .
 
 # for building gh-pages
-GH_PAGES_SOURCES = py_gnome/documentation/sphinx_docs
-DOCS_SOURCE = ./py_gnome/documentation/sphinx_docs
+GH_PAGES_SOURCES = ./py_gnome/documentation/sphinx_docs
 
 .PHONY: help clean html dirhtml singlehtml pickle json htmlhelp qthelp devhelp epub latex latexpdf text man changes linkcheck doctest gettext
 
@@ -161,7 +160,7 @@ gh-pages:
 	# rm -rf build # not sure we need this
 	git checkout master $(GH_PAGES_SOURCES) 
 	git reset HEAD
-	sphinx-build -b html $(DOCS_SOURCE) .
+	sphinx-build -b html $(GH_PAGES_SOURCES) .
 	#rm -rf ./py_gnome	# not sure we need to remove this?
 	git add -A
 	git commit -m "Generated gh-pages for `git log master -1 --pretty=short --abbrev-commit`" && git push origin gh-pages; git checkout master
