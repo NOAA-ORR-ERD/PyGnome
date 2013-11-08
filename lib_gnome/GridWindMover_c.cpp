@@ -57,16 +57,14 @@ void GridWindMover_c::Dispose()
 OSErr GridWindMover_c::PrepareForModelStep(const Seconds& model_time, const Seconds& time_step, bool uncertain, int numLESets, int* LESetsSizesList)
 {
 	OSErr err = 0;
-	if(uncertain) 
-	{
-		Seconds elapsed_time = model_time - fModelStartTime;
-		err = this->UpdateUncertainty(elapsed_time, numLESets, LESetsSizesList);
-	}
-	
+
 	char errmsg[256];
 	
 	errmsg[0]=0;
 	
+	if (bIsFirstStep)
+		fModelStartTime = model_time;
+
 	if (!bActive) return noErr;
 	
 	if (!timeGrid) return -1;
@@ -74,6 +72,12 @@ OSErr GridWindMover_c::PrepareForModelStep(const Seconds& model_time, const Seco
 	err = timeGrid -> SetInterval(errmsg, model_time); 
 	
 	if (err) goto done;	// again don't want to have error if outside time interval
+	
+	if(uncertain) 
+	{
+		Seconds elapsed_time = model_time - fModelStartTime;
+		err = this->UpdateUncertainty(elapsed_time, numLESets, LESetsSizesList);
+	}
 	
 	fIsOptimizedForStep = true;	// is this needed?
 	
