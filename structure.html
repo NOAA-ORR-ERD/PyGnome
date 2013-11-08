@@ -1,0 +1,159 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>GNOME Structure &mdash; pyGNOME 0.1.1 documentation</title>
+    
+    <link rel="stylesheet" href="_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '',
+        VERSION:     '0.1.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="pyGNOME 0.1.1 documentation" href="index.html" />
+    <link rel="next" title="Tutorials" href="tutorials.html" />
+    <link rel="prev" title="Installing" href="installing.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="tutorials.html" title="Tutorials"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="installing.html" title="Installing"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">pyGNOME 0.1.1 documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="gnome-structure">
+<h1>GNOME Structure<a class="headerlink" href="#gnome-structure" title="Permalink to this headline">¶</a></h1>
+<p>A setup of the GNOME model consists of fairly simple structure: It is fundamentally a Lagrangian element (particle tracking) model &#8211; the oil or other substance is represented as Lagrangian elements (LEs), or particles, in the model, with their movement and properties tracked over time. The elements are acted on by a number of &#8220;movers&#8221;, each representing a different physical process. For the most part, each mover moves the particles one way or another, but a mover can also act to change the nature of a particle, rather than moving it.</p>
+<p>A GNOME setup consists of:</p>
+<blockquote>
+<div><ul class="simple">
+<li>A Map</li>
+<li>One or more Spills</li>
+<li>One or more movers</li>
+<li>Outputters</li>
+</ul>
+</div></blockquote>
+<div class="section" id="the-map">
+<h2>The Map<a class="headerlink" href="#the-map" title="Permalink to this headline">¶</a></h2>
+<p>The Map in GNOME defines the domain of the model. It can consist of bounds, shoreline (to define where land and water are), and properties of the shoreline. For 3-d modeling, it can also define the bathymetry.</p>
+</div>
+<div class="section" id="spills">
+<h2>Spills<a class="headerlink" href="#spills" title="Permalink to this headline">¶</a></h2>
+<p>Spills in GNOME are a source of elements &#8211; they define where and when the elements are released into the model. Each spill is initialized with an element type &#8211; teh element tpes define what properties the elements have. The elements may represent something spilled such as an oil spill, or could be any other object, objects or substances that you want to track &#8211; chemicals, floating debris, fish larvae, etc.</p>
+</div>
+<div class="section" id="movers">
+<h2>Movers<a class="headerlink" href="#movers" title="Permalink to this headline">¶</a></h2>
+<p>Movers are any physical process that moves or effects the particles. These can be ocean currents, winds, turbulent diffusion, and weathering processes (evaporation, etc). Each move is initialized with the the data it needs to compute the movement. (or links to files with data in them)</p>
+<p>The Mover API is defined so that you can write your own movers &#8211; for instance to model fish swimming behavior, etc. See the reference docs for the the API.</p>
+</div>
+<div class="section" id="outputters">
+<h2>Outputters<a class="headerlink" href="#outputters" title="Permalink to this headline">¶</a></h2>
+<p>Outputters are classes use to output results. Other formats can be written, but the currently available ones are the <cite>Renderer</cite> and <cite>NetCDFOutput</cite></p>
+<p>The Renderer renders a base map, and a set of transparent pngs that plot the positions of the elements, etc. These can be composited to make a movie of the simulation</p>
+<p>The NetCDFOutput class outputs the element information into the netcdf file format.</p>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">GNOME Structure</a><ul>
+<li><a class="reference internal" href="#the-map">The Map</a></li>
+<li><a class="reference internal" href="#spills">Spills</a></li>
+<li><a class="reference internal" href="#movers">Movers</a></li>
+<li><a class="reference internal" href="#outputters">Outputters</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="installing.html"
+                        title="previous chapter">Installing</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="tutorials.html"
+                        title="next chapter">Tutorials</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/structure.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="tutorials.html" title="Tutorials"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="installing.html" title="Installing"
+             >previous</a> |</li>
+        <li><a href="index.html">pyGNOME 0.1.1 documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2012, NOAA Emergecny Response Division.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.3.
+    </div>
+  </body>
+</html>

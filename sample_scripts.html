@@ -1,0 +1,165 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Sample Scripts &mdash; pyGNOME 0.1.1 documentation</title>
+    
+    <link rel="stylesheet" href="_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '',
+        VERSION:     '0.1.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="pyGNOME 0.1.1 documentation" href="index.html" />
+    <link rel="up" title="Tutorials" href="tutorials.html" />
+    <link rel="next" title="Ultra Simple" href="tutorial_1.html" />
+    <link rel="prev" title="Tutorials" href="tutorials.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="tutorial_1.html" title="Ultra Simple"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="tutorials.html" title="Tutorials"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">pyGNOME 0.1.1 documentation</a> &raquo;</li>
+          <li><a href="tutorials.html" accesskey="U">Tutorials</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="sample-scripts">
+<span id="tutorial-1"></span><h1>Sample Scripts<a class="headerlink" href="#sample-scripts" title="Permalink to this headline">¶</a></h1>
+<p>A good way to learn to use PyGNOME is to find an example script that uses similar coponets what you need, and work on that. the Sample scripts can be found in the <tt class="docutils literal"><span class="pre">py_gnome/scripts</span></tt> dir, in directories names with a <tt class="docutils literal"><span class="pre">script_*</span></tt>.</p>
+<p>There are also a few utilities in the <tt class="docutils literal"><span class="pre">scripts</span></tt> directory:</p>
+<p><tt class="docutils literal"><span class="pre">script_runner.py</span></tt> will run a particular script, with various options for output: image output, netcdf output, saving to a &#8220;save file&#8221;, or reloading from a &#8220;save file&#8221;. try:</p>
+<div class="highlight-python"><pre>$ python script_runner -h for help</pre>
+</div>
+<p><tt class="docutils literal"><span class="pre">run_all.py</span></tt> will run all the scripts in the directory &#8211; good for testing.</p>
+<p>Below are summaries of a few of them:</p>
+<div class="section" id="script-marianas">
+<h2><tt class="docutils literal"><span class="pre">script_marianas</span></tt><a class="headerlink" href="#script-marianas" title="Permalink to this headline">¶</a></h2>
+<p>This script used current from the Navy&#8217;s HYCOM model, subsetted to a region around the Marianas Islands. The land-water map is a BNA pulled from the GOODS shoreline extractor, with a map_bounds hand added to a larger region.</p>
+</div>
+<div class="section" id="script-boston">
+<h2><tt class="docutils literal"><span class="pre">script_boston</span></tt><a class="headerlink" href="#script-boston" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="script-long-island">
+<h2><tt class="docutils literal"><span class="pre">script_long_island</span></tt><a class="headerlink" href="#script-long-island" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="script-chesapeake-bay">
+<h2><tt class="docutils literal"><span class="pre">script_chesapeake_bay</span></tt><a class="headerlink" href="#script-chesapeake-bay" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="script-mariana">
+<h2><tt class="docutils literal"><span class="pre">script_mariana</span></tt><a class="headerlink" href="#script-mariana" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="script-guam">
+<h2><tt class="docutils literal"><span class="pre">script_guam</span></tt><a class="headerlink" href="#script-guam" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="script-mississippi-river">
+<h2><tt class="docutils literal"><span class="pre">script_mississippi_river</span></tt><a class="headerlink" href="#script-mississippi-river" title="Permalink to this headline">¶</a></h2>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Sample Scripts</a><ul>
+<li><a class="reference internal" href="#script-marianas"><tt class="docutils literal"><span class="pre">script_marianas</span></tt></a></li>
+<li><a class="reference internal" href="#script-boston"><tt class="docutils literal"><span class="pre">script_boston</span></tt></a></li>
+<li><a class="reference internal" href="#script-long-island"><tt class="docutils literal"><span class="pre">script_long_island</span></tt></a></li>
+<li><a class="reference internal" href="#script-chesapeake-bay"><tt class="docutils literal"><span class="pre">script_chesapeake_bay</span></tt></a></li>
+<li><a class="reference internal" href="#script-mariana"><tt class="docutils literal"><span class="pre">script_mariana</span></tt></a></li>
+<li><a class="reference internal" href="#script-guam"><tt class="docutils literal"><span class="pre">script_guam</span></tt></a></li>
+<li><a class="reference internal" href="#script-mississippi-river"><tt class="docutils literal"><span class="pre">script_mississippi_river</span></tt></a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="tutorials.html"
+                        title="previous chapter">Tutorials</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="tutorial_1.html"
+                        title="next chapter">Ultra Simple</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/sample_scripts.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="tutorial_1.html" title="Ultra Simple"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="tutorials.html" title="Tutorials"
+             >previous</a> |</li>
+        <li><a href="index.html">pyGNOME 0.1.1 documentation</a> &raquo;</li>
+          <li><a href="tutorials.html" >Tutorials</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2012, NOAA Emergecny Response Division.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.3.
+    </div>
+  </body>
+</html>

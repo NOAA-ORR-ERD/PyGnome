@@ -1,0 +1,621 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>gnome.model &mdash; pyGNOME 0.1.1 documentation</title>
+    
+    <link rel="stylesheet" href="../../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../',
+        VERSION:     '0.1.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="pyGNOME 0.1.1 documentation" href="../../index.html" />
+    <link rel="up" title="Module code" href="../index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../index.html">pyGNOME 0.1.1 documentation</a> &raquo;</li>
+          <li><a href="../index.html" accesskey="U">Module code</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <h1>Source code for gnome.model</h1><div class="highlight"><pre>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">from</span> <span class="nn">datetime</span> <span class="kn">import</span> <span class="n">datetime</span><span class="p">,</span> <span class="n">timedelta</span>
+<span class="kn">import</span> <span class="nn">copy</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+
+<span class="kn">import</span> <span class="nn">gnome</span>
+<span class="kn">import</span> <span class="nn">gnome.utilities.cache</span>
+
+<span class="kn">from</span> <span class="nn">gnome.utilities.time_utils</span> <span class="kn">import</span> <span class="n">round_time</span>
+<span class="kn">from</span> <span class="nn">gnome.utilities.orderedcollection</span> <span class="kn">import</span> <span class="n">OrderedCollection</span>
+<span class="kn">from</span> <span class="nn">gnome.environment</span> <span class="kn">import</span> <span class="n">Environment</span><span class="p">,</span> <span class="n">Wind</span>
+<span class="kn">from</span> <span class="nn">gnome.movers</span> <span class="kn">import</span> <span class="n">Mover</span><span class="p">,</span> <span class="n">WindMover</span><span class="p">,</span> <span class="n">CatsMover</span>
+<span class="kn">from</span> <span class="nn">gnome.spill_container</span> <span class="kn">import</span> <span class="n">SpillContainerPair</span>
+<span class="kn">from</span> <span class="nn">gnome.utilities</span> <span class="kn">import</span> <span class="n">serializable</span>
+
+
+<span class="k">class</span> <span class="nc">Model</span><span class="p">(</span><span class="n">serializable</span><span class="o">.</span><span class="n">Serializable</span><span class="p">):</span>
+<div class="viewcode-block" id="Model"><a class="viewcode-back" href="../../reference.html#gnome.model.Model">[docs]</a>
+    <span class="sd">&quot;&quot;&quot; </span>
+<span class="sd">    PyGNOME Model Class</span>
+<span class="sd">    </span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">_update</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="s">&#39;time_step&#39;</span><span class="p">,</span>
+        <span class="s">&#39;start_time&#39;</span><span class="p">,</span>
+        <span class="s">&#39;duration&#39;</span><span class="p">,</span>
+        <span class="s">&#39;uncertain&#39;</span><span class="p">,</span>
+        <span class="s">&#39;movers&#39;</span><span class="p">,</span>
+        <span class="s">&#39;environment&#39;</span><span class="p">,</span>
+        <span class="s">&#39;spills&#39;</span><span class="p">,</span>
+        <span class="s">&#39;map&#39;</span><span class="p">,</span>
+        <span class="s">&#39;outputters&#39;</span><span class="p">,</span>
+        <span class="s">&#39;cache_enabled&#39;</span><span class="p">,</span>
+        <span class="p">]</span>
+    <span class="n">_create</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">_create</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">_update</span><span class="p">)</span>
+    <span class="n">state</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">serializable</span><span class="o">.</span><span class="n">Serializable</span><span class="o">.</span><span class="n">state</span><span class="p">)</span>
+    <span class="n">state</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">create</span><span class="o">=</span><span class="n">_create</span><span class="p">,</span> <span class="n">update</span><span class="o">=</span><span class="n">_update</span><span class="p">)</span>  <span class="c"># no need to copy parent&#39;s state in tis case</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">new_from_dict</span><span class="p">(</span><span class="n">cls</span><span class="p">,</span> <span class="n">dict_</span><span class="p">):</span>
+<div class="viewcode-block" id="Model.new_from_dict"><a class="viewcode-back" href="../../reference.html#gnome.model.Model.new_from_dict">[docs]</a>        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Restore model from previously persisted state</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">l_env</span> <span class="o">=</span> <span class="n">dict_</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s">&#39;environment&#39;</span><span class="p">)</span>
+        <span class="n">l_out</span> <span class="o">=</span> <span class="n">dict_</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s">&#39;outputters&#39;</span><span class="p">)</span>
+        <span class="n">l_movers</span> <span class="o">=</span> <span class="n">dict_</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s">&#39;movers&#39;</span><span class="p">)</span>
+
+        <span class="n">c_spills</span> <span class="o">=</span> <span class="n">dict_</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s">&#39;certain_spills&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="s">&#39;uncertain_spills&#39;</span> <span class="ow">in</span> <span class="n">dict_</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+            <span class="n">u_spills</span> <span class="o">=</span> <span class="n">dict_</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s">&#39;uncertain_spills&#39;</span><span class="p">)</span>
+            <span class="n">l_spills</span> <span class="o">=</span> <span class="nb">zip</span><span class="p">(</span><span class="n">c_spills</span><span class="p">,</span> <span class="n">u_spills</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">l_spills</span> <span class="o">=</span> <span class="n">c_spills</span>
+
+        <span class="n">model</span> <span class="o">=</span> <span class="nb">object</span><span class="o">.</span><span class="n">__new__</span><span class="p">(</span><span class="n">cls</span><span class="p">)</span>
+        <span class="n">model</span><span class="o">.</span><span class="n">__restore__</span><span class="p">(</span><span class="o">**</span><span class="n">dict_</span><span class="p">)</span>
+        <span class="p">[</span><span class="n">model</span><span class="o">.</span><span class="n">environment</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span> <span class="k">for</span> <span class="n">obj</span> <span class="ow">in</span> <span class="n">l_env</span><span class="p">]</span>
+        <span class="p">[</span><span class="n">model</span><span class="o">.</span><span class="n">outputters</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span> <span class="k">for</span> <span class="n">obj</span> <span class="ow">in</span> <span class="n">l_out</span><span class="p">]</span>
+        <span class="p">[</span><span class="n">model</span><span class="o">.</span><span class="n">spills</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span> <span class="k">for</span> <span class="n">obj</span> <span class="ow">in</span> <span class="n">l_spills</span><span class="p">]</span>
+        <span class="p">[</span><span class="n">model</span><span class="o">.</span><span class="n">movers</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span> <span class="k">for</span> <span class="n">obj</span> <span class="ow">in</span> <span class="n">l_movers</span><span class="p">]</span>
+
+        <span class="c"># register callback with OrderedCollection</span>
+
+        <span class="n">model</span><span class="o">.</span><span class="n">movers</span><span class="o">.</span><span class="n">register_callback</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">_callback_add_mover</span><span class="p">,</span> <span class="p">(</span><span class="s">&#39;add&#39;</span>
+                <span class="p">,</span> <span class="s">&#39;replace&#39;</span><span class="p">))</span>
+
+        <span class="k">return</span> <span class="n">model</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span></div>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">time_step</span><span class="o">=</span><span class="n">timedelta</span><span class="p">(</span><span class="n">minutes</span><span class="o">=</span><span class="mi">15</span><span class="p">),</span>
+        <span class="n">start_time</span><span class="o">=</span><span class="n">round_time</span><span class="p">(</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">(),</span> <span class="mi">3600</span><span class="p">),</span>
+        <span class="n">duration</span><span class="o">=</span><span class="n">timedelta</span><span class="p">(</span><span class="n">days</span><span class="o">=</span><span class="mi">1</span><span class="p">),</span>
+        <span class="nb">map</span><span class="o">=</span><span class="n">gnome</span><span class="o">.</span><span class="n">map</span><span class="o">.</span><span class="n">GnomeMap</span><span class="p">(),</span>
+        <span class="n">uncertain</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span>
+        <span class="n">cache_enabled</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span>
+        <span class="nb">id</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
+        <span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; </span>
+<span class="sd">        Initializes a model. All arguments have a default.</span>
+
+<span class="sd">        :param time_step=timedelta(minutes=15): model time step in seconds or as a timedelta object</span>
+<span class="sd">        :param start_time=datetime.now(): start time of model, datetime object. default to now, rounded to the nearest hour</span>
+<span class="sd">        :param duration=timedelta(days=1): how long to run the model, a timedelta object</span>
+<span class="sd">        :param map=gnome.map.GnomeMap(): the land-water map, default is a map with no land-water</span>
+<span class="sd">        :param uncertain=False: flag for setting uncertainty</span>
+<span class="sd">        :param cache_enabled=False: flag for setting whether the mocel should cache results to disk.</span>
+<span class="sd">        :param id: Unique Id identifying the newly created mover (a UUID as a string). </span>
+<span class="sd">                   This is used when loading an object from a persisted model</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__restore__</span><span class="p">(</span>
+            <span class="n">time_step</span><span class="p">,</span>
+            <span class="n">start_time</span><span class="p">,</span>
+            <span class="n">duration</span><span class="p">,</span>
+            <span class="nb">map</span><span class="p">,</span>
+            <span class="n">uncertain</span><span class="p">,</span>
+            <span class="n">cache_enabled</span><span class="p">,</span>
+            <span class="nb">id</span><span class="p">,</span>
+            <span class="p">)</span>
+
+        <span class="c"># register callback with OrderedCollection</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">movers</span><span class="o">.</span><span class="n">register_callback</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_callback_add_mover</span><span class="p">,</span> <span class="p">(</span><span class="s">&#39;add&#39;</span><span class="p">,</span>
+                <span class="s">&#39;replace&#39;</span><span class="p">))</span>
+
+    <span class="k">def</span> <span class="nf">__restore__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">time_step</span><span class="p">,</span>
+        <span class="n">start_time</span><span class="p">,</span>
+        <span class="n">duration</span><span class="p">,</span>
+        <span class="nb">map</span><span class="p">,</span>
+        <span class="n">uncertain</span><span class="p">,</span>
+        <span class="n">cache_enabled</span><span class="p">,</span>
+        <span class="nb">id</span><span class="p">,</span>
+        <span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Take out initialization that does not register the callback here.</span>
+<span class="sd">        This is because new_from_dict will use this to restore the model state</span>
+<span class="sd">        when doing a midrun persistence.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="c"># making sure basic stuff is in place before properties are set</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">environment</span> <span class="o">=</span> <span class="n">OrderedCollection</span><span class="p">(</span><span class="n">dtype</span><span class="o">=</span><span class="n">Environment</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">movers</span> <span class="o">=</span> <span class="n">OrderedCollection</span><span class="p">(</span><span class="n">dtype</span><span class="o">=</span><span class="n">Mover</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">spills</span> <span class="o">=</span> <span class="n">SpillContainerPair</span><span class="p">(</span><span class="n">uncertain</span><span class="p">)</span>  <span class="c"># contains both certain/uncertain spills</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_cache</span> <span class="o">=</span> <span class="n">gnome</span><span class="o">.</span><span class="n">utilities</span><span class="o">.</span><span class="n">cache</span><span class="o">.</span><span class="n">ElementCache</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_cache</span><span class="o">.</span><span class="n">enabled</span> <span class="o">=</span> <span class="n">cache_enabled</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">outputters</span> <span class="o">=</span> \
+            <span class="n">OrderedCollection</span><span class="p">(</span><span class="n">dtype</span><span class="o">=</span><span class="n">gnome</span><span class="o">.</span><span class="n">outputter</span><span class="o">.</span><span class="n">Outputter</span><span class="p">)</span>  <span class="c"># list of output objects</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_start_time</span> <span class="o">=</span> <span class="n">start_time</span>  <span class="c"># default to now, rounded to the nearest hour</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_duration</span> <span class="o">=</span> <span class="n">duration</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_map</span> <span class="o">=</span> <span class="nb">map</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">time_step</span> <span class="o">=</span> <span class="n">time_step</span>  <span class="c"># this calls rewind() !</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_gnome_id</span> <span class="o">=</span> <span class="n">gnome</span><span class="o">.</span><span class="n">GnomeId</span><span class="p">(</span><span class="nb">id</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">reset</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<div class="viewcode-block" id="Model.reset"><a class="viewcode-back" href="../../reference.html#gnome.model.Model.reset">[docs]</a>        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Resets model to defaults -- Caution -- clears all movers, spills, etc.</span>
+
+<span class="sd">        Takes same keyword arguments as __init__</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">rewind</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span></div>
+<div class="viewcode-block" id="Model.rewind"><a class="viewcode-back" href="../../reference.html#gnome.model.Model.rewind">[docs]</a>        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Rewinds the model to the beginning (start_time)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="c"># # fixme: do the movers need re-setting? -- or wait for prepare_for_model_run?</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">current_time_step</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>  <span class="c"># start at -1</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">model_time</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_start_time</span>
+
+        <span class="c"># # note: this may be redundant -- they will get reset in setup_model_run() anyway..</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">spills</span><span class="o">.</span><span class="n">rewind</span><span class="p">()</span>
+        <span class="n">gnome</span><span class="o">.</span><span class="n">utilities</span><span class="o">.</span><span class="n">rand</span><span class="o">.</span><span class="n">seed</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>  <span class="c"># set rand before each call so windages are set correctly</span>
+
+        <span class="c"># clear the cache:</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_cache</span><span class="o">.</span><span class="n">rewind</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">outputter</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">outputters</span><span class="p">:</span>
+            <span class="n">outputter</span><span class="o">.</span><span class="n">rewind</span><span class="p">()</span>
+
+<span class="c">#    def write_from_cache(self, filetype=&#39;netcdf&#39;, time_step=&#39;all&#39;):</span>
+<span class="c">#        &quot;&quot;&quot;</span>
+<span class="c">#        write the already-cached data to an output files.</span>
+<span class="c">#        &quot;&quot;&quot;</span>
+
+    <span class="c"># ## Assorted properties</span>
+
+    <span class="nd">@property</span></div>
+    <span class="k">def</span> <span class="nf">uncertain</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">spills</span><span class="o">.</span><span class="n">uncertain</span>
+
+    <span class="nd">@uncertain.setter</span>
+    <span class="k">def</span> <span class="nf">uncertain</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">uncertain_value</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        only if uncertainty switch is toggled, then restart model</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">spills</span><span class="o">.</span><span class="n">uncertain</span> <span class="o">!=</span> <span class="n">uncertain_value</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">spills</span><span class="o">.</span><span class="n">uncertain</span> <span class="o">=</span> <span class="n">uncertain_value</span>  <span class="c"># update uncertainty</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">rewind</span><span class="p">()</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">cache_enabled</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cache</span><span class="o">.</span><span class="n">enabled</span>
+
+    <span class="nd">@cache_enabled.setter</span>
+    <span class="k">def</span> <span class="nf">cache_enabled</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">enabled</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_cache</span><span class="o">.</span><span class="n">enabled</span> <span class="o">=</span> <span class="n">enabled</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">id</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_gnome_id</span><span class="o">.</span><span class="n">id</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">start_time</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_start_time</span>
+
+    <span class="nd">@start_time.setter</span>
+    <span class="k">def</span> <span class="nf">start_time</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">start_time</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_start_time</span> <span class="o">=</span> <span class="n">start_time</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">rewind</span><span class="p">()</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">time_step</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_time_step</span>
+
+    <span class="nd">@time_step.setter</span>
+    <span class="k">def</span> <span class="nf">time_step</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">time_step</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        sets the time step, and rewinds the model</span>
+
+<span class="sd">        :param time_step: the timestep as a timedelta object or integer seconds.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_time_step</span> <span class="o">=</span> <span class="n">time_step</span><span class="o">.</span><span class="n">total_seconds</span><span class="p">()</span>
+        <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
+
+                               <span class="c"># not a timedelta object -- assume it&#39;s in seconds.</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">_time_step</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">time_step</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_num_time_steps</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_duration</span><span class="o">.</span><span class="n">total_seconds</span><span class="p">()</span>
+                                   <span class="o">//</span> <span class="bp">self</span><span class="o">.</span><span class="n">_time_step</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span>  <span class="c"># there is a zeroth time step</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">rewind</span><span class="p">()</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">current_time_step</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_current_time_step</span>
+
+    <span class="nd">@current_time_step.setter</span>
+    <span class="k">def</span> <span class="nf">current_time_step</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">step</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">model_time</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_start_time</span> <span class="o">+</span> <span class="n">timedelta</span><span class="p">(</span><span class="n">seconds</span><span class="o">=</span><span class="n">step</span>
+                <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">time_step</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_current_time_step</span> <span class="o">=</span> <span class="n">step</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">duration</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_duration</span>
+
+    <span class="nd">@duration.setter</span>
+    <span class="k">def</span> <span class="nf">duration</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">duration</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">duration</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">_duration</span><span class="p">:</span>  <span class="c"># only need to rewind if shorter than it was...</span>
+
+            <span class="c"># # fixme: actually, only need to rewide is current model time is byond new time...</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">rewind</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_duration</span> <span class="o">=</span> <span class="n">duration</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_num_time_steps</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_duration</span><span class="o">.</span><span class="n">total_seconds</span><span class="p">()</span>
+                                   <span class="o">//</span> <span class="bp">self</span><span class="o">.</span><span class="n">time_step</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span>  <span class="c"># there is a zeroth time step</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">map</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_map</span>
+
+    <span class="nd">@map.setter</span>
+    <span class="k">def</span> <span class="nf">map</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">map_in</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_map</span> <span class="o">=</span> <span class="n">map_in</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">rewind</span><span class="p">()</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">num_time_steps</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_num_time_steps</span>
+
+    <span class="k">def</span> <span class="nf">setup_model_run</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="Model.setup_model_run"><a class="viewcode-back" href="../../reference.html#gnome.model.Model.setup_model_run">[docs]</a>        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Sets up each mover for the model run</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">spills</span><span class="o">.</span><span class="n">rewind</span><span class="p">()</span>  <span class="c"># why is rewind for spills here?</span>
+
+        <span class="k">for</span> <span class="n">outputter</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">outputters</span><span class="p">:</span>
+            <span class="n">outputter</span><span class="o">.</span><span class="n">prepare_for_model_run</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_cache</span><span class="p">,</span>
+                                            <span class="n">model_start_time</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">start_time</span><span class="p">,</span>
+                                            <span class="n">num_time_steps</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">num_time_steps</span><span class="p">,</span>
+                                            <span class="n">uncertain</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">uncertain</span><span class="p">,</span>
+                                            <span class="n">spills</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">spills</span><span class="p">)</span>
+
+        <span class="n">array_types</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">mover</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">movers</span><span class="p">:</span>
+            <span class="n">mover</span><span class="o">.</span><span class="n">prepare_for_model_run</span><span class="p">()</span>
+            <span class="n">array_types</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">mover</span><span class="o">.</span><span class="n">array_types</span><span class="p">)</span>
+
+        <span class="c"># setup the current_time_stamp for the spill_container objects</span>
+
+        <span class="k">for</span> <span class="n">sc</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">spills</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">sc</span><span class="o">.</span><span class="n">prepare_for_model_run</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model_time</span><span class="p">,</span> <span class="n">array_types</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">setup_time_step</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span></div>
+<div class="viewcode-block" id="Model.setup_time_step"><a class="viewcode-back" href="../../reference.html#gnome.model.Model.setup_time_step">[docs]</a>        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        sets up everything for the current time_step:</span>
+<span class="sd">        </span>
+<span class="sd">        right now only prepares the movers -- maybe more later?.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="c"># initialize movers differently if model uncertainty is on</span>
+
+        <span class="p">[</span><span class="n">sc</span><span class="o">.</span><span class="n">prepare_for_model_step</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model_time</span><span class="p">)</span> <span class="k">for</span> <span class="n">sc</span> <span class="ow">in</span>
+         <span class="bp">self</span><span class="o">.</span><span class="n">spills</span><span class="o">.</span><span class="n">items</span><span class="p">()]</span>
+
+        <span class="k">for</span> <span class="n">mover</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">movers</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">sc</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">spills</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                <span class="n">mover</span><span class="o">.</span><span class="n">prepare_for_model_step</span><span class="p">(</span><span class="n">sc</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">time_step</span><span class="p">,</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">model_time</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">outputter</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">outputters</span><span class="p">:</span>
+            <span class="n">outputter</span><span class="o">.</span><span class="n">prepare_for_model_step</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">move_elements</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span></div>
+<div class="viewcode-block" id="Model.move_elements"><a class="viewcode-back" href="../../reference.html#gnome.model.Model.move_elements">[docs]</a>        <span class="sd">&quot;&quot;&quot;</span>
+
+<span class="sd">        Moves elements:</span>
+<span class="sd">         - loops through all the movers. and moves the elements</span>
+<span class="sd">         - sets new_position array for each spill</span>
+<span class="sd">         - calls the beaching code to beach the elements that need beaching.</span>
+<span class="sd">         - sets the new position</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="c"># # if there are no spills, there is nothing to do:</span>
+
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">spills</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>  <span class="c"># can this check be removed?</span>
+            <span class="k">for</span> <span class="n">sc</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">spills</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                <span class="k">if</span> <span class="n">sc</span><span class="o">.</span><span class="n">num_released</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>  <span class="c"># can this check be removed?</span>
+
+                    <span class="c"># possibly refloat elements</span>
+
+                    <span class="bp">self</span><span class="o">.</span><span class="n">map</span><span class="o">.</span><span class="n">refloat_elements</span><span class="p">(</span><span class="n">sc</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">time_step</span><span class="p">)</span>
+
+                    <span class="c"># reset next_positions</span>
+
+                    <span class="p">(</span><span class="n">sc</span><span class="p">[</span><span class="s">&#39;next_positions&#39;</span><span class="p">])[:]</span> <span class="o">=</span> <span class="n">sc</span><span class="p">[</span><span class="s">&#39;positions&#39;</span><span class="p">]</span>
+
+                    <span class="c"># loop through the movers</span>
+
+                    <span class="k">for</span> <span class="n">mover</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">movers</span><span class="p">:</span>
+                        <span class="n">delta</span> <span class="o">=</span> <span class="n">mover</span><span class="o">.</span><span class="n">get_move</span><span class="p">(</span><span class="n">sc</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">time_step</span><span class="p">,</span>
+                                <span class="bp">self</span><span class="o">.</span><span class="n">model_time</span><span class="p">)</span>
+                        <span class="n">sc</span><span class="p">[</span><span class="s">&#39;next_positions&#39;</span><span class="p">]</span> <span class="o">+=</span> <span class="n">delta</span>
+
+                    <span class="bp">self</span><span class="o">.</span><span class="n">map</span><span class="o">.</span><span class="n">beach_elements</span><span class="p">(</span><span class="n">sc</span><span class="p">)</span>
+
+                    <span class="c"># the final move to the new positions</span>
+
+                    <span class="p">(</span><span class="n">sc</span><span class="p">[</span><span class="s">&#39;positions&#39;</span><span class="p">])[:]</span> <span class="o">=</span> <span class="n">sc</span><span class="p">[</span><span class="s">&#39;next_positions&#39;</span><span class="p">]</span>
+
+    <span class="k">def</span> <span class="nf">step_is_done</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span></div>
+<div class="viewcode-block" id="Model.step_is_done"><a class="viewcode-back" href="../../reference.html#gnome.model.Model.step_is_done">[docs]</a>        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Loop through movers and call model_step_is_done</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">for</span> <span class="n">mover</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">movers</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">sc</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">spills</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                <span class="n">mover</span><span class="o">.</span><span class="n">model_step_is_done</span><span class="p">(</span><span class="n">sc</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">sc</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">spills</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">sc</span><span class="o">.</span><span class="n">model_step_is_done</span><span class="p">()</span>
+
+        <span class="k">for</span> <span class="n">outputter</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">outputters</span><span class="p">:</span>
+            <span class="n">outputter</span><span class="o">.</span><span class="n">model_step_is_done</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">write_output</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span></div>
+        <span class="n">output_info</span> <span class="o">=</span> <span class="p">{</span><span class="s">&#39;step_num&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">current_time_step</span><span class="p">}</span>
+        <span class="k">for</span> <span class="n">outputter</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">outputters</span><span class="p">:</span>
+            <span class="n">output_info</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">outputter</span><span class="o">.</span><span class="n">write_output</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">current_time_step</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">output_info</span>
+
+    <span class="k">def</span> <span class="nf">step</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="Model.step"><a class="viewcode-back" href="../../reference.html#gnome.model.Model.step">[docs]</a>        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Steps the model forward (or backward) in time. Needs testing for hindcasting.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">current_time_step</span> <span class="o">&gt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_num_time_steps</span> <span class="o">-</span> <span class="mi">1</span><span class="p">:</span>  <span class="c"># it gets incremented after this check</span>
+            <span class="k">raise</span> <span class="ne">StopIteration</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">current_time_step</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">setup_model_run</span><span class="p">()</span>  <span class="c"># that&#39;s all we need to do for the zeroth time step</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">setup_time_step</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">move_elements</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">step_is_done</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">current_time_step</span> <span class="o">+=</span> <span class="mi">1</span>
+
+        <span class="c"># # release_elements after the time step increment so that they will be there</span>
+        <span class="c"># # but not yet moved, at the beginning of the release time.</span>
+
+        <span class="k">for</span> <span class="n">sc</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">spills</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">sc</span><span class="o">.</span><span class="n">release_elements</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model_time</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">time_step</span><span class="p">)</span>
+
+        <span class="c"># cache the results</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_cache</span><span class="o">.</span><span class="n">save_timestep</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">current_time_step</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">spills</span><span class="p">)</span>
+        <span class="n">output_info</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">write_output</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">output_info</span>
+
+    <span class="k">def</span> <span class="nf">__iter__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span></div>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        for compatibility with Python&#39;s iterator protocol</span>
+<span class="sd">        </span>
+<span class="sd">        rewinds the model and returns itself so it can be iterated over. </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">rewind</span><span class="p">()</span>
+        <span class="k">return</span> <span class="bp">self</span>
+
+    <span class="k">def</span> <span class="nf">next</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="Model.next"><a class="viewcode-back" href="../../reference.html#gnome.model.Model.next">[docs]</a>        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        (This method here to satisfy Python&#39;s iterator and generator protocols)</span>
+
+<span class="sd">        Simply calls model.step()</span>
+
+<span class="sd">        :return: the step number</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">step</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">full_run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">rewind</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">log</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span></div>
+<div class="viewcode-block" id="Model.full_run"><a class="viewcode-back" href="../../reference.html#gnome.model.Model.full_run">[docs]</a>        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Do a full run of the model.</span>
+
+<span class="sd">        :param rewind=True: whether to rewind the model first -- defaults to True</span>
+<span class="sd">                            if set to false, model will be run from the current</span>
+<span class="sd">                            step to the end</span>
+<span class="sd">        :returns: list of outputter info dicts</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="n">rewind</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">rewind</span><span class="p">()</span>
+
+        <span class="c"># run the model</span>
+
+        <span class="n">output_data</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">while</span> <span class="bp">True</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">results</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">step</span><span class="p">()</span>
+                <span class="k">if</span> <span class="n">log</span><span class="p">:</span>
+                    <span class="k">print</span> <span class="n">results</span>
+                <span class="n">output_data</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">results</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">StopIteration</span><span class="p">:</span>
+                <span class="k">print</span> <span class="s">&#39;Done with the model run&#39;</span>
+                <span class="k">break</span>
+        <span class="k">return</span> <span class="n">output_data</span>
+
+    <span class="k">def</span> <span class="nf">movers_to_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span></div>
+<div class="viewcode-block" id="Model.movers_to_dict"><a class="viewcode-back" href="../../reference.html#gnome.model.Model.movers_to_dict">[docs]</a>        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        call to_dict method of OrderedCollection object</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">movers</span><span class="o">.</span><span class="n">to_dict</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">environment_to_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span></div>
+<div class="viewcode-block" id="Model.environment_to_dict"><a class="viewcode-back" href="../../reference.html#gnome.model.Model.environment_to_dict">[docs]</a>        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        call to_dict method of OrderedCollection object</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">environment</span><span class="o">.</span><span class="n">to_dict</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">spills_to_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span></div>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">spills</span><span class="o">.</span><span class="n">to_dict</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">outputters_to_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="Model.outputters_to_dict"><a class="viewcode-back" href="../../reference.html#gnome.model.Model.outputters_to_dict">[docs]</a>        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        call to_dict method of OrderedCollection object</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">outputters</span><span class="o">.</span><span class="n">to_dict</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">map_to_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span></div>
+<div class="viewcode-block" id="Model.map_to_dict"><a class="viewcode-back" href="../../reference.html#gnome.model.Model.map_to_dict">[docs]</a>        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        create a tuple that contains: (type, object.id)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="c"># dict_ = {&#39;map&#39;: (&quot;{0}.{1}&quot;.format(self.map.__module__, self.map.__class__.__name__), self.map.id)}</span>
+
+        <span class="k">return</span> <span class="p">(</span><span class="s">&#39;{0}.{1}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">map</span><span class="o">.</span><span class="n">__module__</span><span class="p">,</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">map</span><span class="o">.</span><span class="n">__class__</span><span class="o">.</span><span class="n">__name__</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">map</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
+
+        <span class="c"># if self.output_map is not None:</span>
+        <span class="c">#    dict_.update({&#39;output_map&#39;: (&quot;{0}.{1}&quot;.format(self.output_map.__module__, self.output_map.__class__.__name__), self.output_map.id)})</span>
+
+    <span class="k">def</span> <span class="nf">_callback_add_mover</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obj_added</span><span class="p">):</span></div>
+        <span class="sd">&quot;&quot;&quot; callback after mover has been added &quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj_added</span><span class="p">,</span> <span class="n">WindMover</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">obj_added</span><span class="o">.</span><span class="n">wind</span><span class="o">.</span><span class="n">id</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">environment</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">environment</span> <span class="o">+=</span> <span class="n">obj_added</span><span class="o">.</span><span class="n">wind</span>
+
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj_added</span><span class="p">,</span> <span class="n">CatsMover</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">obj_added</span><span class="o">.</span><span class="n">tide</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span> <span class="ow">and</span> <span class="n">obj_added</span><span class="o">.</span><span class="n">tide</span><span class="o">.</span><span class="n">id</span> \
+                <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">environment</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">environment</span> <span class="o">+=</span> <span class="n">obj_added</span><span class="o">.</span><span class="n">tide</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">rewind</span><span class="p">()</span>  <span class="c"># rewind model if a new mover is added</span>
+
+    <span class="k">def</span> <span class="nf">__eq__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="n">check</span> <span class="o">=</span> <span class="nb">super</span><span class="p">(</span><span class="n">Model</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__eq__</span><span class="p">(</span><span class="n">other</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">check</span><span class="p">:</span>
+
+            <span class="c"># also check the data in spill_container object</span>
+
+            <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">spills</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">type</span><span class="p">(</span><span class="n">other</span><span class="o">.</span><span class="n">spills</span><span class="p">):</span>
+                <span class="k">return</span> <span class="bp">False</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">spills</span> <span class="o">!=</span> <span class="n">other</span><span class="o">.</span><span class="n">spills</span><span class="p">:</span>
+                <span class="k">return</span> <span class="bp">False</span>
+
+        <span class="k">return</span> <span class="n">check</span>
+
+    <span class="k">def</span> <span class="nf">__ne__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; </span>
+<span class="sd">        Compare inequality (!=) of two objects</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="bp">self</span> <span class="o">==</span> <span class="n">other</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">False</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">True</span>
+</pre></div></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../index.html">pyGNOME 0.1.1 documentation</a> &raquo;</li>
+          <li><a href="../index.html" >Module code</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2012, NOAA Emergecny Response Division.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.3.
+    </div>
+  </body>
+</html>

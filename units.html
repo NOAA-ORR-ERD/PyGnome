@@ -1,0 +1,131 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Units used in GNOME / PyGNOME &mdash; pyGNOME 0.1.1 documentation</title>
+    
+    <link rel="stylesheet" href="_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '',
+        VERSION:     '0.1.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="pyGNOME 0.1.1 documentation" href="index.html" />
+    <link rel="prev" title="pyGNOME Reference" href="reference.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="reference.html" title="pyGNOME Reference"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">pyGNOME 0.1.1 documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="units-used-in-gnome-pygnome">
+<span id="units"></span><h1>Units used in GNOME / PyGNOME<a class="headerlink" href="#units-used-in-gnome-pygnome" title="Permalink to this headline">¶</a></h1>
+<p>GNOME is a model of physical processes, and thus most of the things computed are in various physical units.</p>
+<p>To keep things clean, the internal computational code is all handled in a consistent set of units. All values are stored in floating point types, generally 64 bit (<tt class="docutils literal"><span class="pre">double</span></tt>) unless otherwise noted.</p>
+<p>Conversion is done on I/O or occasionally within a class (i.e the class may store data in the units the user gave, but return values in the standard unit to other parts of the code) So unless otherwise noted, pass data into methods in the following standard units:</p>
+<dl class="docutils">
+<dt>Time</dt>
+<dd><p class="first">Time is expressed in integer seconds &#8211; stored in a C <tt class="docutils literal"><span class="pre">unsigned</span> <span class="pre">long</span></tt></p>
+<p>Date-times are in seconds since 1904 (1904-01-01T00:00) &#8211; stored in a C <tt class="docutils literal"><span class="pre">unsigned</span> <span class="pre">long</span></tt></p>
+<p class="last">(NOTE: much of the Python code uses <tt class="docutils literal"><span class="pre">datetime.datetime</span></tt> objects and/or numpy <tt class="docutils literal"><span class="pre">datetime64</span></tt> objects, but the internal C++ code uses integer seconds)</p>
+</dd>
+<dt>Length</dt>
+<dd>Lengths are in meters</dd>
+<dt>Mass</dt>
+<dd>Mass is in  grams ???</dd>
+<dt>Volume</dt>
+<dd>Volume is in cubic meters</dd>
+<dt>Density</dt>
+<dd>Density is in grams per cubic centimeter (g/cm^3)</dd>
+<dt>Velocity</dt>
+<dd>Velocities are in meters per second</dd>
+<dt>Latitude-Longitude</dt>
+<dd>Lat-long is in floating point degrees  &#8211; range generally -360 to 360, so we can do stuff accross the date line.</dd>
+</dl>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="reference.html"
+                        title="previous chapter"><tt class="docutils literal docutils literal docutils literal"><span class="pre">pyGNOME</span></tt> Reference</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/units.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="reference.html" title="pyGNOME Reference"
+             >previous</a> |</li>
+        <li><a href="index.html">pyGNOME 0.1.1 documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2012, NOAA Emergecny Response Division.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.3.
+    </div>
+  </body>
+</html>

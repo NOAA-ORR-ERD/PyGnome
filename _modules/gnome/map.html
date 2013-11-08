@@ -1,0 +1,762 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>gnome.map &mdash; pyGNOME 0.1.1 documentation</title>
+    
+    <link rel="stylesheet" href="../../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../',
+        VERSION:     '0.1.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="pyGNOME 0.1.1 documentation" href="../../index.html" />
+    <link rel="up" title="Module code" href="../index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../index.html">pyGNOME 0.1.1 documentation</a> &raquo;</li>
+          <li><a href="../index.html" accesskey="U">Module code</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <h1>Source code for gnome.map</h1><div class="highlight"><pre>
+<span class="c">###fixme:</span>
+<span class="c">### needs some re-catoring -- more clear distiction between public and</span>
+<span class="c">###                           private API:</span>
+
+<span class="c"># on_land, in_water, etc -- need that?</span>
+
+<span class="c"># NOTES:</span>
+<span class="c">#  - Should we just use non-projected coordinates for the raster map?</span>
+<span class="c">#    It makes for a little less computation at every step.</span>
+<span class="c">#  - Do we want to treat lakes differently than regular water?</span>
+
+<span class="c"># New features:</span>
+<span class="c">#  - Map now handles spillable area and map bounds as polygons</span>
+<span class="c">#  - raster is the same aspect ratio as the land</span>
+<span class="c">#  - internally, raster is a numpy array</span>
+<span class="c">#  - land raster is only as big as the land -- if the map bounds are bigger,</span>
+<span class="c">#    extra space is not in the land map</span>
+<span class="c">#  Question: what if map-bounds is smaller than land? wasted bitmap space?</span>
+<span class="c">#            (though it should work)</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">An implementation of the GNOME land-water map.</span>
+
+<span class="sd">This is a re-write of the C++ raster map approach</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span> <span class="nn">copy</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+
+<span class="kn">from</span> <span class="nn">gnome</span> <span class="kn">import</span> <span class="n">GnomeId</span>
+
+<span class="kn">from</span> <span class="nn">gnome.utilities</span> <span class="kn">import</span> <span class="n">map_canvas</span><span class="p">,</span> <span class="n">serializable</span>
+<span class="kn">from</span> <span class="nn">gnome.utilities.file_tools</span> <span class="kn">import</span> <span class="n">haz_files</span>
+
+<span class="kn">from</span> <span class="nn">gnome.basic_types</span> <span class="kn">import</span> <span class="n">oil_status</span><span class="p">,</span> <span class="n">world_point_type</span>
+<span class="kn">from</span> <span class="nn">gnome.cy_gnome.cy_land_check</span> <span class="kn">import</span> <span class="n">check_land</span>
+
+<span class="kn">from</span> <span class="nn">gnome.utilities.geometry.cy_point_in_polygon</span> <span class="kn">import</span> <span class="n">points_in_poly</span><span class="p">,</span> \
+    <span class="n">point_in_poly</span>
+
+<span class="kn">from</span> <span class="nn">gnome.utilities.geometry.polygons</span> <span class="kn">import</span> <span class="n">PolygonSet</span>
+
+
+<span class="k">class</span> <span class="nc">GnomeMap</span><span class="p">(</span><span class="n">serializable</span><span class="o">.</span><span class="n">Serializable</span><span class="p">):</span>
+<div class="viewcode-block" id="GnomeMap"><a class="viewcode-back" href="../../reference.html#gnome.map.GnomeMap">[docs]</a>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    The very simplest map for GNOME -- all water</span>
+<span class="sd">    with only a bounding box for the map bounds.</span>
+
+<span class="sd">    This also serves as a description of the interface</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">_update</span> <span class="o">=</span> <span class="p">[</span><span class="s">&#39;map_bounds&#39;</span><span class="p">,</span> <span class="s">&#39;spillable_area&#39;</span><span class="p">]</span>
+    <span class="n">_create</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">_create</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">_update</span><span class="p">)</span>
+    <span class="n">state</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">serializable</span><span class="o">.</span><span class="n">Serializable</span><span class="o">.</span><span class="n">state</span><span class="p">)</span>
+    <span class="n">state</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">create</span><span class="o">=</span><span class="n">_create</span><span class="p">,</span> <span class="n">update</span><span class="o">=</span><span class="n">_update</span><span class="p">)</span>
+
+    <span class="n">refloat_halflife</span> <span class="o">=</span> <span class="bp">None</span>  <span class="c"># note -- no land, so never used</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">map_bounds</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
+        <span class="n">spillable_area</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
+        <span class="nb">id</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
+        <span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        This __init__ will be different for other implementations</span>
+
+<span class="sd">        Optional parameters (kwargs)</span>
+
+<span class="sd">        :param map_bounds: The polygon bounding the map -- could be larger</span>
+<span class="sd">                           or smaller than the land raster</span>
+
+<span class="sd">        :param spillable_area: The polygon bounding the spillable_area</span>
+
+<span class="sd">        :param id: unique ID of the object. Using UUID as a string.</span>
+<span class="sd">                   This is only used when loading object from save file.</span>
+<span class="sd">        :type id: string</span>
+
+<span class="sd">        Note on &#39;map_bounds&#39;:</span>
+<span class="sd">            ( (x1,y1), (x2,y2),(x3,y3),..)</span>
+<span class="sd">            An NX2 array of points that describe a polygon</span>
+<span class="sd">            if no map bounds is provided -- the whole world is valid</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="n">map_bounds</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">map_bounds</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">map_bounds</span><span class="p">,</span>
+                    <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+
+            <span class="c"># using -360 to 360 to allow stuff to cross the dateline..</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">map_bounds</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(((</span><span class="o">-</span><span class="mi">360</span><span class="p">,</span> <span class="mi">90</span><span class="p">),</span> <span class="p">(</span><span class="mi">360</span><span class="p">,</span> <span class="mi">90</span><span class="p">),</span> <span class="p">(</span><span class="mi">360</span><span class="p">,</span>
+                    <span class="o">-</span><span class="mi">90</span><span class="p">),</span> <span class="p">(</span><span class="o">-</span><span class="mi">360</span><span class="p">,</span> <span class="o">-</span><span class="mi">90</span><span class="p">)),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">spillable_area</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">spillable_area</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">map_bounds</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">spillable_area</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">spillable_area</span><span class="p">,</span>
+                    <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_gnome_id</span> <span class="o">=</span> <span class="n">GnomeId</span><span class="p">(</span><span class="nb">id</span><span class="p">)</span>
+
+    <span class="nb">id</span> <span class="o">=</span> <span class="nb">property</span><span class="p">(</span><span class="k">lambda</span> <span class="bp">self</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_gnome_id</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">on_map</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">coords</span><span class="p">):</span>
+<div class="viewcode-block" id="GnomeMap.on_map"><a class="viewcode-back" href="../../reference.html#gnome.map.GnomeMap.on_map">[docs]</a>        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        :param coords: location for test.</span>
+<span class="sd">        :type coords: 3-tuple of floats: (long, lat, depth) or a</span>
+<span class="sd">                                         NX3 numpy array</span>
+
+<span class="sd">        :return: bool array: True if the location is on the map,</span>
+<span class="sd">                             False otherwise</span>
+
+<span class="sd">        Note:</span>
+<span class="sd">          coord is 3-d, but the concept of &quot;on the map&quot; is 2-d in this context,</span>
+<span class="sd">          so depth is ignored.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">coords</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">coords</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">world_point_type</span><span class="p">)</span>
+        <span class="n">on_map_mask</span> <span class="o">=</span> <span class="n">points_in_poly</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">map_bounds</span><span class="p">,</span> <span class="n">coords</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">on_map_mask</span>
+
+    <span class="k">def</span> <span class="nf">on_land</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">coord</span><span class="p">):</span></div>
+<div class="viewcode-block" id="GnomeMap.on_land"><a class="viewcode-back" href="../../reference.html#gnome.map.GnomeMap.on_land">[docs]</a>        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        :param coord: location for test.</span>
+<span class="sd">        :type coord: 3-tuple of floats: (long, lat, depth)</span>
+
+<span class="sd">        :return:</span>
+<span class="sd">         - Always returns False-- no land in this implementation</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">return</span> <span class="bp">False</span>
+
+    <span class="k">def</span> <span class="nf">in_water</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">coords</span><span class="p">):</span></div>
+<div class="viewcode-block" id="GnomeMap.in_water"><a class="viewcode-back" href="../../reference.html#gnome.map.GnomeMap.in_water">[docs]</a>        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        :param coords: location for test.</span>
+<span class="sd">        :type coords: 3-tuple of floats: (long, lat, depth)</span>
+<span class="sd">                      or an Nx3 array</span>
+
+<span class="sd">        :returns:</span>
+<span class="sd">         - True if the point is in the water,</span>
+<span class="sd">         - False if the point is on land (or off map?)</span>
+
+<span class="sd">         This implementation has no land, so always True in on the map.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">on_map</span><span class="p">(</span><span class="n">coords</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">allowable_spill_position</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">coord</span><span class="p">):</span></div>
+<div class="viewcode-block" id="GnomeMap.allowable_spill_position"><a class="viewcode-back" href="../../reference.html#gnome.map.GnomeMap.allowable_spill_position">[docs]</a>        <span class="sd">&quot;&quot;&quot;</span>
+
+<span class="sd">        :param coord: location for test.</span>
+<span class="sd">        :type coord: 3-tuple of floats: (long, lat, depth)</span>
+
+<span class="sd">        :return:</span>
+<span class="sd">         - True if the point is an allowable spill position</span>
+<span class="sd">         - False if the point is not an allowable spill position</span>
+
+<span class="sd">        .. note:: it could be either off the map, or in a location that</span>
+<span class="sd">                  spills aren&#39;t allowed</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">return</span> <span class="n">points_in_poly</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">spillable_area</span><span class="p">,</span> <span class="n">coord</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_set_off_map_status</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">spill</span><span class="p">):</span></div>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Determines which LEs moved off the map</span>
+
+<span class="sd">        Called by beach_elements after checking for land-hits</span>
+
+<span class="sd">        :param spill: current SpillContainer</span>
+<span class="sd">        :type spill:  :class:`gnome.spill_container.SpillContainer`</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">next_positions</span> <span class="o">=</span> <span class="n">spill</span><span class="p">[</span><span class="s">&#39;next_positions&#39;</span><span class="p">]</span>
+        <span class="n">status_codes</span> <span class="o">=</span> <span class="n">spill</span><span class="p">[</span><span class="s">&#39;status_codes&#39;</span><span class="p">]</span>
+        <span class="n">off_map</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">logical_not</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">on_map</span><span class="p">(</span><span class="n">next_positions</span><span class="p">))</span>
+
+        <span class="c"># status_codes[off_map] = oil_status.off_maps</span>
+
+        <span class="n">status_codes</span><span class="p">[</span><span class="n">off_map</span><span class="p">]</span> <span class="o">=</span> <span class="n">oil_status</span><span class="o">.</span><span class="n">to_be_removed</span>
+
+    <span class="k">def</span> <span class="nf">beach_elements</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">spill</span><span class="p">):</span>
+<div class="viewcode-block" id="GnomeMap.beach_elements"><a class="viewcode-back" href="../../reference.html#gnome.map.GnomeMap.beach_elements">[docs]</a>        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Determines which LEs were or weren&#39;t beached or moved off_map.</span>
+<span class="sd">        status_code is changed to oil_status.off_maps if off the map.</span>
+
+<span class="sd">        Called by the model in the main time loop, after all movers have acted.</span>
+
+<span class="sd">        :param spill: current SpillContainer</span>
+<span class="sd">        :type spill:  :class:`gnome.spill_container.SpillContainer`</span>
+
+<span class="sd">        This map class has no land, so only the map check is done</span>
+<span class="sd">        and nothing changes</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_set_off_map_status</span><span class="p">(</span><span class="n">spill</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">refloat_elements</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">spill_container</span><span class="p">,</span> <span class="n">time_step</span><span class="p">):</span></div>
+<div class="viewcode-block" id="GnomeMap.refloat_elements"><a class="viewcode-back" href="../../reference.html#gnome.map.GnomeMap.refloat_elements">[docs]</a>        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        This method performs the re-float logic -- changing the element</span>
+<span class="sd">        status flag, and moving the element to the last known water position</span>
+
+<span class="sd">        :param spill_container: current SpillContainer</span>
+<span class="sd">        :type spill_container:  :class:`gnome.spill_container.SpillContainer`</span>
+
+<span class="sd">        .. note::</span>
+<span class="sd">            This map class has no land, and so is a no-op.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">pass</span>
+
+    <span class="k">def</span> <span class="nf">resurface_airborne_elements</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">spill_container</span><span class="p">):</span></div>
+<div class="viewcode-block" id="GnomeMap.resurface_airborne_elements"><a class="viewcode-back" href="../../reference.html#gnome.map.GnomeMap.resurface_airborne_elements">[docs]</a>        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Takes any elements that are left above the water surface (z &lt; 0.0)</span>
+<span class="sd">        and puts them on the surface (z == 0.0)</span>
+
+<span class="sd">        :param spill_container: current SpillContainer</span>
+<span class="sd">        :type spill_container:  :class:`gnome.spill_container.SpillContainer`</span>
+
+<span class="sd">        .. note::</span>
+<span class="sd">            While this shouldn&#39;t occur according to the physics we&#39;re modeling,</span>
+<span class="sd">            some movers may push elements up to high, or multiple movers may</span>
+<span class="sd">            add vertical movement that adds up to over the surface.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">next_positions</span> <span class="o">=</span> <span class="n">spill_container</span><span class="p">[</span><span class="s">&#39;next_positions&#39;</span><span class="p">]</span>
+
+        <span class="c"># next_positions[:,2] = np.where(next_positions[:,2]&lt;0.0, 0.0,</span>
+        <span class="c">#                               next_positions[:,2])</span>
+
+        <span class="n">np</span><span class="o">.</span><span class="n">maximum</span><span class="p">(</span><span class="n">next_positions</span><span class="p">[:,</span> <span class="mi">2</span><span class="p">],</span> <span class="mf">0.0</span><span class="p">,</span> <span class="n">out</span><span class="o">=</span><span class="n">next_positions</span><span class="p">[:,</span> <span class="mi">2</span><span class="p">])</span>
+        <span class="k">return</span> <span class="bp">None</span>
+
+
+<span class="k">class</span> <span class="nc">RasterMap</span><span class="p">(</span><span class="n">GnomeMap</span><span class="p">):</span></div></div>
+<div class="viewcode-block" id="RasterMap"><a class="viewcode-back" href="../../reference.html#gnome.map.RasterMap">[docs]</a>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    A land water map implemented as a raster</span>
+
+<span class="sd">    This one uses a numpy array of uint8, so there are 8 bits to choose from...</span>
+
+<span class="sd">    It requires a constant refloat half-life in hours</span>
+
+<span class="sd">    This will usually be initialized in a sub-class (from a BNA, etc)</span>
+<span class="sd">    NOTE: Nothing new added to state attribute for serialization</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="c"># # NOTE: spillable area can be both larger and smaller than land raster:</span>
+    <span class="c"># #       map bounds can also be larger or smaller:</span>
+    <span class="c"># #            both are done with a point in polygon check</span>
+    <span class="c"># #       if map is smaller than land polygons, no need for raster to be</span>
+    <span class="c"># #       larger than map -- but no impimented yet.</span>
+
+    <span class="c"># # flags for what&#39;s in the bitmap</span>
+    <span class="c"># # in theory -- it could be used for other data:</span>
+    <span class="c"># #  refloat, other properties?</span>
+    <span class="c"># # note the BW map_canvas only does 1, though.</span>
+
+    <span class="n">land_flag</span> <span class="o">=</span> <span class="mi">1</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">refloat_halflife</span><span class="p">,</span>
+        <span class="n">bitmap_array</span><span class="p">,</span>
+        <span class="n">projection</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">kwargs</span>
+        <span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        create a new RasterMap</span>
+
+<span class="sd">        :param refloat_halflife: The halflife for refloating off land</span>
+<span class="sd">                                 -- assumed to be the same for all land.</span>
+<span class="sd">        :type refloat_halflife: float. Units are hours</span>
+
+<span class="sd">        :param bitmap_array: A numpy array that stores the land-water map</span>
+<span class="sd">        :type bitmap_array: a (W,H) numpy array of type uint8</span>
+
+<span class="sd">        :param projection: A Projection object -- used to convert from</span>
+<span class="sd">                           lat-long to pixels in the array</span>
+<span class="sd">        :type projection: :class:`gnome.map_canvas.Projection`</span>
+
+<span class="sd">        Optional arguments (kwargs)</span>
+
+<span class="sd">        :param map_bounds: The polygon bounding the map -- could be larger</span>
+<span class="sd">                           or smaller than the land raster</span>
+<span class="sd">        :type map_bounds: (N,2) numpy array of floats</span>
+
+<span class="sd">        :param spillable_area: The polygon bounding the spillable_area</span>
+<span class="sd">        :type spillable_area: (N,2) numpy array of floats</span>
+
+<span class="sd">        :param id: unique ID of the object. Using UUID as a string.</span>
+<span class="sd">                   This is only used when loading object from save file.</span>
+
+<span class="sd">        :type id: string</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+                                    <span class="c"># hours</span>
+
+        <span class="c"># convert to seconds</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_refloat_halflife</span> <span class="o">=</span> <span class="n">refloat_halflife</span> <span class="o">*</span> <span class="mf">60.0</span> <span class="o">*</span> <span class="mf">60.0</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">bitmap</span> <span class="o">=</span> <span class="n">bitmap_array</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">projection</span> <span class="o">=</span> <span class="n">projection</span>
+
+        <span class="n">GnomeMap</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">refloat_halflife</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_refloat_halflife</span> <span class="o">/</span> <span class="mf">3600.0</span>  <span class="c"># convert to hours</span>
+
+    <span class="nd">@refloat_halflife.setter</span>
+    <span class="k">def</span> <span class="nf">refloat_halflife</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_refloat_halflife</span> <span class="o">=</span> <span class="n">value</span> <span class="o">*</span> <span class="mf">3600.0</span>  <span class="c"># convert to seconds</span>
+
+    <span class="k">def</span> <span class="nf">_on_land_pixel</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">coord</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        returns 1 if the point is on land, 0 otherwise</span>
+
+<span class="sd">        :param coord: pixel coordinates of point of interest</span>
+<span class="sd">        :type coord: tuple: (row, col)</span>
+
+<span class="sd">        .. note:: Only used internally or for testing -- no need for external</span>
+<span class="sd">                  API to use pixel coordinates.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">bitmap</span><span class="p">[</span><span class="n">coord</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">coord</span><span class="p">[</span><span class="mi">1</span><span class="p">]]</span> <span class="o">&amp;</span> <span class="bp">self</span><span class="o">.</span><span class="n">land_flag</span>
+        <span class="k">except</span> <span class="ne">IndexError</span><span class="p">:</span>
+
+            <span class="c"># not on land if outside the land raster. (Might be off the map!)</span>
+
+            <span class="k">return</span> <span class="bp">False</span>
+
+    <span class="k">def</span> <span class="nf">on_land</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">coord</span><span class="p">):</span>
+<div class="viewcode-block" id="RasterMap.on_land"><a class="viewcode-back" href="../../reference.html#gnome.map.RasterMap.on_land">[docs]</a>        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        :param coord: (long, lat, depth) location -- depth is ignored here.</span>
+<span class="sd">        :type coord: 3-tyuple of floats -- (long, lat, depth)</span>
+
+<span class="sd">        :return:</span>
+<span class="sd">         - 1 if point on land</span>
+<span class="sd">         - 0 if not on land</span>
+
+<span class="sd">        .. note:: to_pixel() converts to array of points...</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_on_land_pixel</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">projection</span><span class="o">.</span><span class="n">to_pixel</span><span class="p">(</span><span class="n">coord</span><span class="p">)[</span><span class="mi">0</span><span class="p">])</span>
+
+    <span class="k">def</span> <span class="nf">_on_land_pixel_array</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">coords</span><span class="p">):</span></div>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        determines which LEs are on lond</span>
+
+<span class="sd">        :param coords:  Nx2 numpy int array of pixel coords matching the bitmap</span>
+<span class="sd">        :type coords:  Nx2 numpy int array of pixel coords matching the bitmap</span>
+
+<span class="sd">        returns: a (N,) array of bools - true for particles that are on land</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">mask</span> <span class="o">=</span> <span class="nb">map</span><span class="p">(</span><span class="n">point_in_poly</span><span class="p">,</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">map_bounds</span><span class="p">]</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">coords</span><span class="p">),</span>
+                   <span class="n">coords</span><span class="p">)</span>
+        <span class="n">racpy</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">coords</span><span class="p">)[</span><span class="n">mask</span><span class="p">]</span>
+        <span class="n">mskgph</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">bitmap</span><span class="p">[</span><span class="n">racpy</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">racpy</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">]]</span>
+        <span class="n">chrmgph</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">0</span><span class="p">]</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">coords</span><span class="p">))</span>
+        <span class="n">chrmgph</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">mask</span><span class="p">)]</span> <span class="o">=</span> <span class="n">mskgph</span>
+        <span class="k">return</span> <span class="n">chrmgph</span>
+
+    <span class="k">def</span> <span class="nf">_in_water_pixel</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">coord</span><span class="p">):</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">return</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">bitmap</span><span class="p">[</span><span class="n">coord</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">coord</span><span class="p">[</span><span class="mi">1</span><span class="p">]]</span> <span class="o">&amp;</span> <span class="bp">self</span><span class="o">.</span><span class="n">land_flag</span>
+        <span class="k">except</span> <span class="ne">IndexError</span><span class="p">:</span>
+
+            <span class="c"># Note: this could be off map, which may be a different thing</span>
+            <span class="c">#       than on land....but off the map should have been tested</span>
+            <span class="c">#       first</span>
+
+            <span class="k">return</span> <span class="bp">True</span>
+
+    <span class="k">def</span> <span class="nf">in_water</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">coord</span><span class="p">):</span>
+<div class="viewcode-block" id="RasterMap.in_water"><a class="viewcode-back" href="../../reference.html#gnome.map.RasterMap.in_water">[docs]</a>        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        checks if it&#39;s on the map, first.</span>
+<span class="sd">            (depth is ignored in this version)</span>
+
+<span class="sd">        :param coord: (lon, lat, depth) coordinate</span>
+
+<span class="sd">        :return: true if the point given by coord is in the water</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">on_map</span><span class="p">(</span><span class="n">coord</span><span class="p">):</span>
+            <span class="k">return</span> <span class="bp">False</span>
+        <span class="k">else</span><span class="p">:</span>
+
+            <span class="c"># to_pixel makes a NX2 array</span>
+
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_in_water_pixel</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">projection</span><span class="o">.</span><span class="n">to_pixel</span><span class="p">(</span><span class="n">coord</span><span class="p">,</span>
+                    <span class="n">asint</span><span class="o">=</span><span class="bp">True</span><span class="p">)[</span><span class="mi">0</span><span class="p">])</span>
+
+    <span class="k">def</span> <span class="nf">beach_elements</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">spill</span><span class="p">):</span></div>
+<div class="viewcode-block" id="RasterMap.beach_elements"><a class="viewcode-back" href="../../reference.html#gnome.map.RasterMap.beach_elements">[docs]</a>        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Determines which elements were or weren&#39;t beached.</span>
+
+<span class="sd">        Any that are beached have the beached flag set, and a</span>
+<span class="sd">        &quot;last known water position&quot; (lkwp) is computed</span>
+
+<span class="sd">        This version uses a modified Bresenham algorithm to find out</span>
+<span class="sd">        which pixels the LE may have crossed.</span>
+
+<span class="sd">        :param spill: the current spill container</span>
+<span class="sd">        :type spill:  :class:`gnome.spill_container.SpillContainer`</span>
+<span class="sd">            It must have the following data arrays:</span>
+<span class="sd">            (&#39;prev_position&#39;, &#39;positions&#39;, &#39;last_water_pt&#39;, &#39;status_code&#39;)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">resurface_airborne_elements</span><span class="p">(</span><span class="n">spill</span><span class="p">)</span>
+
+        <span class="c"># pull the data from the spill</span>
+        <span class="c"># # is the last water point the same as the previous position? why not??</span>
+        <span class="c"># # if beached, it won&#39;t move, if not, then we can use it?</span>
+
+        <span class="n">start_pos</span> <span class="o">=</span> <span class="n">spill</span><span class="p">[</span><span class="s">&#39;positions&#39;</span><span class="p">]</span>
+        <span class="n">next_pos</span> <span class="o">=</span> <span class="n">spill</span><span class="p">[</span><span class="s">&#39;next_positions&#39;</span><span class="p">]</span>
+        <span class="n">status_codes</span> <span class="o">=</span> <span class="n">spill</span><span class="p">[</span><span class="s">&#39;status_codes&#39;</span><span class="p">]</span>
+        <span class="n">last_water_positions</span> <span class="o">=</span> <span class="n">spill</span><span class="p">[</span><span class="s">&#39;last_water_positions&#39;</span><span class="p">]</span>
+
+        <span class="c"># transform to pixel coords:</span>
+        <span class="c"># NOTE: must be integers!</span>
+
+        <span class="n">start_pos_pixel</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">projection</span><span class="o">.</span><span class="n">to_pixel</span><span class="p">(</span><span class="n">start_pos</span><span class="p">,</span>
+                <span class="n">asint</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+        <span class="n">next_pos_pixel</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">projection</span><span class="o">.</span><span class="n">to_pixel</span><span class="p">(</span><span class="n">next_pos</span><span class="p">,</span> <span class="n">asint</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+        <span class="n">last_water_pos_pixel</span> <span class="o">=</span> \
+            <span class="bp">self</span><span class="o">.</span><span class="n">projection</span><span class="o">.</span><span class="n">to_pixel</span><span class="p">(</span><span class="n">last_water_positions</span><span class="p">,</span> <span class="n">asint</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+
+        <span class="c"># call the actual hit code:</span>
+        <span class="c"># the status_code and last_water_point arrays are altered in-place</span>
+        <span class="c"># only check the ones that aren&#39;t already beached?</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_check_land</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">bitmap</span><span class="p">,</span> <span class="n">start_pos_pixel</span><span class="p">,</span> <span class="n">next_pos_pixel</span><span class="p">,</span>
+                         <span class="n">status_codes</span><span class="p">,</span> <span class="n">last_water_pos_pixel</span><span class="p">)</span>
+
+        <span class="c"># transform the points back to lat-long.</span>
+
+        <span class="n">beached</span> <span class="o">=</span> <span class="n">status_codes</span> <span class="o">==</span> <span class="n">oil_status</span><span class="o">.</span><span class="n">on_land</span>
+        <span class="n">next_pos</span><span class="p">[</span><span class="n">beached</span><span class="p">,</span> <span class="p">:</span><span class="mi">2</span><span class="p">]</span> <span class="o">=</span> \
+            <span class="bp">self</span><span class="o">.</span><span class="n">projection</span><span class="o">.</span><span class="n">to_lonlat</span><span class="p">(</span><span class="n">next_pos_pixel</span><span class="p">[</span><span class="n">beached</span><span class="p">])</span>
+        <span class="n">last_water_positions</span><span class="p">[</span><span class="n">beached</span><span class="p">,</span> <span class="p">:</span><span class="mi">2</span><span class="p">]</span> <span class="o">=</span> \
+            <span class="bp">self</span><span class="o">.</span><span class="n">projection</span><span class="o">.</span><span class="n">to_lonlat</span><span class="p">(</span><span class="n">last_water_pos_pixel</span><span class="p">[</span><span class="n">beached</span><span class="p">,</span> <span class="p">:</span><span class="mi">2</span><span class="p">])</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_set_off_map_status</span><span class="p">(</span><span class="n">spill</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">refloat_elements</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">spill_container</span><span class="p">,</span> <span class="n">time_step</span><span class="p">):</span></div>
+<div class="viewcode-block" id="RasterMap.refloat_elements"><a class="viewcode-back" href="../../reference.html#gnome.map.RasterMap.refloat_elements">[docs]</a>        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        This method performs the re-float logic -- changing the element</span>
+<span class="sd">        status flag, and moving the element to the last known water position</span>
+
+<span class="sd">        :param spill_container: the current spill container</span>
+<span class="sd">        :type spill_container:  :class:`gnome.spill_container.SpillContainer`</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="c"># index into array of particles on_land</span>
+
+        <span class="n">r_idx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">spill_container</span><span class="p">[</span><span class="s">&#39;status_codes&#39;</span><span class="p">]</span>
+                         <span class="o">==</span> <span class="n">oil_status</span><span class="o">.</span><span class="n">on_land</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+
+        <span class="k">if</span> <span class="n">r_idx</span><span class="o">.</span><span class="n">size</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>  <span class="c"># no particles on land</span>
+            <span class="k">return</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_refloat_halflife</span> <span class="o">&gt;</span> <span class="mf">0.0</span><span class="p">:</span>
+
+            <span class="c"># refloat particles based on probability</span>
+
+            <span class="n">refloat_probability</span> <span class="o">=</span> <span class="mf">1.0</span> <span class="o">-</span> <span class="mf">0.5</span> <span class="o">**</span> <span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">time_step</span><span class="p">)</span>
+                    <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">_refloat_halflife</span><span class="p">)</span>
+            <span class="n">rnd</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">uniform</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">r_idx</span><span class="p">))</span>
+
+            <span class="c"># subset of indices that will refloat</span>
+            <span class="c"># maybe we should rename refloat_probability since</span>
+            <span class="c"># rnd &lt;= refloat_probability to</span>
+            <span class="c"># refloat, maybe call it stay_on_land_probability</span>
+
+            <span class="n">r_idx</span> <span class="o">=</span> <span class="n">r_idx</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">rnd</span> <span class="o">&lt;=</span> <span class="n">refloat_probability</span><span class="p">)[</span><span class="mi">0</span><span class="p">]]</span>
+
+        <span class="k">if</span> <span class="n">r_idx</span><span class="o">.</span><span class="n">size</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+
+            <span class="c"># check is not required, but why do this operation if no particles</span>
+            <span class="c"># need to be refloated</span>
+
+            <span class="n">spill_container</span><span class="p">[</span><span class="s">&#39;positions&#39;</span><span class="p">][</span><span class="n">r_idx</span><span class="p">]</span> <span class="o">=</span> \
+                <span class="n">spill_container</span><span class="p">[</span><span class="s">&#39;last_water_positions&#39;</span><span class="p">][</span><span class="n">r_idx</span><span class="p">]</span>
+            <span class="n">spill_container</span><span class="p">[</span><span class="s">&#39;status_codes&#39;</span><span class="p">][</span><span class="n">r_idx</span><span class="p">]</span> <span class="o">=</span> <span class="n">oil_status</span><span class="o">.</span><span class="n">in_water</span>
+
+    <span class="k">def</span> <span class="nf">_check_land</span><span class="p">(</span></div>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">raster_map</span><span class="p">,</span>
+        <span class="n">positions</span><span class="p">,</span>
+        <span class="n">end_positions</span><span class="p">,</span>
+        <span class="n">status_codes</span><span class="p">,</span>
+        <span class="n">last_water_positions</span><span class="p">,</span>
+        <span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Do the actual land-checking.  This method calls a Cython version:</span>
+<span class="sd">            gnome.cy_gnome.cy_land_check.check_land()</span>
+
+<span class="sd">        The arguments &#39;status_codes&#39;, &#39;positions&#39; and &#39;last_water_positions&#39;</span>
+<span class="sd">        are altered in place.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">check_land</span><span class="p">(</span><span class="n">raster_map</span><span class="p">,</span> <span class="n">positions</span><span class="p">,</span> <span class="n">end_positions</span><span class="p">,</span> <span class="n">status_codes</span><span class="p">,</span>
+                   <span class="n">last_water_positions</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">allowable_spill_position</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">coord</span><span class="p">):</span>
+<div class="viewcode-block" id="RasterMap.allowable_spill_position"><a class="viewcode-back" href="../../reference.html#gnome.map.RasterMap.allowable_spill_position">[docs]</a>        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns true is the spill position is in the allowable spill area</span>
+
+<span class="sd">        .. note::</span>
+<span class="sd">            This may not be the same as in_water!</span>
+
+<span class="sd">        :param coord: (lon, lat, depth) coordinate</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">on_map</span><span class="p">(</span><span class="n">coord</span><span class="p">):</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">on_land</span><span class="p">(</span><span class="n">coord</span><span class="p">):</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">spillable_area</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+                    <span class="k">return</span> <span class="bp">True</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">return</span> <span class="n">points_in_poly</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">spillable_area</span><span class="p">,</span> <span class="n">coord</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">return</span> <span class="bp">False</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">False</span>
+
+    <span class="k">def</span> <span class="nf">to_pixel_array</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">coords</span><span class="p">):</span></div>
+<div class="viewcode-block" id="RasterMap.to_pixel_array"><a class="viewcode-back" href="../../reference.html#gnome.map.RasterMap.to_pixel_array">[docs]</a>        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Projects an array of (lon, lat) tuples onto the bitmap,</span>
+<span class="sd">        and modifies it in place to hold the corresponding projected values.</span>
+
+<span class="sd">        :param coords:  a numpy array of (lon, lat, depth) points</span>
+
+<span class="sd">        :return: a numpy array of (x, y) pixel values</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">projection</span><span class="o">.</span><span class="n">to_pixel</span><span class="p">(</span><span class="n">coords</span><span class="p">)</span>
+
+
+<span class="k">class</span> <span class="nc">MapFromBNA</span><span class="p">(</span><span class="n">RasterMap</span><span class="p">,</span> <span class="n">serializable</span><span class="o">.</span><span class="n">Serializable</span><span class="p">):</span></div></div>
+<div class="viewcode-block" id="MapFromBNA"><a class="viewcode-back" href="../../reference.html#gnome.map.MapFromBNA">[docs]</a>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    A raster land-water map, created from a BNA file</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">state</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">RasterMap</span><span class="o">.</span><span class="n">state</span><span class="p">)</span>
+    <span class="n">state</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">create</span><span class="o">=</span><span class="p">[</span><span class="s">&#39;refloat_halflife&#39;</span><span class="p">],</span> <span class="n">update</span><span class="o">=</span><span class="p">[</span><span class="s">&#39;refloat_halflife&#39;</span><span class="p">])</span>
+    <span class="n">state</span><span class="o">.</span><span class="n">add_field</span><span class="p">(</span><span class="n">serializable</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span><span class="s">&#39;filename&#39;</span><span class="p">,</span> <span class="n">isdatafile</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span>
+                    <span class="n">create</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">read</span><span class="o">=</span><span class="bp">True</span><span class="p">))</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">filename</span><span class="p">,</span>
+        <span class="n">refloat_halflife</span><span class="p">,</span>
+        <span class="n">raster_size</span><span class="o">=</span><span class="mi">1024</span> <span class="o">*</span> <span class="mi">1024</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">kwargs</span>
+        <span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Creates a GnomeMap (specifically a RasterMap) from a bna file.</span>
+<span class="sd">        It is expected that you will get the spillable area and map bounds</span>
+<span class="sd">        from the BNA -- if they exist</span>
+
+<span class="sd">        Required arguments:</span>
+
+<span class="sd">        :param bna_file: full path to a bna file</span>
+<span class="sd">        :param refloat_halflife: the half-life (in hours) for the re-floating.</span>
+<span class="sd">        :param raster_size: the total number of pixels (bytes) to make the</span>
+<span class="sd">                            raster -- the actual size will match the</span>
+<span class="sd">                            aspect ratio of the bounding box of the land</span>
+
+<span class="sd">        Optional arguments (kwargs):</span>
+
+<span class="sd">        :param map_bounds: The polygon bounding the map -- could be larger or</span>
+<span class="sd">                           smaller than the land raster</span>
+<span class="sd">        :param spillable_area: The polygon bounding the spillable_area</span>
+<span class="sd">        :param id: unique ID of the object. Using UUID as a string.</span>
+<span class="sd">                   This is only used when loading object from save file.</span>
+<span class="sd">        :type id: string</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+                                    <span class="c"># hours</span>
+                                           <span class="c"># default to 1MB raster</span>
+        <span class="c"># self.filename = os.path.abspath(filename)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">filename</span> <span class="o">=</span> <span class="n">filename</span>
+        <span class="n">polygons</span> <span class="o">=</span> <span class="n">haz_files</span><span class="o">.</span><span class="n">ReadBNA</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="s">&#39;PolygonSet&#39;</span><span class="p">)</span>
+        <span class="n">map_bounds</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="n">spillable_area</span> <span class="o">=</span> <span class="bp">None</span>
+
+        <span class="c"># find the spillable area and map bounds:</span>
+        <span class="c"># and create a new polygonset without them</span>
+        <span class="c">#  fixme -- adding a &quot;pop&quot; method to PolygonSet might be better</span>
+        <span class="c">#      or a gnome_map_data object...</span>
+
+        <span class="n">just_land</span> <span class="o">=</span> <span class="n">PolygonSet</span><span class="p">()</span>  <span class="c"># and lakes....</span>
+
+        <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">polygons</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">p</span><span class="o">.</span><span class="n">metadata</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">==</span> <span class="s">&#39;spillablearea&#39;</span><span class="p">:</span>
+                <span class="n">spillable_area</span> <span class="o">=</span> <span class="n">p</span>
+            <span class="k">elif</span> <span class="n">p</span><span class="o">.</span><span class="n">metadata</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">==</span> <span class="s">&#39;map bounds&#39;</span><span class="p">:</span>
+                <span class="n">map_bounds</span> <span class="o">=</span> <span class="n">p</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">just_land</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">p</span><span class="p">)</span>
+
+        <span class="c"># now draw the raster map with a map_canvas:</span>
+        <span class="c"># determine the size:</span>
+
+        <span class="n">BB</span> <span class="o">=</span> <span class="n">just_land</span><span class="o">.</span><span class="n">bounding_box</span>
+
+        <span class="c"># create spillable area and  bounds if they weren&#39;t in the BNA</span>
+
+        <span class="k">if</span> <span class="n">map_bounds</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">map_bounds</span> <span class="o">=</span> <span class="n">BB</span><span class="o">.</span><span class="n">AsPoly</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">spillable_area</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">spillable_area</span> <span class="o">=</span> <span class="n">map_bounds</span>
+
+        <span class="c"># user defined spillable_area, map_bounds overrides data obtained</span>
+        <span class="c"># from polygons</span>
+
+        <span class="n">spillable_area</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s">&#39;spillable_area&#39;</span><span class="p">,</span> <span class="n">spillable_area</span><span class="p">)</span>
+        <span class="n">map_bounds</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s">&#39;map_bounds&#39;</span><span class="p">,</span> <span class="n">map_bounds</span><span class="p">)</span>
+
+        <span class="c"># stretch the bounding box, to get approximate aspect ratio in</span>
+        <span class="c"># projected coords.</span>
+
+        <span class="n">aspect_ratio</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">BB</span><span class="o">.</span><span class="n">Center</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">/</span> <span class="mi">180</span><span class="p">)</span> <span class="o">*</span> <span class="n">BB</span><span class="o">.</span><span class="n">Width</span> \
+            <span class="o">/</span> <span class="n">BB</span><span class="o">.</span><span class="n">Height</span>
+        <span class="n">w</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">raster_size</span> <span class="o">*</span> <span class="n">aspect_ratio</span><span class="p">))</span>
+        <span class="n">h</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">raster_size</span> <span class="o">/</span> <span class="n">w</span><span class="p">)</span>
+
+        <span class="n">canvas</span> <span class="o">=</span> <span class="n">map_canvas</span><span class="o">.</span><span class="n">BW_MapCanvas</span><span class="p">((</span><span class="n">w</span><span class="p">,</span> <span class="n">h</span><span class="p">),</span>
+                <span class="n">land_polygons</span><span class="o">=</span><span class="n">just_land</span><span class="p">)</span>
+        <span class="n">canvas</span><span class="o">.</span><span class="n">draw_background</span><span class="p">()</span>
+
+        <span class="c"># canvas.save_background(&quot;raster_map_test.png&quot;)</span>
+
+        <span class="c"># # get the bitmap as a numpy array:</span>
+
+        <span class="n">bitmap_array</span> <span class="o">=</span> <span class="n">canvas</span><span class="o">.</span><span class="n">as_array</span><span class="p">()</span>
+
+        <span class="c"># __init__ the  RasterMap</span>
+
+        <span class="n">RasterMap</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span>  <span class="c"># hours</span>
+            <span class="bp">self</span><span class="p">,</span>
+            <span class="n">refloat_halflife</span><span class="p">,</span>
+            <span class="n">bitmap_array</span><span class="p">,</span>
+            <span class="n">canvas</span><span class="o">.</span><span class="n">projection</span><span class="p">,</span>
+            <span class="n">map_bounds</span><span class="o">=</span><span class="n">map_bounds</span><span class="p">,</span>
+            <span class="n">spillable_area</span><span class="o">=</span><span class="n">spillable_area</span><span class="p">,</span>
+            <span class="o">**</span><span class="n">kwargs</span>
+            <span class="p">)</span>
+
+        <span class="k">return</span> <span class="bp">None</span>
+</pre></div></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../index.html">pyGNOME 0.1.1 documentation</a> &raquo;</li>
+          <li><a href="../index.html" >Module code</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2012, NOAA Emergecny Response Division.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.3.
+    </div>
+  </body>
+</html>
