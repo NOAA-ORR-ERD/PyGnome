@@ -56,14 +56,21 @@ class WindMoversBase(CyMover):
 
         It calls super in the __init__ method
         """
+        super(WindMoversBase, self).__init__(**kwargs)
+
         self.uncertain_duration = uncertain_duration
         self.uncertain_time_delay = uncertain_time_delay
         self.uncertain_speed_scale = uncertain_speed_scale
 
         # also sets self._uncertain_angle_units
         self.set_uncertain_angle(uncertain_angle_scale, uncertain_angle_units)
+		 
+        self.array_types.update(
+                  {'windages': gnome.array_types.windages,
+                   'windage_range': gnome.array_types.windage_range,
+                   'windage_persist': gnome.array_types.windage_persist})
 
-        super(WindMoversBase, self).__init__(**kwargs)
+        
 
     # no conversion necessary - simply sets/gets the stored value
     uncertain_speed_scale = property(lambda self: \
@@ -268,10 +275,6 @@ class WindMover(WindMoversBase, serializable.Serializable):
 
         # set optional attributes
         super(WindMover, self).__init__(**kwargs)
-        self.array_types.update(
-                  {'windages': gnome.array_types.windages,
-                   'windage_range': gnome.array_types.windage_range,
-                   'windage_persist': gnome.array_types.windage_persist})
 
     def __repr__(self):
         """
