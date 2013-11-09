@@ -4,6 +4,7 @@ Movers using currents and tides as forcing functions
 
 import os
 import copy
+from datetime import datetime, timedelta
 
 from gnome.movers import CyMover
 from gnome import environment
@@ -164,8 +165,11 @@ class CatsMover(CyMover, serializable.Serializable):
 
 class GridCurrentMover(CyMover, serializable.Serializable):
 
+    _update = ['uncertain_duration', 'uncertain_time_delay',
+               'uncertain_cross', 'uncertain_along', 'current_scale']
     state = copy.deepcopy(CyMover.state)
 
+    state.add(update=_update)
     state.add_field([serializable.Field('filename', create=True,
                     read=True, isdatafile=True),
                     serializable.Field('topology_file', create=True,
@@ -175,14 +179,28 @@ class GridCurrentMover(CyMover, serializable.Serializable):
         self,
         filename,
         topology_file=None,
+#         current_scale=1,
+#         uncertain_duration=timedelta(hours=24),
+#         uncertain_time_delay=timedelta(hours=0),
+#         uncertain_along=0.5,
+#         uncertain_cross=.25,
         **kwargs
         ):
         """
-        Initialize a GirdCurrentMover
+        Initialize a GridCurrentMover
 
         :param filename: absolute or relative path to the data file: could be netcdf or filelist
         :param topology_file=None: absolute or relative path to topology file. If not given, the
-                                   GridCurrentMover will copmute teh topology from the data file.
+                                   GridCurrentMover will copmute the topology from the data file.
+        :param active_start: datetime when the mover should be active
+        :param active_stop: datetime after which the mover should be inactive
+        :param current_scale: Value to scale current data
+        :param uncertain_duration: how often does a given uncertain element gets reset
+        :param uncertain_time_delay: when does the uncertainly kick in.
+        :param uncertain_cross: Scale for uncertainty perpendicular to the flow
+        :param uncertain_along: Scale for uncertainty parallel to the flow
+
+        uses super: super(GridCurrentMover,self).__init__(**kwargs)
         """
 
         # # NOTE: will need to add uncertainty parameters and other dialog fields
@@ -197,24 +215,65 @@ class GridCurrentMover(CyMover, serializable.Serializable):
 
         self.filename = filename  # check if this is stored with cy_gridcurrent_mover?
         self.topology_file = topology_file  # check if this is stored with cy_gridcurrent_mover?
-        self.mover = cy_gridcurrent_mover.CyGridCurrentMover()
+        #self.mover = cy_gridcurrent_mover.CyGridCurrentMover()
+        self.mover = \
+        cy_gridcurrent_mover.CyGridCurrentMover(current_scale=kwargs.pop('current_scale', 1),
+             uncertain_duration=3600.*kwargs.pop('uncertain_duration', 24),
+             uncertain_time_delay=3600.*kwargs.pop('uncertain_time_delay', 0),
+             uncertain_along=kwargs.pop('uncertain_along', 0.5),
+             uncertain_cross=kwargs.pop('uncertain_cross', 0.25))
+
         self.mover.text_read(filename, topology_file)
 
         super(GridCurrentMover, self).__init__(**kwargs)
 
-#     def __repr__(self):
-#         """
-#         not sure what to do here
-#         unambiguous representation of object
-#         """
-#         info = "GridCurrentMover(filename={0},topology_file={1})".format(self.curr_mover, self.curr_mover)
-#         return info
-#
-#     # Properties
-# Will eventually need some properties, depending on what user gets to set
-#     scale_value = property( lambda self: self.mover.scale_value,
-#                             lambda self,val: setattr(self.mover, 'scale_value', val) )
-#
+    def __repr__(self):
+        """
+        .. todo::
+            We probably want to include more information.
+        """
+
+        info = \
+            'GridCurrentMover( uncertain_duration={0.uncertain_duration},' \
+            + 'uncertain_time_delay={0.uncertain_time_delay}, '\
+            + 'uncertain_cross={0.uncertain_cross}, ' \
+            + 'uncertain_along={0.uncertain_along}, '\
+            + 'active_start={1.active_start}, active_stop={1.active_stop}, '\
+            + 'on={1.on})'
+        return info.format(self.mover, self)
+
+    def __str__(self):
+        info = 'GridCurrentMover - current state.\n' \
+            + '  uncertain_duration={0.uncertain_duration}\n' \
+            + '  uncertain_time_delay={0.uncertain_time_delay}\n' \
+            + '  uncertain_cross={0.uncertain_cross}\n' \
+            + '  uncertain_along={0.uncertain_along}' \
+            + '  active_start time={1.active_start}' \
+            + '  active_stop time={1.active_stop}' \
+            + '  current on/off status={1.on}'
+        return info.format(self.mover, self)
+
+
+    # Define properties using lambda functions: uses lambda function, which are
+    #accessible via fget/fset as follows:
+    uncertain_duration = property(lambda self: \
+                                  self.mover.uncertain_duration/3600.,
+                                  lambda self, val: setattr(self.mover,
+                                  'uncertain_duration', val*3600.))
+
+    uncertain_time_delay = property(lambda self: \
+                                    self.mover.uncertain_time_delay/3600.,
+                                    lambda self, val: \
+                                    setattr(self.mover,
+                                    'uncertain_time_delay', val*3600.))
+
+    uncertain_cross = property(lambda self: \
+            self.mover.uncertain_cross, lambda self, val: \
+            setattr(self.mover, 'uncertain_cross', val))
+
+    uncertain_along = property(lambda self: \
+            self.mover.uncertain_along, lambda self, val: \
+            setattr(self.mover, 'uncertain_along', val))
 
     def export_topology(self, topology_file):
         """

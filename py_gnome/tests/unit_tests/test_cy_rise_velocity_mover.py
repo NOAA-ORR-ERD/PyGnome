@@ -14,20 +14,21 @@ from gnome.cy_gnome.cy_rise_velocity_mover import CyRiseVelocityMover
 from cy_fixtures import CyTestMove
 
 
-def test_exceptions():
-    """
-    Test ValueError exception thrown if improper input arguments
-    """
-
-    with pytest.raises(ValueError):
-        CyRiseVelocityMover(water_density=0, water_viscosity=0)
+# def test_exceptions():
+#     """
+#     Test ValueError exception thrown if improper input arguments
+#     """
+# 
+#     with pytest.raises(ValueError):
+#         CyRiseVelocityMover(water_density=0, water_viscosity=0)
 
 
 class TestRiseVelocity:
 
     cm = CyTestMove()
-    rv = CyRiseVelocityMover(water_density=1020,
-                             water_viscosity=.000001)
+    #rv = CyRiseVelocityMover(water_density=1020,
+     #                        water_viscosity=.000001)
+    rv = CyRiseVelocityMover()
     #density = np.zeros((cm.num_le, ), dtype=np.double)
     #droplet_size = np.zeros((cm.num_le, ), dtype=np.double)
 

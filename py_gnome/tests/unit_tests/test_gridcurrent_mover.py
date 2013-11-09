@@ -1,0 +1,222 @@
+'''
+Test all operations for gridcurrent mover work
+'''
+
+import datetime
+import os
+
+import numpy as np
+import pytest
+
+from gnome.movers import GridCurrentMover
+from gnome.utilities import time_utils
+from gnome.utilities.remote_data import get_datafile
+
+from conftest import sample_sc_release
+
+here = os.path.dirname(__file__)
+cur_dir = os.path.join(here, 'sample_data', 'currents')
+
+curr_file = get_datafile(os.path.join(cur_dir, 'ChesBay.nc'))
+topology_file = get_datafile(os.path.join(cur_dir, 'ChesBay.dat'))
+
+
+def test_exceptions():
+    """
+    Test correct exceptions are raised
+    """
+
+    bad_file = os.path.join(cur_dir, 'ChesBay.CUR')
+    with pytest.raises(ValueError):
+        GridCurrentMover(bad_file)
+
+    with pytest.raises(TypeError):
+        GridCurrentMover(curr_file, topology_file=10)
+
+
+num_le = 4
+start_pos = (-76.149368, 37.74496, 0)
+rel_time = datetime.datetime(2004, 12, 31, 13)
+time_step = 15 * 60  # seconds
+model_time = time_utils.sec_to_date(time_utils.date_to_sec(rel_time))
+
+
+def test_loop():
+    """
+    test one time step with no uncertainty on the spill
+    checks there is non-zero motion.
+    also checks the motion is same for all LEs
+    """
+
+    pSpill = sample_sc_release(num_le, start_pos, rel_time)
+    curr = GridCurrentMover(curr_file, topology_file)
+    delta = _certain_loop(pSpill, curr)
+
+    _assert_move(delta)
+
+    assert np.all(delta[:, 0] == delta[0, 0])  # lat move matches for all LEs
+    assert np.all(delta[:, 1] == delta[0, 1])  # long move matches for all LEs
+    assert np.all(delta[:, 2] == 0)  # 'z' is zeros
+
+    return delta
+
+
+# def test_uncertain_loop():
+#     """
+#     test one time step with uncertainty on the spill
+#     checks there is non-zero motion.
+#     """
+# 
+#     pSpill = sample_sc_release(num_le, start_pos, rel_time,
+#                                uncertain=True)
+#     curr = GridCurrentMover(curr_file, topology_file)
+#     u_delta = _uncertain_loop(pSpill, curr)
+# 
+#     _assert_move(u_delta)
+# 
+#     return u_delta
+# 
+def test_uncertain_loop():
+    """
+    test one time step with uncertainty on the spill
+    checks there is non-zero motion.
+    """
+
+    pSpill = sample_sc_release(num_le, start_pos, rel_time,
+                               uncertain=True)
+    curr = GridCurrentMover(curr_file, topology_file)
+    #curr.uncertain_time_delay=3
+    u_delta = _uncertain_loop(pSpill, curr)
+
+    _assert_move(u_delta)
+
+    return u_delta
+
+
+# def test_certain_uncertain():
+#     """
+#     make sure certain and uncertain loop results in different deltas
+#     """
+# 
+#     delta = test_loop()
+#     u_delta = test_uncertain_loop()
+#     print
+#     print delta
+#     print u_delta
+#     assert np.all(delta[:, :2] != u_delta[:, :2])
+#     assert np.all(delta[:, 2] == u_delta[:, 2])
+# 
+def test_certain_uncertain():
+    """
+    make sure certain and uncertain loop results in different deltas
+    """
+
+    delta = test_loop()
+    u_delta = test_uncertain_loop()
+    print
+    print delta
+    print u_delta
+    assert np.all(delta[:, :2] != u_delta[:, :2])
+    assert np.all(delta[:, 2] == u_delta[:, 2])
+
+
+c_grid = GridCurrentMover(curr_file,topology_file)
+
+
+def test_default_props():
+    """
+    test default properties
+    """
+
+    assert c_grid.uncertain_time_delay == 0
+    assert c_grid.uncertain_duration == 24
+    assert c_grid.uncertain_cross == .25
+    assert c_grid.uncertain_along == .5
+
+
+def test_scale():
+    """
+    test setting / getting properties
+    """
+
+    c_grid.uncertain_time_delay = 3
+    assert c_grid.uncertain_time_delay == 3
+
+
+def test_scale_value():
+    """
+    test setting / getting properties
+    """
+
+    c_grid.scale_value = 2
+    print c_grid.scale_value
+    assert c_grid.scale_value == 2
+
+
+# def test_scale_refpoint():
+#     """
+#     test setting / getting properties
+#     """
+# 
+#     tgt = (1, 2, 3)
+#     c_cats.scale_refpoint = tgt  # can be a list or a tuple
+#     assert c_cats.scale_refpoint == tuple(tgt)
+#     c_cats.scale_refpoint = list(tgt)  # can be a list or a tuple
+#     assert c_cats.scale_refpoint == tuple(tgt)
+# 
+# 
+# Helper functions for tests
+
+def _assert_move(delta):
+    """
+    helper function to test assertions
+    """
+
+    print
+    print delta
+    assert np.all(delta[:, :2] != 0)
+    assert np.all(delta[:, 2] == 0)
+
+
+def _certain_loop(pSpill, curr):
+    curr.prepare_for_model_run()
+    curr.prepare_for_model_step(pSpill, time_step, model_time)
+    delta = curr.get_move(pSpill, time_step, model_time)
+    curr.model_step_is_done()
+
+    return delta
+
+
+def _uncertain_loop(pSpill, curr):
+    curr.prepare_for_model_run()
+    curr.prepare_for_model_step(pSpill, time_step, model_time)
+    u_delta = curr.get_move(pSpill, time_step, model_time)
+    curr.model_step_is_done()
+
+    return u_delta
+
+
+# def test_exception_new_from_dict():
+#     """
+#     test exceptions raised for new_from_dict
+#     """
+# 
+#     c_grid = GridCurrentMover(curr_file,topology_file)
+#     dict_ = c_grid.to_dict('create')
+#     dict_.update({'tide': td})
+#     with pytest.raises(KeyError):
+#         GridCurrentMover.new_from_dict(dict_)
+# 
+# 
+def test_new_from_dict_curronly():
+    """
+    test to_dict function for Wind object
+    create a new wind object and make sure it has same properties
+    """
+
+    c_grid = GridCurrentMover(curr_file,topology_file)
+    dict_ = c_grid.to_dict('create')
+    c2 = GridCurrentMover.new_from_dict(dict_)
+    assert c_grid == c2
+
+

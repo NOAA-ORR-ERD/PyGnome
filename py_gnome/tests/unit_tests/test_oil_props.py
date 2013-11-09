@@ -27,17 +27,16 @@ oil_density_units = [
 
 @pytest.mark.parametrize(('oil', 'density', 'units'), oil_density_units)
 def test_OilProps_sample_oil(oil, density, units):
-    """ compare expected values with values stored in OilProps - make sure 
+    """ compare expected values with values stored in OilProps - make sure
     data entered correctly and unit conversion is correct """
 
     o = OilProps(oil)
     assert o.get_density(units) == density
     assert o.name == oil
 
-@pytest.mark.xfail
+
 @pytest.mark.parametrize(('oil', 'api'), [('FUEL OIL NO.6', 12.3)])
 def test_OilProps_DBquery(oil, api):
     """ test dbquery worked for an example like FUEL OIL NO.6 """
-
     o = OilProps(oil)
     assert o.oil.api == api

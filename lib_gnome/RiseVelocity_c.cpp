@@ -33,8 +33,8 @@ RiseVelocity_c::RiseVelocity_c (TMap *owner, char *name) : Mover_c (owner, name)
 // Initialize local variables the same way for all constructors
 void RiseVelocity_c::Init()
 {
-	water_density = 1020.;
-	water_viscosity = 1.e-6;
+	//water_density = 1020.; // Oceanic; 1010 - Estuary; 1000 - Fresh, units  kg / m^3
+	//water_viscosity = 1.e-6;	// Ns/m^2
 }
 
 
@@ -73,7 +73,7 @@ double GetRiseVelocity(double le_density, double le_droplet_size, double water_v
 	// check inputs are ok? (water_density>le_density...)
 	if (scaled_dropletSize < 0.)	// special case where d is in Stoke's drift range
 	{
-		double ds = scaled_dropletSize * (d2 -d1) + d1;
+		double ds = scaled_dropletSize * (d2 - d1) + d1;
 		riseVelocity = dfac*ds*ds / (18.*water_viscosity);
 	}
 	else if (scaled_dropletSize >= 1.0)	// special case where d is in form drag range
@@ -149,7 +149,7 @@ OSErr RiseVelocity_c::get_move(int n, unsigned long model_time, unsigned long st
 {
 	// JS Ques: Is this required? Could cy/python invoke this method without well defined numpy arrays?
 	if (!delta || !ref || !rise_velocity) {
-		cerr << "(delta, ref, rise_velocity, density, droplet_size) = ("
+		cerr << "(delta, ref, rise_velocity) = ("
 			 << delta << "," << ref << "," << rise_velocity << ")" << endl;
 		return 1;
 	}

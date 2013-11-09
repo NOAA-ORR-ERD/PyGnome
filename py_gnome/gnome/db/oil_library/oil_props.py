@@ -57,14 +57,15 @@ _sample_oils = {
                  'gram per cubic centimeter', 'API degree', 1)},
     }
 
-""" 
-currently, the DB is stored locally - use this for now till we have
-a persistent DB that we can query 
 """
+currently, the DB is stored locally - use this for now till we have
+a persistent DB that we can query
+"""
+#_oillib_path = os.path.join(os.path.split(os.path.realpath(__file__))[0],
+#                           '../../../../web/gnome/webgnome/webgnome/data')
 _oillib_path = os.path.join(os.path.split(os.path.realpath(__file__))[0],
-                           '../../../../web/gnome/webgnome/webgnome/data')
+                            '../../data')
 _db_file = os.path.join(_oillib_path, 'OilLibrary.db')
-
 # No need to create DB, we'll just download the DB file from remote server:
 # (http://gnome.orr.noaa.gov/py_gnome_testdata/)
 # At some point, DB will be persisted on server and we just need to
@@ -81,22 +82,23 @@ _db_file = os.path.join(_oillib_path, 'OilLibrary.db')
 #     initialize_sql(settings)
 #     load_database(settings)
 #==============================================================================
-    
+
+
 def get_oil(oil_name):
     """
     function returns the Oil object given the name of the oil as a string.
-    
+
     :param oil_: name of the oil that spilled. If it is one of the names
             stored in _sample_oil dict, then an Oil object with specified
             API is returned.
             Otherwise, query the database for the oil_name and return the
             associated Oil object.
     :type oil_: str
-    
+
     It should be updated to take **kwargs so if user wants to define a new
-    oil with specific properties, they can do so by defining properties 
+    oil with specific properties, they can do so by defining properties
     in kwargs.
-        
+
     NOTE I:
     -------
     One issue is that the kwargs in Oil contain spaces, like 'Oil Name'. This
@@ -105,28 +107,32 @@ def get_oil(oil_name):
         get_oil(**kw)
     however, the following will not work:
         get_oil('Oil Name'='new oil', 'Field Name'='field name')
-        
+
     This is another reason, we need an interface (business logic) between the
     SQL object and the end user.
-    
+
     NOTE II:
     --------
     currently, the _sample_oils contained in dict in this module are not part
     of the database. May want to add them to the final persistent database to
     make a consistent interface which always accesses DB for any 'oil_name'
     """
-    
+
     if oil_name in _sample_oils.keys():
         return Oil(**_sample_oils[oil_name])
 
     else:
-        if not os.path.exists(_db_file):            
+        if not os.path.exists(_db_file):
+            """
+            if db_file doesn't exist in webgnome, then download it from
+            remote_data.data_server and put it in py_gnome/gnome/data/
+            """
             #_db_from_flatfile()
             get_datafile(_db_file)
-        
+
         # not sure we want to do it this way - but let's use for now
         engine = sqlalchemy.create_engine('sqlite:///'+ _db_file)
-        
+
         # let's use global DBSession defined in oillibrary
         # alternatively, we could define a new scoped_session
         # Not sure what's the proper way yet but this needs

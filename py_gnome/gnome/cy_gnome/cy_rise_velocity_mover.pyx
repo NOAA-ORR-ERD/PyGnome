@@ -26,41 +26,42 @@ cdef class CyRiseVelocityMover(cy_mover.CyMover):
         del self.mover
         self.rise_vel = NULL
 
-    def __init__(self, water_density=1020, water_viscosity=.000001):
+#    def __init__(self, water_density=1020, water_viscosity=.000001):
+    def __init__(self):
         """
         Default water_density = 1020 [kg/m3]
         Default water_viscosity = 1e-6
         """
-        if water_density <= 0:
-            raise ValueError("CyRiseVelocityMover: water_density must be >= 0")
-        if water_viscosity <= 0:
-            raise ValueError("CyRiseVelocityMover: water_viscosity must"
-                             " be >= 0")
+#         if water_density <= 0:
+#             raise ValueError("CyRiseVelocityMover: water_density must be >= 0")
+#         if water_viscosity <= 0:
+#             raise ValueError("CyRiseVelocityMover: water_viscosity must"
+#                              " be >= 0")
+# 
+#         self.rise_vel.water_density = water_density
+#         self.rise_vel.water_viscosity = water_viscosity
+# 
+#     property water_density:
+#         def __get__(self):
+#             return self.rise_vel.water_density
+# 
+#         def __set__(self, value):
+#             self.rise_vel.water_density = value
+# 
+#     property water_viscosity:
+#         def __get__(self):
+#             return self.rise_vel.water_viscosity
+# 
+#         def __set__(self, value):
+#             self.rise_vel.water_viscosity = value
 
-        self.rise_vel.water_density = water_density
-        self.rise_vel.water_viscosity = water_viscosity
-
-    property water_density:
-        def __get__(self):
-            return self.rise_vel.water_density
-
-        def __set__(self, value):
-            self.rise_vel.water_density = value
-
-    property water_viscosity:
-        def __get__(self):
-            return self.rise_vel.water_viscosity
-
-        def __set__(self, value):
-            self.rise_vel.water_viscosity = value
-
-    def __repr__(self):
-        """
-        unambiguous repr of object, reuse for str() method
-        """
-        return "CyRiseVelocityMover(water_density=%s,water_viscosity=%s)" % \
-                (self.water_density, self.water_viscosity)
-
+#     def __repr__(self):
+#         """
+#         unambiguous repr of object, reuse for str() method
+#         """
+#         return "CyRiseVelocityMover(water_density=%s,water_viscosity=%s)" % \
+#                 (self.water_density, self.water_viscosity)
+# 
     def get_move(self,
                  model_time,
                  step_len,

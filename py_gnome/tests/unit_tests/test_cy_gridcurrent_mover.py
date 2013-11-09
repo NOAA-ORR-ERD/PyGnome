@@ -48,6 +48,7 @@ class Common:
     num_le = 4  # test on 4 LEs
     ref = np.zeros((num_le, ), dtype=world_point)
     delta = np.zeros((num_le, ), dtype=world_point)
+    delta_uncertainty = np.zeros((num_le, ), dtype=world_point)
     status = np.empty((num_le, ), dtype=status_code_type)
 
     time_step = 900
@@ -105,6 +106,7 @@ class TestGridCurrentMover:
     def move(self):
         self.gcm.prepare_for_model_run()
 
+        print "Certain move"
         self.gcm.prepare_for_model_step(self.cm.model_time,
                 self.cm.time_step)
         self.gcm.get_move(
@@ -116,11 +118,61 @@ class TestGridCurrentMover:
             spill_type.forecast,
             )
 
+    def move_uncertain(self):
+        self.gcm.prepare_for_model_run()
+        spill_size = np.zeros((1, ), dtype=np.int32)  # number of LEs in 1 uncertainty spill - simple test   
+        spill_size[0] = self.cm.num_le  # for uncertainty spills
+        start_pos=(-76.149368,37.74496,0)
+
+        print "Uncertain move"
+        self.gcm.prepare_for_model_step(self.cm.model_time,
+                self.cm.time_step, 1, spill_size)
+        self.gcm.get_move(
+            self.cm.model_time,
+            self.cm.time_step,
+            self.cm.ref,
+            self.cm.delta_uncertainty,
+            self.cm.status,
+            spill_type.uncertainty,
+            )
+
     def check_move(self):
         self.move()
         print self.cm.delta
         assert np.all(self.cm.delta['lat'] != 0)
         assert np.all(self.cm.delta['long'] != 0)
+
+    def check_move_uncertain(self):
+        self.move_uncertain()
+        print self.cm.delta_uncertainty
+        assert np.all(self.cm.delta_uncertainty['lat'] != 0)
+        assert np.all(self.cm.delta_uncertainty['long'] != 0)
+
+    def check_move_certain_uncertain(self,uncertain_time_delay=0):
+        self.check_move()
+        self.check_move_uncertain()
+        tol = 1e-5
+        msg = r"{0} move is not within a tolerance of {1}"
+        if uncertain_time_delay == 0:
+            assert np.all(self.cm.delta_uncertainty['lat'] != self.cm.delta['lat'])
+            assert np.all(self.cm.delta_uncertainty['long'] != self.cm.delta['long'])
+        if uncertain_time_delay > 0:
+            np.testing.assert_allclose(
+            self.cm.delta['lat'],
+            self.cm.delta_uncertainty['lat'],
+            tol,
+            tol,
+            msg.format('grid_current.nc', tol),
+            0,
+            )
+            np.testing.assert_allclose(
+            self.cm.delta['long'],
+            self.cm.delta_uncertainty['long'],
+            tol,
+            tol,
+            msg.format('grid_current.nc', tol),
+            0,
+            )
 
     def test_move_reg(self):
         """
@@ -302,6 +354,7 @@ class TestGridCurrentMover:
 
         time = datetime.datetime(2004, 12, 31, 13)
         self.cm.model_time = time_utils.date_to_sec(time)
+        self.cm.uncertain = True
 
         time_grid_file = get_datafile(os.path.join(cur_dir, 'ChesBay.nc'
                 ))
@@ -311,7 +364,8 @@ class TestGridCurrentMover:
         self.gcm.text_read(time_grid_file, topology_file)
         self.cm.ref[:]['long'] = -76.149368  # for ChesBay
         self.cm.ref[:]['lat'] = 37.74496
-        self.check_move()
+        #self.check_move()
+        self.check_move_certain_uncertain(self.gcm.uncertain_time_delay)
 
         actual = np.empty((self.cm.num_le, ), dtype=world_point)
         actual[:]['lat'] = -.00170908
@@ -335,6 +389,9 @@ class TestGridCurrentMover:
             msg.format('ches_bay', tol),
             0,
             )
+        #check that certain and uncertain are the same if uncertainty is time delayed
+        self.gcm.uncertain_time_delay = 3
+        self.check_move_certain_uncertain(self.gcm.uncertain_time_delay)
 
     def test_move_ptcur(self):
         """

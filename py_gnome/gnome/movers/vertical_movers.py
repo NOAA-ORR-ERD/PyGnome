@@ -17,13 +17,13 @@ class RiseVelocityMover(CyMover, serializable.Serializable):
     """
 
     state = copy.deepcopy(CyMover.state)
-    state.add(update=['water_density'], create=['water_density'])
-    state.add(update=['water_viscosity'], create=['water_viscosity'])
+    #state.add(update=['water_density'], create=['water_density'])
+    #state.add(update=['water_viscosity'], create=['water_viscosity'])
 
     def __init__(
         self,
-        water_density=1020,
-        water_viscosity=1.e-6,
+       # water_density=1020,
+       # water_viscosity=1.e-6,
         **kwargs
         ):
         """
@@ -38,36 +38,35 @@ class RiseVelocityMover(CyMover, serializable.Serializable):
         See Mover documentation for remaining valid kwargs.
         """
 
-        self.mover = CyRiseVelocityMover(water_density, water_viscosity)
+       # self.mover = CyRiseVelocityMover(water_density, water_viscosity)
+        self.mover = CyRiseVelocityMover()
         super(RiseVelocityMover, self).__init__(**kwargs)
         self.array_types.update({'rise_vel': rise_vel})
 
-    @property
-    def water_density(self):
-        return self.mover.water_density
-
-    @property
-    def water_viscosity(self):
-        return self.mover.water_viscosity
-
-    @water_density.setter
-    def water_density(self, value):
-        self.mover.water_density = value
-
-    @water_viscosity.setter
-    def water_viscosity(self, value):
-        self.mover.water_viscosity = value
-
+#     @property
+#     def water_density(self):
+#         return self.mover.water_density
+# 
+#     @property
+#     def water_viscosity(self):
+#         return self.mover.water_viscosity
+# 
+#     @water_density.setter
+#     def water_density(self, value):
+#         self.mover.water_density = value
+# 
+#     @water_viscosity.setter
+#     def water_viscosity(self, value):
+#         self.mover.water_viscosity = value
+# 
     def __repr__(self):
         """
         .. todo::
             We probably want to include more information.
         """
 
-        return ('RiseVelocityMover(water_density={0}, water_viscosity={1},'
-                ' active_start={2}, active_stop={3},'
-                ' on={4})').format(self.water_density, self.water_viscosity,
-                                self.active_start, self.active_stop, self.on)
+        return ('RiseVelocityMover(active_start={0}, active_stop={1},'
+                ' on={2})').format(self.active_start, self.active_stop, self.on)
 
     def get_move(
         self,

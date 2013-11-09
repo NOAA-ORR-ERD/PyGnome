@@ -436,6 +436,5 @@ setup(name='pyGnome',
       version='alpha',
       requires=['numpy'],
       cmdclass={'build_ext': build_ext},
-      packages=find_packages(exclude=['gnome.deprecated']),
       ext_modules=extensions
      )
