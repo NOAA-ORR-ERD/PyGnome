@@ -187,6 +187,7 @@ class TestGridWindMover:
             0,
             )
 
+    @pytest.mark.xfail
     def test_move_curv(self):
         """
         test move for a curvilinear grid (first time in file)
