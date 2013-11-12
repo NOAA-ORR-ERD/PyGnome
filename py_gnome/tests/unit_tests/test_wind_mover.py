@@ -6,7 +6,9 @@ import pytest
 
 from hazpy import unit_conversion
 
-from gnome.basic_types import datetime_value_2d, ts_format, windage_type
+from gnome.basic_types import (datetime_value_2d,
+                               ts_format,
+                               world_point_type)
 
 from gnome import environment
 from gnome import array_types
@@ -19,11 +21,12 @@ from gnome.utilities import convert
 from gnome.movers import WindMover, constant_wind_mover, \
     wind_mover_from_file
 
-from gnome.spill import PointLineSource
+from gnome.spill import PointLineSource, SpatialRelease
 from gnome.spill_container import SpillContainer
-from gnome.array_types import ArrayType
 
 from conftest import sample_sc_release
+
+""" WindMover tests """
 
 datadir = os.path.join(os.path.dirname(__file__), r'sample_data')
 file_ = os.path.join(datadir, r'WindDataFromGnome.WND')
@@ -33,16 +36,24 @@ def test_exceptions():
     """
     Test ValueError exception thrown if improper input arguments
     """
-
     with pytest.raises(TypeError):
         WindMover()
 
     with pytest.raises(ValueError):
-        wind = environment.Wind(filename=file_)
-        now = datetime.now()
-        WindMover(wind, active_start=now, active_stop=now)
+        WindMover(environment.Wind(filename=file_),
+                  uncertain_angle_units='xyz')
+
+    with pytest.raises(ValueError):
+        wm = WindMover(environment.Wind(filename=file_))
+        wm.set_uncertain_angle(.4, 'xyz')
 
     with pytest.raises(TypeError):
+        """
+        violates duck typing so may want to remove. Though current WindMover's
+        backend cython object looks for C++ OSSM object which is embedded in
+        environment.Wind object which is why this check was enforced. Can be
+        re-evaluated if there is a need.
+        """
         WindMover(wind=10)
 
 
@@ -98,12 +109,17 @@ def test_properties(wind_circ):
     wm.uncertain_duration = 1
     wm.uncertain_time_delay = 2
     wm.uncertain_speed_scale = 3
-    wm.uncertain_angle_scale = 4
+    wm.set_uncertain_angle(4, 'deg')
 
     assert wm.uncertain_duration == 1
     assert wm.uncertain_time_delay == 2
     assert wm.uncertain_speed_scale == 3
     assert wm.uncertain_angle_scale == 4
+    assert wm.uncertain_angle_units == 'deg'
+
+    wm.set_uncertain_angle(.04, 'rad')
+    assert wm.uncertain_angle_scale == 0.04
+    assert wm.uncertain_angle_units == 'rad'
 
 
 def test_update_wind(wind_circ):
@@ -148,13 +164,10 @@ class TestWindMover:
     """
     gnome.WindMover() test
     """
-
     time_step = 15 * 60  # seconds
-    rel_time = datetime(2012, 8, 20, 13)  # yyyy/month/day/hr/min/sec
-    sc = sample_sc_release(5, (3., 6., 0.), rel_time)
-    model_time = rel_time
-
-    time_val = np.array((rel_time, (2., 25.)),
+    model_time = datetime(2012, 8, 20, 13)  # yyyy/month/day/hr/min/sec
+    sc = sample_sc_release(5, (3., 6., 0.), model_time)
+    time_val = np.array((model_time, (2., 25.)),
                         dtype=datetime_value_2d).reshape(1)
     wind = environment.Wind(timeseries=time_val,
                             units='meter per second')
@@ -178,11 +191,11 @@ class TestWindMover:
 
         self.sc.prepare_for_model_step(self.model_time)
         self.wm.prepare_for_model_step(self.sc, self.time_step,
-                self.model_time)
+                                       self.model_time)
 
         for ix in range(2):
-            curr_time = sec_to_date(date_to_sec(self.model_time)
-                                    + self.time_step * ix)
+            curr_time = sec_to_date(date_to_sec(self.model_time) +
+                                    self.time_step * ix)
             delta = self.wm.get_move(self.sc, self.time_step, curr_time)
             actual = self._expected_move()
 
@@ -210,8 +223,7 @@ class TestWindMover:
         self.wm.model_step_is_done()
 
     def test_get_move_exceptions(self):
-        curr_time = sec_to_date(date_to_sec(self.model_time)
-                                + self.time_step)
+        curr_time = sec_to_date(date_to_sec(self.model_time) + self.time_step)
         tmp_windages = self.sc._data_arrays['windages']
         del self.sc._data_arrays['windages']
         with pytest.raises(KeyError):
@@ -238,8 +250,7 @@ class TestWindMover:
         exp[:, 0] = self.sc['windages'] * uv[0, 0] * self.time_step  # 'u'
         exp[:, 1] = self.sc['windages'] * uv[0, 1] * self.time_step  # 'v'
 
-        xform = FlatEarthProjection.meters_to_lonlat(exp,
-                self.sc['positions'])
+        xform = FlatEarthProjection.meters_to_lonlat(exp, self.sc['positions'])
         return xform
 
 
@@ -475,10 +486,11 @@ def _defaults(wm):
     """
 
     assert wm.active == True  # timespan is as big as possible
-    assert wm.uncertain_duration == 10800
+    assert wm.uncertain_duration == 24
     assert wm.uncertain_time_delay == 0
     assert wm.uncertain_speed_scale == 2
     assert wm.uncertain_angle_scale == 0.4
+    assert wm.uncertain_angle_units == 'rad'
 
 
 def _get_timeseries_from_cpp(windmover):
@@ -520,5 +532,3 @@ def _assert_timeseries_equivalence(cpp_timeseries, wind_ts):
     assert np.all(cpp_timeseries['time'] == wind_ts['time'])
     assert np.allclose(cpp_timeseries['value'], wind_ts['value'], atol,
                        rtol)
-
-
