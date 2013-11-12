@@ -14,6 +14,9 @@ ALLSPHINXOPTS   = -d $(BUILDDIR)/doctrees $(PAPEROPT_$(PAPER)) $(SPHINXOPTS) .
 # the i18n builder cannot share the environment and doctrees with the others
 I18NSPHINXOPTS  = $(PAPEROPT_$(PAPER)) $(SPHINXOPTS) .
 
+# for building gh-pages
+GH_PAGES_SOURCES = ./py_gnome/documentation/sphinx_docs
+
 .PHONY: help clean html dirhtml singlehtml pickle json htmlhelp qthelp devhelp epub latex latexpdf text man changes linkcheck doctest gettext
 
 help:
@@ -151,3 +154,13 @@ doctest:
 	$(SPHINXBUILD) -b doctest $(ALLSPHINXOPTS) $(BUILDDIR)/doctest
 	@echo "Testing of doctests in the sources finished, look at the " \
 	      "results in $(BUILDDIR)/doctest/output.txt."
+
+gh-pages:
+	git checkout gh-pages
+	# rm -rf build # not sure we need this
+	git checkout master $(GH_PAGES_SOURCES) 
+	git reset HEAD
+	sphinx-build -b html $(GH_PAGES_SOURCES) .
+	#rm -rf ./py_gnome	# not sure we need to remove this?
+	git add -A
+	git commit -m "Generated gh-pages for `git log master -1 --pretty=short --abbrev-commit`" && git push origin gh-pages; git checkout master

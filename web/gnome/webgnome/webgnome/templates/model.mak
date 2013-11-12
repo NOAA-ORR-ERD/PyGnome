@@ -32,6 +32,8 @@
 
     <script src="/static/js/require-jquery.js"></script>
     <script src="/static/js/config.js"></script>
+    
+    <script src="//dygraphs.com/dygraph-dev.js"></script>
 </%block>
 
 <%block name="extra_head">
@@ -157,8 +159,24 @@
     					Map View
     				</div>
     			</div> <!-- end first item -->
-				<div class="item">
-					<img src="http://placehold.it/900x500" alt="">
+				<div class="item active">
+					<ul class="nav nav-tabs">
+					    <li class="active"><a href="#remaining-graph" data-toggle="tab">Remaining</a></li>
+					    <li><a href="#dispersed-graph" data-toggle="tab">Dispersed</a></li>
+					    <li><a href="#evaporated-graph" data-toggle="tab">Evaporated</a></li>
+					</ul>
+					<div id="myTabContent" class="tab-content">
+					    <!-- It is important for all panes to be initially active -->
+					    <!-- when loading dynamic content like dygraphs.          -->
+					    <!-- After the page load, we can use JS to remove the     -->
+					    <!-- 'in active' classes from our inactive panes.         -->
+					    <div class="tab-pane fade in active" id="remaining-graph">
+					    </div>
+					    <div class="tab-pane fade in active" id="dispersed-graph">
+					    </div>
+					    <div class="tab-pane fade in active" id="evaporated-graph">
+					    </div>
+					</div>
 					<div class="carousel-caption">
 						Reports View (None Yet...)
 					</div>

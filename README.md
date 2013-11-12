@@ -1,5 +1,7 @@
 # GNOME2 #
 
+## [Project Documentation](http://noaa-orr-erd.github.io/GNOME2/) ##
+
 <img src="http://gnome.orr.noaa.gov/py_gnome_testdata/GnomeIcon128.png" alt="Gnome Logo" title="Gnome" align="right">
 
 The General NOAA Operational Modeling Environment.

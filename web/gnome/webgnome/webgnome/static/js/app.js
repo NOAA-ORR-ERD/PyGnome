@@ -6,6 +6,7 @@ define([
     'models',
     'views/all',
     'util',
+    '//dygraphs.com/dygraph-dev.js',
 ], function($, _, Backbone, Mousetrap, models, views, util) {
      /*
      `AppView` acts as a controller, listening to delegate views and models for
@@ -27,8 +28,29 @@ define([
             this.router = this.options.router;
 
             this.setupModels();
+
             this.setupForms();
 
+            this.setupMainMenus();
+
+            this.setupMainSidebar();
+
+            this.setupMainMapView();
+
+            this.setupMessageViews();
+
+            this.setupSplashView();
+
+            this.setupLocationFileMapView();
+
+            this.setupGraphs();
+
+            this.setupEventHandlers();
+
+            this.setupKeyboardHandlers();
+        },
+
+        setupMainMenus: function() {
             this.menuView = new views.MenuView({
                 modelDropdownEl: "#file-drop",
                 runDropdownEl: "#run-drop",
@@ -39,7 +61,9 @@ define([
                 runUntilItemEl: "#menu-run-until",
                 locationFilesMeta: this.locationFilesMeta
             });
+        },
 
+        setupMainSidebar: function() {
             this.sidebarEl = '#sidebar';
             $(this.sidebarEl).resizable({
                 handles: 'e, w'
@@ -71,7 +95,9 @@ define([
                 settingsButtonEl: "#settings-button",
                 treeView: this.treeView
             });
+        },
 
+        setupMainMapView: function() {
             this.mapView = new views.MapView({
                 mapEl: '#map',
                 placeholderClass: 'placeholder',
@@ -108,27 +134,114 @@ define([
                 model: this.map,
                 state: this.state
             });
+        },
 
+        setupMessageViews: function() {
             this.messageView = new views.MessageView({
                 stepGenerator: this.stepGenerator,
                 gnomeModel: this.gnomeModel,
                 surfaceReleaseSpills: this.surfaceReleaseSpills,
                 windMovers: this.windMovers
             });
+        },
 
+        setupSplashView: function() {
             this.splashView = new views.SplashView({
                 el: $('#splash-page'),
                 router: this.router
             });
+        },
 
+        setupLocationFileMapView: function() {
             this.locationFileMapView = new views.LocationFileMapView({
                 el: $('#location-file-map'),
                 mapCanvas: '#map_canvas',
                 locationFilesMeta: this.locationFilesMeta
             });
+        },
 
-            this.setupEventHandlers();
-            this.setupKeyboardHandlers();
+        setupGraphs: function() {
+        	g_remaining = new Dygraph($("#remaining-graph").get(0),
+                    [
+                        // our timeseries values have the format
+                        // [value, std_deviation]
+                        [new Date("2009/11/05 12:00:00"), [90, 0]],
+                        [new Date("2009/11/06 00:00:00"), [65, 0]],
+                        [new Date("2009/11/06 12:00:00"), [62.5, 0]],
+                        [new Date("2009/11/07 00:00:00"), [61.7, 0]]
+                    ],
+                    {
+                        // options go here. See
+                        // http://dygraphs.com/options.html
+                        labels: [ "x", "% Remaining" ],
+
+                        // here is where we specify our uncertainty
+                        // properties
+                        errorBars: true,
+                        sigma: 1.0,  // - scaling factor for the
+                                     //   std devation values.
+                                     // - defaults to 2.0
+
+                        legend: 'always',
+                        animatedZooms: true,
+                        title: 'Oil Remaining'
+                    });
+
+        	g_dispersed = new Dygraph($("#dispersed-graph").get(0),
+                    [
+                        // our timeseries values have the format
+                        // [value, std_deviation]
+                        [new Date("2009/07/12"), [10,5], [100,5]],
+                        [new Date("2009/07/13"), [20,3], [80,2]],
+                        [new Date("2009/07/14"), [50,4], [60,1]],
+                        [new Date("2009/07/16"), [70,6], [80,4]]
+                    ],
+                    {
+                        // options go here. See
+                        // http://dygraphs.com/options.html
+                        labels: [ "x", "A", "B" ],
+
+                        // here is where we specify our uncertainty
+                        // properties
+                        errorBars: true,
+                        sigma: 1.0,  // - scaling factor for the
+                                     //   std devation values.
+                                     // - defaults to 2.0
+
+                        legend: 'always',
+                        animatedZooms: true,
+                        title: 'Oil Dispersed (percent)'
+                    });
+
+        	g_evaporated = new Dygraph($("#evaporated-graph").get(0),
+                    [
+                        // our timeseries values have the format
+                        // [value, std_deviation]
+                        [new Date("2009/07/12"), [10,5], [100,5]],
+                        [new Date("2009/07/13"), [20,3], [80,2]],
+                        [new Date("2009/07/14"), [50,4], [60,1]],
+                        [new Date("2009/07/16"), [70,6], [80,4]]
+                    ],
+                    {
+                        // options go here. See
+                        // http://dygraphs.com/options.html
+                        labels: [ "x", "A", "B" ],
+
+                        // here is where we specify our uncertainty
+                        // properties
+                        errorBars: true,
+                        sigma: 1.0,  // - scaling factor for the
+                                     //   std devation values.
+                                     // - defaults to 2.0
+
+                        legend: 'always',
+                        animatedZooms: true,
+                        title: 'Oil Evaporated (percent)'
+                    });
+
+        	$('#myTabContent').parent().removeClass("active");
+        	$("#dispersed-graph").removeClass("in active")
+        	$("#evaporated-graph").removeClass("in active")
         },
 
         setupEventHandlers: function() {
