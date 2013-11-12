@@ -76,27 +76,9 @@ def test_loop():
 
     _assert_move(delta)
 
-    #set windage to be constant or each particle has a different position
+    #set windage to be constant or each particle has a different position, doesn't work with uncertainty on
     #assert np.all(delta[:, 0] == delta[0, 0])  # lat move matches for all LEs
     #assert np.all(delta[:, 1] == delta[0, 1])  # long move matches for all LEs
-    tol = 1e-2
-    msg = r"{0} move is not within a tolerance of {1}"
-    np.testing.assert_allclose(
-        delta[:, 0],
-        delta[0, 0],
-        tol,
-        tol,
-        msg.format('sf_bay', tol),
-        0,
-        )
-    np.testing.assert_allclose(
-        delta[:, 1],
-        delta[0, 1],
-        tol,
-        tol,
-        msg.format('sf_bay', tol),
-        0,
-        )
 
     # returned delta is used in test_certain_uncertain test
     return delta

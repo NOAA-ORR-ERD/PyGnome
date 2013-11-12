@@ -187,7 +187,6 @@ class TestGridWindMover:
             0,
             )
 
-    @pytest.mark.xfail
     def test_move_curv(self):
         """
         test move for a curvilinear grid (first time in file)
@@ -195,6 +194,7 @@ class TestGridWindMover:
 
         time = datetime.datetime(2006, 3, 31, 21)
         self.cm.model_time = date_to_sec(time)
+        self.cm.uncertain = True
 
         time_grid_file = get_datafile(os.path.join(winds_dir,
                 'WindSpeedDirSubset.nc'))
@@ -233,7 +233,8 @@ class TestGridWindMover:
 
         #check that certain and uncertain are the same if uncertainty is time delayed
         #self.gcm.uncertain_time_delay = 3
-        #self.check_move_certain_uncertain(self.gcm.uncertain_time_delay)
+        self.gcm.uncertain_time_delay = 10800 # cython expects time_delay in seconds
+        self.check_move_certain_uncertain(self.gcm.uncertain_time_delay)
         # np.testing.assert_equal(self.cm.delta, actual,
         #                        "test_move_curv() failed", 0)
 
