@@ -95,6 +95,7 @@ done:
 
 void GridWindMover_c::ModelStepIsDone()
 {
+	bIsFirstStep = false;
 	fIsOptimizedForStep = false;
 }
 
