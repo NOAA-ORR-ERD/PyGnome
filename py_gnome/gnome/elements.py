@@ -14,43 +14,6 @@ Initializers for various element types
 """
 
 
-#==============================================================================
-# class InitConstantWindageRange(object):
-#     """
-#     initialize floating elements with windage range information
-#     """
-#     def __init__(self, windage_range=[0.01, 0.04]):
-#         self.windage_range = windage_range
-# 
-#     def initialize(self, num_new_particles, spill, data_arrays):
-#         """
-#         Since windages exists in data_arrays, so must windage_range and
-#         windage_persist if this initializer is used/called
-#         """
-#         data_arrays['windage_range'][-num_new_particles:, :] = \
-#             self.windage_range
-# 
-# 
-# class InitConstantWindagePersist(object):
-#     """
-#     initialize floating elements with windage persistance information
-#     """
-#     def __init__(self, windage_persist=900):
-#         self.windage_persist = windage_persist
-#         if windage_persist == 0:
-#             raise TypeError("'windage_range' cannot be 0. For infinite windage"
-#                 " windage_range == -1, otherwise windag_range > 0.")
-# 
-#     def initialize(self, num_new_particles, spill, data_arrays):
-#         """
-#         Since windages exists in data_arrays, so must windage_range and
-#         windage_persist if this initializer is used/called
-#         """
-#         data_arrays['windage_persist'][-num_new_particles:] = \
-#             self.windage_persist
-#==============================================================================
-
-
 class InitWindagesConstantParams(object):
     def __init__(self, windage_range=[0.01, 0.04], windage_persist=900):
         self.windage_persist = windage_persist

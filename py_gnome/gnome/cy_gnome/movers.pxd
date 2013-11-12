@@ -171,6 +171,8 @@ cdef extern from "GridCurrentMover_c.h":
 cdef extern from "GridWindMover_c.h":
     
     cdef cppclass GridWindMover_c(WindMover_c):
+        # Why can't I do this?
+        #GridWindMover_c() except +
         TimeGridVel_c    *timeGrid
         Boolean fIsOptimizedForStep
         float    fWindScale

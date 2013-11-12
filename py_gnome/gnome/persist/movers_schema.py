@@ -25,17 +25,22 @@ class Mover(MappingSchema):
     active_stop = SchemaNode(LocalDateTime(), missing=drop,
                             validator=convertible_to_seconds)
 
-class WindMover(Id, Mover):
+
+class WindMoversBase(Id, Mover):
+    uncertain_duration = SchemaNode(Float(), default=24)
+    uncertain_time_delay = SchemaNode(Float(), default=0)
+    uncertain_speed_scale = SchemaNode(Float(), default=2)
+    uncertain_angle_scale = SchemaNode(Float(), default=0.4)
+    uncertain_angle_units = SchemaNode(String(), default='rad')
+
+
+class WindMover(WindMoversBase):
 
     """
     Contains properties required by UpdateWindMover and CreateWindMover
     """
-
-    uncertain_duration = SchemaNode(Float(), default=3)
-    uncertain_time_delay = SchemaNode(Float(), default=0)
-    uncertain_speed_scale = SchemaNode(Float(), default=2)
-    uncertain_angle_scale = SchemaNode(Float(), default=0.4)
-    wind_id = SchemaNode(String(), missing=drop)    # only used to create new WindMover
+    # only used to create new WindMover
+    wind_id = SchemaNode(String(), missing=drop)
 
 
 class RandomMover(Id, Mover):
@@ -61,7 +66,8 @@ class CatsMover(Id, Mover):
     scale = SchemaNode(Bool())
     scale_refpoint = WorldPoint()
     scale_value = SchemaNode(Float())
-    tide_id = SchemaNode(String(), missing=drop)    # can have CatsMover without Tide object
+    # can have CatsMover without Tide object
+    tide_id = SchemaNode(String(), missing=drop)
 
 
 class GridCurrentMover(Id, Mover):
@@ -69,11 +75,9 @@ class GridCurrentMover(Id, Mover):
     topology_file = SchemaNode(String(), missing=drop)
 
 
-class GridWindMover(WindMover):
+class GridWindMover(WindMoversBase):
 
     """ Similar to WindMover except it doesn't have wind_id"""
 
     wind_file = SchemaNode(String(), missing=drop)
     topology_file = SchemaNode(String(), missing=drop)
-
-
