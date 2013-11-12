@@ -19,11 +19,10 @@ from gnome.utilities.transforms import r_theta_to_uv_wind
 from gnome.utilities import convert
 
 from gnome.movers import WindMover, constant_wind_mover, \
-    wind_mover_from_file, GridWindMover
+    wind_mover_from_file
 
 from gnome.spill import PointLineSource, SpatialRelease
 from gnome.spill_container import SpillContainer
-from gnome.utilities.remote_data import get_datafile
 
 from conftest import sample_sc_release
 
@@ -31,25 +30,22 @@ from conftest import sample_sc_release
 
 datadir = os.path.join(os.path.dirname(__file__), r'sample_data')
 file_ = os.path.join(datadir, r'WindDataFromGnome.WND')
-grid_file = get_datafile(os.path.join(datadir, 'winds/test_wind.cdf'))
 
 
-@pytest.mark.parametrize(("obj"), [(WindMover), (GridWindMover)])
-def test_exceptions(obj):
+def test_exceptions():
     """
     Test ValueError exception thrown if improper input arguments
     """
     with pytest.raises(TypeError):
-        obj()
+        WindMover()
 
     with pytest.raises(ValueError):
         WindMover(environment.Wind(filename=file_),
                   uncertain_angle_units='xyz')
 
     with pytest.raises(ValueError):
-        #gw = GridWindMover(grid_file, uncertain_angle_units='xyz')
-        gw = GridWindMover(grid_file)   # todo: why does this fail
-        gw.set_uncertain_angle(.4, 'xyz')
+        wm = WindMover(environment.Wind(filename=file_))
+        wm.set_uncertain_angle(.4, 'xyz')
 
     with pytest.raises(TypeError):
         """
@@ -481,44 +477,6 @@ def test_array_types():
     assert 'windages' in wm.array_types
     assert 'windage_range' in wm.array_types
     assert 'windage_persist' in wm.array_types
-
-"""
-GridWindMover tests - test all methods and attributes work. The results
-of the get_move are tested in test_cy_gridwind_mover.py
-"""
-
-
-class TestGridWindMover:
-    # defined in test_cy_gridwind
-    time_step = 15 * 60  # seconds
-    model_time = datetime(1999, 11, 29, 21)
-    sc = sample_sc_release(4,
-            release_time=model_time,
-            spill=SpatialRelease((np.zeros((4, 3), dtype=world_point_type) +
-                                     (3.104588, 52.016468, 0.0)), model_time))
-    gwm = GridWindMover(grid_file)
-
-    def test_string_repr_no_errors(self):
-        print
-        print '======================'
-        print 'repr(WindMover): '
-        print repr(self.gwm)
-        print
-        print 'str(WindMover): '
-        print str(self.gwm)
-        assert True
-
-    @pytest.mark.slow
-    def test_calls_in_one_step(self):
-        self.gwm.prepare_for_model_run()
-
-        self.sc.prepare_for_model_step(self.model_time)
-        self.gwm.prepare_for_model_step(self.sc, self.time_step,
-                                        self.model_time)
-        delta = self.gwm.get_move(self.sc, self.time_step, self.model_time)
-        self.gwm.model_step_is_done()
-
-        assert np.all(delta[:, :2] != 0)
 
 
 def _defaults(wm):

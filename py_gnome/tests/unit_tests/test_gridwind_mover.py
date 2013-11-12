@@ -18,13 +18,16 @@ here = os.path.dirname(__file__)
 wind_dir = os.path.join(here, 'sample_data', 'winds')
 
 wind_file = get_datafile(os.path.join(wind_dir, 'WindSpeedDirSubset.nc'))
-topology_file = get_datafile(os.path.join(wind_dir, 'WindSpeedDirSubsetTop.dat'))
+topology_file = get_datafile(os.path.join(wind_dir,
+                                          'WindSpeedDirSubsetTop.dat'))
 
 
 def test_exceptions():
     """
     Test correct exceptions are raised
     """
+    with pytest.raises(TypeError):
+        GridWindMover()
 
     bad_file = os.path.join(wind_dir, 'WindSpeedDirSubset.CUR')
     with pytest.raises(ValueError):
@@ -32,6 +35,25 @@ def test_exceptions():
 
     with pytest.raises(TypeError):
         GridWindMover(wind_file, topology_file=10)
+
+    with pytest.raises(ValueError):
+        # todo: Following fails - cannot raise exception during initialize
+        # Need to look into this issue
+        #gw = GridWindMover(grid_file, uncertain_angle_units='xyz')
+        gw = GridWindMover(wind_file)   # todo: why does this fail
+        gw.set_uncertain_angle(.4, 'xyz')
+
+
+def test_string_repr_no_errors():
+    gw = GridWindMover(wind_file)
+    print
+    print '======================'
+    print 'repr(WindMover): '
+    print repr(gw)
+    print
+    print 'str(WindMover): '
+    print str(gw)
+    assert True
 
 
 num_le = 4
@@ -54,29 +76,29 @@ def test_loop():
 
     _assert_move(delta)
 
-	# will need to set windage to be constant or each particle has a different position
+    #set windage to be constant or each particle has a different position
     #assert np.all(delta[:, 0] == delta[0, 0])  # lat move matches for all LEs
     #assert np.all(delta[:, 1] == delta[0, 1])  # long move matches for all LEs
     tol = 1e-2
     msg = r"{0} move is not within a tolerance of {1}"
     np.testing.assert_allclose(
-    	delta[:,0],
-    	delta[0,0],
-    	tol,
-    	tol,
-    	msg.format('sf_bay', tol),
-    	0,
-    	)
+        delta[:, 0],
+        delta[0, 0],
+        tol,
+        tol,
+        msg.format('sf_bay', tol),
+        0,
+        )
     np.testing.assert_allclose(
-    	delta[:,1],
-    	delta[0,1],
-    	tol,
-    	tol,
-    	msg.format('sf_bay', tol),
-    	0,
-    	)
-    assert np.all(delta[:, 2] == 0)  # 'z' is zeros
+        delta[:, 1],
+        delta[0, 1],
+        tol,
+        tol,
+        msg.format('sf_bay', tol),
+        0,
+        )
 
+    # returned delta is used in test_certain_uncertain test
     return delta
 
 
@@ -93,6 +115,7 @@ def test_uncertain_loop():
 
     _assert_move(u_delta)
 
+    # returned delta is used in test_certain_uncertain test
     return u_delta
 
 
@@ -110,16 +133,19 @@ def test_certain_uncertain():
     assert np.all(delta[:, 2] == u_delta[:, 2])
 
 
-w_grid = GridWindMover(wind_file,topology_file)
+w_grid = GridWindMover(wind_file, topology_file)
 
 
 def test_default_props():
     """
     test default properties
     """
-
+    assert w_grid.active == True  # timespan is as big as possible
+    assert w_grid.uncertain_duration == 24
     assert w_grid.uncertain_time_delay == 0
-    assert w_grid.uncertain_angle_scale == .4
+    assert w_grid.uncertain_speed_scale == 2
+    assert w_grid.uncertain_angle_scale == 0.4
+    assert w_grid.uncertain_angle_units == 'rad'
 
 
 def test_uncertain_time_delay():
@@ -131,28 +157,6 @@ def test_uncertain_time_delay():
     assert w_grid.uncertain_time_delay == 3
 
 
-# def test_scale_value():
-#     """
-#     test setting / getting properties
-#     """
-# 
-#     c_cats.scale_value = 0
-#     print c_cats.scale_value
-#     assert c_cats.scale_value == 0
-# 
-# 
-# def test_scale_refpoint():
-#     """
-#     test setting / getting properties
-#     """
-# 
-#     tgt = (1, 2, 3)
-#     c_cats.scale_refpoint = tgt  # can be a list or a tuple
-#     assert c_cats.scale_refpoint == tuple(tgt)
-#     c_cats.scale_refpoint = list(tgt)  # can be a list or a tuple
-#     assert c_cats.scale_refpoint == tuple(tgt)
-# 
-# 
 # Helper functions for tests
 
 def _assert_move(delta):
