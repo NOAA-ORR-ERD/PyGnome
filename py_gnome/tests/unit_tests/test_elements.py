@@ -50,7 +50,8 @@ def assert_dataarray_shape_size(arr_types, data_arrays, num_released):
                  (InitWindagesConstantParams(), windages, None),
                  (InitMassFromVolume(), mass_array, Spill(volume=10)),
                  (InitRiseVelFromDist(), rise_vel_array, None),
-                 (InitRiseVelFromDist('normal'), rise_vel_array, None),
+                 (InitRiseVelFromDist(distribution='normal'),
+                  rise_vel_array, None),
                  ])
 def test_correct_particles_set_by_initializers(fcn, arr_types, spill):
     """

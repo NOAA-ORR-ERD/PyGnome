@@ -87,7 +87,11 @@ cdef extern from "RandomVertical_c.h":
         double fVerticalBottomDiffusionCoefficient
         double fMixedLayerDepth
         OSErr get_move(int n, unsigned long model_time, unsigned long step_len, WorldPoint3D* ref, WorldPoint3D* delta, short* LE_status, LEType spillType, long spillID)        
-        
+
+"""
+Only the mover functionality is exposed here
+The functions to compute droplet size are exposed in utils.pxd
+"""        
 cdef extern from "RiseVelocity_c.h":
     cdef cppclass RiseVelocity_c(Mover_c):
         RiseVelocity_c() except +

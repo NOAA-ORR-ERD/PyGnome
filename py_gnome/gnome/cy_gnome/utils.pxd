@@ -77,3 +77,10 @@ cdef extern from "ShioTimeValue_c.h":
         # Not Sure if Following are required/used
         OSErr       GetConvertedHeightValue(Seconds  , VelocityRec *)
         OSErr       GetProgressiveWaveValue(Seconds &, VelocityRec *)
+
+"""
+Expose droplet size functions from RiseVelocity_c here. The mover class
+is exposed in movers.pxd
+"""
+cdef extern from "RiseVelocity_c.h":
+    

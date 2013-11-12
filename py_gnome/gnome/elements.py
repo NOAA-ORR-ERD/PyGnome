@@ -77,7 +77,7 @@ class InitMassFromVolume(object):
                                                     num_new_particles)
 
 
-class InitRiseVelFromDist(object):
+class ValuesFromDistBase(object):
     def __init__(self, distribution='uniform', params=[0, .1]):
         """
         Set the rise velocity parameters to be sampled from a distribution.
@@ -99,20 +99,76 @@ class InitRiseVelFromDist(object):
         self.distribution = distribution
         self.params = params
 
+    def set_values(self, np_array):
+        if self.distribution == 'uniform':
+            np_array = np.random.uniform(self.params[0], self.params[1],
+                                         len(np_array))
+        elif self.distribution == 'normal':
+            np_array = np.random.normal(self.params[0], self.params[1],
+                                        len(np_array))
+
+
+class InitRiseVelFromDist(ValuesFromDistBase):
+    def __init__(self, **kwargs):
+        """
+        Set the rise velocity parameters to be sampled from a distribution.
+
+        Use distribution to define rise_vel
+
+        :param risevel_dist: could be 'uniform' or 'normal'
+        :type distribution: str
+
+        :param params: for 'uniform' dist, it is [min_val, max_val].
+            For 'normal' dist, it is [mean, sigma] where sigma is
+            1 standard deviation
+        """
+
+        super(InitRiseVelFromDist, self).__init__(**kwargs)
+
     def initialize(self, num_new_particles, spill, data_arrays):
         """
         if 'rise_vel' exists in SpillContainer's data_arrays, then define
         """
-        if self.distribution == 'uniform':
-            data_arrays['rise_vel'][-num_new_particles:] = np.random.uniform(
-                                                        self.params[0],
-                                                        self.params[1],
-                                                        num_new_particles)
-        elif self.distribution == 'normal':
-            data_arrays['rise_vel'][-num_new_particles:] = np.random.normal(
-                                                        self.params[0],
-                                                        self.params[1],
-                                                        num_new_particles)
+        self.set_values(data_arrays['rise_vel'][-num_new_particles:])
+        #======================================================================
+        # if self.distribution == 'uniform':
+        #     data_arrays['rise_vel'][-num_new_particles:] = np.random.uniform(
+        #                                                 self.params[0],
+        #                                                 self.params[1],
+        #                                                 num_new_particles)
+        # elif self.distribution == 'normal':
+        #     data_arrays['rise_vel'][-num_new_particles:] = np.random.normal(
+        #                                                 self.params[0],
+        #                                                 self.params[1],
+        #                                                 num_new_particles)
+        #======================================================================
+
+
+class InitRiseVelFromDropletSizeFromDist(ValuesFromDistBase):
+    def __init__(self, **kwargs):
+        """
+        Set the rise velocity parameters to be sampled from a distribution.
+
+        Use distribution to define rise_vel
+
+        :param risevel_dist: could be 'uniform' or 'normal'
+        :type distribution: str
+
+        :param params: for 'uniform' dist, it is [min_val, max_val].
+            For 'normal' dist, it is [mean, sigma] where sigma is
+            1 standard deviation
+        """
+        super(InitRiseVelFromDropletSizeFromDist, self).__init__(**kwargs)
+
+    def initialize(self, num_new_particles, spill, data_arrays):
+        """
+        if 'rise_vel' exists in SpillContainer's data_arrays, then define
+        """
+        drop_size = np.zeros((num_new_particles, ), dtype=np.float64)
+        self.set_values(drop_size)
+        # now update rise_vel with droplet size - dummy for now
+        data_arrays['rise_vel'][-num_new_particles:] = drop_size
+
 
 """ ElementType classes"""
 
