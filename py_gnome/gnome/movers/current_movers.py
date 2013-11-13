@@ -275,6 +275,10 @@ class GridCurrentMover(CyMover, serializable.Serializable):
             self.mover.uncertain_along, lambda self, val: \
             setattr(self.mover, 'uncertain_along', val))
 
+    current_scale = property(lambda self: \
+            self.mover.current_scale, lambda self, val: \
+            setattr(self.mover, 'current_scale', val))
+
     def export_topology(self, topology_file):
         """
         :param topology_file=None: absolute or relative path where topology file will be written.

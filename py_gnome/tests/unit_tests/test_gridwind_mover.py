@@ -170,40 +170,15 @@ def _uncertain_loop(pSpill, wind):
     return u_delta
 
 
-# def test_exception_new_from_dict():
-#     """
-#     test exceptions raised for new_from_dict
-#     """
-# 
-#     c_cats = CatsMover(curr_file)
-#     dict_ = c_cats.to_dict('create')
-#     dict_.update({'tide': td})
-#     with pytest.raises(KeyError):
-#         CatsMover.new_from_dict(dict_)
-# 
-# 
-# def test_new_from_dict_tide():
-#     """
-#     test to_dict function for Wind object
-#     create a new wind object and make sure it has same properties
-#     """
-# 
-#     c_cats = CatsMover(curr_file, tide=td)
-#     dict_ = c_cats.to_dict('create')
-#     dict_.update({'tide': td})
-#     c2 = CatsMover.new_from_dict(dict_)
-#     assert c_cats == c2
-# 
-# 
-# def test_new_from_dict_curronly():
-#     """
-#     test to_dict function for Wind object
-#     create a new wind object and make sure it has same properties
-#     """
-# 
-#     c_cats = CatsMover(curr_file)
-#     dict_ = c_cats.to_dict('create')
-#     c2 = CatsMover.new_from_dict(dict_)
-#     assert c_cats == c2
-# 
-# 
+def test_new_from_dict():
+    """
+    test to_dict function for GridWind object
+    create a new grid_wind object and make sure it has same properties
+    """
+
+    grid_wind = GridWindMover(wind_file)
+    dict_ = grid_wind.to_dict('create')
+    gw2 = GridWindMover.new_from_dict(dict_)
+    assert grid_wind == gw2
+
+
