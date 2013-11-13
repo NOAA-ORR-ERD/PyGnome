@@ -297,19 +297,22 @@ class Model(serializable.Serializable):
         # setup the current_time_stamp for the spill_container objects
 
         for sc in self.spills.items():
-            sc.prepare_for_model_run(self.model_time, array_types)
+            # Give it simulation start_time, even though
+            #    self.model_time == self.start_time
+            # when self.current_time_step == -1, which is at beginning of run
+            sc.prepare_for_model_run(self.start_time, array_types)
 
     def setup_time_step(self):
         """
         sets up everything for the current time_step:
-        
+
         right now only prepares the movers -- maybe more later?.
         """
 
         # initialize movers differently if model uncertainty is on
 
-        [sc.prepare_for_model_step(self.model_time) for sc in
-         self.spills.items()]
+        for sc in self.spills.items():
+            sc.prepare_for_model_step(self.model_time)
 
         for mover in self.movers:
             for sc in self.spills.items():
