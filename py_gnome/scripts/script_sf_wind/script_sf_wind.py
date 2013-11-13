@@ -67,9 +67,9 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     print 'adding a grid wind mover:'
 
     wind_file = get_datafile(os.path.join(base_dir,
-                             r"./windSpeedDirSubset.nc"))
+                             r"./WindSpeedDirSubset.nc"))
     topology_file = get_datafile(os.path.join(base_dir,
-                                 r"./windSpeedDirSubsetTop.dat"))
+                                 r"./WindSpeedDirSubsetTop.dat"))
     w_mover = gnome.movers.GridWindMover(wind_file, topology_file)
     #w_mover.uncertain_time_delay=6
     #w_mover.uncertain_duration=6
