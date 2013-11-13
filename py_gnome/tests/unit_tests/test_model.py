@@ -80,6 +80,7 @@ def test_start_time():
     st = datetime.now()
     model.start_time = st
     assert model.start_time == st
+    assert model.current_time_step == -1
 
     model.step()
 
@@ -88,6 +89,24 @@ def test_start_time():
 
     assert model.current_time_step == -1
     assert model.start_time == st
+
+
+def test_model_time_and_current_time_in_sc():
+    model = Model()
+    model.start_time = datetime.now()
+
+    assert model.current_time_step == -1
+    assert model.model_time == model.start_time
+
+    for step in range(4):
+        model.step()
+
+        assert model.current_time_step == step
+        assert model.model_time == model.start_time + timedelta(seconds=step
+                                                            * model.time_step)
+
+        for sc in model.spills.items():
+            assert model.model_time == sc.current_time_stamp
 
 
 def test_timestep():
