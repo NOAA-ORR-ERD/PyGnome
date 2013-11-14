@@ -86,12 +86,12 @@ def test_one_simple_spill(spill):
     sc.prepare_for_model_run(spill.release_time, windage_at)
     num_steps = ((spill.end_release_time -
                   spill.release_time).seconds / time_step + 1)
-
     for step in range(num_steps):
         current_time = spill.release_time + timedelta(seconds=time_step * step)
-        sc.prepare_for_model_step(current_time)
-        sc.release_elements(current_time, time_step)
-        assert sc.current_time_stamp == current_time
+        sc.release_elements(time_step, current_time)
+        sc.prepare_for_model_step(time_step, current_time)
+        assert sc.current_time_stamp == (current_time +
+                                        timedelta(seconds=time_step))
 
     assert sc.num_released == spill.num_elements
 
@@ -127,9 +127,10 @@ def test_multiple_spills(uncertain):
 
     for step in range(num_steps):
         current_time = release_time + timedelta(seconds=time_step * step)
-        sc.prepare_for_model_step(current_time)
-        sc.release_elements(current_time, time_step)
-        assert sc.current_time_stamp == current_time
+        sc.release_elements(time_step, current_time)
+        sc.prepare_for_model_step(time_step, current_time)
+        assert sc.current_time_stamp == (current_time +
+                                        timedelta(seconds=time_step))
 
     assert sc.num_released == spills[0].num_elements * len(spills)
     assert_dataarray_shape_size(sc)
@@ -166,8 +167,8 @@ def test_rewind():
     sc.prepare_for_model_run(release_time, windage_at)
 
     for time in [release_time, release_time2]:
-        sc.prepare_for_model_step(time)
-        sc.release_elements(time, 3600)
+        sc.release_elements(3600, time)
+        sc.prepare_for_model_step(3600, time)
 
     assert sc.num_released == num_elements * len(spills)
     for spill in spills:
@@ -257,6 +258,7 @@ def test_data_setting_new():
     # release 10 particles
     time_step = (end_release_time - release_time) / 2
     sc = sample_sc_release(time_step=time_step.seconds, spill=spill)
+    released = sc.num_released
 
     new_arr = np.ones((sc.num_released, 3), dtype=np.float64)
     sc['new_name'] = new_arr
@@ -268,10 +270,9 @@ def test_data_setting_new():
 
     # now release remaining particles and check to see new_name is populated
     # with zeros - default initial_value
-    sc.prepare_for_model_step(spill.release_time + time_step)
-    released = sc.num_released
-
-    sc.release_elements(spill.release_time + time_step, time_step.seconds)
+    sc.release_elements(time_step.seconds, spill.release_time + time_step)
+    sc.prepare_for_model_step(time_step.seconds,
+                              spill.release_time + time_step)
     new_released = sc.num_released - released
 
     assert_dataarray_shape_size(sc)  # shape is consistent for all arrays
@@ -416,7 +417,7 @@ def test_uncertain_copy():
     # do the spills work?
 
     sc.prepare_for_model_run(windage_at)
-    sc.release_elements(release_time, time_step=100)
+    sc.release_elements(100, release_time)
 
     assert sc['positions'].shape == (num_elements, 3)
     assert sc['last_water_positions'].shape == (num_elements, 3)
@@ -427,7 +428,7 @@ def test_uncertain_copy():
 
     assert u_sc['positions'].shape[0] == 0  # nothing released yet.
 
-    u_sc.release_elements(release_time, time_step=100)
+    u_sc.release_elements(100, release_time)
 
     # elements should be there.
 
@@ -436,7 +437,7 @@ def test_uncertain_copy():
 
     # next release:
 
-    sc.release_elements(release_time + timedelta(hours=24), time_step=100)
+    sc.release_elements(100, release_time + timedelta(hours=24))
 
     assert sc['positions'].shape == (num_elements * 2, 3)
     assert sc['last_water_positions'].shape == (num_elements * 2, 3)
@@ -448,8 +449,7 @@ def test_uncertain_copy():
 
     # release second set
 
-    u_sc.release_elements(release_time + timedelta(hours=24),
-                          time_step=100)
+    u_sc.release_elements(100, release_time + timedelta(hours=24))
     assert u_sc['positions'].shape == (num_elements * 2, 3)
     assert u_sc['last_water_positions'].shape == (num_elements * 2, 3)
 
@@ -503,9 +503,10 @@ def test_element_types(elem_type, arr_types, sample_sc_no_uncertainty):
 
     for step in range(num_steps):
         current_time = release_t + timedelta(seconds=time_step * step)
-        sc.prepare_for_model_step(current_time)
-        sc.release_elements(current_time, time_step)
-        assert sc.current_time_stamp == current_time
+        sc.release_elements(time_step, current_time)
+        sc.prepare_for_model_step(time_step, current_time)
+        assert sc.current_time_stamp == (current_time +
+                                         timedelta(seconds=time_step))
 
     # after all steps, check that the element_type parameters were initialized
     # correctly
@@ -688,11 +689,10 @@ def test_get_spill_mask():
     # expected way
 
     sc.prepare_for_model_run(windage_at)
-    sc.release_elements(start_time0, time_step=100)
-    sc.release_elements(start_time0 + timedelta(hours=24),
-                        time_step=100)
-    sc.release_elements(start_time1 + timedelta(hours=1), time_step=100)
-    sc.release_elements(start_time1 + timedelta(hours=3), time_step=100)
+    sc.release_elements(100, start_time0)
+    sc.release_elements(100, start_time0 + timedelta(hours=24))
+    sc.release_elements(100, start_time1 + timedelta(hours=1))
+    sc.release_elements(100, start_time1 + timedelta(hours=3))
 
     assert all(sc['spill_num'][sc.get_spill_mask(sp2)] == 2)
     assert all(sc['spill_num'][sc.get_spill_mask(sp0)] == 0)
@@ -710,10 +710,10 @@ def test_eq_spill_container():
     sc2.spills.add(sp2)
 
     sc1.prepare_for_model_run(windage_at)
-    sc1.release_elements(sp1.release_time, 360)
+    sc1.release_elements(360, sp1.release_time)
 
     sc2.prepare_for_model_run(windage_at)
-    sc2.release_elements(sp2.release_time, 360)
+    sc2.release_elements(360, sp2.release_time)
 
     assert sc1 == sc2
 
@@ -738,10 +738,10 @@ def test_eq_allclose_spill_container():
     sc2.spills.add(sp2)
 
     sc1.prepare_for_model_run(windage_at)
-    sc1.release_elements(sp1.release_time, 360)
+    sc1.release_elements(360, sp1.release_time)
 
     sc2.prepare_for_model_run(windage_at)
-    sc2.release_elements(sp2.release_time, 360)
+    sc2.release_elements(360, sp2.release_time)
 
     # need to change both atol
 
@@ -791,9 +791,9 @@ def test_eq_spill_container_pair(uncertain):
 
     for sc in zip(scp1.items(), scp2.items()):
         sc[0].prepare_for_model_run(sp1.release_time)
-        sc[0].release_elements(sp1.release_time, 360)
+        sc[0].release_elements(360, sp1.release_time)
         sc[1].prepare_for_model_run(sp2.release_time)
-        sc[1].release_elements(sp2.release_time, 360)
+        sc[1].release_elements(360, sp2.release_time)
 
     assert scp1 == scp2
 
@@ -814,10 +814,10 @@ def test_ne_spill_container():
     sc2.spills.add(sp2)
 
     sc1.prepare_for_model_run(windage_at)
-    sc1.release_elements(sp1.release_time, 360)
+    sc1.release_elements(360, sp1.release_time)
 
     sc2.prepare_for_model_run(windage_at)
-    sc2.release_elements(sp2.release_time, 360)
+    sc2.release_elements(360, sp2.release_time)
 
     assert sc1 != sc2
 
@@ -843,8 +843,8 @@ def test_model_step_is_done():
 
     sc.prepare_for_model_run(windage_at)
 
-    sc.release_elements(release_time, time_step=100)
-    sc.release_elements(start_time2, time_step=100)
+    sc.release_elements(100, release_time)
+    sc.release_elements(100, start_time2)
 
     (sc['status_codes'])[5:8] = oil_status.to_be_removed
     (sc['status_codes'])[14:17] = oil_status.to_be_removed

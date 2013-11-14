@@ -7,13 +7,11 @@ set of arrays. The spills themselves provide some of the arrays themselves
 (adding more each time LEs are released).
 """
 import numpy as np
+from datetime import timedelta
 
 import gnome.spill
 from gnome.utilities.orderedcollection import OrderedCollection
-from gnome.basic_types import (world_point_type,
-                               status_code_type,
-                               oil_status,
-                               id_type,)
+from gnome.basic_types import oil_status
 import gnome.array_types
 
 
@@ -294,7 +292,7 @@ class SpillContainer(SpillContainerData):
             u_sc.spills += sp.uncertain_copy()
         return u_sc
 
-    def prepare_for_model_run(self, current_time, array_types={}):
+    def prepare_for_model_run(self, model_start_time, array_types={}):
         """
         called when setting up the model prior to 1st time step
         This is considered 0th timestep by model
@@ -303,8 +301,15 @@ class SpillContainer(SpillContainerData):
         especially for 0th step; however, the model needs to set it because
         it will write_output() after each step. The data_arrays along with
         the current_time_stamp must be set in order to write_output()
+
+        :param model_start_time: model_start_time to initialize
+            current_time_stamp. This is the time_stamp associated with 0-th
+            step so initial conditions for data arrays
+        :param array_types: a dict of additional array_types to append to
+            standard array_types attribute. The data_arrays are initialized and
+            appended based on the values of array_types attribute
         """
-        self.current_time_stamp = current_time
+        self.current_time_stamp = model_start_time
 
         # Question - should we purge any new arrays that were added in previous
         # call to prepare_for_model_run()?
@@ -313,12 +318,20 @@ class SpillContainer(SpillContainerData):
         self._array_types.update(array_types)
         self.initialize_data_arrays()
 
-    def prepare_for_model_step(self, current_time):
+    def prepare_for_model_step(self, time_step, model_time):
         """
         Called at the beginning of a time step
-        set the current_time_stamp attribute
+        set the current_time_stamp attribute defined as:
+        self.current_time_stamp = current_time + time_step
+
+        The computed data_arrays that will be computed in this step are
+        associated with current_time + time_step
+        The released particles are over current_time + time_step
+
+        :param time_step: time step in seconds
+        :param model_time: current model time as datetime object
         """
-        self.current_time_stamp = current_time
+        self.current_time_stamp = model_time + timedelta(seconds=time_step)
 
     def initialize_data_arrays(self):
         """
@@ -345,7 +358,7 @@ class SpillContainer(SpillContainerData):
             self._data_arrays[name] = np.r_[self._data_arrays[name],
                                     array_type.initialize(num_released)]
 
-    def release_elements(self, current_time, time_step):
+    def release_elements(self, time_step, model_time):
         """
         Called at the end of a time step
 
@@ -355,7 +368,7 @@ class SpillContainer(SpillContainerData):
 
         for spill in self.spills:
             if spill.on:
-                num_released = spill.num_elements_to_release(current_time,
+                num_released = spill.num_elements_to_release(model_time,
                                                              time_step)
                 if num_released > 0:
                     # update 'spill_num' ArrayType's initial_value so it
@@ -374,7 +387,7 @@ class SpillContainer(SpillContainerData):
 
                     # append to data arrays
                     self._append_data_arrays(num_released)
-                    spill.set_newparticle_values(num_released, current_time,
+                    spill.set_newparticle_values(num_released, model_time,
                                                  time_step, self._data_arrays)
 
     def model_step_is_done(self):

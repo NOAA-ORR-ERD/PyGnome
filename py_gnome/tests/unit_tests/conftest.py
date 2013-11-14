@@ -84,8 +84,8 @@ def sample_sc_release(num_elements=10,
 
     # used for testing so just assume there is a Windage array
     sc.prepare_for_model_run(spill.release_time, arr_types)
-    sc.prepare_for_model_step(current_time)
-    sc.release_elements(current_time, time_step)
+    sc.release_elements(time_step, current_time)
+    sc.prepare_for_model_step(time_step, current_time)
     return sc
 
 

@@ -312,7 +312,7 @@ class Model(serializable.Serializable):
         # initialize movers differently if model uncertainty is on
 
         for sc in self.spills.items():
-            sc.prepare_for_model_step(self.model_time)
+            sc.prepare_for_model_step(self.time_step, self.model_time)
 
         for mover in self.movers:
             for sc in self.spills.items():
@@ -380,25 +380,35 @@ class Model(serializable.Serializable):
 
     def step(self):
         """
-        Steps the model forward (or backward) in time. Needs testing for hindcasting.
+        Steps the model forward (or backward) in time. Needs testing for
+        hind casting.
         """
-
-        if self.current_time_step >= self._num_time_steps - 1:  # it gets incremented after this check
+        # it gets incremented after this check
+        if self.current_time_step >= self._num_time_steps - 1:
             raise StopIteration
 
         if self.current_time_step == -1:
-            self.setup_model_run()  # that's all we need to do for the zeroth time step
+            # that's all we need to do for the zeroth time step
+            self.setup_model_run()
         else:
             self.setup_time_step()
             self.move_elements()
             self.step_is_done()
+
+        # this is where the next step begins!
+        # the elements released are during the time period:
+        #    self.model_time + self.time_step
+        # The else part of the loop computes values for data_arrays that
+        # correspond with time_stamp:
+        #    self.model_time + self.time_step
+        # This is the current_time_stamp attribute of the SpillContainer
+        #     [sc.current_time_stamp for sc in self.spills.items()]
         self.current_time_step += 1
 
-        # # release_elements after the time step increment so that they will be there
-        # # but not yet moved, at the beginning of the release time.
-
+        # release_elements after the time step increment so that they will be
+        # there but not yet moved, at the beginning of the release time.
         for sc in self.spills.items():
-            sc.release_elements(self.model_time, self.time_step)
+            sc.release_elements(self.time_step, self.model_time)
 
         # cache the results
 
@@ -409,8 +419,8 @@ class Model(serializable.Serializable):
     def __iter__(self):
         """
         for compatibility with Python's iterator protocol
-        
-        rewinds the model and returns itself so it can be iterated over. 
+
+        rewinds the model and returns itself so it can be iterated over.
         """
 
         self.rewind()
