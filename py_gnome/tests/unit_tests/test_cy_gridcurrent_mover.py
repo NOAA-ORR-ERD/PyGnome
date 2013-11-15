@@ -390,7 +390,8 @@ class TestGridCurrentMover:
             0,
             )
         #check that certain and uncertain are the same if uncertainty is time delayed
-        self.gcm.uncertain_time_delay = 3
+        #self.gcm.uncertain_time_delay = 3
+        self.gcm.uncertain_time_delay = 10800 # cython expects time_delay in seconds
         self.check_move_certain_uncertain(self.gcm.uncertain_time_delay)
 
     def test_move_ptcur(self):
