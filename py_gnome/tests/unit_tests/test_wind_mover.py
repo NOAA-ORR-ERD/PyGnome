@@ -188,7 +188,6 @@ class TestWindMover:
         Test the get_move(...) results in WindMover match the expected delta
         """
 
-        self.sc.prepare_for_model_step(self.time_step, self.model_time)
         self.wm.prepare_for_model_step(self.sc, self.time_step,
                                        self.model_time)
 
@@ -272,10 +271,8 @@ def test_windage_index():
     windage = {'windages': array_types.windages,
                'windage_range': array_types.windage_range,
                'windage_persist': array_types.windage_persist}
-    sc.prepare_for_model_run(rel_time,
-                             array_types=windage)
+    sc.prepare_for_model_run(array_types=windage)
     sc.release_elements(timestep, rel_time)
-    sc.prepare_for_model_step(timestep, rel_time)
     wm = WindMover(environment.ConstantWind(5, 0))
     wm.prepare_for_model_step(sc, timestep, rel_time)
     wm.model_step_is_done()  # need this to toggle _windage_is_set_flag
@@ -299,7 +296,6 @@ def test_windage_index():
     _check_index(sc)  # 1st ASSERT
 
     sc.release_elements(timestep, rel_time + timedelta(hours=1))
-    sc.prepare_for_model_step(timestep, rel_time + timedelta(hours=1))
     wm.prepare_for_model_step(sc, timestep, rel_time)
     _check_index(sc)  # 2nd ASSERT
 

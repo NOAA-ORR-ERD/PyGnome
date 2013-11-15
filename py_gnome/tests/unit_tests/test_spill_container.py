@@ -83,15 +83,12 @@ def test_one_simple_spill(spill):
     sc.spills.add(spill)
     time_step = 3600
 
-    sc.prepare_for_model_run(spill.release_time, windage_at)
+    sc.prepare_for_model_run(windage_at)
     num_steps = ((spill.end_release_time -
                   spill.release_time).seconds / time_step + 1)
     for step in range(num_steps):
         current_time = spill.release_time + timedelta(seconds=time_step * step)
         sc.release_elements(time_step, current_time)
-        sc.prepare_for_model_step(time_step, current_time)
-        assert sc.current_time_stamp == (current_time +
-                                        timedelta(seconds=time_step))
 
     assert sc.num_released == spill.num_elements
 
@@ -123,14 +120,11 @@ def test_multiple_spills(uncertain):
     num_steps = ((spills[-1].end_release_time -
                   spills[-1].release_time).seconds / time_step + 1)
 
-    sc.prepare_for_model_run(release_time, windage_at)
+    sc.prepare_for_model_run(windage_at)
 
     for step in range(num_steps):
         current_time = release_time + timedelta(seconds=time_step * step)
         sc.release_elements(time_step, current_time)
-        sc.prepare_for_model_step(time_step, current_time)
-        assert sc.current_time_stamp == (current_time +
-                                        timedelta(seconds=time_step))
 
     assert sc.num_released == spills[0].num_elements * len(spills)
     assert_dataarray_shape_size(sc)
@@ -164,11 +158,10 @@ def test_rewind():
               PointLineSource(num_elements, start_position, release_time2)]
     sc.spills.add(spills)
 
-    sc.prepare_for_model_run(release_time, windage_at)
+    sc.prepare_for_model_run(windage_at)
 
     for time in [release_time, release_time2]:
         sc.release_elements(3600, time)
-        sc.prepare_for_model_step(3600, time)
 
     assert sc.num_released == num_elements * len(spills)
     for spill in spills:
@@ -271,8 +264,6 @@ def test_data_setting_new():
     # now release remaining particles and check to see new_name is populated
     # with zeros - default initial_value
     sc.release_elements(time_step.seconds, spill.release_time + time_step)
-    sc.prepare_for_model_step(time_step.seconds,
-                              spill.release_time + time_step)
     new_released = sc.num_released - released
 
     assert_dataarray_shape_size(sc)  # shape is consistent for all arrays
@@ -311,7 +302,7 @@ class TestAddArrayTypes:
     def default_arraytypes(self):
         """ return array_types back to baseline for SpillContainer """
         self.sc.rewind()
-        self.sc.prepare_for_model_run(release_time)  # set to anything
+        self.sc.prepare_for_model_run()  # set to anything
         assert self.sc.array_types == sc_default_array_types
 
     def test_no_addto_array_types(self):
@@ -330,8 +321,7 @@ class TestAddArrayTypes:
         at the beginning of the run
         """
         self.default_arraytypes()
-        self.sc.prepare_for_model_run(release_time,  # set to any value
-                                      array_types={'new_name': self.new_at})
+        self.sc.prepare_for_model_run(array_types={'new_name': self.new_at})
         assert 'new_name' in self.sc.array_types
 
     def test_addto_array_types_via_data_array(self):
@@ -356,8 +346,7 @@ def test_array_types_reset():
     check the array_types are reset on rewind() only
     """
     sc = SpillContainer()
-    sc.prepare_for_model_run(release_time,  # set to any datetime
-                             array_types=windage_at)
+    sc.prepare_for_model_run(array_types=windage_at)
 
     assert 'windages' in sc.array_types
 
@@ -365,13 +354,12 @@ def test_array_types_reset():
     assert 'windages' not in sc.array_types
     assert sc.array_types == sc_default_array_types
 
-    sc.prepare_for_model_run(release_time,  # set to any datetime
-                             array_types=windage_at)
+    sc.prepare_for_model_run(array_types=windage_at)
     assert 'windages' in sc.array_types
 
     # now if we invoke prepare_for_model_run without giving it any array_types
     # it should not reset the dict to default
-    sc.prepare_for_model_run(release_time)   # set to any datetime
+    sc.prepare_for_model_run()   # set to any datetime
     assert 'windages' in sc.array_types
 
 
@@ -499,14 +487,11 @@ def test_element_types(elem_type, arr_types, sample_sc_no_uncertainty):
 
     time_step = 3600
     num_steps = 4   # just run for 4 steps
-    sc.prepare_for_model_run(release_t, arr_types)
+    sc.prepare_for_model_run(arr_types)
 
     for step in range(num_steps):
         current_time = release_t + timedelta(seconds=time_step * step)
         sc.release_elements(time_step, current_time)
-        sc.prepare_for_model_step(time_step, current_time)
-        assert sc.current_time_stamp == (current_time +
-                                         timedelta(seconds=time_step))
 
     # after all steps, check that the element_type parameters were initialized
     # correctly
@@ -790,9 +775,9 @@ def test_eq_spill_container_pair(uncertain):
         scp2.add(sp2)
 
     for sc in zip(scp1.items(), scp2.items()):
-        sc[0].prepare_for_model_run(sp1.release_time)
+        sc[0].prepare_for_model_run()
         sc[0].release_elements(360, sp1.release_time)
-        sc[1].prepare_for_model_run(sp2.release_time)
+        sc[1].prepare_for_model_run()
         sc[1].release_elements(360, sp2.release_time)
 
     assert scp1 == scp2
@@ -867,13 +852,25 @@ def test_model_step_is_done():
 
 
 def get_eq_spills():
-    """ returns a tuple of identical PointLineSource objects """
+    """
+    returns a tuple of identical PointLineSource objects
+
+    todo: The spill's element_type is forced to be ElementType() since
+    it is not being persisted and the default (Floating()) uses randomly
+    generated values for initial data array values and these will not match for
+    the two spills. Fix this be persisting element_type attribute and making
+    min and max windage_range equal so windages are the same.
+    """
 
     num_elements = 10
     release_time = datetime(2000, 1, 1, 1)
 
-    spill = PointLineSource(num_elements, (28, -75, 0), release_time)
+    spill = PointLineSource(num_elements,
+                            (28, -75, 0),
+                            release_time,
+                            element_type=elements.ElementType())
     spill2 = PointLineSource.new_from_dict(spill.to_dict('create'))
+    spill2.element_type = elements.ElementType()
 
     return (spill, spill2)
 

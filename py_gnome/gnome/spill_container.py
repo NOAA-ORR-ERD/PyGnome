@@ -37,6 +37,9 @@ class SpillContainerData(object):
 
         The common use-case for this is for loading from cache for
         re-rendering, etc.
+
+        Note: initialize current_time_stamp attribute to None. It is
+        responsibility of caller to set current_time_stamp (for eg: Model)
         """
 
         self.uncertain = uncertain
@@ -294,7 +297,7 @@ class SpillContainer(SpillContainerData):
             u_sc.spills += sp.uncertain_copy()
         return u_sc
 
-    def prepare_for_model_run(self, model_start_time, array_types={}):
+    def prepare_for_model_run(self, array_types={}):
         """
         called when setting up the model prior to 1st time step
         This is considered 0th timestep by model
@@ -311,7 +314,6 @@ class SpillContainer(SpillContainerData):
             standard array_types attribute. The data_arrays are initialized and
             appended based on the values of array_types attribute
         """
-        self.current_time_stamp = model_start_time
 
         # Question - should we purge any new arrays that were added in previous
         # call to prepare_for_model_run()?
@@ -319,21 +321,6 @@ class SpillContainer(SpillContainerData):
         # let's keep those. A rewind will reset data_arrays.
         self._array_types.update(array_types)
         self.initialize_data_arrays()
-
-    def prepare_for_model_step(self, time_step, model_time):
-        """
-        Called at the beginning of a time step
-        set the current_time_stamp attribute defined as:
-        self.current_time_stamp = current_time + time_step
-
-        The computed data_arrays that will be computed in this step are
-        associated with current_time + time_step
-        The released particles are over current_time + time_step
-
-        :param time_step: time step in seconds
-        :param model_time: current model time as datetime object
-        """
-        self.current_time_stamp = model_time + timedelta(seconds=time_step)
 
     def initialize_data_arrays(self):
         """

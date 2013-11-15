@@ -294,13 +294,8 @@ class Model(serializable.Serializable):
             mover.prepare_for_model_run()
             array_types.update(mover.array_types)
 
-        # setup the current_time_stamp for the spill_container objects
-
         for sc in self.spills.items():
-            # Give it simulation start_time, even though
-            #    self.model_time == self.start_time
-            # when self.current_time_step == -1, which is at beginning of run
-            sc.prepare_for_model_run(self.start_time, array_types)
+            sc.prepare_for_model_run(array_types)
 
     def setup_time_step(self):
         """
@@ -310,9 +305,6 @@ class Model(serializable.Serializable):
         """
 
         # initialize movers differently if model uncertainty is on
-
-        for sc in self.spills.items():
-            sc.prepare_for_model_step(self.time_step, self.model_time)
 
         for mover in self.movers:
             for sc in self.spills.items():
@@ -383,6 +375,13 @@ class Model(serializable.Serializable):
         Steps the model forward (or backward) in time. Needs testing for
         hind casting.
         """
+
+        for sc in self.spills.items():
+            # set the current time stamp only after current_time_step is
+            # incremented and before the output is written. Set it to None here
+            # just so we're not carrying around the old time_stamp
+            sc.current_time_stamp = None
+
         # it gets incremented after this check
         if self.current_time_step >= self._num_time_steps - 1:
             raise StopIteration
@@ -397,7 +396,7 @@ class Model(serializable.Serializable):
 
         self.current_time_step += 1
 
-        # this is where the step ends!
+        # this is where the new step begins!
         # the elements released are during the time period:
         #    self.model_time + self.time_step
         # The else part of the loop computes values for data_arrays that
@@ -406,6 +405,7 @@ class Model(serializable.Serializable):
         # This is the current_time_stamp attribute of the SpillContainer
         #     [sc.current_time_stamp for sc in self.spills.items()]
         for sc in self.spills.items():
+            sc.current_time_stamp = self.model_time
             sc.release_elements(self.time_step, self.model_time)
 
         # cache the results - current_time_step is incremented but the

@@ -109,7 +109,7 @@ def test_model_time_and_current_time_in_sc():
             assert model.model_time == sc.current_time_stamp
 
 
-@pytest.mark.parametrize("duration", [1, 1.5])
+@pytest.mark.parametrize("duration", [1.5])
 def test_release_end_of_step(duration):
     """
     tests that elements released at end of step are recorded with their
@@ -131,7 +131,7 @@ def test_release_end_of_step(duration):
                                         model.spills.LE('current_time_stamp'))
         print 'particle ID: {0}'.format(model.spills.LE('id'))
         print 'positions: \n{0}'.format(model.spills.LE('positions'))
-        print 'just ran time step: %s' % step
+        print 'just ran time step: %s\n' % step
 
     print "\n---------------------------------------------"
 

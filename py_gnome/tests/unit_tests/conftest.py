@@ -61,8 +61,8 @@ def sample_sc_release(num_elements=10,
     current_time=None):
     """
     initiailize a spill of type spill_obj, add it to a SpillContainer.
-    Invoke prepare_for_model_step and release_elements on SpillContainer, then
-    return the spill container object
+    Invoke release_elements on SpillContainer, then return the spill container
+    object
     """
     if spill is None:
         spill = gnome.spill.PointLineSource(num_elements, start_pos,
@@ -83,9 +83,8 @@ def sample_sc_release(num_elements=10,
     sc.spills.add(spill)
 
     # used for testing so just assume there is a Windage array
-    sc.prepare_for_model_run(spill.release_time, arr_types)
+    sc.prepare_for_model_run(arr_types)
     sc.release_elements(time_step, current_time)
-    sc.prepare_for_model_step(time_step, current_time)
     return sc
 
 
