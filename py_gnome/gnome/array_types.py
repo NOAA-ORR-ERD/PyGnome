@@ -21,6 +21,9 @@ movers needs
 
 '''
 
+import sys
+import inspect
+
 from gnome.basic_types import (
     world_point_type,
     windage_type,
@@ -122,20 +125,53 @@ class IdArrayType(ArrayType):
         return array
 
 
-# Required array types - dict defined by SpillContainer
-positions = ArrayType((3,), world_point_type)
-next_positions = ArrayType((3,), world_point_type)
-last_water_positions = ArrayType((3,), world_point_type)
-status_codes = ArrayType((), status_code_type, oil_status.in_water)
-spill_num = ArrayType((), id_type, -1)
-id = IdArrayType((), np.uint32)
-mass = ArrayType((), np.float64)
+# SpillContainer manipulates initial_value property to initialize 'spill_num'
+# and 'element_id' properly. Referencing global ArrayType objects for this
+# means the initial values may not get reset. Need a function to reset
+# to default values
+_default_values = \
+    {'positions': ((3,), world_point_type, (0., 0., 0.)),
+     'next_positions': ((3,), world_point_type, (0., 0., 0.)),
+     'last_water_positions': ((3,), world_point_type, (0., 0., 0.)),
+     'status_codes': ((), status_code_type, oil_status.in_water),
+     'spill_num': ((), id_type, 0),
+     'id': ((), np.uint32, 0, IdArrayType),
+     'mass': ((), np.float64, 0),
+     'windages': ((), windage_type, 0),
+     'windage_range': ((2,), np.float64, (0., 0.)),
+     'windage_persist': ((), np.int, 0),
+     'rise_vel': ((), np.float64, 0.),
+     }
 
-# ArrayTypes required by movers. dict defined by movers
-windages = ArrayType((), windage_type)
-windage_range = ArrayType((2,), np.float64)
-windage_persist = ArrayType((), np.int)
-rise_vel = ArrayType((), np.float64)
+
+# dynamically create the ArrayType objects in this module from _default_values
+# dict
+for key, val in _default_values.iteritems():
+    if len(val) > 3:
+        vars()[key] = val[3](shape=_default_values[key][0],
+                             dtype=_default_values[key][1],
+                             initial_value=_default_values[key][2])
+    else:
+        vars()[key] = ArrayType(shape=_default_values[key][0],
+                                dtype=_default_values[key][1],
+                                initial_value=_default_values[key][2])
+
+
+# use reflection to:
+#    define a function to reset all ArrayTypes to defaults
+_to_reset = inspect.getmembers(sys.modules[__name__], predicate=lambda members:
+                               (False, True)[isinstance(members, ArrayType)])
+_at_names = [item[0] for item in _to_reset]
+
+
+def reset_to_defaults(names=_at_names):
+    for item in _to_reset:
+        if item[0] in names:
+            obj = eval(item[0])
+            obj.shape = _default_values[item[0]][0]
+            obj.dtype = _default_values[item[0]][1]
+            obj.initial_value = _default_values[item[0]][2]
+
 
 ## TODO: Find out if this is still required?
 # water_currents = ArrayType( (3,), basic_types.water_current_type)

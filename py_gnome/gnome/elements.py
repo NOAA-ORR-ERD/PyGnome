@@ -54,6 +54,7 @@ class InitWindagesConstantParams(object):
             self.windage_persist
 
         # initialize all windages - ignore persistence during initialization
+        # if we have infinite persistence, these values are never updated
         random_with_persistance(
                     data_arrays['windage_range'][-num_new_particles:][:, 0],
                     data_arrays['windage_range'][-num_new_particles:][:, 1],

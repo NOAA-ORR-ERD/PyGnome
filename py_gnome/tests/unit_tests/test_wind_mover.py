@@ -7,8 +7,7 @@ import pytest
 from hazpy import unit_conversion
 
 from gnome.basic_types import (datetime_value_2d,
-                               ts_format,
-                               world_point_type)
+                               ts_format)
 
 from gnome import environment
 from gnome import array_types
@@ -21,7 +20,7 @@ from gnome.utilities import convert
 from gnome.movers import WindMover, constant_wind_mover, \
     wind_mover_from_file
 
-from gnome.spill import PointLineSource, SpatialRelease
+from gnome.spill import PointLineSource
 from gnome.spill_container import SpillContainer
 
 from conftest import sample_sc_release
@@ -189,7 +188,6 @@ class TestWindMover:
         Test the get_move(...) results in WindMover match the expected delta
         """
 
-        self.sc.prepare_for_model_step(self.model_time)
         self.wm.prepare_for_model_step(self.sc, self.time_step,
                                        self.model_time)
 
@@ -273,9 +271,8 @@ def test_windage_index():
     windage = {'windages': array_types.windages,
                'windage_range': array_types.windage_range,
                'windage_persist': array_types.windage_persist}
-    sc.prepare_for_model_run(rel_time,
-                             array_types=windage)
-    sc.release_elements(rel_time, timestep)
+    sc.prepare_for_model_run(array_types=windage)
+    sc.release_elements(timestep, rel_time)
     wm = WindMover(environment.ConstantWind(5, 0))
     wm.prepare_for_model_step(sc, timestep, rel_time)
     wm.model_step_is_done()  # need this to toggle _windage_is_set_flag
@@ -295,11 +292,10 @@ def test_windage_index():
                               (sp.element_type.initializers["windages"].
                               windage_range[0]))
 
-    # only 1st sc is released
-
+    # only 1st spill is released
     _check_index(sc)  # 1st ASSERT
 
-    sc.release_elements(rel_time + timedelta(hours=1), timestep)
+    sc.release_elements(timestep, rel_time + timedelta(hours=1))
     wm.prepare_for_model_step(sc, timestep, rel_time)
     _check_index(sc)  # 2nd ASSERT
 
@@ -312,23 +308,13 @@ def test_timespan():
 
     time_step = 15 * 60  # seconds
 
-    # todo: hack for now, but should try to use same sc for all tests
-
     start_pos = (3., 6., 0.)
     rel_time = datetime(2012, 8, 20, 13)  # yyyy/month/day/hr/min/sec
 
-    # fixme: what to do about persistance?
-
     sc = sample_sc_release(5, start_pos, rel_time)
-    sc.release_elements(datetime.now(), time_step=100)
-
-    # model_time = time_utils.sec_to_date(time_utils.date_to_sec(rel_time) + 1)
-
-    model_time = rel_time
-    sc.prepare_for_model_step(model_time)  # release particles
 
     # value is given as (r,theta)
-
+    model_time = rel_time
     time_val = np.zeros((1, ), dtype=datetime_value_2d)
     time_val['time'] = np.datetime64(rel_time.isoformat())
     time_val['value'] = (2., 25.)
@@ -350,9 +336,7 @@ def test_timespan():
     wm.model_step_is_done()
 
     assert wm.active == True
-    print '''
- test_timespan: delta 
-{0}'''.format(delta)
+    print '''\ntest_timespan delta \n{0}'''.format(delta)
     assert np.all(delta[:, :2] != 0)  # model_time + time_step > active_start
 
 
@@ -361,20 +345,10 @@ def test_active():
 
     time_step = 15 * 60  # seconds
 
-    # todo: hack for now, but should try to use same sc for all tests
-
     start_pos = (3., 6., 0.)
     rel_time = datetime(2012, 8, 20, 13)  # yyyy/month/day/hr/min/sec
 
-    # fixme: what to do about persistance?
-
     sc = sample_sc_release(5, start_pos, rel_time)
-    sc.release_elements(datetime.now(), time_step=100)
-
-    # model_time = time_utils.sec_to_date(time_utils.date_to_sec(rel_time) + 1)
-
-    model_time = rel_time
-    sc.prepare_for_model_step(model_time)  # release particles
 
     # value is given as (r,theta)
 
@@ -386,8 +360,8 @@ def test_active():
                    units='meter per second'), on=False)
 
     wm.prepare_for_model_run()
-    wm.prepare_for_model_step(sc, time_step, model_time)
-    delta = wm.get_move(sc, time_step, model_time)
+    wm.prepare_for_model_step(sc, time_step, rel_time)
+    delta = wm.get_move(sc, time_step, rel_time)
     wm.model_step_is_done()
     assert wm.active == False
     assert np.all(delta == 0)  # model_time + time_step = active_start

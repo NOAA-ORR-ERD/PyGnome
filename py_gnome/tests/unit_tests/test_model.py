@@ -80,6 +80,7 @@ def test_start_time():
     st = datetime.now()
     model.start_time = st
     assert model.start_time == st
+    assert model.current_time_step == -1
 
     model.step()
 
@@ -88,6 +89,65 @@ def test_start_time():
 
     assert model.current_time_step == -1
     assert model.start_time == st
+
+
+def test_model_time_and_current_time_in_sc():
+    model = Model()
+    model.start_time = datetime.now()
+
+    assert model.current_time_step == -1
+    assert model.model_time == model.start_time
+
+    for step in range(4):
+        model.step()
+
+        assert model.current_time_step == step
+        assert model.model_time == model.start_time + timedelta(seconds=step
+                                                            * model.time_step)
+
+        for sc in model.spills.items():
+            assert model.model_time == sc.current_time_stamp
+
+
+# todo: look at case where duration is 1 hour - it seems to remove 1st particle
+# not sure why. The GnomeMap()._set_off_map_status() seems to remove it - again
+# not sure why
+@pytest.mark.parametrize("duration", [1.25])
+def test_release_end_of_step(duration):
+    """
+    tests that elements released at end of step are recorded with their
+    initial conditions with correct timestamp
+    """
+    model = Model(time_step=timedelta(minutes=15),
+                  duration=timedelta(hours=duration))
+
+    model.spills += PointLineSource(10, (0.0, 0.0, 0.0), model.start_time,
+                        end_release_time=model.start_time + model.duration)
+
+    model.movers += SimpleMover(velocity=(1., -1., 0.0))
+
+    print "\n---------------------------------------------"
+    print 'model_start_time: {0}'.format(model.start_time)
+
+    prev_rel = len(model.spills.LE('positions'))
+    for step in model:
+        new_particles = len(model.spills.LE('positions')) - prev_rel
+        if new_particles > 0:
+            assert np.all(model.spills.LE('positions')[-new_particles:, :] ==
+                          0)
+
+        if prev_rel > 0:
+            assert np.all(model.spills.LE('positions')[:prev_rel, :2] != 0)
+
+        prev_rel = len(model.spills.LE('positions'))
+
+        print 'current_time_stamp: {0}'.format(
+                                        model.spills.LE('current_time_stamp'))
+        print 'particle ID: {0}'.format(model.spills.LE('id'))
+        print 'positions: \n{0}'.format(model.spills.LE('positions'))
+        print 'just ran time step: %s\n' % step
+
+    print "\n---------------------------------------------"
 
 
 def test_timestep():

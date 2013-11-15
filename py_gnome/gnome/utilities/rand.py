@@ -82,7 +82,6 @@ def random_with_persistance(
         interval
         """
         array[:] = np.random.uniform(low, high)
-        print array
     else:
         """
         if persistence == time_step, then no need to scale the [low, high]
