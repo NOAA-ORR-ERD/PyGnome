@@ -142,7 +142,7 @@ class NetCDFOutput(Outputter, serializable.Serializable):
         serializable.Field('netcdf_filename', create=True,
                            update=True),
         serializable.Field('all_data', create=True, update=True),
-        serializable.Field('format', create=True, update=True),
+        serializable.Field('netcdf_format', create=True, update=True),
         serializable.Field('compress', create=True, update=True),
         serializable.Field('_start_idx', create=True),
         serializable.Field('_middle_of_run', create=True),
