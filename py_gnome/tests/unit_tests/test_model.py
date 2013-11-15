@@ -109,7 +109,10 @@ def test_model_time_and_current_time_in_sc():
             assert model.model_time == sc.current_time_stamp
 
 
-@pytest.mark.parametrize("duration", [1.5])
+# todo: look at case where duration is 1 hour - it seems to remove 1st particle
+# not sure why. The GnomeMap()._set_off_map_status() seems to remove it - again
+# not sure why
+@pytest.mark.parametrize("duration", [1.25])
 def test_release_end_of_step(duration):
     """
     tests that elements released at end of step are recorded with their
@@ -126,7 +129,18 @@ def test_release_end_of_step(duration):
     print "\n---------------------------------------------"
     print 'model_start_time: {0}'.format(model.start_time)
 
+    prev_rel = len(model.spills.LE('positions'))
     for step in model:
+        new_particles = len(model.spills.LE('positions')) - prev_rel
+        if new_particles > 0:
+            assert np.all(model.spills.LE('positions')[-new_particles:, :] ==
+                          0)
+
+        if prev_rel > 0:
+            assert np.all(model.spills.LE('positions')[:prev_rel, :2] != 0)
+
+        prev_rel = len(model.spills.LE('positions'))
+
         print 'current_time_stamp: {0}'.format(
                                         model.spills.LE('current_time_stamp'))
         print 'particle ID: {0}'.format(model.spills.LE('id'))
