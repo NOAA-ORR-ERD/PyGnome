@@ -7,8 +7,6 @@ designed to be run with py.test
 import datetime
 import numpy as np
 
-import gnome
-
 from gnome.movers import RandomMover
 
 from gnome.utilities.time_utils import sec_to_date, date_to_sec
@@ -114,7 +112,7 @@ def test_variance1(start_loc, time_step):
     model_time = start_time
     for i in range(num_steps):
         model_time += datetime.timedelta(seconds=time_step)
-        sc.prepare_for_model_step(model_time)
+        sc.release_elements(time_step, model_time)
         rand.prepare_for_model_step(sc, time_step, model_time)
         delta = rand.get_move(sc, time_step, model_time)
 

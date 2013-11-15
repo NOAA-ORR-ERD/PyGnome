@@ -190,13 +190,11 @@ def test_element_types(elem_type, arr_types, sample_sc_no_uncertainty):
 
     time_step = 3600
     num_steps = 4   # just run for 4 steps
-    sc.prepare_for_model_run(release_t, arr_types)
+    sc.prepare_for_model_run(arr_types)
 
     for step in range(num_steps):
         current_time = release_t + timedelta(seconds=time_step * step)
-        sc.prepare_for_model_step(current_time)
-        sc.release_elements(current_time, time_step)
-        assert sc.current_time_stamp == current_time
+        sc.release_elements(time_step, current_time)
 
         for spill in sc.spills:
             spill.element_type

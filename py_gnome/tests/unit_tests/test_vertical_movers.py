@@ -63,7 +63,6 @@ def test_one_move(test_sc):
     r_vel = RiseVelocityMover()
     r_vel.prepare_for_model_run()
 
-    test_sc.prepare_for_model_step(model_time)
     r_vel.prepare_for_model_step(test_sc, time_step, model_time)
     delta_pos = r_vel.get_move(test_sc, time_step, model_time)
     r_vel.model_step_is_done()

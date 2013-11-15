@@ -294,22 +294,17 @@ class Model(serializable.Serializable):
             mover.prepare_for_model_run()
             array_types.update(mover.array_types)
 
-        # setup the current_time_stamp for the spill_container objects
-
         for sc in self.spills.items():
-            sc.prepare_for_model_run(self.model_time, array_types)
+            sc.prepare_for_model_run(array_types)
 
     def setup_time_step(self):
         """
         sets up everything for the current time_step:
-        
+
         right now only prepares the movers -- maybe more later?.
         """
 
         # initialize movers differently if model uncertainty is on
-
-        [sc.prepare_for_model_step(self.model_time) for sc in
-         self.spills.items()]
 
         for mover in self.movers:
             for sc in self.spills.items():
@@ -377,28 +372,45 @@ class Model(serializable.Serializable):
 
     def step(self):
         """
-        Steps the model forward (or backward) in time. Needs testing for hindcasting.
+        Steps the model forward (or backward) in time. Needs testing for
+        hind casting.
         """
 
-        if self.current_time_step >= self._num_time_steps - 1:  # it gets incremented after this check
+        for sc in self.spills.items():
+            # set the current time stamp only after current_time_step is
+            # incremented and before the output is written. Set it to None here
+            # just so we're not carrying around the old time_stamp
+            sc.current_time_stamp = None
+
+        # it gets incremented after this check
+        if self.current_time_step >= self._num_time_steps - 1:
             raise StopIteration
 
         if self.current_time_step == -1:
-            self.setup_model_run()  # that's all we need to do for the zeroth time step
+            # that's all we need to do for the zeroth time step
+            self.setup_model_run()
         else:
             self.setup_time_step()
             self.move_elements()
             self.step_is_done()
+
         self.current_time_step += 1
 
-        # # release_elements after the time step increment so that they will be there
-        # # but not yet moved, at the beginning of the release time.
-
+        # this is where the new step begins!
+        # the elements released are during the time period:
+        #    self.model_time + self.time_step
+        # The else part of the loop computes values for data_arrays that
+        # correspond with time_stamp:
+        #    self.model_time + self.time_step
+        # This is the current_time_stamp attribute of the SpillContainer
+        #     [sc.current_time_stamp for sc in self.spills.items()]
         for sc in self.spills.items():
-            sc.release_elements(self.model_time, self.time_step)
+            sc.current_time_stamp = self.model_time
+            sc.release_elements(self.time_step, self.model_time)
 
-        # cache the results
-
+        # cache the results - current_time_step is incremented but the
+        # current_time_stamp in spill_containers (self.spills) is not updated
+        # till we go through the prepare_for_model_step
         self._cache.save_timestep(self.current_time_step, self.spills)
         output_info = self.write_output()
         return output_info
@@ -406,8 +418,8 @@ class Model(serializable.Serializable):
     def __iter__(self):
         """
         for compatibility with Python's iterator protocol
-        
-        rewinds the model and returns itself so it can be iterated over. 
+
+        rewinds the model and returns itself so it can be iterated over.
         """
 
         self.rewind()
