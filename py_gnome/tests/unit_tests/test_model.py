@@ -109,6 +109,33 @@ def test_model_time_and_current_time_in_sc():
             assert model.model_time == sc.current_time_stamp
 
 
+@pytest.mark.parametrize("duration", [1, 1.5])
+def test_release_end_of_step(duration):
+    """
+    tests that elements released at end of step are recorded with their
+    initial conditions with correct timestamp
+    """
+    model = Model(time_step=timedelta(minutes=15),
+                  duration=timedelta(hours=duration))
+
+    model.spills += PointLineSource(10, (0.0, 0.0, 0.0), model.start_time,
+                        end_release_time=model.start_time + model.duration)
+
+    model.movers += SimpleMover(velocity=(1., -1., 0.0))
+
+    print "\n---------------------------------------------"
+    print 'model_start_time: {0}'.format(model.start_time)
+
+    for step in model:
+        print 'current_time_stamp: {0}'.format(
+                                        model.spills.LE('current_time_stamp'))
+        print 'particle ID: {0}'.format(model.spills.LE('id'))
+        print 'positions: \n{0}'.format(model.spills.LE('positions'))
+        print 'just ran time step: %s' % step
+
+    print "\n---------------------------------------------"
+
+
 def test_timestep():
     model = Model()
 
