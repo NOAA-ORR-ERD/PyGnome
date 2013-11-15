@@ -236,13 +236,15 @@ class SpillContainer(SpillContainerData):
         """
         reset _array_types dict so it contains default keys/values
         """
+        gnome.array_types.reset_to_defaults(['spill_num', 'id'])
+
         self._array_types = {'positions': gnome.array_types.positions,
-                'next_positions': gnome.array_types.next_positions,
-                'last_water_positions': gnome.array_types.last_water_positions,
-                'status_codes': gnome.array_types.status_codes,
-                'spill_num': gnome.array_types.spill_num,
-                'id': gnome.array_types.id,
-                'mass': gnome.array_types.mass}
+            'next_positions': gnome.array_types.next_positions,
+            'last_water_positions': gnome.array_types.last_water_positions,
+            'status_codes': gnome.array_types.status_codes,
+            'spill_num': gnome.array_types.spill_num,
+            'id': gnome.array_types.id,
+            'mass': gnome.array_types.mass}
         self._data_arrays = {}
 
     @property
@@ -376,14 +378,17 @@ class SpillContainer(SpillContainerData):
                     # particles - just another way to set value of spill_num
                     # correctly
                     self._array_types['spill_num'].initial_value = \
-                                    self.spills.index(spill.id,
-                                                      renumber=False)
-                    # unique identifier for each new element released
-                    # this adjusts the _array_types initial_value since the
-                    # initialize function just calls:
-                    #  range(initial_value, num_released + initial_value)
-                    self._array_types['id'].initial_value = \
-                        len(self['spill_num'])
+                                    self.spills.index(spill.id, renumber=False)
+
+                    if len(self['spill_num']) > 0:
+                        # unique identifier for each new element released
+                        # this adjusts the _array_types initial_value since the
+                        # initialize function just calls:
+                        #  range(initial_value, num_released + initial_value)
+                        self._array_types['id'].initial_value = \
+                                        self['id'][-1] + 1
+                    #else:
+                    #    self._array_types['id'].initial_value = 0
 
                     # append to data arrays
                     self._append_data_arrays(num_released)

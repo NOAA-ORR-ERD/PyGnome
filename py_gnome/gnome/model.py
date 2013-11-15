@@ -395,7 +395,9 @@ class Model(serializable.Serializable):
             self.move_elements()
             self.step_is_done()
 
-        # this is where the next step begins!
+        self.current_time_step += 1
+
+        # this is where the step ends!
         # the elements released are during the time period:
         #    self.model_time + self.time_step
         # The else part of the loop computes values for data_arrays that
@@ -403,15 +405,12 @@ class Model(serializable.Serializable):
         #    self.model_time + self.time_step
         # This is the current_time_stamp attribute of the SpillContainer
         #     [sc.current_time_stamp for sc in self.spills.items()]
-        self.current_time_step += 1
-
-        # release_elements after the time step increment so that they will be
-        # there but not yet moved, at the beginning of the release time.
         for sc in self.spills.items():
             sc.release_elements(self.time_step, self.model_time)
 
-        # cache the results
-
+        # cache the results - current_time_step is incremented but the
+        # current_time_stamp in spill_containers (self.spills) is not updated
+        # till we go through the prepare_for_model_step
         self._cache.save_timestep(self.current_time_step, self.spills)
         output_info = self.write_output()
         return output_info
