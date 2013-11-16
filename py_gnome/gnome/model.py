@@ -228,12 +228,12 @@ class Model(serializable.Serializable):
         try:
             self._time_step = time_step.total_seconds()
         except AttributeError:
-
-                               # not a timedelta object -- assume it's in seconds.
-
+            # not a timedelta object -- assume it's in seconds.
             self._time_step = int(time_step)
+
+        # there is a zeroth time step
         self._num_time_steps = int(self._duration.total_seconds()
-                                   // self._time_step) + 1  # there is a zeroth time step
+                                   // self._time_step) + 1  
         self.rewind()
 
     @property
