@@ -233,7 +233,7 @@ class Model(serializable.Serializable):
 
         # there is a zeroth time step
         self._num_time_steps = int(self._duration.total_seconds()
-                                   // self._time_step) + 1  
+                                   // self._time_step) + 1
         self.rewind()
 
     @property
@@ -283,9 +283,9 @@ class Model(serializable.Serializable):
         self.spills.rewind()  # why is rewind for spills here?
 
         for outputter in self.outputters:
-            outputter.prepare_for_model_run(self._cache,
-                                            model_start_time=self.start_time,
+            outputter.prepare_for_model_run(model_start_time=self.start_time,
                                             num_time_steps=self.num_time_steps,
+                                            cache=self._cache,
                                             uncertain=self.uncertain,
                                             spills=self.spills)
 
@@ -311,7 +311,7 @@ class Model(serializable.Serializable):
                 mover.prepare_for_model_step(sc, self.time_step,
                         self.model_time)
         for outputter in self.outputters:
-            outputter.prepare_for_model_step()
+            outputter.prepare_for_model_step(self.time_step, self.model_time)
 
     def move_elements(self):
         """

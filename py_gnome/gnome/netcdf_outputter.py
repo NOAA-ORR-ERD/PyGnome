@@ -170,11 +170,11 @@ class NetCDFOutput(Outputter, serializable.Serializable):
     def __init__(
         self,
         netcdf_filename,
-        cache=None,
         all_data=False,
         netcdf_format='NETCDF4',
         compress=True,
         id=None,
+        **kwargs
         ):
         """
         .. function:: __init__(netcdf_filename, cache=None, all_data=False,
@@ -185,22 +185,28 @@ class NetCDFOutput(Outputter, serializable.Serializable):
         :param netcdf_filename: Required parameter. The filename in which to
             store the NetCDF data.
         :type netcdf_filename: str. or unicode
-        :param cache: A cache object. Default is None, but this is required
-            before calling write_output. This will generally be set
-            automatically by the model.
-        :type cache: As defined in cache module (gnome.utilities.cache).
-            Currently only ElementCache is defined/used.
         :param all_data: If true, write all data to NetCDF, otherwise write
             only standard data. Default is False.
         :type all_data: bool
         :param id: Unique Id identifying the newly created mover (a UUID as a
             string). This is used when loading an object from a persisted
             state. User should never have to set this.
+
+        Optional arguments (kwargs):
+
+        :param cache: A cache object. Default is None, but this is required
+            before calling write_output. This will generally be set
+            automatically by the model.
+        :type cache: As defined in cache module (gnome.utilities.cache).
+            Currently only ElementCache is defined/used.
+        :param output_timestep: default is None
+        :type output_timestep: timedelta object
+
+        use super to pass optional **kwargs to base class __init__ method
         """
 
         self._check_netcdf_filename(netcdf_filename)
         self._netcdf_filename = netcdf_filename
-        self.cache = cache
         self._uncertain = False
         self._u_netcdf_filename = None
 
@@ -220,6 +226,7 @@ class NetCDFOutput(Outputter, serializable.Serializable):
         self._start_idx = 0
 
         self._gnome_id = gnome.GnomeId(id)
+        super(NetCDFOutput, self).__init__(**kwargs)
 
     @property
     def id(self):
@@ -310,16 +317,17 @@ class NetCDFOutput(Outputter, serializable.Serializable):
 
     def prepare_for_model_run(
         self,
+        model_start_time,
+        num_time_steps,
         cache=None,
-        model_start_time=None,
-        num_time_steps=None,
         uncertain=False,
         spills=None,
         **kwargs
         ):
         """
-        .. function:: prepare_for_model_run(cache=None, model_start_time=None,
-                num_time_steps=None, uncertain=False, spills=None, **kwargs)
+        .. function:: prepare_for_model_run(model_start_time,
+                num_time_steps, cache=None, uncertain=False, spills=None,
+                **kwargs)
 
         Write global attributes and define dimensions and variables for NetCDF
         file. This must be done in prepare_for_model_run because if model state
@@ -336,16 +344,6 @@ class NetCDFOutput(Outputter, serializable.Serializable):
         the data itself is different, but they contain the same type of data
         arrays.
 
-        :param cache=None: Sets the cache object to be used for the data.
-            If None, it will use the one already set up.
-        :type cache: As defined in cache module (gnome.utilities.cache).
-            Currently only ElementCache is defined/used.
-        :param model_start_time: (Required) start time of the model run. NetCDF
-            time units calculated with respect to this time.
-        :type model_start_time: datetime.datetime object
-        :param num_time_steps: (Required) total number of time steps for the
-            run. Currently this is known and fixed.
-        :type num_time_steps: int
         :param uncertain: Default is False. Model automatically sets this based
             on whether uncertainty is on or off. If this is True then a
             uncertain data is written to netcdf_filename + '_uncertain.nc'
@@ -361,14 +359,13 @@ class NetCDFOutput(Outputter, serializable.Serializable):
         Does not take any other input arguments; however, to keep the interface
             the same for all outputters, define **kwargs incase future
             outputters require different arguments.
+
+        use super to pass model_start_time, num_time_steps, cache=None and
+        remaining **kwargs to base class method
         """
 
-        if cache is not None:
-            self.cache = cache
-
-        if model_start_time is None or num_time_steps is None:
-            raise TypeError('model_start_time and num_time_steps cannot be'
-                            ' NoneType')
+        super(NetCDFOutput, self).prepare_for_model_run(model_start_time,
+                num_time_steps, cache, **kwargs)
 
         if self.all_data and spills is None:
             raise ValueError("'all_data' flag is True, however spills is None."
@@ -399,13 +396,13 @@ class NetCDFOutput(Outputter, serializable.Serializable):
                 rootgrp.institution = self.cf_attributes['institution']
                 rootgrp.convention = self.cf_attributes['conventions']
 
-                rootgrp.createDimension('time', num_time_steps)
+                rootgrp.createDimension('time', self._num_time_steps)
                 rootgrp.createDimension('data', 0)
 
                 time_ = rootgrp.createVariable('time', np.double,
                         ('time', ), zlib=self._compress)
                 time_.units = 'seconds since {0}'.format(
-                            model_start_time.isoformat().replace('T', ' '))
+                        self._model_start_time.isoformat().replace('T', ' '))
                 time_.long_name = 'time'
                 time_.standard_name = 'time'
                 time_.calendar = 'gregorian'
@@ -463,11 +460,14 @@ class NetCDFOutput(Outputter, serializable.Serializable):
         :param step_num: The model's current timestep for which data is being
             written. model.current_time_step
         :type step_num: int
+
+        use super to call base class write_output method
         """
 
-        if self.cache is None:
-            raise ValueError('cache object is not defined. It is required'
-                             ' prior to calling write_output')
+        super(NetCDFOutput, self).write_output(step_num)
+
+        if not self._write_step:
+            return None
 
         for sc in self.cache.load_timestep(step_num).items():
             if sc.uncertain and self._u_netcdf_filename is not None:
@@ -513,6 +513,9 @@ class NetCDFOutput(Outputter, serializable.Serializable):
                                     _end_idx, :] = sc[key]
 
         self._start_idx = _end_idx  # set _start_idx for the next timestep
+
+        # update self._next_output_time if data is successfully written
+        self._update_output_timestep(step_num, time_stamp)
         return {'step_num': step_num,
                 'netcdf_filename': (self.netcdf_filename,
                 self._u_netcdf_filename), 'time_stamp': time_stamp}

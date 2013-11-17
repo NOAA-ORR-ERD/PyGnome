@@ -308,9 +308,13 @@ def test_write_output_post_run(model):
 
     # now write netcdf output
 
-    o_put.prepare_for_model_run(model._cache, model.start_time,
-                                model.num_time_steps, model.uncertain)
+    o_put.prepare_for_model_run(model.start_time,
+                                model.num_time_steps,
+                                model._cache,
+                                model.uncertain)
     for step_num in range(model.num_time_steps):
+        # no need for prepare_for_model_step since output_timestep is None.
+        # So every single timestep is written out
         write_info = o_put.write_output(step_num)
         print write_info
 

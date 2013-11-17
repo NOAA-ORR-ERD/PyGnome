@@ -10,30 +10,31 @@ import glob
 import string
 import shutil
 
-import netCDF4 as nc
+#import netCDF4 as nc
 
-import gnome
+import gnome    # used implicitly by eval()
 from gnome.netcdf_outputter import NetCDFOutput
 
 from gnome.persist import (
     modules_dict,
-    environment_schema,
-    model_schema,
-    movers_schema,
-    spills_schema,
-    map_schema,
-    outputters_schema)
+    environment_schema,     # used implicitly by eval()
+    model_schema,           # used implicitly by eval()
+    movers_schema,          # used implicitly by eval()
+    spills_schema,          # used implicitly by eval()
+    map_schema,             # used implicitly by eval()
+    outputters_schema       # used implicitly by eval()
+    )
 
 
 class Scenario(object):
 
-    """ 
+    """
     Create a class that contains functionality to load/save a model scenario
     """
 
     def __init__(self, saveloc, model=None):
         """
-        Constructor for a Scenario object. It's main function is to either 
+        Constructor for a Scenario object. It's main function is to either
         'save' and model or to 'load' an already existing model. If a model is
         loaded from saveloc, the 'model' attribute will contain the re-created
         model object.
@@ -41,14 +42,14 @@ class Scenario(object):
         'saveloc' is given as /path_to_save_directory/save_directory
         if /path_to_save_directory does not exist, then a ValueError is raised
         if save_directory does not exist, it is created and is empty
-        
+
         If save_directory exists but is not empty, then the save() method
         will clobber all the files in here. The save_directory only contains
-        all the files associated with a single PyGnome Model 
-        
+        all the files associated with a single PyGnome Model
+
         All object's being persisted must use the serializable.Serializable
         class as a mixin or they must define the same methods/attributes.
-        
+
         :param saveloc: A valid directory. Model files are either persisted
                         here or a new model is re-created from the files
                         stored here. The files are clobbered when save() is
@@ -56,7 +57,7 @@ class Scenario(object):
         :type saveloc: A path as a string or unicode
         :param model: A model object. Only required if save method is invoked.
         :type model: gnome.model.Model object
-        
+
         .. note:: If user wants to save a scenario, then model must be set
         """
         (path_, savedir) = os.path.split(saveloc)
@@ -70,22 +71,22 @@ class Scenario(object):
         self.model = model
         self._certainspill_data = os.path.join(self.saveloc,
                 'spills_data_arrays.nc')
-        
+
         # will be updated when _certainspill_data is saved
-        self._uncertainspill_data = None  
+        self._uncertainspill_data = None
 
     def save(self):
         """
         Method used to save the model state to saveloc
         It saves the state of each object, including the model in JSON format
         in *.json files.
-        
+
         Clobber any existing files in 'saveloc'. It will only contain the
         files associated with 'model' that user wishes to save.
         """
-        
+
         self._empty_save_dir()
-        
+
         if self.model is None:
             raise AttributeError('A model needs to be defined before it'\
                                  ' can be saved')
@@ -105,14 +106,14 @@ class Scenario(object):
             self._save_collection(sc.spills)
 
         # persist model state since middle of run
-        if self.model.current_time_step > -1:  
+        if self.model.current_time_step > -1:
             self._save_spill_data()
 
     def load(self):
         """
         reconstruct the model from saveloc. It stores the re-created model
         inside 'model' attribute. Function also returns the recreated model.
-        
+
         :returns: a model object re-created from the save files
         """
 
@@ -146,13 +147,13 @@ class Scenario(object):
         return self.model
 
     def dict_to_json(self, dict_):
-        """ 
+        """
         convert the dict returned by object's to_dict method to valid json
         format via colander schema
-        
+
         It uses the modules_dict defined in gnome.persist to find the correct
         schema module.
-        
+
         :param dict_: dictionary returned by object's to_dict method.
         :type dict_: dictionary containing object properties
         """
@@ -170,7 +171,7 @@ class Scenario(object):
         containing a list of objects. It calls the to_dict method for each
         object, then converts it o valid json (dict_to_json),
         and finally saves it to file (_save_json_to_file)
-        
+
         :param coll_: ordered collection or iterable
         """
 
@@ -181,7 +182,7 @@ class Scenario(object):
     def _save_json_to_file(self, data, obj):
         """
         write json data to file
-        :param data: dict containing json data 
+        :param data: dict containing json data
         :param obj: gnome object corresponding w/ data
         """
 
@@ -216,10 +217,10 @@ class Scenario(object):
 
     def json_to_dict(self, json_):
         """
-        Function used when loading a model scenario. 
+        Function used when loading a model scenario.
         convert the dict returned by object's to_dict method to valid json
         format via colander schema
-        
+
         :param json_: dict containing json_ data
         """
 
@@ -231,9 +232,9 @@ class Scenario(object):
         return _to_dict
 
     def dict_to_obj(self, obj_dict):
-        """ 
+        """
         create object from a dict. The dict contains (keyword,value) pairs
-        used to create new object 
+        used to create new object
         """
 
         type_ = obj_dict.pop('obj_type')
@@ -242,10 +243,10 @@ class Scenario(object):
         return obj
 
     def load_model_dict(self):
-        """ 
-        Load model dict from *.json file. 
-        Pop 'map' key, create 'map' object and add to model dict. 
-        This dict is used in Model.new_from_dict(dict_) to create new Model 
+        """
+        Load model dict from *.json file.
+        Pop 'map' key, create 'map' object and add to model dict.
+        This dict is used in Model.new_from_dict(dict_) to create new Model
         """
 
         model_file = glob.glob(os.path.join(self.saveloc, 'Model_*.json'
@@ -254,7 +255,7 @@ class Scenario(object):
             raise ValueError('No Model_*.json files find in {0}'\
                              .format(self.saveloc))
         elif len(model_file) > 1:
-            raise ValueError("multiple Model_*.json files found in {0}. Please"\
+            raise ValueError("multiple Model_*.json files found in {0}. Please"
                              " provide 'filename'".format(self.saveloc))
         else:
             model_file = model_file[0]
@@ -268,9 +269,9 @@ class Scenario(object):
         obj_json = self._find_and_load_json_file(map_id)
 
         dict_ = self.json_to_dict(obj_json)
-        map = self.dict_to_obj(dict_)
+        map_ = self.dict_to_obj(dict_)
 
-        model_dict['map'] = map  # replace map object in the dict
+        model_dict['map'] = map_  # replace map object in the dict
 
         return model_dict
 
@@ -296,18 +297,18 @@ class Scenario(object):
     def _find_and_load_json_file(self, id_):
         """
         Given the id of the object, find the *_{id}.json file that contains
-        json of the object and load it. 
+        json of the object and load it.
         """
 
         obj_file = glob.glob(os.path.join(self.saveloc,
                              '*_{0}.json'.format(id_)))
         if len(obj_file) == 0:
             msg = 'No filename containing *_{0}.json found in {1}'
-            raise IOError(msg.format(id_,os.path.abspath('.')))
+            raise IOError(msg.format(id_, os.path.abspath('.')))
         elif len(obj_file) > 1:
             msg = 'Cannot have two objects with same Id. Multiple'\
                   ' filenames containing *_{0}.json found in {1}'
-            raise IOError(msg.format(id_,os.path.abspath(self.saveloc)))
+            raise IOError(msg.format(id_, os.path.abspath(self.saveloc)))
 
         obj_file = obj_file[0]
         obj_json = self._load_json_from_file(os.path.abspath(obj_file))
@@ -316,15 +317,15 @@ class Scenario(object):
     def _load_collection(self, coll_dict):
         """
         Load collection - dict contains output of OrderedCollection.to_dict()
-        
+
         'dtype' - currently not used for anything
         'id_list' - for each object in list, use this to find and load the
                     json file, convert it to a valid dict, then create a new
                     object using new_from_dict 'id_list' contains a list of
                     tuples (object_type, id of object)
-        
+
         :returns: a list of objects corresponding with the data in 'id_list'
-        
+
         .. note:: while this applies to ordered collections. It can work for
                   any iterable that contains 'id_list' in the dict with above
                   format.
@@ -343,13 +344,13 @@ class Scenario(object):
         """
         add movers to the model - dict contains the output of
         OrderedCollection.to_dict()
-        
+
         'dtype' - not used for anything
         'id_list' - for each object in list, use this to find and load the json
                     file, convert it to a valid dict, then create a new object
                     using new_from_dict 'id_list' contains a list of tuples
                     (object_type, id of object)
-        
+
         .. note:: If Wind object and Tide object are present, the objects must
                   be created and part of a list passed in as l_env
         """
@@ -376,19 +377,19 @@ class Scenario(object):
 
         return obj_list
 
-    def _get_obj(self, list_, id):
+    def _get_obj(self, list_, id_):
         """
         Get object by ID from list of objects
         """
 
-        obj = [obj for obj in list_ if id in obj.id]
+        obj = [obj for obj in list_ if id_ in obj.id]
         if len(obj) == 0:
-            msg = 'List does not contain an object with id: {0}'
-            raise ValueError(msg.format(id))
+            msg = 'List does not contain an object with id_: {0}'
+            raise ValueError(msg.format(id_))
 
         if len(obj) > 1:
-            msg = 'List contains more than one object with id: {0}'
-            raise ValueError(msg.format(id))
+            msg = 'List contains more than one object with id_: {0}'
+            raise ValueError(msg.format(id_))
 
         return obj[0]
 
@@ -429,16 +430,16 @@ class Scenario(object):
     def _empty_save_dir(self):
         '''
         Remove all files, directories under self.saveloc
-        
+
         First clean out directory, then add new save files
         This should only be called by self.save()
         '''
         (dirpath, dirnames, filenames) = os.walk(self.saveloc).next()
-        
+
         if dirnames:
             for dir_ in dirnames:
                 shutil.rmtree(os.path.join(dirpath, dir_))
-                
+
         if filenames:
             for file_ in filenames:
-                os.remove(os.path.join(dirpath,file_))
+                os.remove(os.path.join(dirpath, file_))

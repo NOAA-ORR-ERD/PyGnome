@@ -11,6 +11,7 @@ NOTE: some of these only really test if the code crashes
 
 import os
 import shutil
+from datetime import datetime
 
 import numpy.random as random
 
@@ -52,7 +53,8 @@ def test_file_delete():
         open(os.path.join(output_dir, fg_format % i), 'w'
              ).write('some junk')
 
-    r.prepare_for_model_run()
+    r.prepare_for_model_run(model_start_time=datetime.now(),
+                            num_time_steps=10)
 
     # there should only be a background image now.
 
