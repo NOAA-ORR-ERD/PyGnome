@@ -515,7 +515,8 @@ class NetCDFOutput(Outputter, serializable.Serializable):
         self._start_idx = _end_idx  # set _start_idx for the next timestep
 
         # update self._next_output_time if data is successfully written
-        self._update_output_timestep(step_num, time_stamp)
+        self._update_next_output_time(step_num, sc.current_time_stamp)
+
         return {'step_num': step_num,
                 'netcdf_filename': (self.netcdf_filename,
                 self._u_netcdf_filename), 'time_stamp': time_stamp}
@@ -524,8 +525,11 @@ class NetCDFOutput(Outputter, serializable.Serializable):
         """
         if rewound, delete both the files and expect prepare_for_model_run to
         be called since rewind means start from beginning.
+
+        Also call base class rewind to reset internal variables. Using super
         """
 
+        super(NetCDFOutput, self).rewind()
         if os.path.exists(self.netcdf_filename):
             os.remove(self.netcdf_filename)
 

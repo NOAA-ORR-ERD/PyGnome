@@ -40,7 +40,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     model.map = gnome.map.MapFromBNA(mapfile, refloat_halflife=1)  # seconds
 
     renderer = gnome.renderer.Renderer(mapfile, images_dir, size=(800,
-            600))
+            600), output_timestep=timedelta(hours=2))
     renderer.viewport = ((-76.5, 37.), (-75.8, 38.))
 
     print 'adding outputters'
@@ -89,3 +89,5 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     return model
 
 
+if __name__ == "__main__":
+    model = make_model()

@@ -194,7 +194,7 @@ class Renderer(Outputter, MapCanvas, serializable.Serializable):
         self.last_filename = image_filename
 
         # update self._next_output_time if data is successfully written
-        self._update_output_timestep(step_num, time_stamp)
+        self._update_next_output_time(step_num, sc.current_time_stamp)
 
         return {'step_num': step_num, 'image_filename': image_filename,
                 'time_stamp': time_stamp}

@@ -9,6 +9,8 @@ module to define classes for GNOME output:
 
 """
 
+from datetime import timedelta
+
 
 class Outputter(object):
 
@@ -20,7 +22,7 @@ class Outputter(object):
                  cache=None,
                  output_timestep=None,
                  output_zero_step=True,
-                 output_final_step=True):
+                 output_last_step=True):
         """
         sets attributes for all outputters, like output_timestep, cache
 
@@ -34,44 +36,21 @@ class Outputter(object):
             regardless of output_timestep
         :type output_zero_step: boolean
 
-        :param output_final_step: default is True. If True then output for
+        :param output_last_step: default is True. If True then output for
             final step is written regardless of output_timestep
-        :type output_final_step: boolean
+        :type output_last_step: boolean
         """
         self.cache = cache
         self.output_timestep = output_timestep
         self.output_zero_step = output_zero_step
-        self.output_final_step = output_final_step
+        self.output_last_step = output_last_step
 
-        # internally used variables - automatically set in
-        # prepare_for_model_run
-        self._model_start_time = None
-        self._num_time_steps = None
-        self._next_output_time = None
-        self._write_step = False  # boolean indicating whether to write output
-
-    def write_output(self, step_num):
-        """
-        called by the model at the end of each time step
-        """
-
-        if (step_num == 0 and self.output_zero_step):
-            self._write_step = True
-
-        if (step_num == self._num_time_steps - 1 and self.output_final_step):
-            self._write_step = True
-
-        if (self._write_step and self.cache is None):
-            raise ValueError('cache object is not defined. It is required'
-                             ' prior to calling write_output')
-
-        # if output_time_step is not set, then no need to call
-        # prepare_for_model_step. This is primarily useful when every timestep
-        # is written post model run. In this case, it is easier to call
-        # write_output() without messing with prepare_for_model_step which
-        # requires model_time as input
-        if self._next_output_time is None:
-            self._write_step = True
+        # internally used variables - set in prepare_for_model_run
+        self.rewind()
+        #self._model_start_time = None
+        #self._num_time_steps = None
+        #self._next_output_time = None
+        #self._write_step = False
 
     def prepare_for_model_run(self,
         model_start_time,
@@ -138,7 +117,8 @@ class Outputter(object):
 
         if self._next_output_time is not None:
             if (model_time < self._next_output_time and
-                self._next_output_time <= model_time + time_step):
+                self._next_output_time <= model_time + timedelta(
+                                                        seconds=time_step)):
                 self._write_step = True
 
     def model_step_is_done(self):
@@ -149,22 +129,48 @@ class Outputter(object):
 
         pass
 
+    def write_output(self, step_num):
+        """
+        called by the model at the end of each time step
+        This is the last operation after model_step_is_done()
+        """
+
+        if (step_num == 0 and self.output_zero_step):
+            self._write_step = True
+
+        if (step_num == self._num_time_steps - 1 and self.output_last_step):
+            self._write_step = True
+
+        if (self._write_step and self.cache is None):
+            raise ValueError('cache object is not defined. It is required'
+                             ' prior to calling write_output')
+
+        # if output_time_step is not set, then no need to call
+        # prepare_for_model_step. This is primarily useful when every timestep
+        # is written post model run. In this case, it is easier to call
+        # write_output() without messing with prepare_for_model_step which
+        # requires model_time as input
+        if self._next_output_time is None:
+            self._write_step = True
+
     def rewind(self):
         """
         called by model.rewind()
 
-        do what needs to be done to reset the outputter
+        reset variables set during prepare_for_model_run() to init conditions
         """
+        self._model_start_time = None
+        self._num_time_steps = None
+        self._next_output_time = None
+        self._write_step = False
 
-        pass
-
-    def _update_output_timestep(self, step_num, time_stamp):
+    def _update_next_output_time(self, step_num, time_stamp):
         """
         Internal method to update self._next_output_time by:
             self._next_output_time = self.time_stamp + self.output_timestep
 
-        Call only if data associated with time_stamp is written so as to update
-        the _next_output_time to determine if data should be written
+        Call only after data associated with time_stamp is written. This
+        function updates the _next_output_time
 
         :param time_stamp: datetime associated with data written by
             write_output
@@ -177,4 +183,4 @@ class Outputter(object):
             return
 
         if self.output_timestep is not None:
-            self._next_output_time = self.model_time + self.output_timestep
+            self._next_output_time = time_stamp + self.output_timestep

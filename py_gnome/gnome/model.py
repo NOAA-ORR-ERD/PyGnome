@@ -367,7 +367,9 @@ class Model(serializable.Serializable):
     def write_output(self):
         output_info = {'step_num': self.current_time_step}
         for outputter in self.outputters:
-            output_info.update(outputter.write_output(self.current_time_step))
+            output = outputter.write_output(self.current_time_step)
+            if output is not None:
+                output_info.update(output)
         return output_info
 
     def step(self):
