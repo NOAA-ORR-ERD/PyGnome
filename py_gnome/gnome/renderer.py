@@ -65,10 +65,31 @@ class Renderer(Outputter, MapCanvas, serializable.Serializable):
         image_size=(800, 600),
         cache=None,
         output_timestep=None,
+        output_zero_step=True,
+        output_last_step=True,
         **kwargs
         ):
         """
         Init the image renderer.
+
+        Following args are passed to base class Outputter's init:
+
+        :param cache: sets the cache object from which to read data. The model
+            will automatically set this param
+
+        :param output_timestep: default is None in which case everytime the
+            write_output is called, output is written. If set, then output is
+            written every output_timestep starting from model_start_time.
+        :type output_timestep: timedelta object
+
+        :param output_zero_step: default is True. If True then output for
+            initial step (showing initial release conditions) is written
+            regardless of output_timestep
+        :type output_zero_step: boolean
+
+        :param output_last_step: default is True. If True then output for
+            final step is written regardless of output_timestep
+        :type output_last_step: boolean
 
         Remaining kwargs are passed onto baseclass's __init__ with a direct
         call: MapCanvas.__init__(..)
@@ -93,7 +114,8 @@ class Renderer(Outputter, MapCanvas, serializable.Serializable):
 
         self._filename = filename
         polygons = haz_files.ReadBNA(filename, 'PolygonSet')
-        Outputter.__init__(self, cache, output_timestep)
+        Outputter.__init__(self, cache, output_timestep, output_zero_step,
+                           output_last_step)
         MapCanvas.__init__(self, image_size, land_polygons=polygons,
                            **kwargs)
 

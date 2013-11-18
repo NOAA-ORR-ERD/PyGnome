@@ -26,6 +26,9 @@ class Outputter(object):
         """
         sets attributes for all outputters, like output_timestep, cache
 
+        :param cache: sets the cache object from which to read data. The model
+            will automatically set this param
+
         :param output_timestep: default is None in which case everytime the
             write_output is called, output is written. If set, then output is
             written every output_timestep starting from model_start_time.
@@ -47,10 +50,6 @@ class Outputter(object):
 
         # internally used variables - set in prepare_for_model_run
         self.rewind()
-        #self._model_start_time = None
-        #self._num_time_steps = None
-        #self._next_output_time = None
-        #self._write_step = False
 
     def prepare_for_model_run(self,
         model_start_time,

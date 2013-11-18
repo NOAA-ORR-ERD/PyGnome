@@ -194,13 +194,22 @@ class NetCDFOutput(Outputter, serializable.Serializable):
 
         Optional arguments (kwargs):
 
-        :param cache: A cache object. Default is None, but this is required
-            before calling write_output. This will generally be set
-            automatically by the model.
-        :type cache: As defined in cache module (gnome.utilities.cache).
-            Currently only ElementCache is defined/used.
-        :param output_timestep: default is None
+        :param cache: sets the cache object from which to read data. The model
+            will automatically set this param
+
+        :param output_timestep: default is None in which case everytime the
+            write_output is called, output is written. If set, then output is
+            written every output_timestep starting from model_start_time.
         :type output_timestep: timedelta object
+
+        :param output_zero_step: default is True. If True then output for
+            initial step (showing initial release conditions) is written
+            regardless of output_timestep
+        :type output_zero_step: boolean
+
+        :param output_last_step: default is True. If True then output for
+            final step is written regardless of output_timestep
+        :type output_last_step: boolean
 
         use super to pass optional **kwargs to base class __init__ method
         """
