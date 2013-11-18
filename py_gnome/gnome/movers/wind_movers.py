@@ -42,10 +42,10 @@ class WindMoversBase(CyMover):
         The classes that inherit from this should define the self.mover object
         correctly so it has the required attributes.
 
-        Optional parameters (kwargs):
+        Input args with defaults:
 
-        :param uncertain_duration: (seconds) how often does a given uncertain
-                                   windage get re-set
+        :param uncertain_duration: (seconds) the randomly generated uncertainty
+            array gets recomputed based on 'uncertain_duration'
         :param uncertain_time_delay: when does the uncertainly kick in.
         :param uncertain_speed_scale: Scale for uncertainty in wind speed
             non-dimensional number
@@ -54,7 +54,8 @@ class WindMoversBase(CyMover):
         :param uncertain_angle_units: 'rad' or 'deg'. These are the units for
             the uncertain_angle_scale.
 
-        It calls super in the __init__ method
+        It calls super in the __init__ method and passes in the optional
+        parameters (kwargs)
         """
         super(WindMoversBase, self).__init__(**kwargs)
 
@@ -64,13 +65,11 @@ class WindMoversBase(CyMover):
 
         # also sets self._uncertain_angle_units
         self.set_uncertain_angle(uncertain_angle_scale, uncertain_angle_units)
-		 
+
         self.array_types.update(
                   {'windages': gnome.array_types.windages,
                    'windage_range': gnome.array_types.windage_range,
                    'windage_persist': gnome.array_types.windage_persist})
-
-        
 
     # no conversion necessary - simply sets/gets the stored value
     uncertain_speed_scale = property(lambda self: \
