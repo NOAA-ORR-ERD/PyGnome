@@ -16,6 +16,7 @@ I18NSPHINXOPTS  = $(PAPEROPT_$(PAPER)) $(SPHINXOPTS) .
 
 # for building gh-pages
 GH_PAGES_SOURCES = ./py_gnome/documentation/sphinx_docs
+PYGNOME_SRC = ./py_gnome
 
 .PHONY: help clean html dirhtml singlehtml pickle json htmlhelp qthelp devhelp epub latex latexpdf text man changes linkcheck doctest gettext
 
@@ -158,12 +159,14 @@ doctest:
 gh-pages:
 	git checkout gh-pages
 	# rm -rf build # not sure we need this
-	git checkout master $(GH_PAGES_SOURCES) 
+	git checkout master $(PYGNOME_SRC) 
 	git reset HEAD
+	python ./py_gnome/setup.py develop
 	sphinx-build -b html $(GH_PAGES_SOURCES) .
 	
 	# remove it so we don't accidently checkin any other source code from py_gnome 
 	# or extra files if working directory isn't clean
 	rm -rf ./py_gnome	
-	git add -A
-	git commit -m "Generated gh-pages for `git log master -1 --pretty=short --abbrev-commit`" && git push origin gh-pages; git checkout master
+	#git add -A
+	#git commit -m "Generated gh-pages for `git log master -1 --pretty=short --abbrev-commit`" \
+	#		&& git push origin gh-pages; git checkout master
