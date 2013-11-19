@@ -18,13 +18,13 @@
 
 //++ Carry-over from basic definitions.
 
-#define DIRTY_EVERYTHING -1
+/*#define DIRTY_EVERYTHING -1
 #define DIRTY_RUNBAR 1
 #define DIRTY_LIST 2
 #define DIRTY_MAPDRAWINGRECT  4
 #define DIRTY_TOOLBAR  8
 #define DIRTY_ENTIREWINDOW  16
-
+*/
 #define DEREFH(h) (*(h))
 #define INDEXH(h, i) (*(h))[i]
 
@@ -181,20 +181,6 @@ typedef struct {
 extern BFPB gRunSpillForecastFile;
 #endif
 extern Rect CATSgridRect;
-/*
-typedef struct {
-	char name[30];
-	short previewLength;
-	short (*compare)(VOIDPTR rec1, VOIDPTR rec2);
-	short fp;
-} IndexFile, *IndexFileP;
-
-typedef struct {
-	char name[30];
-	BFPB bfpb;
-	IndexFileP indexList;
-} DataBase, *DataBaseP;
-*/
 
 typedef struct VelocityRec
 {
@@ -233,28 +219,7 @@ typedef struct
 	Seconds time;
 	VelocityRec3D value;
 } TimeValuePair3D, *TimeValuePairP3D, **TimeValuePairH3D;
-#ifndef pyGNOME
-typedef struct
-{	// for CDOG
-	float depth;
-	VelocityRec value;	//u,v
-	double w;
-	float temp;
-	float sal;
-} DepthValuesSet, *DepthValuesSetP, **DepthValuesSetH;
 
-typedef struct
-{	// for CDOG
-	double time;	// time after model start in hours
-	double q_oil;	// oil discharge rate
-	double q_gas;	// gas discharge rate
-	double temp;	// release temp (deg C)
-	double diam;	// orifice diameter (m)
-	double rho_oil;	// density of oil (kg/m^3)
-	long n_den;	// release oil (n_den>=0) or water (n_den<0)
-	long output_int; // output files after output_int steps
-} DischargeData, *DischargeDataP, **DischargeDataH;
-#endif
 // old ossm pollutant types
 enum { //OSSMOIL_UNKNOWN = 0,  JLM 3/11/99, there was no such thing as unkown in old OSSM
 	OSSMOIL_GAS = 1, OSSMOIL_JETFUELS, OSSMOIL_DIESEL,
@@ -408,20 +373,20 @@ enum { ESCAPEKEY = 0X35, ENTERKEY = 0X4C, RETURNKEY = 0X24, PERIODKEY = 0X2F,
 
 #define round(n) floor((n) + 0.5)
 //#define abs(n) ((n) >= 0 ? (n) : -(n))
-#define TOPLEFT(r) (POINTPTR)(&(r).top)
-#define BOTRIGHT(r) (POINTPTR)(&(r).bottom)
+//#define TOPLEFT(r) (POINTPTR)(&(r).top)
+//#define BOTRIGHT(r) (POINTPTR)(&(r).bottom)
 
-#define MAX_MACPAINT_SIZE 53000
-#define MAX_MACPAINT_LINES 720
-#define MACPAINT_BYTE_UNPACK 72
+//#define MAX_MACPAINT_SIZE 53000
+//#define MAX_MACPAINT_LINES 720
+//#define MACPAINT_BYTE_UNPACK 72
 
 #define PI 3.14159265359
-#define ROOT2 1.4142136562373
-#define KG2POUNDS 2.2
+//#define ROOT2 1.4142136562373
+//#define KG2POUNDS 2.2
 
-#define FRAME_ITEM 2
+//#define FRAME_ITEM 2
 
-#define MultFindEvt 15
+//#define MultFindEvt 15
 
 class TClassID;
 class TTriGridVel;
@@ -594,7 +559,6 @@ typedef struct
 	double dropletSize;
 	double probability;
 } DropletInfoRec,**DropletInfoRecH;
-#endif
 
 typedef struct
 {
@@ -621,6 +585,7 @@ typedef struct
 	double		ageInHrsWhenReleased;
 	
 	double		riseVelocity;	// will this vary over a set? - maybe a flag if so
+	double		halfLife;	// hours
 	
 	char			spillName[kMaxNameLen];
 } LESetSummary; 					// record used to summarize LE sets
@@ -641,7 +606,7 @@ typedef struct
 	unsigned long ticksAtCreation;
 	short counter;
 } UNIQUEID;
-
+#endif
 
 typedef struct {
 	Boolean isOptimizedForStep;
@@ -687,13 +652,13 @@ typedef struct SegInfo
 	Boolean 	isWater;	//land/water boudary
 } SegInfo, *SegInfoPtr, **SegInfoHdl;
 
-
+#ifndef pyGNOME
 typedef struct
 {
 	Seconds		frameTime;
 	char		frameLEFName [255];
 } LEFrameRec, *LEFrameRecPtr;
-#ifndef pyGNOME
+
 typedef struct
 {
 	Seconds	startTime;			// time to start model run
@@ -786,6 +751,7 @@ typedef struct ScaleRec
 	double					YOffset;
 } ScaleRec, *ScaleRecPtr;
 
+#ifndef pyGNOME
 typedef struct {
 	short		color;
 	char		code[2];
@@ -793,6 +759,7 @@ typedef struct {
 	long		numPoints;
 	long		firstPoint;
 } PolygonType, *PolygonP, **PolygonH;
+#endif
 
 typedef struct
 {

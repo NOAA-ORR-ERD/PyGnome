@@ -7,17 +7,17 @@
  *
  */
 
-#include "NetCDFMoverTri_c.h"
-#include "CompFunctions.h"
-#include "StringFunctions.h"
-#include "my_build_list.h"
-#include "netcdf.h"
-
 #ifndef pyGNOME
 #include "CROSS.H"
 #else
 #include "Replacements.h"
 #endif
+
+#include "NetCDFMoverTri_c.h"
+#include "CompFunctions.h"
+#include "StringFunctions.h"
+#include "my_build_list.h"
+#include "netcdf.h"
 
 NetCDFMoverTri_c::NetCDFMoverTri_c (TMap *owner, char *name) : NetCDFMoverCurv_c(owner, name)
 {

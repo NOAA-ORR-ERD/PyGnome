@@ -1130,6 +1130,7 @@ void TOLEList::GetMassBalanceLines(Boolean includePercentage, char* line1,char*l
 		//if (fDispersantData.bDisperseOil || fAdiosDataH) this->RecalculateLEStatistics(&numDispersed,&numFloating,&numRemoved,&numOffMap);
 		if (this->GetOilType()==CHEMICAL) 
 		{ 
+			double halfLife = this->fSetSummary.halfLife;	// each spill can have a half life
 			double totalMassRemaining = 0;
 			if (LEHandle) 
 			{
@@ -1137,7 +1138,7 @@ void TOLEList::GetMassBalanceLines(Boolean includePercentage, char* line1,char*l
 				for (i = 0 ; i < this->numOfLEs ; i++) 
 				{
 					LERec theLE = INDEXH(LEHandle, i);
-					double LEmass = GetLEMass(theLE);	// for time dependent release might want just percent of released
+					double LEmass = GetLEMass(theLE,halfLife);	// for time dependent release might want just percent of released
 					totalMassRemaining += LEmass;
 				}
 				
@@ -1639,7 +1640,8 @@ OSErr TOLEList::Initialize(long numElements, LERecH array, short massUnits, Seco
 //#define TOLEListVersion 5  // 11/3/04, added spill name
 //#define TOLEListVersion 6  // 2/25/08, added the dispersed oil fields
 //#define TOLEListVersion 7  // 8/23/10, added rise velocity
-#define TOLEListVersion 8  // 4/10/12, added color
+//#define TOLEListVersion 8  // 4/10/12, added color
+#define TOLEListVersion 9  // 11/19/13, added halfLife - before value was in weatherer so there could only be one for all spills
 
 OSErr TOLEList::Write(BFPB *bfpb)
 {
@@ -1673,6 +1675,7 @@ OSErr TOLEList::Write(BFPB *bfpb)
 	if (err = WriteMacValue(bfpb, fSetSummary.ageInHrsWhenReleased)) return err;
 
 	if (err = WriteMacValue(bfpb, fSetSummary.riseVelocity)) return err;
+	if (err = WriteMacValue(bfpb, fSetSummary.halfLife)) return err;
 	//if (!gMearnsVersion)
 	{if (err = WriteMacValue(bfpb, fSetSummary.spillName, kMaxNameLen)) return err;}
 	
@@ -1780,6 +1783,8 @@ OSErr TOLEList::Read(BFPB *bfpb)
 	if (version > 6) 
 		if (err = ReadMacValue(bfpb, &fSetSummary.riseVelocity)) return err;
 
+	if (version > 8) 
+		if (err = ReadMacValue(bfpb, &fSetSummary.halfLife)) return err;
 
 	if ((version > 4 && !gMearnsVersion) || version > 5)
 	{
@@ -4157,7 +4162,8 @@ OSErr OLESettingsDialog (TOLEList 	*thisLEList)
 	sAdiosInfoH = thisLEList -> GetAdiosInfo();
 	strcpy(sOilTypeName,thisLEList -> fOilTypeName);
 	sDensity = sharedSet.density;
-	sHalfLife = GetChemicalHalfLife();
+	//sHalfLife = GetChemicalHalfLife();
+	sHalfLife = sharedSet.halfLife;
 	
 	dialogItem = MyModalDialog(M13, mapWindow, nil, OSSMLEInit, OSSMLEClick);
 	if (dialogItem == M13CANCEL)
@@ -4185,7 +4191,8 @@ OSErr OLESettingsDialog (TOLEList 	*thisLEList)
 		if (sDispInfo.lassoSelectedLEsToDisperse) 
 			deleteLERecH = false;
 		sharedSet.density = sDensity;
-		SetChemicalHalfLife(sHalfLife);
+		//SetChemicalHalfLife(sHalfLife);
+		sharedSet.halfLife = sHalfLife;
 		err = thisLEList -> Initialize (&sharedSet,deleteLERecH);
 		if(err) goto done;
 		
@@ -4273,6 +4280,8 @@ OSErr CreateLESet(WorldPoint *startPoint,WorldPoint *endPoint)
 	sWindageInfo.persistence = .25;	// in hours
 	
 	sOilTypeName[0] = 0;
+	sDensity = sharedSet.density;
+	sHalfLife = 1000000000;
 
 	item = MyModalDialog(M13, mapWindow, 0, OSSMLEInit, OSSMLEClick);
 	if (item == M13CANCEL) 
@@ -4298,6 +4307,10 @@ OSErr CreateLESet(WorldPoint *startPoint,WorldPoint *endPoint)
 		list -> SetDispersionInfo(sDispInfo);
 		strcpy(list -> fOilTypeName,sOilTypeName);
 
+		sharedSet.density = sDensity;
+		//SetChemicalHalfLife(sHalfLife);
+		sharedSet.halfLife = sHalfLife;
+
 		err = list->Initialize(&sharedSet,true);
 		if(err) goto done;
 
@@ -4309,6 +4322,7 @@ OSErr CreateLESet(WorldPoint *startPoint,WorldPoint *endPoint)
 		uncertaintyLEList -> SetAdiosInfo(sAdiosInfoH); 
 		uncertaintyLEList -> SetDispersionInfo(sDispInfo); 
 		strcpy(uncertaintyLEList->fOilTypeName,sOilTypeName);
+
 
 		model->NewDirtNotification();
 

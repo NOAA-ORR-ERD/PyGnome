@@ -3155,7 +3155,7 @@ void PtCurMap::DrawContours(Rect r, WorldRect view)
 	RGBColor saveColor, *onLandColor, *inWaterColor;
 	LONGH numLEsInTri = 0;
 	DOUBLEH massInTriInGrams = 0;
-	double density, LEmass, massInGrams;
+	double density, LEmass, massInGrams, halfLife;
 	TopologyHdl topH = 0;
 	TDagTree *dagTree = 0;
 	TTriGridVel3D* triGrid = GetGrid3D(true);	
@@ -3201,6 +3201,7 @@ void PtCurMap::DrawContours(Rect r, WorldRect view)
 		// density set from API
 		//density =  GetPollutantDensity(thisLEList->GetOilType());	
 		density = (((TOLEList*)thisLEList)->fSetSummary).density;	
+		halfLife = (*(dynamic_cast<TOLEList*>(thisLEList))).fSetSummary.halfLife;
 		massunits = thisLEList->GetMassUnits();
 
 		// time has already been updated at this point
@@ -3221,7 +3222,7 @@ void PtCurMap::DrawContours(Rect r, WorldRect view)
 				lp.h = LE.p.pLong;
 				lp.v = LE.p.pLat;
 				// will want to calculate individual LE mass for chemicals where particles will dissolve over time
-				LEmass = GetLEMass(LE);	// will only vary for chemical with different release end time
+				LEmass = GetLEMass(LE,halfLife);	// will only vary for chemical with different release end time
 				massInGrams = VolumeMassToGrams(LEmass, density, massunits);	// need to do this above too
 				if (fContourDepth1==BOTTOMINDEX)
 				{
@@ -3981,7 +3982,7 @@ void PtCurMap::TrackOutputData(void)
 	Seconds modelTime = model->GetModelTime(),timeStep = model->GetTimeStep();
 	Seconds startTime = model->GetStartTime();
 	short oldIndex, nowIndex, massunits;
-	double depthAtPt, density, LEmass, massInGrams;
+	double depthAtPt, density, LEmass, massInGrams, halfLife;
 	TLEList *thisLEList = 0;
 	
 	if (!triGrid) return; // some error alert, no depth info to check
@@ -4020,6 +4021,7 @@ void PtCurMap::TrackOutputData(void)
 		// density set from API
 		//density =  GetPollutantDensity(thisLEList->GetOilType());	
 		density = ((TOLEList*)thisLEList)->fSetSummary.density;	
+		halfLife = (*(dynamic_cast<TOLEList*>(thisLEList))).fSetSummary.halfLife;
 		massunits = thisLEList->GetMassUnits();
 
 		if (bTimeToOutputData)	// track budget at the same time
@@ -4077,7 +4079,7 @@ void PtCurMap::TrackOutputData(void)
 			if (!(LE.statusCode == OILSTAT_INWATER)) continue;	// Windows compiler requires extra parentheses
 			lp.h = LE.p.pLong;
 			lp.v = LE.p.pLat;
-			LEmass = GetLEMass(LE);	// will only vary for chemical with different release end time
+			LEmass = GetLEMass(LE,halfLife);	// will only vary for chemical with different release end time
 			massInGrams = VolumeMassToGrams(LEmass, density, massunits);	// need to do this above too
 			if (fContourDepth1==BOTTOMINDEX)
 			{
@@ -4242,7 +4244,7 @@ void PtCurMap::TrackOutputDataInAllLayers(void)
 	Seconds modelTime = model->GetModelTime(),timeStep = model->GetTimeStep();
 	Seconds startTime = model->GetStartTime();
 	short oldIndex, nowIndex, massunits;
-	double depthAtPt, density, LEmass, massInGrams;
+	double depthAtPt, density, LEmass, massInGrams, halfLife;
 	TLEList *thisLEList = 0;
 	
 	if (!triGrid) return; // some error alert, no depth info to check
@@ -4281,6 +4283,7 @@ void PtCurMap::TrackOutputDataInAllLayers(void)
 		// density set from API
 		//density =  GetPollutantDensity(thisLEList->GetOilType());	
 		density = ((TOLEList*)thisLEList)->fSetSummary.density;	
+		halfLife = (*(dynamic_cast<TOLEList*>(thisLEList))).fSetSummary.halfLife;
 		massunits = thisLEList->GetMassUnits();
 
 		if (bTimeToOutputData)	// track budget at the same time
@@ -4338,7 +4341,7 @@ void PtCurMap::TrackOutputDataInAllLayers(void)
 			if (!(LE.statusCode == OILSTAT_INWATER)) continue;	// Windows compiler requires extra parentheses
 			lp.h = LE.p.pLong;
 			lp.v = LE.p.pLat;
-			LEmass = GetLEMass(LE);	// will only vary for chemical with different release end time
+			LEmass = GetLEMass(LE,halfLife);	// will only vary for chemical with different release end time
 			massInGrams = VolumeMassToGrams(LEmass, density, massunits);	// need to do this above too
 			if (fContourDepth1==BOTTOMINDEX)
 			{

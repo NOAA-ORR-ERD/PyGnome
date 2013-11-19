@@ -18,6 +18,8 @@ class TLEList : virtual public LEList_c, public TClassID
 {
 
 public:
+	UNIQUEID		fOwnersUniqueID; // set if owned by another LE set, i.e this is a mirrored set
+
 	TLEList ();
 	virtual		   ~TLEList () { Dispose (); }
 	

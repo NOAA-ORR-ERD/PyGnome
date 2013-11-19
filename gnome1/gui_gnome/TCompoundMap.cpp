@@ -1979,7 +1979,7 @@ void TCompoundMap::DrawContoursFromMapIndex(Rect r, WorldRect view, long mapInde
 	RGBColor saveColor, *onLandColor, *inWaterColor;
 	LONGH numLEsInTri = 0;
 	DOUBLEH massInTriInGrams = 0;
-	double density, LEmass, massInGrams;
+	double density, LEmass, massInGrams, halfLife;
 	TopologyHdl topH = 0;
 	TDagTree *dagTree = 0;
 	TTriGridVel3D* triGrid = GetGrid3DFromMapIndex(mapIndex);	
@@ -2025,6 +2025,7 @@ void TCompoundMap::DrawContoursFromMapIndex(Rect r, WorldRect view, long mapInde
 		// density set from API
 		//density =  GetPollutantDensity(thisLEList->GetOilType());	
 		density = (((TOLEList*)thisLEList)->fSetSummary).density;	
+		halfLife = (*(dynamic_cast<TOLEList*>(thisLEList))).fSetSummary.halfLife;
 		massunits = thisLEList->GetMassUnits();
 		
 		// time has already been updated at this point
@@ -2045,7 +2046,7 @@ void TCompoundMap::DrawContoursFromMapIndex(Rect r, WorldRect view, long mapInde
 				lp.h = LE.p.pLong;
 				lp.v = LE.p.pLat;
 				// will want to calculate individual LE mass for chemicals where particles will dissolve over time
-				LEmass = GetLEMass(LE);	// will only vary for chemical with different release end time
+				LEmass = GetLEMass(LE,halfLife);	// will only vary for chemical with different release end time
 				massInGrams = VolumeMassToGrams(LEmass, density, massunits);	// need to do this above too
 				if (fContourDepth1==BOTTOMINDEX)
 				{
@@ -2747,7 +2748,7 @@ void TCompoundMap::TrackOutputDataFromMapIndex(long mapIndex)
 	Seconds modelTime = model->GetModelTime(),timeStep = model->GetTimeStep();
 	Seconds startTime = model->GetStartTime();
 	short oldIndex, nowIndex, massunits;
-	double depthAtPt, density, LEmass, massInGrams;
+	double depthAtPt, density, LEmass, massInGrams, halfLife;
 	TLEList *thisLEList = 0;
 	
 	if (!triGrid) return; // some error alert, no depth info to check
@@ -2786,6 +2787,7 @@ void TCompoundMap::TrackOutputDataFromMapIndex(long mapIndex)
 		// density set from API
 		//density =  GetPollutantDensity(thisLEList->GetOilType());	
 		density = ((TOLEList*)thisLEList)->fSetSummary.density;	
+		halfLife = (*(dynamic_cast<TOLEList*>(thisLEList))).fSetSummary.halfLife;
 		massunits = thisLEList->GetMassUnits();
 		
 		if (bTimeToOutputData)	// track budget at the same time
@@ -2825,7 +2827,7 @@ void TCompoundMap::TrackOutputDataFromMapIndex(long mapIndex)
 			if (!(LE.statusCode == OILSTAT_INWATER)) continue;	// Windows compiler requires extra parentheses
 			lp.h = LE.p.pLong;
 			lp.v = LE.p.pLat;
-			LEmass = GetLEMass(LE);	// will only vary for chemical with different release end time
+			LEmass = GetLEMass(LE,halfLife);	// will only vary for chemical with different release end time
 			massInGrams = VolumeMassToGrams(LEmass, density, massunits);	// need to do this above too
 			if (fContourDepth1==BOTTOMINDEX)
 			{
@@ -3335,7 +3337,7 @@ OSErr TCompoundMap::GetDepthAtMaxTri(long *maxTriIndex,double *depthAtPnt)
 	double concInSelectedTriangles=0,maxConc=0;
 	Boolean **triSelected = triGrid -> GetTriSelection(false);	// don't init
 	short massunits;
-	double density, LEmass;
+	double density, LEmass, halfLife;
 	TLEList *thisLEList = 0;
 	//short massunits = thisLEList->GetMassUnits();
 	//double density =  thisLEList->fSetSummary.density;	// density set from API
@@ -3371,6 +3373,7 @@ OSErr TCompoundMap::GetDepthAtMaxTri(long *maxTriIndex,double *depthAtPnt)
 		// density set from API
 		//density =  GetPollutantDensity(thisLEList->GetOilType());	
 		density = ((TOLEList*)thisLEList)->fSetSummary.density;	
+		halfLife = (*(dynamic_cast<TOLEList*>(thisLEList))).fSetSummary.halfLife;
 		massunits = thisLEList->GetMassUnits();
 		
 		for (j = 0 ; j < numOfLEs ; j++) 
@@ -3382,7 +3385,7 @@ OSErr TCompoundMap::GetDepthAtMaxTri(long *maxTriIndex,double *depthAtPnt)
 			if (!(LE.statusCode == OILSTAT_INWATER)) continue;// Windows compiler requires extra parentheses
 			lp.h = LE.p.pLong;
 			lp.v = LE.p.pLat;
-			LEmass = GetLEMass(LE);	// will only vary for chemical with different release end time
+			LEmass = GetLEMass(LE,halfLife);	// will only vary for chemical with different release end time
 			massInGrams = VolumeMassToGrams(LEmass, density, massunits);	// need to do this above too
 			if (fContourDepth1==BOTTOMINDEX)
 			{

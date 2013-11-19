@@ -1,6 +1,6 @@
 #include "MemUtils.h"
 #include "CMyList.h"
-
+#include "CLASSES.H"
 ///////////////////////////////////////////////////////////////////////////
 CMyList::CMyList(long elemSize)
 {

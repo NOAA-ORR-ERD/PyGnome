@@ -53,5 +53,7 @@ public:
 	virtual OSErr 		CheckAndPassOnMessage(TModelMessage *message);
 };
 
+void SetChemicalHalfLife(double halfLife);
+double GetChemicalHalfLife();
 
 #endif

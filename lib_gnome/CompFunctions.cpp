@@ -490,7 +490,7 @@ double ConvertCM3ToGrams(double val,double density)
 }
 
 
-double GetLEMass(LERec theLE)	// AH 06/20/2012
+double GetLEMass(LERec theLE, double halfLife)	// AH 06/20/2012
 {
 #ifndef pyGNOME
 
@@ -502,20 +502,24 @@ double GetLEMass(LERec theLE)	// AH 06/20/2012
 	
 	if (theLE.pollutantType == CHEMICAL)
 	{
-		weatherList->GetListItem((Ptr)&thisWeatherer, 0);	// assume there is only one
-		((dynamic_cast<TOSSMWeatherer*>(thisWeatherer)))->componentsList -> GetListItem ((Ptr) &component, theLE.pollutantType - 1);
+		//weatherList->GetListItem((Ptr)&thisWeatherer, 0);	// assume there is only one
+		//((dynamic_cast<TOSSMWeatherer*>(thisWeatherer)))->componentsList -> GetListItem ((Ptr) &component, theLE.pollutantType - 1);
+
 		tHours = (double) ( model -> GetModelTime () - theLE.releaseTime)/ 3600.0  + theLE.ageInHrsWhenReleased;
+
 		// if LE has not been released yet return 0?
 		//if (theLE.releaseTime > model->GetModelTime()) return theLE.mass;
 		if (theLE.releaseTime > model->GetModelTime()) return 0;
 		
-		for(i = 0;i<3;i++)	// at this point only using 1 half life component
+		/*for(i = 0;i<3;i++)	// at this point only using 1 half life component
 		{
 			if(component.percent[i] > 0.0)
 			{
 				fracLeft +=  (component.percent[i])*pow(0.5,tHours/(component.halfLife[i]));
 			}
-		}
+		}*/
+		fracLeft = pow(.5,tHours/halfLife);
+		
 		fracLeft = _max (0.0,fracLeft);
 		fracLeft = _min (1.0,fracLeft);
 		return fracLeft*theLE.mass;
@@ -526,16 +530,6 @@ double GetLEMass(LERec theLE)	// AH 06/20/2012
 	return theLE.mass;
 #endif
 }
-
-
-
-Boolean EqualUniqueIDs(UNIQUEID uid,UNIQUEID uid2)
-{
-	if(uid.counter != uid2.counter) return false;
-	if(uid.ticksAtCreation != uid2.ticksAtCreation) return false;
-	return true;
-}
-
 
 /**************************************************************************************************/
 OSErr ScanDepth (char *startChar, double *DepthPtr)

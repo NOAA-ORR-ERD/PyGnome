@@ -12,9 +12,9 @@
 // read in grid values for first time and set up transformation (dagtree?)
 // need to read in lat/lon since won't be evenly spaced
 
+#include "CROSS.H"
 #include "NetCDFMoverTri.h"
 #include "netcdf.h"
-#include "CROSS.H"
 #include "DagTreeIO.h"
 
 NetCDFMoverTri::NetCDFMoverTri (TMap *owner, char *name) : NetCDFMoverCurv(owner, name)

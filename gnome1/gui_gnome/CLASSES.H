@@ -16,6 +16,7 @@ using std::string;
 #include "GridVel.h"
 #include "MemUtils.h"
 
+Boolean EqualUniqueIDs(UNIQUEID uid,UNIQUEID uid2);
 UNIQUEID ZeroID(void);
 
 
@@ -291,6 +292,27 @@ typedef struct
 	short 	molWtUnits;			// g/mol, kg/mol
 	
 } CDOGUserUnits;
+
+typedef struct
+{	// for CDOG
+	float depth;
+	VelocityRec value;	//u,v
+	double w;
+	float temp;
+	float sal;
+} DepthValuesSet, *DepthValuesSetP, **DepthValuesSetH;
+
+typedef struct
+{	// for CDOG
+	double time;	// time after model start in hours
+	double q_oil;	// oil discharge rate
+	double q_gas;	// gas discharge rate
+	double temp;	// release temp (deg C)
+	double diam;	// orifice diameter (m)
+	double rho_oil;	// density of oil (kg/m^3)
+	long n_den;	// release oil (n_den>=0) or water (n_den<0)
+	long output_int; // output files after output_int steps
+} DischargeData, *DischargeDataP, **DischargeDataH;
 
 enum {	kDegreesC = 1, kDegreesF };
 enum {	kKgM3 = 1, kAPI };
@@ -694,6 +716,13 @@ void TellPlayersAboutNewDirt(void);
 
 //ADCPTimeValue* LoadADCPTimeValue(TMover *theOwner,short unitsIfKnownInAdvance);
 //ADCPTimeValue* CreateADCPTimeValue(TMover *theOwner,char* path, char* shortFileName, short unitsIfKnownInAdvance); //JLM
+
+#define DIRTY_EVERYTHING -1
+#define DIRTY_RUNBAR 1
+#define DIRTY_LIST 2
+#define DIRTY_MAPDRAWINGRECT  4
+#define DIRTY_TOOLBAR  8
+#define DIRTY_ENTIREWINDOW  16
 
 void StartReadWriteSequence(char *procName);
 OSErr WriteValue(BFPB *bfpb, char *data, short length, Boolean swap);

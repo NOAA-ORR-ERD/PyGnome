@@ -22,7 +22,7 @@ public:
 	Boolean				bOpen;
 	Boolean				bActive;
 	char				className [kMaxNameLen];
-	UNIQUEID			fUniqueID;
+	//UNIQUEID			fUniqueID;
 	
 						ClassID_c ();
 	virtual			   ~ClassID_c () { Dispose (); }
@@ -30,8 +30,8 @@ public:
 	virtual Boolean		IAm(ClassID id) { return FALSE; }
 	void				GetClassName (char* theName) { strcpy (theName, className); }	// sohail
 	void				SetClassName (char* name);
-	UNIQUEID			GetUniqueID () { return fUniqueID; }
-	Boolean 			MatchesUniqueID(UNIQUEID uid);	
+	//UNIQUEID			GetUniqueID () { return fUniqueID; }
+	//Boolean 			MatchesUniqueID(UNIQUEID uid);	
 	virtual void		Dispose 	() { return; }
 	virtual Boolean		IsDirty  	() { return bDirty;  }
 	virtual Boolean		IsOpen   	() { return bOpen;   }

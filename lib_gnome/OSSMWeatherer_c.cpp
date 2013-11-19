@@ -55,11 +55,11 @@ void OSSMWeatherer_c::WeatherLE (LERec *theLE)
 	///////////////////////////////
 	
 	// temporary fudge, probably won't weather chemicals, just have mass decrease, maybe need a new category for dissolved LEs
-	if(theLE -> pollutantType == CHEMICAL)
+	if(theLE -> pollutantType == CHEMICAL /*&& (*theLE).z > 0*/)
 	{
 		double fracLeft = 0.;
 		for(i = 0;i<3;i++)
-		{
+		{	// only actually using first component...
 			if(component.percent[i] > 0.0)
 			{
 				fracLeft +=  (component.percent[i])*pow(0.5,tHours/(component.halfLife[i]));
@@ -69,12 +69,51 @@ void OSSMWeatherer_c::WeatherLE (LERec *theLE)
 		fracLeft = _min (1.0,fracLeft);
 		//if (fracLeft < 0.001)
 		if (fracLeft == 0.0)
-			theLE -> statusCode = OILSTAT_EVAPORATED; 
+			theLE -> statusCode = OILSTAT_EVAPORATED; // I don't think this will happen
 		return;
 	}
 	
 	XINT = (double) model -> GetTimeStep () / 3600.0;			// time step converted from seconds to hours
 	
+	// put this in for debugging to visualize LEs disappearing
+	/*if(theLE -> pollutantType == CHEMICAL && (*theLE).z == 0)
+	{
+		// the settable half life needs to be a field in LEList since it could be different for different spills
+		// possibly set the component.halfLife for each spill during Step()
+		double thisComponent_XK = 0.693147 / component.halfLife [0],p0,p1;
+		if (-thisComponent_XK * (tHours + XINT) < -100)
+		{
+     		p0 = 0.0;
+      		p1 = 0.0;
+		}
+		else
+		{
+			//			printf ("Exponent computed\n");
+     		p0 = exp (-thisComponent_XK * tHours);
+     		p1 = exp (-thisComponent_XK * (tHours + XINT));
+		}
+		
+		//		printf ("p [0][i] = %f, p[1][i] = %f\n", p[0][i], p[1][i]);;
+      	prNum = (p0 - p1);
+      	prDen = p0;
+		
+		xProb = prNum / prDen;
+		rNum = (double) MyRandom ();
+		//if (rNum <= xProb && theLE -> mass != 0)
+		if (rNum <= xProb && theLE -> statusCode != OILSTAT_EVAPORATED)
+		{
+			//theLE -> mass = 0;
+			theLE -> statusCode = OILSTAT_EVAPORATED; //JLM,10/20/98 
+			//		printf ("LE [%d] Evaporated\n", theLE -> leKey);
+		}
+		else
+		{
+			xProb = 0;
+			ipr = 0;
+		}
+		return;
+	}*/
+		
 	for (i = 0; i <= 2; ++i)
 	{
 		if (-component.XK [i] * (tHours + XINT) < -100)

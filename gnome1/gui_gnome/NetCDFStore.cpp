@@ -36,6 +36,7 @@ bool NetCDFStore::Capture(TModel* model, bool uncertain, map<string, int> *ncVar
     list<LERecP> tLEsContainer;
     NetCDFStore* netStore;
 	char errStr[256];
+	double halfLife;
     
     netStore = new NetCDFStore(); // why do we need this?
     tLEsContainer = list<LERecP>();
@@ -47,6 +48,8 @@ bool NetCDFStore::Capture(TModel* model, bool uncertain, map<string, int> *ncVar
 	    LESetsList -> GetListItem ((Ptr) &thisLEList, i);
 		if(!thisLEList->IsActive()) continue;
 		LETYPE type = thisLEList->GetLEType();
+		halfLife = (*(dynamic_cast<TOLEList*>(thisLEList))).fSetSummary.halfLife;
+					
         if(uncertain && type == UNCERTAINTY_LE /*&& model->IsUncertain()*/) {
 			for (j = 0, c = thisLEList->numOfLEs; j < c; j++) {
 				if(INDEXH(thisLEList->LEHandle, j).statusCode == OILSTAT_NOTRELEASED);
@@ -131,7 +134,7 @@ bool NetCDFStore::Capture(TModel* model, bool uncertain, map<string, int> *ncVar
 		netStore->lat[j] /= 1000000;
         //if(threeMovement)
             netStore->depth[j] = tLE->z;
-        netStore->mass[j] = GetLEMass(*tLE);
+        netStore->mass[j] = GetLEMass(*tLE,halfLife);
 		float tMass = netStore->mass[j];
 		try {
 			long tUnits = (*tLE).leUnits;

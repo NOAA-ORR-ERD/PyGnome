@@ -1093,7 +1093,7 @@ OSErr CompoundMap_c::GetDepthAtMaxTri(long *maxTriIndex,double *depthAtPnt, NetC
 	double concInSelectedTriangles=0,maxConc=0;
 	Boolean **triSelected = triGrid -> GetTriSelection(false);	// don't init
 	short massunits;
-	double density, LEmass;
+	double density, LEmass, halfLife;
 	TLEList *thisLEList = 0;
 	//short massunits = thisLEList->GetMassUnits();
 	//double density =  thisLEList->fSetSummary.density;	// density set from API
@@ -1125,6 +1125,7 @@ OSErr CompoundMap_c::GetDepthAtMaxTri(long *maxTriIndex,double *depthAtPnt, NetC
 		if (!((*(dynamic_cast<TOLEList*>(thisLEList))).fDispersantData.bDisperseOil && ((model->GetModelTime() - model->GetStartTime()) >= (*(dynamic_cast<TOLEList*>(thisLEList))).fDispersantData.timeToDisperse ) )
 			&& !(*(dynamic_cast<TOLEList*>(thisLEList))).fAdiosDataH && !((*(dynamic_cast<TOLEList*>(thisLEList))).fSetSummary.z > 0)) 
 			continue;
+		halfLife = (*(dynamic_cast<TOLEList*>(thisLEList))).fSetSummary.halfLife;
 		numOfLEs = thisLEList->numOfLEs;
 		// density set from API
 		//density =  GetPollutantDensity(thisLEList->GetOilType());	
@@ -1140,7 +1141,7 @@ OSErr CompoundMap_c::GetDepthAtMaxTri(long *maxTriIndex,double *depthAtPnt, NetC
 			if (!(LE.statusCode == OILSTAT_INWATER)) continue;// Windows compiler requires extra parentheses
 			lp.h = LE.p.pLong;
 			lp.v = LE.p.pLat;
-			LEmass = GetLEMass(LE);	// will only vary for chemical with different release end time
+			LEmass = GetLEMass(LE,halfLife);	// will only vary for chemical with different release end time
 			massInGrams = VolumeMassToGrams(LEmass, density, massunits);	// need to do this above too
 			if (fContourDepth1==BOTTOMINDEX)
 			{
@@ -1249,7 +1250,7 @@ OSErr CompoundMap_c::CreateDepthSlice(long triNum, float **depthSlice)
 	LongPoint lp;
 	long i, j, k, triIndex, numOfLEs, numLESets, numDepths, numDepths2;
 	short massunits;
-	double density, LEmass, depthAtPt;
+	double density, LEmass, halfLife, depthAtPt;
 	double triArea, triVol, oilDensityInWaterColumn, massInGrams;;
 	//TTriGridVel3D* triGrid = GetGrid(false);	
 	TTriGridVel3D* triGrid = GetGrid3D(true);	
@@ -1308,6 +1309,7 @@ OSErr CompoundMap_c::CreateDepthSlice(long triNum, float **depthSlice)
 				   || (*(dynamic_cast<TOLEList*>(thisLEList))).fSetSummary.z > 0	))// for bottom spill
 				continue;	// this list has no subsurface LEs
 			
+			halfLife = (*(dynamic_cast<TOLEList*>(thisLEList))).fSetSummary.halfLife;
 			numOfLEs = thisLEList->numOfLEs;
 			// density set from API
 			//density =  GetPollutantDensity(thisLEList->GetOilType());	
@@ -1325,7 +1327,7 @@ OSErr CompoundMap_c::CreateDepthSlice(long triNum, float **depthSlice)
 				//massunits = thisLEList->GetMassUnits();
 				//density =  (((TOLEList*)thisLEList)->fSetSummary).density;	// density set from API
 				//LEmass =  (((TOLEList*)thisLEList)->fSetSummary).totalMass / (double)(((TOLEList*)thisLEList)->fSetSummary).numOfLEs;	
-				LEmass =  GetLEMass(LE); // will only vary for chemical with different release end time
+				LEmass =  GetLEMass(LE,halfLife); // will only vary for chemical with different release end time
 				//if (LE.pollutantType == CHEMICAL) LEmass = GetLEMass(LE);
 				massInGrams = VolumeMassToGrams(LEmass, density, massunits);
 				//triArea = (triGrid -> GetTriArea(triIndex)) * 1000 * 1000;	// convert to meters
@@ -1382,7 +1384,7 @@ long CompoundMap_c::CountLEsOnSelectedBeach()
 	OSErr err = 0, triErr = 0;
 	TDagTree *dagTree = 0;
 	TTriGridVel3D* triGrid = GetGrid3D(true);	
-	double density,massFrac,amtBeachedOnSegment,LEMass;
+	double density,massFrac,amtBeachedOnSegment,LEMass,halfLife;
 	short massunits;
 	long p,afterP;
 	long numSelectedSegs=0;
@@ -1456,6 +1458,7 @@ long CompoundMap_c::CountLEsOnSelectedBeach()
 		leType = thisLEList -> GetLEType();
 		if(leType == UNCERTAINTY_LE && !model->IsUncertain()) continue; //JLM 9/10/98
 		density = ((dynamic_cast<TOLEList*>(thisLEList)))->fSetSummary.density;	
+		halfLife = (*(dynamic_cast<TOLEList*>(thisLEList))).fSetSummary.halfLife;
 		massunits = thisLEList->GetMassUnits();
 		massFrac = thisLEList->GetTotalMass()/thisLEList->GetNumOfLEs();
 		for (j = 0, c = thisLEList -> numOfLEs; j < c; j++)
@@ -1526,7 +1529,7 @@ long CompoundMap_c::CountLEsOnSelectedBeach()
 								(*oiledShorelineHdl)[index2].endPt = index2; 
 								(*oiledShorelineHdl)[index2].numBeachedLEs++; 
 								(*oiledShorelineHdl)[index2].segmentLengthInKm = segLengthInKm; 
-								LEMass = GetLEMass(thisLE);
+								LEMass = GetLEMass(thisLE,halfLife);
 								//amtBeachedOnSegment = VolumeMassToVolumeMass(1*massFrac,density,massunits,GALLONS);	// a single LE in gallons
 								amtBeachedOnSegment = VolumeMassToVolumeMass(1*LEMass,density,massunits,GALLONS);	// a single LE in gallons
 								(*oiledShorelineHdl)[index2].gallonsOnSegment += amtBeachedOnSegment; 
@@ -1553,7 +1556,7 @@ long CompoundMap_c::CountLEsOnSelectedBeach()
 								(*oiledShorelineHdl)[index1].endPt = index1; 
 								(*oiledShorelineHdl)[index1].numBeachedLEs++; 
 								(*oiledShorelineHdl)[index1].segmentLengthInKm = segLengthInKm; 
-								LEMass = GetLEMass(thisLE);
+								LEMass = GetLEMass(thisLE,halfLife);
 								//amtBeachedOnSegment = VolumeMassToVolumeMass(1*massFrac,density,massunits,GALLONS);	// a single LE in gallons
 								amtBeachedOnSegment = VolumeMassToVolumeMass(1*LEMass,density,massunits,GALLONS);	// a single LE in gallons
 								(*oiledShorelineHdl)[index1].gallonsOnSegment += amtBeachedOnSegment; 
@@ -1592,7 +1595,7 @@ long CompoundMap_c::CountLEsOnSelectedBeach()
 					(*oiledShorelineHdl)[endver].endPt = endver; 
 					(*oiledShorelineHdl)[endver].numBeachedLEs++; 
 					(*oiledShorelineHdl)[endver].segmentLengthInKm = segLengthInKm; 
-					LEMass = GetLEMass(thisLE);
+					LEMass = GetLEMass(thisLE,halfLife);
 					//amtBeachedOnSegment = VolumeMassToVolumeMass(1*massFrac,density,massunits,GALLONS);	// a single LE in gallons
 					amtBeachedOnSegment = VolumeMassToVolumeMass(1*LEMass,density,massunits,GALLONS);	// a single LE in gallons
 					(*oiledShorelineHdl)[endver].gallonsOnSegment += amtBeachedOnSegment; 
