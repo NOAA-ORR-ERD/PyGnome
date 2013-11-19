@@ -1,1 +1,0 @@
-a place for templates for sphinx
