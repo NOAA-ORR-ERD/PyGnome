@@ -112,7 +112,7 @@ def test_model_time_and_current_time_in_sc():
 # todo: look at case where duration is 1 hour - it seems to remove 1st particle
 # not sure why. The GnomeMap()._set_off_map_status() seems to remove it - again
 # not sure why
-@pytest.mark.parametrize("duration", [1.25])
+@pytest.mark.parametrize("duration", [1, 2])
 def test_release_end_of_step(duration):
     """
     tests that elements released at end of step are recorded with their

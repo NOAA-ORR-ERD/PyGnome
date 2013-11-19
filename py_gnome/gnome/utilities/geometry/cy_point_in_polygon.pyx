@@ -68,10 +68,13 @@ def points_in_poly(cnp.ndarray[double, ndim=2, mode="c"] pgon, points):
     Note: this version takes a 3-d point, even though the third coord
           is ignored.
     """
-    scalar = (len(points) == 3)
 
-    cdef cnp.ndarray[double, ndim = 2, mode = "c"] a_points
-    a_points = np.ascontiguousarray(points, dtype=np.float64).reshape(-1, 3)
+    np_points = np.ascontiguousarray(points, dtype=np.float64)
+    scalar = (np_points.shape == (3,))
+    np_points.shape = (-1, 3)
+
+    cdef double [:, :] a_points
+    a_points = np_points
 
     ## fixme -- proper way to get np.bool?
     cdef cnp.ndarray[char, ndim = 1, mode = "c"] result = np.zeros((a_points.shape[0],), dtype=np.uint8)
