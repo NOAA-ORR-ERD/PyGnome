@@ -170,7 +170,7 @@ gh-pages:
 	
 	# remove it so we don't accidently checkin any other source code from py_gnome 
 	# or extra files if working directory isn't clean
-	rm -rf ./py_gnome	
+	#rm -rf ./py_gnome	
 	#git add -A
 	#git commit -m "Generated gh-pages for `git log master -1 --pretty=short --abbrev-commit`" \
 	#		&& git push origin gh-pages; git checkout master
