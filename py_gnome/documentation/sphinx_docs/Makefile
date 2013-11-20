@@ -164,13 +164,13 @@ gh-pages:
 	python ./py_gnome/setup.py develop
 	git checkout gh-pages
 	# rm -rf build # not sure we need this
-	git checkout master $(GH_PAGES_SOURCES) 
+	git checkout master $(PYGNOME_SRC) 
 	git reset HEAD
 	sphinx-build -b html $(GH_PAGES_SOURCES) .
 	
 	# remove it so we don't accidently checkin any other source code from py_gnome 
 	# or extra files if working directory isn't clean
-	#rm -rf ./py_gnome	
+	rm -rf ./py_gnome	
 	#git add -A
 	#git commit -m "Generated gh-pages for `git log master -1 --pretty=short --abbrev-commit`" \
 	#		&& git push origin gh-pages; git checkout master
