@@ -1,0 +1,722 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>gnome.netcdf_outputter &mdash; pyGNOME 0.1.1 documentation</title>
+    
+    <link rel="stylesheet" href="../../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../',
+        VERSION:     '0.1.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="pyGNOME 0.1.1 documentation" href="../../index.html" />
+    <link rel="up" title="Module code" href="../index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../index.html">pyGNOME 0.1.1 documentation</a> &raquo;</li>
+          <li><a href="../index.html" accesskey="U">Module code</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <h1>Source code for gnome.netcdf_outputter</h1><div class="highlight"><pre>
+<span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">NetCDF outputter - follows the interface defined by gnome.Outputter for a</span>
+<span class="sd">NetCDF output writer</span>
+<span class="sd">&#39;&#39;&#39;</span>
+
+<span class="kn">import</span> <span class="nn">copy</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">from</span> <span class="nn">datetime</span> <span class="kn">import</span> <span class="n">datetime</span>
+<span class="kn">from</span> <span class="nn">collections</span> <span class="kn">import</span> <span class="n">OrderedDict</span>
+
+<span class="kn">import</span> <span class="nn">netCDF4</span> <span class="kn">as</span> <span class="nn">nc</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+
+<span class="kn">import</span> <span class="nn">gnome</span>
+<span class="kn">from</span> <span class="nn">gnome.basic_types</span> <span class="kn">import</span> <span class="n">oil_status</span>
+<span class="kn">from</span> <span class="nn">gnome.outputter</span> <span class="kn">import</span> <span class="n">Outputter</span>
+<span class="kn">from</span> <span class="nn">gnome.utilities</span> <span class="kn">import</span> <span class="n">serializable</span><span class="p">,</span> <span class="n">time_utils</span>
+
+
+<div class="viewcode-block" id="NetCDFOutput"><a class="viewcode-back" href="../../reference.html#gnome.netcdf_outputter.NetCDFOutput">[docs]</a><span class="k">class</span> <span class="nc">NetCDFOutput</span><span class="p">(</span><span class="n">Outputter</span><span class="p">,</span> <span class="n">serializable</span><span class="o">.</span><span class="n">Serializable</span><span class="p">):</span>
+
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    A NetCDFOutput object is used to write the model&#39;s data to a NetCDF file.</span>
+<span class="sd">    It inherits from Outputter class and implements the same interface.</span>
+
+<span class="sd">    This class is meant to be used within the Model, to be added to list of</span>
+<span class="sd">    outputters.</span>
+
+<span class="sd">    &gt;&gt;&gt; model = gnome.model.Model(...)</span>
+<span class="sd">    &gt;&gt;&gt; model.outputters += gnome.netcdf_outputter.NetCDFOutput(</span>
+<span class="sd">                os.path.join(base_dir,&#39;sample_model.nc&#39;), all_data=True)</span>
+
+<span class="sd">    &#39;all_data&#39; flag is used to either output all the data arrays defined in</span>
+<span class="sd">    model.spills or only the standard data.</span>
+
+
+<span class="sd">    .. note::</span>
+<span class="sd">       cf_attributes and data_vars are static members. cf_attributes is a dict</span>
+<span class="sd">       that contains the global attributes per CF convention</span>
+<span class="sd">       data_vars is a dict used to define NetCDF variables.</span>
+<span class="sd">       There is also a list called &#39;standard_data&#39;. Since the names of the</span>
+<span class="sd">       netcdf variables are different from the names in the SpillContainer</span>
+<span class="sd">       data_arrays, this simply lists the names of data_arrays that are part of</span>
+<span class="sd">       standard data. When writing &#39;all_data&#39;, these data arrays are skipped.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">cf_attributes</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s">&#39;comment&#39;</span><span class="p">:</span> <span class="s">&#39;Particle output from the NOAA PyGnome model&#39;</span><span class="p">,</span>
+        <span class="s">&#39;source&#39;</span><span class="p">:</span> <span class="s">&#39;PyGnome version x.x.x&#39;</span><span class="p">,</span>
+        <span class="s">&#39;references&#39;</span><span class="p">:</span> <span class="s">&#39;TBD&#39;</span><span class="p">,</span>
+        <span class="s">&#39;feature_type&#39;</span><span class="p">:</span> <span class="s">&#39;particle_trajectory&#39;</span><span class="p">,</span>
+        <span class="s">&#39;institution&#39;</span><span class="p">:</span> <span class="s">&#39;NOAA Emergency Response Division&#39;</span><span class="p">,</span>
+        <span class="s">&#39;conventions&#39;</span><span class="p">:</span> <span class="s">&#39;CF-1.6&#39;</span><span class="p">,</span>
+        <span class="p">}</span>
+
+    <span class="n">data_vars</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">()</span>
+    <span class="n">var</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">()</span>
+
+    <span class="c"># longitude</span>
+
+    <span class="n">var</span><span class="p">[</span><span class="s">&#39;dtype&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">float32</span>
+    <span class="n">var</span><span class="p">[</span><span class="s">&#39;long_name&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s">&#39;longitude of the particle&#39;</span>
+    <span class="n">var</span><span class="p">[</span><span class="s">&#39;units&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s">&#39;degrees_east&#39;</span>
+    <span class="n">data_vars</span><span class="p">[</span><span class="s">&#39;longitude&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">var</span><span class="p">)</span>
+
+    <span class="c"># latitude</span>
+
+    <span class="n">var</span><span class="p">[</span><span class="s">&#39;long_name&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s">&#39;latitude of the particle&#39;</span>
+    <span class="n">var</span><span class="p">[</span><span class="s">&#39;units&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s">&#39;degrees_north&#39;</span>
+    <span class="n">data_vars</span><span class="p">[</span><span class="s">&#39;latitude&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">var</span><span class="p">)</span>
+
+    <span class="c"># latitude</span>
+
+    <span class="n">var</span><span class="p">[</span><span class="s">&#39;long_name&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s">&#39;particle depth below sea surface&#39;</span>
+    <span class="n">var</span><span class="p">[</span><span class="s">&#39;units&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s">&#39;meters&#39;</span>
+    <span class="n">var</span><span class="p">[</span><span class="s">&#39;axis&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s">&#39;z positive down&#39;</span>
+    <span class="n">data_vars</span><span class="p">[</span><span class="s">&#39;depth&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">var</span><span class="p">)</span>
+
+    <span class="c"># mass - is this part of standard output?</span>
+
+    <span class="n">var</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+    <span class="n">var</span><span class="p">[</span><span class="s">&#39;dtype&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">float32</span>
+    <span class="n">var</span><span class="p">[</span><span class="s">&#39;units&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s">&#39;grams&#39;</span>
+    <span class="n">data_vars</span><span class="p">[</span><span class="s">&#39;mass&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">var</span><span class="p">)</span>
+
+    <span class="c"># age?</span>
+
+    <span class="n">var</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+    <span class="n">var</span><span class="p">[</span><span class="s">&#39;dtype&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">int32</span>
+    <span class="n">var</span><span class="p">[</span><span class="s">&#39;long_name&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s">&#39;from age at time of release&#39;</span>
+    <span class="n">var</span><span class="p">[</span><span class="s">&#39;units&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s">&#39;seconds&#39;</span>
+    <span class="n">data_vars</span><span class="p">[</span><span class="s">&#39;age&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">var</span><span class="p">)</span>
+
+    <span class="c"># status</span>
+    <span class="c"># todo: update to read status flag from basic_types.oil_status</span>
+
+    <span class="n">var</span><span class="p">[</span><span class="s">&#39;long_name&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s">&#39;particle status flag&#39;</span>
+    <span class="n">var</span><span class="p">[</span><span class="s">&#39;valid_range&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">10</span><span class="p">]</span>
+    <span class="n">var</span><span class="p">[</span><span class="s">&#39;flag_values&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">([</span><span class="n">oil_status</span><span class="o">.</span><span class="n">in_water</span><span class="p">,</span> <span class="n">oil_status</span><span class="o">.</span><span class="n">on_land</span><span class="p">,</span>
+                           <span class="n">oil_status</span><span class="o">.</span><span class="n">off_maps</span><span class="p">,</span> <span class="n">oil_status</span><span class="o">.</span><span class="n">evaporated</span><span class="p">],</span> <span class="p">)</span>
+    <span class="n">var</span><span class="p">[</span><span class="s">&#39;flag_meanings&#39;</span><span class="p">]</span> <span class="o">=</span> \
+        <span class="s">&#39;{0}:in_water {1}:on_land {2}:off_maps {3}:evaporated&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                                    <span class="n">oil_status</span><span class="o">.</span><span class="n">in_water</span><span class="p">,</span> <span class="n">oil_status</span><span class="o">.</span><span class="n">on_land</span><span class="p">,</span>
+                                    <span class="n">oil_status</span><span class="o">.</span><span class="n">off_maps</span><span class="p">,</span> <span class="n">oil_status</span><span class="o">.</span><span class="n">evaporated</span><span class="p">)</span>
+    <span class="n">data_vars</span><span class="p">[</span><span class="s">&#39;status&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">var</span><span class="p">)</span>
+
+    <span class="c"># id - id of particle</span>
+
+    <span class="n">var</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+    <span class="n">var</span><span class="p">[</span><span class="s">&#39;dtype&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">uint32</span>
+    <span class="n">var</span><span class="p">[</span><span class="s">&#39;long_name&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s">&#39;particle ID&#39;</span>
+    <span class="n">var</span><span class="p">[</span><span class="s">&#39;units&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s">&#39;1&#39;</span>
+    <span class="n">data_vars</span><span class="p">[</span><span class="s">&#39;id&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">var</span><span class="p">)</span>
+
+    <span class="c"># spill_num - spill to which the particle belongs</span>
+
+    <span class="n">var</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+    <span class="n">var</span><span class="p">[</span><span class="s">&#39;dtype&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">uint8</span>
+    <span class="n">var</span><span class="p">[</span><span class="s">&#39;long_name&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s">&#39;spill to which the particle belongs&#39;</span>
+    <span class="n">var</span><span class="p">[</span><span class="s">&#39;units&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s">&#39;1&#39;</span>
+    <span class="n">data_vars</span><span class="p">[</span><span class="s">&#39;spill_num&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">var</span><span class="p">)</span>
+
+    <span class="k">del</span> <span class="n">var</span>  <span class="c"># only used during initialization - no need to keep around</span>
+
+    <span class="c"># This is data that has already been written in standard format</span>
+
+    <span class="n">standard_data</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="s">&#39;positions&#39;</span><span class="p">,</span>
+        <span class="s">&#39;current_time_stamp&#39;</span><span class="p">,</span>
+        <span class="s">&#39;status_codes&#39;</span><span class="p">,</span>
+        <span class="s">&#39;spill_num&#39;</span><span class="p">,</span>
+        <span class="s">&#39;id&#39;</span><span class="p">,</span>
+        <span class="s">&#39;mass&#39;</span><span class="p">,</span>
+        <span class="s">&#39;age&#39;</span><span class="p">,</span>
+        <span class="p">]</span>
+
+    <span class="c"># define state for serialization</span>
+
+    <span class="n">state</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">serializable</span><span class="o">.</span><span class="n">Serializable</span><span class="o">.</span><span class="n">state</span><span class="p">)</span>
+    <span class="n">state</span><span class="o">.</span><span class="n">add_field</span><span class="p">([</span>  <span class="c"># data file should not be moved to save file location!</span>
+        <span class="n">serializable</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span><span class="s">&#39;netcdf_filename&#39;</span><span class="p">,</span> <span class="n">create</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span>
+                           <span class="n">update</span><span class="o">=</span><span class="bp">True</span><span class="p">),</span>
+        <span class="n">serializable</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span><span class="s">&#39;all_data&#39;</span><span class="p">,</span> <span class="n">create</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">update</span><span class="o">=</span><span class="bp">True</span><span class="p">),</span>
+        <span class="n">serializable</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span><span class="s">&#39;netcdf_format&#39;</span><span class="p">,</span> <span class="n">create</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">update</span><span class="o">=</span><span class="bp">True</span><span class="p">),</span>
+        <span class="n">serializable</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span><span class="s">&#39;compress&#39;</span><span class="p">,</span> <span class="n">create</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">update</span><span class="o">=</span><span class="bp">True</span><span class="p">),</span>
+        <span class="n">serializable</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span><span class="s">&#39;_start_idx&#39;</span><span class="p">,</span> <span class="n">create</span><span class="o">=</span><span class="bp">True</span><span class="p">),</span>
+        <span class="n">serializable</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span><span class="s">&#39;_middle_of_run&#39;</span><span class="p">,</span> <span class="n">create</span><span class="o">=</span><span class="bp">True</span><span class="p">),</span>
+        <span class="p">])</span>
+
+    <span class="nd">@classmethod</span>
+<div class="viewcode-block" id="NetCDFOutput.new_from_dict"><a class="viewcode-back" href="../../reference.html#gnome.netcdf_outputter.NetCDFOutput.new_from_dict">[docs]</a>    <span class="k">def</span> <span class="nf">new_from_dict</span><span class="p">(</span><span class="n">cls</span><span class="p">,</span> <span class="n">dict_</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        creates a new object from dictionary</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">_middle_of_run</span> <span class="o">=</span> <span class="n">dict_</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s">&#39;_middle_of_run&#39;</span><span class="p">,</span> <span class="bp">None</span><span class="p">)</span>
+        <span class="n">_start_idx</span> <span class="o">=</span> <span class="n">dict_</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s">&#39;_start_idx&#39;</span><span class="p">,</span> <span class="bp">None</span><span class="p">)</span>
+        <span class="n">obj</span> <span class="o">=</span> <span class="n">cls</span><span class="p">(</span><span class="o">**</span><span class="n">dict_</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">_middle_of_run</span> <span class="ow">is</span> <span class="bp">None</span> <span class="ow">or</span> <span class="n">_start_idx</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span><span class="s">&#39;Expected netcdf_outputter to contain keys&#39;</span>
+                           <span class="s">&#39; _middle_of_run and _start_idx&#39;</span><span class="p">)</span>
+
+        <span class="c"># If prepare_for_model_run is called, these will be reset</span>
+        <span class="n">obj</span><span class="o">.</span><span class="n">_middle_of_run</span> <span class="o">=</span> <span class="n">_middle_of_run</span>
+        <span class="n">obj</span><span class="o">.</span><span class="n">_start_idx</span> <span class="o">=</span> <span class="n">_start_idx</span>
+        <span class="k">return</span> <span class="n">obj</span>
+</div>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">netcdf_filename</span><span class="p">,</span>
+        <span class="n">all_data</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span>
+        <span class="n">netcdf_format</span><span class="o">=</span><span class="s">&#39;NETCDF4&#39;</span><span class="p">,</span>
+        <span class="n">compress</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span>
+        <span class="nb">id</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">kwargs</span>
+        <span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        .. function:: __init__(netcdf_filename, cache=None, all_data=False,</span>
+<span class="sd">                               id=None)</span>
+
+<span class="sd">        Constructor for Net_CDFOutput object.</span>
+
+<span class="sd">        :param netcdf_filename: Required parameter. The filename in which to</span>
+<span class="sd">            store the NetCDF data.</span>
+<span class="sd">        :type netcdf_filename: str. or unicode</span>
+<span class="sd">        :param all_data: If true, write all data to NetCDF, otherwise write</span>
+<span class="sd">            only standard data. Default is False.</span>
+<span class="sd">        :type all_data: bool</span>
+<span class="sd">        :param id: Unique Id identifying the newly created mover (a UUID as a</span>
+<span class="sd">            string). This is used when loading an object from a persisted</span>
+<span class="sd">            state. User should never have to set this.</span>
+
+<span class="sd">        Optional arguments (kwargs):</span>
+
+<span class="sd">        :param cache: sets the cache object from which to read data. The model</span>
+<span class="sd">            will automatically set this param</span>
+
+<span class="sd">        :param output_timestep: default is None in which case everytime the</span>
+<span class="sd">            write_output is called, output is written. If set, then output is</span>
+<span class="sd">            written every output_timestep starting from model_start_time.</span>
+<span class="sd">        :type output_timestep: timedelta object</span>
+
+<span class="sd">        :param output_zero_step: default is True. If True then output for</span>
+<span class="sd">            initial step (showing initial release conditions) is written</span>
+<span class="sd">            regardless of output_timestep</span>
+<span class="sd">        :type output_zero_step: boolean</span>
+
+<span class="sd">        :param output_last_step: default is True. If True then output for</span>
+<span class="sd">            final step is written regardless of output_timestep</span>
+<span class="sd">        :type output_last_step: boolean</span>
+
+<span class="sd">        use super to pass optional **kwargs to base class __init__ method</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_check_netcdf_filename</span><span class="p">(</span><span class="n">netcdf_filename</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_netcdf_filename</span> <span class="o">=</span> <span class="n">netcdf_filename</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_uncertain</span> <span class="o">=</span> <span class="bp">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_u_netcdf_filename</span> <span class="o">=</span> <span class="bp">None</span>
+
+        <span class="c"># flag to keep track of state of the object - is True after calling</span>
+        <span class="c"># prepare_for_model_run</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_middle_of_run</span> <span class="o">=</span> <span class="bp">False</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">all_data</span> <span class="o">=</span> <span class="n">all_data</span>
+
+        <span class="c"># this is only updated in prepare_for_model_run if all_data is True</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">arr_types</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_format</span> <span class="o">=</span> <span class="n">netcdf_format</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_compress</span> <span class="o">=</span> <span class="n">compress</span>
+
+        <span class="c"># need to keep track of starting index for writing data since variable</span>
+        <span class="c"># number of particles are released</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_start_idx</span> <span class="o">=</span> <span class="mi">0</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_gnome_id</span> <span class="o">=</span> <span class="n">gnome</span><span class="o">.</span><span class="n">GnomeId</span><span class="p">(</span><span class="nb">id</span><span class="p">)</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">NetCDFOutput</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+<div class="viewcode-block" id="NetCDFOutput.id"><a class="viewcode-back" href="../../reference.html#gnome.netcdf_outputter.NetCDFOutput.id">[docs]</a>    <span class="k">def</span> <span class="nf">id</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Function returns the unique id to identify the object,</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_gnome_id</span><span class="o">.</span><span class="n">id</span>
+</div>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">middle_of_run</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_middle_of_run</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">netcdf_filename</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_netcdf_filename</span>
+
+    <span class="nd">@netcdf_filename.setter</span>
+    <span class="k">def</span> <span class="nf">netcdf_filename</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">new_name</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">middle_of_run</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">AttributeError</span><span class="p">(</span><span class="s">&#39;This attribute cannot be changed in the&#39;</span>
+                                 <span class="s">&#39; middle of a run&#39;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_check_netcdf_filename</span><span class="p">(</span><span class="n">new_name</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_netcdf_filename</span> <span class="o">=</span> <span class="n">new_name</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">all_data</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_all_data</span>
+
+    <span class="nd">@all_data.setter</span>
+    <span class="k">def</span> <span class="nf">all_data</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">middle_of_run</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">AttributeError</span><span class="p">(</span><span class="s">&#39;This attribute cannot be changed in the&#39;</span>
+                                 <span class="s">&#39; middle of a run&#39;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_all_data</span> <span class="o">=</span> <span class="n">value</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">compress</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_compress</span>
+
+    <span class="nd">@compress.setter</span>
+    <span class="k">def</span> <span class="nf">compress</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">middle_of_run</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">AttributeError</span><span class="p">(</span><span class="s">&#39;This attribute cannot be changed in the&#39;</span>
+                                 <span class="s">&#39; middle of a run&#39;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_compress</span> <span class="o">=</span> <span class="n">value</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">netcdf_format</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_format</span>
+
+    <span class="nd">@netcdf_format.setter</span>
+    <span class="k">def</span> <span class="nf">netcdf_format</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">middle_of_run</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">AttributeError</span><span class="p">(</span><span class="s">&#39;This attribute cannot be changed in the&#39;</span>
+                                 <span class="s">&#39; middle of a run&#39;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_format</span> <span class="o">=</span> <span class="n">value</span>
+
+    <span class="k">def</span> <span class="nf">_check_netcdf_filename</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">netcdf_filename</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; basic checks to make sure the netcdf_filename is valid &quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isdir</span><span class="p">(</span><span class="n">netcdf_filename</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&#39;netcdf_filename must be a file not a directory.&#39;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">realpath</span><span class="p">(</span>
+                                            <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">netcdf_filename</span><span class="p">))):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&#39;{0} does not appear to be a valid&#39;</span>
+                             <span class="s">&#39; path&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">netcdf_filename</span><span class="p">)))</span>
+
+    <span class="k">def</span> <span class="nf">_nc_file_exists_error</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">file_</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        invoked by prepare_for_model_run. If file already exists, it will raise</span>
+<span class="sd">        this error.</span>
+
+<span class="sd">        Do this in prepare_for_model_run, because user may want to define the</span>
+<span class="sd">        model and run it in batch mode. This will allow netcdf_outputter to be</span>
+<span class="sd">        created, but the first time it tries to write this file, it will check</span>
+<span class="sd">        and raise an error if file exists</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">file_</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&#39;{0} file exists. Enter a filename that does not&#39;</span>
+                <span class="s">&#39; exist in which to save data.&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">file_</span><span class="p">))</span>
+
+<div class="viewcode-block" id="NetCDFOutput.prepare_for_model_run"><a class="viewcode-back" href="../../reference.html#gnome.netcdf_outputter.NetCDFOutput.prepare_for_model_run">[docs]</a>    <span class="k">def</span> <span class="nf">prepare_for_model_run</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">model_start_time</span><span class="p">,</span>
+        <span class="n">num_time_steps</span><span class="p">,</span>
+        <span class="n">cache</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
+        <span class="n">uncertain</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span>
+        <span class="n">spills</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">kwargs</span>
+        <span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        .. function:: prepare_for_model_run(model_start_time,</span>
+<span class="sd">                num_time_steps, cache=None, uncertain=False, spills=None,</span>
+<span class="sd">                **kwargs)</span>
+
+<span class="sd">        Write global attributes and define dimensions and variables for NetCDF</span>
+<span class="sd">        file. This must be done in prepare_for_model_run because if model state</span>
+<span class="sd">        changes, it is rewound and re-run from the beginning.</span>
+
+<span class="sd">        This takes more than standard &#39;cache&#39; argument. Some of these are</span>
+<span class="sd">        required arguments - they contain None for defaults because non-default</span>
+<span class="sd">        argument cannot follow default argument. Since cache is already 2nd</span>
+<span class="sd">        positional argument for Renderer object, the required non-default</span>
+<span class="sd">        arguments must be defined following &#39;cache&#39;.</span>
+
+<span class="sd">        If uncertainty is on, then UncertainSpillPair object contains</span>
+<span class="sd">        identical _data_arrays in both certain and uncertain SpillContainer&#39;s,</span>
+<span class="sd">        the data itself is different, but they contain the same type of data</span>
+<span class="sd">        arrays.</span>
+
+<span class="sd">        :param uncertain: Default is False. Model automatically sets this based</span>
+<span class="sd">            on whether uncertainty is on or off. If this is True then a</span>
+<span class="sd">            uncertain data is written to netcdf_filename + &#39;_uncertain.nc&#39;</span>
+<span class="sd">        :type uncertain: bool</span>
+<span class="sd">        :param spills: If &#39;all_data&#39; flag is True, then model must provide the</span>
+<span class="sd">            model.spills object (SpillContainerPair object) so NetCDF variables</span>
+<span class="sd">            can be defined for the remaining data arrays. If spills is None,</span>
+<span class="sd">            but all_data flag is True, a ValueError will be raised. It does not</span>
+<span class="sd">            make sense to write &#39;all_data&#39; but not provide &#39;model.spills&#39;.</span>
+<span class="sd">        :type spills: gnome.spill_container.SpillContainerPair object.</span>
+
+<span class="sd">        .. note::</span>
+<span class="sd">        Does not take any other input arguments; however, to keep the interface</span>
+<span class="sd">            the same for all outputters, define **kwargs incase future</span>
+<span class="sd">            outputters require different arguments.</span>
+
+<span class="sd">        use super to pass model_start_time, num_time_steps, cache=None and</span>
+<span class="sd">        remaining **kwargs to base class method</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="nb">super</span><span class="p">(</span><span class="n">NetCDFOutput</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">prepare_for_model_run</span><span class="p">(</span><span class="n">model_start_time</span><span class="p">,</span>
+                <span class="n">num_time_steps</span><span class="p">,</span> <span class="n">cache</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">all_data</span> <span class="ow">and</span> <span class="n">spills</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&quot;&#39;all_data&#39; flag is True, however spills is None.&quot;</span>
+                <span class="s">&quot; Please provide valid model.spills so we know which&quot;</span>
+                <span class="s">&quot; additional data to write.&quot;</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_uncertain</span> <span class="o">=</span> <span class="n">uncertain</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_uncertain</span><span class="p">:</span>
+            <span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">ext</span><span class="p">)</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">splitext</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">netcdf_filename</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_u_netcdf_filename</span> <span class="o">=</span> <span class="s">&#39;{0}_uncertain{1}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">name</span><span class="p">,</span>
+                    <span class="n">ext</span><span class="p">)</span>
+            <span class="n">filenames</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">netcdf_filename</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_u_netcdf_filename</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">filenames</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">netcdf_filename</span><span class="p">,</span> <span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">file_</span> <span class="ow">in</span> <span class="n">filenames</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_nc_file_exists_error</span><span class="p">(</span><span class="n">file_</span><span class="p">)</span>
+            <span class="k">with</span> <span class="n">nc</span><span class="o">.</span><span class="n">Dataset</span><span class="p">(</span><span class="n">file_</span><span class="p">,</span> <span class="s">&#39;w&#39;</span><span class="p">,</span> <span class="n">format</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_format</span><span class="p">)</span> <span class="k">as</span> <span class="n">rootgrp</span><span class="p">:</span>
+                <span class="n">rootgrp</span><span class="o">.</span><span class="n">comment</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cf_attributes</span><span class="p">[</span><span class="s">&#39;comment&#39;</span><span class="p">]</span>
+                <span class="n">rootgrp</span><span class="o">.</span><span class="n">creation_date</span> <span class="o">=</span> \
+                    <span class="n">time_utils</span><span class="o">.</span><span class="n">round_time</span><span class="p">(</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">(),</span>
+                        <span class="n">roundTo</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">isoformat</span><span class="p">()</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s">&#39;T&#39;</span><span class="p">,</span> <span class="s">&#39; &#39;</span><span class="p">)</span>
+                <span class="n">rootgrp</span><span class="o">.</span><span class="n">source</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cf_attributes</span><span class="p">[</span><span class="s">&#39;source&#39;</span><span class="p">]</span>
+                <span class="n">rootgrp</span><span class="o">.</span><span class="n">references</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cf_attributes</span><span class="p">[</span><span class="s">&#39;references&#39;</span><span class="p">]</span>
+                <span class="n">rootgrp</span><span class="o">.</span><span class="n">feature_type</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cf_attributes</span><span class="p">[</span><span class="s">&#39;feature_type&#39;</span>
+                        <span class="p">]</span>
+                <span class="n">rootgrp</span><span class="o">.</span><span class="n">institution</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cf_attributes</span><span class="p">[</span><span class="s">&#39;institution&#39;</span><span class="p">]</span>
+                <span class="n">rootgrp</span><span class="o">.</span><span class="n">convention</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cf_attributes</span><span class="p">[</span><span class="s">&#39;conventions&#39;</span><span class="p">]</span>
+
+                <span class="n">rootgrp</span><span class="o">.</span><span class="n">createDimension</span><span class="p">(</span><span class="s">&#39;time&#39;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_num_time_steps</span><span class="p">)</span>
+                <span class="n">rootgrp</span><span class="o">.</span><span class="n">createDimension</span><span class="p">(</span><span class="s">&#39;data&#39;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+
+                <span class="n">time_</span> <span class="o">=</span> <span class="n">rootgrp</span><span class="o">.</span><span class="n">createVariable</span><span class="p">(</span><span class="s">&#39;time&#39;</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">double</span><span class="p">,</span>
+                        <span class="p">(</span><span class="s">&#39;time&#39;</span><span class="p">,</span> <span class="p">),</span> <span class="n">zlib</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_compress</span><span class="p">)</span>
+                <span class="n">time_</span><span class="o">.</span><span class="n">units</span> <span class="o">=</span> <span class="s">&#39;seconds since {0}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">_model_start_time</span><span class="o">.</span><span class="n">isoformat</span><span class="p">()</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s">&#39;T&#39;</span><span class="p">,</span> <span class="s">&#39; &#39;</span><span class="p">))</span>
+                <span class="n">time_</span><span class="o">.</span><span class="n">long_name</span> <span class="o">=</span> <span class="s">&#39;time&#39;</span>
+                <span class="n">time_</span><span class="o">.</span><span class="n">standard_name</span> <span class="o">=</span> <span class="s">&#39;time&#39;</span>
+                <span class="n">time_</span><span class="o">.</span><span class="n">calendar</span> <span class="o">=</span> <span class="s">&#39;gregorian&#39;</span>
+                <span class="n">time_</span><span class="o">.</span><span class="n">comment</span> <span class="o">=</span> <span class="s">&#39;unspecified time zone&#39;</span>
+
+                <span class="n">pc</span> <span class="o">=</span> <span class="n">rootgrp</span><span class="o">.</span><span class="n">createVariable</span><span class="p">(</span><span class="s">&#39;particle_count&#39;</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">,</span>
+                        <span class="p">(</span><span class="s">&#39;time&#39;</span><span class="p">,</span> <span class="p">),</span> <span class="n">zlib</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_compress</span><span class="p">)</span>
+                <span class="n">pc</span><span class="o">.</span><span class="n">units</span> <span class="o">=</span> <span class="s">&#39;1&#39;</span>
+                <span class="n">pc</span><span class="o">.</span><span class="n">long_name</span> <span class="o">=</span> <span class="s">&#39;number of particles in a given timestep&#39;</span>
+                <span class="n">pc</span><span class="o">.</span><span class="n">ragged_row_count</span> <span class="o">=</span> <span class="s">&#39;particle count at nth timestep&#39;</span>
+
+                <span class="k">for</span> <span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">val</span><span class="p">)</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">data_vars</span><span class="o">.</span><span class="n">iteritems</span><span class="p">():</span>
+                    <span class="c"># don&#39;t pop since it maybe required twice</span>
+                    <span class="n">var</span> <span class="o">=</span> <span class="n">rootgrp</span><span class="o">.</span><span class="n">createVariable</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">val</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;dtype&#39;</span><span class="p">),</span>
+                            <span class="p">(</span><span class="s">&#39;data&#39;</span><span class="p">,</span> <span class="p">),</span> <span class="n">zlib</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_compress</span><span class="p">)</span>
+
+                    <span class="c"># iterate over remaining attributes</span>
+
+                    <span class="p">[</span><span class="nb">setattr</span><span class="p">(</span><span class="n">var</span><span class="p">,</span> <span class="n">key2</span><span class="p">,</span> <span class="n">val2</span><span class="p">)</span> <span class="k">for</span> <span class="p">(</span><span class="n">key2</span><span class="p">,</span> <span class="n">val2</span><span class="p">)</span> <span class="ow">in</span>
+                     <span class="n">val</span><span class="o">.</span><span class="n">iteritems</span><span class="p">()</span> <span class="k">if</span> <span class="n">key2</span> <span class="o">!=</span> <span class="s">&#39;dtype&#39;</span><span class="p">]</span>
+
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">all_data</span><span class="p">:</span>
+                    <span class="n">rootgrp</span><span class="o">.</span><span class="n">createDimension</span><span class="p">(</span><span class="s">&#39;world_point&#39;</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">arr_types</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
+
+                    <span class="n">at</span> <span class="o">=</span> <span class="n">spills</span><span class="o">.</span><span class="n">items</span><span class="p">()[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">array_types</span>
+                    <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">arr_types</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="n">key</span><span class="p">:</span> <span class="n">atype</span><span class="p">})</span> <span class="k">for</span> <span class="p">(</span><span class="n">key</span><span class="p">,</span>
+                     <span class="n">atype</span><span class="p">)</span> <span class="ow">in</span> <span class="n">at</span><span class="o">.</span><span class="n">iteritems</span><span class="p">()</span> <span class="k">if</span> <span class="n">key</span>
+                     <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">arr_types</span> <span class="ow">and</span> <span class="n">key</span>
+                     <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">standard_data</span><span class="p">]</span>
+
+                    <span class="c"># create variables</span>
+
+                    <span class="k">for</span> <span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">val</span><span class="p">)</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">arr_types</span><span class="o">.</span><span class="n">iteritems</span><span class="p">():</span>
+                        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">val</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                            <span class="n">rootgrp</span><span class="o">.</span><span class="n">createVariable</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">val</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span>
+                                    <span class="s">&#39;data&#39;</span><span class="p">,</span> <span class="n">zlib</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_compress</span><span class="p">)</span>
+                        <span class="k">elif</span> <span class="n">val</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="mi">3</span><span class="p">:</span>
+                            <span class="n">rootgrp</span><span class="o">.</span><span class="n">createVariable</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">val</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span>
+                                    <span class="p">(</span><span class="s">&#39;data&#39;</span><span class="p">,</span> <span class="s">&#39;world_point&#39;</span><span class="p">),</span>
+                                    <span class="n">zlib</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_compress</span><span class="p">)</span>
+                        <span class="k">else</span><span class="p">:</span>
+                            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&#39;{0} has an undefined dimension:&#39;</span>
+                                             <span class="s">&#39; {1}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">val</span><span class="o">.</span><span class="n">shape</span><span class="p">))</span>
+
+        <span class="c"># need to keep track of starting index for writing data since variable</span>
+        <span class="c"># number of particles are released</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_start_idx</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_middle_of_run</span> <span class="o">=</span> <span class="bp">True</span>
+</div>
+<div class="viewcode-block" id="NetCDFOutput.write_output"><a class="viewcode-back" href="../../reference.html#gnome.netcdf_outputter.NetCDFOutput.write_output">[docs]</a>    <span class="k">def</span> <span class="nf">write_output</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">step_num</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        write NetCDF output at the end of the step</span>
+
+<span class="sd">        :param step_num: The model&#39;s current timestep for which data is being</span>
+<span class="sd">            written. model.current_time_step</span>
+<span class="sd">        :type step_num: int</span>
+
+<span class="sd">        use super to call base class write_output method</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="nb">super</span><span class="p">(</span><span class="n">NetCDFOutput</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">write_output</span><span class="p">(</span><span class="n">step_num</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_write_step</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">None</span>
+
+        <span class="k">for</span> <span class="n">sc</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">cache</span><span class="o">.</span><span class="n">load_timestep</span><span class="p">(</span><span class="n">step_num</span><span class="p">)</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">sc</span><span class="o">.</span><span class="n">uncertain</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">_u_netcdf_filename</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+                <span class="n">file_</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_u_netcdf_filename</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">file_</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">netcdf_filename</span>
+
+            <span class="n">time_stamp</span> <span class="o">=</span> <span class="n">sc</span><span class="o">.</span><span class="n">current_time_stamp</span>
+
+            <span class="k">with</span> <span class="n">nc</span><span class="o">.</span><span class="n">Dataset</span><span class="p">(</span><span class="n">file_</span><span class="p">,</span> <span class="s">&#39;a&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">rootgrp</span><span class="p">:</span>
+                <span class="n">rootgrp</span><span class="o">.</span><span class="n">variables</span><span class="p">[</span><span class="s">&#39;time&#39;</span><span class="p">][</span><span class="n">step_num</span><span class="p">]</span> <span class="o">=</span> \
+                    <span class="n">nc</span><span class="o">.</span><span class="n">date2num</span><span class="p">(</span><span class="n">time_stamp</span><span class="p">,</span> <span class="n">rootgrp</span><span class="o">.</span><span class="n">variables</span><span class="p">[</span><span class="s">&#39;time&#39;</span>
+                                <span class="p">]</span><span class="o">.</span><span class="n">units</span><span class="p">,</span> <span class="n">rootgrp</span><span class="o">.</span><span class="n">variables</span><span class="p">[</span><span class="s">&#39;time&#39;</span>
+                                <span class="p">]</span><span class="o">.</span><span class="n">calendar</span><span class="p">)</span>
+                <span class="n">pc</span> <span class="o">=</span> <span class="n">rootgrp</span><span class="o">.</span><span class="n">variables</span><span class="p">[</span><span class="s">&#39;particle_count&#39;</span><span class="p">]</span>
+                <span class="n">pc</span><span class="p">[</span><span class="n">step_num</span><span class="p">]</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">sc</span><span class="p">[</span><span class="s">&#39;status_codes&#39;</span><span class="p">])</span>
+
+                <span class="n">_end_idx</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_start_idx</span> <span class="o">+</span> <span class="n">pc</span><span class="p">[</span><span class="n">step_num</span><span class="p">]</span>
+                <span class="n">rootgrp</span><span class="o">.</span><span class="n">variables</span><span class="p">[</span><span class="s">&#39;longitude&#39;</span><span class="p">][</span><span class="bp">self</span><span class="o">.</span><span class="n">_start_idx</span><span class="p">:</span><span class="n">_end_idx</span><span class="p">]</span> <span class="o">=</span> \
+                    <span class="n">sc</span><span class="p">[</span><span class="s">&#39;positions&#39;</span><span class="p">][:,</span> <span class="mi">0</span><span class="p">]</span>
+                <span class="n">rootgrp</span><span class="o">.</span><span class="n">variables</span><span class="p">[</span><span class="s">&#39;latitude&#39;</span><span class="p">][</span><span class="bp">self</span><span class="o">.</span><span class="n">_start_idx</span><span class="p">:</span><span class="n">_end_idx</span><span class="p">]</span> <span class="o">=</span> \
+                    <span class="n">sc</span><span class="p">[</span><span class="s">&#39;positions&#39;</span><span class="p">][:,</span> <span class="mi">1</span><span class="p">]</span>
+                <span class="n">rootgrp</span><span class="o">.</span><span class="n">variables</span><span class="p">[</span><span class="s">&#39;depth&#39;</span><span class="p">][</span><span class="bp">self</span><span class="o">.</span><span class="n">_start_idx</span><span class="p">:</span><span class="n">_end_idx</span><span class="p">]</span> <span class="o">=</span> \
+                    <span class="n">sc</span><span class="p">[</span><span class="s">&#39;positions&#39;</span><span class="p">][:,</span> <span class="mi">2</span><span class="p">]</span>
+                <span class="n">rootgrp</span><span class="o">.</span><span class="n">variables</span><span class="p">[</span><span class="s">&#39;status&#39;</span><span class="p">][</span><span class="bp">self</span><span class="o">.</span><span class="n">_start_idx</span><span class="p">:</span><span class="n">_end_idx</span><span class="p">]</span> <span class="o">=</span> \
+                    <span class="n">sc</span><span class="p">[</span><span class="s">&#39;status_codes&#39;</span><span class="p">][:]</span>
+                <span class="n">rootgrp</span><span class="o">.</span><span class="n">variables</span><span class="p">[</span><span class="s">&#39;spill_num&#39;</span><span class="p">][</span><span class="bp">self</span><span class="o">.</span><span class="n">_start_idx</span><span class="p">:</span><span class="n">_end_idx</span><span class="p">]</span> <span class="o">=</span> \
+                    <span class="n">sc</span><span class="p">[</span><span class="s">&#39;spill_num&#39;</span><span class="p">][:]</span>
+                <span class="n">rootgrp</span><span class="o">.</span><span class="n">variables</span><span class="p">[</span><span class="s">&#39;id&#39;</span><span class="p">][</span><span class="bp">self</span><span class="o">.</span><span class="n">_start_idx</span><span class="p">:</span><span class="n">_end_idx</span><span class="p">]</span> <span class="o">=</span> \
+                    <span class="n">sc</span><span class="p">[</span><span class="s">&#39;id&#39;</span><span class="p">][:]</span>
+                <span class="n">rootgrp</span><span class="o">.</span><span class="n">variables</span><span class="p">[</span><span class="s">&#39;mass&#39;</span><span class="p">][</span><span class="bp">self</span><span class="o">.</span><span class="n">_start_idx</span><span class="p">:</span><span class="n">_end_idx</span><span class="p">]</span> <span class="o">=</span> \
+                    <span class="n">sc</span><span class="p">[</span><span class="s">&#39;mass&#39;</span><span class="p">][:]</span>
+
+                <span class="c"># write remaining data</span>
+
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">all_data</span><span class="p">:</span>
+                    <span class="k">for</span> <span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">val</span><span class="p">)</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">arr_types</span><span class="o">.</span><span class="n">iteritems</span><span class="p">():</span>
+                        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">val</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                            <span class="n">rootgrp</span><span class="o">.</span><span class="n">variables</span><span class="p">[</span><span class="n">key</span><span class="p">][</span><span class="bp">self</span><span class="o">.</span><span class="n">_start_idx</span><span class="p">:</span>
+                                    <span class="n">_end_idx</span><span class="p">]</span> <span class="o">=</span> <span class="n">sc</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
+                        <span class="k">else</span><span class="p">:</span>
+                            <span class="n">rootgrp</span><span class="o">.</span><span class="n">variables</span><span class="p">[</span><span class="n">key</span><span class="p">][</span><span class="bp">self</span><span class="o">.</span><span class="n">_start_idx</span><span class="p">:</span>
+                                    <span class="n">_end_idx</span><span class="p">,</span> <span class="p">:]</span> <span class="o">=</span> <span class="n">sc</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_start_idx</span> <span class="o">=</span> <span class="n">_end_idx</span>  <span class="c"># set _start_idx for the next timestep</span>
+
+        <span class="c"># update self._next_output_time if data is successfully written</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_update_next_output_time</span><span class="p">(</span><span class="n">step_num</span><span class="p">,</span> <span class="n">sc</span><span class="o">.</span><span class="n">current_time_stamp</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="p">{</span><span class="s">&#39;step_num&#39;</span><span class="p">:</span> <span class="n">step_num</span><span class="p">,</span>
+                <span class="s">&#39;netcdf_filename&#39;</span><span class="p">:</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">netcdf_filename</span><span class="p">,</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_u_netcdf_filename</span><span class="p">),</span> <span class="s">&#39;time_stamp&#39;</span><span class="p">:</span> <span class="n">time_stamp</span><span class="p">}</span>
+</div>
+<div class="viewcode-block" id="NetCDFOutput.rewind"><a class="viewcode-back" href="../../reference.html#gnome.netcdf_outputter.NetCDFOutput.rewind">[docs]</a>    <span class="k">def</span> <span class="nf">rewind</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        if rewound, delete both the files and expect prepare_for_model_run to</span>
+<span class="sd">        be called since rewind means start from beginning.</span>
+
+<span class="sd">        Also call base class rewind to reset internal variables. Using super</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="nb">super</span><span class="p">(</span><span class="n">NetCDFOutput</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">rewind</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">netcdf_filename</span><span class="p">):</span>
+            <span class="n">os</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">netcdf_filename</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_u_netcdf_filename</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span> \
+            <span class="ow">and</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_u_netcdf_filename</span><span class="p">):</span>
+            <span class="n">os</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_u_netcdf_filename</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_middle_of_run</span> <span class="o">=</span> <span class="bp">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_start_idx</span> <span class="o">=</span> <span class="mi">0</span>
+</div>
+    <span class="nd">@staticmethod</span>
+<div class="viewcode-block" id="NetCDFOutput.read_data"><a class="viewcode-back" href="../../reference.html#gnome.netcdf_outputter.NetCDFOutput.read_data">[docs]</a>    <span class="k">def</span> <span class="nf">read_data</span><span class="p">(</span><span class="n">netcdf_file</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">all_data</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Read and create standard data arrays for a netcdf file that was created</span>
+<span class="sd">        with NetCDFOutput class. Make it a static method since it is</span>
+<span class="sd">        independent of an instance of the Outputter. The method is put with</span>
+<span class="sd">        this class because the NetCDF functionality for PyGnome data with CF</span>
+<span class="sd">        standard is captured here.</span>
+
+<span class="sd">        :param netcdf_file: Name of the NetCDF file from which to read the data</span>
+<span class="sd">        :type netcdf_file: str</span>
+<span class="sd">        :param index: Index of the &#39;time&#39; variable (or time_step) for which</span>
+<span class="sd">            data is desired. Default is 0 so it returns data associated with</span>
+<span class="sd">            first timestamp.</span>
+<span class="sd">        :type index: int</span>
+<span class="sd">        :returns: a dict containing &#39;positions&#39;, &#39;status_codes&#39;, &#39;spill_num&#39;.</span>
+<span class="sd">            Currently, this is standard data.</span>
+
+<span class="sd">        Standard data arrays are numpy arrays of size N, where N is number of</span>
+<span class="sd">        particles released at time step of interest:</span>
+<span class="sd">            &#39;current_time_stamp&#39;: datetime object associated with this data</span>
+<span class="sd">            &#39;positions&#39;         : NX3 array. Corresponds with NetCDF variables</span>
+<span class="sd">                                  &#39;longitude&#39;, &#39;latitude&#39;, &#39;depth&#39;</span>
+<span class="sd">            &#39;status_codes&#39;      : NX1 array. Corresponds with NetCDF variable</span>
+<span class="sd">                                  &#39;status&#39;</span>
+<span class="sd">            &#39;spill_num&#39;         : NX1 array. Corresponds with NetCDF variable</span>
+<span class="sd">                                  &#39;id&#39;</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">netcdf_file</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">IOError</span><span class="p">(</span><span class="s">&#39;File not found: {0}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">netcdf_file</span><span class="p">))</span>
+
+        <span class="n">arrays_dict</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
+        <span class="k">with</span> <span class="n">nc</span><span class="o">.</span><span class="n">Dataset</span><span class="p">(</span><span class="n">netcdf_file</span><span class="p">)</span> <span class="k">as</span> <span class="n">data</span><span class="p">:</span>
+            <span class="n">_start_ix</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="k">for</span> <span class="n">idx</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">index</span><span class="p">):</span>
+                <span class="n">_start_ix</span> <span class="o">+=</span> <span class="n">data</span><span class="o">.</span><span class="n">variables</span><span class="p">[</span><span class="s">&#39;particle_count&#39;</span><span class="p">][</span><span class="n">idx</span><span class="p">]</span>
+
+            <span class="n">_stop_ix</span> <span class="o">=</span> <span class="n">_start_ix</span> <span class="o">+</span> <span class="n">data</span><span class="o">.</span><span class="n">variables</span><span class="p">[</span><span class="s">&#39;particle_count&#39;</span><span class="p">][</span><span class="n">index</span><span class="p">]</span>
+            <span class="n">elem</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">variables</span><span class="p">[</span><span class="s">&#39;particle_count&#39;</span><span class="p">][</span><span class="n">index</span><span class="p">]</span>
+
+            <span class="n">time_</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">variables</span><span class="p">[</span><span class="s">&#39;time&#39;</span><span class="p">]</span>
+            <span class="n">c_time</span> <span class="o">=</span> <span class="n">nc</span><span class="o">.</span><span class="n">num2date</span><span class="p">(</span><span class="n">time_</span><span class="p">[</span><span class="n">index</span><span class="p">],</span> <span class="n">time_</span><span class="o">.</span><span class="n">units</span><span class="p">,</span>
+                                 <span class="n">calendar</span><span class="o">=</span><span class="n">time_</span><span class="o">.</span><span class="n">calendar</span><span class="p">)</span>
+            <span class="n">arrays_dict</span><span class="p">[</span><span class="s">&#39;current_time_stamp&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">c_time</span><span class="p">)</span>
+
+            <span class="n">positions</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">elem</span><span class="p">,</span> <span class="mi">3</span><span class="p">),</span>
+                                 <span class="n">dtype</span><span class="o">=</span><span class="n">gnome</span><span class="o">.</span><span class="n">basic_types</span><span class="o">.</span><span class="n">world_point_type</span><span class="p">)</span>
+
+            <span class="n">positions</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">variables</span><span class="p">[</span><span class="s">&#39;longitude&#39;</span><span class="p">][</span><span class="n">_start_ix</span><span class="p">:</span><span class="n">_stop_ix</span><span class="p">]</span>
+            <span class="n">positions</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">variables</span><span class="p">[</span><span class="s">&#39;latitude&#39;</span><span class="p">][</span><span class="n">_start_ix</span><span class="p">:</span><span class="n">_stop_ix</span><span class="p">]</span>
+            <span class="n">positions</span><span class="p">[:,</span> <span class="mi">2</span><span class="p">]</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">variables</span><span class="p">[</span><span class="s">&#39;depth&#39;</span><span class="p">][</span><span class="n">_start_ix</span><span class="p">:</span><span class="n">_stop_ix</span><span class="p">]</span>
+
+            <span class="n">arrays_dict</span><span class="p">[</span><span class="s">&#39;positions&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">positions</span>
+            <span class="n">arrays_dict</span><span class="p">[</span><span class="s">&#39;status_codes&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">variables</span><span class="p">[</span><span class="s">&#39;status&#39;</span><span class="p">]</span>
+                <span class="p">[</span><span class="n">_start_ix</span><span class="p">:</span><span class="n">_stop_ix</span><span class="p">])</span>
+            <span class="n">arrays_dict</span><span class="p">[</span><span class="s">&#39;spill_num&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">variables</span><span class="p">[</span><span class="s">&#39;spill_num&#39;</span><span class="p">]</span>
+                <span class="p">[</span><span class="n">_start_ix</span><span class="p">:</span><span class="n">_stop_ix</span><span class="p">])</span>
+            <span class="n">arrays_dict</span><span class="p">[</span><span class="s">&#39;id&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">variables</span><span class="p">[</span><span class="s">&#39;id&#39;</span><span class="p">][</span><span class="n">_start_ix</span><span class="p">:</span><span class="n">_stop_ix</span><span class="p">]</span>
+            <span class="n">arrays_dict</span><span class="p">[</span><span class="s">&#39;mass&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">variables</span><span class="p">[</span><span class="s">&#39;mass&#39;</span><span class="p">][</span><span class="n">_start_ix</span><span class="p">:</span><span class="n">_stop_ix</span><span class="p">]</span>
+
+            <span class="k">if</span> <span class="n">all_data</span><span class="p">:</span>  <span class="c"># append remaining data arrays</span>
+                <span class="n">excludes</span> <span class="o">=</span> <span class="n">NetCDFOutput</span><span class="o">.</span><span class="n">data_vars</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span>
+                <span class="n">excludes</span><span class="o">.</span><span class="n">extend</span><span class="p">([</span><span class="s">&#39;time&#39;</span><span class="p">,</span> <span class="s">&#39;particle_count&#39;</span><span class="p">])</span>
+
+                <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">data</span><span class="o">.</span><span class="n">variables</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+                    <span class="k">if</span> <span class="n">key</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">excludes</span><span class="p">:</span>
+                        <span class="k">if</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">arrays_dict</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+                            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&#39;Error in read_data. {0} is&#39;</span>
+                                <span class="s">&#39; already added to arrays_dict - trying to&#39;</span>
+                                <span class="s">&#39; add it again&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">key</span><span class="p">))</span>
+
+                        <span class="n">arrays_dict</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> \
+                            <span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">variables</span><span class="p">[</span><span class="n">key</span><span class="p">])[</span><span class="n">_start_ix</span><span class="p">:</span><span class="n">_stop_ix</span><span class="p">]</span>
+
+        <span class="k">return</span> <span class="n">arrays_dict</span></div></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../index.html">pyGNOME 0.1.1 documentation</a> &raquo;</li>
+          <li><a href="../index.html" >Module code</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2012, NOAA Emergecny Response Division.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.3.
+    </div>
+  </body>
+</html>

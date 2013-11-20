@@ -86,7 +86,7 @@ At the C++ level, each mover has a <cite>get_move</cite> method that takes the c
 <span id="gnome-model-the-pygnome-model-class"></span><h2><tt class="docutils literal"><span class="pre">gnome.model</span></tt> &#8211; the pyGNOME model class<a class="headerlink" href="#module-gnome.model" title="Permalink to this headline">¶</a></h2>
 <dl class="class">
 <dt id="gnome.model.Model">
-<em class="property">class </em><tt class="descclassname">gnome.model.</tt><tt class="descname">Model</tt><big>(</big><em>time_step=datetime.timedelta(0</em>, <em>900)</em>, <em>start_time=datetime.datetime(2013</em>, <em>11</em>, <em>19</em>, <em>17</em>, <em>0)</em>, <em>duration=datetime.timedelta(1)</em>, <em>map=&lt;gnome.map.GnomeMap object at 0x2d04f30&gt;</em>, <em>uncertain=False</em>, <em>cache_enabled=False</em>, <em>id=None</em><big>)</big><a class="reference internal" href="_modules/gnome/model.html#Model"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.model.Model" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><tt class="descclassname">gnome.model.</tt><tt class="descname">Model</tt><big>(</big><em>time_step=datetime.timedelta(0</em>, <em>900)</em>, <em>start_time=datetime.datetime(2013</em>, <em>11</em>, <em>19</em>, <em>18</em>, <em>0)</em>, <em>duration=datetime.timedelta(1)</em>, <em>map=&lt;gnome.map.GnomeMap object at 0x2d04fb0&gt;</em>, <em>uncertain=False</em>, <em>cache_enabled=False</em>, <em>id=None</em><big>)</big><a class="reference internal" href="_modules/gnome/model.html#Model"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.model.Model" title="Permalink to this definition">¶</a></dt>
 <dd><p>PyGNOME Model Class</p>
 <p>Initializes a model. All arguments have a default.</p>
 <table class="docutils field-list" frame="void" rules="none">
@@ -1045,53 +1045,6 @@ couple more things specific to CyMover.</p>
 </dd></dl>
 
 <dl class="class">
-<dt id="gnome.movers.WindMover">
-<em class="property">class </em><tt class="descclassname">gnome.movers.</tt><tt class="descname">WindMover</tt><big>(</big><em>wind</em>, <em>**kwargs</em><big>)</big><a class="headerlink" href="#gnome.movers.WindMover" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <tt class="xref py py-class docutils literal"><span class="pre">gnome.movers.wind_movers.WindMoversBase</span></tt>, <tt class="xref py py-class docutils literal"><span class="pre">gnome.utilities.serializable.Serializable</span></tt></p>
-<p>Python wrapper around the Cython wind_mover module.
-This class inherits from CyMover and contains CyWindMover</p>
-<p>The real work is done by the CyWindMover object.  CyMover
-sets everything up that is common to all movers.</p>
-<p>In addition to base class array_types.basic, also use the
-array_types.windage dict since WindMover requires a windage array</p>
-<p>Uses super to call CyMover base class __init__</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>wind</strong> &#8211; wind object &#8211; provides the wind time series for the mover</td>
-</tr>
-</tbody>
-</table>
-<p>Remaining kwargs are passed onto WindMoversBase __init__ using super.
-See Mover documentation for remaining valid kwargs.</p>
-<dl class="method">
-<dt id="gnome.movers.WindMover.from_dict">
-<tt class="descname">from_dict</tt><big>(</big><em>dict_</em><big>)</big><a class="headerlink" href="#gnome.movers.WindMover.from_dict" title="Permalink to this definition">¶</a></dt>
-<dd><p>For updating the object from dictionary</p>
-<p>&#8216;wind&#8217; object is not part of the state since it is not serialized/
-deserialized; however, user can still update the wind attribute with a
-new Wind object. That must be poped out of the dict() here, then call
-super to process the standard dict_</p>
-</dd></dl>
-
-<dl class="classmethod">
-<dt id="gnome.movers.WindMover.new_from_dict">
-<em class="property">classmethod </em><tt class="descname">new_from_dict</tt><big>(</big><em>dict_</em><big>)</big><a class="headerlink" href="#gnome.movers.WindMover.new_from_dict" title="Permalink to this definition">¶</a></dt>
-<dd><p>define in WindMover and check wind_id matches wind</p>
-<p>invokes: super(WindMover,cls).new_from_dict(dict_)</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="gnome.movers.WindMover.wind_id_to_dict">
-<tt class="descname">wind_id_to_dict</tt><big>(</big><big>)</big><a class="headerlink" href="#gnome.movers.WindMover.wind_id_to_dict" title="Permalink to this definition">¶</a></dt>
-<dd><p>used only for storing state so no wind_id_from_dict is defined. This
-is not a read/write attribute. Only defined for serializable_state</p>
-</dd></dl>
-
-</dd></dl>
-
-<dl class="class">
 <dt id="gnome.movers.RandomMover">
 <em class="property">class </em><tt class="descclassname">gnome.movers.</tt><tt class="descname">RandomMover</tt><big>(</big><em>**kwargs</em><big>)</big><a class="headerlink" href="#gnome.movers.RandomMover" title="Permalink to this definition">¶</a></dt>
 <dd><p>This mover class inherits from CyMover and contains CyRandomMover</p>
@@ -1115,7 +1068,7 @@ only updates here</p>
 <dd><p>modifies state of the object using dictionary &#8216;data&#8217;. 
 Only the self.state.update list contains properties that can me modified for existing object</p>
 <p>Set the state of this object using the dictionary <tt class="docutils literal"><span class="pre">data</span></tt> by looking up
-the value of each key in <tt class="docutils literal"><span class="pre">data</span></tt> that is also in  <cite>list_</cite>. Input <a href="#id1"><span class="problematic" id="id2">list_</span></a> 
+the value of each key in <tt class="docutils literal"><span class="pre">data</span></tt> that is also in  <cite>list_</cite>. Input <a href="#id15"><span class="problematic" id="id16">list_</span></a> 
 contains the object&#8217;s attributes (or fields) updated with data</p>
 <p>For every field, the choice of how to set the field is as follows:</p>
 <p>If there is a method defined on the object such that the method name is
@@ -1234,6 +1187,538 @@ the method name is <cite>{field_name}_to_dict</cite>, use the return value of th
 method as the field value.</p>
 <p>Note: any field in <cite>list</cite> that does not exist on the
 object and does not have a to_dict method will raise an AttributeError.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="gnome.movers.GridCurrentMover">
+<em class="property">class </em><tt class="descclassname">gnome.movers.</tt><tt class="descname">GridCurrentMover</tt><big>(</big><em>filename</em>, <em>topology_file=None</em>, <em>**kwargs</em><big>)</big><a class="headerlink" href="#gnome.movers.GridCurrentMover" title="Permalink to this definition">¶</a></dt>
+<dd><p>Initialize a GridCurrentMover</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>filename</strong> &#8211; absolute or relative path to the data file: could be netcdf or filelist</li>
+<li><strong>topology_file=None</strong> &#8211; absolute or relative path to topology file. If not given, the
+GridCurrentMover will copmute the topology from the data file.</li>
+<li><strong>active_start</strong> &#8211; datetime when the mover should be active</li>
+<li><strong>active_stop</strong> &#8211; datetime after which the mover should be inactive</li>
+<li><strong>current_scale</strong> &#8211; Value to scale current data</li>
+<li><strong>uncertain_duration</strong> &#8211; how often does a given uncertain element gets reset</li>
+<li><strong>uncertain_time_delay</strong> &#8211; when does the uncertainly kick in.</li>
+<li><strong>uncertain_cross</strong> &#8211; Scale for uncertainty perpendicular to the flow</li>
+<li><strong>uncertain_along</strong> &#8211; Scale for uncertainty parallel to the flow</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<p>uses super: super(GridCurrentMover,self).__init__(<a href="#id1"><span class="problematic" id="id2">**</span></a>kwargs)</p>
+<dl class="method">
+<dt id="gnome.movers.GridCurrentMover.datetime_to_seconds">
+<tt class="descname">datetime_to_seconds</tt><big>(</big><em>model_time</em><big>)</big><a class="headerlink" href="#gnome.movers.GridCurrentMover.datetime_to_seconds" title="Permalink to this definition">¶</a></dt>
+<dd><p>Put the time conversion call here - in case we decide to change it, it
+only updates here</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gnome.movers.GridCurrentMover.export_topology">
+<tt class="descname">export_topology</tt><big>(</big><em>topology_file</em><big>)</big><a class="headerlink" href="#gnome.movers.GridCurrentMover.export_topology" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>topology_file=None</strong> &#8211; absolute or relative path where topology file will be written.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="gnome.movers.GridCurrentMover.from_dict">
+<tt class="descname">from_dict</tt><big>(</big><em>data</em><big>)</big><a class="headerlink" href="#gnome.movers.GridCurrentMover.from_dict" title="Permalink to this definition">¶</a></dt>
+<dd><p>modifies state of the object using dictionary &#8216;data&#8217;. 
+Only the self.state.update list contains properties that can me modified for existing object</p>
+<p>Set the state of this object using the dictionary <tt class="docutils literal"><span class="pre">data</span></tt> by looking up
+the value of each key in <tt class="docutils literal"><span class="pre">data</span></tt> that is also in  <cite>list_</cite>. Input <a href="#id17"><span class="problematic" id="id18">list_</span></a> 
+contains the object&#8217;s attributes (or fields) updated with data</p>
+<p>For every field, the choice of how to set the field is as follows:</p>
+<p>If there is a method defined on the object such that the method name is
+<cite>{field_name}_from_dict</cite>, call that method with the field&#8217;s data.</p>
+<p>If the field on the object has a <tt class="docutils literal"><span class="pre">from_dict</span></tt> method, then use that
+method instead.</p>
+<p>If neither method exists, then set the field with the value from
+<tt class="docutils literal"><span class="pre">data</span></tt> directly on the object.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gnome.movers.GridCurrentMover.get_move">
+<tt class="descname">get_move</tt><big>(</big><em>sc</em>, <em>time_step</em>, <em>model_time_datetime</em><big>)</big><a class="headerlink" href="#gnome.movers.GridCurrentMover.get_move" title="Permalink to this definition">¶</a></dt>
+<dd><p>Base implementation of Cython wrapped C++ movers
+Override for things like the WindMover since it has a different
+implementation</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>sc</strong> &#8211; spill_container.SpillContainer object</li>
+<li><strong>time_step</strong> &#8211; time step in seconds</li>
+<li><strong>model_time_datetime</strong> &#8211; current model time as datetime object</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="gnome.movers.GridCurrentMover.model_step_is_done">
+<tt class="descname">model_step_is_done</tt><big>(</big><em>sc=None</em><big>)</big><a class="headerlink" href="#gnome.movers.GridCurrentMover.model_step_is_done" title="Permalink to this definition">¶</a></dt>
+<dd><p>This method gets called by the model after everything else is done
+in a time step, and is intended to perform any necessary clean-up
+operations. Subclassed movers can override this method.</p>
+</dd></dl>
+
+<dl class="classmethod">
+<dt id="gnome.movers.GridCurrentMover.new_from_dict">
+<em class="property">classmethod </em><tt class="descname">new_from_dict</tt><big>(</big><em>dict_</em><big>)</big><a class="headerlink" href="#gnome.movers.GridCurrentMover.new_from_dict" title="Permalink to this definition">¶</a></dt>
+<dd><p>creates a new object from dictionary</p>
+<p>This is base implementation and can be over-ridden by classes using mixin</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gnome.movers.GridCurrentMover.obj_type_to_dict">
+<tt class="descname">obj_type_to_dict</tt><big>(</big><big>)</big><a class="headerlink" href="#gnome.movers.GridCurrentMover.obj_type_to_dict" title="Permalink to this definition">¶</a></dt>
+<dd><p>returns object type to save in dict. This is base implementation and can be over-ridden</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gnome.movers.GridCurrentMover.prepare_data_for_get_move">
+<tt class="descname">prepare_data_for_get_move</tt><big>(</big><em>sc</em>, <em>model_time_datetime</em><big>)</big><a class="headerlink" href="#gnome.movers.GridCurrentMover.prepare_data_for_get_move" title="Permalink to this definition">¶</a></dt>
+<dd><p>organizes the spill object into inputs for calling with Cython
+wrapper&#8217;s get_move(...)</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>sc</strong> &#8211; an instance of gnome.spill_container.SpillContainer class</li>
+<li><strong>model_time_datetime</strong> &#8211; current model time as datetime object</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="gnome.movers.GridCurrentMover.prepare_for_model_run">
+<tt class="descname">prepare_for_model_run</tt><big>(</big><big>)</big><a class="headerlink" href="#gnome.movers.GridCurrentMover.prepare_for_model_run" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calls the contained cython mover&#8217;s prepare_for_model_run()</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gnome.movers.GridCurrentMover.prepare_for_model_step">
+<tt class="descname">prepare_for_model_step</tt><big>(</big><em>sc</em>, <em>time_step</em>, <em>model_time_datetime</em><big>)</big><a class="headerlink" href="#gnome.movers.GridCurrentMover.prepare_for_model_step" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="docutils">
+<dt>Default implementation of prepare_for_model_step(...)</dt>
+<dd><ul class="first last simple">
+<li>Sets the mover&#8217;s active flag if time is within specified timespan
+(done in base class Mover)</li>
+<li>Invokes the cython mover&#8217;s prepare_for_model_step</li>
+</ul>
+</dd>
+</dl>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>sc</strong> &#8211; an instance of gnome.spill_container.SpillContainer class</li>
+<li><strong>time_step</strong> &#8211; time step in seconds</li>
+<li><strong>model_time_datetime</strong> &#8211; current model time as datetime object</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<p>Uses super to invoke Mover class prepare_for_model_step and does a
+couple more things specific to CyMover.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gnome.movers.GridCurrentMover.to_dict">
+<tt class="descname">to_dict</tt><big>(</big><em>do='update'</em><big>)</big><a class="headerlink" href="#gnome.movers.GridCurrentMover.to_dict" title="Permalink to this definition">¶</a></dt>
+<dd><p>returns a dictionary containing the serialized representation of this
+object. By default it converts the &#8216;update&#8217; list of the state object to dict;
+however, do=&#8217;create&#8217; or do=&#8217;read&#8217; will return the dict with the corresponding
+list.</p>
+<p>For every field, if there is a method defined on the object such that
+the method name is <cite>{field_name}_to_dict</cite>, use the return value of that
+method as the field value.</p>
+<p>Note: any field in <cite>list</cite> that does not exist on the
+object and does not have a to_dict method will raise an AttributeError.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="gnome.movers.WindMoversBase">
+<em class="property">class </em><tt class="descclassname">gnome.movers.</tt><tt class="descname">WindMoversBase</tt><big>(</big><em>uncertain_duration=24</em>, <em>uncertain_time_delay=0</em>, <em>uncertain_speed_scale=2.0</em>, <em>uncertain_angle_scale=0.4</em>, <em>uncertain_angle_units='rad'</em>, <em>**kwargs</em><big>)</big><a class="headerlink" href="#gnome.movers.WindMoversBase" title="Permalink to this definition">¶</a></dt>
+<dd><p>This is simply a base class for WindMover and GridWindMover for the
+common properties.</p>
+<p>The classes that inherit from this should define the self.mover object
+correctly so it has the required attributes.</p>
+<p>Input args with defaults:</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>uncertain_duration</strong> &#8211; (seconds) the randomly generated uncertainty
+array gets recomputed based on &#8216;uncertain_duration&#8217;</li>
+<li><strong>uncertain_time_delay</strong> &#8211; when does the uncertainly kick in.</li>
+<li><strong>uncertain_speed_scale</strong> &#8211; Scale for uncertainty in wind speed
+non-dimensional number</li>
+<li><strong>uncertain_angle_scale</strong> &#8211; Scale for uncertainty in wind direction
+&#8216;deg&#8217; or &#8216;rad&#8217;</li>
+<li><strong>uncertain_angle_units</strong> &#8211; &#8216;rad&#8217; or &#8216;deg&#8217;. These are the units for
+the uncertain_angle_scale.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<p>It calls super in the __init__ method and passes in the optional
+parameters (kwargs)</p>
+<dl class="method">
+<dt id="gnome.movers.WindMoversBase.datetime_to_seconds">
+<tt class="descname">datetime_to_seconds</tt><big>(</big><em>model_time</em><big>)</big><a class="headerlink" href="#gnome.movers.WindMoversBase.datetime_to_seconds" title="Permalink to this definition">¶</a></dt>
+<dd><p>Put the time conversion call here - in case we decide to change it, it
+only updates here</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gnome.movers.WindMoversBase.get_move">
+<tt class="descname">get_move</tt><big>(</big><em>sc</em>, <em>time_step</em>, <em>model_time_datetime</em><big>)</big><a class="headerlink" href="#gnome.movers.WindMoversBase.get_move" title="Permalink to this definition">¶</a></dt>
+<dd><p>Override base class functionality because mover has a different
+get_move signature</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>sc</strong> &#8211; an instance of the gnome.SpillContainer class</li>
+<li><strong>time_step</strong> &#8211; time step in seconds</li>
+<li><strong>model_time_datetime</strong> &#8211; current time of the model as a date time
+object</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="gnome.movers.WindMoversBase.model_step_is_done">
+<tt class="descname">model_step_is_done</tt><big>(</big><em>sc=None</em><big>)</big><a class="headerlink" href="#gnome.movers.WindMoversBase.model_step_is_done" title="Permalink to this definition">¶</a></dt>
+<dd><p>This method gets called by the model after everything else is done
+in a time step, and is intended to perform any necessary clean-up
+operations. Subclassed movers can override this method.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gnome.movers.WindMoversBase.prepare_data_for_get_move">
+<tt class="descname">prepare_data_for_get_move</tt><big>(</big><em>sc</em>, <em>model_time_datetime</em><big>)</big><a class="headerlink" href="#gnome.movers.WindMoversBase.prepare_data_for_get_move" title="Permalink to this definition">¶</a></dt>
+<dd><p>organizes the spill object into inputs for calling with Cython
+wrapper&#8217;s get_move(...)</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>sc</strong> &#8211; an instance of gnome.spill_container.SpillContainer class</li>
+<li><strong>model_time_datetime</strong> &#8211; current model time as datetime object</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="gnome.movers.WindMoversBase.prepare_for_model_run">
+<tt class="descname">prepare_for_model_run</tt><big>(</big><big>)</big><a class="headerlink" href="#gnome.movers.WindMoversBase.prepare_for_model_run" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calls the contained cython mover&#8217;s prepare_for_model_run()</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gnome.movers.WindMoversBase.prepare_for_model_step">
+<tt class="descname">prepare_for_model_step</tt><big>(</big><em>sc</em>, <em>time_step</em>, <em>model_time_datetime</em><big>)</big><a class="headerlink" href="#gnome.movers.WindMoversBase.prepare_for_model_step" title="Permalink to this definition">¶</a></dt>
+<dd><p>Call base class method using super
+Also updates windage for this timestep</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>sc</strong> &#8211; an instance of gnome.spill_container.SpillContainer class</li>
+<li><strong>time_step</strong> &#8211; time step in seconds</li>
+<li><strong>model_time_datetime</strong> &#8211; current time of model as a date time object</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="gnome.movers.WindMoversBase.set_uncertain_angle">
+<tt class="descname">set_uncertain_angle</tt><big>(</big><em>val</em>, <em>units</em><big>)</big><a class="headerlink" href="#gnome.movers.WindMoversBase.set_uncertain_angle" title="Permalink to this definition">¶</a></dt>
+<dd><p>this must be a function because user must provide units with value</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="gnome.movers.WindMoversBase.uncertain_angle_scale">
+<tt class="descname">uncertain_angle_scale</tt><a class="headerlink" href="#gnome.movers.WindMoversBase.uncertain_angle_scale" title="Permalink to this definition">¶</a></dt>
+<dd><p>read only - this is set when set_uncertain_angle() is called
+It returns the angle in &#8216;uncertain_angle_units&#8217;</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="gnome.movers.WindMoversBase.uncertain_angle_units">
+<tt class="descname">uncertain_angle_units</tt><a class="headerlink" href="#gnome.movers.WindMoversBase.uncertain_angle_units" title="Permalink to this definition">¶</a></dt>
+<dd><p>units specified by the user when setting the uncertain_angle:
+set_uncertain_angle()</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="gnome.movers.WindMover">
+<em class="property">class </em><tt class="descclassname">gnome.movers.</tt><tt class="descname">WindMover</tt><big>(</big><em>wind</em>, <em>**kwargs</em><big>)</big><a class="headerlink" href="#gnome.movers.WindMover" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <tt class="xref py py-class docutils literal"><span class="pre">gnome.movers.wind_movers.WindMoversBase</span></tt>, <tt class="xref py py-class docutils literal"><span class="pre">gnome.utilities.serializable.Serializable</span></tt></p>
+<p>Python wrapper around the Cython wind_mover module.
+This class inherits from CyMover and contains CyWindMover</p>
+<p>The real work is done by the CyWindMover object.  CyMover
+sets everything up that is common to all movers.</p>
+<p>In addition to base class array_types.basic, also use the
+array_types.windage dict since WindMover requires a windage array</p>
+<p>Uses super to call CyMover base class __init__</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>wind</strong> &#8211; wind object &#8211; provides the wind time series for the mover</td>
+</tr>
+</tbody>
+</table>
+<p>Remaining kwargs are passed onto WindMoversBase __init__ using super.
+See Mover documentation for remaining valid kwargs.</p>
+<dl class="method">
+<dt id="gnome.movers.WindMover.from_dict">
+<tt class="descname">from_dict</tt><big>(</big><em>dict_</em><big>)</big><a class="headerlink" href="#gnome.movers.WindMover.from_dict" title="Permalink to this definition">¶</a></dt>
+<dd><p>For updating the object from dictionary</p>
+<p>&#8216;wind&#8217; object is not part of the state since it is not serialized/
+deserialized; however, user can still update the wind attribute with a
+new Wind object. That must be poped out of the dict() here, then call
+super to process the standard dict_</p>
+</dd></dl>
+
+<dl class="classmethod">
+<dt id="gnome.movers.WindMover.new_from_dict">
+<em class="property">classmethod </em><tt class="descname">new_from_dict</tt><big>(</big><em>dict_</em><big>)</big><a class="headerlink" href="#gnome.movers.WindMover.new_from_dict" title="Permalink to this definition">¶</a></dt>
+<dd><p>define in WindMover and check wind_id matches wind</p>
+<p>invokes: super(WindMover,cls).new_from_dict(dict_)</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gnome.movers.WindMover.wind_id_to_dict">
+<tt class="descname">wind_id_to_dict</tt><big>(</big><big>)</big><a class="headerlink" href="#gnome.movers.WindMover.wind_id_to_dict" title="Permalink to this definition">¶</a></dt>
+<dd><p>used only for storing state so no wind_id_from_dict is defined. This
+is not a read/write attribute. Only defined for serializable_state</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="gnome.movers.GridWindMover">
+<em class="property">class </em><tt class="descclassname">gnome.movers.</tt><tt class="descname">GridWindMover</tt><big>(</big><em>wind_file</em>, <em>topology_file=None</em>, <em>**kwargs</em><big>)</big><a class="headerlink" href="#gnome.movers.GridWindMover" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>wind_file</strong> &#8211; file containing wind data on a grid</li>
+<li><strong>topology_file</strong> &#8211; Default is None. When exporting topology, it
+is stored in this file</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<p>Pass optional arguments to base class
+uses super: super(GridWindMover,self).__init__(<a href="#id3"><span class="problematic" id="id4">**</span></a>kwargs)</p>
+<dl class="method">
+<dt id="gnome.movers.GridWindMover.datetime_to_seconds">
+<tt class="descname">datetime_to_seconds</tt><big>(</big><em>model_time</em><big>)</big><a class="headerlink" href="#gnome.movers.GridWindMover.datetime_to_seconds" title="Permalink to this definition">¶</a></dt>
+<dd><p>Put the time conversion call here - in case we decide to change it, it
+only updates here</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gnome.movers.GridWindMover.export_topology">
+<tt class="descname">export_topology</tt><big>(</big><em>topology_file</em><big>)</big><a class="headerlink" href="#gnome.movers.GridWindMover.export_topology" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>topology_file=None</strong> &#8211; absolute or relative path where topology</td>
+</tr>
+</tbody>
+</table>
+<p>file will be written.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gnome.movers.GridWindMover.from_dict">
+<tt class="descname">from_dict</tt><big>(</big><em>data</em><big>)</big><a class="headerlink" href="#gnome.movers.GridWindMover.from_dict" title="Permalink to this definition">¶</a></dt>
+<dd><p>modifies state of the object using dictionary &#8216;data&#8217;. 
+Only the self.state.update list contains properties that can me modified for existing object</p>
+<p>Set the state of this object using the dictionary <tt class="docutils literal"><span class="pre">data</span></tt> by looking up
+the value of each key in <tt class="docutils literal"><span class="pre">data</span></tt> that is also in  <cite>list_</cite>. Input <a href="#id19"><span class="problematic" id="id20">list_</span></a> 
+contains the object&#8217;s attributes (or fields) updated with data</p>
+<p>For every field, the choice of how to set the field is as follows:</p>
+<p>If there is a method defined on the object such that the method name is
+<cite>{field_name}_from_dict</cite>, call that method with the field&#8217;s data.</p>
+<p>If the field on the object has a <tt class="docutils literal"><span class="pre">from_dict</span></tt> method, then use that
+method instead.</p>
+<p>If neither method exists, then set the field with the value from
+<tt class="docutils literal"><span class="pre">data</span></tt> directly on the object.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gnome.movers.GridWindMover.get_move">
+<tt class="descname">get_move</tt><big>(</big><em>sc</em>, <em>time_step</em>, <em>model_time_datetime</em><big>)</big><a class="headerlink" href="#gnome.movers.GridWindMover.get_move" title="Permalink to this definition">¶</a></dt>
+<dd><p>Override base class functionality because mover has a different
+get_move signature</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>sc</strong> &#8211; an instance of the gnome.SpillContainer class</li>
+<li><strong>time_step</strong> &#8211; time step in seconds</li>
+<li><strong>model_time_datetime</strong> &#8211; current time of the model as a date time
+object</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="gnome.movers.GridWindMover.model_step_is_done">
+<tt class="descname">model_step_is_done</tt><big>(</big><em>sc=None</em><big>)</big><a class="headerlink" href="#gnome.movers.GridWindMover.model_step_is_done" title="Permalink to this definition">¶</a></dt>
+<dd><p>This method gets called by the model after everything else is done
+in a time step, and is intended to perform any necessary clean-up
+operations. Subclassed movers can override this method.</p>
+</dd></dl>
+
+<dl class="classmethod">
+<dt id="gnome.movers.GridWindMover.new_from_dict">
+<em class="property">classmethod </em><tt class="descname">new_from_dict</tt><big>(</big><em>dict_</em><big>)</big><a class="headerlink" href="#gnome.movers.GridWindMover.new_from_dict" title="Permalink to this definition">¶</a></dt>
+<dd><p>creates a new object from dictionary</p>
+<p>This is base implementation and can be over-ridden by classes using mixin</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gnome.movers.GridWindMover.obj_type_to_dict">
+<tt class="descname">obj_type_to_dict</tt><big>(</big><big>)</big><a class="headerlink" href="#gnome.movers.GridWindMover.obj_type_to_dict" title="Permalink to this definition">¶</a></dt>
+<dd><p>returns object type to save in dict. This is base implementation and can be over-ridden</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gnome.movers.GridWindMover.prepare_data_for_get_move">
+<tt class="descname">prepare_data_for_get_move</tt><big>(</big><em>sc</em>, <em>model_time_datetime</em><big>)</big><a class="headerlink" href="#gnome.movers.GridWindMover.prepare_data_for_get_move" title="Permalink to this definition">¶</a></dt>
+<dd><p>organizes the spill object into inputs for calling with Cython
+wrapper&#8217;s get_move(...)</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>sc</strong> &#8211; an instance of gnome.spill_container.SpillContainer class</li>
+<li><strong>model_time_datetime</strong> &#8211; current model time as datetime object</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="gnome.movers.GridWindMover.prepare_for_model_run">
+<tt class="descname">prepare_for_model_run</tt><big>(</big><big>)</big><a class="headerlink" href="#gnome.movers.GridWindMover.prepare_for_model_run" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calls the contained cython mover&#8217;s prepare_for_model_run()</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gnome.movers.GridWindMover.prepare_for_model_step">
+<tt class="descname">prepare_for_model_step</tt><big>(</big><em>sc</em>, <em>time_step</em>, <em>model_time_datetime</em><big>)</big><a class="headerlink" href="#gnome.movers.GridWindMover.prepare_for_model_step" title="Permalink to this definition">¶</a></dt>
+<dd><p>Call base class method using super
+Also updates windage for this timestep</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>sc</strong> &#8211; an instance of gnome.spill_container.SpillContainer class</li>
+<li><strong>time_step</strong> &#8211; time step in seconds</li>
+<li><strong>model_time_datetime</strong> &#8211; current time of model as a date time object</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="gnome.movers.GridWindMover.set_uncertain_angle">
+<tt class="descname">set_uncertain_angle</tt><big>(</big><em>val</em>, <em>units</em><big>)</big><a class="headerlink" href="#gnome.movers.GridWindMover.set_uncertain_angle" title="Permalink to this definition">¶</a></dt>
+<dd><p>this must be a function because user must provide units with value</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gnome.movers.GridWindMover.to_dict">
+<tt class="descname">to_dict</tt><big>(</big><em>do='update'</em><big>)</big><a class="headerlink" href="#gnome.movers.GridWindMover.to_dict" title="Permalink to this definition">¶</a></dt>
+<dd><p>returns a dictionary containing the serialized representation of this
+object. By default it converts the &#8216;update&#8217; list of the state object to dict;
+however, do=&#8217;create&#8217; or do=&#8217;read&#8217; will return the dict with the corresponding
+list.</p>
+<p>For every field, if there is a method defined on the object such that
+the method name is <cite>{field_name}_to_dict</cite>, use the return value of that
+method as the field value.</p>
+<p>Note: any field in <cite>list</cite> that does not exist on the
+object and does not have a to_dict method will raise an AttributeError.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="gnome.movers.GridWindMover.uncertain_angle_scale">
+<tt class="descname">uncertain_angle_scale</tt><a class="headerlink" href="#gnome.movers.GridWindMover.uncertain_angle_scale" title="Permalink to this definition">¶</a></dt>
+<dd><p>read only - this is set when set_uncertain_angle() is called
+It returns the angle in &#8216;uncertain_angle_units&#8217;</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="gnome.movers.GridWindMover.uncertain_angle_units">
+<tt class="descname">uncertain_angle_units</tt><a class="headerlink" href="#gnome.movers.GridWindMover.uncertain_angle_units" title="Permalink to this definition">¶</a></dt>
+<dd><p>units specified by the user when setting the uncertain_angle:
+set_uncertain_angle()</p>
 </dd></dl>
 
 </dd></dl>
@@ -1470,6 +1955,453 @@ object. If both are given, then &#8216;filename&#8217; takes precedence.</p>
 </dd></dl>
 
 </div>
+<div class="section" id="module-gnome.outputter">
+<span id="gnome-outputter-pygnome-outputter-classes"></span><h2><tt class="docutils literal"><span class="pre">gnome.outputter</span></tt> &#8211; pyGNOME outputter classes<a class="headerlink" href="#module-gnome.outputter" title="Permalink to this headline">¶</a></h2>
+<p>outputters.py</p>
+<dl class="docutils">
+<dt>module to define classes for GNOME output:</dt>
+<dd><ul class="first last simple">
+<li>base class</li>
+<li>saving to netcdf</li>
+<li>saving to other formats ?</li>
+</ul>
+</dd>
+</dl>
+<dl class="class">
+<dt id="gnome.outputter.Outputter">
+<em class="property">class </em><tt class="descclassname">gnome.outputter.</tt><tt class="descname">Outputter</tt><big>(</big><em>cache=None</em>, <em>output_timestep=None</em>, <em>output_zero_step=True</em>, <em>output_last_step=True</em><big>)</big><a class="reference internal" href="_modules/gnome/outputter.html#Outputter"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.outputter.Outputter" title="Permalink to this definition">¶</a></dt>
+<dd><p>base class for all outputters</p>
+<p>sets attributes for all outputters, like output_timestep, cache</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>cache</strong> &#8211; sets the cache object from which to read data. The model
+will automatically set this param</li>
+<li><strong>output_timestep</strong> (<em>timedelta object</em>) &#8211; default is None in which case everytime the
+write_output is called, output is written. If set, then output is
+written every output_timestep starting from model_start_time.</li>
+<li><strong>output_zero_step</strong> (<em>boolean</em>) &#8211; default is True. If True then output for
+initial step (showing initial release conditions) is written
+regardless of output_timestep</li>
+<li><strong>output_last_step</strong> (<em>boolean</em>) &#8211; default is True. If True then output for
+final step is written regardless of output_timestep</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<dl class="method">
+<dt id="gnome.outputter.Outputter.model_step_is_done">
+<tt class="descname">model_step_is_done</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/gnome/outputter.html#Outputter.model_step_is_done"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.outputter.Outputter.model_step_is_done" title="Permalink to this definition">¶</a></dt>
+<dd><p>This method gets called by the model when after everything else is done
+in a time step. Put any code need for clean-up, etc.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gnome.outputter.Outputter.prepare_for_model_run">
+<tt class="descname">prepare_for_model_run</tt><big>(</big><em>model_start_time</em>, <em>num_time_steps</em>, <em>cache=None</em>, <em>**kwargs</em><big>)</big><a class="reference internal" href="_modules/gnome/outputter.html#Outputter.prepare_for_model_run"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.outputter.Outputter.prepare_for_model_run" title="Permalink to this definition">¶</a></dt>
+<dd><p>This method gets called by the model at the beginning of a new run.
+Do what you need to do to prepare.</p>
+<p>Required arguments - if output_timestep is changed from None, these are
+needed. Just make them required.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>model_start_time</strong> (<em>datetime.datetime object</em>) &#8211; (Required) start time of the model run. NetCDF
+time units calculated with respect to this time.</li>
+<li><strong>num_time_steps</strong> (<em>int</em>) &#8211; (Required) total number of time steps for the
+run. Currently this is known and fixed.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<p>Optional argument - incase cache needs to be updated</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>cache=None</strong> &#8211; Sets the cache object to be used for the data.
+If None, it will use the one already set up.</td>
+</tr>
+</tbody>
+</table>
+<p>also added <a href="#id5"><span class="problematic" id="id6">**</span></a>kwargs since a derived class like NetCDFOutput could
+require additional variables.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gnome.outputter.Outputter.prepare_for_model_step">
+<tt class="descname">prepare_for_model_step</tt><big>(</big><em>time_step</em>, <em>model_time</em><big>)</big><a class="reference internal" href="_modules/gnome/outputter.html#Outputter.prepare_for_model_step"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.outputter.Outputter.prepare_for_model_step" title="Permalink to this definition">¶</a></dt>
+<dd><p>This method gets called by the model at the beginning of each time step
+Do what you need to do to prepare for a new model step</p>
+<p>base class method checks to see if data for model_time should be output
+Set self._write_step flag to true if:</p>
+<blockquote>
+<div>model_time &lt; self._next_output_timestep &lt;= model_time + time_step</div></blockquote>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>time_step</strong> &#8211; time step in seconds</li>
+<li><strong>model_time</strong> &#8211; current model time as datetime object</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<dl class="docutils">
+<dt>Note: If output_time_step is not set so every timestep is infact</dt>
+<dd>written out, then there is no need to call prepare_for_model_step.
+This is primarily only useful if user wants to write data post run
+and write out every step_num saved in the model&#8217;s cache. In this
+case, user can simply call prepare_for_model_run() followed by
+write_output for every step_num in range(model.num_time_steps)</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="gnome.outputter.Outputter.rewind">
+<tt class="descname">rewind</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/gnome/outputter.html#Outputter.rewind"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.outputter.Outputter.rewind" title="Permalink to this definition">¶</a></dt>
+<dd><p>called by model.rewind()</p>
+<p>reset variables set during prepare_for_model_run() to init conditions</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gnome.outputter.Outputter.write_output">
+<tt class="descname">write_output</tt><big>(</big><em>step_num</em><big>)</big><a class="reference internal" href="_modules/gnome/outputter.html#Outputter.write_output"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.outputter.Outputter.write_output" title="Permalink to this definition">¶</a></dt>
+<dd><p>called by the model at the end of each time step
+This is the last operation after model_step_is_done()</p>
+</dd></dl>
+
+</dd></dl>
+
+<span class="target" id="module-gnome.renderer"></span><p>renderer.py</p>
+<p>module to hold all teh map rendering code.</p>
+<dl class="class">
+<dt id="gnome.renderer.Renderer">
+<em class="property">class </em><tt class="descclassname">gnome.renderer.</tt><tt class="descname">Renderer</tt><big>(</big><em>filename</em>, <em>images_dir</em>, <em>image_size=(800</em>, <em>600)</em>, <em>cache=None</em>, <em>output_timestep=None</em>, <em>output_zero_step=True</em>, <em>output_last_step=True</em>, <em>**kwargs</em><big>)</big><a class="reference internal" href="_modules/gnome/renderer.html#Renderer"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.renderer.Renderer" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#gnome.outputter.Outputter" title="gnome.outputter.Outputter"><tt class="xref py py-class docutils literal"><span class="pre">gnome.outputter.Outputter</span></tt></a>, <tt class="xref py py-class docutils literal"><span class="pre">gnome.utilities.map_canvas.MapCanvas</span></tt>, <tt class="xref py py-class docutils literal"><span class="pre">gnome.utilities.serializable.Serializable</span></tt></p>
+<p>Map Renderer</p>
+<dl class="docutils">
+<dt>class that writes map images for GNOME results:</dt>
+<dd>writes the frames for the LE &#8220;movies&#8221;, etc.</dd>
+</dl>
+<p>Init the image renderer.</p>
+<p>Following args are passed to base class Outputter&#8217;s init:</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>cache</strong> &#8211; sets the cache object from which to read data. The model
+will automatically set this param</li>
+<li><strong>output_timestep</strong> (<em>timedelta object</em>) &#8211; default is None in which case everytime the
+write_output is called, output is written. If set, then output is
+written every output_timestep starting from model_start_time.</li>
+<li><strong>output_zero_step</strong> (<em>boolean</em>) &#8211; default is True. If True then output for
+initial step (showing initial release conditions) is written
+regardless of output_timestep</li>
+<li><strong>output_last_step</strong> (<em>boolean</em>) &#8211; default is True. If True then output for
+final step is written regardless of output_timestep</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<p>Remaining kwargs are passed onto baseclass&#8217;s __init__ with a direct
+call: MapCanvas.__init__(..)</p>
+<p>Optional parameters (kwargs)
+:param projection_class: gnome.utilities.projections class to use.</p>
+<blockquote>
+<div>Default is gnome.utilities.projections.FlatEarthProjection</div></blockquote>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>map_BB</strong> &#8211; map bounding box. Default is to use
+land_polygons.bounding_box. If land_polygons is None, then this is
+the whole world, defined by ((-180,-90),(180, 90))</li>
+<li><strong>viewport</strong> &#8211; viewport of map &#8211; what gets drawn and on what scale.
+Default is to set viewport = map_BB</li>
+<li><strong>image_mode</strong> &#8211; Image mode (&#8216;P&#8217; for palette or &#8216;L&#8217; for Black and
+White image). BW_MapCanvas inherits from MapCanvas and sets the
+mode to &#8216;L&#8217;. Default image_mode is &#8216;P&#8217;.</li>
+<li><strong>id</strong> &#8211; unique identifier for a instance of this class (UUID given
+as a string). This is used when loading an object from a persisted
+model.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<dl class="classmethod">
+<dt id="gnome.renderer.Renderer.new_from_dict">
+<em class="property">classmethod </em><tt class="descname">new_from_dict</tt><big>(</big><em>dict_</em><big>)</big><a class="reference internal" href="_modules/gnome/renderer.html#Renderer.new_from_dict"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.renderer.Renderer.new_from_dict" title="Permalink to this definition">¶</a></dt>
+<dd><p>change projection_type from string to correct type</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gnome.renderer.Renderer.prepare_for_model_run">
+<tt class="descname">prepare_for_model_run</tt><big>(</big><em>model_start_time</em>, <em>num_time_steps</em>, <em>cache=None</em>, <em>**kwargs</em><big>)</big><a class="reference internal" href="_modules/gnome/renderer.html#Renderer.prepare_for_model_run"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.renderer.Renderer.prepare_for_model_run" title="Permalink to this definition">¶</a></dt>
+<dd><p>prepares the renderer for a model run.</p>
+<dl class="docutils">
+<dt>Parameters passed to base class:</dt>
+<dd>model_start_time, num_time_steps, cache</dd>
+</dl>
+<p>In this case, it draws the background image and clears the previous
+images. If you want to save the previous images, a new output dir
+should be set.</p>
+<p>Does not take any other input arguments; however, to keep the interface
+the same for all outputters, define <a href="#id7"><span class="problematic" id="id8">**</span></a>kwargs for now.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gnome.renderer.Renderer.projection_class_to_dict">
+<tt class="descname">projection_class_to_dict</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/gnome/renderer.html#Renderer.projection_class_to_dict"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.renderer.Renderer.projection_class_to_dict" title="Permalink to this definition">¶</a></dt>
+<dd><p>store projection class as a string for now since that is all that
+is required for persisting</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gnome.renderer.Renderer.write_output">
+<tt class="descname">write_output</tt><big>(</big><em>step_num</em><big>)</big><a class="reference internal" href="_modules/gnome/renderer.html#Renderer.write_output"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.renderer.Renderer.write_output" title="Permalink to this definition">¶</a></dt>
+<dd><p>Render the map image, according to current parameters.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>step_num</strong> &#8211; the model step number you want rendered.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">A dict of info about this step number if this step
+is to be output, None otherwise.<blockquote>
+<div>&#8216;step_num&#8217;: step_num
+&#8216;image_filename&#8217;: filename
+&#8216;time_stamp&#8217;: time_stamp # as ISO string</div></blockquote>
+</td>
+</tr>
+</tbody>
+</table>
+<p>use super to call base class write_output method</p>
+<p>If this is last step, then data is written; otherwise
+prepare_for_model_step determines whether to write the output for
+this step based on output_timestep</p>
+</dd></dl>
+
+</dd></dl>
+
+<span class="target" id="module-gnome.netcdf_outputter"></span><p>NetCDF outputter - follows the interface defined by gnome.Outputter for a
+NetCDF output writer</p>
+<dl class="class">
+<dt id="gnome.netcdf_outputter.NetCDFOutput">
+<em class="property">class </em><tt class="descclassname">gnome.netcdf_outputter.</tt><tt class="descname">NetCDFOutput</tt><big>(</big><em>netcdf_filename</em>, <em>all_data=False</em>, <em>netcdf_format='NETCDF4'</em>, <em>compress=True</em>, <em>id=None</em>, <em>**kwargs</em><big>)</big><a class="reference internal" href="_modules/gnome/netcdf_outputter.html#NetCDFOutput"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.netcdf_outputter.NetCDFOutput" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#gnome.outputter.Outputter" title="gnome.outputter.Outputter"><tt class="xref py py-class docutils literal"><span class="pre">gnome.outputter.Outputter</span></tt></a>, <tt class="xref py py-class docutils literal"><span class="pre">gnome.utilities.serializable.Serializable</span></tt></p>
+<p>A NetCDFOutput object is used to write the model&#8217;s data to a NetCDF file.
+It inherits from Outputter class and implements the same interface.</p>
+<p>This class is meant to be used within the Model, to be added to list of
+outputters.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">model</span> <span class="o">=</span> <span class="n">gnome</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">Model</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">model</span><span class="o">.</span><span class="n">outputters</span> <span class="o">+=</span> <span class="n">gnome</span><span class="o">.</span><span class="n">netcdf_outputter</span><span class="o">.</span><span class="n">NetCDFOutput</span><span class="p">(</span>
+<span class="go">            os.path.join(base_dir,&#39;sample_model.nc&#39;), all_data=True)</span>
+</pre></div>
+</div>
+<p>&#8216;all_data&#8217; flag is used to either output all the data arrays defined in
+model.spills or only the standard data.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">cf_attributes and data_vars are static members. cf_attributes is a dict
+that contains the global attributes per CF convention
+data_vars is a dict used to define NetCDF variables.
+There is also a list called &#8216;standard_data&#8217;. Since the names of the
+netcdf variables are different from the names in the SpillContainer
+data_arrays, this simply lists the names of data_arrays that are part of
+standard data. When writing &#8216;all_data&#8217;, these data arrays are skipped.</p>
+</div>
+<dl class="function">
+<dt>
+<tt class="descname">__init__(netcdf_filename, cache=None, all_data=False,</tt></dt>
+<dt>
+<tt class="descname">id=None)</tt></dt>
+<dd></dd></dl>
+
+<p>Constructor for Net_CDFOutput object.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>netcdf_filename</strong> (<em>str. or unicode</em>) &#8211; Required parameter. The filename in which to
+store the NetCDF data.</li>
+<li><strong>all_data</strong> (<em>bool</em>) &#8211; If true, write all data to NetCDF, otherwise write
+only standard data. Default is False.</li>
+<li><strong>id</strong> &#8211; Unique Id identifying the newly created mover (a UUID as a
+string). This is used when loading an object from a persisted
+state. User should never have to set this.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<p>Optional arguments (kwargs):</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>cache</strong> &#8211; sets the cache object from which to read data. The model
+will automatically set this param</li>
+<li><strong>output_timestep</strong> (<em>timedelta object</em>) &#8211; default is None in which case everytime the
+write_output is called, output is written. If set, then output is
+written every output_timestep starting from model_start_time.</li>
+<li><strong>output_zero_step</strong> (<em>boolean</em>) &#8211; default is True. If True then output for
+initial step (showing initial release conditions) is written
+regardless of output_timestep</li>
+<li><strong>output_last_step</strong> (<em>boolean</em>) &#8211; default is True. If True then output for
+final step is written regardless of output_timestep</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<p>use super to pass optional <a href="#id9"><span class="problematic" id="id10">**</span></a>kwargs to base class __init__ method</p>
+<dl class="attribute">
+<dt id="gnome.netcdf_outputter.NetCDFOutput.id">
+<tt class="descname">id</tt><a class="reference internal" href="_modules/gnome/netcdf_outputter.html#NetCDFOutput.id"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.netcdf_outputter.NetCDFOutput.id" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function returns the unique id to identify the object,</p>
+</dd></dl>
+
+<dl class="classmethod">
+<dt id="gnome.netcdf_outputter.NetCDFOutput.new_from_dict">
+<em class="property">classmethod </em><tt class="descname">new_from_dict</tt><big>(</big><em>dict_</em><big>)</big><a class="reference internal" href="_modules/gnome/netcdf_outputter.html#NetCDFOutput.new_from_dict"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.netcdf_outputter.NetCDFOutput.new_from_dict" title="Permalink to this definition">¶</a></dt>
+<dd><p>creates a new object from dictionary</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gnome.netcdf_outputter.NetCDFOutput.prepare_for_model_run">
+<tt class="descname">prepare_for_model_run</tt><big>(</big><em>model_start_time</em>, <em>num_time_steps</em>, <em>cache=None</em>, <em>uncertain=False</em>, <em>spills=None</em>, <em>**kwargs</em><big>)</big><a class="reference internal" href="_modules/gnome/netcdf_outputter.html#NetCDFOutput.prepare_for_model_run"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.netcdf_outputter.NetCDFOutput.prepare_for_model_run" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="function">
+<dt>
+<tt class="descname">prepare_for_model_run(model_start_time,</tt></dt>
+<dt>
+<tt class="descname">num_time_steps, cache=None, uncertain=False, spills=None,</tt></dt>
+<dt>
+<tt class="descname">**kwargs)</tt></dt>
+<dd></dd></dl>
+
+<p>Write global attributes and define dimensions and variables for NetCDF
+file. This must be done in prepare_for_model_run because if model state
+changes, it is rewound and re-run from the beginning.</p>
+<p>This takes more than standard &#8216;cache&#8217; argument. Some of these are
+required arguments - they contain None for defaults because non-default
+argument cannot follow default argument. Since cache is already 2nd
+positional argument for Renderer object, the required non-default
+arguments must be defined following &#8216;cache&#8217;.</p>
+<p>If uncertainty is on, then UncertainSpillPair object contains
+identical _data_arrays in both certain and uncertain SpillContainer&#8217;s,
+the data itself is different, but they contain the same type of data
+arrays.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>uncertain</strong> (<em>bool</em>) &#8211; Default is False. Model automatically sets this based
+on whether uncertainty is on or off. If this is True then a
+uncertain data is written to netcdf_filename + &#8216;_uncertain.nc&#8217;</li>
+<li><strong>spills</strong> (<em>gnome.spill_container.SpillContainerPair object.</em>) &#8211; If &#8216;all_data&#8217; flag is True, then model must provide the
+model.spills object (SpillContainerPair object) so NetCDF variables
+can be defined for the remaining data arrays. If spills is None,
+but all_data flag is True, a ValueError will be raised. It does not
+make sense to write &#8216;all_data&#8217; but not provide &#8216;model.spills&#8217;.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<dl class="docutils">
+<dt>Does not take any other input arguments; however, to keep the interface</dt>
+<dd>the same for all outputters, define <a href="#id11"><span class="problematic" id="id12">**</span></a>kwargs incase future
+outputters require different arguments.</dd>
+</dl>
+<p>use super to pass model_start_time, num_time_steps, cache=None and
+remaining <a href="#id13"><span class="problematic" id="id14">**</span></a>kwargs to base class method</p>
+</dd></dl>
+
+<dl class="staticmethod">
+<dt id="gnome.netcdf_outputter.NetCDFOutput.read_data">
+<em class="property">static </em><tt class="descname">read_data</tt><big>(</big><em>netcdf_file</em>, <em>index=0</em>, <em>all_data=False</em><big>)</big><a class="reference internal" href="_modules/gnome/netcdf_outputter.html#NetCDFOutput.read_data"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.netcdf_outputter.NetCDFOutput.read_data" title="Permalink to this definition">¶</a></dt>
+<dd><p>Read and create standard data arrays for a netcdf file that was created
+with NetCDFOutput class. Make it a static method since it is
+independent of an instance of the Outputter. The method is put with
+this class because the NetCDF functionality for PyGnome data with CF
+standard is captured here.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>netcdf_file</strong> (<em>str</em>) &#8211; Name of the NetCDF file from which to read the data</li>
+<li><strong>index</strong> (<em>int</em>) &#8211; Index of the &#8216;time&#8217; variable (or time_step) for which
+data is desired. Default is 0 so it returns data associated with
+first timestamp.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">a dict containing &#8216;positions&#8217;, &#8216;status_codes&#8217;, &#8216;spill_num&#8217;.
+Currently, this is standard data.</p>
+</td>
+</tr>
+</tbody>
+</table>
+<p>Standard data arrays are numpy arrays of size N, where N is number of
+particles released at time step of interest:</p>
+<blockquote>
+<div><p>&#8216;current_time_stamp&#8217;: datetime object associated with this data
+&#8216;positions&#8217;         : NX3 array. Corresponds with NetCDF variables</p>
+<blockquote>
+<div>&#8216;longitude&#8217;, &#8216;latitude&#8217;, &#8216;depth&#8217;</div></blockquote>
+<dl class="docutils">
+<dt>&#8216;status_codes&#8217; <span class="classifier-delimiter">:</span> <span class="classifier">NX1 array. Corresponds with NetCDF variable</span></dt>
+<dd>&#8216;status&#8217;</dd>
+<dt>&#8216;spill_num&#8217; <span class="classifier-delimiter">:</span> <span class="classifier">NX1 array. Corresponds with NetCDF variable</span></dt>
+<dd>&#8216;id&#8217;</dd>
+</dl>
+</div></blockquote>
+</dd></dl>
+
+<dl class="method">
+<dt id="gnome.netcdf_outputter.NetCDFOutput.rewind">
+<tt class="descname">rewind</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/gnome/netcdf_outputter.html#NetCDFOutput.rewind"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.netcdf_outputter.NetCDFOutput.rewind" title="Permalink to this definition">¶</a></dt>
+<dd><p>if rewound, delete both the files and expect prepare_for_model_run to
+be called since rewind means start from beginning.</p>
+<p>Also call base class rewind to reset internal variables. Using super</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gnome.netcdf_outputter.NetCDFOutput.write_output">
+<tt class="descname">write_output</tt><big>(</big><em>step_num</em><big>)</big><a class="reference internal" href="_modules/gnome/netcdf_outputter.html#NetCDFOutput.write_output"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.netcdf_outputter.NetCDFOutput.write_output" title="Permalink to this definition">¶</a></dt>
+<dd><p>write NetCDF output at the end of the step</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>step_num</strong> (<em>int</em>) &#8211; The model&#8217;s current timestep for which data is being
+written. model.current_time_step</td>
+</tr>
+</tbody>
+</table>
+<p>use super to call base class write_output method</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
 <div class="section" id="module-gnome.persist">
 <span id="gnome-persist-pygnome-persistance-classes"></span><h2><tt class="docutils literal"><span class="pre">gnome.persist</span></tt> &#8211; pyGNOME persistance classes<a class="headerlink" href="#module-gnome.persist" title="Permalink to this headline">¶</a></h2>
 <p>Default behavior:
@@ -1493,6 +2425,7 @@ Apply colander monkey patch by default</p>
 <li><a class="reference internal" href="#module-gnome.spill"><tt class="docutils literal"><span class="pre">gnome.spill</span></tt> &#8211; the pyGNOME spill class</a></li>
 <li><a class="reference internal" href="#module-gnome.movers"><tt class="docutils literal"><span class="pre">gnome.movers</span></tt> &#8211; pyGNOME mover classes</a></li>
 <li><a class="reference internal" href="#module-gnome.environment"><tt class="docutils literal"><span class="pre">gnome.weather</span></tt> &#8211; pyGNOME environment classes</a></li>
+<li><a class="reference internal" href="#module-gnome.outputter"><tt class="docutils literal"><span class="pre">gnome.outputter</span></tt> &#8211; pyGNOME outputter classes</a></li>
 <li><a class="reference internal" href="#module-gnome.persist"><tt class="docutils literal"><span class="pre">gnome.persist</span></tt> &#8211; pyGNOME persistance classes</a></li>
 </ul>
 </li>

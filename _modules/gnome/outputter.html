@@ -1,0 +1,279 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>gnome.outputter &mdash; pyGNOME 0.1.1 documentation</title>
+    
+    <link rel="stylesheet" href="../../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../',
+        VERSION:     '0.1.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="pyGNOME 0.1.1 documentation" href="../../index.html" />
+    <link rel="up" title="Module code" href="../index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../index.html">pyGNOME 0.1.1 documentation</a> &raquo;</li>
+          <li><a href="../index.html" accesskey="U">Module code</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <h1>Source code for gnome.outputter</h1><div class="highlight"><pre>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">outputters.py</span>
+
+<span class="sd">module to define classes for GNOME output:</span>
+<span class="sd">  - base class</span>
+<span class="sd">  - saving to netcdf</span>
+<span class="sd">  - saving to other formats ?</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span> <span class="nn">datetime</span> <span class="kn">import</span> <span class="n">timedelta</span>
+
+
+<span class="k">class</span> <span class="nc">Outputter</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+<div class="viewcode-block" id="Outputter"><a class="viewcode-back" href="../../reference.html#gnome.outputter.Outputter">[docs]</a>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    base class for all outputters</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                 <span class="n">cache</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
+                 <span class="n">output_timestep</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
+                 <span class="n">output_zero_step</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span>
+                 <span class="n">output_last_step</span><span class="o">=</span><span class="bp">True</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        sets attributes for all outputters, like output_timestep, cache</span>
+
+<span class="sd">        :param cache: sets the cache object from which to read data. The model</span>
+<span class="sd">            will automatically set this param</span>
+
+<span class="sd">        :param output_timestep: default is None in which case everytime the</span>
+<span class="sd">            write_output is called, output is written. If set, then output is</span>
+<span class="sd">            written every output_timestep starting from model_start_time.</span>
+<span class="sd">        :type output_timestep: timedelta object</span>
+
+<span class="sd">        :param output_zero_step: default is True. If True then output for</span>
+<span class="sd">            initial step (showing initial release conditions) is written</span>
+<span class="sd">            regardless of output_timestep</span>
+<span class="sd">        :type output_zero_step: boolean</span>
+
+<span class="sd">        :param output_last_step: default is True. If True then output for</span>
+<span class="sd">            final step is written regardless of output_timestep</span>
+<span class="sd">        :type output_last_step: boolean</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cache</span> <span class="o">=</span> <span class="n">cache</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">output_timestep</span> <span class="o">=</span> <span class="n">output_timestep</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">output_zero_step</span> <span class="o">=</span> <span class="n">output_zero_step</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">output_last_step</span> <span class="o">=</span> <span class="n">output_last_step</span>
+
+        <span class="c"># internally used variables - set in prepare_for_model_run</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">rewind</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">prepare_for_model_run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+<div class="viewcode-block" id="Outputter.prepare_for_model_run"><a class="viewcode-back" href="../../reference.html#gnome.outputter.Outputter.prepare_for_model_run">[docs]</a>        <span class="n">model_start_time</span><span class="p">,</span>
+        <span class="n">num_time_steps</span><span class="p">,</span>
+        <span class="n">cache</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        This method gets called by the model at the beginning of a new run.</span>
+<span class="sd">        Do what you need to do to prepare.</span>
+
+<span class="sd">        Required arguments - if output_timestep is changed from None, these are</span>
+<span class="sd">        needed. Just make them required.</span>
+
+<span class="sd">        :param model_start_time: (Required) start time of the model run. NetCDF</span>
+<span class="sd">            time units calculated with respect to this time.</span>
+<span class="sd">        :type model_start_time: datetime.datetime object</span>
+<span class="sd">        :param num_time_steps: (Required) total number of time steps for the</span>
+<span class="sd">            run. Currently this is known and fixed.</span>
+<span class="sd">        :type num_time_steps: int</span>
+
+<span class="sd">        Optional argument - incase cache needs to be updated</span>
+
+<span class="sd">        :param cache=None: Sets the cache object to be used for the data.</span>
+<span class="sd">            If None, it will use the one already set up.</span>
+<span class="sd">        :type cache: As defined in cache module (gnome.utilities.cache).</span>
+<span class="sd">            Currently only ElementCache is defined/used.</span>
+
+<span class="sd">        also added **kwargs since a derived class like NetCDFOutput could</span>
+<span class="sd">        require additional variables.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">cache</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">cache</span> <span class="o">=</span> <span class="n">cache</span>
+
+        <span class="k">if</span> <span class="n">model_start_time</span> <span class="ow">is</span> <span class="bp">None</span> <span class="ow">or</span> <span class="n">num_time_steps</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s">&#39;model_start_time or num_time_steps cannot be&#39;</span>
+                            <span class="s">&#39; NoneType if output_timestep is not None&#39;</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_model_start_time</span> <span class="o">=</span> <span class="n">model_start_time</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_num_time_steps</span> <span class="o">=</span> <span class="n">num_time_steps</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_timestep</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_next_output_time</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_model_start_time</span> <span class="o">+</span>
+                                      <span class="bp">self</span><span class="o">.</span><span class="n">output_timestep</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">prepare_for_model_step</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">time_step</span><span class="p">,</span> <span class="n">model_time</span><span class="p">):</span></div>
+<div class="viewcode-block" id="Outputter.prepare_for_model_step"><a class="viewcode-back" href="../../reference.html#gnome.outputter.Outputter.prepare_for_model_step">[docs]</a>        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        This method gets called by the model at the beginning of each time step</span>
+<span class="sd">        Do what you need to do to prepare for a new model step</span>
+
+<span class="sd">        base class method checks to see if data for model_time should be output</span>
+<span class="sd">        Set self._write_step flag to true if:</span>
+<span class="sd">            model_time &lt; self._next_output_timestep &lt;= model_time + time_step</span>
+
+<span class="sd">        :param time_step: time step in seconds</span>
+<span class="sd">        :param model_time: current model time as datetime object</span>
+
+<span class="sd">        Note: If output_time_step is not set so every timestep is infact</span>
+<span class="sd">            written out, then there is no need to call prepare_for_model_step.</span>
+<span class="sd">            This is primarily only useful if user wants to write data post run</span>
+<span class="sd">            and write out every step_num saved in the model&#39;s cache. In this</span>
+<span class="sd">            case, user can simply call prepare_for_model_run() followed by</span>
+<span class="sd">            write_output for every step_num in range(model.num_time_steps)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_write_step</span> <span class="o">=</span> <span class="bp">False</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_next_output_time</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="p">(</span><span class="n">model_time</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">_next_output_time</span> <span class="ow">and</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_next_output_time</span> <span class="o">&lt;=</span> <span class="n">model_time</span> <span class="o">+</span> <span class="n">timedelta</span><span class="p">(</span>
+                                                        <span class="n">seconds</span><span class="o">=</span><span class="n">time_step</span><span class="p">)):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_write_step</span> <span class="o">=</span> <span class="bp">True</span>
+
+    <span class="k">def</span> <span class="nf">model_step_is_done</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span></div>
+<div class="viewcode-block" id="Outputter.model_step_is_done"><a class="viewcode-back" href="../../reference.html#gnome.outputter.Outputter.model_step_is_done">[docs]</a>        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        This method gets called by the model when after everything else is done</span>
+<span class="sd">        in a time step. Put any code need for clean-up, etc.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">pass</span>
+
+    <span class="k">def</span> <span class="nf">write_output</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">step_num</span><span class="p">):</span></div>
+<div class="viewcode-block" id="Outputter.write_output"><a class="viewcode-back" href="../../reference.html#gnome.outputter.Outputter.write_output">[docs]</a>        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        called by the model at the end of each time step</span>
+<span class="sd">        This is the last operation after model_step_is_done()</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="p">(</span><span class="n">step_num</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_zero_step</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_write_step</span> <span class="o">=</span> <span class="bp">True</span>
+
+        <span class="k">if</span> <span class="p">(</span><span class="n">step_num</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">_num_time_steps</span> <span class="o">-</span> <span class="mi">1</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_last_step</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_write_step</span> <span class="o">=</span> <span class="bp">True</span>
+
+        <span class="k">if</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_write_step</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">cache</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&#39;cache object is not defined. It is required&#39;</span>
+                             <span class="s">&#39; prior to calling write_output&#39;</span><span class="p">)</span>
+
+        <span class="c"># if output_time_step is not set, then no need to call</span>
+        <span class="c"># prepare_for_model_step. This is primarily useful when every timestep</span>
+        <span class="c"># is written post model run. In this case, it is easier to call</span>
+        <span class="c"># write_output() without messing with prepare_for_model_step which</span>
+        <span class="c"># requires model_time as input</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_next_output_time</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_write_step</span> <span class="o">=</span> <span class="bp">True</span>
+
+    <span class="k">def</span> <span class="nf">rewind</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span></div>
+<div class="viewcode-block" id="Outputter.rewind"><a class="viewcode-back" href="../../reference.html#gnome.outputter.Outputter.rewind">[docs]</a>        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        called by model.rewind()</span>
+
+<span class="sd">        reset variables set during prepare_for_model_run() to init conditions</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_model_start_time</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_num_time_steps</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_next_output_time</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_write_step</span> <span class="o">=</span> <span class="bp">False</span>
+
+    <span class="k">def</span> <span class="nf">_update_next_output_time</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">step_num</span><span class="p">,</span> <span class="n">time_stamp</span><span class="p">):</span></div>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Internal method to update self._next_output_time by:</span>
+<span class="sd">            self._next_output_time = self.time_stamp + self.output_timestep</span>
+
+<span class="sd">        Call only after data associated with time_stamp is written. This</span>
+<span class="sd">        function updates the _next_output_time</span>
+
+<span class="sd">        :param time_stamp: datetime associated with data written by</span>
+<span class="sd">            write_output</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">step_num</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">or</span> <span class="n">step_num</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">_num_time_steps</span> <span class="o">-</span> <span class="mi">1</span><span class="p">):</span>
+            <span class="c"># update not required if 0th step or final step.</span>
+            <span class="c"># Strictly speaking this logic is not required since setting the</span>
+            <span class="c"># _next_output_time at time 0 doesn&#39;t change its value and at</span>
+            <span class="c"># final step it doesn&#39;t matter. But why reset it if not required</span>
+            <span class="k">return</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_timestep</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_next_output_time</span> <span class="o">=</span> <span class="n">time_stamp</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_timestep</span>
+</pre></div></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../index.html">pyGNOME 0.1.1 documentation</a> &raquo;</li>
+          <li><a href="../index.html" >Module code</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2012, NOAA Emergecny Response Division.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.3.
+    </div>
+  </body>
+</html>
