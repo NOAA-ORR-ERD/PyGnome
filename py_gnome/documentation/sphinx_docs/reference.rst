@@ -56,17 +56,37 @@ Class Reference:
    :members:
 .. autoclass:: CyMover
    :members:
-.. autoclass:: WindMover
-   :members:
-   :show-inheritance:
 .. autoclass:: RandomMover
    :members:
    :inherited-members:
+.. autoclass:: GridCurrentMover
+    :members:
+    :inherited-members:
+.. autoclass:: WindMoversBase
+    :members:
+    :inherited-members:
+.. autoclass:: WindMover
+   :members:
+   :show-inheritance:
+.. autoclass:: GridWindMover
+    :members:
+    :inherited-members:
 
 ``gnome.weather`` -- pyGNOME environment classes
 ---------------------------------------------------
 .. automodule:: gnome.environment
    :members:
+
+``gnome.outputter`` -- pyGNOME outputter classes
+---------------------------------------------------
+.. automodule:: gnome.outputter
+    :members:
+.. automodule:: gnome.renderer
+    :members:
+    :show-inheritance:
+.. automodule:: gnome.netcdf_outputter
+    :members:
+    :show-inheritance:
 
 ``gnome.persist`` -- pyGNOME persistance classes
 ---------------------------------------------------
