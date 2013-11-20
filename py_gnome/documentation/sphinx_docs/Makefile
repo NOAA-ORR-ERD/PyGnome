@@ -16,6 +16,7 @@ I18NSPHINXOPTS  = $(PAPEROPT_$(PAPER)) $(SPHINXOPTS) .
 
 # for building gh-pages
 GH_PAGES_SOURCES = ./py_gnome/documentation/sphinx_docs
+PYGNOME_SRC = ./py_gnome
 
 .PHONY: help clean html dirhtml singlehtml pickle json htmlhelp qthelp devhelp epub latex latexpdf text man changes linkcheck doctest gettext
 
@@ -155,12 +156,22 @@ doctest:
 	@echo "Testing of doctests in the sources finished, look at the " \
 	      "results in $(BUILDDIR)/doctest/output.txt."
 
+# Following target must be built from top level
+# so one level above py_gnome - mostly to keep things simple when switching branches
+# Also need to checkout ./py_gnome folder since we build in develop mode
+# todo: add some checks to make sure this is the case
 gh-pages:
+	git checkout master
+	python ./py_gnome/setup.py develop
 	git checkout gh-pages
 	# rm -rf build # not sure we need this
-	git checkout master $(GH_PAGES_SOURCES) 
+	git checkout master $(PYGNOME_SRC) 
 	git reset HEAD
 	sphinx-build -b html $(GH_PAGES_SOURCES) .
-	#rm -rf ./py_gnome	# not sure we need to remove this?
+	
+	# remove it so we don't accidently checkin any other source code from py_gnome 
+	# or extra files if working directory isn't clean
+	rm -rf ./py_gnome	
 	git add -A
-	git commit -m "Generated gh-pages for `git log master -1 --pretty=short --abbrev-commit`" && git push origin gh-pages; git checkout master
+	git commit -m "Generated gh-pages for `git log master -1 --pretty=short --abbrev-commit`" \
+			&& git push origin gh-pages; git checkout master
