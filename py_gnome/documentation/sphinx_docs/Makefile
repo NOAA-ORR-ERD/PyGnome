@@ -157,7 +157,8 @@ doctest:
 	      "results in $(BUILDDIR)/doctest/output.txt."
 
 # Following target must be built from top level
-# so one level above py_gnome.
+# so one level above py_gnome - mostly to keep things simple when switching branches
+# Also need to checkout ./py_gnome folder since we build in develop mode
 # todo: add some checks to make sure this is the case
 gh-pages:
 	git checkout master
@@ -171,6 +172,6 @@ gh-pages:
 	# remove it so we don't accidently checkin any other source code from py_gnome 
 	# or extra files if working directory isn't clean
 	rm -rf ./py_gnome	
-	#git add -A
-	#git commit -m "Generated gh-pages for `git log master -1 --pretty=short --abbrev-commit`" \
-	#		&& git push origin gh-pages; git checkout master
+	git add -A
+	git commit -m "Generated gh-pages for `git log master -1 --pretty=short --abbrev-commit`" \
+			&& git push origin gh-pages; git checkout master
