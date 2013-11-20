@@ -156,12 +156,16 @@ doctest:
 	@echo "Testing of doctests in the sources finished, look at the " \
 	      "results in $(BUILDDIR)/doctest/output.txt."
 
+# Following target must be built from top level
+# so one level above py_gnome.
+# todo: add some checks to make sure this is the case
 gh-pages:
+	git checkout master
+	python ./py_gnome/setup.py develop
 	git checkout gh-pages
 	# rm -rf build # not sure we need this
-	git checkout master $(PYGNOME_SRC) 
+	git checkout master $(GH_PAGES_SOURCES) 
 	git reset HEAD
-	python ./py_gnome/setup.py develop
 	sphinx-build -b html $(GH_PAGES_SOURCES) .
 	
 	# remove it so we don't accidently checkin any other source code from py_gnome 
