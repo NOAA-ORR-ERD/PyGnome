@@ -37,6 +37,9 @@ import numpy as np
 # could run setup from anywhere
 (SETUP_PATH, SETUP_FILE) = os.path.split(sys.argv[0])
 
+# cd to SETUP_PATH, run develop or install, then cd back
+CWD = os.getcwd()
+os.chdir(SETUP_PATH)
 
 def target_dir(name):
     '''Returns the name of a distutils build directory'''
@@ -175,11 +178,10 @@ if sys.platform is "darwin" or "win32":
         # understanding of current issue!
         # STILL WORKING ON A MORE PERMANENT SOLUTION
         win_dlls = os.path.join(netcdf_base, 'bin')
-        cwd = os.getcwd()
-        dlls_path = os.path.join(cwd, SETUP_PATH, win_dlls)
+        dlls_path = os.path.join(os.getcwd(), win_dlls)
 
         for dll in glob.glob(os.path.join(dlls_path,'*.dll')):
-            dlls_dst = os.path.join(cwd, SETUP_PATH, 'gnome/cy_gnome/')
+            dlls_dst = os.path.join(os.getcwd(), 'gnome/cy_gnome/')
 
             if sys.argv[1] == 'cleanall' or sys.argv[1] == 'clean':
                 (x_, dll_name) = os.path.split(dll)
@@ -438,3 +440,6 @@ setup(name='pyGnome',
       cmdclass={'build_ext': build_ext},
       ext_modules=extensions
      )
+
+# Change current working directory back to what user originally had
+os.chdir(CWD)
