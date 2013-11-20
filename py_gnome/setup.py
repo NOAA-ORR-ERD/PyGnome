@@ -39,7 +39,8 @@ import numpy as np
 
 # cd to SETUP_PATH, run develop or install, then cd back
 CWD = os.getcwd()
-os.chdir(SETUP_PATH)
+if SETUP_PATH:
+    os.chdir(SETUP_PATH)
 
 def target_dir(name):
     '''Returns the name of a distutils build directory'''
