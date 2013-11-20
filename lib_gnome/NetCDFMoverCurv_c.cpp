@@ -7,18 +7,18 @@
  *
  */
 
+#ifndef pyGNOME
+#include "CROSS.H"
+#else
+#include "Replacements.h"
+#endif
+
 #include "NetCDFMoverCurv_c.h"
 #include "netcdf.h"
 #include "CompFunctions.h"
 #include "StringFunctions.h"
 #include "DagTree.h"
 #include "DagTreeIO.h"
-
-#ifndef pyGNOME
-#include "CROSS.H"
-#else
-#include "Replacements.h"
-#endif
 
 NetCDFMoverCurv_c::NetCDFMoverCurv_c (TMap *owner, char *name) : NetCDFMover_c(owner, name)
 {

@@ -23,7 +23,7 @@ LEList_c::LEList_c()
 	this->numOfLEs = 0;
 	//this->massUnits = 0;
 	this-> fLeType = FORECAST_LE;
-	memset(&fOwnersUniqueID,0,sizeof(fOwnersUniqueID));
+	//memset(&fOwnersUniqueID,0,sizeof(fOwnersUniqueID));
 		
 	bOpen = FALSE;
 }

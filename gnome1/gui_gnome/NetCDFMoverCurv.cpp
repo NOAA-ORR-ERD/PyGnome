@@ -7,11 +7,11 @@
  *
  */
 
+#include "CROSS.H"
 #include "NetCDFMoverCurv.h"
 #include "MemUtils.h"
 #include "netcdf.h"
 #include "DagTreeIO.h"
-#include "CROSS.H"
 
 NetCDFMoverCurv::NetCDFMoverCurv (TMap *owner, char *name) : NetCDFMover(owner, name)
 {

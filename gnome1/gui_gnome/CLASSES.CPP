@@ -822,6 +822,13 @@ OSErr TMapSettingsDialog(TMap* theMap)
 /////////////////////////////////////////////////
 
 
+Boolean EqualUniqueIDs(UNIQUEID uid,UNIQUEID uid2)
+{
+	if(uid.counter != uid2.counter) return false;
+	if(uid.ticksAtCreation != uid2.ticksAtCreation) return false;
+	return true;
+}
+
 UNIQUEID ZeroID(void)
 {
 	UNIQUEID uid;

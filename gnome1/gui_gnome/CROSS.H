@@ -847,7 +847,8 @@ extern OSType gMySignature ;
 #include "VLIST.h"
 #include "GEOMETRY.h"
 
-	#include "OSSM.h"
+#include "CLASSES.h"
+#include "OSSM.h"
 
 #ifdef MAC
 	#include "CarbonUtil.h"

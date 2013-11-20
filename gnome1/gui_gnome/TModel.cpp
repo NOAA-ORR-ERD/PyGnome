@@ -1423,6 +1423,7 @@ OSErr TModel::SaveMossLEFile (Seconds fileTime, short fileNumber)
 	char out[512];
 	char trajectoryTime[64], trajectoryDate[64], preparedTime[32], preparedDate[32];
 	Boolean bWriteUncertaintyLEs = this->IsUncertain();
+	double halfLife;
 	
 	char logoFileName[256];
 	StrcpyLogoFileName(logoFileName);
@@ -1617,6 +1618,7 @@ OSErr TModel::SaveMossLEFile (Seconds fileTime, short fileNumber)
 		isUncertainLE = (list -> GetLEType () == UNCERTAINTY_LE);
 		if(isUncertainLE && !bWriteUncertaintyLEs) continue; //don't write out uncertainty LEs unless uncertainty is on
 
+		halfLife = (*(dynamic_cast<TOLEList*>(list))).fSetSummary.halfLife;
 		for (j = 0 ; j < list->numOfLEs ; j++) 
 		{
 			list -> GetLE (j, &theLE);
@@ -1733,7 +1735,7 @@ OSErr TModel::SaveMossLEFile (Seconds fileTime, short fileNumber)
 				
 				//ageInHrs = theLE.ageInHrsWhenReleased;
 				ageInHrs = theLE.ageInHrsWhenReleased + elapsedTimeInHrs;
-				mass = VolumeMassToKilograms(GetLEMass(theLE), theLE.density, list->GetMassUnits());	// applies half life for chemicals and converts units
+				mass = VolumeMassToKilograms(GetLEMass(theLE,halfLife), theLE.density, list->GetMassUnits());	// applies half life for chemicals and converts units
 				sprintf(out, "%ld, %s, %s, %lf, %lf, %lf, %lf, %s%s",
 					-fileItemNum, keyWord, pollutantKey,
 					//theLE.z, theLE.mass, theLE.density, ageInHrs, status, UNIXNEWLINESTRING);
@@ -1981,6 +1983,7 @@ OSErr TModel::SaveSimpleAsciiLEFile (Seconds fileTime, short fileNumber)
 	char out[512],forecastLEFName[256],uncertainLEFName[256];
 	char trajectoryTime[64], trajectoryDate[64], preparedTime[32], preparedDate[32];
 	Boolean bWriteUncertaintyLEs = this->IsUncertain();
+	double halfLife;
 	
 	
 	forecastFile.f = uncertainFile.f = 0;
@@ -2041,6 +2044,7 @@ OSErr TModel::SaveSimpleAsciiLEFile (Seconds fileTime, short fileNumber)
 		isUncertainLE = (list -> GetLEType () == UNCERTAINTY_LE);
 		if(isUncertainLE && !bWriteUncertaintyLEs) continue; //don't write out uncertainty LEs unless uncertainty is on
 
+		halfLife = (*(dynamic_cast<TOLEList*>(list))).fSetSummary.halfLife;
 		for (j = 0 ; j < list->numOfLEs ; j++) 
 		{
 			list -> GetLE (j, &theLE);
@@ -2153,7 +2157,7 @@ OSErr TModel::SaveSimpleAsciiLEFile (Seconds fileTime, short fileNumber)
 				
 				//ageInHrs = theLE.ageInHrsWhenReleased;
 				ageInHrs = theLE.ageInHrsWhenReleased + elapsedTimeInHrs;
-				mass = GetLEMass(theLE);	// applies half life for chemicals
+				mass = GetLEMass(theLE,halfLife);	// applies half life for chemicals
 				sprintf(out, "%ld, %s, %s, %lf, %lf, %lf, %lf, %s%s",
 					-fileItemNum, keyWord, pollutantKey,
 					//theLE.z, theLE.mass, theLE.density, ageInHrs, status, UNIXNEWLINESTRING);
@@ -3769,6 +3773,7 @@ OSErr TModel::Step ()
 		}
 		else listIndex = 0;	// note this is not used for forecast LEs - maybe put in a flag to identify that
 
+		SetChemicalHalfLife(((TOLEList *)thisLEList)->fSetSummary.halfLife);	// each spill can have a half life
 		UpdateWindage(thisLEList);
 		DispersionRec dispInfo = ((TOLEList *)thisLEList) -> GetDispersionInfo();
 		//Seconds disperseTime = model->GetStartTime() + dispInfo.timeToDisperse;

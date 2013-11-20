@@ -7,6 +7,18 @@
 extern RGBColor WHITECOLOR, BLACKCOLOR;
 extern Rect bigRect;
 
+#define MAX_MACPAINT_SIZE 53000
+#define MAX_MACPAINT_LINES 720
+#define MACPAINT_BYTE_UNPACK 72
+
+//#define PI 3.14159265359	// moved to typedefs.h
+//#define ROOT2 1.4142136562373
+//#define KG2POUNDS 2.2
+
+#define FRAME_ITEM 2
+
+#define MultFindEvt 15
+
 ///// MISC ///////////////////////////////////////////////////////////////////////////
 
 void debugnum(CHARPTR title, long n);
@@ -141,6 +153,20 @@ OSErr DeleteFileSection(short vRefNum, long dirID, CHARPTR name, long offset, lo
 
 ///// DATABASES ////////////////////////////////////////////////////////////////////////
 
+/*
+ typedef struct {
+ char name[30];
+ short previewLength;
+ short (*compare)(VOIDPTR rec1, VOIDPTR rec2);
+ short fp;
+ } IndexFile, *IndexFileP;
+ 
+ typedef struct {
+ char name[30];
+ BFPB bfpb;
+ IndexFileP indexList;
+ } DataBase, *DataBaseP;
+ */
 //OSErr OpenDataBase(DataBaseP db, CHARPTR fileName, short vRefNum, long dirID,
 				   //OSType creator, IndexFileP indexList, long bufSize);
 //OSErr NthByIndex(DataBaseP db, long n, short indexNum, LONGPTR offset);

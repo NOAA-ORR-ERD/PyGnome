@@ -22,7 +22,7 @@ public:
 	//short			massUnits;
 	LERecH			LEHandle; 	// handle to LE array
 	LETYPE 			fLeType;
-	UNIQUEID		fOwnersUniqueID; // set if owned by another LE set, i.e this is a mirrored set
+	//UNIQUEID		fOwnersUniqueID; // set if owned by another LE set, i.e this is a mirrored set
 
 					LEList_c ();
 	virtual OSErr	Reset (Boolean newKeys) { return noErr; }

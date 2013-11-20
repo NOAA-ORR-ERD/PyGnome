@@ -21,6 +21,8 @@ class TClassID : virtual public ClassID_c
 {
 	
 public:
+	UNIQUEID			fUniqueID;
+
 	TClassID ();
 	virtual			   ~TClassID () { Dispose (); }
 	
@@ -36,6 +38,8 @@ public:
 	virtual OSErr 		MakeClone(TClassID **clonePtrPtr);
 	virtual OSErr 		BecomeClone(TClassID *clone);
 	
+	UNIQUEID			GetUniqueID () { return fUniqueID; }
+	Boolean 			MatchesUniqueID(UNIQUEID uid);	
 	
 	virtual OSErr 		Read  (BFPB *bfpb);  			
 	virtual OSErr 		Write (BFPB *bfpb); 			

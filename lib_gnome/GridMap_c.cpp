@@ -1861,7 +1861,7 @@ OSErr GridMap_c::GetPointsAndMask(char *path,DOUBLEH *maskH,WORLDPOINTFH *vertex
 	float startLat,startLon,endLat,endLon,hc_param=0.;
 	char dimname[NC_MAX_NAME], s[256], topPath[256], outPath[256];
 	WORLDPOINTFH vertexPtsH=0;
-	FLOATH totalDepthsH=0, sigmaLevelsH=0;
+	FLOATH totalDepthsH=0/*, sigmaLevelsH=0*/;
 	double *lat_vals=0,*lon_vals=0,timeVal;
 	float *depth_vals=0,*sigma_vals=0,*sigma_vals2=0;
 	static size_t latIndex=0,lonIndex=0,timeIndex,ptIndex[2]={0,0},sigmaIndex=0;
@@ -1869,7 +1869,7 @@ OSErr GridMap_c::GetPointsAndMask(char *path,DOUBLEH *maskH,WORLDPOINTFH *vertex
 	char errmsg[256] = "";
 	char fileName[64],*modelTypeStr=0;
 	Boolean bTopFile = false, isLandMask = true, fIsNavy = false;
-	VelocityFH velocityH = 0;
+	//VelocityFH velocityH = 0;
 	static size_t mask_index[] = {0,0};
 	static size_t mask_count[2];
 	double *landmask = 0; 
@@ -2229,7 +2229,8 @@ done:
 			fGrid = 0;
 		}
 		if(vertexPtsH) {DisposeHandle((Handle)vertexPtsH); vertexPtsH = 0;}
-		if(sigmaLevelsH) {DisposeHandle((Handle)sigmaLevelsH); sigmaLevelsH = 0;}
+		if(totalDepthsH) {DisposeHandle((Handle)totalDepthsH); totalDepthsH = 0;}
+		//if(sigmaLevelsH) {DisposeHandle((Handle)sigmaLevelsH); sigmaLevelsH = 0;}
 		//if (fDepthLevelsHdl) {DisposeHandle((Handle)fDepthLevelsHdl); fDepthLevelsHdl=0;}
 		//if (fDepthLevelsHdl2) {DisposeHandle((Handle)fDepthLevelsHdl2); fDepthLevelsHdl2=0;}
 	}
@@ -2238,6 +2239,8 @@ done:
 	if (lon_vals) delete [] lon_vals;
 	if (depth_vals) delete [] depth_vals;
 	if (sigma_vals) delete [] sigma_vals;
+	if (sigma_vals2) delete [] sigma_vals2;
+	if (landmask) delete [] landmask;
 	if (modelTypeStr) delete [] modelTypeStr;
 	//if (velocityH) {DisposeHandle((Handle)velocityH); velocityH = 0;}
 	return err;
@@ -2559,12 +2562,20 @@ done:
 			DisposeHandle((Handle)vertexPtsH);
 			vertexPtsH = 0;
 		}
+		if (totalDepthsH) {
+			DisposeHandle((Handle)totalDepthsH);
+			totalDepthsH = 0;
+		}
 		if (bndry_indices)
 			delete [] bndry_indices;
 		if (bndry_nums)
 			delete [] bndry_nums;
 		if (bndry_type)
 			delete [] bndry_type;
+		if (top_verts)
+			delete [] top_verts;
+		if (top_neighbors)
+			delete [] top_neighbors;
 	}
 
 	if (lat_vals)

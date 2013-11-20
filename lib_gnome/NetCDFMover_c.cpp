@@ -7,18 +7,18 @@
  *
  */
 
+#ifndef pyGNOME
+#include "CROSS.H"
+#else
+#include "Replacements.h"
+#endif
+
 #include "NetCDFMover_c.h"
 #include "netcdf.h"
 #include "CompFunctions.h"
 #include "StringFunctions.h"
 #include <math.h>
 #include <float.h>
-
-#ifndef pyGNOME
-#include "CROSS.H"
-#else
-#include "Replacements.h"
-#endif
 
 using std::cout;
 

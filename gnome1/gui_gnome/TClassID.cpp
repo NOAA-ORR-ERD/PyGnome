@@ -133,6 +133,10 @@ OSErr TClassID::BecomeClone(TClassID *clone)
 }
 
 
+Boolean TClassID::MatchesUniqueID(UNIQUEID uid)
+{
+	return EqualUniqueIDs(uid,this->fUniqueID);
+}
 
 #define TClassID_FileVersion 1
 OSErr TClassID::Read(BFPB *bfpb)
