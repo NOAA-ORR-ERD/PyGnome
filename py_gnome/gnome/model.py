@@ -284,7 +284,6 @@ class Model(serializable.Serializable):
 
         for outputter in self.outputters:
             outputter.prepare_for_model_run(model_start_time=self.start_time,
-                                            num_time_steps=self.num_time_steps,
                                             cache=self._cache,
                                             uncertain=self.uncertain,
                                             spills=self.spills)
@@ -367,7 +366,10 @@ class Model(serializable.Serializable):
     def write_output(self):
         output_info = {'step_num': self.current_time_step}
         for outputter in self.outputters:
-            output = outputter.write_output(self.current_time_step)
+            if self.current_time_step == self.num_time_steps - 1:
+                output = outputter.write_output(self.current_time_step, True)
+            else:
+                output = outputter.write_output(self.current_time_step)
             if output is not None:
                 output_info.update(output)
         return output_info

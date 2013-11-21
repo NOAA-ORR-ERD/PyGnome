@@ -399,8 +399,7 @@ class Scenario(object):
         nc_out = NetCDFOutput(self._certainspill_data,
                               all_data=True, cache=self.model._cache)
         nc_out.prepare_for_model_run(model_start_time=self.model.start_time,
-                num_time_steps=1, uncertain=self.model.uncertain,
-                spills=self.model.spills)
+                uncertain=self.model.uncertain, spills=self.model.spills)
         nc_out.write_output(self.model.current_time_step)
         self._uncertainspill_data = nc_out._u_netcdf_filename
 
@@ -418,9 +417,11 @@ class Scenario(object):
         for sc in self.model.spills.items():
             if sc.uncertain:
                 data = NetCDFOutput.read_data(self._uncertainspill_data,
+                                              time=None,
                                               all_data=True)
             else:
                 data = NetCDFOutput.read_data(self._certainspill_data,
+                                              time=None,
                                               all_data=True)
 
             sc.current_time_stamp = data.pop('current_time_stamp').item()

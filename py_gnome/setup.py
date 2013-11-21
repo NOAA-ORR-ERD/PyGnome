@@ -27,7 +27,7 @@ import glob
 import shutil
 
 # to support "develop" mode:
-from setuptools import setup, find_packages
+from setuptools import setup
 
 from distutils.extension import Extension
 from Cython.Distutils import build_ext
@@ -37,10 +37,17 @@ import numpy as np
 # could run setup from anywhere
 (SETUP_PATH, SETUP_FILE) = os.path.split(sys.argv[0])
 
+if SETUP_PATH == '':
+    SETUP_PATH = '.'
+
 # cd to SETUP_PATH, run develop or install, then cd back
 CWD = os.getcwd()
+
 if SETUP_PATH:
+    """ Additional check, though should not be needed since SETUP_PATH should
+    always exist """
     os.chdir(SETUP_PATH)
+
 
 def target_dir(name):
     '''Returns the name of a distutils build directory'''

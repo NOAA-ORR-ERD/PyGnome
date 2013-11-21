@@ -142,7 +142,7 @@ class NetCDFOutput(Outputter, serializable.Serializable):
         serializable.Field('netcdf_filename', create=True,
                            update=True),
         serializable.Field('all_data', create=True, update=True),
-        serializable.Field('netcdf_format', create=True, update=True),
+        #serializable.Field('netcdf_format', create=True, update=True),
         serializable.Field('compress', create=True, update=True),
         serializable.Field('_start_idx', create=True),
         serializable.Field('_middle_of_run', create=True),
@@ -171,7 +171,6 @@ class NetCDFOutput(Outputter, serializable.Serializable):
         self,
         netcdf_filename,
         all_data=False,
-        netcdf_format='NETCDF4',
         compress=True,
         id=None,
         **kwargs
@@ -180,7 +179,8 @@ class NetCDFOutput(Outputter, serializable.Serializable):
         .. function:: __init__(netcdf_filename, cache=None, all_data=False,
                                id=None)
 
-        Constructor for Net_CDFOutput object.
+        Constructor for Net_CDFOutput object. It reads data from cache and
+        writes it to a NetCDF4 format file using the CF convention
 
         :param netcdf_filename: Required parameter. The filename in which to
             store the NetCDF data.
@@ -227,7 +227,7 @@ class NetCDFOutput(Outputter, serializable.Serializable):
 
         # this is only updated in prepare_for_model_run if all_data is True
         self.arr_types = None
-        self._format = netcdf_format
+        self._format = 'NETCDF4'
         self._compress = compress
 
         # need to keep track of starting index for writing data since variable
@@ -290,14 +290,6 @@ class NetCDFOutput(Outputter, serializable.Serializable):
     def netcdf_format(self):
         return self._format
 
-    @netcdf_format.setter
-    def netcdf_format(self, value):
-        if self.middle_of_run:
-            raise AttributeError('This attribute cannot be changed in the'
-                                 ' middle of a run')
-        else:
-            self._format = value
-
     def _check_netcdf_filename(self, netcdf_filename):
         """ basic checks to make sure the netcdf_filename is valid """
 
@@ -327,7 +319,6 @@ class NetCDFOutput(Outputter, serializable.Serializable):
     def prepare_for_model_run(
         self,
         model_start_time,
-        num_time_steps,
         cache=None,
         uncertain=False,
         spills=None,
@@ -335,7 +326,7 @@ class NetCDFOutput(Outputter, serializable.Serializable):
         ):
         """
         .. function:: prepare_for_model_run(model_start_time,
-                num_time_steps, cache=None, uncertain=False, spills=None,
+                cache=None, uncertain=False, spills=None,
                 **kwargs)
 
         Write global attributes and define dimensions and variables for NetCDF
@@ -369,12 +360,12 @@ class NetCDFOutput(Outputter, serializable.Serializable):
             the same for all outputters, define **kwargs incase future
             outputters require different arguments.
 
-        use super to pass model_start_time, num_time_steps, cache=None and
+        use super to pass model_start_time, cache=None and
         remaining **kwargs to base class method
         """
 
         super(NetCDFOutput, self).prepare_for_model_run(model_start_time,
-                num_time_steps, cache, **kwargs)
+                cache, **kwargs)
 
         if self.all_data and spills is None:
             raise ValueError("'all_data' flag is True, however spills is None."
@@ -405,7 +396,7 @@ class NetCDFOutput(Outputter, serializable.Serializable):
                 rootgrp.institution = self.cf_attributes['institution']
                 rootgrp.convention = self.cf_attributes['conventions']
 
-                rootgrp.createDimension('time', self._num_time_steps)
+                rootgrp.createDimension('time', 0)
                 rootgrp.createDimension('data', 0)
 
                 time_ = rootgrp.createVariable('time', np.double,
@@ -462,18 +453,22 @@ class NetCDFOutput(Outputter, serializable.Serializable):
         self._start_idx = 0
         self._middle_of_run = True
 
-    def write_output(self, step_num):
+    def write_output(self, step_num, islast_step=False):
         """
         write NetCDF output at the end of the step
 
-        :param step_num: The model's current timestep for which data is being
-            written. model.current_time_step
+        :param step_num: the model step number you want rendered.
         :type step_num: int
+
+        :param islast_step: default is False. Flag that indicates that step_num
+            is last step. If 'output_last_step' is True then this is written
+            out
+        :type islast_step: bool
 
         use super to call base class write_output method
         """
 
-        super(NetCDFOutput, self).write_output(step_num)
+        super(NetCDFOutput, self).write_output(step_num, islast_step)
 
         if not self._write_step:
             return None
@@ -487,14 +482,15 @@ class NetCDFOutput(Outputter, serializable.Serializable):
             time_stamp = sc.current_time_stamp
 
             with nc.Dataset(file_, 'a') as rootgrp:
-                rootgrp.variables['time'][step_num] = \
+                curr_idx = len(rootgrp.variables['time'])
+                rootgrp.variables['time'][curr_idx] = \
                     nc.date2num(time_stamp, rootgrp.variables['time'
                                 ].units, rootgrp.variables['time'
                                 ].calendar)
                 pc = rootgrp.variables['particle_count']
-                pc[step_num] = len(sc['status_codes'])
+                pc[curr_idx] = len(sc['status_codes'])
 
-                _end_idx = self._start_idx + pc[step_num]
+                _end_idx = self._start_idx + pc[curr_idx]
                 rootgrp.variables['longitude'][self._start_idx:_end_idx] = \
                     sc['positions'][:, 0]
                 rootgrp.variables['latitude'][self._start_idx:_end_idx] = \
@@ -549,8 +545,26 @@ class NetCDFOutput(Outputter, serializable.Serializable):
         self._middle_of_run = False
         self._start_idx = 0
 
+    def write_output_post_run(self,
+        model_start_time,
+        num_time_steps,
+        cache=None,
+        uncertain=False,
+        spills=None,
+        **kwargs):
+        """
+        Define all the positional input arguments. Pass these onto baseclass
+        write_output_post_run as correct kwargs
+        """
+        super(NetCDFOutput, self).write_output_post_run(model_start_time,
+                                                        num_time_steps,
+                                                        cache,
+                                                        uncertain=uncertain,
+                                                        spills=spills,
+                                                        **kwargs)
+
     @staticmethod
-    def read_data(netcdf_file, index=0, all_data=False):
+    def read_data(netcdf_file, time=None, all_data=False):
         """
         Read and create standard data arrays for a netcdf file that was created
         with NetCDFOutput class. Make it a static method since it is
@@ -560,12 +574,13 @@ class NetCDFOutput(Outputter, serializable.Serializable):
 
         :param netcdf_file: Name of the NetCDF file from which to read the data
         :type netcdf_file: str
-        :param index: Index of the 'time' variable (or time_step) for which
+        :param time: Index of the 'time' variable (or time_step) for which
             data is desired. Default is 0 so it returns data associated with
             first timestamp.
-        :type index: int
-        :returns: a dict containing 'positions', 'status_codes', 'spill_num'.
-            Currently, this is standard data.
+        :type time: datetime
+
+        :returns: a dict containing standard data closest to the indicated
+            'time'. Standard data is defined as follows:
 
         Standard data arrays are numpy arrays of size N, where N is number of
         particles released at time step of interest:
@@ -575,7 +590,10 @@ class NetCDFOutput(Outputter, serializable.Serializable):
             'status_codes'      : NX1 array. Corresponds with NetCDF variable
                                   'status'
             'spill_num'         : NX1 array. Corresponds with NetCDF variable
-                                  'id'
+                                  'spill_num'
+            'id'                : NX1 array showing particle id. Corresponds
+                                  with NetCDF variable 'id'
+            'mass'              : NX1 array showing 'mass' of each particle
         """
 
         if not os.path.exists(netcdf_file):
@@ -584,13 +602,33 @@ class NetCDFOutput(Outputter, serializable.Serializable):
         arrays_dict = dict()
         with nc.Dataset(netcdf_file) as data:
             _start_ix = 0
+
+            # first find the index of timestep in which we are interested
+            time_ = data.variables['time']
+            if time == None:
+                # there should only be 1 time in file. Read and
+                # return data associated with it
+                if len(time_) > 1:
+                    raise ValueError("More than one times found in netcdf"
+                                     " file. Please specify time for which"
+                                     " data is desired")
+                else:
+                    index = 0
+            else:
+                time_offset = nc.date2num(time, time_.units,
+                                          calendar=time_.calendar)
+                if time_offset < 0:
+                    """ desired time is before start of model """
+                    index = 0
+                else:
+                    index = abs(time_[:] - time_offset).argmin()
+
             for idx in range(index):
                 _start_ix += data.variables['particle_count'][idx]
 
             _stop_ix = _start_ix + data.variables['particle_count'][index]
             elem = data.variables['particle_count'][index]
 
-            time_ = data.variables['time']
             c_time = nc.num2date(time_[index], time_.units,
                                  calendar=time_.calendar)
             arrays_dict['current_time_stamp'] = np.array(c_time)

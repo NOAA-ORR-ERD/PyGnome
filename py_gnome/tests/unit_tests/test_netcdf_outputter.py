@@ -3,7 +3,7 @@ Tests for netcdf_outputter
 '''
 
 import os
-from datetime import datetime
+from datetime import datetime, timedelta
 
 import numpy as np
 import netCDF4 as nc
@@ -45,7 +45,7 @@ def model(sample_model, request):
     def cleanup():
         """ cleanup outputters was added to sample_model and delete files """
 
-        print '''Cleaning up %s''' % model
+        print '''\nCleaning up %s''' % model
         o_put = None
         for outputter in model.outputters:
             # there should only be 1!
@@ -55,7 +55,8 @@ def model(sample_model, request):
                 if os.path.exists(o_put.netcdf_filename):
                     os.remove(o_put.netcdf_filename)
 
-                if os.path.exists(o_put._u_netcdf_filename):
+                if (o_put._u_netcdf_filename is not None
+                    and os.path.exists(o_put._u_netcdf_filename)):
                     os.remove(o_put._u_netcdf_filename)
 
     request.addfinalizer(cleanup)
@@ -135,9 +136,6 @@ def test_exceptions_middle_of_run(model):
 
     with pytest.raises(AttributeError):
         o_put.all_data = True
-
-    with pytest.raises(AttributeError):
-        o_put.netcdf_format = 'NETCDF3_CLASSIC'
 
     with pytest.raises(AttributeError):
         o_put.compress = False
@@ -291,41 +289,6 @@ def test_write_output_all_data(model):
         uncertain = True
 
 
-def test_write_output_post_run(model):
-    """
-    Create netcdf file post run from the cache.
-    """
-
-    model.rewind()
-
-    o_put = [model.outputters[outputter.id] for outputter in
-             model.outputters if isinstance(outputter, NetCDFOutput)][0]
-    o_put.all_data = False
-
-    del model.outputters[o_put.id]  # remove from list of outputters
-
-    _run_model(model)
-
-    # now write netcdf output
-
-    o_put.prepare_for_model_run(model.start_time,
-                                model.num_time_steps,
-                                model._cache,
-                                model.uncertain)
-    for step_num in range(model.num_time_steps):
-        # no need for prepare_for_model_step since output_timestep is None.
-        # So every single timestep is written out
-        write_info = o_put.write_output(step_num)
-        print write_info
-
-    assert os.path.exists(o_put.netcdf_filename)
-    if model.uncertain:
-        assert os.path.exists(o_put._u_netcdf_filename)
-
-    # add this back in so cleanup script deletes the generated *.nc files
-    model.outputters += o_put
-
-
 def test_run_without_spills(model):
     """
     """
@@ -338,53 +301,80 @@ def test_run_without_spills(model):
     _run_model(model)
 
 
-def test_read_standard_arrays(model):
+def test_read_data_exception(model):
     """
-    tests the data returned by read_data is correct when `all_data` flag is
-    False. It is only reading the standard_data_arrays
+    tests the exception is raised by read_data when file contains more than one
+    output time and read_data is not given the output time to read
     """
 
     model.rewind()
-    _run_model(model)
 
     # check contents of netcdf File at multiple time steps (should only be 1!)
-
     o_put = [model.outputters[outputter.id] for outputter in
              model.outputters if isinstance(outputter, NetCDFOutput)][0]
+
+    _run_model(model)
+
+    with pytest.raises(ValueError):
+        NetCDFOutput.read_data(o_put.netcdf_filename)
+
+
+@pytest.mark.parametrize("output_ts_factor", [1, 2.4])
+def test_read_standard_arrays(model, output_ts_factor):
+    """
+    tests the data returned by read_data is correct when `all_data` flag is
+    False. It is only reading the standard_data_arrays
+
+    Test will only verify the data when time_stamp of model matches the
+    time_stamp of data written out. output_ts_factor means not all data is
+    written out.
+    """
+
+    model.rewind()
+
+    # check contents of netcdf File at multiple time steps (should only be 1!)
+    o_put = [model.outputters[outputter.id] for outputter in
+             model.outputters if isinstance(outputter, NetCDFOutput)][0]
+    o_put.output_timestep = timedelta(seconds=model.time_step *
+                                      output_ts_factor)
+    _run_model(model)
 
     atol = 1e-5
     rtol = 0
 
     uncertain = False
     for file_ in (o_put.netcdf_filename, o_put._u_netcdf_filename):
-        for step in range(model.num_time_steps):
+        _found_a_matching_time = False
+        for step in range(0, model.num_time_steps, int(output_ts_factor)):
             scp = model._cache.load_timestep(step)
-            nc_data = NetCDFOutput.read_data(file_, step)
+            curr_time = scp.LE('current_time_stamp', uncertain)
+            nc_data = NetCDFOutput.read_data(file_, curr_time)
 
             # check time
+            if curr_time == nc_data['current_time_stamp'].item():
+                _found_a_matching_time = True
+                # check standard variables
+                assert np.allclose(scp.LE('positions', uncertain),
+                                   nc_data['positions'], rtol, atol)
+                assert np.all(scp.LE('spill_num', uncertain)[:]
+                              == nc_data['spill_num'])
+                assert np.all(scp.LE('status_codes', uncertain)[:]
+                              == nc_data['status_codes'])
 
-            assert scp.LE('current_time_stamp', uncertain) \
-                == nc_data['current_time_stamp'].item()
+                # flag variable is not currently set or checked
 
-            # check standard variables
-            assert np.allclose(scp.LE('positions', uncertain),
-                               nc_data['positions'], rtol, atol)
-            assert np.all(scp.LE('spill_num', uncertain)[:]
-                          == nc_data['spill_num'])
-            assert np.all(scp.LE('status_codes', uncertain)[:]
-                          == nc_data['status_codes'])
+                if 'mass' in scp.LE_data:
+                    assert np.all(scp.LE('mass', uncertain)[:]
+                                  == nc_data['mass'])
 
-            # flag variable is not currently set or checked
+                if 'age' in scp.LE_data:
+                    assert np.all(scp.LE('age', uncertain)[:]
+                                  == nc_data['age'])
 
-            if 'mass' in scp.LE_data:
-                assert np.all(scp.LE('mass', uncertain)[:]
-                              == nc_data['mass'])
-
-            if 'age' in scp.LE_data:
-                assert np.all(scp.LE('age', uncertain)[:]
-                              == nc_data['age'])
-
-        print 'data in model matches output in {0}'.format(file_)
+        if _found_a_matching_time:
+            """ at least one matching time found """
+            print ('\ndata in model matches for output in \n{0} \nand'
+                   ' output_ts_factor: {1}'.format(file_, output_ts_factor))
 
         # 2nd time around, look at uncertain filename so toggle uncertain flag
 
@@ -409,26 +399,90 @@ def test_read_all_arrays(model):
 
     uncertain = False
     for file_ in (o_put.netcdf_filename, o_put._u_netcdf_filename):
+        _found_a_matching_time = False
         for step in range(model.num_time_steps):
             scp = model._cache.load_timestep(step)
-            nc_data = NetCDFOutput.read_data(file_, step, all_data=True)
+            curr_time = scp.LE('current_time_stamp', uncertain)
+            nc_data = NetCDFOutput.read_data(file_, curr_time, all_data=True)
 
-            for key in scp.LE_data:
-                if key == 'current_time_stamp':
-                    assert scp.LE('current_time_stamp', uncertain) \
-                        == nc_data['current_time_stamp'].item()
-                elif key == 'positions':
-                    assert np.allclose(scp.LE('positions', uncertain),
-                            nc_data['positions'], rtol, atol)
-                else:
-                    assert np.all(scp.LE(key, uncertain)[:]
-                                  == nc_data[key])
+            if curr_time == nc_data['current_time_stamp'].item():
+                _found_a_matching_time = True
+                for key in scp.LE_data:
+                    if key == 'current_time_stamp':
+                        """ already matched """
+                        continue
+                    elif key == 'positions':
+                        assert np.allclose(scp.LE('positions', uncertain),
+                                nc_data['positions'], rtol, atol)
+                    else:
+                        assert np.all(scp.LE(key, uncertain)[:]
+                                      == nc_data[key])
 
-        print 'data in model matches output in {0}'.format(file_)
+        if _found_a_matching_time:
+            print ('\ndata in model matches for output in \n{0}'.format(file_))
 
         # 2nd time around, look at uncertain filename so toggle uncertain flag
 
         uncertain = True
+
+
+@pytest.mark.parametrize("output_ts_factor", [1, 2])
+def test_write_output_post_run(model, output_ts_factor):
+    """
+    Create netcdf file post run from the cache. Under the hood, it is simply
+    calling write_output so no need to check the data is correctly written
+    test_write_output_standard already checks data is correctly written.
+
+    Instead, make sure if output_timestep is not same as model.time_step,
+    then data is output at correct time stamps
+    """
+
+    model.rewind()
+
+    o_put = [model.outputters[outputter.id] for outputter in
+             model.outputters if isinstance(outputter, NetCDFOutput)][0]
+    o_put.all_data = False
+    o_put.output_timestep = timedelta(seconds=model.time_step *
+                                      output_ts_factor)
+
+    del model.outputters[o_put.id]  # remove from list of outputters
+
+    _run_model(model)
+
+    # now write netcdf output
+    o_put.write_output_post_run(model.start_time,
+                                model.num_time_steps,
+                                model._cache,
+                                model.uncertain)
+
+    assert os.path.exists(o_put.netcdf_filename)
+    if model.uncertain:
+        assert os.path.exists(o_put._u_netcdf_filename)
+
+    uncertain = False
+    for file_ in (o_put.netcdf_filename, o_put._u_netcdf_filename):
+        for step in range(model.num_time_steps, int(output_ts_factor)):
+            print "step: {0}".format(step)
+            scp = model._cache.load_timestep(step)
+            curr_time = scp.LE('current_time_stamp', uncertain)
+            nc_data = NetCDFOutput.read_data(file_, curr_time)
+            assert curr_time == nc_data['current_time_stamp'].item()
+
+        if o_put.output_last_step:
+            scp = model._cache.load_timestep(model.num_time_steps - 1)
+            curr_time = scp.LE('current_time_stamp', uncertain)
+            nc_data = NetCDFOutput.read_data(file_, curr_time)
+            assert curr_time == nc_data['current_time_stamp'].item()
+
+        """ at least one matching time found """
+        print ('\nAll expected timestamps are written out for'
+                ' output_ts_factor: {1}'.format(file_, output_ts_factor))
+
+        # 2nd time around, look at uncertain filename so toggle uncertain flag
+        uncertain = True
+
+    # add this back in so cleanup script deletes the generated *.nc files
+    model.outputters += o_put
 
 
 def _run_model(model):
