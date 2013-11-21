@@ -53,7 +53,6 @@ class Outputter(object):
 
     def prepare_for_model_run(self,
         model_start_time,
-        num_time_steps,
         cache=None,
         **kwargs):
         """
@@ -66,9 +65,6 @@ class Outputter(object):
         :param model_start_time: (Required) start time of the model run. NetCDF
             time units calculated with respect to this time.
         :type model_start_time: datetime.datetime object
-        :param num_time_steps: (Required) total number of time steps for the
-            run. Currently this is known and fixed.
-        :type num_time_steps: int
 
         Optional argument - incase cache needs to be updated
 
@@ -83,12 +79,11 @@ class Outputter(object):
         if cache is not None:
             self.cache = cache
 
-        if model_start_time is None or num_time_steps is None:
-            raise TypeError('model_start_time or num_time_steps cannot be'
-                            ' NoneType if output_timestep is not None')
+        if model_start_time is None:
+            raise TypeError('model_start_time cannot be NoneType if'
+                            ' output_timestep is not None')
 
         self._model_start_time = model_start_time
-        self._num_time_steps = num_time_steps
         if self.output_timestep is not None:
             self._next_output_time = (self._model_start_time +
                                       self.output_timestep)
@@ -128,16 +123,24 @@ class Outputter(object):
 
         pass
 
-    def write_output(self, step_num):
+    def write_output(self, step_num, islast_step=False):
         """
         called by the model at the end of each time step
         This is the last operation after model_step_is_done()
+
+        :param step_num: the model step number you want rendered.
+        :type step_num: int
+
+        :param islast_step: default is False. Flag that indicates that step_num
+            is last step. If 'output_last_step' is True then this is written
+            out
+        :type islast_step: bool
         """
 
         if (step_num == 0 and self.output_zero_step):
             self._write_step = True
 
-        if (step_num == self._num_time_steps - 1 and self.output_last_step):
+        if (islast_step and self.output_last_step):
             self._write_step = True
 
         if (self._write_step and self.cache is None):
@@ -159,7 +162,6 @@ class Outputter(object):
         reset variables set during prepare_for_model_run() to init conditions
         """
         self._model_start_time = None
-        self._num_time_steps = None
         self._next_output_time = None
         self._write_step = False
 
@@ -174,12 +176,60 @@ class Outputter(object):
         :param time_stamp: datetime associated with data written by
             write_output
         """
-        if (step_num == 0 or step_num == self._num_time_steps - 1):
+        if (step_num == 0):
             # update not required if 0th step or final step.
             # Strictly speaking this logic is not required since setting the
-            # _next_output_time at time 0 doesn't change its value and at
-            # final step it doesn't matter. But why reset it if not required
+            # _next_output_time at time 0 doesn't change its value
+            # But why reset it if not required
             return
 
         if self.output_timestep is not None:
             self._next_output_time = time_stamp + self.output_timestep
+
+    def write_output_post_run(self,
+        model_start_time,
+        num_time_steps,
+        cache=None,
+        **kwargs):
+        """
+        If the model has already been run and the data is cached, then use
+        this function to write output. In this case, num_time_steps is known
+        so pass it into this function.
+
+        :param model_start_time: (Required) start time of the model run. NetCDF
+            time units calculated with respect to this time.
+        :type model_start_time: datetime.datetime object
+
+        :param num_time_steps: (Required) total number of time steps for the
+            run. Currently this is known and fixed.
+        :type num_time_steps: int
+
+        Optional argument - incase cache needs to be updated
+
+        :param cache=None: Sets the cache object to be used for the data.
+            If None, it will use the one already set up.
+        :type cache: As defined in cache module (gnome.utilities.cache).
+            Currently only ElementCache is defined/used.
+
+        also added **kwargs since a derived class like NetCDFOutput could
+        require additional variables in prepare_for_model_run() as is the
+        case for netcdf_outputter
+
+        Follows the iteration in Model().step() for each step_num
+        """
+        self.prepare_for_model_run(model_start_time, cache, **kwargs)
+        model_time = model_start_time
+        last_step = False
+        for step_num in range(num_time_steps):
+            if (step_num > 0 and step_num < num_time_steps - 1):
+                next_ts = (self.cache.load_timestep(step_num + 1).items()[0].
+                           current_time_stamp)
+                ts = next_ts - model_time
+                self.prepare_for_model_step(ts.seconds, model_time)
+
+            if step_num == num_time_steps - 1:
+                last_step = True
+
+            self.write_output(step_num, last_step)
+            model_time = (self.cache.load_timestep(step_num).items()[0].
+                         current_time_stamp)

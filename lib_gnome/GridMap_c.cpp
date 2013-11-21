@@ -2230,6 +2230,7 @@ done:
 		}
 		if(vertexPtsH) {DisposeHandle((Handle)vertexPtsH); vertexPtsH = 0;}
 		if(totalDepthsH) {DisposeHandle((Handle)totalDepthsH); totalDepthsH = 0;}
+		if(mylandmaskH) {DisposeHandle((Handle)mylandmaskH); mylandmaskH = 0;}
 		//if(sigmaLevelsH) {DisposeHandle((Handle)sigmaLevelsH); sigmaLevelsH = 0;}
 		//if (fDepthLevelsHdl) {DisposeHandle((Handle)fDepthLevelsHdl); fDepthLevelsHdl=0;}
 		//if (fDepthLevelsHdl2) {DisposeHandle((Handle)fDepthLevelsHdl2); fDepthLevelsHdl2=0;}

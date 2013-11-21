@@ -130,25 +130,24 @@ class Renderer(Outputter, MapCanvas, serializable.Serializable):
 
     def prepare_for_model_run(self,
         model_start_time,
-        num_time_steps,
         cache=None,
         **kwargs):
         """
         prepares the renderer for a model run.
 
-        Parameters passed to base class:
-            model_start_time, num_time_steps, cache
+        Parameters passed to base class (use super): model_start_time, cache
+
+        Does not take any other input arguments; however, to keep the interface
+        the same for all outputters, define **kwargs and pass into base class
 
         In this case, it draws the background image and clears the previous
         images. If you want to save the previous images, a new output dir
         should be set.
 
-        Does not take any other input arguments; however, to keep the interface
-        the same for all outputters, define **kwargs for now.
         """
 
         super(Renderer, self).prepare_for_model_run(model_start_time,
-                num_time_steps, cache, **kwargs)
+                cache, **kwargs)
 
         self.clear_output_dir()
 
@@ -175,11 +174,17 @@ class Renderer(Outputter, MapCanvas, serializable.Serializable):
         for name in foreground_filenames:
             os.remove(name)
 
-    def write_output(self, step_num):
+    def write_output(self, step_num, islast_step=False):
         """
         Render the map image, according to current parameters.
 
         :param step_num: the model step number you want rendered.
+        :type step_num: int
+
+        :param islast_step: default is False. Flag that indicates that step_num
+            is last step. If 'output_last_step' is True then this is written
+            out
+        :type islast_step: bool
 
         :returns: A dict of info about this step number if this step
             is to be output, None otherwise.
@@ -194,7 +199,7 @@ class Renderer(Outputter, MapCanvas, serializable.Serializable):
         this step based on output_timestep
         """
 
-        super(Renderer, self).write_output(step_num)
+        super(Renderer, self).write_output(step_num, islast_step)
 
         if not self._write_step:
             return None
