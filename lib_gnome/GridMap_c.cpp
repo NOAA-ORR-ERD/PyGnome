@@ -1855,60 +1855,57 @@ OSErr GridMap_c::GetPointsAndMask(char *path,DOUBLEH *maskH,WORLDPOINTFH *vertex
 {
 	// this code is for curvilinear grids
 	OSErr err = 0;
-	long i,j,k, numScanned, indexOfStart = 0;
-	int status, ncid, latIndexid, lonIndexid, latid, lonid, recid, sigmaid, sigmavarid, sigmavarid2, hcvarid, depthid, depthdimid, depthvarid, mask_id, numdims;
-	size_t latLength, lonLength, t_len2, sigmaLength=0;
-	float startLat,startLon,endLat,endLon,hc_param=0.;
-	char dimname[NC_MAX_NAME], s[256], topPath[256], outPath[256];
+	long i,j,k, indexOfStart = 0;
+	int status, ncid, latIndexid, lonIndexid, latid, lonid, depthid, mask_id, numdims;
+	size_t latLength, lonLength, t_len2;
+	float startLat,startLon,endLat,endLon;
+	char dimname[NC_MAX_NAME];
 	WORLDPOINTFH vertexPtsH=0;
-	FLOATH totalDepthsH=0/*, sigmaLevelsH=0*/;
-	double *lat_vals=0,*lon_vals=0,timeVal;
-	float *depth_vals=0,*sigma_vals=0,*sigma_vals2=0;
-	static size_t latIndex=0,lonIndex=0,timeIndex,ptIndex[2]={0,0},sigmaIndex=0;
-	static size_t pt_count[2], sigma_count;
+	FLOATH totalDepthsH=0;
+	double *lat_vals=0,*lon_vals=0;
+	float *depth_vals=0;
+	static size_t latIndex=0,lonIndex=0,ptIndex[2]={0,0};
+	static size_t pt_count[2];
 	char errmsg[256] = "";
-	char fileName[64],*modelTypeStr=0;
-	Boolean bTopFile = false, isLandMask = true, fIsNavy = false;
-	//VelocityFH velocityH = 0;
+	char *modelTypeStr=0;
+	Boolean isLandMask = true, fIsNavy = false;
 	static size_t mask_index[] = {0,0};
 	static size_t mask_count[2];
-	double *landmask = 0; 
+	double *landmask = 0, scale_factor = 1; 
 	DOUBLEH mylandmaskH=0;
-	//long numTimesInFile = 0;
 	long fNumRows, fNumCols;
-	short fGridType;
 	
 	if (!path || !path[0]) return 0;
-	//strcpy(fVar.pathName,path);
 	
-	strcpy(s,path);
-	SplitPathFile (s, fileName);
-	//strcpy(fVar.userName, fileName); // maybe use a name from the file
 	status = nc_open(path, NC_NOWRITE, &ncid);
 	//if (status != NC_NOERR) {err = -1; goto done;}
 	if (status != NC_NOERR) /*{err = -1; goto done;}*/
-	{
-#if TARGET_API_MAC_CARBON
-		err = ConvertTraditionalPathToUnixPath((const char *) path, outPath, kMaxNameLen) ;
-		status = nc_open(outPath, NC_NOWRITE, &ncid);
-#endif
+	{	
 		if (status != NC_NOERR) {err = -1; goto done;}
 	}
+
 	// check number of dimensions - 2D or 3D
 	status = nc_inq_ndims(ncid, &numdims);
 	if (status != NC_NOERR) {err = -1; goto done;}
 	
 	status = nc_inq_attlen(ncid,NC_GLOBAL,"generating_model",&t_len2);
-	if (status != NC_NOERR) {status = nc_inq_attlen(ncid,NC_GLOBAL,"generator",&t_len2); if (status != NC_NOERR) {fIsNavy = false; /*goto done;*/}}	// will need to split for Navy vs LAS
-	else 
+	if (status != NC_NOERR) 
 	{
-		fIsNavy = true;
+			status = nc_inq_attlen(ncid,NC_GLOBAL,"generator",&t_len2); 
+			if (status != NC_NOERR) {fIsNavy = false; /*goto done;*/}
+	}	// will need to split for Navy vs LAS
+	else 
+	{	
+		fIsNavy = true;	// do we still need to support separate Navy format?
 		// may only need to see keyword is there, since already checked grid type
 		modelTypeStr = new char[t_len2+1];
 		status = nc_get_att_text(ncid, NC_GLOBAL, "generating_model", modelTypeStr);
-		if (status != NC_NOERR) {status = nc_inq_attlen(ncid,NC_GLOBAL,"generator",&t_len2); if (status != NC_NOERR) {fIsNavy = false; goto done;}}	// will need to split for regridded or non-Navy cases 
-		modelTypeStr[t_len2] = '\0';
-		
+		if (status != NC_NOERR) 
+		{
+			status = nc_inq_attlen(ncid,NC_GLOBAL,"generator",&t_len2); 
+			if (status != NC_NOERR) {fIsNavy = false; goto done;}
+		}	// will need to split for regridded or non-Navy cases 
+		modelTypeStr[t_len2] = '\0';		
 	}		
 	
 	if (fIsNavy)
@@ -1934,12 +1931,10 @@ OSErr GridMap_c::GetPointsAndMask(char *path,DOUBLEH *maskH,WORLDPOINTFH *vertex
 			//if (i == recid) continue;
 			status = nc_inq_dimname(ncid,i,dimname);
 			if (status != NC_NOERR) {err = -1; goto done;}
-			//if (!strncmpnocase(dimname,"X",1) || !strncmpnocase(dimname,"LON",3))
 			if (!strncmpnocase(dimname,"X",1) || !strncmpnocase(dimname,"LON",3) || !strncmpnocase(dimname,"NX",2))
 			{
 				lonIndexid = i;
 			}
-			//if (!strncmpnocase(dimname,"Y",1) || !strncmpnocase(dimname,"LAT",3))
 			if (!strncmpnocase(dimname,"Y",1) || !strncmpnocase(dimname,"LAT",3) || !strncmpnocase(dimname,"NY",2))
 			{
 				latIndexid = i;
@@ -1987,106 +1982,26 @@ OSErr GridMap_c::GetPointsAndMask(char *path,DOUBLEH *maskH,WORLDPOINTFH *vertex
 		}
 	}
 	*vertexPointsH	= vertexPtsH;// get first and last, lat/lon values, then last-first/total-1 = dlat/dlon
-	
-	
-	status = nc_inq_dimid(ncid, "sigma", &sigmaid); 	
-	//if (status != NC_NOERR || fIsNavy) {fVar.gridType = TWO_D; /*err = -1; goto done;*/}	// check for zgrid option here
-	if (status != NC_NOERR)
-	{
-		status = nc_inq_dimid(ncid, "depth", &depthdimid); 
-		if (status != NC_NOERR || fIsNavy) 
-		{
-			fGridType = TWO_D; /*err = -1; goto done;*/
-		}	
-		else
-		{// check for zgrid option here
-			fGridType = MULTILAYER; /*err = -1; goto done;*/
-			status = nc_inq_varid(ncid, "depth", &sigmavarid); //Navy
-			if (status != NC_NOERR) {err = -1; goto done;}
-			status = nc_inq_dimlen(ncid, depthdimid, &sigmaLength);
-			if (status != NC_NOERR) {err = -1; goto done;}
-			//fVar.maxNumDepths = sigmaLength;
-			sigma_vals = new float[sigmaLength];
-			if (!sigma_vals) {err = memFullErr; goto done;}
-			sigma_count = sigmaLength;
-			status = nc_get_vara_float(ncid, sigmavarid, &sigmaIndex, &sigma_count, sigma_vals);
-			if (status != NC_NOERR) {err = -1; goto done;}
-		}
-	}
-	else
-	{
-		status = nc_inq_varid(ncid, "sigma", &sigmavarid); //Navy
-		if (status != NC_NOERR) 
-		{
-			status = nc_inq_varid(ncid, "sc_r", &sigmavarid);
-			if (status != NC_NOERR) {err = -1; goto done;}
-			status = nc_inq_varid(ncid, "Cs_r", &sigmavarid2);
-			if (status != NC_NOERR) {err = -1; goto done;}
-			status = nc_inq_dimlen(ncid, sigmaid, &sigmaLength);
-			if (status != NC_NOERR) {err = -1; goto done;}
-			fGridType = SIGMA_ROMS;
-			//fVar.maxNumDepths = sigmaLength;
-			sigma_vals = new float[sigmaLength];
-			if (!sigma_vals) {err = memFullErr; goto done;}
-			sigma_vals2 = new float[sigmaLength];
-			if (!sigma_vals2) {err = memFullErr; goto done;}
-			sigma_count = sigmaLength;
-			status = nc_get_vara_float(ncid, sigmavarid, &sigmaIndex, &sigma_count, sigma_vals);
-			if (status != NC_NOERR) {err = -1; goto done;}
-			status = nc_get_vara_float(ncid, sigmavarid2, &sigmaIndex, &sigma_count, sigma_vals2);
-			if (status != NC_NOERR) {err = -1; goto done;}
-			status = nc_inq_varid(ncid, "hc", &hcvarid);
-			if (status != NC_NOERR) {err = -1; goto done;}
-			status = nc_get_var1_float(ncid, hcvarid, &sigmaIndex, &hc_param);
-			if (status != NC_NOERR) {err = -1; goto done;}
-		}
-		else
-		{
-			// code goes here, for SIGMA_ROMS the variable isn't sigma but sc_r and Cs_r, with parameter hc
-			status = nc_inq_dimlen(ncid, sigmaid, &sigmaLength);
-			if (status != NC_NOERR) {err = -1; goto done;}
-			// check if sigmaLength > 1
-			fGridType = SIGMA;
-			//fVar.maxNumDepths = sigmaLength;
-			sigma_vals = new float[sigmaLength];
-			if (!sigma_vals) {err = memFullErr; goto done;}
-			sigma_count = sigmaLength;
-			status = nc_get_vara_float(ncid, sigmavarid, &sigmaIndex, &sigma_count, sigma_vals);
-			if (status != NC_NOERR) {err = -1; goto done;}
-		}
-		// once depth is read in 
-	}
-	
+		
 	status = nc_inq_varid(ncid, "depth", &depthid);	// this is required for sigma or multilevel grids
-	if (status != NC_NOERR || fIsNavy) {fGridType = TWO_D;}
+	//if (status != NC_NOERR || fIsNavy) {fGridType = TWO_D;}
+	if (status != NC_NOERR) 
+	//{err = -1; goto done;}	// should we require bathymetry for maps or not?
+	{	// will set the depths to 'infinite' below
+		totalDepthsH = (FLOATH)_NewHandleClear(latLength*lonLength*sizeof(float));
+		if (!totalDepthsH) {err = memFullErr; goto done;}
+	}
 	else
 	{	
-		if (fGridType==MULTILAYER)
-		{
-			// for now
-			totalDepthsH = (FLOATH)_NewHandleClear(latLength*lonLength*sizeof(float));
-			if (!totalDepthsH) {err = memFullErr; goto done;}
-			depth_vals = new float[latLength*lonLength];
-			if (!depth_vals) {err = memFullErr; goto done;}
-			for (i=0;i<latLength*lonLength;i++)
-			{
-				INDEXH(totalDepthsH,i)=sigma_vals[sigmaLength-1];
-				depth_vals[i] = INDEXH(totalDepthsH,i);
-			}
-			
-		}
-		else
-		{
-			totalDepthsH = (FLOATH)_NewHandleClear(latLength*lonLength*sizeof(float));
-			if (!totalDepthsH) {err = memFullErr; goto done;}
-			depth_vals = new float[latLength*lonLength];
-			if (!depth_vals) {err = memFullErr; goto done;}
-			status = nc_get_vara_float(ncid, depthid, ptIndex,pt_count, depth_vals);
-			if (status != NC_NOERR) {err = -1; goto done;}
-			
-			//status = nc_get_att_double(ncid, depthid, "scale_factor", &scale_factor);
-			//if (status != NC_NOERR) {}	// don't require scale factor
-		}
+		totalDepthsH = (FLOATH)_NewHandleClear(latLength*lonLength*sizeof(float));
+		if (!totalDepthsH) {err = memFullErr; goto done;}
+		depth_vals = new float[latLength*lonLength];
+		if (!depth_vals) {err = memFullErr; goto done;}
+		status = nc_get_vara_float(ncid, depthid, ptIndex,pt_count, depth_vals);
+		if (status != NC_NOERR) {err = -1; goto done;}
+		
+		status = nc_get_att_double(ncid, depthid, "scale_factor", &scale_factor);
+		if (status != NC_NOERR) {/*err = -1; goto done;*/}	// don't require scale factor
 	}
 	
 	*numRows = latLength;
@@ -2103,8 +2018,6 @@ OSErr GridMap_c::GetPointsAndMask(char *path,DOUBLEH *maskH,WORLDPOINTFH *vertex
 	{
 		landmask = new double[latLength*lonLength]; 
 		if(!landmask) {TechError("GridMap_c::GetPointsAndMask()", "new[]", 0); err = memFullErr; goto done;}
-		//mylandmask = new double[latlength*lonlength]; 
-		//if(!mylandmask) {TechError("NetCDFMoverCurv::ReoderPointsNoMask()", "new[]", 0); err = memFullErr; goto done;}
 		mylandmaskH = (double**)_NewHandleClear(latLength*lonLength*sizeof(double));
 		if(!mylandmaskH) {TechError("GridMap_c::GetPointsAndMask()", "_NewHandleClear()", 0); err = memFullErr; goto done;}
 		status = nc_get_vara_double(ncid, mask_id, mask_index, mask_count, landmask);
@@ -2135,86 +2048,19 @@ depths:
 			for (j=0;j<lonLength;j++)
 			{
 				// grid ordering does matter for creating ptcurmap, assume increases fastest in x/lon, then in y/lat
-				//INDEXH(totalDepthsH,i*lonLength+j) = depth_vals[(latLength-i-1)*lonLength+j];	
-				INDEXH(totalDepthsH,i*lonLength+j) = fabs(depth_vals[(latLength-i-1)*lonLength+j]);
+				//INDEXH(totalDepthsH,i*lonLength+j) = fabs(depth_vals[(latLength-i-1)*lonLength+j]);
+				if (depth_vals)
+					INDEXH(totalDepthsH,i*lonLength+j) = fabs(depth_vals[(latLength-i-1)*lonLength+j]) * scale_factor;
+				else 
+					INDEXH(totalDepthsH, i) = INFINITE_DEPTH;	// let map have infinite depth
+
 			}
 		}
 		*depthPointsH = totalDepthsH;
 		
 	}
 	
-	if (sigmaLength>1)
-	{
-		/*float sigma = 0;
-		 fDepthLevelsHdl = (FLOATH)_NewHandleClear(sigmaLength * sizeof(float));
-		 if (!fDepthLevelsHdl) {err = memFullErr; goto done;}
-		 for (i=0;i<sigmaLength;i++)
-		 {	// decide what to do here, may be upside down for ROMS
-		 sigma = sigma_vals[i];
-		 if (sigma_vals[0]==1) 
-		 INDEXH(fDepthLevelsHdl,i) = (1-sigma);	// in this case velocities will be upside down too...
-		 else
-		 {
-		 if (fVar.gridType == SIGMA_ROMS)
-		 INDEXH(fDepthLevelsHdl,i) = sigma;
-		 else
-		 INDEXH(fDepthLevelsHdl,i) = abs(sigma);
-		 }
-		 
-		 }
-		 if (fVar.gridType == SIGMA_ROMS)
-		 {
-		 fDepthLevelsHdl2 = (FLOATH)_NewHandleClear(sigmaLength * sizeof(float));
-		 if (!fDepthLevelsHdl2) {err = memFullErr; goto done;}
-		 for (i=0;i<sigmaLength;i++)
-		 {
-		 sigma = sigma_vals2[i];
-		 //if (sigma_vals[0]==1) 
-		 //INDEXH(fDepthLevelsHdl,i) = (1-sigma);	// in this case velocities will be upside down too...
-		 //else
-		 INDEXH(fDepthLevelsHdl2,i) = sigma;
-		 }
-		 hc = hc_param;
-		 }*/
-	}
-	
-	/*if (totalDepthsH)
-	 {	// may need to extend the depth grid along with lat/lon grid - not sure what to use for the values though...
-	 // not sure what map will expect in terms of depths order
-	 long n,ptIndex,iIndex,jIndex;
-	 long numPoints = _GetHandleSize((Handle)fVerdatToNetCDFH)/sizeof(**fVerdatToNetCDFH);
-	 //_SetHandleSize((Handle)totalDepthsH,(fNumRows+1)*(fNumCols+1)*sizeof(float));
-	 _SetHandleSize((Handle)totalDepthsH,numPoints*sizeof(float));
-	 //for (i=0; i<fNumRows*fNumCols; i++)
-	 //for (i=0; i<(fNumRows+1)*(fNumCols+1); i++)
-	 
-	 for (i=0; i<numPoints; i++)
-	 {	// works okay for simple grid except for far right column (need to extend depths similar to lat/lon)
-	 // if land use zero, if water use point next to it?
-	 ptIndex = INDEXH(fVerdatToNetCDFH,i);
-	 iIndex = ptIndex/(fNumCols+1);
-	 jIndex = ptIndex%(fNumCols+1);
-	 if (iIndex>0 && jIndex<fNumCols)
-	 ptIndex = (iIndex-1)*(fNumCols)+jIndex;
-	 else
-	 ptIndex = -1;
-	 
-	 //n = INDEXH(fVerdatToNetCDFH,i);
-	 //if (n<0 || n>= fNumRows*fNumCols) {printError("indices messed up"); err=-1; goto done;}
-	 //INDEXH(totalDepthsH,i) = depth_vals[n];
-	 if (ptIndex<0 || ptIndex>= fNumRows*fNumCols) 
-	 {
-	 //printError("indices messed up"); 
-	 //err=-1; goto done;
-	 INDEXH(totalDepthsH,i) = 0;	// need to figure out what to do here...
-	 continue;
-	 }
-	 //INDEXH(totalDepthsH,i) = depth_vals[ptIndex];
-	 INDEXH(totalDepthsH,i) = INDEXH(fDepthsH,ptIndex);
-	 }
-	 ((TTriGridVel*)fGrid)->SetDepths(totalDepthsH);
-	 }*/
-	
+		
 done:
 	if (err)
 	{
@@ -2231,19 +2077,14 @@ done:
 		if(vertexPtsH) {DisposeHandle((Handle)vertexPtsH); vertexPtsH = 0;}
 		if(totalDepthsH) {DisposeHandle((Handle)totalDepthsH); totalDepthsH = 0;}
 		if(mylandmaskH) {DisposeHandle((Handle)mylandmaskH); mylandmaskH = 0;}
-		//if(sigmaLevelsH) {DisposeHandle((Handle)sigmaLevelsH); sigmaLevelsH = 0;}
-		//if (fDepthLevelsHdl) {DisposeHandle((Handle)fDepthLevelsHdl); fDepthLevelsHdl=0;}
-		//if (fDepthLevelsHdl2) {DisposeHandle((Handle)fDepthLevelsHdl2); fDepthLevelsHdl2=0;}
 	}
 	
 	if (lat_vals) delete [] lat_vals;
 	if (lon_vals) delete [] lon_vals;
 	if (depth_vals) delete [] depth_vals;
-	if (sigma_vals) delete [] sigma_vals;
-	if (sigma_vals2) delete [] sigma_vals2;
 	if (landmask) delete [] landmask;
 	if (modelTypeStr) delete [] modelTypeStr;
-	//if (velocityH) {DisposeHandle((Handle)velocityH); velocityH = 0;}
+
 	return err;
 }
 
@@ -2256,184 +2097,109 @@ OSErr GridMap_c::GetPointsAndBoundary(char *path,
 {
 	OSErr err = 0;
 	char errmsg[256] = "";
-	char fileName[64], s[256], topPath[256], outPath[256];
 
-	Boolean bTopFile = false, bTopInfoInFile = false, bVelocitiesOnTriangles = false;
+	Boolean bTopInfoInFile = false, bVelocitiesOnTriangles = false;
 
-	long i, numScanned, status;
+	long i, status;
 	int ncid, nodeid, nbndid, bndid, neleid;
 	int nv_varid, nbe_varid;
-	int latid, lonid;
-	int depthid;
-	int recid, timeid, sigmaid, sigmavarid;
+	int latid, lonid, depthid;
 	int curr_ucmp_id, uv_dimid[3], uv_ndims;
-	float timeVal;
 
-	size_t nodeLength, nbndLength, neleLength, recs, t_len, sigmaLength = 0;
-	static size_t latIndex = 0, lonIndex = 0, timeIndex, ptIndex = 0;
-	static size_t pt_count, sigma_count;
+	size_t nodeLength, nbndLength, neleLength;
+	static size_t latIndex = 0, lonIndex = 0, ptIndex = 0;
+	static size_t pt_count;
 	static size_t bndIndex[2] = {0, 0}, bnd_count[2];
 	static size_t topIndex[2] = {0, 0}, top_count[2];
 
-	//char recname[NC_MAX_NAME], *timeUnits=0;	
-	//, sigmaLevelsH=0;
-	//, *sigma_vals=0;
 	float *lat_vals = 0, *lon_vals = 0, *depth_vals = 0;
 	long *bndry_indices = 0, *bndry_nums = 0, *bndry_type = 0, *top_verts = 0, *top_neighbors = 0;
-	double timeConversion = 1., scale_factor = 1.;
+	double scale_factor = 1.;
 	char *modelTypeStr = 0;
 
 	FLOATH totalDepthsH = 0;
-	WORLDPOINTFH vertexPtsH = 0;
-	
+	WORLDPOINTFH vertexPtsH = 0;	
 	
 	if (!path || !path[0])
 		return 0;
 
 	status = nc_open(path, NC_NOWRITE, &ncid);
-	if (status != NC_NOERR)
-	{
-#if TARGET_API_MAC_CARBON
-		err = ConvertTraditionalPathToUnixPath((const char *) path, outPath, kMaxNameLen) ;
-		status = nc_open(outPath, NC_NOWRITE, &ncid);
-#endif
-		if (status != NC_NOERR) {
-			err = -1;
-			goto done;
-		}
-	}
+	if (status != NC_NOERR){err = -1; goto done;}
 
 	status = nc_inq_dimid(ncid, "node", &nodeid); 
-	if (status != NC_NOERR) {
-		err = -1;
-		goto done;
-	}
+	if (status != NC_NOERR) {err = -1; goto done;}
 
 	status = nc_inq_dimlen(ncid, nodeid, &nodeLength);
-	if (status != NC_NOERR) {
-		err = -1;
-		goto done;
-	}
+	if (status != NC_NOERR) {err = -1; goto done;}
 
 	status = nc_inq_dimid(ncid, "nbnd", &nbndid);	
-	if (status != NC_NOERR) {
-		err = -1;
-		goto done;
-	}
+	if (status != NC_NOERR) {err = -1; goto done;}
 
 	status = nc_inq_varid(ncid, "bnd", &bndid);	
-	if (status != NC_NOERR) {
-		err = -1;
-		goto done;
-	}
+	if (status != NC_NOERR) {err = -1; goto done;}
 
 	status = nc_inq_dimlen(ncid, nbndid, &nbndLength);
-	if (status != NC_NOERR) {
-		err = -1;
-		goto done;
-	}
+	if (status != NC_NOERR) {err = -1; goto done;}
 	
 	bnd_count[0] = nbndLength;
 	bnd_count[1] = 1;
 	bndry_indices = new long[nbndLength]; 
 	bndry_nums = new long[nbndLength]; 
 	bndry_type = new long[nbndLength]; 
-	if (!bndry_indices || !bndry_nums || !bndry_type) {
-		err = memFullErr;
-		goto done;
-	}
+	if (!bndry_indices || !bndry_nums || !bndry_type) {err = memFullErr; goto done;}
 
 	bndIndex[1] = 1;	// take second point of boundary segments instead, so that water boundaries work out
 	status = nc_get_vara_long(ncid, bndid, bndIndex, bnd_count, bndry_indices);
-	if (status != NC_NOERR) {
-		err = -1;
-		goto done;
-	}
+	if (status != NC_NOERR) {err = -1; goto done;}
 
 	bndIndex[1] = 2;
 	status = nc_get_vara_long(ncid, bndid, bndIndex, bnd_count, bndry_nums);
-	if (status != NC_NOERR) {
-		err = -1;
-		goto done;
-	}
+	if (status != NC_NOERR) {err = -1; goto done;}
 
 	bndIndex[1] = 3;
 	status = nc_get_vara_long(ncid, bndid, bndIndex, bnd_count, bndry_type);
-	if (status != NC_NOERR) {
-		err = -1;
-		goto done;
-	}
+	if (status != NC_NOERR) {err = -1; goto done;}
 	
 	// option to use index values?
 	status = nc_inq_varid(ncid, "lat", &latid);
-	if (status != NC_NOERR) {
-		err = -1;
-		goto done;
-	}
+	if (status != NC_NOERR) {err = -1; goto done;}
 
 	status = nc_inq_varid(ncid, "lon", &lonid);
-	if (status != NC_NOERR) {
-		err = -1;
-		goto done;
-	}
+	if (status != NC_NOERR) {err = -1; goto done;}
 
 	pt_count = nodeLength;
 	vertexPtsH = (WorldPointF**)_NewHandleClear(nodeLength * sizeof(WorldPointF));
-	if (!vertexPtsH) {
-		err = memFullErr;
-		goto done;
-	}
+	if (!vertexPtsH) {err = memFullErr; goto done;}
 
 	lat_vals = new float[nodeLength]; 
 	lon_vals = new float[nodeLength]; 
-	if (!lat_vals || !lon_vals) {
-		err = memFullErr;
-		goto done;
-	}
+	if (!lat_vals || !lon_vals) {err = memFullErr; goto done;}
 
 	status = nc_get_vara_float(ncid, latid, &ptIndex, &pt_count, lat_vals);
-	if (status != NC_NOERR) {
-		err = -1;
-		goto done;
-	}
+	if (status != NC_NOERR) {err = -1; goto done;}
 
 	status = nc_get_vara_float(ncid, lonid, &ptIndex, &pt_count, lon_vals);
-	if (status != NC_NOERR) {
-		err = -1;
-		goto done;
-	}
+	if (status != NC_NOERR) {err = -1; goto done;}
 
 	totalDepthsH = (FLOATH)_NewHandleClear(nodeLength * sizeof(float));
-	if (!totalDepthsH) {
-		err = memFullErr;
-		goto done;
-	}
+	if (!totalDepthsH) {err = memFullErr; goto done;}
 
 	status = nc_inq_varid(ncid, "depth", &depthid);
 	if (status == NC_NOERR) {
 		depth_vals = new float[nodeLength];
-		if (!depth_vals) {
-			err = memFullErr;
-			goto done;
-		}
+		if (!depth_vals) {err = memFullErr; goto done;}
 
 		status = nc_get_vara_float(ncid, depthid, &ptIndex, &pt_count, depth_vals);
-		if (status != NC_NOERR) {
-			err = -1;
-			goto done;
-		}
+		if (status != NC_NOERR) {err = -1; goto done;}
 
 		status = nc_get_att_double(ncid, depthid, "scale_factor", &scale_factor);
-		if (status != NC_NOERR) {
-			// don't require scale factor
-			}
+		if (status != NC_NOERR) {/*err = -1; goto done;*/}	// don't require scale factor
 	}
-
 	for (i = 0; i < nodeLength; i++) {
 		INDEXH(vertexPtsH, i).pLat = lat_vals[i];
 		INDEXH(vertexPtsH, i).pLong = lon_vals[i];
 		if (depth_vals)
-			INDEXH(totalDepthsH, i) = depth_vals[i];
+			INDEXH(totalDepthsH, i) = depth_vals[i] * scale_factor;
 		else
 			INDEXH(totalDepthsH, i) = INFINITE_DEPTH;	// let map have infinite depth
 	}
@@ -2447,71 +2213,43 @@ OSErr GridMap_c::GetPointsAndBoundary(char *path,
 	// check if file has topology in it
 	{
 		status = nc_inq_varid(ncid, "nv", &nv_varid); //Navy
-		if (status != NC_NOERR) {
-			/*err = -1; goto done;*/
-		}
+		if (status != NC_NOERR) {/*err = -1; goto done;*/}
 		else {
 			status = nc_inq_varid(ncid, "nbe", &nbe_varid); //Navy
-			if (status != NC_NOERR) {
-				/*err = -1; goto done;*/
-			}
+			if (status != NC_NOERR) {/*err = -1; goto done;*/}
 			else
 				bTopInfoInFile = true;
 		}
 		if (bTopInfoInFile)
 		{
 			status = nc_inq_dimid(ncid, "nele", &neleid);	
-			if (status != NC_NOERR) {
-				err = -1;
-				goto done;
-			}
+			if (status != NC_NOERR) {err = -1; goto done;}
 
 			status = nc_inq_dimlen(ncid, neleid, &neleLength);
-			if (status != NC_NOERR) {
-				err = -1;
-				goto done;
-			}
+			if (status != NC_NOERR) {err = -1; goto done;}
 
 			//fNumEles = neleLength;
 			top_verts = new long[neleLength * 3];
-			if (!top_verts) {
-				err = memFullErr;
-				goto done;
-			}
+			if (!top_verts) {err = memFullErr; goto done;}
 
 			top_neighbors = new long[neleLength * 3];
-			if (!top_neighbors) {
-				err = memFullErr;
-				goto done;
-			}
+			if (!top_neighbors) {err = memFullErr; goto done;}
 
 			top_count[0] = 3;
 			top_count[1] = neleLength;
 
 			status = nc_get_vara_long(ncid, nv_varid, topIndex, top_count, top_verts);
-			if (status != NC_NOERR) {
-				err = -1;
-				goto done;
-			}
+			if (status != NC_NOERR) {err = -1; goto done;}
 
 			status = nc_get_vara_long(ncid, nbe_varid, topIndex, top_count, top_neighbors);
-			if (status != NC_NOERR) {
-				err = -1;
-				goto done;
-			}
+			if (status != NC_NOERR) {err = -1; goto done;}
 
 			//determine if velocities are on triangles
 			status = nc_inq_varid(ncid, "u", &curr_ucmp_id);
-			if (status != NC_NOERR) {
-				err = -1;
-				goto done;
-			}
+			if (status != NC_NOERR) {err = -1; goto done;}
 
 			status = nc_inq_varndims(ncid, curr_ucmp_id, &uv_ndims);
-			if (status != NC_NOERR) {
-				err = -1;
-				goto done;
-			}
+			if (status != NC_NOERR) {err = -1; goto done;}
 			
 			status = nc_inq_vardimid (ncid, curr_ucmp_id, uv_dimid);	// see if dimid(1) or (2) == nele or node, depends on uv_ndims
 			if (status == NC_NOERR) {
@@ -2524,25 +2262,16 @@ OSErr GridMap_c::GetPointsAndBoundary(char *path,
 	}
 
 	status = nc_close(ncid);
-	if (status != NC_NOERR) {
-		err = -1;
-		goto done;
-	}
+	if (status != NC_NOERR) {err = -1; goto done;}
 
-	if (!bndry_indices || !bndry_nums || !bndry_type) {
-		err = memFullErr;
-		goto done;
-	}
+	if (!bndry_indices || !bndry_nums || !bndry_type) {err = memFullErr; goto done;}
 
 	*boundary_indices = bndry_indices;
 	*boundary_nums = bndry_nums;
 	*boundary_type = bndry_type;
 	
 	if (bVelocitiesOnTriangles) {
-		if (!top_verts || !top_neighbors) {
-			err = memFullErr;
-			goto done;
-		}
+		if (!top_verts || !top_neighbors) {err = memFullErr; goto done;}
 
 		*ntri = neleLength;
 		*triangle_verts = top_verts;
@@ -2559,32 +2288,18 @@ done:
 		if (!errmsg[0]) 
 			strcpy(errmsg,"Error opening NetCDF file");
 		printNote(errmsg);
-		if (vertexPtsH) {
-			DisposeHandle((Handle)vertexPtsH);
-			vertexPtsH = 0;
-		}
-		if (totalDepthsH) {
-			DisposeHandle((Handle)totalDepthsH);
-			totalDepthsH = 0;
-		}
-		if (bndry_indices)
-			delete [] bndry_indices;
-		if (bndry_nums)
-			delete [] bndry_nums;
-		if (bndry_type)
-			delete [] bndry_type;
-		if (top_verts)
-			delete [] top_verts;
-		if (top_neighbors)
-			delete [] top_neighbors;
+		if(vertexPtsH) {DisposeHandle((Handle)vertexPtsH); vertexPtsH = 0;}
+		if(totalDepthsH) {DisposeHandle((Handle)totalDepthsH); totalDepthsH = 0;}
+		if (bndry_indices) delete [] bndry_indices;
+		if (bndry_nums) delete [] bndry_nums;
+		if (bndry_type) delete [] bndry_type;
+		if (top_verts) delete [] top_verts;
+		if (top_neighbors) delete [] top_neighbors;
 	}
 
-	if (lat_vals)
-		delete [] lat_vals;
-	if (lon_vals)
-		delete [] lon_vals;
-	if (depth_vals)
-		delete [] depth_vals;
+	if (lat_vals) delete [] lat_vals;
+	if (lon_vals) delete [] lon_vals;
+	if (depth_vals) delete [] depth_vals;
 
 	return err;
 }
