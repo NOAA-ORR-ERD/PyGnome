@@ -42,7 +42,8 @@ if SETUP_PATH == '':
 
 # cd to SETUP_PATH, run develop or install, then cd back
 CWD = os.getcwd()
-os.chdir(SETUP_PATH)
+if SETUP_PATH:
+    os.chdir(SETUP_PATH)
 
 
 def target_dir(name):

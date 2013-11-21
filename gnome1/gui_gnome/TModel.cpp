@@ -4866,7 +4866,7 @@ OSErr TModel::HandleRunMessage(TModelMessage *message)
 	Boolean hadError = FALSE;
 	char str[512], hindCastStr[256];
 	char outputDirectory[256];
-	char outputPath[256], ncOutputPath[256];
+	char outputPath[256], ncOutputPath[256], moviePath[256], mossDirectory[256];
 	long len;
 	double runDurationInHrs;
 	double timeStepInMinutes = GetTimeStep()/60,outputStepInMinutes = GetOutputStep()/60;
@@ -4937,7 +4937,7 @@ OSErr TModel::HandleRunMessage(TModelMessage *message)
 		}
 	}
 	else
-		this->writeNC = false;	message->GetParameterString("NETCDFPATH", ncOutputPath, 256);
+		this->writeNC = false;	/*message->GetParameterString("NETCDFPATH", ncOutputPath, 256);*/
 /*	if(ncOutputPath[0]) {
 		int tLen;
 		char *p, classicPath[256];
@@ -4993,6 +4993,42 @@ OSErr TModel::HandleRunMessage(TModelMessage *message)
 */
 	gRunSpillNoteStr[0] = 0;
 	message->GetParameterString("note",gRunSpillNoteStr,256);// this parameter is optional
+	
+	message->GetParameterString("moviePath",moviePath,256);
+	if(moviePath[0]) {
+		char classicPath[kMaxNameLen], * p;
+		//ResolvePathFromApplication(moviePath);
+		//StringSubstitute(moviePath, '/', DIRDELIMITER);
+		if (ConvertIfUnixPath(moviePath, classicPath)) strcpy(moviePath,classicPath);
+		err = ResolvePathFromCommandFile(moviePath);
+		if (err) ResolvePathFromApplication(moviePath);
+		strcpy(str,moviePath);
+		p =  strrchr(str,DIRDELIMITER);
+		if(p) *(p+1) = 0; // chop off the file name
+		// create the folder if it does not exist
+		if (!FolderExists(0, 0, str)) 
+		{
+			err = dircreate(0, 0, str, &dirID);
+			if(err) 
+			{	// try to create folders 
+				err = CreateFoldersInDirectoryPath(str);
+				if (err)	
+				{
+					printError("Unable to create the directory for the movie file.");
+					hadError = TRUE;
+				}
+			}
+		}
+		if(!CanMakeMovie()) {
+			printError("Unable to make a movie.  Check that Quicktime is properly installed.");
+			hadError = TRUE;	
+		}
+		else 
+		{
+			if (!err) bMakeMovie=true;
+		}
+	}
+	
 	
 	message->GetParameterString("outputPath",outputPath,256);
 	if(outputPath[0]) {
@@ -5067,9 +5103,35 @@ OSErr TModel::HandleRunMessage(TModelMessage *message)
 			}
 		}
 	}
-	///////////////////////////////////////////////////////////
 
-	
+	///////////////////////////////////////////////////////////
+	message->GetParameterString("mossFolder",mossDirectory,256);
+	if(mossDirectory[0]) {
+		char classicPath[kMaxNameLen];
+		if (ConvertIfUnixPath(mossDirectory, classicPath)) strcpy(mossDirectory,classicPath);
+		err = ResolvePathFromCommandFile(mossDirectory);
+		if (err) ResolvePathFromApplication(mossDirectory);
+		len = strlen(mossDirectory);
+		if(len > 0 && mossDirectory[len-1] != DIRDELIMITER)
+		{ mossDirectory[len] = DIRDELIMITER; mossDirectory[len+1] = 0;} // make sure it ends with a delimiter
+		
+		// create the folder if it does not exist
+		strcpy (str,mossDirectory);
+		if (!FolderExists(0, 0, str)) 
+		{
+			err = dircreate(0, 0, str, &dirID);
+			if(err) 
+			{
+				err = CreateFoldersInDirectoryPath(str);
+				if (err)	
+				{
+					printError("Unable to create the directory for the moss output files.");
+					hadError = TRUE;
+				}
+			}
+		}
+	}
+	///////////////////////////////////////////////////////////
 	/////////////////////////////////////////////////
 
 	err = message->GetParameterAsSeconds("startTime",&startTime);
@@ -5176,6 +5238,11 @@ OSErr TModel::HandleRunMessage(TModelMessage *message)
 	}
 
 	
+	if(moviePath[0] && bMakeMovie) {
+		strcpy(fMoviePath,moviePath);
+		this->OpenMovieFile();
+	}
+	
 	/////////////////////////////////////////////////
 	// do the run
 	/////////////////////////////////////////////////
@@ -5193,6 +5260,13 @@ OSErr TModel::HandleRunMessage(TModelMessage *message)
 	else {
 		this->SetWantOutput(false);
 	}
+	if(mossDirectory[0]) {
+		gSaveMossFiles=true;
+		strcpy(gMossPath,mossDirectory);
+	}
+	else {
+		gSaveMossFiles=false;
+	}
 	//err = this->Run(this->GetEndTime());
 	if (model->bHindcast)
 		model->Run(model->GetStartTime()); 
@@ -5200,6 +5274,7 @@ OSErr TModel::HandleRunMessage(TModelMessage *message)
 		model->Run(model->GetEndTime());
 	// reset the parameters we changed
 	this->SetWantOutput(saveBool);
+	gSaveMossFiles = false;
 	this->bSaveRunBarLEs = savebSaveRunBarLEs; 
 	
 	// reset those model parameters that the user can not normally change
@@ -5207,6 +5282,7 @@ OSErr TModel::HandleRunMessage(TModelMessage *message)
 	
 	// close the output file
 	if (gRunSpillForecastFile.f)  FSCloseBuf(&gRunSpillForecastFile);
+	if (model->bMakeMovie ==true ) {this->CloseMovieFile(); model->bMakeMovie = false;}
 	
 done:	 // reset important globals, etc
 	memset(&gRunSpillForecastFile,0,sizeof(gRunSpillForecastFile));
@@ -5553,7 +5629,7 @@ OSErr TModel::HandleRunSpillMessage(TModelMessage *message)
 	Boolean hadError = FALSE;
 	char str[512], hindCastStr[256];
 	char outputDirectory[256];
-	char outputPath[256], ncOutputPath[256];
+	char outputPath[256], ncOutputPath[256], moviePath[256], mossDirectory[256];
 	long len;
 	double runDurationInHrs;
 	double timeStepInMinutes = GetTimeStep()/60,outputStepInMinutes = GetOutputStep()/60;
@@ -5639,6 +5715,40 @@ OSErr TModel::HandleRunSpillMessage(TModelMessage *message)
 	gRunSpillNoteStr[0] = 0;
 	message->GetParameterString("note",gRunSpillNoteStr,256);// this parameter is optional
 	
+	message->GetParameterString("moviePath",moviePath,256);
+	if(moviePath[0]) {
+		char classicPath[kMaxNameLen], * p;
+		if (ConvertIfUnixPath(moviePath, classicPath)) strcpy(moviePath,classicPath);
+		err = ResolvePathFromCommandFile(moviePath);
+		if (err) ResolvePathFromApplication(moviePath);
+		strcpy(str,moviePath);
+		p =  strrchr(str,DIRDELIMITER);
+		if(p) *(p+1) = 0; // chop off the file name
+		// create the folder if it does not exist
+		if (!FolderExists(0, 0, str)) 
+		{
+			err = dircreate(0, 0, str, &dirID);
+			if(err) 
+			{	// try to create folders 
+				err = CreateFoldersInDirectoryPath(str);
+				if (err)	
+				{
+					printError("Unable to create the directory for the movie file.");
+					hadError = TRUE;
+				}
+			}
+		}
+		if(!CanMakeMovie()) {
+			printError("Unable to make a movie.  Check that Quicktime is properly installed.");
+			hadError = TRUE;	
+		}
+		else 
+		{
+			if (!err) bMakeMovie=true;
+		}
+	}
+	
+	
 	message->GetParameterString("outputPath",outputPath,256);
 	if(outputPath[0]) {
 		char classicPath[kMaxNameLen], * p;
@@ -5713,7 +5823,34 @@ OSErr TModel::HandleRunSpillMessage(TModelMessage *message)
 		}
 	}
 	///////////////////////////////////////////////////////////
-
+	message->GetParameterString("mossFolder",mossDirectory,256);
+	if(mossDirectory[0]) {
+		char classicPath[kMaxNameLen];
+		if (ConvertIfUnixPath(mossDirectory, classicPath)) strcpy(mossDirectory,classicPath);
+		err = ResolvePathFromCommandFile(mossDirectory);
+		if (err) ResolvePathFromApplication(mossDirectory);
+		len = strlen(mossDirectory);
+		if(len > 0 && mossDirectory[len-1] != DIRDELIMITER)
+		{ mossDirectory[len] = DIRDELIMITER; mossDirectory[len+1] = 0;} // make sure it ends with a delimiter
+		
+		// create the folder if it does not exist
+		strcpy (str,mossDirectory);
+		if (!FolderExists(0, 0, str)) 
+		{
+			err = dircreate(0, 0, str, &dirID);
+			if(err) 
+			{
+				err = CreateFoldersInDirectoryPath(str);
+				if (err)	
+				{
+					printError("Unable to create the directory for the moss output files.");
+					hadError = TRUE;
+				}
+			}
+		}
+	}
+	///////////////////////////////////////////////////////////
+	
 	//	There are three methods supported at this time
 	// (1) you specify the parameters for a spill
 	// or (2) provide the path to a file containing the LE's at some time
@@ -6103,6 +6240,11 @@ OSErr TModel::HandleRunSpillMessage(TModelMessage *message)
 			{ TechError("HandleRunSpillMessage()", "FSOpenBuf()", err); goto done ; }
 	}
 
+	if(moviePath[0] && bMakeMovie) {
+		strcpy(fMoviePath,moviePath);
+		this->OpenMovieFile();
+	}
+	
 	
 	/////////////////////////////////////////////////
 	// do the run
@@ -6121,6 +6263,13 @@ OSErr TModel::HandleRunSpillMessage(TModelMessage *message)
 	else {
 		this->SetWantOutput(false);
 	}
+	if(mossDirectory[0]) {
+		gSaveMossFiles=true;
+		strcpy(gMossPath,mossDirectory);
+	}
+	else {
+		gSaveMossFiles=false;
+	}
 	//err = this->Run(this->GetEndTime());
 	if (model->bHindcast)
 		model->Run(model->GetStartTime()); 
@@ -6128,6 +6277,7 @@ OSErr TModel::HandleRunSpillMessage(TModelMessage *message)
 		model->Run(model->GetEndTime());
 	// reset the parameters we changed
 	this->SetWantOutput(saveBool);
+	gSaveMossFiles = false;
 	this->bSaveRunBarLEs = savebSaveRunBarLEs; 
 	
 	// reset those model parameters that the user can not normally change
@@ -6135,6 +6285,7 @@ OSErr TModel::HandleRunSpillMessage(TModelMessage *message)
 	
 	// close the output file
 	if (gRunSpillForecastFile.f)  FSCloseBuf(&gRunSpillForecastFile);
+	if (bMakeMovie==true) {this->CloseMovieFile();bMakeMovie=false;}
 	
 done:	 // reset important globals, etc
 	memset(&gRunSpillForecastFile,0,sizeof(gRunSpillForecastFile));
@@ -10312,19 +10463,23 @@ OSErr TModel::OpenMovieFile ()
 
 	movieFrameIndex = 0;
 
-	if (index==1) strcpy (name, "SpillMovie.mov");
+	if (!gCommandFileRun)	// command file sets fMoviePath from file
+	{
+		if (index==1) strcpy (name, "SpillMovie.mov");
 #if TARGET_API_MAC_CARBON
-				err = AskUserForSaveFilename("SpillMovie.mov",fullPath,".mov",TRUE);
+		err = AskUserForSaveFilename("SpillMovie.mov",fullPath,".mov",TRUE);
 		if (err) return USERCANCEL;
 #else
 #ifdef MAC
-	sfputfile(&where, "Save movie as:", name, (DlgHookUPP)0, &reply);
+		sfputfile(&where, "Save movie as:", name, (DlgHookUPP)0, &reply);
 #else
-	sfpputfile(&where, "VOM.", name, (DlgHookUPP)0, &reply,
-			   M55, (ModalFilterUPP)MakeUPP((ProcPtr)STDFilter, uppModalFilterProcInfo));
+		sfpputfile(&where, "VOM.", name, (DlgHookUPP)0, &reply,
+				   M55, (ModalFilterUPP)MakeUPP((ProcPtr)STDFilter, uppModalFilterProcInfo));
 #endif
-	if (!reply.good) return USERCANCEL;
+		if (!reply.good) return USERCANCEL;
 #endif
+	}
+	
 #ifdef MAC
 	short		vRefNum;
 	long		parDirID;
@@ -10366,19 +10521,22 @@ OSErr TModel::OpenMovieFile ()
 		if(!err)
 		{
 			char movieFilePath[256],shortFileName[64];
+			if(!gCommandFileRun)
+			{
 #if MACB4CARBON
-			my_p2cstr(reply.fName);
-			GetFullPath (reply.vRefNum, 0, (char *) "", movieFilePath);
-			strcat (movieFilePath, ":");
-			strcat (movieFilePath, (char *) reply.fName);
-			strcpy(fMoviePath,movieFilePath); // record the file name chosen in this  structure
-			strcpy (name, (char *) reply.fName);	// save users name
+				my_p2cstr(reply.fName);
+				GetFullPath (reply.vRefNum, 0, (char *) "", movieFilePath);
+				strcat (movieFilePath, ":");
+				strcat (movieFilePath, (char *) reply.fName);
+				strcpy(fMoviePath,movieFilePath); // record the file name chosen in this  structure
+				strcpy (name, (char *) reply.fName);	// save users name
 #else
-			strcpy(movieFilePath,fullPath);
-			strcpy(fMoviePath,movieFilePath); // record the file name chosen in this  structure
-			SplitPathFile(fullPath,shortFileName);
-			strcpy (name, shortFileName);	// save users name
+				strcpy(movieFilePath,fullPath);
+				strcpy(fMoviePath,movieFilePath); // record the file name chosen in this  structure
+				SplitPathFile(fullPath,shortFileName);
+				strcpy (name, shortFileName);	// save users name
 #endif
+			}
 			strcpy(fMoviePicsPath,folderPath); // record the folder name chosen in this  structure
 		}
 	}
@@ -10407,8 +10565,11 @@ OSErr TModel::OpenMovieFile ()
 		
 		if(!err)
 		{
-			strcpy(fMoviePath,reply.fName); // record the file name chosen in this  structure
-			SplitPathFile ((char*)reply.fName, name);	// remember users name
+			if (!gCommandFileRun)
+			{
+				strcpy(fMoviePath,reply.fName); // record the file name chosen in this  structure
+				SplitPathFile ((char*)reply.fName, name);	// remember users name
+			}
 			strcpy(fMoviePicsPath,folderPath); // record the folder name chosen in this  structure
 		}
 	}
@@ -10418,6 +10579,8 @@ OSErr TModel::OpenMovieFile ()
 	index++;
 	return err;
 }
+
+
 
 ////////////////////////////////////////////////////////////////////////////////
 
