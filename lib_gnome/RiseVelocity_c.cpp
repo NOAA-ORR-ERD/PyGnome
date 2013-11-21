@@ -60,6 +60,15 @@ void RiseVelocity_c::ModelStepIsDone()
 	//memset(&fOptimize,0,sizeof(fOptimize));
 }
 
+OSErr get_rise_velocity(int n, double *rise_velocity, double *le_density, double *le_droplet_size, double water_viscosity, double water_density)
+{
+	for (int i=0; i < n; i++)
+	{
+		rise_velocity[i] = GetRiseVelocity(le_density[i], le_droplet_size[i], water_viscosity, water_density);
+	}
+	return noErr;
+}
+
 double GetRiseVelocity(double le_density, double le_droplet_size, double water_viscosity, double water_density)
 {
 	double g = 9.8, riseVelocity=0.;

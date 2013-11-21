@@ -3,7 +3,7 @@ import numpy as np
 
 # following exist in gnome.cy_gnome
 from type_defs cimport *
-from movers cimport RiseVelocity_c, Mover_c
+from movers cimport RiseVelocity_c, Mover_c, get_rise_velocity
 cimport cy_mover
 
 """
@@ -121,3 +121,23 @@ cdef class CyRiseVelocityMover(cy_mover.CyMover):
             raise ValueError(msg.format('get_move()',
                                     "spill_type=('forecast','uncertainty')",
                                     spill_type))
+
+
+def rise_velocity_from_drop_size(cnp.ndarray[cnp.npy_double, ndim=1] rise_vel,
+                 cnp.ndarray[cnp.npy_double, ndim=1] le_density,
+                 cnp.ndarray[cnp.npy_double] le_drop_size,
+                 double water_viscosity,
+                 double water_density):
+    """
+    """
+    cdef OSErr vel_err
+    vel_err = get_rise_velocity(len(rise_vel),
+                                &rise_vel[0],
+                                &le_density[0],
+                                &le_drop_size[0],
+                                water_viscosity,
+                                water_density)
+
+    if vel_err != 0:
+        raise ValueError("C++ call to get_rise_velocity returned error code: "
+                         "{0}".format(vel_err))
