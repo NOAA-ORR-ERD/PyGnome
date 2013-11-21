@@ -42,7 +42,10 @@ if SETUP_PATH == '':
 
 # cd to SETUP_PATH, run develop or install, then cd back
 CWD = os.getcwd()
+
 if SETUP_PATH:
+    """ Additional check, though should not be needed since SETUP_PATH should
+    always exist """
     os.chdir(SETUP_PATH)
 
 
