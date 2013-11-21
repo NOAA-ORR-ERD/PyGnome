@@ -44,7 +44,6 @@ def test_rewind():
     o_put = Outputter(output_timestep=timedelta(minutes=30))
     o_put.rewind()
     assert o_put._model_start_time is None
-    assert o_put._num_time_steps is None
     assert o_put._next_output_time is None
     assert not o_put._write_step
 
@@ -75,7 +74,6 @@ def test_output_timestep(model, output_ts, model_ts):
     # rewind and make sure outputter resets values
     model.rewind()
     assert o_put._model_start_time is None
-    assert o_put._num_time_steps is None
     assert o_put._next_output_time is None
     assert not o_put._write_step
 
@@ -85,7 +83,6 @@ def test_output_timestep(model, output_ts, model_ts):
         if step_num == -1:
             model.setup_model_run()
             assert o_put._model_start_time == model.start_time
-            assert o_put._num_time_steps == model.num_time_steps
             assert o_put._next_output_time == (model.model_time +
                                                o_put.output_timestep)
             assert not o_put._write_step
