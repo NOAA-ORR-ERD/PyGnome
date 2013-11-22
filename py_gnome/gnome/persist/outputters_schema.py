@@ -20,6 +20,7 @@ class Renderer(base_schema.Id, MappingSchema):
     projection_class = SchemaNode(String(), missing=drop)
     image_size = base_schema.ImageSize(missing=drop)
     images_dir = SchemaNode(String())
+    draw_ontop = SchemaNode(String())
 
 
 class NetCDFOutput(base_schema.Id, MappingSchema):

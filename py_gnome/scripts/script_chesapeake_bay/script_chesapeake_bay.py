@@ -39,8 +39,15 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     print 'adding the map'
     model.map = gnome.map.MapFromBNA(mapfile, refloat_halflife=1)  # seconds
 
-    renderer = gnome.renderer.Renderer(mapfile, images_dir, size=(800,
-            600), output_timestep=timedelta(hours=2))
+    # draw_ontop can be 'uncertain' or 'forecast'
+    # 'forecast' LEs are in black, and 'uncertain' are in red
+    # default is 'forecast' LEs draw on top
+    renderer = gnome.renderer.Renderer(mapfile,
+                                       images_dir,
+                                       size=(800, 600),
+                                       output_timestep=timedelta(hours=2),
+                                       draw_ontop='uncertain'
+                                       )
     renderer.viewport = ((-76.5, 37.), (-75.8, 38.))
 
     print 'adding outputters'

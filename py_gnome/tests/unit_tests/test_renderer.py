@@ -13,6 +13,7 @@ import os
 import shutil
 from datetime import datetime
 
+import pytest
 import numpy.random as random
 
 from gnome.basic_types import oil_status
@@ -31,6 +32,15 @@ bna_sample = os.path.join(data_dir,
 if os.path.isdir(output_dir):
     shutil.rmtree(output_dir)
 os.mkdir(output_dir)
+
+
+def test_exception():
+    with pytest.raises(ValueError):
+        Renderer(bna_sample, output_dir, draw_ontop='forecasting')
+
+    r = Renderer(bna_sample, output_dir)
+    with pytest.raises(ValueError):
+        r.draw_ontop = 'forecasting'
 
 
 def test_init():

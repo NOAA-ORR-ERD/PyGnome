@@ -32,8 +32,8 @@ class Renderer(Outputter, MapCanvas, serializable.Serializable):
     foreground_filename_glob = 'foreground_?????.png'
 
     # todo: how should images_dir be saved? Absolute? Currently, it is relative
-    _update = ['viewport', 'map_BB', 'images_dir', 'image_size']
-    _create = ['image_size', 'projection_class']
+    _update = ['viewport', 'map_BB', 'images_dir', 'image_size', 'draw_ontop']
+    _create = ['image_size', 'projection_class', 'draw_ontop']
 
     _create.extend(_update)
     state = copy.deepcopy(serializable.Serializable.state)
@@ -67,6 +67,7 @@ class Renderer(Outputter, MapCanvas, serializable.Serializable):
         output_timestep=None,
         output_zero_step=True,
         output_last_step=True,
+        draw_ontop='forecast',
         **kwargs
         ):
         """
@@ -91,10 +92,15 @@ class Renderer(Outputter, MapCanvas, serializable.Serializable):
             final step is written regardless of output_timestep
         :type output_last_step: boolean
 
+        :param draw_ontop: draw 'forecast' or 'uncertain' LEs on top. Default
+            is to draw 'forecast' LEs, which are in black on top
+        :type draw_ontop: str
+
         Remaining kwargs are passed onto baseclass's __init__ with a direct
         call: MapCanvas.__init__(..)
 
         Optional parameters (kwargs)
+
         :param projection_class: gnome.utilities.projections class to use.
             Default is gnome.utilities.projections.FlatEarthProjection
         :param map_BB:  map bounding box. Default is to use
@@ -123,7 +129,20 @@ class Renderer(Outputter, MapCanvas, serializable.Serializable):
 
         self.last_filename = ''
 
+        self.draw_ontop = draw_ontop
+
     filename = property(lambda self: self._filename)
+
+    @property
+    def draw_ontop(self):
+        return self._draw_ontop
+
+    @draw_ontop.setter
+    def draw_ontop(self, val):
+        if val not in ['forecast', 'uncertain']:
+            raise ValueError("'draw_ontop' must be either 'forecast' or"
+                            "'uncertain'. {0} is invalid.".format(val))
+        self._draw_ontop = val
 
     def images_dir_to_dict(self):
         return os.path.abspath(self.images_dir)
@@ -209,22 +228,41 @@ class Renderer(Outputter, MapCanvas, serializable.Serializable):
 
         self.create_foreground_image()
 
-        # pull the data from cache:
-        for sc in self.cache.load_timestep(step_num).items():
-            self.draw_elements(sc)
+        # do a function call so data arrays get garbage collected after
+        # function exists
+        current_time_stamp = self._draw(step_num)
 
         # get the timestamp:
-
-        time_stamp = sc.current_time_stamp.isoformat()
+        time_stamp = current_time_stamp.isoformat()
         self.save_foreground(image_filename)
 
         self.last_filename = image_filename
 
         # update self._next_output_time if data is successfully written
-        self._update_next_output_time(step_num, sc.current_time_stamp)
+        self._update_next_output_time(step_num, current_time_stamp)
 
         return {'step_num': step_num, 'image_filename': image_filename,
                 'time_stamp': time_stamp}
+
+    def _draw(self, step_num):
+        """
+        create a small function so data arrays are garbage collected from
+        memory after this function exits - it returns current_time_stamp
+        """
+
+        # draw data for self.draw_ontop second so it draws on top
+        scp = self.cache.load_timestep(step_num).items()
+        if len(scp) == 1:
+            self.draw_elements(scp[0])
+        else:
+            if self.draw_ontop == 'forecast':
+                self.draw_elements(scp[1])
+                self.draw_elements(scp[0])
+            else:
+                self.draw_elements(scp[0])
+                self.draw_elements(scp[1])
+
+        return scp[0].current_time_stamp
 
     def projection_class_to_dict(self):
         """ store projection class as a string for now since that is all that
