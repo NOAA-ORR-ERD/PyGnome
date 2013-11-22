@@ -86,7 +86,7 @@ At the C++ level, each mover has a <cite>get_move</cite> method that takes the c
 <span id="gnome-model-the-pygnome-model-class"></span><h2><tt class="docutils literal"><span class="pre">gnome.model</span></tt> &#8211; the pyGNOME model class<a class="headerlink" href="#module-gnome.model" title="Permalink to this headline">¶</a></h2>
 <dl class="class">
 <dt id="gnome.model.Model">
-<em class="property">class </em><tt class="descclassname">gnome.model.</tt><tt class="descname">Model</tt><big>(</big><em>time_step=datetime.timedelta(0</em>, <em>900)</em>, <em>start_time=datetime.datetime(2013</em>, <em>11</em>, <em>19</em>, <em>18</em>, <em>0)</em>, <em>duration=datetime.timedelta(1)</em>, <em>map=&lt;gnome.map.GnomeMap object at 0x2d04fb0&gt;</em>, <em>uncertain=False</em>, <em>cache_enabled=False</em>, <em>id=None</em><big>)</big><a class="reference internal" href="_modules/gnome/model.html#Model"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.model.Model" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><tt class="descclassname">gnome.model.</tt><tt class="descname">Model</tt><big>(</big><em>time_step=datetime.timedelta(0</em>, <em>900)</em>, <em>start_time=datetime.datetime(2013</em>, <em>11</em>, <em>22</em>, <em>11</em>, <em>0)</em>, <em>duration=datetime.timedelta(1)</em>, <em>map=&lt;gnome.map.GnomeMap object at 0x2d08bb0&gt;</em>, <em>uncertain=False</em>, <em>cache_enabled=False</em>, <em>id=None</em><big>)</big><a class="reference internal" href="_modules/gnome/model.html#Model"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.model.Model" title="Permalink to this definition">¶</a></dt>
 <dd><p>PyGNOME Model Class</p>
 <p>Initializes a model. All arguments have a default.</p>
 <table class="docutils field-list" frame="void" rules="none">
@@ -1068,7 +1068,7 @@ only updates here</p>
 <dd><p>modifies state of the object using dictionary &#8216;data&#8217;. 
 Only the self.state.update list contains properties that can me modified for existing object</p>
 <p>Set the state of this object using the dictionary <tt class="docutils literal"><span class="pre">data</span></tt> by looking up
-the value of each key in <tt class="docutils literal"><span class="pre">data</span></tt> that is also in  <cite>list_</cite>. Input <a href="#id15"><span class="problematic" id="id16">list_</span></a> 
+the value of each key in <tt class="docutils literal"><span class="pre">data</span></tt> that is also in  <cite>list_</cite>. Input <a href="#id17"><span class="problematic" id="id18">list_</span></a> 
 contains the object&#8217;s attributes (or fields) updated with data</p>
 <p>For every field, the choice of how to set the field is as follows:</p>
 <p>If there is a method defined on the object such that the method name is
@@ -1242,7 +1242,7 @@ only updates here</p>
 <dd><p>modifies state of the object using dictionary &#8216;data&#8217;. 
 Only the self.state.update list contains properties that can me modified for existing object</p>
 <p>Set the state of this object using the dictionary <tt class="docutils literal"><span class="pre">data</span></tt> by looking up
-the value of each key in <tt class="docutils literal"><span class="pre">data</span></tt> that is also in  <cite>list_</cite>. Input <a href="#id17"><span class="problematic" id="id18">list_</span></a> 
+the value of each key in <tt class="docutils literal"><span class="pre">data</span></tt> that is also in  <cite>list_</cite>. Input <a href="#id19"><span class="problematic" id="id20">list_</span></a> 
 contains the object&#8217;s attributes (or fields) updated with data</p>
 <p>For every field, the choice of how to set the field is as follows:</p>
 <p>If there is a method defined on the object such that the method name is
@@ -1589,7 +1589,7 @@ only updates here</p>
 <dd><p>modifies state of the object using dictionary &#8216;data&#8217;. 
 Only the self.state.update list contains properties that can me modified for existing object</p>
 <p>Set the state of this object using the dictionary <tt class="docutils literal"><span class="pre">data</span></tt> by looking up
-the value of each key in <tt class="docutils literal"><span class="pre">data</span></tt> that is also in  <cite>list_</cite>. Input <a href="#id19"><span class="problematic" id="id20">list_</span></a> 
+the value of each key in <tt class="docutils literal"><span class="pre">data</span></tt> that is also in  <cite>list_</cite>. Input <a href="#id21"><span class="problematic" id="id22">list_</span></a> 
 contains the object&#8217;s attributes (or fields) updated with data</p>
 <p>For every field, the choice of how to set the field is as follows:</p>
 <p>If there is a method defined on the object such that the method name is
@@ -2001,7 +2001,7 @@ in a time step. Put any code need for clean-up, etc.</p>
 
 <dl class="method">
 <dt id="gnome.outputter.Outputter.prepare_for_model_run">
-<tt class="descname">prepare_for_model_run</tt><big>(</big><em>model_start_time</em>, <em>num_time_steps</em>, <em>cache=None</em>, <em>**kwargs</em><big>)</big><a class="reference internal" href="_modules/gnome/outputter.html#Outputter.prepare_for_model_run"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.outputter.Outputter.prepare_for_model_run" title="Permalink to this definition">¶</a></dt>
+<tt class="descname">prepare_for_model_run</tt><big>(</big><em>model_start_time</em>, <em>cache=None</em>, <em>**kwargs</em><big>)</big><a class="reference internal" href="_modules/gnome/outputter.html#Outputter.prepare_for_model_run"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.outputter.Outputter.prepare_for_model_run" title="Permalink to this definition">¶</a></dt>
 <dd><p>This method gets called by the model at the beginning of a new run.
 Do what you need to do to prepare.</p>
 <p>Required arguments - if output_timestep is changed from None, these are
@@ -2010,13 +2010,8 @@ needed. Just make them required.</p>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>model_start_time</strong> (<em>datetime.datetime object</em>) &#8211; (Required) start time of the model run. NetCDF
-time units calculated with respect to this time.</li>
-<li><strong>num_time_steps</strong> (<em>int</em>) &#8211; (Required) total number of time steps for the
-run. Currently this is known and fixed.</li>
-</ul>
-</td>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>model_start_time</strong> (<em>datetime.datetime object</em>) &#8211; (Required) start time of the model run. NetCDF
+time units calculated with respect to this time.</td>
 </tr>
 </tbody>
 </table>
@@ -2074,9 +2069,59 @@ write_output for every step_num in range(model.num_time_steps)</dd>
 
 <dl class="method">
 <dt id="gnome.outputter.Outputter.write_output">
-<tt class="descname">write_output</tt><big>(</big><em>step_num</em><big>)</big><a class="reference internal" href="_modules/gnome/outputter.html#Outputter.write_output"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.outputter.Outputter.write_output" title="Permalink to this definition">¶</a></dt>
+<tt class="descname">write_output</tt><big>(</big><em>step_num</em>, <em>islast_step=False</em><big>)</big><a class="reference internal" href="_modules/gnome/outputter.html#Outputter.write_output"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.outputter.Outputter.write_output" title="Permalink to this definition">¶</a></dt>
 <dd><p>called by the model at the end of each time step
 This is the last operation after model_step_is_done()</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>step_num</strong> (<em>int</em>) &#8211; the model step number you want rendered.</li>
+<li><strong>islast_step</strong> (<em>bool</em>) &#8211; default is False. Flag that indicates that step_num
+is last step. If &#8216;output_last_step&#8217; is True then this is written
+out</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="gnome.outputter.Outputter.write_output_post_run">
+<tt class="descname">write_output_post_run</tt><big>(</big><em>model_start_time</em>, <em>num_time_steps</em>, <em>cache=None</em>, <em>**kwargs</em><big>)</big><a class="headerlink" href="#gnome.outputter.Outputter.write_output_post_run" title="Permalink to this definition">¶</a></dt>
+<dd><p>If the model has already been run and the data is cached, then use
+this function to write output. In this case, num_time_steps is known
+so pass it into this function.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>model_start_time</strong> (<em>datetime.datetime object</em>) &#8211; (Required) start time of the model run. NetCDF
+time units calculated with respect to this time.</li>
+<li><strong>num_time_steps</strong> (<em>int</em>) &#8211; (Required) total number of time steps for the
+run. Currently this is known and fixed.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<p>Optional argument - incase cache needs to be updated</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>cache=None</strong> &#8211; Sets the cache object to be used for the data.
+If None, it will use the one already set up.</td>
+</tr>
+</tbody>
+</table>
+<p>also added <a href="#id7"><span class="problematic" id="id8">**</span></a>kwargs since a derived class like NetCDFOutput could
+require additional variables in prepare_for_model_run() as is the
+case for netcdf_outputter</p>
+<p>Follows the iteration in Model().step() for each step_num</p>
 </dd></dl>
 
 </dd></dl>
@@ -2085,7 +2130,7 @@ This is the last operation after model_step_is_done()</p>
 <p>module to hold all teh map rendering code.</p>
 <dl class="class">
 <dt id="gnome.renderer.Renderer">
-<em class="property">class </em><tt class="descclassname">gnome.renderer.</tt><tt class="descname">Renderer</tt><big>(</big><em>filename</em>, <em>images_dir</em>, <em>image_size=(800</em>, <em>600)</em>, <em>cache=None</em>, <em>output_timestep=None</em>, <em>output_zero_step=True</em>, <em>output_last_step=True</em>, <em>**kwargs</em><big>)</big><a class="reference internal" href="_modules/gnome/renderer.html#Renderer"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.renderer.Renderer" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><tt class="descclassname">gnome.renderer.</tt><tt class="descname">Renderer</tt><big>(</big><em>filename</em>, <em>images_dir</em>, <em>image_size=(800</em>, <em>600)</em>, <em>cache=None</em>, <em>output_timestep=None</em>, <em>output_zero_step=True</em>, <em>output_last_step=True</em>, <em>draw_ontop='forecast'</em>, <em>**kwargs</em><big>)</big><a class="reference internal" href="_modules/gnome/renderer.html#Renderer"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.renderer.Renderer" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#gnome.outputter.Outputter" title="gnome.outputter.Outputter"><tt class="xref py py-class docutils literal"><span class="pre">gnome.outputter.Outputter</span></tt></a>, <tt class="xref py py-class docutils literal"><span class="pre">gnome.utilities.map_canvas.MapCanvas</span></tt>, <tt class="xref py py-class docutils literal"><span class="pre">gnome.utilities.serializable.Serializable</span></tt></p>
 <p>Map Renderer</p>
 <dl class="docutils">
@@ -2109,6 +2154,8 @@ initial step (showing initial release conditions) is written
 regardless of output_timestep</li>
 <li><strong>output_last_step</strong> (<em>boolean</em>) &#8211; default is True. If True then output for
 final step is written regardless of output_timestep</li>
+<li><strong>draw_ontop</strong> (<em>str</em>) &#8211; draw &#8216;forecast&#8217; or &#8216;uncertain&#8217; LEs on top. Default
+is to draw &#8216;forecast&#8217; LEs, which are in black on top</li>
 </ul>
 </td>
 </tr>
@@ -2116,15 +2163,14 @@ final step is written regardless of output_timestep</li>
 </table>
 <p>Remaining kwargs are passed onto baseclass&#8217;s __init__ with a direct
 call: MapCanvas.__init__(..)</p>
-<p>Optional parameters (kwargs)
-:param projection_class: gnome.utilities.projections class to use.</p>
-<blockquote>
-<div>Default is gnome.utilities.projections.FlatEarthProjection</div></blockquote>
+<p>Optional parameters (kwargs)</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>projection_class</strong> &#8211; gnome.utilities.projections class to use.
+Default is gnome.utilities.projections.FlatEarthProjection</li>
 <li><strong>map_BB</strong> &#8211; map bounding box. Default is to use
 land_polygons.bounding_box. If land_polygons is None, then this is
 the whole world, defined by ((-180,-90),(180, 90))</li>
@@ -2149,17 +2195,14 @@ model.</li>
 
 <dl class="method">
 <dt id="gnome.renderer.Renderer.prepare_for_model_run">
-<tt class="descname">prepare_for_model_run</tt><big>(</big><em>model_start_time</em>, <em>num_time_steps</em>, <em>cache=None</em>, <em>**kwargs</em><big>)</big><a class="reference internal" href="_modules/gnome/renderer.html#Renderer.prepare_for_model_run"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.renderer.Renderer.prepare_for_model_run" title="Permalink to this definition">¶</a></dt>
+<tt class="descname">prepare_for_model_run</tt><big>(</big><em>model_start_time</em>, <em>cache=None</em>, <em>**kwargs</em><big>)</big><a class="reference internal" href="_modules/gnome/renderer.html#Renderer.prepare_for_model_run"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.renderer.Renderer.prepare_for_model_run" title="Permalink to this definition">¶</a></dt>
 <dd><p>prepares the renderer for a model run.</p>
-<dl class="docutils">
-<dt>Parameters passed to base class:</dt>
-<dd>model_start_time, num_time_steps, cache</dd>
-</dl>
+<p>Parameters passed to base class (use super): model_start_time, cache</p>
+<p>Does not take any other input arguments; however, to keep the interface
+the same for all outputters, define <a href="#id9"><span class="problematic" id="id10">**</span></a>kwargs and pass into base class</p>
 <p>In this case, it draws the background image and clears the previous
 images. If you want to save the previous images, a new output dir
 should be set.</p>
-<p>Does not take any other input arguments; however, to keep the interface
-the same for all outputters, define <a href="#id7"><span class="problematic" id="id8">**</span></a>kwargs for now.</p>
 </dd></dl>
 
 <dl class="method">
@@ -2171,19 +2214,28 @@ is required for persisting</p>
 
 <dl class="method">
 <dt id="gnome.renderer.Renderer.write_output">
-<tt class="descname">write_output</tt><big>(</big><em>step_num</em><big>)</big><a class="reference internal" href="_modules/gnome/renderer.html#Renderer.write_output"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.renderer.Renderer.write_output" title="Permalink to this definition">¶</a></dt>
+<tt class="descname">write_output</tt><big>(</big><em>step_num</em>, <em>islast_step=False</em><big>)</big><a class="reference internal" href="_modules/gnome/renderer.html#Renderer.write_output"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.renderer.Renderer.write_output" title="Permalink to this definition">¶</a></dt>
 <dd><p>Render the map image, according to current parameters.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>step_num</strong> &#8211; the model step number you want rendered.</td>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>step_num</strong> (<em>int</em>) &#8211; the model step number you want rendered.</li>
+<li><strong>islast_step</strong> (<em>bool</em>) &#8211; default is False. Flag that indicates that step_num
+is last step. If &#8216;output_last_step&#8217; is True then this is written
+out</li>
+</ul>
+</td>
 </tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">A dict of info about this step number if this step
-is to be output, None otherwise.<blockquote>
-<div>&#8216;step_num&#8217;: step_num
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last"><p>A dict of info about this step number if this step
+is to be output, None otherwise.</p>
+<blockquote>
+<div><p>&#8216;step_num&#8217;: step_num
 &#8216;image_filename&#8217;: filename
-&#8216;time_stamp&#8217;: time_stamp # as ISO string</div></blockquote>
+&#8216;time_stamp&#8217;: time_stamp # as ISO string</p>
+</div></blockquote>
+</p>
 </td>
 </tr>
 </tbody>
@@ -2200,7 +2252,7 @@ this step based on output_timestep</p>
 NetCDF output writer</p>
 <dl class="class">
 <dt id="gnome.netcdf_outputter.NetCDFOutput">
-<em class="property">class </em><tt class="descclassname">gnome.netcdf_outputter.</tt><tt class="descname">NetCDFOutput</tt><big>(</big><em>netcdf_filename</em>, <em>all_data=False</em>, <em>netcdf_format='NETCDF4'</em>, <em>compress=True</em>, <em>id=None</em>, <em>**kwargs</em><big>)</big><a class="reference internal" href="_modules/gnome/netcdf_outputter.html#NetCDFOutput"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.netcdf_outputter.NetCDFOutput" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><tt class="descclassname">gnome.netcdf_outputter.</tt><tt class="descname">NetCDFOutput</tt><big>(</big><em>netcdf_filename</em>, <em>all_data=False</em>, <em>compress=True</em>, <em>id=None</em>, <em>**kwargs</em><big>)</big><a class="reference internal" href="_modules/gnome/netcdf_outputter.html#NetCDFOutput"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.netcdf_outputter.NetCDFOutput" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#gnome.outputter.Outputter" title="gnome.outputter.Outputter"><tt class="xref py py-class docutils literal"><span class="pre">gnome.outputter.Outputter</span></tt></a>, <tt class="xref py py-class docutils literal"><span class="pre">gnome.utilities.serializable.Serializable</span></tt></p>
 <p>A NetCDFOutput object is used to write the model&#8217;s data to a NetCDF file.
 It inherits from Outputter class and implements the same interface.</p>
@@ -2230,7 +2282,8 @@ standard data. When writing &#8216;all_data&#8217;, these data arrays are skippe
 <tt class="descname">id=None)</tt></dt>
 <dd></dd></dl>
 
-<p>Constructor for Net_CDFOutput object.</p>
+<p>Constructor for Net_CDFOutput object. It reads data from cache and
+writes it to a NetCDF4 format file using the CF convention</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
@@ -2269,7 +2322,7 @@ final step is written regardless of output_timestep</li>
 </tr>
 </tbody>
 </table>
-<p>use super to pass optional <a href="#id9"><span class="problematic" id="id10">**</span></a>kwargs to base class __init__ method</p>
+<p>use super to pass optional <a href="#id11"><span class="problematic" id="id12">**</span></a>kwargs to base class __init__ method</p>
 <dl class="attribute">
 <dt id="gnome.netcdf_outputter.NetCDFOutput.id">
 <tt class="descname">id</tt><a class="reference internal" href="_modules/gnome/netcdf_outputter.html#NetCDFOutput.id"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.netcdf_outputter.NetCDFOutput.id" title="Permalink to this definition">¶</a></dt>
@@ -2284,12 +2337,12 @@ final step is written regardless of output_timestep</li>
 
 <dl class="method">
 <dt id="gnome.netcdf_outputter.NetCDFOutput.prepare_for_model_run">
-<tt class="descname">prepare_for_model_run</tt><big>(</big><em>model_start_time</em>, <em>num_time_steps</em>, <em>cache=None</em>, <em>uncertain=False</em>, <em>spills=None</em>, <em>**kwargs</em><big>)</big><a class="reference internal" href="_modules/gnome/netcdf_outputter.html#NetCDFOutput.prepare_for_model_run"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.netcdf_outputter.NetCDFOutput.prepare_for_model_run" title="Permalink to this definition">¶</a></dt>
+<tt class="descname">prepare_for_model_run</tt><big>(</big><em>model_start_time</em>, <em>cache=None</em>, <em>uncertain=False</em>, <em>spills=None</em>, <em>**kwargs</em><big>)</big><a class="reference internal" href="_modules/gnome/netcdf_outputter.html#NetCDFOutput.prepare_for_model_run"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.netcdf_outputter.NetCDFOutput.prepare_for_model_run" title="Permalink to this definition">¶</a></dt>
 <dd><dl class="function">
 <dt>
 <tt class="descname">prepare_for_model_run(model_start_time,</tt></dt>
 <dt>
-<tt class="descname">num_time_steps, cache=None, uncertain=False, spills=None,</tt></dt>
+<tt class="descname">cache=None, uncertain=False, spills=None,</tt></dt>
 <dt>
 <tt class="descname">**kwargs)</tt></dt>
 <dd></dd></dl>
@@ -2326,16 +2379,16 @@ make sense to write &#8216;all_data&#8217; but not provide &#8216;model.spills&#
 </table>
 <dl class="docutils">
 <dt>Does not take any other input arguments; however, to keep the interface</dt>
-<dd>the same for all outputters, define <a href="#id11"><span class="problematic" id="id12">**</span></a>kwargs incase future
+<dd>the same for all outputters, define <a href="#id13"><span class="problematic" id="id14">**</span></a>kwargs incase future
 outputters require different arguments.</dd>
 </dl>
-<p>use super to pass model_start_time, num_time_steps, cache=None and
-remaining <a href="#id13"><span class="problematic" id="id14">**</span></a>kwargs to base class method</p>
+<p>use super to pass model_start_time, cache=None and
+remaining <a href="#id15"><span class="problematic" id="id16">**</span></a>kwargs to base class method</p>
 </dd></dl>
 
 <dl class="staticmethod">
 <dt id="gnome.netcdf_outputter.NetCDFOutput.read_data">
-<em class="property">static </em><tt class="descname">read_data</tt><big>(</big><em>netcdf_file</em>, <em>index=0</em>, <em>all_data=False</em><big>)</big><a class="reference internal" href="_modules/gnome/netcdf_outputter.html#NetCDFOutput.read_data"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.netcdf_outputter.NetCDFOutput.read_data" title="Permalink to this definition">¶</a></dt>
+<em class="property">static </em><tt class="descname">read_data</tt><big>(</big><em>netcdf_file</em>, <em>time=None</em>, <em>all_data=False</em><big>)</big><a class="reference internal" href="_modules/gnome/netcdf_outputter.html#NetCDFOutput.read_data"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.netcdf_outputter.NetCDFOutput.read_data" title="Permalink to this definition">¶</a></dt>
 <dd><p>Read and create standard data arrays for a netcdf file that was created
 with NetCDFOutput class. Make it a static method since it is
 independent of an instance of the Outputter. The method is put with
@@ -2347,14 +2400,14 @@ standard is captured here.</p>
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
 <li><strong>netcdf_file</strong> (<em>str</em>) &#8211; Name of the NetCDF file from which to read the data</li>
-<li><strong>index</strong> (<em>int</em>) &#8211; Index of the &#8216;time&#8217; variable (or time_step) for which
+<li><strong>time</strong> (<em>datetime</em>) &#8211; Index of the &#8216;time&#8217; variable (or time_step) for which
 data is desired. Default is 0 so it returns data associated with
 first timestamp.</li>
 </ul>
 </td>
 </tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">a dict containing &#8216;positions&#8217;, &#8216;status_codes&#8217;, &#8216;spill_num&#8217;.
-Currently, this is standard data.</p>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">a dict containing standard data closest to the indicated
+&#8216;time&#8217;. Standard data is defined as follows:</p>
 </td>
 </tr>
 </tbody>
@@ -2370,8 +2423,11 @@ particles released at time step of interest:</p>
 <dt>&#8216;status_codes&#8217; <span class="classifier-delimiter">:</span> <span class="classifier">NX1 array. Corresponds with NetCDF variable</span></dt>
 <dd>&#8216;status&#8217;</dd>
 <dt>&#8216;spill_num&#8217; <span class="classifier-delimiter">:</span> <span class="classifier">NX1 array. Corresponds with NetCDF variable</span></dt>
-<dd>&#8216;id&#8217;</dd>
+<dd>&#8216;spill_num&#8217;</dd>
+<dt>&#8216;id&#8217; <span class="classifier-delimiter">:</span> <span class="classifier">NX1 array showing particle id. Corresponds</span></dt>
+<dd>with NetCDF variable &#8216;id&#8217;</dd>
 </dl>
+<p>&#8216;mass&#8217;              : NX1 array showing &#8216;mass&#8217; of each particle</p>
 </div></blockquote>
 </dd></dl>
 
@@ -2385,18 +2441,30 @@ be called since rewind means start from beginning.</p>
 
 <dl class="method">
 <dt id="gnome.netcdf_outputter.NetCDFOutput.write_output">
-<tt class="descname">write_output</tt><big>(</big><em>step_num</em><big>)</big><a class="reference internal" href="_modules/gnome/netcdf_outputter.html#NetCDFOutput.write_output"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.netcdf_outputter.NetCDFOutput.write_output" title="Permalink to this definition">¶</a></dt>
+<tt class="descname">write_output</tt><big>(</big><em>step_num</em>, <em>islast_step=False</em><big>)</big><a class="reference internal" href="_modules/gnome/netcdf_outputter.html#NetCDFOutput.write_output"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.netcdf_outputter.NetCDFOutput.write_output" title="Permalink to this definition">¶</a></dt>
 <dd><p>write NetCDF output at the end of the step</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>step_num</strong> (<em>int</em>) &#8211; The model&#8217;s current timestep for which data is being
-written. model.current_time_step</td>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>step_num</strong> (<em>int</em>) &#8211; the model step number you want rendered.</li>
+<li><strong>islast_step</strong> (<em>bool</em>) &#8211; default is False. Flag that indicates that step_num
+is last step. If &#8216;output_last_step&#8217; is True then this is written
+out</li>
+</ul>
+</td>
 </tr>
 </tbody>
 </table>
 <p>use super to call base class write_output method</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gnome.netcdf_outputter.NetCDFOutput.write_output_post_run">
+<tt class="descname">write_output_post_run</tt><big>(</big><em>model_start_time</em>, <em>num_time_steps</em>, <em>cache=None</em>, <em>uncertain=False</em>, <em>spills=None</em>, <em>**kwargs</em><big>)</big><a class="headerlink" href="#gnome.netcdf_outputter.NetCDFOutput.write_output_post_run" title="Permalink to this definition">¶</a></dt>
+<dd><p>Define all the positional input arguments. Pass these onto baseclass
+write_output_post_run as correct kwargs</p>
 </dd></dl>
 
 </dd></dl>
