@@ -173,8 +173,8 @@ WorldPoint3D GridWindMover_c::GetMove(const Seconds& model_time, Seconds timeSte
 	refPoint.z = (*theLE).z;
 	windVelocity = timeGrid->GetScaledPatValue(model_time, refPoint);
 
-	//windVelocity.u *= fWindScale; 
-	//windVelocity.v *= fWindScale; 
+	windVelocity.u *= fWindScale; 
+	windVelocity.v *= fWindScale; 
 	
 	
 	if(leType == UNCERTAINTY_LE)
