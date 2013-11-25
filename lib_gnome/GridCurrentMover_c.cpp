@@ -283,6 +283,9 @@ WorldPoint3D GridCurrentMover_c::GetMove(const Seconds& model_time, Seconds time
 	refPoint.z = (*theLE).z;
 	scaledPatVelocity = timeGrid->GetScaledPatValue(model_time, refPoint);
 
+	scaledPatVelocity.u *= fCurScale;
+	scaledPatVelocity.v *= fCurScale;
+	
 	if(leType == UNCERTAINTY_LE)
 	{
 		AddUncertainty(setIndex,leIndex,&scaledPatVelocity,timeStep,useEddyUncertainty);
