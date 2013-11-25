@@ -101,15 +101,15 @@ class ValuesFromDistBase(object):
 
     def set_values(self, np_array):
         if self.distribution == 'uniform':
-            np_array = np.random.uniform(self.params[0], self.params[1],
+            np_array[:] = np.random.uniform(self.params[0], self.params[1],
                                          len(np_array))
         elif self.distribution == 'normal':
-            np_array = np.random.normal(self.params[0], self.params[1],
+            np_array[:] = np.random.normal(self.params[0], self.params[1],
                                         len(np_array))
 
 
 class InitRiseVelFromDist(ValuesFromDistBase):
-    def __init__(self, **kwargs):
+    def __init__(self, distribution='uniform', params=[0, .1]):
         """
         Set the rise velocity parameters to be sampled from a distribution.
 
@@ -123,25 +123,13 @@ class InitRiseVelFromDist(ValuesFromDistBase):
             1 standard deviation
         """
 
-        super(InitRiseVelFromDist, self).__init__(**kwargs)
+        super(InitRiseVelFromDist, self).__init__(distribution, params)
 
     def initialize(self, num_new_particles, spill, data_arrays):
         """
         if 'rise_vel' exists in SpillContainer's data_arrays, then define
         """
         self.set_values(data_arrays['rise_vel'][-num_new_particles:])
-        #======================================================================
-        # if self.distribution == 'uniform':
-        #     data_arrays['rise_vel'][-num_new_particles:] = np.random.uniform(
-        #                                                 self.params[0],
-        #                                                 self.params[1],
-        #                                                 num_new_particles)
-        # elif self.distribution == 'normal':
-        #     data_arrays['rise_vel'][-num_new_particles:] = np.random.normal(
-        #                                                 self.params[0],
-        #                                                 self.params[1],
-        #                                                 num_new_particles)
-        #======================================================================
 
 
 class InitRiseVelFromDropletSizeFromDist(ValuesFromDistBase):
