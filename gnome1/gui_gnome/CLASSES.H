@@ -9,6 +9,7 @@ using std::map;
 using std::string;
 
 #include "TypeDefs.h"
+#include "GuiTypeDefs.h"
 #include "CMyList.h"
 #include "RectUtils.h"
 #include "ObjectUtils.h"
@@ -81,6 +82,20 @@ enum { // moved TModel defines to TModel.cpp // JLM
 	I_WINDTIMEENTRIES, I_WINDBARB,
 	
 	I_WEATHERNAME = 0, I_WEATHERACTIVE };
+
+enum {
+	I_PTCURNAME = 0 ,
+	I_PTCURACTIVE, 
+	I_PTCURGRID, 
+	I_PTCURARROWS,
+	I_PTCURSCALE,
+	I_PTCURUNCERTAINTY,
+	I_PTCURSTARTTIME,
+	I_PTCURDURATION, 
+	I_PTCURALONGCUR,
+	I_PTCURCROSSCUR,
+	I_PTCURMINCURRENT
+};
 
 ///////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////

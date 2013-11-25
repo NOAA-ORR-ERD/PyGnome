@@ -13,6 +13,7 @@
 
 #include "Basics.h"
 #include "TypeDefs.h"
+#include "GuiTypeDefs.h"
 #include "Map_c.h"
 #include "RectUtils.h"
 

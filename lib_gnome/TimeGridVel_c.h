@@ -26,6 +26,8 @@
 #define TGridVel GridVel_c
 #endif
 
+using namespace std;
+
 // code goes here, decide which fields go with the mover
 typedef struct {
 	char		pathName[kMaxNameLen];
@@ -282,9 +284,11 @@ class TimeGridCurTri_c : virtual public TimeGridCurRect_c
 {
 public:
 	
+	long fNumLandPts;
+	double fBoundaryLayerThickness;
+	
 	FLOATH fDepthsH;
 	DepthDataInfoH fDepthDataInfo;
-	PTCurVariables fVar2;
 	
 	TimeGridCurTri_c();
 	virtual	~TimeGridCurTri_c() { Dispose (); }
@@ -296,12 +300,15 @@ public:
 	VelocityRec 		GetScaledPatValue(const Seconds& model_time, WorldPoint3D p);
 	VelocityRec 		GetScaledPatValue3D(const Seconds& model_time, InterpolationVal interpolationVal,float depth);
 	
-	OSErr         ReadHeaderLine(std::string &strIn);
+	//OSErr         ReadHeaderLine(std::string &strIn);
+	OSErr	ReadHeaderLine(string &strIn, UncertaintyParameters *uncertainParams);
 	virtual OSErr ReadTimeData(long index, VelocityFH *velocityH, char *errmsg);
 	OSErr ReadPtCurVertices(std::vector<std::string> &linesInFile, long *line,
 							LongPointHdl *pointsH, FLOATH *bathymetryH, char* errmsg,
 							long numPoints);
 	
+	OSErr	ReadHeaderLines(vector<string> &linesInFile, string containingDir, UncertaintyParameters *uncertainParams);
+	OSErr	ReadHeaderLines(const char *path, UncertaintyParameters *uncertainParams);
 	long GetNumDepths(void);
 	void GetDepthIndices(long ptIndex, float depthAtPoint, long *depthIndex1, long *depthIndex2);
 

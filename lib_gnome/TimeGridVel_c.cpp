@@ -8392,42 +8392,9 @@ done:
 
 TimeGridCurTri_c::TimeGridCurTri_c () : TimeGridCurRect_c()
 {
-	memset(&fVar2,0,sizeof(fVar2));
-	fVar2.arrowScale = 5;
-	fVar2.arrowDepth = 0;
-	fVar2.alongCurUncertainty = .5;
-	fVar2.crossCurUncertainty = .25;
-	//fVar.uncertMinimumInMPS = .05;
-	fVar2.uncertMinimumInMPS = 0.0;
-	fVar2.curScale = 1.0;
-	fVar2.startTimeInHrs = 0.0;
-	fVar2.durationInHrs = 24.0;
-	fVar2.numLandPts = 0; // default that boundary velocities are given
-	fVar2.maxNumDepths = 1; // 2D default
-	fVar2.gridType = TWO_D; // 2D default
-	fVar2.bLayerThickness = 0.; // FREESLIP default
+	fNumLandPts = 0; // default that boundary velocities are given
+	fBoundaryLayerThickness = 0.; // FREESLIP default
 	//
-	// Override TCurrentMover defaults
-	/*fDownCurUncertainty = -fVar2.alongCurUncertainty; 
-	fUpCurUncertainty = fVar2.alongCurUncertainty; 	
-	fRightCurUncertainty = fVar2.crossCurUncertainty;  
-	fLeftCurUncertainty = -fVar2.crossCurUncertainty; 
-	fDuration=fVar2.durationInHrs*3600.; //24 hrs as seconds 
-	fUncertainStartTime = (long) (fVa2r.startTimeInHrs*3600.);*/
-	//
-/*	fGrid = 0;
-	fTimeDataHdl = 0;
-	fIsOptimizedForStep = false;
-	fOverLap = false;		// for multiple files case
-	fOverLapStartTime = 0;
-	
-	memset(&fStartData,0,sizeof(fStartData));
-	fStartData.timeIndex = UNASSIGNEDINDEX; 
-	fStartData.dataHdl = 0; 
-	memset(&fEndData,0,sizeof(fEndData));
-	fEndData.timeIndex = UNASSIGNEDINDEX;
-	fEndData.dataHdl = 0;
-	*/
 	fDepthsH = 0;
 	fDepthDataInfo = 0;
 	//fInputFilesHdl = 0;	// for multiple files case
@@ -8773,7 +8740,7 @@ VelocityRec TimeGridCurTri_c::GetScaledPatValue3D(const Seconds& model_time,Inte
 // '[<name>] <value>'
 // <name> == the name of the data item
 // <value> == the value of the data item
-OSErr TimeGridCurTri_c::ReadHeaderLine(string &strIn)
+OSErr TimeGridCurTri_c::ReadHeaderLine(string &strIn, UncertaintyParameters *uncertainParams)
 {
 	string msg;
 	string boundary;
@@ -8830,7 +8797,7 @@ OSErr TimeGridCurTri_c::ReadHeaderLine(string &strIn)
 					if (lineStream.fail()) {
 						goto BadValue;
 					}
-					fVar2.bLayerThickness = thickness;
+					fBoundaryLayerThickness = thickness;
 
 					return 0; // no error
 				}
@@ -8854,7 +8821,7 @@ OSErr TimeGridCurTri_c::ReadHeaderLine(string &strIn)
 			break;
 		case 'U':
 			if (key == "[UNCERTALONG]") {
-				lineStream >> fVar2.alongCurUncertainty;
+				lineStream >> (*uncertainParams).alongCurUncertainty;
 				if (lineStream.fail()) {
 					goto BadValue; 
 				}
@@ -8862,7 +8829,7 @@ OSErr TimeGridCurTri_c::ReadHeaderLine(string &strIn)
 				return 0; // no error
 			}
 			else if (key == "[UNCERTCROSS]") {
-				lineStream >> fVar2.crossCurUncertainty;
+				lineStream >> (*uncertainParams).crossCurUncertainty;
 				if (lineStream.fail()) {
 					goto BadValue; 
 				}
@@ -8870,7 +8837,7 @@ OSErr TimeGridCurTri_c::ReadHeaderLine(string &strIn)
 				return 0; // no error
 			}
 			else if (key == "[UNCERTMIN]") {
-				lineStream >> fVar2.uncertMinimumInMPS;
+				lineStream >> (*uncertainParams).uncertMinimumInMPS;
 				if (lineStream.fail()) {
 					goto BadValue; 
 				}
@@ -9142,7 +9109,7 @@ OSErr TimeGridCurTri_c::ReadTimeData(long index,
 		goto done;
 	}
 
-	for (long i = 0; i < fVar2.numLandPts; i++) {
+	for (long i = 0; i < fNumLandPts; i++) {
 		// zero out boundary velocity
 		numDepths = (*fDepthDataInfo)[i].numDepths;
 		for (long j = 0; j < numDepths; j++) {
@@ -9151,7 +9118,7 @@ OSErr TimeGridCurTri_c::ReadTimeData(long index,
 		}
 	}
 	
-	for (long i = fVar2.numLandPts; i < numPoints; i++) {
+	for (long i = fNumLandPts; i < numPoints; i++) {
 		// interior points
 		long scanLength, stringIndex = 0;
 		numDepths = (*fDepthDataInfo)[i].numDepths;
@@ -9248,7 +9215,7 @@ OSErr TimeGridCurTri_c::TextRead(vector<string> &linesInFile,
 		currentLine = trim(linesInFile[line++]);
 		if (currentLine[0] != '[')
 			break;
-		err = this->ReadHeaderLine(currentLine);
+		//err = this->ReadHeaderLine(currentLine);
 		if (err)
 			goto done;
 	}
@@ -9257,7 +9224,7 @@ OSErr TimeGridCurTri_c::TextRead(vector<string> &linesInFile,
 	// read triangle/topology info if included in file, otherwise calculate
 
 	// Points in Galt format
-	if (IsPtCurVerticesHeaderLine(currentLine, numPoints, fVar2.numLandPts)) {
+	if (IsPtCurVerticesHeaderLine(currentLine, numPoints, fNumLandPts)) {
 		MySpinCursor();
 
 		err = ReadPtCurVertices(linesInFile, &line, &pts, &bathymetryH, errmsg, numPoints);
@@ -9533,6 +9500,55 @@ OSErr TimeGridCurTri_c::TextRead(const char *path, const char *topFilePath)
 	vector<string> linesInFile;
 	if (ReadLinesInFile(strPath, linesInFile)) {
 		return TextRead(linesInFile, dir);
+	}
+	else {
+		return false;
+	}
+}
+
+OSErr TimeGridCurTri_c::ReadHeaderLines(vector<string> &linesInFile,
+								 string containingDir, UncertaintyParameters *uncertainParams)
+{
+	char errmsg[256];
+	OSErr err = 0;
+	string currentLine;
+	
+	long line = 0;
+	
+	errmsg[0] = 0;
+	
+	// code goes here, we need to worry about really big files
+	
+	// code goes here, worry about really long lines in the file
+	
+	// read past the header
+	for (long i = 0; i < linesInFile.size(); i++) {
+		currentLine = trim(linesInFile[line++]);
+		if (currentLine[0] != '[')
+			break;
+		err = this->ReadHeaderLine(currentLine, uncertainParams);
+		if (err)
+			goto done;
+	}
+done:
+	return err;
+}
+
+OSErr TimeGridCurTri_c::ReadHeaderLines(const char *path, UncertaintyParameters *uncertainParams)
+{
+	string strPath = path;
+	
+	if (strPath.size() == 0)
+		return 0;
+	strcpy(fVar.pathName, strPath.c_str());
+	
+	string dir, file;
+	SplitPathIntoDirAndFile(strPath, dir, file);
+	
+	
+	vector<string> linesInFile;
+	if (ReadLinesInFile(strPath, linesInFile)) {
+		return ReadHeaderLines(linesInFile, dir, uncertainParams);
 	}
 	else {
 		return false;

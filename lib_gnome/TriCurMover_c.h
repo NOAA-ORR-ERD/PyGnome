@@ -12,6 +12,7 @@
 
 #include "Basics.h"
 #include "TypeDefs.h"
+#include "GuiTypeDefs.h"
 #include "DagTree.h"
 #include "CurrentMover_c.h"
 

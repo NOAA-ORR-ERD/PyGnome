@@ -138,28 +138,19 @@ cdef extern from "CATSMover_c.h":
 
 cdef extern from "GridCurrentMover_c.h":
     
-    cdef struct GridCurrentVariables:
-        char        *pathName
-        char        *userName
+    cdef struct UncertaintyParameters:
         double     alongCurUncertainty
         double     crossCurUncertainty
         double     uncertMinimumInMPS
-        double     curScale
         double     startTimeInHrs
         double     durationInHrs
-        short        gridType
-        Boolean     bShowGrid
-        Boolean     bShowArrows
-        Boolean    bUncertaintyPointOpen
-        double     arrowScale
-        double     arrowDepth
 
     cdef cppclass GridCurrentMover_c(CurrentMover_c):
-        GridCurrentVariables fVar
+        UncertaintyParameters fUncertainParams
+        double fCurScale
         TimeGridVel_c    *timeGrid
         Boolean fIsOptimizedForStep
         Boolean fAllowVerticalExtrapolationOfCurrents
-        float    fMaxDepthForExtrapolation
         
         GridCurrentMover_c ()
         WorldPoint3D    GetMove(Seconds&,Seconds&,Seconds&,Seconds&, long, long, LERec *, LETYPE)

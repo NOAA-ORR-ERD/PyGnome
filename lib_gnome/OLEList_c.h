@@ -12,6 +12,7 @@
 
 #include "Basics.h"
 #include "TypeDefs.h"
+#include "GuiTypeDefs.h"
 #include "LEList_c.h"
 #include "CMYLIST.H"
 #include "MemUtils.h"

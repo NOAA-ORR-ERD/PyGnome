@@ -12,6 +12,7 @@
 
 #include "Basics.h"
 #include "TypeDefs.h"
+#include "GuiTypeDefs.h"
 #include "CMYLIST.H"
 #include "ClassID_c.h"
 #include <string>

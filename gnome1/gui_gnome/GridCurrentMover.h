@@ -26,6 +26,11 @@ public:
 	//Boolean bShowDepthContours;
 	//Boolean bShowDepthContourLabels;
 	//Rect fLegendRect;
+	Boolean fArrowScale;
+	Boolean fArrowDepth;
+	Boolean bShowGrid;
+	Boolean bShowArrows;
+	Boolean	bUncertaintyPointOpen;
 
 
 						GridCurrentMover (TMap *owner, char *name);
@@ -45,6 +50,7 @@ public:
 	virtual void		Draw (Rect r, WorldRect view);
 	virtual Boolean	DrawingDependsOnTime(void);
 	virtual Boolean 	VelocityStrAtPoint(WorldPoint3D wp, char *diagnosticStr);
+	virtual float		GetArrowDepth() {return fArrowDepth;}
 	
 	virtual long		GetListLength ();
 	virtual ListItem 	GetNthListItem (long n, short indent, short *style, char *text);

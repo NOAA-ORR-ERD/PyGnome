@@ -23,30 +23,13 @@
 #define TimeGridVel TimeGridVel_c
 #endif
 
-typedef struct {
-	char		pathName[kMaxNameLen];
-	char		userName[kPtCurUserNameLen]; // user name for the file, or short file name
-	double 	alongCurUncertainty;	
-	double 	crossCurUncertainty;	
-	double 	uncertMinimumInMPS;	
-	double 	curScale;	// use value from file? 	
-	double 	startTimeInHrs;	
-	double 	durationInHrs;	
-	//
-	//long		maxNumDepths;
-	short		gridType;
-	//
-	Boolean 	bShowGrid;
-	Boolean 	bShowArrows;
-	Boolean	bUncertaintyPointOpen;
-	double 	arrowScale;
-	double 	arrowDepth;	// depth level where velocities will be shown
-} GridCurrentVariables;
-
 class DLL_API GridCurrentMover_c : virtual public CurrentMover_c {
 
 public:
-	GridCurrentVariables fVar;
+	UncertaintyParameters fUncertainParams;
+	double fCurScale;
+	char fPathName[kMaxNameLen];
+	char fUserName[kPtCurUserNameLen];
 	Boolean fIsOptimizedForStep;
 	TimeGridVel *timeGrid;
 	
@@ -66,7 +49,6 @@ public:
 	virtual OSErr		AddUncertainty(long setIndex, long leIndex,VelocityRec *patVelocity,double timeStep,Boolean useEddyUncertainty);
 	VelocityRec			GetPatValue (WorldPoint p);
 	VelocityRec 		GetScaledPatValue(const Seconds& model_time, WorldPoint p,Boolean * useEddyUncertainty);//JLM 5/12/99
-	virtual float		GetArrowDepth() {return fVar.arrowDepth;}
 	
 	virtual WorldRect	GetGridBounds(){return timeGrid->GetGridBounds();}	
 	//virtual OSErr		InitMover (TimeGridVel *grid); 
