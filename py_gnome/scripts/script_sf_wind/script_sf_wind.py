@@ -75,6 +75,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     #w_mover.uncertain_duration=6
     w_mover.uncertain_speed_scale=.5
     w_mover.set_uncertain_angle(0,'rad')	#default is .4
+    w_mover.wind_scale=.5
     model.movers += w_mover
 
     return model
