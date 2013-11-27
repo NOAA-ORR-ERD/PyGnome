@@ -61,6 +61,9 @@ class Scenario(object):
         .. note:: If user wants to save a scenario, then model must be set
         """
         (path_, savedir) = os.path.split(saveloc)
+        if path_ == '':
+            path_ = '.'     # relative to current directory
+
         if not os.path.exists(path_):
             raise ValueError("{0} does not exist. \nCannot create '{1}'"\
                              .format(path_, savedir))

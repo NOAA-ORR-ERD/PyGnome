@@ -124,7 +124,7 @@ if sys.argv.count(config) != 0:
 ##     failing to link because we netCDF library is 32 bit (I believe).
 ##     Added third_party_lib/win32/x86_64/netcdf.lib
 ##     Adding the netCDF bin directory and the dependency bin directory
-##     to the Path variable 
+##     to the Path variable
 
 ## setup our environment and architecture
 ## These should be properties that are used by all Extensions
@@ -173,26 +173,27 @@ if sys.platform is "darwin" or "win32":
         # On windows the dlls have the same names for those used by python's
         # netCDF4 module and PyGnome modules. For PyGnome, we had the latest
         # netcdf dlls from UCARR site but this was giving DLL import errors.
-        # The netcdf dlls that come with Python's netCDF4 module (C. Gohlke's site)
+        # Netcdf dlls that come with Python's netCDF4 module (C. Gohlke's site)
         # were different from the netcdf4 DLLs we got from UCARR.
         # For now, third_party_lib contains the DLLs installed in site-packages
         # from C. Gohlke's site.
         #
-        # Alternatively, we could also look for python netCDF4 package and copy DLLs from site-packages.
-        # This way the DLLs used and loaded by PyGnome are the same as the DLL used and
-        # expected by netCDF4. PyGnome loads the DLL with cy_basic_types.pyd and it also
-        # imports netCDF4 when netcdf_outputters module is imported - this was causing the
-        # previous conflict. The DLL loaded in memory should be consistent - that's the best
-        # understanding of current issue!
+        # Alternatively, we could also look for python netCDF4 package and copy
+        # DLLs from site-packages. This way the DLLs used and loaded by PyGnome
+        # are the same as the DLL used and expected by netCDF4. PyGnome loads
+        # the DLL with cy_basic_types.pyd and it also imports netCDF4 when
+        # netcdf_outputters module is imported - this was causing the previous
+        # conflict. The DLL loaded in memory should be consistent - that's the
+        # best understanding of current issue!
         # STILL WORKING ON A MORE PERMANENT SOLUTION
         win_dlls = os.path.join(netcdf_base, 'bin')
         dlls_path = os.path.join(os.getcwd(), win_dlls)
 
-        for dll in glob.glob(os.path.join(dlls_path,'*.dll')):
+        for dll in glob.glob(os.path.join(dlls_path, '*.dll')):
             dlls_dst = os.path.join(os.getcwd(), 'gnome/cy_gnome/')
 
             if sys.argv[1] == 'cleanall' or sys.argv[1] == 'clean':
-                (x_, dll_name) = os.path.split(dll)
+                dll_name = os.path.split(dll)[1]
                 rm_dll = os.path.join(dlls_dst, dll_name)
                 if os.path.exists(rm_dll):
                     os.remove(rm_dll)
