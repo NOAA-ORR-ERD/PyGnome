@@ -33,9 +33,8 @@ public:
 	
 	NetCDFMoverTri_c (TMap *owner, char *name);
 	NetCDFMoverTri_c () {}
-	virtual ClassID 	GetClassID () { return TYPE_NETCDFMOVERTRI; }
-	//virtual Boolean	IAm(ClassID id) { if(id==TYPE_NETCDFMOVERTRI) return TRUE; return NetCDFMover::IAm(id); }
-	virtual Boolean	IAm(ClassID id) { if(id==TYPE_NETCDFMOVERTRI) return TRUE; return NetCDFMoverCurv_c::IAm(id); }
+	//virtual ClassID 	GetClassID () { return TYPE_NETCDFMOVERTRI; }
+	//virtual Boolean	IAm(ClassID id) { if(id==TYPE_NETCDFMOVERTRI) return TRUE; return NetCDFMoverCurv::IAm(id); }
 	LongPointHdl			GetPointsHdl();
 	Boolean 				VelocityStrAtPoint(WorldPoint3D wp, char *diagnosticStr);
 	virtual WorldPoint3D       GetMove(const Seconds& model_time, Seconds timeStep,long setIndex,long leIndex,LERec *thisLE,LETYPE leType);

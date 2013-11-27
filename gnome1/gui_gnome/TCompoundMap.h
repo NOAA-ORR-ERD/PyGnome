@@ -28,6 +28,8 @@ public:
 	//virtual OSErr		InitContourLevels();
 	//virtual OSErr		InitDropletSizes();
 	
+	virtual ClassID 	GetClassID () { return TYPE_COMPOUNDMAP; }
+	virtual Boolean		IAm(ClassID id) { if(id==TYPE_COMPOUNDMAP) return TRUE; return PtCurMap::IAm(id); }
 	
 	//virtual OSErr		AddMover (TMover *theMover, short where);
 	virtual OSErr		AddMap (TMap *theMap, short where);

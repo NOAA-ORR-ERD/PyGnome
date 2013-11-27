@@ -23,6 +23,9 @@ public:
 	TLEList ();
 	virtual		   ~TLEList () { Dispose (); }
 	
+	virtual ClassID GetClassID () { return TYPE_LELIST; }
+	virtual Boolean	IAm(ClassID id) { if(id==TYPE_LELIST) return TRUE; return TClassID::IAm(id); }
+	
 	//virtual OSErr	Initialize (long numElements, LERec *representativeLE, short massUnits,
 	//							WorldPoint startRelPos, WorldPoint endRelPos,
 	//							Seconds startRelTime, Seconds endRelTime,

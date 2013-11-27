@@ -43,8 +43,8 @@ public:
 	virtual ~GridCurrentMover_c () { Dispose (); }
 	virtual void		Dispose ();
 	
-	virtual ClassID 	GetClassID () { return TYPE_GRIDCURRENTMOVER; }
-	virtual Boolean	IAm(ClassID id) { if(id==TYPE_GRIDCURRENTMOVER) return TRUE; return CurrentMover_c::IAm(id); }
+	//virtual ClassID 	GetClassID () { return TYPE_GRIDCURRENTMOVER; }
+	//virtual Boolean	IAm(ClassID id) { if(id==TYPE_GRIDCURRENTMOVER) return TRUE; return CurrentMover_c::IAm(id); }
 
 	virtual OSErr		AddUncertainty(long setIndex, long leIndex,VelocityRec *patVelocity,double timeStep,Boolean useEddyUncertainty);
 	VelocityRec			GetPatValue (WorldPoint p);

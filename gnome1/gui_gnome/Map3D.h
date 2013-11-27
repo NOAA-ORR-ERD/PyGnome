@@ -40,6 +40,9 @@ public:
 	//virtual OSErr	InitMap (char *path);
 	virtual void	Dispose ();
 	
+	virtual ClassID GetClassID () { return TYPE_MAP3D; }
+	virtual Boolean	IAm(ClassID id) { if(id==TYPE_MAP3D) return TRUE; return TMap::IAm(id); }
+
 	virtual OSErr 	AddMover(TMover *theMover, short where);
 	OSErr		MakeBitmaps();
 	virtual	OSErr 	ReplaceMap();

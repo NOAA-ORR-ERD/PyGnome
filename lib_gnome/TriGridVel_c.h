@@ -24,7 +24,7 @@ protected:
 public:
 	TriGridVel_c(){fDagTree = 0; fBathymetryH=0;}
 	virtual	~TriGridVel_c() { Dispose (); }
-	virtual ClassID 	GetClassID 	() { return TYPE_TRIGRIDVEL; }
+	//virtual ClassID 	GetClassID 	() { return TYPE_TRIGRIDVEL; }
 	void SetDagTree(TDagTree *dagTree){fDagTree=dagTree;}
 	TDagTree*  GetDagTree(){return fDagTree;}
 	LongPointHdl GetPointsHdl(void);

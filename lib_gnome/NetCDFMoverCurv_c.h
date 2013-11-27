@@ -34,8 +34,8 @@ public:
 	
 	NetCDFMoverCurv_c (TMap *owner, char *name);
 	NetCDFMoverCurv_c () {}
-	virtual ClassID 	GetClassID () { return TYPE_NETCDFMOVERCURV; }
-	virtual Boolean	IAm(ClassID id) { if(id==TYPE_NETCDFMOVERCURV) return TRUE; return NetCDFMover_c::IAm(id); }
+	//virtual ClassID 	GetClassID () { return TYPE_NETCDFMOVERCURV; }
+	//virtual Boolean	IAm(ClassID id) { if(id==TYPE_NETCDFMOVERCURV) return TRUE; return NetCDFMover::IAm(id); }
 
 	LongPointHdl		GetPointsHdl();
 	virtual Boolean 	VelocityStrAtPoint(WorldPoint3D wp, char *diagnosticStr);

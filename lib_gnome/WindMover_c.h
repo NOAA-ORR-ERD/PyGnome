@@ -62,8 +62,8 @@ public:
 	virtual			   ~WindMover_c ();	// move to cpp file for debugging
 	virtual void		Dispose ();
 
-	virtual ClassID 	GetClassID () { return TYPE_WINDMOVER; }
-	virtual Boolean		IAm(ClassID id) { if(id==TYPE_WINDMOVER) return TRUE; return Mover_c::IAm(id); }
+	//virtual ClassID 	GetClassID () { return TYPE_WINDMOVER; }
+	//virtual Boolean		IAm(ClassID id) { if(id==TYPE_WINDMOVER) return TRUE; return Mover_c::IAm(id); }
 	
 	virtual OSErr		AllocateUncertainty (int numLESets, int* LESetsSizesList);
 	virtual OSErr		ReallocateUncertainty(int numLEs, short* statusCodes);	

@@ -21,6 +21,9 @@ public:
 	TTimeValue (TMover *theOwner) { owner = theOwner; }
 	virtual		   ~TTimeValue () { Dispose (); }
 
+	virtual ClassID GetClassID () { return TYPE_TIMEVALUES; }
+	virtual Boolean	IAm(ClassID id) { if(id==TYPE_TIMEVALUES) return TRUE; return TClassID::IAm(id); }
+
 	virtual OSErr 	MakeClone(TTimeValue **clonePtrPtr);
 	virtual OSErr 	BecomeClone(TTimeValue *clone);
 	

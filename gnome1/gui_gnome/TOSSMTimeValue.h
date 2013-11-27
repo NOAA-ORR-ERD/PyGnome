@@ -23,6 +23,10 @@ public:
 	TOSSMTimeValue (TMover *theOwner);
 	TOSSMTimeValue (TMover *theOwner,TimeValuePairH tvals,short userUnits);
 	virtual				   ~TOSSMTimeValue () { Dispose (); }
+
+	virtual ClassID 		GetClassID () { return TYPE_OSSMTIMEVALUES; }
+	virtual Boolean			IAm(ClassID id) { if(id==TYPE_OSSMTIMEVALUES) return TRUE; return TTimeValue::IAm(id); }
+	
 	virtual OSErr 			MakeClone(TOSSMTimeValue **clonePtrPtr);
 	virtual OSErr			BecomeClone(TOSSMTimeValue *clone);
 	

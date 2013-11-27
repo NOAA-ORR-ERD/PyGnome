@@ -25,7 +25,7 @@ class TGridVel : virtual public GridVel_c
 
 		TGridVel();
 		virtual	~TGridVel() { Dispose (); }
-
+		virtual ClassID 	GetClassID 	() { return TYPE_GRIDVEL; }	
 		virtual OSErr TextWrite(char *path){return noErr;}
 		virtual OSErr TextRead (char *path){return noErr;}
 		virtual OSErr Write(BFPB *bfpb)=0;
@@ -45,6 +45,7 @@ class TRectGridVel : virtual public RectGridVel_c, public TGridVel
 		TRectGridVel();
 		virtual	~TRectGridVel() { Dispose (); }
 		 
+		virtual ClassID GetClassID 	() { return TYPE_RECTGRIDVEL; }
 
 		OSErr 			TextRead(char *path);
 		OSErr 			ReadOssmCurFile(char *path);
@@ -69,6 +70,8 @@ class TTriGridVel : virtual public TriGridVel_c, public TGridVel
 		TTriGridVel(){fDagTree = 0; fBathymetryH=0;	fDepthContoursH=0;	memset(&fLegendRect,0,sizeof(fLegendRect));}
 		virtual	~TTriGridVel() { if(fDepthContoursH) {DisposeHandle((Handle)fDepthContoursH); fDepthContoursH=0;} Dispose (); }
 
+		virtual ClassID 	GetClassID 	() { return TYPE_TRIGRIDVEL; }
+	
 		OSErr TextRead(char *path);
 		OSErr Read(BFPB *bfpb);
 		OSErr Write(BFPB *bfpb);
@@ -96,7 +99,8 @@ class TTriGridVel3D : virtual public TriGridVel3D_c, public TTriGridVel
 		TTriGridVel3D();
 		virtual	~TTriGridVel3D() { Dispose (); }
 
-
+		virtual ClassID 	GetClassID 	() { return TYPE_TRIGRIDVEL3D; }
+	
 		Boolean **GetPtsSelection(Boolean initHdl);
 		Boolean ThereAreTrianglesSelected() {if (fTriSelected) return true; else return false;}
 		Boolean ThereAreTrianglesSelected2(void);

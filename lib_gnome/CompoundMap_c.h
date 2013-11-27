@@ -81,8 +81,8 @@ public:
 	CompoundMap_c (char* name, WorldRect bounds);
 	CompoundMap_c () {}
 
-	virtual ClassID 	GetClassID () { return TYPE_COMPOUNDMAP; }
-	virtual Boolean		IAm(ClassID id) { if(id==TYPE_COMPOUNDMAP) return TRUE; return PtCurMap_c::IAm(id); }
+	//virtual ClassID 	GetClassID () { return TYPE_COMPOUNDMAP; }
+	//virtual Boolean		IAm(ClassID id) { if(id==TYPE_COMPOUNDMAP) return TRUE; return PtCurMap::IAm(id); }
 	CMyList				*GetMapList () { return mapList; }
 	TCurrentMover*		GetCompoundMover();
 	virtual	Boolean	HaveMapBoundsLayer (void) { return false; }

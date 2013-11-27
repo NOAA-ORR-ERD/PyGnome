@@ -433,8 +433,13 @@ VelocityRec CATSMover_c::GetPatValue(WorldPoint3D p)
 	VelocityRec patVal = {0., 0.};
 
 	if (p.z > 0 && !bApplyLogProfile) {
-		if (!IAm(TYPE_CATSMOVER3D))
+#ifndef pyGNOME
+		//if (!IAm(TYPE_CATSMOVER3D))
+			if (!(dynamic_cast<TCATSMover*>(this)->IAm(TYPE_CATSMOVER3D)))
 			return patVal;
+#else
+		return patVal;
+#endif
 	}
 
 	if (p.z > 1 && bApplyLogProfile) {

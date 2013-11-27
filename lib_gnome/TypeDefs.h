@@ -21,14 +21,17 @@
 #define DEREFH(h) (*(h))
 #define INDEXH(h, i) (*(h))[i]
 
+#ifndef pyGNOME
 #define kDefSaveFileName "Untitled.sav"		// STH
 #define	kDefLEFileName "LEFile"				// STH
+#endif
 
 /*#ifndef MAC
 typedef CHARPTR Ptr;
 typedef CHARH Handle;
 typedef Handle *HANDLEPTR;
 #endif*/
+#ifndef pyGNOME
 #define PTCUR_DELIM_STR " \t"
 
 extern RGBColor colors[];
@@ -37,10 +40,13 @@ enum { BLACK = 1, WHITE, DARKGRAY, GRAY, LIGHTGRAY,
 	BROWN, LIGHTBROWN, OLIVE = 7, DARKGREEN, GREEN,
 	LIGHTBLUE, BLUE, DARKBLUE, PURPLE, PINK, RED, YELLOW, OTHERCOLOR }; // colors
 
+#endif
 //--
 
 #define kMaxNameLen 256
 #define TIMEVALUE_TOLERANCE 0.00001
+
+#ifndef pyGNOME
 #define kNumOSSMLandTypes 11
 #define kNumOSSMWaterTypes 5
 #define kOMapWidth 80
@@ -50,11 +56,13 @@ enum { BLACK = 1, WHITE, DARKGRAY, GRAY, LIGHTGRAY,
 #define	kOCurWidth			40
 #define	kOCurHeight			24
 #define	kVelsPerLine		10 // # of velocity numbers pairs per line
+#endif
 
 #define INFINITE_DEPTH	5000.
 
 //#define COMPLETE_LE  (FORECAST_LE + UNCERTAINTY_LE)
 
+#ifndef pyGNOME
 typedef long ClassID;
 
 const ClassID TYPE_UNDENTIFIED	 	= 0;
@@ -124,6 +132,7 @@ const ClassID TYPE_BUOY_OVERLAY	= 930; //JLM
 const ClassID TYPE_BP_BUOY_OVERLAY	= 931; //JLM
 const ClassID TYPE_SLDMB_BUOY_OVERLAY	= 932; //JLM
 const ClassID TYPE_OVERFLIGHT_OVERLAY	= 940; //JLM
+#endif
 
 typedef short OilType;
 typedef short OilStatus;

@@ -15,6 +15,9 @@ public:
 	virtual				~TimeGridVel () { Dispose (); }
 	//virtual void		Dispose ();
 
+	virtual ClassID 	GetClassID () { return TYPE_TIMEGRIDVEL; }
+	virtual Boolean	IAm(ClassID id) { return(id==TYPE_TIMEGRIDVEL);}
+	
 	// I/O methods
 	virtual OSErr 		Read (BFPB *bfpb); 	// read from current position
 	virtual OSErr 		Write (BFPB *bfpb); // write to  current position
@@ -35,6 +38,9 @@ public:
 	virtual ~TimeGridVelRect () { Dispose (); }
 	//virtual void		Dispose ();
 	
+	virtual ClassID 	GetClassID () { return TYPE_TIMEGRIDVELRECT; }
+	virtual Boolean	IAm(ClassID id) { if(id==TYPE_TIMEGRIDVELRECT) return TRUE; return TimeGridVel::IAm(id); }
+	
 	// I/O methods
 	virtual OSErr 		Read (BFPB *bfpb); 	// read from current position
 	virtual OSErr 		Write (BFPB *bfpb); // write to  current position
@@ -51,6 +57,9 @@ public:
 						TimeGridVelCurv();
 	virtual				~TimeGridVelCurv () { Dispose (); }
 	//virtual void		Dispose ();
+
+	virtual ClassID 	GetClassID () { return TYPE_TIMEGRIDVELCURV; }
+	virtual Boolean	IAm(ClassID id) { if(id==TYPE_TIMEGRIDVELCURV) return TRUE; return TimeGridVelRect::IAm(id); }
 
 	// I/O methods
 	virtual OSErr 		Read (BFPB *bfpb); 	// read from current position
@@ -71,6 +80,9 @@ public:
 						TimeGridVelTri();
 	virtual				~TimeGridVelTri () { Dispose (); }
 	//virtual void		Dispose ();
+
+	virtual ClassID 	GetClassID () { return TYPE_TIMEGRIDVELTRI; }
+	virtual Boolean	IAm(ClassID id) { if(id==TYPE_TIMEGRIDVELTRI) return TRUE; return TimeGridVelCurv::IAm(id); }
 
 	// I/O methods
 	virtual OSErr 		Read (BFPB *bfpb); 	// read from current position
@@ -94,6 +106,9 @@ public:
 	virtual ~TimeGridCurRect () { Dispose (); }
 	//virtual void		Dispose ();
 	
+	virtual ClassID 	GetClassID () { return TYPE_TIMEGRIDCURRECT; }
+	virtual Boolean	IAm(ClassID id) { if(id==TYPE_TIMEGRIDCURRECT) return TRUE; return TimeGridVel::IAm(id); }
+	
 	// I/O methods
 	virtual OSErr 		Read (BFPB *bfpb); 	// read from current position
 	virtual OSErr 		Write (BFPB *bfpb); // write to  current position
@@ -113,6 +128,9 @@ public:
 	virtual ~TimeGridCurTri () { Dispose (); }
 	//virtual void		Dispose ();
 	
+	virtual ClassID 	GetClassID () { return TYPE_TIMEGRIDCURTRI; }
+	virtual Boolean	IAm(ClassID id) { if(id==TYPE_TIMEGRIDCURTRI) return TRUE; return TimeGridCurRect::IAm(id); }
+
 	// I/O methods
 	virtual OSErr 		Read (BFPB *bfpb); 	// read from current position
 	virtual OSErr 		Write (BFPB *bfpb); // write to  current position
@@ -131,6 +149,9 @@ public:
 	virtual ~TimeGridWindRect () { Dispose (); }
 	//virtual void		Dispose ();
 	
+	virtual ClassID 	GetClassID () { return TYPE_TIMEGRIDWINDRECT; }
+	virtual Boolean	IAm(ClassID id) { if(id==TYPE_TIMEGRIDWINDRECT) return TRUE; return TimeGridVel::IAm(id); }
+	
 	// I/O methods
 	virtual OSErr 		Read (BFPB *bfpb); 	// read from current position
 	virtual OSErr 		Write (BFPB *bfpb); // write to  current position
@@ -147,6 +168,9 @@ public:
 	TimeGridWindCurv();
 	virtual ~TimeGridWindCurv () { Dispose (); }
 	//virtual void		Dispose ();
+	
+	virtual ClassID 	GetClassID () { return TYPE_TIMEGRIDWINDCURV; }
+	virtual Boolean	IAm(ClassID id) { if(id==TYPE_TIMEGRIDWINDCURV) return TRUE;  return TimeGridWindRect::IAm(id); }
 	
 	// I/O methods
 	virtual OSErr 		Read (BFPB *bfpb); 	// read from current position

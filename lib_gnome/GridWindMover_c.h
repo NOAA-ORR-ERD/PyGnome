@@ -50,8 +50,8 @@ public:
 	~GridWindMover_c () { Dispose (); }
 	virtual void		Dispose ();
 	
-	virtual ClassID 	GetClassID () { return TYPE_GRIDWINDMOVER; }
-	virtual Boolean		IAm(ClassID id) { if(id==TYPE_GRIDWINDMOVER) return TRUE; return WindMover_c::IAm(id); }
+	//virtual ClassID 	GetClassID () { return TYPE_GRIDWINDMOVER; }
+	//virtual Boolean		IAm(ClassID id) { if(id==TYPE_GRIDWINDMOVER) return TRUE; return WindMover_c::IAm(id); }
 
 	virtual WorldRect GetGridBounds(){return timeGrid->GetGridBounds();}	
 	void		SetTimeGrid(TimeGridVel *newTimeGrid) {timeGrid = newTimeGrid;}

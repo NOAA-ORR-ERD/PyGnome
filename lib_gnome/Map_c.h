@@ -53,8 +53,8 @@ public:
 	virtual double		DepthAtPoint(WorldPoint wp) {return INFINITE_DEPTH;}
 	virtual	float		GetMaxDepth2(void) {return 0;}	
 	virtual OSErr		AddMover (TMover *theMover, short where);
-	virtual ClassID		GetClassID () { return TYPE_MAP; }
-	virtual Boolean		IAm(ClassID id) {if(id==TYPE_MAP) return TRUE; return ClassID_c::IAm(id); }
+	//virtual ClassID		GetClassID () { return TYPE_MAP; }
+	//virtual Boolean		IAm(ClassID id) {if(id==TYPE_MAP) return TRUE; return ClassID_c::IAm(id); }
 
 	double 			GetBreakingWaveHeight(void) {return 1.;}
 	double 			GetMixedLayerDepth(void) {return 10.;}

@@ -27,7 +27,8 @@ public:
 	TClassID ();
 	virtual			   ~TClassID () { Dispose (); }
 	
-
+	virtual ClassID 	GetClassID 	() { return TYPE_UNDENTIFIED; }
+	virtual Boolean		IAm(ClassID id) { return FALSE; }
 	Boolean 			GetSelectedListItem(ListItem *item);
 	Boolean 			SelectedListItemIsMine(void);
 	virtual Boolean 	IAmEditableInMapDrawingRect(void);

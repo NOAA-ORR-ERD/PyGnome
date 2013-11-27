@@ -56,8 +56,8 @@ public:
 	VectorMap_c () {}
 	void		 		SetExtendedBounds (WorldRect newBounds) {fExtendedMapBounds = newBounds;}
 	virtual WorldRect	GetMapBounds () { if (fUseExtendedBounds) return fExtendedMapBounds; else return fMapBounds; }
-	virtual ClassID 	GetClassID () { return TYPE_VECTORMAP; }
-	virtual Boolean		IAm(ClassID id) { if(id==TYPE_VECTORMAP) return TRUE; return Map_c::IAm(id); }	
+	//virtual ClassID 	GetClassID () { return TYPE_VECTORMAP; }
+	//virtual Boolean		IAm(ClassID id) { if(id==TYPE_VECTORMAP) return TRUE; return TMap::IAm(id); }	
 
 	virtual float		RefloatHalfLifeInHrs(WorldPoint p);
 	virtual long 		GetLandType (WorldPoint p);

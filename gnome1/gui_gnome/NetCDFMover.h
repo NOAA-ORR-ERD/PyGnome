@@ -19,6 +19,10 @@ class NetCDFMover : virtual public NetCDFMover_c,  public TCurrentMover
 							NetCDFMover (TMap *owner, char *name);
 						   ~NetCDFMover () { Dispose (); }
 		virtual void		Dispose ();
+
+	virtual ClassID 	GetClassID () { return TYPE_NETCDFMOVER; }
+	virtual Boolean	IAm(ClassID id) { if(id==TYPE_NETCDFMOVER) return TRUE; return TCurrentMover::IAm(id); }
+	
 	virtual OSErr		InitMover (); //  use TCATSMover version which sets grid ?
 
 	virtual	OSErr 	ReplaceMover();

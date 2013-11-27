@@ -21,7 +21,8 @@ public:
 	virtual			   ~TCurrentMover () { Dispose (); }
 	//virtual void		Dispose ();
 	
-
+	virtual ClassID 	GetClassID () { return TYPE_CURRENTMOVER; }
+	virtual Boolean		IAm(ClassID id) { if(id==TYPE_CURRENTMOVER) return TRUE; return TMover::IAm(id); }
 	
 	virtual OSErr 		UpItem (ListItem item);
 	virtual OSErr 		DownItem (ListItem item);

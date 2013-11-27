@@ -19,7 +19,8 @@ class TriCurMover : virtual public TriCurMover_c,  public TCurrentMover
 	virtual void		Dispose ();
 	virtual OSErr		InitMover ();
 
-
+	virtual ClassID 	GetClassID () { return TYPE_TRICURMOVER; }
+	virtual Boolean		IAm(ClassID id) { if(id==TYPE_TRICURMOVER) return TRUE; return TCurrentMover::IAm(id); }
 	
 	// I/O methods
 	virtual OSErr 		Read (BFPB *bfpb); 	// read from current position

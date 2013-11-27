@@ -34,6 +34,8 @@ public:
 	virtual			   ~CMapLayer() { Dispose(); }
 	virtual void		Dispose ();
 	
+	ClassID 			GetClassID () { return TYPE_CMAPLAYER; }//JLM
+	
 	Boolean				PerformUndo ();
 	void				UndoLayerObjects ();
 

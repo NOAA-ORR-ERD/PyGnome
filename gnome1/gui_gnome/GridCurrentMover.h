@@ -36,8 +36,11 @@ public:
 						GridCurrentMover (TMap *owner, char *name);
 	virtual				~GridCurrentMover () { Dispose (); }
 	//virtual void		Dispose ();
-	virtual OSErr		InitMover (TimeGridVel *grid); 
 
+	virtual ClassID 	GetClassID () { return TYPE_GRIDCURRENTMOVER; }
+	virtual Boolean	IAm(ClassID id) { if(id==TYPE_GRIDCURRENTMOVER) return TRUE; return TCurrentMover::IAm(id); }
+	
+	virtual OSErr		InitMover (TimeGridVel *grid); 
 
 	// I/O methods
 	virtual OSErr 		Read (BFPB *bfpb); 	// read from current position

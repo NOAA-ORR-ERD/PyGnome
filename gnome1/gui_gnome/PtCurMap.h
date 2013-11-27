@@ -36,6 +36,9 @@ public:
 	//virtual OSErr	InitMap (char *path);
 	virtual void	Dispose ();
 	
+	virtual ClassID GetClassID () { return TYPE_PTCURMAP; }
+	virtual Boolean	IAm(ClassID id) { if(id==TYPE_PTCURMAP) return TRUE; return TMap::IAm(id); }
+
 	virtual OSErr 	AddMover(TMover *theMover, short where);
 	OSErr		MakeBitmaps();
 	virtual	OSErr 	ReplaceMap();

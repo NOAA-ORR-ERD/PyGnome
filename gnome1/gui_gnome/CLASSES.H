@@ -162,6 +162,8 @@ class TWeatherer : virtual public Weatherer_c, public TClassID
 		virtual OSErr		InitWeatherer () { return noErr; }
 		virtual void		Dispose () { return; }
 
+		virtual ClassID 	GetClassID () { return TYPE_WEATHERER; }
+	
 		// I/O methods
 		virtual OSErr 		Read  (BFPB *bfpb);  			// read from current position
 		virtual OSErr 		Write (BFPB *bfpb); 			// write to  current position
@@ -182,6 +184,9 @@ class TOSSMWeatherer : virtual public OSSMWeatherer_c, public TWeatherer
 		virtual				~TOSSMWeatherer ();
 		virtual OSErr		InitWeatherer ();
 		virtual void		Dispose ();
+	
+		virtual ClassID		GetClassID () { return TYPE_OSSMWEATHERER; }
+	
 		// I/O methods
 		virtual OSErr 		Read (BFPB *bfpb); 	// read from current position
 		virtual OSErr 		Write (BFPB *bfpb); // write to  current position
