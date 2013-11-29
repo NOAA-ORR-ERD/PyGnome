@@ -34,8 +34,10 @@ public:
 	Map_c () {}
 	
 	virtual OSErr		InitMap ();
+#ifndef pyGNOME
 	void	GetMapName (char* returnName) { GetClassName (returnName); }
 	void	SetMapName (char* newName) { SetClassName (newName); }
+#endif
 	virtual	WorldRect	GetMapBounds () { return fMapBounds; }
 	void				SetMapBounds (WorldRect newBounds) { fMapBounds = newBounds; }
 	virtual	Boolean 	InMap (WorldPoint p);

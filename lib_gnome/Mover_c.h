@@ -56,9 +56,9 @@ public:
 	virtual OSErr 		PrepareForModelStep(const Seconds&, const Seconds&, bool, int numLESets, int* LESetsSizesList) { return noErr; } // AH 07/10/2012
 
 	virtual OSErr		UpdateUncertainty(void);
+#ifndef pyGNOME
 	void				GetMoverName (char *name) { GetClassName (name); }
 	void				SetMoverName (char *name) { SetClassName (name); }
-#ifndef pyGNOME
 	TMap				*GetMoverMap () { return moverMap; }
 	void				SetMoverMap (TMap *owner) { moverMap = owner; }
 #endif

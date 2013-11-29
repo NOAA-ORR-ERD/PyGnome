@@ -821,8 +821,7 @@ void DrawFooter(Rect r, Boolean bitmapIcons)
 			char timeStr[20];
 			SecondsToDate (model->GetModelTime(), &time);
 			Date2String(&time, timeStr);
-			err = mover->GetTimeValue(model->GetModelTime(),&vel);	// minus AH 07/10/2012
-			
+			err = mover->GetTimeValue(model->GetModelTime(),&vel);
 			UV2RThetaStrings(vel.u,vel.v,mover->timeDep -> GetUserUnits(),str);
 			
 			//sprintf(s,"Wind: Variable %s",str);
@@ -962,8 +961,7 @@ void DrawFooter2(Rect r, Boolean bitmapIcons)
 			char timeStr[20];
 			SecondsToDate (model->GetModelTime(), &time);
 			Date2String(&time, timeStr);
-			err = mover->GetTimeValue(model->GetModelTime(),&vel);					// minus AH 07/10/2012
-			
+			err = mover->GetTimeValue(model->GetModelTime(),&vel);
 			UV2RThetaStrings(vel.u,vel.v,mover->timeDep -> GetUserUnits(),str);
 			
 			sprintf(s,"Wind: Variable %s",str);
@@ -3470,15 +3468,23 @@ OSErr SaveAsHelper(Boolean bOnlyAdvancedSaveFile)
 			if(-ncFileSave(path))
 				break;
 			model->ncSnapshot = true;
-			NetCDFStore::Create(model->ncPath, true, &model->ncID);
-			NetCDFStore::Define(model, false, &model->ncVarIDs, &model->ncDimIDs);
-			NetCDFStore::Capture(model, false, &model->ncVarIDs, &model->ncDimIDs);
-			NetCDFStore::fClose(model->ncID);
+			err = NetCDFStore::Create(model->ncPath, true, &model->ncID);
+			if (err) break;
+			err = NetCDFStore::Define(model, false, &model->ncVarIDs, &model->ncDimIDs);
+			if (err) break;
+			err = NetCDFStore::Capture(model, false, &model->ncVarIDs, &model->ncDimIDs);
+			if (err) break;
+			err = NetCDFStore::fClose(model->ncID);
+			if (err) break;
 			if(model->IsUncertain()) {
-				NetCDFStore::Create(model->ncPathConfidence, true, &model->ncID_C);
-				NetCDFStore::Define(model, true, &model->ncVarIDs_C, &model->ncDimIDs_C);
-				NetCDFStore::Capture(model, true, &model->ncVarIDs_C, &model->ncDimIDs_C);
-				NetCDFStore::fClose(model->ncID_C);
+				err = NetCDFStore::Create(model->ncPathConfidence, true, &model->ncID_C);
+				if (err) break;
+				err = NetCDFStore::Define(model, true, &model->ncVarIDs_C, &model->ncDimIDs_C);
+				if (err) break;
+				err = NetCDFStore::Capture(model, true, &model->ncVarIDs_C, &model->ncDimIDs_C);
+				if (err) break;
+				err = NetCDFStore::fClose(model->ncID_C);
+				if (err) break;
 			}
 			model->outputStepsCount = outputStepsCount;
 			model->ncSnapshot = false;

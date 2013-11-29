@@ -28,15 +28,14 @@ class NetCDFStore // Houses stepwise run information for NetCDF output (and inpu
 	
     public:
                     NetCDFStore();
-        static bool Capture(TModel* model, bool uncertain, map<string, int> *ncVarIDs, map<string, int> *ncDimIDs);
-        static bool Create(char* outFile, bool overwrite, int* ncID);
-        static bool Define(TModel* model, bool uncertain, map<string, int> *ncVarIDs, map<string, int> *ncDimIDs);
-        static bool fClose(int ncID);
-        static bool Open(char* inFile, int* ncID);
-        static bool CheckNC(int ncErr);
-			   //bool Write(TModel* model, bool threeMovement, bool uncertain);
-			   bool Write(TModel* model, bool uncertain);
-               bool Read();
+        static OSErr Capture(TModel* model, bool uncertain, map<string, int> *ncVarIDs, map<string, int> *ncDimIDs);
+        static OSErr Create(char* outFile, bool overwrite, int* ncID);
+        static OSErr Define(TModel* model, bool uncertain, map<string, int> *ncVarIDs, map<string, int> *ncDimIDs);
+        static OSErr fClose(int ncID);
+        static OSErr Open(char* inFile, int* ncID);
+        static OSErr CheckNC(int ncErr);
+			   OSErr Write(TModel* model, bool uncertain);
+               OSErr Read();
 };
 
 #endif

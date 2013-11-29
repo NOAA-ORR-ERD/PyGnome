@@ -24,7 +24,7 @@ NetCDFStore::NetCDFStore() {
     this->id = NULL;
 }
 
-bool NetCDFStore::Capture(TModel* model, bool uncertain, map<string, int> *ncVarIDs, map<string, int> *ncDimIDs) {
+OSErr NetCDFStore::Capture(TModel* model, bool uncertain, map<string, int> *ncVarIDs, map<string, int> *ncDimIDs) {
     
 	//if(!model->IsUncertain() && uncertain)	// this is checked on the outside...
 		//return true;
@@ -37,6 +37,7 @@ bool NetCDFStore::Capture(TModel* model, bool uncertain, map<string, int> *ncVar
     NetCDFStore* netStore;
 	char errStr[256];
 	double halfLife;
+	OSErr err = 0;
     
     netStore = new NetCDFStore(); // why do we need this?
     tLEsContainer = list<LERecP>();
@@ -60,12 +61,13 @@ bool NetCDFStore::Capture(TModel* model, bool uncertain, map<string, int> *ncVar
 					}
 					catch(...) {
 						strcpy(errStr,"We are unable to allocate the memory required to perform this task.\n");
-						strcat(errStr,"The run will continue, notwithstanding.");
+						//strcat(errStr,"The run will continue, notwithstanding.");
 						printError(errStr);
 						//cerr << "We are unable to allocate the memory required to perform this task.\n";
 						//cerr << "The run will continue, notwithstanding.\n";
 						//cerr << "(Timestep " << model->currentStep << ")\n";
-						return false;
+						err = -1;
+						return err;
 					}
 				}
 			}
@@ -80,12 +82,13 @@ bool NetCDFStore::Capture(TModel* model, bool uncertain, map<string, int> *ncVar
 						}
 						catch(...) {
 							strcpy(errStr,"We are unable to allocate the memory required to perform this task.\n");
-							strcat(errStr,"The run will continue, notwithstanding.");
+							//strcat(errStr,"The run will continue, notwithstanding.");
 							printError(errStr);
 							//cerr << "We are unable to allocate the memory required to perform this task.\n";
 							//cerr << "The run will continue, notwithstanding.\n";
 							//cerr << "(Timestep " << model->currentStep << ")\n";
-							return false;
+							err = -1;
+							return err;
 						}
 					}
 			}
@@ -113,12 +116,13 @@ bool NetCDFStore::Capture(TModel* model, bool uncertain, map<string, int> *ncVar
 	}
 	catch(std::bad_alloc) {
 		strcpy(errStr,"We are unable to allocate the memory required to perform this task.\n");
-		strcat(errStr,"The run will continue, notwithstanding.");
+		//strcat(errStr,"The run will continue, notwithstanding.");
 		printError(errStr);
 		//cerr << "We are unable to allocate the memory required to perform this task.\n";
 		//cerr << "The run will continue, notwithstanding.\n";
 		//cerr << "(Timestep " << model->currentStep << ")\n";
-		return false;
+		err = -1;
+		return err;
 	}
 
     list<LERecP>::iterator tIter = tLEsContainer.begin();
@@ -183,7 +187,8 @@ bool NetCDFStore::Capture(TModel* model, bool uncertain, map<string, int> *ncVar
 	netStore->ncVarIDs = ncVarIDs;
 	netStore->ncDimIDs = ncDimIDs;
    // netStore->Write(model, threeMovement, uncertain);
-    netStore->Write(model, uncertain);
+	err = netStore->Write(model, uncertain);
+	if (err) return err;
 	
 	
 	delete[] netStore->lat;
@@ -196,11 +201,11 @@ bool NetCDFStore::Capture(TModel* model, bool uncertain, map<string, int> *ncVar
 	delete[] netStore->age;
 	delete[] netStore->id;
     delete netStore;           
-    return true;
+    return err;
 
 }
 
-bool NetCDFStore::Create(char *path, bool overwrite, int* ncID) {
+OSErr NetCDFStore::Create(char *path, bool overwrite, int* ncID) {
 
     int ncErr;
 
@@ -212,9 +217,10 @@ bool NetCDFStore::Create(char *path, bool overwrite, int* ncID) {
     return CheckNC(ncErr);
 }
 
-bool NetCDFStore::Define(TModel* model, bool uncertain, map<string, int> *ncVarIDs, map<string, int> *ncDimIDs) 
+OSErr NetCDFStore::Define(TModel* model, bool uncertain, map<string, int> *ncVarIDs, map<string, int> *ncDimIDs) 
 {
 	Seconds seconds;
+	OSErr err = 0;
 	char currentTimeStr[256], startTimeStr[256], timeStr[256];
 
 	//if(!model->IsUncertain() && uncertain)
@@ -243,10 +249,10 @@ bool NetCDFStore::Define(TModel* model, bool uncertain, map<string, int> *ncVarI
 	
    // ncErr = nc_def_dim(ncID, "time", model->stepsCount, tTime);
     ncErr = nc_def_dim(ncID, "time", model->outputStepsCount, tTime);
-    if(!CheckNC(ncErr)) return false; // handle error. 
+    err = CheckNC(ncErr); {if (err) return err;} // handle error. 
 
 	ncErr = nc_def_dim(ncID, "data", NC_UNLIMITED, tData);
-    if(!CheckNC(ncErr)) return false; // handle error.
+    err = CheckNC(ncErr); {if (err) return err;} // handle error.
 	
     (*ncDimIDs)["Time"] = *tTime;
     (*ncDimIDs)["Data"] = *tData;
@@ -256,25 +262,25 @@ bool NetCDFStore::Define(TModel* model, bool uncertain, map<string, int> *ncVarI
 
     varIDs = tVariables;
     ncErr = nc_def_var(ncID, "time", NC_DOUBLE, VAR_DIMS, tTime, varIDs);
-    if(!CheckNC(ncErr)) return false; // handle error.
+    err = CheckNC(ncErr); {if (err) return err;} // handle error.
     
     (*ncVarIDs)["Time"] = *varIDs;
     ++varIDs;
 
     ncErr = nc_def_var(ncID, "particle_count", NC_INT, VAR_DIMS, tTime, varIDs);
-    if(!CheckNC(ncErr)) return false; // handle error.
+    err = CheckNC(ncErr); {if (err) return err;} // handle error.
 
     (*ncVarIDs)["Particle_Count"] = *varIDs;
     ++varIDs;
 
     ncErr = nc_def_var(ncID, "longitude", NC_FLOAT, VAR_DIMS, tData, varIDs);
-    if(!CheckNC(ncErr)) return false; // handle error.
+    err = CheckNC(ncErr); {if (err) return err;} // handle error.
 
     (*ncVarIDs)["Longitude"] = *varIDs;
     ++varIDs;
 
     ncErr = nc_def_var(ncID, "latitude", NC_FLOAT, VAR_DIMS, tData, varIDs);
-    if(!CheckNC(ncErr)) return false; // handle error.
+    err = CheckNC(ncErr); {if (err) return err;} // handle error.
     
     (*ncVarIDs)["Latitude"] = *varIDs;
     ++varIDs;
@@ -285,38 +291,38 @@ bool NetCDFStore::Define(TModel* model, bool uncertain, map<string, int> *ncVarI
 	//if(threeMovement) {
 		//ncErr = nc_def_var(ncID, "depth", NC_FLOAT, threeMovement ? VAR_DIMS : 0, tData, varIDs);
 		ncErr = nc_def_var(ncID, "depth", NC_FLOAT, VAR_DIMS, tData, varIDs);
-		if(!CheckNC(ncErr)) return false; // handle error.
+		err = CheckNC(ncErr); {if (err) return err;} // handle error.
 
 		(*ncVarIDs)["Depth"] = *varIDs;
 		++varIDs;
 	//}
 
     ncErr = nc_def_var(ncID, "mass", NC_FLOAT, VAR_DIMS, tData, varIDs);
-    if(!CheckNC(ncErr)) return false; // handle error.
+    err = CheckNC(ncErr); {if (err) return err;} // handle error.
     
     (*ncVarIDs)["Mass"] = *varIDs;
     ++varIDs;
 
     ncErr = nc_def_var(ncID, "age", NC_INT, VAR_DIMS, tData, varIDs);
-    if(!CheckNC(ncErr)) return false; // handle error.
+    err = CheckNC(ncErr); {if (err) return err;} // handle error.
     
     (*ncVarIDs)["Age"] = *varIDs;
     ++varIDs;
 
     ncErr = nc_def_var(ncID, "flag", NC_BYTE, VAR_DIMS, tData, varIDs);
-    if(!CheckNC(ncErr)) return false; // handle error.
+    err = CheckNC(ncErr); {if (err) return err;} // handle error.
 
     (*ncVarIDs)["Flag"] = *varIDs;
     ++varIDs;
 
     ncErr = nc_def_var(ncID, "status", NC_INT, VAR_DIMS, tData, varIDs);
-    if(!CheckNC(ncErr)) return false; // handle error.
+    err = CheckNC(ncErr); {if (err) return err;} // handle error.
 
     (*ncVarIDs)["Status"] = *varIDs;
     ++varIDs;
 
     ncErr = nc_def_var(ncID, "id", NC_INT, VAR_DIMS, tData, varIDs);
-    if(!CheckNC(ncErr)) return false; // handle error.
+    err = CheckNC(ncErr); {if (err) return err;} // handle error.
 
     (*ncVarIDs)["ID"] = *varIDs;
 
@@ -330,39 +336,39 @@ bool NetCDFStore::Define(TModel* model, bool uncertain, map<string, int> *ncVarI
 
 	tStr = "Particle output from the NOAA GNOME model";
 	ncErr = nc_put_att_text(ncID, NC_GLOBAL, "comment", strlen(tStr), tStr);
-	if(!CheckNC(ncErr)) return false;
+	err = CheckNC(ncErr); {if (err) return err;}
 
 	// code goes here - get current time 
 	//tStr = "2011-14-09T11:18:40.0000";
 	ncErr = nc_put_att_text(ncID, NC_GLOBAL, "creation_date", strlen(currentTimeStr), currentTimeStr);
-	if(!CheckNC(ncErr)) return false;
+	err = CheckNC(ncErr); {if (err) return err;}
 	
 	tStr = "GNOME version 1.3.7";
 	ncErr = nc_put_att_text(ncID, NC_GLOBAL, "source", strlen(tStr), tStr);
-	if(!CheckNC(ncErr)) return false;
+	err = CheckNC(ncErr); {if (err) return err;}
 	
 	tStr = "http://response.restoration.noaa.gov/gnome";
 	ncErr = nc_put_att_text(ncID, NC_GLOBAL, "references", strlen(tStr), tStr);
-	if(!CheckNC(ncErr)) return false;
+	err = CheckNC(ncErr); {if (err) return err;}
 	
 	//tStr = "Sample data/file for particle trajectory format";
 	//ncErr = nc_put_att_text(ncID, NC_GLOBAL, "title", strlen(tStr), tStr);
-	//if(!CheckNC(ncErr)) return false;
+	//err = CheckNC(ncErr); {if (err) return err;}
 	
 	if(!uncertain)
 		tStr = "particle_trajectories";
 	else
 		tStr = "uncertainty_particle_trajectories";
 	ncErr = nc_put_att_text(ncID, NC_GLOBAL, "feature_type", strlen(tStr), tStr);
-	if(!CheckNC(ncErr)) return false;
+	err = CheckNC(ncErr); {if (err) return err;}
 	
 	tStr = "NOAA Emergency Response Division";
 	ncErr = nc_put_att_text(ncID, NC_GLOBAL, "institution", strlen(tStr), tStr);
-	if(!CheckNC(ncErr)) return false;
+	err = CheckNC(ncErr); {if (err) return err;}
 	
 	tStr = "CF-1.6";
 	ncErr = nc_put_att_text(ncID, NC_GLOBAL, "conventions", strlen(tStr), tStr);
-	if(!CheckNC(ncErr)) return false;
+	err = CheckNC(ncErr); {if (err) return err;}
 
 	
 // ++ Local Attributes:
@@ -375,52 +381,52 @@ bool NetCDFStore::Define(TModel* model, bool uncertain, map<string, int> *ncVarI
 	Secs2DateStringNetCDF(seconds, startTimeStr);
 	strcat(timeStr, startTimeStr);
     ncErr = nc_put_att_text(ncID, (*ncVarIDs)["Time"], "units", strlen(timeStr), timeStr);
-    if(!CheckNC(ncErr)) return false; // handle error.
+    err = CheckNC(ncErr); {if (err) return err;} // handle error.
 
     tStr = "time";
     ncErr = nc_put_att_text(ncID, (*ncVarIDs)["Time"], "long_name", strlen(tStr), tStr);
-    if(!CheckNC(ncErr)) return false; // handle error.
+    err = CheckNC(ncErr); {if (err) return err;} // handle error.
 
     tStr = "time";
     ncErr = nc_put_att_text(ncID, (*ncVarIDs)["Time"], "standard_name", strlen(tStr), tStr);
-    if(!CheckNC(ncErr)) return false; // handle error.
+    err = CheckNC(ncErr); {if (err) return err;} // handle error.
 	
 	tStr = "gregorian";
 	ncErr = nc_put_att_text(ncID, (*ncVarIDs)["Time"], "calendar", strlen(tStr), tStr);
-	if(!CheckNC(ncErr)) return false;
+	err = CheckNC(ncErr); {if (err) return err;}
 
  	tStr = "unspecified time zone";
 	ncErr = nc_put_att_text(ncID, (*ncVarIDs)["Time"], "comment", strlen(tStr), tStr);
-	if(!CheckNC(ncErr)) return false;
+	err = CheckNC(ncErr); {if (err) return err;}
 
     // Particle count
     tStr = "1";
     ncErr = nc_put_att_text(ncID, (*ncVarIDs)["Particle_Count"], "units", strlen(tStr), tStr);
-    if(!CheckNC(ncErr)) return false; // handle error.
+    err = CheckNC(ncErr); {if (err) return err;} // handle error.
    
     tStr = "number of particles in a given timestep";
     ncErr = nc_put_att_text(ncID, (*ncVarIDs)["Particle_Count"], "long_name", strlen(tStr), tStr);
-    if(!CheckNC(ncErr)) return false; // handle error.
+	err = CheckNC(ncErr); {if (err) return err;} // handle error.
 
     tStr = "particle count at nth timestep";
     ncErr = nc_put_att_text(ncID, (*ncVarIDs)["Particle_Count"], "ragged_row_count", strlen(tStr), tStr);
-    if(!CheckNC(ncErr)) return false; // handle error.
+    err = CheckNC(ncErr); {if (err) return err;} // handle error.
     
     // Longitude
 
     tStr = "longitude of the particle";
     ncErr = nc_put_att_text(ncID, (*ncVarIDs)["Longitude"], "long_name", strlen(tStr), tStr);
-    if(!CheckNC(ncErr)) return false; // handle error.
+    err = CheckNC(ncErr); {if (err) return err;} // handle error.
 
 	tStr = "degrees_east";
 	ncErr = nc_put_att_text(ncID, (*ncVarIDs)["Longitude"], "units", strlen(tStr), tStr);
-	if(!CheckNC(ncErr)) return false;
+	err = CheckNC(ncErr); {if (err) return err;}
 	
     // Latitude
 
     tStr = "latitude of the particle";
     ncErr = nc_put_att_text(ncID, (*ncVarIDs)["Latitude"], "long_name", strlen(tStr), tStr);
-    if(!CheckNC(ncErr)) return false;
+    err = CheckNC(ncErr); {if (err) return err;}
 
 	tStr = "degrees_north";
 	ncErr = nc_put_att_text(ncID, (*ncVarIDs)["Latitude"], "units", strlen(tStr), tStr);
@@ -431,15 +437,15 @@ bool NetCDFStore::Define(TModel* model, bool uncertain, map<string, int> *ncVarI
 	//if(threeMovement) {
 		tStr = "particle depth below sea surface";
 		ncErr = nc_put_att_text(ncID, (*ncVarIDs)["Depth"], "long_name", strlen(tStr), tStr);
-		if(!CheckNC(ncErr)) return false;
+		err = CheckNC(ncErr); {if (err) return err;}
 		
 		tStr = "meters";
 		ncErr = nc_put_att_text(ncID, (*ncVarIDs)["Depth"], "units", strlen(tStr), tStr);
-		if(!CheckNC(ncErr)) return false;
+		err = CheckNC(ncErr); {if (err) return err;}
 
 		tStr = "z positive down";
 		ncErr = nc_put_att_text(ncID, (*ncVarIDs)["Depth"], "axis", strlen(tStr), tStr);
-		if(!CheckNC(ncErr)) return false;
+		err = CheckNC(ncErr); {if (err) return err;}
 
 	//}
 	
@@ -447,37 +453,37 @@ bool NetCDFStore::Define(TModel* model, bool uncertain, map<string, int> *ncVarI
 	
 	tStr = "grams";
 	ncErr = nc_put_att_text(ncID, (*ncVarIDs)["Mass"], "units", strlen(tStr), tStr);
-	if(!CheckNC(ncErr)) return false;
+	err = CheckNC(ncErr); {if (err) return err;}
 	
 	// Age
 	
 	tStr = "from age at time of release";
 	ncErr = nc_put_att_text(ncID, (*ncVarIDs)["Age"], "description", strlen(tStr), tStr);
-	if(!CheckNC(ncErr)) return false;
+	err = CheckNC(ncErr); {if (err) return err;}
 	
 	tStr = "seconds";
 	ncErr = nc_put_att_text(ncID, (*ncVarIDs)["Age"], "units", strlen(tStr), tStr);
-	if(!CheckNC(ncErr)) return false;
+	err = CheckNC(ncErr); {if (err) return err;}
 	
 	
 	// Flags
 	
 	tStr = "particle status flag";
 	ncErr = nc_put_att_text(ncID, (*ncVarIDs)["Flag"], "long_name", strlen(tStr), tStr);
-	if(!CheckNC(ncErr)) return false;
+	err = CheckNC(ncErr); {if (err) return err;}
 	
 	{
 		const int tRange[] = {0, 5};
 		ncErr = nc_put_att_int(ncID, (*ncVarIDs)["Flag"], "valid_range", NC_BYTE, 2, tRange);
-		if(!CheckNC(ncErr)) return false;
+		err = CheckNC(ncErr); {if (err) return err;}
 
 		const int tVals[] = { 1, 2, 3, 4 };
 		ncErr = nc_put_att_int(ncID, (*ncVarIDs)["Flag"], "flag_values", NC_BYTE, 4, tVals);
-		if(!CheckNC(ncErr)) return false;
+		err = CheckNC(ncErr); {if (err) return err;}
 		
 		tStr = "on_land off_maps evaporated below_surface";
 		ncErr = nc_put_att_text(ncID, (*ncVarIDs)["Flag"], "flag_meanings", strlen(tStr), tStr);
-		if(!CheckNC(ncErr)) return false;
+		err = CheckNC(ncErr); {if (err) return err;}
 		
 			// we don't need masks.
 	}
@@ -486,41 +492,41 @@ bool NetCDFStore::Define(TModel* model, bool uncertain, map<string, int> *ncVarI
 	
 	tStr = "particle status flag";
 	ncErr = nc_put_att_text(ncID, (*ncVarIDs)["Status"], "long_name", strlen(tStr), tStr);
-	if(!CheckNC(ncErr)) return false;
+	err = CheckNC(ncErr); {if (err) return err;}
 	
 	{
 		const int tRange[] = {0, 10};
 		ncErr = nc_put_att_int(ncID, (*ncVarIDs)["Status"], "valid_range", NC_INT, 2, tRange);
-		if(!CheckNC(ncErr)) return false;
+		err = CheckNC(ncErr); {if (err) return err;}
 
 		const int tVals[] = { 2, 3, 7, 10 };
 		ncErr = nc_put_att_int(ncID, (*ncVarIDs)["Status"], "flag_values", NC_INT, 4, tVals);
-		if(!CheckNC(ncErr)) return false;
+		err = CheckNC(ncErr); {if (err) return err;}
 		
 		tStr = "2:in_water 3:on_land 7:off_maps 10:evaporated";
 		ncErr = nc_put_att_text(ncID, (*ncVarIDs)["Status"], "flag_meanings", strlen(tStr), tStr);
-		if(!CheckNC(ncErr)) return false;
+		err = CheckNC(ncErr); {if (err) return err;}
 		
 			// we don't need masks.
 	}
 	
 	tStr = "particle ID";
 	ncErr = nc_put_att_text(ncID, (*ncVarIDs)["ID"], "description", strlen(tStr), tStr);
-	if(!CheckNC(ncErr)) return false;
+	err = CheckNC(ncErr); {if (err) return err;}
 	
 	tStr = "1";
 	ncErr = nc_put_att_text(ncID, (*ncVarIDs)["ID"], "units", strlen(tStr), tStr);
-	if(!CheckNC(ncErr)) return false;	
+	err = CheckNC(ncErr); {if (err) return err;};	
 	// Leaving definition mode.
 	
 	
     ncErr = nc_enddef(ncID);
-    if(!CheckNC(ncErr)) return false; // handle error.
+    err = CheckNC(ncErr); {if (err) return err;} // handle error.
 
-    return true;
+    return err;
 }
 
-bool NetCDFStore::Open(char* path, int* ncID) {
+OSErr NetCDFStore::Open(char* path, int* ncID) {
 // Opens strictly for read access.
 
     int ncErr;
@@ -528,21 +534,23 @@ bool NetCDFStore::Open(char* path, int* ncID) {
     return CheckNC(ncErr);
 }
 
-bool NetCDFStore::Read() {
+OSErr NetCDFStore::Read() {
 
-    return true;
+	OSErr err = 0;
+    return err;
 }
 
 //bool NetCDFStore::Write(TModel* model, bool threeMovement, bool uncertain) {
-bool NetCDFStore::Write(TModel* model, bool uncertain) {
+OSErr NetCDFStore::Write(TModel* model, bool uncertain) {
 
-    
-	short ncID, *cFlag, ncErr = 0;
+    short *cFlag;
+	int ncID, ncErr = 0;
     long j, *cID, tID, timeStep, *cAge, *cStatus;
     float *cLon, *cLat, *cDepth, *cMass;
     static map<string, int> lastCoord_M = map<string, int>();
 	static map<string, int> lastCoord_C = map<string, int>();
 	map<string, int> *lastCoord;
+	OSErr err = 0;
 	
 	if(!uncertain)
 		lastCoord = &lastCoord_M;
@@ -574,7 +582,7 @@ bool NetCDFStore::Write(TModel* model, bool uncertain) {
         ncErr = nc_put_var1_double(ncID, tID, tCoord, &this->time);
         (*lastCoord)["Time"]+= 1;
     }
-    if(!CheckNC(ncErr)) return false; // handle error.
+    err = CheckNC(ncErr); {if (err) return err;} // handle error.
 
              // Particle Count:
     tID = (*this->ncVarIDs)["Particle_Count"];
@@ -583,7 +591,7 @@ bool NetCDFStore::Write(TModel* model, bool uncertain) {
         ncErr = nc_put_var1_long(ncID, tID, tCoord, &this->pCount);
         (*lastCoord)["Particle_Count"]+= 1;
     }
-    if(!CheckNC(ncErr)) return false; // handle error.
+    err = CheckNC(ncErr); {if (err) return err;} // handle error.
     
             // Longitudes:
     tID = (*this->ncVarIDs)["Longitude"];
@@ -592,7 +600,7 @@ bool NetCDFStore::Write(TModel* model, bool uncertain) {
         ncErr = nc_put_var1_float(ncID, tID, tCoord, cLon);
     }
     (*lastCoord)["Longitude"] += j;
-    if(!CheckNC(ncErr)) return false; // handle error.
+    err = CheckNC(ncErr); {if (err) return err;} // handle error.
 
             // Latitudes:
     tID = (*this->ncVarIDs)["Latitude"];
@@ -601,7 +609,7 @@ bool NetCDFStore::Write(TModel* model, bool uncertain) {
         ncErr = nc_put_var1_float(ncID, tID, tCoord, cLat);
     }
     (*lastCoord)["Latitude"]+=j;
-    if(!CheckNC(ncErr)) return false; // handle error.
+    err = CheckNC(ncErr); {if (err) return err;} // handle error.
     
     //if(threeMovement) {
                 // Depths:
@@ -611,7 +619,7 @@ bool NetCDFStore::Write(TModel* model, bool uncertain) {
             ncErr = nc_put_var1_float(ncID, tID, tCoord, cDepth);
         }
         (*lastCoord)["Depth"]+=j;
-        if(!CheckNC(ncErr)) return false;
+		err = CheckNC(ncErr); {if (err) return err;}
     //}
 
             // Mass:
@@ -621,7 +629,7 @@ bool NetCDFStore::Write(TModel* model, bool uncertain) {
         ncErr = nc_put_var1_float(ncID, tID, tCoord, cMass);
     }
     (*lastCoord)["Mass"]+=j;
-    if(!CheckNC(ncErr)) return false;
+    err = CheckNC(ncErr); {if (err) return err;}
 
             // Age:
     tID = (*this->ncVarIDs)["Age"];
@@ -630,7 +638,7 @@ bool NetCDFStore::Write(TModel* model, bool uncertain) {
         ncErr = nc_put_var1_long(ncID, tID, tCoord, cAge);
     }
     (*lastCoord)["Age"]+=j;
-    if(!CheckNC(ncErr)) return false;
+    err = CheckNC(ncErr); {if (err) return err;}
         
             // Flags:
     tID = (*this->ncVarIDs)["Flag"];
@@ -639,7 +647,7 @@ bool NetCDFStore::Write(TModel* model, bool uncertain) {
 		ncErr = nc_put_var1_short(ncID, tID, tCoord, cFlag);
     }
     (*lastCoord)["Flag"]+=j;
-    if(!CheckNC(ncErr)) return false;
+    err = CheckNC(ncErr); {if (err) return err;}
 
              // Status:
     tID = (*this->ncVarIDs)["Status"];
@@ -648,7 +656,7 @@ bool NetCDFStore::Write(TModel* model, bool uncertain) {
 		ncErr = nc_put_var1_long(ncID, tID, tCoord, cStatus);
     }
     (*lastCoord)["Status"]+=j;
-    if(!CheckNC(ncErr)) return false;
+    err = CheckNC(ncErr); {if (err) return err;}
 
            // ID:
     tID = (*this->ncVarIDs)["ID"];
@@ -657,12 +665,12 @@ bool NetCDFStore::Write(TModel* model, bool uncertain) {
         ncErr = nc_put_var1_long(ncID, tID, tCoord, cID);
     }
     (*lastCoord)["ID"]+=j;
-    if(!CheckNC(ncErr)) return false;
+    err = CheckNC(ncErr); {if (err) return err;}
 
-    return true;
+    return err;
 }
 
-bool NetCDFStore::fClose(int ncID) {
+OSErr NetCDFStore::fClose(int ncID) {
 
     int ncErr;
 
@@ -671,45 +679,52 @@ bool NetCDFStore::fClose(int ncID) {
 }
 
 
-bool NetCDFStore::CheckNC(int ncErr) {
+OSErr NetCDFStore::CheckNC(int ncErr) {
     
 	char errStr[256];
+	OSErr err = 0;
+	
     if(ncErr != NC_NOERR) {
+		err = -1;
         switch(ncErr) {
 
             case NC_ENOMEM:
 					strcpy(errStr,"We are unable to allocate the memory required to perform this task.\n");
-					strcat(errStr,"The run will continue, notwithstanding. (Exception caught in write mode.)");
+					//strcat(errStr,"The run will continue, notwithstanding. (Exception caught in write mode.)");
 					printError(errStr);
 					//cerr << "We are unable to allocate the memory required to perform this task.\n";
 					//cerr << "The run will continue, notwithstanding. (Exception caught in write mode.)\n";
-					return false;
+					return err;
             case NC_EBADID:
 					strcpy(errStr,"Error: NC_EBADID.\n");
-					strcat(errStr,"We will attempt to continue the run.");
+					//strcat(errStr,"We will attempt to continue the run.");
 					printError(errStr);
 					//cerr << "Error: NC_EBADID.\n";
 					//cerr << "We will attempt to continue the run.\n";
-                    return false;
+                    return err;
             case NC_EINVALCOORDS:
 					strcpy(errStr,"Error: NC_EINVALCOORDS.\n");
-					strcat(errStr,"We will attempt to continue the run.");
+					//strcat(errStr,"We will attempt to continue the run.");
 					printError(errStr);
 					//cerr << "Error: NC_EINVALCOORDS.\n";
 					//cerr << "We will attempt to continue the run.\n";
-                    return false;
+                    return err;
             case NC_EINDEFINE:
 					strcpy(errStr,"Error: NC_EINDEFINE.\n");
-					strcat(errStr,"We will attempt to continue the run.");
+					//strcat(errStr,"We will attempt to continue the run.");
 					printError(errStr);
 					//cerr << "Error: NC_EINDEFINE.\n";
 					//cerr << "We will attempt to continue the run.\n";
-                    return false;
+                    return err;
             default:
                 // ..
-                    return false;
+				sprintf(errStr,"There was an error trying to write the NetCDF file - ncErr = %ld.\n",ncErr);
+				//strcpy(errStr,"There was an error trying to write the NetCDF file.\n");
+				//strcat(errStr,"We will attempt to continue the run.");
+				printError(errStr);
+				return err;
         }
     }
 
-    else return true;
+    else return err;
 }
