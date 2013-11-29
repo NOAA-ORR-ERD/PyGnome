@@ -40,6 +40,9 @@ def get_datafile(file_):
         # download file, then return file_ path
 
         (path_, fname) = os.path.split(file_)
+        if path_ == '':
+            path_ = '.'     # relative to current path
+
         try:
             resp = urllib2.urlopen(urljoin(data_server, fname))
         except urllib2.HTTPError, ex:
