@@ -7,15 +7,17 @@ These are properties that are spill specific like:
   'weathering' element_types would use droplet_size, densities, mass?
 '''
 import numpy as np
-from gnome.utilities.rand import random_with_persistance
 
+from gnome.utilities.rand import random_with_persistance
+from gnome.cy_gnome.cy_rise_velocity_mover import rise_velocity_from_drop_size
+from gnome.db.oil_library.oil_props import OilProps
 """
 Initializers for various element types
 """
 
 
 class InitWindagesConstantParams(object):
-    def __init__(self, windage_range=[0.01, 0.04], windage_persist=900):
+    def __init__(self, windage_range=(0.01, 0.04), windage_persist=900):
         self.windage_persist = windage_persist
         self.windage_range = windage_range
 
@@ -41,7 +43,8 @@ class InitWindagesConstantParams(object):
                 " between 1% to 4%, so default windage_range = [0.01, 0.04]")
         self._windage_range = val
 
-    def initialize(self, num_new_particles, spill, data_arrays):
+    def initialize(self, num_new_particles, spill, data_arrays,
+                   substance=None):
         """
         Since windages exists in data_arrays, so must windage_range and
         windage_persist if this initializer is used/called
@@ -66,12 +69,13 @@ class InitMassFromVolume(object):
     This could also go into ArrayType's initialize method if we pass
     spill as input to initialize method
     """
-    def initialize(self, num_new_particles, spill, data_arrays):
+
+    def initialize(self, num_new_particles, spill, data_arrays, substance):
         if spill.volume is None:
             raise ValueError('volume attribute of spill is None - cannot'
                              ' compute mass without volume')
 
-        _total_mass = spill.oil_props.get_density('kg/m^3') \
+        _total_mass = substance.get_density('kg/m^3') \
             * spill.get_volume('m^3') * 1000
         data_arrays['mass'][-num_new_particles:] = (_total_mass /
                                                     num_new_particles)
@@ -82,14 +86,16 @@ class ValuesFromDistBase(object):
         """
         Set the rise velocity parameters to be sampled from a distribution.
 
-        Use distribution to define rise_vel
+        Use distribution to define rise_vel - use super to invoke
+        ValuesFromDistBase().__init__()
 
-        :param risevel_dist: could be 'uniform' or 'normal'
+        :param distribution: could be 'uniform' or 'normal'
         :type distribution: str
 
         :param params: for 'uniform' dist, it is [min_val, max_val].
             For 'normal' dist, it is [mean, sigma] where sigma is
             1 standard deviation
+        :type params: list of length 2
         """
 
         if distribution not in ['uniform', 'normal']:
@@ -113,19 +119,22 @@ class InitRiseVelFromDist(ValuesFromDistBase):
         """
         Set the rise velocity parameters to be sampled from a distribution.
 
-        Use distribution to define rise_vel
+        Use distribution to define rise_vel - use super to invoke
+        ValuesFromDistBase().__init__()
 
-        :param risevel_dist: could be 'uniform' or 'normal'
+        :param distribution: could be 'uniform' or 'normal'
         :type distribution: str
 
         :param params: for 'uniform' dist, it is [min_val, max_val].
             For 'normal' dist, it is [mean, sigma] where sigma is
             1 standard deviation
+        :type params: list of length 2
         """
 
         super(InitRiseVelFromDist, self).__init__(distribution, params)
 
-    def initialize(self, num_new_particles, spill, data_arrays):
+    def initialize(self, num_new_particles, spill, data_arrays,
+                   substance=None):
         """
         if 'rise_vel' exists in SpillContainer's data_arrays, then define
         """
@@ -133,69 +142,114 @@ class InitRiseVelFromDist(ValuesFromDistBase):
 
 
 class InitRiseVelFromDropletSizeFromDist(ValuesFromDistBase):
-    def __init__(self, **kwargs):
+    def __init__(self,
+                 distribution='uniform',
+                 params=(0, .1),
+                 water_density=1020.0,
+                 water_viscosity=1.0e-6):
         """
-        Set the rise velocity parameters to be sampled from a distribution.
+        Set the droplet size from a distribution. Use the C++ get_rise_velocity
+        function exposed via cython (rise_velocity_from_drop_size) to obtain
+        rise_velocity from droplet size. In this case, the droplet size is not
+        changing over time, so no data array for droplet size exists.
 
-        Use distribution to define rise_vel
+        Use distribution to define rise_vel - use super to invoke
+        ValuesFromDistBase().__init__()
 
-        :param risevel_dist: could be 'uniform' or 'normal'
+        All parameters have defaults and are optional
+
+        :param distribution: could be 'uniform' or 'normal'.
+            Default value 'uniform'
         :type distribution: str
 
         :param params: for 'uniform' dist, it is [min_val, max_val].
             For 'normal' dist, it is [mean, sigma] where sigma is
-            1 standard deviation
-        """
-        super(InitRiseVelFromDropletSizeFromDist, self).__init__(**kwargs)
+            1 standard deviation. Default value [0, .1]
+        :type params: list of length 2
 
-    def initialize(self, num_new_particles, spill, data_arrays):
+        :param water_density: 1020.0 [kg/m3]
+        :type water_density: float
+        :param water_viscosity: 1.0e-6 [m^2/s]
+        :type water_viscosity: float
+        """
+        super(InitRiseVelFromDropletSizeFromDist, self).__init__(distribution,
+                                                                 params)
+        self.water_viscosity = water_viscosity
+        self.water_density = water_density
+
+    def initialize(self, num_new_particles, spill, data_arrays,
+                   substance=None):
         """
         if 'rise_vel' exists in SpillContainer's data_arrays, then define
         """
         drop_size = np.zeros((num_new_particles, ), dtype=np.float64)
+        le_density = np.zeros((num_new_particles, ), dtype=np.float64)
+
         self.set_values(drop_size)
+        le_density[:] = spill.oil_props.density
+
         # now update rise_vel with droplet size - dummy for now
-        data_arrays['rise_vel'][-num_new_particles:] = drop_size
+        rise_velocity_from_drop_size(
+                                data_arrays['rise_vel'][-num_new_particles:],
+                                le_density,
+                                drop_size,
+                                self.water_viscosity,
+                                self.water_density)
 
 
 """ ElementType classes"""
 
 
 class ElementType(object):
-    def __init__(self):
-        self.initializers = {}
+    def __init__(self, substance='oil_conservative', init={}):
+        self.initializers = init
+        if isinstance(substance, basestring):
+            self.substance = OilProps(substance)
+        else:
+            # assume object passed in is duck typed to be same as OilProps
+            self.substance = substance
 
-    def set_newparticle_values(self, num_new_particles, spill, data_arrays):
+    def set_newparticle_values(self, num_new_particles, spill, data_arrays,
+                               substance):
         if num_new_particles > 0:
             for key in data_arrays:
                 if key in self.initializers:
-                    self.initializers[key].initialize(num_new_particles, spill,
-                                                      data_arrays)
+                    self.initializers[key].initialize(num_new_particles,
+                                                      spill,
+                                                      data_arrays,
+                                                      self.substance)
 
 
-class Floating(ElementType):
-    def __init__(self):
-        """
-        Mover should define windages, windage_range and windage_persist
-        For this ElementType, all three must be defined!
-        """
-        super(Floating, self).__init__()
-        self.initializers = {'windages': InitWindagesConstantParams()}
+def floating(windage_range=(.01, .04), windage_persist=900):
+    return ElementType({'windages': InitWindagesConstantParams(windage_range,
+                                                            windage_persist)})
 
 
-class FloatingMassFromVolume(Floating):
-    def __init__(self):
-        super(FloatingMassFromVolume, self).__init__()
-        self.initializers.update({'mass': InitMassFromVolume()})
-
-
-class FloatingWithRiseVel(Floating):
-    def __init__(self):
-        super(FloatingWithRiseVel, self).__init__()
-        self.initializers.update({'rise_vel': InitRiseVelFromDist()})
-
-
-class FloatingMassFromVolumeRiseVel(FloatingMassFromVolume):
-    def __init__(self):
-        super(FloatingMassFromVolumeRiseVel, self).__init__()
-        self.initializers.update({'rise_vel': InitRiseVelFromDist()})
+#==============================================================================
+# class Floating(ElementType):
+#     def __init__(self):
+#         """
+#         Mover should define windages, windage_range and windage_persist
+#         For this ElementType, all three must be defined!
+#         """
+#         super(Floating, self).__init__()
+#         self.initializers = {'windages': InitWindagesConstantParams()}
+# 
+# 
+# class FloatingMassFromVolume(Floating):
+#     def __init__(self):
+#         super(FloatingMassFromVolume, self).__init__()
+#         self.initializers.update({'mass': InitMassFromVolume()})
+# 
+# 
+# class FloatingWithRiseVel(Floating):
+#     def __init__(self):
+#         super(FloatingWithRiseVel, self).__init__()
+#         self.initializers.update({'rise_vel': InitRiseVelFromDist()})
+# 
+# 
+# class FloatingMassFromVolumeRiseVel(FloatingMassFromVolume):
+#     def __init__(self):
+#         super(FloatingMassFromVolumeRiseVel, self).__init__()
+#         self.initializers.update({'rise_vel': InitRiseVelFromDist()})
+#==============================================================================

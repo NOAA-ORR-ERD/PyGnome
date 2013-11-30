@@ -113,7 +113,7 @@ class Spill(object):
 
         self._gnome_id = GnomeId(id)
         if element_type is None:
-            element_type = elements.Floating()
+            element_type = elements.floating()
 
         self.element_type = element_type
 
