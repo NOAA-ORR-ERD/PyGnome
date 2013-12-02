@@ -16,7 +16,7 @@ Initializers for various element types
 """
 
 
-class InitWindagesConstantParams(object):
+class InitWindages(object):
     def __init__(self, windage_range=(0.01, 0.04), windage_persist=900):
         self.windage_persist = windage_persist
         self.windage_range = windage_range
@@ -82,7 +82,7 @@ class InitMassFromVolume(object):
 
 
 class ValuesFromDistBase(object):
-    def __init__(self, distribution='uniform', params=[0, .1]):
+    def __init__(self, distribution='uniform', params=(0, .1)):
         """
         Set the rise velocity parameters to be sampled from a distribution.
 
@@ -92,8 +92,8 @@ class ValuesFromDistBase(object):
         :param distribution: could be 'uniform' or 'normal'
         :type distribution: str
 
-        :param params: for 'uniform' dist, it is [min_val, max_val].
-            For 'normal' dist, it is [mean, sigma] where sigma is
+        :param params: for 'uniform' dist, it is (min_val, max_val).
+            For 'normal' dist, it is (mean, sigma) where sigma is
             1 standard deviation
         :type params: list of length 2
         """
@@ -115,7 +115,7 @@ class ValuesFromDistBase(object):
 
 
 class InitRiseVelFromDist(ValuesFromDistBase):
-    def __init__(self, distribution='uniform', params=[0, .1]):
+    def __init__(self, distribution='uniform', params=(0, .1)):
         """
         Set the rise velocity parameters to be sampled from a distribution.
 
@@ -125,8 +125,8 @@ class InitRiseVelFromDist(ValuesFromDistBase):
         :param distribution: could be 'uniform' or 'normal'
         :type distribution: str
 
-        :param params: for 'uniform' dist, it is [min_val, max_val].
-            For 'normal' dist, it is [mean, sigma] where sigma is
+        :param params: for 'uniform' dist, it is (min_val, max_val).
+            For 'normal' dist, it is (mean, sigma) where sigma is
             1 standard deviation
         :type params: list of length 2
         """
@@ -162,9 +162,9 @@ class InitRiseVelFromDropletSizeFromDist(ValuesFromDistBase):
             Default value 'uniform'
         :type distribution: str
 
-        :param params: for 'uniform' dist, it is [min_val, max_val].
-            For 'normal' dist, it is [mean, sigma] where sigma is
-            1 standard deviation. Default value [0, .1]
+        :param params: for 'uniform' dist, it is (min_val, max_val).
+            For 'normal' dist, it is (mean, sigma) where sigma is
+            1 standard deviation. Default value (0, .1)
         :type params: list of length 2
 
         :param water_density: 1020.0 [kg/m3]
@@ -201,16 +201,15 @@ class InitRiseVelFromDropletSizeFromDist(ValuesFromDistBase):
 
 
 class ElementType(object):
-    def __init__(self, substance='oil_conservative', init={}):
-        self.initializers = init
+    def __init__(self, initializers={}, substance='oil_conservative'):
+        self.initializers = initializers
         if isinstance(substance, basestring):
             self.substance = OilProps(substance)
         else:
             # assume object passed in is duck typed to be same as OilProps
             self.substance = substance
 
-    def set_newparticle_values(self, num_new_particles, spill, data_arrays,
-                               substance):
+    def set_newparticle_values(self, num_new_particles, spill, data_arrays):
         if num_new_particles > 0:
             for key in data_arrays:
                 if key in self.initializers:
@@ -221,35 +220,5 @@ class ElementType(object):
 
 
 def floating(windage_range=(.01, .04), windage_persist=900):
-    return ElementType({'windages': InitWindagesConstantParams(windage_range,
+    return ElementType({'windages': InitWindages(windage_range,
                                                             windage_persist)})
-
-
-#==============================================================================
-# class Floating(ElementType):
-#     def __init__(self):
-#         """
-#         Mover should define windages, windage_range and windage_persist
-#         For this ElementType, all three must be defined!
-#         """
-#         super(Floating, self).__init__()
-#         self.initializers = {'windages': InitWindagesConstantParams()}
-# 
-# 
-# class FloatingMassFromVolume(Floating):
-#     def __init__(self):
-#         super(FloatingMassFromVolume, self).__init__()
-#         self.initializers.update({'mass': InitMassFromVolume()})
-# 
-# 
-# class FloatingWithRiseVel(Floating):
-#     def __init__(self):
-#         super(FloatingWithRiseVel, self).__init__()
-#         self.initializers.update({'rise_vel': InitRiseVelFromDist()})
-# 
-# 
-# class FloatingMassFromVolumeRiseVel(FloatingMassFromVolume):
-#     def __init__(self):
-#         super(FloatingMassFromVolumeRiseVel, self).__init__()
-#         self.initializers.update({'rise_vel': InitRiseVelFromDist()})
-#==============================================================================

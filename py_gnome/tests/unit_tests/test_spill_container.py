@@ -16,7 +16,10 @@ from gnome.basic_types import (oil_status,
 from gnome.spill_container import SpillContainer, SpillContainerPair
 from gnome.spill import PointLineSource
 from gnome import array_types
-from gnome import elements
+from gnome.elements import (ElementType,
+                            InitWindages,
+                            InitMassFromVolume,
+                            InitRiseVelFromDist)
 
 from conftest import sample_sc_release
 
@@ -454,10 +457,13 @@ def test_ordered_collection_api():
 
 
 """ tests w/ element types set for two spills """
-el = elements.FloatingMassFromVolumeRiseVel()
-el.initializers['windages'].windage_range = [0.02, 0.02]
-el.initializers['windages'].windage_persist = -1
-el.initializers['rise_vel'].params = [1, 10]
+el0 = ElementType({'windages': InitWindages((0.02, 0.02), -1),
+                   'mass': InitMassFromVolume(),
+                   'rise_vel': InitRiseVelFromDist(params=(1, 10))})
+
+el1 = ElementType({'windages': InitWindages(),
+                   'mass': InitMassFromVolume(),
+                   'rise_vel': InitRiseVelFromDist()})
 
 arr_types = {'windages': array_types.windages,
              'windage_range': array_types.windage_range,
@@ -466,7 +472,7 @@ arr_types = {'windages': array_types.windages,
 
 
 @pytest.mark.parametrize(("elem_type", "arr_types"),
-        [((el, elements.FloatingMassFromVolumeRiseVel()), arr_types)])
+        [((el0, el1), arr_types)])
 def test_element_types(elem_type, arr_types, sample_sc_no_uncertainty):
     """
     Tests that the spill_container's data_arrays associated with initializers
@@ -757,8 +763,8 @@ def test_eq_spill_container_pair(uncertain):
     # windages array will not match after elements are released so lets not
     # add any more types to data_arrays for this test. Just look at base
     # array_types for SpillContainer's and ensure the data matches for them
-    sp1.element_type = elements.ElementType()
-    sp2.element_type = elements.ElementType()
+    sp1.element_type = ElementType()
+    sp2.element_type = ElementType()
 
     scp1 = SpillContainerPair(uncertain)  # uncertainty is on
     scp1.add(sp1)
@@ -868,9 +874,9 @@ def get_eq_spills():
     spill = PointLineSource(num_elements,
                             (28, -75, 0),
                             release_time,
-                            element_type=elements.ElementType())
+                            element_type=ElementType())
     spill2 = PointLineSource.new_from_dict(spill.to_dict('create'))
-    spill2.element_type = elements.ElementType()
+    spill2.element_type = ElementType()
 
     return (spill, spill2)
 

@@ -14,17 +14,13 @@ import pytest
 from gnome.array_types import (windages, windage_range, windage_persist,
                                mass,
                                rise_vel)
-from gnome.elements import (InitWindagesConstantParams,
+from gnome.elements import (InitWindages,
                             InitMassFromVolume,
                             InitRiseVelFromDist,
                             InitRiseVelFromDropletSizeFromDist,
+                            floating,
+                            ElementType
                             )
-                            #==================================================
-                            # Floating,
-                            # FloatingMassFromVolume,
-                            # FloatingWithRiseVel,
-                            # FloatingMassFromVolumeRiseVel)
-                            #==================================================
 from gnome.spill import Spill
 from gnome import array_types
 from gnome.db.oil_library.oil_props import OilProps
@@ -51,8 +47,8 @@ def assert_dataarray_shape_size(arr_types, data_arrays, num_released):
 
 
 @pytest.mark.parametrize(("fcn", "arr_types", "spill"),
-                [(InitWindagesConstantParams(), windages, None),
-                 (InitWindagesConstantParams(), windages, None),
+                [(InitWindages(), windages, None),
+                 (InitWindages(), windages, None),
                  (InitMassFromVolume(), mass_array, Spill(volume=10)),
                  (InitRiseVelFromDist(), rise_vel_array, None),
                  (InitRiseVelFromDist(distribution='normal'),
@@ -88,10 +84,10 @@ def test_correct_particles_set_by_initializers(fcn, arr_types, spill):
 
 class TestInitConstantWindageRange:
     @pytest.mark.parametrize(("fcn", "array"),
-            [(InitWindagesConstantParams(), windages),
-             (InitWindagesConstantParams([0.02, 0.03]), windages),
-             (InitWindagesConstantParams(), windages),
-             (InitWindagesConstantParams(windage_persist=-1), windages)])
+            [(InitWindages(), windages),
+             (InitWindages([0.02, 0.03]), windages),
+             (InitWindages(), windages),
+             (InitWindages(windage_persist=-1), windages)])
     def test_initailize_InitConstantWindageRange(self, fcn, array):
         """
         tests initialize method
@@ -109,12 +105,12 @@ class TestInitConstantWindageRange:
     def test_exceptions(self):
         bad_wr = [-1, 0]
         bad_wp = 0
-        obj = InitWindagesConstantParams()
+        obj = InitWindages()
         with pytest.raises(ValueError):
-            InitWindagesConstantParams(windage_range=bad_wr)
+            InitWindages(windage_range=bad_wr)
 
         with pytest.raises(ValueError):
-            InitWindagesConstantParams(windage_persist=bad_wp)
+            InitWindages(windage_persist=bad_wp)
 
         with pytest.raises(ValueError):
             obj.windage_range = bad_wr
@@ -166,54 +162,64 @@ def test_initialize_InitRiseVelFromDist_normal():
 
 
 """ Element Types"""
-# all array_types corresponding with elem_t above
+# additional array_types corresponding with ElementTypes for following test
 arr_types = {'windages': array_types.windages,
              'windage_range': array_types.windage_range,
              'windage_persist': array_types.windage_persist,
              'rise_vel': array_types.rise_vel}
 
-#==============================================================================
-# inp_params = [((Floating(), FloatingMassFromVolume()), arr_types),
-#               ((Floating(), FloatingWithRiseVel()), arr_types),
-#               ((Floating(), FloatingMassFromVolumeRiseVel()), arr_types)]
-# 
-# 
-# @pytest.mark.parametrize(("elem_type", "arr_types"), inp_params)
-# def test_element_types(elem_type, arr_types, sample_sc_no_uncertainty):
-#     """
-#     Tests that the data_arrays associated with the spill_container's
-#     initializers get initialized to non-zero values
-#     uses sample_sc_no_uncertainty fixture defined in conftest.py
-#     """
-#     sc = sample_sc_no_uncertainty
-#     release_t = None
-#     for idx, spill in enumerate(sc.spills):
-#         spill.num_elements = 20
-#         spill.element_type = elem_type[idx]
-# 
-#         if release_t is None:
-#             release_t = spill.release_time
-# 
-#         # set release time based on earliest release spill
-#         if spill.release_time < release_t:
-#             release_t = spill.release_time
-# 
-#     time_step = 3600
-#     num_steps = 4   # just run for 4 steps
-#     sc.prepare_for_model_run(arr_types)
-# 
-#     for step in range(num_steps):
-#         current_time = release_t + timedelta(seconds=time_step * step)
-#         sc.release_elements(time_step, current_time)
-# 
-#         for spill in sc.spills:
-#             spill.element_type
-#             spill_mask = sc.get_spill_mask(spill)
-#             if np.any(spill_mask):
-#                 for key in arr_types:
-#                     if (key in spill.element_type.initializers or
-#                         key in ['windage_range', 'windage_persist']):
-#                         assert np.all(sc[key][spill_mask] != 0)
-#                     else:
-#                         assert np.all(sc[key][spill_mask] == 0)
-#==============================================================================
+inp_params = \
+    [((floating(),
+       ElementType({'windages': InitWindages(),
+                    'mass': InitMassFromVolume()})), arr_types),
+     ((floating(),
+       ElementType({'windages': InitWindages(),
+                    'rise_vel': InitRiseVelFromDist()})), arr_types),
+     ((floating(),
+       ElementType({'mass': InitMassFromVolume(),
+                    'rise_vel': InitRiseVelFromDist()})), arr_types)
+     ]
+
+
+@pytest.mark.parametrize(("elem_type", "arr_types"), inp_params)
+def test_element_types(elem_type, arr_types, sample_sc_no_uncertainty):
+    """
+    Tests data_arrays associated with the spill_container's
+    initializers get initialized to non-zero values.
+    Uses sample_sc_no_uncertainty fixture defined in conftest.py
+    It initializes a SpillContainer object with two Spill objects. For first
+    Spill object, set element_type=floating() and for the second Spill object,
+    set element_type=elem_type[1] as defined in the tuple in inp_params
+    """
+    sc = sample_sc_no_uncertainty
+    release_t = None
+    for idx, spill in enumerate(sc.spills):
+        spill.num_elements = 20
+        spill.element_type = elem_type[idx]
+
+        if release_t is None:
+            release_t = spill.release_time
+
+        # set release time based on earliest release spill
+        if spill.release_time < release_t:
+            release_t = spill.release_time
+
+    time_step = 3600
+    num_steps = 4   # just run for 4 steps
+    sc.prepare_for_model_run(arr_types)
+
+    for step in range(num_steps):
+        current_time = release_t + timedelta(seconds=time_step * step)
+        sc.release_elements(time_step, current_time)
+
+        for spill in sc.spills:
+            spill.element_type
+            spill_mask = sc.get_spill_mask(spill)
+            if np.any(spill_mask):
+                for key in arr_types:
+                    if (key in spill.element_type.initializers or
+                        ('windages' in spill.element_type.initializers and
+                         key in ['windage_range', 'windage_persist'])):
+                        assert np.all(sc[key][spill_mask] != 0)
+                    else:
+                        assert np.all(sc[key][spill_mask] == 0)

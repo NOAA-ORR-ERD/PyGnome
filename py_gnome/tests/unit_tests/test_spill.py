@@ -27,13 +27,13 @@ arr_types = {'positions': gnome.array_types.positions}
 
 @pytest.mark.parametrize(("windage_range", "windage_persist"),
                          [(None, None),
-                          ([0.02, 0.03], -1)
+                          ((0.02, 0.03), -1)
                           ])
 def test_init(windage_range, windage_persist):
     spill = Spill(10, windage_range=windage_range,
                   windage_persist=windage_persist)
     if windage_range is None:
-        windage_range = [0.01, 0.04]
+        windage_range = (0.01, 0.04)
     if windage_persist is None:
         windage_persist = 900
 

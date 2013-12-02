@@ -9,7 +9,7 @@ import numpy as np
 
 from gnome.movers import RiseVelocityMover
 from gnome.array_types import rise_vel
-from gnome.elements import FloatingWithRiseVel
+from gnome.elements import ElementType, InitRiseVelFromDist
 
 from conftest import sample_sc_release
 
@@ -43,12 +43,14 @@ sc = sample_sc_release(5, (3., 6., 0.),
                        rel_time,
                        uncertain=False,
                        arr_types={'rise_vel': rise_vel},
-                       element_type=FloatingWithRiseVel())
+                       element_type=ElementType({'rise_vel':
+                                                 InitRiseVelFromDist()}))
 u_sc = sample_sc_release(5, (3., 6., 0.),
                          rel_time,
                          uncertain=True,
                          arr_types={'rise_vel': rise_vel},
-                         element_type=FloatingWithRiseVel())
+                         element_type=ElementType({'rise_vel':
+                                                 InitRiseVelFromDist()}))
 model_time = rel_time
 
 
