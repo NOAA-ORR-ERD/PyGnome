@@ -1519,14 +1519,18 @@ VelocityRec TimeGridVelRect_c::GetScaledPatValue(const Seconds& model_time, Worl
 	
 	if (refPoint.z>0 && fVar.gridType==TWO_D)
 	{
-		if (fAllowVerticalExtrapolationOfCurrents && fMaxDepthForExtrapolation >= refPoint.z)
+		if (!fAllowVerticalExtrapolationOfCurrents)
 		{
-			// fall through to get the velocity
-		}
-		else
-		{	// may allow 3D currents later
 			return scaledPatVelocity;
 		}
+#ifndef pyGNOME
+		if (fAllowVerticalExtrapolationOfCurrents && fMaxDepthForExtrapolation < refPoint.z)
+		{
+			return scaledPatVelocity;
+		}
+#endif
+		// else fall through to get the velocity
+		// will also want a log profile option
 	}
 	
 	GetDepthIndices(0,refPoint.z,&depthIndex1,&depthIndex2);

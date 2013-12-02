@@ -56,6 +56,12 @@ public:
 	virtual WorldRect GetGridBounds(){return timeGrid->GetGridBounds();}	
 	void		SetTimeGrid(TimeGridVel *newTimeGrid) {timeGrid = newTimeGrid;}
 
+	void	SetExtrapolationInTime(Boolean extrapolate) {timeGrid->SetExtrapolationInTime(extrapolate);}	
+	Boolean	GetExtrapolationInTime() {return timeGrid->GetExtrapolationInTime();}	
+	
+	void	SetTimeShift(long timeShift) {timeGrid->SetTimeShift(timeShift);}	
+	Boolean	GetTimeShift() {return timeGrid->GetTimeShift();}	
+	
 	virtual OSErr 		PrepareForModelRun(); 
 	virtual OSErr 		PrepareForModelStep(const Seconds&, const Seconds&, bool, int numLESets, int* LESetsSizesList); 
 	virtual void 		ModelStepIsDone();

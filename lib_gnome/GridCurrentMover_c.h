@@ -55,6 +55,12 @@ public:
 	//virtual void		SetTimeGrid(TimeGridVel *newTimeGrid) {timeGrid = newTimeGrid;}
 	void		SetTimeGrid(TimeGridVel *newTimeGrid) {timeGrid = newTimeGrid;}
 
+	void	SetExtrapolationInTime(Boolean extrapolate) {timeGrid->SetExtrapolationInTime(extrapolate);}	
+	Boolean	GetExtrapolationInTime() {return timeGrid->GetExtrapolationInTime();}	
+
+	void	SetTimeShift(long timeShift) {timeGrid->SetTimeShift(timeShift);}	
+	Boolean	GetTimeShift() {return timeGrid->GetTimeShift();}	
+	
 	virtual OSErr 		PrepareForModelRun(); 
 	virtual WorldPoint3D       GetMove(const Seconds& model_time, Seconds timeStep,long setIndex,long leIndex,LERec *thisLE,LETYPE leType);
 	virtual OSErr 		PrepareForModelStep(const Seconds&, const Seconds&, bool, int numLESets, int* LESetsSizesList); 

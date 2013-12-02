@@ -26,11 +26,6 @@
 #define	kDefLEFileName "LEFile"				// STH
 #endif
 
-/*#ifndef MAC
-typedef CHARPTR Ptr;
-typedef CHARH Handle;
-typedef Handle *HANDLEPTR;
-#endif*/
 #ifndef pyGNOME
 #define PTCUR_DELIM_STR " \t"
 
@@ -59,8 +54,6 @@ enum { BLACK = 1, WHITE, DARKGRAY, GRAY, LIGHTGRAY,
 #endif
 
 #define INFINITE_DEPTH	5000.
-
-//#define COMPLETE_LE  (FORECAST_LE + UNCERTAINTY_LE)
 
 #ifndef pyGNOME
 typedef long ClassID;
@@ -327,6 +320,7 @@ enum { ESCAPEKEY = 0X35, ENTERKEY = 0X4C, RETURNKEY = 0X24, PERIODKEY = 0X2F,
 
 //#define MultFindEvt 15
 
+#ifndef pyGNOME
 class TClassID;
 class TTriGridVel;
 class TTriGridVel3D;
@@ -338,7 +332,7 @@ typedef struct {
 	short indent;
 	short bullet;
 } ListItem;
-
+#endif
 typedef struct {
 	Boolean isOptimizedForStep;
 	Boolean isFirstStep;
@@ -394,7 +388,7 @@ typedef struct {
 	float hiLong;
 	float hiLat;
 } WorldRectF, *WORLDRECTFP, **WORLDRECTFH;
-
+#ifndef pyGNOME
 typedef struct GeoPoint
 { 	// right handed coordinate system
 	long				h; 			// Latitude  (dec_deg*10e6)
@@ -409,7 +403,7 @@ typedef struct {
 } Segment, *SEGMENTP, **SEGMENTH, **SegmentsHdl;
 
 typedef struct { long x; long y; } Vector;
-
+#endif
 //--
 
 ///////////////////////////////////////////////////////////////////////////
@@ -475,17 +469,6 @@ typedef struct {
 
 #define		kUCode			0					// supplied to UorV routine
 #define		kVCode			1
-#ifndef pyGNOME
-typedef struct {
-	long segNo;
-	long startPt;
-	long endPt;
-	long numBeachedLEs;
-	float segmentLengthInKm;
-	float	gallonsOnSegment;
-	//Seconds time;
-} OiledShorelineData,*OiledShorelineDataP,**OiledShorelineDataHdl;
-#endif
 
 typedef struct GridCellInfo
 {

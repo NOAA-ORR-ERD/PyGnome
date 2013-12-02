@@ -136,6 +136,16 @@ typedef struct
 	
 } OilComponent;
 
+typedef struct {
+	long segNo;
+	long startPt;
+	long endPt;
+	long numBeachedLEs;
+	float segmentLengthInKm;
+	float	gallonsOnSegment;
+	//Seconds time;
+} OiledShorelineData,*OiledShorelineDataP,**OiledShorelineDataHdl;
+
 typedef struct
 {
 	unsigned long ticksAtCreation;
