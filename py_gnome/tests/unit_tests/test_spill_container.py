@@ -19,7 +19,8 @@ from gnome import array_types
 from gnome.elements import (ElementType,
                             InitWindages,
                             InitMassFromVolume,
-                            InitRiseVelFromDist)
+                            InitRiseVelFromDist,
+                            floating)
 
 from conftest import sample_sc_release
 
@@ -763,8 +764,8 @@ def test_eq_spill_container_pair(uncertain):
     # windages array will not match after elements are released so lets not
     # add any more types to data_arrays for this test. Just look at base
     # array_types for SpillContainer's and ensure the data matches for them
-    sp1.element_type = ElementType()
-    sp2.element_type = ElementType()
+    #sp1.element_type = ElementType()
+    #sp2.element_type = ElementType()
 
     scp1 = SpillContainerPair(uncertain)  # uncertainty is on
     scp1.add(sp1)
@@ -861,11 +862,12 @@ def get_eq_spills():
     """
     returns a tuple of identical PointLineSource objects
 
-    todo: The spill's element_type is forced to be ElementType() since
-    it is not being persisted and the default (Floating()) uses randomly
-    generated values for initial data array values and these will not match for
-    the two spills. Fix this be persisting element_type attribute and making
-    min and max windage_range equal so windages are the same.
+    Set the spill's element_type is to floating(windage_range=(0, 0))
+    since the default, floating(), uses randomly generated values for initial
+    data array values and these will not match for the two spills.
+
+    TODO: Currently does not persist the element_type object.
+    spill.to_dict('create') does not persist this attribute - Fix this.
     """
 
     num_elements = 10
@@ -874,9 +876,9 @@ def get_eq_spills():
     spill = PointLineSource(num_elements,
                             (28, -75, 0),
                             release_time,
-                            element_type=ElementType())
+                            element_type=floating(windage_range=(0, 0)))
     spill2 = PointLineSource.new_from_dict(spill.to_dict('create'))
-    spill2.element_type = ElementType()
+    spill2.element_type = floating(windage_range=(0, 0))
 
     return (spill, spill2)
 

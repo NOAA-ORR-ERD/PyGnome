@@ -12,6 +12,7 @@ import pytest
 
 import gnome
 from gnome.outputter import Outputter
+from gnome.elements import floating
 
 
 @pytest.fixture(scope='module')
@@ -34,7 +35,7 @@ def model(sample_model):
             start_position=sample_model['release_start_pos'],
             release_time=model.start_time,
             end_release_time=model.start_time + model.duration,
-            windage_persist=-1)
+            element_type=floating(windage_persist=-1))
 
     return model
 

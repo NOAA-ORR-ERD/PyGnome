@@ -23,6 +23,7 @@ from gnome.utilities.remote_data import get_datafile
 from gnome.movers.simple_mover import SimpleMover
 from gnome.movers import RandomMover, WindMover, CatsMover
 from gnome.environment import Wind, Tide
+from gnome.elements import floating
 
 basedir = os.path.dirname(__file__)
 datadir = os.path.join(basedir, r"sample_data")
@@ -589,7 +590,7 @@ def test_linearity_of_wind_movers(wind_persist):
     model1.start_time = start_time
     model1.spills += PointLineSource(num_elements=num_LEs,
             start_position=(1., 2., 0.), release_time=start_time,
-            windage_persist=wind_persist)
+            element_type=floating(windage_persist=wind_persist))
 
     model1.movers += WindMover(Wind(timeseries=series1, units=units))
 
@@ -600,7 +601,7 @@ def test_linearity_of_wind_movers(wind_persist):
 
     model2.spills += PointLineSource(num_elements=num_LEs,
             start_position=(1., 2., 0.), release_time=start_time,
-            windage_persist=wind_persist)
+            element_type=floating(windage_persist=wind_persist))
 
     # todo: CHECK RANDOM SEED
     # model2.movers += WindMover(Wind(timeseries=series1, units=units))
