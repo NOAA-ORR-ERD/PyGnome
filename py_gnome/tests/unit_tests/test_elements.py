@@ -123,8 +123,9 @@ def test_initailize_InitMassFromVolume():
     data_arrays = mock_append_data_arrays(mass_array, num_elems)
     fcn = InitMassFromVolume()
     spill = Spill()
-    spill.volume = num_elems / (spill.oil_props.get_density('kg/m^3') * 1000)
-    fcn.initialize(num_elems, spill, data_arrays, OilProps('oil_conservative'))
+    substance = OilProps('oil_conservative')
+    spill.volume = num_elems / (substance.get_density('kg/m^3') * 1000)
+    fcn.initialize(num_elems, spill, data_arrays, substance)
 
     assert_dataarray_shape_size(mass_array, data_arrays, num_elems)
     assert np.all(1. == data_arrays['mass'])

@@ -22,6 +22,7 @@ from gnome.movers import WindMover, constant_wind_mover, \
 
 from gnome.spill import PointLineSource
 from gnome.spill_container import SpillContainer
+from gnome.elements import floating
 
 from conftest import sample_sc_release
 
@@ -263,9 +264,12 @@ def test_windage_index():
     timestep = 30
     for i in range(2):
         spill = PointLineSource(num_elements=5,
-                start_position=(0., 0., 0.), release_time=rel_time + i
-                * timedelta(hours=1), windage_range=(i * .01 + .01, i
-                * .01 + .01), windage_persist=900)
+                                start_position=(0., 0., 0.),
+                                release_time=rel_time + i * timedelta(hours=1),
+                                element_type=floating(windage_range=(i * .01 +
+                                                        .01, i * .01 + .01),
+                                                      windage_persist=900)
+                                )
         sc.spills.add(spill)
 
     windage = {'windages': array_types.windages,

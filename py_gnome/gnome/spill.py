@@ -59,9 +59,6 @@ class Spill(object):
         volume_units='m^3',
         mass=None,
         mass_units='g',
-        oil='oil_conservative',
-        windage_range=None,
-        windage_persist=None,
         element_type=None,
         id=None,
         ):
@@ -81,16 +78,6 @@ class Spill(object):
         :type volume: float
         :param volume_units=m^3: volume units
         :type volume_units: str
-        :param oil='oil_conservative': Type of oil spilled.
-            If this is a string, or an oillibrary.models.Oil object, then
-            create gnome.spill.OilProps(oil) object. If this is a
-            gnome.spill.OilProps object, then simply instance oil_props
-            variable to it: self.oil_props = oil
-        :type oil: either str, or oillibrary.models.Oil object or
-            gnome.spill.OilProps
-        :param windage_range: A tuple defining the min/max % of wind acting on
-            each LE. Default (0.01, 0.04)
-        :type windage_range: a tuple of size 2 (min, max)
         :param id: Unique Id identifying the newly created mover (a UUID as a
             string), used when loading from a persisted model
         :param element_type=None: list of various element_type that are
@@ -109,27 +96,11 @@ class Spill(object):
             self._volume = unit_conversion.convert('Volume', volume_units,
                 'm^3', volume)
 
-        self.oil_props = OilProps(oil)
-
         self._gnome_id = GnomeId(id)
         if element_type is None:
             element_type = elements.floating()
 
         self.element_type = element_type
-
-        if windage_range is not None:
-            if 'windages' not in self.element_type.initializers:
-                raise TypeError("'windage_range' cannot be set for specified"
-                                " element_type: {0}".format(element_type))
-            (self.element_type.initializers['windages']).windage_range = \
-                windage_range
-
-        if windage_persist is not None:
-            if 'windages' not in self.element_type.initializers:
-                raise TypeError("'windage_persist' cannot be set for specified"
-                                " element_type: {0}".format(element_type))
-            (self.element_type.initializers['windages']).windage_persist = \
-                windage_persist
 
         # number of new particles released at each timestep
         self.num_released = 0
@@ -382,15 +353,6 @@ class PointLineSource(Spill, serializable.Serializable):
         :param end_release_time=None: optional -- for a release over time, the
             end release time
         :type end_release_time: datetime.datetime
-
-        :param windage_range=(0.01, 0.04): the windage range of the elements
-            default is (0.01, 0.04) from 1% to 4%.
-        :type windage_range: tuple: (min, max)
-
-        :param windage_persist=-1: Default is 900s, so windage is updated every
-            900 sec. -1 means the persistence is infinite so it is only set at
-            the beginning of the run.
-        :type windage_persist: integer seconds
 
         Remaining kwargs are passed onto base class __init__ using super.
         See :class:`FloatingSpill` documentation for remaining valid kwargs.

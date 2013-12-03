@@ -13,7 +13,8 @@ import numpy as np
 
 from gnome.spill import (Spill,
                          PointLineSource)
-from gnome.elements import ElementType
+from gnome.elements import (ElementType,
+                            floating)
 import gnome.array_types
 
 from conftest import mock_append_data_arrays
@@ -25,30 +26,21 @@ from conftest import mock_append_data_arrays
 arr_types = {'positions': gnome.array_types.positions}
 
 
-@pytest.mark.parametrize(("windage_range", "windage_persist"),
-                         [(None, None),
-                          ((0.02, 0.03), -1)
-                          ])
-def test_init(windage_range, windage_persist):
-    spill = Spill(10, windage_range=windage_range,
-                  windage_persist=windage_persist)
-    if windage_range is None:
-        windage_range = (0.01, 0.04)
-    if windage_persist is None:
-        windage_persist = 900
+def test_init():
+    spill = Spill(10)
 
     assert np.all(spill.element_type.initializers['windages'].windage_range
-                  == windage_range)
+                  == (0.01, 0.04))
     assert (spill.element_type.initializers['windages'].windage_persist
-            == windage_persist)
+            == 900)
 
 
 def test_init_exceptions():
-    with pytest.raises(TypeError):
-        Spill(10, element_type=ElementType(), windage_range=[0.01, 0.04])
+    with pytest.raises(ValueError):
+        Spill(10, element_type=floating(windage_range=(-1, 0)))
 
-    with pytest.raises(TypeError):
-        Spill(10, element_type=ElementType(), windage_persist=0)
+    with pytest.raises(ValueError):
+        Spill(10, element_type=floating(windage_persist=0))
 
 
 def test_deepcopy():
@@ -94,8 +86,7 @@ def test_uncertain_copy():
         release_time=datetime.now(),
         end_position=(29, -79, 0.),
         end_release_time=datetime.now() + timedelta(hours=24),
-        windage_range=(.02, .03),
-        windage_persist=-1,
+        element_type=floating(windage_range=(.02, .03), windage_persist=-1)
         )
 
     u_spill = spill.uncertain_copy()

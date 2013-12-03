@@ -13,7 +13,7 @@ import numpy as np
 
 import gnome
 from gnome.environment import Wind
-
+from gnome.elements import floating
 from gnome.utilities import map_canvas
 from gnome.utilities.file_tools import haz_files
 from gnome.utilities.remote_data import get_datafile
@@ -55,7 +55,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     spill = gnome.spill.PointLineSource(num_elements=1000,
             start_position=(-123.57152, 37.369436, 0.0),
             release_time=start_time,
-            windage_range=(.3,.3)
+            element_type=floating(windage_range=(0.3, 0.3))
             )  
 
     model.spills += spill
