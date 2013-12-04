@@ -29,7 +29,7 @@ class WindMoversBase(CyMover):
               read=['uncertain_angle_scale'])
 
     def __init__(self,
-        uncertain_duration=24,
+        uncertain_duration=3,
         uncertain_time_delay=0,
         uncertain_speed_scale=2.,
         uncertain_angle_scale=0.4,
@@ -153,12 +153,14 @@ class WindMoversBase(CyMover):
             spill_mask = sc.get_spill_mask(spill)
 
             if np.any(spill_mask):
-                rand.random_with_persistance(
+                array = np.zeros(len(sc['windage_range'][spill_mask, 0],), dtype=float)
+                array = rand.random_with_persistance(
                                 sc['windage_range'][spill_mask, 0],
                                 sc['windage_range'][spill_mask, 1],
                                 sc['windages'][spill_mask],
                                 sc['windage_persist'][spill_mask],
                                 time_step)
+                sc['windages'][spill_mask] = array
 
     def get_move(
         self,

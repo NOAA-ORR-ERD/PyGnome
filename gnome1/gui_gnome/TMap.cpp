@@ -1087,7 +1087,7 @@ OSErr TMap::AddItem(ListItem item)
 								return 0;
 							}
 							newMover = newGridWindMover;
-							timeGrid -> fUserUnits = selectedUnits;
+							(dynamic_cast<TimeGridCurRect *>(timeGrid)) -> fUserUnits = selectedUnits;
 							
 							err = newGridWindMover->InitMover(timeGrid);
 							//if(err) goto Error;
