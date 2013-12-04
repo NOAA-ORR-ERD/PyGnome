@@ -123,7 +123,7 @@ def test_default_props():
     test default properties
     """
     assert w_grid.active == True  # timespan is as big as possible
-    assert w_grid.uncertain_duration == 24
+    assert w_grid.uncertain_duration == 3
     assert w_grid.uncertain_time_delay == 0
     assert w_grid.uncertain_speed_scale == 2
     assert w_grid.uncertain_angle_scale == 0.4
