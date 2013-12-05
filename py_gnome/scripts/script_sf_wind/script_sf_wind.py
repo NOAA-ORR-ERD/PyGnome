@@ -56,7 +56,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
             start_position=(-123.57152, 37.369436, 0.0),
             release_time=start_time,
             element_type=floating(windage_range=(0.01, 0.04))
-            )  
+            )
 
     model.spills += spill
 

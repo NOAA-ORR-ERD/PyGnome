@@ -464,7 +464,7 @@ def _defaults(wm):
     """
 
     assert wm.active == True  # timespan is as big as possible
-    assert wm.uncertain_duration == 24
+    assert wm.uncertain_duration == 3.0
     assert wm.uncertain_time_delay == 0
     assert wm.uncertain_speed_scale == 2
     assert wm.uncertain_angle_scale == 0.4
