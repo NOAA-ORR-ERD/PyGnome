@@ -153,14 +153,15 @@ class WindMoversBase(CyMover):
             spill_mask = sc.get_spill_mask(spill)
 
             if np.any(spill_mask):
-                array = np.zeros(len(sc['windage_range'][spill_mask, 0],), dtype=float)
-                array = rand.random_with_persistance(
+                windages = sc['windages'][spill_mask]	# overwriting sc array does not work
+                rand.random_with_persistance(
                                 sc['windage_range'][spill_mask, 0],
                                 sc['windage_range'][spill_mask, 1],
-                                sc['windages'][spill_mask],
+                                #sc['windages'][spill_mask],
+                                windages,
                                 sc['windage_persist'][spill_mask],
                                 time_step)
-                sc['windages'][spill_mask] = array
+                sc['windages'][spill_mask] = windages
 
     def get_move(
         self,
