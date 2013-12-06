@@ -9,6 +9,7 @@
 #include "TriGridVel_c.h"
 #include "TriGridVel3D_c.h"
 #include "MemUtils.h"
+#include "TClassID.h"
 
 #ifdef __cplusplus
 extern "C" {

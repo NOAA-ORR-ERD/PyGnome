@@ -22,6 +22,8 @@ class TMover : virtual public Mover_c,  public TClassID
 {
 	
 public:
+	RGBColor			fColor;
+
 	TMover (TMap *owner, char *name);
 	virtual			   ~TMover () { Dispose (); }
 	//virtual void		Dispose () {}

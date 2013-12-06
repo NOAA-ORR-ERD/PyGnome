@@ -25,7 +25,7 @@ Mover_c::Mover_c(TMap *owner, char *name)
 	fUncertainStartTime = 0;
 	fDuration = 0; // JLM 9/18/98
 	fTimeUncertaintyWasSet = 0;// JLM 9/18/98
-	fColor = colors[PURPLE];	// default to draw arrows in purple
+	//fColor = colors[PURPLE];	// default to draw arrows in purple
 }
 #endif
 
