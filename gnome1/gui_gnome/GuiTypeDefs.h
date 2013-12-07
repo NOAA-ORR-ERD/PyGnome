@@ -12,14 +12,14 @@
 
 #include <time.h>
 
-#ifndef pyGNOME
 #include "Earl.h"
 #include "Typedefs.h"
-#endif
 
 ///////////////////////////////////////////////////////////////////////////
 
-#ifndef pyGNOME
+#define kDefSaveFileName "Untitled.sav"		// STH
+#define	kDefLEFileName "LEFile"				// STH
+
 #define kNumOSSMLandTypes 11
 #define kNumOSSMWaterTypes 5
 #define kOMapWidth 80
@@ -29,7 +29,29 @@
 #define	kOCurWidth			40
 #define	kOCurHeight			24
 #define	kVelsPerLine		10 // # of velocity numbers pairs per line
-#endif
+
+class TClassID;
+class TTriGridVel;
+class TTriGridVel3D;
+class TCurrentMover;
+
+typedef struct {
+	TClassID *owner;
+	long index;
+	short indent;
+	short bullet;
+} ListItem;
+
+typedef struct {
+	short f;
+	CHARH buf;
+	long bufSize;
+	long base;
+	long index;
+	long fileLength;
+	Boolean bufModified;
+} BFPB, *BFPBP;
+extern BFPB gRunSpillForecastFile;
 
 typedef struct
 {
@@ -139,6 +161,17 @@ typedef struct
 
 typedef struct
 {
+	WorldPoint	p; 				// x and y location
+	double		z; 				// z position
+	Seconds		releaseTime; 	// time of release, seconds since 1904
+	double		ageInHrsWhenReleased;// age of oil in hours at time of release
+	OilType		pollutantType; 	// L.E. pollutant type
+	double		density; 		// density in same units as everything else, added 1/23/03
+	//double		riseVelocity;
+} InitialLEInfoRec, *InitialLEInfoRecPtr, **InitialLEInfoRecHdl;
+
+typedef struct
+{
 	char		pollutant [kMaxNameLen];
 	double		halfLife [3];
 	double		percent [3];
@@ -157,6 +190,14 @@ typedef struct {
 	float	gallonsOnSegment;
 	//Seconds time;
 } OiledShorelineData,*OiledShorelineDataP,**OiledShorelineDataHdl;
+
+typedef struct {
+	short		color;
+	char		code[2];
+	WorldRect	bounds;
+	long		numPoints;
+	long		firstPoint;
+} PolygonType, *PolygonP, **PolygonH;
 
 typedef long ClassID;
 

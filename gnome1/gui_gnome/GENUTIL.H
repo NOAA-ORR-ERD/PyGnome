@@ -1,6 +1,7 @@
 
 #include "Earl.h"
 #include "TypeDefs.h"
+#include "GuiTypeDefs.h"
 
 
 

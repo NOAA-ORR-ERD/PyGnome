@@ -21,28 +21,11 @@
 #define DEREFH(h) (*(h))
 #define INDEXH(h, i) (*(h))[i]
 
-#ifndef pyGNOME
-#define kDefSaveFileName "Untitled.sav"		// STH
-#define	kDefLEFileName "LEFile"				// STH
-#endif
-
 //--
 
 #define kMaxNameLen 256
 #define TIMEVALUE_TOLERANCE 0.00001
 
-/*#ifndef pyGNOME
-#define kNumOSSMLandTypes 11
-#define kNumOSSMWaterTypes 5
-#define kOMapWidth 80
-#define kOMapHeight 48
-#define kOMapColorInd 8
-
-#define	kOCurWidth			40
-#define	kOCurHeight			24
-#define	kVelsPerLine		10 // # of velocity numbers pairs per line
-#endif
-*/
 #define INFINITE_DEPTH	5000.
 
 
@@ -79,18 +62,7 @@ typedef short LandType;
 typedef unsigned long LETYPE ;
 
 ///// TYPES ///////////////////////////////////////////////////////////////////////
-#ifndef pyGNOME
-typedef struct {
-	short f;
-	CHARH buf;
-	long bufSize;
-	long base;
-	long index;
-	long fileLength;
-	Boolean bufModified;
-} BFPB, *BFPBP;
-extern BFPB gRunSpillForecastFile;
-#endif
+
 extern Rect CATSgridRect;
 
 typedef struct VelocityRec
@@ -223,35 +195,9 @@ enum { ESCAPEKEY = 0X35, ENTERKEY = 0X4C, RETURNKEY = 0X24, PERIODKEY = 0X2F,
 #endif
 
 #define round(n) floor((n) + 0.5)
-//#define abs(n) ((n) >= 0 ? (n) : -(n))
-//#define TOPLEFT(r) (POINTPTR)(&(r).top)
-//#define BOTRIGHT(r) (POINTPTR)(&(r).bottom)
-
-//#define MAX_MACPAINT_SIZE 53000
-//#define MAX_MACPAINT_LINES 720
-//#define MACPAINT_BYTE_UNPACK 72
 
 #define PI 3.14159265359
-//#define ROOT2 1.4142136562373
-//#define KG2POUNDS 2.2
 
-//#define FRAME_ITEM 2
-
-//#define MultFindEvt 15
-
-#ifndef pyGNOME
-class TClassID;
-class TTriGridVel;
-class TTriGridVel3D;
-class TCurrentMover;
-
-typedef struct {
-	TClassID *owner;
-	long index;
-	short indent;
-	short bullet;
-} ListItem;
-#endif
 typedef struct {
 	Boolean isOptimizedForStep;
 	Boolean isFirstStep;
@@ -333,18 +279,6 @@ typedef struct
 	Seconds		beachTime; 		// time when L.E. was beached
 } LERec, *LERecP, **LERecH;
 
-#ifndef pyGNOME
-typedef struct
-{
-	WorldPoint	p; 				// x and y location
-	double		z; 				// z position
-	Seconds		releaseTime; 	// time of release, seconds since 1904
-	double		ageInHrsWhenReleased;// age of oil in hours at time of release
-	OilType		pollutantType; 	// L.E. pollutant type
-	double		density; 		// density in same units as everything else, added 1/23/03
-	//double		riseVelocity;
-} InitialLEInfoRec, *InitialLEInfoRecPtr, **InitialLEInfoRecHdl;
-#endif
 typedef struct
 {
 	float downStream;
@@ -446,16 +380,6 @@ typedef struct ScaleRec
 	double					XOffset;
 	double					YOffset;
 } ScaleRec, *ScaleRecPtr;
-
-#ifndef pyGNOME
-typedef struct {
-	short		color;
-	char		code[2];
-	WorldRect	bounds;
-	long		numPoints;
-	long		firstPoint;
-} PolygonType, *PolygonP, **PolygonH;
-#endif
 
 typedef struct
 {
