@@ -21,7 +21,7 @@ from gnome.elements import (InitWindages,
                             floating,
                             ElementType
                             )
-from gnome.spill import Spill
+from gnome.spill import Spill, Release
 from gnome import array_types
 from gnome.db.oil_library.oil_props import OilProps
 
@@ -199,11 +199,11 @@ def test_element_types(elem_type, arr_types, sample_sc_no_uncertainty):
         spill.element_type = elem_type[idx]
 
         if release_t is None:
-            release_t = spill.release_time
+            release_t = spill.release.release_time
 
         # set release time based on earliest release spill
-        if spill.release_time < release_t:
-            release_t = spill.release_time
+        if spill.release.release_time < release_t:
+            release_t = spill.release.release_time
 
     time_step = 3600
     num_steps = 4   # just run for 4 steps

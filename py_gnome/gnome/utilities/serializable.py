@@ -131,9 +131,9 @@ class State(object):
         return new_
 
     def add_field(self, l_field):
-        """ 
+        """
         Adds a Field object or a list of Field objects to fields attribute
-        
+
         Either use this to add a property to the state object or use the 'add' method to add a property.
         add_field gives more control since the attributes other than 'create','update','read' can be set
         directly when defining the Field object.
@@ -165,21 +165,27 @@ class State(object):
         read=[],
         ):
         """
-        Only checks to make sure 'read' and 'update' properties are disjoint. Also makes sure everything is a list. 
-        
-        Args:
-        :param update: a list of strings which are properties that can be updated, so read/write capable
+        Only checks to make sure 'read' and 'update' properties are disjoint.
+        Also makes sure everything is a list.
+
+        Input arguments, defaults are empty lists:
+
+        :param update: a list of strings which are properties that can be
+            updated, so read/write capable
         :type update:  list containing str
-        :param read:   a list of strings which are properties that are for info, so readonly. It is not required for creating new object.
+        :param read:   a list of strings which are readonly; for display only.
+            It is not required for creating new object.
         :type read:    list containing str
-        :param create: a list of strings which are properties that are required to create new object when 
-                        JSON is read from save file
-                       Only the create properties are saved to save file
+        :param create: a list of strings which are properties that are required
+            to create new object when JSON is read from save file
+            Only the create properties are saved to save file
         :type create:  a list of str
-        :param field:  a field object or a list of field objects that should be added to the State for persistence
+        :param field:  a field object or a list of field objects that should be
+            added to the State for persistence
         :type field:   Field object or list of Field objects
-                 
-        For 'update', 'read', 'create', a Field object is create for each property in the list
+
+        For 'update', 'read', 'create', a Field object is create for each
+        property in the list
         """
 
         if not all([isinstance(vals, list) for vals in [create, update,
@@ -191,8 +197,8 @@ class State(object):
         create_ = list(set(create))
 
         if len(set(update_).intersection(set(read_))) > 0:
-            raise AttributeError('update (read/write properties) and read (readonly props) lists lists must be disjoint'
-                                 )
+            raise AttributeError('update (read/write properties) and read'
+                            ' (readonly props) lists lists must be disjoint')
 
         fields = []
         for item in update_:
@@ -215,8 +221,9 @@ class State(object):
 
     def remove(self, l_names):
         """
-        Analogous to add method, this removes Field objects associated with l_names from the list
-        Provide a list containing the names (string) of properties to be removed
+        Analogous to add method, this removes Field objects associated with
+        l_names from the list. Provide a list containing the names (string) of
+        properties to be removed
         """
 
         if isinstance(l_names, basestring):
@@ -225,35 +232,40 @@ class State(object):
         for name in l_names:
             field = self.get_field_by_name(name)
             if field == []:
-                raise ValueError('Cannot remove {0} since self.fields does not contain a field with this name'.format(name))
+                raise ValueError('Cannot remove {0} since self.fields does not'
+                                ' contain a field with this name'.format(name))
 
             self.fields.remove(field)
 
     def update(self, l_names, **kwargs):
-        """ 
+        """
         update the attributes of an existing field
         Kwargs are key,value pairs defining the state of attributes.
-        It must be one of the valid attributes of Field object (see Field object __dict__ for valid attributes) 
+        It must be one of the valid attributes of Field object
+        (see Field object __dict__ for valid attributes) 
         :param update:     True or False
         :param create:     True or False
         :param read:       True or False
         :param isdatafield:True or False
-        
+
         Usage:
         >>> state = State(read=['test'])
-        >>> state.update('test',read=False,update=True,create=True,isdatafile=True)
-        
-        .. note::An exception will be raised if both 'read' and 'update' are True for a given field
+        >>> state.update('test', read=False,update=True,
+                          create=True, isdatafile=True)
+
+        .. note::An exception will be raised if both 'read' and 'update' are
+        True for a given field
         """
 
         for key in kwargs.keys():
             if key not in self._valid_field_attr:
-                raise AttributeError('{0} is not a valid attribute of Field object. It cannot be updated.'.format(key))
+                raise AttributeError('{0} is not a valid attribute of Field'
+                ' object. It cannot be updated.'.format(key))
 
         if 'read' in kwargs.keys() and 'update' in kwargs.keys():
             if kwargs.get('read') and kwargs.get('update'):
-                raise AttributeError("The 'read' attribute and 'update' attribute cannot both be True"
-                        )
+                raise AttributeError("The 'read' attribute and 'update'"
+                                     " attribute cannot both be True")
 
         l_field = self.get_field_by_name(l_names)
         if not isinstance(l_field, list):
@@ -272,13 +284,13 @@ class State(object):
                 setattr(field, 'update', update_)
             elif read_ is not None:
                 if field.update and read_:
-                    raise AttributeError("The 'read' attribute and 'update' attribute cannot both be True"
-                            )
+                    raise AttributeError("The 'read' attribute and 'update'"
+                                         " attribute cannot both be True")
                 setattr(field, 'read', read_)
             elif update_ is not None:
                 if field.read and update_:
-                    raise AttributeError("The 'read' attribute and 'update' attribute cannot both be True"
-                            )
+                    raise AttributeError("The 'read' attribute and 'update'"
+                                         " attribute cannot both be True")
                 setattr(field, 'update', update_)
 
         read_ = None
@@ -292,8 +304,9 @@ class State(object):
             for (key, val) in kwargs.iteritems():
                 if key == 'update' and val == True:
                     if getattr(field, 'read'):
-                        raise AttributeError("The 'read' attribute and 'update' attribute cannot both be True"
-                                )
+                        raise AttributeError("The 'read' attribute and"
+                                             " 'update' attribute cannot both"
+                                             " be True")
 
                 setattr(field, key, val)
 
@@ -314,16 +327,18 @@ class State(object):
         """ returns a list of fields where attr is true """
 
         if attr not in self._valid_field_attr:
-            raise AttributeError('{0} is not valid attribute. Field.__dict__ contains: {1}'.format(attr,
+            raise AttributeError('{0} is not valid attribute. Field.__dict__'
+                                 ' contains: {1}'.format(attr,
                                  self._valid_field_attr))
 
         out = [field for field in self.fields if getattr(field, attr)]
         return out
 
     def get_names(self, attr='all'):
-        """ returns the property names in self.fields. Can return all field names, or fieldnames with 
-        an attribute equal to True. attr can also be a list:
-        
+        """ returns the property names in self.fields. Can return all field
+        names, or fieldnames with an attribute equal to True.
+        attr can also be a list:
+
         >>> state = State(read=['t0'],create=['t0','t1'])
         >>> state.get_names(['read','create'])    # returns 't0'
         >>> state.get_names('create')     # returns ['t0', 't1']
@@ -348,92 +363,6 @@ class State(object):
 
         return names
 
-
-# ===============================================================================
-# class State(object):
-#    def __init__(self, **kwargs):
-#        """
-#        object keeps the list of properties that are output by Serializable.to_dict() method
-#        Each list is accompanied by a keyword as defined below
-#
-#        'update' is list of properties that can be updated, so read/write capable
-#        'read'   is list of properties that are for info, so readonly. This is not required for creating new element
-#        'create' is list of properties that are required to create new object when JSON is read from save file
-#                 The readonly properties are not saved in a file
-#
-#        NOTE: Since this object only contains lists, standard copy and deepcopy work fine.
-#              copy will create a new State object but reference original lists
-#              deepcopy will create new State object and new lists for the attributes
-#        """
-#        self.update = []
-#        self.create = []
-#        self.read = []
-#        self._add_to_lists(**kwargs)
-#
-#
-#    def add(self,**kwargs):
-#        """
-#        Only checks to make sure 'read' and 'update' properties are disjoint. Also makes sure everything is a list.
-#
-#        Takes the same keyword, value pairs as __init__ method:
-#        'update' is list of properties that can be updated, so read/write capable
-#        'read'   is list of properties that are for info, so readonly. This is not required for creating new element
-#        'create' is list of properties that are required to create new object when JSON is read from save file
-#                 The readonly properties are not saved in a file
-#        add(update=['prop_name'] to add prop_name to list containing properties that can be updated
-#        """
-#        self._add_to_lists(**kwargs)
-#
-#    def remove(self,**kwargs):
-#        """
-#        Removes properties from the list. Provide a list containing the names of properties to be removed
-#
-#        Takes the same keyword, value pairs as __init__ method:
-#        'update' is list of properties that can be updated, so read/write capable
-#        'read'   is list of properties that are for info, so readonly. This is not required for creating new element
-#        'create' is list of properties that are required to create new object when JSON is read from save file
-#                 The readonly properties are not saved in a file
-#        remove(update=['prop_name']) to remove prop_name from the list of properties that are updated ('update' list)
-#        """
-#        read_, update_, create_ = self._get_lists(**kwargs)
-#        [self.read.remove(item) for item in read_ if item in self.read]
-#        [self.update.remove(item) for item in update_ if item in self.update]
-#        [self.create.remove(item) for item in create_ if item in self.create]
-#
-#
-#    def _add_to_lists(self, **kwargs):
-#        """
-#        Make sure update list and read lists are disjoint
-#        """
-#        if not all([isinstance(vals,list) for vals in kwargs.values()]):
-#            raise ValueError("inputs for State object must be a list of strings")
-#
-#        read_, update_, create_ = self._get_lists(**kwargs)
-#
-#        if len( set(update_).intersection(set(read_)) ) > 0:
-#            raise ValueError('update (read/write properties) and read (readonly props) lists lists must be disjoint')
-#
-#        self.update.extend( update_ )  # unique elements
-#        self.read.extend( read_)
-#        self.create.extend( create_)
-#
-#    def _get_lists(self, **kwargs):
-#        """
-#        Internal method that just parses kwargs to get the update=[...], read=[...] and create=[...] lists
-#        """
-#        update_ = list( set( kwargs.pop('update',[])))
-#        read_ = list( set( kwargs.pop('read',[])))
-#        create_ = list( set(kwargs.pop('create',[])))
-#
-#        return read_, update_, create_
-#
-#
-#    def get(self):
-#        """
-#        Returns a dict containing the 'update', 'read' and 'create' lists
-#        """
-#        return {'update':self.update,'read':self.read,'create':self.create}
-# ===============================================================================
 
 class Serializable(object):
 
@@ -502,19 +431,25 @@ class Serializable(object):
     def new_from_dict(cls, dict_):
         """
         creates a new object from dictionary
-        
+
         This is base implementation and can be over-ridden by classes using mixin
         """
 
+        # remove obj_type from dict since that is only used by scenario
+        # module to load objects
+        # In baseclass, cls() is used to get the obj_type
+        if 'obj_type' in dict_:
+            dict_.pop('obj_type')
         return cls(**dict_)
 
     def to_dict(self, do='update'):
         """
         returns a dictionary containing the serialized representation of this
-        object. By default it converts the 'update' list of the state object to dict;
-        however, do='create' or do='read' will return the dict with the corresponding
-        list.
-        
+        object.
+        By default it converts the 'update' list of the state object to dict;
+        however, do='create' or do='read' will return the dict with the
+        corresponding list.
+
         For every field, if there is a method defined on the object such that
         the method name is `{field_name}_to_dict`, use the return value of that
         method as the field value.
@@ -530,34 +465,52 @@ class Serializable(object):
         elif do == 'read':
             list_ = self.state.get_names('read')
         else:
-            raise ValueError("input not understood. String must be one of following: 'update', 'create' or 'readonly'."
+            raise ValueError("input not understood. String must be one of"
+                             " following: 'update', 'create' or 'readonly'."
                              )
 
         data = {}
         for key in list_:
-            to_dict_fn_name = '%s_to_dict' % key
-
-            if hasattr(self, to_dict_fn_name):
-                value = getattr(self, to_dict_fn_name)()
-            else:
-                value = getattr(self, key)
-
+#==============================================================================
+#             to_dict_fn_name = '%s_to_dict' % key
+# 
+#             if hasattr(self, to_dict_fn_name):
+#                 value = getattr(self, to_dict_fn_name)()
+#             else:
+#                 value = getattr(self, key)
+#==============================================================================
+            value = self.attr_to_dict(key)
             if hasattr(value, 'to_dict'):
-                value = value.to_dict(do)  # recursively call on contained objects
+                # recursively call on contained objects
+                value = value.to_dict(do)
 
-            if value is not None:  # no need to persist properties that are None!
+            if value is not None:  # no need to persist None!
                 data[key] = value
 
         return data
 
+    def attr_to_dict(self, name):
+        """
+        refactor to_dict's functionality so child classes can convert a
+        single attribute to_dict instead of doing a whole list of fields
+        """
+        to_dict_fn_name = '%s_to_dict' % name
+        if hasattr(self, to_dict_fn_name):
+            value = getattr(self, to_dict_fn_name)()
+        else:
+            value = getattr(self, name)
+
+        return value
+
     def from_dict(self, data):
         """
-        modifies state of the object using dictionary 'data'. 
-        Only the self.state.update list contains properties that can me modified for existing object
-        
-        Set the state of this object using the dictionary ``data`` by looking up
-        the value of each key in ``data`` that is also in  `list_`. Input list_ 
-        contains the object's attributes (or fields) updated with data
+        modifies state of the object using dictionary 'data'.
+        Only the self.state.update list contains properties that can be
+        modified for existing object
+
+        Set the state of this object using the dictionary ``data`` by looking
+        up the value of each key in ``data`` that is also in  `list_`. Input
+        list_ contains the object's attributes (or fields) updated with data
 
         For every field, the choice of how to set the field is as follows:
 
@@ -651,5 +604,3 @@ class Serializable(object):
             return False
         else:
             return True
-
-

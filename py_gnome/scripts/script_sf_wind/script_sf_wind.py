@@ -52,7 +52,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
 
     print 'adding a spill'
 
-    spill = gnome.spill.PointLineSource(num_elements=1000,
+    spill = gnome.spill.PointLineRelease(num_elements=1000,
             start_position=(-123.57152, 37.369436, 0.0),
             release_time=start_time,
             element_type=floating(windage_range=(0.01, 0.04))

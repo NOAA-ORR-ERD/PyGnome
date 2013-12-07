@@ -12,7 +12,8 @@ import pytest
 import numpy as np
 
 from gnome.spill import (Spill,
-                         PointLineSource)
+                         Release,
+                         point_line_release_spill)
 from gnome.elements import (ElementType,
                             floating)
 import gnome.array_types
@@ -45,12 +46,11 @@ def test_init_exceptions():
 
 def test_deepcopy():
     """
-    only tests that the spill_nums work -- not sure about anything else...
-
-    test_spill_container does test some other issues.
+    tests that a deepcopy results in a copy so objects are not the same
+    todo: how should this work
     """
 
-    sp1 = Spill()
+    sp1 = Spill(Release(10))
     sp2 = copy.deepcopy(sp1)
     assert sp1 is not sp2
 
@@ -62,10 +62,10 @@ def test_deepcopy():
 
 def test_copy():
     """
-    only tests that the spill_nums work -- not sure about anything else...
+    todo: how should this work
     """
 
-    sp1 = Spill()
+    sp1 = Spill(Release(10))
     sp2 = copy.copy(sp1)
     assert sp1 is not sp2
 
@@ -80,7 +80,7 @@ def test_uncertain_copy():
     only tests a few things...
     """
 
-    spill = PointLineSource(
+    spill = point_line_release_spill(
         num_elements=100,
         start_position=(28, -78, 0.),
         release_time=datetime.now(),
@@ -92,12 +92,13 @@ def test_uncertain_copy():
     u_spill = spill.uncertain_copy()
 
     assert u_spill is not spill
-    assert np.array_equal(u_spill.start_position, spill.start_position)
+    assert np.array_equal(u_spill.release.start_position,
+                          spill.release.start_position)
     del spill
     del u_spill
 
 
-class Test_PointLineSource:
+class Test_point_line_release_spill:
 
     num_elements = 10
     start_position = (-128.3, 28.5, 0)
@@ -159,15 +160,16 @@ class Test_PointLineSource:
         - self.end_position == self.start_position if it is not given as input
         - self.end_release_time == self.release_time if not given as input
         """
-        sp = PointLineSource(num_elements=self.num_elements,
+        sp = point_line_release_spill(num_elements=self.num_elements,
                 start_position=self.start_position,
                 release_time=self.release_time)
 
-        assert sp.num_elements == self.num_elements
-        assert (np.all(sp.start_position == self.start_position) and
-                np.all(sp.start_position == sp.end_position))
-        assert (np.all(sp.release_time == self.release_time) and
-                np.all(sp.release_time == sp.end_release_time))
+        release = sp.release
+        assert release.num_elements == self.num_elements
+        assert (np.all(release.start_position == self.start_position) and
+                np.all(release.start_position == release.end_position))
+        assert (np.all(release.release_time == self.release_time) and
+                np.all(release.release_time == release.end_release_time))
 
     def test_noparticles_model_run_after_release_time(self):
         """
@@ -176,7 +178,7 @@ class Test_PointLineSource:
         This so that if the user sets the model start time after the spill,
         they don't get anything.
         """
-        sp = PointLineSource(num_elements=self.num_elements,
+        sp = point_line_release_spill(num_elements=self.num_elements,
                 start_position=self.start_position,
                 release_time=self.release_time)
 
@@ -202,7 +204,7 @@ class Test_PointLineSource:
         to num_elements_to_release is before the release_time + timestep.
         """
 
-        sp = PointLineSource(num_elements=self.num_elements,
+        sp = point_line_release_spill(num_elements=self.num_elements,
                 start_position=self.start_position,
                 release_time=self.release_time)
         print 'release_time:', self.release_time
@@ -227,7 +229,7 @@ class Test_PointLineSource:
         - also tests that once all particles have been released, no new
           particles are released in subsequent steps
         """
-        sp = PointLineSource(num_elements=self.num_elements,
+        sp = point_line_release_spill(num_elements=self.num_elements,
                 start_position=self.start_position,
                 release_time=self.release_time)
         timestep = 3600  # seconds
@@ -266,7 +268,7 @@ class Test_PointLineSource:
         It simulates how particles could be released by a Model with a variable
         timestep
         """
-        sp = PointLineSource(num_elements=100,
+        sp = point_line_release_spill(num_elements=100,
                 start_position=self.start_position,
                 release_time=self.release_time,
                 end_release_time=self.release_time
@@ -298,7 +300,7 @@ class Test_PointLineSource:
                                 ts[ix], data_arrays, exp_num_released[ix])
             assert np.alltrue(data_arrays['positions'] == self.start_position)
 
-        assert sp.num_released == sp.num_elements
+        assert sp.num_released == sp.release.num_elements
 
         # rewind and reset data arrays for new release
         sp.rewind()
@@ -319,12 +321,12 @@ class Test_PointLineSource:
         release all elements instantaneously but
         start_position != end_position so they are released along a line
         """
-        sp = PointLineSource(num_elements=11,
+        sp = point_line_release_spill(num_elements=11,
                 start_position=start_position,
                 release_time=self.release_time,
                 end_position=end_position)
         data_arrays = self.release_and_assert(sp, self.release_time,
-                                              600, {}, sp.num_elements)
+                                              600, {}, sp.release.num_elements)
 
         assert data_arrays['positions'].shape == (11, 3)
         assert np.array_equal(data_arrays['positions'][:, 0],
@@ -344,7 +346,7 @@ class Test_PointLineSource:
 
         In this one it all gets released in the first time step.
         """
-        sp = PointLineSource(num_elements=11,
+        sp = point_line_release_spill(num_elements=11,
                 start_position=start_position,
                 release_time=self.release_time,
                 end_position=end_position,
@@ -354,7 +356,8 @@ class Test_PointLineSource:
         # the full release over one time step
         # (plus a tiny bit to get the last one)
         data_arrays = self.release_and_assert(sp, self.release_time,
-                                            timestep + 1, {}, sp.num_elements)
+                                            timestep + 1, {},
+                                            sp.release.num_elements)
 
         assert data_arrays['positions'].shape == (11, 3)
         assert np.array_equal(data_arrays['positions'][:, 0],
@@ -375,14 +378,15 @@ class Test_PointLineSource:
         the remaining particles in the last step
         """
         num_elems = 100
-        sp = PointLineSource(num_elems,
+        sp = point_line_release_spill(num_elems,
                 start_position=start_position,
                 release_time=self.release_time,
                 end_position=end_position,
                 end_release_time=self.release_time + timedelta(minutes=100))
-        lats = np.linspace(sp.start_position[0], sp.end_position[0], num_elems)
-        lons = np.linspace(sp.start_position[1], sp.end_position[1], num_elems)
-        z = np.linspace(sp.start_position[2], sp.end_position[2], num_elems)
+        rel = sp.release
+        lats = np.linspace(rel.start_position[0], rel.end_position[0], num_elems)
+        lons = np.linspace(rel.start_position[1], rel.end_position[1], num_elems)
+        z = np.linspace(rel.start_position[2], rel.end_position[2], num_elems)
 
         # at release time with time step of 1/10 of release_time
         # 1/10th of total particles are expected to be released
@@ -423,7 +427,7 @@ class Test_PointLineSource:
         Same test with vary_timestep=False is used by
         test_cardinal_direction_release(..)
         """
-        sp = PointLineSource(num_elements=50,
+        sp = point_line_release_spill(num_elements=50,
                 start_position=start_position,
                 release_time=self.release_time,
                 end_position=end_position,
@@ -440,7 +444,7 @@ class Test_PointLineSource:
         if not vary_timestep:
             mult = 1
         # end after release - release 10 particles at every step
-        while time < sp.end_release_time:
+        while time < sp.release.end_release_time:
             var_delta_t = delta_t   # vary delta_t
             exp_num_rel = 0
             if (time + delta_t > self.release_time):
@@ -450,7 +454,7 @@ class Test_PointLineSource:
 
                 var_delta_t = mult * delta_t
                 timestep_min = var_delta_t.seconds / 60
-                exp_num_rel = min(sp.num_elements - sp.num_released,
+                exp_num_rel = min(sp.release.num_elements - sp.num_released,
                                   num_rel_per_min * timestep_min)
 
             data_arrays = self.release_and_assert(sp,
@@ -461,16 +465,17 @@ class Test_PointLineSource:
             time += var_delta_t
 
         # all particles have been released
-        assert data_arrays['positions'].shape == (sp.num_elements, 3)
-        assert np.allclose(data_arrays['positions'][0], sp.start_position, 0,
-                           1e-14)
-        assert np.allclose(data_arrays['positions'][-1], sp.end_position, 0,
-                           1e-14)
+        assert data_arrays['positions'].shape == (sp.release.num_elements, 3)
+        assert np.allclose(data_arrays['positions'][0],
+                           sp.release.start_position, 0, 1e-14)
+        assert np.allclose(data_arrays['positions'][-1],
+                           sp.release.end_position, 0, 1e-14)
 
         # the delta position is a constant and is given by
         # (sp.end_position-sp.start_position)/(sp.num_elements-1)
-        delta_p = (sp.end_position - sp.start_position) / (sp.num_elements - 1)
-        assert np.all(delta_p == sp.delta_pos)
+        delta_p = ((sp.release.end_position - sp.release.start_position) /
+                   (sp.release.num_elements - 1))
+        assert np.all(delta_p == sp.release.delta_pos)
         assert np.allclose(delta_p, np.diff(data_arrays['positions'], axis=0),
                            0, 1e-10)
 
@@ -504,7 +509,7 @@ class Test_PointLineSource:
 
         Test it's right for the full release
         """
-        sp = PointLineSource(num_elements=10,
+        sp = point_line_release_spill(num_elements=10,
                 start_position=start_position,
                 release_time=self.release_time,
                 end_position=end_position,
@@ -517,7 +522,7 @@ class Test_PointLineSource:
         data_arrays = {}
 
         # end after release
-        while time < sp.end_release_time + delta_t:
+        while time < sp.release.end_release_time + delta_t:
             """
             keep releasing particles - no need to use self.release_and_assert
             since computing expected_number_of_particles_released is cumbersome
@@ -529,21 +534,24 @@ class Test_PointLineSource:
             sp.set_newparticle_values(num, time, timestep, data_arrays)
             time += delta_t
 
-        assert data_arrays['positions'].shape == (sp.num_elements, 3)
-        assert np.array_equal(data_arrays['positions'][0], sp.start_position)
-        assert np.array_equal(data_arrays['positions'][-1], sp.end_position)
+        assert data_arrays['positions'].shape == (sp.release.num_elements, 3)
+        assert np.array_equal(data_arrays['positions'][0],
+                              sp.release.start_position)
+        assert np.array_equal(data_arrays['positions'][-1],
+                              sp.release.end_position)
 
         # the delta position is a constant and is given by
         # (sp.end_position-sp.start_position)/(sp.num_elements-1)
-        delta_p = (sp.end_position - sp.start_position) / (sp.num_elements - 1)
-        assert np.all(delta_p == sp.delta_pos)
+        delta_p = ((sp.release.end_position - sp.release.start_position) /
+                   (sp.release.num_elements - 1))
+        assert np.all(delta_p == sp.release.delta_pos)
         assert np.allclose(delta_p, np.diff(data_arrays['positions'], axis=0),
                            0, 1e-10)
 
     def test_cont_not_valid_times_exception(self):
         """ Check exception raised if end_release_time < release_time """
         with pytest.raises(ValueError):
-            PointLineSource(num_elements=100,
+            point_line_release_spill(num_elements=100,
                     start_position=self.start_position,
                     release_time=self.release_time,
                     end_release_time=self.release_time - timedelta(seconds=1))
@@ -552,32 +560,32 @@ class Test_PointLineSource:
         """
         if end_position = None, then automatically set it to start_position
         """
-        sp = PointLineSource(num_elements=self.num_elements,
+        sp = point_line_release_spill(num_elements=self.num_elements,
                 start_position=self.start_position,
                 release_time=self.release_time)
 
-        sp.start_position = (0, 0, 0)
-        assert np.any(sp.start_position != sp.end_position)
+        sp.release.start_position = (0, 0, 0)
+        assert np.any(sp.release.start_position != sp.release.end_position)
 
-        sp.end_position = None
-        assert np.all(sp.start_position == sp.end_position)
+        sp.release.end_position = None
+        assert np.all(sp.release.start_position == sp.release.end_position)
 
     def test_end_release_time(self):
         """
         if end_release_time = None, then automatically set it to release_time
         """
-        sp = PointLineSource(num_elements=self.num_elements,
+        sp = point_line_release_spill(num_elements=self.num_elements,
                 start_position=self.start_position,
                 release_time=self.release_time)
 
-        sp.release_time = self.release_time + timedelta(hours=20)
-        assert sp.release_time != sp.end_release_time
+        sp.release.release_time = (self.release_time + timedelta(hours=20))
+        assert sp.release.release_time != sp.release.end_release_time
 
-        sp.end_release_time = None
-        assert sp.release_time == sp.end_release_time
+        sp.release.end_release_time = None
+        assert sp.release.release_time == sp.release.end_release_time
 
 
-""" A few more line release (PointLineSource) tests """
+""" A few more line release (point_line_release_spill) tests """
 num_elems = (
     (998, ),
     (100, ),
@@ -603,7 +611,7 @@ def test_single_line(num_elements):
     start_pos = np.array((0., 0., 0.))
     end_pos = np.array((1.0, 2.0, 0.))
 
-    sp = PointLineSource(num_elements=num_elements,
+    sp = point_line_release_spill(num_elements=num_elements,
                          start_position=start_pos,
                          release_time=release_time,
                          end_position=end_pos,
@@ -642,7 +650,7 @@ def test_line_release_with_one_element():
     start_pos = np.array((0., 0., 0.))
     end_pos = np.array((1.0, 2.0, 0.))
 
-    sp = PointLineSource(num_elements=1,
+    sp = point_line_release_spill(num_elements=1,
                                    start_position=start_pos,
                                    release_time=release_time,
                                    end_position=end_pos,
@@ -669,7 +677,7 @@ def test_line_release_with_big_timestep():
     start_pos = np.array((0., 0., 0.))
     end_pos = np.array((1.0, 2.0, 0.))
 
-    sp = PointLineSource(num_elements=10,
+    sp = point_line_release_spill(num_elements=10,
                          start_position=start_pos,
                          release_time=release_time,
                          end_position=end_pos,
@@ -677,7 +685,7 @@ def test_line_release_with_big_timestep():
 
     num = sp.num_elements_to_release(release_time - timedelta(seconds=100),
                                      time_step.total_seconds())
-    assert num == sp.num_elements
+    assert num == sp.release.num_elements
 
     data_arrays = mock_append_data_arrays(arr_types, num)
     sp.set_newparticle_values(num, release_time - timedelta(seconds=100),
@@ -686,9 +694,9 @@ def test_line_release_with_big_timestep():
     # all axes should release particles with same, evenly spaced delta_position
     for ix in range(3):
         assert np.allclose(data_arrays['positions'][:, ix],
-                     np.linspace(start_pos[ix], end_pos[ix], sp.num_elements))
+            np.linspace(start_pos[ix], end_pos[ix], sp.release.num_elements))
 
-""" end line release (PointLineSource) tests"""
+""" end line release (point_line_release_spill) tests"""
 
 
 def release_elements(sp, release_time, time_step, data_arrays={}):
@@ -714,7 +722,7 @@ def release_elements(sp, release_time, time_step, data_arrays={}):
 
 class TestSpatialRelease:
     @pytest.fixture(autouse=True)
-    def setup(self, sample_spatial_release):
+    def setup(self, sample_spatial_release_spill):
         """
         define common use attributes here.
         rewind the model. Fixture is a function argument only for this function
@@ -724,64 +732,65 @@ class TestSpatialRelease:
         self.start_positions get defined
         """
         #if not hasattr(self, 'sp'):
-        self.sp = sample_spatial_release[0]
-        self.start_positions = sample_spatial_release[1]
+        self.sp = sample_spatial_release_spill[0]
+        self.start_positions = sample_spatial_release_spill[1]
         self.sp.rewind()
 
     def test_SpatialRelease_rewind(self):
         """ test rewind sets state to original """
         assert self.sp.num_released == 0
-        assert self.sp.start_time_invalid == True
+        assert self.sp.release.start_time_invalid == True
 
     def test_SpatialRelease_0_elements(self):
         """
         if current_time + timedelta(seconds=time_step) <= self.release_time,
         then do not release any more elements
         """
-        num = self.sp.num_elements_to_release(self.sp.release_time -
+        num = self.sp.num_elements_to_release(self.sp.release.release_time -
                                               timedelta(seconds=600), 600)
         assert num == 0
 
         self.sp.rewind()
 
         # first call after release_time
-        num = self.sp.num_elements_to_release(self.sp.release_time +
+        num = self.sp.num_elements_to_release(self.sp.release.release_time +
                                               timedelta(seconds=1), 600)
         assert num == 0
 
         # still shouldn't release
-        num = self.sp.num_elements_to_release(self.sp.release_time +
+        num = self.sp.num_elements_to_release(self.sp.release.release_time +
                                               timedelta(hours=1), 600)
         assert num == 0
 
         self.sp.rewind()
 
         # now it should:
-        (data_arrays, num) = release_elements(self.sp, self.sp.release_time,
-                                              600)
+        (data_arrays, num) = release_elements(self.sp,
+                                            self.sp.release.release_time, 600)
         assert np.alltrue(data_arrays['positions'] == self.start_positions)
 
     def test_SpatialRelease(self):
         """
         see if the right arrays get created
         """
-        (data_arrays, num) = release_elements(self.sp, self.sp.release_time,
-                                              600)
+        (data_arrays, num) = release_elements(self.sp,
+                                            self.sp.release.release_time, 600)
 
-        assert (self.sp.num_released == self.sp.num_elements and
-                self.sp.num_elements == num)
+        assert (self.sp.num_released == self.sp.release.num_elements and
+                self.sp.release.num_elements == num)
         assert np.alltrue(data_arrays['positions'] == self.start_positions)
 
     def test_SpatialRelease_inst_release_twice(self):
         """
         make sure they don't release elements twice
         """
-        (data_arrays, num) = release_elements(self.sp, self.sp.release_time,
-                                              600)
-        assert (self.sp.num_released == self.sp.num_elements and
-                self.sp.num_elements == num)
+        (data_arrays, num) = release_elements(self.sp,
+                                            self.sp.release.release_time, 600)
+        assert (self.sp.num_released == self.sp.release.num_elements and
+                self.sp.release.num_elements == num)
 
-        (data_arrays, num) = release_elements(self.sp, self.sp.release_time +
+        (data_arrays, num) = release_elements(self.sp,
+                                              self.sp.release.release_time +
                                               timedelta(seconds=600), 600,
                                               data_arrays)
         assert np.alltrue(data_arrays['positions'] == self.start_positions)

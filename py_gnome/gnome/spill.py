@@ -22,85 +22,27 @@ from itertools import chain
 import numpy as np
 from hazpy import unit_conversion
 
+import gnome    # required by new_from_dict
 from gnome import basic_types, elements, GnomeId
 from gnome.utilities import serializable
 from gnome.db.oil_library.oil_props import OilProps
 
 
-class Spill(object):
-
+class Release(object):
     """
-    base class for a source of elements
+    base class for Release classes.
 
-    .. note:: This class is not serializable since it will not be used in
-              PyGnome. It does not release any elements
+    It contains interface for Release objects
     """
-
-    _update = ['num_elements', 'on']
+    _update = ['num_elements']
     _create = ['num_released', 'start_time_invalid']
     _create.extend(_update)
     state = copy.deepcopy(serializable.Serializable.state)
+    state.remove('id')
     state.add(create=_create, update=_update)
 
-    valid_vol_units = list(chain.from_iterable([item[1] for item in
-                           unit_conversion.ConvertDataUnits['Volume'
-                           ].values()]))
-    valid_vol_units.extend(unit_conversion.GetUnitNames('Volume'))
-
-    @property
-    def id(self):
-        return self._gnome_id.id
-
-    def __init__(
-        self,
-        num_elements=0,
-        on=True,
-        volume=None,
-        volume_units='m^3',
-        mass=None,
-        mass_units='g',
-        element_type=None,
-        id=None,
-        ):
-        """
-        Base spill class. Spill used by a gnome model derive from this class
-
-        :param num_elements: number of LEs - default is 0.
-        :type num_elements: int
-
-        Optional parameters (kwargs):
-
-        :param on: Toggles the spill on/off (bool). Default is 'on'.
-        :type on: bool
-        :type id: str
-        :param volume: oil spilled volume (used to compute mass per particle)
-            Default is None.
-        :type volume: float
-        :param volume_units=m^3: volume units
-        :type volume_units: str
-        :param id: Unique Id identifying the newly created mover (a UUID as a
-            string), used when loading from a persisted model
-        :param element_type=None: list of various element_type that are
-            released. These are spill specific properties of the elements.
-        :type element_type: list of gnome.element_type.* objects
-        """
-
+    def __init__(self, num_elements=0):
         self.num_elements = num_elements
-        self.on = on    # spill is active or not
-
-        # mass/volume, type of oil spilled
-        self._check_units(volume_units)
-        self._volume_units = volume_units   # user defined for display
-        self._volume = volume
-        if volume is not None:
-            self._volume = unit_conversion.convert('Volume', volume_units,
-                'm^3', volume)
-
-        self._gnome_id = GnomeId(id)
-        if element_type is None:
-            element_type = elements.floating()
-
-        self.element_type = element_type
 
         # number of new particles released at each timestep
         self.num_released = 0
@@ -113,137 +55,21 @@ class Spill(object):
         # model start time is valid
         self.start_time_invalid = True
 
-    def __deepcopy__(self, memo=None):
-        """
-        the deepcopy implementation
-
-        we need this, as we don't want the spill_nums copied, but do want
-        everything else.
-
-        got the method from:
-
-        http://stackoverflow.com/questions/3253439/python-copy-how-to-inherit-the-default-copying-behaviour
-
-        Despite what that thread says for __copy__, the built-in deepcopy()
-        ends up using recursion
-        """
-
-        obj_copy = object.__new__(type(self))
-
-        # recursively calls deepcopy on GnomeId object
-        obj_copy.__dict__ = copy.deepcopy(self.__dict__, memo)  
-        return obj_copy
-
-    def __copy__(self):
-        """
-        Make a shallow copy of the object
-
-        It makes a shallow copy of all attributes defined in __dict__
-        Since it is a shallow copy of the dict, the _gnome_id object is not
-        copied, but merely referenced
-        This seems to be standard python copy behavior so leave as is.
-        """
-
-        obj_copy = object.__new__(type(self))
-        obj_copy.__dict__ = copy.copy(self.__dict__)
-        return obj_copy
-
-    def _check_units(self, units):
-        """
-        Checks the user provided units are in list of valid volume units:
-        self.valid_vol_units
-        """
-
-        if units not in self.valid_vol_units:
-            raise unit_conversion.InvalidUnitError("Volume units must be from"\
-               " following list to be valid: {0}".format(self.valid_vol_units))
-
-    @property
-    def volume_units(self):
-        """
-        default units in which volume data is returned
-        """
-        return self._volume_units
-
-    @volume_units.setter
-    def volume_units(self, units):
-        """
-        set default units in which volume data is returned
-        """
-        self._check_units(units)  # check validity before setting
-        self._volume_units = units
-
-    # returns the volume in volume_units specified by user
-    volume = property(lambda self: self.get_volume(),
-                      lambda self, value: self.set_volume(value, 'm^3'))
-
-    def get_volume(self, units=None):
-        """
-        return the volume released during the spill. The default units for
-        volume are as defined in 'volume_units' property. User can also specify
-        desired output units in the function.
-        """
-        if self._volume is None:
-            return self._volume
-
-        if units is None:
-            return unit_conversion.convert('Volume', 'm^3',
-                                           self.volume_units, self._volume)
-        else:
-            self._check_units(units)
-            return unit_conversion.convert('Volume', 'm^3', units,
-                    self._volume)
-
-    def set_volume(self, volume, units):
-        """
-        set the volume released during the spill. The default units for
-        volume are as defined in 'volume_units' property. User can also specify
-        desired output units in the function.
-        """
-        self._check_units(units)
-        self._volume = unit_conversion.convert('Volume', units, 'm^3', volume)
-        self.volume_units = units
-
-    def uncertain_copy(self):
-        """
-        Returns a deepcopy of this spill for the uncertainty runs
-
-        The copy has everything the same, including the spill_num,
-        but it is a new object with a new id.
-
-        Not much to this method, but it could be overridden to do something
-        fancier in the future or a subclass.
-        """
-
-        u_copy = copy.deepcopy(self)
-        return u_copy
-
-    def rewind(self):
-        """
-        rewinds the Spill to original status (before anything has been
-        released).
-
-        Base class sets 'num_released'=0 and 'start_time_invalid'=True
-        properties to original state.
-        Subclasses should overload for additional functions required to reset
-        state.
-        """
-        self.num_released = 0
-        self.start_time_invalid = True
-
     def num_elements_to_release(self, current_time, time_step):
         """
         Determines the number of elements to be released during:
-        current_time + time_step
+        current_time + time_step. Base class has partial (incomplete)
+        implementation.
 
-        This base class method if checks is current_time in first step
+        This base class method checks if current_time in first step
         is valid and toggles the self.start_time_invalid flag if it is valid.
         If current_time <= self.release_time the first time this is called,
         then toggle start_time_invalid to True.
 
-        Subclasses should define the implementation and return number of new
-        particles to be released once this check passes. Be sure to call the
-        base class method first if start_time_invalid flag should be checked.
+        Subclasses should define the complete implementation and return number
+        of new particles to be released once this check passes. Be sure to call
+        the base class method first if start_time_invalid flag should be
+        checked.
 
         :param current_time: current time
         :type current_time: datetime.datetime
@@ -263,34 +89,33 @@ class Spill(object):
             # It's fine to release elements in subsequent steps
             self.start_time_invalid = False
 
-    def set_newparticle_values(self, num_new_particles, current_time,
-                               time_step, data_arrays):
+        return 0    # base class does not release any particles
+
+    def set_new_particle_positions(self,
+        num_new_particles,
+        current_time,
+        time_step,
+        data_arrays):
         """
-        SpillContainer will release elements and initialize all data_arrays
-        to default initial value. The SpillContainer gets passed as input and
-        the data_arrays for 'position', get initialized correctly.
-
-        :param num_new_particles: number of new particles that were added
-        :type num_new_particles: int
-        :param current_time: current time
-        :type current_time: datetime.datetime
-        :param time_step: the time step, sometimes used to decide how many
-            should get released.
-        :type time_step: integer seconds
-        :param data_arrays: dict of data_arrays provided by the SpillContainer.
-            Look for 'positions' array in the dict and update positions for
-            latest num_new_particles that are released
-        :type data_arrays: dict containing numpy arrays for values
-
-        Also, the set_newparticle_values() method for all element_type gets
-        called so each element_type sets the values for its own data correctly
+        release should set the 'positions' array for the data_arrays
         """
-        if self.element_type is not None:
-            self.element_type.set_newparticle_values(num_new_particles, self,
-                                                 data_arrays)
+        pass
+
+    def rewind(self):
+        """
+        rewinds the Release to original status (before anything has been
+        released).
+
+        Base class sets 'num_released'=0 and 'start_time_invalid'=True
+        properties to original state.
+        Subclasses should overload for additional functions required to reset
+        state.
+        """
+        self.num_released = 0
+        self.start_time_invalid = True
 
 
-class PointLineSource(Spill, serializable.Serializable):
+class PointLineRelease(Release, serializable.Serializable):
 
     """
     The primary spill source class  --  a release of floating
@@ -298,13 +123,15 @@ class PointLineSource(Spill, serializable.Serializable):
     released at a single point, or over a line.
     """
 
-    _update = ['start_position', 'release_time', 'end_position',
+    _update = ['start_position',
+               'release_time',
+               'end_position',
                'end_release_time']
 
     # not sure these should be user update able
     _create = ['prev_release_pos']
     _create.extend(_update)
-    state = copy.deepcopy(Spill.state)
+    state = copy.deepcopy(Release.state)
     state.add(update=_update, create=_create)
 
     @classmethod
@@ -320,7 +147,6 @@ class PointLineSource(Spill, serializable.Serializable):
             release_time=dict_.pop('release_time'),
             end_position=dict_.pop('end_position', None),
             end_release_time=dict_.pop('end_release_time', None),
-            id=dict_.pop('id'),
             )
 
         for key in dict_.keys():
@@ -355,10 +181,10 @@ class PointLineSource(Spill, serializable.Serializable):
         :type end_release_time: datetime.datetime
 
         Remaining kwargs are passed onto base class __init__ using super.
-        See :class:`FloatingSpill` documentation for remaining valid kwargs.
+        See base :class:`Release` documentation for remaining valid kwargs.
         """
 
-        super(PointLineSource, self).__init__(**kwargs)
+        super(PointLineRelease, self).__init__(**kwargs)
 
         self.num_elements = num_elements
         self.release_time = release_time
@@ -373,10 +199,10 @@ class PointLineSource(Spill, serializable.Serializable):
             self.end_release_time = end_release_time
 
         if self.release_time == self.end_release_time:
-            self.set_newparticle_values = \
+            self.set_newparticle_positions = \
                 self._init_positions_instantaneous_release
         else:
-            self.set_newparticle_values = \
+            self.set_newparticle_positions = \
                 self._init_positions_timevarying_release
 
         if end_position is None:
@@ -425,7 +251,7 @@ class PointLineSource(Spill, serializable.Serializable):
         return number of particles released in current_time + time_step
         """
         # call base class method to check if start_time is valid
-        super(PointLineSource, self).num_elements_to_release(current_time,
+        super(PointLineRelease, self).num_elements_to_release(current_time,
                                                              time_step)
         if self.start_time_invalid:
             return 0
@@ -489,10 +315,10 @@ class PointLineSource(Spill, serializable.Serializable):
             return
 
         # call the base Spill class set_newparticle_values()
-        super(PointLineSource, self).set_newparticle_values(num_new_particles,
-                                                            current_time,
-                                                            time_step,
-                                                            data_arrays)
+        #super(PointLineRelease, self).set_newparticle_values(num_new_particles,
+        #                                                    current_time,
+        #                                                    time_step,
+        #                                                    data_arrays)
 
         if np.all(self.start_position == self.end_position):
             # point release
@@ -527,10 +353,10 @@ class PointLineSource(Spill, serializable.Serializable):
             return
 
         # call the base Spill class set_newparticle_values()
-        super(PointLineSource, self).set_newparticle_values(num_new_particles,
-                                                            current_time,
-                                                            time_step,
-                                                            data_arrays)
+        #super(PointLineRelease, self).set_newparticle_values(num_new_particles,
+        #                                                    current_time,
+        #                                                    time_step,
+        #                                                    data_arrays)
 
         if np.all(self.start_position == self.end_position):
             # point release
@@ -550,7 +376,7 @@ class PointLineSource(Spill, serializable.Serializable):
         """
         reset to initial conditions -- i.e. nothing released.
         """
-        super(PointLineSource, self).rewind()
+        super(PointLineRelease, self).rewind()
         self.prev_release_pos = self.start_position
 
 # JS: DELETE FOLLOWING CLASSES
@@ -720,7 +546,7 @@ class PointLineSource(Spill, serializable.Serializable):
 #==============================================================================
 
 
-class SpatialRelease(Spill):
+class SpatialRelease(Release):
 
     """
     A simple spill class  --  a release of floating non-weathering particles,
@@ -741,6 +567,8 @@ class SpatialRelease(Spill):
         :param release_time: time the LEs are released
         :type release_time: datetime.datetime
 
+        Remaining kwargs are passed onto base class __init__ using super.
+        See base :class:`Release` documentation for remaining valid kwargs.
         """
 
         super(SpatialRelease, self).__init__(**kwargs)
@@ -767,7 +595,7 @@ class SpatialRelease(Spill):
 
         return self.num_elements
 
-    def set_newparticle_values(self, num_new_particles, current_time,
+    def set_newparticle_positions(self, num_new_particles, current_time,
                                time_step, data_arrays):
         """
         set positions for new elements added by the SpillContainer
@@ -776,16 +604,310 @@ class SpatialRelease(Spill):
             the release_time
         """
         # call the base Spill class set_newparticle_values()
-        super(SpatialRelease, self).set_newparticle_values(num_new_particles,
-                                                            current_time,
-                                                            time_step,
-                                                            data_arrays)
+        #super(SpatialRelease, self).set_newparticle_values(num_new_particles,
+        #                                                    current_time,
+        #                                                    time_step,
+        #                                                    data_arrays)
         self.num_released = self.num_elements
         data_arrays['positions'][:, :] = self.start_positions
 
+
+class Spill(serializable.Serializable, object):
+
+    """
+    base class for a source of elements
+
+    .. note:: This class is not serializable since it will not be used in
+              PyGnome. It does not release any elements
+    """
+
+    _update = ['on', 'release']
+    _create = []
+    _create.extend(_update)
+    state = copy.deepcopy(serializable.Serializable.state)
+    state.add(create=_create, update=_update, read=['num_released'])
+
+    valid_vol_units = list(chain.from_iterable([item[1] for item in
+                           unit_conversion.ConvertDataUnits['Volume'
+                           ].values()]))
+    valid_vol_units.extend(unit_conversion.GetUnitNames('Volume'))
+
+    @classmethod
+    def new_from_dict(cls, dict_):
+        """
+        create object using the same settings as persisted object.
+        In addition, set the state of other properties after initialization
+        """
+        # create release object
+        # create element_type object
+        # then create Spill object
+        obj_dict = dict_.pop('release')
+        rel_obj = obj_dict.pop('obj_type')
+        obj = eval(rel_obj).new_from_dict(obj_dict)
+        dict_['release'] = obj
+        new_obj = super(Spill, cls).new_from_dict(dict_)
+
+        return new_obj
+
+    def __init__(
+        self,
+        release=Release(0),
+        element_type=None,
+        on=True,
+        volume=None,
+        volume_units='m^3',
+        # still need to add/implement mass/mass_units here
+        #mass=None,
+        #mass_units='g',
+        id=None,
+        ):
+        """
+        Base spill class. Spill used by a gnome model derive from this class
+
+        :param num_elements: number of LEs - default is 0.
+        :type num_elements: int
+
+        Optional parameters (kwargs):
+
+        :param on: Toggles the spill on/off (bool). Default is 'on'.
+        :type on: bool
+        :type id: str
+        :param volume: oil spilled volume (used to compute mass per particle)
+            Default is None.
+        :type volume: float
+        :param volume_units=m^3: volume units
+        :type volume_units: str
+        :param id: Unique Id identifying the newly created mover (a UUID as a
+            string), used when loading from a persisted model
+        :param element_type=None: list of various element_type that are
+            released. These are spill specific properties of the elements.
+        :type element_type: list of gnome.element_type.* objects
+        """
+
+        #self.num_elements = num_elements
+        self.release = release
+        if element_type is None:
+            element_type = elements.floating()
+        self.element_type = element_type
+
+        self.on = on    # spill is active or not
+
+        # mass/volume, type of oil spilled
+        self._check_units(volume_units)
+        self._volume_units = volume_units   # user defined for display
+        self._volume = volume
+        if volume is not None:
+            self._volume = unit_conversion.convert('Volume', volume_units,
+                'm^3', volume)
+
+        self._gnome_id = GnomeId(id)
+
+    def __deepcopy__(self, memo=None):
+        """
+        the deepcopy implementation
+
+        we need this, as we don't want the spill_nums copied, but do want
+        everything else.
+
+        got the method from:
+
+        http://stackoverflow.com/questions/3253439/python-copy-how-to-inherit-the-default-copying-behaviour
+
+        Despite what that thread says for __copy__, the built-in deepcopy()
+        ends up using recursion
+        """
+
+        obj_copy = object.__new__(type(self))
+
+        # recursively calls deepcopy on GnomeId object
+        obj_copy.__dict__ = copy.deepcopy(self.__dict__, memo)
+        return obj_copy
+
+    def __copy__(self):
+        """
+        Make a shallow copy of the object
+
+        It makes a shallow copy of all attributes defined in __dict__
+        Since it is a shallow copy of the dict, the _gnome_id object is not
+        copied, but merely referenced
+        This seems to be standard python copy behavior so leave as is.
+        """
+
+        obj_copy = object.__new__(type(self))
+        obj_copy.__dict__ = copy.copy(self.__dict__)
+        return obj_copy
+
+    def __eq__(self, other):
+        """
+        over ride base == operator defined in Serializable class.
+        Spill object contains nested objects like ElementType and Release
+        objects. Check all properties here so nested objects properties
+        can be checked in the __eq__ implementation within the nested objects
+        """
+        if (self.state.get_field_by_attribute('create') !=
+            other.state.get_field_by_attribute('create')):
+            return False
+
+        for name in self.state.get_names('create'):
+            if not hasattr(self, name):
+                """
+                for an attribute like obj_type, base class has
+                obj_type_to_dict method so let base class convert the attribute
+                to dict, then compare
+                """
+                if (self.attr_to_dict(name) != other.attr_to_dict(name)):
+                    return False
+
+            elif getattr(self, name) != getattr(other, name):
+                return False
+
+        return True
+
+    def _check_units(self, units):
+        """
+        Checks the user provided units are in list of valid volume units:
+        self.valid_vol_units
+        """
+
+        if units not in self.valid_vol_units:
+            raise unit_conversion.InvalidUnitError("Volume units must be from"\
+               " following list to be valid: {0}".format(self.valid_vol_units))
+
+    @property
+    def id(self):
+        return self._gnome_id.id
+
+    num_released = property(lambda self: self.release.num_released)
+
+    @property
+    def volume_units(self):
+        """
+        default units in which volume data is returned
+        """
+        return self._volume_units
+
+    @volume_units.setter
+    def volume_units(self, units):
+        """
+        set default units in which volume data is returned
+        """
+        self._check_units(units)  # check validity before setting
+        self._volume_units = units
+
+    # returns the volume in volume_units specified by user
+    volume = property(lambda self: self.get_volume(),
+                      lambda self, value: self.set_volume(value, 'm^3'))
+
+    def get_volume(self, units=None):
+        """
+        return the volume released during the spill. The default units for
+        volume are as defined in 'volume_units' property. User can also specify
+        desired output units in the function.
+        """
+        if self._volume is None:
+            return self._volume
+
+        if units is None:
+            return unit_conversion.convert('Volume', 'm^3',
+                                           self.volume_units, self._volume)
+        else:
+            self._check_units(units)
+            return unit_conversion.convert('Volume', 'm^3', units,
+                    self._volume)
+
+    def set_volume(self, volume, units):
+        """
+        set the volume released during the spill. The default units for
+        volume are as defined in 'volume_units' property. User can also specify
+        desired output units in the function.
+        """
+        self._check_units(units)
+        self._volume = unit_conversion.convert('Volume', units, 'm^3', volume)
+        self.volume_units = units
+
+    def uncertain_copy(self):
+        """
+        Returns a deepcopy of this spill for the uncertainty runs
+
+        The copy has everything the same, including the spill_num,
+        but it is a new object with a new id.
+
+        Not much to this method, but it could be overridden to do something
+        fancier in the future or a subclass.
+        """
+
+        u_copy = copy.deepcopy(self)
+        return u_copy
+
     def rewind(self):
         """
-        rewind to initial conditions -- i.e. nothing released.
+        rewinds the release to original status (before anything has been
+        released).
         """
-        self.num_released = 0
-        self.start_time_invalid = True
+        self.release.rewind()
+
+    def num_elements_to_release(self, current_time, time_step):
+        """
+        Determines the number of elements to be released during:
+        current_time + time_step
+
+        It invokes the num_elements_to_release method for the the unerlying
+        release object: self.release.num_elements_to_release()
+
+        :param current_time: current time
+        :type current_time: datetime.datetime
+        :param time_step: the time step, sometimes used to decide how many
+            should get released.
+        :type time_step: integer seconds
+
+        :returns: the number of elements that will be released. This is taken
+            by SpillContainer to initialize all data_arrays.
+        """
+        return self.release.num_elements_to_release(current_time, time_step)
+
+    def set_newparticle_values(self, num_new_particles, current_time,
+                               time_step, data_arrays):
+        """
+        SpillContainer will release elements and initialize all data_arrays
+        to default initial value. The SpillContainer gets passed as input and
+        the data_arrays for 'position' get initialized correctly by the release
+        object: self.release.set_newparticle_positions()
+
+        :param num_new_particles: number of new particles that were added
+        :type num_new_particles: int
+        :param current_time: current time
+        :type current_time: datetime.datetime
+        :param time_step: the time step, sometimes used to decide how many
+            should get released.
+        :type time_step: integer seconds
+        :param data_arrays: dict of data_arrays provided by the SpillContainer.
+            Look for 'positions' array in the dict and update positions for
+            latest num_new_particles that are released
+        :type data_arrays: dict containing numpy arrays for values
+
+        Also, the set_newparticle_values() method for all element_type gets
+        called so each element_type sets the values for its own data correctly
+        """
+        if self.element_type is not None:
+            self.element_type.set_newparticle_values(num_new_particles, self,
+                                                 data_arrays)
+
+        self.release.set_newparticle_positions(num_new_particles, current_time,
+                                               time_step, data_arrays)
+
+
+""" Helper functions """
+
+
+def point_line_release_spill(num_elements,
+        start_position,
+        release_time,
+        end_position=None,
+        end_release_time=None,
+        element_type=None,
+        on=True,
+        volume=None,
+        volume_units='m^3'):
+    release = PointLineRelease(num_elements, start_position, release_time,
+                               end_position, end_release_time)
+    return Spill(release, element_type, on, volume, volume_units)

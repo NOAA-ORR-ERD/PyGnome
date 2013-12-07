@@ -65,13 +65,13 @@ def sample_sc_release(num_elements=10,
     object
     """
     if spill is None:
-        spill = gnome.spill.PointLineSource(num_elements, start_pos,
+        spill = gnome.spill.point_line_release_spill(num_elements, start_pos,
                                             release_time)
     if element_type is not None:
         spill.element_type = element_type
 
     if current_time is None:
-        current_time = spill.release_time
+        current_time = spill.release.release_time
 
     if arr_types is None:
         # default always has standard windage parameters required by wind_mover
@@ -214,7 +214,7 @@ def wind_circ(rq_wind):
 
 
 @pytest.fixture(scope='module')
-def sample_spatial_release():
+def sample_spatial_release_spill():
     """
     creates an example SpatialRelease object with
     start_positions: ((0., 0., 0.), (28.0, -75.0, 0.), (-15, 12, 4.0),
@@ -226,14 +226,15 @@ def sample_spatial_release():
     from gnome.spill import SpatialRelease
     start_positions = ((0., 0., 0.), (28.0, -75.0, 0.), (-15, 12, 4.0),
                    (80, -80, 100.0))
-    sp = SpatialRelease(start_positions, release_time=datetime(2012, 1, 1, 1))
+    rel = SpatialRelease(start_positions, release_time=datetime(2012, 1, 1, 1))
+    sp = gnome.spill.Spill(release=rel)
     return (sp, start_positions)
 
 
 @pytest.fixture(scope='module')
 def sample_sc_no_uncertainty():
     """
-    Sample spill container with 2 PointLineSource spills:
+    Sample spill container with 2 point_line_release_spill spills:
 
     - release_time for 2nd spill is 1 hour delayed
     - 2nd spill takes 4 hours to release and end_position is different so it
@@ -252,11 +253,11 @@ def sample_sc_no_uncertainty():
     end_position = (24.0, -79.5, 1.0)
     end_release_time = datetime(2012, 1, 1, 12) + timedelta(hours=4)
 
-    spills = [gnome.spill.PointLineSource(num_elements,
+    spills = [gnome.spill.point_line_release_spill(num_elements,
                               start_position,
                               release_time,
                               volume=10),
-              gnome.spill.PointLineSource(num_elements, start_position,
+              gnome.spill.point_line_release_spill(num_elements, start_position,
                               release_time + timedelta(hours=1),
                               end_position, end_release_time,
                               volume=10),

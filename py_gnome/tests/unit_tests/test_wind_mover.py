@@ -20,7 +20,7 @@ from gnome.utilities import convert
 from gnome.movers import WindMover, constant_wind_mover, \
     wind_mover_from_file
 
-from gnome.spill import PointLineSource
+from gnome.spill import point_line_release_spill
 from gnome.spill_container import SpillContainer
 from gnome.elements import floating
 
@@ -263,7 +263,7 @@ def test_windage_index():
     rel_time = datetime(2013, 1, 1, 0, 0)
     timestep = 30
     for i in range(2):
-        spill = PointLineSource(num_elements=5,
+        spill = point_line_release_spill(num_elements=5,
                                 start_position=(0., 0., 0.),
                                 release_time=rel_time + i * timedelta(hours=1),
                                 element_type=floating(windage_range=(i * .01 +

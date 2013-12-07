@@ -22,7 +22,7 @@ def model(sample_model, request):
     use fixture model_surface_release_spill and add a few things to it for the
     test
 
-    This fixtures adds another spill (PointLineSource) and a netcdf outputter
+    This fixtures adds another spill (point_line_release_spill) and a netcdf outputter
     to the model. It also adds a cleanup function that deletes the netcdf files
     after upon test completion.
     """
@@ -37,7 +37,7 @@ def model(sample_model, request):
     model.movers += gnome.movers.RandomMover(diffusion_coef=100000)
 
     model.spills += \
-        gnome.spill.PointLineSource(num_elements=5,
+        gnome.spill.point_line_release_spill(num_elements=5,
             start_position=sample_model['release_start_pos'],
             release_time=model.start_time,
             end_release_time=model.start_time + model.duration,

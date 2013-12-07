@@ -20,7 +20,7 @@ import gnome.array_types
 
 
 class WindMoversBase(CyMover):
-    state = copy.deepcopy(serializable.Serializable.state)
+    state = copy.deepcopy(CyMover.state)
     state.add(update=['uncertain_duration', 'uncertain_time_delay',
                       'uncertain_speed_scale'],
               create=['uncertain_duration', 'uncertain_time_delay',
