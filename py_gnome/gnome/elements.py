@@ -55,7 +55,7 @@ class InitWindages(object):
     @windage_range.setter
     def windage_range(self, val):
         if np.any(np.asarray(val) < 0):
-            raise ValueError("'windage_range' > (0, 0). Nominal values vary"
+            raise ValueError("'windage_range' >= (0, 0). Nominal values vary"
                 " between 1% to 4%, so default windage_range=(0.01, 0.04)")
         self._windage_range = val
 

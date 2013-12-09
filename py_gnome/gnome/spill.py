@@ -36,7 +36,7 @@ class Spill(object):
               PyGnome. It does not release any elements
     """
 
-    _update = ['num_elements', 'on']
+    _update = ['num_elements', 'on', 'windage_range', 'windage_persist']
     _create = ['num_released', 'start_time_invalid']
     _create.extend(_update)
     state = copy.deepcopy(serializable.Serializable.state)
@@ -59,6 +59,8 @@ class Spill(object):
         volume_units='m^3',
         mass=None,
         mass_units='g',
+        windage_range=None,
+        windage_persist=None,
         element_type=None,
         id=None,
         ):
@@ -80,6 +82,13 @@ class Spill(object):
         :type volume_units: str
         :param id: Unique Id identifying the newly created mover (a UUID as a
             string), used when loading from a persisted model
+        :param windage_range=(0.01, 0.04): the windage range of the elements
+            default is (0.01, 0.04) from 1% to 4%.
+        :type windage_range: tuple: (min, max)
+        :param windage_persist=-1: Default is 900s, so windage is updated every
+            900 sec. -1 means the persistence is infinite so it is only set at
+            the beginning of the run.
+        :type windage_persist: integer seconds
         :param element_type=None: list of various element_type that are
             released. These are spill specific properties of the elements.
         :type element_type: list of gnome.element_type.* objects
@@ -101,6 +110,20 @@ class Spill(object):
             element_type = elements.floating()
 
         self.element_type = element_type
+
+        if windage_range is not None:
+            if 'windages' not in self.element_type.initializers:
+                raise TypeError("'windage_range' cannot be set for specified"
+                                " element_type: {0}".format(element_type))
+            (self.element_type.initializers['windages']).windage_range = \
+                    windage_range
+
+        if windage_persist is not None:
+            if 'windages' not in self.element_type.initializers:
+                raise TypeError("'windage_persist' cannot be set for specified"
+                                " element_type: {0}".format(element_type))
+            (self.element_type.initializers['windages']).windage_persist = \
+                windage_persist
 
         # number of new particles released at each timestep
         self.num_released = 0
@@ -157,6 +180,22 @@ class Spill(object):
         if units not in self.valid_vol_units:
             raise unit_conversion.InvalidUnitError("Volume units must be from"\
                " following list to be valid: {0}".format(self.valid_vol_units))
+
+    @property
+    def windage_range(self):
+        return self.element_type.initializers['windages'].windage_range
+
+    @windage_range.setter
+    def windage_range(self, val):
+        self.element_type.initializers['windages'].windage_range = val
+
+    @property
+    def windage_persist(self):
+        return self.element_type.initializers['windages'].windage_persist
+
+    @windage_persist.setter
+    def windage_persist(self, val):
+        self.element_type.initializers['windages'].windage_persist = val
 
     @property
     def volume_units(self):

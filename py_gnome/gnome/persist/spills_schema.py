@@ -45,8 +45,8 @@ class Spill(MappingSchema):
 
     on = SchemaNode(Bool(), default=True, missing=True)
     num_elements = SchemaNode(Int(), default=1000)
-    #windage_range = Windage(default=(0.01, 0.04))
-    #windage_persist = SchemaNode(Float(), default=900)
+    windage_range = Windage(default=(0.01, 0.04))
+    windage_persist = SchemaNode(Float(), default=900)
 
 
 class PointLineSource(Id, Spill):

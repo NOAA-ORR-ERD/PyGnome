@@ -835,6 +835,35 @@ class TestSpatialRelease:
 #                 == sp_dict.__getitem__(key)
 #==============================================================================
 
+
+"""
+Following test set/get windage_range and windage_persist parameters from the
+Spill object. These were removed but are put back into master branch so current
+webgnome works. These will eventually be removed
+"""
+
+
+class TestWindageProps:
+    def test_exceptions(self):
+        with pytest.raises(ValueError):
+            Spill(windage_range=(-1, 0))
+
+    def test_windage_range(self):
+        spill = Spill()
+        assert spill.windage_range == (0.01, 0.04)
+        spill.windage_range = (0, 0.03)
+        assert spill.windage_range == (0.0, 0.03)
+        assert (spill.element_type.initializers['windages'].windage_range ==
+                spill.windage_range)
+
+    def test_windage_persist(self):
+        spill = Spill()
+        assert spill.windage_persist == 900
+        spill.windage_persist = 100
+        assert spill.windage_persist == 100
+        assert (spill.element_type.initializers['windages'].windage_persist ==
+                spill.windage_persist)
+
 if __name__ == '__main__':
 
     # TC = Test_PointSourceSurfaceRelease()
