@@ -17,7 +17,7 @@
 
 // functions for computing rise velocity from droplet size
 // get_rise_velocity is exposed to Cython/Python for PyGnome
-OSErr get_rise_velocity(int n, double *rise_velocity, double *le_density, double *le_droplet_size, double water_viscosity, double water_density);
+OSErr DLL_API get_rise_velocity(int n, double *rise_velocity, double *le_density, double *le_droplet_size, double water_viscosity, double water_density);
 double GetRiseVelocity(double le_density, double le_droplet_size, double water_viscosity, double water_density);
 
 class DLL_API RiseVelocity_c : virtual public Mover_c {
