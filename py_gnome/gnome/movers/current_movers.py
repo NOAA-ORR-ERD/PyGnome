@@ -289,4 +289,11 @@ class GridCurrentMover(CyMover, serializable.Serializable):
 
         self.mover.export_topology(topology_file)
 
+    def extrapolate_in_time(self, extrapolate):
+        """
+        :param extrapolate=false: allow current data to be extrapolated before and after file data.
+        """
+
+        self.mover.extrapolate_in_time(extrapolate)
+
 

@@ -115,6 +115,9 @@ cdef class CyGridWindMover(cy_mover.CyMover):
         self.grid_wind.fWindScale = wind_scale
         self.grid_wind.fIsOptimizedForStep = 0
 
+    def extrapolate_in_time(self, extrapolate):
+        self.grid_wind.SetExtrapolationInTime(extrapolate)
+
     def get_move(self,
                  model_time,
                  step_len,

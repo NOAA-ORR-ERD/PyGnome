@@ -159,6 +159,9 @@ cdef class CyGridCurrentMover(cy_mover.CyMover):
             self.grid_current.fDownCurUncertainty = -1.*value
         
 
+    def extrapolate_in_time(self, extrapolate):
+        self.grid_current.SetExtrapolationInTime(extrapolate)
+
     def get_move(self,
                  model_time,
                  step_len,

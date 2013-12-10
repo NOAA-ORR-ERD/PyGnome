@@ -56,8 +56,8 @@ public:
 	virtual WorldRect GetGridBounds(){return timeGrid->GetGridBounds();}	
 	void		SetTimeGrid(TimeGridVel *newTimeGrid) {timeGrid = newTimeGrid;}
 
-	void	SetExtrapolationInTime(Boolean extrapolate) {timeGrid->SetExtrapolationInTime(extrapolate);}	
-	Boolean	GetExtrapolationInTime() {return timeGrid->GetExtrapolationInTime();}	
+	void	SetExtrapolationInTime(bool extrapolate) {timeGrid->SetExtrapolationInTime(extrapolate);}	
+	bool	GetExtrapolationInTime() {return timeGrid->GetExtrapolationInTime();}	
 	
 	void	SetTimeShift(long timeShift) {timeGrid->SetTimeShift(timeShift);}	
 	Boolean	GetTimeShift() {return timeGrid->GetTimeShift();}	
