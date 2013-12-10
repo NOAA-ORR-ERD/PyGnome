@@ -5,7 +5,7 @@ pyGNOME consists of compiled C++ code (`libgnome`), compiled Cython code (`*.pyx
 
 Dependencies
 ---------------------
-pyGNOME depends on a numbero f third party packages -- teh complete list can be found in the `requirements.txt` file. This file can also be processed by the `pip` pacakge installer, which (if all goes well) will auto install all the dependencies.
+pyGNOME depends on a number of third party packages -- the complete list can be found in the `requirements.txt` file. This file can also be processed by the `pip` package installer, which (if all goes well) will auto install all the dependencies.
 
 
 Binary Instalation
@@ -22,7 +22,7 @@ Ideally, it is as simple as::
 or::
     $ python setup.py develop
 
-(develop mode instals links to the code, rather than copying the code into pthon's site-packages -- it is helpful if you want to be updating the code, and have the new version run right away.)
+(develop mode installs links to the code, rather than copying the code into python's site-packages -- it is helpful if you want to update the code, and have the new version run right away.)
 
 (MORE HERE!!)
 

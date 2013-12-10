@@ -86,7 +86,7 @@ At the C++ level, each mover has a <cite>get_move</cite> method that takes the c
 <span id="gnome-model-the-pygnome-model-class"></span><h2><tt class="docutils literal"><span class="pre">gnome.model</span></tt> &#8211; the pyGNOME model class<a class="headerlink" href="#module-gnome.model" title="Permalink to this headline">¶</a></h2>
 <dl class="class">
 <dt id="gnome.model.Model">
-<em class="property">class </em><tt class="descclassname">gnome.model.</tt><tt class="descname">Model</tt><big>(</big><em>time_step=datetime.timedelta(0</em>, <em>900)</em>, <em>start_time=datetime.datetime(2013</em>, <em>11</em>, <em>22</em>, <em>11</em>, <em>0)</em>, <em>duration=datetime.timedelta(1)</em>, <em>map=&lt;gnome.map.GnomeMap object at 0x2d08bb0&gt;</em>, <em>uncertain=False</em>, <em>cache_enabled=False</em>, <em>id=None</em><big>)</big><a class="reference internal" href="_modules/gnome/model.html#Model"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.model.Model" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><tt class="descclassname">gnome.model.</tt><tt class="descname">Model</tt><big>(</big><em>time_step=datetime.timedelta(0</em>, <em>900)</em>, <em>start_time=datetime.datetime(2013</em>, <em>12</em>, <em>10</em>, <em>12</em>, <em>0)</em>, <em>duration=datetime.timedelta(1)</em>, <em>map=&lt;gnome.map.GnomeMap object at 0x2d16cd0&gt;</em>, <em>uncertain=False</em>, <em>cache_enabled=False</em>, <em>id=None</em><big>)</big><a class="reference internal" href="_modules/gnome/model.html#Model"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.model.Model" title="Permalink to this definition">¶</a></dt>
 <dd><p>PyGNOME Model Class</p>
 <p>Initializes a model. All arguments have a default.</p>
 <table class="docutils field-list" frame="void" rules="none">
@@ -623,11 +623,6 @@ released at a single point, or over a line.</p>
 <li><strong>end_position=None</strong> &#8211; optional. For moving source, the end position</li>
 <li><strong>end_release_time=None</strong> &#8211; optional &#8211; for a release over time, the
 end release time</li>
-<li><strong>0.04)</strong> (<em>windage_range=(0.01,</em>) &#8211; the windage range of the elements
-default is (0.01, 0.04) from 1% to 4%.</li>
-<li><strong>windage_persist=-1</strong> &#8211; Default is 900s, so windage is updated every
-900 sec. -1 means the persistence is infinite so it is only set at
-the beginning of the run.</li>
 </ul>
 </td>
 </tr>
@@ -701,7 +696,7 @@ the release_time</p>
 
 <dl class="class">
 <dt id="gnome.spill.Spill">
-<em class="property">class </em><tt class="descclassname">gnome.spill.</tt><tt class="descname">Spill</tt><big>(</big><em>num_elements=0</em>, <em>on=True</em>, <em>volume=None</em>, <em>volume_units='m^3'</em>, <em>mass=None</em>, <em>mass_units='g'</em>, <em>oil='oil_conservative'</em>, <em>windage_range=None</em>, <em>windage_persist=None</em>, <em>element_type=None</em>, <em>id=None</em><big>)</big><a class="reference internal" href="_modules/gnome/spill.html#Spill"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.spill.Spill" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><tt class="descclassname">gnome.spill.</tt><tt class="descname">Spill</tt><big>(</big><em>num_elements=0</em>, <em>on=True</em>, <em>volume=None</em>, <em>volume_units='m^3'</em>, <em>mass=None</em>, <em>mass_units='g'</em>, <em>windage_range=None</em>, <em>windage_persist=None</em>, <em>element_type=None</em>, <em>id=None</em><big>)</big><a class="reference internal" href="_modules/gnome/spill.html#Spill"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.spill.Spill" title="Permalink to this definition">¶</a></dt>
 <dd><p>base class for a source of elements</p>
 <div class="admonition note">
 <p class="first admonition-title">Note</p>
@@ -727,15 +722,13 @@ PyGnome. It does not release any elements</p>
 <li><strong>volume</strong> (<em>float</em>) &#8211; oil spilled volume (used to compute mass per particle)
 Default is None.</li>
 <li><strong>volume_units=m^3</strong> &#8211; volume units</li>
-<li><strong>oil=&#8217;oil_conservative&#8217;</strong> &#8211; Type of oil spilled.
-If this is a string, or an oillibrary.models.Oil object, then
-create gnome.spill.OilProps(oil) object. If this is a
-gnome.spill.OilProps object, then simply instance oil_props
-variable to it: self.oil_props = oil</li>
-<li><strong>windage_range</strong> (<em>a tuple of size 2 (min, max)</em>) &#8211; A tuple defining the min/max % of wind acting on
-each LE. Default (0.01, 0.04)</li>
 <li><strong>id</strong> (<em>str</em>) &#8211; Unique Id identifying the newly created mover (a UUID as a
 string), used when loading from a persisted model</li>
+<li><strong>0.04)</strong> (<em>windage_range=(0.01,</em>) &#8211; the windage range of the elements
+default is (0.01, 0.04) from 1% to 4%.</li>
+<li><strong>windage_persist=-1</strong> &#8211; Default is 900s, so windage is updated every
+900 sec. -1 means the persistence is infinite so it is only set at
+the beginning of the run.</li>
 <li><strong>element_type=None</strong> &#8211; list of various element_type that are
 released. These are spill specific properties of the elements.</li>
 </ul>
@@ -1367,7 +1360,7 @@ object and does not have a to_dict method will raise an AttributeError.</p>
 
 <dl class="class">
 <dt id="gnome.movers.WindMoversBase">
-<em class="property">class </em><tt class="descclassname">gnome.movers.</tt><tt class="descname">WindMoversBase</tt><big>(</big><em>uncertain_duration=24</em>, <em>uncertain_time_delay=0</em>, <em>uncertain_speed_scale=2.0</em>, <em>uncertain_angle_scale=0.4</em>, <em>uncertain_angle_units='rad'</em>, <em>**kwargs</em><big>)</big><a class="headerlink" href="#gnome.movers.WindMoversBase" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><tt class="descclassname">gnome.movers.</tt><tt class="descname">WindMoversBase</tt><big>(</big><em>uncertain_duration=3</em>, <em>uncertain_time_delay=0</em>, <em>uncertain_speed_scale=2.0</em>, <em>uncertain_angle_scale=0.4</em>, <em>uncertain_angle_units='rad'</em>, <em>**kwargs</em><big>)</big><a class="headerlink" href="#gnome.movers.WindMoversBase" title="Permalink to this definition">¶</a></dt>
 <dd><p>This is simply a base class for WindMover and GridWindMover for the
 common properties.</p>
 <p>The classes that inherit from this should define the self.mover object
@@ -1555,6 +1548,7 @@ is not a read/write attribute. Only defined for serializable_state</p>
 <li><strong>wind_file</strong> &#8211; file containing wind data on a grid</li>
 <li><strong>topology_file</strong> &#8211; Default is None. When exporting topology, it
 is stored in this file</li>
+<li><strong>wind_scale</strong> &#8211; Value to scale wind data</li>
 </ul>
 </td>
 </tr>
