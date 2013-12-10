@@ -12,6 +12,7 @@
 
 #include "Basics.h"
 #include "TypeDefs.h"
+#include "GuiTypeDefs.h"
 #include "CurrentMover_c.h"
 #include "DagTree.h"
 
@@ -43,8 +44,8 @@ public:
 	
 	PtCurMover_c (TMap *owner, char *name);
 	PtCurMover_c () {}
-	virtual ClassID 	GetClassID () { return TYPE_PTCURMOVER; }
-	virtual Boolean	IAm(ClassID id) { if(id==TYPE_PTCURMOVER) return TRUE; return CurrentMover_c::IAm(id); }
+	//virtual ClassID 	GetClassID () { return TYPE_PTCURMOVER; }
+	//virtual Boolean	IAm(ClassID id) { if(id==TYPE_PTCURMOVER) return TRUE; return TCurrentMover::IAm(id); }
 	
 	virtual OSErr		AddUncertainty(long setIndex, long leIndex,VelocityRec *patVelocity,double timeStep,Boolean useEddyUncertainty);
 	VelocityRec			GetPatValue (WorldPoint p);

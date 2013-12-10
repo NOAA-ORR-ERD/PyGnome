@@ -9,6 +9,7 @@ using std::map;
 using std::string;
 
 #include "TypeDefs.h"
+#include "GuiTypeDefs.h"
 #include "CMyList.h"
 #include "RectUtils.h"
 #include "ObjectUtils.h"
@@ -82,6 +83,20 @@ enum { // moved TModel defines to TModel.cpp // JLM
 	
 	I_WEATHERNAME = 0, I_WEATHERACTIVE };
 
+enum {
+	I_PTCURNAME = 0 ,
+	I_PTCURACTIVE, 
+	I_PTCURGRID, 
+	I_PTCURARROWS,
+	I_PTCURSCALE,
+	I_PTCURUNCERTAINTY,
+	I_PTCURSTARTTIME,
+	I_PTCURDURATION, 
+	I_PTCURALONGCUR,
+	I_PTCURCROSSCUR,
+	I_PTCURMINCURRENT
+};
+
 ///////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////
 //////////////////////////////     Classes     ////////////////////////////
@@ -147,6 +162,8 @@ class TWeatherer : virtual public Weatherer_c, public TClassID
 		virtual OSErr		InitWeatherer () { return noErr; }
 		virtual void		Dispose () { return; }
 
+		virtual ClassID 	GetClassID () { return TYPE_WEATHERER; }
+	
 		// I/O methods
 		virtual OSErr 		Read  (BFPB *bfpb);  			// read from current position
 		virtual OSErr 		Write (BFPB *bfpb); 			// write to  current position
@@ -167,6 +184,9 @@ class TOSSMWeatherer : virtual public OSSMWeatherer_c, public TWeatherer
 		virtual				~TOSSMWeatherer ();
 		virtual OSErr		InitWeatherer ();
 		virtual void		Dispose ();
+	
+		virtual ClassID		GetClassID () { return TYPE_OSSMWEATHERER; }
+	
 		// I/O methods
 		virtual OSErr 		Read (BFPB *bfpb); 	// read from current position
 		virtual OSErr 		Write (BFPB *bfpb); // write to  current position

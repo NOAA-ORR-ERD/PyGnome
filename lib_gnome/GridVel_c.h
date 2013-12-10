@@ -29,7 +29,7 @@ protected:
 public:
 	GridVel_c();
 	virtual	~GridVel_c() { Dispose (); }
-	virtual ClassID 	GetClassID 	() { return TYPE_GRIDVEL; }
+	//virtual ClassID 	GetClassID 	() { return TYPE_GRIDVEL; }
 	virtual  VelocityRec GetPatValue(WorldPoint p)=0;
 	virtual VelocityRec GetSmoothVelocity(WorldPoint p)=0;
 	virtual void SetBounds(WorldRect bounds){fGridBounds = bounds;}	

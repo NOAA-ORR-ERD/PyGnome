@@ -50,8 +50,8 @@ public:
 	OSSMTimeValue_c ();
 	virtual				   ~OSSMTimeValue_c ();
 
-	virtual ClassID 		GetClassID () { return TYPE_OSSMTIMEVALUES; }
-	virtual Boolean			IAm(ClassID id) { if(id==TYPE_OSSMTIMEVALUES) return TRUE; return TimeValue_c::IAm(id); }
+	//virtual ClassID 		GetClassID () { return TYPE_OSSMTIMEVALUES; }
+	//virtual Boolean			IAm(ClassID id) { if(id==TYPE_OSSMTIMEVALUES) return TRUE; return TimeValue_c::IAm(id); }
 	
 	virtual void			Dispose ();
 	virtual OSErr			GetTimeValue(const Seconds& current_time, VelocityRec *value);

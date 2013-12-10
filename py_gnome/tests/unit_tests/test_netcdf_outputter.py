@@ -11,6 +11,7 @@ import pytest
 
 import gnome
 from gnome.netcdf_outputter import NetCDFOutput
+from gnome.elements import floating
 
 base_dir = os.path.dirname(__file__)
 
@@ -40,7 +41,7 @@ def model(sample_model, request):
             start_position=sample_model['release_start_pos'],
             release_time=model.start_time,
             end_release_time=model.start_time + model.duration,
-            windage_persist=-1)
+            element_type=floating(windage_persist=-1))
 
     def cleanup():
         """ cleanup outputters was added to sample_model and delete files """

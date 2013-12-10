@@ -53,8 +53,8 @@ public:
 
 	virtual void	Dispose ();
 	virtual OSErr	InitMap();
-	virtual ClassID GetClassID () { return TYPE_GRIDMAP; }
-	virtual Boolean	IAm(ClassID id) { if(id==TYPE_GRIDMAP) return TRUE; return ClassID_c::IAm(id); }
+	//virtual ClassID GetClassID () { return TYPE_GRIDMAP; }
+	//virtual Boolean	IAm(ClassID id) { if(id==TYPE_GRIDMAP) return TRUE; return ClassID_c::IAm(id); }
 
 	WorldRect		GetMapBounds () { return fMapBounds; }
 	void			SetMapBounds (WorldRect newBounds) { fMapBounds = newBounds; }

@@ -33,7 +33,7 @@ public:
 #endif
 	Seconds				fUncertainStartTime;
 	double				fDuration; 				// duration time for uncertainty;
-	RGBColor			fColor;
+	//RGBColor			fColor;
 	
 protected:
 	double				fTimeUncertaintyWasSet;	// time to measure next uncertainty update
@@ -56,17 +56,17 @@ public:
 	virtual OSErr 		PrepareForModelStep(const Seconds&, const Seconds&, bool, int numLESets, int* LESetsSizesList) { return noErr; } // AH 07/10/2012
 
 	virtual OSErr		UpdateUncertainty(void);
+#ifndef pyGNOME
 	void				GetMoverName (char *name) { GetClassName (name); }
 	void				SetMoverName (char *name) { SetClassName (name); }
-#ifndef pyGNOME
 	TMap				*GetMoverMap () { return moverMap; }
 	void				SetMoverMap (TMap *owner) { moverMap = owner; }
 #endif
 	virtual void 		ModelStepIsDone(){ return; }
 	virtual OSErr 		ReallocateUncertainty(int numLEs, short* LE_Status){ return 0; }
 	virtual Boolean		IAmA3DMover() {return false;}
-	virtual ClassID 	GetClassID () { return TYPE_MOVER; }
-	virtual Boolean		IAm(ClassID id) { if(id==TYPE_MOVER) return TRUE; return ClassID_c::IAm(id); }
+	//virtual ClassID 	GetClassID () { return TYPE_MOVER; }
+	//virtual Boolean		IAm(ClassID id) { if(id==TYPE_MOVER) return TRUE; return ClassID_c::IAm(id); }
 	
 };
 

@@ -212,7 +212,7 @@ protected:
 	
 public:
 	
-	ClassID 			GetClassID () { return TYPE_CMAPLAYER; }//JLM
+	//ClassID 			GetClassID () { return TYPE_CMAPLAYER; }//JLM
 	
 	
 	long				GetLayerObjectCount ();

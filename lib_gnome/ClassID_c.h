@@ -26,8 +26,8 @@ public:
 	
 						ClassID_c ();
 	virtual			   ~ClassID_c () { Dispose (); }
-	virtual ClassID 	GetClassID 	() { return TYPE_UNDENTIFIED; }
-	virtual Boolean		IAm(ClassID id) { return FALSE; }
+	//virtual ClassID 	GetClassID 	() { return TYPE_UNDENTIFIED; }
+	//virtual Boolean		IAm(ClassID id) { return FALSE; }
 	void				GetClassName (char* theName) { strcpy (theName, className); }	// sohail
 	void				SetClassName (char* name);
 	//UNIQUEID			GetUniqueID () { return fUniqueID; }

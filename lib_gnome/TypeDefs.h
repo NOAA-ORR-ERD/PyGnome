@@ -18,119 +18,16 @@
 
 //++ Carry-over from basic definitions.
 
-/*#define DIRTY_EVERYTHING -1
-#define DIRTY_RUNBAR 1
-#define DIRTY_LIST 2
-#define DIRTY_MAPDRAWINGRECT  4
-#define DIRTY_TOOLBAR  8
-#define DIRTY_ENTIREWINDOW  16
-*/
 #define DEREFH(h) (*(h))
 #define INDEXH(h, i) (*(h))[i]
-
-#define kDefSaveFileName "Untitled.sav"		// STH
-#define	kDefLEFileName "LEFile"				// STH
-
-/*#ifndef MAC
-typedef CHARPTR Ptr;
-typedef CHARH Handle;
-typedef Handle *HANDLEPTR;
-#endif*/
-#define PTCUR_DELIM_STR " \t"
-
-extern RGBColor colors[];
-
-enum { BLACK = 1, WHITE, DARKGRAY, GRAY, LIGHTGRAY,
-	BROWN, LIGHTBROWN, OLIVE = 7, DARKGREEN, GREEN,
-	LIGHTBLUE, BLUE, DARKBLUE, PURPLE, PINK, RED, YELLOW, OTHERCOLOR }; // colors
 
 //--
 
 #define kMaxNameLen 256
 #define TIMEVALUE_TOLERANCE 0.00001
-#define kNumOSSMLandTypes 11
-#define kNumOSSMWaterTypes 5
-#define kOMapWidth 80
-#define kOMapHeight 48
-#define kOMapColorInd 8
-
-#define	kOCurWidth			40
-#define	kOCurHeight			24
-#define	kVelsPerLine		10 // # of velocity numbers pairs per line
 
 #define INFINITE_DEPTH	5000.
 
-//#define COMPLETE_LE  (FORECAST_LE + UNCERTAINTY_LE)
-
-typedef long ClassID;
-
-const ClassID TYPE_UNDENTIFIED	 	= 0;
-const ClassID TYPE_MODEL	 		= 100;
-const ClassID TYPE_LELISTLIST	 	= 200;
-const ClassID TYPE_MAPLIST 			= 201;
-const ClassID TYPE_MOVERLIST	 	= 202;
-const ClassID TYPE_LELIST 			= 300;
-const ClassID TYPE_OSSMLELIST		= 301;
-const ClassID TYPE_SPRAYLELIST		= 302;
-const ClassID TYPE_CDOGLELIST		= 303;
-const ClassID TYPE_MAP 				= 400;
-const ClassID TYPE_OSSMMAP			= 401;
-const ClassID TYPE_VECTORMAP		= 402;
-const ClassID TYPE_PTCURMAP			= 403;
-const ClassID TYPE_COMPOUNDMAP		= 404;
-const ClassID TYPE_MAP3D			= 405;
-const ClassID TYPE_GRIDMAP			= 406;
-
-const ClassID TYPE_MOVER 			= 500;
-const ClassID TYPE_RANDOMMOVER		= 501;
-const ClassID TYPE_CATSMOVER		= 502;
-const ClassID TYPE_WINDMOVER		= 503;
-//const ClassID TYPE_CONSTANTMOVER	= 504; // no longer supported, replaced by an enhanced TYPE_WINDMOVER, JLM 2/18/00
-const ClassID TYPE_COMPONENTMOVER	= 505;
-const ClassID TYPE_PTCURMOVER		= 506;
-const ClassID TYPE_CURRENTMOVER		= 507;
-const ClassID TYPE_RANDOMMOVER3D	= 508;
-const ClassID TYPE_CATSMOVER3D		= 509;
-const ClassID TYPE_GRIDCURMOVER		= 510;
-const ClassID TYPE_NETCDFMOVER		= 511;
-const ClassID TYPE_NETCDFMOVERCURV	= 512;
-const ClassID TYPE_NETCDFMOVERTRI	= 513;
-const ClassID TYPE_NETCDFWINDMOVER	= 514;
-const ClassID TYPE_GRIDWNDMOVER	= 515;
-const ClassID TYPE_NETCDFWINDMOVERCURV	= 516;
-const ClassID TYPE_TRICURMOVER	= 517;
-const ClassID TYPE_TIDECURCYCLEMOVER	= 518;
-const ClassID TYPE_COMPOUNDMOVER	= 519;
-const ClassID TYPE_ADCPMOVER		= 520;
-const ClassID TYPE_GRIDCURRENTMOVER	= 521;
-const ClassID TYPE_GRIDWINDMOVER	= 522;
-
-const ClassID TYPE_TIMEVALUES		= 600;
-const ClassID TYPE_OSSMTIMEVALUES	= 601;
-const ClassID TYPE_SHIOTIMEVALUES	= 602;
-const ClassID TYPE_ADCPTIMEVALUES	= 602;
-const ClassID TYPE_WEATHERER		= 700;
-const ClassID TYPE_OSSMWEATHERER	= 701;
-const ClassID TYPE_GRIDVEL			= 800;
-const ClassID TYPE_RECTGRIDVEL		= 801;
-const ClassID TYPE_TRIGRIDVEL		= 802;
-const ClassID TYPE_TRIGRIDVEL3D		= 803;
-const ClassID TYPE_TIMEGRIDVEL		= 810;
-const ClassID TYPE_TIMEGRIDVELRECT		= 811;
-const ClassID TYPE_TIMEGRIDVELCURV		= 812;
-const ClassID TYPE_TIMEGRIDVELTRI		= 813;
-const ClassID TYPE_TIMEGRIDWINDRECT		= 814;
-const ClassID TYPE_TIMEGRIDWINDCURV		= 815;
-const ClassID TYPE_TIMEGRIDCURRECT		= 816;
-const ClassID TYPE_TIMEGRIDCURTRI		= 817;
-const ClassID TYPE_CMAPLAYER 		= 901; //JLM
-
-const ClassID TYPE_OVERLAY	= 910; //JLM
-const ClassID TYPE_NESDIS_OVERLAY	= 920; //JLM
-const ClassID TYPE_BUOY_OVERLAY	= 930; //JLM
-const ClassID TYPE_BP_BUOY_OVERLAY	= 931; //JLM
-const ClassID TYPE_SLDMB_BUOY_OVERLAY	= 932; //JLM
-const ClassID TYPE_OVERFLIGHT_OVERLAY	= 940; //JLM
 
 typedef short OilType;
 typedef short OilStatus;
@@ -165,18 +62,7 @@ typedef short LandType;
 typedef unsigned long LETYPE ;
 
 ///// TYPES ///////////////////////////////////////////////////////////////////////
-#ifndef pyGNOME
-typedef struct {
-	short f;
-	CHARH buf;
-	long bufSize;
-	long base;
-	long index;
-	long fileLength;
-	Boolean bufModified;
-} BFPB, *BFPBP;
-extern BFPB gRunSpillForecastFile;
-#endif
+
 extern Rect CATSgridRect;
 
 typedef struct VelocityRec
@@ -309,33 +195,8 @@ enum { ESCAPEKEY = 0X35, ENTERKEY = 0X4C, RETURNKEY = 0X24, PERIODKEY = 0X2F,
 #endif
 
 #define round(n) floor((n) + 0.5)
-//#define abs(n) ((n) >= 0 ? (n) : -(n))
-//#define TOPLEFT(r) (POINTPTR)(&(r).top)
-//#define BOTRIGHT(r) (POINTPTR)(&(r).bottom)
-
-//#define MAX_MACPAINT_SIZE 53000
-//#define MAX_MACPAINT_LINES 720
-//#define MACPAINT_BYTE_UNPACK 72
 
 #define PI 3.14159265359
-//#define ROOT2 1.4142136562373
-//#define KG2POUNDS 2.2
-
-//#define FRAME_ITEM 2
-
-//#define MultFindEvt 15
-
-class TClassID;
-class TTriGridVel;
-class TTriGridVel3D;
-class TCurrentMover;
-
-typedef struct {
-	TClassID *owner;
-	long index;
-	short indent;
-	short bullet;
-} ListItem;
 
 typedef struct {
 	Boolean isOptimizedForStep;
@@ -392,22 +253,6 @@ typedef struct {
 	float hiLong;
 	float hiLat;
 } WorldRectF, *WORLDRECTFP, **WORLDRECTFH;
-
-typedef struct GeoPoint
-{ 	// right handed coordinate system
-	long				h; 			// Latitude  (dec_deg*10e6)
-	long				v;  		// Longitude (dec_deg*10e6)
-}GeoPoint,  *GeoPointPtr,  **GeoPointHdl;
-
-typedef struct {
-	long fromLong;
-	long fromLat;
-	long toLong;
-	long toLat;
-} Segment, *SEGMENTP, **SEGMENTH, **SegmentsHdl;
-
-typedef struct { long x; long y; } Vector;
-
 //--
 
 ///////////////////////////////////////////////////////////////////////////
@@ -436,17 +281,6 @@ typedef struct
 
 typedef struct
 {
-	WorldPoint	p; 				// x and y location
-	double		z; 				// z position
-	Seconds		releaseTime; 	// time of release, seconds since 1904
-	double		ageInHrsWhenReleased;// age of oil in hours at time of release
-	OilType		pollutantType; 	// L.E. pollutant type
-	double		density; 		// density in same units as everything else, added 1/23/03
-	//double		riseVelocity;
-} InitialLEInfoRec, *InitialLEInfoRecPtr, **InitialLEInfoRecHdl;
-
-typedef struct
-{
 	float downStream;
 	float crossStream;
 	//	float angle;
@@ -457,93 +291,6 @@ typedef struct
 	float randCos;
 	float randSin;
 } LEWindUncertainRec,*LEWindUncertainRecP,**LEWindUncertainRecH;
-#ifndef pyGNOME
-typedef struct
-{
-	Boolean bDisperseOil;
-	Seconds timeToDisperse;
-	Seconds duration;
-	float amountToDisperse;
-	WorldRect areaToDisperse;
-	Boolean lassoSelectedLEsToDisperse;
-	double api;
-} DispersionRec,*DispersionRecP,**DispersionRecH;
-
-typedef struct
-{
-	Seconds timeAfterSpill;
-	//Seconds duration;
-	float amountDispersed;
-	float amountEvaporated;
-	float amountRemoved;
-	//double api;
-} AdiosInfoRec,**AdiosInfoRecH;
-
-typedef struct
-{
-	Seconds timeAfterSpill;
-	float amountReleased;
-	float amountFloating;
-	float amountDispersed;
-	float amountEvaporated;
-	float amountBeached;
-	float amountOffMap;
-	float amountRemoved;
-} BudgetTableData,**BudgetTableDataH;
-
-typedef struct
-{
-	double dropletSize;
-	double probability;
-} DropletInfoRec,**DropletInfoRecH;
-
-typedef struct
-{
-	double windageA;
-	double windageB;	
-	double persistence;	// in hours, .25 or infinite
-} WindageRec,*WindageRecP;
-
-typedef struct
-{
-	long 		numOfLEs;			// number of L.E.'s in this set
-	OilType		pollutantType;		// type of pollutant
-	double		totalMass; 			// total mass of all le's in list (in massUnits)
-	short		massUnits; 			// units for mass quantity
-	Seconds		startRelTime;		// start release time
-	Seconds		endRelTime;			// end release time
-	WorldPoint	startRelPos;		// start L.E. position
-	WorldPoint	endRelPos;			// end   L.E. position
-	Boolean		bWantEndRelTime;
-	Boolean		bWantEndRelPosition;
-	
-	double		z;
-	double		density;
-	double		ageInHrsWhenReleased;
-	
-	double		riseVelocity;	// will this vary over a set? - maybe a flag if so
-	double		halfLife;	// hours
-	
-	char			spillName[kMaxNameLen];
-} LESetSummary; 					// record used to summarize LE sets
-
-typedef struct
-{
-	char		pollutant [kMaxNameLen];
-	double		halfLife [3];
-	double		percent [3];
-	double		XK [3];
-	double		EPRAC;
-	Boolean		bModified;
-	
-} OilComponent;
-
-typedef struct
-{
-	unsigned long ticksAtCreation;
-	short counter;
-} UNIQUEID;
-#endif
 
 typedef struct {
 	Boolean isOptimizedForStep;
@@ -560,17 +307,6 @@ typedef struct {
 
 #define		kUCode			0					// supplied to UorV routine
 #define		kVCode			1
-#ifndef pyGNOME
-typedef struct {
-	long segNo;
-	long startPt;
-	long endPt;
-	long numBeachedLEs;
-	float segmentLengthInKm;
-	float	gallonsOnSegment;
-	//Seconds time;
-} OiledShorelineData,*OiledShorelineDataP,**OiledShorelineDataHdl;
-#endif
 
 typedef struct GridCellInfo
 {
@@ -589,22 +325,6 @@ typedef struct SegInfo
 	Boolean 	isWater;	//land/water boudary
 } SegInfo, *SegInfoPtr, **SegInfoHdl;
 
-#ifndef pyGNOME
-typedef struct
-{
-	Seconds		frameTime;
-	char		frameLEFName [255];
-} LEFrameRec, *LEFrameRecPtr;
-
-typedef struct
-{
-	Seconds	startTime;			// time to start model run
-	Seconds	duration;			// duration of model run
-	Seconds computeTimeStep;	// time step for computation
-	Boolean	bUncertain; 		// uncertainty on / off
-	Boolean preventLandJumping;	// use the code that checks for land jumping
-} TModelDialogVariables;
-#endif
 #define kPtCurUserNameLen 64
 #define UNASSIGNEDINDEX -1
 #define BOTTOMINDEX -2	// below last data value, but above bottom
@@ -614,41 +334,14 @@ typedef struct
 enum { REGULAR=1, REGULAR_SWAFS, CURVILINEAR, TRIANGULAR, REGRIDDED};	// maybe eliminate regridded option
 enum {TWO_D=1, BAROTROPIC, SIGMA, MULTILAYER, SIGMA_ROMS};	// gridtypes
 
-enum {
-	I_PTCURNAME = 0 ,
-	I_PTCURACTIVE, 
-	I_PTCURGRID, 
-	I_PTCURARROWS,
-	I_PTCURSCALE,
-	I_PTCURUNCERTAINTY,
-	I_PTCURSTARTTIME,
-	I_PTCURDURATION, 
-	I_PTCURALONGCUR,
-	I_PTCURCROSSCUR,
-	I_PTCURMINCURRENT
-};
 
 typedef struct {
-	char		pathName[kMaxNameLen];
-	char		userName[kPtCurUserNameLen]; // user name for the file
 	double 	alongCurUncertainty;	
 	double 	crossCurUncertainty;	
 	double 	uncertMinimumInMPS;	
-	double 	curScale;	
 	double 	startTimeInHrs;	
 	double 	durationInHrs;	
-	//
-	long		numLandPts; // 0 if boundary velocities defined, else set boundary velocity to zero
-	long		maxNumDepths;
-	short		gridType;
-	double	bLayerThickness;
-	//
-	Boolean 	bShowGrid;
-	Boolean 	bShowArrows;
-	Boolean	bUncertaintyPointOpen;
-	double 	arrowScale;
-	double 	arrowDepth;	// depth level where velocities will be shown
-} PTCurVariables;
+} UncertaintyParameters;
 
 typedef struct {
 	long fileOffsetToStartOfData;
@@ -687,16 +380,6 @@ typedef struct ScaleRec
 	double					XOffset;
 	double					YOffset;
 } ScaleRec, *ScaleRecPtr;
-
-#ifndef pyGNOME
-typedef struct {
-	short		color;
-	char		code[2];
-	WorldRect	bounds;
-	long		numPoints;
-	long		firstPoint;
-} PolygonType, *PolygonP, **PolygonH;
-#endif
 
 typedef struct
 {

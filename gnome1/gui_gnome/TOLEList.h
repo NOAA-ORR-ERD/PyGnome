@@ -21,6 +21,10 @@ class TOLEList : virtual public OLEList_c, public TLEList
 public:
 	TOLEList ();
 	virtual			   ~TOLEList () { Dispose (); }
+
+	virtual ClassID 	GetClassID () { return TYPE_OSSMLELIST; }
+	virtual Boolean		IAm(ClassID id) { if(id==TYPE_OSSMLELIST) return TRUE; return TLEList::IAm(id); }
+
 	//virtual OSErr		Initialize (long numElements, LERec *representativeLE, short massUnits,
 	//								WorldPoint startRelPos, WorldPoint endRelPos,
 	//								Seconds startRelTime, Seconds endRelTime,

@@ -11,6 +11,7 @@
 #define __ObjectUtilsPD__
 
 #include "ObjectUtils.h"
+#include "GuiTypeDefs.h"
 
 #undef				kPolyType
 #define				kPolyType			'POLY'	//AH 03/20/2012
@@ -33,6 +34,8 @@ public:
 	OSErr				IMapLayer (WindowPtr mapWPtr, CMap *Map, Boolean bLayerVisible, Boolean bLayerOLabelVisble);
 	virtual			   ~CMapLayer() { Dispose(); }
 	virtual void		Dispose ();
+	
+	ClassID 			GetClassID () { return TYPE_CMAPLAYER; }//JLM
 	
 	Boolean				PerformUndo ();
 	void				UndoLayerObjects ();

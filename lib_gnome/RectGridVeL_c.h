@@ -23,7 +23,7 @@ protected:
 
 public:
 	RectGridVel_c();
-	virtual ClassID GetClassID 	() { return TYPE_RECTGRIDVEL; }
+	//virtual ClassID GetClassID 	() { return TYPE_RECTGRIDVEL; }
 	virtual void 	SetBounds(WorldRect bounds);			
 	long 			NumVelsInGridHdl(void);
 	VelocityRec 	GetPatValue(WorldPoint p);

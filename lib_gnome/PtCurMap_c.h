@@ -13,6 +13,7 @@
 
 #include "Basics.h"
 #include "TypeDefs.h"
+#include "GuiTypeDefs.h"
 #include "Map_c.h"
 #include "RectUtils.h"
 
@@ -81,8 +82,8 @@ public:
 
 	virtual OSErr	InitMap();
 	virtual OSErr	InitDropletSizes();
-	virtual ClassID GetClassID () { return TYPE_PTCURMAP; }
-	virtual Boolean	IAm(ClassID id) { if(id==TYPE_PTCURMAP) return TRUE; return Map_c::IAm(id); }
+	//virtual ClassID GetClassID () { return TYPE_PTCURMAP; }
+	//virtual Boolean	IAm(ClassID id) { if(id==TYPE_PTCURMAP) return TRUE; return TMap::IAm(id); }
 	virtual OSErr	InitContourLevels();
 
 	virtual	void 	SetBoundarySegs(LONGH boundarySegs) { fBoundarySegmentsH = boundarySegs; }

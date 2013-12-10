@@ -26,7 +26,9 @@ public:
 	~NetCDFMoverTri () { Dispose (); }
 	virtual void		Dispose ();
 
-	
+	virtual ClassID 	GetClassID () { return TYPE_NETCDFMOVERTRI; }
+	virtual Boolean	IAm(ClassID id) { if(id==TYPE_NETCDFMOVERTRI) return TRUE; return NetCDFMoverCurv::IAm(id); }
+
 	// I/O methods
 	virtual OSErr 		Read (BFPB *bfpb); 	// read from current position
 	virtual OSErr 		Write (BFPB *bfpb); // write to current position

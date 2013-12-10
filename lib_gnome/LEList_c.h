@@ -50,8 +50,8 @@ public:
 	virtual short	GetMassUnitType () { return -1; } // they must override
 	virtual double	GetTotalMass () { return -1; } ; // they must override
 	
-	virtual ClassID GetClassID () { return TYPE_LELIST; }
-	virtual Boolean	IAm(ClassID id) { if(id==TYPE_LELIST) return TRUE; return ClassID_c::IAm(id); }
+	//virtual ClassID GetClassID () { return TYPE_LELIST; }
+	//virtual Boolean	IAm(ClassID id) { if(id==TYPE_LELIST) return TRUE; return ClassID_c::IAm(id); }
 	
 
 };

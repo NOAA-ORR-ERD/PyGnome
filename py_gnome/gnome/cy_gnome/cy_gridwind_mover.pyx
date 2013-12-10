@@ -17,43 +17,50 @@ cdef extern from *:
 
 cdef class CyGridWindMover(cy_mover.CyMover):
 
-    cdef GridWindMover_c *grid
+    cdef GridWindMover_c *grid_wind
 
     def __cinit__(self):
         self.mover = new GridWindMover_c()
-        self.grid = dynamic_cast_ptr(self.mover)
+        self.grid_wind = dynamic_cast_ptr(self.mover)
 
     def __dealloc__(self):
         del self.mover
-        self.grid = NULL
+        self.grid_wind = NULL
 
+    property wind_scale:
+        def __get__(self):
+            return self.grid_wind.fWindScale
+        
+        def __set__(self, value):
+            self.grid_wind.fWindScale = value
+        
     property uncertain_duration:
         def __get__(self):
-            return self.grid.fDuration
+            return self.grid_wind.fDuration
 
         def __set__(self, value):
-            self.grid.fDuration = value
+            self.grid_wind.fDuration = value
 
     property uncertain_time_delay:
         def __get__(self):
-            return self.grid.fUncertainStartTime
+            return self.grid_wind.fUncertainStartTime
 
         def __set__(self, value):
-            self.grid.fUncertainStartTime = value
+            self.grid_wind.fUncertainStartTime = value
 
     property uncertain_speed_scale:
         def __get__(self):
-            return self.grid.fSpeedScale
+            return self.grid_wind.fSpeedScale
 
         def __set__(self, value):
-            self.grid.fSpeedScale = value
+            self.grid_wind.fSpeedScale = value
 
     property uncertain_angle_scale:
         def __get__(self):
-            return self.grid.fAngleScale
+            return self.grid_wind.fAngleScale
 
         def __set__(self, value):
-            self.grid.fAngleScale = value
+            self.grid_wind.fAngleScale = value
 
     def text_read(self, time_grid_file, topology_file=None):
         """
@@ -67,11 +74,11 @@ cdef class CyGridWindMover(cy_mover.CyMover):
         time_grid = to_bytes(unicode(time_grid_file))
 
         if topology_file is None:
-            err = self.grid.TextRead(time_grid, '')
+            err = self.grid_wind.TextRead(time_grid, '')
         else:
             topology_file = os.path.normpath(topology_file)
             topology = to_bytes(unicode(topology_file))
-            err = self.grid.TextRead(time_grid, topology)
+            err = self.grid_wind.TextRead(time_grid, topology)
 
         if err != 0:
             """
@@ -88,7 +95,7 @@ cdef class CyGridWindMover(cy_mover.CyMover):
         cdef OSErr err
         topology_file = os.path.normpath(topology_file)
         topology_file = to_bytes(unicode(topology_file))
-        err = self.grid.ExportTopology(topology_file)
+        err = self.grid_wind.ExportTopology(topology_file)
         if err != 0:
             """
             For now just raise an OSError - until the types of possible errors
@@ -96,8 +103,17 @@ cdef class CyGridWindMover(cy_mover.CyMover):
             """
             raise OSError("GridWindMover_c.ExportTopology returned an error.")
 
-    def __init__(self):
-        self.grid.fIsOptimizedForStep = 0
+    def __init__(self, wind_scale=1):
+        """
+        .. function:: __init__(self, wind_scale=1)
+        
+        initialize a grid wind mover
+        
+        :param wind_scale: scale factor applied to wind values
+        
+        """
+        self.grid_wind.fWindScale = wind_scale
+        self.grid_wind.fIsOptimizedForStep = 0
 
     def get_move(self,
                  model_time,
@@ -136,7 +152,7 @@ cdef class CyGridWindMover(cy_mover.CyMover):
         cdef OSErr err
         N = len(ref_points)
 
-        err = self.grid.get_move(N, model_time, step_len, &ref_points[0],
+        err = self.grid_wind.get_move(N, model_time, step_len, &ref_points[0],
                             &delta[0], &windages[0], <short *>&LE_status[0],
                             spill_type, 0)
         if err == 1:

@@ -12,6 +12,7 @@
 
 #include "Basics.h"
 #include "TypeDefs.h"
+#include "GuiTypeDefs.h"
 #include "LEList_c.h"
 #include "CMYLIST.H"
 #include "MemUtils.h"
@@ -34,8 +35,8 @@ public:
 	
 						OLEList_c ();
 	long				GetLECount () { return fSetSummary.numOfLEs; }
-	virtual ClassID 	GetClassID () { return TYPE_OSSMLELIST; }
-	virtual Boolean		IAm(ClassID id) { if(id==TYPE_OSSMLELIST) return TRUE; return LEList_c::IAm(id); }
+	//virtual ClassID 	GetClassID () { return TYPE_OSSMLELIST; }
+	//virtual Boolean		IAm(ClassID id) { if(id==TYPE_OSSMLELIST) return TRUE; return LEList_c::IAm(id); }
 
 	
 	virtual long		GetMassUnits () { return fSetSummary.massUnits; } 

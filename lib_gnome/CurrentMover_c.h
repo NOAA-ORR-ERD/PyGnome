@@ -53,8 +53,8 @@ public:
 	//virtual WorldRect GetGridBounds(){return theWorld;}	
 	virtual float		GetArrowDepth(){return 0.;}
 	virtual Boolean		IAmA3DMover(){return false;}
-	virtual ClassID 	GetClassID () { return TYPE_CURRENTMOVER; }
-	virtual Boolean		IAm(ClassID id) { if(id==TYPE_CURRENTMOVER) return TRUE; return Mover_c::IAm(id); }
+	//virtual ClassID 	GetClassID () { return TYPE_CURRENTMOVER; }
+	//virtual Boolean		IAm(ClassID id) { if(id==TYPE_CURRENTMOVER) return TRUE; return Mover_c::IAm(id); }
 	
 };
 

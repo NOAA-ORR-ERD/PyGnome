@@ -17,35 +17,35 @@ static Boolean sDialogUncertaintyChanged2;
 
 GridCurrentMover::GridCurrentMover (TMap *owner, char *name) : TCurrentMover(owner, name)
 {
-	memset(&fVar,0,sizeof(fVar));
-	fVar.arrowScale = 1.;
-	fVar.arrowDepth = 0;
-	if (gNoaaVersion)
+	//memset(&fUncertainParameters,0,sizeof(fUncertainParams));
+	fArrowScale = 1.;
+	fArrowDepth = 0;
+	/*if (gNoaaVersion)
 	{
-		fVar.alongCurUncertainty = .5;
-		fVar.crossCurUncertainty = .25;
-		fVar.durationInHrs = 24.0;
+		fUncertainParams.alongCurUncertainty = .5;
+		fUncertainParams.crossCurUncertainty = .25;
+		fUncertainParams.durationInHrs = 24.0;
 	}
 	else
 	{
-		fVar.alongCurUncertainty = 0.;
-		fVar.crossCurUncertainty = 0.;
-		fVar.durationInHrs = 0.;
+		fUncertainParams.alongCurUncertainty = 0.;
+		fUncertainParams.crossCurUncertainty = 0.;
+		fUncertainParams.durationInHrs = 0.;
 	}
-	fVar.uncertMinimumInMPS = 0.0;
-	fVar.curScale = 1.0;
-	fVar.startTimeInHrs = 0.0;
+	fUncertainParams.uncertMinimumInMPS = 0.0;
+	fCurScale = 1.0;
+	fUncertainParams.startTimeInHrs = 0.0;
 	//fVar.gridType = TWO_D; // 2D default
 	//fVar.maxNumDepths = 1;	// 2D default - may not need this
 	
 	// Override TCurrentMover defaults
-	fDownCurUncertainty = -fVar.alongCurUncertainty; 
-	fUpCurUncertainty = fVar.alongCurUncertainty; 	
-	fRightCurUncertainty = fVar.crossCurUncertainty;  
-	fLeftCurUncertainty = -fVar.crossCurUncertainty; 
-	fDuration=fVar.durationInHrs*3600.; //24 hrs as seconds 
-	fUncertainStartTime = (long) (fVar.startTimeInHrs*3600.);
-	//
+	fDownCurUncertainty = -fUncertainParams.alongCurUncertainty; 
+	fUpCurUncertainty = fUncertainParams.alongCurUncertainty; 	
+	fRightCurUncertainty = fUncertainParams.crossCurUncertainty;  
+	fLeftCurUncertainty = -fUncertainParams.crossCurUncertainty; 
+	fDuration=fUncertainParams.durationInHrs*3600.; //24 hrs as seconds 
+	fUncertainStartTime = (long) (fUncertainParams.startTimeInHrs*3600.);
+	*///
 	//bShowDepthContours = false;
 	//bShowDepthContourLabels = false;
 	
@@ -212,27 +212,27 @@ short GridCurrentMoverSettingsClick(DialogPtr dialog, short itemNum, long lParam
 			}
 			mygetitext(dialog, M33NAME, sGridCurrentDialogMover->timeGrid->fVar.userName, kPtCurUserNameLen-1);
 			sGridCurrentDialogMover->bActive = GetButton(dialog, M33ACTIVE);
-			sGridCurrentDialogMover->fVar.bShowArrows = GetButton(dialog, M33SHOWARROWS);
-			sGridCurrentDialogMover->fVar.arrowScale = EditText2Float(dialog, M33ARROWSCALE);
-			sGridCurrentDialogMover->fVar.arrowDepth = arrowDepth;
+			sGridCurrentDialogMover->bShowArrows = GetButton(dialog, M33SHOWARROWS);
+			sGridCurrentDialogMover->fArrowScale = EditText2Float(dialog, M33ARROWSCALE);
+			sGridCurrentDialogMover->fArrowDepth = arrowDepth;
 			//sGridCurrentDialogMover->timeGrid->fVar.fileScaleFactor = EditText2Float(dialog, M33SCALE);
-			sGridCurrentDialogMover->fVar.curScale = EditText2Float(dialog, M33SCALE);
+			sGridCurrentDialogMover->fCurScale = EditText2Float(dialog, M33SCALE);
 			
-			if (sGridCurrentDialogMover->fVar.alongCurUncertainty != tempAlong || sGridCurrentDialogMover->fVar.crossCurUncertainty != tempCross
-				|| sGridCurrentDialogMover->fVar.startTimeInHrs != tempStart || sGridCurrentDialogMover->fVar.durationInHrs != tempDuration)
+			if (sGridCurrentDialogMover->fUncertainParams.alongCurUncertainty != tempAlong || sGridCurrentDialogMover->fUncertainParams.crossCurUncertainty != tempCross
+				|| sGridCurrentDialogMover->fUncertainParams.startTimeInHrs != tempStart || sGridCurrentDialogMover->fUncertainParams.durationInHrs != tempDuration)
 				sDialogUncertaintyChanged2 = true;
-			sGridCurrentDialogMover->fVar.alongCurUncertainty = EditText2Float(dialog, M33ALONG)/100;
-			sGridCurrentDialogMover->fVar.crossCurUncertainty = EditText2Float(dialog, M33CROSS)/100;
+			sGridCurrentDialogMover->fUncertainParams.alongCurUncertainty = EditText2Float(dialog, M33ALONG)/100;
+			sGridCurrentDialogMover->fUncertainParams.crossCurUncertainty = EditText2Float(dialog, M33CROSS)/100;
 			//sNetCDFDialogMover->fVar.uncertMinimumInMPS = EditText2Float(dialog, M33MINCURRENT);
-			sGridCurrentDialogMover->fVar.startTimeInHrs = EditText2Float(dialog, M33STARTTIME);
-			sGridCurrentDialogMover->fVar.durationInHrs = EditText2Float(dialog, M33DURATION);
+			sGridCurrentDialogMover->fUncertainParams.startTimeInHrs = EditText2Float(dialog, M33STARTTIME);
+			sGridCurrentDialogMover->fUncertainParams.durationInHrs = EditText2Float(dialog, M33DURATION);
 			
-			sGridCurrentDialogMover->fDownCurUncertainty = -sGridCurrentDialogMover->fVar.alongCurUncertainty; 
-			sGridCurrentDialogMover->fUpCurUncertainty = sGridCurrentDialogMover->fVar.alongCurUncertainty; 	
-			sGridCurrentDialogMover->fRightCurUncertainty = sGridCurrentDialogMover->fVar.crossCurUncertainty;  
-			sGridCurrentDialogMover->fLeftCurUncertainty = -sGridCurrentDialogMover->fVar.crossCurUncertainty; 
-			sGridCurrentDialogMover->fDuration = sGridCurrentDialogMover->fVar.durationInHrs * 3600.;  
-			sGridCurrentDialogMover->fUncertainStartTime = (long) (sGridCurrentDialogMover->fVar.startTimeInHrs * 3600.); 
+			sGridCurrentDialogMover->fDownCurUncertainty = -sGridCurrentDialogMover->fUncertainParams.alongCurUncertainty; 
+			sGridCurrentDialogMover->fUpCurUncertainty = sGridCurrentDialogMover->fUncertainParams.alongCurUncertainty; 	
+			sGridCurrentDialogMover->fRightCurUncertainty = sGridCurrentDialogMover->fUncertainParams.crossCurUncertainty;  
+			sGridCurrentDialogMover->fLeftCurUncertainty = -sGridCurrentDialogMover->fUncertainParams.crossCurUncertainty; 
+			sGridCurrentDialogMover->fDuration = sGridCurrentDialogMover->fUncertainParams.durationInHrs * 3600.;  
+			sGridCurrentDialogMover->fUncertainStartTime = (long) (sGridCurrentDialogMover->fUncertainParams.startTimeInHrs * 3600.); 
 			//if (timeZone>1) sNetCDFDialogMover->fTimeShift = EditText2Long(dialog, M33TIMESHIFT)*3600*-1;
 			if (timeZone>1) sGridCurrentDialogMover->timeGrid->fTimeShift =(long)( EditText2Float(dialog, M33TIMESHIFT)*3600);
 			else sGridCurrentDialogMover->timeGrid->fTimeShift = 0;	// file is in local time
@@ -352,9 +352,9 @@ OSErr GridCurrentMoverSettingsInit(DialogPtr dialog, VOIDPTR data)
 	//Long2EditText(dialog, M33TIMESHIFT, (long) (-1.*sGridCurrentDialogMover->fTimeShift/3600.));
 	Float2EditText(dialog, M33TIMESHIFT, (float)(sGridCurrentDialogMover->timeGrid->fTimeShift)/3600.,1);
 	
-	SetButton(dialog, M33SHOWARROWS, sGridCurrentDialogMover->fVar.bShowArrows);
-	Float2EditText(dialog, M33ARROWSCALE, sGridCurrentDialogMover->fVar.arrowScale, 6);
-	Float2EditText(dialog, M33ARROWDEPTH, sGridCurrentDialogMover->fVar.arrowDepth, 6);
+	SetButton(dialog, M33SHOWARROWS, sGridCurrentDialogMover->bShowArrows);
+	Float2EditText(dialog, M33ARROWSCALE, sGridCurrentDialogMover->fArrowScale, 6);
+	Float2EditText(dialog, M33ARROWDEPTH, sGridCurrentDialogMover->fArrowDepth, 6);
 	
 	ShowHideDialogItem(dialog, M33MINCURRENTLABEL, false); 
 	ShowHideDialogItem(dialog, M33MINCURRENT, false); 
@@ -372,13 +372,13 @@ OSErr GridCurrentMoverSettingsInit(DialogPtr dialog, VOIDPTR data)
 	
 	SetButton(dialog, M33EXTRAPOLATECHECKBOX, sGridCurrentDialogMover->timeGrid->fAllowExtrapolationInTime);
 	SetButton(dialog, M33EXTRAPOLATEVERTCHECKBOX, ((TimeGridVelRect*) (sGridCurrentDialogMover->timeGrid))->fAllowVerticalExtrapolationOfCurrents);
-	SetButton(dialog, M33VELOCITYATBOTTOMCHECKBOX, sGridCurrentDialogMover->fVar.arrowDepth < 0);
+	SetButton(dialog, M33VELOCITYATBOTTOMCHECKBOX, sGridCurrentDialogMover->fArrowDepth < 0);
 	
 	//ShowHideDialogItem(dialog, M33VELOCITYATBOTTOMCHECKBOX, sGridCurrentDialogMover->fNumDepthLevels > 1); 
 	
 	//Float2EditText(dialog, M33SCALE, sGridCurrentDialogMover->timeGrid->fVar.fileScaleFactor, 6);
-	Float2EditText(dialog, M33SCALE, sGridCurrentDialogMover->fVar.curScale, 6);
-	if(sGridCurrentDialogMover->fVar.alongCurUncertainty == 0) 
+	Float2EditText(dialog, M33SCALE, sGridCurrentDialogMover->fCurScale, 6);
+	if(sGridCurrentDialogMover->fUncertainParams.alongCurUncertainty == 0) 
 	{	// assume if one is not set, none are
 		mysetitext(dialog, M33ALONG, blankStr); // force user to set uncertainty
 		mysetitext(dialog, M33CROSS, blankStr); // force user to set uncertainty
@@ -387,10 +387,10 @@ OSErr GridCurrentMoverSettingsInit(DialogPtr dialog, VOIDPTR data)
 	}
 	else
 	{
-		Float2EditText(dialog, M33ALONG, sGridCurrentDialogMover->fVar.alongCurUncertainty*100, 6);
-		Float2EditText(dialog, M33CROSS, sGridCurrentDialogMover->fVar.crossCurUncertainty*100, 6);
-		Float2EditText(dialog, M33STARTTIME, sGridCurrentDialogMover->fVar.startTimeInHrs, 6);
-		Float2EditText(dialog, M33DURATION, sGridCurrentDialogMover->fVar.durationInHrs, 6);
+		Float2EditText(dialog, M33ALONG, sGridCurrentDialogMover->fUncertainParams.alongCurUncertainty*100, 6);
+		Float2EditText(dialog, M33CROSS, sGridCurrentDialogMover->fUncertainParams.crossCurUncertainty*100, 6);
+		Float2EditText(dialog, M33STARTTIME, sGridCurrentDialogMover->fUncertainParams.startTimeInHrs, 6);
+		Float2EditText(dialog, M33DURATION, sGridCurrentDialogMover->fUncertainParams.durationInHrs, 6);
 	}
 	
 	Float2EditText(dialog, M33EXTRAPOLATETOVALUE, ((TimeGridVelRect*) (sGridCurrentDialogMover->timeGrid))->fMaxDepthForExtrapolation, 6);
@@ -548,7 +548,7 @@ ListItem GridCurrentMover::GetNthListItem(long n, short indent, short *style, ch
 		
 		if (--n == 0) {
 			item.index = I_GRIDCURRENTGRID;
-			item.bullet = fVar.bShowGrid ? BULLET_FILLEDBOX : BULLET_EMPTYBOX;
+			item.bullet = bShowGrid ? BULLET_FILLEDBOX : BULLET_EMPTYBOX;
 			sprintf(text, "Show Grid");
 			item.indent++;
 			return item;
@@ -556,15 +556,15 @@ ListItem GridCurrentMover::GetNthListItem(long n, short indent, short *style, ch
 		
 		if (--n == 0) {
 			item.index = I_GRIDCURRENTARROWS;
-			item.bullet = fVar.bShowArrows ? BULLET_FILLEDBOX : BULLET_EMPTYBOX;
-			StringWithoutTrailingZeros(valStr,fVar.arrowScale,6);
+			item.bullet = bShowArrows ? BULLET_FILLEDBOX : BULLET_EMPTYBOX;
+			StringWithoutTrailingZeros(valStr,fArrowScale,6);
 			//sprintf(text, "Show Velocities (@ 1 in = %s m/s) ", valStr);
-			if (fVar.gridType==TWO_D)
+			if (timeGrid->fVar.gridType==TWO_D)
 				sprintf(text, "Show Velocities (@ 1 in = %s m/s)", valStr);
 			else
 			{
-				if (fVar.arrowDepth>=0)
-					sprintf(text, "Show Velocities (@ 1 in = %s m/s) at %g m", valStr, fVar.arrowDepth);
+				if (fArrowDepth>=0)
+					sprintf(text, "Show Velocities (@ 1 in = %s m/s) at %g m", valStr, fArrowDepth);
 				else
 					sprintf(text, "Show Velocities (@ 1 in = %s m/s) at bottom", valStr);
 			}
@@ -574,7 +574,7 @@ ListItem GridCurrentMover::GetNthListItem(long n, short indent, short *style, ch
 		
 		if (--n == 0) {
 			item.index = I_GRIDCURRENTSCALE;
-			StringWithoutTrailingZeros(valStr,fVar.curScale,6);
+			StringWithoutTrailingZeros(valStr,fCurScale,6);
 			sprintf(text, "Multiplicative Scalar: %s", valStr);
 			//item.indent++;
 			return item;
@@ -634,18 +634,18 @@ ListItem GridCurrentMover::GetNthListItem(long n, short indent, short *style, ch
 		{
 			if (--n == 0) {
 				item.index = I_GRIDCURRENTUNCERTAINTY;
-				item.bullet = fVar.bUncertaintyPointOpen ? BULLET_OPENTRIANGLE : BULLET_CLOSEDTRIANGLE;
+				item.bullet = bUncertaintyPointOpen ? BULLET_OPENTRIANGLE : BULLET_CLOSEDTRIANGLE;
 				strcpy(text, "Uncertainty");
 				item.indent++;
 				return item;
 			}
 			
-			if (fVar.bUncertaintyPointOpen) {
+			if (bUncertaintyPointOpen) {
 				
 				if (--n == 0) {
 					item.index = I_GRIDCURRENTALONGCUR;
 					item.indent++;
-					StringWithoutTrailingZeros(valStr,fVar.alongCurUncertainty*100,6);
+					StringWithoutTrailingZeros(valStr,fUncertainParams.alongCurUncertainty*100,6);
 					sprintf(text, "Along Current: %s %%",valStr);
 					return item;
 				}
@@ -653,7 +653,7 @@ ListItem GridCurrentMover::GetNthListItem(long n, short indent, short *style, ch
 				if (--n == 0) {
 					item.index = I_GRIDCURRENTCROSSCUR;
 					item.indent++;
-					StringWithoutTrailingZeros(valStr,fVar.crossCurUncertainty*100,6);
+					StringWithoutTrailingZeros(valStr,fUncertainParams.crossCurUncertainty*100,6);
 					sprintf(text, "Cross Current: %s %%",valStr);
 					return item;
 				}
@@ -661,7 +661,7 @@ ListItem GridCurrentMover::GetNthListItem(long n, short indent, short *style, ch
 				/*if (--n == 0) {
 				 item.index = I_GRIDCURRENTMINCURRENT;
 				 item.indent++;
-				 StringWithoutTrailingZeros(valStr,fVar.uncertMinimumInMPS,6);
+				 StringWithoutTrailingZeros(valStr,fUncertainParams.uncertMinimumInMPS,6);
 				 sprintf(text, "Current Minimum: %s m/s",valStr);
 				 return item;
 				 }*/
@@ -669,7 +669,7 @@ ListItem GridCurrentMover::GetNthListItem(long n, short indent, short *style, ch
 				if (--n == 0) {
 					item.index = I_GRIDCURRENTSTARTTIME;
 					item.indent++;
-					StringWithoutTrailingZeros(valStr,fVar.startTimeInHrs,6);
+					StringWithoutTrailingZeros(valStr,fUncertainParams.startTimeInHrs,6);
 					sprintf(text, "Start Time: %s hours",valStr);
 					return item;
 				}
@@ -678,7 +678,7 @@ ListItem GridCurrentMover::GetNthListItem(long n, short indent, short *style, ch
 					item.index = I_GRIDCURRENTDURATION;
 					//item.bullet = BULLET_DASH;
 					item.indent++;
-					StringWithoutTrailingZeros(valStr,fVar.durationInHrs,6);
+					StringWithoutTrailingZeros(valStr,fUncertainParams.durationInHrs,6);
 					sprintf(text, "Duration: %s hours",valStr);
 					return item;
 				}
@@ -700,11 +700,11 @@ Boolean GridCurrentMover::ListClick(ListItem item, Boolean inBullet, Boolean dou
 	if (inBullet)
 		switch (item.index) {
 			case I_GRIDCURRENTNAME: bOpen = !bOpen; return TRUE;
-			case I_GRIDCURRENTGRID: fVar.bShowGrid = !fVar.bShowGrid; 
+			case I_GRIDCURRENTGRID: bShowGrid = !bShowGrid; 
 				model->NewDirtNotification(DIRTY_MAPDRAWINGRECT); return TRUE;
-			case I_GRIDCURRENTARROWS: fVar.bShowArrows = !fVar.bShowArrows; 
+			case I_GRIDCURRENTARROWS: bShowArrows = !bShowArrows; 
 				model->NewDirtNotification(DIRTY_MAPDRAWINGRECT); return TRUE;
-			case I_GRIDCURRENTUNCERTAINTY: fVar.bUncertaintyPointOpen = !fVar.bUncertaintyPointOpen; return TRUE;
+			case I_GRIDCURRENTUNCERTAINTY: bUncertaintyPointOpen = !bUncertaintyPointOpen; return TRUE;
 			case I_GRIDCURRENTACTIVE:
 				bActive = !bActive;
 				model->NewDirtNotification(); 
@@ -797,12 +797,12 @@ Boolean GridCurrentMover::VelocityStrAtPoint(WorldPoint3D wp, char *diagnosticSt
 	// maybe should set interval right after reading the file...
 	// then wouldn't have to do it here
 	if (!bActive) return 0; 
-	if (!fVar.bShowArrows && !fVar.bShowGrid) return 0;
+	if (!bShowArrows && !bShowGrid) return 0;
 	err = timeGrid -> SetInterval(errmsg, model->GetModelTime()); 
 	
 	if(err) return false;
 	
-	if (err = timeGrid->VelocityStrAtPoint(wp, diagnosticStr, fVar.arrowDepth)) return err;
+	if (err = timeGrid->VelocityStrAtPoint(wp, diagnosticStr, fArrowDepth)) return err;
 		
 /*	if (fVar.arrowDepth>0 && fVar.gridType==TWO_D)
 	{		
@@ -903,7 +903,7 @@ CalcStr:
 
 Boolean GridCurrentMover::DrawingDependsOnTime(void)
 {
-	Boolean depends = fVar.bShowArrows;
+	Boolean depends = bShowArrows;
 	// if this is a constant current, we can say "no"
 	//if(this->GetNumTimesInFile()==1) depends = false;
 	if(timeGrid->GetNumTimesInFile()==1 && !(timeGrid->GetNumFiles()>1)) depends = false;
@@ -912,7 +912,7 @@ Boolean GridCurrentMover::DrawingDependsOnTime(void)
 
 void GridCurrentMover::Draw(Rect r, WorldRect view) 
 {	// Use this for regular grid or regridded data
-	timeGrid->Draw(r,view,fVar.curScale,fVar.arrowScale,fVar.arrowDepth,fVar.bShowArrows,fVar.bShowGrid,fColor);
+	timeGrid->Draw(r,view,fCurScale,fArrowScale,fArrowDepth,bShowArrows,bShowGrid,fColor);
 }
 
 /////////////////////////////////////////////////////////////////

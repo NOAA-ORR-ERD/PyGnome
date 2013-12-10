@@ -13,7 +13,7 @@ import numpy as np
 
 import gnome
 from gnome.environment import Wind
-
+from gnome.elements import floating
 from gnome.utilities import map_canvas
 from gnome.utilities.file_tools import haz_files
 from gnome.utilities.remote_data import get_datafile
@@ -39,7 +39,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     model.map = gnome.map.MapFromBNA(mapfile, refloat_halflife=1)  # seconds
 
     renderer = gnome.renderer.Renderer(mapfile, images_dir, size=(800,
-            600))
+            600),draw_ontop='forecast')
     renderer.viewport = ((-124.5, 37.), (-120.5, 39))
 
     print 'adding outputters'
@@ -55,8 +55,8 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     spill = gnome.spill.PointLineSource(num_elements=1000,
             start_position=(-123.57152, 37.369436, 0.0),
             release_time=start_time,
-            windage_range=(.3,.3)
-            )  
+            element_type=floating(windage_range=(0.01, 0.04))
+            )
 
     model.spills += spill
 
@@ -73,8 +73,9 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     w_mover = gnome.movers.GridWindMover(wind_file, topology_file)
     #w_mover.uncertain_time_delay=6
     #w_mover.uncertain_duration=6
-    w_mover.uncertain_speed_scale=.5
-    w_mover.set_uncertain_angle(0,'rad')	#default is .4
+    w_mover.uncertain_speed_scale=1
+    w_mover.set_uncertain_angle(.2,'rad')	#default is .4
+    w_mover.wind_scale=2
     model.movers += w_mover
 
     return model

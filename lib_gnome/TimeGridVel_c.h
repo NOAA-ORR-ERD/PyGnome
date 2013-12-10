@@ -26,6 +26,8 @@
 #define TGridVel GridVel_c
 #endif
 
+using namespace std;
+
 // code goes here, decide which fields go with the mover
 typedef struct {
 	char		pathName[kMaxNameLen];
@@ -70,8 +72,8 @@ public:
 	virtual ~TimeGridVel_c () { Dispose (); }
 	virtual void		Dispose ();
 	
-	virtual ClassID 	GetClassID () { return TYPE_TIMEGRIDVEL; }
-	virtual Boolean	IAm(ClassID id) { return(id==TYPE_TIMEGRIDVEL);}
+	//virtual ClassID 	GetClassID () { return TYPE_TIMEGRIDVEL; }
+	//virtual Boolean	IAm(ClassID id) { return(id==TYPE_TIMEGRIDVEL);}
 
 	virtual long 		GetVelocityIndex(WorldPoint p);
 	virtual LongPoint 	GetVelocityIndices(WorldPoint wp);
@@ -81,6 +83,13 @@ public:
 	//virtual void SetGridBounds(WorldRect gridBounds){return fGrid->SetBounds(gridBounds);}	
 	virtual WorldRect GetGridBounds(){return fGridBounds;}	
 	virtual void SetGridBounds(WorldRect gridBounds){fGridBounds = gridBounds;}	
+	
+	void SetExtrapolationInTime(Boolean extrapolate){fAllowExtrapolationInTime = extrapolate;}
+	Boolean GetExtrapolationInTime(){return fAllowExtrapolationInTime;}
+	
+	void SetTimeShift(long timeShift){fTimeShift = timeShift;}
+	long GetTimeShift(){return fTimeShift;}
+	
 	virtual Seconds 		GetStartTimeValue(long index);
 	virtual Seconds 		GetTimeValue(long index);
 	virtual OSErr		GetStartTime(Seconds *startTime);
@@ -143,8 +152,8 @@ public:
 	virtual ~TimeGridVelRect_c () { Dispose (); }
 	virtual void		Dispose ();
 	
-	virtual ClassID 	GetClassID () { return TYPE_TIMEGRIDVELRECT; }
-	virtual Boolean	IAm(ClassID id) { if(id==TYPE_TIMEGRIDVELRECT) return TRUE; return TimeGridVel_c::IAm(id); }
+	//virtual ClassID 	GetClassID () { return TYPE_TIMEGRIDVELRECT; }
+	//virtual Boolean	IAm(ClassID id) { if(id==TYPE_TIMEGRIDVELRECT) return TRUE; return TimeGridVel_c::IAm(id); }
 	
 	VelocityRec 		GetScaledPatValue(const Seconds& model_time, WorldPoint3D p);
 	void 				GetDepthIndices(long ptIndex, float depthAtPoint, long *depthIndex1, long *depthIndex2);
@@ -156,6 +165,9 @@ public:
 	virtual double	GetDepthAtIndex(long depthIndex, double totalDepth);
 	float		GetTotalDepth(WorldPoint refPoint, long triNum);
 
+	void SetVerticalExtrapolation(Boolean extrapolate){fAllowVerticalExtrapolationOfCurrents = extrapolate;}
+	Boolean GetVerticalExtrapolation(){return fAllowVerticalExtrapolationOfCurrents;}
+	
 	virtual OSErr 		ReadTimeData(long index,VelocityFH *velocityH, char* errmsg);
 	virtual long 		GetNumDepthLevelsInFile();	// eventually get rid of this
 	
@@ -175,8 +187,8 @@ public:
 	TimeGridVelCurv_c ();
 	virtual ~TimeGridVelCurv_c () { Dispose (); }
 	virtual void		Dispose ();
-	virtual ClassID 	GetClassID () { return TYPE_TIMEGRIDVELCURV; }
-	virtual Boolean	IAm(ClassID id) { if(id==TYPE_TIMEGRIDVELCURV) return TRUE; return TimeGridVelRect_c::IAm(id); }
+	//virtual ClassID 	GetClassID () { return TYPE_TIMEGRIDVELCURV; }
+	//virtual Boolean	IAm(ClassID id) { if(id==TYPE_TIMEGRIDVELCURV) return TRUE; return TimeGridVelRect_c::IAm(id); }
 	
 	LongPointHdl		GetPointsHdl();
 	OSErr 				ReadTimeData(long index,VelocityFH *velocityH, char* errmsg); 
@@ -216,8 +228,8 @@ public:
 	TimeGridVelTri_c ();
 	virtual ~TimeGridVelTri_c () { Dispose (); }
 	virtual void		Dispose ();
-	virtual ClassID 	GetClassID () { return TYPE_TIMEGRIDVELTRI; }
-	virtual Boolean	IAm(ClassID id) { if(id==TYPE_TIMEGRIDVELTRI) return TRUE; return TimeGridVelCurv_c::IAm(id); }
+	//virtual ClassID 	GetClassID () { return TYPE_TIMEGRIDVELTRI; }
+	//virtual Boolean	IAm(ClassID id) { if(id==TYPE_TIMEGRIDVELTRI) return TRUE; return TimeGridVelCurv_c::IAm(id); }
 	LongPointHdl			GetPointsHdl();
 	void					GetDepthIndices(long ptIndex, float depthAtPoint, long *depthIndex1, long *depthIndex2);
 	OSErr 				ReadTimeData(long index,VelocityFH *velocityH, char* errmsg); 
@@ -250,8 +262,8 @@ public:
 	virtual	~TimeGridCurRect_c() { Dispose (); }
 	virtual void	Dispose();
 
-	virtual ClassID 	GetClassID () { return TYPE_TIMEGRIDCURRECT; }
-	virtual Boolean	IAm(ClassID id) { if(id==TYPE_TIMEGRIDCURRECT) return TRUE; return TimeGridVel_c::IAm(id); }
+	//virtual ClassID 	GetClassID () { return TYPE_TIMEGRIDCURRECT; }
+	//virtual Boolean	IAm(ClassID id) { if(id==TYPE_TIMEGRIDCURRECT) return TRUE; return TimeGridVel_c::IAm(id); }
 
 	VelocityRec 		GetScaledPatValue(const Seconds& model_time, WorldPoint3D p);
 
@@ -282,26 +294,31 @@ class TimeGridCurTri_c : virtual public TimeGridCurRect_c
 {
 public:
 	
+	long fNumLandPts;
+	double fBoundaryLayerThickness;
+	
 	FLOATH fDepthsH;
 	DepthDataInfoH fDepthDataInfo;
-	PTCurVariables fVar2;
 	
 	TimeGridCurTri_c();
 	virtual	~TimeGridCurTri_c() { Dispose (); }
 	virtual void	Dispose();
 	
-	virtual ClassID 	GetClassID () { return TYPE_TIMEGRIDCURTRI; }
-	virtual Boolean	IAm(ClassID id) { if(id==TYPE_TIMEGRIDCURTRI) return TRUE; return TimeGridCurRect_c::IAm(id); }
+	//virtual ClassID 	GetClassID () { return TYPE_TIMEGRIDCURTRI; }
+	//virtual Boolean	IAm(ClassID id) { if(id==TYPE_TIMEGRIDCURTRI) return TRUE; return TimeGridCurRect_c::IAm(id); }
 	
 	VelocityRec 		GetScaledPatValue(const Seconds& model_time, WorldPoint3D p);
 	VelocityRec 		GetScaledPatValue3D(const Seconds& model_time, InterpolationVal interpolationVal,float depth);
 	
-	OSErr         ReadHeaderLine(std::string &strIn);
+	//OSErr         ReadHeaderLine(std::string &strIn);
+	OSErr	ReadHeaderLine(string &strIn, UncertaintyParameters *uncertainParams);
 	virtual OSErr ReadTimeData(long index, VelocityFH *velocityH, char *errmsg);
 	OSErr ReadPtCurVertices(std::vector<std::string> &linesInFile, long *line,
 							LongPointHdl *pointsH, FLOATH *bathymetryH, char* errmsg,
 							long numPoints);
 	
+	OSErr	ReadHeaderLines(vector<string> &linesInFile, string containingDir, UncertaintyParameters *uncertainParams);
+	OSErr	ReadHeaderLines(const char *path, UncertaintyParameters *uncertainParams);
 	long GetNumDepths(void);
 	void GetDepthIndices(long ptIndex, float depthAtPoint, long *depthIndex1, long *depthIndex2);
 
@@ -318,8 +335,8 @@ public:
 	virtual	~TimeGridWindRect_c() { Dispose (); }
 	virtual void	Dispose();
 	
-	virtual ClassID 	GetClassID () { return TYPE_TIMEGRIDWINDRECT; }
-	virtual Boolean	IAm(ClassID id) { if(id==TYPE_TIMEGRIDWINDRECT) return TRUE; return TimeGridVel_c::IAm(id); }
+	//virtual ClassID 	GetClassID () { return TYPE_TIMEGRIDWINDRECT; }
+	//virtual Boolean	IAm(ClassID id) { if(id==TYPE_TIMEGRIDWINDRECT) return TRUE; return TimeGridVel_c::IAm(id); }
 	
 	VelocityRec 		GetScaledPatValue(const Seconds& model_time, WorldPoint3D p);
 	
@@ -341,8 +358,8 @@ public:
 	virtual	~TimeGridWindCurv_c() { Dispose (); }
 	virtual void	Dispose();
 	
-	virtual ClassID 	GetClassID () { return TYPE_TIMEGRIDWINDCURV; }
-	virtual Boolean	IAm(ClassID id) { if(id==TYPE_TIMEGRIDWINDCURV) return TRUE;  return TimeGridWindRect_c::IAm(id); }
+	//virtual ClassID 	GetClassID () { return TYPE_TIMEGRIDWINDCURV; }
+	//virtual Boolean	IAm(ClassID id) { if(id==TYPE_TIMEGRIDWINDCURV) return TRUE;  return TimeGridWindRect_c::IAm(id); }
 	
 	VelocityRec 		GetScaledPatValue(const Seconds& model_time, WorldPoint3D p);
 	

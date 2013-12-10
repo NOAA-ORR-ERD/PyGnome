@@ -12,6 +12,7 @@
 
 #include "Basics.h"
 #include "TypeDefs.h"
+#include "GuiTypeDefs.h"
 #include "DagTree.h"
 #include "CurrentMover_c.h"
 
@@ -66,8 +67,8 @@ public:
 	TriCurMover_c (TMap *owner, char *name);
 	TriCurMover_c () {}
 	
-	virtual ClassID 	GetClassID () { return TYPE_TRICURMOVER; }
-	virtual Boolean		IAm(ClassID id) { if(id==TYPE_TRICURMOVER) return TRUE; return CurrentMover_c::IAm(id); }
+	//virtual ClassID 	GetClassID () { return TYPE_TRICURMOVER; }
+	//virtual Boolean		IAm(ClassID id) { if(id==TYPE_TRICURMOVER) return TRUE; return TCurrentMover::IAm(id); }
 	virtual Boolean		IAmA3DMover(){return true;}
 
 	virtual OSErr		AddUncertainty(long setIndex, long leIndex,VelocityRec *patVelocity,double timeStep,Boolean useEddyUncertainty);

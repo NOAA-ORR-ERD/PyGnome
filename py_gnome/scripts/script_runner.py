@@ -8,17 +8,10 @@ Command line utility to run a gnome script
 
 import os
 import shutil
-from datetime import datetime, timedelta
 import argparse
 import sys
 import imp
 
-import numpy as np
-
-import gnome
-from gnome.environment import Wind, Tide
-from gnome.utilities import map_canvas
-from gnome.utilities.file_tools import haz_files
 from gnome.persist import scenario
 from gnome import scripting
 
@@ -61,7 +54,8 @@ def save(model, saveloc):
 
 def run_from_save(saveloc):
     if not os.path.isdir(saveloc):
-        raise ValueError('{0} does not appear to be a valid directory'.format(saveloc))
+        raise ValueError('{0} does not appear to be a valid'
+                         ' directory'.format(saveloc))
     sc = scenario.Scenario(saveloc)
     sc.load()
 
@@ -75,18 +69,18 @@ def parse_args(argv):
 
     parser = argparse.ArgumentParser()
     parser.add_argument('location',
-                        help='path to script to run or save, or save file location to be loaded and run'
-                        , nargs=1)
+                        help=('path to script to run or save, or save file'
+                              ' location to be loaded and run'), nargs=1)
     parser.add_argument('--do', default='run',
                         help='either run or save the model',
                         choices=['run', 'save', 'run_from_save'])
 
     parser.add_argument('--saveloc',
-                        help='store save files here. Defaults to location/save_model'
-                        , nargs=1)
+                        help=('store save files here. Defaults to'
+                              ' location/save_model'), nargs=1)
     parser.add_argument('--images',
-                        help='store output images here. Defaults to location/images'
-                        , nargs=1)
+                        help=('store output images here. Defaults to'
+                              ' location/images'), nargs=1)
     args = parser.parse_args(argv)
 
     args.location = args.location[0]
@@ -114,7 +108,7 @@ def load_model(location, images_dir):
 
     # import ipdb; ipdb.set_trace()
 
-    (dir_name, filename) = os.path.split(location)
+    filename = os.path.split(location)[1]
 
     scripting.make_images_dir(images_dir)
     imp_script = imp.load_source(filename.rstrip('.py'), location)
@@ -127,7 +121,8 @@ if __name__ == '__main__':
 
     if args.do == 'run' or args.do == 'save':
         if not os.path.isfile(args.location):
-            raise ValueError("{0} is not a file - provide a python script if action is to 'run' or 'save' model".format(args.location))
+            raise ValueError("{0} is not a file - provide a python script if"
+                   " action is to 'run' or 'save' model".format(args.location))
 
         (model, imp_script) = load_model(args.location, args.images)
 
@@ -136,10 +131,9 @@ if __name__ == '__main__':
         try:
             imp_script.post_run(model)
         except AttributeError:
-
-                               # must not have a post_run function
-
+            # must not have a post_run function
             pass
+
     elif args.do == 'save':
         save(model, args.saveloc)
     else:

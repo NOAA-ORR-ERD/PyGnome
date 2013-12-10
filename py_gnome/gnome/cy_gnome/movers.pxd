@@ -87,8 +87,12 @@ cdef extern from "RandomVertical_c.h":
         double fVerticalBottomDiffusionCoefficient
         double fMixedLayerDepth
         OSErr get_move(int n, unsigned long model_time, unsigned long step_len, WorldPoint3D* ref, WorldPoint3D* delta, short* LE_status, LEType spillType, long spillID)        
-        
+
+     
 cdef extern from "RiseVelocity_c.h":
+    OSErr get_rise_velocity(int n, double *rise_vel, double *le_density, double *le_drop_size, double water_vis, double water_density)
+    
+    # the mover class, above is just a function for computing rise velocity
     cdef cppclass RiseVelocity_c(Mover_c):
         RiseVelocity_c() except +
         #double water_density
@@ -138,28 +142,19 @@ cdef extern from "CATSMover_c.h":
 
 cdef extern from "GridCurrentMover_c.h":
     
-    cdef struct GridCurrentVariables:
-        char        *pathName
-        char        *userName
+    cdef struct UncertaintyParameters:
         double     alongCurUncertainty
         double     crossCurUncertainty
         double     uncertMinimumInMPS
-        double     curScale
         double     startTimeInHrs
         double     durationInHrs
-        short        gridType
-        Boolean     bShowGrid
-        Boolean     bShowArrows
-        Boolean    bUncertaintyPointOpen
-        double     arrowScale
-        double     arrowDepth
 
     cdef cppclass GridCurrentMover_c(CurrentMover_c):
-        GridCurrentVariables fVar
+        UncertaintyParameters fUncertainParams
+        double fCurScale
         TimeGridVel_c    *timeGrid
         Boolean fIsOptimizedForStep
         Boolean fAllowVerticalExtrapolationOfCurrents
-        float    fMaxDepthForExtrapolation
         
         GridCurrentMover_c ()
         WorldPoint3D    GetMove(Seconds&,Seconds&,Seconds&,Seconds&, long, long, LERec *, LETYPE)
@@ -167,6 +162,8 @@ cdef extern from "GridCurrentMover_c.h":
         void 		    SetTimeGrid(TimeGridVel_c *newTimeGrid)
         OSErr           TextRead(char *path,char *topFilePath)
         OSErr          ExportTopology(char *topFilePath)
+        void 		    SetExtrapolationInTime(Boolean extrapolate)
+        void 		    SetTimeShift(long timeShift)
         
 cdef extern from "GridWindMover_c.h":
     
@@ -184,6 +181,8 @@ cdef extern from "GridWindMover_c.h":
         void 		    SetTimeGrid(TimeGridVel_c *newTimeGrid)
         OSErr           TextRead(char *path,char *topFilePath)
         OSErr          ExportTopology(char *topFilePath)
+        void 		    SetExtrapolationInTime(Boolean extrapolate)
+        void 		    SetTimeShift(long timeShift)
         
 cdef extern from "GridMap_c.h":
     

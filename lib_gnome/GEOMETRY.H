@@ -63,6 +63,21 @@ float DistanceBetweenWorldPoints(WorldPoint p1, WorldPoint p2);
 float EarthRadius();
 
 #ifndef pyGNOME
+typedef struct GeoPoint
+{ 	// right handed coordinate system
+	long				h; 			// Latitude  (dec_deg*10e6)
+	long				v;  		// Longitude (dec_deg*10e6)
+}GeoPoint,  *GeoPointPtr,  **GeoPointHdl;
+
+typedef struct {
+	long fromLong;
+	long fromLat;
+	long toLong;
+	long toLat;
+} Segment, *SEGMENTP, **SEGMENTH, **SegmentsHdl;
+
+typedef struct { long x; long y; } Vector;
+
 Boolean SameSegmentEndPoints(Segment s1, Segment s2);
 //Point ForcePointOnLineIntoRect(short x, short y, float slope, Rect r);
 

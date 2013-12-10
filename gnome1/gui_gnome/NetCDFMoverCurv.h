@@ -33,6 +33,10 @@ public:
 	~NetCDFMoverCurv () { Dispose (); }
 	virtual void		Dispose ();
 	virtual Boolean		IAmA3DMover();
+
+	virtual ClassID 	GetClassID () { return TYPE_NETCDFMOVERCURV; }
+	virtual Boolean	IAm(ClassID id) { if(id==TYPE_NETCDFMOVERCURV) return TRUE; return NetCDFMover::IAm(id); }
+
 	// I/O methods
 	virtual OSErr 		Read (BFPB *bfpb); 	// read from current position
 	virtual OSErr 		Write (BFPB *bfpb); // write to  current position

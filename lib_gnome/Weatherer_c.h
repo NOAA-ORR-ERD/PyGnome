@@ -23,7 +23,7 @@ public:
 	//		void				SetWeathererName (char *newName)    { SetClassName (newName); }
 	//		void				GetWeathererName (char *returnName) { GetClassName (returnName); }
 	
-	virtual ClassID 	GetClassID () { return TYPE_WEATHERER; }
+	//virtual ClassID 	GetClassID () { return TYPE_WEATHERER; }
 	virtual void		WeatherLE (LERec *theLE) {}
 	
 	

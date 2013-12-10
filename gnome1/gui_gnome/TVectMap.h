@@ -36,6 +36,9 @@ public:
 	TVectorMap (char* name, WorldRect bounds);
 	virtual			   ~TVectorMap () { Dispose (); }
 	
+	virtual ClassID 	GetClassID () { return TYPE_VECTORMAP; }
+	virtual Boolean		IAm(ClassID id) { if(id==TYPE_VECTORMAP) return TRUE; return TMap::IAm(id); }	
+
 	virtual OSErr		InitMap ();
 	virtual OSErr		InitMap (char *path);
 

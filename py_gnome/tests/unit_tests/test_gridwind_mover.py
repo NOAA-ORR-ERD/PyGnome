@@ -13,6 +13,8 @@ from gnome.utilities import time_utils
 from gnome.utilities.remote_data import get_datafile
 
 from conftest import sample_sc_release
+# default settings are the same for both objects
+from test_wind_mover import _defaults
 
 here = os.path.dirname(__file__)
 wind_dir = os.path.join(here, 'sample_data', 'winds')
@@ -121,13 +123,17 @@ w_grid = GridWindMover(wind_file, topology_file)
 def test_default_props():
     """
     test default properties
+    use _defaults helper function defined in test_wind_mover.py
     """
-    assert w_grid.active == True  # timespan is as big as possible
-    assert w_grid.uncertain_duration == 24
-    assert w_grid.uncertain_time_delay == 0
-    assert w_grid.uncertain_speed_scale == 2
-    assert w_grid.uncertain_angle_scale == 0.4
-    assert w_grid.uncertain_angle_units == 'rad'
+    #==========================================================================
+    # assert w_grid.active == True  # timespan is as big as possible
+    # assert w_grid.uncertain_duration == 3.0
+    # assert w_grid.uncertain_time_delay == 0
+    # assert w_grid.uncertain_speed_scale == 2
+    # assert w_grid.uncertain_angle_scale == 0.4
+    # assert w_grid.uncertain_angle_units == 'rad'
+    #==========================================================================
+    _defaults(w_grid)
 
 
 def test_uncertain_time_delay():

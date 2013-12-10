@@ -48,7 +48,7 @@ public:
 	Boolean bShowMaxTri;
 	
 						TriGridVel3D_c();
-	virtual ClassID 	GetClassID 	() { return TYPE_TRIGRIDVEL3D; }
+	//virtual ClassID 	GetClassID 	() { return TYPE_TRIGRIDVEL3D; }
 	void SetDepths(FLOATH depthsH){fDepthsH=depthsH;}
 	FLOATH  GetDepths(){return fDepthsH;}
 	void 	ScaleDepths(double scaleFactor);

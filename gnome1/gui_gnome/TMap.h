@@ -26,6 +26,9 @@ public:
 	virtual			   ~TMap () { Dispose (); }
 	virtual void		Dispose ();		
 
+	virtual ClassID		GetClassID () { return TYPE_MAP; }
+	virtual Boolean		IAm(ClassID id) {if(id==TYPE_MAP) return TRUE; return TClassID::IAm(id); }
+
 	virtual OSErr	CheckAndPassOnMessage(TModelMessage * model);
 	virtual Boolean	IsDirty ();
 	virtual void		Draw (Rect r, WorldRect view);

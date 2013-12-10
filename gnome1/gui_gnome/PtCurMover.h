@@ -14,6 +14,7 @@ bool IsPtCurFile(std::vector<std::string> &linesInFile);
 //OSErr ScanDepth (char *startChar, double *DepthPtr);
 //void CheckYear(short *year);
 
+#define PTCUR_DELIM_STR " \t"
 
 class PtCurMover : virtual public PtCurMover_c,  public TCurrentMover
 {
@@ -25,6 +26,8 @@ class PtCurMover : virtual public PtCurMover_c,  public TCurrentMover
 
 		virtual void		Dispose ();
 	
+		virtual ClassID 	GetClassID () { return TYPE_PTCURMOVER; }
+		virtual Boolean	IAm(ClassID id) { if(id==TYPE_PTCURMOVER) return TRUE; return TCurrentMover::IAm(id); }
 
 		virtual WorldPoint3D	GetMove (const Seconds& model_time, Seconds timeStep,long setIndex,long leIndex,LERec *thisLE,LETYPE leType);
 		VelocityRec			GetMove3D(InterpolationVal interpolationVal,float depth);

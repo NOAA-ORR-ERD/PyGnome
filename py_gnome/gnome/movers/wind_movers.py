@@ -29,7 +29,7 @@ class WindMoversBase(CyMover):
               read=['uncertain_angle_scale'])
 
     def __init__(self,
-        uncertain_duration=24,
+        uncertain_duration=3,
         uncertain_time_delay=0,
         uncertain_speed_scale=2.,
         uncertain_angle_scale=0.4,
@@ -153,12 +153,15 @@ class WindMoversBase(CyMover):
             spill_mask = sc.get_spill_mask(spill)
 
             if np.any(spill_mask):
+                windages = sc['windages'][spill_mask]	# overwriting sc array does not work
                 rand.random_with_persistance(
                                 sc['windage_range'][spill_mask, 0],
                                 sc['windage_range'][spill_mask, 1],
-                                sc['windages'][spill_mask],
+                                #sc['windages'][spill_mask],
+                                windages,
                                 sc['windage_persist'][spill_mask],
                                 time_step)
+                sc['windages'][spill_mask] = windages
 
     def get_move(
         self,
@@ -350,6 +353,7 @@ def constant_wind_mover(speed, direction, units='m/s'):
 class GridWindMover(WindMoversBase, serializable.Serializable):
 
     state = copy.deepcopy(WindMoversBase.state)
+    state.add(update=['wind_scale'], create=['wind_scale'])
     state.add_field([serializable.Field('wind_file', create=True,
                     read=True, isdatafile=True),
                     serializable.Field('topology_file', create=True,
@@ -365,6 +369,7 @@ class GridWindMover(WindMoversBase, serializable.Serializable):
         :param wind_file: file containing wind data on a grid
         :param topology_file: Default is None. When exporting topology, it
             is stored in this file
+        :param wind_scale: Value to scale wind data
 
         Pass optional arguments to base class
         uses super: super(GridWindMover,self).__init__(**kwargs)
@@ -382,7 +387,7 @@ class GridWindMover(WindMoversBase, serializable.Serializable):
         # is wind_file and topology_file is stored with cy_gridwind_mover?
         self.wind_file = wind_file
         self.topology_file = topology_file
-        self.mover = CyGridWindMover()
+        self.mover = CyGridWindMover(wind_scale=kwargs.pop('wind_scale', 1))
         super(GridWindMover, self).__init__(**kwargs)
 
         self.mover.text_read(wind_file, topology_file)
@@ -400,6 +405,10 @@ class GridWindMover(WindMoversBase, serializable.Serializable):
         info = 'GridWindMover - current state.\n' \
             + "{0}".format(self._state_as_str())
         return info
+
+    wind_scale = property(lambda self: \
+            self.mover.wind_scale, lambda self, val: \
+            setattr(self.mover, 'wind_scale', val))
 
     def export_topology(self, topology_file):
         """

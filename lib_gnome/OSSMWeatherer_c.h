@@ -23,7 +23,7 @@ public:
 	
 	OSSMWeatherer_c (char *name);
 	OSSMWeatherer_c () {}
-	virtual ClassID		GetClassID () { return TYPE_OSSMWEATHERER; }
+	//virtual ClassID		GetClassID () { return TYPE_OSSMWEATHERER; }
 	virtual void		WeatherLE (LERec *theLE);
 
 };

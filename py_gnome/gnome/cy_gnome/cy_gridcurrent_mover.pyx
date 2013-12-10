@@ -91,13 +91,13 @@ cdef class CyGridCurrentMover(cy_mover.CyMover):
         :param current_scale: scale factor applied to current values
         
         """
-        self.grid_current.fVar.curScale = current_scale
-        #self.grid_current.fVar.durationInHrs = uncertain_duration
+        self.grid_current.fCurScale = current_scale
+        #self.grid_current.fUncertainParams.durationInHrs = uncertain_duration
         self.grid_current.fDuration = uncertain_duration
-        #self.grid_current.fVar.startTimeInHrs = uncertain_time_delay
+        #self.grid_current.fUncertainParams.startTimeInHrs = uncertain_time_delay
         self.grid_current.fUncertainStartTime = uncertain_time_delay
-        #self.grid_current.fVar.crossCurUncertainty = uncertain_cross
-        #self.grid_current.fVar.alongCurUncertainty = uncertain_along
+        #self.grid_current.fUncertainParams.crossCurUncertainty = uncertain_cross
+        #self.grid_current.fUncertainParams.alongCurUncertainty = uncertain_along
         self.grid_current.fDownCurUncertainty = -1*uncertain_along
         self.grid_current.fUpCurUncertainty = uncertain_along
         self.grid_current.fLeftCurUncertainty = -1*uncertain_cross
@@ -123,10 +123,10 @@ cdef class CyGridCurrentMover(cy_mover.CyMover):
         
     property current_scale:
         def __get__(self):
-            return self.grid_current.fVar.curScale
+            return self.grid_current.fCurScale
         
         def __set__(self, value):
-            self.grid_current.fVar.curScale = value
+            self.grid_current.fCurScale = value
         
     property uncertain_duration:
         def __get__(self):

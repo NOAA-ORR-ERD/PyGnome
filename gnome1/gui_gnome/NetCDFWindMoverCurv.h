@@ -26,6 +26,9 @@ public:
 	NetCDFWindMoverCurv (TMap *owner, char *name);
 	~NetCDFWindMoverCurv () { Dispose (); }
 	virtual void		Dispose ();
+
+	virtual ClassID 	GetClassID () { return TYPE_NETCDFWINDMOVERCURV; }
+	virtual Boolean	IAm(ClassID id) { if(id==TYPE_NETCDFWINDMOVERCURV) return TRUE; return NetCDFWindMover::IAm(id); }
 	// I/O methods
 	virtual OSErr 		Read (BFPB *bfpb); 	// read from current position
 	virtual OSErr 		Write (BFPB *bfpb); // write to  current position

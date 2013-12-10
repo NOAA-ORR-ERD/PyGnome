@@ -26,13 +26,21 @@ public:
 	//Boolean bShowDepthContours;
 	//Boolean bShowDepthContourLabels;
 	//Rect fLegendRect;
+	Boolean fArrowScale;
+	Boolean fArrowDepth;
+	Boolean bShowGrid;
+	Boolean bShowArrows;
+	Boolean	bUncertaintyPointOpen;
 
 
 						GridCurrentMover (TMap *owner, char *name);
 	virtual				~GridCurrentMover () { Dispose (); }
 	//virtual void		Dispose ();
-	virtual OSErr		InitMover (TimeGridVel *grid); 
 
+	virtual ClassID 	GetClassID () { return TYPE_GRIDCURRENTMOVER; }
+	virtual Boolean	IAm(ClassID id) { if(id==TYPE_GRIDCURRENTMOVER) return TRUE; return TCurrentMover::IAm(id); }
+	
+	virtual OSErr		InitMover (TimeGridVel *grid); 
 
 	// I/O methods
 	virtual OSErr 		Read (BFPB *bfpb); 	// read from current position
@@ -45,6 +53,7 @@ public:
 	virtual void		Draw (Rect r, WorldRect view);
 	virtual Boolean	DrawingDependsOnTime(void);
 	virtual Boolean 	VelocityStrAtPoint(WorldPoint3D wp, char *diagnosticStr);
+	virtual float		GetArrowDepth() {return fArrowDepth;}
 	
 	virtual long		GetListLength ();
 	virtual ListItem 	GetNthListItem (long n, short indent, short *style, char *text);

@@ -81,8 +81,8 @@ public:
 	virtual double 	GetEndVVelocity(long index);
 	virtual Boolean 	VelocityStrAtPoint(WorldPoint3D wp, char *diagnosticStr);
 	virtual WorldRect GetGridBounds(){return fGrid->GetBounds();}	
-	virtual ClassID 	GetClassID () { return TYPE_NETCDFWINDMOVER; }
-	virtual Boolean		IAm(ClassID id) { if(id==TYPE_NETCDFWINDMOVER) return TRUE; return WindMover_c::IAm(id); }
+	//virtual ClassID 	GetClassID () { return TYPE_NETCDFWINDMOVER; }
+	//virtual Boolean		IAm(ClassID id) { if(id==TYPE_NETCDFWINDMOVER) return TRUE; return TWindMover::IAm(id); }
 
 	virtual OSErr 		ReadTimeData(long index,VelocityFH *velocityH, char* errmsg); 
 };

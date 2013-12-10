@@ -28,8 +28,8 @@ public:
 #endif
 	TimeValue_c () {}
 	virtual				   ~TimeValue_c () { Dispose (); }
-	virtual ClassID GetClassID () { return TYPE_TIMEVALUES; }
-	virtual Boolean	IAm(ClassID id) { if(id==TYPE_TIMEVALUES) return TRUE; return ClassID_c::IAm(id); }
+	//virtual ClassID GetClassID () { return TYPE_TIMEVALUES; }
+	//virtual Boolean	IAm(ClassID id) { if(id==TYPE_TIMEVALUES) return TRUE; return ClassID_c::IAm(id); }
 	virtual OSErr   GetTimeValue(const Seconds& current_time, VelocityRec *value);
 	virtual OSErr	CheckStartTime (Seconds time);
 	virtual void	Dispose () {}

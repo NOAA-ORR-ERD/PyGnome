@@ -14,15 +14,16 @@ import pytest
 from gnome.array_types import (windages, windage_range, windage_persist,
                                mass,
                                rise_vel)
-from gnome.elements import (InitWindagesConstantParams,
+from gnome.elements import (InitWindages,
                             InitMassFromVolume,
                             InitRiseVelFromDist,
-                            Floating,
-                            FloatingMassFromVolume,
-                            FloatingWithRiseVel,
-                            FloatingMassFromVolumeRiseVel)
+                            InitRiseVelFromDropletSizeFromDist,
+                            floating,
+                            ElementType
+                            )
 from gnome.spill import Spill
 from gnome import array_types
+from gnome.db.oil_library.oil_props import OilProps
 
 from conftest import mock_append_data_arrays
 
@@ -46,11 +47,14 @@ def assert_dataarray_shape_size(arr_types, data_arrays, num_released):
 
 
 @pytest.mark.parametrize(("fcn", "arr_types", "spill"),
-                [(InitWindagesConstantParams(), windages, None),
-                 (InitWindagesConstantParams(), windages, None),
+                [(InitWindages(), windages, None),
+                 (InitWindages(), windages, None),
                  (InitMassFromVolume(), mass_array, Spill(volume=10)),
                  (InitRiseVelFromDist(), rise_vel_array, None),
-                 (InitRiseVelFromDist('normal'), rise_vel_array, None),
+                 (InitRiseVelFromDist(distribution='normal'),
+                  rise_vel_array, None),
+                 (InitRiseVelFromDropletSizeFromDist('normal'),
+                  rise_vel_array, Spill())
                  ])
 def test_correct_particles_set_by_initializers(fcn, arr_types, spill):
     """
@@ -63,7 +67,8 @@ def test_correct_particles_set_by_initializers(fcn, arr_types, spill):
     data_arrays = mock_append_data_arrays(arr_types, num_elems)
     data_arrays = mock_append_data_arrays(arr_types, num_elems, data_arrays)
 
-    fcn.initialize(num_elems, spill, data_arrays)
+    substance = OilProps('oil_conservative')
+    fcn.initialize(num_elems, spill, data_arrays, substance)
 
     assert_dataarray_shape_size(arr_types, data_arrays, num_elems * 2)
 
@@ -79,10 +84,10 @@ def test_correct_particles_set_by_initializers(fcn, arr_types, spill):
 
 class TestInitConstantWindageRange:
     @pytest.mark.parametrize(("fcn", "array"),
-            [(InitWindagesConstantParams(), windages),
-             (InitWindagesConstantParams([0.02, 0.03]), windages),
-             (InitWindagesConstantParams(), windages),
-             (InitWindagesConstantParams(windage_persist=-1), windages)])
+            [(InitWindages(), windages),
+             (InitWindages([0.02, 0.03]), windages),
+             (InitWindages(), windages),
+             (InitWindages(windage_persist=-1), windages)])
     def test_initailize_InitConstantWindageRange(self, fcn, array):
         """
         tests initialize method
@@ -100,12 +105,12 @@ class TestInitConstantWindageRange:
     def test_exceptions(self):
         bad_wr = [-1, 0]
         bad_wp = 0
-        obj = InitWindagesConstantParams()
+        obj = InitWindages()
         with pytest.raises(ValueError):
-            InitWindagesConstantParams(windage_range=bad_wr)
+            InitWindages(windage_range=bad_wr)
 
         with pytest.raises(ValueError):
-            InitWindagesConstantParams(windage_persist=bad_wp)
+            InitWindages(windage_persist=bad_wp)
 
         with pytest.raises(ValueError):
             obj.windage_range = bad_wr
@@ -118,8 +123,9 @@ def test_initailize_InitMassFromVolume():
     data_arrays = mock_append_data_arrays(mass_array, num_elems)
     fcn = InitMassFromVolume()
     spill = Spill()
-    spill.volume = num_elems / (spill.oil_props.get_density('kg/m^3') * 1000)
-    fcn.initialize(num_elems, spill, data_arrays)
+    substance = OilProps('oil_conservative')
+    spill.volume = num_elems / (substance.get_density('kg/m^3') * 1000)
+    fcn.initialize(num_elems, spill, data_arrays, substance)
 
     assert_dataarray_shape_size(mass_array, data_arrays, num_elems)
     assert np.all(1. == data_arrays['mass'])
@@ -157,23 +163,34 @@ def test_initialize_InitRiseVelFromDist_normal():
 
 
 """ Element Types"""
-# all array_types corresponding with elem_t above
+# additional array_types corresponding with ElementTypes for following test
 arr_types = {'windages': array_types.windages,
              'windage_range': array_types.windage_range,
              'windage_persist': array_types.windage_persist,
              'rise_vel': array_types.rise_vel}
 
-inp_params = [((Floating(), FloatingMassFromVolume()), arr_types),
-              ((Floating(), FloatingWithRiseVel()), arr_types),
-              ((Floating(), FloatingMassFromVolumeRiseVel()), arr_types)]
+inp_params = \
+    [((floating(),
+       ElementType({'windages': InitWindages(),
+                    'mass': InitMassFromVolume()})), arr_types),
+     ((floating(),
+       ElementType({'windages': InitWindages(),
+                    'rise_vel': InitRiseVelFromDist()})), arr_types),
+     ((floating(),
+       ElementType({'mass': InitMassFromVolume(),
+                    'rise_vel': InitRiseVelFromDist()})), arr_types)
+     ]
 
 
 @pytest.mark.parametrize(("elem_type", "arr_types"), inp_params)
 def test_element_types(elem_type, arr_types, sample_sc_no_uncertainty):
     """
-    Tests that the data_arrays associated with the spill_container's
-    initializers get initialized to non-zero values
-    uses sample_sc_no_uncertainty fixture defined in conftest.py
+    Tests data_arrays associated with the spill_container's
+    initializers get initialized to non-zero values.
+    Uses sample_sc_no_uncertainty fixture defined in conftest.py
+    It initializes a SpillContainer object with two Spill objects. For first
+    Spill object, set element_type=floating() and for the second Spill object,
+    set element_type=elem_type[1] as defined in the tuple in inp_params
     """
     sc = sample_sc_no_uncertainty
     release_t = None
@@ -202,7 +219,8 @@ def test_element_types(elem_type, arr_types, sample_sc_no_uncertainty):
             if np.any(spill_mask):
                 for key in arr_types:
                     if (key in spill.element_type.initializers or
-                        key in ['windage_range', 'windage_persist']):
+                        ('windages' in spill.element_type.initializers and
+                         key in ['windage_range', 'windage_persist'])):
                         assert np.all(sc[key][spill_mask] != 0)
                     else:
                         assert np.all(sc[key][spill_mask] == 0)

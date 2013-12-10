@@ -26,35 +26,35 @@ using std::cout;
 GridCurrentMover_c::GridCurrentMover_c (TMap *owner, char *name) : CurrentMover_c(owner, name), Mover_c(owner, name)
 {
 	timeGrid = 0;
-	memset(&fVar,0,sizeof(fVar));
-	fVar.arrowScale = 1.;
-	fVar.arrowDepth = 0;
+	memset(&fUncertainParams,0,sizeof(fUncertainParams));
+	//fArrowScale = 1.;
+	//fArrowDepth = 0;
 	if (gNoaaVersion)
 	{
-		fVar.alongCurUncertainty = .5;
-		fVar.crossCurUncertainty = .25;
-		fVar.durationInHrs = 24.0;
+		fUncertainParams.alongCurUncertainty = .5;
+		fUncertainParams.crossCurUncertainty = .25;
+		fUncertainParams.durationInHrs = 24.0;
 	}
 	else
 	{
-		fVar.alongCurUncertainty = 0.;
-		fVar.crossCurUncertainty = 0.;
-		fVar.durationInHrs = 0.;
+		fUncertainParams.alongCurUncertainty = 0.;
+		fUncertainParams.crossCurUncertainty = 0.;
+		fUncertainParams.durationInHrs = 0.;
 	}
 	//fVar.uncertMinimumInMPS = .05;
-	fVar.uncertMinimumInMPS = 0.0;
-	fVar.curScale = 1.0;
-	fVar.startTimeInHrs = 0.0;
-	fVar.gridType = TWO_D; // 2D default
+	fUncertainParams.uncertMinimumInMPS = 0.0;
+	fCurScale = 1.0;
+	fUncertainParams.startTimeInHrs = 0.0;
+	//fGridType = TWO_D; // 2D default
 	//fVar.maxNumDepths = 1;	// 2D default - may always be constant for netCDF files
 	
 	// Override TCurrentMover defaults
-	fDownCurUncertainty = -fVar.alongCurUncertainty; 
-	fUpCurUncertainty = fVar.alongCurUncertainty; 	
-	fRightCurUncertainty = fVar.crossCurUncertainty;  
-	fLeftCurUncertainty = -fVar.crossCurUncertainty; 
-	fDuration=fVar.durationInHrs*3600.; //24 hrs as seconds 
-	fUncertainStartTime = (long) (fVar.startTimeInHrs*3600.);
+	fDownCurUncertainty = -fUncertainParams.alongCurUncertainty; 
+	fUpCurUncertainty = fUncertainParams.alongCurUncertainty; 	
+	fRightCurUncertainty = fUncertainParams.crossCurUncertainty;  
+	fLeftCurUncertainty = -fUncertainParams.crossCurUncertainty; 
+	fDuration=fUncertainParams.durationInHrs*3600.; //24 hrs as seconds 
+	fUncertainStartTime = (long) (fUncertainParams.startTimeInHrs*3600.);
 	//
 	
 	fIsOptimizedForStep = false;
@@ -70,14 +70,13 @@ GridCurrentMover_c::GridCurrentMover_c (TMap *owner, char *name) : CurrentMover_
 GridCurrentMover_c::GridCurrentMover_c () : CurrentMover_c()
 {
 	timeGrid = 0;
-	memset(&fVar,0,sizeof(fVar));
-	fVar.arrowScale = 1.;
-	fVar.arrowDepth = 0;
+	memset(&fUncertainParams,0,sizeof(fUncertainParams));
+
 	//if (gNoaaVersion)
 	{
-		fVar.alongCurUncertainty = .5;
-		fVar.crossCurUncertainty = .25;
-		fVar.durationInHrs = 24.0;
+		fUncertainParams.alongCurUncertainty = .5;
+		fUncertainParams.crossCurUncertainty = .25;
+		fUncertainParams.durationInHrs = 24.0;
 	}
 	/*else
 	{
@@ -86,19 +85,19 @@ GridCurrentMover_c::GridCurrentMover_c () : CurrentMover_c()
 		fVar.durationInHrs = 0.;
 	}*/
 	//fVar.uncertMinimumInMPS = .05;
-	fVar.uncertMinimumInMPS = 0.0;
-	fVar.curScale = 1.0;
-	fVar.startTimeInHrs = 0.0;
-	fVar.gridType = TWO_D; // 2D default
+	fUncertainParams.uncertMinimumInMPS = 0.0;
+	fCurScale = 1.0;
+	fUncertainParams.startTimeInHrs = 0.0;
+	//fGridType = TWO_D; // 2D default
 	//fVar.maxNumDepths = 1;	// 2D default - may always be constant for netCDF files
 	
 	// Override TCurrentMover defaults
-	fDownCurUncertainty = -fVar.alongCurUncertainty; 
-	fUpCurUncertainty = fVar.alongCurUncertainty; 	
-	fRightCurUncertainty = fVar.crossCurUncertainty;  
-	fLeftCurUncertainty = -fVar.crossCurUncertainty; 
-	fDuration=fVar.durationInHrs*3600.; //24 hrs as seconds 
-	fUncertainStartTime = (long) (fVar.startTimeInHrs*3600.);
+	fDownCurUncertainty = -fUncertainParams.alongCurUncertainty; 
+	fUpCurUncertainty = fUncertainParams.alongCurUncertainty; 	
+	fRightCurUncertainty = fUncertainParams.crossCurUncertainty;  
+	fLeftCurUncertainty = -fUncertainParams.crossCurUncertainty; 
+	fDuration=fUncertainParams.durationInHrs*3600.; //24 hrs as seconds 
+	fUncertainStartTime = (long) (fUncertainParams.startTimeInHrs*3600.);
 	//
 	
 	fIsOptimizedForStep = false;
@@ -139,7 +138,7 @@ OSErr GridCurrentMover_c::AddUncertainty(long setIndex, long leIndex,VelocityRec
 		u = velocity->u;
 		v = velocity->v;
 		
-		if(lengthS < fVar.uncertMinimumInMPS)
+		if(lengthS < fUncertainParams.uncertMinimumInMPS)
 		{
 			// use a diffusion  ??
 			printError("nonzero UNCERTMIN is unimplemented");
@@ -284,6 +283,9 @@ WorldPoint3D GridCurrentMover_c::GetMove(const Seconds& model_time, Seconds time
 	refPoint.z = (*theLE).z;
 	scaledPatVelocity = timeGrid->GetScaledPatValue(model_time, refPoint);
 
+	scaledPatVelocity.u *= fCurScale;
+	scaledPatVelocity.v *= fCurScale;
+	
 	if(leType == UNCERTAINTY_LE)
 	{
 		AddUncertainty(setIndex,leIndex,&scaledPatVelocity,timeStep,useEddyUncertainty);
@@ -357,17 +359,26 @@ OSErr GridCurrentMover_c::TextRead(char *path, char *topFilePath)
 
 	if (IsPtCurFile(linesInFile))
 	{
-		//cerr << "we are opening a PtCurFile..." << "'" << path << "'" << endl;
 		char errmsg[256];
 
 		newTimeGrid = new TimeGridCurTri();
 		if (newTimeGrid)
 		{
-			
 			//err = this->InitMover(newTimeGrid);
 			//if(err) goto Error;
+			// do this in two steps since we need the uncertainty parameters for the grid mover
+			err = dynamic_cast<TimeGridCurTri*>(newTimeGrid)->ReadHeaderLines(path,&fUncertainParams);
 			err = newTimeGrid->TextRead(path,"");
 			if(err) return err;
+
+			// set the TCurrentMover uncertainty parameters 
+			// only along and across can be set in the file (uncertainty min is not implemented so should stay zero
+			fDownCurUncertainty = -fUncertainParams.alongCurUncertainty; 
+			fUpCurUncertainty = fUncertainParams.alongCurUncertainty; 	
+
+			fRightCurUncertainty = fUncertainParams.crossCurUncertainty;  
+			fLeftCurUncertainty = -fUncertainParams.crossCurUncertainty; 
+			
 			this->SetTimeGrid(newTimeGrid);
 			if (!err) /// JLM 5/3/10
 			{

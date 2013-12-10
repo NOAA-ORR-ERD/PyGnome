@@ -2741,29 +2741,8 @@ void TimeGridCurRect::Draw(Rect r, WorldRect view,double refScale,double arrowSc
 }
 TimeGridCurTri::TimeGridCurTri () : TimeGridCurRect()
 {
-	memset(&fVar2,0,sizeof(fVar2));
-	fVar2.arrowScale = 5;
-	fVar2.arrowDepth = 0;
-	fVar2.alongCurUncertainty = .5;
-	fVar2.crossCurUncertainty = .25;
-	//fVar.uncertMinimumInMPS = .05;
-	fVar2.uncertMinimumInMPS = 0.0;
-	fVar2.curScale = 1.0;
-	fVar2.startTimeInHrs = 0.0;
-	fVar2.durationInHrs = 24.0;
-	fVar2.numLandPts = 0; // default that boundary velocities are given
-	fVar2.maxNumDepths = 1; // 2D default
-	fVar2.gridType = TWO_D; // 2D default
-	fVar2.bLayerThickness = 0.; // FREESLIP default
-	//
-	// Override TCurrentMover defaults
-	/*fDownCurUncertainty = -fVar2.alongCurUncertainty; 
-	fUpCurUncertainty = fVar2.alongCurUncertainty; 	
-	fRightCurUncertainty = fVar2.crossCurUncertainty;  
-	fLeftCurUncertainty = -fVar2.crossCurUncertainty; 
-	fDuration=fVar2.durationInHrs*3600.; //24 hrs as seconds 
-	fUncertainStartTime = (long) (fVar2.startTimeInHrs*3600.);*/
-	//
+	fNumLandPts = 0; // default that boundary velocities are given
+	fBoundaryLayerThickness = 0.; // FREESLIP default
 	
 	fDepthsH = 0;
 	fDepthDataInfo = 0;

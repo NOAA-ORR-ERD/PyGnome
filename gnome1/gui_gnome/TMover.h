@@ -22,10 +22,14 @@ class TMover : virtual public Mover_c,  public TClassID
 {
 	
 public:
+	RGBColor			fColor;
+
 	TMover (TMap *owner, char *name);
 	virtual			   ~TMover () { Dispose (); }
 	//virtual void		Dispose () {}
 	
+	virtual ClassID 	GetClassID () { return TYPE_MOVER; }
+	virtual Boolean		IAm(ClassID id) { if(id==TYPE_MOVER) return TRUE; return TClassID::IAm(id); }
 	virtual OSErr 		MakeClone(TMover **clonePtrPtr);
 	virtual OSErr 		BecomeClone(TMover *clone);
 	virtual	OSErr 		ReplaceMover() {return 0;}

@@ -97,8 +97,8 @@ public:
 #endif
 	NetCDFMover_c () {fTimeHdl = 0; fGrid = 0; fDepthLevelsHdl = 0; fDepthLevelsHdl2 = 0; fDepthsH = 0; fDepthDataInfo = 0; fInputFilesHdl = 0; fLESetSizesH = 0; fUncertaintyListH = 0;} // AH 07/17/2012
 	
-	virtual ClassID 	GetClassID () { return TYPE_NETCDFMOVER; }
-	virtual Boolean	IAm(ClassID id) { if(id==TYPE_NETCDFMOVER) return TRUE; return CurrentMover_c::IAm(id); }
+	//virtual ClassID 	GetClassID () { return TYPE_NETCDFMOVER; }
+	//virtual Boolean	IAm(ClassID id) { if(id==TYPE_NETCDFMOVER) return TRUE; return TCurrentMover::IAm(id); }
 
 	virtual OSErr		AddUncertainty(long setIndex, long leIndex,VelocityRec *patVelocity,double timeStep,Boolean useEddyUncertainty);
 	virtual long 		GetVelocityIndex(WorldPoint p);

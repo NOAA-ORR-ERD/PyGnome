@@ -2924,13 +2924,19 @@ OSErr TModel::SaveOutputSeriesFiles(Seconds oldTime,Boolean excludeRunBarFile)
 	if (writeNC)
 	{
 		if(bTimeZero) {
-			NetCDFStore::Create(this->ncPath, true, &this->ncID);
-			NetCDFStore::Define(this, false, &this->ncVarIDs, &this->ncDimIDs);
-			NetCDFStore::Capture(this, false, &this->ncVarIDs, &this->ncDimIDs);
+			err = NetCDFStore::Create(this->ncPath, true, &this->ncID);
+			if (err) return err;
+			err = NetCDFStore::Define(this, false, &this->ncVarIDs, &this->ncDimIDs);
+			if (err) return err;
+			err = NetCDFStore::Capture(this, false, &this->ncVarIDs, &this->ncDimIDs);
+			if (err) return err;
 			if(this->IsUncertain()) {
-				NetCDFStore::Create(this->ncPathConfidence, true, &this->ncID_C);
-				NetCDFStore::Define(this, true, &this->ncVarIDs_C, &this->ncDimIDs_C);
-				NetCDFStore::Capture(this, true, &this->ncVarIDs_C, &this->ncDimIDs_C);
+				err = NetCDFStore::Create(this->ncPathConfidence, true, &this->ncID_C);
+				if (err) return err;
+				err = NetCDFStore::Define(this, true, &this->ncVarIDs_C, &this->ncDimIDs_C);
+				if (err) return err;
+				err = NetCDFStore::Capture(this, true, &this->ncVarIDs_C, &this->ncDimIDs_C);
+				if (err) return err;
 			}
 		}
 		
@@ -2945,9 +2951,13 @@ OSErr TModel::SaveOutputSeriesFiles(Seconds oldTime,Boolean excludeRunBarFile)
 			if(nowIndex > oldIndex/* || bTimeZero*/)
 			{
 				if(this->writeNC) {
-					NetCDFStore::Capture(this, false, &this->ncVarIDs, &this->ncDimIDs);
+					err = NetCDFStore::Capture(this, false, &this->ncVarIDs, &this->ncDimIDs);
+					if (err) return err;
 					if(this->IsUncertain())
-						NetCDFStore::Capture(this, true, &this->ncVarIDs, &this->ncDimIDs);
+					{
+						err = NetCDFStore::Capture(this, true, &this->ncVarIDs, &this->ncDimIDs);
+						if (err) return err;
+					}
 				}
 				// we should return error
 				/*if(err)
@@ -4885,7 +4895,7 @@ OSErr TModel::HandleRunMessage(TModelMessage *message)
 	//
 	///////////////
 	
-		message->GetParameterString("NETCDFPATH", ncOutputPath, 256);
+	message->GetParameterString("NETCDFPATH", ncOutputPath, 256);
 	if(ncOutputPath[0]) {
 		int tLen;
 		char *p, classicPath[256];
@@ -4937,8 +4947,10 @@ OSErr TModel::HandleRunMessage(TModelMessage *message)
 		}
 	}
 	else
-		this->writeNC = false;	/*message->GetParameterString("NETCDFPATH", ncOutputPath, 256);*/
-/*	if(ncOutputPath[0]) {
+		this->writeNC = false;	
+		
+	/*message->GetParameterString("NETCDFPATH", ncOutputPath, 256);
+		if(ncOutputPath[0]) {
 		int tLen;
 		char *p, classicPath[256];
 		this->writeNC = true;
@@ -7746,9 +7758,9 @@ OSErr TModel::Run (Seconds stopTime)
 	fRunning = FALSE;
 	
 	if(this->writeNC) {
-		NetCDFStore::fClose(this->ncID);
+		err = NetCDFStore::fClose(this->ncID);
 		if(this->IsUncertain())
-			NetCDFStore::fClose(this->ncID_C);
+			err = NetCDFStore::fClose(this->ncID_C);
 	}
 	
 	this->writeNC = false;

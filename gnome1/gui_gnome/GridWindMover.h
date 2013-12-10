@@ -25,6 +25,9 @@ public:
 	~GridWindMover () { Dispose (); }
 	//virtual void		Dispose ();
 
+	virtual ClassID 	GetClassID () { return TYPE_GRIDWINDMOVER; }
+	virtual Boolean		IAm(ClassID id) { if(id==TYPE_GRIDWINDMOVER) return TRUE; return TWindMover::IAm(id); }
+	
 	virtual OSErr		InitMover (TimeGridVel *grid); 
 
 	// I/O methods

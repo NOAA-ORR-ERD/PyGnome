@@ -70,8 +70,8 @@ public:
 	Map3D_c () {}
 
 	virtual OSErr	InitMap();
-	virtual ClassID GetClassID () { return TYPE_MAP3D; }
-	virtual Boolean	IAm(ClassID id) { if(id==TYPE_MAP3D) return TRUE; return Map_c::IAm(id); }
+	//virtual ClassID GetClassID () { return TYPE_MAP3D; }
+	//virtual Boolean	IAm(ClassID id) { if(id==TYPE_MAP3D) return TRUE; return TMap::IAm(id); }
 
 	virtual	void 	SetBoundarySegs(LONGH boundarySegs) { fBoundarySegmentsH = boundarySegs; }
 	virtual	void 	SetWaterBoundaries(LONGH waterBoundaries) { fBoundaryTypeH = waterBoundaries; }
