@@ -84,8 +84,8 @@ public:
 	virtual WorldRect GetGridBounds(){return fGridBounds;}	
 	virtual void SetGridBounds(WorldRect gridBounds){fGridBounds = gridBounds;}	
 	
-	void SetExtrapolationInTime(Boolean extrapolate){fAllowExtrapolationInTime = extrapolate;}
-	Boolean GetExtrapolationInTime(){return fAllowExtrapolationInTime;}
+	void SetExtrapolationInTime(bool extrapolate){fAllowExtrapolationInTime = extrapolate;}
+	bool GetExtrapolationInTime(){return fAllowExtrapolationInTime;}
 	
 	void SetTimeShift(long timeShift){fTimeShift = timeShift;}
 	long GetTimeShift(){return fTimeShift;}
@@ -165,8 +165,8 @@ public:
 	virtual double	GetDepthAtIndex(long depthIndex, double totalDepth);
 	float		GetTotalDepth(WorldPoint refPoint, long triNum);
 
-	void SetVerticalExtrapolation(Boolean extrapolate){fAllowVerticalExtrapolationOfCurrents = extrapolate;}
-	Boolean GetVerticalExtrapolation(){return fAllowVerticalExtrapolationOfCurrents;}
+	void SetVerticalExtrapolation(bool extrapolate){fAllowVerticalExtrapolationOfCurrents = extrapolate;}
+	bool GetVerticalExtrapolation(){return fAllowVerticalExtrapolationOfCurrents;}
 	
 	virtual OSErr 		ReadTimeData(long index,VelocityFH *velocityH, char* errmsg);
 	virtual long 		GetNumDepthLevelsInFile();	// eventually get rid of this

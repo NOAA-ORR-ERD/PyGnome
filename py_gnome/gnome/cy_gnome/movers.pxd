@@ -162,8 +162,10 @@ cdef extern from "GridCurrentMover_c.h":
         void 		    SetTimeGrid(TimeGridVel_c *newTimeGrid)
         OSErr           TextRead(char *path,char *topFilePath)
         OSErr          ExportTopology(char *topFilePath)
-        void 		    SetExtrapolationInTime(Boolean extrapolate)
+        void 		    SetExtrapolationInTime(bool extrapolate)
+        bool 		    GetExtrapolationInTime()
         void 		    SetTimeShift(long timeShift)
+        long 		    GetTimeShift()
         
 cdef extern from "GridWindMover_c.h":
     
@@ -181,8 +183,10 @@ cdef extern from "GridWindMover_c.h":
         void 		    SetTimeGrid(TimeGridVel_c *newTimeGrid)
         OSErr           TextRead(char *path,char *topFilePath)
         OSErr          ExportTopology(char *topFilePath)
-        void 		    SetExtrapolationInTime(Boolean extrapolate)
+        void 		    SetExtrapolationInTime(bool extrapolate)
+        bool 		    GetExtrapolationInTime()
         void 		    SetTimeShift(long timeShift)
+        long 		    GetTimeShift()
         
 cdef extern from "GridMap_c.h":
     

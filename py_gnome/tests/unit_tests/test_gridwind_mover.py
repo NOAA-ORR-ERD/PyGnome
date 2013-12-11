@@ -133,6 +133,10 @@ def test_default_props():
     # assert w_grid.uncertain_angle_scale == 0.4
     # assert w_grid.uncertain_angle_units == 'rad'
     #==========================================================================
+    assert w_grid.wind_scale == 1
+    assert w_grid.extrapolate == False
+    assert w_grid.time_offset == 0
+
     _defaults(w_grid)
 
 
