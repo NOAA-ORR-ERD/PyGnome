@@ -184,7 +184,9 @@ cdef extern from "GridWindMover_c.h":
         OSErr           TextRead(char *path,char *topFilePath)
         OSErr          ExportTopology(char *topFilePath)
         void 		    SetExtrapolationInTime(bool extrapolate)
+        bool 		    GetExtrapolationInTime()
         void 		    SetTimeShift(long timeShift)
+        long 		    GetTimeShift()
         
 cdef extern from "GridMap_c.h":
     

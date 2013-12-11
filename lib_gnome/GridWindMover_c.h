@@ -60,7 +60,7 @@ public:
 	bool	GetExtrapolationInTime() {return timeGrid->GetExtrapolationInTime();}	
 	
 	void	SetTimeShift(long timeShift) {timeGrid->SetTimeShift(timeShift);}	
-	Boolean	GetTimeShift() {return timeGrid->GetTimeShift();}	
+	long	GetTimeShift() {return timeGrid->GetTimeShift();}	
 	
 	virtual OSErr 		PrepareForModelRun(); 
 	virtual OSErr 		PrepareForModelStep(const Seconds&, const Seconds&, bool, int numLESets, int* LESetsSizesList); 

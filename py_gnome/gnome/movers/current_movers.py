@@ -201,6 +201,8 @@ class GridCurrentMover(CyMover, serializable.Serializable):
         :param uncertain_time_delay: when does the uncertainly kick in.
         :param uncertain_cross: Scale for uncertainty perpendicular to the flow
         :param uncertain_along: Scale for uncertainty parallel to the flow
+        :param extrapolate: Allow current data to be extrapolated before and after file data
+        :param time_offset: Time zone shift if data is in GMT 
 
         uses super: super(GridCurrentMover,self).__init__(**kwargs)
         """
@@ -309,14 +311,14 @@ class GridCurrentMover(CyMover, serializable.Serializable):
 
     def offset_time(self, time_offset):
         """
-        :param extrapolate=false: allow current data to be extrapolated before and after file data.
+        :param offset_time=0: allow data to be in GMT with a time zone offset (hours).
         """
 
         self.mover.offset_time(time_offset*3600.)
 
     def get_offset_time(self):
         """
-        :param extrapolate=false: allow current data to be extrapolated before and after file data.
+        :param offset_time=0: allow data to be in GMT with a time zone offset (hours).
         """
 
         off_set_time = self.mover.get_offset_time()/3600.

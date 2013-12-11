@@ -110,6 +110,7 @@ def test_default_props():
     assert c_grid.uncertain_cross == .25
     assert c_grid.uncertain_along == .5
     assert c_grid.extrapolate == False
+    assert c_grid.time_offset == 0
 
 
 def test_scale():
