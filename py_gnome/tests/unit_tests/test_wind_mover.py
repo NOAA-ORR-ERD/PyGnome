@@ -159,6 +159,33 @@ def test_update_wind(wind_circ):
                        ], atol, rtol)
 
 
+def test_prepare_for_model_step():
+    """
+    explicitly test to make sure windages are being updated for persistence
+    != 0 and windages are not being changed for persistance == -1
+    """
+    time_step = 15 * 60  # seconds
+    model_time = datetime(2012, 8, 20, 13)  # yyyy/month/day/hr/min/sec
+    sc = sample_sc_release(5, (3., 6., 0.), model_time)
+    sc['windage_persist'][:2] = -1
+    wind = environment.Wind(timeseries=np.array((model_time, (2., 25.)),
+                                        dtype=datetime_value_2d).reshape(1),
+                            units='meter per second')
+    wm = WindMover(wind)
+    wm.prepare_for_model_run()
+    for ix in range(2):
+        curr_time = sec_to_date(date_to_sec(model_time) +
+                                time_step * ix)
+        old_windages = np.copy(sc['windages'])
+        wm.prepare_for_model_step(sc, time_step, curr_time)
+
+        mask = [sc['windage_persist'] == -1]
+        assert np.all(sc['windages'][mask] == old_windages[mask])
+
+        mask = [sc['windage_persist'] > 0]
+        assert np.all(sc['windages'][mask] != old_windages[mask])
+
+
 class TestWindMover:
 
     """
@@ -189,12 +216,11 @@ class TestWindMover:
         Test the get_move(...) results in WindMover match the expected delta
         """
 
-        self.wm.prepare_for_model_step(self.sc, self.time_step,
-                                       self.model_time)
-
         for ix in range(2):
             curr_time = sec_to_date(date_to_sec(self.model_time) +
                                     self.time_step * ix)
+            self.wm.prepare_for_model_step(self.sc, self.time_step,
+                                       curr_time)
             delta = self.wm.get_move(self.sc, self.time_step, curr_time)
             actual = self._expected_move()
 

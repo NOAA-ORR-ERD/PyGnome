@@ -149,19 +149,12 @@ class WindMoversBase(CyMover):
         if sc.num_released is None  or sc.num_released == 0:
             return
 
-        for spill in sc.spills:
-            spill_mask = sc.get_spill_mask(spill)
-
-            if np.any(spill_mask):
-                windages = sc['windages'][spill_mask]	# overwriting sc array does not work
-                rand.random_with_persistance(
-                                sc['windage_range'][spill_mask, 0],
-                                sc['windage_range'][spill_mask, 1],
-                                #sc['windages'][spill_mask],
-                                windages,
-                                sc['windage_persist'][spill_mask],
-                                time_step)
-                sc['windages'][spill_mask] = windages
+        rand.random_with_persistance(
+            sc['windage_range'][:, 0],
+            sc['windage_range'][:, 1],
+            sc['windages'],
+            sc['windage_persist'],
+            time_step)
 
     def get_move(
         self,
