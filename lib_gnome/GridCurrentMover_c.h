@@ -59,7 +59,7 @@ public:
 	bool	GetExtrapolationInTime() {return timeGrid->GetExtrapolationInTime();}	
 
 	void	SetTimeShift(long timeShift) {timeGrid->SetTimeShift(timeShift);}	
-	Boolean	GetTimeShift() {return timeGrid->GetTimeShift();}	
+	long	GetTimeShift() {return timeGrid->GetTimeShift();}	
 	
 	virtual OSErr 		PrepareForModelRun(); 
 	virtual WorldPoint3D       GetMove(const Seconds& model_time, Seconds timeStep,long setIndex,long leIndex,LERec *thisLE,LETYPE leType);
