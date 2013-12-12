@@ -142,6 +142,31 @@ The remaining dependencies are python packages and can be installed using the co
 
 See [Build PyGnome/WebGnome](https://github.com/NOAA-ORR-ERD/GNOME2#build-pygnomewebgnome) section below.
 
+### Windows 7 (64-bit, using VS-2008 express edition) ###
+
+Building GNOME for 64 bit Windows is similar to the 32 bit Windows build, and has similar
+binary dependencies.
+There are however some extra steps you need to perform in order to build py_gnome.
+
+If you are not on a 64 bit Windows system, you may skip forward to the section
+[Build PyGnome/WebGnome](https://github.com/NOAA-ORR-ERD/GNOME2#build-pygnomewebgnome)
+
+1. Download and install the windows SDK.  Here is the link that we are using:  
+   [Microsoft Windows SDK for Windows 7 and .NET Framework 3.5 SP1](http://www.microsoft.com/en-us/download/details.aspx?id=3138)
+
+2. Start the Windows SDK command window.  
+   From your Windows Desktop, select:  
+   **`Start`->`All Programs`->`Microsoft Windows SDK v7.0`->`CMD Shell`**
+
+   The title of your command window should read:  
+   **'Microsoft Windows 7 x64 DEBUG Build Environment'**
+
+3. Inside your x64 Build Console:
+   run the command `"\Program Files (x86)\Microsoft Visual Studio 9.0\VC\bin\vcvars64.bat"`  
+   This sets up the environment variables needed for 64 bit compilation.
+
+4. Stay inside this Build console for all further build actions.
+
 ### Build PyGnome/WebGnome ###
 
 1. Clone the GNOME2 repository.  
