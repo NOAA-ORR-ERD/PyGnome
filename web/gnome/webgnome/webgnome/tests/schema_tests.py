@@ -10,17 +10,22 @@ from webgnome.schema import WindSchema
 
 
 class WindValueSchemaTests(TestCase):
-    def test_serialize_strips_timezone(self):
-        # note -- serialize expects to receive a (datetime, (float, float))
-        # structure and outputs a (datetime, float, float) structure.
-        dt = datetime.datetime.now(timezone('US/Pacific'))
-        dt_without_tz = dt.replace(tzinfo=None)
-        data = [[numpy.datetime64(dt.isoformat()), [10.5, 180.5]]]
-        wind_value = environment_schema.WindTimeSeriesSchema().serialize(data)
-
-        self.assertEqual(wind_value[0][0], dt_without_tz.isoformat())
-        self.assertEqual(wind_value[0][1], data[1])
-        self.assertEqual(wind_value[0][2], data[2])
+    # JS: 12/11
+    # It isn't clear how the following should work so comment the test for now
+    # See ticket: https://trac.orr.noaa.gov/trac/GNOME-ADIOS/ticket/431
+#==============================================================================
+#     def test_serialize_strips_timezone(self):
+#         # note -- serialize expects to receive a (datetime, (float, float))
+#         # structure and outputs a (datetime, float, float) structure.
+#         dt = datetime.datetime.now(timezone('US/Pacific'))
+#         dt_without_tz = dt.replace(tzinfo=None)
+#         data = [[numpy.datetime64(dt.isoformat()), [10.5, 180.5]]]
+#         wind_value = environment_schema.WindTimeSeriesSchema().serialize(data)
+# 
+#         self.assertEqual(wind_value[0][0], dt_without_tz.isoformat())
+#         self.assertEqual(wind_value[0][1], data[1])
+#         self.assertEqual(wind_value[0][2], data[2])
+#==============================================================================
 
     def test_deserialize_strips_timezone(self):
         # note -- deserialize expects to receive a (datetime, float, float)
