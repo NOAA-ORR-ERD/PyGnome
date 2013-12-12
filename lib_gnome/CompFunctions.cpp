@@ -583,7 +583,7 @@ OSErr ScanDepth (char *startChar, double *DepthPtr)
 	
 }
 
-
+#ifndef pyGNOME
 // - expects a number of the form
 //     <number><comma><number>
 // - parses the number values and scales them
@@ -716,7 +716,7 @@ OSErr ScanMatrixPt (char *startChar, LongPoint *MatrixLPtPtr)
 	return (ErrCode);
 	
 }
-
+#endif
 
 /**************************************************************************************************/
 OSErr ScanVelocity (char *startChar, VelocityRec *VelocityPtr, long *scanLength)
