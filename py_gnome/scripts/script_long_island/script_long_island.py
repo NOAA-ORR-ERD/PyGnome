@@ -119,7 +119,7 @@ def post_run(model):
 
     renderer.viewport = ((-72.75, 41.1), (-72.34, 41.3))
 
-    renderer.prepare_for_model_run()
+    renderer.prepare_for_model_run(model.start_time)
 
     for step_num in range(model.num_time_steps):
         print 'writing image:'
