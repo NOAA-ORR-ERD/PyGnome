@@ -251,8 +251,8 @@ void TimeGridWindRect::Draw(Rect r, WorldRect view, double refScale, double arro
 			
 			if (bDrawArrows && (velocity.u != 0 || velocity.v != 0))
 			{
-				inchesX = (velocity.u * refScale) / arrowScale;
-				inchesY = (velocity.v * refScale) / arrowScale;
+				inchesX = (velocity.u * refScale * fVar.fileScaleFactor) / arrowScale;
+				inchesY = (velocity.v * refScale * fVar.fileScaleFactor) / arrowScale;
 				pixX = inchesX * PixelsPerInchCurrent();
 				pixY = inchesY * PixelsPerInchCurrent();
 				p2.h = p.h + pixX;
@@ -558,8 +558,8 @@ void TimeGridWindCurv::Draw(Rect r, WorldRect view, double refScale, double arro
 				}
 				if ((velocity.u != 0 || velocity.v != 0) && (velocity.u != fFillValue && velocity.v != fFillValue))
 				{
-					float inchesX = (velocity.u * refScale) / arrowScale;
-					float inchesY = (velocity.v * refScale) / arrowScale;
+					float inchesX = (velocity.u * refScale * fVar.fileScaleFactor) / arrowScale;
+					float inchesY = (velocity.v * refScale * fVar.fileScaleFactor) / arrowScale;
 					short pixX = inchesX * PixelsPerInchCurrent();
 					short pixY = inchesY * PixelsPerInchCurrent();
 					p2.h = p.h + pixX;
