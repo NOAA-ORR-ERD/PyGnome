@@ -110,14 +110,13 @@ def test_model_time_and_current_time_in_sc():
             assert model.model_time == sc.current_time_stamp
 
 
-# todo: look at case where duration is 1 hour - it seems to remove 1st particle
-# not sure why. The GnomeMap()._set_off_map_status() seems to remove it - again
-# not sure why
 @pytest.mark.parametrize("duration", [1, 2])
 def test_release_end_of_step(duration):
     """
     tests that elements released at end of step are recorded with their
     initial conditions with correct timestamp
+    Also tests the age is set correctly.
+    todo: write separate test for checking age
     """
     model = Model(time_step=timedelta(minutes=15),
                   duration=timedelta(hours=duration))
@@ -136,9 +135,14 @@ def test_release_end_of_step(duration):
         if new_particles > 0:
             assert np.all(model.spills.LE('positions')[-new_particles:, :] ==
                           0)
+            assert np.all(model.spills.LE('age')[-new_particles:] == 0)
+            #assert np.all(model.spills.LE('age')[-new_particles:] ==
+            #            (model.model_time + timedelta(seconds=model.time_step)
+            #             - model.start_time).seconds)
 
         if prev_rel > 0:
             assert np.all(model.spills.LE('positions')[:prev_rel, :2] != 0)
+            assert np.all(model.spills.LE('age')[:prev_rel] >= model.time_step)
 
         prev_rel = len(model.spills.LE('positions'))
 
@@ -146,9 +150,12 @@ def test_release_end_of_step(duration):
                                         model.spills.LE('current_time_stamp'))
         print 'particle ID: {0}'.format(model.spills.LE('id'))
         print 'positions: \n{0}'.format(model.spills.LE('positions'))
-        print 'just ran time step: %s\n' % step
+        print 'age: \n{0}'.format(model.spills.LE('age'))
+        print 'just ran: %s' % step
+        print 'particles released: %s' % new_particles
+        print "---------------------------------------------"
 
-    print "\n---------------------------------------------"
+    print "\n==============================================="
 
 
 def test_timestep():
