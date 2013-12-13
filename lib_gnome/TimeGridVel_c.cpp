@@ -268,6 +268,9 @@ TimeGridVel_c::TimeGridVel_c ()
 	
 	fAllowExtrapolationInTime = false;
 
+	fAllowVerticalExtrapolationOfCurrents = false;
+	fMaxDepthForExtrapolation = 0.;	// assume 2D is just surface
+	
 	fNumCols = fNumRows = 0;
 }
 
@@ -1884,10 +1887,10 @@ TimeGridVelRect_c::TimeGridVelRect_c () : TimeGridVel_c()
 	
 	fNumDepthLevels = 1;	// default surface current only
 	
-	fAllowVerticalExtrapolationOfCurrents = false;
-	fMaxDepthForExtrapolation = 0.;	// assume 2D is just surface
+	//fAllowVerticalExtrapolationOfCurrents = false;
+	//fMaxDepthForExtrapolation = 0.;	// assume 2D is just surface
 	
-	fFileScaleFactor = 1.0;
+	//fFileScaleFactor = 1.0;
 
 }
 
@@ -9506,7 +9509,8 @@ OSErr TimeGridCurTri_c::TextRead(const char *path, const char *topFilePath)
 
 	vector<string> linesInFile;
 	if (ReadLinesInFile(strPath, linesInFile)) {
-		return TextRead(linesInFile, dir);
+		return TextRead(linesInFile,
+						dir);
 	}
 	else {
 		return false;

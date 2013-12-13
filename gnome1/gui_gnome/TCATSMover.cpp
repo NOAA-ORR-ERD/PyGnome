@@ -1983,7 +1983,7 @@ TCATSMover *CreateAndInitCatsCurrentsMover (TMap *owner, Boolean askForFile, cha
 
 TCurrentMover *CreateAndInitCurrentsMover (TMap *owner, Boolean askForFile, char* givenPath,char* givenFileName,TMap **newMap)
 {
-	char path[256], s[256], fileName[64], fileNamesPath[256], topFilePath[256];
+	char path[256], s[256], fileName[64], fileNamesPath[256], topFilePath[256], outPath[256];
 	short item, gridType, selectedUnits;
 	Point where = CenteredDialogUpLeft(M38c);;
 	OSType typeList[] = { 'NULL', 'NULL', 'NULL', 'NULL' };
@@ -2044,6 +2044,11 @@ TCurrentMover *CreateAndInitCurrentsMover (TMap *owner, Boolean askForFile, char
 			
 			err = newGridCurrentMover->InitMover(timeGrid);
 			if(err) goto Error;
+#if TARGET_API_MAC_CARBON
+			err = ConvertTraditionalPathToUnixPath((const char *) path, outPath, kMaxNameLen) ;
+			if (!err) strcpy(path,outPath);
+#endif
+			err = dynamic_cast<TimeGridCurTri*>(timeGrid)->ReadHeaderLines(path,&(newGridCurrentMover->fUncertainParams));
 			err = timeGrid->TextRead(path,"");
 			if(err) goto Error;
 			if (!err) /// JLM 5/3/10
@@ -2129,6 +2134,10 @@ TCurrentMover *CreateAndInitCurrentsMover (TMap *owner, Boolean askForFile, char
 		
 			err = newGridCurrentMover->InitMover(timeGrid);
 			if(err) goto Error;
+#if TARGET_API_MAC_CARBON
+			err = ConvertTraditionalPathToUnixPath((const char *) path, outPath, kMaxNameLen) ;
+			if (!err) strcpy(path,outPath);
+#endif
 			err = timeGrid->TextRead(path,"");
 			if(err) goto Error;
 			if (!err /*&& isNetCDFPathsFile*/) /// JLM 5/3/10
@@ -2239,7 +2248,6 @@ TCurrentMover *CreateAndInitCurrentsMover (TMap *owner, Boolean askForFile, char
 			MySFReply reply;
 			Boolean bTopFile = false;
 			topFilePath[0]=0;
-			char outPath[256];
 			// code goes here, store path as unix
 			if (gridType!=REGULAR)	// move this outside, pass the path in
 			{
@@ -2304,6 +2312,8 @@ TCurrentMover *CreateAndInitCurrentsMover (TMap *owner, Boolean askForFile, char
 #if TARGET_API_MAC_CARBON
 			err = ConvertTraditionalPathToUnixPath((const char *) path, outPath, kMaxNameLen) ;
 			if (!err) strcpy(path,outPath);
+			err = ConvertTraditionalPathToUnixPath((const char *) topFilePath, outPath, kMaxNameLen) ;
+			if (!err) strcpy(topFilePath,outPath);
 #endif
 			err = timeGrid->TextRead(path,topFilePath);
 			if(err) goto Error;

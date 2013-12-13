@@ -64,6 +64,9 @@ public:
 	long fTimeShift;		// to convert GMT to local time
 	Boolean fAllowExtrapolationInTime;
 	
+	Boolean fAllowVerticalExtrapolationOfCurrents;	// this shouldn't be part of the winds, but moved here so ptcur and gridcur would have access. revisit...
+	float	fMaxDepthForExtrapolation;	// probably will get rid of this
+	
 	WorldRect fGridBounds;
 
 
@@ -141,11 +144,11 @@ public:
 
 	FLOATH fDepthsH;	// check what this is, maybe rename
 	DepthDataInfoH fDepthDataInfo;
-	double fFileScaleFactor;
+	//double fFileScaleFactor;
 	Boolean fIsNavy;	// special variable names for Navy, maybe change to grid type depending on Navy options	Boolean fIsOptimizedForStep;
 
-	Boolean fAllowVerticalExtrapolationOfCurrents;
-	float	fMaxDepthForExtrapolation;
+	//Boolean fAllowVerticalExtrapolationOfCurrents;
+	//float	fMaxDepthForExtrapolation;
 	
 	
 	TimeGridVelRect_c();

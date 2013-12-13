@@ -716,7 +716,6 @@ OSErr ScanMatrixPt (char *startChar, LongPoint *MatrixLPtPtr)
 	return (ErrCode);
 	
 }
-#endif
 
 /**************************************************************************************************/
 OSErr ScanVelocity (char *startChar, VelocityRec *VelocityPtr, long *scanLength)
@@ -816,6 +815,8 @@ OSErr ScanVelocity (char *startChar, VelocityRec *VelocityPtr, long *scanLength)
 	return err;
 	
 }
+#endif
+
 void CheckYear(short *year)
 {
 	if (*year < 1900) {
