@@ -419,6 +419,7 @@ OSErr NetCDFWindMoverCurv::TextRead(char *path, TMap **newMap, char *topFilePath
 	// need dialog to ask for file
 	//if (fIsNavy)	// for now don't allow for wind files
 	{if (topFilePath[0]) {err = ReadTopology(topFilePath,newMap); goto done;}}
+	if (!gCommandFileRun)
 	{
 		short buttonSelected;
 		buttonSelected  = MULTICHOICEALERT(1688,"Do you have an extended topology file to load?",FALSE);

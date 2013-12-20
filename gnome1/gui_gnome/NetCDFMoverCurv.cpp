@@ -586,7 +586,8 @@ OSErr NetCDFMoverCurv::TextRead(char *path, TMap **newMap, char *topFilePath)
 	//{if (topFilePath[0]) {strcpy(fTopFilePath,topFilePath); err = ReadTopology(fTopFilePath,newMap); goto done;}}
 	{if (topFilePath[0]) {err = ReadTopology(topFilePath,newMap); goto depths;}}
 	//if (isLandMask/*fIsNavy*//*true*/)	// allow for the LAS files too ?
-	if (true)	// allow for the LAS files too ?
+	if (!gCommandFileRun)
+	//if (true)	// allow for the LAS files too ?
 	{
 		short buttonSelected;
 		buttonSelected  = MULTICHOICEALERT(1688,"Do you have an extended topology file to load?",FALSE);

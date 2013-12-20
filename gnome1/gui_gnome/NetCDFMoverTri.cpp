@@ -424,7 +424,7 @@ OSErr NetCDFMoverTri::TextRead(char *path, TMap **newMap, char *topFilePath)
 	// look for topology in the file
 	// for now ask for an ascii file, output from Topology save option
 	// need dialog to ask for file
-	if (!bTopFile)
+	if (!bTopFile && !gCommandFileRun)
 	{
 		short buttonSelected;
 		buttonSelected  = MULTICHOICEALERT(1688,"Do you have an extended topology file to load?",FALSE);
