@@ -84,7 +84,7 @@ class NetCDFOutput(Outputter, serializable.Serializable):
     var['units'] = 'grams'
     data_vars['mass'] = copy.deepcopy(var)
 
-    # age?
+    # age
 
     var.clear()
     var['dtype'] = np.int32
@@ -134,6 +134,9 @@ class NetCDFOutput(Outputter, serializable.Serializable):
         'mass',
         'age',
         ]
+
+    # these keys have same names in numpy data_arrays and netcdf variable names
+    _same_keynames = ['spill_num', 'id', 'mass', 'age']
 
     # define state for serialization
 
@@ -499,12 +502,10 @@ class NetCDFOutput(Outputter, serializable.Serializable):
                     sc['positions'][:, 2]
                 rootgrp.variables['status'][self._start_idx:_end_idx] = \
                     sc['status_codes'][:]
-                rootgrp.variables['spill_num'][self._start_idx:_end_idx] = \
-                    sc['spill_num'][:]
-                rootgrp.variables['id'][self._start_idx:_end_idx] = \
-                    sc['id'][:]
-                rootgrp.variables['mass'][self._start_idx:_end_idx] = \
-                    sc['mass'][:]
+
+                for key in self._same_keynames:
+                    rootgrp.variables[key][self._start_idx:_end_idx] = \
+                        sc[key][:]
 
                 # write remaining data
 
@@ -643,10 +644,9 @@ class NetCDFOutput(Outputter, serializable.Serializable):
             arrays_dict['positions'] = positions
             arrays_dict['status_codes'] = (data.variables['status']
                 [_start_ix:_stop_ix])
-            arrays_dict['spill_num'] = (data.variables['spill_num']
-                [_start_ix:_stop_ix])
-            arrays_dict['id'] = data.variables['id'][_start_ix:_stop_ix]
-            arrays_dict['mass'] = data.variables['mass'][_start_ix:_stop_ix]
+
+            for key in NetCDFOutput._same_keynames:
+                arrays_dict[key] = data.variables[key][_start_ix:_stop_ix]
 
             if all_data:  # append remaining data arrays
                 excludes = NetCDFOutput.data_vars.keys()
