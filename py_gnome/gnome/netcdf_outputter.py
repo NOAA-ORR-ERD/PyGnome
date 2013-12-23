@@ -232,6 +232,7 @@ class NetCDFOutput(Outputter, serializable.Serializable):
         self.arr_types = None
         self._format = 'NETCDF4'
         self._compress = compress
+        self._chunksize = 1024*1024 # 1MB seemed to test pertty well
 
         # need to keep track of starting index for writing data since variable
         # number of particles are released
@@ -402,8 +403,11 @@ class NetCDFOutput(Outputter, serializable.Serializable):
                 rootgrp.createDimension('time', 0)
                 rootgrp.createDimension('data', 0)
 
-                time_ = rootgrp.createVariable('time', np.double,
-                        ('time', ), zlib=self._compress)
+                time_ = rootgrp.createVariable('time',
+                                               np.double,
+                                               ('time', ),
+                                               zlib=self._compress,
+                                               chunksizes=(self._chunksize,) )
                 time_.units = 'seconds since {0}'.format(
                         self._model_start_time.isoformat().replace('T', ' '))
                 time_.long_name = 'time'
@@ -412,7 +416,8 @@ class NetCDFOutput(Outputter, serializable.Serializable):
                 time_.comment = 'unspecified time zone'
 
                 pc = rootgrp.createVariable('particle_count', np.int32,
-                        ('time', ), zlib=self._compress)
+                        ('time', ), zlib=self._compress,
+                                               chunksizes=(self._chunksize,) )
                 pc.units = '1'
                 pc.long_name = 'number of particles in a given timestep'
                 pc.ragged_row_count = 'particle count at nth timestep'
@@ -420,7 +425,8 @@ class NetCDFOutput(Outputter, serializable.Serializable):
                 for (key, val) in self.data_vars.iteritems():
                     # don't pop since it maybe required twice
                     var = rootgrp.createVariable(key, val.get('dtype'),
-                            ('data', ), zlib=self._compress)
+                            ('data', ), zlib=self._compress,
+                                               chunksizes=(self._chunksize,) )
 
                     # iterate over remaining attributes
 
@@ -442,11 +448,14 @@ class NetCDFOutput(Outputter, serializable.Serializable):
                     for (key, val) in self.arr_types.iteritems():
                         if len(val.shape) == 0:
                             rootgrp.createVariable(key, val.dtype,
-                                    'data', zlib=self._compress)
+                                    'data', zlib=self._compress,
+                                               chunksizes=(self._chunksize,) )
                         elif val.shape[0] == 3:
                             rootgrp.createVariable(key, val.dtype,
-                                    ('data', 'world_point'),
-                                    zlib=self._compress)
+                                                  ('data', 'world_point'),
+                                                   zlib=self._compress,
+                                                   # chunksizes -- what should this be?
+                                                   )
                         else:
                             raise ValueError('{0} has an undefined dimension:'
                                              ' {1}'.format(key, val.shape))
