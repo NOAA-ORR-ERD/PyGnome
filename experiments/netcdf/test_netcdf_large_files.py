@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 """
-Some code to test writting large files with the NetCDF4 package
+Some code to test writing large files with the NetCDF4 package
 
 Used to help debug a problem with GNOME2 and writting large output files.
 
@@ -15,8 +15,9 @@ print "imports successful"
 
 # length of array to test
 N = 1024 * 1024 * 16
-num_chunks = 16
-chunk_size = N/num_chunks
+# "blocks" is the size of data written out in each run through the loop
+num_blocks = 16
+block_size = N/num_blocks
 # create a test file:
 
 print "creating file"
@@ -31,16 +32,16 @@ print "creating variables"
 # default chunking
 # big_var = nc_file.createVariable('big_var', np.float64, ('big_dim',))
 # setting a chunksize1
-big_var = nc_file.createVariable('big_var', np.float64, ('big_dim',), chunksizes=(1024*1024,) )
+big_var = nc_file.createVariable('big_var', np.float64, ('big_dim',), chunksizes=(1024*1024 ,) )
 
 
 start = time.time()
-for i in range(num_chunks):
+for i in range(num_blocks):
     print "creating data:", i
-    data = np.linspace(0, 2*chunk_size-2, chunk_size)
+    data = np.linspace(0, 2*block_size-2, block_size)
 
     print "writing data to file"
-    big_var[i*chunk_size:(i+1)*chunk_size] = data
+    big_var[i*block_size:(i+1)*block_size] = data
     print "written chunk:", i
     sys.stdout.flush()
 

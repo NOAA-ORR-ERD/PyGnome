@@ -232,7 +232,7 @@ class NetCDFOutput(Outputter, serializable.Serializable):
         self.arr_types = None
         self._format = 'NETCDF4'
         self._compress = compress
-        self._chunksize = 1024*1024 # 1MB seemed to test pertty well
+        self._chunksize = 1024*512 # 0.5MB seemed to test best on the Mac and OK on Windows.
 
         # need to keep track of starting index for writing data since variable
         # number of particles are released
@@ -390,9 +390,8 @@ class NetCDFOutput(Outputter, serializable.Serializable):
             self._nc_file_exists_error(file_)
             with nc.Dataset(file_, 'w', format=self._format) as rootgrp:
                 rootgrp.comment = self.cf_attributes['comment']
-                rootgrp.creation_date = \
-                    time_utils.round_time(datetime.now(),
-                        roundTo=1).isoformat().replace('T', ' ')
+                rootgrp.creation_date = time_utils.round_time(datetime.now(),
+                                                              roundTo=1).isoformat().replace('T', ' ')
                 rootgrp.source = self.cf_attributes['source']
                 rootgrp.references = self.cf_attributes['references']
                 rootgrp.feature_type = self.cf_attributes['feature_type'
@@ -415,18 +414,22 @@ class NetCDFOutput(Outputter, serializable.Serializable):
                 time_.calendar = 'gregorian'
                 time_.comment = 'unspecified time zone'
 
-                pc = rootgrp.createVariable('particle_count', np.int32,
-                        ('time', ), zlib=self._compress,
-                                               chunksizes=(self._chunksize,) )
+                pc = rootgrp.createVariable('particle_count',
+                                            np.int32,
+                                            ('time', ),
+                                            zlib=self._compress,
+                                            chunksizes=(self._chunksize,) )
                 pc.units = '1'
                 pc.long_name = 'number of particles in a given timestep'
                 pc.ragged_row_count = 'particle count at nth timestep'
 
                 for (key, val) in self.data_vars.iteritems():
                     # don't pop since it maybe required twice
-                    var = rootgrp.createVariable(key, val.get('dtype'),
-                            ('data', ), zlib=self._compress,
-                                               chunksizes=(self._chunksize,) )
+                    var = rootgrp.createVariable(key,
+                                                 val.get('dtype'),
+                                                 ('data', ),
+                                                 zlib=self._compress,
+                                                 chunksizes=(self._chunksize,) )
 
                     # iterate over remaining attributes
 
@@ -447,14 +450,18 @@ class NetCDFOutput(Outputter, serializable.Serializable):
 
                     for (key, val) in self.arr_types.iteritems():
                         if len(val.shape) == 0:
-                            rootgrp.createVariable(key, val.dtype,
-                                    'data', zlib=self._compress,
-                                               chunksizes=(self._chunksize,) )
-                        elif val.shape[0] == 3:
-                            rootgrp.createVariable(key, val.dtype,
-                                                  ('data', 'world_point'),
+                            rootgrp.createVariable(key,
+                                                   val.dtype,
+                                                   'data',
                                                    zlib=self._compress,
-                                                   # chunksizes -- what should this be?
+                                                   chunksizes=(self._chunksize,),
+                                                   )
+                        elif val.shape[0] == 3:
+                            rootgrp.createVariable(key,
+                                                   val.dtype,
+                                                   ('data', 'world_point'),
+                                                   zlib=self._compress,
+                                                   chunksizes=(self._chunksize, 3),
                                                    )
                         else:
                             raise ValueError('{0} has an undefined dimension:'
