@@ -232,7 +232,10 @@ class NetCDFOutput(Outputter, serializable.Serializable):
         self.arr_types = None
         self._format = 'NETCDF4'
         self._compress = compress
-        self._chunksize = 1024*512 # 0.5MB seemed to test best on the Mac and OK on Windows.
+        self._chunksize = 1024 # 1k is about right hfor 1000LEs and one time step.
+                               # up to 0.5MB tested better for large datasets, but
+                               # we don't want to have far-too-large files for the
+                               # smaller ones
 
         # need to keep track of starting index for writing data since variable
         # number of particles are released

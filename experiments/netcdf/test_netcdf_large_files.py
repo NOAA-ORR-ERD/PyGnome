@@ -3,7 +3,7 @@
 """
 Some code to test writing large files with the NetCDF4 package
 
-Used to help debug a problem with GNOME2 and writting large output files.
+Used to help debug a problem with GNOME2 and writing large output files.
 
 """
 import sys, time
@@ -31,8 +31,9 @@ print "creating variables"
 # create a variable
 # default chunking
 # big_var = nc_file.createVariable('big_var', np.float64, ('big_dim',))
-# setting a chunksize1
-big_var = nc_file.createVariable('big_var', np.float64, ('big_dim',), chunksizes=(1024*1024 ,) )
+# setting a chunksize
+big_var = nc_file.createVariable('big_var', np.float64, ('big_dim',), chunksizes=(1024, ) )
+
 
 
 start = time.time()
