@@ -102,18 +102,20 @@ class ValuesFromDistBase(object):
         """
         Values to be sampled from a distribution.
 
-        :param distribution: could be 'uniform' or 'normal'
+        :param distribution: could be 'uniform', 'normal' or 'weibull'
         :type distribution: str
 
         :param params: for 'uniform' dist, it is (min_val, max_val).
             For 'normal' dist, it is (mean, sigma) where sigma is
             1 standard deviation
+            For 'weibull' dist, it is (scale, shape) defaults should
+            be different here (1., and 1.?)
         :type params: list of length 2
         """
 
-        if distribution not in ['uniform', 'normal']:
-            raise ValueError("{0} is unknown distribution. Only 'uniform' or"
-                             " 'normal' distribution is implemented")
+        if distribution not in ['uniform', 'normal', 'weibull']:
+            raise ValueError("{0} is unknown distribution. Only 'uniform' 'normal' or"
+                             " 'weibull' distribution is implemented")
 
         self.distribution = distribution
         self.params = params
@@ -132,6 +134,9 @@ class ValuesFromDistBase(object):
                                          len(np_array))
         elif self.distribution == 'normal':
             np_array[:] = np.random.normal(self.params[0], self.params[1],
+                                        len(np_array))
+        elif self.distribution == 'weibull':
+            np_array[:] = self.params[0]*np.random.weibull(self.params[1],
                                         len(np_array))
 
 
@@ -179,13 +184,15 @@ class InitRiseVelFromDropletSizeFromDist(ValuesFromDistBase):
 
         All parameters have defaults and are optional
 
-        :param distribution: could be 'uniform' or 'normal'.
+        :param distribution: could be 'uniform', 'normal' or 'weibull'.
             Default value 'uniform'
         :type distribution: str
 
         :param params: for 'uniform' dist, it is (min_val, max_val).
             For 'normal' dist, it is (mean, sigma) where sigma is
             1 standard deviation. Default value (0, .1)
+            For 'weibull' dist, it is (scale, shape) defaults should
+            be different here (1., and 1.?)
         :type params: list of length 2
 
         :param water_density: 1020.0 [kg/m3]

@@ -146,6 +146,24 @@ def test_initialize_InitRiseVelFromDist_uniform():
     assert np.all(data_arrays['rise_vel'] >= 0)
 
 
+def test_initialize_InitRiseVelFromDropletDist_weibull():
+    """
+    test initialize data_arrays with weibull dist
+    """
+    num_elems = 1000
+    data_arrays = mock_append_data_arrays(rise_vel_array, num_elems)
+    substance = OilProps('oil_conservative')
+    spill = Spill()
+    #fcn = InitRiseVelFromDropletSizeFromDist('weibull',params=(.00456,1.8))	# larger droplet test case - in mm so multiply by .001
+    fcn = InitRiseVelFromDropletSizeFromDist('weibull',params=(.000248,1.8))	# smaller droplet test case - in mm so multiply by .001
+    fcn.initialize(num_elems, spill, data_arrays, substance)
+
+    assert_dataarray_shape_size(rise_vel_array, data_arrays, num_elems)
+
+    #print data_arrays['rise_vel']
+
+    assert np.all(0 != data_arrays['rise_vel'])
+
 def test_initialize_InitRiseVelFromDist_normal():
     """
     test initialize data_arrays with normal dist
