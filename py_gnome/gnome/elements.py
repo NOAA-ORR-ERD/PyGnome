@@ -98,27 +98,58 @@ class InitMassFromVolume(object):
 
 
 class ValuesFromDistBase(object):
-    def __init__(self, distribution='uniform', params=(0, .1)):
+    def __init__(self, **kwargs):
         """
         Values to be sampled from a distribution.
 
-        :param distribution: could be 'uniform', 'normal' or 'weibull'
+        Keyword arguments: kwargs are different based on the type of
+        distribution selected by user
+
+        :param distribution: could be 'uniform', 'normal', 'lognormal' or 'weibull'
         :type distribution: str
 
-        :param params: for 'uniform' dist, it is (min_val, max_val).
-            For 'normal' dist, it is (mean, sigma) where sigma is
-            1 standard deviation
-            For 'weibull' dist, it is (scale, shape) defaults should
-            be different here (1., and 1.?)
-        :type params: list of length 2
-        """
+        If distribution is 'uniform', then following kwargs are expected
 
-        if distribution not in ['uniform', 'normal', 'weibull']:
-            raise ValueError("{0} is unknown distribution. Only 'uniform' 'normal' or"
-                             " 'weibull' distribution is implemented")
+        :param low: for 'uniform' dist, it is lower bound. Default is 0.
+        :param high: for 'uniform' dist, it is upper bound. Default is 0.1
+
+        If distribution is 'normal' or 'lognormal', then following kwargs are
+        expected
+
+        :param mean: mean of the normal distribution
+        :param sigma: 1 standard deviation (sigma) of normal distribution
+
+        If distribution is 'weibull', then following kwargs are expected.
+
+        :param alpha: shape parameter 'alpha' - labeled as 'a' in
+            numpy.random.weibull distribution
+        :param lambda_: the scale parameter for the distribution - required for
+            2-parameter weibull distribution (Rosin-Rammler). Default is 1.
+
+        """
+        distribution = kwargs.pop('distribution', 'uniform')
+        if distribution not in ['uniform', 'normal', 'lognormal', 'weibull']:
+            raise ValueError("{0} is unknown distribution. Only 'uniform',"
+                             " 'normal', 'lognormal', and 'weibull'"
+                             " distributions are implemented")
 
         self.distribution = distribution
-        self.params = params
+
+        if distribution == 'uniform':
+            self.low = kwargs.pop('low', 0)
+            self.high = kwargs.pop('high', .1)
+        elif distribution in ['normal', 'lognormal']:
+            self.mean = kwargs.pop('mean', None)
+            self.sigma = kwargs.pop('sigma', None)
+            if self.mean is None or self.sigma is None:
+                raise TypeError("'normal' distribution requires 'mean' and"
+                                " 'sigma' input as kwargs")
+        elif distribution == 'weibull':
+            self.alpha = kwargs.pop('alpha', None)
+            self.lambda_ = kwargs.pop('lambda_', 1)
+            if self.alpha is None:
+                raise TypeError("'weibull' distribution requires 'alpha'"
+                                " input as kwargs")
 
     def set_values(self, np_array):
         """
@@ -130,34 +161,51 @@ class ValuesFromDistBase(object):
         :type np_array: numpy array of dtype 'float64'
         """
         if self.distribution == 'uniform':
-            np_array[:] = np.random.uniform(self.params[0], self.params[1],
+            np_array[:] = np.random.uniform(self.low, self.high,
                                          len(np_array))
         elif self.distribution == 'normal':
-            np_array[:] = np.random.normal(self.params[0], self.params[1],
+            np_array[:] = np.random.normal(self.mean, self.sigma,
+                                        len(np_array))
+        elif self.distribution == 'lognormal':
+            np_array[:] = np.random.lognormal(self.mean, self.sigma,
                                         len(np_array))
         elif self.distribution == 'weibull':
-            np_array[:] = self.params[0]*np.random.weibull(self.params[1],
-                                        len(np_array))
+            np_array[:] = (self.lambda_ *
+                           np.random.weibull(self.alpha, len(np_array)))
 
 
 class InitRiseVelFromDist(ValuesFromDistBase):
-    def __init__(self, distribution='uniform', params=(0, .1)):
+    def __init__(self, distribution='uniform', **kwargs):
         """
         Set the rise velocity parameters to be sampled from a distribution.
 
         Use distribution to define rise_vel - use super to invoke
         ValuesFromDistBase().__init__()
 
-        :param distribution: could be 'uniform' or 'normal'
+        :param distribution: could be 'uniform', 'normal', 'lognormal' or 'weibull'
         :type distribution: str
 
-        :param params: for 'uniform' dist, it is (min_val, max_val).
-            For 'normal' dist, it is (mean, sigma) where sigma is
-            1 standard deviation
-        :type params: list of length 2
+        If distribution is 'uniform', then following kwargs are expected
+
+        :param low: for 'uniform' dist, it is lower bound. Default is 0.
+        :param high: for 'uniform' dist, it is upper bound. Default is 0.1
+
+        If distribution is 'normal' or 'lognormal', then following kwargs are
+        expected
+
+        :param mean: mean of the normal distribution
+        :param sigma: 1 standard deviation (sigma) of normal distribution
+
+        If distribution is 'weibull', then following kwargs are expected.
+
+        :param alpha: shape parameter 'alpha' - labeled as 'a' in
+            numpy.random.weibull distribution
+        :param lambda_: the scale parameter for the distribution - required for
+            2-parameter weibull distribution (Rosin-Rammler). Default is 1.
         """
 
-        super(InitRiseVelFromDist, self).__init__(distribution, params)
+        super(InitRiseVelFromDist, self).__init__(distribution=distribution,
+                                                  **kwargs)
 
     def initialize(self, num_new_particles, spill, data_arrays,
                    substance=None):
@@ -170,9 +218,9 @@ class InitRiseVelFromDist(ValuesFromDistBase):
 class InitRiseVelFromDropletSizeFromDist(ValuesFromDistBase):
     def __init__(self,
                  distribution='uniform',
-                 params=(0, .1),
                  water_density=1020.0,
-                 water_viscosity=1.0e-6):
+                 water_viscosity=1.0e-6,
+                 **kwargs):
         """
         Set the droplet size from a distribution. Use the C++ get_rise_velocity
         function exposed via cython (rise_velocity_from_drop_size) to obtain
@@ -184,24 +232,35 @@ class InitRiseVelFromDropletSizeFromDist(ValuesFromDistBase):
 
         All parameters have defaults and are optional
 
-        :param distribution: could be 'uniform', 'normal' or 'weibull'.
+        :param distribution: could be 'uniform', 'normal' ,'lognormal' or 'weibull'.
             Default value 'uniform'
         :type distribution: str
 
-        :param params: for 'uniform' dist, it is (min_val, max_val).
-            For 'normal' dist, it is (mean, sigma) where sigma is
-            1 standard deviation. Default value (0, .1)
-            For 'weibull' dist, it is (scale, shape) defaults should
-            be different here (1., and 1.?)
-        :type params: list of length 2
+        If distribution is 'uniform', then following kwargs are expected
+
+        :param low: for 'uniform' dist, it is lower bound. Default is 0.
+        :param high: for 'uniform' dist, it is upper bound. Default is 0.1
+
+        If distribution is 'normal' or 'lognormal', then following kwargs are
+        expected
+
+        :param mean: mean of the normal distribution
+        :param sigma: 1 standard deviation (sigma) of normal distribution
+
+        If distribution is 'weibull', then following kwargs are expected.
+
+        :param alpha: shape parameter 'alpha' - labeled as 'a' in
+            numpy.random.weibull distribution
+        :param lambda_: the scale parameter for the distribution - required for
+            2-parameter weibull distribution (Rosin-Rammler). Default is 1.
 
         :param water_density: 1020.0 [kg/m3]
         :type water_density: float
         :param water_viscosity: 1.0e-6 [m^2/s]
         :type water_viscosity: float
         """
-        super(InitRiseVelFromDropletSizeFromDist, self).__init__(distribution,
-                                                                 params)
+        super(InitRiseVelFromDropletSizeFromDist, self).__init__(
+                                        distribution=distribution, **kwargs)
         self.water_viscosity = water_viscosity
         self.water_density = water_density
 
