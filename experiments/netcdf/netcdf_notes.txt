@@ -101,3 +101,26 @@ RuntimeError: NetCDF: HDF error
 HDF5: infinite loop closing library
       R,D,G,A,S,T,D,G,F,D,A,S,T,F,FD,P,FD,P,FD,P,E,E,SL,FL,FL,FL,FL,FL,FL,FL,FL,FL,FL,FL,FL,FL,FL,FL,FL,FL,FL,FL,FL,FL,FL,FL,FL,FL,FL,FL,FL,FL,FL,FL,FL,FL,FL,FL,FL,FL,FL,FL,FL,FL,FL,FL,FL,FL,FL,FL,FL,FL,FL,FL,FL,FL,FL,FL,FL,FL,FL,FL,FL,FL,FL,FL,FL,FL,FL,FL,FL,FL,FL,FL,FL,FL,FL,FL,FL,FL,FL,FL,FL,FL,FL,FL,FL,FL,FL,FL,FL,FL,FL
 
+
+Test with multiple arrays -- testing for much larger files.
+################################################################
+
+# length of array to test
+N = 1024 * 2
+K = 4 #number of arrays
+# "blocks" is the size of data written out in each run through the loop
+block_size = 1024
+# chunksize is the size of chunks in teh netcdf file
+chunksizes = (1024, )
+
+
+length         size        run_time   
+1024*2           80112    0.0783071517944
+1024*20         669936    0.0177519321442
+1024*200       6601712    0.143374919891
+
+
+
+
+
+

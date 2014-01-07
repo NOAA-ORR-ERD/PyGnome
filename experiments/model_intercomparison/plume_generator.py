@@ -16,7 +16,9 @@ class Plume(object):
       but for right now, we just evenly space the depths of the
       mass flux values.
     '''
-    def __init__(self, lon, lat,
+    def __init__(self,
+                 lon,
+                 lat,
                  plume_data):
         self.mass_flux = np.array([d[1] for d in plume_data])
         num_points = self.mass_flux.size
@@ -33,8 +35,11 @@ class PlumeGenerator(object):
       over a range of time.
     '''
     def __init__(self,
-                 release_time, end_release_time, time_step_delta,
+                 release_time,
+                 end_release_time,
+                 time_step_delta,
                  plume):
+
         self.release_time = release_time
         self.end_release_time = end_release_time
         self.time_step_delta = time_step_delta
@@ -42,7 +47,7 @@ class PlumeGenerator(object):
 
         self.plume = plume
 
-        self.accum_mass = np.zeros((self.plume.mass_flux.size))
+        self.accum_mass = np.zeros_like(self.plume.mass_flux)
 
         # Here we just calculate a reasonable value for the mass
         # that is contained in a single LE.
