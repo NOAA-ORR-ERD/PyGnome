@@ -262,6 +262,10 @@ OSErr GridWindMover_c::TextRead(char *path, char *topFilePath)
 			}
 		}
 	}
+	else {
+		err = -1; return err;
+	}
+
 Error: // JLM 	 10/27/98
 	//if(newMover) {newMover->Dispose();delete newMover;newMover = 0;};
 	//return 0;
