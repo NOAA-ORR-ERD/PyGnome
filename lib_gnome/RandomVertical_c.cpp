@@ -154,13 +154,13 @@ WorldPoint3D RandomVertical_c::GetMove (const Seconds& model_time, Seconds timeS
 			// also should handle non-dispersed subsurface spill
 			totalLEDepth = (*theLE).z+deltaPoint.z;
 			
-			/*if (totalLEDepth>mixedLayerDepth) 
+			if (totalLEDepth>mixedLayerDepth) 
 			{
 				deltaPoint.z = mixedLayerDepth - (totalLEDepth - mixedLayerDepth) - (*theLE).z; // reflect about mixed layer depth
 				// check if went above surface and put randomly into mixed layer
 				if ((*theLE).z+deltaPoint.z <= 0) deltaPoint.z = GetRandomFloat(eps,mixedLayerDepth) - (*theLE).z;	
 					// or just let it go and deal with it later? then it will go into full water column...
-			}*/
+			}
 		}
 		z = deltaPoint.z;	// will add this on to the next move
 		if (mixedLayerDepth==depthAtPoint) /*return deltaPoint*/goto dochecks;	// in this case don't need to do anything more
