@@ -135,7 +135,7 @@ WorldPoint3D RandomVertical_c::GetMove (const Seconds& model_time, Seconds timeS
 		depthAtPoint = GetDepthAtPoint(refPoint);
 		if (depthAtPoint <= 0) depthAtPoint = INFINITE_DEPTH;	// this should be taken care of in GetDepthAtPoint	
 		// if (depthAtPoint < eps) // should this be an error?
-		if (z<=mixedLayerDepth)
+		if ((*theLE).z<=mixedLayerDepth)
 		{
 			if (fVerticalDiffusionCoefficient==0) return deltaPoint;	
 			verticalDiffusionCoefficient = sqrt(2.*(fVerticalDiffusionCoefficient/10000.)*timeStep);
@@ -162,11 +162,11 @@ WorldPoint3D RandomVertical_c::GetMove (const Seconds& model_time, Seconds timeS
 					// or just let it go and deal with it later? then it will go into full water column...
 			}
 		}
-		if (mixedLayerDepth==depthAtPoint) return deltaPoint;	// in this case don't need to do anything more
 		z = deltaPoint.z;	// will add this on to the next move
+		if (mixedLayerDepth==depthAtPoint) /*return deltaPoint*/goto dochecks;	// in this case don't need to do anything more
 		// now apply below mixed layer depth diffusion to all particles above and below
-		if (fVerticalBottomDiffusionCoefficient==0/* && z==0*/) return deltaPoint;
-		verticalDiffusionCoefficient = sqrt(2.*fVerticalBottomDiffusionCoefficient/10000.*timeStep);
+		if (fVerticalBottomDiffusionCoefficient==0/* && z==0*/) /*return deltaPoint*/goto dochecks;	// don't return until do checks
+		verticalDiffusionCoefficient = sqrt(2.*(fVerticalBottomDiffusionCoefficient/10000.)*timeStep);
 		GetRandomVectorInUnitCircle(&rand1,&rand2);
 		r = sqrt(rand1*rand1+rand2*rand2);
 		w = sqrt(-2*log(r)/r);
@@ -176,6 +176,7 @@ WorldPoint3D RandomVertical_c::GetMove (const Seconds& model_time, Seconds timeS
 		z = z + deltaPoint.z;	// add move to previous move if any
 		totalLEDepth = (*theLE).z+z;
 		// if LE has gone above surface reflect
+dochecks:
 		if (totalLEDepth==0) 
 		{	
 			deltaPoint.z = eps - (*theLE).z; 
@@ -204,6 +205,8 @@ WorldPoint3D RandomVertical_c::GetMove (const Seconds& model_time, Seconds timeS
 				deltaPoint.z = GetRandomFloat(eps,depthAtPoint-eps) - (*theLE).z;
 			return deltaPoint;
 		}
+		else
+			deltaPoint.z = z;
 	}
 	else
 		deltaPoint.z = 0.;	
