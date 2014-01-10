@@ -63,7 +63,7 @@ def model(sample_model):
 
     # print start_points
 
-    spill = Spill(SpatialRelease(start_positions=line_pos,
+    spill = Spill(SpatialRelease(start_position=line_pos,
                            release_time=model.start_time))
 
     model.spills += spill
@@ -299,7 +299,7 @@ def test_simple_run_with_image_output():
 
     # print start_points
 
-    spill = Spill(SpatialRelease(start_positions=start_points,
+    spill = Spill(SpatialRelease(start_position=start_points,
                            release_time=start_time))
 
     model.spills += spill
@@ -369,7 +369,7 @@ def test_simple_run_with_image_output_uncertainty():
 
     # print start_points
 
-    spill = Spill(SpatialRelease(start_positions=start_points,
+    spill = Spill(SpatialRelease(start_position=start_points,
                            release_time=start_time))
 
     model.spills += spill

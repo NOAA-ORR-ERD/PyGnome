@@ -5,7 +5,7 @@ These are also tested in the test_spill_container module since it allows for
 more comprehensive testing
 '''
 import copy
-from datetime import timedelta
+from datetime import timedelta, datetime
 
 import numpy as np
 import pytest
@@ -49,7 +49,8 @@ def assert_dataarray_shape_size(arr_types, data_arrays, num_released):
 @pytest.mark.parametrize(("fcn", "arr_types", "spill"),
                 [(InitWindages(), windages, None),
                  (InitWindages(), windages, None),
-                 (InitMassFromVolume(), mass_array, Spill(volume=10)),
+                 (InitMassFromVolume(), mass_array,
+                  Spill(Release(), volume=10)),
                  (InitRiseVelFromDist(), rise_vel_array, None),
                  (InitRiseVelFromDist(distribution='normal',
                                       mean=0, sigma=0.1),
@@ -63,7 +64,7 @@ def assert_dataarray_shape_size(arr_types, data_arrays, num_released):
                   rise_vel_array, None),
                  (InitRiseVelFromDropletSizeFromDist('normal',
                                                      mean=0, sigma=0.1),
-                  rise_vel_array, Spill())
+                  rise_vel_array, Spill(Release()))
                  ])
 def test_correct_particles_set_by_initializers(fcn, arr_types, spill):
     """
@@ -131,7 +132,7 @@ class TestInitConstantWindageRange:
 def test_initailize_InitMassFromVolume():
     data_arrays = mock_append_data_arrays(mass_array, num_elems)
     fcn = InitMassFromVolume()
-    spill = Spill()
+    spill = Spill(Release())
     substance = OilProps('oil_conservative')
     spill.volume = num_elems / (substance.get_density('kg/m^3') * 1000)
     fcn.initialize(num_elems, spill, data_arrays, substance)
@@ -162,7 +163,7 @@ def test_initialize_InitRiseVelFromDropletDist_weibull():
     num_elems = 1000
     data_arrays = mock_append_data_arrays(rise_vel_array, num_elems)
     substance = OilProps('oil_conservative')
-    spill = Spill()
+    spill = Spill(Release())
 #     fcn = InitRiseVelFromDropletSizeFromDist('weibull',
 #                                       alpha = 1.8,
 #                                       lambda_ = .00456)	# (.001*3.8) / (.693 ** (1 / 1.8)) - larger droplet test case, in mm so multiply by .001 

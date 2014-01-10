@@ -28,7 +28,7 @@ arr_types = {'positions': gnome.array_types.positions}
 
 
 def test_init():
-    spill = Spill(10)
+    spill = Spill(Release())
 
     assert np.all(spill.element_type.initializers['windages'].windage_range
                   == (0.01, 0.04))
@@ -37,11 +37,14 @@ def test_init():
 
 
 def test_init_exceptions():
-    with pytest.raises(ValueError):
-        Spill(10, element_type=floating(windage_range=(-1, 0)))
+    with pytest.raises(TypeError):
+        Spill()
 
     with pytest.raises(ValueError):
-        Spill(10, element_type=floating(windage_persist=0))
+        Spill(Release(), element_type=floating(windage_range=(-1, 0)))
+
+    with pytest.raises(ValueError):
+        Spill(Release(), element_type=floating(windage_persist=0))
 
 
 def test_deepcopy():
@@ -50,7 +53,7 @@ def test_deepcopy():
     todo: how should this work
     """
 
-    sp1 = Spill(Release(10))
+    sp1 = Spill(Release())
     sp2 = copy.deepcopy(sp1)
     assert sp1 is not sp2
 
@@ -65,7 +68,7 @@ def test_copy():
     todo: how should this work
     """
 
-    sp1 = Spill(Release(10))
+    sp1 = Spill(Release())
     sp2 = copy.copy(sp1)
     assert sp1 is not sp2
 
@@ -96,6 +99,40 @@ def test_uncertain_copy():
                           spill.release.start_position)
     del spill
     del u_spill
+
+
+class TestRelease:
+    rel_time = datetime.now().replace(microsecond=0)
+
+    def test_init(self):
+        rel = Release(0, self.rel_time)
+        assert rel.num_elements == 0
+        assert rel.release_time == self.rel_time
+        assert rel.start_time_invalid
+
+    @pytest.mark.parametrize("curr_time", [rel_time,
+                                           rel_time - timedelta(seconds=1),
+                                           rel_time + timedelta(seconds=1)])
+    def test_num_elements_to_release(self, curr_time):
+        rel = Release(0, self.rel_time)
+        rel.num_elements_to_release(curr_time, 900)
+
+        if curr_time <= rel.release_time:
+            assert not rel.start_time_invalid
+        else:
+            assert rel.start_time_invalid
+
+    def test_rewind(self):
+        rel = Release(10, self.rel_time)
+        rel.num_elements_to_release(self.rel_time, 900)
+        assert not rel.start_time_invalid
+
+        # change attribute manually for test
+        rel.num_released = rel.num_elements
+
+        rel.rewind()
+        assert rel.start_time_invalid
+        assert rel.num_released == 0
 
 
 class Test_point_line_release_spill:

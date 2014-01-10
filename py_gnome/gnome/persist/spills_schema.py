@@ -39,17 +39,16 @@ class Windage(TupleSchema):
                              default=0.04)
 
 
-class Spill(MappingSchema):
-
-    """Base schema class from which spills that are serialized derive"""
-
-    on = SchemaNode(Bool(), default=True, missing=True)
+class Release(MappingSchema):
+    """ Base class for Release schemas"""
     num_elements = SchemaNode(Int(), default=1000)
-    windage_range = Windage(default=(0.01, 0.04))
-    windage_persist = SchemaNode(Float(), default=900)
+
+    # used to create a new Release object if model is persisted mid-run
+    num_released = SchemaNode(Int())
+    start_time_invalid = SchemaNode(Bool())
 
 
-class PointLineSource(Id, Spill):
+class PointLineSource(Release):
 
     """
     Contains properties required by UpdateWindMover and CreateWindMover
@@ -70,3 +69,12 @@ class PointLineSource(Id, Spill):
 
     # Not sure how this will work w/ WebGnome
     prev_release_pos = WorldPoint(missing=drop)
+
+
+class Spill(Id):
+
+    """Spill class scema"""
+
+    on = SchemaNode(Bool(), default=True, missing=True)
+    # num_rleased is a readonly property
+    #num_released = SchemaNode(Int(), default=0, missing=drop)

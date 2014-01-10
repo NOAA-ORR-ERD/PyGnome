@@ -41,12 +41,12 @@ class Release(object):
     state.remove('id')
     state.add(create=_create, update=_update)
 
-    def __init__(self, num_elements=0):
+    def __init__(self, num_elements=0, release_time=None):
         self.num_elements = num_elements
+        self.release_time = release_time
 
         # number of new particles released at each timestep
         self.num_released = 0
-        self.elements_not_released = True
 
         # flag determines if the first time is valid. If the first call to
         # self.num_elements_to_release(current_time, time_step) has
@@ -83,6 +83,9 @@ class Release(object):
         self.num_released is updated after self.set_newparticle_values is
         called. Particles are considered released after the values are set.
         """
+        if self.release_time is None:
+            raise ValueError("release_time attribute cannot be None")
+
         if (current_time <= self.release_time and
             self.start_time_invalid):
             # start time is valid
@@ -97,7 +100,8 @@ class Release(object):
         time_step,
         data_arrays):
         """
-        release should set the 'positions' array for the data_arrays
+        derived object should set the 'positions' array for the data_arrays
+        base class has no implementation
         """
         pass
 
@@ -161,17 +165,16 @@ class PointLineRelease(Release, serializable.Serializable):
         release_time,
         end_position=None,
         end_release_time=None,
-        **kwargs
         ):
         """
         :param num_elements: total number of elements to be released
         :type num_elements: integer
 
-        :param start_position: initial location the elements are released
-        :type start_position: 3-tuple of floats (long, lat, z)
-
         :param release_time: time the LEs are released (datetime object)
         :type release_time: datetime.datetime
+
+        :param start_position: initial location the elements are released
+        :type start_position: 3-tuple of floats (long, lat, z)
 
         :param end_position=None: optional. For moving source, the end position
         :type end_position: 3-tuple of floats (long, lat, z)
@@ -180,14 +183,12 @@ class PointLineRelease(Release, serializable.Serializable):
             end release time
         :type end_release_time: datetime.datetime
 
-        Remaining kwargs are passed onto base class __init__ using super.
-        See base :class:`Release` documentation for remaining valid kwargs.
+        num_elements and release_time passed to base class __init__ using super
+        See base :class:`Release` documentation
         """
 
-        super(PointLineRelease, self).__init__(**kwargs)
-
-        self.num_elements = num_elements
-        self.release_time = release_time
+        super(PointLineRelease, self).__init__(num_elements,
+                                               release_time)
 
         if end_release_time is None:
             # also sets self._end_release_time
@@ -205,12 +206,12 @@ class PointLineRelease(Release, serializable.Serializable):
             self.set_newparticle_positions = \
                 self._init_positions_timevarying_release
 
+        self.start_position = np.array(start_position,
+                            dtype=basic_types.world_point_type).reshape((3, ))
         if end_position is None:
             # also sets self._end_position
             end_position = start_position
 
-        self.start_position = np.array(start_position,
-                dtype=basic_types.world_point_type).reshape((3, ))
         self.end_position = np.array(end_position,
                 dtype=basic_types.world_point_type).reshape((3, ))
 
@@ -549,35 +550,31 @@ class PointLineRelease(Release, serializable.Serializable):
 class SpatialRelease(Release):
 
     """
-    A simple spill class  --  a release of floating non-weathering particles,
+    A simple release class  --  a release of floating non-weathering particles,
     with their initial positions pre-specified
     """
 
     def __init__(
         self,
-        start_positions,
+        start_position,
         release_time,
-        **kwargs
         ):
         """
+        :param release_time: time the LEs are released
+        :type release_time: datetime.datetime
+
         :param start_positions: locations the LEs are released
         :type start_positions: (num_elements, 3) numpy array of float64
             -- (long, lat, z)
 
-        :param release_time: time the LEs are released
-        :type release_time: datetime.datetime
-
-        Remaining kwargs are passed onto base class __init__ using super.
-        See base :class:`Release` documentation for remaining valid kwargs.
+        num_elements and release_time passed to base class __init__ using super
+        See base :class:`Release` documentation
         """
 
-        super(SpatialRelease, self).__init__(**kwargs)
-
-        self.start_positions = np.asarray(start_positions,
+        self.start_position = np.asarray(start_position,
                 dtype=basic_types.world_point_type).reshape((-1, 3))
-        self.num_elements = self.start_positions.shape[0]
-
-        self.release_time = release_time
+        super(SpatialRelease, self).__init__(self.start_position.shape[0],
+                                             release_time)
 
     def num_elements_to_release(self, current_time, time_step):
         """
@@ -609,7 +606,7 @@ class SpatialRelease(Release):
         #                                                    time_step,
         #                                                    data_arrays)
         self.num_released = self.num_elements
-        data_arrays['positions'][:, :] = self.start_positions
+        data_arrays['positions'][:, :] = self.start_position
 
 
 class Spill(serializable.Serializable, object):
@@ -621,7 +618,7 @@ class Spill(serializable.Serializable, object):
               PyGnome. It does not release any elements
     """
 
-    _update = ['on', 'release']
+    _update = ['on', 'release', 'element_type']
     _create = []
     _create.extend(_update)
     state = copy.deepcopy(serializable.Serializable.state)
@@ -651,7 +648,7 @@ class Spill(serializable.Serializable, object):
 
     def __init__(
         self,
-        release=Release(0),
+        release,
         element_type=None,
         on=True,
         volume=None,

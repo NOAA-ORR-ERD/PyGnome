@@ -6,17 +6,43 @@ These are properties that are spill specific like:
   'nonweathering' element_types would set use_droplet_size flag to False
   'weathering' element_types would use droplet_size, densities, mass?
 '''
+import copy
+
 import numpy as np
 
 from gnome.utilities.rand import random_with_persistance
 from gnome.cy_gnome.cy_rise_velocity_mover import rise_velocity_from_drop_size
 from gnome.db.oil_library.oil_props import OilProps
+from gnome.utilities.serializable import Serializable
 """
 Initializers for various element types
 """
 
 
-class InitWindages(object):
+class InitBaseClass(object):
+    """
+    created a base class that simply removes the 'id' field from
+    Serializable.state
+
+    All Init* classes will need to do this so just do so in a base class.
+
+    todo/Note:
+    This may change as the persistence code changes. Currently, 'id' and
+    'obj_type' are part of base Serializable.state
+    The 'id' was a unique identifier for all Gnome objects; however, it is
+    only required by subset of objects so this may undergo a refactor
+    """
+    state = copy.deepcopy(Serializable.state)
+    state.remove('id')
+
+
+class InitWindages(InitBaseClass, Serializable):
+    _update = ['windage_range', 'windage_persist']
+    _create = []
+    _create.extend(_update)
+    state = copy.deepcopy(InitBaseClass.state)
+    state.add(create=_create, update=_update)
+
     def __init__(self, windage_range=(0.01, 0.04), windage_persist=900):
         """
         Initializes the windages, windage_range, windage_persist data arrays.
@@ -80,11 +106,13 @@ class InitWindages(object):
                     data_arrays['windages'][-num_new_particles:])
 
 
-class InitMassFromVolume(object):
+class InitMassFromVolume(InitBaseClass, Serializable):
     """
     Initialize the 'mass' array based on total volume spilled and the type of
     substance
     """
+
+    state = copy.deepcopy(InitBaseClass.state)
 
     def initialize(self, num_new_particles, spill, data_arrays, substance):
         if spill.volume is None:
@@ -100,7 +128,10 @@ class InitMassFromVolume(object):
 class ValuesFromDistBase(object):
     def __init__(self, **kwargs):
         """
-        Values to be sampled from a distribution.
+        Values to be sampled from a distribution. This is a base class but
+        isn't serializable since it shouldn't be directly included as a gnome
+        'initializer' for an ElementType. It's a base class for an object
+        that needs to initialize a data array from a distribution
 
         Keyword arguments: kwargs are different based on the type of
         distribution selected by user
@@ -174,7 +205,7 @@ class ValuesFromDistBase(object):
                            np.random.weibull(self.alpha, len(np_array)))
 
 
-class InitRiseVelFromDist(ValuesFromDistBase):
+class InitRiseVelFromDist(InitBaseClass, ValuesFromDistBase, Serializable):
     def __init__(self, distribution='uniform', **kwargs):
         """
         Set the rise velocity parameters to be sampled from a distribution.
