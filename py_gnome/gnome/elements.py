@@ -335,3 +335,17 @@ def floating(windage_range=(.01, .04), windage_persist=900):
     """
     return ElementType({'windages': InitWindages(windage_range,
                                                  windage_persist)})
+
+def plume(distribution_type='droplet_size', distribution='weibull', windage_range=(.01, .04), windage_persist=900, **kwargs):
+    """
+    Helper function returns an ElementType object containing 'rise_vel' and 'windages'
+    initializer with user specified parameters for distribution.
+    """
+    if distribution_type == 'droplet_size':
+        return ElementType({'rise_vel': InitRiseVelFromDropletSizeFromDist(distribution=distribution,
+                                                 **kwargs),
+                                                 'windages': InitWindages(windage_range,windage_persist)})
+    elif distribution_type == 'rise_velocity':
+        return ElementType({'rise_vel': InitRiseVelFromDist(distribution=distribution,
+                                                 **kwargs),
+                                                 'windages': InitWindages(windage_range,windage_persist)})
