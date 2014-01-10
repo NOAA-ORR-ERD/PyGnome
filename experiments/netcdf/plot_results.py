@@ -7,7 +7,7 @@ plots the results of teh chunking tests
 import numpy as np
 import  matplotlib.pyplot as plt
 
-infile = open("chunking_test_results.csv", 'r')
+infile = open("chunking_test_results_1.csv", 'r')
 
 header = [infile.readline() for i in range(3)]
 
