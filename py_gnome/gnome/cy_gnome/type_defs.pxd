@@ -35,9 +35,9 @@ cdef extern from "GEOMETRY.H":
         long hiLat
         
 cdef extern from "TypeDefs.h":
-    ctypedef struct TModelDialogVariables:
-        Boolean bUncertain
-        Boolean preventLandJumping
+#     ctypedef struct TModelDialogVariables:
+#         Boolean bUncertain
+#         Boolean preventLandJumping
         
     ctypedef struct TR_OPTIMZE:
         Boolean isOptimizedForStep
@@ -108,17 +108,17 @@ cdef extern from "TypeDefs.h":
         FORECAST_LE = 1
         UNCERTAINTY_LE = 2
     
-    ctypedef enum:
-        DONT_DISPERSE 
-        DISPERSE
-        HAVE_DISPERSED
-        DISPERSE_NAT
-        HAVE_DISPERSED_NAT
-        EVAPORATE
-        HAVE_EVAPORATED
-        REMOVE
-        HAVE_REMOVED
-        
+#     ctypedef enum:
+#         DONT_DISPERSE 
+#         DISPERSE
+#         HAVE_DISPERSED
+#         DISPERSE_NAT
+#         HAVE_DISPERSED_NAT
+#         EVAPORATE
+#         HAVE_EVAPORATED
+#         REMOVE
+#         HAVE_REMOVED
+#         
     ctypedef enum:
         M19REALREAL = 1
         M19HILITEDEFAULT    

@@ -31,14 +31,14 @@ cdef extern from "TimeGridVel_c.h":
 # comment for now so it doesn't give compile time errors - not sure LELIST_c is used anywhere either
 #IF not HEADERS.count("_LIST_"):
 #    DEF HEADERS = HEADERS +  ["_LE_LIST_"]
-cdef extern from "LEList_c.h":
-    cdef cppclass LEList_c:
-        long numOfLEs
-        LETYPE fLeType
+# cdef extern from "LEList_c.h":
+#     cdef cppclass LEList_c:
+#         long numOfLEs
+#         LETYPE fLeType
 
-cdef extern from "Map_c.h":
-    cdef cppclass Map_c:
-        pass
+# cdef extern from "Map_c.h":
+#     cdef cppclass Map_c:
+#         pass
 
 """
 movers:
@@ -162,8 +162,10 @@ cdef extern from "GridCurrentMover_c.h":
         void 		    SetTimeGrid(TimeGridVel_c *newTimeGrid)
         OSErr           TextRead(char *path,char *topFilePath)
         OSErr          ExportTopology(char *topFilePath)
-        void 		    SetExtrapolationInTime(Boolean extrapolate)
+        void 		    SetExtrapolationInTime(bool extrapolate)
+        bool 		    GetExtrapolationInTime()
         void 		    SetTimeShift(long timeShift)
+        long 		    GetTimeShift()
         
 cdef extern from "GridWindMover_c.h":
     
@@ -181,8 +183,10 @@ cdef extern from "GridWindMover_c.h":
         void 		    SetTimeGrid(TimeGridVel_c *newTimeGrid)
         OSErr           TextRead(char *path,char *topFilePath)
         OSErr          ExportTopology(char *topFilePath)
-        void 		    SetExtrapolationInTime(Boolean extrapolate)
+        void 		    SetExtrapolationInTime(bool extrapolate)
+        bool 		    GetExtrapolationInTime()
         void 		    SetTimeShift(long timeShift)
+        long 		    GetTimeShift()
         
 cdef extern from "GridMap_c.h":
     

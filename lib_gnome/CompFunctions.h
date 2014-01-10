@@ -64,7 +64,7 @@ double VolumeMassToGrams(double val, double density , short massVolUnits);
 double CM3ToVolumeMass(double val, double density,short massVolUnits);
 double GetLEMass(LERec theLE, double halfLife);
 //Boolean EqualUniqueIDs(UNIQUEID uid,UNIQUEID uid2);
-OSErr ScanMatrixPt (char *startChar, LongPoint *MatrixLPtPtr);
+//OSErr ScanMatrixPt (char *startChar, LongPoint *MatrixLPtPtr);
 OSErr ScanVelocity (char *startChar, VelocityRec *VelocityPtr, long *scanLength);
 OSErr ScanDepth (char *startChar, double *DepthPtr);
 void CheckYear(short *year);

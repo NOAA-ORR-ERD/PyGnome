@@ -6,6 +6,8 @@ Script to test GNOME with HYCOM data in Mariana Islands region.
 
 """
 
+NUM_ELEMENTS = 1e6
+
 import os
 import shutil
 from datetime import datetime, timedelta
@@ -14,6 +16,7 @@ import numpy as np
 
 import gnome
 from gnome.environment import Wind
+from gnome import utilities
 from gnome.utilities.remote_data import get_datafile
 
 from gnome import scripting
@@ -28,9 +31,8 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
 
     start_time = datetime(2013, 5, 18, 0)
     model = gnome.model.Model(start_time=start_time,
-                              duration=timedelta(days=8), time_step=4
-                              * 3600, uncertain=False)  # 9 day of data in file
-                                                        # 4 hr in seconds
+                              duration=timedelta(days=8), # 9 days of data in file
+                              time_step=1 * 3600, uncertain=False)  # 1 hr in seconds
 
     mapfile = get_datafile(os.path.join(base_dir, './mariana_island.bna'
                            ))
@@ -77,17 +79,17 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     print 'adding four spill'
 
     model.spills += \
-        gnome.spill.PointLineSource(num_elements=250,
+        gnome.spill.PointLineSource(num_elements=NUM_ELEMENTS//4,
             start_position=(145.25, 15.0, 0.0), release_time=start_time)
     model.spills += \
-        gnome.spill.PointLineSource(num_elements=250,
+        gnome.spill.PointLineSource(num_elements=NUM_ELEMENTS//4,
             start_position=(146.25, 15.0, 0.0), release_time=start_time)
     model.spills += \
-        gnome.spill.PointLineSource(num_elements=250,
+        gnome.spill.PointLineSource(num_elements=NUM_ELEMENTS//4,
             start_position=(145.75, 15.25, 0.0),
             release_time=start_time)
     model.spills += \
-        gnome.spill.PointLineSource(num_elements=250,
+        gnome.spill.PointLineSource(num_elements=NUM_ELEMENTS//4,
             start_position=(145.75, 14.75, 0.0),
             release_time=start_time)
 
@@ -97,5 +99,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
 if __name__ == '__main__':
     scripting.make_images_dir()
     model = make_model()
-    model.full_run(log=True)
+    for step in model:
+        print "step: %.4i -- memuse: %fMB"%(step['step_num'], utilities.get_mem_use())
+    #model.full_run(log=True)
 

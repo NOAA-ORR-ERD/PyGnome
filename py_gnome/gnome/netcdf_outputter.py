@@ -84,7 +84,7 @@ class NetCDFOutput(Outputter, serializable.Serializable):
     var['units'] = 'grams'
     data_vars['mass'] = copy.deepcopy(var)
 
-    # age?
+    # age
 
     var.clear()
     var['dtype'] = np.int32
@@ -134,6 +134,9 @@ class NetCDFOutput(Outputter, serializable.Serializable):
         'mass',
         'age',
         ]
+
+    # these keys have same names in numpy data_arrays and netcdf variable names
+    _same_keynames = ['spill_num', 'id', 'mass', 'age']
 
     # define state for serialization
 
@@ -229,6 +232,11 @@ class NetCDFOutput(Outputter, serializable.Serializable):
         self.arr_types = None
         self._format = 'NETCDF4'
         self._compress = compress
+        self._chunksize = 1024 # 1k is about right for 1000LEs and one time step.
+                               # up to 0.5MB tested better for large datasets, but
+                               # we don't want to have far-too-large files for the
+                               # smaller ones
+                               # The default in netcdf4 is 1 -- which works really badly
 
         # need to keep track of starting index for writing data since variable
         # number of particles are released
@@ -386,9 +394,8 @@ class NetCDFOutput(Outputter, serializable.Serializable):
             self._nc_file_exists_error(file_)
             with nc.Dataset(file_, 'w', format=self._format) as rootgrp:
                 rootgrp.comment = self.cf_attributes['comment']
-                rootgrp.creation_date = \
-                    time_utils.round_time(datetime.now(),
-                        roundTo=1).isoformat().replace('T', ' ')
+                rootgrp.creation_date = time_utils.round_time(datetime.now(),
+                                                              roundTo=1).isoformat().replace('T', ' ')
                 rootgrp.source = self.cf_attributes['source']
                 rootgrp.references = self.cf_attributes['references']
                 rootgrp.feature_type = self.cf_attributes['feature_type'
@@ -399,8 +406,11 @@ class NetCDFOutput(Outputter, serializable.Serializable):
                 rootgrp.createDimension('time', 0)
                 rootgrp.createDimension('data', 0)
 
-                time_ = rootgrp.createVariable('time', np.double,
-                        ('time', ), zlib=self._compress)
+                time_ = rootgrp.createVariable('time',
+                                               np.double,
+                                               ('time', ),
+                                               zlib=self._compress,
+                                               chunksizes=(self._chunksize,) )
                 time_.units = 'seconds since {0}'.format(
                         self._model_start_time.isoformat().replace('T', ' '))
                 time_.long_name = 'time'
@@ -408,16 +418,22 @@ class NetCDFOutput(Outputter, serializable.Serializable):
                 time_.calendar = 'gregorian'
                 time_.comment = 'unspecified time zone'
 
-                pc = rootgrp.createVariable('particle_count', np.int32,
-                        ('time', ), zlib=self._compress)
+                pc = rootgrp.createVariable('particle_count',
+                                            np.int32,
+                                            ('time', ),
+                                            zlib=self._compress,
+                                            chunksizes=(self._chunksize,) )
                 pc.units = '1'
                 pc.long_name = 'number of particles in a given timestep'
                 pc.ragged_row_count = 'particle count at nth timestep'
 
                 for (key, val) in self.data_vars.iteritems():
                     # don't pop since it maybe required twice
-                    var = rootgrp.createVariable(key, val.get('dtype'),
-                            ('data', ), zlib=self._compress)
+                    var = rootgrp.createVariable(key,
+                                                 val.get('dtype'),
+                                                 ('data', ),
+                                                 zlib=self._compress,
+                                                 chunksizes=(self._chunksize,) )
 
                     # iterate over remaining attributes
 
@@ -438,12 +454,19 @@ class NetCDFOutput(Outputter, serializable.Serializable):
 
                     for (key, val) in self.arr_types.iteritems():
                         if len(val.shape) == 0:
-                            rootgrp.createVariable(key, val.dtype,
-                                    'data', zlib=self._compress)
+                            rootgrp.createVariable(key,
+                                                   val.dtype,
+                                                   'data',
+                                                   zlib=self._compress,
+                                                   chunksizes=(self._chunksize,),
+                                                   )
                         elif val.shape[0] == 3:
-                            rootgrp.createVariable(key, val.dtype,
-                                    ('data', 'world_point'),
-                                    zlib=self._compress)
+                            rootgrp.createVariable(key,
+                                                   val.dtype,
+                                                   ('data', 'world_point'),
+                                                   zlib=self._compress,
+                                                   chunksizes=(self._chunksize, 3),
+                                                   )
                         else:
                             raise ValueError('{0} has an undefined dimension:'
                                              ' {1}'.format(key, val.shape))
@@ -499,12 +522,10 @@ class NetCDFOutput(Outputter, serializable.Serializable):
                     sc['positions'][:, 2]
                 rootgrp.variables['status'][self._start_idx:_end_idx] = \
                     sc['status_codes'][:]
-                rootgrp.variables['spill_num'][self._start_idx:_end_idx] = \
-                    sc['spill_num'][:]
-                rootgrp.variables['id'][self._start_idx:_end_idx] = \
-                    sc['id'][:]
-                rootgrp.variables['mass'][self._start_idx:_end_idx] = \
-                    sc['mass'][:]
+
+                for key in self._same_keynames:
+                    rootgrp.variables[key][self._start_idx:_end_idx] = \
+                        sc[key][:]
 
                 # write remaining data
 
@@ -643,10 +664,9 @@ class NetCDFOutput(Outputter, serializable.Serializable):
             arrays_dict['positions'] = positions
             arrays_dict['status_codes'] = (data.variables['status']
                 [_start_ix:_stop_ix])
-            arrays_dict['spill_num'] = (data.variables['spill_num']
-                [_start_ix:_stop_ix])
-            arrays_dict['id'] = data.variables['id'][_start_ix:_stop_ix]
-            arrays_dict['mass'] = data.variables['mass'][_start_ix:_stop_ix]
+
+            for key in NetCDFOutput._same_keynames:
+                arrays_dict[key] = data.variables[key][_start_ix:_stop_ix]
 
             if all_data:  # append remaining data arrays
                 excludes = NetCDFOutput.data_vars.keys()

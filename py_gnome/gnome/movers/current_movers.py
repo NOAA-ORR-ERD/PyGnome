@@ -179,6 +179,8 @@ class GridCurrentMover(CyMover, serializable.Serializable):
         self,
         filename,
         topology_file=None,
+        extrapolate=False,
+        time_offset=0,
 #         current_scale=1,
 #         uncertain_duration=timedelta(hours=24),
 #         uncertain_time_delay=timedelta(hours=0),
@@ -199,6 +201,8 @@ class GridCurrentMover(CyMover, serializable.Serializable):
         :param uncertain_time_delay: when does the uncertainly kick in.
         :param uncertain_cross: Scale for uncertainty perpendicular to the flow
         :param uncertain_along: Scale for uncertainty parallel to the flow
+        :param extrapolate: Allow current data to be extrapolated before and after file data
+        :param time_offset: Time zone shift if data is in GMT 
 
         uses super: super(GridCurrentMover,self).__init__(**kwargs)
         """
@@ -222,8 +226,9 @@ class GridCurrentMover(CyMover, serializable.Serializable):
              uncertain_time_delay=3600.*kwargs.pop('uncertain_time_delay', 0),
              uncertain_along=kwargs.pop('uncertain_along', 0.5),
              uncertain_cross=kwargs.pop('uncertain_cross', 0.25))
-
         self.mover.text_read(filename, topology_file)
+        self.mover.extrapolate_in_time(extrapolate)
+        self.mover.offset_time(time_offset*3600.)
 
         super(GridCurrentMover, self).__init__(**kwargs)
 
@@ -279,6 +284,14 @@ class GridCurrentMover(CyMover, serializable.Serializable):
             self.mover.current_scale, lambda self, val: \
             setattr(self.mover, 'current_scale', val))
 
+    extrapolate = property(lambda self: \
+            self.mover.extrapolate, lambda self, val: \
+            setattr(self.mover, 'extrapolate', val))
+
+    time_offset = property(lambda self: \
+            self.mover.time_offset/3600., lambda self, val: \
+            setattr(self.mover, 'time_offset', val*3600.))
+
     def export_topology(self, topology_file):
         """
         :param topology_file=None: absolute or relative path where topology file will be written.
@@ -288,5 +301,27 @@ class GridCurrentMover(CyMover, serializable.Serializable):
             raise ValueError('Topology file path required: {0}'.format(topology_file))
 
         self.mover.export_topology(topology_file)
+
+    def extrapolate_in_time(self, extrapolate):
+        """
+        :param extrapolate=false: allow current data to be extrapolated before and after file data.
+        """
+
+        self.mover.extrapolate_in_time(extrapolate)
+
+    def offset_time(self, time_offset):
+        """
+        :param offset_time=0: allow data to be in GMT with a time zone offset (hours).
+        """
+
+        self.mover.offset_time(time_offset*3600.)
+
+    def get_offset_time(self):
+        """
+        :param offset_time=0: allow data to be in GMT with a time zone offset (hours).
+        """
+
+        off_set_time = self.mover.get_offset_time()/3600.
+        return (self.mover.get_offset_time())/3600.
 
 

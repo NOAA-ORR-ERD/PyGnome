@@ -31,7 +31,7 @@ class WindMoversBase(Id, Mover):
     uncertain_time_delay = SchemaNode(Float(), default=0)
     uncertain_speed_scale = SchemaNode(Float(), default=2)
     uncertain_angle_scale = SchemaNode(Float(), default=0.4)
-    uncertain_angle_units = SchemaNode(String(), default='rad')
+    uncertain_angle_units = SchemaNode(String(), default='rad', missing=drop)
 
 
 class WindMover(WindMoversBase):

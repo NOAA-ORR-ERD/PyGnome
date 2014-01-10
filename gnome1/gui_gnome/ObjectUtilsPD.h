@@ -11,6 +11,7 @@
 #define __ObjectUtilsPD__
 
 #include "ObjectUtils.h"
+#include "GuiTypeDefs.h"
 
 #undef				kPolyType
 #define				kPolyType			'POLY'	//AH 03/20/2012

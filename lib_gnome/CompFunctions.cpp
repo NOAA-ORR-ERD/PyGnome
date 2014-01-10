@@ -583,7 +583,7 @@ OSErr ScanDepth (char *startChar, double *DepthPtr)
 	
 }
 
-
+#ifndef pyGNOME
 // - expects a number of the form
 //     <number><comma><number>
 // - parses the number values and scales them
@@ -717,7 +717,6 @@ OSErr ScanMatrixPt (char *startChar, LongPoint *MatrixLPtPtr)
 	
 }
 
-
 /**************************************************************************************************/
 OSErr ScanVelocity (char *startChar, VelocityRec *VelocityPtr, long *scanLength)
 {	// expects a number of the form 
@@ -816,6 +815,8 @@ OSErr ScanVelocity (char *startChar, VelocityRec *VelocityPtr, long *scanLength)
 	return err;
 	
 }
+#endif
+
 void CheckYear(short *year)
 {
 	if (*year < 1900) {

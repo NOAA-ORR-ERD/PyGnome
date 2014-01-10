@@ -141,6 +141,7 @@ _default_values = \
      'windage_range': ((2,), np.float64, (0., 0.)),
      'windage_persist': ((), np.int, 0),
      'rise_vel': ((), np.float64, 0.),
+     'age': ((), np.int32, 0)
      }
 
 

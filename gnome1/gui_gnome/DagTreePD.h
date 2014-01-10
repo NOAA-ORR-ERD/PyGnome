@@ -8,6 +8,7 @@
  */
 
 #include "DagTree.h"
+#include "GuiTypeDefs.h"
 
 OSErr ReadIndexedDagTree(BFPB *bfpb,DAGHdl *treeH,char* errmsg);
 OSErr WriteIndexedDagTree(BFPB *bfpb,DAGHdl theTree,char* errmsg);

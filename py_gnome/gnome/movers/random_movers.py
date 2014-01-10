@@ -84,8 +84,10 @@ class RandomVerticalMover(CyMover, serializable.Serializable):
         """
 
         self.mover = \
-            CyRandomVerticalMover(vertical_diffusion_coef_above_ml=kwargs.pop('vertical_diffusion_coef_above_ml'
-                                  , 5),vertical_diffusion_coef_below_ml=kwargs.pop('vertical_diffusion_coef_below_ml',.11),mixed_layer_depth=kwargs.pop('mixed_layer_depth',10.))
+            CyRandomVerticalMover(vertical_diffusion_coef_above_ml=kwargs.pop('vertical_diffusion_coef_above_ml', 5),
+                                  vertical_diffusion_coef_below_ml=kwargs.pop('vertical_diffusion_coef_below_ml',.11),
+                                  mixed_layer_depth=kwargs.pop('mixed_layer_depth',10.)
+                                  )
         super(RandomVerticalMover, self).__init__(**kwargs)
 
     @property

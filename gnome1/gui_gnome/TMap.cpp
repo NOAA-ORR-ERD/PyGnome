@@ -1019,6 +1019,8 @@ OSErr TMap::AddItem(ListItem item)
 #if TARGET_API_MAC_CARBON
 							if (!err) err = ConvertTraditionalPathToUnixPath((const char *) path, outPath, kMaxNameLen) ;
 							if (!err) strcpy(path,outPath);
+							if (!err && bTopFile) err = ConvertTraditionalPathToUnixPath((const char *) topFilePath, outPath, kMaxNameLen) ;
+							if (!err && bTopFile) strcpy(topFilePath,outPath);
 #endif
 							//if (!err) err = timeGrid->TextRead(path,"");
 							if (!err) err = timeGrid->TextRead(path,topFilePath);
@@ -1070,8 +1072,9 @@ OSErr TMap::AddItem(ListItem item)
 							// it has already been added to the map's list,we need to get rid of it
 							this -> DropMover(newMover); 
 							newMover->Dispose(); delete newMover;  newMover = 0;
+							return err;
 						}			
-						return err;
+						//return err;
 					}
 					else if (IsGridWindFile(path,&selectedUnits))	// code goes here, constant wind case
 					{
@@ -1091,10 +1094,10 @@ OSErr TMap::AddItem(ListItem item)
 							
 							err = newGridWindMover->InitMover(timeGrid);
 							//if(err) goto Error;
-//#if TARGET_API_MAC_CARBON
-//							if (!err) err = ConvertTraditionalPathToUnixPath((const char *) path, outPath, kMaxNameLen) ;
-//							if (!err) strcpy(path,outPath);
-//#endif
+#if TARGET_API_MAC_CARBON
+							if (!err) err = ConvertTraditionalPathToUnixPath((const char *) path, outPath, kMaxNameLen) ;
+							if (!err) strcpy(path,outPath);
+#endif
 							//if (!err) err = timeGrid->TextRead(path,"");
 							if (!err) err = timeGrid->TextRead(path,topFilePath);
 							//if(err) goto Error;

@@ -463,7 +463,8 @@ def test_ordered_collection_api():
 """ tests w/ element types set for two spills """
 el0 = ElementType({'windages': InitWindages((0.02, 0.02), -1),
                    'mass': InitMassFromVolume(),
-                   'rise_vel': InitRiseVelFromDist(params=(1, 10))})
+                   'rise_vel': InitRiseVelFromDist(distribution='uniform',
+                                                   low=1, high=10)})
 
 el1 = ElementType({'windages': InitWindages(),
                    'mass': InitMassFromVolume(),
@@ -518,10 +519,12 @@ def test_element_types(elem_type, arr_types, sample_sc_no_uncertainty):
                     assert (np.all(sc[key][spill_mask] ==
                         spill.element_type.initializers[key].windage_persist))
                 elif key == 'rise_vel':
-                    assert (np.all(sc[key][spill_mask] >=
-                        spill.element_type.initializers[key].params[0]))
-                    assert (np.all(sc[key][spill_mask] <=
-                        spill.element_type.initializers[key].params[1]))
+                    if (spill.element_type.initializers[key].distribution ==
+                        'uniform'):
+                        assert (np.all(sc[key][spill_mask] >=
+                            spill.element_type.initializers[key].low))
+                        assert (np.all(sc[key][spill_mask] <=
+                            spill.element_type.initializers[key].high))
 
 
 """ SpillContainerPairData tests """

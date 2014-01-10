@@ -149,19 +149,12 @@ class WindMoversBase(CyMover):
         if sc.num_released is None  or sc.num_released == 0:
             return
 
-        for spill in sc.spills:
-            spill_mask = sc.get_spill_mask(spill)
-
-            if np.any(spill_mask):
-                windages = sc['windages'][spill_mask]	# overwriting sc array does not work
-                rand.random_with_persistance(
-                                sc['windage_range'][spill_mask, 0],
-                                sc['windage_range'][spill_mask, 1],
-                                #sc['windages'][spill_mask],
-                                windages,
-                                sc['windage_persist'][spill_mask],
-                                time_step)
-                sc['windages'][spill_mask] = windages
+        rand.random_with_persistance(
+            sc['windage_range'][:, 0],
+            sc['windage_range'][:, 1],
+            sc['windages'],
+            sc['windage_persist'],
+            time_step)
 
     def get_move(
         self,
@@ -363,6 +356,8 @@ class GridWindMover(WindMoversBase, serializable.Serializable):
         self,
         wind_file,
         topology_file=None,
+        extrapolate=False,
+        time_offset=0,
         **kwargs
         ):
         """
@@ -370,6 +365,8 @@ class GridWindMover(WindMoversBase, serializable.Serializable):
         :param topology_file: Default is None. When exporting topology, it
             is stored in this file
         :param wind_scale: Value to scale wind data
+        :param extrapolate: Allow current data to be extrapolated before and after file data
+        :param time_offset: Time zone shift if data is in GMT 
 
         Pass optional arguments to base class
         uses super: super(GridWindMover,self).__init__(**kwargs)
@@ -391,6 +388,8 @@ class GridWindMover(WindMoversBase, serializable.Serializable):
         super(GridWindMover, self).__init__(**kwargs)
 
         self.mover.text_read(wind_file, topology_file)
+        self.mover.extrapolate_in_time(extrapolate)
+        self.mover.offset_time(time_offset*3600.)
 
     def __repr__(self):
         """
@@ -410,6 +409,14 @@ class GridWindMover(WindMoversBase, serializable.Serializable):
             self.mover.wind_scale, lambda self, val: \
             setattr(self.mover, 'wind_scale', val))
 
+    extrapolate = property(lambda self: \
+            self.mover.extrapolate, lambda self, val: \
+            setattr(self.mover, 'extrapolate', val))
+
+    time_offset = property(lambda self: \
+            self.mover.time_offset/3600., lambda self, val: \
+            setattr(self.mover, 'time_offset', val*3600.))
+
     def export_topology(self, topology_file):
         """
         :param topology_file=None: absolute or relative path where topology
@@ -421,3 +428,18 @@ class GridWindMover(WindMoversBase, serializable.Serializable):
                              format(topology_file))
 
         self.mover.export_topology(topology_file)
+
+    def extrapolate_in_time(self, extrapolate):
+        """
+        :param extrapolate=false: allow current data to be extrapolated before and after file data.
+        """
+
+        self.mover.extrapolate_in_time(extrapolate)
+
+    def offset_time(self, time_offset):
+        """
+        :param offset_time=0: allow data to be in GMT with a time zone offset (hours).
+        """
+
+        self.mover.offset_time(time_offset*3600.)
+

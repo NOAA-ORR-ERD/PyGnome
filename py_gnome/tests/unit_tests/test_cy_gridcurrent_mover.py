@@ -433,6 +433,46 @@ class TestGridCurrentMover:
             0,
             )
 
+    def test_move_ptcur_extrapolate(self):
+        """
+        test move for a ptCur grid (first time in file)
+        """
+
+        time = datetime.datetime(2000, 2, 14, 8)	# time before first time in file
+        self.cm.model_time = time_utils.date_to_sec(time)
+
+        time_grid_file = get_datafile(os.path.join(cur_dir,
+                'ptCurNoMap.cur'))
+
+        self.gcm.text_read(time_grid_file)
+        self.gcm.extrapolate_in_time(True)	# result of move should be same as first step
+        self.cm.ref[:]['long'] = -124.686928  # for ptCur test
+        self.cm.ref[:]['lat'] = 48.401124
+        self.check_move()
+
+        actual = np.empty((self.cm.num_le, ), dtype=world_point)
+        actual[:]['lat'] = .0161987
+        actual[:]['long'] = -.02439887
+        tol = 1e-5
+
+        msg = r"{0} move is not within a tolerance of {1}"
+        np.testing.assert_allclose(
+            self.cm.delta['lat'],
+            actual['lat'],
+            tol,
+            tol,
+            msg.format('ptcur', tol),
+            0,
+            )
+        np.testing.assert_allclose(
+            self.cm.delta['long'],
+            actual['long'],
+            tol,
+            tol,
+            msg.format('ptcur', tol),
+            0,
+            )
+
     def test_move_gridcurtime(self):
         """
         test move for a gridCurTime file (first time in file)

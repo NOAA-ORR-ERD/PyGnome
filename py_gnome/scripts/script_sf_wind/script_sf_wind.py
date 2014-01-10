@@ -27,10 +27,10 @@ base_dir = os.path.dirname(__file__)
 def make_model(images_dir=os.path.join(base_dir, 'images')):
     print 'initializing the model'
 
-    start_time = datetime(2006, 3, 31, 21, 0)
+    start_time = datetime(2006, 3, 31, 20, 0) 
     model = gnome.model.Model(start_time=start_time,
                               duration=timedelta(days=3), time_step=30
-                              * 60, uncertain=True)  # 1 day of data in file
+                              * 60, uncertain=True)  # 1 time in file, extrapolates
                                                       # 1/2 hr in seconds
 
     mapfile = get_datafile(os.path.join(base_dir, './coastSF.bna'

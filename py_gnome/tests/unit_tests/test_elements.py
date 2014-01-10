@@ -51,9 +51,18 @@ def assert_dataarray_shape_size(arr_types, data_arrays, num_released):
                  (InitWindages(), windages, None),
                  (InitMassFromVolume(), mass_array, Spill(volume=10)),
                  (InitRiseVelFromDist(), rise_vel_array, None),
-                 (InitRiseVelFromDist(distribution='normal'),
+                 (InitRiseVelFromDist(distribution='normal',
+                                      mean=0, sigma=0.1),
                   rise_vel_array, None),
-                 (InitRiseVelFromDropletSizeFromDist('normal'),
+                 (InitRiseVelFromDist(distribution='lognormal',
+                                      mean=0, sigma=0.1),
+                  rise_vel_array, None),
+                 (InitRiseVelFromDist(distribution='weibull',
+                                      alpha=1.8,
+                                      lambda_=1 / (.693 ** (1 / 1.8))),
+                  rise_vel_array, None),
+                 (InitRiseVelFromDropletSizeFromDist('normal',
+                                                     mean=0, sigma=0.1),
                   rise_vel_array, Spill())
                  ])
 def test_correct_particles_set_by_initializers(fcn, arr_types, spill):
@@ -146,6 +155,26 @@ def test_initialize_InitRiseVelFromDist_uniform():
     assert np.all(data_arrays['rise_vel'] >= 0)
 
 
+def test_initialize_InitRiseVelFromDropletDist_weibull():
+    """
+    test initialize data_arrays with weibull dist
+    """
+    num_elems = 1000
+    data_arrays = mock_append_data_arrays(rise_vel_array, num_elems)
+    substance = OilProps('oil_conservative')
+    spill = Spill()
+#     fcn = InitRiseVelFromDropletSizeFromDist('weibull',
+#                                       alpha = 1.8,
+#                                       lambda_ = .00456)	# (.001*3.8) / (.693 ** (1 / 1.8)) - larger droplet test case, in mm so multiply by .001 
+    fcn = InitRiseVelFromDropletSizeFromDist('weibull',
+                                      alpha = 1.8,
+                                      lambda_ = .000248)	# (.001*.2) / (.693 ** (1 / 1.8)) - smaller droplet test case, in mm so multiply by .001
+    fcn.initialize(num_elems, spill, data_arrays, substance)
+
+    assert_dataarray_shape_size(rise_vel_array, data_arrays, num_elems)
+
+    assert np.all(0 != data_arrays['rise_vel'])
+
 def test_initialize_InitRiseVelFromDist_normal():
     """
     test initialize data_arrays with normal dist
@@ -154,7 +183,7 @@ def test_initialize_InitRiseVelFromDist_normal():
     """
     num_elems = 1000
     data_arrays = mock_append_data_arrays(rise_vel_array, num_elems)
-    fcn = InitRiseVelFromDist('normal')
+    fcn = InitRiseVelFromDist('normal', mean=0, sigma=0.1)
     fcn.initialize(num_elems, None, data_arrays)
 
     assert_dataarray_shape_size(rise_vel_array, data_arrays, num_elems)

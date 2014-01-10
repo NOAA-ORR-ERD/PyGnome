@@ -10,6 +10,15 @@
 //extern THPrint gPrRecHdl;
 //#endif
 
+#ifndef pyGNOME
+extern RGBColor colors[];
+
+enum { BLACK = 1, WHITE, DARKGRAY, GRAY, LIGHTGRAY,
+	BROWN, LIGHTBROWN, OLIVE = 7, DARKGREEN, GREEN,
+	LIGHTBLUE, BLUE, DARKBLUE, PURPLE, PINK, RED, YELLOW, OTHERCOLOR }; // colors
+
+#endif
+
 ///// MISC ///////////////////////////////////////////////////////////////////////////
 
 void BasicInit();

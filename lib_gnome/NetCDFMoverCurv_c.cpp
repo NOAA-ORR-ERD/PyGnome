@@ -506,10 +506,14 @@ float NetCDFMoverCurv_c::GetTotalDepth(WorldPoint refPoint,long ptIndex)
 		
 		interpolationVal = ((TTriGridVel*)fGrid)->GetInterpolationValues(refPoint);
 		depthsHdl = ((TTriGridVel3D*)fGrid)->GetDepths();
+		if (fDepthsH) 
+		{
+			totalDepth = INDEXH(fDepthsH,ptIndex); 
+			return totalDepth;
+		}
 		if (!depthsHdl || interpolationVal.ptIndex1<0 ) 
 			//return -1;	// some error alert, no depth info to check
-		{if (fDepthsH) totalDepth = INDEXH(fDepthsH,ptIndex); 
-			return totalDepth;}
+			return totalDepth;	// assume 2D
 		//if (fDepthsH)
 		{
 			depth1 = (*depthsHdl)[interpolationVal.ptIndex1];

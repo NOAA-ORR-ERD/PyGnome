@@ -20,6 +20,9 @@ GridCurrentMover::GridCurrentMover (TMap *owner, char *name) : TCurrentMover(own
 	//memset(&fUncertainParameters,0,sizeof(fUncertainParams));
 	fArrowScale = 1.;
 	fArrowDepth = 0;
+	bShowGrid = false;
+	bShowArrows = false;
+	bUncertaintyPointOpen=false;
 	/*if (gNoaaVersion)
 	{
 		fUncertainParams.alongCurUncertainty = .5;
@@ -252,7 +255,8 @@ short GridCurrentMoverSettingsClick(DialogPtr dialog, short itemNum, long lParam
 				model->NewDirtNotification(DIRTY_RUNBAR); // must reset the runbar
 			}
 			sGridCurrentDialogMover->timeGrid->fAllowExtrapolationInTime = GetButton(dialog, M33EXTRAPOLATECHECKBOX);
-			((TimeGridVelRect*) (sGridCurrentDialogMover->timeGrid))->fAllowVerticalExtrapolationOfCurrents = GetButton(dialog, M33EXTRAPOLATEVERTCHECKBOX);
+			//((TimeGridVelRect*) (sGridCurrentDialogMover->timeGrid))->fAllowVerticalExtrapolationOfCurrents = GetButton(dialog, M33EXTRAPOLATEVERTCHECKBOX);
+			sGridCurrentDialogMover->timeGrid->fAllowVerticalExtrapolationOfCurrents = GetButton(dialog, M33EXTRAPOLATEVERTCHECKBOX);
 			// code goes here, add box to dialog to input desired depth to extrapolate to 
 			if (((TimeGridVelRect*) (sGridCurrentDialogMover->timeGrid))-> fAllowVerticalExtrapolationOfCurrents) ((TimeGridVelRect*) (sGridCurrentDialogMover->timeGrid))->fMaxDepthForExtrapolation = EditText2Float(dialog, M33EXTRAPOLATETOVALUE); 
 			else ((TimeGridVelRect*) (sGridCurrentDialogMover->timeGrid))->fMaxDepthForExtrapolation = 0.;
@@ -371,7 +375,8 @@ OSErr GridCurrentMoverSettingsInit(DialogPtr dialog, VOIDPTR data)
 		ShowHideDialogItem(dialog, M33REPLACEMOVER, false);	// code goes here, eventually allow this for outside
 	
 	SetButton(dialog, M33EXTRAPOLATECHECKBOX, sGridCurrentDialogMover->timeGrid->fAllowExtrapolationInTime);
-	SetButton(dialog, M33EXTRAPOLATEVERTCHECKBOX, ((TimeGridVelRect*) (sGridCurrentDialogMover->timeGrid))->fAllowVerticalExtrapolationOfCurrents);
+	//SetButton(dialog, M33EXTRAPOLATEVERTCHECKBOX, ((TimeGridVelRect*) (sGridCurrentDialogMover->timeGrid))->fAllowVerticalExtrapolationOfCurrents);
+	SetButton(dialog, M33EXTRAPOLATEVERTCHECKBOX, sGridCurrentDialogMover->timeGrid->fAllowVerticalExtrapolationOfCurrents);
 	SetButton(dialog, M33VELOCITYATBOTTOMCHECKBOX, sGridCurrentDialogMover->fArrowDepth < 0);
 	
 	//ShowHideDialogItem(dialog, M33VELOCITYATBOTTOMCHECKBOX, sGridCurrentDialogMover->fNumDepthLevels > 1); 

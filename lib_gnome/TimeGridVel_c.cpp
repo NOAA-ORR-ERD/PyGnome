@@ -268,6 +268,9 @@ TimeGridVel_c::TimeGridVel_c ()
 	
 	fAllowExtrapolationInTime = false;
 
+	fAllowVerticalExtrapolationOfCurrents = false;
+	fMaxDepthForExtrapolation = 0.;	// assume 2D is just surface
+	
 	fNumCols = fNumRows = 0;
 }
 
@@ -1884,10 +1887,10 @@ TimeGridVelRect_c::TimeGridVelRect_c () : TimeGridVel_c()
 	
 	fNumDepthLevels = 1;	// default surface current only
 	
-	fAllowVerticalExtrapolationOfCurrents = false;
-	fMaxDepthForExtrapolation = 0.;	// assume 2D is just surface
+	//fAllowVerticalExtrapolationOfCurrents = false;
+	//fMaxDepthForExtrapolation = 0.;	// assume 2D is just surface
 	
-	fFileScaleFactor = 1.0;
+	//fFileScaleFactor = 1.0;
 
 }
 
@@ -7509,7 +7512,8 @@ VelocityRec TimeGridCurRect_c::GetScaledPatValue(const Seconds& model_time, Worl
 	index = GetVelocityIndex(refPoint.p); 
 	
 	// Check for constant current 
-	if(GetNumTimesInFile()==1 && !(GetNumFiles()>1))
+	if((GetNumTimesInFile()==1 && !(GetNumFiles()>1)) || (fEndData.timeIndex == UNASSIGNEDINDEX && model_time > ((*fTimeHdl)[fStartData.timeIndex] + fTimeShift) && fAllowExtrapolationInTime) || (fEndData.timeIndex == UNASSIGNEDINDEX && model_time < ((*fTimeHdl)[fStartData.timeIndex] + fTimeShift) && fAllowExtrapolationInTime))
+	//if(GetNumTimesInFile()==1 && !(GetNumFiles()>1))
 	{
 		// Calculate the interpolated velocity at the point
 		if (index >= 0) 
@@ -8531,7 +8535,8 @@ VelocityRec TimeGridCurTri_c::GetScaledPatValue(const Seconds& model_time, World
 	}						
 	
 	// Check for constant current 
-	if(GetNumTimesInFile()==1 && !(GetNumFiles()>1))
+	if((GetNumTimesInFile()==1 && !(GetNumFiles()>1)) || (fEndData.timeIndex == UNASSIGNEDINDEX && model_time > ((*fTimeHdl)[fStartData.timeIndex] + fTimeShift) && fAllowExtrapolationInTime) || (fEndData.timeIndex == UNASSIGNEDINDEX && model_time < ((*fTimeHdl)[fStartData.timeIndex] + fTimeShift) && fAllowExtrapolationInTime))
+	//if(GetNumTimesInFile()==1 && !(GetNumFiles()>1))
 	{
 		// Calculate the interpolated velocity at the point
 		if (interpolationVal.ptIndex1 >= 0) 
@@ -8606,7 +8611,8 @@ VelocityRec TimeGridCurTri_c::GetScaledPatValue3D(const Seconds& model_time,Inte
 	
  	// the contributions from each point will default to zero if the depth indicies
 	// come back negative (ie the LE depth is out of bounds at the grid point)
-	if(GetNumTimesInFile()==1 && !(GetNumFiles()>1))
+	if((GetNumTimesInFile()==1 && !(GetNumFiles()>1)) || (fEndData.timeIndex == UNASSIGNEDINDEX && model_time > ((*fTimeHdl)[fStartData.timeIndex] + fTimeShift) && fAllowExtrapolationInTime) || (fEndData.timeIndex == UNASSIGNEDINDEX && model_time < ((*fTimeHdl)[fStartData.timeIndex] + fTimeShift) && fAllowExtrapolationInTime))
+	//if(GetNumTimesInFile()==1 && !(GetNumFiles()>1))
 	{
 		if (pt1depthIndex1!=-1)
 		{
@@ -9503,7 +9509,8 @@ OSErr TimeGridCurTri_c::TextRead(const char *path, const char *topFilePath)
 
 	vector<string> linesInFile;
 	if (ReadLinesInFile(strPath, linesInFile)) {
-		return TextRead(linesInFile, dir);
+		return TextRead(linesInFile,
+						dir);
 	}
 	else {
 		return false;

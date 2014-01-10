@@ -64,6 +64,9 @@ public:
 	long fTimeShift;		// to convert GMT to local time
 	Boolean fAllowExtrapolationInTime;
 	
+	Boolean fAllowVerticalExtrapolationOfCurrents;	// this shouldn't be part of the winds, but moved here so ptcur and gridcur would have access. revisit...
+	float	fMaxDepthForExtrapolation;	// probably will get rid of this
+	
 	WorldRect fGridBounds;
 
 
@@ -84,8 +87,8 @@ public:
 	virtual WorldRect GetGridBounds(){return fGridBounds;}	
 	virtual void SetGridBounds(WorldRect gridBounds){fGridBounds = gridBounds;}	
 	
-	void SetExtrapolationInTime(Boolean extrapolate){fAllowExtrapolationInTime = extrapolate;}
-	Boolean GetExtrapolationInTime(){return fAllowExtrapolationInTime;}
+	void SetExtrapolationInTime(bool extrapolate){fAllowExtrapolationInTime = extrapolate;}
+	bool GetExtrapolationInTime(){return fAllowExtrapolationInTime;}
 	
 	void SetTimeShift(long timeShift){fTimeShift = timeShift;}
 	long GetTimeShift(){return fTimeShift;}
@@ -141,11 +144,11 @@ public:
 
 	FLOATH fDepthsH;	// check what this is, maybe rename
 	DepthDataInfoH fDepthDataInfo;
-	double fFileScaleFactor;
+	//double fFileScaleFactor;
 	Boolean fIsNavy;	// special variable names for Navy, maybe change to grid type depending on Navy options	Boolean fIsOptimizedForStep;
 
-	Boolean fAllowVerticalExtrapolationOfCurrents;
-	float	fMaxDepthForExtrapolation;
+	//Boolean fAllowVerticalExtrapolationOfCurrents;
+	//float	fMaxDepthForExtrapolation;
 	
 	
 	TimeGridVelRect_c();
@@ -165,8 +168,8 @@ public:
 	virtual double	GetDepthAtIndex(long depthIndex, double totalDepth);
 	float		GetTotalDepth(WorldPoint refPoint, long triNum);
 
-	void SetVerticalExtrapolation(Boolean extrapolate){fAllowVerticalExtrapolationOfCurrents = extrapolate;}
-	Boolean GetVerticalExtrapolation(){return fAllowVerticalExtrapolationOfCurrents;}
+	void SetVerticalExtrapolation(bool extrapolate){fAllowVerticalExtrapolationOfCurrents = extrapolate;}
+	bool GetVerticalExtrapolation(){return fAllowVerticalExtrapolationOfCurrents;}
 	
 	virtual OSErr 		ReadTimeData(long index,VelocityFH *velocityH, char* errmsg);
 	virtual long 		GetNumDepthLevelsInFile();	// eventually get rid of this

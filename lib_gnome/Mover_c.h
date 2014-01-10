@@ -33,7 +33,7 @@ public:
 #endif
 	Seconds				fUncertainStartTime;
 	double				fDuration; 				// duration time for uncertainty;
-	RGBColor			fColor;
+	//RGBColor			fColor;
 	
 protected:
 	double				fTimeUncertaintyWasSet;	// time to measure next uncertainty update

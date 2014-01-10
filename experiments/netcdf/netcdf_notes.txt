@@ -1,0 +1,126 @@
+NetCDF notes:
+
+For a 1-d variable, it is a lot slower to use unlimited dimension.
+
+
+NOTE: on the Mac, cacheing (or something) makes a lot of difference -- running the script a few times in a row, it gets a lot faster... not suere why that would be...
+
+Examples under Windows (Gohlke Builds):
+
+total elements: 1024 * 1024 * 16
+total byes: 1024 * 1024 * 16 * 8 = 134217728 = 128MB
+
+writing out 1024*1024 elements at a time.
+
+
+Fixed dimension, no chunking:
+  Windows:  run time: 0.79s
+            file size: 134 MB
+
+  Mac:      run time: 0.48s
+            file size: 134 MB
+
+Fixed dimension, 1MB chunks:
+  Windows:  run time: 0.80s
+            file size: 134 MB
+  Mac:      run time: 1.4s
+            file size: 134 MB
+
+
+Unlimited dimension, no chunking:
+  Windows:  run time: 337s !
+            file size: 762 MB
+
+  Mac: HARD CRASH!!!! (see [1] below)
+
+
+Unlimited dimension, 1KB chunks:
+  Windows:  run time: 1.8s 
+            file size: 134 MB
+
+  Mac:      run time: 0.63s
+            file size: 134 MB
+
+Unlimited dimension, 8KB chunks:
+  Windows:  run time: 1.01s 
+            file size: 134 MB
+
+  Mac:      run time: 0.5s
+            file size: 134 MB
+
+Unlimited dimension, 1/2 MB chunks:
+  Windows:  run time: 0.8s 
+            file size: 134 MB
+
+  Mac:      run time: .5s # note: first run slower...
+            file size: 134 MB
+
+Unlimited dimension, 1MB chunks:
+  Windows:  run time: 0.8s 
+            file size: 134 MB
+
+  Mac:      run time: 1.5s # note: doesn't change form first run to more...
+            file size: 134 MB
+
+Unlimited dimension, 8MB chunks:
+  Windows:  run time: 1.1s 
+            file size: 134 MB
+
+  Mac:      run time: 1.5s # note: doesn't change form first run to more...
+            file size: 134 MB
+
+
+Writing out 16k elements at time, 1MB chunks:
+  Windows:  run time: 1.7s
+            file size: 134MB
+
+  Mac:      run time: 0.5s # note: first couple runs: 1.5 s
+            file size: 134 MB
+ 
+
+[0] Mac:
+32 bit python2.7 from python.org.
+In [6]: netCDF4.getlibversion()
+Out[6]: u'4.3.0 of Aug 21 2013 16:31:18 $'
+
+(self-built -- all of it)
+
+
+[1] Python(1271) malloc: *** mmap(size=16777216) failed (error code=12)
+*** error: can't allocate region
+*** set a breakpoint in malloc_error_break to debug
+Python(1271) malloc: *** mmap(size=16777216) failed (error code=12)
+*** error: can't allocate region
+*** set a breakpoint in malloc_error_break to debug
+Traceback (most recent call last):
+  File "./test_netcdf_large_files.py", line 43, in <module>
+    big_var[i*block_size:(i+1)*block_size] = data
+  File "netCDF4.pyx", line 2884, in netCDF4.Variable.__setitem__ (netCDF4.c:36319)
+  File "netCDF4.pyx", line 3013, in netCDF4.Variable._put (netCDF4.c:37295)
+RuntimeError: NetCDF: HDF error
+HDF5: infinite loop closing library
+      R,D,G,A,S,T,D,G,F,D,A,S,T,F,FD,P,FD,P,FD,P,E,E,SL,FL,FL,FL,FL,FL,FL,FL,FL,FL,FL,FL,FL,FL,FL,FL,FL,FL,FL,FL,FL,FL,FL,FL,FL,FL,FL,FL,FL,FL,FL,FL,FL,FL,FL,FL,FL,FL,FL,FL,FL,FL,FL,FL,FL,FL,FL,FL,FL,FL,FL,FL,FL,FL,FL,FL,FL,FL,FL,FL,FL,FL,FL,FL,FL,FL,FL,FL,FL,FL,FL,FL,FL,FL,FL,FL,FL,FL,FL,FL,FL,FL,FL,FL,FL,FL,FL,FL,FL,FL,FL
+
+
+Test with multiple arrays -- testing for much larger files.
+################################################################
+
+# length of array to test
+N = 1024 * 2
+K = 4 #number of arrays
+# "blocks" is the size of data written out in each run through the loop
+block_size = 1024
+# chunksize is the size of chunks in teh netcdf file
+chunksizes = (1024, )
+
+
+length         size        run_time   
+1024*2           80112    0.0783071517944
+1024*20         669936    0.0177519321442
+1024*200       6601712    0.143374919891
+1024*2000     65844016    1.57513689995
+1024*20000    658376048  14.9359309673
+
+
+
+

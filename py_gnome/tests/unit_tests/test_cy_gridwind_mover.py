@@ -187,6 +187,47 @@ class TestGridWindMover:
             0,
             )
 
+    def test_move_reg_extrapolate(self):
+        """
+        test move for a regular grid (first time in file)
+        """
+
+        time = datetime.datetime(1999, 11, 29, 20)	# before first time in file
+        self.cm.model_time = date_to_sec(time)
+
+        time_grid_file = get_datafile(os.path.join(winds_dir,
+                'test_wind.cdf'))
+
+        self.gcm.text_read(time_grid_file)
+        self.gcm.extrapolate_in_time(True)
+        self.cm.ref[:]['long'] = 3.104588  # for simple example
+        self.cm.ref[:]['lat'] = 52.016468
+        self.check_move()
+
+        actual = np.empty((self.cm.num_le, ), dtype=world_point)
+        actual[:]['lat'] = .00010063832857459063
+        actual[:]['long'] = 3.0168548769686512e-05
+        actual[:]['z'] = 0.
+        tol = 1e-5
+
+        msg = '{0} move is not within a tolerance of {1}'
+        np.testing.assert_allclose(
+            self.cm.delta['lat'],
+            actual['lat'],
+            tol,
+            tol,
+            msg.format('test_wind.cdf', tol),
+            0,
+            )
+        np.testing.assert_allclose(
+            self.cm.delta['long'],
+            actual['long'],
+            tol,
+            tol,
+            msg.format('test_wind.cdf', tol),
+            0,
+            )
+
     def test_move_curv(self):
         """
         test move for a curvilinear grid (first time in file)

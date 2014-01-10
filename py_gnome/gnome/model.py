@@ -358,7 +358,11 @@ class Model(serializable.Serializable):
             for sc in self.spills.items():
                 mover.model_step_is_done(sc)
         for sc in self.spills.items():
+            """ removes elements with oil_status.to_be_removed """
             sc.model_step_is_done()
+
+            # age remaining particles
+            sc['age'][:] = sc['age'][:] + self.time_step
 
         for outputter in self.outputters:
             outputter.model_step_is_done()
@@ -410,6 +414,9 @@ class Model(serializable.Serializable):
         #     [sc.current_time_stamp for sc in self.spills.items()]
         for sc in self.spills.items():
             sc.current_time_stamp = self.model_time
+
+            # release particles for next step - these particles will be aged
+            # in the next step
             sc.release_elements(self.time_step, self.model_time)
 
         # cache the results - current_time_step is incremented but the

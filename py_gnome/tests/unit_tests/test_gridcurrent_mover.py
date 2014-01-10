@@ -30,6 +30,10 @@ def test_exceptions():
     with pytest.raises(ValueError):
         GridCurrentMover(bad_file)
 
+    bad_file = os.path.join(cur_dir, 'BigCombinedwMapBad.cur')
+    with pytest.raises(OSError):
+        GridCurrentMover(bad_file)
+
     with pytest.raises(TypeError):
         GridCurrentMover(curr_file, topology_file=10)
 
@@ -109,6 +113,8 @@ def test_default_props():
     assert c_grid.uncertain_duration == 24
     assert c_grid.uncertain_cross == .25
     assert c_grid.uncertain_along == .5
+    assert c_grid.extrapolate == False
+    assert c_grid.time_offset == 0
 
 
 def test_scale():
@@ -128,6 +134,24 @@ def test_scale_value():
     c_grid.current_scale = 2
     print c_grid.current_scale
     assert c_grid.current_scale == 2
+
+def test_extrapolate():
+    """
+    test setting / getting properties
+    """
+
+    c_grid.extrapolate = True
+    print c_grid.extrapolate
+    assert c_grid.extrapolate == True
+
+def test_offset_time():
+    """
+    test setting / getting properties
+    """
+
+    c_grid.time_offset = -8
+    print c_grid.time_offset
+    assert c_grid.time_offset == -8
 
 
 # Helper functions for tests
