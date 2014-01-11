@@ -185,8 +185,6 @@ class GnomeMap(serializable.Serializable):
         status_codes = spill['status_codes']
         off_map = np.logical_not(self.on_map(next_positions))
 
-        # status_codes[off_map] = oil_status.off_maps
-
         status_codes[off_map] = oil_status.to_be_removed
 
     def beach_elements(self, spill):
@@ -199,10 +197,19 @@ class GnomeMap(serializable.Serializable):
         :param spill: current SpillContainer
         :type spill:  :class:`gnome.spill_container.SpillContainer`
 
-        This map class has no land, so only the map check is done
-        and nothing changes
+        This map class has no land, so only the map check and
+        resurface_airborn elements is done: noting else changes.
+
+        subclasses that override this probably want to make sure that:
+
+        self.resurface_airborne_elements(spill)
+        self._set_off_map_status(spill)
+
+        are called.
+
         """
 
+        self.resurface_airborne_elements(spill)
         self._set_off_map_status(spill)
 
     def refloat_elements(self, spill_container, time_step):
@@ -229,8 +236,8 @@ class GnomeMap(serializable.Serializable):
 
         .. note::
             While this shouldn't occur according to the physics we're modeling,
-            some movers may push elements up to high, or multiple movers may
-            add vertical movement that adds up to over the surface.
+            some movers may push elements up too high, or multiple movers may
+            add vertical movement that adds up to over the surface. e.g rise velocity.
         """
 
         next_positions = spill_container['next_positions']
