@@ -65,7 +65,7 @@ def test_bottom_layer():
     """
     D_lower = .11 #m^2/s (or cm^2/s?)
     time_step = 60
-    total_time = 6000
+    total_time = 60000
 
     num_elements = 100
     num_timesteps = total_time // time_step 
@@ -100,7 +100,7 @@ def test_bottom_layer():
     var = sc['positions'][:,2].var()
     print "expected_var:", exp_var, "var:", var
 
-    assert np.allclose(exp_var, var)
+    assert np.allclose(exp_var, var, rtol=0.1)
 
 def test_mixed_layer():
     """

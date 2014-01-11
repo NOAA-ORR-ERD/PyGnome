@@ -116,6 +116,104 @@ WorldPoint3D RandomVertical_c::GetMove (const Seconds& model_time, Seconds timeS
 	double	dLong, dLat, z = 0;
 	WorldPoint3D	deltaPoint = {0,0,0.};
 	WorldPoint refPoint = (*theLE).p;	
+	float rand;
+	OSErr err = 0;
+
+	//if ((*theLE).z==0)	return deltaPoint;
+	// will need a flag to check if LE is supposed to stay on the surface or can be diffused below	
+	// will want to be able to set mixed layer depth, but have a local value that can be changed
+	if ((*theLE).z>0)	// only apply vertical diffusion if there are particles below surface
+	{
+		double verticalDiffusionCoefficient;
+		double mixedLayerDepth=fMixedLayerDepth, totalLEDepth, depthAtPoint=INFINITE_DEPTH;
+		float eps = 1.e-6;
+		// diffusion coefficient is O(1) vs O(100000) for horizontal / vertical diffusion
+		// vertical is 3-5 cm^2/s, divide by sqrt of 10^4
+		
+		// instead diffuse particles above MLD, reflect if necessary and then apply bottom diffusion to all particles
+		// then check top and bottom. Still need to consider what to do with large steps - put randomly into mixed layer / water column ?
+		depthAtPoint = GetDepthAtPoint(refPoint);
+		if (depthAtPoint <= 0) depthAtPoint = INFINITE_DEPTH;	// this should be taken care of in GetDepthAtPoint	
+		// if (depthAtPoint < eps) // should this be an error?
+		if ((*theLE).z<=mixedLayerDepth)
+		{
+			if (fVerticalDiffusionCoefficient==0) return deltaPoint;	
+			verticalDiffusionCoefficient = sqrt(6.*(fVerticalDiffusionCoefficient/10000.)*timeStep);
+			rand = GetRandomFloat(-1.0, 1.0);
+			deltaPoint.z = rand*verticalDiffusionCoefficient;
+			//z = deltaPoint.z;	// will add this on to the next move
+			
+			// check that depth at point is greater than mixed layer depth, else bottom threshold is the depth
+			//depthAtPoint = GetDepthAtPoint(refPoint);	
+			
+			if (depthAtPoint < mixedLayerDepth) mixedLayerDepth = depthAtPoint;
+				
+			// also should handle non-dispersed subsurface spill
+			totalLEDepth = (*theLE).z+deltaPoint.z;
+			
+			if (totalLEDepth>mixedLayerDepth) 
+			{
+				deltaPoint.z = mixedLayerDepth - (totalLEDepth - mixedLayerDepth) - (*theLE).z; // reflect about mixed layer depth
+				// check if went above surface and put randomly into mixed layer
+				if ((*theLE).z+deltaPoint.z <= 0) deltaPoint.z = GetRandomFloat(eps,mixedLayerDepth) - (*theLE).z;	
+					// or just let it go and deal with it later? then it will go into full water column...
+			}
+		}
+		z = deltaPoint.z;	// will add this on to the next move
+		if (mixedLayerDepth==depthAtPoint) /*return deltaPoint*/goto dochecks;	// in this case don't need to do anything more
+		// now apply below mixed layer depth diffusion to all particles above and below
+		if (fVerticalBottomDiffusionCoefficient==0/* && z==0*/) /*return deltaPoint*/goto dochecks;	// don't return until do checks
+		verticalDiffusionCoefficient = sqrt(6.*(fVerticalBottomDiffusionCoefficient/10000.)*timeStep);
+		rand = GetRandomFloat(-1.0, 1.0);
+		deltaPoint.z = rand*verticalDiffusionCoefficient;
+		
+		z = z + deltaPoint.z;	// add move to previous move if any
+		totalLEDepth = (*theLE).z+z;
+		// if LE has gone above surface reflect
+dochecks:
+		if (totalLEDepth==0) 
+		{	
+			deltaPoint.z = eps - (*theLE).z; 
+			return deltaPoint;
+		}
+		if (totalLEDepth<0) 
+		{	
+			deltaPoint.z = - totalLEDepth - (*theLE).z;	// reflect below surface
+			totalLEDepth = (*theLE).z + deltaPoint.z;
+			if (totalLEDepth > depthAtPoint) 
+				deltaPoint.z = GetRandomFloat(eps,depthAtPoint-eps) - (*theLE).z;
+			return deltaPoint;
+		}
+		if (totalLEDepth==depthAtPoint) 
+		{	
+			deltaPoint.z = (depthAtPoint - eps) - (*theLE).z; 
+			return deltaPoint;
+		}
+		if (totalLEDepth > depthAtPoint) 
+		{
+			// reflect above bottom
+			deltaPoint.z = depthAtPoint - (totalLEDepth - depthAtPoint) - (*theLE).z; 
+			totalLEDepth = (*theLE).z + deltaPoint.z;
+			if (totalLEDepth <= 0) 
+				// put randomly into water column
+				deltaPoint.z = GetRandomFloat(eps,depthAtPoint-eps) - (*theLE).z;
+			return deltaPoint;
+		}
+		else
+			deltaPoint.z = z;
+	}
+	else
+		deltaPoint.z = 0.;	
+	
+	return deltaPoint;
+}
+/*
+// Box Muller algorithm - needs a factor adjustment since the random value range is limited by the sqrt(-2log(r)/r) calculation (can't have r>1)
+WorldPoint3D RandomVertical_c::GetMove (const Seconds& model_time, Seconds timeStep,long setIndex,long leIndex,LERec *theLE,LETYPE leType)
+{
+	double	dLong, dLat, z = 0;
+	WorldPoint3D	deltaPoint = {0,0,0.};
+	WorldPoint refPoint = (*theLE).p;	
 	float rand1,rand2,r,w;
 	OSErr err = 0;
 
@@ -128,7 +226,7 @@ WorldPoint3D RandomVertical_c::GetMove (const Seconds& model_time, Seconds timeS
 		double mixedLayerDepth=fMixedLayerDepth, totalLEDepth, depthAtPoint=INFINITE_DEPTH;
 		float eps = 1.e-6;
 		// diffusion coefficient is O(1) vs O(100000) for horizontal / vertical diffusion
-		// vertical is 3-5 cm^2/s, divide by sqrt of 10^5
+		// vertical is 3-5 cm^2/s, divide by sqrt of 10^4
 		
 		// instead diffuse particles above MLD, reflect if necessary and then apply bottom diffusion to all particles
 		// then check top and bottom. Still need to consider what to do with large steps - put randomly into mixed layer / water column ?
@@ -163,9 +261,9 @@ WorldPoint3D RandomVertical_c::GetMove (const Seconds& model_time, Seconds timeS
 			}
 		}
 		z = deltaPoint.z;	// will add this on to the next move
-		if (mixedLayerDepth==depthAtPoint) /*return deltaPoint*/goto dochecks;	// in this case don't need to do anything more
+		if (mixedLayerDepth==depthAtPoint) goto dochecks;	// in this case don't need to do anything more
 		// now apply below mixed layer depth diffusion to all particles above and below
-		if (fVerticalBottomDiffusionCoefficient==0/* && z==0*/) /*return deltaPoint*/goto dochecks;	// don't return until do checks
+		if (fVerticalBottomDiffusionCoefficient==0) goto dochecks;	// don't return until do checks
 		verticalDiffusionCoefficient = sqrt(2.*(fVerticalBottomDiffusionCoefficient/10000.)*timeStep);
 		GetRandomVectorInUnitCircle(&rand1,&rand2);
 		r = sqrt(rand1*rand1+rand2*rand2);
@@ -212,5 +310,5 @@ dochecks:
 		deltaPoint.z = 0.;	
 	
 	return deltaPoint;
-}
+}*/
 
