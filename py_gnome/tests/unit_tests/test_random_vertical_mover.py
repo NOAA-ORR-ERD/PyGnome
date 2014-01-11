@@ -113,7 +113,7 @@ def test_mixed_layer():
     """
     D_mixed = 10.0 # cm^2/s
     time_step = 60
-    total_time = 60000
+    total_time = 600
 
     num_elements = 100
     num_timesteps = total_time // time_step 
@@ -148,7 +148,7 @@ def test_mixed_layer():
     var = sc['positions'][:,2].var()
     print "expected_var:", exp_var, "var:", var
 
-    assert np.allclose(exp_var, var)
+    assert np.allclose(exp_var, var, rtol = 0.1)
 
 def test_mixed_layer2():
     """
@@ -160,9 +160,9 @@ def test_mixed_layer2():
     D_mixed = 10.0 # cm^2/s
     mixed_layer_depth = 10.0 # m
     time_step = 60
-    total_time = 600
+    total_time = 6000
 
-    num_elements = 100
+    num_elements = 1000
     num_timesteps = total_time // time_step 
 
     mv = RandomVerticalMover(vertical_diffusion_coef_above_ml=D_mixed,
@@ -195,11 +195,10 @@ def test_mixed_layer2():
 
     # expected variance:
     exp_var = mixed_layer_depth**2 / 12.0
-    exp_var /= 10**4 # convert to m
     var = sc['positions'][:,2].var()
     print "expected_var:", exp_var, "var:", var
 
-    assert np.allclose(exp_var, var)
+    assert np.allclose(exp_var, var, rtol=0.15)
 
 
 

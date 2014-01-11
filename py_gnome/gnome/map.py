@@ -185,8 +185,6 @@ class GnomeMap(serializable.Serializable):
         status_codes = spill['status_codes']
         off_map = np.logical_not(self.on_map(next_positions))
 
-        # status_codes[off_map] = oil_status.off_maps
-
         status_codes[off_map] = oil_status.to_be_removed
 
     def beach_elements(self, spill):
@@ -202,10 +200,16 @@ class GnomeMap(serializable.Serializable):
         This map class has no land, so only the map check and
         resurface_airborn elements is done: noting else changes.
 
+        subclasses that override this probably want to make sure that:
+
+        self.resurface_airborne_elements(spill)
+        self._set_off_map_status(spill)
+
+        are called.
+
         """
 
         self.resurface_airborne_elements(spill)
-
         self._set_off_map_status(spill)
 
     def refloat_elements(self, spill_container, time_step):
