@@ -55,6 +55,8 @@ def test_horizontal_zero():
 
     assert np.alltrue(delta[:,0:2] == 0.0)
 
+
+
 def test_bottom_layer():
     """
     tests the bottom layer
@@ -100,7 +102,104 @@ def test_bottom_layer():
 
     assert np.allclose(exp_var, var)
 
+def test_mixed_layer():
+    """
+    tests the top layer
 
+    elements should vertically spread according to the diffusion coef of the top layer
+    
+    this version uses a really thick mixed layer to stay away from boundary effects
+
+    """
+    D_mixed = 10.0 # cm^2/s
+    time_step = 60
+    total_time = 60000
+
+    num_elements = 100
+    num_timesteps = total_time // time_step 
+
+    mv = RandomVerticalMover(vertical_diffusion_coef_above_ml=D_mixed,
+                             mixed_layer_depth=1000, # HUGE to avoid surface effects.
+                             ) # m
+
+
+    sc = sample_sc_release(num_elements=num_elements,
+                           start_pos=(0.0, 0.0, 0.0),
+                           release_time=model_time,
+                           )
+    # re-set z positions:
+    sc['positions'][:, 2] =  500.0 # far from the  top
+
+    # call get_move a bunch of times
+    for i in range(num_timesteps):
+#        print "positions:\n", sc['positions']
+        delta = mv.get_move(sc,
+                            time_step,
+                            model_time,
+                            )
+#        print "delta:\n", delta
+        sc['positions'] += delta
+
+#    print sc['positions']
+
+    # expected variance:
+    exp_var = 2 * num_timesteps*time_step * D_mixed # in cm^2?
+    exp_var /= 10**4 # convert to m
+    var = sc['positions'][:,2].var()
+    print "expected_var:", exp_var, "var:", var
+
+    assert np.allclose(exp_var, var)
+
+def test_mixed_layer2():
+    """
+    tests the top layer
+
+    elements should end up fairly evenly distributed by the end of along run
+
+    """
+    D_mixed = 10.0 # cm^2/s
+    mixed_layer_depth = 10.0 # m
+    time_step = 60
+    total_time = 600
+
+    num_elements = 100
+    num_timesteps = total_time // time_step 
+
+    mv = RandomVerticalMover(vertical_diffusion_coef_above_ml=D_mixed,
+                             vertical_diffusion_coef_below_ml=0.0,
+                             mixed_layer_depth=mixed_layer_depth,
+                             ) # m
+
+
+    sc = sample_sc_release(num_elements=num_elements,
+                           start_pos=(0.0, 0.0, 0.0),
+                           release_time=model_time,
+                           )
+    # re-set z positions:
+    sc['positions'][:, 2] =  5.0 # middle of the layer
+
+    # call get_move a bunch of times
+    for i in range(num_timesteps):
+#        print "positions:\n", sc['positions']
+        delta = mv.get_move(sc,
+                            time_step,
+                            model_time,
+                            )
+#        print "delta:\n", delta
+        sc['positions'] += delta
+
+#    print sc['positions']
+
+    # expected mean
+    exp_mean = 5.0 # middle of layer
+
+    # expected variance:
+    exp_var = mixed_layer_depth**2 / 12.0
+    exp_var /= 10**4 # convert to m
+    var = sc['positions'][:,2].var()
+    print "expected_var:", exp_var, "var:", var
+
+    assert np.allclose(exp_var, var)
 
 
 
