@@ -61,7 +61,7 @@ class Renderer(Outputter, MapCanvas, serializable.Serializable):
     def __init__(
         self,
         filename=None,
-        images_dir,
+        images_dir='./',
         image_size=(800, 600),
         cache=None,
         output_timestep=None,
