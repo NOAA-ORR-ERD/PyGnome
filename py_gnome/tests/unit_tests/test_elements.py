@@ -77,6 +77,8 @@ def test_correct_particles_set_by_initializers(fcn, arr_types, spill):
     data_arrays = mock_append_data_arrays(arr_types, num_elems, data_arrays)
 
     substance = OilProps('oil_conservative')
+    if spill is not None:
+        spill.num_elements=10
     fcn.initialize(num_elems, spill, data_arrays, substance)
 
     assert_dataarray_shape_size(arr_types, data_arrays, num_elems * 2)
@@ -132,6 +134,7 @@ def test_initailize_InitMassFromVolume():
     data_arrays = mock_append_data_arrays(mass_array, num_elems)
     fcn = InitMassFromVolume()
     spill = Spill()
+    spill.num_elements=10
     substance = OilProps('oil_conservative')
     spill.volume = num_elems / (substance.get_density('kg/m^3') * 1000)
     fcn.initialize(num_elems, spill, data_arrays, substance)
