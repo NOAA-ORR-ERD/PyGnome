@@ -95,6 +95,32 @@ class InitMassFromVolume(object):
             * spill.get_volume('m^3') * 1000
         data_arrays['mass'][-num_new_particles:] = (_total_mass /
                                                     num_new_particles)
+        print "data_arrays['mass']"
+        print data_arrays['mass']
+        print _total_mass
+        print num_new_particles
+
+
+class InitMassFromPlume(object):
+    """
+    Initialize the 'mass' array based on mass flux from the plume spilled
+    """
+
+    def initialize(self, num_new_particles, spill, data_arrays, substance):
+        if spill.plume_gen is None:
+            raise ValueError('plume_gen attribute of spill is None - cannot'
+                             ' compute mass without plume mass flux')
+
+#         _total_mass = substance.get_density('kg/m^3') \
+#             * spill.get_volume('m^3') * 1000
+#         data_arrays['mass'][-num_new_particles:] = (_total_mass /
+#                                                     num_new_particles)
+        data_arrays['mass'][-num_new_particles:] = spill.plume_gen.mass_of_an_le * 1000
+        
+        print "data_arrays['mass']"
+        print data_arrays['mass']
+        #print _total_mass
+        print num_new_particles
 
 
 class ValuesFromDistBase(object):
@@ -350,4 +376,20 @@ def plume(distribution_type='droplet_size', distribution='weibull', windage_rang
         return ElementType({'rise_vel': InitRiseVelFromDist(distribution=distribution,
                                                  **kwargs),
                                                  'windages': InitWindages(windage_range,windage_persist),
-                                                 'mass': InitMassFromVolume(windage_range,windage_persist)})
+                                                 'mass': InitMassFromVolume()})
+
+def plume_from_model(distribution_type='droplet_size', distribution='weibull', windage_range=(.01, .04), windage_persist=900, **kwargs):
+    """
+    Helper function returns an ElementType object containing 'rise_vel' and 'windages'
+    initializer with user specified parameters for distribution.
+    """ 
+    if distribution_type == 'droplet_size':
+        return ElementType({'rise_vel': InitRiseVelFromDropletSizeFromDist(distribution=distribution,
+                                                 **kwargs),
+                                                 'windages': InitWindages(windage_range,windage_persist),
+                                                 'mass': InitMassFromPlume()})
+    elif distribution_type == 'rise_velocity':
+        return ElementType({'rise_vel': InitRiseVelFromDist(distribution=distribution,
+                                                 **kwargs),
+                                                 'windages': InitWindages(windage_range,windage_persist),
+                                                 'mass': InitMassFromPlume()})
