@@ -94,11 +94,8 @@ class InitMassFromVolume(object):
         _total_mass = substance.get_density('kg/m^3') \
             * spill.get_volume('m^3') * 1000
         data_arrays['mass'][-num_new_particles:] = (_total_mass /
-                                                    num_new_particles)
-        print "data_arrays['mass']"
-        print data_arrays['mass']
-        print _total_mass
-        print num_new_particles
+                                                    spill.num_elements)
+                                                    #num_new_particles)
 
 
 class InitMassFromPlume(object):
@@ -111,16 +108,7 @@ class InitMassFromPlume(object):
             raise ValueError('plume_gen attribute of spill is None - cannot'
                              ' compute mass without plume mass flux')
 
-#         _total_mass = substance.get_density('kg/m^3') \
-#             * spill.get_volume('m^3') * 1000
-#         data_arrays['mass'][-num_new_particles:] = (_total_mass /
-#                                                     num_new_particles)
         data_arrays['mass'][-num_new_particles:] = spill.plume_gen.mass_of_an_le * 1000
-        
-        print "data_arrays['mass']"
-        print data_arrays['mass']
-        #print _total_mass
-        print num_new_particles
 
 
 class ValuesFromDistBase(object):
