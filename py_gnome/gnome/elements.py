@@ -340,12 +340,14 @@ def plume(distribution_type='droplet_size', distribution='weibull', windage_rang
     """
     Helper function returns an ElementType object containing 'rise_vel' and 'windages'
     initializer with user specified parameters for distribution.
-    """
+    """ 
     if distribution_type == 'droplet_size':
         return ElementType({'rise_vel': InitRiseVelFromDropletSizeFromDist(distribution=distribution,
                                                  **kwargs),
-                                                 'windages': InitWindages(windage_range,windage_persist)})
+                                                 'windages': InitWindages(windage_range,windage_persist),
+                                                 'mass': InitMassFromVolume()})
     elif distribution_type == 'rise_velocity':
         return ElementType({'rise_vel': InitRiseVelFromDist(distribution=distribution,
                                                  **kwargs),
-                                                 'windages': InitWindages(windage_range,windage_persist)})
+                                                 'windages': InitWindages(windage_range,windage_persist),
+                                                 'mass': InitMassFromVolume(windage_range,windage_persist)})
