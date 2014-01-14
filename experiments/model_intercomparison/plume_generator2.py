@@ -288,7 +288,8 @@ we will choose an LE with %s kg of oil
     # OK the biggest deviation was about 8% when we specified 119 LEs, and
     # it tends to get smaller as we increase the specified LE count.
     figure(num=30)
-    plot([n[0] for n in le_counts], [((np.float(i[0]) / np.float(i[1])) * 100) - 100. for i in le_counts])
+    plot([n[0] for n in le_counts],
+         [(abs(diff(i)) / np.float(i[0]) * 100.) for i in le_counts])
     xlabel('Number of LEs specified')
     ylabel('Deviation (%)')
     title('Specified LEs vs. Resulting LEs')
