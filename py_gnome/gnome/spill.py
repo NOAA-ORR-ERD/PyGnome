@@ -886,29 +886,20 @@ class VerticalPlumeSource(Spill):
         '''
         return a list of positions for all elements released within
         current_time + time_step
-        - our plume generator gives us results in the following format:
-          [(datetime(),
-            [((lon, lat, z), num_elements_to_create),
-             ...
-             ]),
-           ...
-           ]
         '''
-        self.plume_gen.time_step_delta = time_step
-        for step in self.plume_gen:
-            if step[0] >= current_time + timedelta(seconds=time_step):
-                break
-            if step[0] >= current_time:
-                for r in step[1]:
-                    for e in (r[0],) * r[1]:
-                        yield tuple(e)
+        next_time = current_time + timedelta(seconds=time_step)
+        elem_counts = self.plume_gen.elems_in_range(current_time, next_time)
+
+        for coord, count in zip(self.plume_gen.plume.coords, elem_counts):
+            print coord, count
+            for c in (coord,) * count:
+                yield tuple(c)
 
     def num_elements_to_release(self, current_time, time_step):
         '''
         return number of particles released in current_time + time_step
         '''
-        coords = [e for e in self._plume_elem_coords(current_time, time_step)]
-        return len(coords)
+        return len([e for e in self._plume_elem_coords(current_time, time_step)])
 
     def set_newparticle_values(self, num_new_particles, current_time,
                                time_step, data_arrays):

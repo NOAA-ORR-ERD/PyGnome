@@ -9,6 +9,13 @@ import six
 import numpy
 np = numpy
 
+import matplotlib
+from matplotlib import pylab, mlab, pyplot
+plt = pyplot
+
+from pylab import *
+
+
 from datetime import datetime, timedelta
 
 from gnome.basic_types import world_point
@@ -140,7 +147,8 @@ class PlumeGenerator(object):
           specified time
         '''
         seconds = self._seconds_from_beginning(time)
-        return self._mass_to_elems(self.plume.mass_flux * seconds)
+        mass = self.plume.mass_flux * seconds
+        return self._mass_to_elems(mass)
 
     def elems_in_range(self, begin, end):
         return self.elems_from_beginning(end) - self.elems_from_beginning(begin)
@@ -151,8 +159,9 @@ class PlumeGenerator(object):
                 curr_time = self.release_time + timedelta(seconds=self.time_step_delta * step)
                 next_time = curr_time + timedelta(seconds=self.time_step_delta)
                 yield (curr_time,
-                       zip(self.plume.coords,
-                           self.elems_in_range(curr_time, next_time)))
+                       zip(self.plume.coords, self.elems_in_range(curr_time,
+                                                                  next_time))
+                       )
         else:
             step = 0
             while True:
@@ -160,8 +169,9 @@ class PlumeGenerator(object):
                 next_time = curr_time + timedelta(seconds=self.time_step_delta)
                 step += 1
                 yield (curr_time,
-                       zip(self.plume.coords,
-                           self.elems_in_range(curr_time, next_time)))
+                       zip(self.plume.coords, self.elems_in_range(curr_time,
+                                                                  next_time))
+                       )
 
 
 if __name__ == '__main__':
@@ -228,7 +238,7 @@ we will choose an LE with %s kg of oil
                                time_step_delta=time_step_delta,
                                plume=plume)
     plume_gen.set_le_mass_from_total_le_count(200)
-    print 'Now, the occurrence pattern if the total LEs is 200...'
+    print '\nNow, the occurrence pattern if the total LEs is 200...'
     total_le_count = 0
     for step in plume_gen:
         le_count = sum([r[1] for r in step[1]])
@@ -248,15 +258,17 @@ we will choose an LE with %s kg of oil
         plume_generator.set_le_mass_from_total_le_count(le_count)
         return le_count, sum([sum([r[1] for r in step[1]]) for step in plume_generator])
 
-    # To start with, we will compare the number of LEs we specified vs.
-    # the number of LEs that we came up with after a run of our
-    # plume generator.  And we will do this over a range of specified
-    # LE counts.
+    # To start with, we will compare the number of LEs we specified vs. the number
+    # of LEs that we came up with after a run of our plume generator.  And we will
+    # do this over a range of specified LE counts.
     le_counts = [compare_le_count(plume_gen, n) for n in range(100, 401)]
     print le_counts
 
-    # Here we test the difference in LEs that we had over our range of
-    # counts.
+    figure(num=10)
+    plot([n[0] for n in le_counts], le_counts)
+    title('Specified LEs vs. Resulting LEs')
+
+    # Here we plot the difference in LEs that we had.
     # - I would expect there is a small chance where
     #   every one of our points missed an LE.  In this case
     #   we would be off by an amount equal to the number of points in our
@@ -266,4 +278,20 @@ we will choose an LE with %s kg of oil
     #   plume data points.
     # - For our test data, this maximum number is 10, and it
     #   occurs when we specify 260 LEs.
-    assert max([abs(np.diff(i)) for i in le_counts])[0] <= plume_gen.plume.mass_flux.size
+    figure(num=20)
+    plot([n[0] for n in le_counts], [diff(i) for i in le_counts])
+    xlabel('Number of LEs specified')
+    ylabel('Diff in LEs')
+    title('Specified LEs vs. Resulting LEs)')
+    assert max([abs(diff(i)) for i in le_counts])[0] <= plume_gen.plume.mass_flux.size
+
+    # OK the biggest deviation was about 8% when we specified 119 LEs, and
+    # it tends to get smaller as we increase the specified LE count.
+    figure(num=30)
+    plot([n[0] for n in le_counts], [((np.float(i[0]) / np.float(i[1])) * 100) - 100. for i in le_counts])
+    xlabel('Number of LEs specified')
+    ylabel('Deviation (%)')
+    title('Specified LEs vs. Resulting LEs')
+
+    show()
+    #plt.close('all')
