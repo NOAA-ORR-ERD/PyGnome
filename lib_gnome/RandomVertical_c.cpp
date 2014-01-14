@@ -209,6 +209,7 @@ dochecks:
 }
 /*
 // Box Muller algorithm - needs a factor adjustment since the random value range is limited by the sqrt(-2log(r)/r) calculation (can't have r>1)
+// We might want to revisit this sometime if we want an algorithm for generating normally distributed random numbers
 WorldPoint3D RandomVertical_c::GetMove (const Seconds& model_time, Seconds timeStep,long setIndex,long leIndex,LERec *theLE,LETYPE leType)
 {
 	double	dLong, dLat, z = 0;

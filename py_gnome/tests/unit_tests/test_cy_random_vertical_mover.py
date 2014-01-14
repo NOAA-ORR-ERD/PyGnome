@@ -87,6 +87,63 @@ class TestRandomVertical:
         assert np.all(new_delta.view(dtype=np.double).reshape(1, -1)
                       == 0)
 
+    def test_mixed_layer_zero(self):
+        """
+        Test that the move for z above the mixed layer
+        is different from move for z below the mixed layer
+        and the same if the mixed layer is zero
+        Use the py.test -s flag to view the differences
+        """
+
+        srand(1)
+        np.set_printoptions(precision=6)
+        delta = np.zeros((self.cm.num_le, ), dtype=world_point)
+        self.move(delta)  # get the move before changing the coefficient
+        print
+        print self.msg.format(self.rm) + ' get_move output:'
+        print delta.view(dtype=np.float64).reshape(-1, 3)
+
+        srand(1)
+        self.cm.ref['z'][:]=20
+        new_delta = np.zeros((self.cm.num_le, ), dtype=world_point)
+        self.move(new_delta)  # get the move after changing coefficient
+        print
+        print self.msg.format(self.rm) + ' get_move output:'
+        print new_delta.view(dtype=np.float64).reshape(-1, 3)
+        print
+        assert np.all(delta['z'] != new_delta['z'])
+
+        print '-- Norm of difference between movement vector --'
+        print self._diff(delta, new_delta).reshape(-1, 1)
+
+        self.rm.mixed_layer_depth = 0
+
+        srand(1)
+    	self.cm.ref['z'][:]=.1
+        newer_delta = np.zeros((self.cm.num_le, ), dtype=world_point)
+        self.move(newer_delta)  # get the move after changing mld
+        print
+        print self.msg.format(self.rm) + ' get_move output:'
+        print newer_delta.view(dtype=np.float64).reshape(-1, 3)
+        print
+
+       # assert np.all(new_delta['z'] == newer_delta['z'])
+        msg = r"{0} move is not within a tolerance of {1}"
+        tol = 1e-10
+        np.testing.assert_allclose(
+            new_delta['z'],
+            newer_delta['z'],
+            tol,
+            tol,
+            msg.format('random_vertical', tol),
+            0,
+            )
+
+        print '-- Norm of difference between movement vector --'
+        print self._diff(new_delta, newer_delta).reshape(-1, 1)
+
+        self.rm.mixed_layer_depth = 10
+
     def test_update_coef(self):
         """
         Test that the move is different from original move since
