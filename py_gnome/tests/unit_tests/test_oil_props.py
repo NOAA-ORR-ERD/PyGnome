@@ -40,3 +40,13 @@ def test_OilProps_DBquery(oil, api):
     """ test dbquery worked for an example like FUEL OIL NO.6 """
     o = OilProps(oil)
     assert o.oil.api == api
+
+def test_set_properties():
+    """
+    test setting / getting properties
+    """
+    o = OilProps('oil_conservative')
+    o.name = 'my_oil'
+    assert o.name == 'my_oil'
+    o.density = 950
+    assert o.density == 950

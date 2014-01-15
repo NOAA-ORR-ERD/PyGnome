@@ -164,6 +164,21 @@ class ValuesFromDistBase(object):
             if self.alpha is None:
                 raise TypeError("'weibull' distribution requires 'alpha'"
                                 " input as kwargs")
+            self.min_ = kwargs.pop('min_', None)
+            if self.min_ is not None:
+                if self.min_ <= 0:
+                    raise ValueError("'weibull' distribution requires minimum > 0 ")
+                if self.min_ > 0.003:
+                    raise ValueError("'weibull' distribution requires minimum < .003 (3mm)")
+            self.max_ = kwargs.pop('max_', None)
+            if self.max_ is not None:
+                if self.max_ <= 0:
+                    raise ValueError("'weibull' distribution requires minimum > 0 ")
+                    if self.min_ is not None: 
+                        if self.max_ < self.min_:
+                            raise ValueError("'weibull' distribution requires max > min and max > 0")
+                if self.max_ < 0.00005:
+                    raise ValueError("'weibull' distribution requires maximum > .000025 (25 microns)")
 
     def set_values(self, np_array):
         """
@@ -186,6 +201,21 @@ class ValuesFromDistBase(object):
         elif self.distribution == 'weibull':
             np_array[:] = (self.lambda_ *
                            np.random.weibull(self.alpha, len(np_array)))
+            if self.min_ is not None and self.max_ is not None:
+                for x in range(len(np_array)):
+                    while np_array[x] < self.min_ or np_array[x] > self.max_:
+                        #print (x,np_array[x])
+                        np_array[x] = self.lambda_ * np.random.weibull(self.alpha)
+            elif self.min_ is not None:
+                for x in range(len(np_array)):
+                    while np_array[x] < self.min_:
+                        #print (x,np_array[x])
+                        np_array[x] = self.lambda_ * np.random.weibull(self.alpha)
+            elif self.max_ is not None:
+                for x in range(len(np_array)):
+                    while np_array[x] > self.max_:
+                        #print (x,np_array[x])
+                        np_array[x] = self.lambda_ * np.random.weibull(self.alpha)
 
 
 class InitRiseVelFromDist(ValuesFromDistBase):
@@ -216,6 +246,8 @@ class InitRiseVelFromDist(ValuesFromDistBase):
             numpy.random.weibull distribution
         :param lambda_: the scale parameter for the distribution - required for
             2-parameter weibull distribution (Rosin-Rammler). Default is 1.
+        :param min_: optional lower end cutoff in meters for weibull distribution (100 microns)
+        :param max_: optional upper end cutoff in meters for weibull distribution (4 mm ?)
         """
 
         super(InitRiseVelFromDist, self).__init__(distribution=distribution,
@@ -267,6 +299,8 @@ class InitRiseVelFromDropletSizeFromDist(ValuesFromDistBase):
             numpy.random.weibull distribution
         :param lambda_: the scale parameter for the distribution - required for
             2-parameter weibull distribution (Rosin-Rammler). Default is 1.
+        :param min_: optional lower end cutoff in meters for weibull distribution (100 microns)
+        :param max_: optional upper end cutoff in meters for weibull distribution (4 mm ?)
 
         :param water_density: 1020.0 [kg/m3]
         :type water_density: float
@@ -306,7 +340,7 @@ class InitRiseVelFromDropletSizeFromDist(ValuesFromDistBase):
 
 
 class ElementType(object):
-    def __init__(self, initializers, substance='oil_conservative'):
+    def __init__(self, initializers, substance='oil_conservative', density=None, density_units='kg/m^3'):
         """
         Define initializers for the type of elements
 
@@ -320,10 +354,14 @@ class ElementType(object):
             variable to it: self.oil_props = oil
         :type substance: either str, or oillibrary.models.Oil object or
             gnome.spill.OilProps
+        :param density=None: Allow user to set oil density directly.
+        :param density_units='kg/m^3: Only used if a density is input.
         """
         self.initializers = initializers
         if isinstance(substance, basestring):
             self.substance = OilProps(substance)
+            if density is not None:
+                self.substance.set_density(density,density_units)
         else:
             # assume object passed in is duck typed to be same as OilProps
             self.substance = substance
@@ -350,7 +388,7 @@ def floating(windage_range=(.01, .04), windage_persist=900):
     return ElementType({'windages': InitWindages(windage_range,
                                                  windage_persist)})
 
-def plume(distribution_type='droplet_size', distribution='weibull', windage_range=(.01, .04), windage_persist=900, **kwargs):
+def plume(distribution_type='droplet_size', distribution='weibull', windage_range=(.01, .04), windage_persist=900, substance='oil_conservative', density = None, density_units = 'kg/m^3', **kwargs):
     """
     Helper function returns an ElementType object containing 'rise_vel' and 'windages'
     initializer with user specified parameters for distribution.
@@ -359,12 +397,12 @@ def plume(distribution_type='droplet_size', distribution='weibull', windage_rang
         return ElementType({'rise_vel': InitRiseVelFromDropletSizeFromDist(distribution=distribution,
                                                  **kwargs),
                                                  'windages': InitWindages(windage_range,windage_persist),
-                                                 'mass': InitMassFromVolume()})
+                                                 'mass': InitMassFromVolume()},substance,density,density_units)
     elif distribution_type == 'rise_velocity':
         return ElementType({'rise_vel': InitRiseVelFromDist(distribution=distribution,
                                                  **kwargs),
                                                  'windages': InitWindages(windage_range,windage_persist),
-                                                 'mass': InitMassFromVolume()})
+                                                 'mass': InitMassFromVolume()},substance,density,density_units)
 
 def plume_from_model(distribution_type='droplet_size', distribution='weibull', windage_range=(.01, .04), windage_persist=900, **kwargs):
     """
