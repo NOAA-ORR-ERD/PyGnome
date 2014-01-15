@@ -287,6 +287,8 @@ class RasterMap(GnomeMap):
 
         :param refloat_halflife: The halflife for refloating off land
                                  -- assumed to be the same for all land.
+                                 0.0 means all refloat every time step
+                                 < 0.0 means never re-float.
         :type refloat_halflife: float. Units are hours
 
         :param bitmap_array: A numpy array that stores the land-water map
@@ -329,6 +331,24 @@ class RasterMap(GnomeMap):
     @refloat_halflife.setter
     def refloat_halflife(self, value):
         self._refloat_halflife = value * 3600.0  # convert to seconds
+
+    def save_as_image(self, filename):
+        """
+        Save the land-water raster as a PNG save_as_image
+
+        :param filename: the name of teh file to dave to.
+        """
+
+        from PIL import Image 
+        bitmap = self.bitmap.copy()
+        #change anyting not zero to 255 - to get black and white
+        np.putmask(bitmap, self.bitmap > 0, 255)
+        im = Image.fromarray(bitmap, mode='L')
+        # to get it oriented right...
+        im = im.transpose(Image.ROTATE_90)
+        im = im.transpose(Image.FLIP_TOP_BOTTOM)
+        im.save(filename, format='PNG')
+
 
     def _on_land_pixel(self, coord):
         """
@@ -483,7 +503,7 @@ class RasterMap(GnomeMap):
             return
 
         if self._refloat_halflife > 0.0:
-
+            #if 0.0, then r_idx is all of them -- they will all refloat.
             # refloat particles based on probability
 
             refloat_probability = 1.0 - 0.5 ** (float(time_step)
@@ -496,6 +516,10 @@ class RasterMap(GnomeMap):
             # refloat, maybe call it stay_on_land_probability
 
             r_idx = r_idx[np.where(rnd <= refloat_probability)[0]]
+
+        elif self._refloat_halflife < 0.0:
+            r_idx = np.array((), np.bool) # fake for nothing gets refloated.
+
 
         if r_idx.size > 0:
 
@@ -600,9 +624,6 @@ class MapFromBNA(RasterMap, serializable.Serializable):
         :type id: string
         """
 
-                                    # hours
-                                           # default to 1MB raster
-        # self.filename = os.path.abspath(filename)
 
         self.filename = filename
         polygons = haz_files.ReadBNA(filename, 'PolygonSet')
@@ -651,7 +672,7 @@ class MapFromBNA(RasterMap, serializable.Serializable):
         h = int(raster_size / w)
 
         canvas = map_canvas.BW_MapCanvas((w, h),
-                land_polygons=just_land)
+                                         land_polygons=just_land)
         canvas.draw_background()
 
         # canvas.save_background("raster_map_test.png")
