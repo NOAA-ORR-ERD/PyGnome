@@ -152,6 +152,7 @@ def get_oil(oil_name):
             raise ex
 
 
+
 class OilProps(object):
     """
     Class gets the oil properties, specifically, it 
@@ -199,3 +200,20 @@ class OilProps(object):
         # lets return API in correct units
         return unit_conversion.convert('Density', 'API degree', units,
                 self.oil.api)
+
+class OilPropsFromDensity(OilProps):
+    ## to call: OilPropsFRomDensity(name, density)
+    def __init__ (self, name, density, units='API'):
+        """
+        :param name: name of oil
+        :param density: density of oil 
+        :param units='API': units of density -- only 'API' supported for now. 
+
+        """
+        if units != 'API':
+            raise NotImplimentedError("need to add unit conversion code, only API for now")
+        self.oil = Oil(**{'Oil Name': 'oil_diesel',
+                          'API':density} )
+
+
+        
