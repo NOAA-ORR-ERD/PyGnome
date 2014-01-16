@@ -113,9 +113,6 @@ class MapCanvas(object):
 
         self._land_polygons = land_polygons
         self.map_BB = kwargs.pop('map_BB', None)
-        print "self.map_BB"
-        print self.map_BB
-        print self.land_polygons
 
         if self.map_BB is None:
             if self.land_polygons is None:

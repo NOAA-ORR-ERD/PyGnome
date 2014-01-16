@@ -152,7 +152,6 @@ def get_oil(oil_name):
             raise ex
 
 
-
 class OilProps(object):
     """
     Class gets the oil properties, specifically, it 
@@ -223,16 +222,28 @@ class OilProps(object):
 
 class OilPropsFromDensity(OilProps):
     ## to call: OilPropsFRomDensity(name, density)
-    def __init__ (self, name, density, units='API'):
+    def __init__ (self, density, name='user_oil', units='kg/m^3'):
         """
         :param name: name of oil
         :param density: density of oil 
-        :param units='API': units of density -- only 'API' supported for now. 
+        :param units='API': units of density 
 
         """
+        if density is None:
+            raise ValueError("Density value required")
+
+        if units not in self.valid_density_units:
+            raise unit_conversion.InvalidUnitError("Desired density units"\
+                " must be from following list to be valid: {0}".\
+                format(self.valid_density_units))
+
         if units != 'API':
-            raise NotImplimentedError("need to add unit conversion code, only API for now")
-        self.oil = Oil(**{'Oil Name': 'oil_diesel',
-                          'API':density} )
+            api = unit_conversion.convert('Density', units, 'API Degree',
+                density)   
+        else:
+            api = density
+
+        self.oil = Oil(**{'Oil Name': name,
+                          'API':api} )
 
 

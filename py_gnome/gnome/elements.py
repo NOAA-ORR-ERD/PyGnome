@@ -10,7 +10,7 @@ import numpy as np
 
 from gnome.utilities.rand import random_with_persistance
 from gnome.cy_gnome.cy_rise_velocity_mover import rise_velocity_from_drop_size
-from gnome.db.oil_library.oil_props import OilProps
+from gnome.db.oil_library.oil_props import (OilProps, OilPropsFromDensity)
 """
 Initializers for various element types
 """
@@ -340,7 +340,7 @@ class InitRiseVelFromDropletSizeFromDist(ValuesFromDistBase):
 
 
 class ElementType(object):
-    def __init__(self, initializers, substance='oil_conservative', density=None, density_units='kg/m^3'):
+    def __init__(self, initializers, substance='oil_conservative'):
         """
         Define initializers for the type of elements
 
@@ -359,9 +359,7 @@ class ElementType(object):
         """
         self.initializers = initializers
         if isinstance(substance, basestring):
-            self.substance = OilProps(substance)
-            if density is not None:
-                self.substance.set_density(density,density_units)
+            self.substance = OilProps(substance)	#leave for now to preserve tests
         else:
             # assume object passed in is duck typed to be same as OilProps
             self.substance = substance
@@ -388,21 +386,26 @@ def floating(windage_range=(.01, .04), windage_persist=900):
     return ElementType({'windages': InitWindages(windage_range,
                                                  windage_persist)})
 
-def plume(distribution_type='droplet_size', distribution='weibull', windage_range=(.01, .04), windage_persist=900, substance='oil_conservative', density = None, density_units = 'kg/m^3', **kwargs):
+def plume(distribution_type='droplet_size', distribution='weibull', windage_range=(.01, .04), windage_persist=900, substance_name='oil_conservative', density = None, density_units = 'kg/m^3', **kwargs):
     """
     Helper function returns an ElementType object containing 'rise_vel' and 'windages'
     initializer with user specified parameters for distribution.
     """ 
+    if density is not None:
+        substance = OilPropsFromDensity(density,substance_name,density_units)
+    else:
+        substance = OilProps(substance_name)
+        
     if distribution_type == 'droplet_size':
         return ElementType({'rise_vel': InitRiseVelFromDropletSizeFromDist(distribution=distribution,
                                                  **kwargs),
                                                  'windages': InitWindages(windage_range,windage_persist),
-                                                 'mass': InitMassFromVolume()},substance,density,density_units)
+                                                 'mass': InitMassFromVolume()},substance)
     elif distribution_type == 'rise_velocity':
         return ElementType({'rise_vel': InitRiseVelFromDist(distribution=distribution,
                                                  **kwargs),
                                                  'windages': InitWindages(windage_range,windage_persist),
-                                                 'mass': InitMassFromVolume()},substance,density,density_units)
+                                                 'mass': InitMassFromVolume()},substance)
 
 def plume_from_model(distribution_type='droplet_size', distribution='weibull', windage_range=(.01, .04), windage_persist=900, **kwargs):
     """

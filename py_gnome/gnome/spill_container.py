@@ -247,6 +247,7 @@ class SpillContainer(SpillContainerData):
             'status_codes': gnome.array_types.status_codes,
             'spill_num': gnome.array_types.spill_num,
             'id': gnome.array_types.id,
+            'rise_vel': gnome.array_types.rise_vel,
             'mass': gnome.array_types.mass,
             'age': gnome.array_types.age}
         self._data_arrays = {}

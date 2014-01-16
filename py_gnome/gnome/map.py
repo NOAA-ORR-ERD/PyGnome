@@ -336,7 +336,7 @@ class RasterMap(GnomeMap):
         """
         Save the land-water raster as a PNG save_as_image
 
-        :param filename: the name of teh file to dave to.
+        :param filename: the name of the file to save to.
         """
 
         from PIL import Image 
