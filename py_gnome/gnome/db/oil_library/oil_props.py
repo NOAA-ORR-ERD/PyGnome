@@ -178,9 +178,11 @@ class OilProps(object):
         """
         self.oil = get_oil(oil_)
 
-    name = property(lambda self: self.oil.name)
-    density = property(lambda self: self.get_density())
-
+    name = property(lambda self: self.oil.name,
+                       lambda self, val: setattr(self.oil,'name',val))
+    density = property(lambda self: self.get_density(),
+                       lambda self, val: self.set_density(val))
+                       
     def get_density(self, units='kg/m^3'):
         """
         :param units=kg/m^3: optional input if output units should be
@@ -200,6 +202,24 @@ class OilProps(object):
         # lets return API in correct units
         return unit_conversion.convert('Density', 'API degree', units,
                 self.oil.api)
+                
+    def set_density(self, density, units='kg/m^3'):
+        """
+        :param units=kg/m^3: optional input if input units should be
+            something other than kg/m^3
+        """
+
+        if density is None:
+            raise ValueError("Density value required")
+
+        if units not in self.valid_density_units:
+            raise unit_conversion.InvalidUnitError("Desired density units"\
+                " must be from following list to be valid: {0}".\
+                format(self.valid_density_units))
+
+        # density is stored as api 
+        self.oil.api = unit_conversion.convert('Density', units, 'API Degree',
+                density)   
 
 class OilPropsFromDensity(OilProps):
     ## to call: OilPropsFRomDensity(name, density)
@@ -216,4 +236,3 @@ class OilPropsFromDensity(OilProps):
                           'API':density} )
 
 
-        

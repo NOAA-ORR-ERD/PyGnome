@@ -81,8 +81,6 @@ class PlumeGenerator(object):
 
         self.plume = plume
 
-        self.accum_mass = np.zeros_like(self.plume.mass_flux)
-
         # Here we just calculate a reasonable value for the mass
         # that is contained in a single LE.
         # This may not be a good assumption, as other things may be
@@ -106,6 +104,18 @@ class PlumeGenerator(object):
                 self.time_steps /= self._time_step_delta
             else:
                 self.time_steps = None
+
+    def _seconds_from_beginning(self, time):
+        '''
+          qualify our time value and return total number
+          of seconds from release time to the specified time
+        '''
+        if time < self.release_time:
+            time = self.release_time
+        elif self.end_release_time is not None and time > self.end_release_time:
+            time = self.end_release_time
+
+        return (time - self.release_time).total_seconds()
 
     def set_le_mass_from_total_le_count(self, num_elements):
         # Calculate the mass of an LE if a total number of LEs
@@ -131,31 +141,37 @@ class PlumeGenerator(object):
         '''
         return elems * self.mass_of_an_le
 
-    def _xfer_mass_to_elems(self):
+    def elems_from_beginning(self, time):
         '''
-          Transfer mass into an equivalent number of LEs and return them.
+          returns the number of LEs released from release_time to the
+          specified time
         '''
-        tmp_elems = self._mass_to_elems(self.accum_mass)
-        self.accum_mass -= self._elems_to_mass(tmp_elems)
-    
-        return tmp_elems
+        seconds = self._seconds_from_beginning(time)
+        mass = self.plume.mass_flux * seconds
+        return self._mass_to_elems(mass)
+
+    def elems_in_range(self, begin, end):
+        return self.elems_from_beginning(end) - self.elems_from_beginning(begin)
 
     def __iter__(self):
-        self.accum_mass.fill(0.)
         if self.time_steps is not None:
             for step in range(long(self.time_steps)):
-                self.accum_mass += self.plume.mass_flux * self.time_step_delta
-                curr_step_time = self.release_time + timedelta(seconds=self.time_step_delta * step)
-                yield (curr_step_time,
-                       zip(self.plume.coords, self._xfer_mass_to_elems()))
+                curr_time = self.release_time + timedelta(seconds=self.time_step_delta * step)
+                next_time = curr_time + timedelta(seconds=self.time_step_delta)
+                yield (curr_time,
+                       zip(self.plume.coords, self.elems_in_range(curr_time,
+                                                                  next_time))
+                       )
         else:
             step = 0
             while True:
-                self.accum_mass += self.plume.mass_flux * self.time_step_delta
-                curr_step_time = self.release_time + timedelta(seconds=self.time_step_delta * step)
+                curr_time = self.release_time + timedelta(seconds=self.time_step_delta * step)
+                next_time = curr_time + timedelta(seconds=self.time_step_delta)
                 step += 1
-                yield (curr_step_time,
-                       zip(self.plume.coords, self._xfer_mass_to_elems()))
+                yield (curr_time,
+                       zip(self.plume.coords, self.elems_in_range(curr_time,
+                                                                  next_time))
+                       )
 
 
 if __name__ == '__main__':
