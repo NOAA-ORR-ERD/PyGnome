@@ -7,18 +7,35 @@ np = numpy
 
 class IArray(object):
     '''
-       New interpolated array based on numpy
+       An interpolated array based on numpy
+       This contains some added functionality from the standard np.interp() method
     '''
     def __init__(self, points, left=None, right=None, method='linear'):
+        '''
+           :param points: point data that we would like to interpolate
+           :type points: Sequence of 2-tuple items ((x, y),
+                                                    ...
+                                                    )
+           :param left: Value to return for i < x[0], default is y[0].
+           :param right: Value to return for i > x[-1], default is y[-1].
+           :param method: interpolation method to use.
+           :type method: a string in {'linear', 'nearest', 'leftmost', 'rightmost'}
+        '''
         self.points = sorted(points)
         self.x = np.array([p[0] for p in self.points])
         self.y = np.array([p[1] for p in self.points])
         self.left = left
         self.right = right
-        self.method = method
+
+        methods = {'linear': self.interp,
+                   'nearest': self.nearest,
+                   'leftmost': self.leftmost,
+                   'rightmost': self.rightmost
+                   }
+        self.method = methods[method]
 
     def _get_bounding(self, coords):
-        if self.method == 'leftmost':
+        if self.method == self.leftmost:
             rightside = np.searchsorted(self.x, coords, side='right')
         else:
             rightside = np.searchsorted(self.x, coords)
@@ -59,19 +76,10 @@ class IArray(object):
         return self.y[rightside]
 
     def interp(self, coords):
-        if self.method == 'linear':
-            return np.interp(coords, self.x, self.y, self.left, self.right)
-        elif self.method == 'nearest':
-            return self.nearest(coords)
-        elif self.method == 'leftmost':
-            return self.leftmost(coords)
-        elif self.method == 'rightmost':
-            return self.rightmost(coords)
-        else:
-            raise RuntimeError('Method "{0}" is not known'.format(self.method))
+        return np.interp(coords, self.x, self.y, self.left, self.right)
     
     def __getitem__(self, coords):
-        return self.interp(coords)
+        return self.method(coords)
 
 
 if __name__ == '__main__':
