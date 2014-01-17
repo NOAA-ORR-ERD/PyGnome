@@ -58,9 +58,6 @@ class TestRandomVertical:
         print self.cm.delta.view(dtype=np.float64).reshape(-1, 3)
         assert np.all(self.cm.delta['z'] != 0)
 
-        # assert np.all(self.cm.delta['lat'] != 0)
-        # assert np.all(self.cm.delta['long'] != 0)
-
     def test_zero_coef(self):
         """
         ensure no move for 0 vertical diffusion coefficient
@@ -127,7 +124,6 @@ class TestRandomVertical:
         print newer_delta.view(dtype=np.float64).reshape(-1, 3)
         print
 
-       # assert np.all(new_delta['z'] == newer_delta['z'])
         msg = r"{0} move is not within a tolerance of {1}"
         tol = 1e-10
         np.testing.assert_allclose(
@@ -171,9 +167,6 @@ class TestRandomVertical:
         print self._diff(delta, new_delta).reshape(-1, 1)
 
         assert np.all(delta['z'] != new_delta['z'])
-
-        # assert np.all(delta['lat'] != new_delta['lat'])
-        # assert np.all(delta['long'] != new_delta['long'])
 
         self.rm.vertical_diffusion_coef_above_ml = 5  # reset it
 
