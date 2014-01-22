@@ -444,7 +444,7 @@ extensions.append(Extension("gnome.utilities.geometry.cy_point_in_polygon",
                   )
 
 setup(name='pyGnome',
-      version='alpha',
+      version=gnome.__version__,
       requires=['numpy'],
       cmdclass={'build_ext': build_ext},
       ext_modules=extensions

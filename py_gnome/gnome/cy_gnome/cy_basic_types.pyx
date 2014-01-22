@@ -18,7 +18,7 @@ def enum(**enums):
     also append two more attributes called:
       _attr - contains the list of keywords in the input
       _int - contains the list of int values for this enum
-    These can be helpful for error checking
+    These are in the same order, and can be helpful for error checking, etc
     """
     enums.update({'_attr':enums.keys(),'_int':enums.values()})    # append keys and int to dict
     return type('Enum', (), enums)  

@@ -16,6 +16,56 @@ from gnome.basic_types import oil_status
 from gnome.outputter import Outputter
 from gnome.utilities import serializable, time_utils
 
+## Big dict that stores the attributes for the standard data arrays in the output
+var_attributes = {'time': {'long_name':'time since the beginning of the simulation',
+                           'standard_name':'time',
+                           'calendar':'gregorian',
+                           'standard_name':'time',
+                           'comment':'unspecified time zone',
+                           #units will get set based on data
+                           },
+                  'particle_count': {'units':'1',
+                                     'long_name':'number of particles in a given timestep',
+                                     'ragged_row_count':'particle count at nth timestep',
+                                     },
+                  'longitude': {'long_name':'longitude of the particle',
+                                'standard_name':'longitude',
+                                'units':'degrees_east',
+                            },
+                  'latitude': {'long_name':'latitude of the particle',
+                               'standard_name':'latitude',
+                               'units':'degrees_north',
+                              },
+                  'depth': {'long_name':'particle depth below sea surface',
+                            'standard_name':'depth',
+                            'units':'meters',
+                            'axis':'z positive down',
+                            },
+                  'mass': {'long_name':'mass of particle',
+                           'units':'grams',
+                           },
+                  'age': {'long_name':'age of particle from time of release',
+                          'units':'seconds',
+                          },
+                  'status_codes': {'long_name':'particle status code',
+                                   'flag_values': " ".join([ "%i" for i in oil_status._int]),
+                                   'flag_meanings': " ".join ( [ "%i: %s"%pair for pair in sorted(zip(basic_types.oil_status._int,
+                                                      basic_types.oil_status._attr) ) ] )
+                                  },
+                  'id': {'long_name':'particle ID',
+                        },
+                  'spill_num': {'long_name':'spill to which the particle belongs',
+
+                  'droplet_diameter': {'long_name': 'diameter of oil droplet class',
+                                       'units': 'meters'
+                                      }
+                  'rise_vel': {'long_name': 'rise velocity of oil droplet class',
+                                            'units': 'm s-1'}
+                  'next_positions':{},
+                  'last_water_positions':{},
+                  }
+}
+
 
 class NetCDFOutput(Outputter, serializable.Serializable):
 
@@ -28,128 +78,71 @@ class NetCDFOutput(Outputter, serializable.Serializable):
 
     >>> model = gnome.model.Model(...)
     >>> model.outputters += gnome.netcdf_outputter.NetCDFOutput(
-                os.path.join(base_dir,'sample_model.nc'), all_data=True)
+                os.path.join(base_dir,'sample_model.nc'), which_data='most')
 
-    'all_data' flag is used to either output all the data arrays defined in
-    model.spills or only the standard data.
+    `which_data` flag is used to set which data to add to the netcdf file:
+        'standard' : teh basic stuff most people would want
+        'most': everything the model is tracking except the for-internal-use only arrays
+        'all': eveything tracked by teh model (mostly used for diagnosticts of save files)
 
 
     .. note::
-       cf_attributes and data_vars are static members. cf_attributes is a dict
+       cf_attributes is a class attribute: a dict
        that contains the global attributes per CF convention
-       data_vars is a dict used to define NetCDF variables.
-       There is also a list called 'standard_data'. Since the names of the
-       netcdf variables are different from the names in the SpillContainer
-       data_arrays, this simply lists the names of data_arrays that are part of
-       standard data. When writing 'all_data', these data arrays are skipped.
+       
+       The attribute: `.arrays_to_output` is a list of the data arrays that will be
+       added to the netcdf file. array names may be added to or removed from
+       this list before a model run to customize what gets output:
+           `the_netcdf_outputter.arrays_to_output.append['rise_vel']`
+       
+       Since some of the names of the netcdf variables are different from the
+       names in the SpillContainer data_arrays, this list uses the netcdf names
 
     """
 
-    cf_attributes = {
-        'comment': 'Particle output from the NOAA PyGnome model',
-        'source': 'PyGnome version x.x.x',
-        'references': 'TBD',
-        'feature_type': 'particle_trajectory',
-        'institution': 'NOAA Emergency Response Division',
-        'conventions': 'CF-1.6',
-        }
+    cf_attributes = {'comment': 'Particle output from the NOAA PyGnome model',
+                     'source': 'PyGnome version %s'%gnome.__version__,
+                     'references': 'TBD',
+                     'feature_type': 'particle_trajectory',
+                     'institution': 'NOAA Emergency Response Division',
+                     'conventions': 'CF-1.6',
+                     }
 
-    data_vars = OrderedDict()
-    var = OrderedDict()
+    ## the set of arrays we usually output -- i.e. the default
+    standard_arrays = ['latitude',
+                       'longitude', # these are pulled from the 'positions' array
+                       'depth',
+                       'status_codes',
+                       'spill_num',
+                       'id',
+                       'mass',
+                       'age',
+                       ]
 
-    # longitude
-
-    var['dtype'] = np.float32
-    var['long_name'] = 'longitude of the particle'
-    var['units'] = 'degrees_east'
-    data_vars['longitude'] = copy.deepcopy(var)
-
-    # latitude
-
-    var['long_name'] = 'latitude of the particle'
-    var['units'] = 'degrees_north'
-    data_vars['latitude'] = copy.deepcopy(var)
-
-    # latitude
-
-    var['long_name'] = 'particle depth below sea surface'
-    var['units'] = 'meters'
-    var['axis'] = 'z positive down'
-    data_vars['depth'] = copy.deepcopy(var)
-
-    # mass - is this part of standard output?
-
-    var.clear()
-    var['dtype'] = np.float32
-    var['units'] = 'grams'
-    data_vars['mass'] = copy.deepcopy(var)
-
-    # age
-
-    var.clear()
-    var['dtype'] = np.int32
-    var['long_name'] = 'from age at time of release'
-    var['units'] = 'seconds'
-    data_vars['age'] = copy.deepcopy(var)
-
-    # status
-    # todo: update to read status flag from basic_types.oil_status
-
-    var['long_name'] = 'particle status flag'
-    var['valid_range'] = [0, 10]
-    var['flag_values'] = ([oil_status.in_water, oil_status.on_land,
-                           oil_status.off_maps, oil_status.evaporated], )
-    var['flag_meanings'] = \
-        '{0}:in_water {1}:on_land {2}:off_maps {3}:evaporated'.format(
-                                    oil_status.in_water, oil_status.on_land,
-                                    oil_status.off_maps, oil_status.evaporated)
-    data_vars['status'] = copy.deepcopy(var)
-
-    # id - id of particle
-
-    var.clear()
-    var['dtype'] = np.uint32
-    var['long_name'] = 'particle ID'
-    var['units'] = '1'
-    data_vars['id'] = copy.deepcopy(var)
-
-    # spill_num - spill to which the particle belongs
-
-    var.clear()
-    var['dtype'] = np.uint8
-    var['long_name'] = 'spill to which the particle belongs'
-    var['units'] = '1'
-    data_vars['spill_num'] = copy.deepcopy(var)
-
-    del var  # only used during initialization - no need to keep around
-
-    # This is data that has already been written in standard format
-
-    standard_data = [
-        'positions',
-        'current_time_stamp',
-        'status_codes',
-        'spill_num',
-        'id',
-        'mass',
-        'age',
-        ]
-
-    # these keys have same names in numpy data_arrays and netcdf variable names
-    _same_keynames = ['spill_num', 'id', 'mass', 'age']
+    ## the list of arrays that we usually don't want -- i.e. for internal use
+    ## these will get skipped if "most" is asked for
+    ## "all" will output everything.
+    usually_skipped_arrays = ['next_positions',
+                              'last_water_positions',
+                              'windages',
+                              'windage_range',
+                              'windage_persist',
+                              ]
 
     # define state for serialization
 
     state = copy.deepcopy(serializable.Serializable.state)
-    state.add_field([  # data file should not be moved to save file location!
-        serializable.Field('netcdf_filename', create=True,
-                           update=True),
-        serializable.Field('all_data', create=True, update=True),
-        #serializable.Field('netcdf_format', create=True, update=True),
-        serializable.Field('compress', create=True, update=True),
-        serializable.Field('_start_idx', create=True),
-        serializable.Field('_middle_of_run', create=True),
-        ])
+
+    # data file should not be moved to save file location!
+    state.add_field([ serializable.Field('netcdf_filename',
+                                          create=True,
+                                          update=True),
+                      serializable.Field('which_data', create=True, update=True),
+                      #serializable.Field('netcdf_format', create=True, update=True),
+                      serializable.Field('compress', create=True, update=True),
+                      serializable.Field('_start_idx', create=True),
+                      serializable.Field('_middle_of_run', create=True),
+                      ])
 
     @classmethod
     def new_from_dict(cls, dict_):
@@ -170,17 +163,14 @@ class NetCDFOutput(Outputter, serializable.Serializable):
         obj._start_idx = _start_idx
         return obj
 
-    def __init__(
-        self,
-        netcdf_filename,
-        all_data=False,
-        compress=True,
-        id=None,
-        **kwargs
-        ):
+    def __init__(self,
+                 netcdf_filename,
+                 which_data='standard', # options are 'standard', 'most', 'all'
+                 compress=True,
+                 id=None,
+                 **kwargs
+                 ):
         """
-        .. function:: __init__(netcdf_filename, cache=None, all_data=False,
-                               id=None)
 
         Constructor for Net_CDFOutput object. It reads data from cache and
         writes it to a NetCDF4 format file using the CF convention
@@ -188,14 +178,16 @@ class NetCDFOutput(Outputter, serializable.Serializable):
         :param netcdf_filename: Required parameter. The filename in which to
             store the NetCDF data.
         :type netcdf_filename: str. or unicode
-        :param all_data: If true, write all data to NetCDF, otherwise write
+        
+        :param which_data: If true, write all data to NetCDF, otherwise write
             only standard data. Default is False.
-        :type all_data: bool
-        :param id: Unique Id identifying the newly created mover (a UUID as a
+        :type which_data: string, one of: 'standard', 'most', 'all'
+        
+        :param id: Unique Id identifying the newly created object (a UUID as a
             string). This is used when loading an object from a persisted
             state. User should never have to set this.
 
-        Optional arguments (kwargs):
+        Optional arguments passed on to base class (kwargs):
 
         :param cache: sets the cache object from which to read data. The model
             will automatically set this param
@@ -226,7 +218,8 @@ class NetCDFOutput(Outputter, serializable.Serializable):
         # prepare_for_model_run
         self._middle_of_run = False
 
-        self.all_data = all_data
+        self._which_data = which_data
+        self.arrays_to_output = copy.copy(self.standard_arrays)
 
         # this is only updated in prepare_for_model_run if all_data is True
         self.arr_types = None
@@ -271,16 +264,19 @@ class NetCDFOutput(Outputter, serializable.Serializable):
             self._netcdf_filename = new_name
 
     @property
-    def all_data(self):
-        return self._all_data
+    def which_data(self):
+        return self._which_data
 
-    @all_data.setter
-    def all_data(self, value):
+    @which_data.setter
+    def which_data(self, value):
         if self.middle_of_run:
             raise AttributeError('This attribute cannot be changed in the'
                                  ' middle of a run')
         else:
-            self._all_data = value
+            if value not in ('standard', 'most', 'all'):
+                raise ValueError("which_data must be one of: 'standard', 'most', 'all'")
+            else:
+                self._which_data = value
 
     @property
     def compress(self):
@@ -356,11 +352,12 @@ class NetCDFOutput(Outputter, serializable.Serializable):
             on whether uncertainty is on or off. If this is True then a
             uncertain data is written to netcdf_filename + '_uncertain.nc'
         :type uncertain: bool
-        :param spills: If 'all_data' flag is True, then model must provide the
-            model.spills object (SpillContainerPair object) so NetCDF variables
-            can be defined for the remaining data arrays. If spills is None,
-            but all_data flag is True, a ValueError will be raised. It does not
-            make sense to write 'all_data' but not provide 'model.spills'.
+        :param spills: If 'which_data' flag is set to 'all' or 'most', then model
+            must provide the model.spills object (SpillContainerPair object) so
+            NetCDF variables can be defined for the remaining data arrays. If
+            spills is None, but which_data flag is 'all' or 'most', a ValueError
+            will be raised. It does not make sense to write 'all' or 'most' but
+            not provide 'model.spills'.
         :type spills: gnome.spill_container.SpillContainerPair object.
 
         .. note::
@@ -375,10 +372,10 @@ class NetCDFOutput(Outputter, serializable.Serializable):
         super(NetCDFOutput, self).prepare_for_model_run(model_start_time,
                 cache, **kwargs)
 
-        if self.all_data and spills is None:
-            raise ValueError("'all_data' flag is True, however spills is None."
+        if ( self.which_data in ('all', 'most') ) and spills is None:
+            raise ValueError("'which_data' flag is '%s', however spills is None."
                 " Please provide valid model.spills so we know which"
-                " additional data to write.")
+                " additional data to write."%self.which_data)
 
         self._uncertain = uncertain
 
@@ -440,7 +437,7 @@ class NetCDFOutput(Outputter, serializable.Serializable):
                     [setattr(var, key2, val2) for (key2, val2) in
                      val.iteritems() if key2 != 'dtype']
 
-                if self.all_data:
+                if self.which_data in ('all', 'most'):
                     rootgrp.createDimension('world_point', 3)
                     self.arr_types = dict()
 
@@ -529,7 +526,7 @@ class NetCDFOutput(Outputter, serializable.Serializable):
 
                 # write remaining data
 
-                if self.all_data:
+                if self.which_data in ('all', 'most'):
                     for (key, val) in self.arr_types.iteritems():
                         if len(val.shape) == 0:
                             rootgrp.variables[key][self._start_idx:
