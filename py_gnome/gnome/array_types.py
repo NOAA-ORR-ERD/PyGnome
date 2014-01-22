@@ -141,6 +141,7 @@ _default_values = \
      'windage_range': ((2,), np.float64, (0., 0.)),
      'windage_persist': ((), np.int, 0),
      'rise_vel': ((), np.float64, 0.),
+     'droplet_diameter': ((), np.float64, 0.),
      'age': ((), np.int32, 0)
      }
 
@@ -173,6 +174,3 @@ def reset_to_defaults(names=_at_names):
             obj.dtype = _default_values[item[0]][1]
             obj.initial_value = _default_values[item[0]][2]
 
-
-## TODO: Find out if this is still required?
-# water_currents = ArrayType( (3,), basic_types.water_current_type)

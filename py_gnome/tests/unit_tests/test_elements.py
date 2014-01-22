@@ -13,7 +13,9 @@ import pytest
 
 from gnome.array_types import (windages, windage_range, windage_persist,
                                mass,
-                               rise_vel)
+                               rise_vel,
+                               droplet_diameter)
+
 from gnome.elements import (InitWindages,
                             InitMassFromVolume,
                             InitRiseVelFromDist,
@@ -34,6 +36,8 @@ windages = {'windages': windages,
             'windage_persist': windage_persist}
 mass_array = {'mass': mass}
 rise_vel_array = {'rise_vel': rise_vel}
+rise_vel_diameter_array = {'rise_vel': rise_vel,
+                           'droplet_diameter': droplet_diameter}
 num_elems = 10
 
 
@@ -63,7 +67,7 @@ def assert_dataarray_shape_size(arr_types, data_arrays, num_released):
                   rise_vel_array, None),
                  (InitRiseVelFromDropletSizeFromDist('normal',
                                                      mean=0, sigma=0.1),
-                  rise_vel_array, Spill())
+                  rise_vel_diameter_array, Spill())
                  ])
 def test_correct_particles_set_by_initializers(fcn, arr_types, spill):
     """
@@ -163,7 +167,7 @@ def test_initialize_InitRiseVelFromDropletDist_weibull():
     test initialize data_arrays with weibull dist
     """
     num_elems = 1000
-    data_arrays = mock_append_data_arrays(rise_vel_array, num_elems)
+    data_arrays = mock_append_data_arrays(rise_vel_diameter_array, num_elems)
     substance = OilProps('oil_conservative')
     spill = Spill()
 #     fcn = InitRiseVelFromDropletSizeFromDist('weibull',

@@ -270,8 +270,9 @@ class InitRiseVelFromDropletSizeFromDist(ValuesFromDistBase):
         """
         Set the droplet size from a distribution. Use the C++ get_rise_velocity
         function exposed via cython (rise_velocity_from_drop_size) to obtain
-        rise_velocity from droplet size. In this case, the droplet size is not
-        changing over time, so no data array for droplet size exists.
+        rise_velocity from droplet size. Even though the droplet size is not
+        changing over time, it is still stored in data array, as it can be
+        useful for post-processing (called 'droplet_diameter')
 
         Use distribution to define rise_vel - use super to invoke
         ValuesFromDistBase().__init__()
@@ -314,17 +315,18 @@ class InitRiseVelFromDropletSizeFromDist(ValuesFromDistBase):
 
     def initialize(self, num_new_particles, spill, data_arrays, substance):
         """
-        Update values of 'rise_vel' data array for new particles. First
-        create a droplet_size array sampled from specified distribution, then
-        use the cython wrapped (C++) function to set the 'rise_vel' based on
-        droplet size and properties like LE_density, water density and
-        water_viscosity:
+        Update values of 'rise_vel' and 'droplet_diameter' data arrays for
+        new particles. First create a droplet_size array sampled from specified
+        distribution, then use the cython wrapped (C++) function to set the
+        'rise_vel' based on droplet size and properties like LE_density,
+        water density and water_viscosity:
         gnome.cy_gnome.cy_rise_velocity_mover.rise_velocity_from_drop_size()
         """
         drop_size = np.zeros((num_new_particles, ), dtype=np.float64)
         le_density = np.zeros((num_new_particles, ), dtype=np.float64)
 
         self.set_values(drop_size)
+        data_arrays['droplet_diameter'][-num_new_particles:] = drop_size
         le_density[:] = substance.density
 
         # now update rise_vel with droplet size - dummy for now
@@ -386,7 +388,14 @@ def floating(windage_range=(.01, .04), windage_persist=900):
     return ElementType({'windages': InitWindages(windage_range,
                                                  windage_persist)})
 
-def plume(distribution_type='droplet_size', distribution='weibull', windage_range=(.01, .04), windage_persist=900, substance_name='oil_conservative', density = None, density_units = 'kg/m^3', **kwargs):
+def plume(distribution_type='droplet_size',
+          distribution='weibull',
+          windage_range=(.01, .04),
+          windage_persist=900,
+          substance_name='oil_conservative',
+          density = None,
+          density_units = 'kg/m^3',
+          **kwargs):
     """
     Helper function returns an ElementType object containing 'rise_vel' and 'windages'
     initializer with user specified parameters for distribution.
@@ -398,16 +407,20 @@ def plume(distribution_type='droplet_size', distribution='weibull', windage_rang
         
     if distribution_type == 'droplet_size':
         return ElementType({'rise_vel': InitRiseVelFromDropletSizeFromDist(distribution=distribution,
-                                                 **kwargs),
-                                                 'windages': InitWindages(windage_range,windage_persist),
-                                                 'mass': InitMassFromVolume()},substance)
+                                                                           **kwargs),
+                            'windages': InitWindages(windage_range,windage_persist),
+                            'mass': InitMassFromVolume()},substance)
     elif distribution_type == 'rise_velocity':
         return ElementType({'rise_vel': InitRiseVelFromDist(distribution=distribution,
-                                                 **kwargs),
-                                                 'windages': InitWindages(windage_range,windage_persist),
-                                                 'mass': InitMassFromVolume()},substance)
+                                                            **kwargs),
+                            'windages': InitWindages(windage_range,windage_persist),
+                            'mass': InitMassFromVolume()},substance)
 
-def plume_from_model(distribution_type='droplet_size', distribution='weibull', windage_range=(.01, .04), windage_persist=900, **kwargs):
+def plume_from_model(distribution_type='droplet_size',
+                     distribution='weibull',
+                     windage_range=(.01, .04),
+                     windage_persist=900,
+                     **kwargs):
     """
     Helper function returns an ElementType object containing 'rise_vel' and 'windages'
     initializer with user specified parameters for distribution.
@@ -415,10 +428,10 @@ def plume_from_model(distribution_type='droplet_size', distribution='weibull', w
     if distribution_type == 'droplet_size':
         return ElementType({'rise_vel': InitRiseVelFromDropletSizeFromDist(distribution=distribution,
                                                  **kwargs),
-                                                 'windages': InitWindages(windage_range,windage_persist),
-                                                 'mass': InitMassFromPlume()})
+                            'windages': InitWindages(windage_range,windage_persist),
+                            'mass': InitMassFromPlume()})
     elif distribution_type == 'rise_velocity':
         return ElementType({'rise_vel': InitRiseVelFromDist(distribution=distribution,
                                                  **kwargs),
-                                                 'windages': InitWindages(windage_range,windage_persist),
-                                                 'mass': InitMassFromPlume()})
+                            'windages': InitWindages(windage_range,windage_persist),
+                            'mass': InitMassFromPlume()})
