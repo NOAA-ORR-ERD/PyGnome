@@ -59,6 +59,79 @@ void GridWndMover::Dispose()
 }
 
 
+
+bool IsGridWindFile (vector<string> &linesInFile, short *selectedUnitsOut)
+{
+	long lineIdx = 0;
+	string currentLine;
+	
+	short selectedUnits = kUndefined;
+	string value1S, value2S;
+	char errmsg[256];
+	// First line, must start with '[GRIDCURTIME] <units>'
+	// <units> == the designation of units for the file.
+	currentLine = trim(linesInFile[lineIdx++]);
+	
+	istringstream lineStream(currentLine);
+	lineStream >> value1S >> value2S;
+	sprintf(errmsg,"values = %s,%s\n",value1S,value2S);
+	printNote(errmsg);
+	if (lineStream.fail())
+		return false;
+	
+	if (value1S != "[GRIDWIND]" && value1S != "[GRIDWINDTIME]")	
+		return false;
+	
+	selectedUnits = StrToSpeedUnits((char *)value2S.c_str());
+	if (selectedUnits == kUndefined)
+		return false;
+	
+	*selectedUnitsOut = selectedUnits;
+	
+	return true;
+}
+
+
+Boolean IsGridWindFile(char *path,short *selectedUnitsP)
+ { 
+	 Boolean	bIsValid = false;
+	 OSErr	err = noErr;
+	 long line;
+	 char	strLine [512];
+	 char	firstPartOfFile [512];
+	 long lenToRead,fileLength;
+	 short selectedUnits = kUndefined, numScanned;
+	 char unitsStr[64], gridwindStr[64];
+	 
+	 err = MyGetFileSize(0,0,path,&fileLength);
+	 if(err) return false;
+	 
+	 lenToRead = _min(512,fileLength);
+	 
+	 err = ReadSectionOfFile(0,0,path,0,lenToRead,firstPartOfFile,0);
+	 firstPartOfFile[lenToRead-1] = 0; // make sure it is a cString
+	 if (!err)
+	 {
+		 NthLineInTextNonOptimized (firstPartOfFile, line = 0, strLine, 512);
+		 if (strstr(strLine,"[GRIDWIND"))
+		 {
+			 bIsValid = true;
+			 *selectedUnitsP = selectedUnits;
+			 numScanned = sscanf(strLine,"%s%s",gridwindStr,unitsStr);
+			 if(numScanned != 2) { selectedUnits = kUndefined; goto done; }
+			 RemoveLeadingAndTrailingWhiteSpace(unitsStr);
+			 selectedUnits = StrToSpeedUnits(unitsStr);// note we are not supporting cm/sec in gnome
+		 }
+	 }
+ 
+done:
+	 if(bIsValid)
+	 {
+		 *selectedUnitsP = selectedUnits;
+	 }
+	 return bIsValid;
+}
+
 long GridWndMover::GetListLength()
 {
 	long count = 1; // wind name

@@ -87,7 +87,9 @@ Boolean IsPtCurFile (char *path);
 bool IsGridCurTimeFile (std::vector<std::string> &linesInFile, short *selectedUnitsOut);
 Boolean IsGridCurTimeFile (char *path, short *selectedUnits);
 
-//Boolean IsGridWindFile(char *path,short *selectedUnits);
+bool IsGridWindFile (std::vector<std::string> &linesInFile, short *selectedUnitsOut);
+Boolean IsGridWindFile (char *path, short *selectedUnits);
+
 Boolean IsCATS3DFile (char *path);
 
 #endif
