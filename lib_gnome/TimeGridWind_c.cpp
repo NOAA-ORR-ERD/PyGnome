@@ -17,7 +17,7 @@
 
 #include "netcdf.h"
 
-Boolean IsGridWindFile(char *path,short *selectedUnitsP)
+/*Boolean IsGridWindFile(char *path,short *selectedUnitsP)
 {
 	
 	Boolean	bIsValid = false;
@@ -56,7 +56,7 @@ done:
 		*selectedUnitsP = selectedUnits;
 	}
 	return bIsValid;
-}
+}*/
 
 TimeGridWindRect_c::TimeGridWindRect_c() : TimeGridVel_c()
 {
