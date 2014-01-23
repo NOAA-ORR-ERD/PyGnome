@@ -34,6 +34,8 @@ from Cython.Distutils import build_ext
 
 import numpy as np
 
+import gnome # to get the version number.
+
 # could run setup from anywhere
 (SETUP_PATH, SETUP_FILE) = os.path.split(sys.argv[0])
 

@@ -39,8 +39,16 @@ end_release_time = datetime(2012, 1, 1, 12) + timedelta(hours=4)
 
 def test_simple_init():
     sc = SpillContainer()
-    assert sc
+    assert True
 
+def test_length_zero():
+    sc = SpillContainer()
+    assert len(sc) == 0
+
+def test_length():
+    sp = sample_sc_release()
+
+    assert len(sp) == 10
 
 ### Helper functions ###
 def assert_dataarray_shape_size(sc):

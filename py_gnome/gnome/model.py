@@ -282,12 +282,6 @@ class Model(serializable.Serializable):
 
         self.spills.rewind()  # why is rewind for spills here?
 
-        for outputter in self.outputters:
-            outputter.prepare_for_model_run(model_start_time=self.start_time,
-                                            cache=self._cache,
-                                            uncertain=self.uncertain,
-                                            spills=self.spills)
-
         array_types = {}
         for mover in self.movers:
             mover.prepare_for_model_run()
@@ -295,6 +289,14 @@ class Model(serializable.Serializable):
 
         for sc in self.spills.items():
             sc.prepare_for_model_run(array_types)
+
+        ## outputters need array)types, so this needs to come after those have been updated.
+        for outputter in self.outputters:
+            outputter.prepare_for_model_run(model_start_time=self.start_time,
+                                            cache=self._cache,
+                                            uncertain=self.uncertain,
+                                            spills=self.spills)
+
 
     def setup_time_step(self):
         """

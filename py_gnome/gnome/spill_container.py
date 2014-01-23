@@ -164,6 +164,16 @@ class SpillContainerData(object):
             return False
         else:
             return True
+    def __len__(self):
+        """
+        the "length" of apill container is the number of elements in it 
+        i.e. the length of the data arrays
+        """
+        try:
+            #find the length of an arbitrary first array
+            return len( self._data_arrays.itervalues().next() )
+        except StopIteration:
+            return 0
 
     @property
     def num_released(self):
