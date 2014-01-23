@@ -34,7 +34,10 @@ from Cython.Distutils import build_ext
 
 import numpy as np
 
-import gnome # to get the version number.
+try:
+    from gnome import __version__
+except ImportError: # gnome won't import if it's not built yet...
+    __version__ = "alpha"
 
 # could run setup from anywhere
 (SETUP_PATH, SETUP_FILE) = os.path.split(sys.argv[0])
@@ -446,7 +449,7 @@ extensions.append(Extension("gnome.utilities.geometry.cy_point_in_polygon",
                   )
 
 setup(name='pyGnome',
-      version=gnome.__version__,
+      version=__version__,
       requires=['numpy'],
       cmdclass={'build_ext': build_ext},
       ext_modules=extensions

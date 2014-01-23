@@ -222,7 +222,7 @@ class NetCDFOutput(Outputter, serializable.Serializable):
         self.arrays_to_output = set(self.standard_arrays)
 
         # this is only updated in prepare_for_model_run if which_data is 'all' or 'most'
-        self.arr_types = None
+        #self.arr_types = None
         self._format = 'NETCDF4'
         self._compress = compress
         self._chunksize = 1024 # 1k is about right for 1000LEs and one time step.
@@ -618,11 +618,11 @@ class NetCDFOutput(Outputter, serializable.Serializable):
                                                         spills=spills,
                                                         **kwargs)
 
-    @staticmethod
-    def read_data(netcdf_file, time=None, which_data='standard'):
+    @classmethod
+    def read_data(klass, netcdf_file, time=None, which_data='standard'):
         """
         Read and create standard data arrays for a netcdf file that was created
-        with NetCDFOutput class. Make it a static method since it is
+        with NetCDFOutput class. Make it a class method since it is
         independent of an instance of the Outputter. The method is put with
         this class because the NetCDF functionality for PyGnome data with CF
         standard is captured here.
@@ -635,27 +635,43 @@ class NetCDFOutput(Outputter, serializable.Serializable):
             first timestamp.
         :type time: datetime
 
+        :param which_data = 'standard': which data arrays are desired options are
+                            'standard', 'most', 'all', [list_of_array_names]
+        :type which_data: string or sequence of strings.
+
         :returns: a dict containing standard data closest to the indicated
             'time'. Standard data is defined as follows:
 
         Standard data arrays are numpy arrays of size N, where N is number of
-        particles released at time step of interest:
+        particles released at time step of interest. They are defined by the
+        class attribute "standard_arrays", currently:
             'current_time_stamp': datetime object associated with this data
             'positions'         : NX3 array. Corresponds with NetCDF variables
                                   'longitude', 'latitude', 'depth'
             'status_codes'      : NX1 array. Corresponds with NetCDF variable
-                                  'status'
+                                  'status_codes'
             'spill_num'         : NX1 array. Corresponds with NetCDF variable
                                   'spill_num'
             'id'                : NX1 array showing particle id. Corresponds
                                   with NetCDF variable 'id'
             'mass'              : NX1 array showing 'mass' of each particle
-        """
 
+        standard_arrays = ['latitude',
+                           'longitude', # these are pulled from the 'positions' array
+                           'depth',
+                           'status_codes',
+                           'spill_num',
+                           'id',
+                           'mass',
+                           'age',
+                           ]
+
+
+        """
         if not os.path.exists(netcdf_file):
             raise IOError('File not found: {0}'.format(netcdf_file))
 
-        arrays_dict = dict()
+        arrays_dict = {}
         with nc.Dataset(netcdf_file) as data:
             _start_ix = 0
 
@@ -665,7 +681,7 @@ class NetCDFOutput(Outputter, serializable.Serializable):
                 # there should only be 1 time in file. Read and
                 # return data associated with it
                 if len(time_) > 1:
-                    raise ValueError("More than one times found in netcdf"
+                    raise ValueError("More than one time found in netcdf"
                                      " file. Please specify time for which"
                                      " data is desired")
                 else:
@@ -685,36 +701,43 @@ class NetCDFOutput(Outputter, serializable.Serializable):
             _stop_ix = _start_ix + data.variables['particle_count'][index]
             elem = data.variables['particle_count'][index]
 
-            c_time = nc.num2date(time_[index], time_.units,
+            c_time = nc.num2date(time_[index],
+                                 time_.units,
                                  calendar=time_.calendar)
+            
             arrays_dict['current_time_stamp'] = np.array(c_time)
 
-            positions = np.zeros((elem, 3),
-                                 dtype=gnome.basic_types.world_point_type)
+            ## figure out what arrays to read in:
+            if which_data == 'standard':
+                data_arrays = set(klass.standard_arrays)
+                # swap out positions:
+                [data_arrays.discard(x) for x in ('latitude','longitude','depth')]
+                data_arrays.add('positions')
+            elif which_data == 'all':
+                # pull them from the nc file
+                data_arrays = set(data.variables.keys())
+                ## remove the irrelevant ones:
+                [data_arrays.discard(x) for x in ('time',
+                                                  'particle_count',
+                                                  'latitude',
+                                                  'longitude',
+                                                  'depth')]
+                data_arrays.add('positions')
+            else: # should be list of data arrays
+                data_arrays = set(which_data)
 
-            positions[:, 0] = data.variables['longitude'][_start_ix:_stop_ix]
-            positions[:, 1] = data.variables['latitude'][_start_ix:_stop_ix]
-            positions[:, 2] = data.variables['depth'][_start_ix:_stop_ix]
+            # get the data
+            for array_name in data_arrays:
+                #special case time and positions:
+                if array_name == 'positions':
+                    positions = np.zeros((elem, 3),
+                                         dtype=gnome.basic_types.world_point_type)
+                    positions[:, 0] = data.variables['longitude'][_start_ix:_stop_ix]
+                    positions[:, 1] = data.variables['latitude'][_start_ix:_stop_ix]
+                    positions[:, 2] = data.variables['depth'][_start_ix:_stop_ix]
 
-            arrays_dict['positions'] = positions
-            arrays_dict['status_codes'] = (data.variables['status']
-                [_start_ix:_stop_ix])
-
-            for key in NetCDFOutput._same_keynames:
-                arrays_dict[key] = data.variables[key][_start_ix:_stop_ix]
-
-            if all_data:  # append remaining data arrays
-                excludes = NetCDFOutput.data_vars.keys()
-                excludes.extend(['time', 'particle_count'])
-
-                for key in data.variables.keys():
-                    if key not in excludes:
-                        if key in arrays_dict.keys():
-                            raise ValueError('Error in read_data. {0} is'
-                                ' already added to arrays_dict - trying to'
-                                ' add it again'.format(key))
-
-                        arrays_dict[key] = \
-                            (data.variables[key])[_start_ix:_stop_ix]
+                    arrays_dict['positions'] = positions
+                else:
+                    arrays_dict[array_name] = (data.variables[array_name][_start_ix:_stop_ix])
 
         return arrays_dict

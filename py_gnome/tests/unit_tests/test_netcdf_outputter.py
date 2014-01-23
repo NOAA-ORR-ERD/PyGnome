@@ -144,6 +144,9 @@ def test_exceptions_middle_of_run(model):
     with pytest.raises(AttributeError):
         o_put.compress = False
 
+    with pytest.raises(AttributeError):
+        o_put.chunksize = 1024*1024
+
     model.rewind()
     assert not o_put.middle_of_run
     o_put.compress = True
@@ -277,22 +280,30 @@ def test_write_output_all_data(model):
 
             for step in range(model.num_time_steps):
                 scp = model._cache.load_timestep(step)
-
-                #for (key, val) in o_put.arr_types.iteritems():
                 for var_name in o_put.arrays_to_output:
-                    print "checking:", var_name
-                    nc_var = data.variables[var_name]
-                    sc_arr = scp.LE(var_name, uncertain)
-                    print "shape of SC array:", scp.LE(var_name, uncertain).shape
-                    print "shape of var :", nc_var.shape
-                    if len(sc_arr.shape) == 0:
-                        assert np.all( nc_var[idx[step]:idx[step+1]] == sc_arr )
+                    # special_case 'positions'
+                    if var_name == 'longitude':
+                        nc_var = data.variables[var_name]
+                        sc_arr = scp.LE('positions', uncertain)[:,0]
+                    elif var_name == 'latitude':
+                        nc_var = data.variables[var_name]
+                        sc_arr = scp.LE('positions', uncertain)[:,1]
+                    elif var_name == 'depth':
+                        nc_var = data.variables[var_name]
+                        sc_arr = scp.LE('positions', uncertain)[:,2]
                     else:
+                        nc_var = data.variables[var_name]
+                        sc_arr = scp.LE(var_name, uncertain)
+                    if len(sc_arr.shape) == 1:
+                        assert np.all( nc_var[idx[step]:idx[step+1]] == sc_arr )
+                    elif len(sc_arr.shape) == 2:
                         assert np.all( nc_var[idx[step]:idx[step+1], :] == sc_arr )
+                    else:
+                        raise ValueError("haven't written a test for 3-d arrays")
+                    
 
         # 2nd time around, we are looking at uncertain filename so toggle
         # uncertain flag
-
         uncertain = True
 
 
@@ -391,12 +402,13 @@ def test_read_standard_arrays(model, output_ts_factor):
 def test_read_all_arrays(model):
     """
     tests the data returned by read_data is correct when `which_data` flag is
-    'all'. It is only reading the standard_data_arrays
+    'all'.
     """
 
     model.rewind()
     o_put = [model.outputters[outputter.id] for outputter in
              model.outputters if isinstance(outputter, NetCDFOutput)][0]
+
     o_put.which_data = 'all'
 
     _run_model(model)
@@ -410,8 +422,8 @@ def test_read_all_arrays(model):
         for step in range(model.num_time_steps):
             scp = model._cache.load_timestep(step)
             curr_time = scp.LE('current_time_stamp', uncertain)
-            nc_data = NetCDFOutput.read_data(file_, curr_time, which_data='all')
 
+            nc_data = NetCDFOutput.read_data(file_, curr_time, which_data='all')
             if curr_time == nc_data['current_time_stamp'].item():
                 _found_a_matching_time = True
                 for key in scp.LE_data:
@@ -420,10 +432,12 @@ def test_read_all_arrays(model):
                         continue
                     elif key == 'positions':
                         assert np.allclose(scp.LE('positions', uncertain),
-                                nc_data['positions'], rtol, atol)
+                                           nc_data['positions'], rtol, atol)
                     else:
-                        assert np.all(scp.LE(key, uncertain)[:]
+                        if key not in  ['last_water_positions','next_positions']:
+                            assert np.all(scp.LE(key, uncertain)[:]
                                       == nc_data[key])
+        #assert False
 
         if _found_a_matching_time:
             print ('\ndata in model matches for output in \n{0}'.format(file_))
@@ -491,12 +505,6 @@ def test_write_output_post_run(model, output_ts_factor):
     # add this back in so cleanup script deletes the generated *.nc files
     model.outputters += o_put
 
-def test_setting_chunksize():
-    """
-    make sure that chunksize can't be re-set in the middle of a run
-    """
-    print "not written yet!"
-    assert False
 
 
 def _run_model(model):
