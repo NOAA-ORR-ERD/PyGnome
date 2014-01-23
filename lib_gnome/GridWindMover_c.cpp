@@ -244,7 +244,8 @@ OSErr GridWindMover_c::TextRead(char *path, char *topFilePath)
 	else
 		return -1; // we failed to read in the file.
 
-	if (IsGridWindFile(path, &selectedUnits))
+	//if (IsGridWindFile(path, &selectedUnits))	// check if gui gnome need this
+	if (IsGridWindFile(linesInFile, &selectedUnits))
 	{
 		//char errmsg[256];
 		newTimeGrid = new TimeGridCurRect();
