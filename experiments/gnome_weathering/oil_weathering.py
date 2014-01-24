@@ -76,15 +76,7 @@ class weather_curve:
         return self.total_mass.sum(1)
 
     def _decay_constant(self, M_0, time):
-        '''
-           Assumes our factors are decay constant values
-           so basically our function is M_0 * exp(-time * lambda)
-           half-life = ln(2) / lambda
-           lambda * half-life = ln(2)
-           lambda = ln(2) / half-life
-           so if our half life is 12 hrs,
-           lambda = (np.log(2) / 12) = 0.057762265046662105
-        '''
+        'Assumes our factors are decay constant values'
         self.total_mass = (self.fractions * M_0) * np.exp(-time * self.factors)
         return self.total_mass.sum(1)
 
