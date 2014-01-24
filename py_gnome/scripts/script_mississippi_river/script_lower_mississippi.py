@@ -49,7 +49,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     netcdf_file = os.path.join(base_dir, 'script_lower_mississippi.nc')
     scripting.remove_netcdf(netcdf_file)
     model.outputters += \
-        gnome.netcdf_outputter.NetCDFOutput(netcdf_file, all_data=True)
+        gnome.netcdf_outputter.NetCDFOutput(netcdf_file, which_data='all')
 
     print 'adding a RandomMover:'
     model.movers += gnome.movers.RandomMover(diffusion_coef=10000)

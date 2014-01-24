@@ -38,10 +38,10 @@ def model(sample_model, request):
 
     model.spills += \
         gnome.spill.PointLineSource(num_elements=5,
-            start_position=sample_model['release_start_pos'],
-            release_time=model.start_time,
-            end_release_time=model.start_time + model.duration,
-            element_type=floating(windage_persist=-1))
+                                    start_position=sample_model['release_start_pos'],
+                                    release_time=model.start_time,
+                                    end_release_time=model.start_time + model.duration,
+                                    element_type=floating(windage_persist=-1))
 
     def cleanup():
         """ cleanup outputters was added to sample_model and delete files """
@@ -305,6 +305,14 @@ def test_write_output_all_data(model):
         # 2nd time around, we are looking at uncertain filename so toggle
         # uncertain flag
         uncertain = True
+
+# def test_output_all():
+#     """
+#     tests outputting 'all' -- when there are arbitrary data arrays in the spill container
+#     """
+#     o_put = NetCDFOutput(os.path.join(base_dir, u'sample_model.nc'))
+
+
 
 
 def test_run_without_spills(model):

@@ -48,7 +48,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     netcdf_file = os.path.join(base_dir, 'script_sf_bay.nc')
     scripting.remove_netcdf(netcdf_file)
     model.outputters += \
-        gnome.netcdf_outputter.NetCDFOutput(netcdf_file, all_data=True)
+        gnome.netcdf_outputter.NetCDFOutput(netcdf_file, which_data='all')
 
     print 'adding a spill'
 

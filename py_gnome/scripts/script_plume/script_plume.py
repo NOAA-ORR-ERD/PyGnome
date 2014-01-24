@@ -58,7 +58,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
 
     model.outputters += \
         gnome.netcdf_outputter.NetCDFOutput(netcdf_file,
-                                            all_data=True,
+                                            which_data='most',
                                             output_timestep=timedelta(hours=2))
 
     print 'adding a spill'

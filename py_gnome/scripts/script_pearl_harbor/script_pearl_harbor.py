@@ -55,9 +55,8 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     netcdf_output_file = os.path.join(base_dir, 'pearl_harbor_output.nc'
             )
     scripting.remove_netcdf(netcdf_output_file)
-    model.outputters += \
-        gnome.netcdf_outputter.NetCDFOutput(netcdf_output_file,
-            all_data=True)
+    model.outputters += gnome.netcdf_outputter.NetCDFOutput(netcdf_output_file,
+                                                            which_data='all')
 
     # #
     # # Set up the movers:

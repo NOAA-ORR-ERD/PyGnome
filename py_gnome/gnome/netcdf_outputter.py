@@ -420,8 +420,8 @@ class NetCDFOutput(Outputter, serializable.Serializable):
                 # create the dimensions we need
                 rootgrp.createDimension('time') # unlimited
                 rootgrp.createDimension('data') # unlimited
-                rootgrp.createDimension('two') # not sure if it's aconvensin of if dimensions need to be names...
-                rootgrp.createDimension('three') # 
+                rootgrp.createDimension('two', 2) # not sure if it's a convension or if dimensions need to be names...
+                rootgrp.createDimension('three', 3) # 
 
                 # create the time variable
                 time_ = rootgrp.createVariable('time',
@@ -479,7 +479,10 @@ class NetCDFOutput(Outputter, serializable.Serializable):
                                                  chunksizes=chunksizes,
                                                  )
                     # add attributes
-                    var.setncatts( var_attributes[var_name] )
+                    try:
+                        var.setncatts( var_attributes[var_name] )
+                    except KeyError:
+                        pass # we won't get any attribues if they are not in the dict.
 
                 # if self.which_data in ('all', 'most'):
                 #     rootgrp.createDimension('world_point', 3)
