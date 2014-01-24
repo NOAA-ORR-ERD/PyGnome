@@ -1,22 +1,24 @@
 #!/usr/bin/env python
 #
-# The Pipeline Oil Spill Volume Estimator (OCS Study MMS 2002-033) has a 
-# section for calculating the "GOR reduction factor".  The method uses a 
-# series of tables in the calculations.  This technique was chosen to 
-# calculate the "GOR reduction factor" as it appears to be a reliable 
-# reference.  
+# The Pipeline Oil Spill Volume Estimator (OCS Study MMS 2002-033) has a
+# section for calculating the "GOR reduction factor".  The method uses a
+# series of tables in the calculations.  This technique was chosen to
+# calculate the "GOR reduction factor" as it appears to be a reliable
+# reference.
 #
-# References: 
+# References:
 # OCS Study MMS 2002-033, "Pipeline Oil Spill Volume Estimator,
 # Pocket Guide"
 
-import numpy as np
+import numpy
+np = numpy
+
 from common.interpolation import IArray
 
 
 class GasOilRatioReductionFactor(object):
     '''
-        References: 
+        References:
             OCS Study MMS 2002-033, "Pipeline Oil Spill Volume Estimator,
             Pocket Guide"
 
@@ -27,7 +29,7 @@ class GasOilRatioReductionFactor(object):
         The section of the table labeled 'will not occur' is going to
         return a value of None
     '''
-    array = IArray([#(-1, None),
+    array = IArray([  # (-1, None),
                     (0, 1),
                     (225, 0.98),
                     (280, 0.97),
@@ -60,9 +62,9 @@ class GasOilRatioReductionFactor(object):
 
 if __name__ == '__main__':
     print '\nTesting out our packaged GOR Reduction Factor array object.'
-    
+
     gor_reduction_factor_lu = GasOilRatioReductionFactor()
-    
+
     print '\nFirst, we test our calculation limits (GOR < Gmax)'
     gor, g_max = -1, 1
     fgor = gor_reduction_factor_lu.get_gas_oil_reduction_factor(gor, g_max)
@@ -98,7 +100,6 @@ if __name__ == '__main__':
     fgor = gor_reduction_factor_lu.get_gas_oil_reduction_factor(gor, g_max)
     print 'GOR = %s, Gmax = %s, fgor = %s' % (gor, g_max, fgor)
     assert fgor == None
-
 
     print '\nNext, we test our table limits (GOR > Gmax)'
     gor, g_max = -1, -3
@@ -144,12 +145,3 @@ if __name__ == '__main__':
     # we will either get a None value or a value of 0.26
     #assert fgor == None
     assert fgor == 0.26
-
-
-
-
-
-
-
-
-

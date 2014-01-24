@@ -46,7 +46,7 @@ public:
 #ifndef pyGNOME
 	GridWindMover_c (TMap *owner, char* name);
 #endif
-	GridWindMover_c () {}
+	GridWindMover_c ();
 	~GridWindMover_c () { Dispose (); }
 	virtual void		Dispose ();
 	

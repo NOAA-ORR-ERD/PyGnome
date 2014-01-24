@@ -2,10 +2,10 @@
 # The Pipeline Oil Spill Volume Estimator (OCS Study MMS 2002-033)
 # has a section for calculating the "Maximum released volume fraction".
 # The method uses a series of tables in the calculations.
-# This technique was chosen as it appears to be a reliable 
+# This technique was chosen as it appears to be a reliable
 # reference.
 #
-# References: 
+# References:
 # OCS Study MMS 2002-033, "Pipeline Oil Spill Volume Estimator,
 # Pocket Guide"
 
@@ -16,10 +16,10 @@ from common.interpolation import IArray
 
 class ReleaseFraction(object):
     '''
-       References: 
+       References:
            OCS Study MMS 2002-033, "Pipeline Oil Spill Volume Estimator,
            Pocket Guide"
-        
+
        Table 1.3, page 11
        Maximum released volume fraction, [(Prel, (frel, Gmax)),
                                           ...
@@ -27,7 +27,7 @@ class ReleaseFraction(object):
     '''
     table_results = namedtuple('ReleaseFractionResults',
                                ''' f_rel,
-                                   g_max, 
+                                   g_max,
                                ''' )
 
     points = [(1, (0.0, None)),
@@ -56,8 +56,6 @@ class ReleaseFraction(object):
                                   self.g_max[p_rel])
 
 
-
-
 if __name__ == '__main__':
     print '\nTesting out our packaged release fraction array object.'
 
@@ -81,7 +79,7 @@ if __name__ == '__main__':
     assert rfa[p_rel] == (0.0, None)
     assert rfa[p_rel].f_rel == 0.0
     assert rfa[p_rel].g_max == None
-    
+
     p_rel = 1
     print p_rel, rfa[p_rel],
     print '\tPrel = %s, frel = %s, Gmax = %s' % (p_rel,
@@ -90,7 +88,7 @@ if __name__ == '__main__':
     assert rfa[p_rel] == (0.0, None)
     assert rfa[p_rel].f_rel == 0.0
     assert rfa[p_rel].g_max == None
-    
+
     p_rel = 200
     print p_rel, rfa[p_rel],
     print '\tPrel = %s, frel = %s, Gmax = %s' % (p_rel,
@@ -99,7 +97,7 @@ if __name__ == '__main__':
     assert rfa[p_rel] == (0.77, 112)
     assert rfa[p_rel].f_rel == 0.77
     assert rfa[p_rel].g_max == 112
-    
+
     p_rel = 300
     print p_rel, rfa[p_rel],
     print '\tPrel = %s, frel = %s, Gmax = %s' % (p_rel,
@@ -108,7 +106,7 @@ if __name__ == '__main__':
     assert rfa[p_rel] == (0.77, 112)
     assert rfa[p_rel].f_rel == 0.77
     assert rfa[p_rel].g_max == 112
-    
+
     print '\nNext, we test our interpolation behavior.'
     p_rel = 4
     print p_rel, rfa[p_rel],
@@ -118,7 +116,7 @@ if __name__ == '__main__':
     assert rfa[p_rel] == (0.5, 560)
     assert rfa[p_rel].f_rel == 0.5
     assert rfa[p_rel].g_max == 560
-    
+
     p_rel = 4.5
     print p_rel, rfa[p_rel],
     print '\tPrel = %s, frel = %s, Gmax = %s' % (p_rel,
@@ -127,7 +125,7 @@ if __name__ == '__main__':
     assert rfa[p_rel] == (0.5, 560)
     assert rfa[p_rel].f_rel == 0.5
     assert rfa[p_rel].g_max == 560
-    
+
     p_rel = 4.9999
     print p_rel, rfa[p_rel],
     print '\tPrel = %s, frel = %s, Gmax = %s' % (p_rel,
@@ -136,7 +134,7 @@ if __name__ == '__main__':
     assert rfa[p_rel] == (0.5, 560)
     assert rfa[p_rel].f_rel == 0.5
     assert rfa[p_rel].g_max == 560
-    
+
     p_rel = 5
     print p_rel, rfa[p_rel],
     print '\tPrel = %s, frel = %s, Gmax = %s' % (p_rel,

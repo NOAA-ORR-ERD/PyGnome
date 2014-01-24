@@ -37,6 +37,17 @@ GridWindMover_c::GridWindMover_c(TMap *owner,char* name) : WindMover_c(owner, na
 }
 #endif
 
+GridWindMover_c::GridWindMover_c() : WindMover_c()
+{
+	fIsOptimizedForStep = false;
+	
+	fUserUnits = kMetersPerSec;	
+	fWindScale = 1.;
+	fArrowScale = 10.;
+	
+	timeGrid = 0;
+	
+}
 /////////////////////////////////////////////////
 OSErr GridWindMover_c::PrepareForModelRun()
 {
@@ -244,7 +255,8 @@ OSErr GridWindMover_c::TextRead(char *path, char *topFilePath)
 	else
 		return -1; // we failed to read in the file.
 
-	if (IsGridWindFile(path, &selectedUnits))
+	//if (IsGridWindFile(path, &selectedUnits))	// check if gui gnome need this
+	if (IsGridWindFile(linesInFile, &selectedUnits))
 	{
 		//char errmsg[256];
 		newTimeGrid = new TimeGridCurRect();

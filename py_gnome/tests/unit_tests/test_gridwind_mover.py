@@ -42,12 +42,12 @@ def test_exceptions():
         # todo: Following fails - cannot raise exception during initialize
         # Need to look into this issue
         #gw = GridWindMover(grid_file, uncertain_angle_units='xyz')
-        gw = GridWindMover(wind_file)   # todo: why does this fail
+        gw = GridWindMover(wind_file,topology_file)   # todo: why does this fail
         gw.set_uncertain_angle(.4, 'xyz')
 
 
 def test_string_repr_no_errors():
-    gw = GridWindMover(wind_file)
+    gw = GridWindMover(wind_file,topology_file)
     print
     print '======================'
     print 'repr(WindMover): '
@@ -186,7 +186,7 @@ def test_new_from_dict():
     create a new grid_wind object and make sure it has same properties
     """
 
-    grid_wind = GridWindMover(wind_file)
+    grid_wind = GridWindMover(wind_file,topology_file)
     dict_ = grid_wind.to_dict('create')
     gw2 = GridWindMover.new_from_dict(dict_)
     assert grid_wind == gw2
