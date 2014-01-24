@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-# oil_weathering.py
+# weathering.py
 #
 # - module to compute the weathering of an oil that contains one or more
 #   "pseudo components".

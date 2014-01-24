@@ -18,11 +18,11 @@ np = numpy
 
 ## Testing the weather curve calculation
 #from tap_comp_volume import weather_curve, comp_volume
-from oil_weathering import weather_curve, WeatheringComponent
+from weathering import weather_curve, WeatheringComponent
 
 # we will probably get our oil types from a different module
 # at some later date
-from oil_weathering import OilTypes
+from weathering import OilTypes
 
 
 def test_weather_all_add_up():
