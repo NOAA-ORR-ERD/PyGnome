@@ -37,6 +37,17 @@ GridWindMover_c::GridWindMover_c(TMap *owner,char* name) : WindMover_c(owner, na
 }
 #endif
 
+GridWindMover_c::GridWindMover_c() : WindMover_c()
+{
+	fIsOptimizedForStep = false;
+	
+	fUserUnits = kMetersPerSec;	
+	fWindScale = 1.;
+	fArrowScale = 10.;
+	
+	timeGrid = 0;
+	
+}
 /////////////////////////////////////////////////
 OSErr GridWindMover_c::PrepareForModelRun()
 {
