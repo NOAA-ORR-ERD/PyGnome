@@ -5,10 +5,12 @@ import collections
 import numpy
 np = numpy
 
+
 class IArray(object):
     '''
        An interpolated array based on numpy
-       This contains some added functionality from the standard np.interp() method
+       This contains some added functionality from the standard np.interp()
+       method
     '''
     def __init__(self, points, left=None, right=None, method='linear'):
         '''
@@ -19,7 +21,8 @@ class IArray(object):
            :param left: Value to return for i < x[0], default is y[0].
            :param right: Value to return for i > x[-1], default is y[-1].
            :param method: interpolation method to use.
-           :type method: a string in {'linear', 'nearest', 'leftmost', 'rightmost'}
+           :type method: a string in {'linear', 'nearest',
+                                      'leftmost', 'rightmost'}
         '''
         self.points = sorted(points)
         self.x = np.array([p[0] for p in self.points])
@@ -77,7 +80,7 @@ class IArray(object):
 
     def interp(self, coords):
         return np.interp(coords, self.x, self.y, self.left, self.right)
-    
+
     def __getitem__(self, coords):
         return self.method(coords)
 
@@ -135,8 +138,7 @@ if __name__ == '__main__':
     print coords
     print table[coords]
     assert tuple(table[coords]) == (0, 0, 0, 0, 10, 10, 10, 10, 0, 0, 0, 0, 0, 0, 0)
-    assert table[1.01] == 10 # immediately after the previous point
+    assert table[1.01] == 10  # immediately after the previous point
     assert table[4.99] == 10
-    assert table[5.0] == 10  # inclusive 
+    assert table[5.0] == 10  # inclusive
     assert table[5.01] == 0  # immediately after the current point
-
