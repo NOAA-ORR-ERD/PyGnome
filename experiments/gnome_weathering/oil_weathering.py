@@ -1,52 +1,79 @@
 #!/usr/bin/env python
 #
-# OilWeathering.py
+# oil_weathering.py
 #
-# - module to compute "pseudo component" weathering
-# - primarily the weather_curve class
+# - module to compute the weathering of an oil that contains one or more
+#   "pseudo components".
+# - Each pseudo component is assumed to be a known substance that has a known
+#   rate of decay that can be expressed using an exponential decay function.
+# - It is also assumed that the sum of all pseudo components add up to the
+#   total quantity of oil we are dealing with.  Thus, we will require this
+#   to be true.
+# - It is also assumed that all components will have exponential decay factors
+#   that are solvable using a single common function.
 #
 # Built-in Oil Types are in the OilTypes dict.
 #
 # NOTE:
-#   To compute the half lives of components subject to multiple processes (linear),
-#   such as evaporation and bio-degradation, you can use the following formula:
-#
-#   H_t = 1 / (1 / t_w + 1 / t_b)
-#
-#
+#   Right now we will support the three most common exponential decay methods.
+#   These are:
+#   - half life
+#     - the amount of time required for a quantity to fall to half its value
+#     - Basically our calculation is M_0 * (half ** (time / t_half))
+#   - mean lifetime (tau)
+#     - Average length of time that an element remains in the set.
+#     - This is probably not as popular as half life, but we should cover it
+#       just in case.
+#     - Basically our calculation is M_0 * np.exp(-time / tau)
+#       half-life = tau * np.log(2)
+#       tau = half-life / np.log(2)
+#   - decay constant (lambda)
+#     - Exponential positive constant value which solves the differential
+#       rate of change for our decaying quantity.
+#     - This is probably not as popular as half life, but we should cover it
+#       just in case.
+#     - Basically our calculation is M_0 * np.exp(-time * lambda)
+#       half-life = np.log(2) / lambda
+#       lambda * half-life = np.log(2)
+#       lambda = np.log(2) / half-life
+
+
+from collections import namedtuple
 
 import numpy
 np = numpy
 
 
+WeatheringComponent = namedtuple('WeatheringComponent',
+                                 ''' fraction,
+                                     factor,
+                                 ''')
+
+
 class weather_curve:
-    def __init__(self, fractions, decay_factors, method="halflife"):
+    def __init__(self, components, method="halflife"):
         '''
            Weathering computation for a multiple "component" oil.
            Each component is a fraction of the total mass and is assigned
            its own exponential decay value.
 
-           :param fractions: The fractional values of each component.
-           :type fractions: Sequence of items (C1, C2, C3, ....Ci).
-                            The sum of all items must add up to 1.0
-
-           :param decay_factors: The decay factors of each component.
-           :type decay_factors: Sequence of items (F1, F2, F3, ....Fi).
-                                The number of items must match fractions
+           :param components: The properties of each component.
+           :type components: Sequence of WeatheringComponents
+                             (WC1, WC2, WC3, ....WCi).
+                             The sum of the component fractional values must
+                             add up to 1.0
 
            :param method: the method in which the decay_factor is to be used.
            :type method: set({'halflife', 'mean-lifetime', 'decay-constant'})
         '''
+        fractions, factors = zip(*components)
         self.fractions = np.asarray(fractions, dtype=np.float32).reshape(-1,)
-        self.factors = np.asarray(decay_factors, dtype=np.float32).reshape(-1,)
+        self.factors = np.asarray(factors, dtype=np.float32).reshape(-1,)
 
         # only six digit, because float32
         if round(self.fractions.sum(), 6) != 1.0:
             raise ValueError('The sum of our components {0} must add up '
                              'to one'.format(self.fractions.sum()))
-        if len(self.factors) != len(self.fractions):
-            raise ValueError('There must be the same number of '
-                             'component fractions as half lives')
 
         methods = {'halflife': self._halflife,
                    'mean-lifetime': self._mean_lifetime,
@@ -93,67 +120,10 @@ combined_half_lives = [21.0, 422.0, 2.0, 1358.0, 1982.0, 7198.0, 14391.0]
 
 OilTypes = {None: None,
             # Medium Crude parameters from OSSM
-            'MediumCrude': weather_curve((.22, .26, .52),
-                                         (14.4, 48.6, 1e9)),
-            "FL_Straits_MediumCrude": weather_curve(mass_fractions, combined_half_lives),
+            'MediumCrude': weather_curve(((.22, 14.4),
+                                          (.26, 48.6),
+                                          (.52, 1e9)),
+                                         ),
+            "FL_Straits_MediumCrude": weather_curve(zip(mass_fractions,
+                                                        combined_half_lives)),
             }
-
-
-if __name__ == '__main__':
-    print 'first, just a single data point...'
-    wc = weather_curve((1.0,), (12,))
-    print wc.weather((100, 200, 300), (12, 24, 36))
-    assert wc.weather(100, 12) == 50.0
-
-    print '\nNext, we split into thirds...'
-    wc = weather_curve((0.333333, 0.333333, 0.333334),
-                       (12, 12, 12))
-
-    print '\nTesting multiple initial masses'
-    res = wc.weather((100, 200, 300), 12)
-    print res
-    assert np.allclose(res, (50., 100., 150.))
-
-    res = wc.weather((100, 200, 300), 24)
-    print res
-    assert np.allclose(res, (25., 50., 75.))
-
-    print '\nTesting multiple times'
-    res = wc.weather(100, (12, 24, 36))
-    print res
-    assert np.allclose(res, (50., 25., 12.5))
-
-    # Test out our mean lifetime method
-    # Basically our function is M_0 * exp(-time/tau)
-    #     half-life = tau * ln(2)
-    #     tau = half-life / ln(2)
-    # So if our half life is 12 hrs,
-    #     tau = (12 / np.log(2)) = 17.312340490667562
-    print '\nTesting our mean lifetime method'
-    wc = weather_curve((0.333333, 0.333333, 0.333334),
-                       ((12 / np.log(2)),
-                        (12 / np.log(2)),
-                        (12 / np.log(2))),
-                       method='mean-lifetime'
-                       )
-    res = wc.weather((100, 200, 300), 12)
-    print res
-    assert np.allclose(res, (50., 100., 150.))
-
-    # Test out our decay constant method
-    # Basically our function is M_0 * exp(-time * lambda)
-    #     half-life = ln(2) / lambda
-    #     lambda * half-life = ln(2)
-    #     lambda = ln(2) / half-life
-    # So if our half life is 12 hrs,
-    #     lambda = (np.log(2) / 12) = 0.057762265046662105
-    print '\nTesting our decay constant method'
-    wc = weather_curve((0.333333, 0.333333, 0.333334),
-                       ((np.log(2) / 12),
-                        (np.log(2) / 12),
-                        (np.log(2) / 12)),
-                       method='decay-constant'
-                       )
-    res = wc.weather((100, 200, 300), 12)
-    print res
-    assert np.allclose(res, (50., 100., 150.))
