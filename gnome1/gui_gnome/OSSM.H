@@ -84,7 +84,7 @@ Boolean RestoreScreenImage();
 #endif
 
 	#define SETTINGS_VERSION  ((float)1.0)
-	#define GNOME_VERSION_STR  "1.3.7"
+	#define GNOME_VERSION_STR  "1.3.8"
 	
 
 typedef struct {
