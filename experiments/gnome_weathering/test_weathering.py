@@ -9,28 +9,27 @@ designed to be run with nose
 
 import sys
 
-sys.path.append("../lib")
-
 import numpy as np
-import nose
+import pytest
 
 ## Testing the weather curve calculation
-#from tap_comp_volume import weather_curve, comp_volume
 from oil_weathering import weather_curve, OilTypes
 
-@nose.tools.raises(ValueError)
 def test_weather_all_add_up():
-    wc = weather_curve( (0.5, 0.5, 0.5),
-                        ( 12,  24,  36))
+    with pytest.raises(ValueError):
+        # fractions dont add to 1.0
+        wc = weather_curve( (0.5, 0.5, 0.5),
+                            ( 12,  24,  36))
         
 def test_weather_all_add_up2():
     wc = weather_curve((0.333333, 0.333333, 0.333334),
                        (12,       24,       36))
 
-@nose.tools.raises(ValueError)
-def test_weather_same_num_components():
-    wc = weather_curve( (0.333333, 0.333333, 0.333334),
-                        ( 12,  24,  36, 14))
+def test_weather_same_num_components():    
+    with pytest.raises(ValueError):
+        # too many half-life values
+        wc = weather_curve( (0.333333, 0.333333, 0.333334),
+                            ( 12,  24,  36, 14))
         
         
 def test_weather_single_component1():

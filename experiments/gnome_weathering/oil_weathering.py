@@ -35,7 +35,7 @@ class weather_curve:
                                 The number of items must match fractions
 
            :param method: the method in which the decay_factor is to be used.
-           :type method: set({'halflife', 'mean-lifetime', 'decay-constant'})
+           :type method: set(['halflife', 'mean-lifetime', 'decay-constant'])
         '''
         self.fractions = np.asarray(fractions, dtype=np.float32).reshape(-1,)
         self.factors = np.asarray(decay_factors, dtype=np.float32).reshape(-1,)
@@ -88,14 +88,14 @@ class weather_curve:
 
 ## Parameters for combined weathering and bio-degradation for "medium crude"
 ## used for FL Staits TAP analysis
-mass_fractions = [0.25, 0.1, 0.107, 0.2, 0.186, 0.109, 0.048]
-combined_half_lives = [21.0, 422.0, 2.0, 1358.0, 1982.0, 7198.0, 14391.0]
+FS_mass_fractions      = [0.25,   0.1, 0.107,    0.2,  0.186,  0.109, 0.048]
+FS_combined_half_lives = [21.0, 422.0,   2.0, 1358.0, 1982.0, 7198.0, 14391.0]
 
 OilTypes = {None: None,
             # Medium Crude parameters from OSSM
             'MediumCrude': weather_curve((.22, .26, .52),
                                          (14.4, 48.6, 1e9)),
-            "FL_Straits_MediumCrude": weather_curve(mass_fractions, combined_half_lives),
+            "FL_Straits_MediumCrude": weather_curve(FS_mass_fractions, FS_combined_half_lives),
             }
 
 
