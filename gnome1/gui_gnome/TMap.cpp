@@ -253,7 +253,7 @@ OSErr TMap::CheckAndPassOnMessage(TModelMessage *message)
 						if(FileExists(0,0,path))
 						{
 							short unitsIfKnownInAdvance = kUndefined;
-							char str2[64];
+							char str2[64], outPath[256];
 							message->GetParameterString("speedUnits",str2,64);
 							if(str2[0]) 
 							{	
@@ -262,6 +262,11 @@ OSErr TMap::CheckAndPassOnMessage(TModelMessage *message)
 									printError("bad speedUnits parameter");
 							}
 							
+#if TARGET_API_MAC_CARBON
+							// ReadTimeValues expects unix style paths
+							if (!err) err = ConvertTraditionalPathToUnixPath((const char *) path, outPath, kMaxNameLen) ;
+							if (!err) strcpy(path,outPath);
+#endif
 							err = timeFile -> ReadTimeValues (path, M19MAGNITUDEDIRECTION,unitsIfKnownInAdvance);
 						}	
 						else 
@@ -1138,6 +1143,11 @@ OSErr TMap::AddItem(ListItem item)
 						if (!timeFile)
 						{ TechError("TMap::AddItem()", "new TOSSMTimeValue()", 0); delete newMover; return -1; }
 						
+#if TARGET_API_MAC_CARBON
+						// ReadTimeValues expects unix style paths
+						if (!err) err = ConvertTraditionalPathToUnixPath((const char *) path, outPath, kMaxNameLen) ;
+						if (!err) strcpy(path,outPath);
+#endif
 						if (err = timeFile -> ReadTimeValues (path, M19MAGNITUDEDIRECTION, kUndefined)) // ask for units
 						{ delete timeFile; delete newMover; return -1; }
 						newMover->timeDep = timeFile;

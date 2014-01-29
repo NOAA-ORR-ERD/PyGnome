@@ -1076,7 +1076,7 @@ OSErr GetWindFilePath(char *path)
 
 OSErr WindSettingsDialog(TWindMover *mover, TMap *owner,Boolean bAddMover,WindowPtr parentWindow, Boolean savePopTableInfo)
 { // Note: returns USERCANCEL when user cancels
-	char 			path [256];
+	char 			path [256], outPath [256];
 	short 			item;
 	PopTableInfo saveTable = SavePopTable();
 	short j, numItems = 0;
@@ -1121,6 +1121,11 @@ OSErr WindSettingsDialog(TWindMover *mover, TMap *owner,Boolean bAddMover,Window
 		if (!timeFile)
 		{ TechError("WindSettingsDialog()", "new TOSSMTimeValue()", 0); delete newMover; return -1; }
 		
+#if TARGET_API_MAC_CARBON
+		// ReadTimeValues expects unix style paths
+		if (!err) err = ConvertTraditionalPathToUnixPath((const char *) path, outPath, kMaxNameLen) ;
+		if (!err) strcpy(path,outPath);
+#endif
 		if (err = timeFile -> ReadTimeValues (path, M19MAGNITUDEDIRECTION, kUndefined)) // ask for units
 		{ delete timeFile; delete newMover; return -1; }
 		newMover->timeDep = timeFile;

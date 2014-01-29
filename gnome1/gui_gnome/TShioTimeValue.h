@@ -36,6 +36,7 @@ class TShioTimeValue : virtual public ShioTimeValue_c, public TOSSMTimeValue
 		virtual OSErr 			CheckAndPassOnMessage(TModelMessage *message);
 };
 
+bool IsShioFile(vector<string> &linesInFile);
 Boolean IsShioFile(char* path);
 char* GetKeyedLine(CHARH f, const char*key, long lineNum, char *strLine);
 

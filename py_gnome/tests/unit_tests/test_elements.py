@@ -18,6 +18,7 @@ from gnome.array_types import (windages, windage_range, windage_persist,
 
 from gnome.elements import (InitWindages,
                             InitMassFromVolume,
+                            InitMassFromTotalMass,
                             InitRiseVelFromDist,
                             InitRiseVelFromDropletSizeFromDist,
                             floating,
@@ -54,6 +55,7 @@ def assert_dataarray_shape_size(arr_types, data_arrays, num_released):
                 [(InitWindages(), windages, None),
                  (InitWindages(), windages, None),
                  (InitMassFromVolume(), mass_array, Spill(volume=10)),
+                 (InitMassFromTotalMass(), mass_array, Spill(mass=10)),
                  (InitRiseVelFromDist(), rise_vel_array, None),
                  (InitRiseVelFromDist(distribution='normal',
                                       mean=0, sigma=0.1),
@@ -147,6 +149,19 @@ def test_initailize_InitMassFromVolume():
     assert np.all(1. == data_arrays['mass'])
 
 
+def test_initailize_InitMassFromTotalMass():
+    data_arrays = mock_append_data_arrays(mass_array, num_elems)
+    fcn = InitMassFromTotalMass()
+    spill = Spill()
+    spill.num_elements=10
+    substance = OilProps('oil_conservative')
+    spill.mass = num_elems
+    fcn.initialize(num_elems, spill, data_arrays, substance)
+
+    assert_dataarray_shape_size(mass_array, data_arrays, num_elems)
+    assert np.all(1. == data_arrays['mass'])
+
+
 def test_initialize_InitRiseVelFromDist_uniform():
     """
     test initialize data_arrays with uniform dist
@@ -203,6 +218,7 @@ def test_initialize_InitRiseVelFromDist_normal():
 arr_types = {'windages': array_types.windages,
              'windage_range': array_types.windage_range,
              'windage_persist': array_types.windage_persist,
+             'mass': array_types.mass,
              'rise_vel': array_types.rise_vel}
 
 inp_params = \
@@ -211,6 +227,12 @@ inp_params = \
                     'mass': InitMassFromVolume()})), arr_types),
      ((floating(),
        ElementType({'windages': InitWindages(),
+                    'mass': InitMassFromTotalMass()})), arr_types),
+     ((floating(),
+       ElementType({'windages': InitWindages(),
+                    'rise_vel': InitRiseVelFromDist()})), arr_types),
+     ((floating(),
+       ElementType({'mass': InitMassFromTotalMass(),
                     'rise_vel': InitRiseVelFromDist()})), arr_types),
      ((floating(),
        ElementType({'mass': InitMassFromVolume(),

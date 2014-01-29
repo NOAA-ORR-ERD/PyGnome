@@ -80,6 +80,22 @@ class InitWindages(object):
                     data_arrays['windages'][-num_new_particles:])
 
 
+class InitMassFromTotalMass(object):
+    """
+    Initialize the 'mass' array based on total mass spilled
+    """
+
+    def initialize(self, num_new_particles, spill, data_arrays, substance):
+        if spill.mass is None:
+            raise ValueError('mass attribute of spill is None - cannot'
+                             ' compute particle mass without total mass')
+
+        _total_mass = spill.get_mass('g') 
+        #_total_mass = spill.mass	#assume in grams for now 
+        data_arrays['mass'][-num_new_particles:] = (_total_mass /
+                                                    spill.num_elements)
+                                                    #num_new_particles)
+
 class InitMassFromVolume(object):
     """
     Initialize the 'mass' array based on total volume spilled and the type of
