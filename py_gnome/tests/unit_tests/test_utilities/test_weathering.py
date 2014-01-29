@@ -18,11 +18,11 @@ np = numpy
 
 ## Testing the weather curve calculation
 #from tap_comp_volume import weather_curve, comp_volume
-from weathering import weather_curve, WeatheringComponent
+from gnome.utilities.weathering import weather_curve, WeatheringComponent
 
 # we will probably get our oil types from a different module
 # at some later date
-from weathering import OilTypes
+from gnome.utilities.weathering import OilTypes
 
 
 def test_weather_all_add_up():
@@ -40,6 +40,7 @@ def test_weather_all_add_up2():
                         (0.333334, 36)),
                        )
     print wc
+
 
 def test_weather_single_component1():
     wc = weather_curve(((1.0, 12),))

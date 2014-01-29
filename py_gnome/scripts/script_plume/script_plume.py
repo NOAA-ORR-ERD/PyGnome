@@ -61,17 +61,30 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
                                             which_data='most',
                                             output_timestep=timedelta(hours=2))
 
-    print 'adding a spill'
+    print 'adding two spills'
 
-    # need vertical diffusion and rise velocity - wind doesn't act until particles reach surface
+    # break the spill into two spills, first with the larger droplets and second with the smaller droplets
+    # split the total spill volume (100 m^3) to have most in the larger droplet spill
+    # smaller droplets start at a lower depth than larger
 
     spill = gnome.spill.PointLineSource(num_elements=1000,
-            volume=100,
-            start_position=(-76.126872, 37.680952, 1000),
+            volume=90, # default volume_units=m^3
+            start_position=(-76.126872, 37.680952, 1700),
             release_time=start_time,  
             end_release_time=start_time+timedelta(hours=24),  
             #element_type=plume(distribution='weibull',alpha=1.8,lambda_=.000248,min_=.0001))  
-            element_type = plume(distribution='weibull',alpha=1.8,lambda_=.00456,min_=.0001,max_=.004)) 
+            element_type = plume(distribution='weibull',alpha=1.8,lambda_=.00456,min_=.0002)) #200 micron min
+            #element_type = plume(distribution='weibull',alpha=1.8,lambda_=.00456,max_=.0001)) 
+
+    model.spills += spill
+
+    spill = gnome.spill.PointLineSource(num_elements=1000,
+            volume=10,
+            start_position=(-76.126872, 37.680952, 1800),
+            release_time=start_time,  
+            #end_release_time=start_time+timedelta(hours=24),  
+            #element_type=plume(distribution='weibull',alpha=1.8,lambda_=.000248,min_=.0001))  
+            element_type = plume(distribution='weibull',alpha=1.8,lambda_=.00456,max_=.0002)) #200 micron max
             #element_type = plume(distribution='weibull',alpha=1.8,lambda_=.00456,max_=.0001)) 
 
     model.spills += spill
@@ -85,7 +98,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     model.movers += vert_mover
 
     print 'adding a RandomVerticalMover:'
-    vert_mover = gnome.movers.RandomVerticalMover(mixed_layer_depth=10)
+    vert_mover = gnome.movers.RandomVerticalMover(vertical_diffusion_coef_above_ml=5, vertical_diffusion_coef_below_ml=.11, mixed_layer_depth=10)
     model.movers += vert_mover
 
     print 'adding a wind mover:'

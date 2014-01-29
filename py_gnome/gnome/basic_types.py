@@ -10,7 +10,9 @@ Adds some for Python-only use
 """
 
 import sys
-import numpy as np
+
+import numpy
+np = numpy
 
 from cy_gnome.cy_basic_types import *  # pull everything from the cython code
 

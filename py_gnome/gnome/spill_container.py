@@ -6,8 +6,10 @@ Implements a container for spills -- keeps all the data from each spill in one
 set of arrays. The spills themselves provide some of the arrays themselves
 (adding more each time LEs are released).
 """
-import numpy as np
 from datetime import timedelta
+
+import numpy
+np = numpy
 
 import gnome.spill
 from gnome.utilities.orderedcollection import OrderedCollection
@@ -57,6 +59,9 @@ class SpillContainerData(object):
         # through the run since positions are stored as single dtype as opposed
         # to double
         self._array_allclose_atol = 0
+
+    def __contains__(self, item):
+        return item in self._data_arrays
 
     def __getitem__(self, data_name):
         """
@@ -164,14 +169,15 @@ class SpillContainerData(object):
             return False
         else:
             return True
+
     def __len__(self):
         """
-        the "length" of apill container is the number of elements in it 
+        the "length" of apill container is the number of elements in it
         i.e. the length of the data arrays
         """
         try:
             #find the length of an arbitrary first array
-            return len( self._data_arrays.itervalues().next() )
+            return len(self._data_arrays.itervalues().next())
         except StopIteration:
             return 0
 

@@ -28,7 +28,7 @@ class ReleaseFraction(object):
     table_results = namedtuple('ReleaseFractionResults',
                                ''' f_rel,
                                    g_max,
-                               ''' )
+                               ''')
 
     points = [(1, (0.0, None)),
               (1.1, (0.08, 140)),
