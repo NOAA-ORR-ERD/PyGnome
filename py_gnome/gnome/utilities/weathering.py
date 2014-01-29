@@ -90,6 +90,9 @@ class weather_curve:
                    }
         self.method = methods[method]
 
+    def __repr__(self):
+        return ('weather_curve({0})').format(zip(self.fractions, self.factors))
+
     def _xform_inputs(self, M_0, time):
         '''
            make sure our mass and time arguments are a good fit

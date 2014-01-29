@@ -6,7 +6,8 @@ These are properties that are spill specific like:
   'nonweathering' element_types would set use_droplet_size flag to False
   'weathering' element_types would use droplet_size, densities, mass?
 '''
-import numpy as np
+import numpy
+np = numpy
 
 from gnome.utilities.rand import random_with_persistance
 from gnome.cy_gnome.cy_rise_velocity_mover import rise_velocity_from_drop_size
@@ -119,7 +120,8 @@ class ValuesFromDistBase(object):
         Keyword arguments: kwargs are different based on the type of
         distribution selected by user
 
-        :param distribution: could be 'uniform', 'normal', 'lognormal' or 'weibull'
+        :param distribution: could be 'uniform', 'normal', 'lognormal'
+                             or 'weibull'
         :type distribution: str
 
         If distribution is 'uniform', then following kwargs are expected
@@ -167,18 +169,23 @@ class ValuesFromDistBase(object):
             self.min_ = kwargs.pop('min_', None)
             if self.min_ is not None:
                 if self.min_ <= 0:
-                    raise ValueError("'weibull' distribution requires minimum > 0 ")
+                    raise ValueError("'weibull' distribution requires "
+                                     "minimum > 0 ")
                 if self.min_ > 0.003:
-                    raise ValueError("'weibull' distribution requires minimum < .003 (3mm)")
+                    raise ValueError("'weibull' distribution requires "
+                                     "minimum < .003 (3mm)")
             self.max_ = kwargs.pop('max_', None)
             if self.max_ is not None:
                 if self.max_ <= 0:
-                    raise ValueError("'weibull' distribution requires minimum > 0 ")
-                    if self.min_ is not None: 
+                    raise ValueError("'weibull' distribution requires "
+                                     "minimum > 0 ")
+                    if self.min_ is not None:
                         if self.max_ < self.min_:
-                            raise ValueError("'weibull' distribution requires max > min and max > 0")
+                            raise ValueError("'weibull' distribution requires "
+                                             "max > min and max > 0")
                 if self.max_ < 0.00005:
-                    raise ValueError("'weibull' distribution requires maximum > .000025 (25 microns)")
+                    raise ValueError("'weibull' distribution requires maximum "
+                                     "> .000025 (25 microns)")
 
     def set_values(self, np_array):
         """
@@ -226,7 +233,8 @@ class InitRiseVelFromDist(ValuesFromDistBase):
         Use distribution to define rise_vel - use super to invoke
         ValuesFromDistBase().__init__()
 
-        :param distribution: could be 'uniform', 'normal', 'lognormal' or 'weibull'
+        :param distribution: could be 'uniform', 'normal', 'lognormal'
+                             or 'weibull'
         :type distribution: str
 
         If distribution is 'uniform', then following kwargs are expected
@@ -246,8 +254,10 @@ class InitRiseVelFromDist(ValuesFromDistBase):
             numpy.random.weibull distribution
         :param lambda_: the scale parameter for the distribution - required for
             2-parameter weibull distribution (Rosin-Rammler). Default is 1.
-        :param min_: optional lower end cutoff in meters for weibull distribution (100 microns)
-        :param max_: optional upper end cutoff in meters for weibull distribution (4 mm ?)
+        :param min_: optional lower end cutoff in meters for weibull
+                     distribution (100 microns)
+        :param max_: optional upper end cutoff in meters for weibull
+                     distribution (4 mm ?)
         """
 
         super(InitRiseVelFromDist, self).__init__(distribution=distribution,
@@ -279,8 +289,9 @@ class InitRiseVelFromDropletSizeFromDist(ValuesFromDistBase):
 
         All parameters have defaults and are optional
 
-        :param distribution: could be 'uniform', 'normal' ,'lognormal' or 'weibull'.
-            Default value 'uniform'
+        :param distribution: could be 'uniform', 'normal' ,'lognormal'
+                             or 'weibull'.
+                             Default value 'uniform'
         :type distribution: str
 
         If distribution is 'uniform', then following kwargs are expected
@@ -300,8 +311,10 @@ class InitRiseVelFromDropletSizeFromDist(ValuesFromDistBase):
             numpy.random.weibull distribution
         :param lambda_: the scale parameter for the distribution - required for
             2-parameter weibull distribution (Rosin-Rammler). Default is 1.
-        :param min_: optional lower end cutoff in meters for weibull distribution (100 microns)
-        :param max_: optional upper end cutoff in meters for weibull distribution (4 mm ?)
+        :param min_: optional lower end cutoff in meters for weibull
+                     distribution (100 microns)
+        :param max_: optional upper end cutoff in meters for weibull
+                     distribution (4 mm ?)
 
         :param water_density: 1020.0 [kg/m3]
         :type water_density: float
@@ -361,7 +374,8 @@ class ElementType(object):
         """
         self.initializers = initializers
         if isinstance(substance, basestring):
-            self.substance = OilProps(substance)	#leave for now to preserve tests
+            # leave for now to preserve tests
+            self.substance = OilProps(substance)
         else:
             # assume object passed in is duck typed to be same as OilProps
             self.substance = substance
@@ -388,33 +402,40 @@ def floating(windage_range=(.01, .04), windage_persist=900):
     return ElementType({'windages': InitWindages(windage_range,
                                                  windage_persist)})
 
+
 def plume(distribution_type='droplet_size',
           distribution='weibull',
           windage_range=(.01, .04),
           windage_persist=900,
           substance_name='oil_conservative',
-          density = None,
-          density_units = 'kg/m^3',
+          density=None,
+          density_units='kg/m^3',
           **kwargs):
     """
-    Helper function returns an ElementType object containing 'rise_vel' and 'windages'
+    Helper function returns an ElementType object containing 'rise_vel'
+    and 'windages'
     initializer with user specified parameters for distribution.
-    """ 
+    """
     if density is not None:
-        substance = OilPropsFromDensity(density,substance_name,density_units)
+        substance = OilPropsFromDensity(density, substance_name, density_units)
     else:
         substance = OilProps(substance_name)
-        
+
     if distribution_type == 'droplet_size':
         return ElementType({'rise_vel': InitRiseVelFromDropletSizeFromDist(distribution=distribution,
                                                                            **kwargs),
-                            'windages': InitWindages(windage_range,windage_persist),
-                            'mass': InitMassFromVolume()},substance)
+                            'windages': InitWindages(windage_range,
+                                                     windage_persist),
+                            'mass': InitMassFromVolume()},
+                           substance)
     elif distribution_type == 'rise_velocity':
         return ElementType({'rise_vel': InitRiseVelFromDist(distribution=distribution,
                                                             **kwargs),
-                            'windages': InitWindages(windage_range,windage_persist),
-                            'mass': InitMassFromVolume()},substance)
+                            'windages': InitWindages(windage_range,
+                                                     windage_persist),
+                            'mass': InitMassFromVolume()},
+                           substance)
+
 
 def plume_from_model(distribution_type='droplet_size',
                      distribution='weibull',
@@ -422,16 +443,19 @@ def plume_from_model(distribution_type='droplet_size',
                      windage_persist=900,
                      **kwargs):
     """
-    Helper function returns an ElementType object containing 'rise_vel' and 'windages'
+    Helper function returns an ElementType object containing 'rise_vel'
+    and 'windages'
     initializer with user specified parameters for distribution.
-    """ 
+    """
     if distribution_type == 'droplet_size':
         return ElementType({'rise_vel': InitRiseVelFromDropletSizeFromDist(distribution=distribution,
                                                  **kwargs),
-                            'windages': InitWindages(windage_range,windage_persist),
+                            'windages': InitWindages(windage_range,
+                                                     windage_persist),
                             'mass': InitMassFromPlume()})
     elif distribution_type == 'rise_velocity':
         return ElementType({'rise_vel': InitRiseVelFromDist(distribution=distribution,
                                                  **kwargs),
-                            'windages': InitWindages(windage_range,windage_persist),
+                            'windages': InitWindages(windage_range,
+                                                     windage_persist),
                             'mass': InitMassFromPlume()})
