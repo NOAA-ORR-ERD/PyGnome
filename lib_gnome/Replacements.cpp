@@ -483,4 +483,26 @@ Boolean IsCATS3DFile(char *path)
 		return false;
 }
 
+bool IsShioFile(vector<string> &linesInFile)
+{
+	long line = 0;
+	string value;
+	
+	// the first line of the file needs to be "[StationInfo]"
+	if (ParseKeyedLine(linesInFile[line++], "[StationInfo]", value))
+		return true;
+	else
+		return false;
+}
+
+Boolean IsShioFile(char* path)
+{
+	vector<string> linesInFile;
+	
+	if (ReadLinesInFile(path, linesInFile))
+		return IsShioFile(linesInFile);
+	else
+		return false;
+}
+
 #endif

@@ -1,12 +1,7 @@
 #!/usr/bin/env python
 
-from datetime import datetime, timedelta
+from datetime import timedelta
 
-import numpy
-np = numpy
-
-from gnome.utilities.inf_datetime import InfDateTime
-from gnome.utilities.weathering import weather_curve
 from gnome.movers.movers import Mover
 
 
@@ -58,22 +53,3 @@ class Weatherer(Mover):
     def get_move(self, sc, time_step, model_time):
         m0, time = self._xform_inputs(sc, time_step, model_time)
         return self.wc.weather(m0, time)
-
-
-if __name__ == '__main__':
-    # we will just put our testing stuff here for right now
-    wc = weather_curve(((0.333333, 12),
-                        (0.333333, 24),
-                        (0.333334, 36)),
-                       )
-    print wc
-
-    weatherer = Weatherer(weathering=wc)
-    print weatherer
-    assert weatherer.on == True
-    assert weatherer.active == True
-    assert weatherer.active_start == InfDateTime('-inf')
-    assert weatherer.active_stop == InfDateTime('inf')
-    assert weatherer.array_types == {}
-
-    pass

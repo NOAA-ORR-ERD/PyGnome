@@ -796,13 +796,13 @@ OSErr OSSMTimeValue_c::ReadTimeValues(char *path, short format, short unitsIfKno
 	strncpy(this->filePath, path, kMaxNameLen);
 	this->filePath[kMaxNameLen - 1] = 0;
 
-#ifndef pyGNOME
-	SplitPathFile(s, this->fileName);
-#else
+//#ifndef pyGNOME
+	//SplitPathFile(s, this->fileName);
+//#else
 	// this gives filename but tests expect full path
 	SplitPathFileName (s, this->fileName);
 	//strcpy(this->fileName, path); // for now use full path
-#endif
+//#endif
 
 	vector<string> linesInFile;
 	if (ReadLinesInFile(path, linesInFile)) {
@@ -1017,7 +1017,7 @@ done:
 }
 
 
-OSErr OSSMTimeValue_c::ReadHydrologyHeader(char *path)
+/*OSErr OSSMTimeValue_c::ReadHydrologyHeader(char *path)
 {
 	char	strLine [512];
 	char	firstPartOfFile [512];
@@ -1091,7 +1091,127 @@ OSErr OSSMTimeValue_c::ReadHydrologyHeader(char *path)
 done:
 	return err;
 }
+*/
 
+OSErr OSSMTimeValue_c::ReadHydrologyHeader(vector<string> &linesInFile)
+{
+	char	strLine [512];
+	char	firstPartOfFile [512], errmsg[256];
+	OSErr	err = noErr;
+	
+	long	line = 0;
+	long lenToRead, fileLength, numScanned;
+	float latdeg, latmin, longdeg, longmin;
+	
+	string currentLine;
+	char* stationName;
+
+	WorldPoint wp;
+	
+	memset(strLine, 0, 512);
+	memset(firstPartOfFile, 0, 512);
+	
+	//err = MyGetFileSize(0, 0, path, &fileLength);
+	//if (err)
+		//return err;
+	
+	//lenToRead = _min(512, fileLength);
+	
+	//err = ReadSectionOfFile(0, 0, path, 0, lenToRead, firstPartOfFile, 0);
+	//if (err)
+		//return err;
+	
+	currentLine = trim(linesInFile[line++]);
+	//firstPartOfFile[lenToRead - 1] = 0; // make sure it is a cString
+	//NthLineInTextOptimized(firstPartOfFile, line++, strLine, 512); // station name
+	//RemoveLeadingAndTrailingWhiteSpace(strLine);
+	
+	stationName = strdup(currentLine.c_str());	
+	strncpy(fStationName,stationName,kMaxNameLen);
+
+	//strncpy(fStationName, strLine, kMaxNameLen);
+	//fStationName[kMaxNameLen - 1] = 0;
+
+	currentLine = trim(linesInFile[(line)++]);
+	
+	std::replace(currentLine.begin(), currentLine.end(), ',', ' ');
+	
+	istringstream lineStream(currentLine);
+	lineStream >> latdeg >> latmin >> longdeg >> longmin;
+	if (lineStream.fail()) {
+		//sprintf(errmsg, "Unable to read data (ptNum, h, v) from line %ld:\n", *line);
+		//goto done;
+		istringstream lineStream(currentLine);
+		if (lineStream.fail()) {
+			sprintf(errmsg, "Unable to read data (lat, lon) from line %ld:\n", line);
+			goto done;
+		}
+		else {
+			wp.pLat = latdeg * 1000000;
+			wp.pLong = latmin * 1000000;
+			bOSSMStyle = false;
+		}
+
+	}
+	else {
+		// support old OSSM style
+		wp.pLat = (latdeg + latmin / 60.) * 1000000;
+		// need to have header include direction...
+		wp.pLong = -(longdeg + longmin / 60.) * 1000000;
+		bOSSMStyle = true;
+	}
+
+	//NthLineInTextOptimized(firstPartOfFile, line++, strLine, 512); // station position - lat deg, lat min, long deg, long min
+	//RemoveLeadingAndTrailingWhiteSpace(strLine);
+	//StringSubstitute(strLine, ',', ' ');
+	
+	//numScanned = sscanf(strLine, "%f %f %f %f",
+						//&latdeg, &latmin, &longdeg, &longmin);
+	/*if (numScanned == 4) {
+		// support old OSSM style
+		wp.pLat = (latdeg + latmin / 60.) * 1000000;
+		// need to have header include direction...
+		wp.pLong = -(longdeg + longmin / 60.) * 1000000;
+		bOSSMStyle = true;
+	}*/
+	
+	fStationPosition = wp;
+	
+	currentLine = trim(linesInFile[line++]);
+	std::transform(currentLine.begin(),
+				   currentLine.end(),
+				   currentLine.begin(),
+				   ::tolower);
+
+	if (currentLine == "cfs" )
+		fUserUnits = kCFS;
+	else if (currentLine == "kcfs")
+		fUserUnits = kKCFS;
+	else if (currentLine == "cms")
+		fUserUnits = kCMS;
+	else if (currentLine == "kcms")
+		fUserUnits = kKCMS;
+	else
+		err = -1;
+
+	//NthLineInTextOptimized(firstPartOfFile, line++, strLine, 512); // units
+	//RemoveLeadingAndTrailingWhiteSpace(strLine);
+		
+done:
+	return err;
+}
+
+OSErr OSSMTimeValue_c::ReadHydrologyHeader(char *path)
+{
+	vector<string> linesInFile;
+	
+	if (ReadLinesInFile(path, linesInFile)) {
+		return ReadHydrologyHeader(linesInFile);
+	}
+	else {
+		return false;
+	}
+}
 
 OSErr OSSMTimeValue_c::ReadOSSMTimeHeader(char *path)
 {

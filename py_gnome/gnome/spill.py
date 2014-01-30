@@ -53,6 +53,11 @@ class Spill(object):
                            ].values()]))
     valid_vol_units.extend(unit_conversion.GetUnitNames('Volume'))
 
+    valid_mass_units = list(chain.from_iterable([item[1] for item in
+                           unit_conversion.ConvertDataUnits['Mass'
+                           ].values()]))
+    valid_mass_units.extend(unit_conversion.GetUnitNames('Mass'))
+
     @property
     def id(self):
         return self._gnome_id.id
@@ -110,6 +115,16 @@ class Spill(object):
         if volume is not None:
             self._volume = unit_conversion.convert('Volume', volume_units,
                 'm^3', volume)
+
+        self._check_units(mass_units,"Mass")
+        self._mass_units = mass_units   # user defined for display
+        self._mass = mass
+        if mass is not None:
+            self._mass = unit_conversion.convert('Mass', mass_units,
+                'g', mass)
+
+        if mass is not None and volume is not None:
+            raise ValueError("'mass' and 'volume' cannot both be set")
 
         self._gnome_id = GnomeId(id)
         if element_type is None:
@@ -177,15 +192,20 @@ class Spill(object):
         obj_copy.__dict__ = copy.copy(self.__dict__)
         return obj_copy
 
-    def _check_units(self, units):
+    def _check_units(self, units, unit_type = "Volume"):
         """
-        Checks the user provided units are in list of valid volume units:
-        self.valid_vol_units
+        Checks the user provided units are in list of valid volume or mass units:
+        self.valid_vol_units, self.valid_mass_units
         """
 
-        if units not in self.valid_vol_units:
-            raise unit_conversion.InvalidUnitError("Volume units must be from"\
-               " following list to be valid: {0}".format(self.valid_vol_units))
+        if unit_type=="Volume":
+            if units not in self.valid_vol_units:
+                raise unit_conversion.InvalidUnitError("Volume units must be from"\
+                   " following list to be valid: {0}".format(self.valid_vol_units))
+        elif unit_type=="Mass":
+            if units not in self.valid_mass_units:
+                raise unit_conversion.InvalidUnitError("Mass units must be from"\
+                   " following list to be valid: {0}".format(self.valid_mass_units))
 
     @property
     def windage_range(self):
@@ -222,6 +242,25 @@ class Spill(object):
     volume = property(lambda self: self.get_volume(),
                       lambda self, value: self.set_volume(value, 'm^3'))
 
+    @property
+    def mass_units(self):
+        """
+        default units in which volume data is returned
+        """
+        return self._mass_units
+
+    @mass_units.setter
+    def mass_units(self, units):
+        """
+        set default units in which mass data is returned
+        """
+        self._check_units(units,"Mass")  # check validity before setting
+        self._mass_units = units
+
+    # returns the mass in mass_units specified by user
+    mass = property(lambda self: self.get_mass(),
+                      lambda self, value: self.set_mass(value, 'g'))
+
     def get_volume(self, units=None):
         """
         return the volume released during the spill. The default units for
@@ -248,6 +287,33 @@ class Spill(object):
         self._check_units(units)
         self._volume = unit_conversion.convert('Volume', units, 'm^3', volume)
         self.volume_units = units
+
+    def get_mass(self, units=None):
+        """
+        return the mass released during the spill. The default units for
+        mass are as defined in 'mass_units' property. User can also specify
+        desired output units in the function.
+        """
+        if self._mass is None:
+            return self._mass
+
+        if units is None:
+            return unit_conversion.convert('Mass', 'g',
+                                           self.mass_units, self._mass)
+        else:
+            self._check_units(units,"Mass")
+            return unit_conversion.convert('Mass', 'g', units,
+                    self._mass)
+
+    def set_mass(self, mass, units):
+        """
+        set the mass released during the spill. The default units for
+        mass are as defined in 'mass_units' property. User can also specify
+        desired output units in the function.
+        """
+        self._check_units(units,"Mass")
+        self._mass = unit_conversion.convert('Mass', units, 'g', mass)
+        self.mass_units = units
 
     def uncertain_copy(self):
         """
