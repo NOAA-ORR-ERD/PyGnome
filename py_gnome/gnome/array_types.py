@@ -121,7 +121,7 @@ class IdArrayType(ArrayType):
     """
     def initialize(self, num_elements):
         array = np.arange(self.initial_value,
-                          num_elements + self.initial_value, dtype=self.dtype)
+                          int(num_elements) + self.initial_value, dtype=self.dtype)
         return array
 
 
