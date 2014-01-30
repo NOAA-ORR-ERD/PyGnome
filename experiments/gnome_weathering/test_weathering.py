@@ -41,7 +41,6 @@ def test_weather_all_add_up2():
                        )
     print wc
 
-
 def test_weather_single_component1():
     wc = weather_curve(((1.0, 12),))
     time = 12

@@ -68,14 +68,14 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     # smaller droplets start at a lower depth than larger
 
     spill = gnome.spill.PointLineSource(num_elements=1000,
-            volume=90, # default volume_units=m^3
-            start_position=(-76.126872, 37.680952, 1700),
-            release_time=start_time,  
-            end_release_time=start_time+timedelta(hours=24),  
-            #element_type=plume(distribution='weibull',alpha=1.8,lambda_=.000248,min_=.0001))  
-            element_type = plume(distribution='weibull',alpha=1.8,lambda_=.00456,min_=.0002)) #200 micron min
-            #element_type = plume(distribution='weibull',alpha=1.8,lambda_=.00456,max_=.0001)) 
-
+                                        volume=90, # default volume_units=m^3
+                                        start_position=(-76.126872, 37.680952, 1700),
+                                        release_time=start_time,  
+                                        end_release_time=start_time+timedelta(hours=24),  
+                                        #element_type=plume(distribution='weibull',alpha=1.8,lambda_=.000248,min_=.0001),  
+                                        element_type = plume(distribution='weibull',alpha=1.8,lambda_=.00456,min_=.0002), #200 micron min
+                                        #element_type = plume(distribution='weibull',alpha=1.8,lambda_=.00456,max_=.0001), 
+                                        )
     model.spills += spill
 
     spill = gnome.spill.PointLineSource(num_elements=1000,
@@ -83,9 +83,10 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
             start_position=(-76.126872, 37.680952, 1800),
             release_time=start_time,  
             #end_release_time=start_time+timedelta(hours=24),  
-            #element_type=plume(distribution='weibull',alpha=1.8,lambda_=.000248,min_=.0001))  
-            element_type = plume(distribution='weibull',alpha=1.8,lambda_=.00456,max_=.0002)) #200 micron max
-            #element_type = plume(distribution='weibull',alpha=1.8,lambda_=.00456,max_=.0001)) 
+            #element_type=plume(distribution='weibull',alpha=1.8,lambda_=.000248,min_=.0001),
+            element_type = plume(distribution='weibull',alpha=1.8,lambda_=.00456,max_=.0002), #200 micron max
+            #element_type = plume(distribution='weibull',alpha=1.8,lambda_=.00456,max_=.0001),
+            ) 
 
     model.spills += spill
 
@@ -101,15 +102,15 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     vert_mover = gnome.movers.RandomVerticalMover(vertical_diffusion_coef_above_ml=5, vertical_diffusion_coef_below_ml=.11, mixed_layer_depth=10)
     model.movers += vert_mover
 
-    print 'adding a wind mover:'
+    # print 'adding a wind mover:'
 
-    series = np.zeros((2, ), dtype=gnome.basic_types.datetime_value_2d)
-    series[0] = (start_time, (30, 90))
-    series[1] = (start_time + timedelta(hours=23), (30, 90))
+    # series = np.zeros((2, ), dtype=gnome.basic_types.datetime_value_2d)
+    # series[0] = (start_time, (30, 90))
+    # series[1] = (start_time + timedelta(hours=23), (30, 90))
 
-    wind = Wind(timeseries=series, units='knot')
-    w_mover = gnome.movers.WindMover(wind, uncertain_angle_scale=0) 	# default is .4 radians
-    model.movers += w_mover
+    # wind = Wind(timeseries=series, units='knot')
+    # w_mover = gnome.movers.WindMover(wind, uncertain_angle_scale=0) 	# default is .4 radians
+    # model.movers += w_mover
 
     print 'adding a simple mover:'
     s_mover = gnome.movers.SimpleMover(velocity=(0.0, -.1, 0.0))

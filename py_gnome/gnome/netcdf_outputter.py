@@ -450,7 +450,7 @@ class NetCDFOutput(Outputter, serializable.Serializable):
                     if self.which_data == 'most':
                         # remove the ones we don't want
                         for var_name in self.usually_skipped_arrays:
-                            self.arrays_to_output.remove(var_name)
+                            self.arrays_to_output.discard(var_name)
 
                 for var_name in self.arrays_to_output:
                     # the special cases:

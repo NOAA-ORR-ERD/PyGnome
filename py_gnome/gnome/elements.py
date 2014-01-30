@@ -100,7 +100,7 @@ class InitMassFromTotalMass(object):
 class InitMassFromVolume(object):
     """
     Initialize the 'mass' array based on total volume spilled and the type of
-    substance
+    substance. No parameters, as it uses the volume specified elsewhere.
     """
 
     def initialize(self, num_new_particles, spill, data_arrays, substance):
@@ -431,7 +431,20 @@ def plume(distribution_type='droplet_size',
     Helper function returns an ElementType object containing 'rise_vel'
     and 'windages'
     initializer with user specified parameters for distribution.
-    """
+
+    See below docs for details on the parameters.
+
+    :param distribution_type='droplet_size': available options:
+                                             'droplet_size' -- droplet size is samples from the specified distribution. Rise velofity is calculated.
+                                             'rise_velocity' -- rise velocity is directly sampled from the specified distribution. No droplet size is computed.
+    :param distribution='weibull':
+    :param windage_range=(.01, .04):
+    :param windage_persist=900:
+    :param substance_name='oil_conservative':
+    :param density = None:
+    :param density_units = 'kg/m^3':
+
+    """ 
     if density is not None:
         substance = OilPropsFromDensity(density, substance_name, density_units)
     else:
@@ -451,6 +464,20 @@ def plume(distribution_type='droplet_size',
                                                      windage_persist),
                             'mass': InitMassFromVolume()},
                            substance)
+
+
+## Add docstring from called classes
+plume.__doc__ += ("\nDocumentation of OilPropsFromDensity:\n" +
+                   OilPropsFromDensity.__init__.__doc__ +
+                   "\nDocumentation of InitRiseVelFromDropletSizeFromDist:\n" +
+                   InitRiseVelFromDropletSizeFromDist.__init__.__doc__ +
+                   "\nDocumentation of InitRiseVelFromDist:\n" +
+                   InitRiseVelFromDist.__init__.__doc__ +
+                   "\nDocumentation of InitWindages:\n" +
+                   InitWindages.__init__.__doc__ +
+                   "\nDocumentation of InitMassFromVolume:\n" +
+                   InitMassFromVolume.__init__.__doc__
+                   )
 
 
 def plume_from_model(distribution_type='droplet_size',
