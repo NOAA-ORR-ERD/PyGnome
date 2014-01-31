@@ -223,6 +223,9 @@ class Spill(object):
     def windage_persist(self, val):
         self.element_type.initializers['windages'].windage_persist = val
 
+    num_elements = property(lambda self: self._num_elements,
+                      lambda self, value: setattr(self, '_num_elements',int(value)))
+
     @property
     def volume_units(self):
         """
