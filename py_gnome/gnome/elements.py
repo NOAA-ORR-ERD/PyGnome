@@ -10,6 +10,7 @@ import numpy
 np = numpy
 
 from gnome.utilities.rand import random_with_persistance
+from gnome.utilities.compute_fraction import fraction_below_d
 from gnome.cy_gnome.cy_rise_velocity_mover import rise_velocity_from_drop_size
 from gnome.db.oil_library.oil_props import (OilProps, OilPropsFromDensity)
 """
@@ -183,25 +184,33 @@ class ValuesFromDistBase(object):
                 raise TypeError("'weibull' distribution requires 'alpha'"
                                 " input as kwargs")
             self.min_ = kwargs.pop('min_', None)
-            if self.min_ is not None:
-                if self.min_ <= 0:
+            if self.min_ is not None: 
+                frac_below_min = fraction_below_d(self.min_, self.alpha, self.lambda_)
+                if self.min_ < 0:
                     raise ValueError("'weibull' distribution requires "
-                                     "minimum > 0 ")
-                if self.min_ > 0.003:
+                                     "minimum >= 0 ")
+                if frac_below_min > 0.999:
                     raise ValueError("'weibull' distribution requires "
-                                     "minimum < .003 (3mm)")
+                                     "minimum < 99.9% of total distribution")
+#                 if self.min_ > 0.003:
+#                     raise ValueError("'weibull' distribution requires "
+#                                      "minimum < .003 (3mm)")
             self.max_ = kwargs.pop('max_', None)
             if self.max_ is not None:
+                frac_below_max = fraction_below_d(self.max_, self.alpha, self.lambda_)
                 if self.max_ <= 0:
                     raise ValueError("'weibull' distribution requires "
-                                     "minimum > 0 ")
-                    if self.min_ is not None:
-                        if self.max_ < self.min_:
-                            raise ValueError("'weibull' distribution requires "
-                                             "max > min and max > 0")
-                if self.max_ < 0.00005:
-                    raise ValueError("'weibull' distribution requires maximum "
-                                     "> .000025 (25 microns)")
+                                     "maximum > 0 ")
+                if frac_below_max < 0.001:
+                    raise ValueError("'weibull' distribution requires "
+                                     "maximum > 0.1% of total distribution")
+                if self.min_ is not None:
+                    if self.max_ < self.min_:
+					    raise ValueError("'weibull' distribution requires "
+                                        "maximum > minimum")
+#                 if self.max_ < 0.00005:
+#                     raise ValueError("'weibull' distribution requires maximum "
+#                                      "> .000025 (25 microns)")
 
     def set_values(self, np_array):
         """

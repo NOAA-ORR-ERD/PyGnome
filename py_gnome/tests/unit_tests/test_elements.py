@@ -181,7 +181,7 @@ def test_initialize_InitRiseVelFromDropletDist_weibull():
     """
     test initialize data_arrays with weibull dist
     """
-    num_elems = 1000
+    num_elems = 10
     data_arrays = mock_append_data_arrays(rise_vel_diameter_array, num_elems)
     substance = OilProps('oil_conservative')
     spill = Spill()
@@ -196,6 +196,29 @@ def test_initialize_InitRiseVelFromDropletDist_weibull():
     assert_dataarray_shape_size(rise_vel_array, data_arrays, num_elems)
 
     assert np.all(0 != data_arrays['rise_vel'])
+    assert np.all(0 != data_arrays['droplet_diameter'])
+
+def test_initialize_InitRiseVelFromDropletDist_weibull_with_min_max():
+    """
+    test initialize data_arrays with weibull dist
+    """
+    num_elems = 1000
+    data_arrays = mock_append_data_arrays(rise_vel_diameter_array, num_elems)
+    substance = OilProps('oil_conservative')
+    spill = Spill()
+    fcn = InitRiseVelFromDropletSizeFromDist('weibull',
+                                      min_ = .002,
+                                      max_ = .004,
+                                      alpha = 1.8,
+                                      lambda_ = .00456)	# (.001*3.8) / (.693 ** (1 / 1.8)) - larger droplet test case, in mm so multiply by .001 
+#     fcn = InitRiseVelFromDropletSizeFromDist('weibull',
+#                                       min_ = .000006,
+#                                       alpha = 1.8,
+#                                       lambda_ = .000248)	# (.001*.2) / (.693 ** (1 / 1.8)) - smaller droplet test case, in mm so multiply by .001
+    fcn.initialize(num_elems, spill, data_arrays, substance)
+
+    assert np.all(data_arrays['droplet_diameter'] >= .002)	#test for the larger droplet case above
+    assert np.all(data_arrays['droplet_diameter'] <= .004)	#test for the larger droplet case above
 
 def test_initialize_InitRiseVelFromDist_normal():
     """
