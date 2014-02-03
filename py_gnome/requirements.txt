@@ -19,6 +19,7 @@ Pyrex>=0.9.8.6
 pytest>=2.3.4
 sphinx
 progressbar
+six
 
 git+https://github.com/NOAA-ORR-ERD/hazpy.unit_conversion.git#egg=hazpy.unit_conversion
 
