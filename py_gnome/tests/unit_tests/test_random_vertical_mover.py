@@ -115,7 +115,7 @@ def test_mixed_layer():
     time_step = 60
     total_time = 600
 
-    num_elements = 100
+    num_elements = 1000
     num_timesteps = total_time // time_step 
 
     mv = RandomVerticalMover(vertical_diffusion_coef_above_ml=D_mixed,
@@ -198,7 +198,7 @@ def test_mixed_layer2():
     var = sc['positions'][:,2].var()
     print "expected_var:", exp_var, "var:", var
 
-    assert np.allclose(exp_var, var, rtol=0.15)
+    assert np.allclose(exp_var, var, rtol=0.18)
 
 
 

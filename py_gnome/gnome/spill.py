@@ -105,7 +105,7 @@ class Spill(object):
         :type element_type: list of gnome.element_type.* objects
         """
 
-        self.num_elements = num_elements
+        self.num_elements = int(num_elements)
         self.on = on    # spill is active or not
 
         # mass/volume, type of oil spilled
@@ -222,6 +222,9 @@ class Spill(object):
     @windage_persist.setter
     def windage_persist(self, val):
         self.element_type.initializers['windages'].windage_persist = val
+
+    num_elements = property(lambda self: self._num_elements,
+                      lambda self, value: setattr(self, '_num_elements',int(value)))
 
     @property
     def volume_units(self):
@@ -471,7 +474,7 @@ class PointLineSource(Spill, serializable.Serializable):
 
         super(PointLineSource, self).__init__(**kwargs)
 
-        self.num_elements = num_elements
+        self.num_elements = int(num_elements)
         self.release_time = release_time
 
         if end_release_time is None:
