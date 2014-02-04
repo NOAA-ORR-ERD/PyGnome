@@ -143,7 +143,9 @@ _default_values = \
      'rise_vel': ((), np.float64, 0.),
      'droplet_diameter': ((), np.float64, 0.),
      'age': ((), np.int32, 0)
-     }
+     'mass_components': ((5,), np.float64, (1., 0., 0., 0., 0.)),
+     'half_lives': ((5,), np.float64, (np.inf, np.inf, np.inf, np.inf, np.inf)),
+      }
 
 
 # dynamically create the ArrayType objects in this module from _default_values
