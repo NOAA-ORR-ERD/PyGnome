@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import pytest
+from pytest import raises
 
 from gnome.movers.simple_mover import SimpleMover
 from gnome.movers import Mover, RandomMover
@@ -18,22 +18,22 @@ class TestOrderedCollection(object):
         oc = OrderedCollection(dtype=int)
         assert oc.dtype == int
 
-        with pytest.raises(TypeError):
+        with raises(TypeError):
 
             # either a populated list or a dtype is required
 
             oc = OrderedCollection()
 
-        with pytest.raises(TypeError):
+        with raises(TypeError):
             oc = OrderedCollection('not a list')
 
-        with pytest.raises(TypeError):
+        with raises(TypeError):
 
             # either a populated list or a dtype is required
 
             oc = OrderedCollection([])
 
-        with pytest.raises(TypeError):
+        with raises(TypeError):
             oc = OrderedCollection([1, 2, 3, 4, 5], float)
 
     def test_len(self):
@@ -51,7 +51,7 @@ class TestOrderedCollection(object):
     def test_getitem(self):
         oc = OrderedCollection([1, 2, 3, 4, 5])
         assert oc[id(3)] == 3
-        with pytest.raises(KeyError):
+        with raises(KeyError):
             oc[id(6)]
 
     def test_setitem(self):
@@ -77,7 +77,7 @@ class TestOrderedCollection(object):
 
     def test_delitem(self):
         oc = OrderedCollection([1, 2, 3, 4, 5])
-        with pytest.raises(KeyError):
+        with raises(KeyError):
             del oc[id(6)]
         del oc[id(4)]
         assert [i for i in oc] == [1, 2, 3, 5]
@@ -117,12 +117,12 @@ class TestOrderedCollection(object):
             5,
             6,
             ]
-        with pytest.raises(TypeError):
+        with raises(TypeError):
             oc.add('not an int')
 
     def test_remove(self):
         oc = OrderedCollection([1, 2, 3, 4, 5])
-        with pytest.raises(KeyError):
+        with raises(KeyError):
             oc.remove(id(6))
         oc.remove(id(4))
         assert [i for i in oc] == [1, 2, 3, 5]
@@ -148,12 +148,12 @@ class TestOrderedCollection(object):
             6,
             ]
         assert oc[id(7)] == 7
-        with pytest.raises(KeyError):
+        with raises(KeyError):
 
             # our key should also be gone after the delete
 
             oc[id(4)]
-        with pytest.raises(TypeError):
+        with raises(TypeError):
             oc.replace(id(7), 'not an int')
 
     def test_index(self):
@@ -204,13 +204,13 @@ class TestOrderedCollection(object):
         assert mymovers[mover_4.id] == mover_4
 
     def test_eq(self):
-        """ Test comparison operator __eq__ """
+        'Test comparison operator __eq__'
 
         assert OrderedCollection([1, 2, 3, 4, 5]) \
             == OrderedCollection([1, 2, 3, 4, 5])
 
     def test_ne(self):
-        """ Test comparison operator (not equal) """
+        'Test comparison operator (not equal)'
 
         assert OrderedCollection([1, 2, 3, 4, 5]) \
             != OrderedCollection([2, 1, 3, 4, 5])
@@ -218,29 +218,24 @@ class TestOrderedCollection(object):
             != OrderedCollection([1, 2, 3, 4])
         assert OrderedCollection([1, 2, 3, 4, 5]) != [1, 2, 3, 4, 5]
 
+    def test_to_dict(self):
+        'added a to_dict() method - test this method'
 
-def test_to_dict():
-    '''
-        added a to_dict() method - test this method
-    '''
+        items = [SimpleMover(velocity=(i * 0.5, -1.0, 0.0)) for i in
+                 range(2)]
+        items.extend([RandomMover() for i in range(2)])
+        mymovers = OrderedCollection(items, dtype=Mover)
+        dict_ = mymovers.to_dict()
 
-    items = [SimpleMover(velocity=(i * 0.5, -1.0, 0.0)) for i in
-             range(2)]
-    items.extend([RandomMover() for i in range(2)])
-    mymovers = OrderedCollection(items, dtype=Mover)
-    dict_ = mymovers.to_dict()
-
-    assert dict_['dtype'] == mymovers.dtype
-    for (i, mv) in enumerate(items):
-        assert dict_['id_list'][i][0] \
-            == '{0}.{1}'.format(mv.__module__, mv.__class__.__name__)
-        assert dict_['id_list'][i][1] == mv.id
+        assert dict_['dtype'] == mymovers.dtype
+        for (i, mv) in enumerate(items):
+            assert dict_['id_list'][i][0] \
+                == '{0}.{1}'.format(mv.__module__, mv.__class__.__name__)
+            assert dict_['id_list'][i][1] == mv.id
 
 
 class ObjToAdd:
-
-    ''' Define a helper class (mutable object) for use in TestCallbacks '''
-
+    'Define a helper class (mutable object) for use in TestCallbacks'
     def __init__(self):
         self.reset()
 
@@ -255,7 +250,8 @@ class TestCallbacks:
     to_add = [ObjToAdd(), ObjToAdd(), ObjToAdd()]
 
     def test_add_callback(self):
-        ''' test add callback is invoked after adding an object or
+        '''
+            test add callback is invoked after adding an object or
             list of objects
         '''
 
@@ -277,7 +273,7 @@ class TestCallbacks:
             assert not obj.replace_callback
 
     def test_remove_callback(self):
-        ''' test remove callback is invoked after removing an object '''
+        'test remove callback is invoked after removing an object'
 
         oc = OrderedCollection(dtype=ObjToAdd)  # lets work with a mutable type
         oc.register_callback(self._rm_callback, events='remove')
@@ -304,7 +300,7 @@ class TestCallbacks:
             assert not obj.replace_callback
 
     def test_replace_callback(self):
-        ''' test replace callback is invoked after replacing an object '''
+        'test replace callback is invoked after replacing an object'
 
         # lets work with a mutable type
 
@@ -328,7 +324,7 @@ class TestCallbacks:
                 assert not obj.replace_callback
 
     def test_add_replace_callback(self):
-        ''' register one callback with multiple events (add, replace) '''
+        'register one callback with multiple events (add, replace)'
 
         # lets work with a mutable type
 
@@ -367,5 +363,3 @@ class TestCallbacks:
     def _reset_ObjToAdd_init_state(self):
         for obj in self.to_add:
             obj.reset()
-
-
