@@ -61,26 +61,26 @@ def mock_append_data_arrays(array_types, num_elements, data_arrays={}):
 
 
 def sample_sc_release(num_elements=10,
-    start_pos=(0.0, 0.0, 0.0),
-    release_time=datetime(2000, 1, 1, 1),
-    uncertain=False,
-    time_step=360,
-    spill=None,
-    arr_types=None,
-    element_type=None,
-    current_time=None):
+                      start_pos=(0.0, 0.0, 0.0),
+                      release_time=datetime(2000, 1, 1, 1),
+                      uncertain=False,
+                      time_step=360,
+                      spill=None,
+                      element_type=None,
+                      current_time=None,
+                      arr_types=None):
     """
-    initiailize a spill of type spill_obj, add it to a SpillContainer.
+    Initialize a spill of type spill_obj, add it to a SpillContainer.
     Invoke release_elements on SpillContainer, then return the spill container
     object
     """
+    if current_time is None:
+        current_time = release_time
+
     if spill is None:
         spill = PointLineSource(num_elements, start_pos, release_time)
     if element_type is not None:
         spill.element_type = element_type
-
-    if current_time is None:
-        current_time = spill.release_time
 
     if arr_types is None:
         # default always has standard windage parameters required by wind_mover

@@ -24,8 +24,9 @@ np = numpy
 from hazpy import unit_conversion
 uc = unit_conversion
 
-from gnome import elements, GnomeId
+from gnome import GnomeId
 from gnome.basic_types import world_point_type
+from gnome.elements import floating
 
 from gnome.utilities import serializable
 from gnome.utilities.plume import Plume, PlumeGenerator
@@ -114,7 +115,7 @@ class Spill(object):
 
         self._gnome_id = GnomeId(id)
         if element_type is None:
-            element_type = elements.floating()
+            element_type = floating()
 
         self.element_type = element_type
 

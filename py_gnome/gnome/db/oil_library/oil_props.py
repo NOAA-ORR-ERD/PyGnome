@@ -12,55 +12,56 @@ Not sure at present if this needs to be serializable?
 '''
 
 import os
-from itertools import chain
+
 
 from hazpy import unit_conversion
+uc = unit_conversion
+
 import sqlalchemy
 
-from hazpy import unit_conversion
 from itertools import chain
+
 from gnome.db.oil_library.models import Oil, DBSession
-from gnome.db.oil_library.initializedb import initialize_sql, \
-    load_database
+from gnome.db.oil_library.initializedb import (initialize_sql,
+                                               load_database)
+
 from gnome.utilities.remote_data import get_datafile
 
 
 # Some standard oils - scope is module level, non-public
 _sample_oils = {
     'oil_gas': {'Oil Name': 'oil_gas',
-                'API': unit_conversion.convert('Density',
-                'gram per cubic centimeter', 'API degree', 0.75)},
+                'API': uc.convert('Density', 'gram per cubic centimeter',
+                                  'API degree', 0.75)},
     'oil_jetfuels': {'Oil Name': 'oil_jetfuels',
-                     'API': unit_conversion.convert('Density',
-                     'gram per cubic centimeter', 'API degree',
-                     0.81)},
+                     'API': uc.convert('Density', 'gram per cubic centimeter',
+                                       'API degree',
+                                       0.81)},
     'oil_diesel': {'Oil Name': 'oil_diesel',
-                   'API': unit_conversion.convert('Density',
-                   'gram per cubic centimeter', 'API degree',
-                   0.87)},
+                   'API': uc.convert('Density', 'gram per cubic centimeter',
+                                     'API degree', 0.87)},
     'oil_4': {'Oil Name': 'oil_4',
-              'API': unit_conversion.convert('Density',
-              'gram per cubic centimeter', 'API degree', 0.90)},
+              'API': uc.convert('Density', 'gram per cubic centimeter',
+                                'API degree', 0.90)},
     'oil_crude': {'Oil Name': 'oil_crude',
-                  'API': unit_conversion.convert('Density',
-                  'gram per cubic centimeter', 'API degree',
-                  0.90)},
+                  'API': uc.convert('Density', 'gram per cubic centimeter',
+                                    'API degree', 0.90)},
     'oil_6': {'Oil Name': 'oil_6',
-              'API': unit_conversion.convert('Density',
-              'gram per cubic centimeter', 'API degree', 0.99)},
+              'API': uc.convert('Density', 'gram per cubic centimeter',
+                                'API degree', 0.99)},
     'oil_conservative': {'Oil Name': 'oil_conservative',
-                         'API': unit_conversion.convert('Density',
-                         'gram per cubic centimeter', 'API degree',
-                         1)},
+                         'API': uc.convert('Density',
+                                           'gram per cubic centimeter',
+                                           'API degree', 1)},
     'chemical': {'Oil Name': 'chemical',
-                 'API': unit_conversion.convert('Density',
-                 'gram per cubic centimeter', 'API degree', 1)},
+                 'API': uc.convert('Density', 'gram per cubic centimeter',
+                                   'API degree', 1)},
     }
 
-"""
+'''
 currently, the DB is stored locally - use this for now till we have
 a persistent DB that we can query
-"""
+'''
 #_oillib_path = os.path.join(os.path.split(os.path.realpath(__file__))[0],
 #                           '../../../../web/gnome/webgnome/webgnome/data')
 _oillib_path = os.path.join(os.path.split(os.path.realpath(__file__))[0],
@@ -72,8 +73,8 @@ _db_file = os.path.join(_oillib_path, 'OilLibrary.db')
 # query it. At no point should this be creating the DB.
 #==============================================================================
 # def _db_from_flatfile():
-#     """ 
-#     creates the sqllite database from the OilLib flatfile 
+#     """
+#     creates the sqllite database from the OilLib flatfile
 #     """
 #     oillib_file = os.path.join(_oillib_path, 'OilLib')
 #     sqlalchemy_url = 'sqlite:///{0}'.format(_db_file)
@@ -123,15 +124,15 @@ def get_oil(oil_name):
 
     else:
         if not os.path.exists(_db_file):
-            """
+            '''
             if db_file doesn't exist in webgnome, then download it from
             remote_data.data_server and put it in py_gnome/gnome/data/
-            """
+            '''
             #_db_from_flatfile()
             get_datafile(_db_file)
 
         # not sure we want to do it this way - but let's use for now
-        engine = sqlalchemy.create_engine('sqlite:///'+ _db_file)
+        engine = sqlalchemy.create_engine('sqlite:///' + _db_file)
 
         # let's use global DBSession defined in oillibrary
         # alternatively, we could define a new scoped_session
@@ -145,105 +146,99 @@ def get_oil(oil_name):
             return DBSession.query(Oil).filter(Oil.name == oil_name).one()
         except sqlalchemy.orm.exc.NoResultFound, ex:
             # or sqlalchemy.orm.exc.MultipleResultsFound as ex:
-            ex.message = \
-                "oil with name '{0}' not found in database. {1}".\
-                    format(oil_name,ex.message)
+            ex.message = ("oil with name '{0}' not found in database. "
+                          "{1}".format(oil_name, ex.message))
             ex.args = (ex.message, )
             raise ex
 
 
 class OilProps(object):
-    """
-    Class gets the oil properties, specifically, it 
+    '''
+    Class gets the oil properties, specifically, it
     has a property called density that returns a scalar as opposed to a
     list of Densities. Default for the property is to return value in SI units
     (kg/m^3)
-     
+
     It can also return Density in user specified units
-    """
+    '''
     valid_density_units = list(chain.from_iterable([item[1] for item in
-                               unit_conversion.ConvertDataUnits['Density'
-                               ].values()]))
-    valid_density_units.extend(unit_conversion.GetUnitNames('Density'))
+                               uc.ConvertDataUnits['Density'].values()]))
+    valid_density_units.extend(uc.GetUnitNames('Density'))
 
     def __init__(self, oil_):
-        """
+        '''
         If oil_ is amongst self._sample_oils dict, then use the properties
         defined here. If not, then query the Oil database to check if oil_
-        exists and get the properties from DB. 
-        
-        :param oil_: name of the oil 
+        exists and get the properties from DB.
+
+        :param oil_: name of the oil
         :type oil_: str
-        """
+        '''
         self.oil = get_oil(oil_)
 
     name = property(lambda self: self.oil.name,
-                       lambda self, val: setattr(self.oil,'name',val))
+                    lambda self, val: setattr(self.oil, 'name', val))
     density = property(lambda self: self.get_density(),
                        lambda self, val: self.set_density(val))
-                       
+
     def get_density(self, units='kg/m^3'):
-        """
-        :param units=kg/m^3: optional input if output units should be
-            something other than kg/m^3
-        """
+        '''
+        :param units: optional input if output units should be something other
+                      than kg/m^3
+        '''
 
         if self.oil.api is None:
             raise ValueError("Oil with name '{0}' does not contain 'api'"\
                 " property.".format(self.oil.name))
 
         if units not in self.valid_density_units:
-            raise unit_conversion.InvalidUnitError("Desired density units"\
-                " must be from following list to be valid: {0}".\
-                format(self.valid_density_units))
+            raise uc.InvalidUnitError('Desired density units must be from '
+                                      'following list to be valid: '
+                                      '{0}'.format(self.valid_density_units))
 
-        # since Oil object can have various densities depending on temperature, 
+        # since Oil object can have various densities depending on temperature,
         # lets return API in correct units
-        return unit_conversion.convert('Density', 'API degree', units,
-                self.oil.api)
-                
+        return uc.convert('Density', 'API degree', units, self.oil.api)
+
     def set_density(self, density, units='kg/m^3'):
-        """
+        '''
         :param units=kg/m^3: optional input if input units should be
             something other than kg/m^3
-        """
-
+        '''
         if density is None:
             raise ValueError("Density value required")
 
         if units not in self.valid_density_units:
-            raise unit_conversion.InvalidUnitError("Desired density units"\
-                " must be from following list to be valid: {0}".\
-                format(self.valid_density_units))
+            raise uc.InvalidUnitError('Desired density units must be from '
+                                      'following list to be valid: '
+                                      '{0}'.format(self.valid_density_units))
 
-        # density is stored as api 
-        self.oil.api = unit_conversion.convert('Density', units, 'API Degree',
-                density)   
+        # density is stored as api
+        self.oil.api = uc.convert('Density', units, 'API Degree', density)
+
 
 class OilPropsFromDensity(OilProps):
-    ## to call: OilPropsFRomDensity(name, density)
-    def __init__ (self, density, name='user_oil', units='kg/m^3'):
+    '''
+       To call: OilPropsFRomDensity(name, density)
+    '''
+    def __init__(self, density, name='user_oil', units='kg/m^3'):
         """
         :param name: name of oil
-        :param density: density of oil 
-        :param units='API': units of density 
+        :param density: density of oil
+        :param units='API': units of density
 
         """
         if density is None:
             raise ValueError("Density value required")
 
         if units not in self.valid_density_units:
-            raise unit_conversion.InvalidUnitError("Desired density units"\
-                " must be from following list to be valid: {0}".\
-                format(self.valid_density_units))
+            raise uc.InvalidUnitError('Desired density units must be from '
+                                      'following list to be valid: '
+                                      '{0}'.format(self.valid_density_units))
 
         if units != 'API':
-            api = unit_conversion.convert('Density', units, 'API Degree',
-                density)   
+            api = uc.convert('Density', units, 'API Degree', density)
         else:
             api = density
 
-        self.oil = Oil(**{'Oil Name': name,
-                          'API':api} )
-
-
+        self.oil = Oil(**{'Oil Name': name, 'API': api})
