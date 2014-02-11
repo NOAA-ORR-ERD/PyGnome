@@ -190,11 +190,12 @@ enum { ESCAPEKEY = 0X35, ENTERKEY = 0X4C, RETURNKEY = 0X24, PERIODKEY = 0X2F,
 #ifdef _MSC_VER
   #include <float.h>  // for _isnan() on VC++
   #define isnan(x) _isnan(x)  // VC++ uses _isnan() instead of isnan()
+  #define round(n) floor((n) + 0.5) // round not defined in VC++
 #else
   #include <math.h>  // for isnan() everywhere else
 #endif
 
-#define round(n) floor((n) + 0.5)
+//#define round(n) floor((n) + 0.5)
 
 #define PI 3.14159265359
 
