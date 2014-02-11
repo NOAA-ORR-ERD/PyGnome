@@ -46,8 +46,9 @@ class InitWindages(object):
     @windage_persist.setter
     def windage_persist(self, val):
         if val == 0:
-            raise ValueError("'windage_persist' cannot be 0. For infinite"
-                " windage, windage_persist=-1 otherwise windage_persist > 0.")
+            raise ValueError("'windage_persist' cannot be 0. "
+                             "For infinite windage, windage_persist=-1 "
+                             "otherwise windage_persist > 0.")
         self._windage_persist = val
 
     @property
@@ -57,8 +58,9 @@ class InitWindages(object):
     @windage_range.setter
     def windage_range(self, val):
         if np.any(np.asarray(val) < 0):
-            raise ValueError("'windage_range' >= (0, 0). Nominal values vary"
-                " between 1% to 4%, so default windage_range=(0.01, 0.04)")
+            raise ValueError("'windage_range' >= (0, 0). "
+                             "Nominal values vary between 1% to 4%, "
+                             "so default windage_range=(0.01, 0.04)")
         self._windage_range = val
 
     def initialize(self, num_new_particles, spill, data_arrays,
@@ -67,12 +69,12 @@ class InitWindages(object):
         Since windages exists in data_arrays, so must windage_range and
         windage_persist if this initializer is used/called
         """
-        data_arrays['windage_range'][-num_new_particles:, 0] = \
-            self.windage_range[0]
-        data_arrays['windage_range'][-num_new_particles:, 1] = \
-            self.windage_range[1]
-        data_arrays['windage_persist'][-num_new_particles:] = \
-            self.windage_persist
+        (data_arrays['windage_range'][-num_new_particles:, 0],
+         data_arrays['windage_range'][-num_new_particles:, 1],
+         data_arrays['windage_persist'][-num_new_particles:]) = \
+            (self.windage_range[0],
+             self.windage_range[1],
+             self.windage_persist)
 
         # initialize all windages - ignore persistence during initialization
         # if we have infinite persistence, these values are never updated
@@ -92,11 +94,12 @@ class InitMassFromTotalMass(object):
             raise ValueError('mass attribute of spill is None - cannot'
                              ' compute particle mass without total mass')
 
-        _total_mass = spill.get_mass('g') 
-        #_total_mass = spill.mass	#assume in grams for now 
+        _total_mass = spill.get_mass('g')
+        #_total_mass = spill.mass	#assume in grams for now
         data_arrays['mass'][-num_new_particles:] = (_total_mass /
                                                     spill.num_elements)
                                                     #num_new_particles)
+
 
 class InitMassFromVolume(object):
     """
@@ -126,12 +129,13 @@ class InitMassFromPlume(object):
             raise ValueError('plume_gen attribute of spill is None - cannot'
                              ' compute mass without plume mass flux')
 
-        data_arrays['mass'][-num_new_particles:] = spill.plume_gen.mass_of_an_le * 1000
+        data_arrays['mass'][-num_new_particles:] = \
+            spill.plume_gen.mass_of_an_le * 1000
 
 
 class ValuesFromDistBase(object):
     def __init__(self, **kwargs):
-        """
+        '''
         Values to be sampled from a distribution.
 
         Keyword arguments: kwargs are different based on the type of
@@ -155,99 +159,115 @@ class ValuesFromDistBase(object):
         If distribution is 'weibull', then following kwargs are expected.
 
         :param alpha: shape parameter 'alpha' - labeled as 'a' in
-            numpy.random.weibull distribution
+                      numpy.random.weibull distribution
         :param lambda_: the scale parameter for the distribution - required for
-            2-parameter weibull distribution (Rosin-Rammler). Default is 1.
+                        2-parameter weibull distribution (Rosin-Rammler).
+                        Default is 1.
+        '''
+        methods = {'uniform': self._uniform,
+                   'normal': self._normal,
+                   'lognormal': self._lognormal,
+                   'weibull': self._weibull
+                   }
 
-        """
-        distribution = kwargs.pop('distribution', 'uniform')
-        if distribution not in ['uniform', 'normal', 'lognormal', 'weibull']:
-            raise ValueError("{0} is unknown distribution. Only 'uniform',"
-                             " 'normal', 'lognormal', and 'weibull'"
-                             " distributions are implemented")
+        load_args = {'uniform': self._check_uniform_args,
+                         'normal': self._check_normal_args,
+                         'lognormal': self._check_lognormal_args,
+                         'weibull': self._check_weibull_args
+                         }
 
-        self.distribution = distribution
+        self.distribution = kwargs.pop('distribution', 'uniform')
 
-        if distribution == 'uniform':
-            self.low = kwargs.pop('low', 0)
-            self.high = kwargs.pop('high', .1)
-        elif distribution in ['normal', 'lognormal']:
-            self.mean = kwargs.pop('mean', None)
-            self.sigma = kwargs.pop('sigma', None)
-            if self.mean is None or self.sigma is None:
-                raise TypeError("'normal' distribution requires 'mean' and"
-                                " 'sigma' input as kwargs")
-        elif distribution == 'weibull':
-            self.alpha = kwargs.pop('alpha', None)
-            self.lambda_ = kwargs.pop('lambda_', 1)
-            if self.alpha is None:
-                raise TypeError("'weibull' distribution requires 'alpha'"
-                                " input as kwargs")
-            self.min_ = kwargs.pop('min_', None)
-            if self.min_ is not None: 
-                frac_below_min = fraction_below_d(self.min_, self.alpha, self.lambda_)
-                if self.min_ < 0:
+        self.method = methods[self.distribution]
+        load_args[self.distribution](kwargs)
+
+    def _check_uniform_args(self, kwargs):
+        low = kwargs.pop('low', 0)
+        high = kwargs.pop('high', .1)
+        self.method_args = [low, high]
+
+    def _check_normal_args(self, kwargs):
+        mean = kwargs.pop('low', 0)
+        sigma = kwargs.pop('high', .1)
+
+        if None in (mean, sigma):
+            raise TypeError("'normal' distribution requires 'mean' and "
+                            "'sigma' input as kwargs")
+        self.method_args = [mean, sigma]
+
+    def _check_lognormal_args(self, kwargs):
+        self._check_normal_args(kwargs)
+
+    def _check_weibull_args(self, kwargs):
+        alpha = kwargs.pop('alpha', None)
+        lambda_ = kwargs.pop('lambda_', 1)
+        min_ = kwargs.pop('min_', None)
+        max_ = kwargs.pop('max_', None)
+
+        if alpha is None:
+            raise TypeError("'weibull' distribution requires 'alpha'")
+
+        if min_ is not None:
+            frac_below_min = fraction_below_d(min_, alpha, lambda_)
+            if min_ < 0:
+                raise ValueError("'weibull' distribution requires "
+                                 "minimum >= 0 ")
+            if frac_below_min > 0.999:
+                raise ValueError("'weibull' distribution requires "
+                                 "minimum < 99.9% of total distribution")
+
+        if max_ is not None:
+            frac_below_max = fraction_below_d(max_, alpha, lambda_)
+            if max_ <= 0:
+                raise ValueError("'weibull' distribution requires "
+                                 "maximum > 0 ")
+            if frac_below_max < 0.001:
+                raise ValueError("'weibull' distribution requires "
+                                 "maximum > 0.1% of total distribution")
+            if min_ is not None:
+                if max_ < min_:
                     raise ValueError("'weibull' distribution requires "
-                                     "minimum >= 0 ")
-                if frac_below_min > 0.999:
-                    raise ValueError("'weibull' distribution requires "
-                                     "minimum < 99.9% of total distribution")
-#                 if self.min_ > 0.003:
-#                     raise ValueError("'weibull' distribution requires "
-#                                      "minimum < .003 (3mm)")
-            self.max_ = kwargs.pop('max_', None)
-            if self.max_ is not None:
-                frac_below_max = fraction_below_d(self.max_, self.alpha, self.lambda_)
-                if self.max_ <= 0:
-                    raise ValueError("'weibull' distribution requires "
-                                     "maximum > 0 ")
-                if frac_below_max < 0.001:
-                    raise ValueError("'weibull' distribution requires "
-                                     "maximum > 0.1% of total distribution")
-                if self.min_ is not None:
-                    if self.max_ < self.min_:
-					    raise ValueError("'weibull' distribution requires "
-                                        "maximum > minimum")
-#                 if self.max_ < 0.00005:
-#                     raise ValueError("'weibull' distribution requires maximum "
-#                                      "> .000025 (25 microns)")
+                                     "maximum > minimum")
+            if max_ < 0.00005:
+                raise ValueError("'weibull' distribution requires "
+                                 "maximum > .000025 (25 microns)")
+        self.method_args = [alpha, lambda_, min_, max_]
+
+    def _uniform(self, np_array, low, high):
+        np_array[:] = np.random.uniform(low, high, len(np_array))
+
+    def _normal(self, np_array, mean, sigma):
+        np_array[:] = np.random.normal(mean, sigma, len(np_array))
+
+    def _lognormal(self, np_array, mean, sigma):
+        np_array[:] = np.random.lognormal(mean, sigma, len(np_array))
+
+    def _weibull(self, np_array, alpha, lambda_, min_, max_):
+        np_array[:] = (lambda_ * np.random.weibull(alpha, len(np_array)))
+
+        if min_ is not None and max_ is not None:
+            for x in range(len(np_array)):
+                while np_array[x] < min_ or np_array[x] > max_:
+                    np_array[x] = lambda_ * np.random.weibull(alpha)
+        elif min_ is not None:
+            for x in range(len(np_array)):
+                while np_array[x] < min_:
+                    np_array[x] = lambda_ * np.random.weibull(alpha)
+        elif max_ is not None:
+            for x in range(len(np_array)):
+                while np_array[x] > max_:
+                    np_array[x] = lambda_ * np.random.weibull(alpha)
 
     def set_values(self, np_array):
-        """
+        '''
         Takes a numpy array as input and fills it with values generated from
         specified distribution
 
         :param np_array: numpy array to be filled with values sampled from
             specified distribution
         :type np_array: numpy array of dtype 'float64'
-        """
-        if self.distribution == 'uniform':
-            np_array[:] = np.random.uniform(self.low, self.high,
-                                         len(np_array))
-        elif self.distribution == 'normal':
-            np_array[:] = np.random.normal(self.mean, self.sigma,
-                                        len(np_array))
-        elif self.distribution == 'lognormal':
-            np_array[:] = np.random.lognormal(self.mean, self.sigma,
-                                        len(np_array))
-        elif self.distribution == 'weibull':
-            np_array[:] = (self.lambda_ *
-                           np.random.weibull(self.alpha, len(np_array)))
-            if self.min_ is not None and self.max_ is not None:
-                for x in range(len(np_array)):
-                    while np_array[x] < self.min_ or np_array[x] > self.max_:
-                        #print (x,np_array[x])
-                        np_array[x] = self.lambda_ * np.random.weibull(self.alpha)
-            elif self.min_ is not None:
-                for x in range(len(np_array)):
-                    while np_array[x] < self.min_:
-                        #print (x,np_array[x])
-                        np_array[x] = self.lambda_ * np.random.weibull(self.alpha)
-            elif self.max_ is not None:
-                for x in range(len(np_array)):
-                    while np_array[x] > self.max_:
-                        #print (x,np_array[x])
-                        np_array[x] = self.lambda_ * np.random.weibull(self.alpha)
+        '''
+        self.method(*([np_array] + self.method_args))
 
 
 class InitRiseVelFromDist(ValuesFromDistBase):
@@ -284,7 +304,6 @@ class InitRiseVelFromDist(ValuesFromDistBase):
         :param max_: optional upper end cutoff in meters for weibull
                      distribution (4 mm ?)
         """
-
         super(InitRiseVelFromDist, self).__init__(distribution=distribution,
                                                   **kwargs)
 
@@ -381,11 +400,10 @@ class InitRiseVelFromDropletSizeFromDist(ValuesFromDistBase):
 
 class ElementType(object):
     def __init__(self, initializers, substance='oil_conservative'):
-        """
+        '''
         Define initializers for the type of elements
 
-        :param initializers:
-        :type initializers: dict
+        :param dict initializers:
 
         :param substance='oil_conservative': Type of oil spilled.
             If this is a string, or an oillibrary.models.Oil object, then
@@ -393,10 +411,10 @@ class ElementType(object):
             gnome.spill.OilProps object, then simply instance oil_props
             variable to it: self.oil_props = oil
         :type substance: either str, or oillibrary.models.Oil object or
-            gnome.spill.OilProps
+                         gnome.spill.OilProps
         :param density=None: Allow user to set oil density directly.
         :param density_units='kg/m^3: Only used if a density is input.
-        """
+        '''
         self.initializers = initializers
         if isinstance(substance, basestring):
             # leave for now to preserve tests
@@ -406,17 +424,15 @@ class ElementType(object):
             self.substance = substance
 
     def set_newparticle_values(self, num_new_particles, spill, data_arrays):
-        """
+        '''
         call all initializers. This will set the initial values for all
         data_arrays.
-        """
+        '''
         if num_new_particles > 0:
-            for key in data_arrays:
-                if key in self.initializers:
-                    self.initializers[key].initialize(num_new_particles,
-                                                      spill,
-                                                      data_arrays,
-                                                      self.substance)
+            for key, i in self.initializers.iteritems():
+                if key in data_arrays:
+                    i.initialize(num_new_particles, spill, data_arrays,
+                                 self.substance)
 
 
 def floating(windage_range=(.01, .04), windage_persist=900):
@@ -443,17 +459,23 @@ def plume(distribution_type='droplet_size',
 
     See below docs for details on the parameters.
 
-    :param distribution_type='droplet_size': available options:
-                                             'droplet_size' -- droplet size is samples from the specified distribution. Rise velofity is calculated.
-                                             'rise_velocity' -- rise velocity is directly sampled from the specified distribution. No droplet size is computed.
+    :param str distribution_type: default ='droplet_size'
+                                  available options:
+                                  - 'droplet_size': Droplet size is samples
+                                                    from the specified
+                                                    distribution. Rise velocity
+                                                    is calculated.
+                                  - 'rise_velocity': rise velocity is directly
+                                                     sampled from the specified
+                                                     distribution. No droplet
+                                                     size is computed.
     :param distribution='weibull':
     :param windage_range=(.01, .04):
     :param windage_persist=900:
     :param substance_name='oil_conservative':
     :param density = None:
     :param density_units = 'kg/m^3':
-
-    """ 
+    """
     if density is not None:
         substance = OilPropsFromDensity(density, substance_name, density_units)
     else:
@@ -476,6 +498,7 @@ def plume(distribution_type='droplet_size',
 
 
 ## Add docstring from called classes
+
 plume.__doc__ += ("\nDocumentation of OilPropsFromDensity:\n" +
                    OilPropsFromDensity.__init__.__doc__ +
                    "\nDocumentation of InitRiseVelFromDropletSizeFromDist:\n" +

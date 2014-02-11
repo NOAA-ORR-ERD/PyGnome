@@ -30,7 +30,9 @@ from gnome.basic_types import (
     status_code_type,
     oil_status,
     id_type)
-import numpy as np
+
+import numpy
+np = numpy
 
 
 class ArrayType(object):
@@ -142,8 +144,11 @@ _default_values = \
      'windage_persist': ((), np.int, 0),
      'rise_vel': ((), np.float64, 0.),
      'droplet_diameter': ((), np.float64, 0.),
-     'age': ((), np.int32, 0)
-     }
+     'age': ((), np.int32, 0),
+     'mass_components': ((5,), np.float64, (1., 0., 0., 0., 0.)),
+     'half_lives': ((5,), np.float64,
+                    (np.inf, np.inf, np.inf, np.inf, np.inf)),
+      }
 
 
 # dynamically create the ArrayType objects in this module from _default_values
@@ -173,4 +178,3 @@ def reset_to_defaults(names=_at_names):
             obj.shape = _default_values[item[0]][0]
             obj.dtype = _default_values[item[0]][1]
             obj.initial_value = _default_values[item[0]][2]
-

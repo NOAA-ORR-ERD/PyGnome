@@ -6,15 +6,15 @@ Implements a container for spills -- keeps all the data from each spill in one
 set of arrays. The spills themselves provide some of the arrays themselves
 (adding more each time LEs are released).
 """
-from datetime import timedelta
 
 import numpy
 np = numpy
 
-import gnome.spill
-from gnome.utilities.orderedcollection import OrderedCollection
 from gnome.basic_types import oil_status
-import gnome.array_types
+from gnome import array_types
+
+from gnome.utilities.orderedcollection import OrderedCollection
+import gnome.spill
 
 
 class SpillContainerData(object):
@@ -257,16 +257,16 @@ class SpillContainer(SpillContainerData):
         """
         gnome.array_types.reset_to_defaults(['spill_num', 'id'])
 
-        self._array_types = {'positions': gnome.array_types.positions,
-                             'next_positions': gnome.array_types.next_positions,
-                             'last_water_positions': gnome.array_types.last_water_positions,
-                             'status_codes': gnome.array_types.status_codes,
-                             'spill_num': gnome.array_types.spill_num,
-                             'id': gnome.array_types.id,
-                             'rise_vel': gnome.array_types.rise_vel,
-                             'droplet_diameter': gnome.array_types.droplet_diameter,
-                             'mass': gnome.array_types.mass,
-                             'age': gnome.array_types.age}
+        self._array_types = {'positions': array_types.positions,
+                             'next_positions': array_types.next_positions,
+                             'last_water_positions': array_types.last_water_positions,
+                             'status_codes': array_types.status_codes,
+                             'spill_num': array_types.spill_num,
+                             'id': array_types.id,
+                             'rise_vel': array_types.rise_vel,
+                             'droplet_diameter': array_types.droplet_diameter,
+                             'mass': array_types.mass,
+                             'age': array_types.age}
         self._data_arrays = {}
 
     @property

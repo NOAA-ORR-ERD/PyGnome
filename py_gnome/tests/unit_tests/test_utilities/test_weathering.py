@@ -145,7 +145,6 @@ def test_weather_ten_component():
                         (.1, 50)),
                        )
     time = 50
-    print wc.weather(100, time)
     assert np.allclose(wc.weather(100, time), 37.5)
 
 
@@ -166,8 +165,12 @@ def test_weather_array():
                        )
     time = np.array([24, 48, 72])
     mass = np.array([100, 1000, 10000])
-    result = np.array([50, 250, 1250], np.float32)
-    assert np.array_equal(wc.weather(mass, time), result)
+
+    # This is old behavior which now raises an exception
+    #result = np.array([50, 250, 1250], np.float32)
+
+    with raises(ValueError):
+        wc.weather(mass, time)
 
 
 ## test using the same code in a time-step by time-step approach:
@@ -225,9 +228,8 @@ def test_multiple_decay_times():
 
     print '\nTesting if we can pass multiple decay times',
     print ' into our weather() function.'
-    res = wc.weather(100, (12, 24, 36))
-    print res
-    assert np.allclose(res, (50., 25., 12.5))
+    with raises(ValueError):
+        res = wc.weather(100, (12, 24, 36))
 
 
 def test_mean_lifetime_method():
@@ -265,3 +267,40 @@ def test_decay_constant_method():
     res = wc.weather((100, 200, 300), 12)
     print res
     assert np.allclose(res, (50., 100., 150.))
+
+
+def test_multiple_weathering_steps():
+    print '\nTesting if we can perform multiple sequential weathering steps'
+    wc = weather_curve(((.5, 12),
+                        (.5, 24)))
+
+    print 'step 1'
+    res = wc.weather(100, 24, update_fractions=True)
+    assert np.allclose(res, (12.5 + 25.,))
+
+    print 'step 2'
+    expected = np.asarray(((res.sum() / 3) / 4,
+                           (res.sum() * 2 / 3) / 2,
+                           ),
+                          dtype=np.float64)
+    res = wc.weather(res, 24, update_fractions=True)
+    assert np.allclose(res, expected.sum())
+
+    print '\nTesting if we can perform multiple sequential weathering steps ',
+    print 'using the explicit method'
+    wc = weather_curve(((.5, 12),
+                        (.5, 24)))
+
+    print 'step 1'
+    res = wc.weather(100, 24)
+    assert np.allclose(res, (12.5 + 25.,))
+
+    print 'step 2'
+    expected = np.asarray(((res.sum() / 3) / 4,
+                           (res.sum() * 2 / 3) / 2,
+                           ),
+                          dtype=np.float64)
+
+    wc.update_fractions(24)
+    res = wc.weather(res, 24)
+    assert np.allclose(res, expected.sum())

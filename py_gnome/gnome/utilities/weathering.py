@@ -71,13 +71,16 @@ class weather_curve:
                              (WC1, WC2, WC3, ....WCi).
                              The sum of the component fractional values must
                              add up to 1.0
+                             For more on WeatheringComponent, type
+                                 > import WeatheringComponent
+                                 > WeatheringComponent?
 
            :param method: the method in which the decay_factor is to be used.
            :type method: set({'halflife', 'mean-lifetime', 'decay-constant'})
         '''
         fractions, factors = zip(*components)
-        self.fractions = np.asarray(fractions, dtype=np.float32).reshape(-1,)
-        self.factors = np.asarray(factors, dtype=np.float32).reshape(-1,)
+        self.fractions = np.asarray(fractions, dtype=np.float64).reshape(-1,)
+        self.factors = np.asarray(factors, dtype=np.float64).reshape(-1,)
 
         # only six digit, because float32
         if round(self.fractions.sum(), 6) != 1.0:
@@ -95,34 +98,66 @@ class weather_curve:
 
     def _xform_inputs(self, M_0, time):
         '''
-           make sure our mass and time arguments are a good fit
+           Make sure our mass and time arguments are a good fit
            for our calculations
+           - M_0:   Simply needs to be an array.  Thus, we will be able to
+                    weather a set of one or more masses.
+           - time:  Needs to be a single value.
+                    We do this because we would like to be able to apply our
+                    weathering operation to a time series.
+                    So we would optionally like our fractional amounts to
+                    migrate along with the last time interval calculated.
+                    And if each set of decayed masses was decayed using a
+                    different time range, we will not know which time range
+                    to use to recalculate our fractions.
+                    It will just be more well behaved if we can assume all
+                    masses decay using the same time interval.
         '''
-        M_0 = np.asarray(M_0, dtype=np.float32).reshape(-1, 1)
-        time = np.asarray(time, dtype=np.float32).reshape(-1, 1)
+        M_0 = np.asarray(M_0, dtype=np.float64).reshape(-1, 1)
+        time = np.asarray(time, dtype=np.float64).reshape(-1, 1)
+
+        if time.shape[0] != 1:
+            raise ValueError('The decay time must be a single value')
+
         return M_0, time
 
     def _halflife(self, M_0, time):
         'Assumes our factors are half-life values'
         half = np.float32(0.5)
 
-        self.total_mass = (self.fractions * M_0) * (half ** (time / self.factors))
-        return self.total_mass.sum(1)
+        return (self.fractions * M_0) * (half ** (time / self.factors))
 
     def _mean_lifetime(self, M_0, time):
         'Assumes our factors are mean lifetime values (tau)'
-        self.total_mass = (self.fractions * M_0) * np.exp(-time / self.factors)
-        return self.total_mass.sum(1)
+        return (self.fractions * M_0) * np.exp(-time / self.factors)
 
     def _decay_constant(self, M_0, time):
         'Assumes our factors are decay constant values'
-        self.total_mass = (self.fractions * M_0) * np.exp(-time * self.factors)
-        return self.total_mass.sum(1)
+        return (self.fractions * M_0) * np.exp(-time * self.factors)
 
-    def weather(self, M_0, time):
-        'Compute the decayed mass at time specified'
+    def update_fractions(self, time):
+        unscaled_decay = self.method(1.0, time)
+        new_scale = 1 / unscaled_decay.sum()
+
+        self.fractions = unscaled_decay * new_scale
+
+    def weather(self, M_0, time, update_fractions=False):
+        '''
+        Weather an initial mass:
+        1) Compute the decayed mass at time specified
+        2) optionally recalculate the fractional amounts
+           (Note: We do this because we would like to be able to apply this
+                  object to a time series.  So we would like our fractional
+                  amounts to migrate along with the last time interval)
+        3) return the total decayed mass
+        '''
         M_0, time = self._xform_inputs(M_0, time)
-        return self.method(M_0, time)
+        decayed_mass = self.method(M_0, time)
+
+        if update_fractions:
+            self.update_fractions(time)
+
+        return decayed_mass.sum(1)
 
 
 ## Parameters for combined weathering and bio-degradation for "medium crude"
