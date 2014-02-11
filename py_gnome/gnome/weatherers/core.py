@@ -2,6 +2,9 @@
 
 from datetime import timedelta
 
+import numpy
+np = numpy
+
 from gnome.movers.movers import Mover
 
 
@@ -11,21 +14,19 @@ class Weatherer(Mover):
        in the way that it acts upon the model.  It contains the same API
        as the mover as well.
     '''
-    def __init__(self, weathering, **kwargs):
+    def __init__(self, **kwargs):
         '''
            :param weathering: object that represents the weathering
                               properties of the substance that our
                               LEs are made up of.
         '''
-        self.wc = weathering
         super(Weatherer, self).__init__(**kwargs)
 
     def __repr__(self):
         return ('Weatherer(active_start={0}, active_stop={1},'
                 '\n    on={2}, active={3}'
-                '\n    weathering={4}'
                 '\n    )').format(self.active_start, self.active_stop,
-                                  self.on, self.active, self.wc)
+                                  self.on, self.active)
 
     def _get_active_time(self, time_step, model_time):
         'calculate the weathering time duration in seconds'
@@ -43,13 +44,24 @@ class Weatherer(Mover):
 
     def _xform_inputs(self, sc, time_step, model_time):
         'make sure our inputs are a good fit for our calculations'
-        if 'mass' not in sc:
+        if 'mass_components' not in sc:
             raise ValueError('No mass attribute available to calculate '
                              'weathering')
 
+        if 'half_lives' not in sc:
+            raise ValueError('No half-lives attribute available to calculate '
+                             'weathering')
+
         time_step = self._get_active_time(time_step, model_time)
-        return sc['mass'], time_step
+        return sc['mass_components'], sc['half_lives'], time_step
+
+    def _halflife(self, M_0, factors, time):
+        'Assumes our factors are half-life values'
+        half = np.float64(0.5)
+
+        total_mass = M_0 * (half ** (time / factors))
+        return total_mass.sum(1)
 
     def get_move(self, sc, time_step, model_time):
-        m0, time = self._xform_inputs(sc, time_step, model_time)
-        return self.wc.weather(m0, time)
+        m0, f, time = self._xform_inputs(sc, time_step, model_time)
+        return self._halflife(m0, f, time)

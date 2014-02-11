@@ -84,6 +84,65 @@ class InitWindages(object):
                     data_arrays['windages'][-num_new_particles:])
 
 
+class InitMassComponentsFromOilProps(object):
+    '''
+       Initialize the mass components based on given Oil properties
+    '''
+    def initialize(self, num_new_particles, spill, data_arrays, substance):
+        '''
+           :param int num_new_particles: Number of new particles to initialize
+           :param Spill spill: The spill object from which the new particles
+                               are coming from.
+           :param data_arrays: The numpy arrays that make up the collective
+                               properties of our particles.
+           :type data_arrays: dict(<name>: <np.ndarray>,
+                                   ...
+                                   )
+           :param OilProps substance: The Oil Properties associated with the
+                                      spill.
+                                      (TODO: Why is this not simply contained
+                                       in the Spill???  Why the extra argument???)
+        '''
+        if spill.mass is None:
+            raise ValueError('mass attribute of spill is None - cannot '
+                             'compute particle mass without total mass')
+
+        total_mass = spill.get_mass('g')
+        le_mass = total_mass / spill.num_elements
+
+        mass_fractions = np.asarray(zip(*substance.mass_components)[0],
+                                    dtype=np.float64)
+        masses = mass_fractions * le_mass
+
+        data_arrays['mass_components'][-num_new_particles:] = masses
+
+
+class InitHalfLivesFromOilProps(object):
+    '''
+       Initialize the half-lives of our mass components based on given Oil
+       properties.
+    '''
+    def initialize(self, num_new_particles, spill, data_arrays, substance):
+        '''
+           :param int num_new_particles: Number of new particles to initialize
+           :param Spill spill: The spill object from which the new particles
+                               are coming from.
+           :param data_arrays: The numpy arrays that make up the collective
+                               properties of our particles.
+           :type data_arrays: dict(<name>: <np.ndarray>,
+                                   ...
+                                   )
+           :param OilProps substance: The Oil Properties associated with the
+                                      spill.
+                                      (TODO: Why is this not simply contained
+                                       in the Spill???  Why the extra argument???)
+        '''
+        half_lives = np.asarray(zip(*substance.mass_components)[1],
+                                dtype=np.float64)
+
+        data_arrays['half_lives'][-num_new_particles:] = half_lives
+
+
 class InitMassFromTotalMass(object):
     """
     Initialize the 'mass' array based on total mass spilled
@@ -95,10 +154,8 @@ class InitMassFromTotalMass(object):
                              ' compute particle mass without total mass')
 
         _total_mass = spill.get_mass('g')
-        #_total_mass = spill.mass	#assume in grams for now
         data_arrays['mass'][-num_new_particles:] = (_total_mass /
                                                     spill.num_elements)
-                                                    #num_new_particles)
 
 
 class InitMassFromVolume(object):
@@ -420,7 +477,7 @@ class ElementType(object):
             # leave for now to preserve tests
             self.substance = OilProps(substance)
         else:
-            # assume object passed in is duck typed to be same as OilProps
+            # assume object passed in is an OilProps object
             self.substance = substance
 
     def set_newparticle_values(self, num_new_particles, spill, data_arrays):

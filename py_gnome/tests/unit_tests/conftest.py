@@ -79,6 +79,8 @@ def sample_sc_release(num_elements=10,
 
     if spill is None:
         spill = PointLineSource(num_elements, start_pos, release_time)
+    spill.mass = num_elements
+
     if element_type is not None:
         spill.element_type = element_type
 

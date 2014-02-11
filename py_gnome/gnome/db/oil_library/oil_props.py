@@ -12,14 +12,15 @@ Not sure at present if this needs to be serializable?
 '''
 
 import os
+from itertools import chain
+from collections import namedtuple
 
+import sqlalchemy
+import numpy
+np = numpy
 
 from hazpy import unit_conversion
 uc = unit_conversion
-
-import sqlalchemy
-
-from itertools import chain
 
 from gnome.db.oil_library.models import Oil, DBSession
 from gnome.db.oil_library.initializedb import (initialize_sql,
@@ -83,6 +84,12 @@ _db_file = os.path.join(_oillib_path, 'OilLibrary.db')
 #     initialize_sql(settings)
 #     load_database(settings)
 #==============================================================================
+
+
+MassComponent = namedtuple('MassComponent',
+                           ''' fraction,
+                               halflife,
+                           ''')
 
 
 def get_oil(oil_name):
@@ -181,6 +188,22 @@ class OilProps(object):
     density = property(lambda self: self.get_density(),
                        lambda self, val: self.set_density(val))
 
+    @property
+    def mass_components(self):
+        '''
+           Gets the mass components of our oil
+           - Set 'mass_components' array based on mass fractions
+             (distillation cuts?) that are found in the oil library
+           - Set 'half-lives' array based on ???
+           TODO: Right now this is just a stub that returns a hardcoded value
+                 for testing purposes.
+                 - Try to query our distillation cuts and see if they are usable.
+                 - Figure out where we will get the half-lives data.
+        '''
+        mc = (1., 0., 0., 0., 0.)
+        hl = ((15. * 60), np.inf, np.inf, np.inf, np.inf)
+        return [MassComponent(*n) for n in zip(mc, hl)]
+
     def get_density(self, units='kg/m^3'):
         '''
         :param units: optional input if output units should be something other
@@ -202,8 +225,8 @@ class OilProps(object):
 
     def set_density(self, density, units='kg/m^3'):
         '''
-        :param units=kg/m^3: optional input if input units should be
-            something other than kg/m^3
+        :param units: optional input if input units should be something other
+                      than kg/m^3
         '''
         if density is None:
             raise ValueError("Density value required")
