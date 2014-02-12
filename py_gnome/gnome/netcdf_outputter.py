@@ -12,9 +12,59 @@ import netCDF4 as nc
 import numpy as np
 
 import gnome
-from gnome.basic_types import oil_status
+from gnome.basic_types import oil_status, world_point_type
+from gnome import array_types
 from gnome.outputter import Outputter
 from gnome.utilities import serializable, time_utils
+
+## Big dict that stores the attributes for the standard data arrays in the output
+var_attributes = {'time': {'long_name':'time since the beginning of the simulation',
+                           'standard_name':'time',
+                           'calendar':'gregorian',
+                           'standard_name':'time',
+                           'comment':'unspecified time zone',
+                           #units will get set based on data
+                           },
+                  'particle_count': {'units':'1',
+                                     'long_name':'number of particles in a given timestep',
+                                     'ragged_row_count':'particle count at nth timestep',
+                                     },
+                  'longitude': {'long_name':'longitude of the particle',
+                                'standard_name':'longitude',
+                                'units':'degrees_east',
+                            },
+                  'latitude': {'long_name':'latitude of the particle',
+                               'standard_name':'latitude',
+                               'units':'degrees_north',
+                              },
+                  'depth': {'long_name':'particle depth below sea surface',
+                            'standard_name':'depth',
+                            'units':'meters',
+                            'axis':'z positive down',
+                            },
+                  'mass': {'long_name':'mass of particle',
+                           'units':'grams',
+                           },
+                  'age': {'long_name':'age of particle from time of release',
+                          'units':'seconds',
+                          },
+                  'status_codes': {'long_name':'particle status code',
+                                   'flag_values': " ".join([ "%i" for i in oil_status._int]),
+                                   'flag_meanings': " ".join ( [ "%i: %s"%pair for pair in sorted(zip(oil_status._int,
+                                                      oil_status._attr) ) ] )
+                                  },
+                  'id': {'long_name':'particle ID',
+                        },
+                  'spill_num': {'long_name':'spill to which the particle belongs',
+                               },
+                  'droplet_diameter': {'long_name': 'diameter of oil droplet class',
+                                       'units': 'meters'
+                                      },
+                  'rise_vel': {'long_name': 'rise velocity of oil droplet class',
+                                            'units': 'm s-1'},
+                  'next_positions':{},
+                  'last_water_positions':{},
+                  }
 
 
 class NetCDFOutput(Outputter, serializable.Serializable):
@@ -28,128 +78,71 @@ class NetCDFOutput(Outputter, serializable.Serializable):
 
     >>> model = gnome.model.Model(...)
     >>> model.outputters += gnome.netcdf_outputter.NetCDFOutput(
-                os.path.join(base_dir,'sample_model.nc'), all_data=True)
+                os.path.join(base_dir,'sample_model.nc'), which_data='most')
 
-    'all_data' flag is used to either output all the data arrays defined in
-    model.spills or only the standard data.
+    `which_data` flag is used to set which data to add to the netcdf file:
+        'standard' : teh basic stuff most people would want
+        'most': everything the model is tracking except the for-internal-use only arrays
+        'all': eveything tracked by the model (mostly used for diagnosticts of save files)
 
 
     .. note::
-       cf_attributes and data_vars are static members. cf_attributes is a dict
+       cf_attributes is a class attribute: a dict
        that contains the global attributes per CF convention
-       data_vars is a dict used to define NetCDF variables.
-       There is also a list called 'standard_data'. Since the names of the
-       netcdf variables are different from the names in the SpillContainer
-       data_arrays, this simply lists the names of data_arrays that are part of
-       standard data. When writing 'all_data', these data arrays are skipped.
+       
+       The attribute: `.arrays_to_output` is a set of the data arrays that will be
+       added to the netcdf file. array names may be added to or removed from
+       this set before a model run to customize what gets output:
+           `the_netcdf_outputter.arrays_to_output.add['rise_vel']`
+       
+       Since some of the names of the netcdf variables are different from the
+       names in the SpillContainer data_arrays, this list uses the netcdf names
 
     """
 
-    cf_attributes = {
-        'comment': 'Particle output from the NOAA PyGnome model',
-        'source': 'PyGnome version x.x.x',
-        'references': 'TBD',
-        'feature_type': 'particle_trajectory',
-        'institution': 'NOAA Emergency Response Division',
-        'conventions': 'CF-1.6',
-        }
+    cf_attributes = {'comment': 'Particle output from the NOAA PyGnome model',
+                     'source': 'PyGnome version %s'%gnome.__version__,
+                     'references': 'TBD',
+                     'feature_type': 'particle_trajectory',
+                     'institution': 'NOAA Emergency Response Division',
+                     'conventions': 'CF-1.6',
+                     }
 
-    data_vars = OrderedDict()
-    var = OrderedDict()
+    ## the set of arrays we usually output -- i.e. the default
+    standard_arrays = ['latitude',
+                       'longitude', # these are pulled from the 'positions' array
+                       'depth',
+                       'status_codes',
+                       'spill_num',
+                       'id',
+                       'mass',
+                       'age',
+                       ]
 
-    # longitude
-
-    var['dtype'] = np.float32
-    var['long_name'] = 'longitude of the particle'
-    var['units'] = 'degrees_east'
-    data_vars['longitude'] = copy.deepcopy(var)
-
-    # latitude
-
-    var['long_name'] = 'latitude of the particle'
-    var['units'] = 'degrees_north'
-    data_vars['latitude'] = copy.deepcopy(var)
-
-    # latitude
-
-    var['long_name'] = 'particle depth below sea surface'
-    var['units'] = 'meters'
-    var['axis'] = 'z positive down'
-    data_vars['depth'] = copy.deepcopy(var)
-
-    # mass - is this part of standard output?
-
-    var.clear()
-    var['dtype'] = np.float32
-    var['units'] = 'grams'
-    data_vars['mass'] = copy.deepcopy(var)
-
-    # age
-
-    var.clear()
-    var['dtype'] = np.int32
-    var['long_name'] = 'from age at time of release'
-    var['units'] = 'seconds'
-    data_vars['age'] = copy.deepcopy(var)
-
-    # status
-    # todo: update to read status flag from basic_types.oil_status
-
-    var['long_name'] = 'particle status flag'
-    var['valid_range'] = [0, 10]
-    var['flag_values'] = ([oil_status.in_water, oil_status.on_land,
-                           oil_status.off_maps, oil_status.evaporated], )
-    var['flag_meanings'] = \
-        '{0}:in_water {1}:on_land {2}:off_maps {3}:evaporated'.format(
-                                    oil_status.in_water, oil_status.on_land,
-                                    oil_status.off_maps, oil_status.evaporated)
-    data_vars['status'] = copy.deepcopy(var)
-
-    # id - id of particle
-
-    var.clear()
-    var['dtype'] = np.uint32
-    var['long_name'] = 'particle ID'
-    var['units'] = '1'
-    data_vars['id'] = copy.deepcopy(var)
-
-    # spill_num - spill to which the particle belongs
-
-    var.clear()
-    var['dtype'] = np.uint8
-    var['long_name'] = 'spill to which the particle belongs'
-    var['units'] = '1'
-    data_vars['spill_num'] = copy.deepcopy(var)
-
-    del var  # only used during initialization - no need to keep around
-
-    # This is data that has already been written in standard format
-
-    standard_data = [
-        'positions',
-        'current_time_stamp',
-        'status_codes',
-        'spill_num',
-        'id',
-        'mass',
-        'age',
-        ]
-
-    # these keys have same names in numpy data_arrays and netcdf variable names
-    _same_keynames = ['spill_num', 'id', 'mass', 'age']
+    ## the list of arrays that we usually don't want -- i.e. for internal use
+    ## these will get skipped if "most" is asked for
+    ## "all" will output everything.
+    usually_skipped_arrays = ['next_positions',
+                              'last_water_positions',
+                              'windages',
+                              'windage_range',
+                              'windage_persist',
+                              ]
 
     # define state for serialization
 
     state = copy.deepcopy(serializable.Serializable.state)
-    state.add_field([  # data file should not be moved to save file location!
-        serializable.Field('netcdf_filename', create=True,
-                           update=True),
-        serializable.Field('all_data', create=True, update=True),
-        #serializable.Field('netcdf_format', create=True, update=True),
-        serializable.Field('compress', create=True, update=True),
-        serializable.Field('_start_idx', create=True),
-        serializable.Field('_middle_of_run', create=True),
-        ])
+
+    # data file should not be moved to save file location!
+    state.add_field([ serializable.Field('netcdf_filename',
+                                          create=True,
+                                          update=True),
+                      serializable.Field('which_data', create=True, update=True),
+                      #serializable.Field('netcdf_format', create=True, update=True),
+                      serializable.Field('compress', create=True, update=True),
+                      serializable.Field('_start_idx', create=True),
+                      serializable.Field('_middle_of_run', create=True),
+                      ])
 
     @classmethod
     def new_from_dict(cls, dict_):
@@ -170,17 +163,14 @@ class NetCDFOutput(Outputter, serializable.Serializable):
         obj._start_idx = _start_idx
         return obj
 
-    def __init__(
-        self,
-        netcdf_filename,
-        all_data=False,
-        compress=True,
-        id=None,
-        **kwargs
-        ):
+    def __init__(self,
+                 netcdf_filename,
+                 which_data='standard', # options are 'standard', 'most', 'all'
+                 compress=True,
+                 id=None,
+                 **kwargs
+                 ):
         """
-        .. function:: __init__(netcdf_filename, cache=None, all_data=False,
-                               id=None)
 
         Constructor for Net_CDFOutput object. It reads data from cache and
         writes it to a NetCDF4 format file using the CF convention
@@ -188,14 +178,16 @@ class NetCDFOutput(Outputter, serializable.Serializable):
         :param netcdf_filename: Required parameter. The filename in which to
             store the NetCDF data.
         :type netcdf_filename: str. or unicode
-        :param all_data: If true, write all data to NetCDF, otherwise write
+        
+        :param which_data: If true, write all data to NetCDF, otherwise write
             only standard data. Default is False.
-        :type all_data: bool
-        :param id: Unique Id identifying the newly created mover (a UUID as a
+        :type which_data: string, one of: 'standard', 'most', 'all'
+        
+        :param id: Unique Id identifying the newly created object (a UUID as a
             string). This is used when loading an object from a persisted
             state. User should never have to set this.
 
-        Optional arguments (kwargs):
+        Optional arguments passed on to base class (kwargs):
 
         :param cache: sets the cache object from which to read data. The model
             will automatically set this param
@@ -226,10 +218,11 @@ class NetCDFOutput(Outputter, serializable.Serializable):
         # prepare_for_model_run
         self._middle_of_run = False
 
-        self.all_data = all_data
+        self._which_data = which_data.lower()
+        self.arrays_to_output = set(self.standard_arrays)
 
-        # this is only updated in prepare_for_model_run if all_data is True
-        self.arr_types = None
+        # this is only updated in prepare_for_model_run if which_data is 'all' or 'most'
+        #self.arr_types = None
         self._format = 'NETCDF4'
         self._compress = compress
         self._chunksize = 1024 # 1k is about right for 1000LEs and one time step.
@@ -271,16 +264,30 @@ class NetCDFOutput(Outputter, serializable.Serializable):
             self._netcdf_filename = new_name
 
     @property
-    def all_data(self):
-        return self._all_data
+    def which_data(self):
+        return self._which_data
 
-    @all_data.setter
-    def all_data(self, value):
+    @which_data.setter
+    def which_data(self, value):
         if self.middle_of_run:
             raise AttributeError('This attribute cannot be changed in the'
                                  ' middle of a run')
         else:
-            self._all_data = value
+            if value not in ('standard', 'most', 'all'):
+                raise ValueError("which_data must be one of: 'standard', 'most', 'all'")
+            else:
+                self._which_data = value
+
+    @property
+    def chunksize(self):
+        return self._chunksize
+
+    @chunksize.setter
+    def chunksize(self, value):
+        if self.middle_of_run:
+            raise AttributeError('chunksize can not be set in the middle of a run')
+        else:
+            self._chunksize = value
 
     @property
     def compress(self):
@@ -319,23 +326,25 @@ class NetCDFOutput(Outputter, serializable.Serializable):
         created, but the first time it tries to write this file, it will check
         and raise an error if file exists
         """
+    
 
         if os.path.exists(file_):
             raise ValueError('{0} file exists. Enter a filename that does not'
                 ' exist in which to save data.'.format(file_))
 
-    def prepare_for_model_run(
-        self,
-        model_start_time,
-        cache=None,
-        uncertain=False,
-        spills=None,
-        **kwargs
-        ):
+    def prepare_for_model_run(self,
+                              model_start_time,
+                              cache=None,
+                              uncertain=False,
+                              spills=None,
+                              **kwargs
+                              ):
         """
         .. function:: prepare_for_model_run(model_start_time,
-                cache=None, uncertain=False, spills=None,
-                **kwargs)
+                                            cache=None,
+                                            uncertain=False,
+                                            spills=None,
+                                            **kwargs)
 
         Write global attributes and define dimensions and variables for NetCDF
         file. This must be done in prepare_for_model_run because if model state
@@ -356,16 +365,18 @@ class NetCDFOutput(Outputter, serializable.Serializable):
             on whether uncertainty is on or off. If this is True then a
             uncertain data is written to netcdf_filename + '_uncertain.nc'
         :type uncertain: bool
-        :param spills: If 'all_data' flag is True, then model must provide the
-            model.spills object (SpillContainerPair object) so NetCDF variables
-            can be defined for the remaining data arrays. If spills is None,
-            but all_data flag is True, a ValueError will be raised. It does not
-            make sense to write 'all_data' but not provide 'model.spills'.
+
+        :param spills: If 'which_data' flag is set to 'all' or 'most', then model
+            must provide the model.spills object (SpillContainerPair object) so
+            NetCDF variables can be defined for the remaining data arrays. If
+            spills is None, but which_data flag is 'all' or 'most', a ValueError
+            will be raised. It does not make sense to write 'all' or 'most' but
+            not provide 'model.spills'.
         :type spills: gnome.spill_container.SpillContainerPair object.
 
         .. note::
         Does not take any other input arguments; however, to keep the interface
-            the same for all outputters, define **kwargs incase future
+            the same for all outputters, define **kwargs in case future
             outputters require different arguments.
 
         use super to pass model_start_time, cache=None and
@@ -373,12 +384,13 @@ class NetCDFOutput(Outputter, serializable.Serializable):
         """
 
         super(NetCDFOutput, self).prepare_for_model_run(model_start_time,
-                cache, **kwargs)
+                                                        cache,
+                                                        **kwargs)
 
-        if self.all_data and spills is None:
-            raise ValueError("'all_data' flag is True, however spills is None."
+        if ( self.which_data in ('all', 'most') ) and spills is None:
+            raise ValueError("'which_data' flag is '%s', however spills is None."
                 " Please provide valid model.spills so we know which"
-                " additional data to write.")
+                " additional data to write."%self.which_data)
 
         self._uncertain = uncertain
 
@@ -392,84 +404,116 @@ class NetCDFOutput(Outputter, serializable.Serializable):
 
         for file_ in filenames:
             self._nc_file_exists_error(file_)
+            ## create the netcdf files and write the standard stuff:
             with nc.Dataset(file_, 'w', format=self._format) as rootgrp:
-                rootgrp.comment = self.cf_attributes['comment']
-                rootgrp.creation_date = time_utils.round_time(datetime.now(),
-                                                              roundTo=1).isoformat().replace('T', ' ')
-                rootgrp.source = self.cf_attributes['source']
-                rootgrp.references = self.cf_attributes['references']
-                rootgrp.feature_type = self.cf_attributes['feature_type'
-                        ]
-                rootgrp.institution = self.cf_attributes['institution']
-                rootgrp.convention = self.cf_attributes['conventions']
+                ## fixme: why remove the "T" ??
+                self.cf_attributes['creation_date'] = time_utils.round_time(datetime.now(),
+                                                                            roundTo=1).isoformat()
+                rootgrp.setncatts(self.cf_attributes)
+                    #rootgrp.comment = self.cf_attributes['comment']
+                    #rootgrp.source = self.cf_attributes['source']
+                    #rootgrp.references = self.cf_attributes['references']
+                    #rootgrp.feature_type = self.cf_attributes['feature_type']
+                    #rootgrp.institution = self.cf_attributes['institution']
+                    #rootgrp.convention = self.cf_attributes['conventions']
 
-                rootgrp.createDimension('time', 0)
-                rootgrp.createDimension('data', 0)
+                # create the dimensions we need
+                rootgrp.createDimension('time') # unlimited
+                rootgrp.createDimension('data') # unlimited
+                rootgrp.createDimension('two', 2) # not sure if it's a convension or if dimensions need to be names...
+                rootgrp.createDimension('three', 3) # 
 
+                # create the time variable
                 time_ = rootgrp.createVariable('time',
-                                               np.double,
+                                               np.float64,
                                                ('time', ),
                                                zlib=self._compress,
                                                chunksizes=(self._chunksize,) )
+                time_.setncatts(var_attributes['time'])
                 time_.units = 'seconds since {0}'.format(
-                        self._model_start_time.isoformat().replace('T', ' '))
-                time_.long_name = 'time'
-                time_.standard_name = 'time'
-                time_.calendar = 'gregorian'
-                time_.comment = 'unspecified time zone'
+                        self._model_start_time.isoformat())
 
-                pc = rootgrp.createVariable('particle_count',
+                # create the particle count variable
+                pc_ = rootgrp.createVariable('particle_count',
                                             np.int32,
                                             ('time', ),
                                             zlib=self._compress,
                                             chunksizes=(self._chunksize,) )
-                pc.units = '1'
-                pc.long_name = 'number of particles in a given timestep'
-                pc.ragged_row_count = 'particle count at nth timestep'
+                pc_.setncatts(var_attributes['particle_count'])
 
-                for (key, val) in self.data_vars.iteritems():
-                    # don't pop since it maybe required twice
-                    var = rootgrp.createVariable(key,
-                                                 val.get('dtype'),
-                                                 ('data', ),
-                                                 zlib=self._compress,
-                                                 chunksizes=(self._chunksize,) )
+                ## create the list of variables that we want to put in the file
+                if self.which_data in ('all', 'most'):
+                    for var_name in spills.items()[0].array_types:
+                        if var_name != 'positions':
+                            # handled by latitude, longitude, depth
+                            self.arrays_to_output.add(var_name)
+                    if self.which_data == 'most':
+                        # remove the ones we don't want
+                        for var_name in self.usually_skipped_arrays:
+                            self.arrays_to_output.discard(var_name)
 
-                    # iterate over remaining attributes
-
-                    [setattr(var, key2, val2) for (key2, val2) in
-                     val.iteritems() if key2 != 'dtype']
-
-                if self.all_data:
-                    rootgrp.createDimension('world_point', 3)
-                    self.arr_types = dict()
-
-                    at = spills.items()[0].array_types
-                    [self.arr_types.update({key: atype}) for (key,
-                     atype) in at.iteritems() if key
-                     not in self.arr_types and key
-                     not in self.standard_data]
-
-                    # create variables
-
-                    for (key, val) in self.arr_types.iteritems():
-                        if len(val.shape) == 0:
-                            rootgrp.createVariable(key,
-                                                   val.dtype,
-                                                   'data',
-                                                   zlib=self._compress,
-                                                   chunksizes=(self._chunksize,),
-                                                   )
-                        elif val.shape[0] == 3:
-                            rootgrp.createVariable(key,
-                                                   val.dtype,
-                                                   ('data', 'world_point'),
-                                                   zlib=self._compress,
-                                                   chunksizes=(self._chunksize, 3),
-                                                   )
+                for var_name in self.arrays_to_output:
+                    # the special cases:
+                    if var_name in ('latitude', 'longitude', 'depth'):
+                        # these don't  map directly to an array_type
+                        dt = world_point_type
+                        shape = ('data', )
+                        chunksizes = (self._chunksize,)
+                    else:
+                        at = getattr(array_types, var_name)
+                        dt = at.dtype
+                        if at.shape == (3,): # total kludge for the cases we happen to have...
+                            shape = ('data', 'three')
+                            chunksizes = (self._chunksize, 3)
+                        elif at.shape == (2,):
+                            shape = ('data', 'two')
+                            chunksizes = (self._chunksize, 2)
                         else:
-                            raise ValueError('{0} has an undefined dimension:'
-                                             ' {1}'.format(key, val.shape))
+                            shape = ('data',)
+                            chunksizes = (self._chunksize,)
+
+                    var = rootgrp.createVariable(var_name,
+                                                 dt,
+                                                 shape,
+                                                 zlib=self._compress,
+                                                 chunksizes=chunksizes,
+                                                 )
+                    # add attributes
+                    try:
+                        var.setncatts( var_attributes[var_name] )
+                    except KeyError:
+                        pass # we won't get any attribues if they are not in the dict.
+
+                # if self.which_data in ('all', 'most'):
+                #     rootgrp.createDimension('world_point', 3)
+                #     self.arr_types = dict()
+
+                #     at = spills.items()[0].array_types
+                #     [self.arr_types.update({key: atype}) for (key,
+                #      atype) in at.iteritems() if key
+                #      not in self.arr_types and key
+                #      not in self.standard_data]
+
+                #     # create variables
+
+                #     for (key, val) in self.arr_types.iteritems():
+                #         if len(val.shape) == 0:
+                #             rootgrp.createVariable(key,
+                #                                    val.dtype,
+                #                                    'data',
+                #                                    zlib=self._compress,
+                #                                    chunksizes=(self._chunksize,),
+                #                                    )
+                #         elif val.shape[0] == 3:
+                #             rootgrp.createVariable(key,
+                #                                    val.dtype,
+                #                                    ('data', 'world_point'),
+                #                                    zlib=self._compress,
+                #                                    chunksizes=(self._chunksize, 3),
+                #                                    )
+                #         else:
+                #             raise ValueError('{0} has an undefined dimension:'
+                #                              ' {1}'.format(key, val.shape))
 
         # need to keep track of starting index for writing data since variable
         # number of particles are released
@@ -506,37 +550,29 @@ class NetCDFOutput(Outputter, serializable.Serializable):
 
             with nc.Dataset(file_, 'a') as rootgrp:
                 curr_idx = len(rootgrp.variables['time'])
-                rootgrp.variables['time'][curr_idx] = \
-                    nc.date2num(time_stamp, rootgrp.variables['time'
-                                ].units, rootgrp.variables['time'
-                                ].calendar)
+                rootgrp.variables['time'][curr_idx] = nc.date2num(time_stamp,
+                                                                  rootgrp.variables['time'].units,
+                                                                  rootgrp.variables['time'].calendar)
                 pc = rootgrp.variables['particle_count']
-                pc[curr_idx] = len(sc['status_codes'])
+                pc[curr_idx] = len(sc)
 
                 _end_idx = self._start_idx + pc[curr_idx]
-                rootgrp.variables['longitude'][self._start_idx:_end_idx] = \
-                    sc['positions'][:, 0]
-                rootgrp.variables['latitude'][self._start_idx:_end_idx] = \
-                    sc['positions'][:, 1]
-                rootgrp.variables['depth'][self._start_idx:_end_idx] = \
-                    sc['positions'][:, 2]
-                rootgrp.variables['status'][self._start_idx:_end_idx] = \
-                    sc['status_codes'][:]
 
-                for key in self._same_keynames:
-                    rootgrp.variables[key][self._start_idx:_end_idx] = \
-                        sc[key][:]
-
-                # write remaining data
-
-                if self.all_data:
-                    for (key, val) in self.arr_types.iteritems():
-                        if len(val.shape) == 0:
-                            rootgrp.variables[key][self._start_idx:
-                                    _end_idx] = sc[key]
-                        else:
-                            rootgrp.variables[key][self._start_idx:
-                                    _end_idx, :] = sc[key]
+                # add the data:
+                for var_name in self.arrays_to_output:
+                    ## special case positions:
+                    if var_name == 'longitude':
+                        rootgrp.variables['longitude'][self._start_idx:_end_idx] = \
+                                    sc['positions'][:, 0]
+                    elif var_name == 'latitude':
+                        rootgrp.variables['latitude'][self._start_idx:_end_idx] = \
+                                    sc['positions'][:, 1]
+                    elif var_name == 'depth':
+                        rootgrp.variables['depth'][self._start_idx:_end_idx] = \
+                                    sc['positions'][:, 2]
+                    else:
+                        rootgrp.variables[var_name][self._start_idx:_end_idx] = \
+                                    sc[var_name]
 
         self._start_idx = _end_idx  # set _start_idx for the next timestep
 
@@ -545,7 +581,8 @@ class NetCDFOutput(Outputter, serializable.Serializable):
 
         return {'step_num': step_num,
                 'netcdf_filename': (self.netcdf_filename,
-                self._u_netcdf_filename), 'time_stamp': time_stamp}
+                                    self._u_netcdf_filename),
+                'time_stamp': time_stamp}
 
     def rewind(self):
         """
@@ -567,12 +604,12 @@ class NetCDFOutput(Outputter, serializable.Serializable):
         self._start_idx = 0
 
     def write_output_post_run(self,
-        model_start_time,
-        num_time_steps,
-        cache=None,
-        uncertain=False,
-        spills=None,
-        **kwargs):
+                              model_start_time,
+                              num_time_steps,
+                              cache=None,
+                              uncertain=False,
+                              spills=None,
+                              **kwargs):
         """
         Define all the positional input arguments. Pass these onto baseclass
         write_output_post_run as correct kwargs
@@ -584,43 +621,60 @@ class NetCDFOutput(Outputter, serializable.Serializable):
                                                         spills=spills,
                                                         **kwargs)
 
-    @staticmethod
-    def read_data(netcdf_file, time=None, all_data=False):
+    @classmethod
+    def read_data(klass, netcdf_file, time=None, which_data='standard'):
         """
         Read and create standard data arrays for a netcdf file that was created
-        with NetCDFOutput class. Make it a static method since it is
+        with NetCDFOutput class. Make it a class method since it is
         independent of an instance of the Outputter. The method is put with
         this class because the NetCDF functionality for PyGnome data with CF
         standard is captured here.
 
         :param netcdf_file: Name of the NetCDF file from which to read the data
         :type netcdf_file: str
+
         :param time: Index of the 'time' variable (or time_step) for which
             data is desired. Default is 0 so it returns data associated with
             first timestamp.
         :type time: datetime
 
+        :param which_data = 'standard': which data arrays are desired options are
+                            'standard', 'most', 'all', [list_of_array_names]
+        :type which_data: string or sequence of strings.
+
         :returns: a dict containing standard data closest to the indicated
             'time'. Standard data is defined as follows:
 
         Standard data arrays are numpy arrays of size N, where N is number of
-        particles released at time step of interest:
+        particles released at time step of interest. They are defined by the
+        class attribute "standard_arrays", currently:
             'current_time_stamp': datetime object associated with this data
             'positions'         : NX3 array. Corresponds with NetCDF variables
                                   'longitude', 'latitude', 'depth'
             'status_codes'      : NX1 array. Corresponds with NetCDF variable
-                                  'status'
+                                  'status_codes'
             'spill_num'         : NX1 array. Corresponds with NetCDF variable
                                   'spill_num'
             'id'                : NX1 array showing particle id. Corresponds
                                   with NetCDF variable 'id'
             'mass'              : NX1 array showing 'mass' of each particle
-        """
 
+        standard_arrays = ['latitude',
+                           'longitude', # these are pulled from the 'positions' array
+                           'depth',
+                           'status_codes',
+                           'spill_num',
+                           'id',
+                           'mass',
+                           'age',
+                           ]
+
+
+        """
         if not os.path.exists(netcdf_file):
             raise IOError('File not found: {0}'.format(netcdf_file))
 
-        arrays_dict = dict()
+        arrays_dict = {}
         with nc.Dataset(netcdf_file) as data:
             _start_ix = 0
 
@@ -630,7 +684,7 @@ class NetCDFOutput(Outputter, serializable.Serializable):
                 # there should only be 1 time in file. Read and
                 # return data associated with it
                 if len(time_) > 1:
-                    raise ValueError("More than one times found in netcdf"
+                    raise ValueError("More than one time found in netcdf"
                                      " file. Please specify time for which"
                                      " data is desired")
                 else:
@@ -650,36 +704,43 @@ class NetCDFOutput(Outputter, serializable.Serializable):
             _stop_ix = _start_ix + data.variables['particle_count'][index]
             elem = data.variables['particle_count'][index]
 
-            c_time = nc.num2date(time_[index], time_.units,
+            c_time = nc.num2date(time_[index],
+                                 time_.units,
                                  calendar=time_.calendar)
+            
             arrays_dict['current_time_stamp'] = np.array(c_time)
 
-            positions = np.zeros((elem, 3),
-                                 dtype=gnome.basic_types.world_point_type)
+            ## figure out what arrays to read in:
+            if which_data == 'standard':
+                data_arrays = set(klass.standard_arrays)
+                # swap out positions:
+                [data_arrays.discard(x) for x in ('latitude','longitude','depth')]
+                data_arrays.add('positions')
+            elif which_data == 'all':
+                # pull them from the nc file
+                data_arrays = set(data.variables.keys())
+                ## remove the irrelevant ones:
+                [data_arrays.discard(x) for x in ('time',
+                                                  'particle_count',
+                                                  'latitude',
+                                                  'longitude',
+                                                  'depth')]
+                data_arrays.add('positions')
+            else: # should be list of data arrays
+                data_arrays = set(which_data)
 
-            positions[:, 0] = data.variables['longitude'][_start_ix:_stop_ix]
-            positions[:, 1] = data.variables['latitude'][_start_ix:_stop_ix]
-            positions[:, 2] = data.variables['depth'][_start_ix:_stop_ix]
+            # get the data
+            for array_name in data_arrays:
+                #special case time and positions:
+                if array_name == 'positions':
+                    positions = np.zeros((elem, 3),
+                                         dtype=gnome.basic_types.world_point_type)
+                    positions[:, 0] = data.variables['longitude'][_start_ix:_stop_ix]
+                    positions[:, 1] = data.variables['latitude'][_start_ix:_stop_ix]
+                    positions[:, 2] = data.variables['depth'][_start_ix:_stop_ix]
 
-            arrays_dict['positions'] = positions
-            arrays_dict['status_codes'] = (data.variables['status']
-                [_start_ix:_stop_ix])
-
-            for key in NetCDFOutput._same_keynames:
-                arrays_dict[key] = data.variables[key][_start_ix:_stop_ix]
-
-            if all_data:  # append remaining data arrays
-                excludes = NetCDFOutput.data_vars.keys()
-                excludes.extend(['time', 'particle_count'])
-
-                for key in data.variables.keys():
-                    if key not in excludes:
-                        if key in arrays_dict.keys():
-                            raise ValueError('Error in read_data. {0} is'
-                                ' already added to arrays_dict - trying to'
-                                ' add it again'.format(key))
-
-                        arrays_dict[key] = \
-                            (data.variables[key])[_start_ix:_stop_ix]
+                    arrays_dict['positions'] = positions
+                else:
+                    arrays_dict[array_name] = (data.variables[array_name][_start_ix:_stop_ix])
 
         return arrays_dict

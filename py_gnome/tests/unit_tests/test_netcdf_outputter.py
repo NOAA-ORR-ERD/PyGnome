@@ -37,7 +37,7 @@ def model(sample_model, request):
     model.movers += gnome.movers.RandomMover(diffusion_coef=100000)
 
     model.spills += \
-        gnome.spill.point_line_release_spill(num_elements=5,
+        gnome.spill.PointLineSource(num_elements=5,
             start_position=sample_model['release_start_pos'],
             release_time=model.start_time,
             end_release_time=model.start_time + model.duration,
@@ -83,45 +83,48 @@ def test_exceptions():
     # Test exceptions raised after object creation
 
     t_file = os.path.join(base_dir, 'temp.nc')
-    netcdf = NetCDFOutput(t_file)
-    with pytest.raises(TypeError):
-        netcdf.prepare_for_model_run(num_time_steps=4)
 
-    with pytest.raises(TypeError):
-        netcdf.prepare_for_model_run()
-
-    netcdf.prepare_for_model_run(model_start_time=datetime.now(),
-                                 num_time_steps=4)
-    with pytest.raises(ValueError):
-        netcdf.write_output(0)
-
-    with pytest.raises(ValueError):
-
-        # raise error because file 'temp.nc' should already exist
-
-        netcdf.prepare_for_model_run(model_start_time=datetime.now(),
-                num_time_steps=4)
-
-    with pytest.raises(ValueError):
-
-        # all_data is True but spills are not provided so raise an error
-
-        netcdf.rewind()
-        netcdf.all_data = True
-        netcdf.prepare_for_model_run(model_start_time=datetime.now(),
-                num_time_steps=4)
-
-    # clean up temporary file
-
+    # clean up temporary file from previos run
     if os.path.exists(t_file):
         print 'remove temporary file {0}'.format(t_file)
         os.remove(t_file)
 
+    netcdf = NetCDFOutput(t_file, which_data='all')
+
+    with pytest.raises(TypeError):
+        # need to pass in model start time
+        netcdf.prepare_for_model_run(num_time_steps=4)
+
+    with pytest.raises(TypeError):
+        # need to pass in model start time
+        netcdf.prepare_for_model_run()
+
+    with pytest.raises(ValueError):
+        # needs a spills object for "all"
+        netcdf.prepare_for_model_run(model_start_time=datetime.now(),
+                                     num_time_steps=4,)
+
+    with pytest.raises(ValueError):
+        # need a cache object
+        netcdf.write_output(0)
+    with pytest.raises(ValueError):
+        # raise error because file 'temp.nc' should already exist
+        netcdf.prepare_for_model_run(model_start_time=datetime.now(),
+                                     num_time_steps=4)
+
+    with pytest.raises(ValueError):
+        # which_data is 'all' but spills are not provided so raise an error
+        netcdf.rewind()
+        netcdf.which_data = 'all'
+        netcdf.prepare_for_model_run(model_start_time=datetime.now(),
+                                     num_time_steps=4)
+    with pytest.raises(ValueError):
+        netcdf.which_data = 'some random string'
 
 def test_exceptions_middle_of_run(model):
     """
     Test attribute exceptions are called when changing parameters in middle of
-    run for 'all_data' and 'netcdf_filename'
+    run for 'which_data' and 'netcdf_filename'
     """
 
     model.rewind()
@@ -136,10 +139,13 @@ def test_exceptions_middle_of_run(model):
         o_put.netcdf_filename = 'test.nc'
 
     with pytest.raises(AttributeError):
-        o_put.all_data = True
+        o_put.which_data = True
 
     with pytest.raises(AttributeError):
         o_put.compress = False
+
+    with pytest.raises(AttributeError):
+        o_put.chunksize = 1024*1024
 
     model.rewind()
     assert not o_put.middle_of_run
@@ -224,7 +230,7 @@ def test_write_output_standard(model):
                 assert np.all(scp.LE('id', uncertain)[:] == 
                               (data.variables['id'])[idx[step]:idx[step + 1]])
                 assert np.all(scp.LE('status_codes', uncertain)[:] ==
-                        (data.variables['status'])[idx[step]:idx[step + 1]])
+                        (data.variables['status_codes'])[idx[step]:idx[step + 1]])
 
                 # flag variable is not currently set or checked
 
@@ -262,7 +268,7 @@ def test_write_output_all_data(model):
     model.rewind()
     o_put = [model.outputters[outputter.id] for outputter in
              model.outputters if isinstance(outputter, NetCDFOutput)][0]
-    o_put.all_data = True  # write all data
+    o_put.which_data = 'all'  # write all data
 
     _run_model(model)
 
@@ -274,20 +280,39 @@ def test_write_output_all_data(model):
 
             for step in range(model.num_time_steps):
                 scp = model._cache.load_timestep(step)
-
-                for (key, val) in o_put.arr_types.iteritems():
-                    if len(val.shape) == 0:
-                        assert np.all((data.variables[key])[idx[step]:idx[step
-                                + 1]] == scp.LE(key, uncertain))
+                for var_name in o_put.arrays_to_output:
+                    # special_case 'positions'
+                    if var_name == 'longitude':
+                        nc_var = data.variables[var_name]
+                        sc_arr = scp.LE('positions', uncertain)[:,0]
+                    elif var_name == 'latitude':
+                        nc_var = data.variables[var_name]
+                        sc_arr = scp.LE('positions', uncertain)[:,1]
+                    elif var_name == 'depth':
+                        nc_var = data.variables[var_name]
+                        sc_arr = scp.LE('positions', uncertain)[:,2]
                     else:
-                        assert np.all(data.variables[key][idx[step]:
-                                idx[step + 1], :] == scp.LE(key,
-                                uncertain))
+                        nc_var = data.variables[var_name]
+                        sc_arr = scp.LE(var_name, uncertain)
+                    if len(sc_arr.shape) == 1:
+                        assert np.all( nc_var[idx[step]:idx[step+1]] == sc_arr )
+                    elif len(sc_arr.shape) == 2:
+                        assert np.all( nc_var[idx[step]:idx[step+1], :] == sc_arr )
+                    else:
+                        raise ValueError("haven't written a test for 3-d arrays")
+                    
 
         # 2nd time around, we are looking at uncertain filename so toggle
         # uncertain flag
-
         uncertain = True
+
+# def test_output_all():
+#     """
+#     tests outputting 'all' -- when there are arbitrary data arrays in the spill container
+#     """
+#     o_put = NetCDFOutput(os.path.join(base_dir, u'sample_model.nc'))
+
+
 
 
 def test_run_without_spills(model):
@@ -323,8 +348,8 @@ def test_read_data_exception(model):
 @pytest.mark.parametrize("output_ts_factor", [1, 2.4])
 def test_read_standard_arrays(model, output_ts_factor):
     """
-    tests the data returned by read_data is correct when `all_data` flag is
-    False. It is only reading the standard_data_arrays
+    tests the data returned by read_data is correct when `which_data` flag is
+    'standard'. It is only reading the standard_arrays
 
     Test will only verify the data when time_stamp of model matches the
     time_stamp of data written out. output_ts_factor means not all data is
@@ -384,14 +409,15 @@ def test_read_standard_arrays(model, output_ts_factor):
 
 def test_read_all_arrays(model):
     """
-    tests the data returned by read_data is correct when `all_data` flag is
-    True. It is only reading the standard_data_arrays
+    tests the data returned by read_data is correct when `which_data` flag is
+    'all'.
     """
 
     model.rewind()
     o_put = [model.outputters[outputter.id] for outputter in
              model.outputters if isinstance(outputter, NetCDFOutput)][0]
-    o_put.all_data = True
+
+    o_put.which_data = 'all'
 
     _run_model(model)
 
@@ -404,8 +430,8 @@ def test_read_all_arrays(model):
         for step in range(model.num_time_steps):
             scp = model._cache.load_timestep(step)
             curr_time = scp.LE('current_time_stamp', uncertain)
-            nc_data = NetCDFOutput.read_data(file_, curr_time, all_data=True)
 
+            nc_data = NetCDFOutput.read_data(file_, curr_time, which_data='all')
             if curr_time == nc_data['current_time_stamp'].item():
                 _found_a_matching_time = True
                 for key in scp.LE_data:
@@ -414,10 +440,12 @@ def test_read_all_arrays(model):
                         continue
                     elif key == 'positions':
                         assert np.allclose(scp.LE('positions', uncertain),
-                                nc_data['positions'], rtol, atol)
+                                           nc_data['positions'], rtol, atol)
                     else:
-                        assert np.all(scp.LE(key, uncertain)[:]
+                        if key not in  ['last_water_positions','next_positions']:
+                            assert np.all(scp.LE(key, uncertain)[:]
                                       == nc_data[key])
+        #assert False
 
         if _found_a_matching_time:
             print ('\ndata in model matches for output in \n{0}'.format(file_))
@@ -442,7 +470,7 @@ def test_write_output_post_run(model, output_ts_factor):
 
     o_put = [model.outputters[outputter.id] for outputter in
              model.outputters if isinstance(outputter, NetCDFOutput)][0]
-    o_put.all_data = False
+    o_put.which_data = 'standard'
     o_put.output_timestep = timedelta(seconds=model.time_step *
                                       output_ts_factor)
 
@@ -484,6 +512,7 @@ def test_write_output_post_run(model, output_ts_factor):
 
     # add this back in so cleanup script deletes the generated *.nc files
     model.outputters += o_put
+
 
 
 def _run_model(model):

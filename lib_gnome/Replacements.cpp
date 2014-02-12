@@ -391,6 +391,49 @@ Boolean IsGridCurTimeFile(char *path, short *selectedUnitsOut)
 	}
 }
 
+bool IsGridWindFile (vector<string> &linesInFile, short *selectedUnitsOut)
+{
+	long lineIdx = 0;
+	string currentLine;
+
+	short selectedUnits = kUndefined;
+	string value1S, value2S;
+
+	// First line, must start with '[GRIDCURTIME] <units>'
+	// <units> == the designation of units for the file.
+	currentLine = trim(linesInFile[lineIdx++]);
+
+	istringstream lineStream(currentLine);
+
+	lineStream >> value1S >> value2S;
+	if (lineStream.fail())
+		return false;
+
+	if (value1S != "[GRIDWIND]" && value1S != "[GRIDWINDTIME]")
+		return false;
+
+	selectedUnits = StrToSpeedUnits((char *)value2S.c_str());
+	if (selectedUnits == kUndefined)
+		return false;
+
+	*selectedUnitsOut = selectedUnits;
+	
+	return true;
+}
+
+
+Boolean IsGridWindFile(char *path, short *selectedUnitsOut)
+{
+	vector<string> linesInFile;
+
+	if (ReadLinesInFile(path, linesInFile, 10)) {
+		return IsGridWindFile(linesInFile, selectedUnitsOut);
+	}
+	else {
+		return false;
+	}
+}
+
 
 bool IsPtCurFile(vector<string> &linesInFile)
 {
@@ -436,6 +479,28 @@ Boolean IsCATS3DFile(char *path)
 	if (ReadLinesInFile(strPath, linesInFile, 1))
 		return IsCATS3DFile(linesInFile);
 
+	else
+		return false;
+}
+
+bool IsShioFile(vector<string> &linesInFile)
+{
+	long line = 0;
+	string value;
+	
+	// the first line of the file needs to be "[StationInfo]"
+	if (ParseKeyedLine(linesInFile[line++], "[StationInfo]", value))
+		return true;
+	else
+		return false;
+}
+
+Boolean IsShioFile(char* path)
+{
+	vector<string> linesInFile;
+	
+	if (ReadLinesInFile(path, linesInFile))
+		return IsShioFile(linesInFile);
 	else
 		return false;
 }

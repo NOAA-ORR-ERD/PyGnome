@@ -54,9 +54,10 @@ OSErr GetScaleFactorFromUser(char *msg, double *scaleFactor)
 
 TOSSMTimeValue* CreateTOSSMTimeValue(TMover *theOwner,char* path, char* shortFileName, short unitsIfKnownInAdvance)
 {
-	char tempStr[256];
+	char tempStr[256], outPath[256];
 	OSErr err = 0;
 	
+	// will need to update the shio readtimevalues
 	if(IsShioFile(path))
 	{
 		TShioTimeValue *timeValObj = new TShioTimeValue(theOwner);
@@ -69,25 +70,33 @@ TOSSMTimeValue* CreateTOSSMTimeValue(TMover *theOwner,char* path, char* shortFil
 		if(err) { delete timeValObj; timeValObj = nil; return nil;}
 		return timeValObj;
 	}
-	else if (IsTimeFile(path) || IsHydrologyFile(path) || IsOSSMTimeFile(path, &unitsIfKnownInAdvance))
+	else 
 	{
-		TOSSMTimeValue *timeValObj = new TOSSMTimeValue(theOwner);
+#if TARGET_API_MAC_CARBON
+		err = ConvertTraditionalPathToUnixPath((const char *) path, outPath, kMaxNameLen) ;
+		if (!err) strcpy(path,outPath);
+#endif
 		
-		if (!timeValObj)
-		{ TechError("LoadTOSSMTimeValue()", "new TOSSMTimeValue()", 0); return nil; }
-		
-		err = timeValObj->InitTimeFunc();
-		if(err) {delete timeValObj; timeValObj = nil; return nil;}  
-		
-		err = timeValObj->ReadTimeValues (path, M19REALREAL, unitsIfKnownInAdvance);
-		if(err) { delete timeValObj; timeValObj = nil; return nil;}
-		return timeValObj;
-	}	
-	// code goes here, add code for OSSMHeightFiles, need scale factor to calculate derivative
-	else
-	{
-		sprintf(tempStr,"File %s is not a recognizable time file.",shortFileName);
-		printError(tempStr);
+		if (IsTimeFile(path) || IsHydrologyFile(path) || IsOSSMTimeFile(path, &unitsIfKnownInAdvance))
+		{
+			TOSSMTimeValue *timeValObj = new TOSSMTimeValue(theOwner);
+			
+			if (!timeValObj)
+			{ TechError("LoadTOSSMTimeValue()", "new TOSSMTimeValue()", 0); return nil; }
+			
+			err = timeValObj->InitTimeFunc();
+			if(err) {delete timeValObj; timeValObj = nil; return nil;}  
+			
+			err = timeValObj->ReadTimeValues (path, M19REALREAL, unitsIfKnownInAdvance);
+			if(err) { delete timeValObj; timeValObj = nil; return nil;}
+			return timeValObj;
+		}	
+		// code goes here, add code for OSSMHeightFiles, need scale factor to calculate derivative
+		else
+		{
+			sprintf(tempStr,"File %s is not a recognizable time file.",shortFileName);
+			printError(tempStr);
+		}
 	}
 		
 	return nil;

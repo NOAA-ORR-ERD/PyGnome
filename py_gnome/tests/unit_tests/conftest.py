@@ -10,11 +10,21 @@ import os
 from datetime import datetime, timedelta
 import copy
 
-import numpy as np
+import numpy
+np = numpy
+
 import pytest
 
-import gnome
-from gnome import basic_types
+from gnome.basic_types import datetime_value_2d
+from gnome.array_types import windages, windage_range, windage_persist
+
+from gnome.map import MapFromBNA
+from gnome.model import Model
+
+from gnome.spill_container import SpillContainer
+from gnome.spill import PointLineSource
+
+from gnome.movers import SimpleMover
 
 
 def mock_append_data_arrays(array_types, num_elements, data_arrays={}):
@@ -51,35 +61,38 @@ def mock_append_data_arrays(array_types, num_elements, data_arrays={}):
 
 
 def sample_sc_release(num_elements=10,
-    start_pos=(0.0, 0.0, 0.0),
-    release_time=datetime(2000, 1, 1, 1),
-    uncertain=False,
-    time_step=360,
-    spill=None,
-    arr_types=None,
-    element_type=None,
-    current_time=None):
+                      start_pos=(0.0, 0.0, 0.0),
+                      release_time=datetime(2000, 1, 1, 1),
+                      uncertain=False,
+                      time_step=360,
+                      spill=None,
+                      element_type=None,
+                      current_time=None,
+                      arr_types=None):
     """
-    initiailize a spill of type spill_obj, add it to a SpillContainer.
+    Initialize a spill of type spill_obj, add it to a SpillContainer.
     Invoke release_elements on SpillContainer, then return the spill container
     object
     """
+    if current_time is None:
+        current_time = release_time
+
     if spill is None:
-        spill = gnome.spill.point_line_release_spill(num_elements, start_pos,
+        spill = gnome.spill.PointLineSource(num_elements, start_pos,
                                             release_time)
     if element_type is not None:
         spill.element_type = element_type
 
     if current_time is None:
-        current_time = spill.release.release_time
+        current_time = spill.release_time
 
     if arr_types is None:
         # default always has standard windage parameters required by wind_mover
-        arr_types = {'windages': gnome.array_types.windages,
-                     'windage_range': gnome.array_types.windage_range,
-                     'windage_persist': gnome.array_types.windage_persist}
+        arr_types = {'windages': windages,
+                     'windage_range': windage_range,
+                     'windage_persist': windage_persist}
 
-    sc = gnome.spill_container.SpillContainer(uncertain)
+    sc = SpillContainer(uncertain)
     sc.spills.add(spill)
 
     # used for testing so just assume there is a Windage array
@@ -194,7 +207,7 @@ def wind_circ(rq_wind):
 
     from gnome import environment
     dtv_rq = np.zeros((len(rq_wind['rq']), ),
-                      dtype=basic_types.datetime_value_2d).view(dtype=np.recarray)
+                      dtype=datetime_value_2d).view(dtype=np.recarray)
     dtv_rq.time = [datetime(
         2012,
         11,
@@ -205,7 +218,7 @@ def wind_circ(rq_wind):
         ) for i in range(len(dtv_rq))]
     dtv_rq.value = rq_wind['rq']
     dtv_uv = np.zeros((len(dtv_rq), ),
-                   dtype=basic_types.datetime_value_2d).view(dtype=np.recarray)
+                   dtype=datetime_value_2d).view(dtype=np.recarray)
     dtv_uv.time = dtv_rq.time
     dtv_uv.value = rq_wind['uv']
     wm = environment.Wind(timeseries=dtv_rq, format='r-theta',
@@ -232,6 +245,27 @@ def sample_spatial_release_spill():
 
 
 @pytest.fixture(scope='module')
+def sample_vertical_plume_source():
+    '''
+    creates an example VerticalPlumeSource object
+    '''
+    from gnome.spill import VerticalPlumeSource
+    from gnome.utilities.plume import get_plume_data
+
+    release_time = datetime.now()
+    vps = VerticalPlumeSource(num_elements=200,
+                              start_position=(28, -78, 0.),
+                              release_time=release_time,
+                              end_release_time=release_time + timedelta(hours=24),
+                              plume_data=get_plume_data(),
+                              )
+
+    vps.plume_gen.time_step_delta = timedelta(hours=1).total_seconds()
+
+    return vps
+
+
+@pytest.fixture(scope='module')
 def sample_sc_no_uncertainty():
     """
     Sample spill container with 2 point_line_release_spill spills:
@@ -245,7 +279,7 @@ def sample_sc_no_uncertainty():
     the two spills and returns it. It is used in test_spill_container.py
     and test_elements.py so defined as a fixture.
     """
-    sc = gnome.spill_container.SpillContainer()
+    sc = SpillContainer()
     # Sample data for creating spill
     num_elements = 100
     start_position = (23.0, -78.5, 0.0)
@@ -253,11 +287,11 @@ def sample_sc_no_uncertainty():
     end_position = (24.0, -79.5, 1.0)
     end_release_time = datetime(2012, 1, 1, 12) + timedelta(hours=4)
 
-    spills = [gnome.spill.point_line_release_spill(num_elements,
+    spills = [gnome.spill.PointLineSource(num_elements,
                               start_position,
                               release_time,
                               volume=10),
-              gnome.spill.point_line_release_spill(num_elements, start_position,
+              gnome.spill.PointLineSource(num_elements, start_position,
                               release_time + timedelta(hours=1),
                               end_position, end_release_time,
                               volume=10),
@@ -299,18 +333,17 @@ def sample_model():
 
     # the land-water map
 
-    map_ = gnome.map.MapFromBNA(mapfile, refloat_halflife=06)  # seconds
+    map_ = MapFromBNA(mapfile, refloat_halflife=06)  # seconds
 
-    model = gnome.model.Model(
-        time_step=timedelta(minutes=15),
-        start_time=release_time,
-        duration=timedelta(hours=1),
-        map=map_,
-        uncertain=True,
-        cache_enabled=False,
-        )
+    model = Model(time_step=timedelta(minutes=15),
+                  start_time=release_time,
+                  duration=timedelta(hours=1),
+                  map=map_,
+                  uncertain=True,
+                  cache_enabled=False,
+                  )
 
-    model.movers += gnome.movers.SimpleMover(velocity=(1., -1., 0.0))
+    model.movers += SimpleMover(velocity=(1., -1., 0.0))
 
     model.uncertain = True
 

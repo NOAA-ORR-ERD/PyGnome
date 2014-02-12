@@ -14,10 +14,11 @@ at all time.
 
 import copy
 
-import numpy as np
+import numpy
 from numpy import random
+np = numpy
 
-from gnome import basic_types
+from gnome.basic_types import oil_status, mover_type
 from gnome.movers import Mover
 from gnome.utilities.projections import FlatEarthProjection as proj
 from gnome.utilities import serializable
@@ -27,10 +28,11 @@ class SimpleMover(Mover, serializable.Serializable):
 
     """
     simple_mover
-    
+
     a really simple mover -- moves all LEs a constant speed and direction
-    
-    (not all that different than a constant wind mover, now that I think about it)    
+
+    (not all that different than a constant wind mover, now that I
+     think about it)
     """
 
     state = copy.deepcopy(Mover.state)
@@ -49,14 +51,15 @@ class SimpleMover(Mover, serializable.Serializable):
         create a simple_mover instance
 
         :param velocity: a (u, v, w) triple -- in meters per second
-        
-        Remaining kwargs are passed onto Mover's __init__ using super. 
+
+        Remaining kwargs are passed onto Mover's __init__ using super.
         See Mover documentation for remaining valid kwargs.
         """
 
+        # use this, to be compatible with whatever we are using for location
         self.velocity = np.asarray(velocity,
-                                   dtype=basic_types.mover_type).reshape((3,
-                ))  # use this, to be compatible with whatever we are using for location
+                                   dtype=mover_type).reshape((3,
+                ))
         self.uncertainty_scale = uncertainty_scale
         super(SimpleMover, self).__init__(**kwargs)
 
@@ -78,7 +81,7 @@ class SimpleMover(Mover, serializable.Serializable):
         ):
         """
         moves the particles defined in the spill object
-        
+
         :param spill: spill is an instance of the gnome.spill.Spill class
         :param time_step: time_step in seconds
         :param model_time: current model time as a datetime object
@@ -86,9 +89,9 @@ class SimpleMover(Mover, serializable.Serializable):
             positions
             status_code
         data arrays.
-        
-        :returns delta: Nx3 numpy array of movement -- in (long, lat, meters) units
-        
+
+        :returns delta: Nx3 numpy array of movement
+                        -- in (long, lat, meters) units
         """
 
         # Get the data:
@@ -97,12 +100,12 @@ class SimpleMover(Mover, serializable.Serializable):
             positions = spill['positions']
             status_codes = spill['status_codes']
         except KeyError, err:
-            raise ValueError('The spill does not have the required data arrays\n'
-                              + err.message)
+            raise ValueError("The spill doesn't have the required "
+                             "data arrays\n{0}".format(err.message))
 
         # which ones should we move?
 
-        in_water_mask = status_codes == basic_types.oil_status.in_water
+        in_water_mask = status_codes == oil_status.in_water
 
         # compute the move
 
@@ -126,8 +129,7 @@ class SimpleMover(Mover, serializable.Serializable):
 
             # scale for projection
 
-            delta = proj.meters_to_lonlat(delta, positions)  # just the lat-lon...
+            # just the lat-lon...
+            delta = proj.meters_to_lonlat(delta, positions)
 
         return delta
-
-

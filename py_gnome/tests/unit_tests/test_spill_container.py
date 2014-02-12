@@ -1,14 +1,15 @@
 #!/usr/bin/env python
-
-"""
+'''
 Tests the SpillContainer class
-"""
+'''
 
 from datetime import datetime, timedelta
-import copy
 
-import numpy as np
 import pytest
+from pytest import raises
+
+import numpy
+np = numpy
 
 from gnome.basic_types import (oil_status,
                                world_point_type,
@@ -39,7 +40,18 @@ end_release_time = datetime(2012, 1, 1, 12) + timedelta(hours=4)
 
 def test_simple_init():
     sc = SpillContainer()
-    assert sc
+    assert sc != None
+
+
+def test_length_zero():
+    sc = SpillContainer()
+    assert len(sc) == 0
+
+
+def test_length():
+    sp = sample_sc_release()
+
+    assert len(sp) == 10
 
 
 ### Helper functions ###
@@ -68,8 +80,6 @@ def test_test_spill_container():
     sc = sample_sc_release()
     assert_sc_single_spill(sc)
 
-
-## real testing involves adding spills!
 
 @pytest.mark.parametrize("spill",
                          [point_line_release_spill(num_elements,
@@ -137,7 +147,7 @@ def test_multiple_spills(uncertain):
 
     sc.spills.remove(spills[0].id)
 
-    with pytest.raises(KeyError):
+    with raises(KeyError):
         # it shouldn't be there anymore.
         assert sc.spills[spills[0].id] is None
 
@@ -214,7 +224,7 @@ def test_data_setting_wrong_size_error():
 
     new_pos = np.ones((sc.num_released + 2, 3), dtype=world_point_type) * 3.0
 
-    with pytest.raises(ValueError):
+    with raises(ValueError):
         sc['positions'] = new_pos
 
 
@@ -227,7 +237,7 @@ def test_data_setting_wrong_dtype_error():
 
     new_pos = np.ones((sc.num_released, 3), dtype=np.int32)
 
-    with pytest.raises(ValueError):
+    with raises(ValueError):
         sc['positions'] = new_pos
 
 
@@ -240,7 +250,7 @@ def test_data_setting_wrong_shape_error():
 
     new_pos = np.ones((sc.num_released, 4), dtype=world_point_type) * 3.0
 
-    with pytest.raises(ValueError):
+    with raises(ValueError):
         sc['positions'] = new_pos
 
 
@@ -521,20 +531,17 @@ def test_element_types(elem_type, arr_types, sample_sc_no_uncertainty):
                 elif key == 'rise_vel':
                     if (spill.element_type.initializers[key].distribution ==
                         'uniform'):
-                        assert (np.all(sc[key][spill_mask] >=
-                            spill.element_type.initializers[key].low))
-                        assert (np.all(sc[key][spill_mask] <=
-                            spill.element_type.initializers[key].high))
+                        low, high = \
+                            spill.element_type.initializers[key].method_args
 
-
-""" SpillContainerPairData tests """
+                        assert (np.all(sc[key][spill_mask] >= low))
+                        assert (np.all(sc[key][spill_mask] <= high))
 
 
 def test_init_SpillContainerPair():
     """
     all this does is test that it can be initialized
     """
-
     SpillContainerPair()
     SpillContainerPair(True)
 
@@ -575,7 +582,7 @@ class TestAddSpillContainerPair:
                 self.start_position2, self.start_time2)
         scp = SpillContainerPair(True)
 
-        with pytest.raises(ValueError):
+        with raises(ValueError):
             scp += (spill, sp2, spill)
 
     def test_exception_uncertainty(self):
@@ -585,7 +592,7 @@ class TestAddSpillContainerPair:
                 self.start_position2, self.start_time2)
         scp = SpillContainerPair(False)
 
-        with pytest.raises(ValueError):
+        with raises(ValueError):
             scp += (spill, sp2)
 
     def test_add_spill(self):

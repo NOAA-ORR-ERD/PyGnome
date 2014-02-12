@@ -1,45 +1,54 @@
 #!/usr/bin/env python
 
-"""
+'''
 test code for the model class
-
-not a lot to test by itself, but a start
-
-"""
+'''
 
 import os
 import shutil
 from datetime import datetime, timedelta
 
-import numpy as np
-import pytest
+import numpy
+np = numpy
 
-import gnome.map
+import pytest
+from pytest import raises
+
 from gnome.basic_types import datetime_value_2d
-from gnome.utilities import inf_datetime
-from gnome.model import Model
-from gnome.spill import Spill, SpatialRelease, point_line_release_spill
-from gnome.utilities.remote_data import get_datafile
-from gnome.movers.simple_mover import SimpleMover
-from gnome.movers import RandomMover, WindMover, CatsMover
-from gnome.environment import Wind, Tide
 from gnome.elements import floating
 
+from gnome.utilities import inf_datetime
+from gnome.model import Model
+from gnome.spill import SpatialRelease, PointLineSource
+from gnome.utilities.remote_data import get_datafile
+
+import gnome.map
+from gnome.environment import Wind, Tide
+
+from gnome.spill import SpatialRelease, PointLineSource
+
+from gnome.movers.simple_mover import SimpleMover
+from gnome.movers import RandomMover, WindMover, CatsMover
+
+from gnome.renderer import Renderer
+
+from gnome.model import Model
+
 basedir = os.path.dirname(__file__)
-datadir = os.path.join(basedir, r"sample_data")
-testmap = os.path.join(basedir, '../sample_data', 'MapBounds_Island.bna'
-                       )
+datadir = os.path.join(basedir, 'sample_data')
+tides_dir = os.path.join(datadir, 'tides')
+lis_dir = os.path.join(datadir, 'long_island_sound')
+
+testmap = os.path.join(basedir, '../sample_data', 'MapBounds_Island.bna')
 
 
 @pytest.fixture(scope='module')
 def model(sample_model):
-    """
-    utility to setup up a simple, but complete model for tests
-    """
-
-    # create a place for test images (cleaning out any old ones)
-
+    '''
+    Utility to setup up a simple, but complete model for tests
+    '''
     images_dir = os.path.join(basedir, 'Test_images')
+
     if os.path.isdir(images_dir):
         shutil.rmtree(images_dir)
     os.mkdir(images_dir)
@@ -51,10 +60,8 @@ def model(sample_model):
     model.cache_enabled = True
     model.uncertain = False
 
-    renderer = gnome.renderer.Renderer(model.map.filename, images_dir,
-            size=(400, 300))
-
-    model.outputters += renderer
+    model.outputters += Renderer(model.map.filename, images_dir,
+                                 size=(400, 300))
 
     N = 10  # a line of ten points
     line_pos = np.zeros((N, 3), dtype=np.float64)
@@ -63,8 +70,8 @@ def model(sample_model):
 
     # print start_points
 
-    spill = Spill(SpatialRelease(start_position=line_pos,
-                           release_time=model.start_time))
+    spill = SpatialRelease(start_positions=line_pos,
+                           release_time=model.start_time)
 
     model.spills += spill
 
@@ -112,12 +119,12 @@ def test_model_time_and_current_time_in_sc():
 
 @pytest.mark.parametrize("duration", [1, 2])
 def test_release_end_of_step(duration):
-    """
-    tests that elements released at end of step are recorded with their
-    initial conditions with correct timestamp
-    Also tests the age is set correctly.
+    '''
+    - Tests that elements released at end of step are recorded with their
+      initial conditions with correct timestamp
+    - Also tests the age is set correctly.
     todo: write separate test for checking age
-    """
+    '''
     model = Model(time_step=timedelta(minutes=15),
                   duration=timedelta(hours=duration))
 
@@ -126,7 +133,7 @@ def test_release_end_of_step(duration):
 
     model.movers += SimpleMover(velocity=(1., -1., 0.0))
 
-    print "\n---------------------------------------------"
+    print '\n---------------------------------------------'
     print 'model_start_time: {0}'.format(model.start_time)
 
     prev_rel = len(model.spills.LE('positions'))
@@ -153,9 +160,9 @@ def test_release_end_of_step(duration):
         print 'age: \n{0}'.format(model.spills.LE('age'))
         print 'just ran: %s' % step
         print 'particles released: %s' % new_particles
-        print "---------------------------------------------"
+        print '---------------------------------------------'
 
-    print "\n==============================================="
+    print '\n==============================================='
 
 
 def test_timestep():
@@ -171,11 +178,11 @@ def test_timestep():
 
 
 def test_simple_run_rewind():
-    """
-    pretty much all this tests is that the model will run
+    '''
+    Pretty much all this tests is that the model will run
     and the seed is set during first run, then set correctly
     after it is rewound and run again
-    """
+    '''
 
     start_time = datetime(2012, 9, 15, 12, 0)
 
@@ -195,32 +202,31 @@ def test_simple_run_rewind():
 
     # model.add_spill(spill)
 
-    model.start_time = spill.release.release_time
+    model.start_time = spill.release_time
 
-    # test iterator:
-
+    # test iterator
     for step in model:
         print 'just ran time step: %s' % model.current_time_step
+        assert step['step_num'] == model.current_time_step
 
     pos = np.copy(model.spills.LE('positions'))
 
     # rewind and run again:
-
     print 'rewinding'
     model.rewind()
 
-    # test iterator:
-
+    # test iterator is repeatable
     for step in model:
         print 'just ran time step: %s' % model.current_time_step
+        assert step['step_num'] == model.current_time_step
 
     assert np.all(model.spills.LE('positions') == pos)
 
 
 def test_simple_run_with_map():
-    """
+    '''
     pretty much all this tests is that the model will run
-    """
+    '''
 
     start_time = datetime(2012, 9, 15, 12, 0)
 
@@ -232,41 +238,33 @@ def test_simple_run_with_map():
     model.movers += a_mover
     assert len(model.movers) == 1
 
-    spill = point_line_release_spill(num_elements=10,
+    spill = PointLineSource(num_elements=10,
             start_position=(0., 0., 0.), release_time=start_time)
 
     model.spills += spill
-
-    # model.add_spill(spill)
-
     assert len(model.spills) == 1
-    model.start_time = spill.release.release_time
+    model.start_time = spill.release_time
 
-    # test iterator:
-
+    # test iterator
     for step in model:
         print 'just ran time step: %s' % step
+        assert step['step_num'] == model.current_time_step
 
-    # reset and run again:
-
+    # reset and run again
     model.reset()
 
-    # test iterator:
-
+    # test iterator is repeatable
     for step in model:
         print 'just ran time step: %s' % step
-
-    assert True
+        assert step['step_num'] == model.current_time_step
 
 
 def test_simple_run_with_image_output():
-    """
-    pretty much all this tests is that the model will run and output images
-    """
-
-    # create a place for test images (cleaning out any old ones)
-
+    '''
+    Pretty much all this tests is that the model will run and output images
+    '''
     images_dir = os.path.join(basedir, 'Test_images')
+
     if os.path.isdir(images_dir):
         shutil.rmtree(images_dir)
     os.mkdir(images_dir)
@@ -274,18 +272,14 @@ def test_simple_run_with_image_output():
     start_time = datetime(2012, 9, 15, 12, 0)
 
     # the land-water map
-
     gnome_map = gnome.map.MapFromBNA(testmap, refloat_halflife=6)  # hours
-    renderer = gnome.renderer.Renderer(testmap, images_dir, size=(400,
-            300))
-    model = Model(
-        time_step=timedelta(minutes=15),
-        start_time=start_time,
-        duration=timedelta(hours=1),
-        map=gnome_map,
-        uncertain=False,
-        cache_enabled=False,
-        )
+    renderer = gnome.renderer.Renderer(testmap, images_dir, size=(400, 300))
+
+    model = Model(time_step=timedelta(minutes=15),
+                  start_time=start_time, duration=timedelta(hours=1),
+                  map=gnome_map,
+                  uncertain=False, cache_enabled=False,
+                  )
 
     model.outputters += renderer
     a_mover = SimpleMover(velocity=(1., -1., 0.))
@@ -296,22 +290,17 @@ def test_simple_run_with_image_output():
     start_points = np.zeros((N, 3), dtype=np.float64)
     start_points[:, 0] = np.linspace(-127.1, -126.5, N)
     start_points[:, 1] = np.linspace(47.93, 48.1, N)
-
     # print start_points
 
-    spill = Spill(SpatialRelease(start_position=start_points,
-                           release_time=start_time))
+    spill = SpatialRelease(start_positions=start_points,
+                           release_time=start_time)
 
     model.spills += spill
-
-    # model.add_spill(spill)
-
     assert len(model.spills) == 1
 
     model.start_time = spill.release.release_time
 
     # image_info = model.next_image()
-
     num_steps_output = 0
     while True:
         print 'calling step'
@@ -323,20 +312,17 @@ def test_simple_run_with_image_output():
             print 'Done with the model run'
             break
 
-    # there is the zeroth step, too.
-
-    assert num_steps_output == model.duration.total_seconds() \
-        / model.time_step + 1
+    # There is the zeroth step, too.
+    calculated_steps = (model.duration.total_seconds() / model.time_step) + 1
+    assert num_steps_output == calculated_steps
 
 
 def test_simple_run_with_image_output_uncertainty():
-    """
-    pretty much all this tests is that the model will run and output images
-    """
-
-    # create a place for test images (cleaning out any old ones)
-
+    '''
+    Pretty much all this tests is that the model will run and output images
+    '''
     images_dir = os.path.join(basedir, 'Test_images2')
+
     if os.path.isdir(images_dir):
         shutil.rmtree(images_dir)
     os.mkdir(images_dir)
@@ -344,19 +330,14 @@ def test_simple_run_with_image_output_uncertainty():
     start_time = datetime(2012, 9, 15, 12, 0)
 
     # the land-water map
-
     gmap = gnome.map.MapFromBNA(testmap, refloat_halflife=6)  # hours
-    renderer = gnome.renderer.Renderer(testmap, images_dir, size=(400,
-            300))
+    renderer = gnome.renderer.Renderer(testmap, images_dir, size=(400, 300))
 
-    model = Model(
-        time_step=timedelta(minutes=15),
-        start_time=start_time,
-        duration=timedelta(hours=1),
-        map=gmap,
-        uncertain=True,
-        cache_enabled=False,
-        )
+    model = Model(start_time=start_time,
+                  time_step=timedelta(minutes=15), duration=timedelta(hours=1),
+                  map=gmap,
+                  uncertain=True, cache_enabled=False,
+                  )
 
     model.outputters += renderer
     a_mover = SimpleMover(velocity=(1., -1., 0.))
@@ -366,22 +347,20 @@ def test_simple_run_with_image_output_uncertainty():
     start_points = np.zeros((N, 3), dtype=np.float64)
     start_points[:, 0] = np.linspace(-127.1, -126.5, N)
     start_points[:, 1] = np.linspace(47.93, 48.1, N)
-
     # print start_points
 
-    spill = Spill(SpatialRelease(start_position=start_points,
-                           release_time=start_time))
+    spill = SpatialRelease(start_positions=start_points,
+                           release_time=start_time)
 
     model.spills += spill
 
     # model.add_spill(spill)
 
-    model.start_time = spill.release.release_time
+    model.start_time = spill.release_time
 
     # image_info = model.next_image()
 
     model.uncertain = True
-
     num_steps_output = 0
     while True:
         try:
@@ -393,19 +372,17 @@ def test_simple_run_with_image_output_uncertainty():
             break
 
     # there is the zeroth step, too.
+    calculated_steps = (model.duration.total_seconds() / model.time_step) + 1
+    assert num_steps_output == calculated_steps
 
-    assert num_steps_output == model.duration.total_seconds() \
-        / model.time_step + 1
+    # fixme -- do an assertion looking for red in images?
+    #          or at least make sure they are created?
 
-
-    # # fixme -- do an assertionlooking for red in images?
-    # #  ot at least make sure they are created?
 
 def test_mover_api():
-    """
+    '''
     Test the API methods for adding and removing movers to the model.
-    """
-
+    '''
     start_time = datetime(2012, 1, 1, 0, 0)
 
     model = Model()
@@ -427,43 +404,35 @@ def test_mover_api():
 
     assert model.movers[mover_1.id] == mover_1
     assert model.movers[mover_2.id] == mover_2
-    with pytest.raises(KeyError):
+    with raises(KeyError):
         temp = model.movers['Invalid']
         print temp
 
     # test our iter and len object methods
-
     assert len(model.movers) == 2
     assert len([m for m in model.movers]) == 2
     for (m1, m2) in zip(model.movers, [mover_1, mover_2]):
         assert m1 == m2
 
     # test our add objectlist methods
-
     model.movers += [mover_3, mover_4]
     assert [m for m in model.movers] == [mover_1, mover_2, mover_3,
             mover_4]
 
     # test our remove object methods
-
     del model.movers[mover_3.id]
     assert [m for m in model.movers] == [mover_1, mover_2, mover_4]
-    with pytest.raises(KeyError):
-
+    with raises(KeyError):
         # our key should also be gone after the delete
-
         temp = model.movers[mover_3.id]
         print temp
 
     # test our replace method
-
     model.movers[mover_2.id] = mover_3
     assert [m for m in model.movers] == [mover_1, mover_3, mover_4]
     assert model.movers[mover_3.id] == mover_3
-    with pytest.raises(KeyError):
-
+    with raises(KeyError):
         # our key should also be gone after the delete
-
         temp = model.movers[mover_2.id]
         print temp
 
@@ -471,18 +440,19 @@ def test_mover_api():
 # model start_time, No. of time_steps after which LEs release,
 # duration as No. of timesteps
 
-test_cases = [(datetime(2012, 1, 1, 0, 0), 0, 12), (datetime(2012, 1,
-              1, 0, 0), 12, 12), (datetime(2012, 1, 1, 0, 0), 13, 12)]
+test_cases = [(datetime(2012, 1, 1, 0, 0), 0, 12),
+              (datetime(2012, 1, 1, 0, 0), 12, 12),
+              (datetime(2012, 1, 1, 0, 0), 13, 12)]
 
 
 @pytest.mark.parametrize(('start_time', 'release_delay', 'duration'),
                          test_cases)
 def test_all_movers(start_time, release_delay, duration):
-    """
-    a test that tests that all the movers at least can be run
+    '''
+    Tests that all the movers at least can be run
 
-    add new ones as they come along!
-    """
+    Add new ones as they come along!
+    '''
 
     model = Model()
     model.time_step = timedelta(hours=1)
@@ -494,76 +464,61 @@ def test_all_movers(start_time, release_delay, duration):
 
     release_time = start_time + timedelta(seconds=model.time_step
             * release_delay)
-    model.spills += point_line_release_spill(num_elements=10,
+    model.spills += PointLineSource(num_elements=10,
             start_position=start_loc, release_time=release_time)
 
     # the land-water map
+    model.map = gnome.map.GnomeMap()  # the simplest of maps
 
-    model.map = gnome.map.GnomeMap()  # the simpleset of maps
-
-    # simplemover
-
+    # simple mover
     model.movers += SimpleMover(velocity=(1., -1., 0.))
     assert len(model.movers) == 1
 
     # random mover
-
     model.movers += RandomMover(diffusion_coef=100000)
     assert len(model.movers) == 2
 
     # wind mover
-
     series = np.array((start_time, (10, 45)),
                       dtype=datetime_value_2d).reshape((1, ))
     model.movers += WindMover(Wind(timeseries=series,
                               units='meter per second'))
     assert len(model.movers) == 3
 
-    # add CATS mover
-
-    c_data = get_datafile(os.path.join(datadir,
-                          r"long_island_sound/tidesWAC.CUR"))
+    # CATS mover
+    c_data = get_datafile(os.path.join(lis_dir, 'tidesWAC.CUR'))
     model.movers += CatsMover(c_data)
     assert len(model.movers) == 4
 
     # run the model all the way...
-
     num_steps_output = 0
     for step in model:
         num_steps_output += 1
         print 'running step:', step
 
     # test release happens correctly for all cases
-
     if release_delay < duration:
-
         # at least one get_move has been called after release
-
         assert np.all(model.spills.LE('positions')[:, :2]
                       != start_loc[:2])
     elif release_delay == duration:
-
         # particles are released after last step so no motion,
         # only initial state
-
         assert np.all(model.spills.LE('positions') == start_loc)
     else:
-
         # release_delay > duration so nothing released though model ran
-
         assert len(model.spills.LE('positions')) == 0
 
     # there is the zeroth step, too.
-
-    assert num_steps_output == model.duration.total_seconds() \
-        / model.time_step + 1
+    calculated_steps = (model.duration.total_seconds() / model.time_step) + 1
+    assert num_steps_output == calculated_steps
 
 
 # 0 is infinite persistence
 
 @pytest.mark.parametrize('wind_persist', [-1, 900, 5])
 def test_linearity_of_wind_movers(wind_persist):
-    """
+    '''
     WindMover is defined as a linear operation - defining a model
     with a single WindMover with 15 knot wind is equivalent to defining
     a model with three WindMovers each with 5 knot wind. Or any number of
@@ -573,14 +528,13 @@ def test_linearity_of_wind_movers(wind_persist):
     Below is an example which defines two models and runs them.
     In model2, there are multiple winds defined so the windage parameter
     is reset 3 times for one timestep.
-    Since windage range and persistance do not change, this only has the effect
+    Since windage range and persistence do not change, this only has the effect
     of doing the same computation 3 times. However, the results are the same.
 
     The mean and variance of the positions for both models are close.
     As windage_persist is decreased, the values become closer.
-    Setting windage_persist=0 gives the larged difference between them.
-    """
-
+    Setting windage_persist=0 gives the large difference between them.
+    '''
     units = 'meter per second'
     start_time = datetime(2012, 1, 1, 0, 0)
     series1 = np.array((start_time, (15, 45)),
@@ -595,7 +549,7 @@ def test_linearity_of_wind_movers(wind_persist):
     model1.duration = timedelta(hours=1)
     model1.time_step = timedelta(hours=1)
     model1.start_time = start_time
-    model1.spills += point_line_release_spill(num_elements=num_LEs,
+    model1.spills += PointLineSource(num_elements=num_LEs,
             start_position=(1., 2., 0.), release_time=start_time,
             element_type=floating(windage_persist=wind_persist))
 
@@ -606,7 +560,7 @@ def test_linearity_of_wind_movers(wind_persist):
     model2.time_step = timedelta(hours=1)
     model2.start_time = start_time
 
-    model2.spills += point_line_release_spill(num_elements=num_LEs,
+    model2.spills += PointLineSource(num_elements=num_LEs,
             start_position=(1., 2., 0.), release_time=start_time,
             element_type=floating(windage_persist=wind_persist))
 
@@ -648,69 +602,69 @@ def test_linearity_of_wind_movers(wind_persist):
 
 
 def test_model_release_after_start():
-    """
-
+    '''
     This runs the model for a simple spill, that starts after the model starts
-
-    """
-
+    '''
     units = 'meter per second'
-
-    # default to now, rounded to nearest hour
-
+    seconds_in_minute = 60
     start_time = datetime(2013, 2, 22, 0)
 
-    model = Model(time_step=60 * 30, start_time=start_time,
-                  duration=timedelta(hours=3))  # 30 minutes in seconds
+    model = Model(time_step=30 * seconds_in_minute,
+                  start_time=start_time, duration=timedelta(hours=3))
 
     # add a spill that starts after the run begins.
-
     release_time = start_time + timedelta(hours=1)
-    model.spills += point_line_release_spill(num_elements=5,
+    model.spills += PointLineSource(num_elements=5,
             start_position=(0, 0, 0), release_time=release_time)
 
     # and another that starts later..
 
     model.spills += \
-        gnome.spill.point_line_release_spill(num_elements=4,
+        gnome.spill.PointLineSource(num_elements=4,
             start_position=(0, 0, 0), release_time=start_time
             + timedelta(hours=2))
 
     # Add a Wind mover:
-
     series = np.array((start_time, (10, 45)),
                       dtype=datetime_value_2d).reshape((1, ))
     model.movers += WindMover(Wind(timeseries=series, units=units))
 
     for step in model:
         print 'running a step'
+        assert step['step_num'] == model.current_time_step
+
         for sc in model.spills.items():
             print 'num_LEs', len(sc['positions'])
 
 
 def test_release_at_right_time():
-    """
+    '''
     Tests that the elements get released when they should
 
     There are issues in that we want the elements to show
     up in the output for a given time step if they were
-    supposed to be released then. Particularly for the
+    supposed to be released then.  Particularly for the
     first time step of the model.
-
-    """
-
+    '''
     # default to now, rounded to the nearest hour
+    seconds_in_minute = 60
+    minutes_in_hour = 60
+    seconds_in_hour = seconds_in_minute * minutes_in_hour
 
     start_time = datetime(2013, 1, 1, 0)
-    time_step = 2 * 60 * 60  # 2 hour in seconds
+    time_step = 2 * seconds_in_hour
 
     model = Model(time_step=time_step, start_time=start_time,
                   duration=timedelta(hours=12))
 
     # add a spill that starts right when the run begins
+    model.spills += PointLineSource(num_elements=12,
+                                    start_position=(0, 0, 0),
+                                    release_time=datetime(2013, 1, 1, 0),
+                                    end_release_time=datetime(2013, 1, 1, 6))
 
     model.spills += \
-        gnome.spill.point_line_release_spill(num_elements=12,
+        gnome.spill.PointLineSource(num_elements=12,
             start_position=(0, 0, 0), release_time=datetime(2013, 1, 1,
             0), end_release_time=datetime(2013, 1, 1, 6))
 
@@ -732,10 +686,7 @@ def test_release_at_right_time():
 
 
 def test_full_run(model):
-    """
-    test doing a full run
-    """
-
+    'Test doing a full run'
     # model = setup_simple_model()
 
     results = model.full_run()
@@ -743,42 +694,36 @@ def test_full_run(model):
 
     # check the number of time steps output is right
     # there is the zeroth step, too.
-
-    assert len(results) == model.duration.total_seconds() \
-        / model.time_step + 1
+    calculated_steps = (model.duration.total_seconds() / model.time_step) + 1
+    assert len(results) == calculated_steps
 
     # check if the images are there:
     # (1 extra for background image)
-
-    assert len(os.listdir(os.path.join(basedir, 'Test_images'))) \
-        == model.num_time_steps + 1
+    num_images = len(os.listdir(os.path.join(basedir, 'Test_images')))
+    assert num_images == model.num_time_steps + 1
 
 
 def test_callback_add_mover():
-    """ Test callback after add mover """
-
+    'Test callback after add mover'
     units = 'meter per second'
 
     model = Model()
-    model.time_step = timedelta(hours=1)
-    model.duration = timedelta(hours=10)
     model.start_time = datetime(2012, 1, 1, 0, 0)
+    model.duration = timedelta(hours=10)
+    model.time_step = timedelta(hours=1)
 
     # start_loc = (1.0, 2.0, 0.0)  # random non-zero starting points
 
     # add Movers
-
     model.movers += SimpleMover(velocity=(1., -1., 0.))
     series = np.array((model.start_time, (10, 45)),
                       dtype=datetime_value_2d).reshape((1, ))
     model.movers += WindMover(Wind(timeseries=series, units=units))
 
-    tide_file = get_datafile(os.path.join(os.path.dirname(__file__),
-                             r"sample_data", 'tides', 'CLISShio.txt'))
+    tide_file = get_datafile(os.path.join(tides_dir, 'CLISShio.txt'))
     tide_ = Tide(filename=tide_file)
 
-    d_file = get_datafile(os.path.join(datadir,
-                          r"long_island_sound/tidesWAC.CUR"))
+    d_file = get_datafile(os.path.join(lis_dir, 'tidesWAC.CUR'))
     model.movers += CatsMover(d_file, tide=tide_)
 
     model.movers += CatsMover(d_file)
@@ -809,12 +754,11 @@ def test_callback_add_mover():
 
 
 def test_callback_add_mover_midrun(model):
-    """ Test callback after add mover called midway through the run """
-
+    'Test callback after add mover called midway through the run'
     model = Model()
-    model.time_step = timedelta(hours=1)
-    model.duration = timedelta(hours=10)
     model.start_time = datetime(2012, 1, 1, 0, 0)
+    model.duration = timedelta(hours=10)
+    model.time_step = timedelta(hours=1)
 
     # start_loc = (1.0, 2.0, 0.0)  # random non-zero starting points
 
@@ -826,13 +770,11 @@ def test_callback_add_mover_midrun(model):
     assert model.current_time_step > -1
 
     # now add another mover and make sure model rewinds
-
     model.movers += SimpleMover(velocity=(2., -2., 0.))
     assert model.current_time_step == -1
 
 
 def test_simple_run_no_spills(model):
-
     # model = setup_simple_model()
 
     for spill in model.spills:
@@ -842,6 +784,7 @@ def test_simple_run_no_spills(model):
 
     for step in model:
         print 'just ran time step: %s' % model.current_time_step
+        assert step['step_num'] == model.current_time_step
 
     assert True
 

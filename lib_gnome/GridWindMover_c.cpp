@@ -11,6 +11,7 @@
 #ifndef pyGNOME
 #include "CROSS.H"
 #include "TimeGridVel_c.h"
+#include "GridWndMover.h"
 #else
 #include "Replacements.h"
 #endif
@@ -36,6 +37,17 @@ GridWindMover_c::GridWindMover_c(TMap *owner,char* name) : WindMover_c(owner, na
 }
 #endif
 
+GridWindMover_c::GridWindMover_c() : WindMover_c()
+{
+	fIsOptimizedForStep = false;
+	
+	fUserUnits = kMetersPerSec;	
+	fWindScale = 1.;
+	fArrowScale = 10.;
+	
+	timeGrid = 0;
+	
+}
 /////////////////////////////////////////////////
 OSErr GridWindMover_c::PrepareForModelRun()
 {
@@ -198,16 +210,15 @@ OSErr GridWindMover_c::TextRead(char *path, char *topFilePath)
 {
 	// this code is for curvilinear grids
 	OSErr err = 0;
-	char fileNamesPath[256], filePath[256];
-
 	short gridType, selectedUnits;
+	char fileNamesPath[256], filePath[256];
 	Boolean isNetCDFPathsFile = false;
-	TimeGridVel *newTimeGrid = 0;
+	TimeGridVel *newTimeGrid = nil;
 
-	//cerr << "GridWindMover_c::TextRead(): path = " << endl << path << endl;
+	memset(fileNamesPath, 0, 256);
+	memset(filePath, 0, 256);
+	strcpy(filePath, path); // this gets altered in IsNetCDFPathsFile, eventually change that function
 
-	// this gets altered in IsNetCDFPathsFile, eventually change that function
-	strcpy(filePath, path);
 	if (IsNetCDFFile(path, &gridType) ||
 		IsNetCDFPathsFile(filePath, &isNetCDFPathsFile, fileNamesPath, &gridType))
 	{
@@ -219,31 +230,35 @@ OSErr GridWindMover_c::TextRead(char *path, char *topFilePath)
 		}
 
 		if (newTimeGrid) {
-			 //err = newGridWindMover->InitMover(timeGrid);
-			 //if(err) goto Error;
-			 if (!err) {
-				 err = newTimeGrid->TextRead(filePath, topFilePath);
-			 }
-			 if (err)
-				 goto Error;
-			 this->SetTimeGrid(newTimeGrid);
+			err = newTimeGrid->TextRead(filePath, topFilePath);
+			if (err) return err;
+			this->SetTimeGrid(newTimeGrid);
 		}
 
-		if (!err && isNetCDFPathsFile)
+		if (isNetCDFPathsFile)
 		{
 			//char errmsg[256];
 			err = timeGrid->ReadInputFileNames(fileNamesPath);
-			if (!err)
-				timeGrid->DisposeAllLoadedData();
+			if (err) return err;
+			timeGrid->DisposeAllLoadedData();
 
 			//if(!err) err = newMover->SetInterval(errmsg); // if set interval here will get error if times are not in model range
-			if (err)
-				return err;
 		}
+
+		return err;
 	}
-	else if (IsGridWindFile(path, &selectedUnits))
+	// All other file formats are line-formatted text files
+	vector<string> linesInFile;
+	if (ReadLinesInFile(path, linesInFile)) {
+		linesInFile = rtrim_empty_lines(linesInFile);
+	}
+	else
+		return -1; // we failed to read in the file.
+
+	//if (IsGridWindFile(path, &selectedUnits))	// check if gui gnome need this
+	if (IsGridWindFile(linesInFile, &selectedUnits))
 	{
-		char errmsg[256];
+		//char errmsg[256];
 		newTimeGrid = new TimeGridCurRect();
 		//timeGrid = new TimeGridVel();
 		if (newTimeGrid) {

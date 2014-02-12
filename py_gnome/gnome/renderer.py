@@ -60,8 +60,8 @@ class Renderer(Outputter, MapCanvas, serializable.Serializable):
 
     def __init__(
         self,
-        filename,
-        images_dir,
+        filename=None,
+        images_dir='./',
         image_size=(800, 600),
         cache=None,
         output_timestep=None,
@@ -119,7 +119,10 @@ class Renderer(Outputter, MapCanvas, serializable.Serializable):
         # set up the canvas
 
         self._filename = filename
-        polygons = haz_files.ReadBNA(filename, 'PolygonSet')
+        if filename is not None:
+            polygons = haz_files.ReadBNA(filename, 'PolygonSet')
+        else:
+            polygons = None
         Outputter.__init__(self, cache, output_timestep, output_zero_step,
                            output_last_step)
         MapCanvas.__init__(self, image_size, land_polygons=polygons,

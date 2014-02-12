@@ -343,7 +343,7 @@ OSErr NetCDFStore::Define(TModel* model, bool uncertain, map<string, int> *ncVar
 	ncErr = nc_put_att_text(ncID, NC_GLOBAL, "creation_date", strlen(currentTimeStr), currentTimeStr);
 	err = CheckNC(ncErr); {if (err) return err;}
 	
-	tStr = "GNOME version 1.3.7";
+	tStr = "GNOME version 1.3.8";
 	ncErr = nc_put_att_text(ncID, NC_GLOBAL, "source", strlen(tStr), tStr);
 	err = CheckNC(ncErr); {if (err) return err;}
 	

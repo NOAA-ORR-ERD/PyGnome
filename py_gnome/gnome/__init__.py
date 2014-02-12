@@ -3,6 +3,8 @@ __init__.py for the gnome package
 
 """
 
+
+__version__ = '0.1.1'
 # a few imports so that the basic stuff is there
 
 from gnomeobject import GnomeId

@@ -6,13 +6,15 @@ Implements a container for spills -- keeps all the data from each spill in one
 set of arrays. The spills themselves provide some of the arrays themselves
 (adding more each time LEs are released).
 """
-import numpy as np
-from datetime import timedelta
 
-import gnome.spill
-from gnome.utilities.orderedcollection import OrderedCollection
+import numpy
+np = numpy
+
 from gnome.basic_types import oil_status
-import gnome.array_types
+from gnome import array_types
+
+from gnome.utilities.orderedcollection import OrderedCollection
+import gnome.spill
 
 
 class SpillContainerData(object):
@@ -57,6 +59,9 @@ class SpillContainerData(object):
         # through the run since positions are stored as single dtype as opposed
         # to double
         self._array_allclose_atol = 0
+
+    def __contains__(self, item):
+        return item in self._data_arrays
 
     def __getitem__(self, data_name):
         """
@@ -158,12 +163,23 @@ class SpillContainerData(object):
 
     def __ne__(self, other):
         """
-        Compare inequality (!=) of two SpillContanerData objects
+        Compare inequality (!=) of two SpillContainerData objects
         """
         if self == other:
             return False
         else:
             return True
+
+    def __len__(self):
+        """
+        the "length" of apill container is the number of elements in it
+        i.e. the length of the data arrays
+        """
+        try:
+            #find the length of an arbitrary first array
+            return len(self._data_arrays.itervalues().next())
+        except StopIteration:
+            return 0
 
     @property
     def num_released(self):
@@ -241,14 +257,16 @@ class SpillContainer(SpillContainerData):
         """
         gnome.array_types.reset_to_defaults(['spill_num', 'id'])
 
-        self._array_types = {'positions': gnome.array_types.positions,
-            'next_positions': gnome.array_types.next_positions,
-            'last_water_positions': gnome.array_types.last_water_positions,
-            'status_codes': gnome.array_types.status_codes,
-            'spill_num': gnome.array_types.spill_num,
-            'id': gnome.array_types.id,
-            'mass': gnome.array_types.mass,
-            'age': gnome.array_types.age}
+        self._array_types = {'positions': array_types.positions,
+                             'next_positions': array_types.next_positions,
+                             'last_water_positions': array_types.last_water_positions,
+                             'status_codes': array_types.status_codes,
+                             'spill_num': array_types.spill_num,
+                             'id': array_types.id,
+                             'rise_vel': array_types.rise_vel,
+                             'droplet_diameter': array_types.droplet_diameter,
+                             'mass': array_types.mass,
+                             'age': array_types.age}
         self._data_arrays = {}
 
     @property

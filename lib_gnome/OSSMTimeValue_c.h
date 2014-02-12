@@ -73,6 +73,7 @@ public:
 	virtual OSErr			ReadNCDCWind (char *path);
 	virtual OSErr			ReadTimeValues (char *path, short format, short unitsIfKnownInAdvance);
 	OSErr					ReadOSSMTimeHeader (char *path);
+	OSErr					ReadHydrologyHeader (vector<string> &linesInFile);
 	OSErr					ReadHydrologyHeader (char *path);
 
 	

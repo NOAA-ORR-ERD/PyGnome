@@ -9,7 +9,8 @@ import copy
 
 import pytest
 
-import numpy as np
+import numpy
+np = numpy
 
 from gnome.spill import (Spill,
                          Release,
@@ -834,44 +835,121 @@ class TestSpatialRelease:
         assert num == 0
 
 
+class TestVerticalPlumeSource:
+    @pytest.fixture(autouse=True)
+    def setup(self, sample_vertical_plume_source):
+        '''
+        define common use attributes here.
+        rewind the model. Fixture is a function argument only for this function
+        autouse means it is used by all test functions without explicitly
+        stating it as a function argument
+        After each test, the autouse fixture setup is called so self.vps
+        gets defined
+        '''
+        self.vps = sample_vertical_plume_source
+        self.vps.rewind()
+
+    def test_rewind(self):
+        ''' test rewind sets state to original '''
+        assert self.vps.num_released == 0
+        assert self.vps.start_time_invalid == True
+
+    def test_release_bounds(self):
+        '''
+        if current_time + timedelta(seconds=time_step) <= self.release_time,
+        then do not release any more elements
+        '''
+        time_step = timedelta(hours=1).total_seconds()
+
+        # before the beginning of the time range
+        num = self.vps.num_elements_to_release(self.vps.release_time - timedelta(seconds=time_step),
+                                               time_step)
+        assert num == 0
+
+        # past the end of the time range
+        self.vps.rewind()
+        num = self.vps.num_elements_to_release(self.vps.plume_gen.end_release_time,
+                                               time_step)
+        assert num == 0
+
+    def test_num_elems(self):
+        '''
+        test that the specified number of elements is consistent with the
+        number released across the lifetime of the source.
+        '''
+        time_step = timedelta(hours=1).total_seconds()
+        total_elems = 0
+        for off_time in range(int(-time_step), int(time_step * 30), int(time_step)):
+            current_time = self.vps.release_time + timedelta(seconds=off_time)
+            elems = self.vps.num_elements_to_release(current_time, time_step)
+            total_elems += elems
+
+        # this is not truly rigorous, but it passes at least for the test data
+        # a more rigorous analysis of the plume generation method is in
+        # experiments/model_intercomparison
+        assert total_elems == 200
+
+    def test_arrays(self):
+        """
+        see if the right arrays get created
+        """
+        time_step = timedelta(hours=1).total_seconds()
+        (data_arrays, num) = release_elements(self.vps, self.vps.release_time,
+                                              time_step)
+
+        # These assertions are linked to the test data that we
+        # are using
+        assert num == 4
+        assert data_arrays['positions'].shape == (4, 3)
+
+        (data_arrays, num) = release_elements(self.vps,
+                                              self.vps.release_time + timedelta(seconds=time_step),
+                                              time_step,
+                                              data_arrays)
+
+        #print 'positions:', data_arrays['positions']
+        assert num == 6
+        assert data_arrays['positions'].shape == (10, 3)
+
+
 # def test_PointSourceSurfaceRelease_new_from_dict():
 #     """
 #     test to_dict function for Wind object
 #     create a new wind object and make sure it has same properties
 #     """
-# 
+#
 #     spill = PointSourceSurfaceRelease(num_elements=1000,
 #             start_position=(144.664166, 13.441944, 0.),
 #             release_time=datetime(2013, 2, 13, 9, 0),
 #             end_release_time=datetime(2013, 2, 13, 9, 0)
 #             + timedelta(hours=6))
-# 
+#
 #     sp_state = spill.to_dict('create')
 #     print sp_state
-# 
+#
 #     # this does not catch two objects with same ID
-# 
+#
 #     sp2 = PointSourceSurfaceRelease.new_from_dict(sp_state)
-# 
+#
 #     assert spill == sp2
-# 
-# 
+#
+#
 # def test_PointSourceSurfaceRelease_from_dict():
 #     """
 #     test from_dict function for Wind object
 #     update existing wind object from_dict
 #     """
-# 
+#
 #     spill = PointSourceSurfaceRelease(num_elements=1000,
 #             start_position=(144.664166, 13.441944, 0.),
 #             release_time=datetime(2013, 2, 13, 9, 0),
 #             end_release_time=datetime(2013, 2, 13, 9, 0)
 #             + timedelta(hours=6))
-# 
+#
 #     sp_dict = spill.to_dict()
 #     sp_dict['windage_range'] = [.02, .03]
 #     spill.from_dict(sp_dict)
-# 
+#
 #     for key in sp_dict.keys():
 #         if isinstance(spill.__getattribute__(key), np.ndarray):
 #             np.testing.assert_equal(sp_dict.__getitem__(key),
