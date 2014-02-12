@@ -78,8 +78,9 @@ def sample_sc_release(num_elements=10,
         current_time = release_time
 
     if spill is None:
-        spill = gnome.spill.PointLineSource(num_elements, start_pos,
-                                            release_time)
+        spill = PointLineSource(num_elements, start_pos, release_time)
+    spill.mass = num_elements
+
     if element_type is not None:
         spill.element_type = element_type
 
