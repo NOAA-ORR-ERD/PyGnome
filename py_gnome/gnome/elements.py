@@ -253,7 +253,7 @@ class ValuesFromDistBase(object):
         :param lambda_: the scale parameter for the distribution - required for
                         2-parameter weibull distribution (Rosin-Rammler).
                         Default is 1.
-        '''
+        """
         methods = {'uniform': self._uniform,
                    'normal': self._normal,
                    'lognormal': self._lognormal,

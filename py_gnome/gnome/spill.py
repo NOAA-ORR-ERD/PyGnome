@@ -19,12 +19,18 @@ import copy
 from datetime import timedelta
 from itertools import chain
 
-import numpy as np
+import numpy
+np = numpy
+
 from hazpy import unit_conversion
+uc = unit_conversion
 
 import gnome    # required by new_from_dict
-from gnome import basic_types, elements, GnomeId
+from gnome import elements, GnomeId
+from gnome.basic_types import world_point_type
 from gnome.utilities import serializable
+from gnome.utilities.plume import Plume, PlumeGenerator
+
 from gnome.db.oil_library.oil_props import OilProps
 
 
@@ -207,13 +213,13 @@ class PointLineRelease(Release, serializable.Serializable):
                 self._init_positions_timevarying_release
 
         self.start_position = np.array(start_position,
-                            dtype=basic_types.world_point_type).reshape((3, ))
+                            dtype=world_point_type).reshape((3, ))
         if end_position is None:
             # also sets self._end_position
             end_position = start_position
 
         self.end_position = np.array(end_position,
-                dtype=basic_types.world_point_type).reshape((3, ))
+                dtype=world_point_type).reshape((3, ))
 
         # only needs to be computed once
         self.delta_pos = ((self.end_position - self.start_position) /
@@ -380,179 +386,16 @@ class PointLineRelease(Release, serializable.Serializable):
         super(PointLineRelease, self).rewind()
         self.prev_release_pos = self.start_position
 
-# JS: DELETE FOLLOWING CLASSES
-#==============================================================================
-# class SubsurfaceSpill(Spill):
-# 
-#     """
-#     spill for underwater objects
-# 
-#     all this does is add the 'water_currents' parameter
-#     """
-# 
-#     def __init__(self, **kwargs):
-#         super(SubsurfaceSpill, self).__init__(**kwargs)
-#         # it is not clear yet (to me anyway) what we will want to add to a 
-#         # subsurface spill
-# 
-# 
-# class SubsurfaceRelease(SubsurfaceSpill):
-# 
-#     """
-#     The second simplest spill source class  --  a point release of underwater
-#     non-weathering particles
-# 
-#     .. todo::
-#         'gnome.cy_gnome.cy_basic_types.oil_status' does not currently have an 
-#         underwater status.
-#         For now we will just keep the in_water status, but we will probably 
-#         want to change this in the future.
-#     """
-# 
-#     def __init__(
-#         self,
-#         num_elements,
-#         start_position,
-#         release_time,
-#         end_position=None,
-#         end_release_time=None,
-#         **kwargs
-#         ):
-#         """
-#         :param num_elements: total number of elements used for this spill
-#         :param start_position: location the LEs are released (long, lat, z) 
-#             (floating point)
-#         :param release_time: time the LEs are released (datetime object)
-#         :param end_position=None: optional -- for a moving source, the end 
-#             position
-#         :param end_release_time=None: optional -- for a release over time, the
-#             end release time
-# 
-#         **kwargs contain keywords passed up the heirarchy
-#         """
-# 
-#         super(SubsurfaceRelease, self).__init__(**kwargs)
-# 
-#         self.num_elements = num_elements
-# 
-#         self.release_time = release_time
-#         if end_release_time is None:
-#             self.end_release_time = release_time
-#         else:
-#             if release_time > end_release_time:
-#                 raise ValueError("end_release_time must be greater than \
-#                 release_time")
-#             self.end_release_time = end_release_time
-# 
-#         if end_position is None:
-#             end_position = start_position
-#         self.start_position = np.asarray(start_position,
-#                 dtype=basic_types.world_point_type).reshape((3, ))
-#         self.end_position = np.asarray(end_position,
-#                 dtype=basic_types.world_point_type).reshape((3, ))
-# 
-#         # self.positions.initial_value = self.start_position
-# 
-#         self.num_released = 0
-#         self.prev_release_pos = self.start_position
-# 
-#     def release_elements(self, current_time, time_step):
-#         """
-#         Release any new elements to be added to the SpillContainer
-# 
-#         :param current_time: datetime object for current time
-#         :param time_step: the time step, in seconds -- used to decide how many
-#             should get released.
-# 
-#         :returns : None if there are no new elements released
-#                    a dict of arrays if there are new elements
-#         """
-# 
-#         if current_time >= self.release_time:
-#             if self.num_released >= self.num_elements:
-#                 return None
-# 
-#             # total release time
-# 
-#             release_delta = (self.end_release_time
-#                              - self.release_time).total_seconds()
-#             if release_delta == 0:  # instantaneous release
-#                 # num_released should always be 0?
-#                 num = self.num_elements - self.num_released  
-#             else:
-# 
-#                 # time since release began
-# 
-#                 if current_time >= self.end_release_time:
-#                     dt = release_delta
-#                 else:
-#                     dt = max((current_time
-#                              - self.release_time).total_seconds()
-#                              + time_step, 0.0)
-#                     total_num = dt / release_delta * self.num_elements
-#                     num = int(total_num - self.num_released)
-# 
-#             if num <= 0:  # all released
-#                 return None
-# 
-#             self.num_released += num
-# 
-#             arrays = self.create_new_elements(num)
-# 
-#             # compute the position of the elements:
-# 
-#             if release_delta == 0:  # all released at once:
-#                 (x1, y1) = self.start_position[:2]
-#                 (x2, y2) = self.end_position[:2]
-#                 arrays['positions'][:, 0] = np.linspace(x1, x2, num)
-#                 arrays['positions'][:, 1] = np.linspace(y1, y2, num)
-#             else:
-#                 (x1, y1) = self.prev_release_pos[:2]
-#                 dx = self.end_position[0] - self.start_position[0]
-#                 dy = self.end_position[1] - self.start_position[1]
-# 
-#                 fraction = min(1, dt / release_delta)
-#                 x2 = fraction * dx + self.start_position[0]
-#                 y2 = fraction * dy + self.start_position[1]
-# 
-#                 if np.array_equal(self.prev_release_pos,
-#                                   self.start_position):
-# 
-#                     # we want both the first and last points
-# 
-#                     arrays['positions'][:, 0] = np.linspace(x1, x2, num)
-#                     arrays['positions'][:, 1] = np.linspace(y1, y2, num)
-#                 else:
-# 
-#                     # we don't want to duplicate the first point.
-# 
-#                     arrays['positions'][:, 0] = np.linspace(x1, x2, num
-#                             + 1)[1:]
-#                     arrays['positions'][:, 1] = np.linspace(y1, y2, num
-#                             + 1)[1:]
-#                 self.prev_release_pos = (x2, y2, 0.0)
-#             return arrays
-#         else:
-#             return None
-# 
-#     def rewind(self):
-#         """
-#         rewind to initial conditions -- i.e. nothing released. 
-#         """
-# 
-#         super(SubsurfaceRelease, self).rewind()
-# 
-#         self.num_released = 0
-#         self.prev_release_pos = self.start_position
-#==============================================================================
 
-
-class SpatialRelease(Release):
+class SpatialRelease(Release, serializable.Serializable):
 
     """
     A simple release class  --  a release of floating non-weathering particles,
     with their initial positions pre-specified
     """
+
+    state = copy.deepcopy(Release.state)
+    state.add(update='start_position', create='start_position')
 
     def __init__(
         self,
@@ -572,7 +415,7 @@ class SpatialRelease(Release):
         """
 
         self.start_position = np.asarray(start_position,
-                dtype=basic_types.world_point_type).reshape((-1, 3))
+                dtype=world_point_type).reshape((-1, 3))
         super(SpatialRelease, self).__init__(self.start_position.shape[0],
                                              release_time)
 
@@ -607,6 +450,100 @@ class SpatialRelease(Release):
         #                                                    data_arrays)
         self.num_released = self.num_elements
         data_arrays['positions'][:, :] = self.start_position
+
+
+class VerticalPlumeRelease(Release):
+    '''
+    An Underwater Plume spill class -- a continuous release of particles,
+    controlled by a contained spill generator object.
+    - plume model generator will have an iteration method.  This will provide
+      flexible looping and list comprehension behavior.
+    '''
+    def __init__(self,
+                 start_position,
+                 release_time,
+                 plume_data,
+                 end_release_time):
+        '''
+        :param num_elements: total number of elements to be released
+        :type num_elements: integer
+
+        :param start_position: initial location the elements are released
+        :type start_position: 3-tuple of floats (long, lat, z)
+
+        :param release_time: time the LEs are released
+        :type release_time: datetime.datetime
+
+        :param start_positions: locations the LEs are released
+        :type start_positions: (num_elements, 3) numpy array of float64
+            -- (long, lat, z)
+        '''
+
+        self.start_position = np.array(start_position,
+                            dtype=world_point_type).reshape((3, ))
+
+        super(VerticalPlumeRelease, self).__init__(self.start_position.shape[0],
+            release_time)
+
+        plume = Plume(position=start_position,
+                      plume_data=plume_data)
+        time_step_delta = timedelta(hours=1).total_seconds()
+        self.plume_gen = PlumeGenerator(release_time=release_time,
+                                        end_release_time=end_release_time,
+                                        time_step_delta=time_step_delta,
+                                        plume=plume)
+
+        if self.num_elements:
+            self.plume_gen.set_le_mass_from_total_le_count(self.num_elements)
+
+    def _plume_elem_coords(self, current_time, time_step):
+        '''
+        Return a list of positions for all elements released within
+        current_time + time_step
+        '''
+        next_time = current_time + timedelta(seconds=time_step)
+        elem_counts = self.plume_gen.elems_in_range(current_time, next_time)
+
+        for coord, count in zip(self.plume_gen.plume.coords, elem_counts):
+            print coord, count
+            for c in (coord,) * count:
+                yield tuple(c)
+
+    def num_elements_to_release(self, current_time, time_step):
+        '''
+        Return number of particles released in current_time + time_step
+        '''
+        return len([e for e in self._plume_elem_coords(current_time,
+                                                       time_step)])
+
+    def set_newparticle_positions(self, num_new_particles, current_time,
+                               time_step, data_arrays):
+        '''
+        Set positions for new elements added by the SpillContainer
+        '''
+        coords = [e for e in self._plume_elem_coords(current_time, time_step)]
+        self.coords = np.asarray(tuple(coords),
+                                 dtype=world_point_type).reshape((-1, 3))
+
+        if self.coords.shape[0] != num_new_particles:
+            raise RuntimeError('The Specified number of new particals does not'
+                               ' match the number calculated from the '
+                               'time range.')
+
+        # call the base Spill class set_newparticle_values()
+        super(VerticalPlumeSource,
+              self).set_newparticle_values(num_new_particles,
+                                           current_time, time_step,
+                                           data_arrays)
+        self.num_released += num_new_particles
+        data_arrays['positions'][-self.coords.shape[0]:, :] = self.coords
+
+    def rewind(self):
+        '''
+        Rewind to initial conditions -- i.e. nothing released.
+        '''
+        self.num_released = 0
+        self.start_time_invalid = True
 
 
 class Spill(serializable.Serializable, object):
@@ -653,9 +590,11 @@ class Spill(serializable.Serializable, object):
         on=True,
         volume=None,
         volume_units='m^3',
-        # still need to add/implement mass/mass_units here
-        #mass=None,
-        #mass_units='g',
+        # Is this total mass of the spill?
+        mass=None,
+        mass_units='g',
+        windage_range=None,
+        windage_persist=None,
         id=None,
         ):
         """
@@ -674,6 +613,13 @@ class Spill(serializable.Serializable, object):
         :type volume: float
         :param volume_units=m^3: volume units
         :type volume_units: str
+        :param windage_range=(0.01, 0.04): the windage range of the elements
+            default is (0.01, 0.04) from 1% to 4%.
+        :type windage_range: tuple: (min, max)
+        :param windage_persist=-1: Default is 900s, so windage is updated every
+            900 sec. -1 means the persistence is infinite so it is only set at
+            the beginning of the run.
+        :type windage_persist: integer seconds
         :param id: Unique Id identifying the newly created mover (a UUID as a
             string), used when loading from a persisted model
         :param element_type=None: list of various element_type that are
@@ -696,6 +642,20 @@ class Spill(serializable.Serializable, object):
         if volume is not None:
             self._volume = unit_conversion.convert('Volume', volume_units,
                 'm^3', volume)
+
+        if windage_range is not None:
+            if 'windages' not in self.element_type.initializers:
+                raise TypeError("'windage_range' cannot be set for specified"
+                                " element_type: {0}".format(element_type))
+            (self.element_type.initializers['windages']).windage_range = \
+                    windage_range
+
+        if windage_persist is not None:
+            if 'windages' not in self.element_type.initializers:
+                raise TypeError("'windage_persist' cannot be set for specified"
+                                " element_type: {0}".format(element_type))
+            (self.element_type.initializers['windages']).windage_persist = \
+                windage_persist
 
         self._gnome_id = GnomeId(id)
 
@@ -777,6 +737,22 @@ class Spill(serializable.Serializable, object):
     num_released = property(lambda self: self.release.num_released)
 
     @property
+    def windage_range(self):
+        return self.element_type.initializers['windages'].windage_range
+
+    @windage_range.setter
+    def windage_range(self, val):
+        self.element_type.initializers['windages'].windage_range = val
+
+    @property
+    def windage_persist(self):
+        return self.element_type.initializers['windages'].windage_persist
+
+    @windage_persist.setter
+    def windage_persist(self, val):
+        self.element_type.initializers['windages'].windage_persist = val
+
+    @property
     def volume_units(self):
         """
         default units in which volume data is returned
@@ -794,6 +770,19 @@ class Spill(serializable.Serializable, object):
     # returns the volume in volume_units specified by user
     volume = property(lambda self: self.get_volume(),
                       lambda self, value: self.set_volume(value, 'm^3'))
+
+    @property
+    def mass_units(self):
+        return self._mass_units
+
+    @mass_units.setter
+    def mass_units(self, units):
+        self._check_units(units, 'Mass')  # check validity before setting
+        self._mass_units = units
+
+    # returns the mass in mass_units specified by user
+    mass = property(lambda self: self.get_mass(),
+                      lambda self, value: self.set_mass(value, 'g'))
 
     def get_volume(self, units=None):
         """
@@ -821,6 +810,31 @@ class Spill(serializable.Serializable, object):
         self._check_units(units)
         self._volume = unit_conversion.convert('Volume', units, 'm^3', volume)
         self.volume_units = units
+
+    def get_mass(self, units=None):
+        '''
+        Return the mass released during the spill.
+        The default units for mass are as defined in 'mass_units' property.
+        User can also specify desired output units in the function.
+        '''
+        if self._mass is None:
+            return self._mass
+
+        if units is None:
+            return uc.convert('Mass', 'g', self.mass_units, self._mass)
+        else:
+            self._check_units(units, 'Mass')
+            return uc.convert('Mass', 'g', units, self._mass)
+
+    def set_mass(self, mass, units):
+        '''
+        Set the mass released during the spill.
+        The default units for mass are as defined in 'mass_units' property.
+        User can also specify desired output units in the function.
+        '''
+        self._check_units(units, 'Mass')
+        self._mass = uc.convert('Mass', units, 'g', mass)
+        self.mass_units = units
 
     def uncertain_copy(self):
         """
