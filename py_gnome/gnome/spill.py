@@ -395,7 +395,7 @@ class SpatialRelease(Release, serializable.Serializable):
     """
 
     state = copy.deepcopy(Release.state)
-    state.add(update='start_position', create='start_position')
+    state.add(update=['start_position'], create=['start_position'])
 
     def __init__(
         self,
@@ -460,10 +460,12 @@ class VerticalPlumeRelease(Release):
       flexible looping and list comprehension behavior.
     '''
     def __init__(self,
+                 num_elements,
                  start_position,
                  release_time,
                  plume_data,
-                 end_release_time):
+                 end_release_time,
+                 **kwargs):
         '''
         :param num_elements: total number of elements to be released
         :type num_elements: integer
@@ -479,11 +481,10 @@ class VerticalPlumeRelease(Release):
             -- (long, lat, z)
         '''
 
+        super(VerticalPlumeRelease, self).__init__(num_elements, release_time)
+
         self.start_position = np.array(start_position,
                             dtype=world_point_type).reshape((3, ))
-
-        super(VerticalPlumeRelease, self).__init__(self.start_position.shape[0],
-            release_time)
 
         plume = Plume(position=start_position,
                       plume_data=plume_data)
@@ -531,10 +532,10 @@ class VerticalPlumeRelease(Release):
                                'time range.')
 
         # call the base Spill class set_newparticle_values()
-        super(VerticalPlumeSource,
-              self).set_newparticle_values(num_new_particles,
-                                           current_time, time_step,
-                                           data_arrays)
+        #super(VerticalPlumeRelease,
+        #      self).set_newparticle_positions(num_new_particles,
+        #                                   current_time, time_step,
+        #                                   data_arrays)
         self.num_released += num_new_particles
         data_arrays['positions'][-self.coords.shape[0]:, :] = self.coords
 
@@ -566,6 +567,10 @@ class Spill(serializable.Serializable, object):
                            ].values()]))
     valid_vol_units.extend(unit_conversion.GetUnitNames('Volume'))
 
+    valid_mass_units = list(chain.from_iterable([item[1] for item in
+                           uc.ConvertDataUnits['Mass'].values()]))
+    valid_mass_units.extend(uc.GetUnitNames('Mass'))
+
     @classmethod
     def new_from_dict(cls, dict_):
         """
@@ -575,10 +580,12 @@ class Spill(serializable.Serializable, object):
         # create release object
         # create element_type object
         # then create Spill object
-        obj_dict = dict_.pop('release')
-        rel_obj = obj_dict.pop('obj_type')
-        obj = eval(rel_obj).new_from_dict(obj_dict)
-        dict_['release'] = obj
+        for name in ['release', 'element_type']:
+            obj_dict = dict_.pop(name)
+            obj_type = obj_dict.pop('obj_type')
+            obj = eval(obj_type).new_from_dict(obj_dict)
+            dict_[name] = obj
+
         new_obj = super(Spill, cls).new_from_dict(dict_)
 
         return new_obj
@@ -642,6 +649,15 @@ class Spill(serializable.Serializable, object):
         if volume is not None:
             self._volume = unit_conversion.convert('Volume', volume_units,
                 'm^3', volume)
+
+        self._check_units(mass_units, 'Mass')
+        self._mass_units = mass_units   # user defined for display
+        self._mass = mass
+        if mass is not None:
+            self._mass = uc.convert('Mass', mass_units, 'g', mass)
+
+        if mass is not None and volume is not None:
+            raise ValueError("'mass' and 'volume' cannot both be set")
 
         if windage_range is not None:
             if 'windages' not in self.element_type.initializers:
@@ -720,15 +736,22 @@ class Spill(serializable.Serializable, object):
 
         return True
 
-    def _check_units(self, units):
+    def _check_units(self, units, unit_type='Volume'):
         """
-        Checks the user provided units are in list of valid volume units:
-        self.valid_vol_units
+        Checks the user provided units are in list of valid volume
+        or mass units
         """
 
-        if units not in self.valid_vol_units:
-            raise unit_conversion.InvalidUnitError("Volume units must be from"\
-               " following list to be valid: {0}".format(self.valid_vol_units))
+        if unit_type == 'Volume':
+            if units not in self.valid_vol_units:
+                raise uc.InvalidUnitError('Volume units must be from '
+                                          'following list to be valid: '
+                                          '{0}'.format(self.valid_vol_units))
+        elif unit_type == 'Mass':
+            if units not in self.valid_mass_units:
+                raise uc.InvalidUnitError('Mass units must be from '
+                                          'following list to be valid: '
+                                          '{0}'.format(self.valid_mass_units))
 
     @property
     def id(self):

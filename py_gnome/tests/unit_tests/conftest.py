@@ -15,6 +15,7 @@ np = numpy
 
 import pytest
 
+import gnome
 from gnome.basic_types import datetime_value_2d
 from gnome.array_types import windages, windage_range, windage_persist
 
@@ -22,7 +23,6 @@ from gnome.map import MapFromBNA
 from gnome.model import Model
 
 from gnome.spill_container import SpillContainer
-from gnome.spill import PointLineSource
 
 from gnome.movers import SimpleMover
 
@@ -70,15 +70,19 @@ def sample_sc_release(num_elements=10,
                       current_time=None,
                       arr_types=None):
     """
-    Initialize a spill of type spill_obj, add it to a SpillContainer.
+    Initialize a Spill of type 'spill', add it to a SpillContainer.
     Invoke release_elements on SpillContainer, then return the spill container
     object
+
+    If 'spill' is None, define a Spill object with a PointLineRelease type
+    of release
     """
     if current_time is None:
         current_time = release_time
 
     if spill is None:
-        spill = PointLineSource(num_elements, start_pos, release_time)
+        spill = gnome.spill.point_line_release_spill(num_elements, start_pos,
+                                            release_time)
     spill.mass = num_elements
 
     if element_type is not None:
@@ -246,15 +250,15 @@ def sample_spatial_release_spill():
 
 
 @pytest.fixture(scope='module')
-def sample_vertical_plume_source():
+def sample_vertical_plume_spill():
     '''
     creates an example VerticalPlumeSource object
     '''
-    from gnome.spill import VerticalPlumeSource
+    from gnome.spill import VerticalPlumeRelease, Spill
     from gnome.utilities.plume import get_plume_data
 
     release_time = datetime.now()
-    vps = VerticalPlumeSource(num_elements=200,
+    vps = VerticalPlumeRelease(num_elements=200,
                               start_position=(28, -78, 0.),
                               release_time=release_time,
                               end_release_time=release_time + timedelta(hours=24),
@@ -262,8 +266,7 @@ def sample_vertical_plume_source():
                               )
 
     vps.plume_gen.time_step_delta = timedelta(hours=1).total_seconds()
-
-    return vps
+    return Spill(vps)
 
 
 @pytest.fixture(scope='module')
@@ -288,11 +291,10 @@ def sample_sc_no_uncertainty():
     end_position = (24.0, -79.5, 1.0)
     end_release_time = datetime(2012, 1, 1, 12) + timedelta(hours=4)
 
-    spills = [gnome.spill.PointLineSource(num_elements,
+    spills = [gnome.spill.point_line_release_spill(num_elements,
+                              start_position, release_time, volume=10),
+              gnome.spill.point_line_release_spill(num_elements,
                               start_position,
-                              release_time,
-                              volume=10),
-              gnome.spill.PointLineSource(num_elements, start_position,
                               release_time + timedelta(hours=1),
                               end_position, end_release_time,
                               volume=10),

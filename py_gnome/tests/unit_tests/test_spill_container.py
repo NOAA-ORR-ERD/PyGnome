@@ -788,6 +788,7 @@ def test_eq_spill_container_pair(uncertain):
         u_sp1 = [scp1.items()[1].spills[spill.id] for spill in
                  scp1.items()[1].spills][0]
 
+        temp = u_sp1.to_dict('create')
         u_sp2 = u_sp1.new_from_dict(u_sp1.to_dict('create'))
 
         scp2.add((sp2, u_sp2))
@@ -892,7 +893,9 @@ def get_eq_spills():
                             element_type=floating(windage_range=(0, 0)))
     dict_ = spill.to_dict('create')
     spill2 = spill.new_from_dict(dict_)
-    spill2.element_type = floating(windage_range=(0, 0))
+
+    # check here if equal spills didn't get created - fail this function
+    assert spill == spill2
 
     return (spill, spill2)
 

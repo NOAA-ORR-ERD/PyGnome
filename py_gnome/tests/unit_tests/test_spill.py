@@ -835,24 +835,24 @@ class TestSpatialRelease:
         assert num == 0
 
 
-class TestVerticalPlumeSource:
+class TestVerticalPlumeRelease:
     @pytest.fixture(autouse=True)
-    def setup(self, sample_vertical_plume_source):
+    def setup(self, sample_vertical_plume_spill):
         '''
         define common use attributes here.
         rewind the model. Fixture is a function argument only for this function
         autouse means it is used by all test functions without explicitly
         stating it as a function argument
-        After each test, the autouse fixture setup is called so self.vps
+        After each test, the autouse fixture setup is called so self.spill
         gets defined
         '''
-        self.vps = sample_vertical_plume_source
-        self.vps.rewind()
+        self.spill = sample_vertical_plume_spill
+        self.spill.rewind()
 
     def test_rewind(self):
         ''' test rewind sets state to original '''
-        assert self.vps.num_released == 0
-        assert self.vps.start_time_invalid == True
+        assert self.spill.release.num_released == 0
+        assert self.spill.release.start_time_invalid == True
 
     def test_release_bounds(self):
         '''
@@ -862,13 +862,13 @@ class TestVerticalPlumeSource:
         time_step = timedelta(hours=1).total_seconds()
 
         # before the beginning of the time range
-        num = self.vps.num_elements_to_release(self.vps.release_time - timedelta(seconds=time_step),
+        num = self.spill.num_elements_to_release(self.spill.release.release_time - timedelta(seconds=time_step),
                                                time_step)
         assert num == 0
 
         # past the end of the time range
-        self.vps.rewind()
-        num = self.vps.num_elements_to_release(self.vps.plume_gen.end_release_time,
+        self.spill.rewind()
+        num = self.spill.num_elements_to_release(self.spill.release.plume_gen.end_release_time,
                                                time_step)
         assert num == 0
 
@@ -880,8 +880,9 @@ class TestVerticalPlumeSource:
         time_step = timedelta(hours=1).total_seconds()
         total_elems = 0
         for off_time in range(int(-time_step), int(time_step * 30), int(time_step)):
-            current_time = self.vps.release_time + timedelta(seconds=off_time)
-            elems = self.vps.num_elements_to_release(current_time, time_step)
+            current_time = (self.spill.release.release_time +
+                timedelta(seconds=off_time))
+            elems = self.spill.num_elements_to_release(current_time, time_step)
             total_elems += elems
 
         # this is not truly rigorous, but it passes at least for the test data
@@ -894,7 +895,8 @@ class TestVerticalPlumeSource:
         see if the right arrays get created
         """
         time_step = timedelta(hours=1).total_seconds()
-        (data_arrays, num) = release_elements(self.vps, self.vps.release_time,
+        (data_arrays, num) = release_elements(self.spill,
+                                              self.spill.release.release_time,
                                               time_step)
 
         # These assertions are linked to the test data that we
@@ -902,8 +904,9 @@ class TestVerticalPlumeSource:
         assert num == 4
         assert data_arrays['positions'].shape == (4, 3)
 
-        (data_arrays, num) = release_elements(self.vps,
-                                              self.vps.release_time + timedelta(seconds=time_step),
+        (data_arrays, num) = release_elements(self.spill,
+                                              (self.spill.release.release_time
+                                              + timedelta(seconds=time_step)),
                                               time_step,
                                               data_arrays)
 
@@ -970,10 +973,10 @@ webgnome works. These will eventually be removed
 class TestWindageProps:
     def test_exceptions(self):
         with pytest.raises(ValueError):
-            Spill(windage_range=(-1, 0))
+            Spill(Release(), windage_range=(-1, 0))
 
     def test_windage_range(self):
-        spill = Spill()
+        spill = Spill(Release())
         assert spill.windage_range == (0.01, 0.04)
         spill.windage_range = (0, 0.03)
         assert spill.windage_range == (0.0, 0.03)
@@ -981,7 +984,7 @@ class TestWindageProps:
                 spill.windage_range)
 
     def test_windage_persist(self):
-        spill = Spill()
+        spill = Spill(Release())
         assert spill.windage_persist == 900
         spill.windage_persist = 100
         assert spill.windage_persist == 100

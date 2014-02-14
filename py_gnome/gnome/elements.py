@@ -10,6 +10,7 @@ import copy
 import numpy
 np = numpy
 
+import gnome    # required by new_from_dict
 from gnome.utilities.rand import random_with_persistance
 from gnome.utilities.compute_fraction import fraction_below_d
 from gnome.cy_gnome.cy_rise_velocity_mover import rise_velocity_from_drop_size
@@ -133,7 +134,7 @@ class InitMassComponentsFromOilProps(object):
                              'compute particle mass without total mass')
 
         total_mass = spill.get_mass('g')
-        le_mass = total_mass / spill.num_elements
+        le_mass = total_mass / spill.release.num_elements
 
         mass_fractions = np.asarray(zip(*substance.mass_components)[0],
                                     dtype=np.float64)
@@ -183,7 +184,7 @@ class InitMassFromTotalMass(InitBaseClass, Serializable):
 
         _total_mass = spill.get_mass('g')
         data_arrays['mass'][-num_new_particles:] = (_total_mass /
-                                                    spill.num_elements)
+                                                    spill.release.num_elements)
 
 
 class InitMassFromVolume(InitBaseClass, Serializable):
@@ -202,8 +203,7 @@ class InitMassFromVolume(InitBaseClass, Serializable):
         _total_mass = substance.get_density('kg/m^3') \
             * spill.get_volume('m^3') * 1000
         data_arrays['mass'][-num_new_particles:] = (_total_mass /
-                                                    spill.num_elements)
-                                                    #num_new_particles)
+                                                    spill.release.num_elements)
 
 
 class InitMassFromPlume(InitBaseClass, Serializable):
@@ -361,6 +361,8 @@ class ValuesFromDistBase(object):
 
 
 class InitRiseVelFromDist(InitBaseClass, ValuesFromDistBase, Serializable):
+    state = copy.deepcopy(InitBaseClass.state)
+
     def __init__(self, distribution='uniform', **kwargs):
         """
         Set the rise velocity parameters to be sampled from a distribution.
@@ -406,6 +408,8 @@ class InitRiseVelFromDist(InitBaseClass, ValuesFromDistBase, Serializable):
 
 
 class InitRiseVelFromDropletSizeFromDist(ValuesFromDistBase):
+    state = copy.deepcopy(InitBaseClass.state)
+
     def __init__(self,
                  distribution='uniform',
                  water_density=1020.0,
@@ -488,7 +492,23 @@ class InitRiseVelFromDropletSizeFromDist(ValuesFromDistBase):
 """ ElementType classes"""
 
 
-class ElementType(object):
+class ElementType(Serializable):
+    state = copy.deepcopy(InitBaseClass.state)
+    state.add(create=['initializers'], update=['initializers'])
+
+    @classmethod
+    def new_from_dict(cls, dict_):
+        """
+        primarily need to reconstruct objects for initializers dict
+        """
+        init = dict_.get('initializers')
+        for name, val in init.iteritems():
+            type_ = val.pop('obj_type')
+            obj = eval(type_).new_from_dict(val)
+            init[name] = obj
+
+        return super(ElementType, cls).new_from_dict(dict_)
+
     def __init__(self, initializers, substance='oil_conservative'):
         '''
         Define initializers for the type of elements
@@ -523,6 +543,38 @@ class ElementType(object):
                 if key in data_arrays:
                     i.initialize(num_new_particles, spill, data_arrays,
                                  self.substance)
+
+    def to_dict(self, do='update'):
+        """
+        since initializers is a dictionary, need to override to_dict so it
+        serializes objects stored in the dict
+
+        todo: is there a need to override from_dict? Will have to see how it
+        interfaces with webgnome
+        """
+        dict_ = super(ElementType, self).to_dict(do)
+        for name, val in dict_['initializers'].iteritems():
+            dict_['initializers'][name] = val.to_dict(do)
+        return dict_
+
+    def initializers_to_dict(self):
+        """
+        return a deep copy of the initializers to be serialized. If a copy is
+        not returned, then original dict of initializers is modified and its
+        objects are replaced by the serialized objects (ie a dict).
+        """
+        return copy.deepcopy(self.initializers)
+#==============================================================================
+#     def initializers_to_dict(self):
+#         """
+#         convert initializer objects to a dict for serialization
+#         """
+#         init_dict = {}
+#         for key, val in self.initializers.iteritems():
+#             init_dict[key] = val.to_dict()
+# 
+#         return init_dict
+#==============================================================================
 
 
 def floating(windage_range=(.01, .04), windage_persist=900):

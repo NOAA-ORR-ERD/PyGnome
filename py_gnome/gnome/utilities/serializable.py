@@ -578,6 +578,9 @@ class Serializable(object):
         NOTE: This class does not have __init__ method and super is not used.
         """
 
+        if self is other:
+            return True
+
         if type(self) != type(other):
             return False
 
