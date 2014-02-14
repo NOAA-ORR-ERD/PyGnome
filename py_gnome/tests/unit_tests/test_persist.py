@@ -3,17 +3,30 @@ primarily tests the operations of the scenario module, the colander schemas,
 and the ability of Model to be recreated in midrun
 '''
 
-from datetime import datetime, timedelta
 import os
 import shutil
 from glob import glob
+from datetime import datetime, timedelta
 
-import numpy as np
 import pytest
+from pytest import raises
 
-import gnome
-from gnome.persist.scenario import Scenario
+import numpy
+np = numpy
+
+from gnome.basic_types import datetime_value_2d
 from gnome.utilities.remote_data import get_datafile
+
+from gnome.map import MapFromBNA
+from gnome.environment import Wind, Tide
+
+from gnome.model import Model
+from gnome.spill import PointLineSource
+from gnome.movers import RandomMover, WindMover, CatsMover
+from gnome.weatherers.core import Weatherer
+
+from gnome.persist.scenario import Scenario
+from gnome.renderer import Renderer
 
 curr_dir = os.path.dirname(__file__)
 datafiles = os.path.join(curr_dir, 'sample_data', 'boston_data')
@@ -54,40 +67,38 @@ def make_model(images_dir, uncertain=False):
     mapfile = get_datafile(os.path.join(datafiles, './MassBayMap.bna'))
 
     start_time = datetime(2013, 2, 13, 9, 0)
-    model = gnome.model.Model(start_time=start_time,
-                              duration=timedelta(days=2), time_step=30
-                              * 60, uncertain=uncertain,
-                              map=gnome.map.MapFromBNA(mapfile,
-                              refloat_halflife=1))  # 1/2 hr in seconds
-                                                    # hours
+    model = Model(start_time=start_time,
+                  duration=timedelta(days=2),
+                  time_step=timedelta(minutes=30).total_seconds(),
+                  uncertain=uncertain,
+                  map=MapFromBNA(mapfile, refloat_halflife=1))
 
     print 'adding a renderer'
 
-    model.outputters += gnome.renderer.Renderer(mapfile, images_dir,
-            size=(800, 600))
+    model.outputters += Renderer(mapfile, images_dir, size=(800, 600))
 
     print 'adding a spill'
-    model.spills += \
-        gnome.spill.PointLineSource(num_elements=1000,
-            start_position=(144.664166, 13.441944, 0.0),
-            release_time=start_time, end_release_time=start_time
-            + timedelta(hours=6))
+    start_position = (144.664166, 13.441944, 0.0)
+    end_release_time = start_time + timedelta(hours=6)
+    model.spills += PointLineSource(num_elements=1000,
+                                    start_position=start_position,
+                                    release_time=start_time,
+                                    end_release_time=end_release_time)
 
     # need a scenario for SimpleMover
     # model.movers += SimpleMover(velocity=(1.0, -1.0, 0.0))
 
     print 'adding a RandomMover:'
-    model.movers += gnome.movers.RandomMover(diffusion_coef=100000)
+    model.movers += RandomMover(diffusion_coef=100000)
 
     print 'adding a wind mover:'
 
-    series = np.zeros((2, ), dtype=gnome.basic_types.datetime_value_2d)
+    series = np.zeros((2, ), dtype=datetime_value_2d)
     series[0] = (start_time, (5, 180))
     series[1] = (start_time + timedelta(hours=18), (5, 180))
 
-    w_mover = \
-        gnome.movers.WindMover(gnome.environment.Wind(timeseries=series,
-                               units='m/s'))
+    w_mover = WindMover(Wind(timeseries=series, units='m/s'))
+
     model.movers += w_mover
     model.environment += w_mover.wind
 
@@ -95,8 +106,7 @@ def make_model(images_dir, uncertain=False):
 
     d_file1 = get_datafile(os.path.join(datafiles, './EbbTides.cur'))
     d_file2 = get_datafile(os.path.join(datafiles, './EbbTidesShio.txt'))
-    c_mover = gnome.movers.CatsMover(d_file1,
-            tide=gnome.environment.Tide(d_file2))
+    c_mover = CatsMover(d_file1, tide=Tide(d_file2))
 
     # c_mover.scale_refpoint should automatically get set from tide object
     c_mover.scale = True  # default value
@@ -111,8 +121,8 @@ def make_model(images_dir, uncertain=False):
                            './MerrimackMassCoast.cur'))
     d_file2 = get_datafile(os.path.join(datafiles,
                            './MerrimackMassCoastOSSM.txt'))
-    c_mover = gnome.movers.CatsMover(d_file1,
-            tide=gnome.environment.Tide(d_file2))
+    c_mover = CatsMover(d_file1, tide=Tide(d_file2))
+
     c_mover.scale = True  # but do need to scale (based on river stage)
     c_mover.scale_refpoint = (-70.65, 42.58333)
     c_mover.scale_value = 1.
@@ -122,18 +132,23 @@ def make_model(images_dir, uncertain=False):
     print 'adding a cats mover:'
 
     d_file1 = get_datafile(os.path.join(datafiles, 'MassBaySewage.cur'))
-    c_mover = gnome.movers.CatsMover(d_file1)
+    c_mover = CatsMover(d_file1)
     c_mover.scale = True  # but do need to scale (based on river stage)
     c_mover.scale_refpoint = (-70.78333, 42.39333)
 
     # the scale factor is 0 if user inputs no sewage outfall effects
     c_mover.scale_value = .04
     model.movers += c_mover
+
+    print 'adding a Weatherer'
+    weatherer = Weatherer()
+    model.weatherers += weatherer
+
     return model
 
 
 def test_init_exception():
-    with pytest.raises(ValueError):
+    with raises(ValueError):
         Scenario(os.path.join(saveloc_, 'x', 'junk'))
 
 
@@ -149,13 +164,13 @@ def test_exception_no_model_to_load(images_dir):
     There are no Model_*.txt files that can be loaded
     '''
     s = Scenario(os.path.join(saveloc_))
-    with pytest.raises(ValueError):
+    with raises(ValueError):
         s.load()
 
 
 def test_exception_no_model_to_save():
     s = Scenario(os.path.join(saveloc_))
-    with pytest.raises(AttributeError):
+    with raises(AttributeError):
         s.save()
 
 
@@ -167,14 +182,18 @@ def test_exception_multiple_models_to_load(images_dir):
     since there should only be 1 Model_*.json in saveloc_
     '''
     model = make_model(images_dir)
+
     scene = Scenario(saveloc_, model)
     scene.save()
+
     m_file = glob(os.path.join(saveloc_, 'Model_*.json'))[0]
-    (fname, ext) = os.path.splitext(m_file)
-    f_new = '{0}_new'.format(fname)
-    m_new = f_new + ext
+    filename, extension = os.path.splitext(m_file)
+
+    m_new = '{0}_new'.format(filename) + extension
+
     shutil.copyfile(m_file, m_new)
-    with pytest.raises(ValueError):
+
+    with raises(ValueError):
         scene.load()
 
 
@@ -194,7 +213,6 @@ def test_save_load_scenario(images_dir, uncertain):
     assert model == model2
 
 
-@pytest.mark.xfail
 @pytest.mark.slow
 @pytest.mark.parametrize('uncertain', [False, True])
 def test_save_load_midrun_scenario(images_dir, uncertain):
@@ -237,7 +255,7 @@ def test_save_load_midrun_no_movers(images_dir, uncertain):
         del model.movers[mover.id]
 
     model.step()
-    print 'saving scnario ..'
+    print 'saving scenario ..'
     scene = Scenario(saveloc_, model)
     scene.save()
 
@@ -254,7 +272,6 @@ def test_save_load_midrun_no_movers(images_dir, uncertain):
     assert model == model2
 
 
-@pytest.mark.xfail
 @pytest.mark.slow
 @pytest.mark.parametrize('uncertain', [False, True])
 def test_load_midrun_ne_rewound_model(images_dir, uncertain):

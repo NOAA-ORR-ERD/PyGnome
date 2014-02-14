@@ -11,20 +11,22 @@ from gnome.environment import Environment
 import gnome.utilities.cache
 from gnome.utilities.time_utils import round_time
 from gnome.utilities.orderedcollection import OrderedCollection
-from gnome.utilities import serializable
+from gnome.utilities.serializable import Serializable
 
 from gnome.spill_container import SpillContainerPair
 
 from gnome.movers import Mover, WindMover, CatsMover
+from gnome.weatherers.core import Weatherer
 
 
-class Model(serializable.Serializable):
+class Model(Serializable):
     'PyGNOME Model Class'
     _update = ['time_step',
                'start_time',
                'duration',
                'uncertain',
                'movers',
+               'weatherers',
                'environment',
                'spills',
                'map',
@@ -32,7 +34,7 @@ class Model(serializable.Serializable):
                'cache_enabled']
     _create = []
     _create.extend(_update)
-    state = copy.deepcopy(serializable.Serializable.state)
+    state = copy.deepcopy(Serializable.state)
 
     # no need to copy parent's state in this case
     state.add(create=_create, update=_update)
@@ -43,6 +45,7 @@ class Model(serializable.Serializable):
         l_env = dict_.pop('environment')
         l_out = dict_.pop('outputters')
         l_movers = dict_.pop('movers')
+        l_weatherers = dict_.pop('weatherers')
         c_spills = dict_.pop('certain_spills')
 
         if 'uncertain_spills' in dict_.keys():
@@ -57,10 +60,14 @@ class Model(serializable.Serializable):
         [model.outputters.add(obj) for obj in l_out]
         [model.spills.add(obj) for obj in l_spills]
         [model.movers.add(obj) for obj in l_movers]
+        [model.weatherers.add(obj) for obj in l_weatherers]
 
         # register callback with OrderedCollection
         model.movers.register_callback(model._callback_add_mover,
                                        ('add', 'replace'))
+
+        model.weatherers.register_callback(model._callback_add_weatherer,
+                                           ('add', 'replace'))
 
         return model
 
@@ -71,8 +78,7 @@ class Model(serializable.Serializable):
                  map=gnome.map.GnomeMap(),
                  uncertain=False,
                  cache_enabled=False,
-                 id=None,
-                 ):
+                 id=None):
         '''
         Initializes a model. All arguments have a default.
 
@@ -98,6 +104,9 @@ class Model(serializable.Serializable):
         self.movers.register_callback(self._callback_add_mover,
                                       ('add', 'replace'))
 
+        self.weatherers.register_callback(self._callback_add_weatherer,
+                                          ('add', 'replace'))
+
     def __restore__(self, time_step, start_time, duration,
                     map, uncertain, cache_enabled,
                     id):
@@ -110,6 +119,7 @@ class Model(serializable.Serializable):
         # making sure basic stuff is in place before properties are set
         self.environment = OrderedCollection(dtype=Environment)
         self.movers = OrderedCollection(dtype=Mover)
+        self.weatherers = OrderedCollection(dtype=Weatherer)
 
         # contains both certain/uncertain spills
         self.spills = SpillContainerPair(uncertain)
@@ -273,6 +283,10 @@ class Model(serializable.Serializable):
             mover.prepare_for_model_run()
             array_types.update(mover.array_types)
 
+        for w in self.weatherers:
+            w.prepare_for_model_run()
+            array_types.update(w.array_types)
+
         for sc in self.spills.items():
             sc.prepare_for_model_run(array_types)
 
@@ -287,15 +301,16 @@ class Model(serializable.Serializable):
     def setup_time_step(self):
         '''
         sets up everything for the current time_step:
-
-        right now only prepares the movers -- maybe more later?.
         '''
-
         # initialize movers differently if model uncertainty is on
-        for mover in self.movers:
+        for m in self.movers:
             for sc in self.spills.items():
-                mover.prepare_for_model_step(sc, self.time_step,
-                        self.model_time)
+                m.prepare_for_model_step(sc, self.time_step, self.model_time)
+
+        for w in self.weatherers:
+            for sc in self.spills.items():
+                # maybe we will setup a super-sampling step here???
+                w.prepare_for_model_step(sc, self.time_step, self.model_time)
 
         for outputter in self.outputters:
             outputter.prepare_for_model_step(self.time_step, self.model_time)
@@ -328,6 +343,25 @@ class Model(serializable.Serializable):
                 # the final move to the new positions
                 (sc['positions'])[:] = sc['next_positions']
 
+    def weather_elements(self):
+        '''
+        Weathers elements:
+        - loops through all the weatherers, passing in the spill_container
+          and the time range
+        - a weatherer modifies the data arrays in the spill container, so a
+          particular time range should not be run multiple times.  It is
+          expected that we are processing a sequence of contiguous time ranges.
+        - TODO: right now we just use the time range specified in the
+                model.  But if there are multiple sequential weathering
+                processes, some inaccuracy will occur.
+                A proposed solution is to 'super-sample' the model time
+                step so that it will be replaced with many smaller time
+                steps.
+        '''
+        for sc in self.spills.items():
+            for w in self.weatherers:
+                w.weather_elements(sc, self.time_step, self.model_time)
+
     def step_is_done(self):
         '''
         Loop through movers and call model_step_is_done
@@ -335,6 +369,9 @@ class Model(serializable.Serializable):
         for mover in self.movers:
             for sc in self.spills.items():
                 mover.model_step_is_done(sc)
+
+        for w in self.weatherers:
+            w.model_step_is_done()
 
         for sc in self.spills.items():
             'removes elements with oil_status.to_be_removed'
@@ -381,6 +418,7 @@ class Model(serializable.Serializable):
         else:
             self.setup_time_step()
             self.move_elements()
+            self.weather_elements()
             self.step_is_done()
 
         self.current_time_step += 1
@@ -455,6 +493,12 @@ class Model(serializable.Serializable):
         '''
         return self.movers.to_dict()
 
+    def weatherers_to_dict(self):
+        '''
+        Call to_dict method of OrderedCollection object
+        '''
+        return self.weatherers.to_dict()
+
     def environment_to_dict(self):
         '''
         Call to_dict method of OrderedCollection object
@@ -490,6 +534,14 @@ class Model(serializable.Serializable):
                 self.environment += obj_added.tide
 
         self.rewind()  # rewind model if a new mover is added
+
+    def _callback_add_weatherer(self, obj_added):
+        'Callback after weatherer has been added'
+        if isinstance(obj_added, Weatherer):
+            # not sure what kind of dependencies we have just yet.
+            pass
+
+        self.rewind()  # rewind model if a new weatherer is added
 
     def __eq__(self, other):
         check = super(Model, self).__eq__(other)

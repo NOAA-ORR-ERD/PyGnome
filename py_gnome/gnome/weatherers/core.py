@@ -5,10 +5,11 @@ from datetime import timedelta
 import numpy
 np = numpy
 
+from gnome.utilities.serializable import Serializable
 from gnome.movers.movers import Mover
 
 
-class Weatherer(Mover):
+class Weatherer(Mover, Serializable):
     '''
        Base Weathering agent.  This is almost exactly like the base Mover
        in the way that it acts upon the model.  It contains the same API
@@ -60,8 +61,19 @@ class Weatherer(Mover):
         half = np.float64(0.5)
 
         total_mass = M_0 * (half ** (time / factors))
-        return total_mass.sum(1)
+        return total_mass
 
     def get_move(self, sc, time_step, model_time):
         m0, f, time = self._xform_inputs(sc, time_step, model_time)
         return self._halflife(m0, f, time)
+
+    def weather_elements(self, sc, time_step, model_time):
+        '''
+           Here we run get_move, and then apply the results to the elements
+           in our spill container.  It just seems more intuitive that the
+           weatherer control what happens to the elements instead of the model,
+           as happens with the movers.
+        '''
+        hl = self.get_move(sc, time_step, model_time)
+        sc['mass_components'][:] = hl
+        sc['mass'][:] = hl.sum(1)

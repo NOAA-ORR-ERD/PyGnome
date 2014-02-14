@@ -34,6 +34,7 @@ class Model(base_schema.Id, MappingSchema):
                             validator=validators.convertible_to_seconds)
     duration = SchemaNode(extend_colander.TimeDelta())  # put a constraint for max duration?
     movers = base_schema.OrderedCollection()
+    weatherers = base_schema.OrderedCollection()
     environment = base_schema.OrderedCollection()
     uncertain = SchemaNode(Bool())
     spills = SpillContainerPair()
@@ -43,5 +44,3 @@ class Model(base_schema.Id, MappingSchema):
     map = ObjectInModel()
     outputters = base_schema.OrderedCollection()
     cache_enabled = SchemaNode(Bool())
-
-
