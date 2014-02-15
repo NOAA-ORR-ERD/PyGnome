@@ -37,7 +37,7 @@ def model(sample_model, request):
     model.movers += gnome.movers.RandomMover(diffusion_coef=100000)
 
     model.spills += \
-        gnome.spill.PointLineSource(num_elements=5,
+        gnome.spill.point_line_release_spill(num_elements=5,
             start_position=sample_model['release_start_pos'],
             release_time=model.start_time,
             end_release_time=model.start_time + model.duration,

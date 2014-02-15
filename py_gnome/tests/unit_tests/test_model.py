@@ -19,13 +19,11 @@ from gnome.elements import floating
 
 from gnome.utilities import inf_datetime
 from gnome.model import Model
-from gnome.spill import SpatialRelease, PointLineSource
+from gnome.spill import Spill, SpatialRelease, point_line_release_spill
 from gnome.utilities.remote_data import get_datafile
 
 import gnome.map
 from gnome.environment import Wind, Tide
-
-from gnome.spill import SpatialRelease, PointLineSource
 
 from gnome.movers.simple_mover import SimpleMover
 from gnome.movers import RandomMover, WindMover, CatsMover
@@ -70,10 +68,10 @@ def model(sample_model):
 
     # print start_points
 
-    spill = SpatialRelease(start_positions=line_pos,
+    release = SpatialRelease(start_position=line_pos,
                            release_time=model.start_time)
 
-    model.spills += spill
+    model.spills += Spill(release)
 
     return model
 
@@ -202,7 +200,7 @@ def test_simple_run_rewind():
 
     # model.add_spill(spill)
 
-    model.start_time = spill.release_time
+    model.start_time = spill.release.release_time
 
     # test iterator
     for step in model:
@@ -238,12 +236,13 @@ def test_simple_run_with_map():
     model.movers += a_mover
     assert len(model.movers) == 1
 
-    spill = PointLineSource(num_elements=10,
-            start_position=(0., 0., 0.), release_time=start_time)
+    spill = point_line_release_spill(num_elements=10,
+                                     start_position=(0., 0., 0.),
+                                     release_time=start_time)
 
     model.spills += spill
     assert len(model.spills) == 1
-    model.start_time = spill.release_time
+    model.start_time = spill.release.release_time
 
     # test iterator
     for step in model:
@@ -292,8 +291,8 @@ def test_simple_run_with_image_output():
     start_points[:, 1] = np.linspace(47.93, 48.1, N)
     # print start_points
 
-    spill = SpatialRelease(start_positions=start_points,
-                           release_time=start_time)
+    spill = Spill(SpatialRelease(start_position=start_points,
+                                 release_time=start_time))
 
     model.spills += spill
     assert len(model.spills) == 1
@@ -349,14 +348,14 @@ def test_simple_run_with_image_output_uncertainty():
     start_points[:, 1] = np.linspace(47.93, 48.1, N)
     # print start_points
 
-    spill = SpatialRelease(start_positions=start_points,
+    release = SpatialRelease(start_position=start_points,
                            release_time=start_time)
 
-    model.spills += spill
+    model.spills += Spill(release)
 
     # model.add_spill(spill)
 
-    model.start_time = spill.release_time
+    model.start_time = release.release_time
 
     # image_info = model.next_image()
 
@@ -464,8 +463,9 @@ def test_all_movers(start_time, release_delay, duration):
 
     release_time = start_time + timedelta(seconds=model.time_step
             * release_delay)
-    model.spills += PointLineSource(num_elements=10,
-            start_position=start_loc, release_time=release_time)
+    model.spills += point_line_release_spill(num_elements=10,
+                                             start_position=start_loc,
+                                             release_time=release_time)
 
     # the land-water map
     model.map = gnome.map.GnomeMap()  # the simplest of maps
@@ -549,9 +549,9 @@ def test_linearity_of_wind_movers(wind_persist):
     model1.duration = timedelta(hours=1)
     model1.time_step = timedelta(hours=1)
     model1.start_time = start_time
-    model1.spills += PointLineSource(num_elements=num_LEs,
-            start_position=(1., 2., 0.), release_time=start_time,
-            element_type=floating(windage_persist=wind_persist))
+    model1.spills += point_line_release_spill(num_elements=num_LEs,
+                        start_position=(1., 2., 0.), release_time=start_time,
+                        element_type=floating(windage_persist=wind_persist))
 
     model1.movers += WindMover(Wind(timeseries=series1, units=units))
 
@@ -560,7 +560,7 @@ def test_linearity_of_wind_movers(wind_persist):
     model2.time_step = timedelta(hours=1)
     model2.start_time = start_time
 
-    model2.spills += PointLineSource(num_elements=num_LEs,
+    model2.spills += point_line_release_spill(num_elements=num_LEs,
             start_position=(1., 2., 0.), release_time=start_time,
             element_type=floating(windage_persist=wind_persist))
 
@@ -614,13 +614,12 @@ def test_model_release_after_start():
 
     # add a spill that starts after the run begins.
     release_time = start_time + timedelta(hours=1)
-    model.spills += PointLineSource(num_elements=5,
+    model.spills += point_line_release_spill(num_elements=5,
             start_position=(0, 0, 0), release_time=release_time)
 
     # and another that starts later..
 
-    model.spills += \
-        gnome.spill.PointLineSource(num_elements=4,
+    model.spills += point_line_release_spill(num_elements=4,
             start_position=(0, 0, 0), release_time=start_time
             + timedelta(hours=2))
 
@@ -658,17 +657,14 @@ def test_release_at_right_time():
                   duration=timedelta(hours=12))
 
     # add a spill that starts right when the run begins
-    model.spills += PointLineSource(num_elements=12,
-                                    start_position=(0, 0, 0),
-                                    release_time=datetime(2013, 1, 1, 0),
-                                    end_release_time=datetime(2013, 1, 1, 6))
 
     model.spills += \
-        gnome.spill.PointLineSource(num_elements=12,
+        point_line_release_spill(num_elements=12,
             start_position=(0, 0, 0), release_time=datetime(2013, 1, 1,
             0), end_release_time=datetime(2013, 1, 1, 6))
 
-    # before the run - no elements present since data_arrays get defined after 1st step (prepare_for_model_run):
+    # before the run - no elements present since data_arrays get defined after
+    # 1st step (prepare_for_model_run):
 
     assert model.spills.items()[0].num_released == 0
 
