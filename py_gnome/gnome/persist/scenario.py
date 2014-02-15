@@ -20,6 +20,7 @@ from gnome.persist import (
     environment_schema,     # used implicitly by eval()
     model_schema,           # used implicitly by eval()
     movers_schema,          # used implicitly by eval()
+    weatherers_schema,      # used implicitly by eval()
     spills_schema,          # used implicitly by eval()
     map_schema,             # used implicitly by eval()
     outputters_schema       # used implicitly by eval()
@@ -102,6 +103,7 @@ class Scenario(object):
                                 self.model.map)
 
         self._save_collection(self.model.movers)
+        self._save_collection(self.model.weatherers)
         self._save_collection(self.model.environment)
         self._save_collection(self.model.outputters)
 
@@ -126,6 +128,7 @@ class Scenario(object):
         # create a list of associated objects and put it back into model_dict
 
         l_movers = model_dict.pop('movers')
+        l_weatherers = model_dict.pop('weatherers')
         l_environment = model_dict.pop('environment')
         l_outputters = model_dict.pop('outputters')
         l_spills = model_dict.pop('spills')
@@ -140,8 +143,10 @@ class Scenario(object):
             model_dict['uncertain_spills'] = \
                 self._load_collection(l_spills['uncertain_spills'])
 
-        model_dict['movers'] = self._load_movers_collection(l_movers,
-                model_dict['environment'])
+        model_dict['movers'] = \
+            self._load_movers_collection(l_movers, model_dict['environment'])
+
+        model_dict['weatherers'] = self._load_collection(l_weatherers)
 
         self.model = self.dict_to_obj(model_dict)
 
@@ -203,7 +208,6 @@ class Scenario(object):
         'name' of the fields with True 'isdatafile' attribute then move that
         datafile and update the key in the to_json to point to new location
         """
-
         state = eval('{0}.state'.format(to_json['obj_type']))
         fields = state.get_field_by_attribute('isdatafile')
 

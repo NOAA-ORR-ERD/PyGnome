@@ -14,7 +14,6 @@ import numpy
 np = numpy
 
 from gnome.utilities.inf_datetime import InfDateTime
-from gnome.utilities.weathering import weather_curve
 
 from gnome.array_types import mass, rise_vel, mass_components, half_lives
 from gnome.elements import (ElementType,
@@ -64,7 +63,7 @@ class TestWeatherer:
     @pytest.mark.parametrize("test_sc", [sc, u_sc])
     def test_one_move(self, test_sc):
         '''
-           calls one movement step and checks that we decayed at the expected
+           calls one get_move step and checks that we decayed at the expected
            rate.
         '''
         weatherer = Weatherer()
@@ -81,7 +80,36 @@ class TestWeatherer:
         weatherer.model_step_is_done()
 
         print '\ndecayed_mass:\n', decayed_mass
-        assert np.allclose(decayed_mass, 0.5)
+        assert np.allclose(decayed_mass.sum(1), 0.5)
+
+    @pytest.mark.parametrize("test_sc", [sc, u_sc])
+    def test_one_weather(self, test_sc):
+        '''
+           calls one weathering step and checks that we decayed at the expected
+           rate.
+        '''
+        saved_mass = np.copy(test_sc['mass'])
+        saved_components = np.copy(test_sc['mass_components'])
+
+        weatherer = Weatherer()
+
+        print '\nsc["mass"]:\n', test_sc['mass']
+
+        model_time = rel_time
+        time_step = 15 * secs_in_minute
+
+        weatherer.prepare_for_model_run()
+        weatherer.prepare_for_model_step(test_sc, time_step, model_time)
+
+        weatherer.weather_elements(test_sc, time_step, model_time)
+        weatherer.model_step_is_done()
+
+        print '\nsc["mass"]:\n', test_sc['mass']
+        assert np.allclose(test_sc['mass'], 0.5)
+        assert np.allclose(test_sc['mass_components'].sum(1), 0.5)
+
+        test_sc['mass'] = saved_mass
+        test_sc['mass_components'] = saved_components
 
     @pytest.mark.parametrize("test_sc", [sc, u_sc])
     def test_out_of_bounds_model_time(self, test_sc):
@@ -119,7 +147,7 @@ class TestWeatherer:
         weatherer.model_step_is_done()
 
         print '\ndecayed_mass:\n', decayed_mass
-        assert np.allclose(decayed_mass, 1.)
+        assert np.allclose(decayed_mass.sum(1), 1.)
 
         # setup test case 2
         model_time = rel_time - timedelta(minutes=15)
@@ -130,7 +158,7 @@ class TestWeatherer:
         weatherer.model_step_is_done()
 
         print '\ndecayed_mass:\n', decayed_mass
-        assert np.allclose(decayed_mass, 1.)
+        assert np.allclose(decayed_mass.sum(1), 1.)
 
         # setup test case 3
         model_time = rel_time - timedelta(minutes=15)
@@ -141,7 +169,7 @@ class TestWeatherer:
         weatherer.model_step_is_done()
 
         print '\ndecayed_mass:\n', decayed_mass
-        assert np.allclose(decayed_mass, 0.5)
+        assert np.allclose(decayed_mass.sum(1), 0.5)
 
     @pytest.mark.parametrize("test_sc", [sc, u_sc])
     def test_out_of_bounds_time_step(self, test_sc):
@@ -172,7 +200,7 @@ class TestWeatherer:
         weatherer.model_step_is_done()
 
         print '\ndecayed_mass:\n', decayed_mass
-        assert np.allclose(decayed_mass, 0.5)
+        assert np.allclose(decayed_mass.sum(1), 0.5)
 
     @pytest.mark.parametrize("test_sc", [sc, u_sc])
     def test_model_time_range_surrounds_active_range(self, test_sc):
@@ -202,4 +230,4 @@ class TestWeatherer:
         weatherer.model_step_is_done()
 
         print '\ndecayed_mass:\n', decayed_mass
-        assert np.allclose(decayed_mass, 0.5)
+        assert np.allclose(decayed_mass.sum(1), 0.5)
