@@ -1,7 +1,8 @@
 from libc cimport stdlib
 import locale
 
-cimport numpy as np
+cimport numpy as cnp
+import numpy as np
 
 from gnome import basic_types
 from type_defs cimport Seconds, DateTimeRec
@@ -9,14 +10,11 @@ cimport utils
 
 cdef class CyDateTime:
     cdef Seconds * seconds
-    cdef Seconds tSeconds
-    cdef DateTimeRec * dateRec
-    cdef DateTimeRec tDateRec
-    
+    cdef Seconds tSeconds   # cannot return pointer to python so return this
+
     def __cinit__(self):
         self.seconds = &self.tSeconds
-        self.dateRec = &self.tDateRec
-         
+
     def __dealloc__(self):
         """
             No python or cython objects need to be deallocated.
@@ -24,26 +22,32 @@ cdef class CyDateTime:
             throws errors
         """
         pass
-        
-    def DateToSeconds(self, np.ndarray[DateTimeRec, ndim=1] date):
-        utils.DateToSeconds( &date[0], self.seconds)
+
+    def DateToSeconds(self, cnp.ndarray[DateTimeRec, ndim=1] date):
+        utils.DateToSeconds(&date[0], self.seconds)
         return self.tSeconds
-    
+
     def SecondsToDate(self, Seconds secs):
-        utils.SecondsToDate( secs, self.dateRec)
-        return self.tDateRec
+        """
+        todo: would be nice to return daterec[0] to python, but this fails
+        """
+        cdef cnp.ndarray[DateTimeRec, ndim=1] daterec
+        daterec = np.empty((1, ), dtype=basic_types.date_rec)
+        utils.SecondsToDate(secs, &daterec[0])
+        return daterec
 
 
 def srand(seed):
     """
-    Resets C random seed 
+    Resets C random seed
     """
     stdlib.srand(seed)
-    
+
+
 def rand():
     """
     Calls the C stdlib.rand() function
-    
+
     Only implemented for testing that the srand was set correctly
     """
     return stdlib.rand()
@@ -51,20 +55,21 @@ def rand():
 
 cdef bytes to_bytes(unicode ucode):
     """
-    Encode a string to its unicode type to default file system encoding for the OS
+    Encode a string to its unicode type to default file system encoding for
+    the OS.
     It uses locale.getpreferredencoding() to get the filesystem encoding
         For the mac it encodes it as utf-8.
         For windows this appears to be cp1252.
-        
-    The C++ expects char * so  either of these encodings appear to work. If the 
-    getpreferredencoding returns a type of encoding that is incompatible with a char *
-    C++ input, then things will fail.
+
+    The C++ expects char * so  either of these encodings appear to work. If the
+    getpreferredencoding returns a type of encoding that is incompatible with
+    a char * C++ input, then things will fail.
     """
     cdef bytes byte_string
-    
+
     try:
         byte_string = ucode.encode(locale.getpreferredencoding())
     except Exception as err:
         raise err
-    
+
     return byte_string
