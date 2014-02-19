@@ -321,12 +321,6 @@ class PointLineRelease(Release, serializable.Serializable):
         if num_new_particles == 0:
             return
 
-        # call the base Spill class set_newparticle_values()
-        #super(PointLineRelease, self).set_newparticle_values(num_new_particles,
-        #                                                    current_time,
-        #                                                    time_step,
-        #                                                    data_arrays)
-
         if np.all(self.start_position == self.end_position):
             # point release
             data_arrays['positions'][-num_new_particles:, :] = \
@@ -358,12 +352,6 @@ class PointLineRelease(Release, serializable.Serializable):
         """
         if num_new_particles == 0:
             return
-
-        # call the base Spill class set_newparticle_values()
-        #super(PointLineRelease, self).set_newparticle_values(num_new_particles,
-        #                                                    current_time,
-        #                                                    time_step,
-        #                                                    data_arrays)
 
         if np.all(self.start_position == self.end_position):
             # point release

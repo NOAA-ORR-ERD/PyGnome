@@ -564,17 +564,6 @@ class ElementType(Serializable):
         objects are replaced by the serialized objects (ie a dict).
         """
         return copy.deepcopy(self.initializers)
-#==============================================================================
-#     def initializers_to_dict(self):
-#         """
-#         convert initializer objects to a dict for serialization
-#         """
-#         init_dict = {}
-#         for key, val in self.initializers.iteritems():
-#             init_dict[key] = val.to_dict()
-# 
-#         return init_dict
-#==============================================================================
 
 
 def floating(windage_range=(.01, .04), windage_persist=900):

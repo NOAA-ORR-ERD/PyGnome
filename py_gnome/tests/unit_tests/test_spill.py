@@ -15,8 +15,7 @@ np = numpy
 from gnome.spill import (Spill,
                          Release,
                          point_line_release_spill)
-from gnome.elements import (ElementType,
-                            floating)
+from gnome.elements import floating
 import gnome.array_types
 
 from conftest import mock_append_data_arrays
@@ -862,14 +861,15 @@ class TestVerticalPlumeRelease:
         time_step = timedelta(hours=1).total_seconds()
 
         # before the beginning of the time range
-        num = self.spill.num_elements_to_release(self.spill.release.release_time - timedelta(seconds=time_step),
-                                               time_step)
+        num = self.spill.num_elements_to_release(
+                self.spill.release.release_time - timedelta(seconds=time_step),
+                time_step)
         assert num == 0
 
         # past the end of the time range
         self.spill.rewind()
-        num = self.spill.num_elements_to_release(self.spill.release.plume_gen.end_release_time,
-                                               time_step)
+        num = self.spill.num_elements_to_release(
+                self.spill.release.plume_gen.end_release_time, time_step)
         assert num == 0
 
     def test_num_elems(self):
