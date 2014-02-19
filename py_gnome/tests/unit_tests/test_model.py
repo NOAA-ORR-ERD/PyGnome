@@ -28,6 +28,7 @@ from gnome.spill import SpatialRelease, PointLineSource
 from gnome.movers.simple_mover import SimpleMover
 from gnome.movers import RandomMover, WindMover, CatsMover
 
+from gnome.weatherers.core import Weatherer
 from gnome.renderer import Renderer
 
 from gnome.model import Model
@@ -779,6 +780,17 @@ def test_simple_run_no_spills(model):
         assert step['step_num'] == model.current_time_step
 
     assert True
+
+
+def test_all_weatherers_in_model(model):
+    """
+    test model run with weatherer
+    """
+    weatherer = Weatherer()
+    model.weatherers += weatherer
+    model.full_run()
+    assert 'mass_components' in model.spills.LE_data
+    assert 'half_lives' in model.spills.LE_data
 
 
 if __name__ == '__main__':

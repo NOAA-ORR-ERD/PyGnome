@@ -7,6 +7,7 @@ np = numpy
 
 from gnome.utilities.serializable import Serializable
 from gnome.movers.movers import Mover
+from gnome.array_types import mass_components, half_lives
 
 
 class Weatherer(Mover, Serializable):
@@ -22,6 +23,9 @@ class Weatherer(Mover, Serializable):
                               LEs are made up of.
         '''
         super(Weatherer, self).__init__(**kwargs)
+        self.array_types.update(
+            {'mass_components': mass_components,
+             'half_lives': half_lives})
 
     def __repr__(self):
         return ('Weatherer(active_start={0}, active_stop={1},'
