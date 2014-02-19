@@ -1,12 +1,3 @@
-# -*- coding: utf-8 -*-
-
-### fixme: this needs a lot of re-factoring:
-
-# base Spill class should be simpler
-
-# create_new_elements() should not be a Spill method (maybe Spill_contianer
-# or element_type class) initialize_new_elements shouldn't be here either...
-
 """
 spill.py - An implementation of the spill class(s)
 
