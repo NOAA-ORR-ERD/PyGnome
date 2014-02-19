@@ -53,7 +53,7 @@ class TestCyDateTime:
 
         # date = np.empty((1,), dtype=date_rec)
 
-        date = self.target.SecondsToDate(self.pySec)[0]
+        date = self.target.SecondsToDate(self.pySec)
 
         # let's also get the date from pyGnome function
         pyDate = self.sec_to_timestruct_from_pyGnome(self.pySec)
@@ -66,6 +66,7 @@ class TestCyDateTime:
         # The C++ time struct 0=Sunday and 6=Sat.
         # For Python time struct 0=Monday and 6=Sunday
 
+        print
         for field in self.daterec.dtype.names:
             # fixme: dayOfWeek doesn't match - check if this is relevant?
             # for pyDate all fields must match

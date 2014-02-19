@@ -9,11 +9,6 @@ from type_defs cimport Seconds, DateTimeRec
 cimport utils
 
 cdef class CyDateTime:
-    cdef Seconds * seconds
-    cdef Seconds tSeconds   # cannot return pointer to python so return this
-
-    def __cinit__(self):
-        self.seconds = &self.tSeconds
 
     def __dealloc__(self):
         """
@@ -24,17 +19,19 @@ cdef class CyDateTime:
         pass
 
     def DateToSeconds(self, cnp.ndarray[DateTimeRec, ndim=1] date):
-        utils.DateToSeconds(&date[0], self.seconds)
-        return self.tSeconds
+        cdef Seconds seconds
+
+        utils.DateToSeconds(&date[0], &seconds)
+
+        return seconds
 
     def SecondsToDate(self, Seconds secs):
-        """
-        todo: would be nice to return daterec[0] to python, but this fails
-        """
-        cdef cnp.ndarray[DateTimeRec, ndim=1] daterec
+        cdef cnp.ndarray[DateTimeRec, ndim = 1] daterec
+
         daterec = np.empty((1, ), dtype=basic_types.date_rec)
         utils.SecondsToDate(secs, &daterec[0])
-        return daterec
+
+        return daterec[:][0]
 
 
 def srand(seed):
