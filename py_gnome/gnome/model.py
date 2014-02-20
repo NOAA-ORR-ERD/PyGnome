@@ -377,7 +377,7 @@ class Model(Serializable):
         '''
         sub_step = self._time_step / self.weathering_substeps
 
-        indexes = [idx for idx in range(0, self._time_step + 1, sub_step)]
+        indexes = [idx for idx in range(0, int(self._time_step) + 1, int(sub_step))]
         res = [(idx, next_idx - idx)
                for idx, next_idx in zip(indexes, indexes[1:])]
 
