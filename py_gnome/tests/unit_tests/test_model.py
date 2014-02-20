@@ -783,14 +783,17 @@ def test_simple_run_no_spills(model):
 
 
 def test_all_weatherers_in_model(model):
-    """
+    '''
     test model run with weatherer
-    """
+    '''
     weatherer = Weatherer()
     model.weatherers += weatherer
+    print 'model.weatherers:', model.weatherers
+
     model.full_run()
-    assert 'mass_components' in model.spills.LE_data
-    assert 'half_lives' in model.spills.LE_data
+
+    expected_keys = {'mass_components', 'half_lives'}
+    assert expected_keys.issubset(model.spills.LE_data)
 
 
 if __name__ == '__main__':

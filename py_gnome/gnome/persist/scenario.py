@@ -28,11 +28,9 @@ from gnome.persist import (
 
 
 class Scenario(object):
-
     """
     Create a class that contains functionality to load/save a model scenario
     """
-
     def __init__(self, saveloc, model=None):
         """
         Constructor for a Scenario object. It's main function is to either
@@ -61,20 +59,21 @@ class Scenario(object):
 
         .. note:: If user wants to save a scenario, then model must be set
         """
-        (path_, savedir) = os.path.split(saveloc)
+        path_, savedir = os.path.split(saveloc)
         if path_ == '':
-            path_ = '.'     # relative to current directory
+            path_ = '.'
 
         if not os.path.exists(path_):
-            raise ValueError("{0} does not exist. \nCannot create '{1}'"\
+            raise ValueError('"{0}" does not exist. \nCannot create "{1}"'
                              .format(path_, savedir))
+
         if not os.path.exists(saveloc):
             os.mkdir(saveloc)
 
         self.saveloc = saveloc
         self.model = model
         self._certainspill_data = os.path.join(self.saveloc,
-                'spills_data_arrays.nc')
+                                               'spills_data_arrays.nc')
 
         # will be updated when _certainspill_data is saved
         self._uncertainspill_data = None
@@ -88,7 +87,6 @@ class Scenario(object):
         Clobber any existing files in 'saveloc'. It will only contain the
         files associated with 'model' that user wishes to save.
         """
-
         self._empty_save_dir()
 
         if self.model is None:
@@ -121,7 +119,6 @@ class Scenario(object):
 
         :returns: a model object re-created from the save files
         """
-
         model_dict = self.load_model_dict()
 
         # pop lists that correspond with ordered collections
@@ -139,7 +136,7 @@ class Scenario(object):
         model_dict['outputters'] = self._load_collection(l_outputters)
         model_dict['certain_spills'] = \
             self._load_collection(l_spills['certain_spills'])
-        if model_dict['uncertain']:
+        if ('uncertain' in model_dict and model_dict['uncertain']):
             model_dict['uncertain_spills'] = \
                 self._load_collection(l_spills['uncertain_spills'])
 
@@ -150,27 +147,26 @@ class Scenario(object):
 
         self.model = self.dict_to_obj(model_dict)
 
-        print 'load data ..'
         self._load_spill_data()
         return self.model
 
     def dict_to_json(self, dict_):
         """
-        convert the dict returned by object's to_dict method to valid json
+        Convert the dict returned by object's to_dict method to valid json
         format via colander schema
 
         It uses the modules_dict defined in gnome.persist to find the correct
         schema module.
 
-        :param dict_: dictionary returned by object's to_dict method.
-        :type dict_: dictionary containing object properties
+        :param dict_: Dictionary returned by object's to_dict method
+                      containing object properties
         """
+        gnome_mod, obj_name = dict_['obj_type'].rsplit('.', 1)
 
-        (gnome_mod, obj_name) = dict_['obj_type'].rsplit('.', 1)
-        to_eval = \
-            '{0}.{1}().serialize(dict_)'.format(modules_dict[gnome_mod],
-                obj_name)
+        to_eval = ('{0}.{1}().serialize(dict_)'
+                   .format(modules_dict[gnome_mod], obj_name))
         _to_json = eval(to_eval)
+
         return _to_json
 
     def _save_collection(self, coll_):
@@ -180,9 +176,8 @@ class Scenario(object):
         object, then converts it o valid json (dict_to_json),
         and finally saves it to file (_save_json_to_file)
 
-        :param coll_: ordered collection or iterable
+        :param OrderedCollection coll_: ordered collection to be saved
         """
-
         for obj in coll_:
             dict_ = obj.to_dict('create')
             self._save_json_to_file(self.dict_to_json(dict_), obj)
@@ -190,14 +185,15 @@ class Scenario(object):
     def _save_json_to_file(self, data, obj):
         """
         write json data to file
-        :param data: dict containing json data
+
+        :param dict data: JSON data to be saved
         :param obj: gnome object corresponding w/ data
         """
-
         fname = os.path.join(self.saveloc,
                              '{0}_{1}.json'.format(obj.__class__.__name__,
                              obj.id))
         data = self._move_data_file(data)  # if there is a
+
         with open(fname, 'w') as outfile:
             json.dump(data, outfile, indent=True)
 
@@ -214,11 +210,12 @@ class Scenario(object):
         for field in fields:
             if field.name not in to_json:
                 continue
+
             value = to_json[field.name]
+
             if os.path.exists(value) and os.path.isfile(value):
                 shutil.copy(value, self.saveloc)
-                to_json[field.name] = \
-                    os.path.split(to_json[field.name])[1]
+                to_json[field.name] = os.path.split(to_json[field.name])[1]
 
         return to_json
 
@@ -228,34 +225,33 @@ class Scenario(object):
         convert the dict returned by object's to_dict method to valid json
         format via colander schema
 
-        :param json_: dict containing json_ data
+        :param dict json_: JSON data to be converted
         """
+        gnome_mod, obj_name = json_['obj_type'].rsplit('.', 1)
 
-        (gnome_mod, obj_name) = json_['obj_type'].rsplit('.', 1)
-        to_eval = \
-            '{0}.{1}().deserialize(json_)'.format(modules_dict[gnome_mod],
-                obj_name)
+        to_eval = ('{0}.{1}().deserialize(json_)'
+                   .format(modules_dict[gnome_mod], obj_name))
         _to_dict = eval(to_eval)
+
         return _to_dict
 
     def dict_to_obj(self, obj_dict):
-        """
+        '''
         create object from a dict. The dict contains (keyword,value) pairs
         used to create new object
-        """
-
+        '''
         type_ = obj_dict.pop('obj_type')
         to_eval = '{0}.new_from_dict(obj_dict)'.format(type_)
         obj = eval(to_eval)
+
         return obj
 
     def load_model_dict(self):
-        """
+        '''
         Load model dict from *.json file.
         Pop 'map' key, create 'map' object and add to model dict.
         This dict is used in Model.new_from_dict(dict_) to create new Model
-        """
-
+        '''
         model_file = glob.glob(os.path.join(self.saveloc, 'Model_*.json'
                                ))
         if model_file == []:
@@ -272,7 +268,7 @@ class Scenario(object):
 
         # create map object and add to model_dict
 
-        (map_type, map_id) = model_dict['map']
+        map_type, map_id = model_dict['map']
         obj_json = self._find_and_load_json_file(map_id)
 
         dict_ = self.json_to_dict(obj_json)
@@ -283,16 +279,18 @@ class Scenario(object):
         return model_dict
 
     def _load_json_from_file(self, fname):
-        """ Look at state attribute of object. Find all fields with
+        '''
+        Look at state attribute of object. Find all fields with
         'isdatafile' attribute as True. If there is a key in json_data
         corresponding with 'name' of the fields with True 'isdatafile'
-        attribute, then append the saveloc path to the value """
-
+        attribute, then append the saveloc path to the value
+        '''
         with open(fname, 'r') as infile:
             json_data = json.load(infile)
 
         state = eval('{0}.state'.format(json_data['obj_type']))
         fields = state.get_field_by_attribute('isdatafile')
+
         for field in fields:
             if field.name not in json_data:
                 continue
@@ -309,6 +307,7 @@ class Scenario(object):
 
         obj_file = glob.glob(os.path.join(self.saveloc,
                              '*_{0}.json'.format(id_)))
+
         if len(obj_file) == 0:
             msg = 'No filename containing *_{0}.json found in {1}'
             raise IOError(msg.format(id_, os.path.abspath('.')))
@@ -319,6 +318,7 @@ class Scenario(object):
 
         obj_file = obj_file[0]
         obj_json = self._load_json_from_file(os.path.abspath(obj_file))
+
         return obj_json
 
     def _load_collection(self, coll_dict):
@@ -337,14 +337,15 @@ class Scenario(object):
                   any iterable that contains 'id_list' in the dict with above
                   format.
         """
-
         obj_list = []
+
         for info in coll_dict['id_list']:
             id_ = info[1]
             obj_json = self._find_and_load_json_file(id_)
             dict_ = self.json_to_dict(obj_json)
             obj = self.dict_to_obj(dict_)
             obj_list.append(obj)
+
         return obj_list
 
     def _load_movers_collection(self, movers_dict, l_env):
@@ -361,10 +362,9 @@ class Scenario(object):
         .. note:: If Wind object and Tide object are present, the objects must
                   be created and part of a list passed in as l_env
         """
-
         obj_list = []
-        for (type_, id_) in movers_dict['id_list']:
 
+        for (type_, id_) in movers_dict['id_list']:
             obj_json = self._find_and_load_json_file(id_)
             obj_name = string.rsplit(type_, '.', 1)[-1]
 
@@ -373,9 +373,8 @@ class Scenario(object):
             if obj_name == 'WindMover':
                 obj_dict.update({'wind': self._get_obj(l_env,
                                 obj_dict['wind_id'])})
-            elif obj_name == 'CatsMover' and obj_dict.get('tide_id') \
-                is not None:
-
+            elif (obj_name == 'CatsMover' and
+                  obj_dict.get('tide_id') is not None):
                 obj_dict.update({'tide': self._get_obj(l_env,
                                 obj_dict['tide_id'])})
 
@@ -388,7 +387,6 @@ class Scenario(object):
         """
         Get object by ID from list of objects
         """
-
         obj = [obj for obj in list_ if id_ in obj.id]
         if len(obj) == 0:
             msg = 'List does not contain an object with id_: {0}'
@@ -402,7 +400,6 @@ class Scenario(object):
 
     def _save_spill_data(self):
         """ save the data arrays for current timestep to NetCDF """
-
         nc_out = NetCDFOutput(self._certainspill_data,
                               which_data='all',
                               cache=self.model._cache)
@@ -414,14 +411,16 @@ class Scenario(object):
 
     def _load_spill_data(self):
         """ load NetCDF file and add spill data back in """
-
         if not os.path.exists(self._certainspill_data):
             return
 
         array_types = {}
 
-        for mover in self.model.movers:
-            array_types.update(mover.array_types)
+        for m in self.model.movers:
+            array_types.update(m.array_types)
+
+        for w in self.model.weatherers:
+            array_types.update(w.array_types)
 
         for sc in self.model.spills.items():
             if sc.uncertain:

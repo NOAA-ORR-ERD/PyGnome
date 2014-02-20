@@ -375,15 +375,16 @@ class Model(Serializable):
                    this remainder, which results in
                    1 more sub-step than we requested.)
         '''
-        sub_step = self._time_step / self.weathering_substeps
+        time_step = int(self._time_step)
+        sub_step = time_step / self.weathering_substeps
 
-        indexes = [idx for idx in range(0, self._time_step + 1, sub_step)]
+        indexes = [idx for idx in range(0, time_step + 1, sub_step)]
         res = [(idx, next_idx - idx)
                for idx, next_idx in zip(indexes, indexes[1:])]
 
-        if sum(res[-1]) < self._time_step:
+        if sum(res[-1]) < time_step:
             # collect the remaining slice
-            res.append((sum(res[-1]), self._time_step % sub_step))
+            res.append((sum(res[-1]), time_step % sub_step))
 
         res = [(self.model_time + timedelta(seconds=idx), delta)
                for idx, delta in res]

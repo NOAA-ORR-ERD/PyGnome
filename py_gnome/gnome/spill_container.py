@@ -129,10 +129,9 @@ class SpillContainerData(object):
         # check key/val that are not dicts
         val_is_dict = []
         for key, val in self.__dict__.iteritems():
-            """ compare dict not including _data_arrays """
+            'compare dict not including _data_arrays'
             if isinstance(val, dict):
                 val_is_dict.append(key)
-
             elif val != other.__dict__[key]:
                 return False
 
@@ -416,8 +415,9 @@ class SpillContainer(SpillContainerData):
                                                    axis=0)
 
     def __str__(self):
-        msg = ("gnome.spill_container.SpillContainer\nspill LE attributes: %s"
-               % self._data_arrays.keys())
+        msg = ('gnome.spill_container.SpillContainer\n'
+               'spill LE attributes: {0}'
+               .format(sorted(self._data_arrays.keys())))
         return msg
 
     __repr__ = __str__
@@ -438,7 +438,6 @@ class SpillContainerPairData(object):
         """
         initialize object with the spill_containers passed in.
         """
-
         if sc.uncertain:
             raise ValueError("sc is an uncertain SpillContainer")
         self._spill_container = sc

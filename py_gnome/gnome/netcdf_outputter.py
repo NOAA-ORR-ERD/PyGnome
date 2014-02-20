@@ -9,66 +9,71 @@ from datetime import datetime
 from collections import OrderedDict
 
 import netCDF4 as nc
-import numpy as np
 
-import gnome
+import numpy
+np = numpy
+
+from gnome import __version__, GnomeId, array_types
 from gnome.basic_types import oil_status, world_point_type
-from gnome import array_types
+
+from gnome.utilities.serializable import Serializable, Field
+from gnome.utilities.time_utils import round_time
+
 from gnome.outputter import Outputter
-from gnome.utilities import serializable, time_utils
 
-## Big dict that stores the attributes for the standard data arrays in the output
-var_attributes = {'time': {'long_name':'time since the beginning of the simulation',
-                           'standard_name':'time',
-                           'calendar':'gregorian',
-                           'standard_name':'time',
-                           'comment':'unspecified time zone',
-                           #units will get set based on data
-                           },
-                  'particle_count': {'units':'1',
-                                     'long_name':'number of particles in a given timestep',
-                                     'ragged_row_count':'particle count at nth timestep',
-                                     },
-                  'longitude': {'long_name':'longitude of the particle',
-                                'standard_name':'longitude',
-                                'units':'degrees_east',
-                            },
-                  'latitude': {'long_name':'latitude of the particle',
-                               'standard_name':'latitude',
-                               'units':'degrees_north',
-                              },
-                  'depth': {'long_name':'particle depth below sea surface',
-                            'standard_name':'depth',
-                            'units':'meters',
-                            'axis':'z positive down',
-                            },
-                  'mass': {'long_name':'mass of particle',
-                           'units':'grams',
-                           },
-                  'age': {'long_name':'age of particle from time of release',
-                          'units':'seconds',
-                          },
-                  'status_codes': {'long_name':'particle status code',
-                                   'flag_values': " ".join([ "%i" for i in oil_status._int]),
-                                   'flag_meanings': " ".join ( [ "%i: %s"%pair for pair in sorted(zip(oil_status._int,
-                                                      oil_status._attr) ) ] )
-                                  },
-                  'id': {'long_name':'particle ID',
+# Big dict that stores the attributes for the standard data arrays
+# in the output
+var_attributes = {
+    'time': {'long_name': 'time since the beginning of the simulation',
+             'standard_name': 'time',
+             'calendar': 'gregorian',
+             'standard_name': 'time',
+             'comment': 'unspecified time zone',
+             #units will get set based on data
+             },
+    'particle_count': {'units': '1',
+                       'long_name': 'number of particles in a given timestep',
+                       'ragged_row_count': 'particle count at nth timestep',
+                       },
+    'longitude': {'long_name': 'longitude of the particle',
+                  'standard_name': 'longitude',
+                  'units': 'degrees_east',
+              },
+    'latitude': {'long_name': 'latitude of the particle',
+                 'standard_name': 'latitude',
+                 'units': 'degrees_north',
+                },
+    'depth': {'long_name': 'particle depth below sea surface',
+              'standard_name': 'depth',
+              'units': 'meters',
+              'axis': 'z positive down',
+              },
+    'mass': {'long_name': 'mass of particle',
+             'units': 'grams',
+             },
+    'age': {'long_name': 'age of particle from time of release',
+            'units': 'seconds',
+            },
+    'status_codes': {'long_name': 'particle status code',
+                     'flag_values': " ".join(["%i" % i for i in oil_status._int]),
+                     'flag_meanings': " ".join(["%i: %s" % pair for pair in sorted(zip(oil_status._int,
+                                        oil_status._attr))])
+                    },
+    'id': {'long_name': 'particle ID',
+          },
+    'spill_num': {'long_name': 'spill to which the particle belongs',
+                 },
+    'droplet_diameter': {'long_name': 'diameter of oil droplet class',
+                         'units': 'meters'
                         },
-                  'spill_num': {'long_name':'spill to which the particle belongs',
-                               },
-                  'droplet_diameter': {'long_name': 'diameter of oil droplet class',
-                                       'units': 'meters'
-                                      },
-                  'rise_vel': {'long_name': 'rise velocity of oil droplet class',
-                                            'units': 'm s-1'},
-                  'next_positions':{},
-                  'last_water_positions':{},
-                  }
+    'rise_vel': {'long_name': 'rise velocity of oil droplet class',
+                              'units': 'm s-1'},
+    'next_positions': {},
+    'last_water_positions': {},
+    }
 
 
-class NetCDFOutput(Outputter, serializable.Serializable):
-
+class NetCDFOutput(Outputter, Serializable):
     """
     A NetCDFOutput object is used to write the model's data to a NetCDF file.
     It inherits from Outputter class and implements the same interface.
@@ -81,27 +86,27 @@ class NetCDFOutput(Outputter, serializable.Serializable):
                 os.path.join(base_dir,'sample_model.nc'), which_data='most')
 
     `which_data` flag is used to set which data to add to the netcdf file:
-        'standard' : teh basic stuff most people would want
-        'most': everything the model is tracking except the for-internal-use only arrays
-        'all': eveything tracked by the model (mostly used for diagnosticts of save files)
+        'standard' : the basic stuff most people would want
+        'most': everything the model is tracking except the internal-use-only
+                arrays
+        'all': everything tracked by the model (mostly used for diagnostics of
+               save files)
 
 
     .. note::
        cf_attributes is a class attribute: a dict
        that contains the global attributes per CF convention
-       
-       The attribute: `.arrays_to_output` is a set of the data arrays that will be
-       added to the netcdf file. array names may be added to or removed from
-       this set before a model run to customize what gets output:
+
+       The attribute: `.arrays_to_output` is a set of the data arrays that
+       will be added to the netcdf file. array names may be added to or removed
+       from this set before a model run to customize what gets output:
            `the_netcdf_outputter.arrays_to_output.add['rise_vel']`
-       
+
        Since some of the names of the netcdf variables are different from the
        names in the SpillContainer data_arrays, this list uses the netcdf names
-
     """
-
     cf_attributes = {'comment': 'Particle output from the NOAA PyGnome model',
-                     'source': 'PyGnome version %s'%gnome.__version__,
+                     'source': 'PyGnome version {0}'.format(__version__),
                      'references': 'TBD',
                      'feature_type': 'particle_trajectory',
                      'institution': 'NOAA Emergency Response Division',
@@ -110,7 +115,7 @@ class NetCDFOutput(Outputter, serializable.Serializable):
 
     ## the set of arrays we usually output -- i.e. the default
     standard_arrays = ['latitude',
-                       'longitude', # these are pulled from the 'positions' array
+                       'longitude',  # pulled from the 'positions' array
                        'depth',
                        'status_codes',
                        'spill_num',
@@ -130,26 +135,22 @@ class NetCDFOutput(Outputter, serializable.Serializable):
                               ]
 
     # define state for serialization
-
-    state = copy.deepcopy(serializable.Serializable.state)
+    state = copy.deepcopy(Serializable.state)
 
     # data file should not be moved to save file location!
-    state.add_field([ serializable.Field('netcdf_filename',
-                                          create=True,
-                                          update=True),
-                      serializable.Field('which_data', create=True, update=True),
-                      #serializable.Field('netcdf_format', create=True, update=True),
-                      serializable.Field('compress', create=True, update=True),
-                      serializable.Field('_start_idx', create=True),
-                      serializable.Field('_middle_of_run', create=True),
-                      ])
+    state.add_field([Field('netcdf_filename', create=True, update=True),
+                     Field('which_data', create=True, update=True),
+                     #Field('netcdf_format', create=True, update=True),
+                     Field('compress', create=True, update=True),
+                     Field('_start_idx', create=True),
+                     Field('_middle_of_run', create=True),
+                     ])
 
     @classmethod
     def new_from_dict(cls, dict_):
-        """
+        '''
         creates a new object from dictionary
-        """
-
+        '''
         _middle_of_run = dict_.pop('_middle_of_run', None)
         _start_idx = dict_.pop('_start_idx', None)
         obj = cls(**dict_)
@@ -161,28 +162,23 @@ class NetCDFOutput(Outputter, serializable.Serializable):
         # If prepare_for_model_run is called, these will be reset
         obj._middle_of_run = _middle_of_run
         obj._start_idx = _start_idx
+
         return obj
 
-    def __init__(self,
-                 netcdf_filename,
-                 which_data='standard', # options are 'standard', 'most', 'all'
-                 compress=True,
-                 id=None,
-                 **kwargs
-                 ):
+    def __init__(self, netcdf_filename, which_data='standard', compress=True,
+                 id=None, **kwargs):
         """
-
         Constructor for Net_CDFOutput object. It reads data from cache and
         writes it to a NetCDF4 format file using the CF convention
 
         :param netcdf_filename: Required parameter. The filename in which to
             store the NetCDF data.
         :type netcdf_filename: str. or unicode
-        
+
         :param which_data: If true, write all data to NetCDF, otherwise write
             only standard data. Default is False.
         :type which_data: string, one of: 'standard', 'most', 'all'
-        
+
         :param id: Unique Id identifying the newly created object (a UUID as a
             string). This is used when loading an object from a persisted
             state. User should never have to set this.
@@ -192,7 +188,7 @@ class NetCDFOutput(Outputter, serializable.Serializable):
         :param cache: sets the cache object from which to read data. The model
             will automatically set this param
 
-        :param output_timestep: default is None in which case everytime the
+        :param output_timestep: default is None in which case every time the
             write_output is called, output is written. If set, then output is
             written every output_timestep starting from model_start_time.
         :type output_timestep: timedelta object
@@ -208,7 +204,6 @@ class NetCDFOutput(Outputter, serializable.Serializable):
 
         use super to pass optional **kwargs to base class __init__ method
         """
-
         self._check_netcdf_filename(netcdf_filename)
         self._netcdf_filename = netcdf_filename
         self._uncertain = False
@@ -221,29 +216,31 @@ class NetCDFOutput(Outputter, serializable.Serializable):
         self._which_data = which_data.lower()
         self.arrays_to_output = set(self.standard_arrays)
 
-        # this is only updated in prepare_for_model_run if which_data is 'all' or 'most'
+        # this is only updated in prepare_for_model_run if which_data is
+        # 'all' or 'most'
         #self.arr_types = None
         self._format = 'NETCDF4'
         self._compress = compress
-        self._chunksize = 1024 # 1k is about right for 1000LEs and one time step.
-                               # up to 0.5MB tested better for large datasets, but
-                               # we don't want to have far-too-large files for the
-                               # smaller ones
-                               # The default in netcdf4 is 1 -- which works really badly
+
+        # 1k is about right for 1000LEs and one time step.
+        # up to 0.5MB tested better for large datasets, but
+        # we don't want to have far-too-large files for the
+        # smaller ones
+        # The default in netcdf4 is 1 -- which works really badly
+        self._chunksize = 1024
 
         # need to keep track of starting index for writing data since variable
         # number of particles are released
         self._start_idx = 0
 
-        self._gnome_id = gnome.GnomeId(id)
+        self._gnome_id = GnomeId(id)
         super(NetCDFOutput, self).__init__(**kwargs)
 
     @property
     def id(self):
-        """
+        '''
         Function returns the unique id to identify the object,
-        """
-
+        '''
         return self._gnome_id.id
 
     @property
@@ -257,8 +254,8 @@ class NetCDFOutput(Outputter, serializable.Serializable):
     @netcdf_filename.setter
     def netcdf_filename(self, new_name):
         if self.middle_of_run:
-            raise AttributeError('This attribute cannot be changed in the'
-                                 ' middle of a run')
+            raise AttributeError('This attribute cannot be changed in the '
+                                 'middle of a run')
         else:
             self._check_netcdf_filename(new_name)
             self._netcdf_filename = new_name
@@ -270,11 +267,12 @@ class NetCDFOutput(Outputter, serializable.Serializable):
     @which_data.setter
     def which_data(self, value):
         if self.middle_of_run:
-            raise AttributeError('This attribute cannot be changed in the'
-                                 ' middle of a run')
+            raise AttributeError('This attribute cannot be changed in the '
+                                 'middle of a run')
         else:
             if value not in ('standard', 'most', 'all'):
-                raise ValueError("which_data must be one of: 'standard', 'most', 'all'")
+                raise ValueError('which_data must be one of: '
+                                 '"standard", "most", "all"')
             else:
                 self._which_data = value
 
@@ -285,7 +283,8 @@ class NetCDFOutput(Outputter, serializable.Serializable):
     @chunksize.setter
     def chunksize(self, value):
         if self.middle_of_run:
-            raise AttributeError('chunksize can not be set in the middle of a run')
+            raise AttributeError('chunksize can not be set '
+                                 'in the middle of a run')
         else:
             self._chunksize = value
 
@@ -296,8 +295,8 @@ class NetCDFOutput(Outputter, serializable.Serializable):
     @compress.setter
     def compress(self, value):
         if self.middle_of_run:
-            raise AttributeError('This attribute cannot be changed in the'
-                                 ' middle of a run')
+            raise AttributeError('This attribute cannot be changed '
+                                 'in the middle of a run')
         else:
             self._compress = value
 
@@ -306,15 +305,14 @@ class NetCDFOutput(Outputter, serializable.Serializable):
         return self._format
 
     def _check_netcdf_filename(self, netcdf_filename):
-        """ basic checks to make sure the netcdf_filename is valid """
-
+        'basic checks to make sure the netcdf_filename is valid'
         if os.path.isdir(netcdf_filename):
             raise ValueError('netcdf_filename must be a file not a directory.')
 
-        if not os.path.exists(os.path.realpath(
-                                            os.path.dirname(netcdf_filename))):
-            raise ValueError('{0} does not appear to be a valid'
-                             ' path'.format(os.path.dirname(netcdf_filename)))
+        if not os.path.exists(os.path.realpath(os.path.dirname(netcdf_filename)
+                                               )):
+            raise ValueError('{0} does not appear to be a valid path'
+                             .format(os.path.dirname(netcdf_filename)))
 
     def _nc_file_exists_error(self, file_):
         """
@@ -326,19 +324,14 @@ class NetCDFOutput(Outputter, serializable.Serializable):
         created, but the first time it tries to write this file, it will check
         and raise an error if file exists
         """
-    
-
         if os.path.exists(file_):
-            raise ValueError('{0} file exists. Enter a filename that does not'
-                ' exist in which to save data.'.format(file_))
+            raise ValueError('{0} file exists. Enter a filename that '
+                             'does not exist in which to save data.'
+                             .format(file_))
 
-    def prepare_for_model_run(self,
-                              model_start_time,
-                              cache=None,
-                              uncertain=False,
-                              spills=None,
-                              **kwargs
-                              ):
+    def prepare_for_model_run(self, model_start_time,
+                              cache=None, uncertain=False, spills=None,
+                              **kwargs):
         """
         .. function:: prepare_for_model_run(model_start_time,
                                             cache=None,
@@ -361,17 +354,19 @@ class NetCDFOutput(Outputter, serializable.Serializable):
         the data itself is different, but they contain the same type of data
         arrays.
 
-        :param uncertain: Default is False. Model automatically sets this based
-            on whether uncertainty is on or off. If this is True then a
-            uncertain data is written to netcdf_filename + '_uncertain.nc'
-        :type uncertain: bool
+        :param bool uncertain: Default is False. Model automatically sets this
+                               based on whether uncertainty is on or off.
+                               If this is True then an uncertain data is
+                               written to netcdf_filename + '_uncertain.nc'
 
-        :param spills: If 'which_data' flag is set to 'all' or 'most', then model
-            must provide the model.spills object (SpillContainerPair object) so
-            NetCDF variables can be defined for the remaining data arrays. If
-            spills is None, but which_data flag is 'all' or 'most', a ValueError
-            will be raised. It does not make sense to write 'all' or 'most' but
-            not provide 'model.spills'.
+        :param spills: If 'which_data' flag is set to 'all' or 'most', then
+                       model must provide the model.spills object
+                       (SpillContainerPair object) so NetCDF variables can be
+                       defined for the remaining data arrays.
+                       If spills is None, but which_data flag is 'all' or
+                       'most', a ValueError will be raised.
+                       It does not make sense to write 'all' or 'most' but not
+                       provide 'model.spills'.
         :type spills: gnome.spill_container.SpillContainerPair object.
 
         .. note::
@@ -382,33 +377,33 @@ class NetCDFOutput(Outputter, serializable.Serializable):
         use super to pass model_start_time, cache=None and
         remaining **kwargs to base class method
         """
-
         super(NetCDFOutput, self).prepare_for_model_run(model_start_time,
                                                         cache,
                                                         **kwargs)
 
-        if ( self.which_data in ('all', 'most') ) and spills is None:
-            raise ValueError("'which_data' flag is '%s', however spills is None."
-                " Please provide valid model.spills so we know which"
-                " additional data to write."%self.which_data)
+        if spills is None and self.which_data in ('all', 'most'):
+            raise ValueError('"which_data" flag is "{0}", '
+                             'however spills is None.  '
+                             'Please provide valid model.spills so we know '
+                             'which additional data to write.'
+                             .format(self.which_data))
 
         self._uncertain = uncertain
 
         if self._uncertain:
-            (name, ext) = os.path.splitext(self.netcdf_filename)
-            self._u_netcdf_filename = '{0}_uncertain{1}'.format(name,
-                    ext)
+            name, ext = os.path.splitext(self.netcdf_filename)
+            self._u_netcdf_filename = '{0}_uncertain{1}'.format(name, ext)
             filenames = (self.netcdf_filename, self._u_netcdf_filename)
         else:
-            filenames = (self.netcdf_filename, )
+            filenames = (self.netcdf_filename,)
 
         for file_ in filenames:
             self._nc_file_exists_error(file_)
             ## create the netcdf files and write the standard stuff:
             with nc.Dataset(file_, 'w', format=self._format) as rootgrp:
                 ## fixme: why remove the "T" ??
-                self.cf_attributes['creation_date'] = time_utils.round_time(datetime.now(),
-                                                                            roundTo=1).isoformat()
+                self.cf_attributes['creation_date'] = \
+                            round_time(datetime.now(), roundTo=1).isoformat()
                 rootgrp.setncatts(self.cf_attributes)
                     #rootgrp.comment = self.cf_attributes['comment']
                     #rootgrp.source = self.cf_attributes['source']
@@ -418,17 +413,21 @@ class NetCDFOutput(Outputter, serializable.Serializable):
                     #rootgrp.convention = self.cf_attributes['conventions']
 
                 # create the dimensions we need
-                rootgrp.createDimension('time') # unlimited
-                rootgrp.createDimension('data') # unlimited
-                rootgrp.createDimension('two', 2) # not sure if it's a convension or if dimensions need to be names...
-                rootgrp.createDimension('three', 3) # 
+                # not sure if it's a convention or if dimensions
+                # need to be names...
+                rootgrp.createDimension('time')  # unlimited
+                rootgrp.createDimension('data')  # unlimited
+                rootgrp.createDimension('two', 2)
+                rootgrp.createDimension('three', 3)
+                rootgrp.createDimension('four', 4)
+                rootgrp.createDimension('five', 5)
 
                 # create the time variable
                 time_ = rootgrp.createVariable('time',
                                                np.float64,
                                                ('time', ),
                                                zlib=self._compress,
-                                               chunksizes=(self._chunksize,) )
+                                               chunksizes=(self._chunksize,))
                 time_.setncatts(var_attributes['time'])
                 time_.units = 'seconds since {0}'.format(
                         self._model_start_time.isoformat())
@@ -438,7 +437,7 @@ class NetCDFOutput(Outputter, serializable.Serializable):
                                             np.int32,
                                             ('time', ),
                                             zlib=self._compress,
-                                            chunksizes=(self._chunksize,) )
+                                            chunksizes=(self._chunksize,))
                 pc_.setncatts(var_attributes['particle_count'])
 
                 ## create the list of variables that we want to put in the file
@@ -447,6 +446,7 @@ class NetCDFOutput(Outputter, serializable.Serializable):
                         if var_name != 'positions':
                             # handled by latitude, longitude, depth
                             self.arrays_to_output.add(var_name)
+
                     if self.which_data == 'most':
                         # remove the ones we don't want
                         for var_name in self.usually_skipped_arrays:
@@ -462,7 +462,15 @@ class NetCDFOutput(Outputter, serializable.Serializable):
                     else:
                         at = getattr(array_types, var_name)
                         dt = at.dtype
-                        if at.shape == (3,): # total kludge for the cases we happen to have...
+
+                        # total kludge for the cases we happen to have...
+                        if at.shape == (5,):
+                            shape = ('data', 'five')
+                            chunksizes = (self._chunksize, 5)
+                        elif at.shape == (4,):
+                            shape = ('data', 'four')
+                            chunksizes = (self._chunksize, 4)
+                        elif at.shape == (3,):
                             shape = ('data', 'three')
                             chunksizes = (self._chunksize, 3)
                         elif at.shape == (2,):
@@ -478,11 +486,13 @@ class NetCDFOutput(Outputter, serializable.Serializable):
                                                  zlib=self._compress,
                                                  chunksizes=chunksizes,
                                                  )
+
                     # add attributes
                     try:
-                        var.setncatts( var_attributes[var_name] )
+                        var.setncatts(var_attributes[var_name])
                     except KeyError:
-                        pass # we won't get any attribues if they are not in the dict.
+                        # just continue if var_name not in the attributes
+                        pass
 
                 # if self.which_data in ('all', 'most'):
                 #     rootgrp.createDimension('world_point', 3)
@@ -522,19 +532,17 @@ class NetCDFOutput(Outputter, serializable.Serializable):
 
     def write_output(self, step_num, islast_step=False):
         """
-        write NetCDF output at the end of the step
+        Write NetCDF output at the end of the step
 
-        :param step_num: the model step number you want rendered.
-        :type step_num: int
+        :param int step_num: the model step number you want rendered.
+        :param bool islast_step: Default is False.
+                                 Flag that indicates that step_num is
+                                 last step.
+                                 If 'output_last_step' is True then this is
+                                 written out
 
-        :param islast_step: default is False. Flag that indicates that step_num
-            is last step. If 'output_last_step' is True then this is written
-            out
-        :type islast_step: bool
-
-        use super to call base class write_output method
+        Use super to call base class write_output method
         """
-
         super(NetCDFOutput, self).write_output(step_num, islast_step)
 
         if not self._write_step:
@@ -585,35 +593,31 @@ class NetCDFOutput(Outputter, serializable.Serializable):
                 'time_stamp': time_stamp}
 
     def rewind(self):
-        """
-        if rewound, delete both the files and expect prepare_for_model_run to
+        '''
+        If rewound, delete both the files and expect prepare_for_model_run to
         be called since rewind means start from beginning.
 
         Also call base class rewind to reset internal variables. Using super
-        """
-
+        '''
         super(NetCDFOutput, self).rewind()
+
         if os.path.exists(self.netcdf_filename):
             os.remove(self.netcdf_filename)
 
-        if self._u_netcdf_filename is not None \
-            and os.path.exists(self._u_netcdf_filename):
+        if (self._u_netcdf_filename is not None
+            and os.path.exists(self._u_netcdf_filename)):
             os.remove(self._u_netcdf_filename)
 
         self._middle_of_run = False
         self._start_idx = 0
 
-    def write_output_post_run(self,
-                              model_start_time,
-                              num_time_steps,
-                              cache=None,
-                              uncertain=False,
-                              spills=None,
+    def write_output_post_run(self, model_start_time, num_time_steps,
+                              cache=None, uncertain=False, spills=None,
                               **kwargs):
-        """
+        '''
         Define all the positional input arguments. Pass these onto baseclass
         write_output_post_run as correct kwargs
-        """
+        '''
         super(NetCDFOutput, self).write_output_post_run(model_start_time,
                                                         num_time_steps,
                                                         cache,
@@ -630,20 +634,19 @@ class NetCDFOutput(Outputter, serializable.Serializable):
         this class because the NetCDF functionality for PyGnome data with CF
         standard is captured here.
 
-        :param netcdf_file: Name of the NetCDF file from which to read the data
-        :type netcdf_file: str
-
-        :param time: Index of the 'time' variable (or time_step) for which
-            data is desired. Default is 0 so it returns data associated with
-            first timestamp.
-        :type time: datetime
-
-        :param which_data = 'standard': which data arrays are desired options are
-                            'standard', 'most', 'all', [list_of_array_names]
+        :param str netcdf_file: Name of the NetCDF file from which to read
+                                the data
+        :param datetime time: Index of the 'time' variable (or time_step)
+                              for which data is desired.
+                              Default is 0 so it returns data associated with
+                              first timestamp.
+        :param which_data='standard': Which data arrays are desired options are
+                                      ('standard', 'most', 'all',
+                                      [list_of_array_names])
         :type which_data: string or sequence of strings.
 
-        :returns: a dict containing standard data closest to the indicated
-            'time'. Standard data is defined as follows:
+        :return: A dict containing standard data closest to the indicated
+                 'time'. Standard data is defined as follows:
 
         Standard data arrays are numpy arrays of size N, where N is number of
         particles released at time step of interest. They are defined by the
@@ -660,7 +663,7 @@ class NetCDFOutput(Outputter, serializable.Serializable):
             'mass'              : NX1 array showing 'mass' of each particle
 
         standard_arrays = ['latitude',
-                           'longitude', # these are pulled from the 'positions' array
+                           'longitude', # pulled from the 'positions' array
                            'depth',
                            'status_codes',
                            'spill_num',
@@ -668,8 +671,6 @@ class NetCDFOutput(Outputter, serializable.Serializable):
                            'mass',
                            'age',
                            ]
-
-
         """
         if not os.path.exists(netcdf_file):
             raise IOError('File not found: {0}'.format(netcdf_file))
@@ -684,16 +685,16 @@ class NetCDFOutput(Outputter, serializable.Serializable):
                 # there should only be 1 time in file. Read and
                 # return data associated with it
                 if len(time_) > 1:
-                    raise ValueError("More than one time found in netcdf"
-                                     " file. Please specify time for which"
-                                     " data is desired")
+                    raise ValueError('More than one time found in netcdf '
+                                     'file. Please specify time for which '
+                                     'data is desired')
                 else:
                     index = 0
             else:
                 time_offset = nc.date2num(time, time_.units,
                                           calendar=time_.calendar)
                 if time_offset < 0:
-                    """ desired time is before start of model """
+                    'desired time is before start of model'
                     index = 0
                 else:
                     index = abs(time_[:] - time_offset).argmin()
@@ -704,17 +705,17 @@ class NetCDFOutput(Outputter, serializable.Serializable):
             _stop_ix = _start_ix + data.variables['particle_count'][index]
             elem = data.variables['particle_count'][index]
 
-            c_time = nc.num2date(time_[index],
-                                 time_.units,
+            c_time = nc.num2date(time_[index], time_.units,
                                  calendar=time_.calendar)
-            
+
             arrays_dict['current_time_stamp'] = np.array(c_time)
 
             ## figure out what arrays to read in:
             if which_data == 'standard':
                 data_arrays = set(klass.standard_arrays)
                 # swap out positions:
-                [data_arrays.discard(x) for x in ('latitude','longitude','depth')]
+                [data_arrays.discard(x)
+                 for x in ('latitude', 'longitude', 'depth')]
                 data_arrays.add('positions')
             elif which_data == 'all':
                 # pull them from the nc file
@@ -726,15 +727,14 @@ class NetCDFOutput(Outputter, serializable.Serializable):
                                                   'longitude',
                                                   'depth')]
                 data_arrays.add('positions')
-            else: # should be list of data arrays
+            else:  # should be list of data arrays
                 data_arrays = set(which_data)
 
             # get the data
             for array_name in data_arrays:
                 #special case time and positions:
                 if array_name == 'positions':
-                    positions = np.zeros((elem, 3),
-                                         dtype=gnome.basic_types.world_point_type)
+                    positions = np.zeros((elem, 3), dtype=world_point_type)
                     positions[:, 0] = data.variables['longitude'][_start_ix:_stop_ix]
                     positions[:, 1] = data.variables['latitude'][_start_ix:_stop_ix]
                     positions[:, 2] = data.variables['depth'][_start_ix:_stop_ix]

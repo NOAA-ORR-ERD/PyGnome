@@ -286,7 +286,7 @@ def test_load_midrun_ne_rewound_model(images_dir, uncertain):
     model = make_model(images_dir, uncertain)
 
     model.step()
-    print 'saving scnario ..'
+    print 'saving scenario ..'
     scene = Scenario(saveloc_, model)
     scene.save()
 
