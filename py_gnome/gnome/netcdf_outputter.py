@@ -132,6 +132,8 @@ class NetCDFOutput(Outputter, Serializable):
                               'windages',
                               'windage_range',
                               'windage_persist',
+                              'mass_components',
+                              'half_lives',
                               ]
 
     # define state for serialization
