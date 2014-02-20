@@ -30,6 +30,7 @@ class ObjectInModel(TupleSchema):
 class Model(base_schema.Id, MappingSchema):
 
     time_step = SchemaNode(Float())
+    weathering_substeps = SchemaNode(Int())
     start_time = SchemaNode(extend_colander.LocalDateTime(),
                             validator=validators.convertible_to_seconds)
     duration = SchemaNode(extend_colander.TimeDelta())  # put a constraint for max duration?
