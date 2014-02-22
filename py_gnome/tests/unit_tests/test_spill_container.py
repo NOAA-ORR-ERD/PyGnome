@@ -270,7 +270,7 @@ def test_data_setting_new():
     new_arr = np.ones((sc.num_released, 3), dtype=np.float64)
     sc['new_name'] = new_arr
 
-    assert 'new_name' in sc.data_arrays_dict
+    assert 'new_name' in sc.data_arrays
     assert 'new_name' in sc.array_types
     assert sc['new_name'] is new_arr
     assert_dataarray_shape_size(sc)
@@ -518,7 +518,7 @@ def test_element_types(elem_type, arr_types, sample_sc_no_uncertainty):
         spill_mask = sc.get_spill_mask(spill)
 
         for key in spill.element_type.initializers:
-            if key in sc.data_arrays_dict:
+            if key in sc.data_arrays:
                 if key == 'windage_range':
                     assert (np.all(sc[key][spill_mask] ==
                         spill.element_type.initializers[key].windage_range))
@@ -536,9 +536,7 @@ def test_element_types(elem_type, arr_types, sample_sc_no_uncertainty):
 
 
 def test_init_SpillContainerPair():
-    """
-    all this does is test that it can be initialized
-    """
+    'All this does is test that it can be initialized'
     SpillContainerPair()
     SpillContainerPair(True)
 
@@ -546,7 +544,7 @@ def test_init_SpillContainerPair():
 
 
 def test_SpillContainerPair_uncertainty():
-    """ test uncertainty property """
+    'test uncertainty property'
 
     u_scp = SpillContainerPair(True)
     u_scp.uncertain = False
@@ -559,7 +557,6 @@ def test_SpillContainerPair_uncertainty():
 
 
 class TestAddSpillContainerPair:
-
     start_time = datetime(2012, 1, 1, 12)
     start_time2 = datetime(2012, 1, 2, 12)
 
@@ -572,11 +569,10 @@ class TestAddSpillContainerPair:
         """
         tests that spills can be added to SpillContainerPair object
         """
-
         spill = PointLineSource(self.num_elements,
-                self.start_position, self.start_time)
+                                self.start_position, self.start_time)
         sp2 = PointLineSource(self.num_elements,
-                self.start_position2, self.start_time2)
+                              self.start_position2, self.start_time2)
         scp = SpillContainerPair(True)
 
         with raises(ValueError):
@@ -584,9 +580,9 @@ class TestAddSpillContainerPair:
 
     def test_exception_uncertainty(self):
         spill = PointLineSource(self.num_elements,
-                self.start_position, self.start_time)
+                                self.start_position, self.start_time)
         sp2 = PointLineSource(self.num_elements,
-                self.start_position2, self.start_time2)
+                              self.start_position2, self.start_time2)
         scp = SpillContainerPair(False)
 
         with raises(ValueError):
@@ -594,52 +590,44 @@ class TestAddSpillContainerPair:
 
     def test_add_spill(self):
         spill = [PointLineSource(self.num_elements,
-                 self.start_position, self.start_time) for i in
-                 range(2)]
+                                 self.start_position, self.start_time)
+                 for i in range(2)]
 
         scp = SpillContainerPair(False)
         scp += (spill[0], )
         scp += spill[1]
-        for sp_ix in zip(scp._spill_container.spills,
-                         range(len(spill))):
-            spill_ = sp_ix[0]
-            index = sp_ix[1]
-            assert spill_.id == spill[index].id
+
+        for sp, idx in zip(scp._spill_container.spills, range(len(spill))):
+            assert sp.id == spill[idx].id
 
     def test_add_spillpair(self):
         c_spill = [PointLineSource(self.num_elements,
-                   self.start_position, self.start_time) for i in
-                   range(2)]
+                                   self.start_position, self.start_time)
+                   for i in range(2)]
 
         u_spill = [PointLineSource(self.num_elements,
-                   self.start_position2, self.start_time2) for i in
-                   range(2)]
+                                   self.start_position2, self.start_time2)
+                   for i in range(2)]
 
         scp = SpillContainerPair(True)
 
         for sp_tuple in zip(c_spill, u_spill):
             scp += sp_tuple
 
-        for sp_ix in zip(scp._spill_container.spills,
-                         range(len(c_spill))):
-            spill = sp_ix[0]
-            index = sp_ix[1]
-            assert spill.id == c_spill[index].id
+        for sp, idx in zip(scp._spill_container.spills, range(len(c_spill))):
+            assert sp.id == c_spill[idx].id
 
-        for sp_ix in zip(scp._u_spill_container.spills,
-                         range(len(c_spill))):
-            spill = sp_ix[0]
-            index = sp_ix[1]
-            assert spill.id == u_spill[index].id
+        for sp, idx in zip(scp._u_spill_container.spills, range(len(c_spill))):
+            assert sp.id == u_spill[idx].id
 
     def test_to_dict(self):
         c_spill = [PointLineSource(self.num_elements,
-                   self.start_position, self.start_time) for i in
-                   range(2)]
+                                   self.start_position, self.start_time)
+                   for i in range(2)]
 
         u_spill = [PointLineSource(self.num_elements,
-                   self.start_position2, self.start_time2) for i in
-                   range(2)]
+                                   self.start_position2, self.start_time2)
+                   for i in range(2)]
 
         scp = SpillContainerPair(True)
 
@@ -662,9 +650,7 @@ class TestAddSpillContainerPair:
 
 
 def test_get_spill_mask():
-    """
-    Simple tests for get_spill_mask
-    """
+    'Simple tests for get_spill_mask'
 
     start_time0 = datetime(2012, 1, 1, 12)
     start_time1 = datetime(2012, 1, 2, 12)
@@ -672,18 +658,14 @@ def test_get_spill_mask():
     start_position = (23.0, -78.5, 0.0)
     num_elements = 5
     sc = SpillContainer()
-    sp0 = PointLineSource(num_elements, start_position,
-                                    start_time0)
 
-    sp1 = PointLineSource(num_elements, start_position,
-                                    start_time1,
-                                    end_position=(start_position[0]
-                                    + 0.2, start_position[1] + 0.2,
-                                    0.0), end_release_time=start_time1
-                                    + timedelta(hours=3))
-
-    sp2 = PointLineSource(num_elements, start_position,
-                                    start_time2)
+    sp0 = PointLineSource(num_elements, start_position, start_time0)
+    sp1 = PointLineSource(num_elements, start_position, start_time1,
+                          end_position=(start_position[0] + 0.2,
+                                        start_position[1] + 0.2,
+                                        0.0),
+                          end_release_time=start_time1 + timedelta(hours=3))
+    sp2 = PointLineSource(num_elements, start_position, start_time2)
 
     sc.spills += [sp0, sp1, sp2]
 
@@ -718,6 +700,9 @@ def test_eq_spill_container():
     sc2.release_elements(360, sp2.release_time)
 
     assert sc1 == sc2
+    assert sc2 == sc1
+    assert not (sc1 != sc2)
+    assert not (sc2 != sc1)
 
 
 def test_eq_allclose_spill_container():
@@ -752,6 +737,8 @@ def test_eq_allclose_spill_container():
 
     assert sc1 == sc2
     assert sc2 == sc1
+    assert not (sc1 != sc2)
+    assert not (sc2 != sc1)
 
 
 @pytest.mark.parametrize("uncertain", [False, True])
@@ -798,6 +785,9 @@ def test_eq_spill_container_pair(uncertain):
         sc[1].release_elements(360, sp2.release_time)
 
     assert scp1 == scp2
+    assert scp2 == scp1
+    assert not (scp1 != scp2)
+    assert not (scp2 != scp1)
 
 
 def test_ne_spill_container():
@@ -822,6 +812,9 @@ def test_ne_spill_container():
     sc2.release_elements(360, sp2.release_time)
 
     assert sc1 != sc2
+    assert sc2 != sc1
+    assert not (sc1 == sc2)
+    assert not (sc2 == sc1)
 
 
 def test_model_step_is_done():
@@ -829,19 +822,16 @@ def test_model_step_is_done():
     tests that correct elements are released when their status_codes is toggled
     to basic_types.oil_status.to_be_removed
     """
-
     release_time = datetime(2012, 1, 1, 12)
     start_time2 = datetime(2012, 1, 2, 12)
     start_position = (23.0, -78.5, 0.0)
     num_elements = 10
     sc = SpillContainer()
-    spill = PointLineSource(num_elements, start_position,
-            release_time)
 
-    sp2 = PointLineSource(num_elements, start_position,
-                                    start_time2)
+    sp1 = PointLineSource(num_elements, start_position, release_time)
+    sp2 = PointLineSource(num_elements, start_position, start_time2)
 
-    sc.spills += [spill, sp2]
+    sc.spills += [sp1, sp2]
 
     sc.prepare_for_model_run(windage_at)
 
@@ -879,18 +869,17 @@ def get_eq_spills():
     TODO: Currently does not persist the element_type object.
     spill.to_dict('create') does not persist this attribute - Fix this.
     """
-
     num_elements = 10
     release_time = datetime(2000, 1, 1, 1)
 
-    spill = PointLineSource(num_elements,
+    sp1 = PointLineSource(num_elements,
                             (28, -75, 0),
                             release_time,
                             element_type=floating(windage_range=(0, 0)))
-    spill2 = PointLineSource.new_from_dict(spill.to_dict('create'))
-    spill2.element_type = floating(windage_range=(0, 0))
+    sp2 = PointLineSource.new_from_dict(sp1.to_dict('create'))
+    sp2.element_type = floating(windage_range=(0, 0))
 
-    return (spill, spill2)
+    return (sp1, sp2)
 
 
 if __name__ == '__main__':
