@@ -16,7 +16,7 @@ from gnome.utilities.serializable import Serializable
 from gnome.spill_container import SpillContainerPair
 
 from gnome.movers import Mover, WindMover, CatsMover
-from gnome.weatherers.core import Weatherer
+from gnome.weatherers import Weatherer
 
 
 class Model(Serializable):

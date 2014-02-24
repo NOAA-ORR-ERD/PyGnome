@@ -23,7 +23,7 @@ from gnome.environment import Wind, Tide
 from gnome.model import Model
 from gnome.spill import point_line_release_spill
 from gnome.movers import RandomMover, WindMover, CatsMover
-from gnome.weatherers.core import Weatherer
+from gnome.weatherers import Weatherer
 
 from gnome.persist.scenario import Scenario
 from gnome.renderer import Renderer
