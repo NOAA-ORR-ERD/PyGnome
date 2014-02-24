@@ -11,7 +11,7 @@ import glob
 import copy
 
 import gnome    # implicitly used when loading from dict by new_from_dict
-from gnome.outputter import Outputter
+from gnome.outputters import Outputter
 from gnome.utilities.map_canvas import MapCanvas
 from gnome.utilities import serializable
 from gnome.utilities.file_tools import haz_files

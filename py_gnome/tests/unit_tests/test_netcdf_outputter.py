@@ -5,13 +5,14 @@ Tests for netcdf_outputter
 import os
 from datetime import datetime, timedelta
 
-import numpy as np
-import netCDF4 as nc
 import pytest
 
+import numpy as np
+import netCDF4 as nc
+
 import gnome
-from gnome.netcdf_outputter import NetCDFOutput
 from gnome.elements import floating
+from gnome.outputters import NetCDFOutput
 
 base_dir = os.path.dirname(__file__)
 
