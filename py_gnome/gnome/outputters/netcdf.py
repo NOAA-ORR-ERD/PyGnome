@@ -19,7 +19,7 @@ from gnome.basic_types import oil_status, world_point_type
 from gnome.utilities.serializable import Serializable, Field
 from gnome.utilities.time_utils import round_time
 
-from gnome.outputter import Outputter
+from . import Outputter
 
 # Big dict that stores the attributes for the standard data arrays
 # in the output
