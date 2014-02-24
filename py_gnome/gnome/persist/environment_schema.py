@@ -3,16 +3,9 @@ Created on Feb 26, 2013
 '''
 import datetime
 
-from colander import (
-    MappingSchema,
-    SchemaNode,
-    Bool,
-    String,
-    OneOf,
-    Float,
-    Range,
-    drop
-)
+from colander import (MappingSchema, SchemaNode,
+                      Bool, String, Float, Range,
+                      OneOf, drop)
 
 import gnome
 from gnome.persist import validators
@@ -82,5 +75,5 @@ class Wind(Id, MappingSchema):
 
 
 class Tide(Id, MappingSchema):
-    filename = SchemaNode( String(), missing=drop)
-    yeardata = SchemaNode( String() )
+    filename = SchemaNode(String(), missing=drop)
+    yeardata = SchemaNode(String())

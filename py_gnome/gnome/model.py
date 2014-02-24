@@ -22,6 +22,7 @@ from gnome.weatherers.core import Weatherer
 class Model(Serializable):
     'PyGNOME Model Class'
     _update = ['time_step',
+               'weathering_substeps',
                'start_time',
                'duration',
                'uncertain',
@@ -48,7 +49,7 @@ class Model(Serializable):
         l_weatherers = dict_.pop('weatherers')
         c_spills = dict_.pop('certain_spills')
 
-        if 'uncertain_spills' in dict_.keys():
+        if 'uncertain_spills' in dict_:
             u_spills = dict_.pop('uncertain_spills')
             l_spills = zip(c_spills, u_spills)
         else:
@@ -75,6 +76,7 @@ class Model(Serializable):
                  time_step=timedelta(minutes=15),
                  start_time=round_time(datetime.now(), 3600),
                  duration=timedelta(days=1),
+                 weathering_substeps=1,
                  map=gnome.map.GnomeMap(),
                  uncertain=False,
                  cache_enabled=False,
@@ -88,6 +90,8 @@ class Model(Serializable):
                                           object. Rounded to the nearest hour.
         :param duration=timedelta(days=1): How long to run the model,
                                            a timedelta object.
+        :param int weathering_substeps=1: How many weathering substeps to
+                                          run inside a single model time step.
         :param map=gnome.map.GnomeMap(): The land-water map.
         :param uncertain=False: Flag for setting uncertainty.
         :param cache_enabled=False: Flag for setting whether the model should
@@ -97,8 +101,8 @@ class Model(Serializable):
                    persisted model
         '''
         self.__restore__(time_step, start_time, duration,
-                         map, uncertain, cache_enabled,
-                         id)
+                         weathering_substeps,
+                         map, uncertain, cache_enabled, id)
 
         # register callback with OrderedCollection
         self.movers.register_callback(self._callback_add_mover,
@@ -108,8 +112,8 @@ class Model(Serializable):
                                           ('add', 'replace'))
 
     def __restore__(self, time_step, start_time, duration,
-                    map, uncertain, cache_enabled,
-                    id):
+                    weathering_substeps,
+                    map, uncertain, cache_enabled, id):
         '''
         Take out initialization that does not register the callback here.
         This is because new_from_dict will use this to restore the model state
@@ -133,6 +137,7 @@ class Model(Serializable):
         # default to now, rounded to the nearest hour
         self._start_time = start_time
         self._duration = duration
+        self.weathering_substeps = weathering_substeps
         self._map = map
         self.time_step = time_step  # this calls rewind() !
 
@@ -333,9 +338,8 @@ class Model(Serializable):
                 (sc['next_positions'])[:] = sc['positions']
 
                 # loop through the movers
-                for mover in self.movers:
-                    delta = mover.get_move(sc, self.time_step,
-                            self.model_time)
+                for m in self.movers:
+                    delta = m.get_move(sc, self.time_step, self.model_time)
                     sc['next_positions'] += delta
 
                 self.map.beach_elements(sc)
@@ -351,16 +355,41 @@ class Model(Serializable):
         - a weatherer modifies the data arrays in the spill container, so a
           particular time range should not be run multiple times.  It is
           expected that we are processing a sequence of contiguous time ranges.
-        - TODO: right now we just use the time range specified in the
-                model.  But if there are multiple sequential weathering
-                processes, some inaccuracy will occur.
-                A proposed solution is to 'super-sample' the model time
-                step so that it will be replaced with many smaller time
-                steps.
+        - Note: If there are multiple sequential weathering processes, some
+                inaccuracy could occur.  A proposed solution is to
+                'super-sample' the model time step so that it will be replaced
+                with many smaller time steps.  We'll have to see if this pans
+                out in practice.
         '''
         for sc in self.spills.items():
             for w in self.weatherers:
-                w.weather_elements(sc, self.time_step, self.model_time)
+                for model_time, time_step in self._split_into_substeps():
+                    w.weather_elements(sc, time_step, model_time)
+
+    def _split_into_substeps(self):
+        '''
+        :return: sequence of (datetime, timestep)
+         (Note: we divide evenly on second boundaries.
+                   Thus, there will likely be a remainder
+                   that needs to be included.  We include
+                   this remainder, which results in
+                   1 more sub-step than we requested.)
+        '''
+        time_step = int(self._time_step)
+        sub_step = time_step / self.weathering_substeps
+
+        indexes = [idx for idx in range(0, time_step + 1, sub_step)]
+        res = [(idx, next_idx - idx)
+               for idx, next_idx in zip(indexes, indexes[1:])]
+
+        if sum(res[-1]) < time_step:
+            # collect the remaining slice
+            res.append((sum(res[-1]), time_step % sub_step))
+
+        res = [(self.model_time + timedelta(seconds=idx), delta)
+               for idx, delta in res]
+
+        return res
 
     def step_is_done(self):
         '''
