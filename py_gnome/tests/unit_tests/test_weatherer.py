@@ -58,7 +58,8 @@ class TestWeatherer:
         assert weatherer.active == True
         assert weatherer.active_start == InfDateTime('-inf')
         assert weatherer.active_stop == InfDateTime('inf')
-        assert weatherer.array_types == {}
+        assert ('half_lives' in weatherer.array_types and
+            'mass_components' in weatherer.array_types)
 
     @pytest.mark.parametrize("test_sc", [sc, u_sc])
     def test_one_move(self, test_sc):
