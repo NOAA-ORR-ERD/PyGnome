@@ -7,6 +7,9 @@ import copy
 import numpy
 np = numpy
 
+import gnome
+from gnome import persist
+
 
 class Field(object):  # ,serializable.Serializable):
     '''
@@ -452,7 +455,7 @@ class Serializable(object):
     object as a string.
     """
 
-    state = State(create=['id', 'obj_type'])
+    _state = State(create=['id'])
 
     # =========================================================================
     # @classmethod
@@ -619,12 +622,12 @@ class Serializable(object):
                 # =============================================================
         # return self    # not required
 
-    def obj_type_to_dict(self):
+    #def obj_type_to_dict(self):
         """
         returns object type to save in dict.
         This is base implementation and can be over-ridden
         """
-        return '{0.__module__}.{0.__class__.__name__}'.format(self)
+    #    return '{0.__module__}.{0.__class__.__name__}'.format(self)
 
     def __eq__(self, other):
         """
@@ -681,3 +684,11 @@ class Serializable(object):
             return False
         else:
             return True
+
+    def serialize(self, dict_):
+        to_eval = ('{0}.{1}().serialize(dict_)'
+                   .format(persist.modules_dict[self.__class__.__module__],
+                       self.__class__.__name__))
+        json_ = eval(to_eval)
+        return json_
+
