@@ -56,7 +56,7 @@ class Wind(Id, MappingSchema):
 
     """
     validate data after deserialize, before it is given back to pyGnome's
-    from_dict to set state of object
+    from_dict to set _state of object
     """
 
     description = SchemaNode(String(), missing=drop)

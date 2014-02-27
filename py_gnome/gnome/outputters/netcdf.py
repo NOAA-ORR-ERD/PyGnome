@@ -136,11 +136,11 @@ class NetCDFOutput(Outputter, Serializable):
                               'half_lives',
                               ]
 
-    # define state for serialization
-    state = copy.deepcopy(Serializable.state)
+    # define _state for serialization
+    _state = copy.deepcopy(Serializable._state)
 
     # data file should not be moved to save file location!
-    state.add_field([Field('netcdf_filename', create=True, update=True),
+    _state.add_field([Field('netcdf_filename', create=True, update=True),
                      Field('which_data', create=True, update=True),
                      #Field('netcdf_format', create=True, update=True),
                      Field('compress', create=True, update=True),
@@ -183,7 +183,7 @@ class NetCDFOutput(Outputter, Serializable):
 
         :param id: Unique Id identifying the newly created object (a UUID as a
             string). This is used when loading an object from a persisted
-            state. User should never have to set this.
+            _state. User should never have to set this.
 
         Optional arguments passed on to base class (kwargs):
 
@@ -211,7 +211,7 @@ class NetCDFOutput(Outputter, Serializable):
         self._uncertain = False
         self._u_netcdf_filename = None
 
-        # flag to keep track of state of the object - is True after calling
+        # flag to keep track of _state of the object - is True after calling
         # prepare_for_model_run
         self._middle_of_run = False
 
@@ -342,7 +342,7 @@ class NetCDFOutput(Outputter, Serializable):
                                             **kwargs)
 
         Write global attributes and define dimensions and variables for NetCDF
-        file. This must be done in prepare_for_model_run because if model state
+        file. This must be done in prepare_for_model_run because if model _state
         changes, it is rewound and re-run from the beginning.
 
         This takes more than standard 'cache' argument. Some of these are

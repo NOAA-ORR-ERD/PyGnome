@@ -36,9 +36,9 @@ class Renderer(Outputter, MapCanvas, serializable.Serializable):
     _create = ['image_size', 'projection_class', 'draw_ontop']
 
     _create.extend(_update)
-    state = copy.deepcopy(serializable.Serializable.state)
-    state.add(create=_create, update=_update)
-    state.add_field(serializable.Field('filename', isdatafile=True,
+    _state = copy.deepcopy(serializable.Serializable._state)
+    _state.add(create=_create, update=_update)
+    _state.add_field(serializable.Field('filename', isdatafile=True,
                     create=True, read=True))
 
     @classmethod

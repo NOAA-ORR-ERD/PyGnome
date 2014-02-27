@@ -774,7 +774,7 @@ class TestSpatialRelease:
         self.sp.rewind()
 
     def test_SpatialRelease_rewind(self):
-        """ test rewind sets state to original """
+        """ test rewind sets _state to original """
         assert self.sp.get('num_released') == 0
         assert self.sp.release.start_time_invalid == True
 
@@ -849,7 +849,7 @@ class TestVerticalPlumeRelease:
         self.spill.rewind()
 
     def test_rewind(self):
-        ''' test rewind sets state to original '''
+        ''' test rewind sets _state to original '''
         assert self.spill.get('num_released') == 0
         assert self.spill.get('start_time_invalid') == True
 

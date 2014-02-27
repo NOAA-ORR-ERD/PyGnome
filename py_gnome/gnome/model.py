@@ -37,14 +37,14 @@ class Model(Serializable):
                'cache_enabled']
     _create = []
     _create.extend(_update)
-    state = copy.deepcopy(Serializable.state)
+    _state = copy.deepcopy(Serializable._state)
 
-    # no need to copy parent's state in this case
-    state.add(create=_create, update=_update)
+    # no need to copy parent's _state in this case
+    _state.add(create=_create, update=_update)
 
     @classmethod
     def new_from_dict(cls, dict_):
-        'Restore model from previously persisted state'
+        'Restore model from previously persisted _state'
         l_env = dict_.pop('environment')
         l_out = dict_.pop('outputters')
         l_movers = dict_.pop('movers')
@@ -118,7 +118,7 @@ class Model(Serializable):
                     map, uncertain, cache_enabled, id):
         '''
         Take out initialization that does not register the callback here.
-        This is because new_from_dict will use this to restore the model state
+        This is because new_from_dict will use this to restore the model _state
         when doing a midrun persistence.
         '''
 

@@ -35,9 +35,9 @@ class Release(object):
     _update = ['num_elements']
     _create = ['num_released', 'start_time_invalid']
     _create.extend(_update)
-    state = copy.deepcopy(serializable.Serializable.state)
-    state.remove('id')
-    state.add(create=_create, update=_update)
+    _state = copy.deepcopy(serializable.Serializable._state)
+    _state.remove('id')
+    _state.add(create=_create, update=_update)
 
     def __init__(self, num_elements=0, release_time=None):
         self.num_elements = num_elements
@@ -109,9 +109,9 @@ class Release(object):
         released).
 
         Base class sets 'num_released'=0 and 'start_time_invalid'=True
-        properties to original state.
+        properties to original _state.
         Subclasses should overload for additional functions required to reset
-        state.
+        _state.
         """
         self.num_released = 0
         self.start_time_invalid = True
@@ -133,14 +133,14 @@ class PointLineRelease(Release, serializable.Serializable):
     # not sure these should be user update able
     _create = ['prev_release_pos']
     _create.extend(_update)
-    state = copy.deepcopy(Release.state)
-    state.add(update=_update, create=_create)
+    _state = copy.deepcopy(Release._state)
+    _state.add(update=_update, create=_create)
 
     @classmethod
     def new_from_dict(cls, dict_):
         """
         create object using the same settings as persisted object.
-        In addition, set the state of other properties after initialization
+        In addition, set the _state of other properties after initialization
         """
 
         new_obj = cls(
@@ -374,8 +374,8 @@ class SpatialRelease(Release, serializable.Serializable):
     with their initial positions pre-specified
     """
 
-    state = copy.deepcopy(Release.state)
-    state.add(update=['start_position'], create=['start_position'])
+    _state = copy.deepcopy(Release._state)
+    _state.add(update=['start_position'], create=['start_position'])
 
     def __init__(
         self,
@@ -539,8 +539,8 @@ class Spill(serializable.Serializable, object):
     _update = ['on', 'release', 'element_type']
     _create = []
     _create.extend(_update)
-    state = copy.deepcopy(serializable.Serializable.state)
-    state.add(create=_create, update=_update, read=['num_released'])
+    _state = copy.deepcopy(serializable.Serializable._state)
+    _state.add(create=_create, update=_update, read=['num_released'])
 
     valid_vol_units = list(chain.from_iterable([item[1] for item in
                            unit_conversion.ConvertDataUnits['Volume'
@@ -555,7 +555,7 @@ class Spill(serializable.Serializable, object):
     def new_from_dict(cls, dict_):
         """
         create object using the same settings as persisted object.
-        In addition, set the state of other properties after initialization
+        In addition, set the _state of other properties after initialization
         """
         # create release object
         # create element_type object
@@ -697,11 +697,11 @@ class Spill(serializable.Serializable, object):
         objects. Check all properties here so nested objects properties
         can be checked in the __eq__ implementation within the nested objects
         """
-        if (self.state.get_field_by_attribute('create') !=
-            other.state.get_field_by_attribute('create')):
+        if (self._state.get_field_by_attribute('create') !=
+            other._state.get_field_by_attribute('create')):
             return False
 
-        for name in self.state.get_names('create'):
+        for name in self._state.get_names('create'):
             if not hasattr(self, name):
                 """
                 for an attribute like obj_type, base class has
@@ -782,9 +782,9 @@ class Spill(serializable.Serializable, object):
             rel_props = inspect.getmembers(self.release,
                             predicate=lambda props: \
                                 (False, True)[not inspect.ismethod(props)])
-            'remove state - update this after we change state to _state'
+            'remove _state - update this after we change _state to _state'
             rel_props = [a[0] for a in rel_props
-                            if not a[0].startswith('_') and a[0] != 'state']
+                            if not a[0].startswith('_') and a[0] != '_state']
 
             all_props.extend(rel_props)
 
@@ -792,9 +792,9 @@ class Spill(serializable.Serializable, object):
             et_props = inspect.getmembers(self.element_type,
                             predicate=lambda props: \
                                 (False, True)[not inspect.ismethod(props)])
-            'remove state - update this after we change state to _state'
+            'remove _state - update this after we change _state to _state'
             et_props = [a[0] for a in et_props
-                            if not a[0].startswith('_') and a[0] != 'state']
+                            if not a[0].startswith('_') and a[0] != '_state']
 
             all_props.extend(et_props)
 
@@ -804,7 +804,7 @@ class Spill(serializable.Serializable, object):
                 toadd = inspect.getmembers(val, lambda props: \
                                     (False, True)[not inspect.ismethod(props)])
                 i_props.extend([a[0] for a in toadd
-                            if not a[0].startswith('_') and a[0] != 'state'])
+                            if not a[0].startswith('_') and a[0] != '_state'])
 
             all_props.extend(i_props)
             return all_props

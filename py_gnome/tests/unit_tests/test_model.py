@@ -504,7 +504,7 @@ def test_all_movers(start_time, release_delay, duration):
                       != start_loc[:2])
     elif release_delay == duration:
         # particles are released after last step so no motion,
-        # only initial state
+        # only initial _state
         assert np.all(model.spills.LE('positions') == start_loc)
     else:
         # release_delay > duration so nothing released though model ran

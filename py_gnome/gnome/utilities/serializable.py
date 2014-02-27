@@ -22,7 +22,7 @@ class Field(object):  # ,serializable.Serializable):
         Constructor for the Field object.
         The Field object is used to describe the property of an object.
         For instance, if a property is required to re-create the object from
-        a persisted state, its 'create' attribute is True.
+        a persisted _state, its 'create' attribute is True.
         If the property describes a data file that will need to be moved
         when persisting the model, isdatafile should be True.
         The gnome.persist.scenario module contains a Scenario class that loads
@@ -113,7 +113,7 @@ class State(object):
 
     def __copy__(self):
         '''
-        shallow copy of state object so references original fields list
+        shallow copy of _state object so references original fields list
         '''
         new_ = type(self)()
         new_.__dict__.update(copy.copy(self.__dict__))
@@ -121,7 +121,7 @@ class State(object):
 
     def __deepcopy__(self, memo):
         '''
-        deep copy of state object so makes a copy of the fields list
+        deep copy of _state object so makes a copy of the fields list
         '''
         new_ = type(self)()
         new_.__dict__.update(copy.deepcopy(self.__dict__))
@@ -130,8 +130,8 @@ class State(object):
     def add_field(self, l_field):
         """
         Adds a Field object or a list of Field objects to fields attribute
-        
-        Either use this to add a property to the state object or use the 'add' method to add a property.
+
+        Either use this to add a property to the _state object or use the 'add' method to add a property.
         add_field gives more control since the attributes other than 'create','update','read' can be set
         directly when defining the Field object.
         """
@@ -226,7 +226,7 @@ class State(object):
     def update(self, l_names, **kwargs):
         """
         update the attributes of an existing field
-        Kwargs are key,value pairs defining the state of attributes.
+        Kwargs are key,value pairs defining the _state of attributes.
         It must be one of the valid attributes of Field object (see Field object __dict__ for valid attributes) 
         :param update:     True or False
         :param create:     True or False
@@ -234,8 +234,8 @@ class State(object):
         :param isdatafield:True or False
         
         Usage:
-        >>> state = State(read=['test'])
-        >>> state.update('test',read=False,update=True,create=True,isdatafile=True)
+        >>> _state = State(read=['test'])
+        >>> _state.update('test',read=False,update=True,create=True,isdatafile=True)
         
         .. note::An exception will be raised if both 'read' and 'update' are True for a given field
         """
@@ -317,9 +317,9 @@ class State(object):
         """ returns the property names in self.fields. Can return all field names, or fieldnames with 
         an attribute equal to True. attr can also be a list:
         
-        >>> state = State(read=['t0'],create=['t0','t1'])
-        >>> state.get_names(['read','create'])    # returns 't0'
-        >>> state.get_names('create')     # returns ['t0', 't1']
+        >>> _state = State(read=['t0'],create=['t0','t1'])
+        >>> _state.get_names(['read','create'])    # returns 't0'
+        >>> _state.get_names('create')     # returns ['t0', 't1']
         """
         if attr == 'all':
             return [field_.name for field_ in self.fields]
@@ -436,14 +436,14 @@ class Serializable(object):
     in a list.
 
     This class is intended as a mixin so to_dict and from_dict become part of
-    the object and the object must define a state attribute of type State().
+    the object and the object must define a _state attribute of type State().
 
-    The default state=State(create=['id']) is a static variable for this class
+    The default _state=State(create=['id']) is a static variable for this class
     It uses the same convention as State to obtain the lists, 'update' for
     updating  properties, 'read' for read-only properties and 'create' for a
     list of properties required to create new object.
 
-    The default state contains 'id' in the create list. This is because all
+    The default _state contains 'id' in the create list. This is because all
     objects in a Model need 'id' to create a new one.
 
     Similarly, 'obj_type' is required for all objects, this is so the scenario
@@ -461,19 +461,19 @@ class Serializable(object):
     # @classmethod
     # def add_state(cls, **kwargs):
     #    """
-    #    Each class that mixes-in Serializable will contain a state attribute
+    #    Each class that mixes-in Serializable will contain a _state attribute
     #    of type State.
-    #    The state should be a static member for each subclass. It is static
+    #    The _state should be a static member for each subclass. It is static
     #    because instances of the class will all have the same field names for
-    #    the state.
+    #    the _state.
     #
-    #    In addition, the state of the child class extends the state of the
+    #    In addition, the _state of the child class extends the _state of the
     #    parent class.
     #
     #    As such, this classmethod is available and used by each subclass in
-    #    __init__ to extend the definition of the parent class state attribute
+    #    __init__ to extend the definition of the parent class _state attribute
     #
-    #    It recursively looks for 'state' attribute in base classes
+    #    It recursively looks for '_state' attribute in base classes
     #    (cls.__bases__); gets the ('read','update','create') lists from each
     #    base class and adds;
     #    and creates a new State() object with its own lists and the lists of
@@ -482,22 +482,22 @@ class Serializable(object):
     #    NOTE: removes duplicates (repeated fields) from list. The lists in
     #    State refer to attributes of the object. By default ['id'] in create
     #    list will end up duplicated if one of the base classes of cls already
-    #    contained 'state' attribute
+    #    contained '_state' attribute
     #    """
     #    print "add_state"
     #    update = kwargs.pop('update',[])
     #    create = kwargs.pop('create',[])
     #    read   = kwargs.pop('read',[])
     #    for obj in cls.__bases__:
-    #        if 'state' in obj.__dict__:
-    #            update.extend( obj.state.get()['update'] )
-    #            create.extend( obj.state.get()['create'] )
-    #            read.extend( obj.state.get()['read'] )
+    #        if '_state' in obj.__dict__:
+    #            update.extend( obj._state.get()['update'] )
+    #            create.extend( obj._state.get()['create'] )
+    #            read.extend( obj._state.get()['read'] )
     #
     #    update = list( set(update) )
     #    create = list( set(create) )
     #    read = list( set(read) )
-    #    cls.state = State(update=update, create=create, read=read)
+    #    cls._state = State(update=update, create=create, read=read)
     # =========================================================================
 
     @classmethod
@@ -519,7 +519,7 @@ class Serializable(object):
         """
         returns a dictionary containing the serialized representation of this
         object.
-        By default it converts the 'update' list of the state object to dict;
+        By default it converts the 'update' list of the _state object to dict;
         however, do='create' or do='read' will return the dict with the
         corresponding list.
 
@@ -532,11 +532,11 @@ class Serializable(object):
         """
 
         if do == 'update':
-            list_ = self.state.get_names('update')
+            list_ = self._state.get_names('update')
         elif do == 'create':
-            list_ = self.state.get_names('create')
+            list_ = self._state.get_names('create')
         elif do == 'read':
-            list_ = self.state.get_names('read')
+            list_ = self._state.get_names('read')
         else:
             raise ValueError("input not understood. String must be one of following: 'update', 'create' or 'readonly'."
                              )
@@ -575,10 +575,10 @@ class Serializable(object):
 
     def from_dict(self, data):
         """
-        modifies state of the object using dictionary 'data'. 
-        Only the self.state.update list contains properties that can me modified for existing object
+        modifies _state of the object using dictionary 'data'. 
+        Only the self._state.update list contains properties that can me modified for existing object
         
-        Set the state of this object using the dictionary ``data`` by looking up
+        Set the _state of this object using the dictionary ``data`` by looking up
         the value of each key in ``data`` that is also in  `list_`. Input list_ 
         contains the object's attributes (or fields) updated with data
 
@@ -593,9 +593,9 @@ class Serializable(object):
         If neither method exists, then set the field with the value from
         ``data`` directly on the object.
         """
-        # return self._from_dict(self.state.update, data)
+        # return self._from_dict(self._state.update, data)
 
-        list_ = self.state.get_names('update')
+        list_ = self._state.get_names('update')
 
         for key in list_:
             if not key in data:
@@ -634,16 +634,16 @@ class Serializable(object):
         .. function:: __eq__(other)
 
         Since this class is designed as a mixin with one objective being to
-        save state of the object, then recreate a new object with the same
-        state.
+        save _state of the object, then recreate a new object with the same
+        _state.
 
         Define a base implementation of __eq__ so an object before persistence
         can be compared with a new object created after it is persisted.
         It can be overridden by the class with which it is mixed.
 
-        It calls to_dict(self.state.create) on both and checks the plain python
+        It calls to_dict(self._state.create) on both and checks the plain python
         types match.
-        Since attributes defined in state.create maybe different from
+        Since attributes defined in _state.create maybe different from
         attributes defined in the object, to_dict is used
 
         It does not compare numpy arrays - only the plain python types

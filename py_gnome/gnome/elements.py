@@ -24,26 +24,26 @@ Initializers for various element types
 class InitBaseClass(object):
     """
     created a base class that simply removes the 'id' field from
-    Serializable.state
+    Serializable._state
 
     All Init* classes will need to do this so just do so in a base class.
 
     todo/Note:
     This may change as the persistence code changes. Currently, 'id' and
-    'obj_type' are part of base Serializable.state
+    'obj_type' are part of base Serializable._state
     The 'id' was a unique identifier for all Gnome objects; however, it is
     only required by subset of objects so this may undergo a refactor
     """
-    state = copy.deepcopy(Serializable.state)
-    state.remove('id')
+    _state = copy.deepcopy(Serializable._state)
+    _state.remove('id')
 
 
 class InitWindages(InitBaseClass, Serializable):
     _update = ['windage_range', 'windage_persist']
     _create = []
     _create.extend(_update)
-    state = copy.deepcopy(InitBaseClass.state)
-    state.add(create=_create, update=_update)
+    _state = copy.deepcopy(InitBaseClass._state)
+    _state.add(create=_create, update=_update)
 
     def __init__(self, windage_range=(0.01, 0.04), windage_persist=900):
         """
@@ -175,7 +175,7 @@ class InitMassFromTotalMass(InitBaseClass, Serializable):
     Initialize the 'mass' array based on total mass spilled
     """
 
-    state = copy.deepcopy(InitBaseClass.state)
+    _state = copy.deepcopy(InitBaseClass._state)
 
     def initialize(self, num_new_particles, spill, data_arrays, substance):
         if spill.mass is None:
@@ -193,7 +193,7 @@ class InitMassFromVolume(InitBaseClass, Serializable):
     substance. No parameters, as it uses the volume specified elsewhere.
     """
 
-    state = copy.deepcopy(InitBaseClass.state)
+    _state = copy.deepcopy(InitBaseClass._state)
 
     def initialize(self, num_new_particles, spill, data_arrays, substance):
         if spill.volume is None:
@@ -210,7 +210,7 @@ class InitMassFromPlume(InitBaseClass, Serializable):
     """
     Initialize the 'mass' array based on mass flux from the plume spilled
     """
-    state = copy.deepcopy(InitBaseClass.state)
+    _state = copy.deepcopy(InitBaseClass._state)
 
     def initialize(self, num_new_particles, spill, data_arrays, substance):
         if spill.plume_gen is None:
@@ -361,7 +361,7 @@ class ValuesFromDistBase(object):
 
 
 class InitRiseVelFromDist(InitBaseClass, ValuesFromDistBase, Serializable):
-    state = copy.deepcopy(InitBaseClass.state)
+    _state = copy.deepcopy(InitBaseClass._state)
 
     def __init__(self, distribution='uniform', **kwargs):
         """
@@ -408,7 +408,7 @@ class InitRiseVelFromDist(InitBaseClass, ValuesFromDistBase, Serializable):
 
 
 class InitRiseVelFromDropletSizeFromDist(ValuesFromDistBase):
-    state = copy.deepcopy(InitBaseClass.state)
+    _state = copy.deepcopy(InitBaseClass._state)
 
     def __init__(self,
                  distribution='uniform',
@@ -493,8 +493,8 @@ class InitRiseVelFromDropletSizeFromDist(ValuesFromDistBase):
 
 
 class ElementType(Serializable):
-    state = copy.deepcopy(InitBaseClass.state)
-    state.add(create=['initializers'], update=['initializers'])
+    _state = copy.deepcopy(InitBaseClass._state)
+    _state.add(create=['initializers'], update=['initializers'])
 
     @classmethod
     def new_from_dict(cls, dict_):

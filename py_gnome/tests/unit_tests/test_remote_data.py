@@ -27,7 +27,7 @@ def test_get_datafile():
     """
     downloads CLISShio.txt to make sure get_datafile works as expected
     
-    removes the file sample_data/CLISShio.txt after downloading it to leave it in clean state
+    removes the file sample_data/CLISShio.txt after downloading it to leave it in clean _state
     """
 
     file_ = os.path.join(here, r'sample_data/CLISShio.txt')

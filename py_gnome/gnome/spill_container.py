@@ -56,7 +56,7 @@ class SpillContainerData(object):
         # following internal variable is used when comparing two SpillContainer
         # objects. When testing the data arrays are equal, use this tolerance
         # with numpy.allclose() method. Default is to make it 0 so arrays must
-        # match exactly. This will not be true when state is stored midway
+        # match exactly. This will not be true when _state is stored midway
         # through the run since positions are stored as single dtype as opposed
         # to double
         self._array_allclose_atol = 0

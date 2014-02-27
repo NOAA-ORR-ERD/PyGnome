@@ -449,10 +449,10 @@ def test_new_from_dict():
     wm_state.update({'wind': wind2})
     wm2 = WindMover.new_from_dict(wm_state)
 
-    # check serializable state is correct
+    # check serializable _state is correct
 
     assert all([wm.__getattribute__(k) == wm2.__getattribute__(k)
-               for k in WindMover.state.get_names('create') if k
+               for k in WindMover._state.get_names('create') if k
                != 'wind_id' and k != 'obj_type'])
     assert wm.wind.id == wm2.wind.id
 

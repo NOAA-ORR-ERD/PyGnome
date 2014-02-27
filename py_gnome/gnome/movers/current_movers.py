@@ -15,13 +15,13 @@ from gnome.cy_gnome import cy_cats_mover, cy_shio_time, cy_ossm_time, \
 
 class CatsMover(CyMover, serializable.Serializable):
 
-    state = copy.deepcopy(CyMover.state)
+    _state = copy.deepcopy(CyMover._state)
 
     _update = ['scale', 'scale_refpoint', 'scale_value']
     _create = ['tide_id']
     _create.extend(_update)
-    state.add(update=_update, create=_create, read=['tide_id'])
-    state.add_field(serializable.Field('filename', create=True,
+    _state.add(update=_update, create=_create, read=['tide_id'])
+    _state.add_field(serializable.Field('filename', create=True,
                     read=True, isdatafile=True))
 
     @classmethod
@@ -152,7 +152,7 @@ class CatsMover(CyMover, serializable.Serializable):
         """
         For updating the object from dictionary
         
-        'tide' object is not part of the state since it is not serialized/deserialized;
+        'tide' object is not part of the _state since it is not serialized/deserialized;
         however, user can still update the tide attribute with a new Tide object. That must
         be poped out of the dict here, then call super to process the standard dict_
         """
@@ -167,10 +167,10 @@ class GridCurrentMover(CyMover, serializable.Serializable):
 
     _update = ['uncertain_duration', 'uncertain_time_delay',
                'uncertain_cross', 'uncertain_along', 'current_scale']
-    state = copy.deepcopy(CyMover.state)
+    _state = copy.deepcopy(CyMover._state)
 
-    state.add(update=_update)
-    state.add_field([serializable.Field('filename', create=True,
+    _state.add(update=_update)
+    _state.add_field([serializable.Field('filename', create=True,
                     read=True, isdatafile=True),
                     serializable.Field('topology_file', create=True,
                     read=True, isdatafile=True)])
@@ -248,7 +248,7 @@ class GridCurrentMover(CyMover, serializable.Serializable):
         return info.format(self.mover, self)
 
     def __str__(self):
-        info = 'GridCurrentMover - current state.\n' \
+        info = 'GridCurrentMover - current _state.\n' \
             + '  uncertain_duration={0.uncertain_duration}\n' \
             + '  uncertain_time_delay={0.uncertain_time_delay}\n' \
             + '  uncertain_cross={0.uncertain_cross}\n' \

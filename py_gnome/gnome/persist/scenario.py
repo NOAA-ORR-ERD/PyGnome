@@ -80,8 +80,8 @@ class Scenario(object):
 
     def save(self):
         """
-        Method used to save the model state to saveloc
-        It saves the state of each object, including the model in JSON format
+        Method used to save the model _state to saveloc
+        It saves the _state of each object, including the model in JSON format
         in *.json files.
 
         Clobber any existing files in 'saveloc'. It will only contain the
@@ -108,7 +108,7 @@ class Scenario(object):
         for sc in self.model.spills.items():
             self._save_collection(sc.spills)
 
-        # persist model state since middle of run
+        # persist model _state since middle of run
         if self.model.current_time_step > -1:
             self._save_spill_data()
 
@@ -199,13 +199,13 @@ class Scenario(object):
 
     def _move_data_file(self, to_json):
         """
-        Look at state attribute of object. Find all fields with 'isdatafile'
+        Look at _state attribute of object. Find all fields with 'isdatafile'
         attribute as True. If there is a key in to_json corresponding with
         'name' of the fields with True 'isdatafile' attribute then move that
         datafile and update the key in the to_json to point to new location
         """
-        state = eval('{0}.state'.format(to_json['obj_type']))
-        fields = state.get_field_by_attribute('isdatafile')
+        _state = eval('{0}._state'.format(to_json['obj_type']))
+        fields = _state.get_field_by_attribute('isdatafile')
 
         for field in fields:
             if field.name not in to_json:
@@ -280,7 +280,7 @@ class Scenario(object):
 
     def _load_json_from_file(self, fname):
         '''
-        Look at state attribute of object. Find all fields with
+        Look at _state attribute of object. Find all fields with
         'isdatafile' attribute as True. If there is a key in json_data
         corresponding with 'name' of the fields with True 'isdatafile'
         attribute, then append the saveloc path to the value
@@ -288,8 +288,8 @@ class Scenario(object):
         with open(fname, 'r') as infile:
             json_data = json.load(infile)
 
-        state = eval('{0}.state'.format(json_data['obj_type']))
-        fields = state.get_field_by_attribute('isdatafile')
+        _state = eval('{0}._state'.format(json_data['obj_type']))
+        fields = _state.get_field_by_attribute('isdatafile')
 
         for field in fields:
             if field.name not in json_data:

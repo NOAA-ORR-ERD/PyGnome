@@ -45,19 +45,19 @@ for script in scripts:
  completed post model run for: {0}
 '''.format(script)
 
-    # save model state
+    # save model _state
 
     saveloc = os.path.join(os.path.dirname(script), 'save_model')
     model.rewind()  # make sure it is rewound so we're not doing a MIDRUN save which does not currently work
     script_runner.save(model, saveloc)
     print '''
- completed saving model state for: {0}
+ completed saving model _state for: {0}
 '''.format(script)
 
     try:
         script_runner.run_from_save(saveloc)
         print '''
- completed loading and running saved model state from: {0}
+ completed loading and running saved model _state from: {0}
 '''.format(saveloc)
     except Exception, ex:
         print ex
