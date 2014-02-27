@@ -7,6 +7,7 @@ the logic about where an when the elements are released
 """
 
 import copy
+import inspect
 from datetime import timedelta
 from itertools import chain
 
@@ -579,8 +580,6 @@ class Spill(serializable.Serializable, object):
         # Is this total mass of the spill?
         mass=None,
         mass_units='g',
-        windage_range=None,
-        windage_persist=None,
         id=None,
         ):
         """
@@ -638,19 +637,21 @@ class Spill(serializable.Serializable, object):
         if mass is not None and volume is not None:
             raise ValueError("'mass' and 'volume' cannot both be set")
 
-        if windage_range is not None:
-            if 'windages' not in self.element_type.initializers:
-                raise TypeError("'windage_range' cannot be set for specified"
-                                " element_type: {0}".format(element_type))
-            (self.element_type.initializers['windages']).windage_range = \
-                    windage_range
-
-        if windage_persist is not None:
-            if 'windages' not in self.element_type.initializers:
-                raise TypeError("'windage_persist' cannot be set for specified"
-                                " element_type: {0}".format(element_type))
-            (self.element_type.initializers['windages']).windage_persist = \
-                windage_persist
+#==============================================================================
+#         if windage_range is not None:
+#             if 'windages' not in self.element_type.initializers:
+#                 raise TypeError("'windage_range' cannot be set for specified"
+#                                 " element_type: {0}".format(element_type))
+#             (self.element_type.initializers['windages']).windage_range = \
+#                     windage_range
+# 
+#         if windage_persist is not None:
+#             if 'windages' not in self.element_type.initializers:
+#                 raise TypeError("'windage_persist' cannot be set for specified"
+#                                 " element_type: {0}".format(element_type))
+#             (self.element_type.initializers['windages']).windage_persist = \
+#                 windage_persist
+#==============================================================================
 
         self._gnome_id = GnomeId(id)
 
@@ -736,23 +737,92 @@ class Spill(serializable.Serializable, object):
     def id(self):
         return self._gnome_id.id
 
-    num_released = property(lambda self: self.release.num_released)
+    def set(self, prop, val):
+        """
+        sets an existing property. The property could be of one of the
+        contained objects like 'Release' or 'ElementType'
+        It can also be a property of one of the initializers contained in
+        the 'ElementType' object.
 
-    @property
-    def windage_range(self):
-        return self.element_type.initializers['windages'].windage_range
+        If the property doesn't exist for any of these, then an error is raised
+        since user cannot set a property that does not exist using this method
+        """
+        if prop == 'num_released':
+            raise AttributeError("cannot set attribute")
 
-    @windage_range.setter
-    def windage_range(self, val):
-        self.element_type.initializers['windages'].windage_range = val
+        # we don't want to add an attribute that doesn't already exist
+        # first check to see that the attribute exists, then change it else
+        # raise error
+        if hasattr(self.release, prop):
+            setattr(self.release, prop, val)
+        elif hasattr(self.element_type, prop):
+            setattr(self.element_type, prop, val)
+        else:
+            for init in self.element_type.initializers.values():
+                if hasattr(init, prop):
+                    setattr(init, prop, val)
+                    break
+                else:
+                    raise AttributeError("{0} attribute does not exist"
+                        " in element_type or release object".format(prop))
 
-    @property
-    def windage_persist(self):
-        return self.element_type.initializers['windages'].windage_persist
+    def get(self, prop=None):
+        """
+        if prop is None then return all the user defined properties of
+        'release' object and list of initializers in 'element_type' object
 
-    @windage_persist.setter
-    def windage_persist(self, val):
-        self.element_type.initializers['windages'].windage_persist = val
+        for get(), return all properties of embedded release object and
+        element_type initializer objects
+        """
+        'Return all properties'
+        if prop is None:
+            all_props = []
+
+            # release properties
+            rel_props = inspect.getmembers(self.release,
+                            predicate=lambda props: \
+                                (False, True)[not inspect.ismethod(props)])
+            'remove state - update this after we change state to _state'
+            rel_props = [a[0] for a in rel_props
+                            if not a[0].startswith('_') and a[0] != 'state']
+
+            all_props.extend(rel_props)
+
+            # element_type properties
+            et_props = inspect.getmembers(self.element_type,
+                            predicate=lambda props: \
+                                (False, True)[not inspect.ismethod(props)])
+            'remove state - update this after we change state to _state'
+            et_props = [a[0] for a in et_props
+                            if not a[0].startswith('_') and a[0] != 'state']
+
+            all_props.extend(et_props)
+
+            # properties for each of the initializer objects
+            i_props = []
+            for val in self.element_type.initializers.values():
+                toadd = inspect.getmembers(val, lambda props: \
+                                    (False, True)[not inspect.ismethod(props)])
+                i_props.extend([a[0] for a in toadd
+                            if not a[0].startswith('_') and a[0] != 'state'])
+
+            all_props.extend(i_props)
+            return all_props
+
+        if hasattr(self.release, prop):
+            return getattr(self.release, prop)
+
+        if hasattr(self.element_type, prop):
+            return getattr(self.element_type, prop)
+
+        for init in self.element_type.initializers.values():
+            if hasattr(init, prop):
+                return getattr(init, prop)
+
+        # nothing returned, then property was not found - raise exception or
+        # return None?
+        raise AttributeError("{0} attribute does not exist in element_type"
+            " or release object".format(prop))
 
     @property
     def volume_units(self):

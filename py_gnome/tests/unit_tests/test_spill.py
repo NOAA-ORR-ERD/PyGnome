@@ -169,25 +169,25 @@ class Test_point_line_release_spill:
         Also so we can keep appending to data_arrays since that is what the
         SpillContainer will work until a rewind.
         """
-        prev_num_rel = sp.num_released
+        prev_num_rel = sp.get('num_released')
         num = sp.num_elements_to_release(release_time, timestep)
         assert num == expected_num_released
 
         # updated after set_newparticle_values is called
-        assert prev_num_rel == sp.num_released
+        assert prev_num_rel == sp.get('num_released')
 
         if num > 0:
             # only invoked if particles are released
             data_arrays = mock_append_data_arrays(arr_types, num, data_arrays)
             sp.set_newparticle_values(num, release_time, timestep, data_arrays)
-            assert sp.num_released == prev_num_rel + expected_num_released
+            assert sp.get('num_released') == prev_num_rel + expected_num_released
         else:
             # initialize all data arrays even if no particles are released
             if data_arrays == {}:
                 data_arrays = mock_append_data_arrays(arr_types, num,
                                                       data_arrays)
 
-        assert data_arrays['positions'].shape == (sp.num_released, 3)
+        assert data_arrays['positions'].shape == (sp.get('num_released'), 3)
 
         return data_arrays
 
@@ -284,12 +284,12 @@ class Test_point_line_release_spill:
 
         # reset and try again
         sp.rewind()
-        assert sp.num_released == 0
+        assert sp.get('num_released') == 0
         num = sp.num_elements_to_release(self.release_time - timedelta(10),
                                          timestep)
         #assert num is None
         assert num == 0
-        assert sp.num_released == 0
+        assert sp.get('num_released') == 0
 
         # release all particles
         data_arrays = self.release_and_assert(sp, self.release_time,
@@ -337,7 +337,7 @@ class Test_point_line_release_spill:
                                 ts[ix], data_arrays, exp_num_released[ix])
             assert np.alltrue(data_arrays['positions'] == self.start_position)
 
-        assert sp.num_released == sp.release.num_elements
+        assert sp.get('num_released') == sp.release.num_elements
 
         # rewind and reset data arrays for new release
         sp.rewind()
@@ -371,7 +371,7 @@ class Test_point_line_release_spill:
         assert np.array_equal(data_arrays['positions'][:, 1],
                               np.linspace(28, 29, 11))
 
-        assert sp.num_released == 11
+        assert sp.get('num_released') == 11
 
     @pytest.mark.parametrize(('start_position', 'end_position'), nom_positions)
     def test_cont_line_release_first_timestep(self,
@@ -402,7 +402,7 @@ class Test_point_line_release_spill:
         assert np.array_equal(data_arrays['positions'][:, 1],
                               np.linspace(28, 29, 11))
 
-        assert sp.num_released == 11
+        assert sp.get('num_released') == 11
 
     @pytest.mark.parametrize(('start_position', 'end_position'), nom_positions)
     def test_cont_line_release_multiple_timesteps(self,
@@ -442,14 +442,14 @@ class Test_point_line_release_spill:
             data_arrays = self.release_and_assert(sp,
                             self.release_time + delay_after_rel_time[ix],
                             ts[ix], data_arrays, exp_elems[ix])
-            assert np.array_equal(
-                    data_arrays['positions'][:, 0], lats[:sp.num_released])
-            assert np.array_equal(
-                    data_arrays['positions'][:, 1], lons[:sp.num_released])
+            assert np.array_equal(data_arrays['positions'][:, 0],
+                lats[:sp.get('num_released')])
+            assert np.array_equal(data_arrays['positions'][:, 1],
+                lons[:sp.get('num_released')])
 
             if np.any(z != 0):
-                assert np.array_equal(
-                    data_arrays['positions'][:, 2], z[:sp.num_released])
+                assert np.array_equal(data_arrays['positions'][:, 2],
+                    z[:sp.get('num_released')])
 
     @pytest.mark.parametrize(('start_position', 'end_position'), nom_positions)
     def test_cont_line_release_vary_timestep(self, start_position,
@@ -491,7 +491,7 @@ class Test_point_line_release_spill:
 
                 var_delta_t = mult * delta_t
                 timestep_min = var_delta_t.seconds / 60
-                exp_num_rel = min(sp.release.num_elements - sp.num_released,
+                exp_num_rel = min(sp.get('num_elements') - sp.get('num_released'),
                                   num_rel_per_min * timestep_min)
 
             data_arrays = self.release_and_assert(sp,
@@ -700,7 +700,7 @@ def test_line_release_with_one_element():
 
     sp.set_newparticle_values(num, release_time, time_step.total_seconds(),
                                       data_arrays)
-    assert sp.num_released == 1
+    assert sp.get('num_released') == 1
     assert np.array_equal(data_arrays['positions'], [start_pos])
 
 
@@ -775,7 +775,7 @@ class TestSpatialRelease:
 
     def test_SpatialRelease_rewind(self):
         """ test rewind sets state to original """
-        assert self.sp.num_released == 0
+        assert self.sp.get('num_released') == 0
         assert self.sp.release.start_time_invalid == True
 
     def test_SpatialRelease_0_elements(self):
@@ -813,7 +813,7 @@ class TestSpatialRelease:
         (data_arrays, num) = release_elements(self.sp,
                                             self.sp.release.release_time, 600)
 
-        assert (self.sp.num_released == self.sp.release.num_elements and
+        assert (self.sp.get('num_released') == self.sp.release.num_elements and
                 self.sp.release.num_elements == num)
         assert np.alltrue(data_arrays['positions'] == self.start_positions)
 
@@ -823,7 +823,7 @@ class TestSpatialRelease:
         """
         (data_arrays, num) = release_elements(self.sp,
                                             self.sp.release.release_time, 600)
-        assert (self.sp.num_released == self.sp.release.num_elements and
+        assert (self.sp.get('num_released') == self.sp.release.num_elements and
                 self.sp.release.num_elements == num)
 
         (data_arrays, num) = release_elements(self.sp,
@@ -850,8 +850,8 @@ class TestVerticalPlumeRelease:
 
     def test_rewind(self):
         ''' test rewind sets state to original '''
-        assert self.spill.release.num_released == 0
-        assert self.spill.release.start_time_invalid == True
+        assert self.spill.get('num_released') == 0
+        assert self.spill.get('start_time_invalid') == True
 
     def test_release_bounds(self):
         '''
@@ -970,26 +970,26 @@ webgnome works. These will eventually be removed
 """
 
 
-class TestWindageProps:
-    def test_exceptions(self):
-        with pytest.raises(ValueError):
-            Spill(Release(), windage_range=(-1, 0))
+def test_setget():
+    """
+    set a couple of properties of release object and windages initializer to
+    test that it works
+    """
+    rel_time = datetime.now()
+    spill = point_line_release_spill(10, (0, 0, 0), rel_time)
+    assert len(spill.get()) > 1
+    assert spill.get('num_elements') == 10
+    assert spill.get('release_time') == rel_time
 
-    def test_windage_range(self):
-        spill = Spill(Release())
-        assert spill.windage_range == (0.01, 0.04)
-        spill.windage_range = (0, 0.03)
-        assert spill.windage_range == (0.0, 0.03)
-        assert (spill.element_type.initializers['windages'].windage_range ==
-                spill.windage_range)
+    spill.set('num_elements', 100)
+    assert spill.get('num_elements') == 100
 
-    def test_windage_persist(self):
-        spill = Spill(Release())
-        assert spill.windage_persist == 900
-        spill.windage_persist = 100
-        assert spill.windage_persist == 100
-        assert (spill.element_type.initializers['windages'].windage_persist ==
-                spill.windage_persist)
+    new_time = datetime(2014, 1, 1, 0, 0, 0)
+    spill.set('release_time', new_time)
+    assert spill.get('release_time') == new_time
+
+    spill.set('windage_persist', -1)
+    assert spill.get('windage_persist') == -1
 
 if __name__ == '__main__':
 

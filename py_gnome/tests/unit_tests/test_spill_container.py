@@ -181,22 +181,22 @@ def test_rewind():
 
     assert sc.num_released == num_elements * len(spills)
     for spill in spills:
-        assert spill.num_released == spill.release.num_elements
+        assert spill.get('num_released') == spill.release.num_elements
 
     sc.rewind()
     assert sc.num_released == 0
     assert_dataarray_shape_size(sc)
     for spill in spills:
-        assert spill.num_released == 0
+        assert spill.get('num_released') == 0
         assert spill.release.start_time_invalid
 
 
 def test_data_access():
-    sp = sample_sc_release()
+    sc = sample_sc_release()
 
-    sp['positions'] += (3.0, 3.0, 3.0)
+    sc['positions'] += (3.0, 3.0, 3.0)
 
-    assert np.array_equal(sp['positions'], np.ones((sp.num_released, 3),
+    assert np.array_equal(sc['positions'], np.ones((sc.num_released, 3),
                           dtype=world_point_type) * 3.0)
 
 

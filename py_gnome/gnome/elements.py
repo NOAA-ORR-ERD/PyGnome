@@ -83,10 +83,10 @@ class InitWindages(InitBaseClass, Serializable):
 
     @windage_range.setter
     def windage_range(self, val):
-        if np.any(np.asarray(val) < 0):
+        if np.any(np.asarray(val) < 0) or np.asarray(val).size != 2:
             raise ValueError("'windage_range' >= (0, 0). "
-                             "Nominal values vary between 1% to 4%, "
-                             "so default windage_range=(0.01, 0.04)")
+                             "Nominal values vary between 1% to 4%. "
+                             "Default windage_range=(0.01, 0.04)")
         self._windage_range = val
 
     def initialize(self, num_new_particles, spill, data_arrays,
