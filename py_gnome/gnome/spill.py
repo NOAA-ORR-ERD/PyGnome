@@ -33,7 +33,9 @@ class Release(object):
     It contains interface for Release objects
     """
     _update = ['num_elements']
-    _create = ['num_released', 'start_time_invalid']
+
+    # obj_type is no longer part of default so add it explicitly here
+    _create = ['num_released', 'start_time_invalid', 'obj_type']
     _create.extend(_update)
     _state = copy.deepcopy(serializable.Serializable._state)
     _state.remove('id')

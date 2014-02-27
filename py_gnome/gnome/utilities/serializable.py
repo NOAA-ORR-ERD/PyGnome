@@ -127,6 +127,18 @@ class State(object):
         new_.__dict__.update(copy.deepcopy(self.__dict__))
         return new_
 
+    def __contains__(self, name):
+        """
+        given the name as a string, it tests whether the 'fields' attribute
+        contains a 'field' with user specified name. The 'fields' attribute is
+        a list of 'Field' objects corresponding with properties that are
+        serialized
+        """
+        if name in [f.name for f in self.fields]:
+            return True
+
+        return False
+
     def add_field(self, l_field):
         """
         Adds a Field object or a list of Field objects to fields attribute
@@ -622,12 +634,12 @@ class Serializable(object):
                 # =============================================================
         # return self    # not required
 
-    #def obj_type_to_dict(self):
+    def obj_type_to_dict(self):
         """
         returns object type to save in dict.
         This is base implementation and can be over-ridden
         """
-    #    return '{0.__module__}.{0.__class__.__name__}'.format(self)
+        return '{0.__module__}.{0.__class__.__name__}'.format(self)
 
     def __eq__(self, other):
         """
@@ -685,10 +697,39 @@ class Serializable(object):
         else:
             return True
 
-    def serialize(self, dict_):
-        to_eval = ('{0}.{1}().serialize(dict_)'
-                   .format(persist.modules_dict[self.__class__.__module__],
-                       self.__class__.__name__))
-        json_ = eval(to_eval)
-        return json_
+    def _dict_to_serialize(self, do='update'):
+        """
+        take object and call its to_dict method to convert object to python
+        dict for serialization.
 
+        adds 'obj_type' field to _state for 'create' attribute
+        """
+        if 'obj_type' not in self._state:
+            self._state.add(create=['obj_type'])
+
+        dict_ = self.to_dict(do)
+
+        return dict_
+
+    def serialize(self, do='update'):
+        """
+        1. add 'obj_type' field to _state for 'create' attribute so it is
+                contained in serialized data
+        2. do serialization and return json
+
+        :param do: tells object where serialization is for update or for
+            creating a new object
+        :returns: json format of serialized data
+
+        Note: creating a new object versus 'update' or 'read' has a different
+            set of fields for serialization so 'do' is required.
+            todo: revisit this to see if it still makes sense to have different
+            attributes for different operations like 'update', 'create', 'read'
+        """
+        dict_ = self._dict_to_serialize(do)
+        to_eval = ('{0}.{1}().serialize({2})'
+                   .format(persist.modules_dict[self.__class__.__module__],
+                       self.__class__.__name__, dict_))
+        json_ = eval(to_eval)
+
+        return json_

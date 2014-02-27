@@ -36,6 +36,14 @@ class InitBaseClass(object):
     """
     _state = copy.deepcopy(Serializable._state)
     _state.remove('id')
+    _state.add(create=['obj_type'])  # no longer part of default so add it
+
+    def initialize(self):
+        """
+        all classes that derive from Base class must implement initialize
+        method
+        """
+        pass
 
 
 class InitWindages(InitBaseClass, Serializable):
