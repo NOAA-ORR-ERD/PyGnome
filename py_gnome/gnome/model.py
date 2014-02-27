@@ -16,7 +16,9 @@ from gnome.utilities.serializable import Serializable
 from gnome.spill_container import SpillContainerPair
 
 from gnome.movers import Mover, WindMover, CatsMover
-from gnome.weatherers.core import Weatherer
+from gnome.weatherers import Weatherer
+
+from gnome.outputters import Outputter
 
 
 class Model(Serializable):
@@ -132,7 +134,7 @@ class Model(Serializable):
         self._cache.enabled = cache_enabled
 
         # list of output objects
-        self.outputters = OrderedCollection(dtype=gnome.outputter.Outputter)
+        self.outputters = OrderedCollection(dtype=Outputter)
 
         # default to now, rounded to the nearest hour
         self._start_time = start_time

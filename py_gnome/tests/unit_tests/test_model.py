@@ -28,7 +28,7 @@ from gnome.environment import Wind, Tide
 from gnome.movers.simple_mover import SimpleMover
 from gnome.movers import RandomMover, WindMover, CatsMover
 
-from gnome.weatherers.core import Weatherer
+from gnome.weatherers import Weatherer
 from gnome.renderer import Renderer
 
 from gnome.model import Model

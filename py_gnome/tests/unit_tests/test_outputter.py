@@ -11,7 +11,7 @@ import math
 import pytest
 
 import gnome
-from gnome.outputter import Outputter
+from gnome.outputters import Outputter
 from gnome.elements import floating
 
 

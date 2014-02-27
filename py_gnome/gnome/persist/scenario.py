@@ -13,7 +13,7 @@ import shutil
 #import netCDF4 as nc
 
 import gnome    # used implicitly by eval()
-from gnome.netcdf_outputter import NetCDFOutput
+from gnome.outputters import NetCDFOutput
 
 from gnome.persist import (
     modules_dict,
