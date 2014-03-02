@@ -18,6 +18,7 @@ from hazpy import unit_conversion
 uc = unit_conversion
 
 import gnome    # required by new_from_dict
+from gnome.persist import modules_dict
 from gnome import elements, GnomeId
 from gnome.basic_types import world_point_type
 from gnome.utilities import serializable
@@ -980,6 +981,20 @@ class Spill(serializable.Serializable, object):
         self.release.set_newparticle_positions(num_new_particles, current_time,
                                                time_step, data_arrays)
 
+    def serialize(self, do='update'):
+        """
+        override base serialize implementation
+        Need to add node for release object and element_type object
+        """
+        dict_ = self._dict_to_serialize(do)
+        to_eval = ('{0}.{1}()'
+                   .format(modules_dict[self.__class__.__module__],
+                       self.__class__.__name__))
+        schema = eval(to_eval)
+        #schema.add()
+        json_ = schema.serialize(dict_)
+
+        return json_
 
 """ Helper functions """
 

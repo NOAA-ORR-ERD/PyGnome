@@ -200,18 +200,22 @@ class OrderedCollection(object):
         Method takes the instance of ordered collection and outputs a dict with
         two fields:
             dtype: associated dtype for each object in the order in which
-                   it is added
-            id : contains list of IDs of each object in the order in which
-                 it is added
+                it is added
+            items : contains list objects in the order in which it is added as
+                well as the index of object in the list
 
         This method assumes object has an ID
         '''
-        dict_ = {'dtype': self.dtype, 'id_list': []}
+        dict_ = {'dtype': self.dtype, 'items': []}
 
-        for obj in self:
-            obj_type = \
-                '{0.__module__}.{0.__class__.__name__}'.format(obj)
-            dict_['id_list'].append((obj_type, obj.id))
+        for count, obj in enumerate(self):
+            try:
+                obj_type = \
+                    '{0.__module__}.{0.__class__.__name__}'.format(obj)
+            except AttributeError:
+                obj_type = '{0.__class__.__name__}'.format(obj)
+
+            dict_['items'].append((obj_type, count))
 
         return dict_
 

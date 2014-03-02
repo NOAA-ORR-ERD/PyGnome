@@ -3,6 +3,8 @@ Created on Feb 15, 2013
 '''
 
 import copy
+import os
+import shutil
 
 import numpy
 np = numpy
@@ -713,8 +715,14 @@ class Serializable(object):
 
     def serialize(self, do='update'):
         """
-        1. add 'obj_type' field to _state for 'create' attribute so it is
-                contained in serialized data
+        Convert the dict returned by object's to_dict method to valid json
+        format via colander schema
+
+        It uses the modules_dict defined in gnome.persist to find the correct
+        schema module.
+
+        1. adds 'obj_type' field to _state for 'create' attribute so it is
+                contained in serialized data. todo: check if this is needed
         2. do serialization and return json
 
         :param do: tells object where serialization is for update or for
@@ -727,9 +735,24 @@ class Serializable(object):
             attributes for different operations like 'update', 'create', 'read'
         """
         dict_ = self._dict_to_serialize(do)
-        to_eval = ('{0}.{1}().serialize({2})'
+        to_eval = ('{0}.{1}()'
                    .format(persist.modules_dict[self.__class__.__module__],
-                       self.__class__.__name__, dict_))
-        json_ = eval(to_eval)
+                       self.__class__.__name__))
+        schema = eval(to_eval)
+        json_ = schema.serialize(dict_)
 
         return json_
+
+    @classmethod
+    def deserialize(cls, json_):
+        """
+        classmethod takes json structure as input, deserializes it using a
+        colander schema then invokes the new_from_dict method to create an
+        instance of the object described by the json schema
+        """
+        gnome_mod, obj_name = json_['obj_type'].rsplit('.', 1)
+        to_eval = ('{0}.{1}().deserialize(json_)'
+                   .format(persist.modules_dict[gnome_mod], obj_name))
+        _to_dict = eval(to_eval)
+
+        return _to_dict

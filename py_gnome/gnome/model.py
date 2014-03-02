@@ -1,7 +1,11 @@
 #!/usr/bin/env python
 
 from datetime import datetime, timedelta
+import glob
 import copy
+import os
+import json
+import shutil
 
 import numpy
 np = numpy
@@ -18,7 +22,11 @@ from gnome.spill_container import SpillContainerPair
 from gnome.movers import Mover, WindMover, CatsMover
 from gnome.weatherers import Weatherer
 
-from gnome.outputters import Outputter
+from gnome.outputters import Outputter, NetCDFOutput
+
+from gnome.persist import (
+    modules_dict,
+    )
 
 
 class Model(Serializable):
@@ -592,3 +600,442 @@ class Model(Serializable):
             return False
         else:
             return True
+
+    '''
+    Following methods are for saving a Model instance or creating a new
+    model instance from a saved location
+    '''
+    def save(self, saveloc):
+        """
+        save model in json format to user specified saveloc
+
+        :param saveloc: A valid directory. Model files are either persisted
+                        here or a new model is re-created from the files
+                        stored here. The files are clobbered when save() is
+                        called.
+        :type saveloc: A path as a string or unicode
+        """
+        path_, savedir = os.path.split(saveloc)
+        if path_ == '':
+            path_ = '.'
+
+        if not os.path.exists(path_):
+            raise ValueError('"{0}" does not exist. \nCannot create "{1}"'
+                             .format(path_, savedir))
+
+        if not os.path.exists(saveloc):
+            os.mkdir(saveloc)
+
+        self._empty_save_dir(saveloc)
+        json_ = self.serialize('create')
+        #self._save_json_to_file(saveloc, json_, self, '_' + self.id)
+        self._save_json_to_file(saveloc, json_,
+            '{0}.json'.format(self.__class__.__name__))
+
+        json_ = self.map.serialize('create')
+        self._save_json_to_file(saveloc, json_,
+            '{0}.json'.format(self.map.__class__.__name__))
+
+        self._save_collection(saveloc, self.movers)
+        self._save_collection(saveloc, self.weatherers)
+        self._save_collection(saveloc, self.environment)
+        self._save_collection(saveloc, self.outputters)
+
+        for sc in self.spills.items():
+            self._save_collection(saveloc, sc.spills)
+
+        # persist model _state since middle of run
+        if self.current_time_step > -1:
+            self._save_spill_data()
+
+    def _save_collection(self, saveloc, coll_):
+        """
+        Function loops over an orderedcollection or any other iterable
+        containing a list of objects. It calls the to_dict method for each
+        object, then converts it o valid json (dict_to_json),
+        and finally saves it to file (_save_json_to_file)
+
+        :param OrderedCollection coll_: ordered collection to be saved
+        """
+        for count, obj in enumerate(coll_):
+            json_ = obj.serialize('create')
+            self._save_json_to_file(saveloc, json_,
+                '{0}_{1}.json'.format(obj.__class__.__name__, count))
+
+    def _save_json_to_file(self, saveloc, data, name):
+        """
+        write json data to file
+
+        :param dict data: JSON data to be saved
+        :param obj: gnome object corresponding w/ data
+        """
+
+        fname = os.path.join(saveloc, name)
+        data = self._move_data_file(saveloc, data)  # if there is a
+
+        with open(fname, 'w') as outfile:
+            json.dump(data, outfile, indent=True)
+
+    def _move_data_file(self, saveloc, json_):
+        """
+        Look at _state attribute of object. Find all fields with 'isdatafile'
+        attribute as True. If there is a key in to_json corresponding with
+        'name' of the fields with True 'isdatafile' attribute then move that
+        datafile and update the key in the to_json to point to new location
+
+        todo: maybe this belongs in serializable base class? Revisit this
+        """
+        _state = eval('{0}._state'.format(json_['obj_type']))
+        fields = _state.get_field_by_attribute('isdatafile')
+
+        for field in fields:
+            if field.name not in json_:
+                continue
+
+            value = json_[field.name]
+
+            if os.path.exists(value) and os.path.isfile(value):
+                shutil.copy(value, saveloc)
+                json_[field.name] = os.path.split(json_[field.name])[1]
+
+        return json_
+
+    def _save_spill_data(self):
+        """ save the data arrays for current timestep to NetCDF """
+        nc_out = NetCDFOutput(self._certainspill_data,
+                              which_data='all',
+                              cache=self.model._cache)
+        nc_out.prepare_for_model_run(model_start_time=self.start_time,
+                                     uncertain=self.uncertain,
+                                     spills=self.spills)
+        nc_out.write_output(self.current_time_step)
+        self._uncertainspill_data = nc_out._u_netcdf_filename
+
+    def _empty_save_dir(self, saveloc):
+        '''
+        Remove all files, directories under saveloc
+
+        First clean out directory, then add new save files
+        This should only be called by self.save()
+        '''
+        (dirpath, dirnames, filenames) = os.walk(saveloc).next()
+
+        if dirnames:
+            for dir_ in dirnames:
+                shutil.rmtree(os.path.join(dirpath, dir_))
+
+        if filenames:
+            for file_ in filenames:
+                os.remove(os.path.join(dirpath, file_))
+
+
+'''
+'load' and the following functions don't really need to be part of the Model
+class - no need to make them classmethods. Use it to load a new model instance
+from json files stored in save file location - sufficient to make these part of
+the model module.
+'''
+
+
+#==============================================================================
+# def _load_json_from_file(fname, saveloc):
+#     '''
+#     Look at _state attribute of object. Find all fields with
+#     'isdatafile' attribute as True. If there is a key in json_data
+#     corresponding with 'name' of the fields with True 'isdatafile'
+#     attribute, then append the saveloc path to the value
+#     '''
+#     with open(fname, 'r') as infile:
+#         json_data = json.load(infile)
+# 
+#     _state = eval('{0}._state'.format(json_data['obj_type']))
+#     fields = _state.get_field_by_attribute('isdatafile')
+# 
+#     for field in fields:
+#         if field.name not in json_data:
+#             continue
+#         json_data[field.name] = os.path.join(saveloc,
+#                 json_data[field.name])
+# 
+#     return json_data
+# 
+# 
+# def _json_to_dict(json_):
+#     """
+#     Function used when loading a model scenario.
+#     convert the dict returned by object's to_dict method to valid json
+#     format via colander schema
+# 
+#     :param dict json_: JSON data to be converted
+#     """
+# 
+#     to_eval = ('{0}.deserialize(json_)'.format(json_['obj_type']))
+#     _to_dict = eval(to_eval)
+# 
+#     return _to_dict
+#==============================================================================
+
+
+def _dict_to_obj(obj_dict):
+    '''
+    create object from a dict. The dict contains (keyword,value) pairs
+    used to create new object
+    '''
+    type_ = obj_dict.pop('obj_type')
+    to_eval = '{0}.new_from_dict(obj_dict)'.format(type_)
+    obj = eval(to_eval)
+
+    return obj
+
+
+def _load_and_deserialize_json(fname):
+    '''
+    load json data from file and deserialize it
+
+    :param fname:
+    :param saveloc:
+    '''
+    with open(fname, 'r') as infile:
+        json_data = json.load(infile)
+
+    _state = eval('{0}._state'.format(json_data['obj_type']))
+    fields = _state.get_field_by_attribute('isdatafile')
+
+    saveloc = os.path.split(fname)[0]
+
+    for field in fields:
+        if field.name not in json_data:
+            continue
+        json_data[field.name] = os.path.join(saveloc,
+                json_data[field.name])
+
+    to_eval = ('{0}.deserialize(json_data)'.format(json_data['obj_type']))
+    _to_dict = eval(to_eval)
+
+    return _to_dict
+
+
+def _load_json_from_file_to_obj(fname):
+    dict_ = _load_and_deserialize_json(fname)
+    obj_ = _dict_to_obj(dict_)
+
+    return obj_
+#==============================================================================
+# def _load_model_dict(saveloc):
+#     '''
+#     Load model dict from *.json file.
+#     Pop 'map' key, create 'map' object and add to model dict.
+#     This dict is used in Model.new_from_dict(dict_) to create new Model
+#     '''
+#     model_file = glob.glob(os.path.join(saveloc, 'Model*.json'))
+#     if model_file == []:
+#         raise ValueError('No Model*.json files find in {0}'\
+#                          .format(saveloc))
+#     elif len(model_file) > 1:
+#         raise ValueError("multiple Model*.json files found in {0}. Please"
+#                          " provide 'filename'".format(saveloc))
+#     else:
+#         model_file = model_file[0]
+# 
+#     model_dict = _load_and_deserialize_json(model_file, saveloc)
+# 
+#     # create map object and add to model_dict
+# 
+#     map_type, map_id = model_dict['map']
+#     obj_json = _find_and_load_json_file(map_id)
+# 
+#     dict_ = _json_to_dict(obj_json)
+#     map_ = _dict_to_obj(dict_)
+# 
+#     model_dict['map'] = map_  # replace map object in the dict
+# 
+#     return model_dict
+#==============================================================================
+
+
+#==============================================================================
+# def _find_and_load_json_file(saveloc, id_):
+#     """
+#     Given the id of the object, find the *_{id}.json file that contains
+#     json of the object and load it.
+#     """
+# 
+#     obj_file = glob.glob(os.path.join(saveloc,
+#                          '*_{0}.json'.format(id_)))
+# 
+#     if len(obj_file) == 0:
+#         msg = 'No filename containing *_{0}.json found in {1}'
+#         raise IOError(msg.format(id_, os.path.abspath('.')))
+#     elif len(obj_file) > 1:
+#         msg = 'Cannot have two objects with same Id. Multiple'\
+#               ' filenames containing *_{0}.json found in {1}'
+#         raise IOError(msg.format(id_, os.path.abspath(saveloc)))
+# 
+#     obj_file = obj_file[0]
+#     obj_json = _load_json_from_file(os.path.abspath(obj_file))
+# 
+#     return obj_json
+#==============================================================================
+
+
+def _load_collection(coll_dict, saveloc, l_env=None):
+    """
+    Load collection - dict contains output of OrderedCollection.to_dict()
+
+    'dtype' - currently not used for anything
+    'items' - for each object in list, use this to find and load the
+                json file, convert it to a valid dict, then create a new
+                object using new_from_dict 'items' contains a list of
+                tuples (object_type, id of object)
+
+    :returns: a list of objects corresponding with the data in 'items'
+
+    .. note:: while this applies to ordered collections. It can work for
+              any iterable that contains 'items' in the dict with above
+              format.
+    """
+    obj_list = []
+
+    for type_idx in coll_dict['items']:
+        type_ = type_idx[0]
+        idx = type_idx[1]
+        print type_idx
+        fname = '{0}_{1}.json'.format(type_.rsplit('.', 1)[1], idx)
+        obj_dict = _load_and_deserialize_json(os.path.join(saveloc, fname))
+        obj_name = type_.rsplit('.', 1)[-1]
+
+        if obj_name == 'WindMover':
+            obj_dict.update({'wind': _get_obj(l_env, obj_dict['wind_id'])})
+        elif (obj_name == 'CatsMover' and
+              obj_dict.get('tide_id') is not None):
+            obj_dict.update({'tide': _get_obj(l_env, obj_dict['tide_id'])})
+
+        obj = _dict_to_obj(obj_dict)
+        obj_list.append(obj)
+
+    return obj_list
+
+
+#==============================================================================
+# def _load_movers_collection(movers_dict, l_env, saveloc):
+#     """
+#     add movers to the model - dict contains the output of
+#     OrderedCollection.to_dict()
+# 
+#     'dtype' - not used for anything
+#     'items' - for each object in list, use this to find and load the json
+#                 file, convert it to a valid dict, then create a new object
+#                 using new_from_dict 'items' contains a list of tuples
+#                 (object_type, id of object)
+# 
+#     .. note:: If Wind object and Tide object are present, the objects must
+#               be created and part of a list passed in as l_env
+#     """
+#     obj_list = []
+# 
+#     for (type_, idx) in movers_dict['items']:
+#         fname = '{0}_{1}.json'.format(type_.rplit(1)[1], idx)
+#         obj_dict = _load_and_deserialize_json(os.path.join(saveloc, fname))
+#         #obj_name = string.rsplit(type_, '.', 1)[-1]
+#         obj_name = type_.rsplit('.', 1)[-1]
+# 
+#         #obj_dict = _json_to_dict(obj_json)
+# 
+#         if obj_name == 'WindMover':
+#             obj_dict.update({'wind': _get_obj(l_env, obj_dict['wind_id'])})
+#         elif (obj_name == 'CatsMover' and
+#               obj_dict.get('tide_id') is not None):
+#             obj_dict.update({'tide': _get_obj(l_env, obj_dict['tide_id'])})
+# 
+#         obj = _dict_to_obj(obj_dict)
+#         obj_list.append(obj)
+# 
+#     return obj_list
+#==============================================================================
+
+
+def _get_obj(list_, id_):
+    """
+    Get object by ID from list of objects
+    """
+    obj = [obj for obj in list_ if id_ in obj.id]
+    if len(obj) == 0:
+        msg = 'List does not contain an object with id_: {0}'
+        raise ValueError(msg.format(id_))
+
+    if len(obj) > 1:
+        msg = 'List contains more than one object with id_: {0}'
+        raise ValueError(msg.format(id_))
+
+    return obj[0]
+
+
+def load(saveloc):
+    """
+    reconstruct the model from saveloc. It stores the re-created model
+    inside 'model' attribute. Function also returns the recreated model.
+
+    :returns: a model object re-created from the save files
+    """
+    model_file = glob.glob(os.path.join(saveloc, 'Model*.json'))
+    if model_file == []:
+        raise ValueError('No Model*.json files find in {0}'\
+                         .format(saveloc))
+    elif len(model_file) > 1:
+        raise ValueError("multiple Model*.json files found in {0}. Please"
+                         " provide 'filename'".format(saveloc))
+    else:
+        model_file = model_file[0]
+
+    model_dict = _load_and_deserialize_json(model_file)
+
+    # create map object and add to model_dict
+    # todo: remove map_id
+    map_type, map_id = model_dict['map']
+    mapfile = os.path.join(saveloc, map_type.rsplit('.', 1)[1] + '.json')
+    map_ = _load_json_from_file_to_obj(mapfile)
+    model_dict['map'] = map_  # replace map object in the dict
+
+    # pop lists that correspond with ordered collections
+    # create a list of associated objects and put it back into model_dict
+    for key in ['weatherers', 'environment', 'outputters', 'spills']:
+        list_ = model_dict.pop(key)
+        if key == 'spills':
+            model_dict['certain_spills'] = \
+                _load_collection(list_['certain_spills'], saveloc)
+            if ('uncertain' in model_dict and model_dict['uncertain']):
+                model_dict['uncertain_spills'] = \
+                    _load_collection(list_['uncertain_spills'], saveloc)
+        else:
+            model_dict[key] = _load_collection(list_, saveloc)
+
+    l_movers = model_dict.pop('movers')
+    model_dict['movers'] = \
+        _load_collection(l_movers, saveloc, model_dict['environment'])
+
+#==============================================================================
+#     l_movers = model_dict.pop('movers')
+#     l_weatherers = model_dict.pop('weatherers')
+#     l_environment = model_dict.pop('environment')
+#     l_outputters = model_dict.pop('outputters')
+#     l_spills = model_dict.pop('spills')
+# 
+#     # load objects in a list and add that back to model_dict
+# 
+#     model_dict['environment'] = _load_collection(l_environment)
+#     model_dict['outputters'] = _load_collection(l_outputters)
+#     model_dict['certain_spills'] = \
+#         _load_collection(l_spills['certain_spills'])
+#     if ('uncertain' in model_dict and model_dict['uncertain']):
+#         model_dict['uncertain_spills'] = \
+#             _load_collection(l_spills['uncertain_spills'])
+# 
+#     model_dict['movers'] = \
+#         _load_movers_collection(l_movers, model_dict['environment'])
+#     model_dict['weatherers'] = _load_collection(l_weatherers)
+#==============================================================================
+
+    model = _dict_to_obj(model_dict)
+    #cls._load_spill_data()    #TODO: fix this
+
+    return model

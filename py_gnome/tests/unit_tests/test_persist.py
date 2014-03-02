@@ -20,7 +20,7 @@ from gnome.utilities.remote_data import get_datafile
 from gnome.map import MapFromBNA
 from gnome.environment import Wind, Tide
 
-from gnome.model import Model
+from gnome.model import Model, load
 from gnome.spill import point_line_release_spill
 from gnome.movers import RandomMover, WindMover, CatsMover
 from gnome.weatherers import Weatherer
@@ -158,6 +158,38 @@ def test_dir_gets_created(images_dir):
     assert os.path.exists(saveloc_)
 
 
+def test_exception_no_model_to_save():
+    s = Scenario(os.path.join(saveloc_))
+    with raises(AttributeError):
+        s.save()
+
+
+def test_save_model(images_dir):
+    '''
+    create a model, save it. Then copy the Model_*.json
+    file to a new Mode_*_new.json file in the same location.
+    During Scenario(...).load(), this should raise an exception
+    since there should only be 1 Model_*.json in saveloc_
+    '''
+    model = make_model(images_dir)
+    #s = Scenario(os.path.join(saveloc_), model)
+    model.save(saveloc_)
+    print 'ok'
+
+
+def test_load_model(images_dir):
+    '''
+    create a model, save it. Then copy the Model_*.json
+    file to a new Mode_*_new.json file in the same location.
+    During Scenario(...).load(), this should raise an exception
+    since there should only be 1 Model_*.json in saveloc_
+    '''
+    model = make_model(images_dir)
+    model.save(saveloc_)
+    model2 = load(saveloc_)
+
+
+@pytest.mark.xfail
 def test_exception_no_model_to_load(images_dir):
     '''
     raises exception since the saveloc_ from where to load the model is empty.
@@ -168,12 +200,7 @@ def test_exception_no_model_to_load(images_dir):
         s.load()
 
 
-def test_exception_no_model_to_save():
-    s = Scenario(os.path.join(saveloc_))
-    with raises(AttributeError):
-        s.save()
-
-
+@pytest.mark.xfail
 def test_exception_multiple_models_to_load(images_dir):
     '''
     create a model, save it. Then copy the Model_*.json

@@ -26,18 +26,18 @@ class Id(MappingSchema):
 class OrderedCollectionIdListItem(TupleSchema):
 
     obj_type = SchemaNode(String())
-    obj_id = SchemaNode(String())
+    obj_idx = SchemaNode(String())
 
 
 class OrderedCollectionIdList(SequenceSchema):
 
-    id_list = OrderedCollectionIdListItem()
+    items = OrderedCollectionIdListItem()
 
 
 class OrderedCollection(MappingSchema):
 
     dtype = SchemaNode(String(), missing=drop)
-    id_list = OrderedCollectionIdList(missing=drop)
+    items = OrderedCollectionIdList(missing=drop)
 
 
 class LongLat(TupleSchema):
