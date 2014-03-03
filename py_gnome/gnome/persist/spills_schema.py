@@ -10,6 +10,7 @@ from colander import SchemaNode, MappingSchema, Bool, Float, Int, \
 from gnome.persist.validators import convertible_to_seconds
 from gnome.persist.base_schema import Id, WorldPoint
 from gnome.persist.extend_colander import LocalDateTime
+from gnome.persist.elements_schema import ElementType
 
 
 class ArrayTypeShape(TupleSchema):
@@ -25,30 +26,24 @@ class ArrayType(MappingSchema):
 
     # initial_value = SchemaNode(String())  # Figure out what this is - tuple?
 
+
 class AllArrayTypes(SequenceSchema):
 
     name = SchemaNode(String())
     value = ArrayType()
 
 
-class Windage(TupleSchema):
-
-    min_windage = SchemaNode(Float(), validator=Range(0, 1.0),
-                             default=0.01)
-    max_windage = SchemaNode(Float(), validator=Range(0, 1.0),
-                             default=0.04)
-
-
-class Release(MappingSchema):
+class Release(Id):
     """ Base class for Release schemas"""
     num_elements = SchemaNode(Int(), default=1000)
 
     # used to create a new Release object if model is persisted mid-run
     num_released = SchemaNode(Int())
     start_time_invalid = SchemaNode(Bool())
+    name = 'release'
 
 
-class PointLineSource(Release):
+class PointLineRelease(Release):
 
     """
     Contains properties required by UpdateWindMover and CreateWindMover
@@ -69,12 +64,12 @@ class PointLineSource(Release):
 
     # Not sure how this will work w/ WebGnome
     prev_release_pos = WorldPoint(missing=drop)
+    description = 'PointLineRelease object schema'
 
 
 class Spill(Id):
 
-    """Spill class scema"""
+    """Spill class schema"""
 
-    on = SchemaNode(Bool(), default=True, missing=True)
-    # num_rleased is a readonly property
-    #num_released = SchemaNode(Int(), default=0, missing=drop)
+    on = SchemaNode(Bool(), default=True, missing=True,
+        description='on/off status of spill')

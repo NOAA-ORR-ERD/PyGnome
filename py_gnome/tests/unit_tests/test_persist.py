@@ -166,15 +166,12 @@ def test_exception_no_model_to_save():
 
 def test_save_model(images_dir):
     '''
-    create a model, save it. Then copy the Model_*.json
-    file to a new Mode_*_new.json file in the same location.
-    During Scenario(...).load(), this should raise an exception
-    since there should only be 1 Model_*.json in saveloc_
+    create a model, save it. It simply tests that save does not throw
+    errors
     '''
     model = make_model(images_dir)
-    #s = Scenario(os.path.join(saveloc_), model)
     model.save(saveloc_)
-    print 'ok'
+    assert True
 
 
 def test_load_model(images_dir):
@@ -187,6 +184,7 @@ def test_load_model(images_dir):
     model = make_model(images_dir)
     model.save(saveloc_)
     model2 = load(saveloc_)
+    assert model == model2
 
 
 @pytest.mark.xfail

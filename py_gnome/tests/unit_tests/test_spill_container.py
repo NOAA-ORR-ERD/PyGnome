@@ -649,10 +649,10 @@ class TestAddSpillContainerPair:
                 enum_spill = u_spill
 
             for (i, spill) in enumerate(enum_spill):
-                assert dict_[key]['id_list'][i][0] \
+                assert dict_[key]['items'][i][0] \
                     == '{0}.{1}'.format(spill.__module__,
                         spill.__class__.__name__)
-                assert dict_[key]['id_list'][i][1] == spill.id
+                assert dict_[key]['items'][i][1] == i
 
 
 def test_get_spill_mask():

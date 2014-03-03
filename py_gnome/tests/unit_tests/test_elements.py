@@ -32,6 +32,8 @@ from conftest import mock_append_data_arrays
 
 
 """ Helper functions """
+# first key in windages array must be 'windages' because test function:
+# test_element_type_serialize_deserialize assumes this is the case
 windages = {'windages': windages,
             'windage_range': windage_range,
             'windage_persist': windage_persist}
@@ -48,31 +50,24 @@ def assert_dataarray_shape_size(arr_types, data_arrays, num_released):
         assert data_arrays[key].shape == (num_released,) + val.shape
 
 
-""" Initializers """
+""" Initializers - following are used for parameterizing tests """
+fcn_list = (InitWindages(), InitMassFromVolume(), InitMassFromTotalMass(),
+            InitRiseVelFromDist(),
+            InitRiseVelFromDist(distribution='normal', mean=0, sigma=0.1),
+            InitRiseVelFromDist(distribution='lognormal', mean=0, sigma=0.1),
+            InitRiseVelFromDist(distribution='weibull', alpha=1.8,
+                                      lambda_=1 / (.693 ** (1 / 1.8))),
+            InitRiseVelFromDropletSizeFromDist('normal', mean=0, sigma=0.1))
+arrays_ = (windages, mass_array, mass_array, rise_vel_array, rise_vel_array,
+             rise_vel_array, rise_vel_array, rise_vel_diameter_array)
+initializer_keys = ('windages', 'mass', 'mass', 'rise_vel', 'rise_vel',
+                    'rise_vel', 'rise_vel', 'rise_vel')
+spill_list = (None, Spill(Release(), volume=10), Spill(Release(), mass=10),
+              None, None, None, None, Spill(Release()))
 
 
 @pytest.mark.parametrize(("fcn", "arr_types", "spill"),
-                [(InitWindages(), windages, None),
-                 (InitWindages(), windages, None),
-                 (InitMassFromVolume(), mass_array, Spill(Release(),
-                     volume=10)),
-                 (InitMassFromTotalMass(), mass_array, Spill(Release(),
-                     mass=10)),
-                 (InitRiseVelFromDist(), rise_vel_array, None),
-                 (InitRiseVelFromDist(distribution='normal',
-                                      mean=0, sigma=0.1),
-                  rise_vel_array, None),
-                 (InitRiseVelFromDist(distribution='lognormal',
-                                      mean=0, sigma=0.1),
-                  rise_vel_array, None),
-                 (InitRiseVelFromDist(distribution='weibull',
-                                      alpha=1.8,
-                                      lambda_=1 / (.693 ** (1 / 1.8))),
-                  rise_vel_array, None),
-                 (InitRiseVelFromDropletSizeFromDist('normal',
-                                                     mean=0, sigma=0.1),
-                  rise_vel_diameter_array, Spill(Release()))
-                 ])
+                            zip(fcn_list, arrays_, spill_list))
 def test_correct_particles_set_by_initializers(fcn, arr_types, spill):
     """
     Tests that the correct elements (ones that
@@ -86,7 +81,7 @@ def test_correct_particles_set_by_initializers(fcn, arr_types, spill):
 
     substance = OilProps('oil_conservative')
     if spill is not None:
-        spill.release.num_elements=10
+        spill.release.num_elements = 10
     fcn.initialize(num_elems, spill, data_arrays, substance)
 
     assert_dataarray_shape_size(arr_types, data_arrays, num_elems * 2)
@@ -99,6 +94,20 @@ def test_correct_particles_set_by_initializers(fcn, arr_types, spill):
 
         # values for these particles should be initialized to non-zero
         assert np.any(0 != data_arrays[key][-num_elems:])
+
+
+@pytest.mark.parametrize(("fcn", "init_key"),
+                      zip(fcn_list[:3], initializer_keys[:3]))
+def test_element_type_serialize_deserialize(fcn, init_key):
+    """
+    test serialization/deserialization of ElementType for various initiailzers
+    """
+    initializers = {init_key: fcn}
+    element_type = ElementType(initializers)
+    json_ = element_type.serialize('create')
+    dict_ = element_type.deserialize(json_)
+    element_type2 = ElementType.new_from_dict(dict_)
+    assert element_type == element_type2
 
 
 class TestInitConstantWindageRange:

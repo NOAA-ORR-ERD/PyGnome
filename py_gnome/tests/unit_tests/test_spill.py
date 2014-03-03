@@ -17,6 +17,7 @@ from gnome.spill import (Spill,
                          point_line_release_spill)
 from gnome.elements import floating
 import gnome.array_types
+from gnome.persist import spills_schema
 
 from conftest import mock_append_data_arrays
 
@@ -620,6 +621,18 @@ class Test_point_line_release_spill:
 
         sp.release.end_release_time = None
         assert sp.release.release_time == sp.release.end_release_time
+
+    def test_serialization_deserialization(self):
+        """
+        tests serializatin/deserialization of the Spill object
+        """
+        spill = point_line_release_spill(num_elements=self.num_elements,
+                start_position=self.start_position,
+                release_time=self.release_time)
+        serial = spill.serialize('create')
+        new_dict = Spill.deserialize(serial)    # classmethod
+        new_spill = Spill.new_from_dict(new_dict)   # classmethod
+        assert spill == new_spill
 
 
 """ A few more line release (point_line_release_spill) tests """

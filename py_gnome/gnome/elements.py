@@ -16,6 +16,8 @@ from gnome.utilities.compute_fraction import fraction_below_d
 from gnome.cy_gnome.cy_rise_velocity_mover import rise_velocity_from_drop_size
 from gnome.db.oil_library.oil_props import (OilProps, OilPropsFromDensity)
 from gnome.utilities.serializable import Serializable
+
+from gnome.persist import elements_schema
 """
 Initializers for various element types
 """
@@ -36,7 +38,6 @@ class InitBaseClass(object):
     """
     _state = copy.deepcopy(Serializable._state)
     _state.remove('id')
-    _state.add(create=['obj_type'])  # no longer part of default so add it
 
     def initialize(self):
         """
@@ -118,10 +119,12 @@ class InitWindages(InitBaseClass, Serializable):
                     data_arrays['windages'][-num_new_particles:])
 
 
-class InitMassComponentsFromOilProps(object):
+class InitMassComponentsFromOilProps(InitBaseClass, Serializable):
     '''
        Initialize the mass components based on given Oil properties
     '''
+    _state = copy.deepcopy(InitBaseClass._state)
+
     def initialize(self, num_new_particles, spill, data_arrays, substance):
         '''
            :param int num_new_particles: Number of new particles to initialize
@@ -151,11 +154,13 @@ class InitMassComponentsFromOilProps(object):
         data_arrays['mass_components'][-num_new_particles:] = masses
 
 
-class InitHalfLivesFromOilProps(object):
+class InitHalfLivesFromOilProps(InitBaseClass, Serializable):
     '''
        Initialize the half-lives of our mass components based on given Oil
        properties.
     '''
+    _state = copy.deepcopy(InitBaseClass._state)
+
     def initialize(self, num_new_particles, spill, data_arrays, substance):
         '''
            :param int num_new_particles: Number of new particles to initialize
@@ -169,7 +174,7 @@ class InitHalfLivesFromOilProps(object):
            :param OilProps substance: The Oil Properties associated with the
                                       spill.
                                       (TODO: Why is this not simply contained
-                                       in the Spill???  Why the extra argument???)
+                                       in the Spill?? Why the extra argument??)
         '''
         half_lives = np.asarray(zip(*substance.mass_components)[1],
                                 dtype=np.float64)
@@ -178,6 +183,8 @@ class InitHalfLivesFromOilProps(object):
 
 
 # do following two classes work for a time release spill?
+
+
 class InitMassFromTotalMass(InitBaseClass, Serializable):
     """
     Initialize the 'mass' array based on total mass spilled
@@ -521,7 +528,10 @@ class ElementType(Serializable):
         '''
         Define initializers for the type of elements
 
-        :param dict initializers:
+        :param dict initializers: a dict of initializers where the keys
+            correspond with names in data_arrays (stored in SpillContainer)
+            and the values are the initializer classes used to initialize
+            these data arrays upon release
 
         :param substance='oil_conservative': Type of oil spilled.
             If this is a string, or an oillibrary.models.Oil object, then
@@ -572,6 +582,47 @@ class ElementType(Serializable):
         objects are replaced by the serialized objects (ie a dict).
         """
         return copy.deepcopy(self.initializers)
+
+    @classmethod
+    def _initializers_schema(cls, init_dict):
+        """
+        used by serialize and deserialize to define the initializers schema
+        make it a classmethod so it can be easily accessed by both. Also make
+        it class method since it belongs with ElementType class
+        """
+        init_schema = elements_schema.Initializers()
+
+        for val in init_dict.values():
+            obj2add = val['obj_type'].rsplit('.', 1)[1]
+            toadd = eval('elements_schema.{0}()'.format(obj2add))
+            init_schema.add(toadd)
+
+        return init_schema
+
+    def serialize(self, do='update'):
+        """
+        need to define initializers schema dynamically
+        """
+        dict_ = self.to_dict(do)
+        init_schema = ElementType._initializers_schema(dict_['initializers'])
+        et_schema = elements_schema.ElementType()
+        et_schema.add(init_schema)
+        json_ = et_schema.serialize(dict_)
+
+        return json_
+
+    @classmethod
+    def deserialize(cls, json_):
+        """
+        need to create schema dynamically before deserialization
+        """
+        init_schema = cls._initializers_schema(json_['initializers'])
+        et_schema = elements_schema.ElementType()
+        et_schema.add(init_schema)
+
+        dict_ = et_schema.deserialize(json_)
+
+        return dict_
 
 
 def floating(windage_range=(.01, .04), windage_persist=900):

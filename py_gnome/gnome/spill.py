@@ -23,6 +23,7 @@ from gnome import elements, GnomeId
 from gnome.basic_types import world_point_type
 from gnome.utilities import serializable
 from gnome.utilities.plume import Plume, PlumeGenerator
+from gnome.persist import spills_schema
 
 from gnome.db.oil_library.oil_props import OilProps
 
@@ -36,7 +37,7 @@ class Release(object):
     _update = ['num_elements']
 
     # obj_type is no longer part of default so add it explicitly here
-    _create = ['num_released', 'start_time_invalid', 'obj_type']
+    _create = ['num_released', 'start_time_invalid']
     _create.extend(_update)
     _state = copy.deepcopy(serializable.Serializable._state)
     _state.remove('id')
@@ -986,15 +987,34 @@ class Spill(serializable.Serializable, object):
         override base serialize implementation
         Need to add node for release object and element_type object
         """
-        dict_ = self._dict_to_serialize(do)
-        to_eval = ('{0}.{1}()'
-                   .format(modules_dict[self.__class__.__module__],
-                       self.__class__.__name__))
-        schema = eval(to_eval)
-        #schema.add()
+        dict_ = self.to_dict(do)
+        schema = spills_schema.Spill()
+
+        rel_type = '{0}()'.format(self.release.__class__.__name__)
+        schema.add(eval('spills_schema.{0}'.format(rel_type)))
+
         json_ = schema.serialize(dict_)
+        json_['element_type'] = self.element_type.serialize(do)
 
         return json_
+
+    @classmethod
+    def deserialize(cls, json_):
+        """
+        need to create schema dynamically for Spill() before deserialization
+        """
+        schema = spills_schema.Spill()
+
+        rel_name = json_['release']['obj_type'].rsplit('.', 1)[1]
+        rel_type = '{0}()'.format(rel_name)
+        schema.add(eval('spills_schema.{0}'.format(rel_type)))
+
+        dict_ = schema.deserialize(json_)
+        et_type = json_['element_type']['obj_type']
+        to_eval = "{0}.deserialize(json_['element_type'])".format(et_type)
+        dict_['element_type'] = eval(to_eval)
+
+        return dict_
 
 """ Helper functions """
 

@@ -469,7 +469,7 @@ class Serializable(object):
     object as a string.
     """
 
-    _state = State(create=['id'])
+    _state = State(create=['id', 'obj_type'])
 
     # =========================================================================
     # @classmethod
@@ -699,19 +699,21 @@ class Serializable(object):
         else:
             return True
 
-    def _dict_to_serialize(self, do='update'):
-        """
-        take object and call its to_dict method to convert object to python
-        dict for serialization.
-
-        adds 'obj_type' field to _state for 'create' attribute
-        """
-        if 'obj_type' not in self._state:
-            self._state.add(create=['obj_type'])
-
-        dict_ = self.to_dict(do)
-
-        return dict_
+#==============================================================================
+#     def _dict_to_serialize(self, do='update'):
+#         """
+#         take object and call its to_dict method to convert object to python
+#         dict for serialization.
+# 
+#         adds 'obj_type' field to _state for 'create' attribute
+#         """
+#         if 'obj_type' not in self._state:
+#             self._state.add(create=['obj_type'])
+# 
+#         dict_ = self.to_dict(do)
+# 
+#         return dict_
+#==============================================================================
 
     def serialize(self, do='update'):
         """
@@ -734,7 +736,8 @@ class Serializable(object):
             todo: revisit this to see if it still makes sense to have different
             attributes for different operations like 'update', 'create', 'read'
         """
-        dict_ = self._dict_to_serialize(do)
+        #dict_ = self._dict_to_serialize(do)
+        dict_ = self.to_dict(do)
         to_eval = ('{0}.{1}()'
                    .format(persist.modules_dict[self.__class__.__module__],
                        self.__class__.__name__))
