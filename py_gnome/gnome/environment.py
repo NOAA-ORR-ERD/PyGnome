@@ -36,6 +36,8 @@ class Environment(object):
 
     This base class just defines the id property
     """
+    _state = copy.deepcopy(serializable.Serializable._state)
+    _state.add(create=['id'])
 
     def __init__(self, **kwargs):
         """
@@ -77,7 +79,7 @@ class Wind(Environment, serializable.Serializable):
     _create = []  # used to create new obj or as readonly parameter
     _create.extend(_update)
 
-    _state = copy.deepcopy(serializable.Serializable._state)
+    _state = copy.deepcopy(Environment._state)
     _state.add(create=_create, update=_update)
 
     # add 'filename' as a Field object
@@ -503,7 +505,7 @@ class Tide(Environment, serializable.Serializable):
     a cython wrapper around the C++ Shio object
     """
 
-    _state = copy.deepcopy(serializable.Serializable._state)
+    _state = copy.deepcopy(Environment._state)
 
     # no need to copy parent's _state in this case
 

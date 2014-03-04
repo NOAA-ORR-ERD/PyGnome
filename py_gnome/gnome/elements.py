@@ -37,7 +37,6 @@ class InitBaseClass(object):
     only required by subset of objects so this may undergo a refactor
     """
     _state = copy.deepcopy(Serializable._state)
-    _state.remove('id')
 
     def initialize(self):
         """

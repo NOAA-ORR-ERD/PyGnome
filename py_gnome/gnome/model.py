@@ -112,7 +112,9 @@ class Model(Serializable):
         '''
         self.__restore__(time_step, start_time, duration,
                          weathering_substeps,
-                         map, uncertain, cache_enabled, id)
+                         map, uncertain, cache_enabled)
+
+        self._gnome_id = gnome.GnomeId(id)
 
         # register callback with OrderedCollection
         self.movers.register_callback(self._callback_add_mover,
@@ -123,7 +125,7 @@ class Model(Serializable):
 
     def __restore__(self, time_step, start_time, duration,
                     weathering_substeps,
-                    map, uncertain, cache_enabled, id):
+                    map, uncertain, cache_enabled):
         '''
         Take out initialization that does not register the callback here.
         This is because new_from_dict will use this to restore the model _state
@@ -150,8 +152,6 @@ class Model(Serializable):
         self.weathering_substeps = weathering_substeps
         self._map = map
         self.time_step = time_step  # this calls rewind() !
-
-        self._gnome_id = gnome.GnomeId(id)
 
     def reset(self, **kwargs):
         '''
@@ -555,11 +555,10 @@ class Model(Serializable):
 
     def map_to_dict(self):
         '''
-        Create a tuple that contains: (type, object.id)
+        returns the gnome object type as a string
         '''
-        return ('{0}.{1}'.format(self.map.__module__,
-                                 self.map.__class__.__name__),
-                self.map.id)
+        return '{0}.{1}'.format(self.map.__module__,
+                                 self.map.__class__.__name__)
 
     def _callback_add_mover(self, obj_added):
         'Callback after mover has been added'
@@ -970,6 +969,34 @@ def _get_obj(list_, id_):
     return obj[0]
 
 
+def _load_spill_data(spill_data):
+    """ load NetCDF file and add spill data back in """
+    if not os.path.exists(spill_data):
+        return
+
+    array_types = {}
+
+    for m in self.model.movers:
+        array_types.update(m.array_types)
+
+    for w in self.model.weatherers:
+        array_types.update(w.array_types)
+
+    for sc in self.model.spills.items():
+        if sc.uncertain:
+            data = NetCDFOutput.read_data(self._uncertainspill_data,
+                                          time=None,
+                                          which_data='all')
+        else:
+            data = NetCDFOutput.read_data(self._certainspill_data,
+                                          time=None,
+                                          which_data='all')
+
+        sc.current_time_stamp = data.pop('current_time_stamp').item()
+        sc._data_arrays = data
+        sc._array_types.update(array_types)
+
+
 def load(saveloc):
     """
     reconstruct the model from saveloc. It stores the re-created model
@@ -977,13 +1004,9 @@ def load(saveloc):
 
     :returns: a model object re-created from the save files
     """
-    model_file = glob.glob(os.path.join(saveloc, 'Model*.json'))
+    model_file = glob.glob(os.path.join(saveloc, 'Model.json'))
     if model_file == []:
-        raise ValueError('No Model*.json files find in {0}'\
-                         .format(saveloc))
-    elif len(model_file) > 1:
-        raise ValueError("multiple Model*.json files found in {0}. Please"
-                         " provide 'filename'".format(saveloc))
+        raise ValueError('No Model.json files find in {0}'.format(saveloc))
     else:
         model_file = model_file[0]
 
@@ -991,7 +1014,7 @@ def load(saveloc):
 
     # create map object and add to model_dict
     # todo: remove map_id
-    map_type, map_id = model_dict['map']
+    map_type = model_dict['map']
     mapfile = os.path.join(saveloc, map_type.rsplit('.', 1)[1] + '.json')
     map_ = _load_json_from_file_to_obj(mapfile)
     model_dict['map'] = map_  # replace map object in the dict

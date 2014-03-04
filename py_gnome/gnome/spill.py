@@ -40,7 +40,6 @@ class Release(object):
     _create = ['num_released', 'start_time_invalid']
     _create.extend(_update)
     _state = copy.deepcopy(serializable.Serializable._state)
-    _state.remove('id')
     _state.add(create=_create, update=_update)
 
     def __init__(self, num_elements=0, release_time=None):

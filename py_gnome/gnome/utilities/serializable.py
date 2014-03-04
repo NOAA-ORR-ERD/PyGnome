@@ -10,7 +10,16 @@ import numpy
 np = numpy
 
 import gnome
-from gnome import persist
+from gnome.persist import (
+    modules_dict,
+    environment_schema,     # used implicitly by eval()
+    model_schema,           # used implicitly by eval()
+    movers_schema,          # used implicitly by eval()
+    weatherers_schema,      # used implicitly by eval()
+    spills_schema,          # used implicitly by eval()
+    map_schema,             # used implicitly by eval()
+    outputters_schema       # used implicitly by eval()
+    )
 
 
 class Field(object):  # ,serializable.Serializable):
@@ -233,7 +242,8 @@ class State(object):
         for name in l_names:
             field = self.get_field_by_name(name)
             if field == []:
-                raise ValueError('Cannot remove {0} since self.fields does not contain a field with this name'.format(name))
+                raise ValueError('Cannot remove {0} since self.fields does not'
+                    ' contain a field with this name'.format(name))
 
             self.fields.remove(field)
 
@@ -469,7 +479,7 @@ class Serializable(object):
     object as a string.
     """
 
-    _state = State(create=['id', 'obj_type'])
+    _state = State(create=['obj_type'])
 
     # =========================================================================
     # @classmethod
@@ -739,7 +749,7 @@ class Serializable(object):
         #dict_ = self._dict_to_serialize(do)
         dict_ = self.to_dict(do)
         to_eval = ('{0}.{1}()'
-                   .format(persist.modules_dict[self.__class__.__module__],
+                   .format(modules_dict[self.__class__.__module__],
                        self.__class__.__name__))
         schema = eval(to_eval)
         json_ = schema.serialize(dict_)
@@ -755,7 +765,7 @@ class Serializable(object):
         """
         gnome_mod, obj_name = json_['obj_type'].rsplit('.', 1)
         to_eval = ('{0}.{1}().deserialize(json_)'
-                   .format(persist.modules_dict[gnome_mod], obj_name))
+                   .format(modules_dict[gnome_mod], obj_name))
         _to_dict = eval(to_eval)
 
         return _to_dict

@@ -23,10 +23,6 @@ class ObjectInModel(TupleSchema):
     id = SchemaNode(String())
 
 
-# class MapList(MappingSchema):
-#    map = MapItem()
-    # output_map = MapItem(missing=drop)
-
 class Model(base_schema.Id, MappingSchema):
 
     time_step = SchemaNode(Float())
@@ -39,9 +35,6 @@ class Model(base_schema.Id, MappingSchema):
     environment = base_schema.OrderedCollection()
     uncertain = SchemaNode(Bool())
     spills = SpillContainerPair()
-
-    # map = MapList()
-
-    map = ObjectInModel()
+    map = SchemaNode(String())
     outputters = base_schema.OrderedCollection()
     cache_enabled = SchemaNode(Bool())
