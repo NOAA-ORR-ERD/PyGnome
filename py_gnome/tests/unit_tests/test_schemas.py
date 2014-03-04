@@ -9,9 +9,13 @@ import os
 import pytest
 
 from gnome import environment, movers
+from gnome.utilities.remote_data import get_datafile
+
 from gnome.persist import environment_schema as env_schema
 from gnome.persist import movers_schema
-from gnome.utilities.remote_data import get_datafile
+
+from gnome.utilities.weathering.graphs import Graph
+from gnome.persist.graph_schema import GraphSchema
 
 here = os.path.dirname(__file__)
 data_dir = os.path.join(here, 'sample_data')
@@ -19,17 +23,43 @@ tides_dir = os.path.join(data_dir, 'tides')
 lis_dir = os.path.join(data_dir, 'long_island_sound')
 
 
-def test_wind_create(wind_circ):
-    """
-    wind_circ is a fixture
-    """
+class TestGraphSchema(object):
+    def test_create(self, sample_graph):
+        serial_dict = GraphSchema().serialize(sample_graph.to_dict('create'))
+        deserial_dict = GraphSchema().deserialize(serial_dict)
+        new_graph = Graph.new_from_dict(deserial_dict)
 
-    c_dict = env_schema.Wind().serialize(wind_circ['wind'
-            ].to_dict('create'))
+        # TODO: not sure if we want to duplicate the id here or not.
+        # I think it might depend on whether we are creating a new
+        # object or updating it.
+        #assert new_graph.id == sample_graph.id
+
+        assert new_graph.points == [list(x) for x in sample_graph.points]
+        assert new_graph.labels == list(sample_graph.labels)
+        assert new_graph.formats == list(sample_graph.formats)
+
+        assert new_graph.title == sample_graph.title
+        pass
+
+    def test_update(self, sample_graph):
+        '''
+           Just tests methods don't fail and the schema is properly defined.
+           It doesn't update any properties.
+        '''
+        serial_dict = GraphSchema().serialize(sample_graph.to_dict())
+        deserial_dict = GraphSchema().deserialize(serial_dict)
+        sample_graph.from_dict(deserial_dict)
+        pass
+
+
+def test_wind_create(wind_circ):
+    '''
+    wind_circ is a fixture
+    '''
+    c_dict = env_schema.Wind().serialize(wind_circ['wind'].to_dict('create'))
     dict_ = env_schema.Wind().deserialize(c_dict)
 
     # now use dict to create new object
-
     new_w = environment.Wind.new_from_dict(dict_)
     assert new_w == wind_circ['wind']
 
@@ -43,9 +73,9 @@ def test_wind_update(wind_circ):
 
     wind_circ is a fixture
     """
-
     c_dict = env_schema.Wind().serialize(wind_circ['wind'].to_dict())
     dict_ = env_schema.Wind().deserialize(c_dict)
+
     wind_circ['wind'].from_dict(dict_)
     assert True
 
@@ -61,7 +91,6 @@ def test_tide_create(filename):
     dict_ = env_schema.Tide().deserialize(c_dict)
 
     # now use dict to create new object
-
     new_w = environment.Tide.new_from_dict(dict_)
     assert new_w == td
 
@@ -80,10 +109,11 @@ def test_tide_update(filename):
 
     wind_circ is a fixture
     """
-
     td = environment.Tide(filename=filename)
+
     c_dict = env_schema.Tide().serialize(td.to_dict())
     dict_ = env_schema.Tide().deserialize(c_dict)
+
     td.from_dict(dict_)
     assert True
 
@@ -121,11 +151,10 @@ def test_catsmover_update():
     c_dict = movers_schema.CatsMover().serialize(c_mv.to_dict())
     dict_ = movers_schema.CatsMover().deserialize(c_dict)
 
-    # now let's say we want to update the Tide object, which is not part of the serialization
+    # now let's say we want to update the Tide object,
+    # which is not part of the serialization
 
     tide = environment.Tide(td_file)
     dict_.update({'tide': tide})
     c_mv.from_dict(dict_)
     assert c_mv.tide.id == tide.id
-
-

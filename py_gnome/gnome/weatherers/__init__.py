@@ -1,4 +1,4 @@
 
 from core import Weatherer
 
-__all__ = [Weatherer,]
+__all__ = [Weatherer]
