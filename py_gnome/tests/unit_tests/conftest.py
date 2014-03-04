@@ -196,6 +196,19 @@ def rq_rand():
 
 
 @pytest.fixture(scope='module')
+def sample_graph():
+    from gnome.utilities.weathering.graphs import Graph
+
+    return Graph(points=((1, 2, 3),
+                         (2, 3, 4),
+                         (3, 4, 5),),
+                 labels=('x', 'F1(x)', 'F2(x)'),
+                 formats=('', 'r-o', 'g->'),
+                 title='Custom line styles'
+                 )
+
+
+@pytest.fixture(scope='module')
 def wind_circ(rq_wind):
     """
     Create Wind object using the time series given by test fixture 'rq_wind'
