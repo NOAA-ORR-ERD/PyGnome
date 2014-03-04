@@ -20,7 +20,7 @@ from cache, as well as serialize and deserialize them.
 This is meant to be a usable base class that behaves in a general manner.
 But it is also intended to be easily customizable through sub-classing.
 """
-from uuid import uuid1
+import copy
 
 import numpy
 np = numpy
@@ -31,11 +31,27 @@ from matplotlib import pyplot
 
 plt = pyplot
 
+from gnome import GnomeId
+from gnome.utilities.serializable import Serializable
 
-class Graph(object):
+
+class Graph(GnomeId, Serializable):
+    # default units for input/output data
+    _update = ['points',
+               'labels',
+               'formats',
+               'title']
+    _create = []  # used to create new obj or as readonly parameter
+    _create.extend(_update)
+
+    state = copy.deepcopy(Serializable.state)
+    state.add(create=_create, update=_update)
+
     default_labels = 'XYZABCDEFGHJKLMNPQRSTUVW'
+    xaxis_plus_one_series = 2
 
-    def __init__(self, points, labels='', formats=None, title='Title'):
+    def __init__(self, points, labels='', formats=None, title='Title',
+                 **kwargs):
         '''
            :param points: A sequence of data points for us to graph.
            :type points:  Sequence of data point items in the form:
@@ -57,15 +73,21 @@ class Graph(object):
         self.labels = labels
         self.formats = formats
         self.title = title
-        self.fig_num = uuid1()
+
+        self._gnome_id = GnomeId(id=kwargs.pop('id', None))
+
+    id = property(lambda self: self._gnome_id.id)
 
     def __del__(self):
         '''
            The entire python session could be shutting down at this point,
            so don't assume anything exists externally to our object
+           We will use the EAFP idiom here though.
         '''
-        if plt:
-            plt.close(self.fig_num)
+        try:
+            plt.close(self.id)
+        except AttributeError:
+            pass
 
     def render(self):
         self._init_figure()
@@ -83,16 +105,10 @@ class Graph(object):
              So we will simply open the figure by number
            - It will probably be OK to just clear the figure every time.
         '''
-        self.fig = plt.figure(num=self.fig_num)
+        self.fig = plt.figure(num=self.id)
         self.fig.clear()
 
     def _plot_points(self):
-        '''
-           There are lots of plotting styles that we may want to take advantage
-           of here.  But for right now, we just get it plotted.
-           TODO: We may need to utilize labels here in order to get the Legend
-                 going properly.
-        '''
         x = self.points[0]
         for p, i in zip(self.points, range(len(self.points)))[1:]:
             static_args = [x, p]
@@ -118,15 +134,11 @@ class Graph(object):
             plt.xlabel(self._get_label(0))
 
     def _label_yaxis(self):
-        '''
-           We label the Y axis only if we are dealing with a single series.
-           Otherwise, it doesn't really make sense.
-        '''
-        if len(self.points) == 2:
+        if len(self.points) == self.xaxis_plus_one_series:
             plt.ylabel(self._get_label(1))
 
     def _make_legend(self):
-        if len(self.points) > 2:
+        if len(self.points) > self.xaxis_plus_one_series:
             plt.legend(loc='upper center', shadow=True)
 
 
