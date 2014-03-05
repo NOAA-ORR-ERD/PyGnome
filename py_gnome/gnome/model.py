@@ -627,7 +627,6 @@ class Model(Serializable):
 
         self._empty_save_dir(saveloc)
         json_ = self.serialize('create')
-        #self._save_json_to_file(saveloc, json_, self, '_' + self.id)
         self._save_json_to_file(saveloc, json_,
             '{0}.json'.format(self.__class__.__name__))
 
@@ -736,45 +735,6 @@ the model module.
 '''
 
 
-#==============================================================================
-# def _load_json_from_file(fname, saveloc):
-#     '''
-#     Look at _state attribute of object. Find all fields with
-#     'isdatafile' attribute as True. If there is a key in json_data
-#     corresponding with 'name' of the fields with True 'isdatafile'
-#     attribute, then append the saveloc path to the value
-#     '''
-#     with open(fname, 'r') as infile:
-#         json_data = json.load(infile)
-# 
-#     _state = eval('{0}._state'.format(json_data['obj_type']))
-#     fields = _state.get_field_by_attribute('isdatafile')
-# 
-#     for field in fields:
-#         if field.name not in json_data:
-#             continue
-#         json_data[field.name] = os.path.join(saveloc,
-#                 json_data[field.name])
-# 
-#     return json_data
-# 
-# 
-# def _json_to_dict(json_):
-#     """
-#     Function used when loading a model scenario.
-#     convert the dict returned by object's to_dict method to valid json
-#     format via colander schema
-# 
-#     :param dict json_: JSON data to be converted
-#     """
-# 
-#     to_eval = ('{0}.deserialize(json_)'.format(json_['obj_type']))
-#     _to_dict = eval(to_eval)
-# 
-#     return _to_dict
-#==============================================================================
-
-
 def _dict_to_obj(obj_dict):
     '''
     create object from a dict. The dict contains (keyword,value) pairs
@@ -819,62 +779,6 @@ def _load_json_from_file_to_obj(fname):
     obj_ = _dict_to_obj(dict_)
 
     return obj_
-#==============================================================================
-# def _load_model_dict(saveloc):
-#     '''
-#     Load model dict from *.json file.
-#     Pop 'map' key, create 'map' object and add to model dict.
-#     This dict is used in Model.new_from_dict(dict_) to create new Model
-#     '''
-#     model_file = glob.glob(os.path.join(saveloc, 'Model*.json'))
-#     if model_file == []:
-#         raise ValueError('No Model*.json files find in {0}'\
-#                          .format(saveloc))
-#     elif len(model_file) > 1:
-#         raise ValueError("multiple Model*.json files found in {0}. Please"
-#                          " provide 'filename'".format(saveloc))
-#     else:
-#         model_file = model_file[0]
-# 
-#     model_dict = _load_and_deserialize_json(model_file, saveloc)
-# 
-#     # create map object and add to model_dict
-# 
-#     map_type, map_id = model_dict['map']
-#     obj_json = _find_and_load_json_file(map_id)
-# 
-#     dict_ = _json_to_dict(obj_json)
-#     map_ = _dict_to_obj(dict_)
-# 
-#     model_dict['map'] = map_  # replace map object in the dict
-# 
-#     return model_dict
-#==============================================================================
-
-
-#==============================================================================
-# def _find_and_load_json_file(saveloc, id_):
-#     """
-#     Given the id of the object, find the *_{id}.json file that contains
-#     json of the object and load it.
-#     """
-# 
-#     obj_file = glob.glob(os.path.join(saveloc,
-#                          '*_{0}.json'.format(id_)))
-# 
-#     if len(obj_file) == 0:
-#         msg = 'No filename containing *_{0}.json found in {1}'
-#         raise IOError(msg.format(id_, os.path.abspath('.')))
-#     elif len(obj_file) > 1:
-#         msg = 'Cannot have two objects with same Id. Multiple'\
-#               ' filenames containing *_{0}.json found in {1}'
-#         raise IOError(msg.format(id_, os.path.abspath(saveloc)))
-# 
-#     obj_file = obj_file[0]
-#     obj_json = _load_json_from_file(os.path.abspath(obj_file))
-# 
-#     return obj_json
-#==============================================================================
 
 
 def _load_collection(coll_dict, saveloc, l_env=None):
@@ -913,44 +817,6 @@ def _load_collection(coll_dict, saveloc, l_env=None):
         obj_list.append(obj)
 
     return obj_list
-
-
-#==============================================================================
-# def _load_movers_collection(movers_dict, l_env, saveloc):
-#     """
-#     add movers to the model - dict contains the output of
-#     OrderedCollection.to_dict()
-# 
-#     'dtype' - not used for anything
-#     'items' - for each object in list, use this to find and load the json
-#                 file, convert it to a valid dict, then create a new object
-#                 using new_from_dict 'items' contains a list of tuples
-#                 (object_type, id of object)
-# 
-#     .. note:: If Wind object and Tide object are present, the objects must
-#               be created and part of a list passed in as l_env
-#     """
-#     obj_list = []
-# 
-#     for (type_, idx) in movers_dict['items']:
-#         fname = '{0}_{1}.json'.format(type_.rplit(1)[1], idx)
-#         obj_dict = _load_and_deserialize_json(os.path.join(saveloc, fname))
-#         #obj_name = string.rsplit(type_, '.', 1)[-1]
-#         obj_name = type_.rsplit('.', 1)[-1]
-# 
-#         #obj_dict = _json_to_dict(obj_json)
-# 
-#         if obj_name == 'WindMover':
-#             obj_dict.update({'wind': _get_obj(l_env, obj_dict['wind_id'])})
-#         elif (obj_name == 'CatsMover' and
-#               obj_dict.get('tide_id') is not None):
-#             obj_dict.update({'tide': _get_obj(l_env, obj_dict['tide_id'])})
-# 
-#         obj = _dict_to_obj(obj_dict)
-#         obj_list.append(obj)
-# 
-#     return obj_list
-#==============================================================================
 
 
 def _get_obj(list_, id_):
@@ -1039,28 +905,6 @@ def load(saveloc):
     l_movers = model_dict.pop('movers')
     model_dict['movers'] = \
         _load_collection(l_movers, saveloc, model_dict['environment'])
-
-#==============================================================================
-#     l_movers = model_dict.pop('movers')
-#     l_weatherers = model_dict.pop('weatherers')
-#     l_environment = model_dict.pop('environment')
-#     l_outputters = model_dict.pop('outputters')
-#     l_spills = model_dict.pop('spills')
-# 
-#     # load objects in a list and add that back to model_dict
-# 
-#     model_dict['environment'] = _load_collection(l_environment)
-#     model_dict['outputters'] = _load_collection(l_outputters)
-#     model_dict['certain_spills'] = \
-#         _load_collection(l_spills['certain_spills'])
-#     if ('uncertain' in model_dict and model_dict['uncertain']):
-#         model_dict['uncertain_spills'] = \
-#             _load_collection(l_spills['uncertain_spills'])
-# 
-#     model_dict['movers'] = \
-#         _load_movers_collection(l_movers, model_dict['environment'])
-#     model_dict['weatherers'] = _load_collection(l_weatherers)
-#==============================================================================
 
     model = _dict_to_obj(model_dict)
     _load_spill_data(saveloc, model)
