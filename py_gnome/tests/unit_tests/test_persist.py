@@ -201,7 +201,6 @@ def test_save_load_scenario(images_dir, uncertain):
     assert model == model2
 
 
-@pytest.mark.xfail
 @pytest.mark.slow
 @pytest.mark.parametrize('uncertain', [False, True])
 def test_save_load_midrun_scenario(images_dir, uncertain):
@@ -227,7 +226,6 @@ def test_save_load_midrun_scenario(images_dir, uncertain):
     assert model == model2
 
 
-@pytest.mark.xfail
 @pytest.mark.slow
 @pytest.mark.parametrize('uncertain', [False, True])
 def test_save_load_midrun_no_movers(images_dir, uncertain):
@@ -244,12 +242,10 @@ def test_save_load_midrun_no_movers(images_dir, uncertain):
 
     model.step()
     print 'saving scenario ..'
-    scene = Scenario(saveloc_, model)
-    scene.save()
+    model.save(saveloc_)
 
-    scene.model = None  # make it none - load from persistence
     print 'loading scenario ..'
-    model2 = scene.load()
+    model2 = load(saveloc_)
 
     for sc in zip(model.spills.items(), model2.spills.items()):
         # need to change both atol since reading persisted data
@@ -260,7 +256,6 @@ def test_save_load_midrun_no_movers(images_dir, uncertain):
     assert model == model2
 
 
-@pytest.mark.xfail
 @pytest.mark.slow
 @pytest.mark.parametrize('uncertain', [False, True])
 def test_load_midrun_ne_rewound_model(images_dir, uncertain):
@@ -276,11 +271,10 @@ def test_load_midrun_ne_rewound_model(images_dir, uncertain):
 
     model.step()
     print 'saving scenario ..'
-    scene = Scenario(saveloc_, model)
-    scene.save()
+    model.save(saveloc_)
 
     model.rewind()
-    model2 = scene.load()
+    model2 = load(saveloc_)
 
     assert model.spills != model2.spills
     assert model != model2

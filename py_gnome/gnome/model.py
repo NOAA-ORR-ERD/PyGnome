@@ -645,7 +645,8 @@ class Model(Serializable):
 
         # persist model _state since middle of run
         if self.current_time_step > -1:
-            self._save_spill_data()
+            self._save_spill_data(os.path.join(saveloc,
+                                                'spills_data_arrays.nc'))
 
     def _save_collection(self, saveloc, coll_):
         """
@@ -699,16 +700,15 @@ class Model(Serializable):
 
         return json_
 
-    def _save_spill_data(self):
+    def _save_spill_data(self, datafile):
         """ save the data arrays for current timestep to NetCDF """
-        nc_out = NetCDFOutput(self._certainspill_data,
+        nc_out = NetCDFOutput(datafile,
                               which_data='all',
-                              cache=self.model._cache)
+                              cache=self._cache)
         nc_out.prepare_for_model_run(model_start_time=self.start_time,
                                      uncertain=self.uncertain,
                                      spills=self.spills)
         nc_out.write_output(self.current_time_step)
-        self._uncertainspill_data = nc_out._u_netcdf_filename
 
     def _empty_save_dir(self, saveloc):
         '''
@@ -969,26 +969,30 @@ def _get_obj(list_, id_):
     return obj[0]
 
 
-def _load_spill_data(spill_data):
+def _load_spill_data(saveloc, model):
     """ load NetCDF file and add spill data back in """
+    spill_data = os.path.join(saveloc, 'spills_data_arrays.nc')
     if not os.path.exists(spill_data):
         return
 
+    if model.uncertain:
+        u_spill_data = os.path.join(saveloc, 'spills_data_arrays_uncertain.nc')
+
     array_types = {}
 
-    for m in self.model.movers:
+    for m in model.movers:
         array_types.update(m.array_types)
 
-    for w in self.model.weatherers:
+    for w in model.weatherers:
         array_types.update(w.array_types)
 
-    for sc in self.model.spills.items():
+    for sc in model.spills.items():
         if sc.uncertain:
-            data = NetCDFOutput.read_data(self._uncertainspill_data,
+            data = NetCDFOutput.read_data(u_spill_data,
                                           time=None,
                                           which_data='all')
         else:
-            data = NetCDFOutput.read_data(self._certainspill_data,
+            data = NetCDFOutput.read_data(spill_data,
                                           time=None,
                                           which_data='all')
 
@@ -1059,6 +1063,6 @@ def load(saveloc):
 #==============================================================================
 
     model = _dict_to_obj(model_dict)
-    #cls._load_spill_data()    #TODO: fix this
+    _load_spill_data(saveloc, model)
 
     return model
