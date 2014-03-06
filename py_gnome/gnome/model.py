@@ -781,7 +781,7 @@ def _load_json_from_file_to_obj(fname):
     return obj_
 
 
-def _load_collection(coll_dict, saveloc, l_env=None):
+def _load_collection(saveloc, coll_dict, l_env=None):
     """
     Load collection - dict contains output of OrderedCollection.to_dict()
 
@@ -895,16 +895,16 @@ def load(saveloc):
         list_ = model_dict.pop(key)
         if key == 'spills':
             model_dict['certain_spills'] = \
-                _load_collection(list_['certain_spills'], saveloc)
+                _load_collection(saveloc, list_['certain_spills'])
             if ('uncertain' in model_dict and model_dict['uncertain']):
                 model_dict['uncertain_spills'] = \
-                    _load_collection(list_['uncertain_spills'], saveloc)
+                    _load_collection(saveloc, list_['uncertain_spills'])
         else:
-            model_dict[key] = _load_collection(list_, saveloc)
+            model_dict[key] = _load_collection(saveloc, list_)
 
     l_movers = model_dict.pop('movers')
     model_dict['movers'] = \
-        _load_collection(l_movers, saveloc, model_dict['environment'])
+        _load_collection(saveloc, l_movers, model_dict['environment'])
 
     model = _dict_to_obj(model_dict)
     _load_spill_data(saveloc, model)
