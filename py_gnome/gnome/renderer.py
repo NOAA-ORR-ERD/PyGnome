@@ -11,7 +11,7 @@ import glob
 import copy
 
 import gnome    # implicitly used when loading from dict by new_from_dict
-from gnome.outputter import Outputter
+from gnome.outputters import Outputter
 from gnome.utilities.map_canvas import MapCanvas
 from gnome.utilities import serializable
 from gnome.utilities.file_tools import haz_files
@@ -36,9 +36,9 @@ class Renderer(Outputter, MapCanvas, serializable.Serializable):
     _create = ['image_size', 'projection_class', 'draw_ontop']
 
     _create.extend(_update)
-    state = copy.deepcopy(serializable.Serializable.state)
-    state.add(create=_create, update=_update)
-    state.add_field(serializable.Field('filename', isdatafile=True,
+    _state = copy.deepcopy(serializable.Serializable._state)
+    _state.add(create=_create, update=_update)
+    _state.add_field(serializable.Field('filename', isdatafile=True,
                     create=True, read=True))
 
     @classmethod

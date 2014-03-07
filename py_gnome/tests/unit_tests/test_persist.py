@@ -20,12 +20,12 @@ from gnome.utilities.remote_data import get_datafile
 from gnome.map import MapFromBNA
 from gnome.environment import Wind, Tide
 
-from gnome.model import Model
-from gnome.spill import PointLineSource
+from gnome.model import Model, load
+from gnome.spill import point_line_release_spill
 from gnome.movers import RandomMover, WindMover, CatsMover
-from gnome.weatherers.core import Weatherer
+from gnome.weatherers import Weatherer
 
-from gnome.persist.scenario import Scenario
+#from gnome.persist.scenario import Scenario
 from gnome.renderer import Renderer
 
 curr_dir = os.path.dirname(__file__)
@@ -33,10 +33,13 @@ datafiles = os.path.join(curr_dir, 'sample_data', 'boston_data')
 saveloc_ = os.path.join(curr_dir, 'save_model')
 
 
-# clean up saveloc_ if it exists from previous runs
+# clean up saveloc_ if it exists
 # let Scenario.__init__() create saveloc_
-if os.path.exists(saveloc_):
-    shutil.rmtree(saveloc_)
+def del_saveloc(saveloc_):
+    if os.path.exists(saveloc_):
+        shutil.rmtree(saveloc_)
+
+del_saveloc(saveloc_)
 
 
 @pytest.fixture(scope='module')
@@ -80,10 +83,10 @@ def make_model(images_dir, uncertain=False):
     print 'adding a spill'
     start_position = (144.664166, 13.441944, 0.0)
     end_release_time = start_time + timedelta(hours=6)
-    model.spills += PointLineSource(num_elements=1000,
-                                    start_position=start_position,
-                                    release_time=start_time,
-                                    end_release_time=end_release_time)
+    model.spills += point_line_release_spill(num_elements=1000,
+                                        start_position=start_position,
+                                        release_time=start_time,
+                                        end_release_time=end_release_time)
 
     # need a scenario for SimpleMover
     # model.movers += SimpleMover(velocity=(1.0, -1.0, 0.0))
@@ -147,54 +150,41 @@ def make_model(images_dir, uncertain=False):
     return model
 
 
-def test_init_exception():
+def test_init_exception(images_dir):
+    m = make_model(images_dir)
     with raises(ValueError):
-        Scenario(os.path.join(saveloc_, 'x', 'junk'))
+        m.save(os.path.join(saveloc_, 'x', 'junk'))
 
 
 def test_dir_gets_created(images_dir):
+    model = make_model(images_dir)
     assert not os.path.exists(saveloc_)
-    Scenario(os.path.join(saveloc_))
+    model.save(os.path.join(saveloc_))
     assert os.path.exists(saveloc_)
 
 
 def test_exception_no_model_to_load(images_dir):
     '''
     raises exception since the saveloc_ from where to load the model is empty.
-    There are no Model_*.txt files that can be loaded
+    There are no Model.txt files that can be loaded
     '''
-    s = Scenario(os.path.join(saveloc_))
+    try:
+        os.remove(os.path.join(saveloc_, 'Model.json'))
+    except:
+        pass
     with raises(ValueError):
-        s.load()
+        load(os.path.join(saveloc_))
 
 
-def test_exception_no_model_to_save():
-    s = Scenario(os.path.join(saveloc_))
-    with raises(AttributeError):
-        s.save()
-
-
-def test_exception_multiple_models_to_load(images_dir):
+def test_save_load_model(images_dir):
     '''
-    create a model, save it. Then copy the Model_*.json
-    file to a new Mode_*_new.json file in the same location.
-    During Scenario(...).load(), this should raise an exception
-    since there should only be 1 Model_*.json in saveloc_
+    create a model, save it, then load it back up and check it is equal to
+    original model
     '''
     model = make_model(images_dir)
-
-    scene = Scenario(saveloc_, model)
-    scene.save()
-
-    m_file = glob(os.path.join(saveloc_, 'Model_*.json'))[0]
-    filename, extension = os.path.splitext(m_file)
-
-    m_new = '{0}_new'.format(filename) + extension
-
-    shutil.copyfile(m_file, m_new)
-
-    with raises(ValueError):
-        scene.load()
+    model.save(saveloc_)
+    model2 = load(saveloc_)
+    assert model == model2
 
 
 @pytest.mark.slow
@@ -202,13 +192,11 @@ def test_exception_multiple_models_to_load(images_dir):
 def test_save_load_scenario(images_dir, uncertain):
     model = make_model(images_dir, uncertain)
 
-    print 'saving scnario ..'
-    scene = Scenario(saveloc_, model)
-    scene.save()
+    print 'saving scenario ..'
+    model.save(saveloc_)
 
-    scene.model = None  # make it none - load from persistence
     print 'loading scenario ..'
-    model2 = scene.load()
+    model2 = load(saveloc_)
 
     assert model == model2
 
@@ -225,12 +213,10 @@ def test_save_load_midrun_scenario(images_dir, uncertain):
 
     model.step()
     print 'saving scnario ..'
-    scene = Scenario(saveloc_, model)
-    scene.save()
+    model.save(saveloc_)
 
-    scene.model = None  # make it none - load from persistence
     print 'loading scenario ..'
-    model2 = scene.load()
+    model2 = load(saveloc_)
 
     for sc in zip(model.spills.items(), model2.spills.items()):
         sc[0]._array_allclose_atol = 1e-5  # need to change both atol
@@ -256,12 +242,10 @@ def test_save_load_midrun_no_movers(images_dir, uncertain):
 
     model.step()
     print 'saving scenario ..'
-    scene = Scenario(saveloc_, model)
-    scene.save()
+    model.save(saveloc_)
 
-    scene.model = None  # make it none - load from persistence
     print 'loading scenario ..'
-    model2 = scene.load()
+    model2 = load(saveloc_)
 
     for sc in zip(model.spills.items(), model2.spills.items()):
         # need to change both atol since reading persisted data
@@ -287,11 +271,10 @@ def test_load_midrun_ne_rewound_model(images_dir, uncertain):
 
     model.step()
     print 'saving scenario ..'
-    scene = Scenario(saveloc_, model)
-    scene.save()
+    model.save(saveloc_)
 
     model.rewind()
-    model2 = scene.load()
+    model2 = load(saveloc_)
 
     assert model.spills != model2.spills
     assert model != model2

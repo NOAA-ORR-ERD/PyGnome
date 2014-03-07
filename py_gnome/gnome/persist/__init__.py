@@ -28,4 +28,5 @@ modules_dict = {'gnome.environment': 'gnome.persist.environment_schema',
                 'gnome.spill': 'gnome.persist.spills_schema',
                 'gnome.renderer': 'gnome.persist.outputters_schema',
                 'gnome.netcdf_outputter': 'gnome.persist.outputters_schema',
+                'gnome.elements': 'gnome.persist.elements_schema',
                 }

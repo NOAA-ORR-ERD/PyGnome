@@ -26,8 +26,8 @@ class Mover(object):
 
     """
 
-    state = copy.deepcopy(serializable.Serializable.state)
-    state.add(update=['on', 'active_start', 'active_stop'],
+    _state = copy.deepcopy(serializable.Serializable._state)
+    _state.add(update=['on', 'active_start', 'active_stop'],
               create=['on', 'active_start', 'active_stop'],
               read=['active'])
 

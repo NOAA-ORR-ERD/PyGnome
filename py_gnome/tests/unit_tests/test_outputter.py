@@ -1,41 +1,34 @@
 #!/usr/bin/env python
-
 """
 test code for the Outputter classes
-
-
 """
+
 from datetime import timedelta
 import math
 
 import pytest
 
-import gnome
-from gnome.outputter import Outputter
 from gnome.elements import floating
+
+from gnome.spill import point_line_release_spill
+from gnome.outputters import Outputter
 
 
 @pytest.fixture(scope='module')
 def model(sample_model):
     """
-    use fixture sample_model and add a few things to it for the
+    Use fixture sample_model and add a few things to it for the
     test
-
-    This fixtures adds another spill (PointLineSource) and a netcdf outputter
-    to the model. It also adds a cleanup function that deletes the netcdf files
-    after upon test completion.
     """
-
     model = sample_model['model']
 
-    model.cache_enabled = True  # let's enable cache
+    model.cache_enabled = True
 
-    model.spills += \
-        gnome.spill.PointLineSource(num_elements=5,
-            start_position=sample_model['release_start_pos'],
-            release_time=model.start_time,
-            end_release_time=model.start_time + model.duration,
-            element_type=floating(windage_persist=-1))
+    model.spills += point_line_release_spill(num_elements=5,
+                        start_position=sample_model['release_start_pos'],
+                        release_time=model.start_time,
+                        end_release_time=model.start_time + model.duration,
+                        element_type=floating(windage_persist=-1))
 
     return model
 
@@ -44,6 +37,7 @@ def test_rewind():
     """ test rewind resets data """
     o_put = Outputter(output_timestep=timedelta(minutes=30))
     o_put.rewind()
+
     assert o_put._model_start_time is None
     assert o_put._next_output_time is None
     assert not o_put._write_step
@@ -83,17 +77,16 @@ def test_output_timestep(model, output_ts, model_ts):
     for step_num in range(-1, model.num_time_steps - 1):
         if step_num == -1:
             model.setup_model_run()
+
             assert o_put._model_start_time == model.start_time
             assert o_put._next_output_time == (model.model_time +
                                                o_put.output_timestep)
             assert not o_put._write_step
-
         else:
             model.setup_time_step()
 
             if o_put.output_timestep <= timedelta(seconds=model.time_step):
                 assert o_put._write_step    # write every step
-
             else:
                 if (step_num + 1) % factor == 0:
                     assert o_put._write_step
@@ -122,20 +115,16 @@ def test_output_timestep(model, output_ts, model_ts):
                                            model.model_time)
             if model.current_time_step < model.num_time_steps - 1:
                 assert o_put._next_output_time == (model.model_time +
-                                               o_put.output_timestep)
+                                                   o_put.output_timestep)
 
         # write_output checks to see if it is zero or last time step and if
         # flags to output these steps are set. It changes _write_step
         # accordingly
         if model.current_time_step == 0:
-            assert (o_put._write_step if o_put.output_zero_step else
-                    not o_put._write_step)
+            assert (o_put._write_step if o_put.output_zero_step
+                    else not o_put._write_step)
         elif model.current_time_step == model.num_time_steps - 1:
-            assert (o_put._write_step if o_put.output_last_step else
-                    not o_put._write_step)
+            assert (o_put._write_step if o_put.output_last_step
+                    else not o_put._write_step)
 
         print 'Completed step: {0}'.format(model.current_time_step)
-
-
-if __name__ == '__main__':
-    pass

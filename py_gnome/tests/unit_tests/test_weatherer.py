@@ -23,7 +23,7 @@ from gnome.elements import (ElementType,
                             InitHalfLivesFromOilProps
                             )
 
-from gnome.weatherers.core import Weatherer
+from gnome.weatherers import Weatherer
 
 rel_time = datetime(2012, 8, 20, 13)  # yyyy/month/day/hr/min/sec
 arr_types = {'mass': mass,

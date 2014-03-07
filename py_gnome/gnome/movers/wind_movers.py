@@ -25,8 +25,8 @@ from gnome.cy_gnome.cy_gridwind_mover import CyGridWindMover
 
 
 class WindMoversBase(CyMover):
-    state = copy.deepcopy(serializable.Serializable.state)
-    state.add(update=['uncertain_duration', 'uncertain_time_delay',
+    _state = copy.deepcopy(CyMover._state)
+    _state.add(update=['uncertain_duration', 'uncertain_time_delay',
                       'uncertain_speed_scale'],
               create=['uncertain_duration', 'uncertain_time_delay',
                       'uncertain_speed_scale', 'uncertain_angle_scale',
@@ -210,8 +210,8 @@ class WindMover(WindMoversBase, serializable.Serializable):
     In addition to base class array_types.basic, also use the
     array_types.windage dict since WindMover requires a windage array
     """
-    state = copy.deepcopy(WindMoversBase.state)
-    state.add(read=['wind_id'], create=['wind_id'])
+    _state = copy.deepcopy(WindMoversBase._state)
+    _state.add(read=['wind_id'], create=['wind_id'])
 
     @classmethod
     def new_from_dict(cls, dict_):
@@ -228,7 +228,7 @@ class WindMover(WindMoversBase, serializable.Serializable):
 
     def wind_id_to_dict(self):
         """
-        used only for storing state so no wind_id_from_dict is defined. This
+        used only for storing _state so no wind_id_from_dict is defined. This
         is not a read/write attribute. Only defined for serializable_state
         """
         return self.wind.id
@@ -237,7 +237,7 @@ class WindMover(WindMoversBase, serializable.Serializable):
         """
         For updating the object from dictionary
 
-        'wind' object is not part of the state since it is not serialized/
+        'wind' object is not part of the _state since it is not serialized/
         deserialized; however, user can still update the wind attribute with a
         new Wind object. That must be poped out of the dict() here, then call
         super to process the standard dict\_
@@ -270,7 +270,7 @@ class WindMover(WindMoversBase, serializable.Serializable):
         return info
 
     def __str__(self):
-        info = ('WindMover - current state. '
+        info = ('WindMover - current _state. '
                 'See "wind" object for wind conditions:\n'
                 '{0}'.format(self._state_as_str()))
         return info
@@ -330,9 +330,9 @@ def constant_wind_mover(speed, direction, units='m/s'):
 
 
 class GridWindMover(WindMoversBase, serializable.Serializable):
-    state = copy.deepcopy(WindMoversBase.state)
-    state.add(update=['wind_scale'], create=['wind_scale'])
-    state.add_field([serializable.Field('wind_file', create=True,
+    _state = copy.deepcopy(WindMoversBase._state)
+    _state.add(update=['wind_scale'], create=['wind_scale'])
+    _state.add_field([serializable.Field('wind_file', create=True,
                     read=True, isdatafile=True),
                     serializable.Field('topology_file', create=True,
                     read=True, isdatafile=True)])
@@ -382,7 +382,7 @@ class GridWindMover(WindMoversBase, serializable.Serializable):
         return info
 
     def __str__(self):
-        info = ('GridWindMover - current state.\n'
+        info = ('GridWindMover - current _state.\n'
                 '{0}'.format(self._state_as_str()))
         return info
 

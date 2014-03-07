@@ -33,8 +33,8 @@ class SimpleMover(Mover, serializable.Serializable):
     (not all that different than a constant wind mover, now that I think about it)    
     """
 
-    state = copy.deepcopy(Mover.state)
-    state.add(update=['uncertainty_scale', 'velocity'],
+    _state = copy.deepcopy(Mover._state)
+    _state.add(update=['uncertainty_scale', 'velocity'],
               create=['uncertainty_scale', 'velocity'])
 
     def __init__(

@@ -205,7 +205,7 @@ class Test_GnomeMap:
 
         gmap = gnome.map.GnomeMap()
         dict_ = gmap.to_dict('create')
-        dict_.pop('obj_type')
+        #dict_.pop('obj_type')
         gmap2 = gmap.new_from_dict(dict_)
 
         assert gmap == gmap2
@@ -352,7 +352,7 @@ class TestRefloat:
         all elements in water so do nothing
         """
 
-        self.reset()  # reset state
+        self.reset()  # reset _state
         (self.spill['status_codes'])[:] = oil_status.in_water
         self.map.refloat_elements(self.spill, self.time_step)
         assert np.all(self.spill['positions'] == self.orig_pos)
@@ -558,7 +558,6 @@ def test_MapfromBNA_new_from_dict():
 
     gmap = gnome.map.MapFromBNA(testmap, 6)
     dict_ = gmap.to_dict('create')
-    dict_.pop('obj_type')
     map2 = gmap.new_from_dict(dict_)
     assert gmap == map2
 

@@ -56,8 +56,8 @@ class GnomeMap(Serializable):
     _update = ['map_bounds', 'spillable_area']
     _create = []
     _create.extend(_update)
-    state = copy.deepcopy(Serializable.state)
-    state.add(create=_create, update=_update)
+    _state = copy.deepcopy(Serializable._state)
+    _state.add(create=_create, update=_update)
 
     refloat_halflife = None  # note -- no land, so never used
 
@@ -234,7 +234,7 @@ class RasterMap(GnomeMap):
     It requires a constant refloat half-life in hours
 
     This will usually be initialized in a sub-class (from a BNA, etc)
-    NOTE: Nothing new added to state attribute for serialization
+    NOTE: Nothing new added to _state attribute for serialization
     """
     # NOTE: spillable area can be both larger and smaller than land raster:
     #       map bounds can also be larger or smaller:
@@ -533,9 +533,9 @@ class MapFromBNA(RasterMap, Serializable):
     """
     A raster land-water map, created from a BNA file
     """
-    state = copy.deepcopy(RasterMap.state)
-    state.add(create=['refloat_halflife'], update=['refloat_halflife'])
-    state.add_field(Field('filename', isdatafile=True, create=True, read=True))
+    _state = copy.deepcopy(RasterMap._state)
+    _state.add(create=['refloat_halflife'], update=['refloat_halflife'])
+    _state.add_field(Field('filename', isdatafile=True, create=True, read=True))
 
     def __init__(self, filename, refloat_halflife, raster_size=1024 * 1024,
                  **kwargs):

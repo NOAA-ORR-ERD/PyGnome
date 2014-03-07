@@ -67,7 +67,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     # split the total spill volume (100 m^3) to have most in the larger droplet spill
     # smaller droplets start at a lower depth than larger
 
-    spill = gnome.spill.PointLineSource(num_elements=1000,
+    spill = gnome.spill.point_line_release_spill(num_elements=1000,
                                         volume=90, # default volume_units=m^3
                                         start_position=(-76.126872, 37.680952, 1700),
                                         release_time=start_time,  
@@ -78,7 +78,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
                                         )
     model.spills += spill
 
-    spill = gnome.spill.PointLineSource(num_elements=1000,
+    spill = gnome.spill.point_line_release_spill(num_elements=1000,
             volume=10,
             start_position=(-76.126872, 37.680952, 1800),
             release_time=start_time,  

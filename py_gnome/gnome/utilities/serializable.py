@@ -3,9 +3,23 @@ Created on Feb 15, 2013
 '''
 
 import copy
+import os
+import shutil
 
 import numpy
 np = numpy
+
+import gnome
+from gnome.persist import (
+    modules_dict,
+    environment_schema,     # used implicitly by eval()
+    model_schema,           # used implicitly by eval()
+    movers_schema,          # used implicitly by eval()
+    weatherers_schema,      # used implicitly by eval()
+    spills_schema,          # used implicitly by eval()
+    map_schema,             # used implicitly by eval()
+    outputters_schema       # used implicitly by eval()
+    )
 
 
 class Field(object):  # ,serializable.Serializable):
@@ -19,7 +33,7 @@ class Field(object):  # ,serializable.Serializable):
         Constructor for the Field object.
         The Field object is used to describe the property of an object.
         For instance, if a property is required to re-create the object from
-        a persisted state, its 'create' attribute is True.
+        a persisted _state, its 'create' attribute is True.
         If the property describes a data file that will need to be moved
         when persisting the model, isdatafile should be True.
         The gnome.persist.scenario module contains a Scenario class that loads
@@ -110,7 +124,7 @@ class State(object):
 
     def __copy__(self):
         '''
-        shallow copy of state object so references original fields list
+        shallow copy of _state object so references original fields list
         '''
         new_ = type(self)()
         new_.__dict__.update(copy.copy(self.__dict__))
@@ -118,21 +132,31 @@ class State(object):
 
     def __deepcopy__(self, memo):
         '''
-        deep copy of state object so makes a copy of the fields list
+        deep copy of _state object so makes a copy of the fields list
         '''
         new_ = type(self)()
         new_.__dict__.update(copy.deepcopy(self.__dict__))
         return new_
 
+    def __contains__(self, name):
+        """
+        given the name as a string, it tests whether the 'fields' attribute
+        contains a 'field' with user specified name. The 'fields' attribute is
+        a list of 'Field' objects corresponding with properties that are
+        serialized
+        """
+        if name in [f.name for f in self.fields]:
+            return True
+
+        return False
+
     def add_field(self, l_field):
         """
         Adds a Field object or a list of Field objects to fields attribute
 
-        Either use this to add a property to the state object or use the
-        'add' method to add a property.
-        add_field gives more control since the attributes other than
-        'create','update','read' can be set directly when defining the
-        Field object.
+        Either use this to add a property to the _state object or use the 'add' method to add a property.
+        add_field gives more control since the attributes other than 'create','update','read' can be set
+        directly when defining the Field object.
         """
         if isinstance(l_field, Field):
             l_field = [l_field]
@@ -158,24 +182,18 @@ class State(object):
 
     def add(self, create=[], update=[], read=[]):
         """
-        Only checks to make sure 'read' and 'update' properties are disjoint.
-        Also makes sure everything is a list.
-
+        Only checks to make sure 'read' and 'update' properties are disjoint. Also makes sure everything is a list. 
+        
         Args:
-        :param update: A list of strings which are properties that can be
-                       updated, so read/write capable
+        :param update: a list of strings which are properties that can be updated, so read/write capable
         :type update:  list containing str
-        :param read:   A list of strings which are properties that are for
-                       info, so read-only.
-                       It is not required for creating new object.
+        :param read:   a list of strings which are properties that are for info, so readonly. It is not required for creating new object.
         :type read:    list containing str
-        :param create: A list of strings which are properties that are
-                       required to create new object when JSON is read from
-                       save file.
+        :param create: a list of strings which are properties that are required to create new object when 
+                        JSON is read from save file
                        Only the create properties are saved to save file
-        :type create:  A list of str
-        :param field:  A field object or a list of field objects that should
-                       be added to the State for persistence
+        :type create:  a list of str
+        :param field:  a field object or a list of field objects that should be added to the State for persistence
         :type field:   Field object or list of Field objects
 
         For 'update', 'read', 'create', a Field object is create for each
@@ -190,9 +208,8 @@ class State(object):
         create_ = list(set(create))
 
         if len(set(update_).intersection(set(read_))) > 0:
-            raise AttributeError('update (read/write properties) and read '
-                                 '(readonly props) lists lists must be '
-                                 'disjoint')
+            raise AttributeError('update (read/write properties) and read (readonly props) lists lists must be disjoint'
+                                 )
 
         fields = []
         for item in update_:
@@ -214,12 +231,10 @@ class State(object):
         self.add_field(fields)  # now add these to self.fields
 
     def remove(self, l_names):
-        '''
-        Analogous to add method, this removes Field objects associated with
-        l_names from the list.
-        Provide a list containing the names (string) of properties to be
-        removed
-        '''
+        """
+        Analogous to add method, this removes Field objects associated with l_names from the list
+        Provide a list containing the names (string) of properties to be removed
+        """
 
         if isinstance(l_names, basestring):
             l_names = [l_names]
@@ -227,42 +242,35 @@ class State(object):
         for name in l_names:
             field = self.get_field_by_name(name)
             if field == []:
-                raise ValueError('Cannot remove {0} since self.fields '
-                                 'does not contain a field '
-                                 'with this name'.format(name))
+                raise ValueError('Cannot remove {0} since self.fields does not'
+                    ' contain a field with this name'.format(name))
 
             self.fields.remove(field)
 
     def update(self, l_names, **kwargs):
         """
-        Update the attributes of an existing field.
-        Kwargs are key,value pairs defining the state of attributes.
-        It must be one of the valid attributes of Field object
-        (see Field object __dict__ for valid attributes)
-
-        :param update: True or False
-        :param create: True or False
-        :param read: True or False
-        :param isdatafield: True or False
-
+        update the attributes of an existing field
+        Kwargs are key,value pairs defining the _state of attributes.
+        It must be one of the valid attributes of Field object (see Field object __dict__ for valid attributes) 
+        :param update:     True or False
+        :param create:     True or False
+        :param read:       True or False
+        :param isdatafield:True or False
+        
         Usage:
-        >>> state = State(read=['test'])
-        >>> state.update('test', read=False, update=True, create=True,
-        ...              isdatafile=True)
-
-        .. note:: An exception will be raised if both 'read' and 'update'
-                  are True for a given field
+        >>> _state = State(read=['test'])
+        >>> _state.update('test',read=False,update=True,create=True,isdatafile=True)
+        
+        .. note::An exception will be raised if both 'read' and 'update' are True for a given field
         """
         for key in kwargs.keys():
             if key not in self._valid_field_attr:
-                raise AttributeError('{0} is not a valid attribute of '
-                                     'Field object. '
-                                     'It cannot be updated.'.format(key))
+                raise AttributeError('{0} is not a valid attribute of Field object. It cannot be updated.'.format(key))
 
         if 'read' in kwargs.keys() and 'update' in kwargs.keys():
             if kwargs.get('read') and kwargs.get('update'):
-                raise AttributeError("The 'read' attribute and 'update' "
-                                     "attribute cannot both be True")
+                raise AttributeError("The 'read' attribute and 'update' attribute cannot both be True"
+                        )
 
         l_field = self.get_field_by_name(l_names)
         if not isinstance(l_field, list):
@@ -281,13 +289,13 @@ class State(object):
                 setattr(field, 'update', update_)
             elif read_ is not None:
                 if field.update and read_:
-                    raise AttributeError("The 'read' attribute and 'update' "
-                                         "attribute cannot both be True")
+                    raise AttributeError("The 'read' attribute and 'update' attribute cannot both be True"
+                            )
                 setattr(field, 'read', read_)
             elif update_ is not None:
                 if field.read and update_:
-                    raise AttributeError("The 'read' attribute and 'update' "
-                                         "attribute cannot both be True")
+                    raise AttributeError("The 'read' attribute and 'update' attribute cannot both be True"
+                            )
                 setattr(field, 'update', update_)
 
         read_ = None
@@ -301,9 +309,8 @@ class State(object):
             for (key, val) in kwargs.iteritems():
                 if key == 'update' and val == True:
                     if getattr(field, 'read'):
-                        raise AttributeError("The 'read' attribute and "
-                                             "'update' attribute cannot "
-                                             "both be True")
+                        raise AttributeError("The 'read' attribute and 'update' attribute cannot both be True"
+                                )
 
                 setattr(field, key, val)
 
@@ -324,23 +331,19 @@ class State(object):
     def get_field_by_attribute(self, attr):
         'returns a list of fields where attr is true'
         if attr not in self._valid_field_attr:
-            raise AttributeError('{0} is not valid attribute. '
-                                 'Field.__dict__ contains: '
-                                 '{1}'.format(attr, self._valid_field_attr))
+            raise AttributeError('{0} is not valid attribute. Field.__dict__ contains: {1}'.format(attr,
+                                 self._valid_field_attr))
 
         out = [field for field in self.fields if getattr(field, attr)]
         return out
 
     def get_names(self, attr='all'):
-        """
-        Returns the property names in self.fields.
-        Can return all field names, or field names with an attribute
-        equal to True.
-        attr can also be a list:
-
-        >>> state = State(read=['t0'],create=['t0','t1'])
-        >>> state.get_names(['read','create'])    # returns 't0'
-        >>> state.get_names('create')     # returns ['t0', 't1']
+        """ returns the property names in self.fields. Can return all field names, or fieldnames with 
+        an attribute equal to True. attr can also be a list:
+        
+        >>> _state = State(read=['t0'],create=['t0','t1'])
+        >>> _state.get_names(['read','create'])    # returns 't0'
+        >>> _state.get_names('create')     # returns ['t0', 't1']
         """
         if attr == 'all':
             return [field_.name for field_ in self.fields]
@@ -364,27 +367,21 @@ class State(object):
         return names
 
 
-# =============================================================================
+# ===============================================================================
 # class State(object):
 #    def __init__(self, **kwargs):
 #        """
-#        object keeps the list of properties that are output by
-#        Serializable.to_dict() method.
-#        Each list is accompanied by a keyword as defined below.
+#        object keeps the list of properties that are output by Serializable.to_dict() method
+#        Each list is accompanied by a keyword as defined below
 #
-#        update: A list of properties that can be updated, so read/write
-#                capable
-#          read: A list of properties that are for info, so readonly.
-#                This is not required for creating new element
-#        create: A list of properties that are required to create new object
-#                when JSON is read from save file
-#                The readonly properties are not saved in a file
+#        'update' is list of properties that can be updated, so read/write capable
+#        'read'   is list of properties that are for info, so readonly. This is not required for creating new element
+#        'create' is list of properties that are required to create new object when JSON is read from save file
+#                 The readonly properties are not saved in a file
 #
-#        NOTE: Since this object only contains lists, standard copy and
-#              deepcopy work fine.
-#              Copy will create a new State object but reference original lists
-#              Deepcopy will create new State object and new lists for the
-#              attributes
+#        NOTE: Since this object only contains lists, standard copy and deepcopy work fine.
+#              copy will create a new State object but reference original lists
+#              deepcopy will create new State object and new lists for the attributes
 #        """
 #        self.update = []
 #        self.create = []
@@ -394,37 +391,27 @@ class State(object):
 #
 #    def add(self,**kwargs):
 #        """
-#        Only checks to make sure 'read' and 'update' properties are disjoint.
-#        Also makes sure everything is a list.
+#        Only checks to make sure 'read' and 'update' properties are disjoint. Also makes sure everything is a list.
 #
 #        Takes the same keyword, value pairs as __init__ method:
-#        update: A list of properties that can be updated, so read/write
-#                capable
-#          read: A list of properties that are for info, so readonly.
-#                This is not required for creating new element
-#        create: A list of properties that are required to create new object
-#                when JSON is read from save file.
-#                The read-only properties are not saved in a file
-#        add(update=['prop_name'] to add prop_name to list containing
-#        properties that can be updated
+#        'update' is list of properties that can be updated, so read/write capable
+#        'read'   is list of properties that are for info, so readonly. This is not required for creating new element
+#        'create' is list of properties that are required to create new object when JSON is read from save file
+#                 The readonly properties are not saved in a file
+#        add(update=['prop_name'] to add prop_name to list containing properties that can be updated
 #        """
 #        self._add_to_lists(**kwargs)
 #
 #    def remove(self,**kwargs):
 #        """
-#        Removes properties from the list. Provide a list containing the names
-#        of properties to be removed.
+#        Removes properties from the list. Provide a list containing the names of properties to be removed
 #
 #        Takes the same keyword, value pairs as __init__ method:
-#        update: A list of properties that can be updated, so read/write
-#                capable
-#          read: A list of properties that are for info, so readonly.
-#                This is not required for creating new element
-#        create: A list of properties that are required to create new object
-#                when JSON is read from save file.
-#                The read-only properties are not saved in a file
-#        remove(update=['prop_name']) to remove prop_name from the list of
-#        properties that are updated ('update' list)
+#        'update' is list of properties that can be updated, so read/write capable
+#        'read'   is list of properties that are for info, so readonly. This is not required for creating new element
+#        'create' is list of properties that are required to create new object when JSON is read from save file
+#                 The readonly properties are not saved in a file
+#        remove(update=['prop_name']) to remove prop_name from the list of properties that are updated ('update' list)
 #        """
 #        read_, update_, create_ = self._get_lists(**kwargs)
 #        [self.read.remove(item) for item in read_ if item in self.read]
@@ -437,14 +424,12 @@ class State(object):
 #        Make sure update list and read lists are disjoint
 #        """
 #        if not all([isinstance(vals,list) for vals in kwargs.values()]):
-#            raise ValueError("inputs for State object must be a list "
-#                             "of strings")
+#            raise ValueError("inputs for State object must be a list of strings")
 #
 #        read_, update_, create_ = self._get_lists(**kwargs)
 #
 #        if len( set(update_).intersection(set(read_)) ) > 0:
-#            raise ValueError('update (read/write properties) and read '
-#                             '(readonly props) lists lists must be disjoint')
+#            raise ValueError('update (read/write properties) and read (readonly props) lists lists must be disjoint')
 #
 #        self.update.extend( update_ )  # unique elements
 #        self.read.extend( read_)
@@ -452,8 +437,7 @@ class State(object):
 #
 #    def _get_lists(self, **kwargs):
 #        """
-#        Internal method that just parses kwargs to get the
-#        update=[...], read=[...] and create=[...] lists
+#        Internal method that just parses kwargs to get the update=[...], read=[...] and create=[...] lists
 #        """
 #        update_ = list( set( kwargs.pop('update',[])))
 #        read_ = list( set( kwargs.pop('read',[])))
@@ -467,7 +451,7 @@ class State(object):
 #        Returns a dict containing the 'update', 'read' and 'create' lists
 #        """
 #        return {'update':self.update,'read':self.read,'create':self.create}
-# =============================================================================
+# ===============================================================================
 
 class Serializable(object):
 
@@ -476,14 +460,14 @@ class Serializable(object):
     in a list.
 
     This class is intended as a mixin so to_dict and from_dict become part of
-    the object and the object must define a state attribute of type State().
+    the object and the object must define a _state attribute of type State().
 
-    The default state=State(create=['id']) is a static variable for this class
+    The default _state=State(create=['id']) is a static variable for this class
     It uses the same convention as State to obtain the lists, 'update' for
     updating  properties, 'read' for read-only properties and 'create' for a
     list of properties required to create new object.
 
-    The default state contains 'id' in the create list. This is because all
+    The default _state contains 'id' in the create list. This is because all
     objects in a Model need 'id' to create a new one.
 
     Similarly, 'obj_type' is required for all objects, this is so the scenario
@@ -495,25 +479,25 @@ class Serializable(object):
     object as a string.
     """
 
-    state = State(create=['id', 'obj_type'])
+    _state = State(create=['obj_type'])
 
     # =========================================================================
     # @classmethod
     # def add_state(cls, **kwargs):
     #    """
-    #    Each class that mixes-in Serializable will contain a state attribute
+    #    Each class that mixes-in Serializable will contain a _state attribute
     #    of type State.
-    #    The state should be a static member for each subclass. It is static
+    #    The _state should be a static member for each subclass. It is static
     #    because instances of the class will all have the same field names for
-    #    the state.
+    #    the _state.
     #
-    #    In addition, the state of the child class extends the state of the
+    #    In addition, the _state of the child class extends the _state of the
     #    parent class.
     #
     #    As such, this classmethod is available and used by each subclass in
-    #    __init__ to extend the definition of the parent class state attribute
+    #    __init__ to extend the definition of the parent class _state attribute
     #
-    #    It recursively looks for 'state' attribute in base classes
+    #    It recursively looks for '_state' attribute in base classes
     #    (cls.__bases__); gets the ('read','update','create') lists from each
     #    base class and adds;
     #    and creates a new State() object with its own lists and the lists of
@@ -522,39 +506,44 @@ class Serializable(object):
     #    NOTE: removes duplicates (repeated fields) from list. The lists in
     #    State refer to attributes of the object. By default ['id'] in create
     #    list will end up duplicated if one of the base classes of cls already
-    #    contained 'state' attribute
+    #    contained '_state' attribute
     #    """
     #    print "add_state"
     #    update = kwargs.pop('update',[])
     #    create = kwargs.pop('create',[])
     #    read   = kwargs.pop('read',[])
     #    for obj in cls.__bases__:
-    #        if 'state' in obj.__dict__:
-    #            update.extend( obj.state.get()['update'] )
-    #            create.extend( obj.state.get()['create'] )
-    #            read.extend( obj.state.get()['read'] )
+    #        if '_state' in obj.__dict__:
+    #            update.extend( obj._state.get()['update'] )
+    #            create.extend( obj._state.get()['create'] )
+    #            read.extend( obj._state.get()['read'] )
     #
     #    update = list( set(update) )
     #    create = list( set(create) )
     #    read = list( set(read) )
-    #    cls.state = State(update=update, create=create, read=read)
+    #    cls._state = State(update=update, create=create, read=read)
     # =========================================================================
 
     @classmethod
     def new_from_dict(cls, dict_):
-        '''
+        """
         creates a new object from dictionary
 
-        This is a base implementation and can be over-ridden by classes
-        using mixin
-        '''
+        This is base implementation and can be over-ridden by classes using mixin
+        """
+        # remove obj_type from dict since that is only used by scenario
+        # module to load objects
+        # In baseclass, cls() is used to get the obj_type
+        if 'obj_type' in dict_:
+            dict_.pop('obj_type')
+
         return cls(**dict_)
 
     def to_dict(self, do='update'):
         """
         returns a dictionary containing the serialized representation of this
         object.
-        By default it converts the 'update' list of the state object to dict;
+        By default it converts the 'update' list of the _state object to dict;
         however, do='create' or do='read' will return the dict with the
         corresponding list.
 
@@ -567,43 +556,55 @@ class Serializable(object):
         """
 
         if do == 'update':
-            list_ = self.state.get_names('update')
+            list_ = self._state.get_names('update')
         elif do == 'create':
-            list_ = self.state.get_names('create')
+            list_ = self._state.get_names('create')
         elif do == 'read':
-            list_ = self.state.get_names('read')
+            list_ = self._state.get_names('read')
         else:
-            raise ValueError("Input not understood. "
-                             "String must be one of the following: "
-                             "'update', 'create' or 'readonly'.")
+            raise ValueError("input not understood. String must be one of following: 'update', 'create' or 'readonly'."
+                             )
 
         data = {}
         for key in list_:
-            to_dict_fn_name = '%s_to_dict' % key
-
-            if hasattr(self, to_dict_fn_name):
-                value = getattr(self, to_dict_fn_name)()
-            else:
-                value = getattr(self, key)
-
+#==============================================================================
+#             to_dict_fn_name = '%s_to_dict' % key
+# 
+#             if hasattr(self, to_dict_fn_name):
+#                 value = getattr(self, to_dict_fn_name)()
+#             else:
+#                 value = getattr(self, key)
+#==============================================================================
+            value = self.attr_to_dict(key)
             if hasattr(value, 'to_dict'):
-                value = value.to_dict(do)  # recursively call contained objects
+                value = value.to_dict(do)  # recursively call on contained objects
 
-            if value is not None:
+            if value is not None:  # no need to persist properties that are None!
                 data[key] = value
 
         return data
 
+    def attr_to_dict(self, name):
+        """
+        refactor to_dict's functionality so child classes can convert a
+        single attribute to_dict instead of doing a whole list of fields
+        """
+        to_dict_fn_name = '%s_to_dict' % name
+        if hasattr(self, to_dict_fn_name):
+            value = getattr(self, to_dict_fn_name)()
+        else:
+            value = getattr(self, name)
+
+        return value
+
     def from_dict(self, data):
         """
-        modifies state of the object using dictionary 'data'.
-        Only the self.state.update list contains properties that can be
-        modified for existing object
-
-        Set the state of this object using the dictionary ``data`` by
-        looking up the value of each key in ``data`` that is also in  `list_`.
-        Input list_ contains the object's attributes (or fields) updated with
-        data
+        modifies _state of the object using dictionary 'data'. 
+        Only the self._state.update list contains properties that can me modified for existing object
+        
+        Set the _state of this object using the dictionary ``data`` by looking up
+        the value of each key in ``data`` that is also in  `list_`. Input list_ 
+        contains the object's attributes (or fields) updated with data
 
         For every field, the choice of how to set the field is as follows:
 
@@ -616,9 +617,9 @@ class Serializable(object):
         If neither method exists, then set the field with the value from
         ``data`` directly on the object.
         """
-        # return self._from_dict(self.state.update, data)
+        # return self._from_dict(self._state.update, data)
 
-        list_ = self.state.get_names('update')
+        list_ = self._state.get_names('update')
 
         for key in list_:
             if not key in data:
@@ -657,16 +658,16 @@ class Serializable(object):
         .. function:: __eq__(other)
 
         Since this class is designed as a mixin with one objective being to
-        save state of the object, then recreate a new object with the same
-        state.
+        save _state of the object, then recreate a new object with the same
+        _state.
 
         Define a base implementation of __eq__ so an object before persistence
         can be compared with a new object created after it is persisted.
         It can be overridden by the class with which it is mixed.
 
-        It calls to_dict(self.state.create) on both and checks the plain python
+        It calls to_dict(self._state.create) on both and checks the plain python
         types match.
-        Since attributes defined in state.create maybe different from
+        Since attributes defined in _state.create maybe different from
         attributes defined in the object, to_dict is used
 
         It does not compare numpy arrays - only the plain python types
@@ -676,6 +677,9 @@ class Serializable(object):
 
         NOTE: This class does not have __init__ method and super is not used.
         """
+
+        if self is other:
+            return True
 
         if type(self) != type(other):
             return False
@@ -704,3 +708,64 @@ class Serializable(object):
             return False
         else:
             return True
+
+#==============================================================================
+#     def _dict_to_serialize(self, do='update'):
+#         """
+#         take object and call its to_dict method to convert object to python
+#         dict for serialization.
+# 
+#         adds 'obj_type' field to _state for 'create' attribute
+#         """
+#         if 'obj_type' not in self._state:
+#             self._state.add(create=['obj_type'])
+# 
+#         dict_ = self.to_dict(do)
+# 
+#         return dict_
+#==============================================================================
+
+    def serialize(self, do='update'):
+        """
+        Convert the dict returned by object's to_dict method to valid json
+        format via colander schema
+
+        It uses the modules_dict defined in gnome.persist to find the correct
+        schema module.
+
+        1. adds 'obj_type' field to _state for 'create' attribute so it is
+                contained in serialized data. todo: check if this is needed
+        2. do serialization and return json
+
+        :param do: tells object where serialization is for update or for
+            creating a new object
+        :returns: json format of serialized data
+
+        Note: creating a new object versus 'update' or 'read' has a different
+            set of fields for serialization so 'do' is required.
+            todo: revisit this to see if it still makes sense to have different
+            attributes for different operations like 'update', 'create', 'read'
+        """
+        #dict_ = self._dict_to_serialize(do)
+        dict_ = self.to_dict(do)
+        to_eval = ('{0}.{1}()'
+                   .format(modules_dict[self.__class__.__module__],
+                       self.__class__.__name__))
+        schema = eval(to_eval)
+        json_ = schema.serialize(dict_)
+
+        return json_
+
+    @classmethod
+    def deserialize(cls, json_):
+        """
+        classmethod takes json structure as input, deserializes it using a
+        colander schema then invokes the new_from_dict method to create an
+        instance of the object described by the json schema
+        """
+        gnome_mod, obj_name = json_['obj_type'].rsplit('.', 1)
+        to_eval = ('{0}.{1}().deserialize(json_)'
+                   .format(modules_dict[gnome_mod], obj_name))
+        _to_dict = eval(to_eval)
+
+        return _to_dict

@@ -229,9 +229,22 @@ class TestOrderedCollection(object):
 
         assert dict_['dtype'] == mymovers.dtype
         for (i, mv) in enumerate(items):
-            assert dict_['id_list'][i][0] \
+            assert dict_['items'][i][0] \
                 == '{0}.{1}'.format(mv.__module__, mv.__class__.__name__)
-            assert dict_['id_list'][i][1] == mv.id
+            assert dict_['items'][i][1] == i
+
+    def test_int_to_dict(self):
+        '''added a to_dict() method - test this method for int dtype.
+        Tests the try, except is working correctly'''
+        items = range(5)
+        oc = OrderedCollection(items)
+        dict_ = oc.to_dict()
+
+        assert dict_['dtype'] == int
+        for (i, item) in enumerate(items):
+            assert dict_['items'][i][0] \
+                == '{0}'.format(item.__class__.__name__)
+            assert dict_['items'][i][1] == i
 
 
 class ObjToAdd:
