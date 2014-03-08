@@ -211,7 +211,10 @@ class WindMover(WindMoversBase, serializable.Serializable):
     array_types.windage dict since WindMover requires a windage array
     """
     _state = copy.deepcopy(WindMoversBase._state)
-    _state.add(read=['wind_id'], create=['wind_id'])
+    #_state.add(read=['wind_id'], create=['wind_id'])
+    # todo: probably need to make update=True for 'wind' as well
+    _state.add_field(serializable.Field('wind', create=True,
+                                         save_reference=True))
 
     @classmethod
     def new_from_dict(cls, dict_):
@@ -226,13 +229,6 @@ class WindMover(WindMoversBase, serializable.Serializable):
                              'parameter')
         return super(WindMover, cls).new_from_dict(dict_)
 
-    def wind_id_to_dict(self):
-        """
-        used only for storing _state so no wind_id_from_dict is defined. This
-        is not a read/write attribute. Only defined for serializable_state
-        """
-        return self.wind.id
-
     def from_dict(self, dict_):
         """
         For updating the object from dictionary
@@ -241,6 +237,13 @@ class WindMover(WindMoversBase, serializable.Serializable):
         deserialized; however, user can still update the wind attribute with a
         new Wind object. That must be poped out of the dict() here, then call
         super to process the standard dict\_
+
+        todo: should probably make 'wind' object part of serialization. It
+        should exist for 'update' flag. The serialize/deserialize functionality
+        should use correct schema based on whether user wants to 'create'/
+        'update' existing object or if returned json_ contains a 'wind' object,
+        then it should be added to schema, deserialized and updated instead of
+        popping it out
         """
         self.wind = dict_.pop('wind', self.wind)
 

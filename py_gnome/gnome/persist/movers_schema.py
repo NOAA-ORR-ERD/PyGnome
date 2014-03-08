@@ -40,7 +40,9 @@ class WindMover(WindMoversBase):
     Contains properties required by UpdateWindMover and CreateWindMover
     """
     # only used to create new WindMover
-    wind_id = SchemaNode(String(), missing=drop)
+    #wind_id = SchemaNode(String(), missing=drop)
+    name = 'WindMover'
+    description = 'wind mover properties'
 
 
 class RandomMover(Id, Mover):

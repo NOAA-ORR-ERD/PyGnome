@@ -28,7 +28,8 @@ class Field(object):  # ,serializable.Serializable):
     '''
     def __init__(self, name,
                  isdatafile=False,
-                 update=False, create=False, read=False):
+                 update=False, create=False, read=False,
+                 save_reference=False):
         """
         Constructor for the Field object.
         The Field object is used to describe the property of an object.
@@ -42,20 +43,32 @@ class Field(object):  # ,serializable.Serializable):
 
         It sets all attributes to False by default.
         :param str name: Name of the property being described by this Field
-                         object
+            object
         :param bool isdatafile: Is the property a datafile that should be
-                                moved during persistence?
+            moved during persistence?
         :param bool update: Is the property update-able by the web app?
         :param bool create: Is the property required to re-create the object
-                            when loading from a save file?
+            when loading from a save file?
         :param bool read: If property is not updateable, perhaps make it
-                          read only so web app has information about the object
+            read only so web app has information about the object
+        :param save_reference: if the property is an object, you can either
+            serialize the object and store it as a nested structure or just
+            store a reference to the object. For instance, the WindMover
+            contains a Wind object and a Weatherer could also contain the
+            same wind object, in this case, the 'wind' property should be
+            stored as a reference. The Model.load function is responsible for
+            hooking up the correct Wind object to the WindMover, Weatherer etc
+
+            NOTE: save_reference currently is only used when the field is
+            stored with 'create' flag.
+        :param bool save_reference: bool with default value of False
         """
         self.name = name
         self.isdatafile = isdatafile
         self.create = create
         self.update = update
         self.read = read
+        self.save_reference = save_reference
 
     def __eq__(self, other):
         'Check equality'
@@ -69,13 +82,19 @@ class Field(object):  # ,serializable.Serializable):
 
     def __repr__(self):
         'unambiguous object representation'
-        return ('Field(name={0.name}, update={0.update}, create={0.create}, '
-                'read={0.read}, isdatafile={0.isdatafile})'.format(self))
+        obj = 'Field( '
+        for attr, val in self.__dict__.iteritems():
+            obj += '{0}={1}, '.format(attr, val)
+        obj = obj[:-2] + obj[-2:].replace(', ', ' )')
+
+        return obj
 
     def __str__(self):
-        info = ('Field object: name={0.name}, update={0.update}, '
-                'create={0.create}, read={0.read}, '
-                'isdatafile={0.isdatafile}'.format(self))
+        info = 'Field object: '
+        for attr, val in self.__dict__.iteritems():
+            info += '{0}={1}, '.format(attr, val)
+        info = info[:-2] + info[-2:].replace(', ', '')
+
         return info
 
 
