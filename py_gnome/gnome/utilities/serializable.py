@@ -169,6 +169,23 @@ class State(object):
 
         return False
 
+    def __len__(self):
+        return len(self.fields)
+
+    def __iadd__(self, field):
+        self.add_field(field)
+        return self
+
+    def __isub__(self, l_names):
+        self.remove(l_names)
+        return self
+
+    def __delitem__(self, l_names):
+        self.remove(l_names)
+
+    def __getitem__(self, names):
+        self.get_field_by_name(names)
+
     def add_field(self, l_field):
         """
         Adds a Field object or a list of Field objects to fields attribute
@@ -261,8 +278,10 @@ class State(object):
         for name in l_names:
             field = self.get_field_by_name(name)
             if field == []:
-                raise ValueError('Cannot remove {0} since self.fields does not'
-                    ' contain a field with this name'.format(name))
+                return
+            # do not raise error - if field doesn't exist, do nothing
+            #    raise ValueError('Cannot remove {0} since self.fields does not'
+            #        ' contain a field with this name'.format(name))
 
             self.fields.remove(field)
 

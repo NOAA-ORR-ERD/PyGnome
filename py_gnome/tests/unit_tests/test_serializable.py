@@ -42,12 +42,6 @@ def test_init_exceptions():
         s.get_names('test')
 
     with pytest.raises(ValueError):
-
-        # no Field object with this name
-
-        s.remove('xyz')
-
-    with pytest.raises(ValueError):
         _state.add(read=read, update=update, create=create)
         _state.add(create=['read'])  # already exists
 
@@ -112,15 +106,18 @@ def test_state_add_field():
     """
 
     _state = State()
-    _state.add_field(Field('test'))
+    #_state.add_field(Field('test'))
+    _state += Field('test')
 
     assert len(_state.fields) == 1
+    #assert len(_state) == 1
 
     f = []
     f.append(Field('filename', create=True, isdatafile=True))
     f.append(Field('topology_file', create=True, isdatafile=True))
 
-    _state.add_field(f)
+    #_state.add_field(f)
+    _state += f
     assert len(_state.fields) == 3
 
     for field in _state.fields:
@@ -138,10 +135,12 @@ def test_state_add_field():
             assert not field.read
 
     with pytest.raises(ValueError):
-        _state.add_field(Field('test'))
+        #_state.add_field(Field('test'))
+        _state += Field('test')
 
     with pytest.raises(ValueError):
-        _state.add_field([Field('test1'), Field('test1')])
+        #_state.add_field([Field('test1'), Field('test1')])
+        _state += [Field('test1'), Field('test1')]
 
 
 def test_state_remove():
@@ -150,7 +149,8 @@ def test_state_remove():
     """
 
     _state = State(read=read, update=update, create=create)
-    _state.remove('test0')
+    #_state.remove('test0')
+    _state -= 'test0'
     assert _state.get_field_by_name('test0') == []
 
 
