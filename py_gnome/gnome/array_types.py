@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 '''
 Module contains array types that a mover may need based on the data
 movers needs
