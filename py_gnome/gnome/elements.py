@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 '''
 Types of elements that a spill can expect
 These are properties that are spill specific like:
@@ -13,9 +14,11 @@ np = numpy
 import gnome    # required by new_from_dict
 from gnome.utilities.rand import random_with_persistance
 from gnome.utilities.compute_fraction import fraction_below_d
+from gnome.utilities.serializable import Serializable
+from gnome.utilities.distributions import UniformDistribution
+
 from gnome.cy_gnome.cy_rise_velocity_mover import rise_velocity_from_drop_size
 from gnome.db.oil_library.oil_props import (OilProps, OilPropsFromDensity)
-from gnome.utilities.serializable import Serializable
 
 from gnome.persist import elements_schema
 """
@@ -137,7 +140,8 @@ class InitMassComponentsFromOilProps(InitBaseClass, Serializable):
            :param OilProps substance: The Oil Properties associated with the
                                       spill.
                                       (TODO: Why is this not simply contained
-                                       in the Spill???  Why the extra argument???)
+                                             in the Spill??
+                                             Why the extra argument??)
         '''
         if spill.mass is None:
             raise ValueError('mass attribute of spill is None - cannot '
@@ -173,7 +177,8 @@ class InitHalfLivesFromOilProps(InitBaseClass, Serializable):
            :param OilProps substance: The Oil Properties associated with the
                                       spill.
                                       (TODO: Why is this not simply contained
-                                       in the Spill?? Why the extra argument??)
+                                             in the Spill??
+                                             Why the extra argument??)
         '''
         half_lives = np.asarray(zip(*substance.mass_components)[1],
                                 dtype=np.float64)
@@ -235,199 +240,46 @@ class InitMassFromPlume(InitBaseClass, Serializable):
             spill.plume_gen.mass_of_an_le * 1000
 
 
-class ValuesFromDistBase(object):
-    def __init__(self, **kwargs):
-        """
-        Values to be sampled from a distribution. This is a base class but
-        isn't serializable since it shouldn't be directly included as a gnome
-        'initializer' for an ElementType. It's a base class for an object
-        that needs to initialize a data array from a distribution
-
-        Keyword arguments: kwargs are different based on the type of
-        distribution selected by user
-
-        :param distribution: could be 'uniform', 'normal', 'lognormal' or 'weibull'
-        :type distribution: str
-
-        If distribution is 'uniform', then following kwargs are expected
-
-        :param low: for 'uniform' dist, it is lower bound. Default is 0.
-        :param high: for 'uniform' dist, it is upper bound. Default is 0.1
-
-        If distribution is 'normal' or 'lognormal', then following kwargs are
-        expected
-
-        :param mean: mean of the normal distribution
-        :param sigma: 1 standard deviation (sigma) of normal distribution
-
-        If distribution is 'weibull', then following kwargs are expected.
-
-        :param alpha: shape parameter 'alpha' - labeled as 'a' in
-            numpy.random.weibull distribution
-        :param lambda_: the scale parameter for the distribution - required for
-                        2-parameter weibull distribution (Rosin-Rammler).
-                        Default is 1.
-        """
-        methods = {'uniform': self._uniform,
-                   'normal': self._normal,
-                   'lognormal': self._lognormal,
-                   'weibull': self._weibull
-                   }
-
-        load_args = {'uniform': self._check_uniform_args,
-                         'normal': self._check_normal_args,
-                         'lognormal': self._check_lognormal_args,
-                         'weibull': self._check_weibull_args
-                         }
-
-        self.distribution = kwargs.pop('distribution', 'uniform')
-
-        self.method = methods[self.distribution]
-        load_args[self.distribution](kwargs)
-
-    def _check_uniform_args(self, kwargs):
-        low = kwargs.pop('low', 0)
-        high = kwargs.pop('high', .1)
-        self.method_args = [low, high]
-
-    def _check_normal_args(self, kwargs):
-        mean = kwargs.pop('low', 0)
-        sigma = kwargs.pop('high', .1)
-
-        if None in (mean, sigma):
-            raise TypeError("'normal' distribution requires 'mean' and "
-                            "'sigma' input as kwargs")
-        self.method_args = [mean, sigma]
-
-    def _check_lognormal_args(self, kwargs):
-        self._check_normal_args(kwargs)
-
-    def _check_weibull_args(self, kwargs):
-        alpha = kwargs.pop('alpha', None)
-        lambda_ = kwargs.pop('lambda_', 1)
-        min_ = kwargs.pop('min_', None)
-        max_ = kwargs.pop('max_', None)
-
-        if alpha is None:
-            raise TypeError("'weibull' distribution requires 'alpha'")
-
-        if min_ is not None:
-            frac_below_min = fraction_below_d(min_, alpha, lambda_)
-            if min_ < 0:
-                raise ValueError("'weibull' distribution requires "
-                                 "minimum >= 0 ")
-            if frac_below_min > 0.999:
-                raise ValueError("'weibull' distribution requires "
-                                 "minimum < 99.9% of total distribution")
-
-        if max_ is not None:
-            frac_below_max = fraction_below_d(max_, alpha, lambda_)
-            if max_ <= 0:
-                raise ValueError("'weibull' distribution requires "
-                                 "maximum > 0 ")
-            if frac_below_max < 0.001:
-                raise ValueError("'weibull' distribution requires "
-                                 "maximum > 0.1% of total distribution")
-            if min_ is not None:
-                if max_ < min_:
-                    raise ValueError("'weibull' distribution requires "
-                                     "maximum > minimum")
-            if max_ < 0.00005:
-                raise ValueError("'weibull' distribution requires "
-                                 "maximum > .000025 (25 microns)")
-        self.method_args = [alpha, lambda_, min_, max_]
-
-    def _uniform(self, np_array, low, high):
-        np_array[:] = np.random.uniform(low, high, len(np_array))
-
-    def _normal(self, np_array, mean, sigma):
-        np_array[:] = np.random.normal(mean, sigma, len(np_array))
-
-    def _lognormal(self, np_array, mean, sigma):
-        np_array[:] = np.random.lognormal(mean, sigma, len(np_array))
-
-    def _weibull(self, np_array, alpha, lambda_, min_, max_):
-        np_array[:] = (lambda_ * np.random.weibull(alpha, len(np_array)))
-
-        if min_ is not None and max_ is not None:
-            for x in range(len(np_array)):
-                while np_array[x] < min_ or np_array[x] > max_:
-                    np_array[x] = lambda_ * np.random.weibull(alpha)
-        elif min_ is not None:
-            for x in range(len(np_array)):
-                while np_array[x] < min_:
-                    np_array[x] = lambda_ * np.random.weibull(alpha)
-        elif max_ is not None:
-            for x in range(len(np_array)):
-                while np_array[x] > max_:
-                    np_array[x] = lambda_ * np.random.weibull(alpha)
-
-    def set_values(self, np_array):
-        '''
-        Takes a numpy array as input and fills it with values generated from
-        specified distribution
-
-        :param np_array: numpy array to be filled with values sampled from
-            specified distribution
-        :type np_array: numpy array of dtype 'float64'
-        '''
-        self.method(*([np_array] + self.method_args))
-
-
-class InitRiseVelFromDist(InitBaseClass, ValuesFromDistBase, Serializable):
+class InitRiseVelFromDist(InitBaseClass, Serializable):
     _state = copy.deepcopy(InitBaseClass._state)
 
-    def __init__(self, distribution='uniform', **kwargs):
+    def __init__(self, distribution=None, **kwargs):
         """
         Set the rise velocity parameters to be sampled from a distribution.
 
-        Use distribution to define rise_vel - use super to invoke
-        ValuesFromDistBase().__init__()
+        Use distribution to define rise_vel
 
-        :param distribution: could be 'uniform', 'normal', 'lognormal'
-                             or 'weibull'
-        :type distribution: str
-
-        If distribution is 'uniform', then following kwargs are expected
-
-        :param low: for 'uniform' dist, it is lower bound. Default is 0.
-        :param high: for 'uniform' dist, it is upper bound. Default is 0.1
-
-        If distribution is 'normal' or 'lognormal', then following kwargs are
-        expected
-
-        :param mean: mean of the normal distribution
-        :param sigma: 1 standard deviation (sigma) of normal distribution
-
-        If distribution is 'weibull', then following kwargs are expected.
-
-        :param alpha: shape parameter 'alpha' - labeled as 'a' in
-            numpy.random.weibull distribution
-        :param lambda_: the scale parameter for the distribution - required for
-            2-parameter weibull distribution (Rosin-Rammler). Default is 1.
-        :param min_: optional lower end cutoff in meters for weibull
-                     distribution (100 microns)
-        :param max_: optional upper end cutoff in meters for weibull
-                     distribution (4 mm ?)
+        :param distribution: An object capable of generating a probability
+                             distribution.
+        :type distribution: Right now, we have:
+                              - UniformDistribution
+                              - NormalDistribution
+                              - LogNormalDistribution
+                              - WeibullDistribution
+                            New distribution classes could be made.  The only
+                            requirement is they need to have a set_values()
+                            method which accepts a NumPy array.
+                            (presumably, this function will also modify
+                             the array in some way)
         """
-        super(InitRiseVelFromDist, self).__init__(distribution=distribution,
-                                                  **kwargs)
+        super(InitRiseVelFromDist, self).__init__(**kwargs)
+
+        if distribution:
+            self.dist = distribution
+        else:
+            self.dist = UniformDistribution()
 
     def initialize(self, num_new_particles, spill, data_arrays,
                    substance=None):
-        """
-        Update values of 'rise_vel' data array for new particles
-        """
-        self.set_values(data_arrays['rise_vel'][-num_new_particles:])
+        'Update values of "rise_vel" data array for new particles'
+        self.dist.set_values(data_arrays['rise_vel'][-num_new_particles:])
 
 
-class InitRiseVelFromDropletSizeFromDist(ValuesFromDistBase):
+class InitRiseVelFromDropletSizeFromDist(object):
     _state = copy.deepcopy(InitBaseClass._state)
 
-    def __init__(self,
-                 distribution='uniform',
-                 water_density=1020.0,
-                 water_viscosity=1.0e-6,
+    def __init__(self, distribution=None,
+                 water_density=1020.0, water_viscosity=1.0e-6,
                  **kwargs):
         """
         Set the droplet size from a distribution. Use the C++ get_rise_velocity
@@ -436,45 +288,33 @@ class InitRiseVelFromDropletSizeFromDist(ValuesFromDistBase):
         changing over time, it is still stored in data array, as it can be
         useful for post-processing (called 'droplet_diameter')
 
-        Use distribution to define rise_vel - use super to invoke
-        ValuesFromDistBase().__init__()
+        Use distribution to define rise_vel
 
-        All parameters have defaults and are optional
-
-        :param distribution: could be 'uniform', 'normal' ,'lognormal'
-                             or 'weibull'.
-                             Default value 'uniform'
-        :type distribution: str
-
-        If distribution is 'uniform', then following kwargs are expected
-
-        :param low: for 'uniform' dist, it is lower bound. Default is 0.
-        :param high: for 'uniform' dist, it is upper bound. Default is 0.1
-
-        If distribution is 'normal' or 'lognormal', then following kwargs are
-        expected
-
-        :param mean: mean of the normal distribution
-        :param sigma: 1 standard deviation (sigma) of normal distribution
-
-        If distribution is 'weibull', then following kwargs are expected.
-
-        :param alpha: shape parameter 'alpha' - labeled as 'a' in
-            numpy.random.weibull distribution
-        :param lambda_: the scale parameter for the distribution - required for
-            2-parameter weibull distribution (Rosin-Rammler). Default is 1.
-        :param min_: optional lower end cutoff in meters for weibull
-                     distribution (100 microns)
-        :param max_: optional upper end cutoff in meters for weibull
-                     distribution (4 mm ?)
+        :param distribution: An object capable of generating a probability
+                             distribution.
+        :type distribution: Right now, we have:
+                              - UniformDistribution
+                              - NormalDistribution
+                              - LogNormalDistribution
+                              - WeibullDistribution
+                            New distribution classes could be made.  The only
+                            requirement is they need to have a set_values()
+                            method which accepts a NumPy array.
+                            (presumably, this function will also modify
+                             the array in some way)
 
         :param water_density: 1020.0 [kg/m3]
         :type water_density: float
         :param water_viscosity: 1.0e-6 [m^2/s]
         :type water_viscosity: float
         """
-        super(InitRiseVelFromDropletSizeFromDist, self).__init__(
-                                        distribution=distribution, **kwargs)
+        super(InitRiseVelFromDropletSizeFromDist, self).__init__(**kwargs)
+
+        if distribution:
+            self.dist = distribution
+        else:
+            self.dist = UniformDistribution()
+
         self.water_viscosity = water_viscosity
         self.water_density = water_density
 
@@ -490,22 +330,19 @@ class InitRiseVelFromDropletSizeFromDist(ValuesFromDistBase):
         drop_size = np.zeros((num_new_particles, ), dtype=np.float64)
         le_density = np.zeros((num_new_particles, ), dtype=np.float64)
 
-        self.set_values(drop_size)
+        self.dist.set_values(drop_size)
+
         data_arrays['droplet_diameter'][-num_new_particles:] = drop_size
         le_density[:] = substance.density
 
         # now update rise_vel with droplet size - dummy for now
         rise_velocity_from_drop_size(
                                 data_arrays['rise_vel'][-num_new_particles:],
-                                le_density,
-                                drop_size,
-                                self.water_viscosity,
-                                self.water_density)
+                                le_density, drop_size,
+                                self.water_viscosity, self.water_density)
 
 
 """ ElementType classes"""
-
-
 class ElementType(Serializable):
     _state = copy.deepcopy(InitBaseClass._state)
     _state.add(create=['initializers'], update=['initializers'])

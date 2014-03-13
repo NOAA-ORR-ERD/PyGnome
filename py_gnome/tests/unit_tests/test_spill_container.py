@@ -7,6 +7,7 @@ from datetime import datetime, timedelta
 
 import pytest
 from pytest import raises
+from conftest import sample_sc_release
 
 import numpy
 np = numpy
@@ -14,8 +15,6 @@ np = numpy
 from gnome.basic_types import (oil_status,
                                world_point_type,
                                id_type)
-from gnome.spill_container import SpillContainer, SpillContainerPair
-from gnome.spill import point_line_release_spill
 from gnome import array_types
 from gnome.elements import (ElementType,
                             InitWindages,
@@ -23,7 +22,11 @@ from gnome.elements import (ElementType,
                             InitRiseVelFromDist,
                             floating)
 
-from conftest import sample_sc_release
+from gnome.utilities.distributions import UniformDistribution
+
+from gnome.spill_container import SpillContainer, SpillContainerPair
+from gnome.spill import point_line_release_spill
+
 
 # additional array_type for testing spill_container functionality
 windage_at = {'windages': array_types.windages,
@@ -473,8 +476,8 @@ def test_ordered_collection_api():
 """ tests w/ element types set for two spills """
 el0 = ElementType({'windages': InitWindages((0.02, 0.02), -1),
                    'mass': InitMassFromVolume(),
-                   'rise_vel': InitRiseVelFromDist(distribution='uniform',
-                                                   low=1, high=10)})
+                   'rise_vel': InitRiseVelFromDist(distribution=UniformDistribution(low=1, high=10))
+                   })
 
 el1 = ElementType({'windages': InitWindages(),
                    'mass': InitMassFromVolume(),
@@ -529,10 +532,10 @@ def test_element_types(elem_type, arr_types, sample_sc_no_uncertainty):
                     assert (np.all(sc[key][spill_mask] ==
                         spill.element_type.initializers[key].windage_persist))
                 elif key == 'rise_vel':
-                    if (spill.element_type.initializers[key].distribution ==
-                        'uniform'):
-                        low, high = \
-                            spill.element_type.initializers[key].method_args
+                    if (isinstance(spill.element_type.initializers[key].dist,
+                                   UniformDistribution)):
+                        low = spill.element_type.initializers[key].dist.low
+                        high = spill.element_type.initializers[key].dist.high
 
                         assert (np.all(sc[key][spill_mask] >= low))
                         assert (np.all(sc[key][spill_mask] <= high))

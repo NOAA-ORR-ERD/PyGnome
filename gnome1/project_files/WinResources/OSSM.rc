@@ -3434,13 +3434,13 @@ BEGIN
         BLOCK "040904e4"
         BEGIN
             VALUE "CompanyName", "NOAA, US Commerce Dept.\0"
-            VALUE "FileDescription", "GNOME 1.3.7\0"
-            VALUE "FileVersion", "1.3.7\0"
+            VALUE "FileDescription", "GNOME 1.3.8\0"
+            VALUE "FileVersion", "1.3.8\0"
             VALUE "InternalName", "GNOME\0"
             VALUE "LegalCopyright", "                                       \0"
             VALUE "OriginalFilename", "\0"
             VALUE "ProductName", "GNOME\0"
-            VALUE "ProductVersion", "1.3.7\0"
+            VALUE "ProductVersion", "1.3.8\0"
         END
     END
     BLOCK "VarFileInfo"
@@ -4210,7 +4210,7 @@ END
 
 STRINGTABLE DISCARDABLE 
 BEGIN
-    128                     "GNOME™ 1.3.7"
+    128                     "GNOME™ 1.3.8"
     129                     " "
     130                     "General"
     131                     "NOAA"
