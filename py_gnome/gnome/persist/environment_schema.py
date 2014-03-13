@@ -72,8 +72,10 @@ class Wind(Id, MappingSchema):
 
     timeseries = WindTimeSeriesSchema(missing=drop)
     filename = SchemaNode(String(), missing=drop)
+    name = 'wind'
 
 
 class Tide(Id, MappingSchema):
     filename = SchemaNode(String(), missing=drop)
     yeardata = SchemaNode(String())
+    name = 'tide'

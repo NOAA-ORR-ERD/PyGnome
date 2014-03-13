@@ -39,8 +39,7 @@ class WindMover(WindMoversBase):
     """
     Contains properties required by UpdateWindMover and CreateWindMover
     """
-    # only used to create new WindMover
-    #wind_id = SchemaNode(String(), missing=drop)
+    # 'wind' schema node added dynamically
     name = 'WindMover'
     description = 'wind mover properties'
 
@@ -66,10 +65,8 @@ class CatsMover(Id, Mover):
     """
     filename = SchemaNode(String(), missing=drop)
     scale = SchemaNode(Bool())
-    scale_refpoint = WorldPoint()
+    scale_refpoint = WorldPoint(missing=drop)
     scale_value = SchemaNode(Float())
-    # can have CatsMover without Tide object
-    tide_id = SchemaNode(String(), missing=drop)
 
 
 class GridCurrentMover(Id, Mover):
