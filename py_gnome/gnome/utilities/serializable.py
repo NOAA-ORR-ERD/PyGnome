@@ -29,7 +29,8 @@ class Field(object):  # ,serializable.Serializable):
     def __init__(self, name,
                  isdatafile=False,
                  update=False, create=False, read=False,
-                 save_reference=False):
+                 save_reference=False,
+                 test_for_eq=True):
         """
         Constructor for the Field object.
         The Field object is used to describe the property of an object.
@@ -51,7 +52,8 @@ class Field(object):  # ,serializable.Serializable):
             when loading from a save file?
         :param bool read: If property is not updateable, perhaps make it
             read only so web app has information about the object
-        :param save_reference: if the property is an object, you can either
+        :param bool save_reference: bool with default value of False.
+            if the property is object, you can either
             serialize the object and store it as a nested structure or just
             store a reference to the object. For instance, the WindMover
             contains a Wind object and a Weatherer could also contain the
@@ -61,7 +63,15 @@ class Field(object):  # ,serializable.Serializable):
 
             NOTE: save_reference currently is only used when the field is
             stored with 'create' flag.
-        :param bool save_reference: bool with default value of False
+        :param bool test_for_eq: bool with default value of True
+            when checking equality (__eq__()) of two gnome
+            objects that are serializable, look for equality of attributes
+            corresponding with fields with 'create'=True and 'test_for_eq'=True
+            For instance, if a gnome.model.Model() object is saved, then loaded
+            back from save file location, the filename attributes of objects
+            that read data from file will point to different location. The
+            objects are still equal. To avoid this problem, we can customize
+            whether to use a field when testing for equality or not.
         """
         self.name = name
         self.isdatafile = isdatafile
@@ -69,6 +79,7 @@ class Field(object):  # ,serializable.Serializable):
         self.update = update
         self.read = read
         self.save_reference = save_reference
+        self.test_for_eq = test_for_eq
 
     def __eq__(self, other):
         'Check equality'
@@ -184,7 +195,11 @@ class State(object):
         self.remove(l_names)
 
     def __getitem__(self, names):
-        self.get_field_by_name(names)
+        return self.get_field_by_name(names)
+
+    def __iter__(self):
+        for field in self.fields:
+            yield field
 
     def add_field(self, l_field):
         """
@@ -405,92 +420,6 @@ class State(object):
         return names
 
 
-# ===============================================================================
-# class State(object):
-#    def __init__(self, **kwargs):
-#        """
-#        object keeps the list of properties that are output by Serializable.to_dict() method
-#        Each list is accompanied by a keyword as defined below
-#
-#        'update' is list of properties that can be updated, so read/write capable
-#        'read'   is list of properties that are for info, so readonly. This is not required for creating new element
-#        'create' is list of properties that are required to create new object when JSON is read from save file
-#                 The readonly properties are not saved in a file
-#
-#        NOTE: Since this object only contains lists, standard copy and deepcopy work fine.
-#              copy will create a new State object but reference original lists
-#              deepcopy will create new State object and new lists for the attributes
-#        """
-#        self.update = []
-#        self.create = []
-#        self.read = []
-#        self._add_to_lists(**kwargs)
-#
-#
-#    def add(self,**kwargs):
-#        """
-#        Only checks to make sure 'read' and 'update' properties are disjoint. Also makes sure everything is a list.
-#
-#        Takes the same keyword, value pairs as __init__ method:
-#        'update' is list of properties that can be updated, so read/write capable
-#        'read'   is list of properties that are for info, so readonly. This is not required for creating new element
-#        'create' is list of properties that are required to create new object when JSON is read from save file
-#                 The readonly properties are not saved in a file
-#        add(update=['prop_name'] to add prop_name to list containing properties that can be updated
-#        """
-#        self._add_to_lists(**kwargs)
-#
-#    def remove(self,**kwargs):
-#        """
-#        Removes properties from the list. Provide a list containing the names of properties to be removed
-#
-#        Takes the same keyword, value pairs as __init__ method:
-#        'update' is list of properties that can be updated, so read/write capable
-#        'read'   is list of properties that are for info, so readonly. This is not required for creating new element
-#        'create' is list of properties that are required to create new object when JSON is read from save file
-#                 The readonly properties are not saved in a file
-#        remove(update=['prop_name']) to remove prop_name from the list of properties that are updated ('update' list)
-#        """
-#        read_, update_, create_ = self._get_lists(**kwargs)
-#        [self.read.remove(item) for item in read_ if item in self.read]
-#        [self.update.remove(item) for item in update_ if item in self.update]
-#        [self.create.remove(item) for item in create_ if item in self.create]
-#
-#
-#    def _add_to_lists(self, **kwargs):
-#        """
-#        Make sure update list and read lists are disjoint
-#        """
-#        if not all([isinstance(vals,list) for vals in kwargs.values()]):
-#            raise ValueError("inputs for State object must be a list of strings")
-#
-#        read_, update_, create_ = self._get_lists(**kwargs)
-#
-#        if len( set(update_).intersection(set(read_)) ) > 0:
-#            raise ValueError('update (read/write properties) and read (readonly props) lists lists must be disjoint')
-#
-#        self.update.extend( update_ )  # unique elements
-#        self.read.extend( read_)
-#        self.create.extend( create_)
-#
-#    def _get_lists(self, **kwargs):
-#        """
-#        Internal method that just parses kwargs to get the update=[...], read=[...] and create=[...] lists
-#        """
-#        update_ = list( set( kwargs.pop('update',[])))
-#        read_ = list( set( kwargs.pop('read',[])))
-#        create_ = list( set(kwargs.pop('create',[])))
-#
-#        return read_, update_, create_
-#
-#
-#    def get(self):
-#        """
-#        Returns a dict containing the 'update', 'read' and 'create' lists
-#        """
-#        return {'update':self.update,'read':self.read,'create':self.create}
-# ===============================================================================
-
 class Serializable(object):
 
     """
@@ -703,12 +632,17 @@ class Serializable(object):
         can be compared with a new object created after it is persisted.
         It can be overridden by the class with which it is mixed.
 
-        It calls to_dict(self._state.create) on both and checks the plain python
-        types match.
-        Since attributes defined in _state.create maybe different from
-        attributes defined in the object, to_dict is used
+        It looks at attributes defined in self._state and checks the plain
+        python types match.
 
-        It does not compare numpy arrays - only the plain python types
+        It does not compare numpy arrays - only the plain python types. If an
+        object's state contains numpy arrays like Wind object, it must override
+        this method and do the comparison in its own class. This is especially
+        useful when a Model object is recreated from mid-run save and the
+        SpillContainer's data_arrays are repopulated. The arrays may not be
+        exact so SpillContainer does the equality check for numpy arrays but
+        can still use this base class for testing equality for all other
+        attributes. Helps in following the DRY principle.
 
         :param other: object of the same type as self that is used for
                       comparison in obj1 == other
@@ -722,15 +656,25 @@ class Serializable(object):
         if type(self) != type(other):
             return False
 
-        self_dict = self.to_dict('create')
-        other_dict = other.to_dict('create')
-
-        if len(self_dict) != len(other_dict):
+        if (self._state.get_field_by_attribute('create') !=
+            other._state.get_field_by_attribute('create')):
             return False
 
-        for val in self_dict:
-            if not isinstance(self_dict[val], np.ndarray):
-                if self_dict[val] != other_dict[val]:
+        for name in self._state.get_names('create'):
+            if not self._state[name].test_for_eq:
+                continue
+
+            if hasattr(self, name):
+                self_attr = getattr(self, name)
+                other_attr = getattr(other, name)
+            else:
+                '''not an attribute, let attr_to_dict call appropriate function
+                and check the dicts are equal'''
+                self_attr = self.attr_to_dict(name)
+                other_attr = other.attr_to_dict(name)
+
+            if not isinstance(self_attr, np.ndarray):
+                if self_attr != other_attr:
                     return False
 
         return True
@@ -746,22 +690,6 @@ class Serializable(object):
             return False
         else:
             return True
-
-#==============================================================================
-#     def _dict_to_serialize(self, do='update'):
-#         """
-#         take object and call its to_dict method to convert object to python
-#         dict for serialization.
-# 
-#         adds 'obj_type' field to _state for 'create' attribute
-#         """
-#         if 'obj_type' not in self._state:
-#             self._state.add(create=['obj_type'])
-# 
-#         dict_ = self.to_dict(do)
-# 
-#         return dict_
-#==============================================================================
 
     def serialize(self, do='update'):
         """
@@ -801,7 +729,9 @@ class Serializable(object):
         colander schema then invokes the new_from_dict method to create an
         instance of the object described by the json schema
         """
-        gnome_mod, obj_name = json_['obj_type'].rsplit('.', 1)
+        #gnome_mod, obj_name = json_['obj_type'].rsplit('.', 1)
+        gnome_mod = cls.__module__
+        obj_name = cls.__name__
         to_eval = ('{0}.{1}().deserialize(json_)'
                    .format(modules_dict[gnome_mod], obj_name))
         _to_dict = eval(to_eval)

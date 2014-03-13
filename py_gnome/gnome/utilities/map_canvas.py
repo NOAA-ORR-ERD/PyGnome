@@ -12,16 +12,14 @@ dealing with spill_containers, etc, should be in the rendere subclass.
 """
 
 import copy
-import os
 
 import numpy as np
 import PIL.Image
 import PIL.ImageDraw
 
 from gnome.utilities.file_tools import haz_files
-from gnome.utilities import projections, serializable
+from gnome.utilities import projections
 from gnome import basic_types, GnomeId
-import gnome
 
 
 def make_map(bna_filename, png_filename, image_size=(500, 500)):
