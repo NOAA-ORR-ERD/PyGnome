@@ -183,40 +183,38 @@ def _uncertain_loop(pSpill, cats):
     return u_delta
 
 
-def test_exception_new_from_dict():
-    """
-    test exceptions raised for new_from_dict
-    """
-
-    c_cats = CatsMover(curr_file)
-    dict_ = c_cats.to_dict('create')
-    dict_.update({'tide': td})
-    with pytest.raises(KeyError):
-        CatsMover.new_from_dict(dict_)
-
-
-def test_new_from_dict_tide():
+@pytest.mark.parametrize(("do"), ['create', 'update'])
+def test_serialize_deserialize_tide(do):
     """
     test to_dict function for Wind object
     create a new wind object and make sure it has same properties
     """
 
     c_cats = CatsMover(curr_file, tide=td)
-    dict_ = c_cats.to_dict('create')
-    dict_.update({'tide': td})
-    c2 = CatsMover.new_from_dict(dict_)
-    assert c_cats == c2
+    json_ = c_cats.serialize(do)
+    dict_ = c_cats.deserialize(json_)
+    if do == 'create':
+        dict_.update({'tide': td})
+        c2 = CatsMover.new_from_dict(dict_)
+        assert c_cats == c2
+    else:
+        assert json_['tide'] == td.serialize(do)
+        c_cats.from_dict(dict_)
+        assert c_cats.tide is td
 
 
-def test_new_from_dict_curronly():
+@pytest.mark.parametrize(("do"), ['create', 'update'])
+def test_serialize_deserialize_curronly(do):
     """
     test to_dict function for Wind object
     create a new wind object and make sure it has same properties
     """
 
     c_cats = CatsMover(curr_file)
-    dict_ = c_cats.to_dict('create')
-    c2 = CatsMover.new_from_dict(dict_)
-    assert c_cats == c2
-
-
+    json_ = c_cats.serialize(do)
+    dict_ = c_cats.deserialize(json_)
+    if do == 'create':
+        c2 = CatsMover.new_from_dict(dict_)
+        assert c_cats == c2
+    else:
+        c_cats.from_dict(dict_)
