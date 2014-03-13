@@ -535,7 +535,8 @@ class MapFromBNA(RasterMap, Serializable):
     """
     _state = copy.deepcopy(RasterMap._state)
     _state.add(create=['refloat_halflife'], update=['refloat_halflife'])
-    _state.add_field(Field('filename', isdatafile=True, create=True, read=True))
+    _state.add_field(Field('filename', isdatafile=True, create=True,
+                            read=True, test_for_eq=False))
 
     def __init__(self, filename, refloat_halflife, raster_size=1024 * 1024,
                  **kwargs):

@@ -37,7 +37,6 @@ class Environment(object):
     This base class just defines the id property
     """
     _state = copy.deepcopy(serializable.Serializable._state)
-    _state.add(create=['id'])
 
     def __init__(self, **kwargs):
         """
@@ -66,7 +65,6 @@ class Wind(Environment, serializable.Serializable):
     # - read only properties
 
     _update = [  # default units for input/output data
-        'name',
         'latitude',
         'longitude',
         'description',
@@ -83,9 +81,12 @@ class Wind(Environment, serializable.Serializable):
     _state.add(create=_create, update=_update)
 
     # add 'filename' as a Field object
-
-    _state.add_field(serializable.Field('filename', isdatafile=True,
-                    create=True, read=True))
+    #'name',    is this for webgnome?
+    _state.add_field([serializable.Field('filename', isdatafile=True,
+                      create=True, read=True, test_for_eq=False),
+                      serializable.Field('name', isdatafile=True,
+                      create=True, update=True, test_for_eq=False),
+                      ])
 
     # list of valid velocity units for timeseries
 
@@ -202,6 +203,7 @@ class Wind(Environment, serializable.Serializable):
                                    file_contains=ts_format)
             self._user_units = self.ossm.user_units
 
+            # todo: not sure what this is for? .. for webgnome?
             self.name = kwargs.pop('name',
                                    os.path.split(self.ossm.filename)[1])
             self.source_type = 'file'  # this must be file
@@ -213,7 +215,8 @@ class Wind(Environment, serializable.Serializable):
         # not sure if this should be datetime or string
 
         self.updated_at = kwargs.pop('updated_at',
-                (time_utils.sec_to_date(os.path.getmtime(self.ossm.filename)) if self.ossm.filename else datetime.datetime.now()))
+                (time_utils.sec_to_date(os.path.getmtime(self.ossm.filename))
+                    if self.ossm.filename else datetime.datetime.now()))
         self.source_id = kwargs.pop('source_id', 'undefined')
         self.longitude = kwargs.pop('longitude', self.longitude)
         self.latitude = kwargs.pop('latitude', self.latitude)
@@ -514,7 +517,7 @@ class Tide(Environment, serializable.Serializable):
     # add 'filename' as a Field object
 
     _state.add_field(serializable.Field('filename', isdatafile=True,
-                    create=True, read=True))
+                    create=True, read=True, test_for_eq=False))
 
     def __init__(
         self,

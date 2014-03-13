@@ -12,38 +12,22 @@ from gnome.utilities import serializable
 from gnome.cy_gnome import cy_cats_mover, cy_shio_time, cy_ossm_time, \
     cy_gridcurrent_mover
 
+from gnome.persist import movers_schema
+from gnome.persist.environment_schema import Tide
+
 
 class CatsMover(CyMover, serializable.Serializable):
 
     _state = copy.deepcopy(CyMover._state)
 
     _update = ['scale', 'scale_refpoint', 'scale_value']
-    _create = ['tide_id']
+    _create = []
     _create.extend(_update)
-    _state.add(update=_update, create=_create, read=['tide_id'])
-    _state.add_field(serializable.Field('filename', create=True,
-                    read=True, isdatafile=True))
-
-    @classmethod
-    def new_from_dict(cls, dict_):
-        """
-        define in WindMover and check wind_id matches wind
-        
-        invokes: super(WindMover,cls).new_from_dict(dict_)
-        """
-
-        if 'tide' in dict_:
-            try:
-                if dict_.get('tide').id != dict_.pop('tide_id'):
-                    raise ValueError('id of tide object does not match the tide_id parameter'
-                            )
-            except KeyError, ex:
-                ex.args = \
-                    ("Found 'tide' in dict but no '{0}' key".format(ex.args[0]),
-                     )
-                raise ex
-
-        return super(CatsMover, cls).new_from_dict(dict_)
+    _state.add(update=_update, create=_create)
+    _state.add_field([serializable.Field('filename', create=True,
+                                read=True, isdatafile=True, test_for_eq=False),
+                      serializable.Field('tide', create=True,
+                                update=True, save_reference=True)])
 
     def __init__(
         self,
@@ -116,19 +100,6 @@ class CatsMover(CyMover, serializable.Serializable):
                            lambda self, val: setattr(self.mover,
                            'scale_value', val))
 
-    # a test case for colander.drop
-    # ===========================================================================
-    # def scale_refpoint_to_dict(self):
-    #     if self.scale_refpoint is None:
-    #         return (None, None, None)
-    # ===========================================================================
-
-    def tide_id_to_dict(self):
-        if self.tide is None:
-            return None
-        else:
-            return self.tide.id
-
     @property
     def tide(self):
         return self._tide
@@ -148,19 +119,47 @@ class CatsMover(CyMover, serializable.Serializable):
 
         self._tide = tide_obj
 
-    def from_dict(self, dict_):
-        """
-        For updating the object from dictionary
-        
-        'tide' object is not part of the _state since it is not serialized/deserialized;
-        however, user can still update the tide attribute with a new Tide object. That must
-        be poped out of the dict here, then call super to process the standard dict_
-        """
+#==============================================================================
+#     def from_dict(self, dict_):
+#         """
+#         For updating the object from dictionary
+# 
+#         'tide' object is not part of the _state since it is not serialized/deserialized;
+#         however, user can still update the tide attribute with a new Tide object. That must
+#         be poped out of the dict here, then call super to process the standard dict_
+#         """
+# 
+#         if 'tide' in dict_ and dict_.get('tide') is not None:
+#             self.tide = dict_.pop('tide')
+# 
+#         super(CatsMover, self).from_dict(dict_)
+#==============================================================================
 
-        if 'tide' in dict_ and dict_.get('tide') is not None:
-            self.tide = dict_.pop('tide')
+    def serialize(self, do='update'):
+        """
+        Since 'wind' property is saved as a reference when used in save file
+        and 'create' option, need to add appropriate node to WindMover schema
+        """
+        dict_ = self.to_dict(do)
+        schema = movers_schema.CatsMover()
+        if do == 'update' and 'tide' in dict_:
+            schema.add(Tide())
 
-        super(CatsMover, self).from_dict(dict_)
+        json_ = schema.serialize(dict_)
+
+        return json_
+
+    @classmethod
+    def deserialize(cls, json_):
+        """
+        append correct schema for wind object
+        """
+        schema = movers_schema.CatsMover()
+        if 'tide' in json_:
+            schema.add(Tide())
+        _to_dict = schema.deserialize(json_)
+
+        return _to_dict
 
 
 class GridCurrentMover(CyMover, serializable.Serializable):
@@ -171,9 +170,9 @@ class GridCurrentMover(CyMover, serializable.Serializable):
 
     _state.add(update=_update)
     _state.add_field([serializable.Field('filename', create=True,
-                    read=True, isdatafile=True),
+                    read=True, isdatafile=True, test_for_eq=False),
                     serializable.Field('topology_file', create=True,
-                    read=True, isdatafile=True)])
+                    read=True, isdatafile=True, test_for_eq=False)])
 
     def __init__(
         self,

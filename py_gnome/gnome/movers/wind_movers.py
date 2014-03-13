@@ -23,6 +23,9 @@ from gnome.movers import CyMover
 from gnome.cy_gnome.cy_wind_mover import CyWindMover
 from gnome.cy_gnome.cy_gridwind_mover import CyGridWindMover
 
+from gnome.persist import movers_schema
+from gnome.persist.environment_schema import Wind
+
 
 class WindMoversBase(CyMover):
     _state = copy.deepcopy(CyMover._state)
@@ -213,41 +216,8 @@ class WindMover(WindMoversBase, serializable.Serializable):
     _state = copy.deepcopy(WindMoversBase._state)
     #_state.add(read=['wind_id'], create=['wind_id'])
     # todo: probably need to make update=True for 'wind' as well
-    _state.add_field(serializable.Field('wind', create=True,
+    _state.add_field(serializable.Field('wind', create=True, update=True,
                                          save_reference=True))
-
-    @classmethod
-    def new_from_dict(cls, dict_):
-        """
-        define in WindMover and check wind_id matches wind
-
-        invokes: super(WindMover,cls).new_from_dict(dict\_)
-        """
-        wind_id = dict_.pop('wind_id')
-        if dict_.get('wind').id != wind_id:
-            raise ValueError('id of wind object does not match the wind_id '
-                             'parameter')
-        return super(WindMover, cls).new_from_dict(dict_)
-
-    def from_dict(self, dict_):
-        """
-        For updating the object from dictionary
-
-        'wind' object is not part of the _state since it is not serialized/
-        deserialized; however, user can still update the wind attribute with a
-        new Wind object. That must be poped out of the dict() here, then call
-        super to process the standard dict\_
-
-        todo: should probably make 'wind' object part of serialization. It
-        should exist for 'update' flag. The serialize/deserialize functionality
-        should use correct schema based on whether user wants to 'create'/
-        'update' existing object or if returned json_ contains a 'wind' object,
-        then it should be added to schema, deserialized and updated instead of
-        popping it out
-        """
-        self.wind = dict_.pop('wind', self.wind)
-
-        super(WindMover, self).from_dict(dict_)
 
     def __init__(self, wind, **kwargs):
         """
@@ -290,6 +260,33 @@ class WindMover(WindMoversBase, serializable.Serializable):
             # update reference to underlying cython object
             self._wind = value
             self.mover.set_ossm(self.wind.ossm)
+
+    def serialize(self, do='update'):
+        """
+        Since 'wind' property is saved as a reference when used in save file
+        and 'create' option, need to add appropriate node to WindMover schema
+        """
+        dict_ = self.to_dict(do)
+        schema = movers_schema.WindMover()
+        if do == 'update':
+            # add wind schema
+            schema.add(Wind())
+
+        json_ = schema.serialize(dict_)
+
+        return json_
+
+    @classmethod
+    def deserialize(cls, json_):
+        """
+        append correct schema for wind object
+        """
+        schema = movers_schema.WindMover()
+        if 'wind' in json_:
+            schema.add(Wind())
+        _to_dict = schema.deserialize(json_)
+
+        return _to_dict
 
 
 def wind_mover_from_file(filename, **kwargs):
@@ -336,9 +333,9 @@ class GridWindMover(WindMoversBase, serializable.Serializable):
     _state = copy.deepcopy(WindMoversBase._state)
     _state.add(update=['wind_scale'], create=['wind_scale'])
     _state.add_field([serializable.Field('wind_file', create=True,
-                    read=True, isdatafile=True),
+                    read=True, isdatafile=True, test_for_eq=False),
                     serializable.Field('topology_file', create=True,
-                    read=True, isdatafile=True)])
+                    read=True, isdatafile=True, test_for_eq=False)])
 
     def __init__(self, wind_file, topology_file=None,
                  extrapolate=False, time_offset=0,

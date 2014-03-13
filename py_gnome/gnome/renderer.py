@@ -39,7 +39,7 @@ class Renderer(Outputter, MapCanvas, serializable.Serializable):
     _state = copy.deepcopy(serializable.Serializable._state)
     _state.add(create=_create, update=_update)
     _state.add_field(serializable.Field('filename', isdatafile=True,
-                    create=True, read=True))
+                    create=True, read=True, test_for_eq=False))
 
     @classmethod
     def new_from_dict(cls, dict_):

@@ -655,9 +655,24 @@ class Model(Serializable):
         and finally saves it to file (_save_json_to_file)
 
         :param OrderedCollection coll_: ordered collection to be saved
+
+        Note: The movers and weatherer objects reference the environment
+        collection. If a field is saved as reference (field.save_reference is
+        True), then this function adds json_[field.name] = index where
+        index is the index into the environment array for the reference
+        object. Currently, only objects in the environment collection are
+        referenced by movers.
         """
         for count, obj in enumerate(coll_):
             json_ = obj.serialize('create')
+            for field in obj._state:
+                if field.save_reference:
+                    'attribute is stored as a reference to environment list'
+                    if getattr(obj, field.name) is not None:
+                        obj_id = getattr(obj, field.name).id
+                        index = self.environment.index(obj_id)
+                        json_[field.name] = index
+
             self._save_json_to_file(saveloc, json_,
                 '{0}_{1}.json'.format(obj.__class__.__name__, count))
 
@@ -759,6 +774,7 @@ def _load_and_deserialize_json(fname):
 
     _state = eval('{0}._state'.format(json_data['obj_type']))
     fields = _state.get_field_by_attribute('isdatafile')
+    refs = _state.get_field_by_attribute('save_reference')
 
     saveloc = os.path.split(fname)[0]
 
@@ -768,8 +784,15 @@ def _load_and_deserialize_json(fname):
         json_data[field.name] = os.path.join(saveloc,
                 json_data[field.name])
 
+    if refs:
+        refs = {field.name: json_data.pop(field.name) for field in refs
+                 if field.name in json_data}
+
     to_eval = ('{0}.deserialize(json_data)'.format(json_data['obj_type']))
     _to_dict = eval(to_eval)
+
+    if refs:
+        _to_dict.update(refs)
 
     return _to_dict
 
@@ -802,37 +825,19 @@ def _load_collection(coll_dict, saveloc, l_env=None):
     for type_idx in coll_dict['items']:
         type_ = type_idx[0]
         idx = type_idx[1]
-        print type_idx
         fname = '{0}_{1}.json'.format(type_.rsplit('.', 1)[1], idx)
         obj_dict = _load_and_deserialize_json(os.path.join(saveloc, fname))
-        obj_name = type_.rsplit('.', 1)[-1]
 
-        if obj_name == 'WindMover':
-            obj_dict.update({'wind': _get_obj(l_env, obj_dict['wind_id'])})
-        elif (obj_name == 'CatsMover' and
-              obj_dict.get('tide_id') is not None):
-            obj_dict.update({'tide': _get_obj(l_env, obj_dict['tide_id'])})
+        _state = eval('{0}._state'.format(type_))
+        refs = _state.get_field_by_attribute('save_reference')
+        for field in refs:
+            if field.name in obj_dict:
+                obj_dict[field.name] = l_env[obj_dict.get(field.name)]
 
         obj = _dict_to_obj(obj_dict)
         obj_list.append(obj)
 
     return obj_list
-
-
-def _get_obj(list_, id_):
-    """
-    Get object by ID from list of objects
-    """
-    obj = [obj for obj in list_ if id_ in obj.id]
-    if len(obj) == 0:
-        msg = 'List does not contain an object with id_: {0}'
-        raise ValueError(msg.format(id_))
-
-    if len(obj) > 1:
-        msg = 'List contains more than one object with id_: {0}'
-        raise ValueError(msg.format(id_))
-
-    return obj[0]
 
 
 def _load_spill_data(saveloc, model):
