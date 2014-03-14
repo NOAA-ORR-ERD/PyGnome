@@ -275,7 +275,7 @@ class InitRiseVelFromDist(InitBaseClass, Serializable):
         self.dist.set_values(data_arrays['rise_vel'][-num_new_particles:])
 
 
-class InitRiseVelFromDropletSizeFromDist(object):
+class InitRiseVelFromDropletSizeFromDist(InitBaseClass, Serializable):
     _state = copy.deepcopy(InitBaseClass._state)
 
     def __init__(self, distribution=None,

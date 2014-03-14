@@ -2,8 +2,10 @@
 Schema classes for gnome.elements.* module
 '''
 
-from colander import SchemaNode, MappingSchema, Int, TupleSchema, Float, \
-    Range, SequenceSchema
+from colander import (SchemaNode, SequenceSchema, TupleSchema, MappingSchema,
+                      Int, Float, Range,
+                      OneOf)
+
 from gnome.persist.base_schema import Id
 
 
@@ -49,6 +51,30 @@ class InitMassFromVolume(Id):
 class InitMassFromPlume(Id):
     name = 'mass'
     description = 'only need to persist the obj_type during serialization'
+
+
+class WeibullDistribution(MappingSchema):
+    alpha = SchemaNode(Float())
+    lambda_ = SchemaNode(Float(), default=1.0)
+    min_ = SchemaNode(Float())
+    max_ = SchemaNode(Float())
+
+
+class UniformDistribution(MappingSchema):
+    low = SchemaNode(Float(), default=0.0)
+    high = SchemaNode(Float(), default=0.1)
+
+
+class InitRiseVelFromDist(Id):
+    name = 'mass'
+    distribution = OneOf([WeibullDistribution(),
+                          UniformDistribution()])
+
+
+class InitRiseVelFromDropletSizeFromDist(Id):
+    name = 'mass'
+    distribution = OneOf([WeibullDistribution(),
+                          UniformDistribution()])
 
 
 class Initializers(MappingSchema):
