@@ -532,10 +532,10 @@ def test_element_types(elem_type, arr_types, sample_sc_no_uncertainty):
                     assert (np.all(sc[key][spill_mask] ==
                         spill.element_type.initializers[key].windage_persist))
                 elif key == 'rise_vel':
-                    if (isinstance(spill.element_type.initializers[key].dist,
+                    if (isinstance(spill.element_type.initializers[key].distribution,
                                    UniformDistribution)):
-                        low = spill.element_type.initializers[key].dist.low
-                        high = spill.element_type.initializers[key].dist.high
+                        low = spill.element_type.initializers[key].distribution.low
+                        high = spill.element_type.initializers[key].distribution.high
 
                         assert (np.all(sc[key][spill_mask] >= low))
                         assert (np.all(sc[key][spill_mask] <= high))

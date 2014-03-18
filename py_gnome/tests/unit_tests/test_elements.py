@@ -115,7 +115,7 @@ def test_correct_particles_set_by_initializers(fcn, arr_types, spill):
 
 
 @pytest.mark.parametrize(("fcn", "init_key"),
-                         zip(fcn_list[:3], initializer_keys[:3]))
+                         zip(fcn_list, initializer_keys))
 def test_element_type_serialize_deserialize(fcn, init_key):
     '''
     test serialization/deserialization of ElementType for various initiailzers

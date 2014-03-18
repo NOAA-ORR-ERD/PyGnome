@@ -3,13 +3,20 @@
 Classes that generate various types of probability distributions
 '''
 
+import copy
 import numpy
 np = numpy
 
 from gnome.utilities.compute_fraction import fraction_below_d
+from gnome.utilities.serializable import Serializable, Field
 
 
-class UniformDistribution(object):
+class UniformDistribution(Serializable):
+    _state = copy.deepcopy(Serializable._state)
+    _state += [Field('low', create=True, update=True),
+               Field('high', create=True, update=True)]
+    _state.update('obj_type', update=True)  # required by deserialize
+
     'Uniform Probability Distribution'
     def __init__(self, low=0., high=0.1):
         '''
@@ -32,7 +39,12 @@ class UniformDistribution(object):
         self._uniform(np_array)
 
 
-class NormalDistribution(object):
+class NormalDistribution(Serializable):
+    _state = copy.deepcopy(Serializable._state)
+    _state += [Field('mean', create=True, update=True),
+               Field('sigma', create=True, update=True)]
+    _state.update('obj_type', update=True)  # required by deserialize
+
     'Normal Probability Distribution'
     def __init__(self, mean=0., sigma=0.1):
         '''
@@ -55,7 +67,12 @@ class NormalDistribution(object):
         self._normal(np_array)
 
 
-class LogNormalDistribution(object):
+class LogNormalDistribution(Serializable):
+    _state = copy.deepcopy(Serializable._state)
+    _state += [Field('mean', create=True, update=True),
+               Field('sigma', create=True, update=True)]
+    _state.update('obj_type', update=True)  # required by deserialize
+
     'Log Normal Probability Distribution'
     def __init__(self, mean=0., sigma=0.1):
         '''
@@ -78,7 +95,14 @@ class LogNormalDistribution(object):
         self._lognormal(np_array)
 
 
-class WeibullDistribution(object):
+class WeibullDistribution(Serializable):
+    _state = copy.deepcopy(Serializable._state)
+    _state += [Field('alpha', create=True, update=True),
+               Field('lambda_', create=True, update=True),
+               Field('min_', create=True, update=True),
+               Field('max_', create=True, update=True)]
+    _state.update('obj_type', update=True)  # required by deserialize
+
     'Log Normal Probability Distribution'
     def __init__(self, alpha=None, lambda_=1.0, min_=None, max_=None):
         '''

@@ -3,8 +3,50 @@ Schema classes for gnome.elements.* module
 '''
 
 from colander import SchemaNode, MappingSchema, Int, TupleSchema, Float, \
-    Range, SequenceSchema
+    Range, SequenceSchema, drop
 from gnome.persist.base_schema import Id
+
+
+''' Distributions schemas - these are used by Init functions that require
+pulling from a distribution '''
+
+
+class UniformDistribution(Id):
+    low = SchemaNode(Float(), name='low',
+        description='lower bound for uniform distribution')
+    high = SchemaNode(Float(), name='high',
+        description='lower bound for uniform distribution')
+    name = 'uniform'
+
+
+class NormalDistribution(Id):
+    mean = SchemaNode(Float(), name='mean',
+        description='mean for normal distribution')
+    sigma = SchemaNode(Float(), name='sigma',
+        description='standard deviation for normal distribution')
+    name = 'normal'
+
+
+class LogNormalDistribution(Id):
+    '''same parameters as Normal - keep in its own class to since serialize/
+    deserialize automatically looks for this class name. Helps keep things
+    consistent.
+    '''
+    NormalDistribution(name='lognormal')
+
+
+class WeibullDistribution(Id):
+    alpha = SchemaNode(Float(), name='alpha',
+        description='shape parameter for weibull distribution')
+    lambda_ = SchemaNode(Float(), name='lambda_',
+        description='scale parameter for weibull distribution')
+    min_ = SchemaNode(Float(), name='min_',
+        description='lower bound? for weibull distribution',
+        missing=drop)
+    max_ = SchemaNode(Float(), name='max_',
+        description='upper bound? for weibull distribution',
+        missing=drop)
+    name = 'weibull'
 
 
 class Windage(TupleSchema):
@@ -49,6 +91,16 @@ class InitMassFromVolume(Id):
 class InitMassFromPlume(Id):
     name = 'mass'
     description = 'only need to persist the obj_type during serialization'
+
+
+class InitRiseVelFromDist(Id):
+    name = 'rise_vel'
+    description = 'rise velocity initializer - dynamically add distribution'
+
+
+class InitRiseVelFromDropletSizeFromDist(Id):
+    name = 'droplet_diameter'
+    description = 'droplet size initializer - dynamically add distribution'
 
 
 class Initializers(MappingSchema):

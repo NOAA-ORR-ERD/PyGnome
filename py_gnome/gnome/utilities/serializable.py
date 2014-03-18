@@ -674,7 +674,10 @@ class Serializable(object):
                 other_attr = other.attr_to_dict(name)
 
             if not isinstance(self_attr, np.ndarray):
-                if self_attr != other_attr:
+                if isinstance(self_attr, float):
+                    if abs(self_attr - other_attr) > 1e-10:
+                        return False
+                elif self_attr != other_attr:
                     return False
 
         return True

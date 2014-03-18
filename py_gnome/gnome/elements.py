@@ -20,7 +20,7 @@ from gnome.utilities.distributions import UniformDistribution
 from gnome.cy_gnome.cy_rise_velocity_mover import rise_velocity_from_drop_size
 from gnome.db.oil_library.oil_props import (OilProps, OilPropsFromDensity)
 
-from gnome.persist import elements_schema
+from gnome.persist import elements_schema, modules_dict
 """
 Initializers for various element types
 """
@@ -240,8 +240,56 @@ class InitMassFromPlume(InitBaseClass, Serializable):
             spill.plume_gen.mass_of_an_le * 1000
 
 
-class InitRiseVelFromDist(InitBaseClass, Serializable):
+class DistributionBase(InitBaseClass, Serializable):
+    '''
+    Define a base class for all initializers that contain a distribution.
+    Keep the code to serialize/deserialize distribution objects here so we only
+    have to write it once.
+    '''
     _state = copy.deepcopy(InitBaseClass._state)
+    _state.add(create=['distribution'], update=['distribution'])
+
+    @classmethod
+    def new_from_dict(cls, dict_):
+        distribution = dict_.get('distribution')
+        to_eval = '{0}.new_from_dict(distribution)'.format(
+                                                    distribution['obj_type'])
+        dict_['distribution'] = eval(to_eval)
+        return super(DistributionBase, cls).new_from_dict(dict_)
+
+    def serialize(self, do='update'):
+        'Add distribution schema based on "distribution" - then serialize'
+
+        dict_ = self.to_dict(do)
+        to_eval = ('{0}.{1}()'
+                   .format(modules_dict[self.__class__.__module__],
+                       self.__class__.__name__))
+        schema = eval(to_eval)
+        to_add = ("elements_schema.{0}(name='distribution')"
+                    .format(self.distribution.__class__.__name__))
+        schema.add(eval(to_add))
+
+        json_ = schema.serialize(dict_)
+        return json_
+
+    @classmethod
+    def deserialize(cls, json_):
+        'Add distribution schema based on "distribution" - then deserialize'
+
+        gnome_mod = cls.__module__
+        obj_name = cls.__name__
+        to_eval = ('{0}.{1}()'.format(modules_dict[gnome_mod], obj_name))
+        schema = eval(to_eval)
+        dist_type = json_['distribution']['obj_type'].rsplit('.', 1)[1]
+        to_add = "elements_schema.{0}(name='distribution')".format(dist_type)
+        schema.add(eval(to_add))
+        dict_ = schema.deserialize(json_)
+
+        return dict_
+
+
+class InitRiseVelFromDist(DistributionBase):
+    _state = copy.deepcopy(DistributionBase._state)
 
     def __init__(self, distribution=None, **kwargs):
         """
@@ -265,18 +313,19 @@ class InitRiseVelFromDist(InitBaseClass, Serializable):
         super(InitRiseVelFromDist, self).__init__(**kwargs)
 
         if distribution:
-            self.dist = distribution
+            self.distribution = distribution
         else:
-            self.dist = UniformDistribution()
+            self.distribution = UniformDistribution()
 
     def initialize(self, num_new_particles, spill, data_arrays,
                    substance=None):
         'Update values of "rise_vel" data array for new particles'
-        self.dist.set_values(data_arrays['rise_vel'][-num_new_particles:])
+        self.distribution.set_values(
+                            data_arrays['rise_vel'][-num_new_particles:])
 
 
-class InitRiseVelFromDropletSizeFromDist(object):
-    _state = copy.deepcopy(InitBaseClass._state)
+class InitRiseVelFromDropletSizeFromDist(DistributionBase):
+    _state = copy.deepcopy(DistributionBase._state)
 
     def __init__(self, distribution=None,
                  water_density=1020.0, water_viscosity=1.0e-6,
@@ -311,9 +360,9 @@ class InitRiseVelFromDropletSizeFromDist(object):
         super(InitRiseVelFromDropletSizeFromDist, self).__init__(**kwargs)
 
         if distribution:
-            self.dist = distribution
+            self.distribution = distribution
         else:
-            self.dist = UniformDistribution()
+            self.distribution = UniformDistribution()
 
         self.water_viscosity = water_viscosity
         self.water_density = water_density
@@ -330,7 +379,7 @@ class InitRiseVelFromDropletSizeFromDist(object):
         drop_size = np.zeros((num_new_particles, ), dtype=np.float64)
         le_density = np.zeros((num_new_particles, ), dtype=np.float64)
 
-        self.dist.set_values(drop_size)
+        self.distribution.set_values(drop_size)
 
         data_arrays['droplet_diameter'][-num_new_particles:] = drop_size
         le_density[:] = substance.density
@@ -343,8 +392,10 @@ class InitRiseVelFromDropletSizeFromDist(object):
 
 
 """ ElementType classes"""
+
+
 class ElementType(Serializable):
-    _state = copy.deepcopy(InitBaseClass._state)
+    _state = copy.deepcopy(Serializable._state)
     _state.add(create=['initializers'], update=['initializers'])
 
     @classmethod
@@ -400,63 +451,62 @@ class ElementType(Serializable):
 
     def to_dict(self, do='update'):
         """
-        since initializers is a dictionary, need to override to_dict so it
-        serializes objects stored in the dict
+        call the to_dict method on each object in the initializers dict. Store
+        results in dict and return.
 
-        todo: is there a need to override from_dict? Will have to see how it
-        interfaces with webgnome
+        todo: the standard to_dict doesn't seem to fit well in this case. It
+        works but perhaps can/should be revisited to make it simpler
         """
         dict_ = super(ElementType, self).to_dict(do)
-        for name, val in dict_['initializers'].iteritems():
-            dict_['initializers'][name] = val.to_dict(do)
+
+        init = {}
+        for key, val in dict_['initializers'].iteritems():
+            init[key] = val.to_dict(do)
+
+        dict_['initializers'] = init
         return dict_
 
     def initializers_to_dict(self):
-        """
-        return a deep copy of the initializers to be serialized. If a copy is
-        not returned, then original dict of initializers is modified and its
-        objects are replaced by the serialized objects (ie a dict).
-        """
+        'just return a deepcopy of the initializers'
         return copy.deepcopy(self.initializers)
-
-    @classmethod
-    def _initializers_schema(cls, init_dict):
-        """
-        used by serialize and deserialize to define the initializers schema
-        make it a classmethod so it can be easily accessed by both. Also make
-        it class method since it belongs with ElementType class
-        """
-        init_schema = elements_schema.Initializers()
-
-        for val in init_dict.values():
-            obj2add = val['obj_type'].rsplit('.', 1)[1]
-            toadd = eval('elements_schema.{0}()'.format(obj2add))
-            init_schema.add(toadd)
-
-        return init_schema
 
     def serialize(self, do='update'):
         """
-        need to define initializers schema dynamically
+        serialize each object in 'initializers' dict, then add it to the json
+        for the ElementType object.
+
+        Note: the to_dict() method returns a dict of initializers as well;
+        however, the schemas associated with the initializers are dynamic
+        (eg initializers that contain a distribution). It is easier to call the
+        initializer's serialize() method instead of adding the initializer's
+        schemas to the ElementType schema since they are not known ahead of
+        time.
         """
         dict_ = self.to_dict(do)
-        init_schema = ElementType._initializers_schema(dict_['initializers'])
         et_schema = elements_schema.ElementType()
-        et_schema.add(init_schema)
         json_ = et_schema.serialize(dict_)
+        s_init = {}
+        for i_key, i_val in self.initializers.iteritems():
+            s_init[i_key] = i_val.serialize(do)
 
+        json_['initializers'] = s_init
         return json_
 
     @classmethod
     def deserialize(cls, json_):
         """
-        need to create schema dynamically before deserialization
+        deserialize each object in the 'initializers' dict, then add it to
+        deserialized ElementType dict
         """
-        init_schema = cls._initializers_schema(json_['initializers'])
         et_schema = elements_schema.ElementType()
-        et_schema.add(init_schema)
-
         dict_ = et_schema.deserialize(json_)
+        d_init = {}
+        for i_key, i_val in json_['initializers'].iteritems():
+            to_eval = ('{0}.deserialize({1})'.format(i_val['obj_type'],
+                                                i_val))
+            d_init[i_key] = eval(to_eval)
+
+        dict_['initializers'] = d_init
 
         return dict_
 
