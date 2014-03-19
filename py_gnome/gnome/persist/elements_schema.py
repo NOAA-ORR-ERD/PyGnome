@@ -95,27 +95,13 @@ class InitMassFromPlume(Id):
 
 
 class InitRiseVelFromDist(Id):
-    name = 'mass'
+    name = 'rise_vel'
     description = 'rise velocity initializer - dynamically add distribution'
-    #distribution = OneOf([WeibullDistribution(),
-    #                      UniformDistribution()])
 
 
 class InitRiseVelFromDropletSizeFromDist(Id):
-    name = 'rise-vel'
+    name = 'rise_vel'
     description = 'droplet size initializer - dynamically add distribution'
-    distribution = OneOf([WeibullDistribution(),
-                          NormalDistribution()])
-
-
-#==============================================================================
-# class Initializers(MappingSchema):
-#     """
-#     Initializers used by the ElementType object
-#     add initializer classes dynamically based on the ElementType instance
-#     """
-#     name = 'initializers'
-#==============================================================================
 
 
 class ElementType(Id):
