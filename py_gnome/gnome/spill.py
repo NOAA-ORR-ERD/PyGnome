@@ -530,7 +530,7 @@ class VerticalPlumeRelease(Release):
         self.start_time_invalid = True
 
 
-class Spill(serializable.Serializable, object):
+class Spill(serializable.Serializable):
 
     """
     base class for a source of elements

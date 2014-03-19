@@ -4,8 +4,9 @@ Created on Mar 18, 2013
 Schema containing Spills
 '''
 
-from colander import SchemaNode, MappingSchema, Bool, Float, Int, \
-    String, TupleSchema, drop, Range, SequenceSchema
+from colander import (SchemaNode, drop,
+                      SequenceSchema, TupleSchema, MappingSchema,
+                      Bool, Float, Int, String, Range)
 
 from gnome.persist.validators import convertible_to_seconds
 from gnome.persist.base_schema import Id, WorldPoint
@@ -14,12 +15,10 @@ from gnome.persist.elements_schema import ElementType
 
 
 class ArrayTypeShape(TupleSchema):
-
     len_ = SchemaNode(Int())
 
 
 class ArrayType(MappingSchema):
-
     shape = ArrayTypeShape()
     dtype = SchemaNode(String())
 
@@ -28,13 +27,12 @@ class ArrayType(MappingSchema):
 
 
 class AllArrayTypes(SequenceSchema):
-
     name = SchemaNode(String())
     value = ArrayType()
 
 
 class Release(Id):
-    """ Base class for Release schemas"""
+    'Base class for Release schemas'
     num_elements = SchemaNode(Int(), default=1000)
 
     # used to create a new Release object if model is persisted mid-run
@@ -44,12 +42,10 @@ class Release(Id):
 
 
 class PointLineRelease(Release):
-
-    """
+    '''
     Contains properties required by UpdateWindMover and CreateWindMover
-    todo: also need a way to persist list of element_types
-    """
-
+    TODO: also need a way to persist list of element_types
+    '''
     start_position = WorldPoint()
     release_time = SchemaNode(LocalDateTime(),
                               validator=convertible_to_seconds)
@@ -68,8 +64,6 @@ class PointLineRelease(Release):
 
 
 class Spill(Id):
-
-    """Spill class schema"""
-
+    'Spill class schema'
     on = SchemaNode(Bool(), default=True, missing=True,
         description='on/off status of spill')

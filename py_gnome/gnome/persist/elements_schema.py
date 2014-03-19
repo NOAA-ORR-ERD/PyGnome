@@ -2,8 +2,9 @@
 Schema classes for gnome.elements.* module
 '''
 
-from colander import SchemaNode, MappingSchema, Int, TupleSchema, Float, \
-    Range, SequenceSchema, drop
+from colander import (SchemaNode, SequenceSchema, TupleSchema, MappingSchema,
+                      Int, Float, Range, drop, OneOf)
+
 from gnome.persist.base_schema import Id
 
 
@@ -12,9 +13,9 @@ pulling from a distribution '''
 
 
 class UniformDistribution(Id):
-    low = SchemaNode(Float(), name='low',
+    low = SchemaNode(Float(), name='low', default=0.0,
         description='lower bound for uniform distribution')
-    high = SchemaNode(Float(), name='high',
+    high = SchemaNode(Float(), name='high', default=0.1,
         description='lower bound for uniform distribution')
     name = 'uniform'
 
@@ -38,7 +39,7 @@ class LogNormalDistribution(Id):
 class WeibullDistribution(Id):
     alpha = SchemaNode(Float(), name='alpha',
         description='shape parameter for weibull distribution')
-    lambda_ = SchemaNode(Float(), name='lambda_',
+    lambda_ = SchemaNode(Float(), name='lambda_', default=1.0,
         description='scale parameter for weibull distribution')
     min_ = SchemaNode(Float(), name='min_',
         description='lower bound? for weibull distribution',
@@ -94,21 +95,27 @@ class InitMassFromPlume(Id):
 
 
 class InitRiseVelFromDist(Id):
-    name = 'rise_vel'
+    name = 'mass'
     description = 'rise velocity initializer - dynamically add distribution'
+    #distribution = OneOf([WeibullDistribution(),
+    #                      UniformDistribution()])
 
 
 class InitRiseVelFromDropletSizeFromDist(Id):
-    name = 'droplet_diameter'
+    name = 'rise-vel'
     description = 'droplet size initializer - dynamically add distribution'
+    distribution = OneOf([WeibullDistribution(),
+                          NormalDistribution()])
 
 
-class Initializers(MappingSchema):
-    """
-    Initializers used by the ElementType object
-    add initializer classes dynamically based on the ElementType instance
-    """
-    name = 'initializers'
+#==============================================================================
+# class Initializers(MappingSchema):
+#     """
+#     Initializers used by the ElementType object
+#     add initializer classes dynamically based on the ElementType instance
+#     """
+#     name = 'initializers'
+#==============================================================================
 
 
 class ElementType(Id):
