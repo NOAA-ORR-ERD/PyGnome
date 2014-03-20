@@ -102,7 +102,7 @@ def test_certain_uncertain():
     """
 
     delta = test_loop()
-    #u_delta = test_uncertain_loop()
+    u_delta = test_uncertain_loop()
     print
     print delta
     print u_delta

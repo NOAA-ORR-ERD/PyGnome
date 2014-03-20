@@ -152,7 +152,7 @@ OSErr ComponentMover_c::PrepareForModelStep(const Seconds& model_time, const Sec
 	
 	errmsg[0]=0;
 	
-	err = SetOptimizeVariables (errmsg);
+	err = SetOptimizeVariables (errmsg, model_time, time_step);
 	
 	// code goes here, jump to done?
 	//if (err) goto done;
@@ -387,7 +387,7 @@ void ComponentMover_c::SetTimeFile(TOSSMTimeValue *newTimeFile)
 	timeFile = newTimeFile;
 }
 
-OSErr ComponentMover_c::SetOptimizeVariables (char *errmsg)
+OSErr ComponentMover_c::SetOptimizeVariables (char *errmsg, const Seconds& model_time, const Seconds& time_step)
 {
 	VelocityRec	vVel, hVel, wVel = {0.,0.};
 	OSErr		err = noErr;
@@ -406,16 +406,11 @@ OSErr ComponentMover_c::SetOptimizeVariables (char *errmsg)
 	
 	// get the time file / wind mover value for this time
 	
-#ifdef pyGNOME
-	printNote("Averaged wind option has not been implemented for pyGNOME yet\n");
-#else
 	if (timeMoverCode == kLinkToWindMover)
 	{
 		long 		i, j, m, n;
 		double 		length, theirLengthSq, myLengthSq, dotProduct;
 		VelocityRec theirVelocity,myVelocity;
-		TMap		*map;
-		TMover 		*mover;
 		Boolean		bFound = false;
 		
 		if (bUseAveragedWinds)
@@ -426,7 +421,7 @@ OSErr ComponentMover_c::SetOptimizeVariables (char *errmsg)
 				//get averaged value from the handle, figure out the time step index
 				//	long index = (long) ((model -> GetModelTime() - model->GetStartTime()) / model->GetTimeStep())
 				//	wvel = INDEXH(fAveragedWindsHdl,index); // check index is in range
-				err = GetAveragedWindValue(model->GetModelTime(), &wVel);
+				err = GetAveragedWindValue(model_time, time_step, &wVel);
 				if (err) 
 				{
 					err = CalculateAveragedWindsHdl(errmsg);
@@ -437,7 +432,7 @@ OSErr ComponentMover_c::SetOptimizeVariables (char *errmsg)
 					}
 					else 
 					{
-						err = GetAveragedWindValue(model->GetModelTime(), &wVel);
+						err = GetAveragedWindValue(model_time, time_step, &wVel);
 						if (err) 
 						{
 							if (!errmsg[0]) {strcpy(errmsg,"There is a problem with the averaged winds. Please check your inputs.");} return -1;
@@ -458,7 +453,7 @@ OSErr ComponentMover_c::SetOptimizeVariables (char *errmsg)
 				}
 				else 
 				{
-					err = GetAveragedWindValue(model->GetModelTime(), &wVel);
+					err = GetAveragedWindValue(model_time, time_step, &wVel);
 					if (err)
 					{ 
 						if (!errmsg[0]) {strcpy(errmsg,"There is a problem with the averaged winds. Please check your inputs.");} return -1;
@@ -470,6 +465,11 @@ OSErr ComponentMover_c::SetOptimizeVariables (char *errmsg)
 		}
 		else
 		{
+#ifdef pyGNOME
+	printNote("Link to wind mover option has not been implemented for pyGNOME yet\n");
+#else
+			TMap	*map = 0;
+			TMover 	*mover = 0;
 			for (j = 0, m = model -> mapList -> GetItemCount() ; j < m && !bFound ; j++) {
 				model -> mapList -> GetListItem((Ptr)&map, j);
 				
@@ -478,7 +478,7 @@ OSErr ComponentMover_c::SetOptimizeVariables (char *errmsg)
 					if (mover -> GetClassID() != TYPE_WINDMOVER) continue;
 					if (!strcmp(mover -> className, windMoverName)) {
 						// JLM, note: we are implicitly matching by file name above
-						dynamic_cast<TWindMover *>(mover)-> GetTimeValue (model -> modelTime, &wVel);	// minus AH 07/10/2012
+						dynamic_cast<TWindMover *>(mover)-> GetTimeValue (model_time, &wVel);	// minus AH 07/10/2012
 						bFound = true;
 						break;
 					}
@@ -492,7 +492,7 @@ OSErr ComponentMover_c::SetOptimizeVariables (char *errmsg)
 						if (mover -> GetClassID() != TYPE_WINDMOVER) continue;
 						if (!strcmp(mover -> className, windMoverName)) {
 							// JLM, note: we are implicitly matching by file name above
-							dynamic_cast<TWindMover *>(mover)-> GetTimeValue (model -> modelTime, &wVel);	// minus AH 07/10/2012
+							dynamic_cast<TWindMover *>(mover)-> GetTimeValue (model_time, &wVel);	// minus AH 07/10/2012
 							
 							bFound = true;
 							break;
@@ -512,18 +512,24 @@ OSErr ComponentMover_c::SetOptimizeVariables (char *errmsg)
 				if (mover) 
 				{
 					strcpy(windMoverName, mover->className);	// link the wind to the component mover
-					dynamic_cast<TWindMover *>(mover)-> GetTimeValue (model -> modelTime, &wVel);	// minus AH 07/10/2012
+					dynamic_cast<TWindMover *>(mover)-> GetTimeValue (model_time, &wVel);	// minus AH 07/10/2012
 				}
 				else strcpy(windMoverName, "");	// clear out any value
 
 			}
 			// alert code goes here if mover is not found
+#endif
 		}
 	}
 	else {
 	// use timeFile (for python do it this way)
+		printNote("Got Here\n");
+		if (timeFile)
+		{
+			printNote("Got Here 2\n");
+			timeFile->GetTimeValue(model_time, &wVel);	// this needs to be defined
+		}
 	}
-#endif
 	
 	// code goes here, option for averaged winds to set a scale or use the main dialog scale, would pat1ValScale/pat2ValScale just be averaged wind value? 
 	
@@ -649,7 +655,7 @@ WorldPoint3D ComponentMover_c::GetMove (const Seconds& model_time, Seconds timeS
 	
 	if (!fOptimize.isOptimizedForStep)
 	{
-		err = SetOptimizeVariables (errmsg);
+		err = SetOptimizeVariables (errmsg, model_time, timeStep);
 		if (err) return deltaPoint;
 	}
 	
@@ -689,12 +695,13 @@ Boolean ComponentMover_c::VelocityStrAtPoint(WorldPoint3D wp, char *diagnosticSt
 		length2 = sqrt(pat2Val.u * pat2Val.u + pat2Val.v * pat2Val.v);
 		StringWithoutTrailingZeros(str2,length2,6);
 	}
+#ifndef pyGNOME	// for now this is not used in pyGNOME, will deal with it later if it becomes an issue
 	if (!(this->fOptimize.isOptimizedForStep))
 	{
-		err = this->SetOptimizeVariables (errmsg);
+		err = this->SetOptimizeVariables (errmsg, model->GetModelTime(), model->GetTimeStep());
 		if (err) return false;
 	}
-	
+#endif	
 	finalVel.u = pat1Val.u * this->fOptimize.pat1ValScale + pat2Val.u * this->fOptimize.pat2ValScale;
 	finalVel.v = pat1Val.v * this->fOptimize.pat1ValScale + pat2Val.v * this->fOptimize.pat2ValScale;
 	length3 = sqrt(finalVel.u * finalVel.u + finalVel.v * finalVel.v);
@@ -750,24 +757,21 @@ OSErr ComponentMover_c::AddUncertainty(long setIndex, long leIndex,VelocityRec *
 }
 
 
-OSErr ComponentMover_c::GetAveragedWindValue(Seconds time, VelocityRec *avValue)
+OSErr ComponentMover_c::GetAveragedWindValue(Seconds time, const Seconds& time_step, VelocityRec *avValue)
 {
 	long index, numValuesInHdl;
 	VelocityRec avWindValue = {0.,0.};
 	Seconds avTime;
 	
-#ifdef pyGNOME
-	printNote("Averaged wind option has not been implemented for pyGNOME yet\n");
-#else
 	*avValue = avWindValue;
 	
-	index = (long)((time - model->GetStartTime())/model->GetTimeStep());
+	index = (long)((time - fModelStartTime)/time_step);
 	numValuesInHdl = _GetHandleSize((Handle)fAveragedWindsHdl)/sizeof(**fAveragedWindsHdl);
 	if (index<0 || index >= numValuesInHdl) {return -1;}	// may want to recalculate
 	avTime = INDEXH(fAveragedWindsHdl, index).time;
 	if (avTime != time) return -1;
 	*avValue = INDEXH(fAveragedWindsHdl, index).value;// translate back to u,v
-#endif	
+
 	return noErr;
 }
 

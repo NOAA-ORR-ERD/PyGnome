@@ -74,9 +74,9 @@ public:
 	virtual OSErr 		PrepareForModelRun(); 
 	virtual OSErr 		PrepareForModelStep(const Seconds&, const Seconds&, bool, int numLESets, int* LESetsSizesList); 
 	virtual void 		ModelStepIsDone();
-	OSErr				SetOptimizeVariables (char *errmsg);
+	OSErr				SetOptimizeVariables (char *errmsg, const Seconds& model_time, const Seconds& time_step);
 	OSErr				CalculateAveragedWindsHdl(char *errmsg);
-	OSErr				GetAveragedWindValue(Seconds time, VelocityRec *avValue);
+	OSErr				GetAveragedWindValue(Seconds time, const Seconds& time_step, VelocityRec *avValue);
 	virtual OSErr		AddUncertainty(long setIndex, long leIndex,VelocityRec *patVelocity,double timeStep);
 
 	virtual WorldPoint3D       GetMove(const Seconds& model_time, Seconds timeStep,long setIndex,long leIndex,LERec *theLE,LETYPE leType);
