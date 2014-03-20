@@ -328,14 +328,15 @@ class ComponentMover(CyMover, serializable.Serializable):
 
     _state = copy.deepcopy(CyMover._state)
 
-    _update = [ 'ref_point', 'pat1_angle', 'pat1_speed']
+    _update = [ 'ref_point', 'pat1_angle', 'pat1_speed', 'pat1_speed_units', 'pat1_scale_to_value',
+                    'pat2_angle', 'pat2_speed', 'pat2_speed_units', 'pat2_scale_to_value']
     _create = []
     _create.extend(_update)
     _state.add(update=_update, create=_create)
     _state.add_field([serializable.Field('filename1', create=True,
                     read=True, isdatafile=True, test_for_eq=False),
-#                       serializable.Field('filename2', create=True,
-#                     read=True, isdatafile=True, test_for_eq=False),
+                      serializable.Field('filename2', create=True,
+                    read=True, isdatafile=True, test_for_eq=False),
                       serializable.Field('wind', create=True,
                                 update=True, save_reference=True)])
 
@@ -379,12 +380,7 @@ class ComponentMover(CyMover, serializable.Serializable):
 
         self.mover = cy_component_mover.CyComponentMover()	# pass in parameters
         self.mover.text_read(filename1, filename2)
-#         self.catsmover1 = cy_cats_mover.CyCatsMover()        
-#         self.catsmover1.text_read(filename1)
-#         if filename2 is not None:
-#             if os.path.exists(filename2):
-#                 self.catsmover2 = cy_cats_mover.CyCatsMover()
-#                 self.catsmover2.text_read(filename2)
+
         self._wind = None
         if wind is not None:
             self.wind = wind
@@ -395,6 +391,8 @@ class ComponentMover(CyMover, serializable.Serializable):
 
         # todo: no need to check for None since properties that are None are not persisted
 
+	
+        # I think this is required...
         if 'scale_refpoint' in kwargs:
             self.scale_refpoint = kwargs.pop('scale_refpoint')
 
