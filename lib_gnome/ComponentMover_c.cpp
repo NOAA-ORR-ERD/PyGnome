@@ -523,10 +523,8 @@ OSErr ComponentMover_c::SetOptimizeVariables (char *errmsg, const Seconds& model
 	}
 	else {
 	// use timeFile (for python do it this way)
-		printNote("Got Here\n");
 		if (timeFile)
 		{
-			printNote("Got Here 2\n");
 			timeFile->GetTimeValue(model_time, &wVel);	// this needs to be defined
 		}
 	}
@@ -725,8 +723,7 @@ OSErr ComponentMover_c::AddUncertainty(long setIndex, long leIndex,VelocityRec *
 	
 	//err = this -> UpdateUncertainty();
 	//if(err) return err;
-	
-	
+
 	if(!fUncertaintyListH || !fLESetSizesH) 
 		return 0; // this is our clue to not add uncertainty
 	
@@ -737,7 +734,7 @@ OSErr ComponentMover_c::AddUncertainty(long setIndex, long leIndex,VelocityRec *
 		
 		u = patVelocity->u;
 		v = patVelocity->v;
-		
+
 		if(lengthS>1e-6) // so we don't divide by zero
 		{	
 			

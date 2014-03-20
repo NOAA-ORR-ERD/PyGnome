@@ -4,8 +4,8 @@ import numpy as np
 
 import gnome
 from gnome import basic_types
-from gnome.cy_gnome import cy_component_mover, cy_cats_mover, cy_ossm_time
-from gnome.environment import Wind, ConstantWind
+from gnome.cy_gnome import cy_component_mover, cy_ossm_time
+from gnome.environment import Wind
 import cy_fixtures
 
 from gnome.utilities.remote_data import get_datafile
@@ -26,21 +26,21 @@ class ComponentMove(cy_fixtures.CyTestMove):
     def __init__(self):
         wind_file = get_datafile(os.path.join(datadir,
                              r"delaware_bay/ConstantWind.WND"))
-        #self.ossm = cy_shio_time.CyShioTime(file_)
+        #self.ossm = cy_ossm_time.CyOSSMTime(wind_file,file_contains=basic_types.ts_format.magnitude_direction)
         wm = Wind(filename=wind_file)
 
         cats1_file = get_datafile(os.path.join(datadir,
                                 r"delaware_bay/NW30ktwinds.cur"))
         cats2_file = get_datafile(os.path.join(datadir,
                                 r"delaware_bay/SW30ktwinds.cur"))
-        #yeardata_path = os.path.join(os.path.dirname(gnome.__file__),
-        #        'data/yeardata/')
         self.component = cy_component_mover.CyComponentMover()
         self.component.set_ossm(wm.ossm)
+        #self.component.set_ossm(self.ossm)
         self.component.text_read(cats1_file,cats2_file)
+        self.component.ref_point = (-75.262319, 39.142987)
 
         super(ComponentMove, self).__init__()
-        self.ref[:] = (-75.5262319, 39.142987, 0)
+        self.ref[:] = (-75.262319, 39.142987, 0)
         self.component.prepare_for_model_run()
         self.component.prepare_for_model_step(self.model_time,
                 self.time_step, 1, self.spill_size)
@@ -87,8 +87,8 @@ def test_move():
     print '--------------'
     print 'test certain_move and uncertain_move are different'
     tgt = ComponentMove()
-    #tgt.certain_move()
-    #tgt.uncertain_move()
+    tgt.certain_move()
+    tgt.uncertain_move()
     tgt.component.model_step_is_done()
 
     assert np.all(tgt.delta['lat'] != tgt.u_delta['lat'])
@@ -98,14 +98,14 @@ def test_move():
 
 def test_certain_move():
     """
-    test get_move for forecase LEs
+    test get_move for forecast LEs
     """
 
     print
     print '--------------'
     print 'test_certain_move'
     tgt = ComponentMove()
-    #tgt.certain_move()
+    tgt.certain_move()
 
     assert np.all(tgt.delta['lat'] != 0)
     assert np.all(tgt.delta['long'] != 0)
@@ -124,7 +124,7 @@ def test_uncertain_move():
     print '--------------'
     print 'test_uncertain_move'
     tgt = ComponentMove()
-    #tgt.uncertain_move()
+    tgt.uncertain_move()
 
     assert np.all(tgt.u_delta['lat'] != 0)
     assert np.all(tgt.u_delta['long'] != 0)

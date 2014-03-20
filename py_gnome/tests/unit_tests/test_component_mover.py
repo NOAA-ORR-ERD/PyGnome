@@ -89,6 +89,7 @@ def test_uncertain_loop():
     pSpill = sample_sc_release(num_le, start_pos, rel_time,
                                uncertain=True)
     component = ComponentMover(curr1_file, curr2_file, wind=wnd)
+    component.ref_point = (-75.262319, 39.142987)
     u_delta = _uncertain_loop(pSpill, component)
 
     _assert_move(u_delta)
