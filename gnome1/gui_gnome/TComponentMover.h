@@ -22,7 +22,7 @@ public:
 	
 	TComponentMover (TMap *owner, char *name);
 	virtual			   ~TComponentMover () { Dispose (); }
-	virtual void 		Dispose ();
+	//virtual void 		Dispose ();
 	virtual OSErr		InitMover ();
 	virtual ClassID 	GetClassID () { return TYPE_COMPONENTMOVER; }
 	virtual Boolean		IAm(ClassID id) { if(id==TYPE_COMPONENTMOVER) return TRUE; return TCurrentMover::IAm(id); }

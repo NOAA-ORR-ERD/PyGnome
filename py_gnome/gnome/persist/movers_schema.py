@@ -67,6 +67,14 @@ class CatsMover(Id, Mover):
     scale_value = SchemaNode(Float())
 
 
+class ComponentMover(Id, Mover):
+    """
+    Contains properties required by UpdateWindMover and CreateWindMover
+    """
+    filename1 = SchemaNode(String(), missing=drop)
+    filename2 = SchemaNode(String(), missing=drop)
+    scale_refpoint = WorldPoint(missing=drop)
+
 class GridCurrentMover(Id, Mover):
     filename = SchemaNode(String(), missing=drop)
     topology_file = SchemaNode(String(), missing=drop)

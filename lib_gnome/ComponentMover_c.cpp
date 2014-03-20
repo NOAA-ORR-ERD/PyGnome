@@ -17,6 +17,118 @@
 #include "Replacements.h"
 #endif
 
+#ifndef pyGNOME	
+ComponentMover_c::ComponentMover_c (TMap *owner, char *name) : CurrentMover_c (owner, name)
+{
+	pattern1 = nil;
+	pattern2 = nil;
+	bPat1Open = true;
+	bPat2Open = true;
+	timeFile = nil;
+	
+	memset(&refP,0,sizeof(refP));
+	bRefPointOpen = false;
+	pat1Angle = 0;
+	pat2Angle = pat1Angle + 90;
+	
+	pat1Speed = 10;
+	pat2Speed = 10;
+	
+	pat1SpeedUnits = kMetersPerSec;
+	pat2SpeedUnits = kMetersPerSec;
+	
+	pat1ScaleToValue = .1;
+	pat2ScaleToValue = .1;
+	
+	//scaleBy = WINDSTRESS;	// changed default 5/26/00
+	scaleBy = NONE;	// default for dialog is WINDSTRESS, but for location files is WINDSPEED 5/29/00
+	// both are set when they are first encountered
+	memset(&fOptimize,0,sizeof(fOptimize));
+	
+	timeMoverCode = kLinkToNone;
+	windMoverName [0] = 0;
+	
+	bUseAveragedWinds = false;
+	bExtrapolateWinds = false;
+	bUseMainDialogScaleFactor = false;
+	fScaleFactorAveragedWinds = 1.;
+	fPowerFactorAveragedWinds = 1.;
+	fPastHoursToAverage = 24;
+	fAveragedWindsHdl = 0;
+	
+	return;
+}
+#endif
+ComponentMover_c::ComponentMover_c () : CurrentMover_c ()
+{
+	pattern1 = nil;
+	pattern2 = nil;
+	//bPat1Open = true;
+	//bPat2Open = true;
+	timeFile = nil;
+	
+	memset(&refP,0,sizeof(refP));
+	//bRefPointOpen = false;
+	pat1Angle = 0;
+	pat2Angle = pat1Angle + 90;
+	
+	pat1Speed = 10;
+	pat2Speed = 10;
+	
+	pat1SpeedUnits = kMetersPerSec;
+	pat2SpeedUnits = kMetersPerSec;
+	
+	pat1ScaleToValue = .1;
+	pat2ScaleToValue = .1;
+	
+	//scaleBy = WINDSTRESS;	// changed default 5/26/00
+	scaleBy = NONE;	// default for dialog is WINDSTRESS, but for location files is WINDSPEED 5/29/00
+	// both are set when they are first encountered
+	memset(&fOptimize,0,sizeof(fOptimize));
+	
+	timeMoverCode = kLinkToNone;
+	windMoverName [0] = 0;
+	
+	bUseAveragedWinds = false;
+	bExtrapolateWinds = false;
+	bUseMainDialogScaleFactor = false;
+	fScaleFactorAveragedWinds = 1.;
+	fPowerFactorAveragedWinds = 1.;
+	fPastHoursToAverage = 24;
+	fAveragedWindsHdl = 0;
+	
+	return;
+}
+
+void ComponentMover_c::Dispose ()
+{
+	if (pattern1) {
+		pattern1 -> Dispose();
+		delete pattern1;
+		pattern1 = nil;
+	}
+	if (pattern2) {
+		pattern2 -> Dispose();
+		delete pattern2;
+		pattern2 = nil;
+	}
+	//For pyGnome, let python/cython manage memory for this object.	
+#ifndef pyGNOME
+	if (timeFile)
+	{
+		timeFile -> Dispose ();
+		delete timeFile;
+		timeFile = nil;
+	}
+#endif
+	if (fAveragedWindsHdl)
+	{
+		DisposeHandle((Handle)fAveragedWindsHdl);
+		fAveragedWindsHdl = 0;
+	}
+	CurrentMover_c::Dispose ();
+}
+
 void ComponentMover_c::ModelStepIsDone()
 {
 	this -> fOptimize.isFirstStep = false;
@@ -75,6 +187,9 @@ done:
 OSErr ComponentMover_c::CalculateAveragedWindsHdl(char *errmsg)
 {
 	OSErr err = 0;
+#ifdef pyGNOME
+	printNote("Averaged wind option has not been implemented for pyGNOME yet\n");
+#else
 	long i, j, numTimeSteps = (model -> GetEndTime () - model -> GetStartTime ()) / model -> GetTimeStep() + 1;
 	VelocityRec value, avValue;
 	TMover 		*mover;
@@ -263,12 +378,18 @@ done:
 			fAveragedWindsHdl = 0;
 		}
 	}
+#endif
 	return err;
+}
+
+void ComponentMover_c::SetTimeFile(TOSSMTimeValue *newTimeFile)
+{
+	timeFile = newTimeFile;
 }
 
 OSErr ComponentMover_c::SetOptimizeVariables (char *errmsg)
 {
-	VelocityRec	vVel, hVel, wVel;
+	VelocityRec	vVel, hVel, wVel = {0.,0.};
 	OSErr		err = noErr;
 	Boolean 	useEddyUncertainty = false;	
 	VelocityRec	ref1Wind, ref2Wind,pat1ValRef, pat2ValRef;
@@ -285,6 +406,9 @@ OSErr ComponentMover_c::SetOptimizeVariables (char *errmsg)
 	
 	// get the time file / wind mover value for this time
 	
+#ifdef pyGNOME
+	printNote("Averaged wind option has not been implemented for pyGNOME yet\n");
+#else
 	if (timeMoverCode == kLinkToWindMover)
 	{
 		long 		i, j, m, n;
@@ -396,6 +520,10 @@ OSErr ComponentMover_c::SetOptimizeVariables (char *errmsg)
 			// alert code goes here if mover is not found
 		}
 	}
+	else {
+	// use timeFile (for python do it this way)
+	}
+#endif
 	
 	// code goes here, option for averaged winds to set a scale or use the main dialog scale, would pat1ValScale/pat2ValScale just be averaged wind value? 
 	
@@ -457,6 +585,49 @@ OSErr ComponentMover_c::SetOptimizeVariables (char *errmsg)
 		
 	}
 	else fOptimize.pat2ValScale = 0;
+	
+	return noErr;
+}
+
+OSErr ComponentMover_c::get_move(int n, Seconds model_time, Seconds step_len,
+							WorldPoint3D *ref, WorldPoint3D *delta, short *LE_status,
+							LEType spillType, long spill_ID)
+{
+	if(!delta || !ref) {
+		return 1;
+	}
+	
+	// For LEType spillType, check to make sure it is within the valid values
+	if (spillType < FORECAST_LE ||
+		spillType > UNCERTAINTY_LE)
+	{
+		return 2;
+	}
+	
+	LERec* prec;
+	LERec rec;
+	prec = &rec;
+	
+	WorldPoint3D zero_delta = { {0, 0}, 0.};
+	
+	for (int i = 0; i < n; i++) {
+		if ( LE_status[i] != OILSTAT_INWATER) {
+			delta[i] = zero_delta;
+			continue;
+		}
+		
+		rec.p = ref[i].p;
+		rec.z = ref[i].z;
+		
+		// let's do the multiply by 1000000 here - this is what gnome expects
+		rec.p.pLat *= 1e6;
+		rec.p.pLong *= 1e6;
+		
+		delta[i] = GetMove(model_time, step_len, spill_ID, i, prec, spillType);
+		
+		delta[i].p.pLat /= 1e6;
+		delta[i].p.pLong /= 1e6;
+	}
 	
 	return noErr;
 }
@@ -585,6 +756,9 @@ OSErr ComponentMover_c::GetAveragedWindValue(Seconds time, VelocityRec *avValue)
 	VelocityRec avWindValue = {0.,0.};
 	Seconds avTime;
 	
+#ifdef pyGNOME
+	printNote("Averaged wind option has not been implemented for pyGNOME yet\n");
+#else
 	*avValue = avWindValue;
 	
 	index = (long)((time - model->GetStartTime())/model->GetTimeStep());
@@ -593,5 +767,42 @@ OSErr ComponentMover_c::GetAveragedWindValue(Seconds time, VelocityRec *avValue)
 	avTime = INDEXH(fAveragedWindsHdl, index).time;
 	if (avTime != time) return -1;
 	*avValue = INDEXH(fAveragedWindsHdl, index).value;// translate back to u,v
+#endif	
 	return noErr;
 }
+
+OSErr ComponentMover_c::TextRead(char *cats_path1, char *cats_path2) 
+{
+	OSErr err = 0;
+	TTriGridVel *triGrid = 0;
+	
+	TCATSMover *newCATSMover1 = 0;
+	TCATSMover *newCATSMover2 = 0;
+	
+	if (!cats_path1[0]) return -1;
+	
+	newCATSMover1 = new TCATSMover;
+	if (!newCATSMover1)
+	{ 
+		TechError("CreateAndInitCurrentsMover()", "new TCATSMover()", 0);
+		return -1;
+	}
+	err = newCATSMover1->TextRead(cats_path1);
+	if (!err) pattern1 = newCATSMover1;
+
+	if (cats_path2[0]) 
+	{
+		newCATSMover2 = new TCATSMover;
+		if (!newCATSMover2)
+		{ 
+			TechError("CreateAndInitCurrentsMover()", "new TCATSMover()", 0);
+			return -1;
+		}
+		err = newCATSMover2->TextRead(cats_path2);
+		if (!err) pattern2 = newCATSMover2;
+	}
+	
+	return err;	
+}
+	
+
