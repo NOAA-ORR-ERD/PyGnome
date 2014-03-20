@@ -186,40 +186,39 @@ def _uncertain_loop(pSpill, component):
     return u_delta
 
 
-# def test_exception_new_from_dict():
-#     """
-#     test exceptions raised for new_from_dict
-#     """
-# 
-#     c_component = ComponentMover(curr1_file)
-#     dict_ = c_component.to_dict('create')
-#     dict_.update({'wind': wnd})
-#     with pytest.raises(KeyError):
-#         ComponentMover.new_from_dict(dict_)
-# 
-
-def test_new_from_dict_wind():
+@pytest.mark.parametrize(("do"), ['create', 'update'])
+def test_serialize_deserialize_wind(do):
     """
-    test to_dict function for Wind object
-    create a new wind object and make sure it has same properties
+    test to_dict function for Component mover with wind object
+    create a new Component mover and make sure it has same properties
     """
 
     c_component = ComponentMover(curr1_file, wind=wnd)
-    dict_ = c_component.to_dict('create')
-    dict_.update({'wind': wnd})
-    c2 = ComponentMover.new_from_dict(dict_)
-    assert c_component == c2
+    json_ = c_component.serialize(do)
+    dict_ = c_component.deserialize(json_)
+    if do == 'create':
+        dict_.update({'wind': wnd})
+        c2 = ComponentMover.new_from_dict(dict_)
+        assert c_component == c2
+    else:
+        assert json_['wind'] == wnd.serialize(do)
+        c_component.from_dict(dict_)
+        assert c_component.wind is wnd
 
 
-def test_new_from_dict_curronly():
+@pytest.mark.parametrize(("do"), ['create', 'update'])
+def test_serialize_deserialize_curronly(do):
     """
     test to_dict function for Component mover
     create a new component mover and make sure it has same properties
     """
 
     c_component = ComponentMover(curr1_file)
-    dict_ = c_component.to_dict('create')
-    c2 = ComponentMover.new_from_dict(dict_)
-    assert c_component == c2
-
+    json_ = c_component.serialize(do)
+    dict_ = c_component.deserialize(json_)
+    if do == 'create':
+        c2 = ComponentMover.new_from_dict(dict_)
+        assert c_component == c2
+    else:
+        c_component.from_dict(dict_)
 

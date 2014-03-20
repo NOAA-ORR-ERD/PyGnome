@@ -13,7 +13,7 @@ from gnome.cy_gnome import cy_cats_mover, cy_shio_time, cy_ossm_time, \
     cy_gridcurrent_mover, cy_component_mover
 
 from gnome.persist import movers_schema
-from gnome.persist.environment_schema import Tide
+from gnome.persist.environment_schema import Tide, Wind
 
 
 class CatsMover(CyMover, serializable.Serializable):
