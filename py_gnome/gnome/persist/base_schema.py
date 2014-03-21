@@ -57,5 +57,3 @@ class ImageSize(TupleSchema):
     'Only contains 2D (long, lat) positions'
     width = SchemaNode(Int())
     height = SchemaNode(Int())
-
-
