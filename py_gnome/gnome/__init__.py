@@ -14,7 +14,7 @@ from . import spill_container
 from . import movers
 from . import environment
 from . import model
-from . import renderer
+from . import outputters
 
 __all__ = [GnomeId,
            map,
@@ -23,4 +23,4 @@ __all__ = [GnomeId,
            movers,
            environment,
            model,
-           renderer]
+           outputters]

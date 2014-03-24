@@ -24,7 +24,7 @@ from gnome.environment import Wind
 from gnome.spill import point_line_release_spill
 from gnome.movers import RandomMover, constant_wind_mover, GridCurrentMover
 
-from gnome.renderer import Renderer
+from gnome.outputters import Renderer
 
 # define base directory
 base_dir = os.path.dirname(__file__)

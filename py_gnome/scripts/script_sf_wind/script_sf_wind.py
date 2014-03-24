@@ -19,7 +19,7 @@ from gnome.map import MapFromBNA
 from gnome.spill import point_line_release_spill
 from gnome.movers import GridWindMover
 
-from gnome.renderer import Renderer
+from gnome.outputters import Renderer
 from gnome.outputters import NetCDFOutput
 
 # define base directory

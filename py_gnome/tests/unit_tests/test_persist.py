@@ -26,7 +26,7 @@ from gnome.movers import RandomMover, WindMover, CatsMover
 from gnome.weatherers import Weatherer
 
 #from gnome.persist.scenario import Scenario
-from gnome.renderer import Renderer
+from gnome.outputters import Renderer
 
 curr_dir = os.path.dirname(__file__)
 datafiles = os.path.join(curr_dir, 'sample_data', 'boston_data')

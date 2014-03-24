@@ -24,7 +24,7 @@ from gnome.movers import (RandomMover,
                           RandomVerticalMover,
                           SimpleMover)
 
-from gnome.renderer import Renderer
+from gnome.outputters import Renderer
 from gnome.outputters import NetCDFOutput
 
 # define base directory

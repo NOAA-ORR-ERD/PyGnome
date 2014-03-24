@@ -29,7 +29,7 @@ from gnome.movers.simple_mover import SimpleMover
 from gnome.movers import RandomMover, WindMover, CatsMover
 
 from gnome.weatherers import Weatherer
-from gnome.renderer import Renderer
+from gnome.outputters import Renderer
 
 from gnome.model import Model
 
@@ -273,7 +273,7 @@ def test_simple_run_with_image_output():
 
     # the land-water map
     gnome_map = gnome.map.MapFromBNA(testmap, refloat_halflife=6)  # hours
-    renderer = gnome.renderer.Renderer(testmap, images_dir, size=(400, 300))
+    renderer = gnome.outputters.Renderer(testmap, images_dir, size=(400, 300))
 
     model = Model(time_step=timedelta(minutes=15),
                   start_time=start_time, duration=timedelta(hours=1),
@@ -331,7 +331,7 @@ def test_simple_run_with_image_output_uncertainty():
 
     # the land-water map
     gmap = gnome.map.MapFromBNA(testmap, refloat_halflife=6)  # hours
-    renderer = gnome.renderer.Renderer(testmap, images_dir, size=(400, 300))
+    renderer = gnome.outputters.Renderer(testmap, images_dir, size=(400, 300))
 
     model = Model(start_time=start_time,
                   time_step=timedelta(minutes=15), duration=timedelta(hours=1),

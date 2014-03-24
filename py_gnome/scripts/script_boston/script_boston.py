@@ -32,7 +32,7 @@ from gnome.spill import point_line_release_spill
 from gnome.movers import RandomMover, WindMover, CatsMover
 
 
-from gnome.renderer import Renderer
+from gnome.outputters import Renderer
 from gnome.outputters import NetCDFOutput
 
 # define base directory
