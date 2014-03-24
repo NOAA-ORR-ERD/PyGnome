@@ -21,6 +21,8 @@ from random_movers import (RandomMoverSchema,
                            RandomVerticalMover)
 from current_movers import (CatsMoverSchema,
                             CatsMover,
+                            ComponentMoverSchema,
+                            ComponentMover,
                             GridCurrentMoverSchema,
                             GridCurrentMover)
 from vertical_movers import RiseVelocityMoverSchema, RiseVelocityMover
@@ -42,6 +44,8 @@ __all__ = [Mover,
            RandomVerticalMover,
            CatsMoverSchema,
            CatsMover,
+           ComponentMoverSchema,
+           ComponentMover,
            GridCurrentMoverSchema,
            GridCurrentMover,
            RiseVelocityMoverSchema,

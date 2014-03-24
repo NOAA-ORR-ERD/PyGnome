@@ -7,7 +7,7 @@ import copy
 
 from colander import (SchemaNode, Bool, String, Float, drop)
 
-from gnome.persist.base_schema import ObjType, WorldPoint
+from gnome.persist.base_schema import ObjType, WorldPoint, LongLat
 
 from gnome.movers import CyMover, MoverSchema
 from gnome import environment
@@ -329,7 +329,8 @@ class ComponentMoverSchema(ObjType, MoverSchema):
     filename1 = SchemaNode(String(), missing=drop)
     filename2 = SchemaNode(String(), missing=drop)
     #scale = SchemaNode(Bool())
-    ref_point = WorldPoint(missing=drop)
+    #ref_point = WorldPoint(missing=drop)
+    ref_point = LongLat(missing=drop)
     #scale_value = SchemaNode(Float())
 
 
@@ -348,7 +349,7 @@ class ComponentMover(CyMover, serializable.Serializable):
                     read=True, isdatafile=True, test_for_eq=False),
                       serializable.Field('wind', create=True,
                                 update=True, save_reference=True)])
-    _schema = CatsMoverSchema
+    _schema = ComponentMoverSchema
 
     def __init__(
         self,
