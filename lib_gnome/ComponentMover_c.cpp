@@ -17,6 +17,118 @@
 #include "Replacements.h"
 #endif
 
+#ifndef pyGNOME	
+ComponentMover_c::ComponentMover_c (TMap *owner, char *name) : CurrentMover_c (owner, name)
+{
+	pattern1 = nil;
+	pattern2 = nil;
+	bPat1Open = true;
+	bPat2Open = true;
+	timeFile = nil;
+	
+	memset(&refP,0,sizeof(refP));
+	bRefPointOpen = false;
+	pat1Angle = 0;
+	pat2Angle = pat1Angle + 90;
+	
+	pat1Speed = 10;
+	pat2Speed = 10;
+	
+	pat1SpeedUnits = kMetersPerSec;
+	pat2SpeedUnits = kMetersPerSec;
+	
+	pat1ScaleToValue = .1;
+	pat2ScaleToValue = .1;
+	
+	//scaleBy = WINDSTRESS;	// changed default 5/26/00
+	scaleBy = NONE;	// default for dialog is WINDSTRESS, but for location files is WINDSPEED 5/29/00
+	// both are set when they are first encountered
+	memset(&fOptimize,0,sizeof(fOptimize));
+	
+	timeMoverCode = kLinkToNone;
+	windMoverName [0] = 0;
+	
+	bUseAveragedWinds = false;
+	bExtrapolateWinds = false;
+	bUseMainDialogScaleFactor = false;
+	fScaleFactorAveragedWinds = 1.;
+	fPowerFactorAveragedWinds = 1.;
+	fPastHoursToAverage = 24;
+	fAveragedWindsHdl = 0;
+	
+	return;
+}
+#endif
+ComponentMover_c::ComponentMover_c () : CurrentMover_c ()
+{
+	pattern1 = nil;
+	pattern2 = nil;
+	//bPat1Open = true;
+	//bPat2Open = true;
+	timeFile = nil;
+	
+	memset(&refP,0,sizeof(refP));
+	//bRefPointOpen = false;
+	pat1Angle = 0;
+	pat2Angle = pat1Angle + 90;
+	
+	pat1Speed = 10;
+	pat2Speed = 10;
+	
+	pat1SpeedUnits = kMetersPerSec;
+	pat2SpeedUnits = kMetersPerSec;
+	
+	pat1ScaleToValue = .1;
+	pat2ScaleToValue = .1;
+	
+	//scaleBy = WINDSTRESS;	// changed default 5/26/00
+	scaleBy = NONE;	// default for dialog is WINDSTRESS, but for location files is WINDSPEED 5/29/00
+	// both are set when they are first encountered
+	memset(&fOptimize,0,sizeof(fOptimize));
+	
+	timeMoverCode = kLinkToNone;
+	windMoverName [0] = 0;
+	
+	bUseAveragedWinds = false;
+	bExtrapolateWinds = false;
+	bUseMainDialogScaleFactor = false;
+	fScaleFactorAveragedWinds = 1.;
+	fPowerFactorAveragedWinds = 1.;
+	fPastHoursToAverage = 24;
+	fAveragedWindsHdl = 0;
+	
+	return;
+}
+
+void ComponentMover_c::Dispose ()
+{
+	if (pattern1) {
+		pattern1 -> Dispose();
+		delete pattern1;
+		pattern1 = nil;
+	}
+	if (pattern2) {
+		pattern2 -> Dispose();
+		delete pattern2;
+		pattern2 = nil;
+	}
+	//For pyGnome, let python/cython manage memory for this object.	
+#ifndef pyGNOME
+	if (timeFile)
+	{
+		timeFile -> Dispose ();
+		delete timeFile;
+		timeFile = nil;
+	}
+#endif
+	if (fAveragedWindsHdl)
+	{
+		DisposeHandle((Handle)fAveragedWindsHdl);
+		fAveragedWindsHdl = 0;
+	}
+	CurrentMover_c::Dispose ();
+}
+
 void ComponentMover_c::ModelStepIsDone()
 {
 	this -> fOptimize.isFirstStep = false;
@@ -40,7 +152,7 @@ OSErr ComponentMover_c::PrepareForModelStep(const Seconds& model_time, const Sec
 	
 	errmsg[0]=0;
 	
-	err = SetOptimizeVariables (errmsg);
+	err = SetOptimizeVariables (errmsg, model_time, time_step);
 	
 	// code goes here, jump to done?
 	//if (err) goto done;
@@ -75,6 +187,9 @@ done:
 OSErr ComponentMover_c::CalculateAveragedWindsHdl(char *errmsg)
 {
 	OSErr err = 0;
+#ifdef pyGNOME
+	printNote("Averaged wind option has not been implemented for pyGNOME yet\n");
+#else
 	long i, j, numTimeSteps = (model -> GetEndTime () - model -> GetStartTime ()) / model -> GetTimeStep() + 1;
 	VelocityRec value, avValue;
 	TMover 		*mover;
@@ -263,12 +378,18 @@ done:
 			fAveragedWindsHdl = 0;
 		}
 	}
+#endif
 	return err;
 }
 
-OSErr ComponentMover_c::SetOptimizeVariables (char *errmsg)
+void ComponentMover_c::SetTimeFile(TOSSMTimeValue *newTimeFile)
 {
-	VelocityRec	vVel, hVel, wVel;
+	timeFile = newTimeFile;
+}
+
+OSErr ComponentMover_c::SetOptimizeVariables (char *errmsg, const Seconds& model_time, const Seconds& time_step)
+{
+	VelocityRec	vVel, hVel, wVel = {0.,0.};
 	OSErr		err = noErr;
 	Boolean 	useEddyUncertainty = false;	
 	VelocityRec	ref1Wind, ref2Wind,pat1ValRef, pat2ValRef;
@@ -290,8 +411,6 @@ OSErr ComponentMover_c::SetOptimizeVariables (char *errmsg)
 		long 		i, j, m, n;
 		double 		length, theirLengthSq, myLengthSq, dotProduct;
 		VelocityRec theirVelocity,myVelocity;
-		TMap		*map;
-		TMover 		*mover;
 		Boolean		bFound = false;
 		
 		if (bUseAveragedWinds)
@@ -302,7 +421,7 @@ OSErr ComponentMover_c::SetOptimizeVariables (char *errmsg)
 				//get averaged value from the handle, figure out the time step index
 				//	long index = (long) ((model -> GetModelTime() - model->GetStartTime()) / model->GetTimeStep())
 				//	wvel = INDEXH(fAveragedWindsHdl,index); // check index is in range
-				err = GetAveragedWindValue(model->GetModelTime(), &wVel);
+				err = GetAveragedWindValue(model_time, time_step, &wVel);
 				if (err) 
 				{
 					err = CalculateAveragedWindsHdl(errmsg);
@@ -313,7 +432,7 @@ OSErr ComponentMover_c::SetOptimizeVariables (char *errmsg)
 					}
 					else 
 					{
-						err = GetAveragedWindValue(model->GetModelTime(), &wVel);
+						err = GetAveragedWindValue(model_time, time_step, &wVel);
 						if (err) 
 						{
 							if (!errmsg[0]) {strcpy(errmsg,"There is a problem with the averaged winds. Please check your inputs.");} return -1;
@@ -334,7 +453,7 @@ OSErr ComponentMover_c::SetOptimizeVariables (char *errmsg)
 				}
 				else 
 				{
-					err = GetAveragedWindValue(model->GetModelTime(), &wVel);
+					err = GetAveragedWindValue(model_time, time_step, &wVel);
 					if (err)
 					{ 
 						if (!errmsg[0]) {strcpy(errmsg,"There is a problem with the averaged winds. Please check your inputs.");} return -1;
@@ -346,6 +465,11 @@ OSErr ComponentMover_c::SetOptimizeVariables (char *errmsg)
 		}
 		else
 		{
+#ifdef pyGNOME
+	printNote("Link to wind mover option has not been implemented for pyGNOME yet\n");
+#else
+			TMap	*map = 0;
+			TMover 	*mover = 0;
 			for (j = 0, m = model -> mapList -> GetItemCount() ; j < m && !bFound ; j++) {
 				model -> mapList -> GetListItem((Ptr)&map, j);
 				
@@ -354,7 +478,7 @@ OSErr ComponentMover_c::SetOptimizeVariables (char *errmsg)
 					if (mover -> GetClassID() != TYPE_WINDMOVER) continue;
 					if (!strcmp(mover -> className, windMoverName)) {
 						// JLM, note: we are implicitly matching by file name above
-						dynamic_cast<TWindMover *>(mover)-> GetTimeValue (model -> modelTime, &wVel);	// minus AH 07/10/2012
+						dynamic_cast<TWindMover *>(mover)-> GetTimeValue (model_time, &wVel);	// minus AH 07/10/2012
 						bFound = true;
 						break;
 					}
@@ -368,7 +492,7 @@ OSErr ComponentMover_c::SetOptimizeVariables (char *errmsg)
 						if (mover -> GetClassID() != TYPE_WINDMOVER) continue;
 						if (!strcmp(mover -> className, windMoverName)) {
 							// JLM, note: we are implicitly matching by file name above
-							dynamic_cast<TWindMover *>(mover)-> GetTimeValue (model -> modelTime, &wVel);	// minus AH 07/10/2012
+							dynamic_cast<TWindMover *>(mover)-> GetTimeValue (model_time, &wVel);	// minus AH 07/10/2012
 							
 							bFound = true;
 							break;
@@ -388,12 +512,20 @@ OSErr ComponentMover_c::SetOptimizeVariables (char *errmsg)
 				if (mover) 
 				{
 					strcpy(windMoverName, mover->className);	// link the wind to the component mover
-					dynamic_cast<TWindMover *>(mover)-> GetTimeValue (model -> modelTime, &wVel);	// minus AH 07/10/2012
+					dynamic_cast<TWindMover *>(mover)-> GetTimeValue (model_time, &wVel);	// minus AH 07/10/2012
 				}
 				else strcpy(windMoverName, "");	// clear out any value
 
 			}
 			// alert code goes here if mover is not found
+#endif
+		}
+	}
+	else {
+	// use timeFile (for python do it this way)
+		if (timeFile)
+		{
+			timeFile->GetTimeValue(model_time, &wVel);	// this needs to be defined
 		}
 	}
 	
@@ -461,6 +593,49 @@ OSErr ComponentMover_c::SetOptimizeVariables (char *errmsg)
 	return noErr;
 }
 
+OSErr ComponentMover_c::get_move(int n, Seconds model_time, Seconds step_len,
+							WorldPoint3D *ref, WorldPoint3D *delta, short *LE_status,
+							LEType spillType, long spill_ID)
+{
+	if(!delta || !ref) {
+		return 1;
+	}
+	
+	// For LEType spillType, check to make sure it is within the valid values
+	if (spillType < FORECAST_LE ||
+		spillType > UNCERTAINTY_LE)
+	{
+		return 2;
+	}
+	
+	LERec* prec;
+	LERec rec;
+	prec = &rec;
+	
+	WorldPoint3D zero_delta = { {0, 0}, 0.};
+	
+	for (int i = 0; i < n; i++) {
+		if ( LE_status[i] != OILSTAT_INWATER) {
+			delta[i] = zero_delta;
+			continue;
+		}
+		
+		rec.p = ref[i].p;
+		rec.z = ref[i].z;
+		
+		// let's do the multiply by 1000000 here - this is what gnome expects
+		rec.p.pLat *= 1e6;
+		rec.p.pLong *= 1e6;
+		
+		delta[i] = GetMove(model_time, step_len, spill_ID, i, prec, spillType);
+		
+		delta[i].p.pLat /= 1e6;
+		delta[i].p.pLong /= 1e6;
+	}
+	
+	return noErr;
+}
+
 WorldPoint3D ComponentMover_c::GetMove (const Seconds& model_time, Seconds timeStep,long setIndex,long leIndex,LERec *theLE,LETYPE leType)
 {
 	double 		dLat, dLong;
@@ -478,7 +653,7 @@ WorldPoint3D ComponentMover_c::GetMove (const Seconds& model_time, Seconds timeS
 	
 	if (!fOptimize.isOptimizedForStep)
 	{
-		err = SetOptimizeVariables (errmsg);
+		err = SetOptimizeVariables (errmsg, model_time, timeStep);
 		if (err) return deltaPoint;
 	}
 	
@@ -518,12 +693,13 @@ Boolean ComponentMover_c::VelocityStrAtPoint(WorldPoint3D wp, char *diagnosticSt
 		length2 = sqrt(pat2Val.u * pat2Val.u + pat2Val.v * pat2Val.v);
 		StringWithoutTrailingZeros(str2,length2,6);
 	}
+#ifndef pyGNOME	// for now this is not used in pyGNOME, will deal with it later if it becomes an issue
 	if (!(this->fOptimize.isOptimizedForStep))
 	{
-		err = this->SetOptimizeVariables (errmsg);
+		err = this->SetOptimizeVariables (errmsg, model->GetModelTime(), model->GetTimeStep());
 		if (err) return false;
 	}
-	
+#endif	
 	finalVel.u = pat1Val.u * this->fOptimize.pat1ValScale + pat2Val.u * this->fOptimize.pat2ValScale;
 	finalVel.v = pat1Val.v * this->fOptimize.pat1ValScale + pat2Val.v * this->fOptimize.pat2ValScale;
 	length3 = sqrt(finalVel.u * finalVel.u + finalVel.v * finalVel.v);
@@ -547,8 +723,7 @@ OSErr ComponentMover_c::AddUncertainty(long setIndex, long leIndex,VelocityRec *
 	
 	//err = this -> UpdateUncertainty();
 	//if(err) return err;
-	
-	
+
 	if(!fUncertaintyListH || !fLESetSizesH) 
 		return 0; // this is our clue to not add uncertainty
 	
@@ -559,7 +734,7 @@ OSErr ComponentMover_c::AddUncertainty(long setIndex, long leIndex,VelocityRec *
 		
 		u = patVelocity->u;
 		v = patVelocity->v;
-		
+
 		if(lengthS>1e-6) // so we don't divide by zero
 		{	
 			
@@ -579,7 +754,7 @@ OSErr ComponentMover_c::AddUncertainty(long setIndex, long leIndex,VelocityRec *
 }
 
 
-OSErr ComponentMover_c::GetAveragedWindValue(Seconds time, VelocityRec *avValue)
+OSErr ComponentMover_c::GetAveragedWindValue(Seconds time, const Seconds& time_step, VelocityRec *avValue)
 {
 	long index, numValuesInHdl;
 	VelocityRec avWindValue = {0.,0.};
@@ -587,11 +762,48 @@ OSErr ComponentMover_c::GetAveragedWindValue(Seconds time, VelocityRec *avValue)
 	
 	*avValue = avWindValue;
 	
-	index = (long)((time - model->GetStartTime())/model->GetTimeStep());
+	index = (long)((time - fModelStartTime)/time_step);
 	numValuesInHdl = _GetHandleSize((Handle)fAveragedWindsHdl)/sizeof(**fAveragedWindsHdl);
 	if (index<0 || index >= numValuesInHdl) {return -1;}	// may want to recalculate
 	avTime = INDEXH(fAveragedWindsHdl, index).time;
 	if (avTime != time) return -1;
 	*avValue = INDEXH(fAveragedWindsHdl, index).value;// translate back to u,v
+
 	return noErr;
 }
+
+OSErr ComponentMover_c::TextRead(char *cats_path1, char *cats_path2) 
+{
+	OSErr err = 0;
+	TTriGridVel *triGrid = 0;
+	
+	TCATSMover *newCATSMover1 = 0;
+	TCATSMover *newCATSMover2 = 0;
+	
+	if (!cats_path1[0]) return -1;
+	
+	newCATSMover1 = new TCATSMover;
+	if (!newCATSMover1)
+	{ 
+		TechError("CreateAndInitCurrentsMover()", "new TCATSMover()", 0);
+		return -1;
+	}
+	err = newCATSMover1->TextRead(cats_path1);
+	if (!err) pattern1 = newCATSMover1;
+
+	if (cats_path2[0]) 
+	{
+		newCATSMover2 = new TCATSMover;
+		if (!newCATSMover2)
+		{ 
+			TechError("CreateAndInitCurrentsMover()", "new TCATSMover()", 0);
+			return -1;
+		}
+		err = newCATSMover2->TextRead(cats_path2);
+		if (!err) pattern2 = newCATSMover2;
+	}
+	
+	return err;	
+}
+	
+

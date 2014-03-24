@@ -140,6 +140,40 @@ cdef extern from "CATSMover_c.h":
         void  SetTimeDep(OSSMTimeValue_c *ossm)
        
 
+cdef extern from "ComponentMover_c.h":
+   #============================================================================
+   # ctypedef struct TCM_OPTIMZE:
+   #    Boolean isOptimizedForStep
+   #    Boolean isFirstStep
+   #    double  value
+   #============================================================================
+   cdef cppclass ComponentMover_c(CurrentMover_c):
+        ComponentMover_c() except +
+        double          pat1Angle
+        double          pat2Angle
+        double          pat1Speed
+        double          pat2Speed
+        long            pat1SpeedUnits
+        long            pat2SpeedUnits
+        double          pat1ScaleToValue
+        double          pat2ScaleToValue
+        #Boolean         bTimeFileActive
+        long            scaleBy
+        WorldPoint      refP
+        Boolean         bUseAveragedWinds
+        Boolean         bExtrapolateWinds
+        #Boolean         bUseMainDialogScaleFactor
+        double          fScaleFactorAveragedWinds
+        double          fPowerFactorAveragedWinds
+        long            fPastHoursToAverage
+	
+        int   TextRead(char* catsPath1, char* catsPath2)
+        void  SetRefPosition (WorldPoint p)    
+       
+        OSErr get_move(int n, unsigned long model_time, unsigned long step_len, WorldPoint3D* ref, WorldPoint3D* delta, short* LE_status, LEType spillType, long spillID)
+        void  SetTimeFile(OSSMTimeValue_c *ossm)	
+       
+
 cdef extern from "GridCurrentMover_c.h":
     
     cdef struct UncertaintyParameters:
