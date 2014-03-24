@@ -303,7 +303,7 @@ def test_windage_index():
                'windage_persist': array_types.windage_persist}
     sc.prepare_for_model_run(array_types=windage)
     sc.release_elements(timestep, rel_time)
-    wm = WindMover(environment.ConstantWind(5, 0))
+    wm = WindMover(environment.constant_wind(5, 0))
     wm.prepare_for_model_step(sc, timestep, rel_time)
     wm.model_step_is_done()  # need this to toggle _windage_is_set_flag
 

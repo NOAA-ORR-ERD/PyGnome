@@ -8,7 +8,7 @@ import pytest
 from hazpy import unit_conversion
 
 from gnome.basic_types import datetime_value_2d, velocity_rec
-from gnome.environment import Wind, ConstantWind
+from gnome.environment import Wind, constant_wind
 
 data_dir = os.path.join(os.path.dirname(__file__), 'sample_data')
 wind_file = os.path.join(data_dir, 'WindDataFromGnome.WND')
@@ -397,7 +397,7 @@ def test_constant_wind():
     tests the utility function for creating a constant wind
     """
 
-    wind = ConstantWind(10, 45, 'knots')
+    wind = constant_wind(10, 45, 'knots')
 
     dt = datetime(2013, 1, 10, 12, 0)
     assert np.allclose(wind.get_timeseries(datetime=dt, units='knots'
@@ -435,7 +435,7 @@ def test_new_from_dict_timeseries():
     create a new wind object and make sure it has same properties
     """
 
-    wm = ConstantWind(10, 45, 'knots')
+    wm = constant_wind(10, 45, 'knots')
     wm_state = wm.to_dict('create')
     print wm_state
 
