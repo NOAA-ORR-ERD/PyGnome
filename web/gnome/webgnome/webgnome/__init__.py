@@ -30,7 +30,7 @@ def main(global_config, **settings):
     """
     This function returns a Pyramid WSGI application.
     """
-    settings['package_root']  = os.path.abspath(os.path.dirname(__file__))
+    settings['package_root'] = os.path.abspath(os.path.dirname(__file__))
     settings['project_root'] = os.path.dirname(settings['package_root'])
     settings['location_file_dir'] = os.path.join(settings['package_root'],
                                                  'location_files')

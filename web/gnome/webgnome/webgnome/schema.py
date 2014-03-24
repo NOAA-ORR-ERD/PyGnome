@@ -1,20 +1,11 @@
 import datetime
 import hammer
 
-from colander import (
-    MappingSchema,
-    SchemaNode,
-    Bool,
-    Int,
-    Float,
-    Range,
-    String,
-    SequenceSchema,
-    OneOf,
-    TupleSchema,
-    deferred,
-    drop,
-)
+from colander import (SchemaNode,
+                      SequenceSchema, TupleSchema, MappingSchema,
+                      Bool, Int, Float, String, Range,
+                      OneOf, deferred, drop)
+
 from gnome.persist import (
     environment_schema,
     movers_schema,
@@ -67,7 +58,7 @@ class WindageRangeSchema(TupleSchema):
     windage_max = SchemaNode(Float())
 
 
-class PointSourceReleaseSchema(spills_schema.PointLineSource):
+class PointSourceReleaseSchema(spills_schema.PointLineRelease):
     default_name = 'Surface Release Spill'
     name = SchemaNode(String(), default=default_name, missing=default_name)
 
