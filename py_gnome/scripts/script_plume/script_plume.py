@@ -13,7 +13,7 @@ import numpy
 np = numpy
 
 from gnome import scripting
-from gnome.elements import plume
+from gnome.spill.elements import plume
 from gnome.utilities.distributions import WeibullDistribution
 
 from gnome.model import Model

@@ -14,7 +14,7 @@ np = numpy
 
 import netCDF4 as nc
 
-from gnome.elements import floating
+from gnome.spill.elements import floating
 from gnome.spill import point_line_release_spill
 
 from gnome.movers import RandomMover

@@ -14,7 +14,7 @@ np = numpy
 
 
 from gnome import array_types
-from gnome.elements import (InitWindages,
+from gnome.spill.elements import (InitWindages,
                             InitMassFromVolume,
                             InitMassFromTotalMass,
                             InitRiseVelFromDist,

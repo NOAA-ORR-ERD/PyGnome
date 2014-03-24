@@ -16,7 +16,7 @@ from gnome.basic_types import (oil_status,
                                world_point_type,
                                id_type)
 from gnome import array_types
-from gnome.elements import (ElementType,
+from gnome.spill.elements import (ElementType,
                             InitWindages,
                             InitMassFromVolume,
                             InitRiseVelFromDist,

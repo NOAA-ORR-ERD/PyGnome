@@ -135,9 +135,11 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
 # scaleBy WindStress
 
     print "adding a component mover:"
-    component_file1 =  get_datafile(os.path.join(base_dir, r"./WAC10msNW.cur"))
-    component_file2 =  get_datafile(os.path.join(base_dir, r"./WAC10msSW.cur"))
-    comp_mover = ComponentMover(component_file1,component_file2,Wind(timeseries=series, units='m/s'))
+    component_file1 = get_datafile(os.path.join(base_dir, r"./WAC10msNW.cur"))
+    component_file2 = get_datafile(os.path.join(base_dir, r"./WAC10msSW.cur"))
+    comp_mover = ComponentMover(component_file1, component_file2, w_mover.wind)
+    #todo: callback did not work correctly below - fix!
+    #comp_mover = ComponentMover(component_file1,component_file2,Wind(timeseries=series, units='m/s'))
 
     comp_mover.ref_point = (-70.855, 42.275)
     comp_mover.pat1_angle = 315

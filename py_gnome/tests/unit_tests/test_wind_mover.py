@@ -22,7 +22,7 @@ from gnome.movers import WindMover, constant_wind_mover, \
 
 from gnome.spill import point_line_release_spill
 from gnome.spill_container import SpillContainer
-from gnome.elements import floating
+from gnome.spill.elements import floating
 
 from conftest import sample_sc_release
 

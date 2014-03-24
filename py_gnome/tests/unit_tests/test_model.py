@@ -15,7 +15,7 @@ import pytest
 from pytest import raises
 
 from gnome.basic_types import datetime_value_2d
-from gnome.elements import floating
+from gnome.spill.elements import floating
 
 from gnome.utilities import inf_datetime
 from gnome.model import Model

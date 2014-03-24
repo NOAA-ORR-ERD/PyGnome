@@ -16,7 +16,7 @@ np = numpy
 from gnome.utilities.inf_datetime import InfDateTime
 
 from gnome.array_types import mass, rise_vel, mass_components, half_lives
-from gnome.elements import (ElementType,
+from gnome.spill.elements import (ElementType,
                             InitMassFromTotalMass,
                             InitRiseVelFromDist,
                             InitMassComponentsFromOilProps,

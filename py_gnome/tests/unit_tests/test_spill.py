@@ -15,7 +15,7 @@ np = numpy
 from gnome.spill import (Spill,
                          Release,
                          point_line_release_spill)
-from gnome.elements import floating
+from gnome.spill.elements import floating
 import gnome.array_types
 
 from conftest import mock_append_data_arrays

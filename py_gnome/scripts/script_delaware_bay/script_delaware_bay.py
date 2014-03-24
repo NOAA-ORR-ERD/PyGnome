@@ -32,12 +32,13 @@ from gnome.spill import point_line_release_spill
 from gnome.movers import RandomMover, WindMover, CatsMover, ComponentMover
 
 
-from gnome.renderer import Renderer
+from gnome.outputters import Renderer
 from gnome.outputters import NetCDFOutput
 
 # define base directory
 
 base_dir = os.path.dirname(__file__)
+
 
 def make_model(images_dir=os.path.join(base_dir, 'images')):
 
@@ -120,7 +121,9 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
 
     curr_file1 = get_datafile(os.path.join(base_dir, r"NW30ktwinds.cur"))
     curr_file2 = get_datafile(os.path.join(base_dir, r"SW30ktwinds.cur"))
-    comp_mover = ComponentMover(curr_file1, curr_file2, Wind(timeseries=series, units='m/s'))
+    comp_mover = ComponentMover(curr_file1, curr_file2, w_mover.wind)
+    #todo: following is not working when model is saved out - fix
+    #comp_mover = ComponentMover(curr_file1, curr_file2, Wind(timeseries=series, units='m/s'))
     #comp_mover = ComponentMover(curr_file1, curr_file2, wind=Wind(filename=wind_file))
 
     comp_mover.ref_point = (-75.263166,39.1428333)

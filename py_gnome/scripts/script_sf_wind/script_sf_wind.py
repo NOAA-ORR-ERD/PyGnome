@@ -10,7 +10,7 @@ import numpy
 np = numpy
 
 from gnome import scripting
-from gnome.elements import floating
+from gnome.spill.elements import floating
 
 from gnome.utilities.remote_data import get_datafile
 

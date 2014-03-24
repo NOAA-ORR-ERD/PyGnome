@@ -8,7 +8,7 @@ import math
 
 import pytest
 
-from gnome.elements import floating
+from gnome.spill.elements import floating
 
 from gnome.spill import point_line_release_spill
 from gnome.outputters import Outputter
