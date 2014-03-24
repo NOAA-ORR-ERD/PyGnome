@@ -15,3 +15,12 @@ from . import movers
 from . import environment
 from . import model
 from . import renderer
+
+__all__ = [GnomeId,
+           map,
+           spill,
+           spill_container,
+           movers,
+           environment,
+           model,
+           renderer]
