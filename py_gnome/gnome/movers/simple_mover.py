@@ -27,6 +27,10 @@ from gnome.utilities import serializable
 
 
 class SimpleMoverVelocitySchema(TupleSchema):
+    '''
+    Currently this is only used by SimpleMover so it is here. If it becomes
+    more general purpose then move it to gnome.persist.base_schema
+    '''
     vel_x = SchemaNode(Float())
     vel_y = SchemaNode(Float())
     vel_z = SchemaNode(Float())
