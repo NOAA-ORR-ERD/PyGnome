@@ -10,16 +10,6 @@ import numpy
 np = numpy
 
 import gnome
-from gnome.persist import (
-    modules_dict,
-    environment_schema,     # used implicitly by eval()
-    model_schema,           # used implicitly by eval()
-    movers_schema,          # used implicitly by eval()
-    weatherers_schema,      # used implicitly by eval()
-    spills_schema,          # used implicitly by eval()
-    map_schema,             # used implicitly by eval()
-    outputters_schema       # used implicitly by eval()
-    )
 
 
 class Field(object):  # ,serializable.Serializable):
@@ -715,12 +705,8 @@ class Serializable(object):
             todo: revisit this to see if it still makes sense to have different
             attributes for different operations like 'update', 'create', 'read'
         """
-        #dict_ = self._dict_to_serialize(do)
         dict_ = self.to_dict(do)
-        to_eval = ('{0}.{1}()'
-                   .format(modules_dict[self.__class__.__module__],
-                       self.__class__.__name__))
-        schema = eval(to_eval)
+        schema = self.__class__._schema()
         json_ = schema.serialize(dict_)
 
         return json_
@@ -732,11 +718,4 @@ class Serializable(object):
         colander schema then invokes the new_from_dict method to create an
         instance of the object described by the json schema
         """
-        #gnome_mod, obj_name = json_['obj_type'].rsplit('.', 1)
-        gnome_mod = cls.__module__
-        obj_name = cls.__name__
-        to_eval = ('{0}.{1}().deserialize(json_)'
-                   .format(modules_dict[gnome_mod], obj_name))
-        _to_dict = eval(to_eval)
-
-        return _to_dict
+        return cls._schema().deserialize(json_)

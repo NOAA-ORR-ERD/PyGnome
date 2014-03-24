@@ -10,11 +10,29 @@ import os
 import glob
 import copy
 
+from colander import SchemaNode, MappingSchema, String, drop
+
+from gnome.persist import base_schema
+
 import gnome    # implicitly used when loading from dict by new_from_dict
 from gnome.outputters import Outputter
 from gnome.utilities.map_canvas import MapCanvas
 from gnome.utilities import serializable
 from gnome.utilities.file_tools import haz_files
+
+
+class RendererSchema(base_schema.ObjType, MappingSchema):
+
+    # not sure if bounding box needs defintion separate from LongLatBounds
+    viewport = base_schema.LongLatBounds()
+
+    # following are only used when creating objects, not updating -
+    # so missing=drop
+    filename = SchemaNode(String(), missing=drop)
+    projection_class = SchemaNode(String(), missing=drop)
+    image_size = base_schema.ImageSize(missing=drop)
+    images_dir = SchemaNode(String())
+    draw_ontop = SchemaNode(String())
 
 
 class Renderer(Outputter, MapCanvas, serializable.Serializable):
@@ -40,6 +58,7 @@ class Renderer(Outputter, MapCanvas, serializable.Serializable):
     _state.add(create=_create, update=_update)
     _state.add_field(serializable.Field('filename', isdatafile=True,
                     create=True, read=True, test_for_eq=False))
+    _schema = RendererSchema
 
     @classmethod
     def new_from_dict(cls, dict_):

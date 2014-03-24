@@ -9,6 +9,7 @@ import math
 
 import numpy
 np = numpy
+from colander import (SchemaNode, String, Float, drop)
 
 from gnome.basic_types import (ts_format,
                                world_point,
@@ -19,12 +20,30 @@ from gnome import array_types
 from gnome.utilities import serializable, rand
 
 from gnome import environment
-from gnome.movers import CyMover
+from gnome.movers import CyMover, MoverSchema
 from gnome.cy_gnome.cy_wind_mover import CyWindMover
 from gnome.cy_gnome.cy_gridwind_mover import CyGridWindMover
 
-from gnome.persist import movers_schema
-from gnome.persist.environment_schema import Wind
+from gnome.persist.base_schema import ObjType
+#from gnome.persist import movers_schema
+#from gnome.persist.environment_schema import Wind
+
+
+class WindMoversBaseSchema(ObjType, MoverSchema):
+    uncertain_duration = SchemaNode(Float(), default=24)
+    uncertain_time_delay = SchemaNode(Float(), default=0)
+    uncertain_speed_scale = SchemaNode(Float(), default=2)
+    uncertain_angle_scale = SchemaNode(Float(), default=0.4)
+    uncertain_angle_units = SchemaNode(String(), default='rad', missing=drop)
+
+
+class WindMoverSchema(WindMoversBaseSchema):
+    """
+    Contains properties required by UpdateWindMover and CreateWindMover
+    """
+    # 'wind' schema node added dynamically
+    name = 'WindMover'
+    description = 'wind mover properties'
 
 
 class WindMoversBase(CyMover):
@@ -218,6 +237,7 @@ class WindMover(WindMoversBase, serializable.Serializable):
     # todo: probably need to make update=True for 'wind' as well
     _state.add_field(serializable.Field('wind', create=True, update=True,
                                          save_reference=True))
+    _schema = WindMoverSchema
 
     def __init__(self, wind, **kwargs):
         """
@@ -267,10 +287,10 @@ class WindMover(WindMoversBase, serializable.Serializable):
         and 'create' option, need to add appropriate node to WindMover schema
         """
         dict_ = self.to_dict(do)
-        schema = movers_schema.WindMover()
+        schema = self.__class__._schema()
         if do == 'update':
             # add wind schema
-            schema.add(Wind())
+            schema.add(environment.WindSchema())
 
         json_ = schema.serialize(dict_)
 
@@ -281,9 +301,9 @@ class WindMover(WindMoversBase, serializable.Serializable):
         """
         append correct schema for wind object
         """
-        schema = movers_schema.WindMover()
+        schema = cls._schema()
         if 'wind' in json_:
-            schema.add(Wind())
+            schema.add(environment.WindSchema())
         _to_dict = schema.deserialize(json_)
 
         return _to_dict
@@ -329,6 +349,12 @@ def constant_wind_mover(speed, direction, units='m/s'):
     return w_mover
 
 
+class GridWindMoverSchema(WindMoversBaseSchema):
+    """ Similar to WindMover except it doesn't have wind_id"""
+    wind_file = SchemaNode(String(), missing=drop)
+    topology_file = SchemaNode(String(), missing=drop)
+
+
 class GridWindMover(WindMoversBase, serializable.Serializable):
     _state = copy.deepcopy(WindMoversBase._state)
     _state.add(update=['wind_scale'], create=['wind_scale'])
@@ -336,6 +362,8 @@ class GridWindMover(WindMoversBase, serializable.Serializable):
                     read=True, isdatafile=True, test_for_eq=False),
                     serializable.Field('topology_file', create=True,
                     read=True, isdatafile=True, test_for_eq=False)])
+
+    _schema = GridWindMoverSchema
 
     def __init__(self, wind_file, topology_file=None,
                  extrapolate=False, time_offset=0,

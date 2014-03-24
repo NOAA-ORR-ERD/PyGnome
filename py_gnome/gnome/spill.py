@@ -16,16 +16,63 @@ np = numpy
 
 from hazpy import unit_conversion
 uc = unit_conversion
+from colander import (SchemaNode, drop, Bool, Int)
+
+from gnome.persist.base_schema import ObjType, WorldPoint
+from gnome.persist.extend_colander import LocalDateTime
+from gnome.persist.validators import convertible_to_seconds
 
 import gnome    # required by new_from_dict
-from gnome.persist import modules_dict
 from gnome import elements, GnomeId
 from gnome.basic_types import world_point_type
 from gnome.utilities import serializable
 from gnome.utilities.plume import Plume, PlumeGenerator
-from gnome.persist import spills_schema
 
 from gnome.db.oil_library.oil_props import OilProps
+
+
+class ReleaseSchema(ObjType):
+    'Base class for Release schemas'
+    num_elements = SchemaNode(Int(), default=1000)
+
+    # used to create a new Release object if model is persisted mid-run
+    num_released = SchemaNode(Int())
+    start_time_invalid = SchemaNode(Bool())
+    name = 'release'
+
+
+class PointLineReleaseSchema(ReleaseSchema):
+    '''
+    Contains properties required by UpdateWindMover and CreateWindMover
+    TODO: also need a way to persist list of element_types
+    '''
+    start_position = WorldPoint()
+    release_time = SchemaNode(LocalDateTime(),
+                              validator=convertible_to_seconds)
+    end_position = WorldPoint(missing=drop)
+    end_release_time = SchemaNode(LocalDateTime(), missing=drop,
+                                  validator=convertible_to_seconds)
+
+    # following will be used when restoring a saved scenario that is
+    # partially run
+    num_released = SchemaNode(Int(), missing=drop)
+    start_time_invalid = SchemaNode(Bool(), missing=drop)
+
+    # Not sure how this will work w/ WebGnome
+    prev_release_pos = WorldPoint(missing=drop)
+    description = 'PointLineRelease object schema'
+
+
+class SpillSchema(ObjType):
+    'Spill class schema'
+    on = SchemaNode(Bool(), default=True, missing=True,
+        description='on/off status of spill')
+
+    def __init__(self, **kwargs):
+        'add release object to schema instance'
+        rel = kwargs.pop('release')
+        self.add(rel)
+        super(SpillSchema, self).__init__(**kwargs)
 
 
 class Release(object):
@@ -41,6 +88,7 @@ class Release(object):
     _create.extend(_update)
     _state = copy.deepcopy(serializable.Serializable._state)
     _state.add(create=_create, update=_update)
+    _schema = ReleaseSchema
 
     def __init__(self, num_elements=0, release_time=None):
         self.num_elements = num_elements
@@ -138,6 +186,7 @@ class PointLineRelease(Release, serializable.Serializable):
     _create.extend(_update)
     _state = copy.deepcopy(Release._state)
     _state.add(update=_update, create=_create)
+    _schema = PointLineReleaseSchema
 
     @classmethod
     def new_from_dict(cls, dict_):
@@ -544,6 +593,7 @@ class Spill(serializable.Serializable):
     _create.extend(_update)
     _state = copy.deepcopy(serializable.Serializable._state)
     _state.add(create=_create, update=_update, read=['num_released'])
+    _schema = SpillSchema
 
     valid_vol_units = list(chain.from_iterable([item[1] for item in
                            unit_conversion.ConvertDataUnits['Volume'
@@ -987,10 +1037,8 @@ class Spill(serializable.Serializable):
         Need to add node for release object and element_type object
         """
         dict_ = self.to_dict(do)
-        schema = spills_schema.Spill()
-
-        rel_type = '{0}()'.format(self.release.__class__.__name__)
-        schema.add(eval('spills_schema.{0}'.format(rel_type)))
+        schema = self.__class__._schema(
+            release=self.release.__class__._schema())
 
         json_ = schema.serialize(dict_)
         json_['element_type'] = self.element_type.serialize(do)
@@ -1002,16 +1050,14 @@ class Spill(serializable.Serializable):
         """
         need to create schema dynamically for Spill() before deserialization
         """
-        schema = spills_schema.Spill()
-
-        rel_name = json_['release']['obj_type'].rsplit('.', 1)[1]
-        rel_type = '{0}()'.format(rel_name)
-        schema.add(eval('spills_schema.{0}'.format(rel_type)))
+        rel_name = json_['release']['obj_type']
+        rel_schema = eval(rel_name)._schema()
+        schema = cls._schema(release=rel_schema)
 
         dict_ = schema.deserialize(json_)
-        et_type = json_['element_type']['obj_type']
-        to_eval = "{0}.deserialize(json_['element_type'])".format(et_type)
-        dict_['element_type'] = eval(to_eval)
+        element_type = json_['element_type']['obj_type']
+        dict_['element_type'] = eval(element_type).deserialize(
+                                                        json_['element_type'])
 
         return dict_
 

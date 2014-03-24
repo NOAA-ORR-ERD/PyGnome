@@ -1,14 +1,27 @@
 #!/usr/bin/env python
-
+import copy
 from datetime import timedelta
 
 import numpy
 np = numpy
+from colander import (SchemaNode, drop, Bool)
+
+from gnome.persist.validators import convertible_to_seconds
+from gnome.persist.base_schema import ObjType
+from gnome.persist.extend_colander import LocalDateTime
 
 from gnome.array_types import mass_components, half_lives
 from gnome.utilities.serializable import Serializable
 
 from gnome.movers.movers import Mover
+
+
+class WeathererSchema(ObjType):
+    on = SchemaNode(Bool(), default=True, missing=True)
+    active_start = SchemaNode(LocalDateTime(), missing=drop,
+                              validator=convertible_to_seconds)
+    active_stop = SchemaNode(LocalDateTime(), missing=drop,
+                             validator=convertible_to_seconds)
 
 
 class Weatherer(Mover, Serializable):
@@ -17,6 +30,9 @@ class Weatherer(Mover, Serializable):
        in the way that it acts upon the model.  It contains the same API
        as the mover as well.
     '''
+    _state = copy.deepcopy(Serializable._state)
+    _schema = WeathererSchema
+
     def __init__(self, **kwargs):
         '''
            :param weathering: object that represents the weathering

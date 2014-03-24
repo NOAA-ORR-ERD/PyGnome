@@ -9,6 +9,14 @@ import shutil
 
 import numpy
 np = numpy
+from colander import (MappingSchema,
+                      SchemaNode,
+                      Float,
+                      Int,
+                      Bool,
+                      String,
+                      drop
+                      )
 
 from gnome.environment import Environment
 
@@ -25,8 +33,39 @@ from gnome.weatherers import Weatherer
 from gnome.outputters import Outputter, NetCDFOutput
 
 from gnome.persist import (
-    modules_dict,
+    extend_colander,
+    base_schema,
+    validators
     )
+
+
+class SpillContainerPairSchema(MappingSchema):
+    '''
+    Schema for SpillContainerPair object.
+    Since this is currently only used by the model, define the schema
+    in this module. The SpillContainerPair object is not serializable since
+    there isn't a need
+    '''
+    certain_spills = base_schema.OrderedCollection()
+    # only present if uncertainty is on
+    uncertain_spills = base_schema.OrderedCollection(missing=drop)
+
+
+class ModelSchema(base_schema.ObjType):
+    'Colander schema for Model object'
+    time_step = SchemaNode(Float())
+    weathering_substeps = SchemaNode(Int())
+    start_time = SchemaNode(extend_colander.LocalDateTime(),
+                            validator=validators.convertible_to_seconds)
+    duration = SchemaNode(extend_colander.TimeDelta())  # max duration?
+    movers = base_schema.OrderedCollection()
+    weatherers = base_schema.OrderedCollection()
+    environment = base_schema.OrderedCollection()
+    uncertain = SchemaNode(Bool())
+    spills = SpillContainerPairSchema()
+    map = SchemaNode(String())
+    outputters = base_schema.OrderedCollection()
+    cache_enabled = SchemaNode(Bool())
 
 
 class Model(Serializable):
@@ -46,6 +85,7 @@ class Model(Serializable):
     _create = []
     _create.extend(_update)
     _state = copy.deepcopy(Serializable._state)
+    _schema = ModelSchema
 
     # no need to copy parent's _state in this case
     _state.add(create=_create, update=_update)

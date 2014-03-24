@@ -5,7 +5,8 @@ It just tests the interface works, doesn't actually change values
 '''
 
 from gnome.utilities.weathering.graphs import Graph
-from gnome.persist.graph_schema import GraphSchema
+#from gnome.persist.graph_schema import GraphSchema
+from gnome.utilities.weathering.graphs import GraphSchema
 
 
 class TestGraphSchema(object):

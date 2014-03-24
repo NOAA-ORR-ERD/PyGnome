@@ -11,6 +11,16 @@ from itertools import chain
 
 import numpy as np
 from hazpy import unit_conversion
+from colander import (SchemaNode,
+                      drop,
+                      Range,
+                      String,
+                      OneOf,
+                      Float)
+
+from gnome.persist.extend_colander import (DefaultTupleSchema,
+                      LocalDateTime, DatetimeValue2dArraySchema)
+from gnome.persist import validators, base_schema
 
 import gnome
 from gnome import basic_types, GnomeId
@@ -24,6 +34,71 @@ from gnome.utilities import time_utils, convert, serializable
 
 from gnome.cy_gnome.cy_ossm_time import CyOSSMTime
 from gnome.cy_gnome.cy_shio_time import CyShioTime
+
+
+class WindTupleSchema(DefaultTupleSchema):
+
+    """
+    Schema for each tuple in WindTimeSeries list
+    """
+
+    datetime = SchemaNode(LocalDateTime(default_tzinfo=None),
+                          default=base_schema.now,
+                          validator=validators.convertible_to_seconds)
+    speed = SchemaNode(Float(),
+                       default=0,
+                       validator=Range(min=0, min_err="wind speed must be greater than or equal to 0"))
+    direction = SchemaNode(Float(), default=0,
+                           validator=Range(0, 360,
+                                           min_err="wind direction must be greater than or equal to 0",
+                                           max_err="wind direction must be less than or equal to 360deg"))
+
+
+class WindTimeSeriesSchema(DatetimeValue2dArraySchema):
+
+    """
+    Schema for list of Wind tuples, to make the wind timeseries
+    """
+
+    value = WindTupleSchema(default=(datetime.datetime.now(), 0, 0))
+
+    def validator(self, node, cstruct):
+        """
+        validate wind timeseries numpy array
+        """
+
+        validators.no_duplicate_datetime(node, cstruct)
+        validators.ascending_datetime(node, cstruct)
+
+
+class WindSchema(base_schema.ObjType):
+
+    """
+    validate data after deserialize, before it is given back to pyGnome's
+    from_dict to set _state of object
+    """
+
+    description = SchemaNode(String(), missing=drop)
+    latitude = SchemaNode(Float(), missing=drop)
+    longitude = SchemaNode(Float(), missing=drop)
+    name = SchemaNode(String(), missing=drop)
+    source_id = SchemaNode(String(), missing=drop)
+    source_type = SchemaNode(String(),
+                             validator=OneOf(gnome.basic_types.wind_datasource._attr),
+                             default='undefined', missing='undefined')
+    updated_at = SchemaNode(LocalDateTime(), missing=drop)
+    units = SchemaNode(String(), default='m/s')
+
+    timeseries = WindTimeSeriesSchema(missing=drop)
+    filename = SchemaNode(String(), missing=drop)
+    name = 'wind'
+
+
+class TideSchema(base_schema.ObjType):
+    'Tide object schema'
+    filename = SchemaNode(String(), missing=drop)
+    yeardata = SchemaNode(String())
+    name = 'tide'
 
 
 class Environment(object):
@@ -79,6 +154,7 @@ class Wind(Environment, serializable.Serializable):
 
     _state = copy.deepcopy(Environment._state)
     _state.add(create=_create, update=_update)
+    _schema = WindSchema
 
     # add 'filename' as a Field object
     #'name',    is this for webgnome?
@@ -518,6 +594,7 @@ class Tide(Environment, serializable.Serializable):
 
     _state.add_field(serializable.Field('filename', isdatafile=True,
                     create=True, read=True, test_for_eq=False))
+    _schema = TideSchema
 
     def __init__(
         self,

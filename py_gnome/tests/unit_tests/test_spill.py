@@ -17,7 +17,6 @@ from gnome.spill import (Spill,
                          point_line_release_spill)
 from gnome.elements import floating
 import gnome.array_types
-from gnome.persist import spills_schema
 
 from conftest import mock_append_data_arrays
 

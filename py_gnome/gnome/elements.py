@@ -10,6 +10,7 @@ These are properties that are spill specific like:
 import copy
 import numpy
 np = numpy
+from colander import SchemaNode, Int, Float, Range, TupleSchema
 
 import gnome    # required by new_from_dict
 from gnome.utilities.rand import random_with_persistance
@@ -20,7 +21,7 @@ from gnome.utilities.distributions import UniformDistribution
 from gnome.cy_gnome.cy_rise_velocity_mover import rise_velocity_from_drop_size
 from gnome.db.oil_library.oil_props import (OilProps, OilPropsFromDensity)
 
-from gnome.persist import elements_schema, modules_dict
+from gnome.persist import base_schema
 """
 Initializers for various element types
 """
@@ -49,12 +50,31 @@ class InitBaseClass(object):
         pass
 
 
+class WindageSchema(TupleSchema):
+    min_windage = SchemaNode(Float(), validator=Range(0, 1.0),
+                             default=0.01)
+    max_windage = SchemaNode(Float(), validator=Range(0, 1.0),
+                             default=0.04)
+    name = 'windage_range'
+
+
+class InitWindagesSchema(base_schema.ObjType):
+    """
+    windages initializer values
+    """
+    windage_range = WindageSchema()
+    windage_persist = SchemaNode(Int(), default=900,
+        description='windage persistence in minutes')
+    name = 'windages'
+
+
 class InitWindages(InitBaseClass, Serializable):
     _update = ['windage_range', 'windage_persist']
     _create = []
     _create.extend(_update)
     _state = copy.deepcopy(InitBaseClass._state)
     _state.add(create=_create, update=_update)
+    _schema = InitWindagesSchema
 
     def __init__(self, windage_range=(0.01, 0.04), windage_persist=900):
         """
@@ -126,6 +146,7 @@ class InitMassComponentsFromOilProps(InitBaseClass, Serializable):
        Initialize the mass components based on given Oil properties
     '''
     _state = copy.deepcopy(InitBaseClass._state)
+    _schema = base_schema.ObjType
 
     def initialize(self, num_new_particles, spill, data_arrays, substance):
         '''
@@ -163,6 +184,7 @@ class InitHalfLivesFromOilProps(InitBaseClass, Serializable):
        properties.
     '''
     _state = copy.deepcopy(InitBaseClass._state)
+    _schema = base_schema.ObjType
 
     def initialize(self, num_new_particles, spill, data_arrays, substance):
         '''
@@ -195,6 +217,7 @@ class InitMassFromTotalMass(InitBaseClass, Serializable):
     """
 
     _state = copy.deepcopy(InitBaseClass._state)
+    _schema = base_schema.ObjType
 
     def initialize(self, num_new_particles, spill, data_arrays, substance):
         if spill.mass is None:
@@ -213,6 +236,7 @@ class InitMassFromVolume(InitBaseClass, Serializable):
     """
 
     _state = copy.deepcopy(InitBaseClass._state)
+    _schema = base_schema.ObjType
 
     def initialize(self, num_new_particles, spill, data_arrays, substance):
         if spill.volume is None:
@@ -230,6 +254,7 @@ class InitMassFromPlume(InitBaseClass, Serializable):
     Initialize the 'mass' array based on mass flux from the plume spilled
     """
     _state = copy.deepcopy(InitBaseClass._state)
+    _schema = base_schema.ObjType
 
     def initialize(self, num_new_particles, spill, data_arrays, substance):
         if spill.plume_gen is None:
@@ -240,6 +265,16 @@ class InitMassFromPlume(InitBaseClass, Serializable):
             spill.plume_gen.mass_of_an_le * 1000
 
 
+class DistributionBaseSchema(base_schema.ObjType):
+    'Add schema to base class since all derived classes use same schema'
+    description = 'dynamically adds distribution schema to self'
+
+    def __init__(self, **kwargs):
+        dist = kwargs.pop('distribution')
+        self.add(dist)
+        super(DistributionBaseSchema, self).__init__(**kwargs)
+
+
 class DistributionBase(InitBaseClass, Serializable):
     '''
     Define a base class for all initializers that contain a distribution.
@@ -248,6 +283,7 @@ class DistributionBase(InitBaseClass, Serializable):
     '''
     _state = copy.deepcopy(InitBaseClass._state)
     _state.add(create=['distribution'], update=['distribution'])
+    _schema = DistributionBaseSchema
 
     @classmethod
     def new_from_dict(cls, dict_):
@@ -261,28 +297,18 @@ class DistributionBase(InitBaseClass, Serializable):
         'Add distribution schema based on "distribution" - then serialize'
 
         dict_ = self.to_dict(do)
-        to_eval = ('{0}.{1}()'
-                   .format(modules_dict[self.__class__.__module__],
-                       self.__class__.__name__))
-        schema = eval(to_eval)
-        to_add = ("elements_schema.{0}(name='distribution')"
-                    .format(self.distribution.__class__.__name__))
-        schema.add(eval(to_add))
-
+        schema = self.__class__._schema(name=self.__class__.__name__,
+                   distribution=self.distribution._schema(name='distribution'))
         json_ = schema.serialize(dict_)
         return json_
 
     @classmethod
     def deserialize(cls, json_):
         'Add distribution schema based on "distribution" - then deserialize'
-
-        gnome_mod = cls.__module__
-        obj_name = cls.__name__
-        to_eval = ('{0}.{1}()'.format(modules_dict[gnome_mod], obj_name))
-        schema = eval(to_eval)
-        dist_type = json_['distribution']['obj_type'].rsplit('.', 1)[1]
-        to_add = "elements_schema.{0}(name='distribution')".format(dist_type)
-        schema.add(eval(to_add))
+        dist_type = json_['distribution']['obj_type']
+        to_eval = "{0}._schema(name='distribution')".format(dist_type)
+        dist_schema = eval(to_eval)
+        schema = cls._schema(name=cls.__name__, distribution=dist_schema)
         dict_ = schema.deserialize(json_)
 
         return dict_
@@ -397,6 +423,7 @@ class InitRiseVelFromDropletSizeFromDist(DistributionBase):
 class ElementType(Serializable):
     _state = copy.deepcopy(Serializable._state)
     _state.add(create=['initializers'], update=['initializers'])
+    _schema = base_schema.ObjType
 
     @classmethod
     def new_from_dict(cls, dict_):
@@ -483,7 +510,8 @@ class ElementType(Serializable):
         time.
         """
         dict_ = self.to_dict(do)
-        et_schema = elements_schema.ElementType()
+        #et_schema = elements_schema.ElementType()
+        et_schema = self.__class__._schema()
         json_ = et_schema.serialize(dict_)
         s_init = {}
         for i_key, i_val in self.initializers.iteritems():
@@ -498,13 +526,13 @@ class ElementType(Serializable):
         deserialize each object in the 'initializers' dict, then add it to
         deserialized ElementType dict
         """
-        et_schema = elements_schema.ElementType()
+        et_schema = cls._schema()
         dict_ = et_schema.deserialize(json_)
         d_init = {}
         for i_key, i_val in json_['initializers'].iteritems():
-            to_eval = ('{0}.deserialize({1})'.format(i_val['obj_type'],
-                                                i_val))
-            d_init[i_key] = eval(to_eval)
+            deserial = eval(i_val['obj_type']).deserialize(i_val)
+            #deserial = schema.deserialize(i_val)
+            d_init[i_key] = deserial
 
         dict_['initializers'] = d_init
 

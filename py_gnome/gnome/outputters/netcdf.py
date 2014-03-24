@@ -12,7 +12,9 @@ import netCDF4 as nc
 
 import numpy
 np = numpy
+from colander import SchemaNode, MappingSchema, String, drop, Int, Bool
 
+from gnome.persist import base_schema
 from gnome import __version__, GnomeId, array_types
 from gnome.basic_types import oil_status, world_point_type
 
@@ -71,6 +73,15 @@ var_attributes = {
     'next_positions': {},
     'last_water_positions': {},
     }
+
+
+class NetCDFOutputSchema(base_schema.ObjType, MappingSchema):
+    'colander schema for serialize/deserialize object'
+    netcdf_filename = SchemaNode(String(), missing=drop)
+    all_data = SchemaNode(Bool(), missing=drop)
+    compress = SchemaNode(Bool(), missing=drop)
+    _start_idx = SchemaNode(Int(), missing=drop)
+    _middle_of_run = SchemaNode(Bool(), missing=drop)
 
 
 class NetCDFOutput(Outputter, Serializable):
@@ -147,6 +158,7 @@ class NetCDFOutput(Outputter, Serializable):
                      Field('_start_idx', create=True),
                      Field('_middle_of_run', create=True),
                      ])
+    _schema = NetCDFOutputSchema
 
     @classmethod
     def new_from_dict(cls, dict_):

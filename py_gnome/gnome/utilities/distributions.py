@@ -6,9 +6,49 @@ Classes that generate various types of probability distributions
 import copy
 import numpy
 np = numpy
+from colander import Float, SchemaNode, drop
 
+from gnome.persist.base_schema import ObjType
 from gnome.utilities.compute_fraction import fraction_below_d
 from gnome.utilities.serializable import Serializable, Field
+
+
+class UniformDistributionSchema(ObjType):
+    low = SchemaNode(Float(), name='low', default=0.0,
+        description='lower bound for uniform distribution')
+    high = SchemaNode(Float(), name='high', default=0.1,
+        description='lower bound for uniform distribution')
+    name = 'uniform'
+
+
+class NormalDistributionSchema(ObjType):
+    mean = SchemaNode(Float(), name='mean',
+        description='mean for normal distribution')
+    sigma = SchemaNode(Float(), name='sigma',
+        description='standard deviation for normal distribution')
+    name = 'normal'
+
+
+class LogNormalDistributionSchema(ObjType):
+    '''same parameters as Normal - keep in its own class to since serialize/
+    deserialize automatically looks for this class name. Helps keep things
+    consistent.
+    '''
+    NormalDistributionSchema(name='lognormal')
+
+
+class WeibullDistributionSchema(ObjType):
+    alpha = SchemaNode(Float(), name='alpha',
+        description='shape parameter for weibull distribution')
+    lambda_ = SchemaNode(Float(), name='lambda_', default=1.0,
+        description='scale parameter for weibull distribution')
+    min_ = SchemaNode(Float(), name='min_',
+        description='lower bound? for weibull distribution',
+        missing=drop)
+    max_ = SchemaNode(Float(), name='max_',
+        description='upper bound? for weibull distribution',
+        missing=drop)
+    name = 'weibull'
 
 
 class UniformDistribution(Serializable):
@@ -16,6 +56,7 @@ class UniformDistribution(Serializable):
     _state += [Field('low', create=True, update=True),
                Field('high', create=True, update=True)]
     _state.update('obj_type', update=True)  # required by deserialize
+    _schema = UniformDistributionSchema
 
     'Uniform Probability Distribution'
     def __init__(self, low=0., high=0.1):
@@ -44,6 +85,7 @@ class NormalDistribution(Serializable):
     _state += [Field('mean', create=True, update=True),
                Field('sigma', create=True, update=True)]
     _state.update('obj_type', update=True)  # required by deserialize
+    _schema = NormalDistributionSchema
 
     'Normal Probability Distribution'
     def __init__(self, mean=0., sigma=0.1):
@@ -72,6 +114,7 @@ class LogNormalDistribution(Serializable):
     _state += [Field('mean', create=True, update=True),
                Field('sigma', create=True, update=True)]
     _state.update('obj_type', update=True)  # required by deserialize
+    _schema = LogNormalDistributionSchema
 
     'Log Normal Probability Distribution'
     def __init__(self, mean=0., sigma=0.1):
@@ -102,6 +145,7 @@ class WeibullDistribution(Serializable):
                Field('min_', create=True, update=True),
                Field('max_', create=True, update=True)]
     _state.update('obj_type', update=True)  # required by deserialize
+    _schema = WeibullDistributionSchema
 
     'Log Normal Probability Distribution'
     def __init__(self, alpha=None, lambda_=1.0, min_=None, max_=None):

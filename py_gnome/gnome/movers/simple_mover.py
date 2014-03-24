@@ -17,11 +17,24 @@ import copy
 import numpy
 from numpy import random
 np = numpy
+from colander import (SchemaNode, TupleSchema, Float)
 
+from gnome.persist.base_schema import ObjType
 from gnome.basic_types import oil_status, mover_type
-from gnome.movers import Mover
+from gnome.movers import Mover, MoverSchema
 from gnome.utilities.projections import FlatEarthProjection as proj
 from gnome.utilities import serializable
+
+
+class SimpleMoverVelocitySchema(TupleSchema):
+    vel_x = SchemaNode(Float())
+    vel_y = SchemaNode(Float())
+    vel_z = SchemaNode(Float())
+
+
+class SimpleMoverSchema(ObjType, MoverSchema):
+    uncertainty_scale = SchemaNode(Float())
+    velocity = SimpleMoverVelocitySchema()
 
 
 class SimpleMover(Mover, serializable.Serializable):
@@ -38,6 +51,7 @@ class SimpleMover(Mover, serializable.Serializable):
     _state = copy.deepcopy(Mover._state)
     _state.add(update=['uncertainty_scale', 'velocity'],
               create=['uncertainty_scale', 'velocity'])
+    _schema = SimpleMoverSchema
 
     def __init__(
         self,

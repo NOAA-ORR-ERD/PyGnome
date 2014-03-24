@@ -31,8 +31,37 @@ from matplotlib import pyplot
 
 plt = pyplot
 
+from colander import (SchemaNode, SequenceSchema,
+                      Float, String,
+                      drop)
+
+from gnome.persist.base_schema import ObjType
+
 from gnome import GnomeId
 from gnome.utilities.serializable import Serializable
+
+
+class PointSeries(SequenceSchema):
+    point = SchemaNode(Float())
+
+
+class Points(SequenceSchema):
+    point_series = PointSeries()
+
+
+class Labels(SequenceSchema):
+    label = SchemaNode(String(), missing='')
+
+
+class Formats(SequenceSchema):
+    format = SchemaNode(String(), missing='')
+
+
+class GraphSchema(ObjType):
+    title = SchemaNode(String(), missing=drop)
+    points = Points()
+    labels = Labels()
+    formats = Formats()
 
 
 class Graph(GnomeId, Serializable):
@@ -46,6 +75,7 @@ class Graph(GnomeId, Serializable):
 
     _state = copy.deepcopy(Serializable._state)
     _state.add(create=_create, update=_update)
+    _schema = GraphSchema
 
     default_labels = 'XYZABCDEFGHJKLMNPQRSTUVW'
     xaxis_plus_one_series = 2

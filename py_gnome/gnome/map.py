@@ -29,11 +29,12 @@ import copy
 
 import numpy
 np = numpy
+from colander import SchemaNode, MappingSchema, String, Float, drop
 
 from gnome import GnomeId
+from gnome.persist import base_schema
 
 from gnome.utilities.map_canvas import BW_MapCanvas
-
 from gnome.utilities.serializable import Serializable, Field
 from gnome.utilities.file_tools import haz_files
 
@@ -42,8 +43,19 @@ from gnome.cy_gnome.cy_land_check import check_land
 
 from gnome.utilities.geometry.cy_point_in_polygon import (points_in_poly,
                                                           point_in_poly)
-
 from gnome.utilities.geometry.polygons import PolygonSet
+
+
+class GnomeMapSchema(base_schema.ObjType, MappingSchema):
+
+    map_bounds = base_schema.LongLatBounds()
+    spillable_area = base_schema.LongLatBounds(missing=drop)
+
+
+class MapFromBNASchema(GnomeMapSchema):
+
+    filename = SchemaNode(String())
+    refloat_halflife = SchemaNode(Float())
 
 
 class GnomeMap(Serializable):
@@ -58,6 +70,7 @@ class GnomeMap(Serializable):
     _create.extend(_update)
     _state = copy.deepcopy(Serializable._state)
     _state.add(create=_create, update=_update)
+    _schema = GnomeMapSchema
 
     refloat_halflife = None  # note -- no land, so never used
 
@@ -529,7 +542,7 @@ class RasterMap(GnomeMap):
         return self.projection.to_pixel(coords)
 
 
-class MapFromBNA(RasterMap, Serializable):
+class MapFromBNA(RasterMap):
     """
     A raster land-water map, created from a BNA file
     """
@@ -537,6 +550,7 @@ class MapFromBNA(RasterMap, Serializable):
     _state.add(create=['refloat_halflife'], update=['refloat_halflife'])
     _state.add_field(Field('filename', isdatafile=True, create=True,
                             read=True, test_for_eq=False))
+    _schema = MapFromBNASchema
 
     def __init__(self, filename, refloat_halflife, raster_size=1024 * 1024,
                  **kwargs):

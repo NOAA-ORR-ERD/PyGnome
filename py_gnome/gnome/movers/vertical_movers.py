@@ -1,10 +1,18 @@
 import copy
 
+from colander import (SchemaNode, Float)
+
+from gnome.persist.base_schema import ObjType
 from gnome.utilities import serializable
-from gnome.movers import CyMover
+from gnome.movers import CyMover, MoverSchema
 from gnome.cy_gnome.cy_rise_velocity_mover import CyRiseVelocityMover
 from gnome.array_types import rise_vel
 from gnome.basic_types import world_point, world_point_type
+
+
+class RiseVelocityMoverSchema(ObjType, MoverSchema):
+    water_density = SchemaNode(Float())
+    water_viscosity = SchemaNode(Float())
 
 
 class RiseVelocityMover(CyMover, serializable.Serializable):
@@ -19,6 +27,7 @@ class RiseVelocityMover(CyMover, serializable.Serializable):
     _state = copy.deepcopy(CyMover._state)
     #_state.add(update=['water_density'], create=['water_density'])
     #_state.add(update=['water_viscosity'], create=['water_viscosity'])
+    _schema = RiseVelocityMoverSchema
 
     def __init__(
         self,
@@ -58,7 +67,7 @@ class RiseVelocityMover(CyMover, serializable.Serializable):
 #     @water_viscosity.setter
 #     def water_viscosity(self, value):
 #         self.mover.water_viscosity = value
-# 
+
     def __repr__(self):
         """
         .. todo::

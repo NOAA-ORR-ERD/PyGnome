@@ -4,10 +4,17 @@ Movers using diffusion as the forcing function
 
 import copy
 
+from colander import (SchemaNode, Float)
+
+from gnome.persist.base_schema import ObjType
 from gnome.utilities.serializable import Serializable
-from gnome.movers import CyMover
+from gnome.movers import CyMover, MoverSchema
 from gnome.cy_gnome.cy_random_mover import CyRandomMover
 from gnome.cy_gnome.cy_random_vertical_mover import CyRandomVerticalMover
+
+
+class RandomMoverSchema(ObjType, MoverSchema):
+    diffusion_coef = SchemaNode(Float())
 
 
 class RandomMover(CyMover, Serializable):
@@ -19,6 +26,7 @@ class RandomMover(CyMover, Serializable):
     """
     _state = copy.deepcopy(CyMover._state)
     _state.add(update=['diffusion_coef'], create=['diffusion_coef'])
+    _schema = RandomMoverSchema
 
     def __init__(self, **kwargs):
         """
@@ -56,6 +64,12 @@ class RandomMover(CyMover, Serializable):
                                  self.active_start, self.active_stop, self.on))
 
 
+class RandomVerticalMoverSchema(ObjType, MoverSchema):
+    vertical_diffusion_coef_above_ml = SchemaNode(Float())
+    vertical_diffusion_coef_below_ml = SchemaNode(Float())
+    mixed_layer_depth = SchemaNode(Float())
+
+
 class RandomVerticalMover(CyMover, Serializable):
     """
     This mover class inherits from CyMover and contains CyRandomVerticalMover
@@ -70,6 +84,7 @@ class RandomVerticalMover(CyMover, Serializable):
               create=['vertical_diffusion_coef_above_ml',
                       'vertical_diffusion_coef_below_ml',
                       'mixed_layer_depth'])
+    _schema = RandomVerticalMoverSchema
 
     def __init__(self, **kwargs):
         """

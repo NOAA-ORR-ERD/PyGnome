@@ -15,11 +15,12 @@ def now(node, kw):
     return datetime.datetime.now()
 
 
-class Id(MappingSchema):
+class ObjType(MappingSchema):
     '''
-    Any need to ensure it is valid UUID?
+    defines the obj_type which is stored by all gnome objects when persisting
+    to save files
     '''
-    id = SchemaNode(String(), missing=drop)
+    #id = SchemaNode(String(), missing=drop)
     obj_type = SchemaNode(String(), missing=drop)
 
 
@@ -57,5 +58,3 @@ class ImageSize(TupleSchema):
     'Only contains 2D (long, lat) positions'
     width = SchemaNode(Int())
     height = SchemaNode(Int())
-
-

@@ -4,16 +4,24 @@ Movers using currents and tides as forcing functions
 
 import os
 import copy
-from datetime import datetime, timedelta
 
-from gnome.movers import CyMover
+from colander import (SchemaNode, Bool, String, Float, drop)
+
+from gnome.persist.base_schema import ObjType, WorldPoint
+
+from gnome.movers import CyMover, MoverSchema
 from gnome import environment
 from gnome.utilities import serializable
 from gnome.cy_gnome import cy_cats_mover, cy_shio_time, cy_ossm_time, \
     cy_gridcurrent_mover
 
-from gnome.persist import movers_schema
-from gnome.persist.environment_schema import Tide
+
+class CatsMoverSchema(ObjType, MoverSchema):
+    '''static schema for CatsMover'''
+    filename = SchemaNode(String(), missing=drop)
+    scale = SchemaNode(Bool())
+    scale_refpoint = WorldPoint(missing=drop)
+    scale_value = SchemaNode(Float())
 
 
 class CatsMover(CyMover, serializable.Serializable):
@@ -28,6 +36,7 @@ class CatsMover(CyMover, serializable.Serializable):
                                 read=True, isdatafile=True, test_for_eq=False),
                       serializable.Field('tide', create=True,
                                 update=True, save_reference=True)])
+    _schema = CatsMoverSchema
 
     def __init__(
         self,
@@ -90,8 +99,8 @@ class CatsMover(CyMover, serializable.Serializable):
     # Properties
 
     scale = property(lambda self: bool(self.mover.scale_type),
-                     lambda self, val: setattr(self.mover, 'scale_type'
-                     , int(val)))
+                     lambda self, val: setattr(self.mover,
+                            'scale_type', int(val)))
     scale_refpoint = property(lambda self: self.mover.ref_point,
                               lambda self, val: setattr(self.mover,
                               'ref_point', val))
@@ -119,31 +128,16 @@ class CatsMover(CyMover, serializable.Serializable):
 
         self._tide = tide_obj
 
-#==============================================================================
-#     def from_dict(self, dict_):
-#         """
-#         For updating the object from dictionary
-# 
-#         'tide' object is not part of the _state since it is not serialized/deserialized;
-#         however, user can still update the tide attribute with a new Tide object. That must
-#         be poped out of the dict here, then call super to process the standard dict_
-#         """
-# 
-#         if 'tide' in dict_ and dict_.get('tide') is not None:
-#             self.tide = dict_.pop('tide')
-# 
-#         super(CatsMover, self).from_dict(dict_)
-#==============================================================================
-
     def serialize(self, do='update'):
         """
         Since 'wind' property is saved as a reference when used in save file
         and 'create' option, need to add appropriate node to WindMover schema
         """
         dict_ = self.to_dict(do)
-        schema = movers_schema.CatsMover()
+        #schema = CatsMover._schema()
+        schema = self.__class__._schema()
         if do == 'update' and 'tide' in dict_:
-            schema.add(Tide())
+            schema.add(environment.TideSchema())
 
         json_ = schema.serialize(dict_)
 
@@ -154,12 +148,18 @@ class CatsMover(CyMover, serializable.Serializable):
         """
         append correct schema for wind object
         """
-        schema = movers_schema.CatsMover()
+        #schema = CatsMover._schema()
+        schema = cls._schema()
         if 'tide' in json_:
-            schema.add(Tide())
+            schema.add(environment.TideSchema())
         _to_dict = schema.deserialize(json_)
 
         return _to_dict
+
+
+class GridCurrentMoverSchema(ObjType, MoverSchema):
+    filename = SchemaNode(String(), missing=drop)
+    topology_file = SchemaNode(String(), missing=drop)
 
 
 class GridCurrentMover(CyMover, serializable.Serializable):
@@ -173,6 +173,7 @@ class GridCurrentMover(CyMover, serializable.Serializable):
                     read=True, isdatafile=True, test_for_eq=False),
                     serializable.Field('topology_file', create=True,
                     read=True, isdatafile=True, test_for_eq=False)])
+    _schema = GridCurrentMoverSchema
 
     def __init__(
         self,
@@ -256,7 +257,6 @@ class GridCurrentMover(CyMover, serializable.Serializable):
             + '  active_stop time={1.active_stop}' \
             + '  current on/off status={1.on}'
         return info.format(self.mover, self)
-
 
     # Define properties using lambda functions: uses lambda function, which are
     #accessible via fget/fset as follows:

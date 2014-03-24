@@ -2,6 +2,10 @@ import copy
 
 import numpy
 np = numpy
+from colander import (SchemaNode, MappingSchema, Bool, drop)
+
+from gnome.persist.validators import convertible_to_seconds
+from gnome.persist.extend_colander import LocalDateTime
 
 from gnome import GnomeId
 #from gnome import basic_types
@@ -15,6 +19,15 @@ from gnome.utilities import time_utils, serializable
 from gnome.cy_gnome.cy_rise_velocity_mover import CyRiseVelocityMover
 
 
+class MoverSchema(MappingSchema):
+    'base mover schema - common to all movers'
+    on = SchemaNode(Bool(), default=True, missing=True)
+    active_start = SchemaNode(LocalDateTime(), missing=drop,
+                              validator=convertible_to_seconds)
+    active_stop = SchemaNode(LocalDateTime(), missing=drop,
+                             validator=convertible_to_seconds)
+
+
 class Mover(object):
 
     """
@@ -24,6 +37,8 @@ class Mover(object):
     defined here. The get_move(...) method needs to be implemented by the
     derived class.
 
+    NOTE: Since base Mover class is not Serializable, it does not need
+    a class level _schema attribute
     """
 
     _state = copy.deepcopy(serializable.Serializable._state)
