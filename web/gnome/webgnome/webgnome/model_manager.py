@@ -6,7 +6,7 @@ import datetime
 import logging
 import os
 import threading
-from gnome.renderer import Renderer
+from gnome.outputters import Renderer
 
 import numpy
 np = numpy

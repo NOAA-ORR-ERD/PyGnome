@@ -39,8 +39,8 @@ def FQNamesToDict(names):
 
 def JSONImplementsOneOf(json_obj, obj_types):
     '''
-        Here we determine if our JSON request payload implements a particular
-        object, or is contained within a set of implemented object types.
+        Here we determine if our JSON request payload implements an object
+        contained within a set of implemented object types.
 
         I think this is a good place to implement our schema validators,
         but for right now let's just validate that it refers to an object
@@ -58,11 +58,10 @@ def JSONImplementsOneOf(json_obj, obj_types):
           other keys of the dictionary will conform to the referred object's
           construction method(s)
 
-        :param request: an incoming request object.  request.body is where we
-                        find the JSON payload
+        :param json_obj: JSON payload
         :param obj_types: list of fully qualified object names.
     '''
-    if type(json_obj) != dict:
+    if not type(json_obj) == dict:
         return False
 
     if not 'obj_type' in json_obj:
@@ -70,8 +69,6 @@ def JSONImplementsOneOf(json_obj, obj_types):
 
     requested_name = FQNamesToList((json_obj['obj_type'],))[0][0]
 
-    #print 'obj_type =', (json_obj['obj_type'],)
-    #print 'requested_name =', requested_name
     if requested_name in FQNamesToDict(obj_types):
         return True
 
@@ -79,3 +76,47 @@ def JSONImplementsOneOf(json_obj, obj_types):
     #       by using our schemas.  And we could do it here.
 
     return False
+
+
+def ObjectImplementsOneOf(model_object, obj_types):
+    '''
+        Here we determine if our python object type is contained within a set
+        of implemented object types.
+
+        :param model_obj: python object
+        :param obj_types: list of fully qualified object names.
+    '''
+    requested_name = model_object.__class__.__name__
+
+    if requested_name in FQNamesToDict(obj_types):
+        return True
+
+    return False
+
+
+def PyClassFromName(name, scope):
+    print 'PyClassFromName(): name, scope = {0}, {1}'.format(name, scope)
+    my_module = __import__(scope, globals(), locals(), [name], -1)
+    print dir(my_module)
+
+    return getattr(my_module, name)
+
+
+def CreateObject(json_obj):
+    '''
+        Here we create a python object from our JSON payload
+    '''
+    name, scope = FQNamesToList((json_obj['obj_type'],))[0]
+    py_class = PyClassFromName(name, scope)
+
+    return py_class.new_from_dict(json_obj)
+
+
+def UpdateObject(model_object, json_obj):
+    '''
+        Here we update our python object with a JSON payload
+
+        For now, I don't think we will be too fancy about this.
+        We will grow more sophistication as we need it.
+    '''
+    pass
