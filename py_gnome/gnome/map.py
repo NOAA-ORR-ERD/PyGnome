@@ -46,14 +46,12 @@ from gnome.utilities.geometry.cy_point_in_polygon import (points_in_poly,
 from gnome.utilities.geometry.polygons import PolygonSet
 
 
-class GnomeMapSchema(base_schema.ObjType, MappingSchema):
-
+class GnomeMapSchema(base_schema.ObjType):
     map_bounds = base_schema.LongLatBounds()
     spillable_area = base_schema.LongLatBounds(missing=drop)
 
 
-class MapFromBNASchema(GnomeMapSchema):
-
+class MapFromBNASchema(base_schema.ObjType):
     filename = SchemaNode(String())
     refloat_halflife = SchemaNode(Float())
 
@@ -547,6 +545,7 @@ class MapFromBNA(RasterMap):
     A raster land-water map, created from a BNA file
     """
     _state = copy.deepcopy(RasterMap._state)
+    _state.remove(['map_bounds', 'spillable_area'])
     _state.add(create=['refloat_halflife'], update=['refloat_halflife'])
     _state.add_field(Field('filename', isdatafile=True, create=True,
                             read=True, test_for_eq=False))
