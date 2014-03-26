@@ -545,7 +545,7 @@ class MapFromBNA(RasterMap):
     A raster land-water map, created from a BNA file
     """
     _state = copy.deepcopy(RasterMap._state)
-    _state.remove(['map_bounds', 'spillable_area'])
+    _state.update(['map_bounds', 'spillable_area'], create=False)
     _state.add(create=['refloat_halflife'], update=['refloat_halflife'])
     _state.add_field(Field('filename', isdatafile=True, create=True,
                             read=True, test_for_eq=False))
