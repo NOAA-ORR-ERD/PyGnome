@@ -1,6 +1,7 @@
 from cornice.resource import resource, view
 
-from gnome.persist import outputters_schema
+from gnome.outputters import RendererSchema
+
 from webgnome import util
 from webgnome.views.services.base import BaseResource
 
@@ -13,10 +14,10 @@ class Renderer(BaseResource):
         """
         Return a JSON representation of the current renderer.
         """
-        return outputters_schema.Renderer().bind().serialize(
+        return RendererSchema().bind().serialize(
             self.request.validated['renderer'].to_dict(do='create'))
 
-    @view(validators=util.valid_renderer, schema=outputters_schema.Renderer)
+    @view(validators=util.valid_renderer, schema=RendererSchema)
     def put(self):
         """
         Update an existing renderer.
@@ -25,7 +26,7 @@ class Renderer(BaseResource):
         renderer.from_dict(self.request.validated)
         self.request.validated['model'].mark_changed()
 
-        return outputters_schema.Renderer().bind().serialize(
+        return RendererSchema().bind().serialize(
             renderer.to_dict(do='create'))
 
     @view(validators=util.valid_renderer)

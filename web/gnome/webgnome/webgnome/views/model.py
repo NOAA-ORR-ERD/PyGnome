@@ -1,8 +1,10 @@
-from gnome.persist.outputters_schema import Renderer
 import hammer
 import json
 
 from pyramid.view import view_config
+
+from gnome.outputters import RendererSchema
+
 from webgnome import schema
 from webgnome import util
 
@@ -46,7 +48,7 @@ def show_model(request):
     renderer = None
 
     if model.renderer:
-        renderer = Renderer().bind().serialize(
+        renderer = RendererSchema().bind().serialize(
             model.renderer.to_dict(do='create'))
 
         if map_data:

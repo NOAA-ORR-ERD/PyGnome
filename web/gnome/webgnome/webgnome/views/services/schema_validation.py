@@ -5,7 +5,9 @@ The purpose of these services is to allow the client to validate data without
 attempting to save it.
 """
 from cornice.resource import resource, view
-from gnome.persist import movers_schema
+
+from gnome.movers.random_movers import RandomMoverSchema
+
 from webgnome import util
 from webgnome.schema import (
     ModelSchema,
@@ -15,6 +17,7 @@ from webgnome.schema import (
     CustomMapSchema,
     LocationFileSchema
 )
+
 from webgnome.views.services.base import BaseResource
 
 
@@ -82,10 +85,11 @@ class WindMoverValidator(BaseResourceValidator):
     }
 
 
-@resource(path='/model/{model_id}/validate/mover/random', renderer='gnome_json',
+@resource(path='/model/{model_id}/validate/mover/random',
+          renderer='gnome_json',
           description='Validate RandomMover JSON.')
 class RandomMoverValidator(BaseResourceValidator):
-    schema = movers_schema.RandomMover
+    schema = RandomMoverSchema
 
 
 @resource(path='/model/{model_id}/validate/spill/surface_release',
