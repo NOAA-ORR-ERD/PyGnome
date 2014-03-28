@@ -8,3 +8,5 @@ from utils cimport OSSMTimeValue_c
 
 cdef class CyOSSMTime:
     cdef OSSMTimeValue_c * time_dep
+    cdef object _user_units_dict
+    cdef public int file_contains
