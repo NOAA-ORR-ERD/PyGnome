@@ -40,6 +40,17 @@ class EnvironmentTests(FunctionalTestBase):
     def test_put_wind_invalid_id(self):
         obj_id = 0xdeadbeef
         data = {'obj_type': 'gnome.environment.Wind',
+                'description': u'Wind Object',
+                'updated_at': '2014-03-26T14:52:45.385126',
+                'source_type': u'undefined',
+                'source_id': u'undefined',
+                'timeseries': [('2012-11-06T20:10:30', 1.0, 0.0),
+                               ('2012-11-06T20:11:30', 1.0, 45.0),
+                               ('2012-11-06T20:12:30', 1.0, 90.0),
+                               ('2012-11-06T20:13:30', 1.0, 120.0),
+                               ('2012-11-06T20:14:30', 1.0, 180.0),
+                               ('2012-11-06T20:15:30', 1.0, 270.0)],
+                'units': u'meter per second'
                 }
 
         print '\n\nWind Put Request payload: {0}'.format(data)

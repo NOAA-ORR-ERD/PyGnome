@@ -95,10 +95,8 @@ def ObjectImplementsOneOf(model_object, obj_types):
 
 
 def PyClassFromName(name, scope):
-    print 'PyClassFromName(): name, scope = {0}, {1}'.format(name, scope)
-    my_module = __import__(scope, globals(), locals(), [name], -1)
-    print dir(my_module)
-
+    print 'PyClassFromName(): name, scope = {0}'.format((name, scope))
+    my_module = __import__(scope, globals(), locals(), [str(name)], -1)
     return getattr(my_module, name)
 
 
@@ -109,7 +107,11 @@ def CreateObject(json_obj):
     name, scope = FQNamesToList((json_obj['obj_type'],))[0]
     py_class = PyClassFromName(name, scope)
 
-    return py_class.new_from_dict(json_obj)
+    print 'dir(py_class) = ', dir(py_class)
+    dict_ = py_class.deserialize(json_obj)
+    print 'dict_ = ', dict_
+
+    return py_class.new_from_dict(dict_)
 
 
 def UpdateObject(model_object, json_obj):
