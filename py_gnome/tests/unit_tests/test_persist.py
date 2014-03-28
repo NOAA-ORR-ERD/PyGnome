@@ -7,6 +7,7 @@ import os
 import shutil
 from glob import glob
 from datetime import datetime, timedelta
+import json
 
 import pytest
 from pytest import raises
@@ -31,6 +32,7 @@ from gnome.outputters import Renderer
 curr_dir = os.path.dirname(__file__)
 datafiles = os.path.join(curr_dir, 'sample_data', 'boston_data')
 saveloc_ = os.path.join(curr_dir, 'save_model')
+webapi_files = os.path.join(curr_dir, './webapi_json')
 
 
 # clean up saveloc_ if it exists
@@ -278,3 +280,15 @@ def test_load_midrun_ne_rewound_model(images_dir, uncertain):
 
     assert model.spills != model2.spills
     assert model != model2
+
+
+@pytest.mark.parametrize('uncertain', [False, True])
+def test_dump_update_option(images_dir, uncertain):
+    del_saveloc(webapi_files)
+    os.makedirs(webapi_files)
+
+    model = make_model(images_dir, uncertain)
+    json_ = model.serialize('update')
+    fname = os.path.join(webapi_files, 'Model.json')
+    with open(fname, 'w') as outfile:
+        json.dump(json_, outfile, indent=True)

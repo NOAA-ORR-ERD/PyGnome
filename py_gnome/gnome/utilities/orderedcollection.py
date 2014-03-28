@@ -195,29 +195,44 @@ class OrderedCollection(object):
         else:
             return True
 
-    def to_dict(self):
+    def to_dict(self, do='update'):
         '''
         Method takes the instance of ordered collection and outputs a dict with
         two fields:
             dtype: associated dtype for each object in the order in which
                 it is added
-            items : contains list objects in the order in which it is added as
-                well as the index of object in the list
+            items: contains a list of tuples containing -
+                (importable object name as string, index into collection):
+                [(object, 0), (object, 1)]
+                The index is always going to be range(number of objects)
+            id: a list of IDs for each object. This is not part of the items
+                tuple because serialize/deserialize to/from JSON for webapi
+                versus saving data out is different
 
-        This method assumes object has an ID
         '''
-        dict_ = {'dtype': self.dtype, 'items': []}
+        if do == 'create':
+            data = {'dtype': self.dtype,
+                    'items': []}
+        else:
+            data = []
 
         for count, obj in enumerate(self):
-            try:
-                obj_type = \
-                    '{0.__module__}.{0.__class__.__name__}'.format(obj)
-            except AttributeError:
-                obj_type = '{0.__class__.__name__}'.format(obj)
+            if do == 'create':
+                try:
+                    obj_type = \
+                        '{0.__module__}.{0.__class__.__name__}'.format(obj)
+                except AttributeError:
+                    obj_type = '{0.__class__.__name__}'.format(obj)
 
-            dict_['items'].append((obj_type, count))
+                data['items'].append((obj_type, count))
 
-        return dict_
+            else:
+                if hasattr(obj, 'id'):
+                    data.append(obj.id)
+                else:
+                    data.append(id(obj))
+
+        return data
 
     def register_callback(self, callback,
                           events=('add', 'remove', 'replace')):

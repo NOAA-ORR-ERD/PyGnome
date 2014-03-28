@@ -629,7 +629,8 @@ class TestAddSpillContainerPair:
         for sp, idx in zip(scp._u_spill_container.spills, range(len(c_spill))):
             assert sp.id == u_spill[idx].id
 
-    def test_to_dict(self):
+    @pytest.mark.parametrize('do', ['create', 'update'])
+    def test_to_dict(self, do):
         c_spill = [point_line_release_spill(self.num_elements,
                    self.start_position, self.start_time) for i in
                    range(2)]
@@ -643,7 +644,7 @@ class TestAddSpillContainerPair:
         for sp_tuple in zip(c_spill, u_spill):
             scp += sp_tuple
 
-        dict_ = scp.to_dict()
+        dict_ = scp.to_dict(do)
 
         for key in dict_.keys():
             if key == 'certain_spills':
@@ -652,10 +653,13 @@ class TestAddSpillContainerPair:
                 enum_spill = u_spill
 
             for (i, spill) in enumerate(enum_spill):
-                assert dict_[key]['items'][i][0] \
-                    == '{0}.{1}'.format(spill.__module__,
-                        spill.__class__.__name__)
-                assert dict_[key]['items'][i][1] == i
+                if do == 'create':
+                    assert dict_[key]['items'][i][0] \
+                        == '{0}.{1}'.format(spill.__module__,
+                            spill.__class__.__name__)
+                    assert dict_[key]['items'][i][1] == i
+                elif do == 'update':
+                    assert dict_[key][i] == spill.id
 
 
 def test_get_spill_mask():

@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-from pytest import raises
+from pytest import raises, mark
 
 from gnome.movers.simple_mover import SimpleMover
 from gnome.movers import Mover, RandomMover
@@ -218,33 +218,41 @@ class TestOrderedCollection(object):
             != OrderedCollection([1, 2, 3, 4])
         assert OrderedCollection([1, 2, 3, 4, 5]) != [1, 2, 3, 4, 5]
 
-    def test_to_dict(self):
+    @mark.parametrize('do', ['create', 'update'])
+    def test_to_dict(self, do):
         'added a to_dict() method - test this method'
 
         items = [SimpleMover(velocity=(i * 0.5, -1.0, 0.0)) for i in
                  range(2)]
         items.extend([RandomMover() for i in range(2)])
         mymovers = OrderedCollection(items, dtype=Mover)
-        dict_ = mymovers.to_dict()
+        self._to_dict_assert(mymovers, items, do)
 
-        assert dict_['dtype'] == mymovers.dtype
-        for (i, mv) in enumerate(items):
-            assert dict_['items'][i][0] \
-                == '{0}.{1}'.format(mv.__module__, mv.__class__.__name__)
-            assert dict_['items'][i][1] == i
-
-    def test_int_to_dict(self):
+    @mark.parametrize('do', ['create', 'update'])
+    def test_int_to_dict(self, do):
         '''added a to_dict() method - test this method for int dtype.
         Tests the try, except is working correctly'''
         items = range(5)
         oc = OrderedCollection(items)
-        dict_ = oc.to_dict()
+        self._to_dict_assert(oc, items, do)
 
-        assert dict_['dtype'] == int
-        for (i, item) in enumerate(items):
-            assert dict_['items'][i][0] \
-                == '{0}'.format(item.__class__.__name__)
-            assert dict_['items'][i][1] == i
+    def _to_dict_assert(self, oc, items, do):
+        toserial = oc.to_dict(do)
+        if do == 'create':
+            assert toserial['dtype'] == oc.dtype
+        for (i, mv) in enumerate(items):
+            if do == 'create':
+                try:
+                    assert toserial['items'][i][0] == \
+                        '{0}.{1}'.format(mv.__module__, mv.__class__.__name__)
+                except AttributeError:
+                    assert toserial['items'][i][0] == mv.__class__.__name__
+                assert toserial['items'][i][1] == i
+            elif do == 'update':
+                try:
+                    assert toserial[i] == mv.id
+                except AttributeError:
+                    assert toserial[i] == id(mv)
 
 
 class ObjToAdd:

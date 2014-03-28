@@ -23,7 +23,7 @@ from gnome.environment import Environment
 import gnome.utilities.cache
 from gnome.utilities.time_utils import round_time
 from gnome.utilities.orderedcollection import OrderedCollection
-from gnome.utilities.serializable import Serializable
+from gnome.utilities.serializable import Serializable, Field
 
 from gnome.spill_container import SpillContainerPair
 
@@ -46,9 +46,19 @@ class SpillContainerPairSchema(MappingSchema):
     in this module. The SpillContainerPair object is not serializable since
     there isn't a need
     '''
-    certain_spills = base_schema.OrderedCollection()
-    # only present if uncertainty is on
-    uncertain_spills = base_schema.OrderedCollection(missing=drop)
+
+    def __init__(self, do='update', **kwargs):
+        if do == 'create':
+            self.add(base_schema.OrderedCollection(name='certain_spills'))
+            self.add(base_schema.OrderedCollection(name='uncertain_spills',
+                                                   missing=drop))
+        else:
+            self.add(base_schema.OrderedCollectionIDList(
+                                                        name='certain_spills'))
+            self.add(base_schema.OrderedCollectionIDList(
+                                        name='uncertain_spills', missing=drop))
+
+        super(SpillContainerPairSchema, self).__init__(**kwargs)
 
 
 class ModelSchema(base_schema.ObjType):
@@ -58,14 +68,21 @@ class ModelSchema(base_schema.ObjType):
     start_time = SchemaNode(extend_colander.LocalDateTime(),
                             validator=validators.convertible_to_seconds)
     duration = SchemaNode(extend_colander.TimeDelta())  # max duration?
-    movers = base_schema.OrderedCollection()
-    weatherers = base_schema.OrderedCollection()
-    environment = base_schema.OrderedCollection()
     uncertain = SchemaNode(Bool())
-    spills = SpillContainerPairSchema()
-    map = SchemaNode(String())
-    outputters = base_schema.OrderedCollection()
+    map = SchemaNode(String(), missing=drop)
+    map_id = SchemaNode(String(), missing=drop)
     cache_enabled = SchemaNode(Bool())
+
+    def __init__(self, do='update', **kwargs):
+        self.add(SpillContainerPairSchema(do, name='spills'))
+        oc_list = ['movers', 'weatherers', 'environment', 'outputters']
+        for oc in oc_list:
+            if do == 'create':
+                self.add(base_schema.OrderedCollection(name=oc))
+            else:
+                self.add(base_schema.OrderedCollectionIDList(name=oc))
+
+        super(ModelSchema, self).__init__(**kwargs)
 
 
 class Model(Serializable):
@@ -79,12 +96,12 @@ class Model(Serializable):
                'weatherers',
                'environment',
                'spills',
-               'map',
                'outputters',
                'cache_enabled']
-    _create = []
+    _create = ['map']
     _create.extend(_update)
     _state = copy.deepcopy(Serializable._state)
+    _state += Field('map_id', update=True)
     _schema = ModelSchema
 
     # no need to copy parent's _state in this case
@@ -566,39 +583,18 @@ class Model(Serializable):
 
         return output_data
 
-    def movers_to_dict(self):
-        '''
-        Call to_dict method of OrderedCollection object
-        '''
-        return self.movers.to_dict()
-
-    def weatherers_to_dict(self):
-        '''
-        Call to_dict method of OrderedCollection object
-        '''
-        return self.weatherers.to_dict()
-
-    def environment_to_dict(self):
-        '''
-        Call to_dict method of OrderedCollection object
-        '''
-        return self.environment.to_dict()
-
-    def spills_to_dict(self):
-        return self.spills.to_dict()
-
-    def outputters_to_dict(self):
-        '''
-        Call to_dict method of OrderedCollection object
-        '''
-        return self.outputters.to_dict()
-
     def map_to_dict(self):
         '''
-        returns the gnome object type as a string
+        returns importable gnome object type as a string
         '''
         return '{0}.{1}'.format(self.map.__module__,
-                                 self.map.__class__.__name__)
+            self.map.__class__.__name__)
+
+    def map_id_to_dict(self):
+        '''
+        return the ID of map object - used for 'update' option
+        '''
+        return self.map.id
 
     def _callback_add_mover(self, obj_added):
         'Callback after mover has been added'
@@ -781,6 +777,31 @@ class Model(Serializable):
             for file_ in filenames:
                 os.remove(os.path.join(dirpath, file_))
 
+    def serialize(self, do='update'):
+        '''
+        for update, the ordered collections only contain the IDs of the objects
+        during serialization/deserialization as required by the WebAPI. For
+        'create', the 'dtype' and 'items' returned by the ordered collection
+        dict is kept for loading from save files and for information
+        '''
+        toserial = self.to_dict(do)
+        schema = self.__class__._schema(do)
+        json_ = schema.serialize(toserial)
+
+        return json_
+
+    @classmethod
+    def deserialize(cls, json_):
+        '''
+        check contents of orderered collections to figure out what schema to
+        use for the OC
+        '''
+        if isinstance(json_['movers'], dict):
+            schema = cls._schema('create')
+        else:
+            schema = cls._schema()
+
+        return schema.deserialize(json_)
 
 '''
 'load' and the following functions don't really need to be part of the Model
