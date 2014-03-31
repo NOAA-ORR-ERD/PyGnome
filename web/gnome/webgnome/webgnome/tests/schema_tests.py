@@ -1,9 +1,10 @@
 import colander
 import datetime
-import numpy
 
 from dateutil import parser
-from gnome.persist import environment_schema
+
+from gnome.environment.wind import WindTimeSeriesSchema
+
 from pytz import timezone
 from unittest import TestCase
 from webgnome.schema import WindSchema
@@ -20,8 +21,8 @@ class WindValueSchemaTests(TestCase):
 #         dt = datetime.datetime.now(timezone('US/Pacific'))
 #         dt_without_tz = dt.replace(tzinfo=None)
 #         data = [[numpy.datetime64(dt.isoformat()), [10.5, 180.5]]]
-#         wind_value = environment_schema.WindTimeSeriesSchema().serialize(data)
-# 
+#         wind_value = WindTimeSeriesSchema().serialize(data)
+#
 #         self.assertEqual(wind_value[0][0], dt_without_tz.isoformat())
 #         self.assertEqual(wind_value[0][1], data[1])
 #         self.assertEqual(wind_value[0][2], data[2])
@@ -33,8 +34,9 @@ class WindValueSchemaTests(TestCase):
         dt = datetime.datetime(year=2013, month=2, day=5,
                                tzinfo=timezone('US/Pacific'))
         dt_without_tz = dt.replace(tzinfo=None)
+
         data = [[dt.isoformat(), '10.5', '180.5']]
-        wind_value = environment_schema.WindTimeSeriesSchema().deserialize(data)
+        wind_value = WindTimeSeriesSchema().deserialize(data)
 
         self.assertEqual(wind_value[0][0].astype(object).isoformat(),
                          dt_without_tz.isoformat())
@@ -44,18 +46,18 @@ class WindValueSchemaTests(TestCase):
     def test_speed_must_be_nonzero(self):
         data = [datetime.datetime.now(), 0, 180.5]
         self.assertRaises(colander.Invalid,
-                          environment_schema.WindTimeSeriesSchema().deserialize,
+                          WindTimeSeriesSchema().deserialize,
                           data)
 
     def test_direction_must_be_valid_degrees_true(self):
         data = [datetime.datetime.now(), 24, -1]
         self.assertRaises(colander.Invalid,
-                          environment_schema.WindTimeSeriesSchema().deserialize,
+                          WindTimeSeriesSchema().deserialize,
                           data)
 
         data = [datetime.datetime.now(), 24, 361]
         self.assertRaises(colander.Invalid,
-                          environment_schema.WindTimeSeriesSchema().deserialize,
+                          WindTimeSeriesSchema().deserialize,
                           data)
 
 
@@ -63,25 +65,20 @@ class WindSchemaTests(TestCase):
 
     def get_test_data(self):
         timeseries = [
-            [
-                datetime.datetime(year=2013, month=1, day=1,
-                                  hour=12, minute=30,
-                                  tzinfo=timezone('US/Pacific')).isoformat(),
-                20.5,
-                300.5
-            ],
-            [
-                datetime.datetime(year=2013, month=2, day=1,
-                                  hour=1, minute=30,
-                                  tzinfo=timezone('US/Pacific')).isoformat(),
-                20.5,
-                300.5
-            ],
+            [datetime.datetime(year=2013, month=1, day=1,
+                               hour=12, minute=30,
+                               tzinfo=timezone('US/Pacific')).isoformat(),
+             20.5,
+             300.5],
+            [datetime.datetime(year=2013, month=2, day=1,
+                               hour=1, minute=30,
+                               tzinfo=timezone('US/Pacific')).isoformat(),
+             20.5,
+             300.5],
         ]
 
-        return {
-            'timeseries': timeseries,
-            'units': 'ft/hr'
+        return {'timeseries': timeseries,
+                'units': 'ft/hr'
         }
 
     def test_serialize(self):
@@ -91,6 +88,7 @@ class WindSchemaTests(TestCase):
 
         for idx, wind_value in enumerate(serialized_wind['timeseries']):
             test_val = data['timeseries'][idx]
+
             self.assertEqual(str(wind_value[0]),
                              test_val[0].astype(object).isoformat())
             self.assertEqual(wind_value[1], test_val[1][0])
@@ -106,6 +104,7 @@ class WindSchemaTests(TestCase):
             dt_without_timezone = parser.parse(
                 wind_value[0]).replace(tzinfo=None)
             expected_datetimes.append(dt_without_timezone)
+
             data['timeseries'][idx][0] = str(wind_value[0])
             data['timeseries'][idx][1] = str(wind_value[1])
             data['timeseries'][idx][2] = str(wind_value[2])
@@ -115,6 +114,7 @@ class WindSchemaTests(TestCase):
         for idx, wind_value in enumerate(wind['timeseries']):
             test_values = data['timeseries'][idx]
             wind_dt = wind_value[0].astype(object).isoformat()
+
             self.assertEqual(wind_dt, expected_datetimes[idx].isoformat())
             self.assertEqual(wind_value[1][0], float(test_values[1]))
             self.assertEqual(wind_value[1][1], float(test_values[2]))

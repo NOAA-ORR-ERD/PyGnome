@@ -24,13 +24,12 @@ implemented_types = ('gnome.environment.Tide',
 def create_environment(request):
     '''Creates a new Environment object.'''
     json_request = json.loads(request.body)
-    json_response = None
 
     if not JSONImplementsOneOf(json_request, implemented_types):
         raise HTTPNotImplemented()
 
     # the pyramid URL parser returns a tuple of 0 or more
-    # matching items, at lease when using the * wild card
+    # matching items, at least when using the * wild card
     obj_id = request.matchdict.get('obj_id')
     obj_id = obj_id[0] if obj_id else None
     print 'Our object ID:', obj_id
@@ -45,8 +44,10 @@ def create_environment(request):
         obj = CreateObject(json_request)
         pass
 
+    print 'our new timeseries: ', (obj.timeseries,)
+    print 'our new ossm.timeseries: ', (obj.ossm.timeseries,)
     set_session_object(obj, request.session)
-    return json_response
+    return obj.serialize()
 
 
 def get_session_object(obj_id, session):

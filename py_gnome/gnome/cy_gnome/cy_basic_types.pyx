@@ -65,6 +65,15 @@ For instance, a standard wind file would contain magnitude and direction info
 
 It could also contain uv info. Tides would contain uv with v == 0
 Hydrology file would also contain uv format
+from TypeDefs.h:
+*   M19REALREAL = 1,
+    M19HILITEDEFAULT = 2
+    M19MAGNITUDEDEGREES = 3
+    M19DEGREESMAGNITUDE = 4
+*   M19MAGNITUDEDIRECTION = 5
+    M19DIRECTIONMAGNITUDE = 6
+    M19CANCEL = 7
+    M19LABEL = 8
 """
 ts_format = enum(magnitude_direction=M19MAGNITUDEDIRECTION,
                    uv=M19REALREAL)
