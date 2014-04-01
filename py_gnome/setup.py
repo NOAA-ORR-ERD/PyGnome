@@ -36,7 +36,7 @@ import numpy as np
 
 try:
     from gnome import __version__
-except ImportError: # gnome won't import if it's not built yet...
+except: # gnome won't import if it's not built (properly) yet...
     __version__ = "alpha"
 
 # could run setup from anywhere
