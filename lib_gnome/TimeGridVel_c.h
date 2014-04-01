@@ -42,7 +42,7 @@ typedef struct {
 
 Boolean IsNetCDFFile (char *path, short *gridType);
 Boolean IsNetCDFPathsFile (char *path, Boolean *isNetCDFPathsFile, char *fileNamesPath, short *gridType);
-Boolean IsGridWindFile(char *path,short *selectedUnits);
+//Boolean IsGridWindFile(char *path,short *selectedUnits);
 
 class TimeGridVel_c
 {

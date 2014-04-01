@@ -1,31 +1,26 @@
 import datetime
 import hammer
 
-from colander import (
-    MappingSchema,
-    SchemaNode,
-    Bool,
-    Int,
-    Float,
-    Range,
-    String,
-    SequenceSchema,
-    OneOf,
-    TupleSchema,
-    deferred,
-    drop,
-)
-from gnome.persist import (
-    environment_schema,
-    movers_schema,
-    map_schema,
-    spills_schema,
-    validators,
-    extend_colander)
+from colander import (SchemaNode,
+                      SequenceSchema, TupleSchema, MappingSchema,
+                      Bool, Int, Float, String, Range,
+                      OneOf, deferred, drop)
+
+from gnome.persist import (validators,
+                           extend_colander)
+
+from gnome.map import MapFromBNASchema
+from gnome.environment.wind import WindSchema
+
+from gnome.movers.wind_movers import WindMoverSchema
+from gnome.movers.random_movers import RandomMoverSchema
+from gnome.movers.current_movers import (CatsMoverSchema,
+                                         GridCurrentMoverSchema)
+
+from gnome.spill.release import PointLineReleaseSchema
+
 from gnome.persist.extend_colander import LocalDateTime
 from gnome.persist.base_schema import LongLatBounds
-from gnome.persist.movers_schema import CatsMover
-from gnome.persist.movers_schema import GridCurrentMover
 
 
 @deferred
@@ -42,7 +37,7 @@ class LongLat(MappingSchema):
     lat = SchemaNode(Float())
 
 
-class WindMoverSchema(movers_schema.WindMover):
+class WindMoverSchema(WindMoverSchema):
     default_name = 'Wind Mover'
     name = SchemaNode(String(), default=default_name, missing=default_name)
     uncertain_angle_scale_units = SchemaNode(String(), default='rad',
@@ -50,7 +45,7 @@ class WindMoverSchema(movers_schema.WindMover):
                                              validator=OneOf(['rad', 'deg']))
 
 
-class RandomMoverSchema(movers_schema.RandomMover):
+class RandomMoverSchema(RandomMoverSchema):
     default_name = 'Random Mover'
     name = SchemaNode(String(), default=default_name, missing=default_name)
     diffusion_coef = SchemaNode(Float(), default=100000, missing=100000)
@@ -67,7 +62,7 @@ class WindageRangeSchema(TupleSchema):
     windage_max = SchemaNode(Float())
 
 
-class PointSourceReleaseSchema(spills_schema.PointLineSource):
+class PointSourceReleaseSchema(PointLineReleaseSchema):
     default_name = 'Surface Release Spill'
     name = SchemaNode(String(), default=default_name, missing=default_name)
 
@@ -84,7 +79,7 @@ class RandomMoversSchema(SequenceSchema):
     mover = RandomMoverSchema()
 
 
-class MapSchema(map_schema.MapFromBNA):
+class MapSchema(MapFromBNASchema):
     default_name = 'Map'
     refloat_halflife = SchemaNode(Float(), default=6 * 3600)  # seconds
     name = SchemaNode(String(), default=default_name, missing=default_name)
@@ -117,7 +112,7 @@ class CustomMapSchema(MappingSchema):
     refloat_halflife = SchemaNode(Float(), default=1)
 
 
-class WindSchema(environment_schema.Wind):
+class WindSchema(WindSchema):
     default_name = 'Wind'
     name = SchemaNode(String(), default=default_name, missing=default_name)
 
@@ -126,7 +121,7 @@ class WindsSchema(SequenceSchema):
     wind = WindSchema()
 
 
-class WebCatsMover(CatsMover):
+class WebCatsMover(CatsMoverSchema):
     default_name = 'Cats Mover'
     name = SchemaNode(String(), default=default_name, missing=default_name)
 
@@ -134,7 +129,8 @@ class WebCatsMover(CatsMover):
 class CatsMoversSchema(SequenceSchema):
     mover = WebCatsMover()
 
-class WebGridCurrentMover(GridCurrentMover):
+
+class WebGridCurrentMover(GridCurrentMoverSchema):
     default_name = 'Grid Current Mover'
     name = SchemaNode(String(), default=default_name, missing=default_name)
 

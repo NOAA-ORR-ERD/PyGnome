@@ -118,11 +118,12 @@ class TimeDelta(Float):
         return datetime.timedelta(seconds=sec)
 
 """
-Following define new schemas for above custom types. This is so serialize/deserialize 
-is called correctly.
+Following define new schemas for above custom types. This is so
+serialize/deserialize is called correctly.
 
 Specifically a new DefaultTypeSchema and a DatetimeValue2dArraySchema
 """
+
 
 class DefaultTupleSchema(TupleSchema):
     schema_type = DefaultTuple

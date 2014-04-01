@@ -1,4 +1,5 @@
-import sys, os
+import sys
+import os
 
 from setuptools import setup, find_packages
 
@@ -26,7 +27,7 @@ requires = [
 setup(name='webgnome',
       version='0.0',
       description='webgnome',
-      long_description=README + '\n\n' +  CHANGES,
+      long_description=README + '\n\n' + CHANGES,
       classifiers=[
         "Programming Language :: Python",
         "Framework :: Pyramid",
@@ -43,7 +44,7 @@ setup(name='webgnome',
       install_requires=requires,
       tests_require=requires,
       test_suite="webgnome",
-      entry_points = """\
+      entry_points="""\
       [paste.app_factory]
       main = webgnome:main
       [console_scripts]
@@ -53,4 +54,3 @@ setup(name='webgnome',
       clean_file_uploads = webgnome.scripts.clean_file_uploads:main
       """,
       )
-

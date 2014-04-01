@@ -327,7 +327,7 @@ short GetRefCurrent(CONSTITUENT *constituent,	// Amplitude-phase array structs
 	short	*tHdl=0,findFlag=0,direcKey=0,zeroFlag=0,lastFlag=0;
 	long	i=0,j=0,MaxMinCount=0,errorFlag=0,actualNoOfConst=0;
 	short	CFlag=0,rotFlag=0,L2Flag=0;
-	Boolean	stop=false;
+	//Boolean	stop=false;
 	
 	long maxMinHdlNumElements; //JLM
 
@@ -437,6 +437,7 @@ short GetRefCurrent(CONSTITUENT *constituent,	// Amplitude-phase array structs
 	
 	// This one is the array for max and min current values
 	maxMinHdlNumElements = maxPeaks+2;
+	maxPeaks += 2;
 	/*MaxMinHdl = (double **)NewHandleClear( maxMinHdlNumElements*sizeof(double) ); errorFlag=(short)MemError();
 	if( errorFlag != 0 ){
 		errorFlag=13;
@@ -552,7 +553,7 @@ short GetRefCurrent(CONSTITUENT *constituent,	// Amplitude-phase array structs
 	refCur = GetDatum(constituent);
 		
 	findFlag = 0;
-	stop=false;
+	//stop=false;
 	for (i= 0; i<NumOfSteps; i++){
 
 		/////pcnt = ((i+1)*100)/NumOfSteps;
@@ -660,7 +661,9 @@ Retry:
 				}
 				MaxMinHdl[MaxMinCount] = MaxMinCurrent;
 				MaxMinTHdl[MaxMinCount].val = MaxMinTime;
-				MaxMinCount = MaxMinCount + 1;
+				//MaxMinCount = MaxMinCount + 1;
+				if(MaxMinCount + 1 < maxPeaks) 
+                    MaxMinCount++;		// othewise, keep writing over last value
 			}
 			
 			// special case ... never happen
@@ -698,8 +701,19 @@ Retry:
 				if(MaxMinCount >= maxMinHdlNumElements) { errorFlag = 41;goto Error;}
 				MaxMinHdl[MaxMinCount] = theEbb;
 				MaxMinTHdl[MaxMinCount].val = theEbbTime;
-				tHdl[MaxMinCount] = 3;
-				MaxMinCount = MaxMinCount + 1;
+                // 02/25/2014 G.K.: added multiple ebbs/floods case
+                if(MaxMinCount > 0)
+                    if(tHdl[MaxMinCount - 1] == MinBeforeEbb)
+				        tHdl[MaxMinCount] = MaxEbb;
+                    else
+                        tHdl[MaxMinCount] = tHdl[MaxMinCount - 1];
+                else
+				    tHdl[MaxMinCount] = MaxEbb;
+
+				if(MaxMinCount + 1 < maxPeaks) 
+                    MaxMinCount++;		// othewise, keep writing over last value
+				//tHdl[MaxMinCount] = 3;
+				//MaxMinCount = MaxMinCount + 1;
 			}
 			// max flood case
 			else if( (slope1>0) && (slope2<0) ) {
@@ -725,8 +739,20 @@ Retry:
 				if(MaxMinCount >= maxMinHdlNumElements) { errorFlag = 41;goto Error;}
 				MaxMinHdl[MaxMinCount] = theFlood;
 				MaxMinTHdl[MaxMinCount].val = theFloodTime;
-				tHdl[MaxMinCount] = 1;
-				MaxMinCount = MaxMinCount + 1;
+
+                // 02/25/2014 G.K.: added multiple ebbs/floods case
+                if(MaxMinCount > 0)
+                    if(tHdl[MaxMinCount - 1] == MinBeforeFlood)
+				        tHdl[MaxMinCount] = MaxFlood;
+                    else
+                        tHdl[MaxMinCount] = tHdl[MaxMinCount - 1];
+                else
+				    tHdl[MaxMinCount] = MaxFlood;
+
+                if(MaxMinCount + 1 < maxPeaks) 
+                    MaxMinCount++;		// othewise, keep writing over last value
+				//tHdl[MaxMinCount] = 1;
+				//MaxMinCount = MaxMinCount + 1;
 			}
 			
 			// OK now look for min values by checking for zero crossings
@@ -759,7 +785,9 @@ Retry:
 				}
 				MaxMinTHdl[MaxMinCount].val = theMinBFTime;
 				tHdl[MaxMinCount] = 0;
-				MaxMinCount = MaxMinCount + 1;
+				if(MaxMinCount + 1 < maxPeaks) 
+                    MaxMinCount++;		// othewise, keep writing over last value
+				//MaxMinCount = MaxMinCount + 1;
 			}
 	
 			// min before ebb case
@@ -790,7 +818,9 @@ Retry:
 				}
 				MaxMinTHdl[MaxMinCount].val = theMinBETime;
 				tHdl[MaxMinCount] = 2;
-				MaxMinCount = MaxMinCount + 1;
+				if(MaxMinCount + 1 < maxPeaks) 
+                    MaxMinCount++;		// othewise, keep writing over last value
+				//MaxMinCount = MaxMinCount + 1;
 			}
 	
 			else if(oldCurrent==0){
@@ -799,7 +829,9 @@ Retry:
 				MaxMinTHdl[MaxMinCount].val = t1;
 				tHdl[MaxMinCount] = 0;
 				if(theCurrent<0)tHdl[MaxMinCount] = 1;
-				MaxMinCount = MaxMinCount + 1;
+				if(MaxMinCount + 1 < maxPeaks) 
+                    MaxMinCount++;		// othewise, keep writing over last value
+				//MaxMinCount = MaxMinCount + 1;
 			}
 		}
 		oldCurrent = theCurrent;
@@ -874,10 +906,14 @@ done:
 	
 	if(MaxMinCount >= maxMinHdlNumElements-1) { errorFlag = 41;goto Error;}
 	MaxMinTHdl[MaxMinCount].val=zeroTime;
-	MaxMinTHdl[MaxMinCount+1].val=lastTime;
 	MaxMinHdl[MaxMinCount]=zeroValue;
-	MaxMinHdl[MaxMinCount+1]=lastValue;
 	tHdl[MaxMinCount]=zeroFlag;
+	
+	if(MaxMinCount + 1 < maxPeaks) 
+        MaxMinCount++;		// othewise, keep writing over last value
+	
+	MaxMinTHdl[MaxMinCount+1].val=lastTime;
+	MaxMinHdl[MaxMinCount+1]=lastValue;
 	tHdl[MaxMinCount+1]=lastFlag;
 
 Error:
@@ -1459,6 +1495,15 @@ short OffsetReferenceCurve(COMPCURRENTS *answer,    //  to reference station hei
 	
 	numOfPoints = answer->nPts;
 		
+    // 2/25/2014 G.K.: added varaible initialization
+    t = TimeHdl[0].val;
+    SpeedCorrectionMult = 1.;
+    flag = 99;
+   	//previousTime = t;
+    //nextTime = t;
+    //dtNew = 0.;
+    indexPlusOne = 0;
+
  	for (i=0; i<numOfPoints; i++){
 	
 		//tOld = t;
@@ -1475,7 +1520,10 @@ short OffsetReferenceCurve(COMPCURRENTS *answer,    //  to reference station hei
 		
 		errorFlag = GetWeights(t,TArrayPtr,&w1,&w2,&index,NoOfMaxMins);
 		
-		if( (w1<0.0) || (w1>1.0) )printError("ShioCurrent - BAD WEIGHT FACTORS");
+		// davew 3/20/3: don't know what to do with this: it doesn't generate an error
+		// I'm going to comment it out
+		//if( (w1<0.0) || (w1>1.0) )printError("ShioCurrent - BAD WEIGHT FACTORS");
+		
 		// in first segment
 		if(index==-99){
 			if( MaxMinFlagHdl[0]==MaxFlood){
@@ -1880,27 +1928,87 @@ short OffsetUV ( COMPCURRENTS *answers,		// Current-time struc with answers
 	// what the magnitudes of the velocities and
 	// flag them as no plot.
 	
+    long NoOfMaxMins;
+    short flag;
+	double  *CArrayPtr;
+	EXTFLAG	*TArrayPtr;
+	short	*OldMaxMinFlagPtr;
+
+	CArrayPtr=NULL;
+	TArrayPtr=NULL;
+	
+	// Begin by declaring temp space on heap 
+	// for a copy of the maxs and mins
+	
+	NoOfMaxMins = answers->numEbbFloods;
+	if(NoOfMaxMins < 1)
+    {
+		errorFlag = 19;
+		goto Error;
+	}
+
+	CArrayPtr = new double[NoOfMaxMins+2];
+	if(CArrayPtr==NULL){
+		errorFlag = 20;
+		goto Error;
+	}
+	
+	TArrayPtr = new EXTFLAG[NoOfMaxMins+2];
+	if(TArrayPtr==NULL){
+		errorFlag = 21;
+		goto Error;
+	}
+	
+	OldMaxMinFlagPtr = new short[NoOfMaxMins+2];
+	if(OldMaxMinFlagPtr==NULL){
+		errorFlag = 37;
+		goto Error;
+	}
+	
+    for(i=0, j=0; i<(NoOfMaxMins+2); i++)
+        if(answers->EbbFloodTimes[i].flag == 0)
+        {
+		    CArrayPtr[j] = answers->EbbFloodSpeeds[i];
+            TArrayPtr[j].val = answers->EbbFloodTimes[i].val;
+            TArrayPtr[j].flag = answers->EbbFloodTimes[i].flag;
+		    OldMaxMinFlagPtr[j] = answers->EbbFloodTimes[i].flag;
+            j++;
+	    }	
+    NoOfMaxMins = j-2;
+
 	for(i=0;i<numberOfPoints;i++){
 		theTimeHdl[i].flag = 0;
 		
-		if(minBFloodSpeed>0.0){
+        if(GetFloodEbbKey(theTimeHdl[i].val,
+					   TArrayPtr,
+					   OldMaxMinFlagPtr,
+					   CArrayPtr,
+					   NoOfMaxMins,
+					   &flag))
+        {
+				uHdl[i] = 0.0;
+				vHdl[i] = 0.0;
+                continue;
+		}
+
+		if(minBFloodSpeed>0.0 && (flag == 0 || flag == 1)){
 			uVel = speedHdl[i];
-			if(uVel>0.0){
+			//if(uVel>0.0){
 				uMag = uVel;
 				if(uMag<=minBFloodSpeed){
 					theTimeHdl[i].flag = 1;
 				}
-			}
+			//}
 		}
 
-		if(minBEbbSpeed>0.0){
+		if(minBEbbSpeed>0.0 && (flag == 2 || flag == 3)){
 			uVel = speedHdl[i];
-			if(uVel<0.0){
+			//if(uVel<0.0){
 				uMag = fabs(uVel);
 				if(uMag<=minBFloodSpeed){
 					theTimeHdl[i].flag = 1;
 				}
-			}
+			//}
 		}
 		
 		// OK if rotKey == 0 then we zero out the
@@ -1938,7 +2046,14 @@ short OffsetUV ( COMPCURRENTS *answers,		// Current-time struc with answers
 	answers->u = uHdl;
 	answers->v = vHdl;
 	
-	return 0;
+Error:
+	
+	if (CArrayPtr) delete [] CArrayPtr;
+	if (TArrayPtr) delete [] TArrayPtr;
+	if (OldMaxMinFlagPtr) delete [] OldMaxMinFlagPtr;
+
+	//return 0;
+	return errorFlag;
 }
 
 // ************************************************************

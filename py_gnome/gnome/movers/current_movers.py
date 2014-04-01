@@ -4,46 +4,39 @@ Movers using currents and tides as forcing functions
 
 import os
 import copy
-from datetime import datetime, timedelta
 
-from gnome.movers import CyMover
+from colander import (SchemaNode, Bool, String, Float, drop)
+
+from gnome.persist.base_schema import ObjType, WorldPoint, LongLat
+
+from gnome.movers import CyMover, MoverSchema
 from gnome import environment
 from gnome.utilities import serializable
 from gnome.cy_gnome import cy_cats_mover, cy_shio_time, cy_ossm_time, \
-    cy_gridcurrent_mover
+    cy_gridcurrent_mover, cy_component_mover
+
+
+class CatsMoverSchema(ObjType, MoverSchema):
+    '''static schema for CatsMover'''
+    filename = SchemaNode(String(), missing=drop)
+    scale = SchemaNode(Bool())
+    scale_refpoint = WorldPoint(missing=drop)
+    scale_value = SchemaNode(Float())
 
 
 class CatsMover(CyMover, serializable.Serializable):
 
-    state = copy.deepcopy(CyMover.state)
+    _state = copy.deepcopy(CyMover._state)
 
     _update = ['scale', 'scale_refpoint', 'scale_value']
-    _create = ['tide_id']
+    _create = []
     _create.extend(_update)
-    state.add(update=_update, create=_create, read=['tide_id'])
-    state.add_field(serializable.Field('filename', create=True,
-                    read=True, isdatafile=True))
-
-    @classmethod
-    def new_from_dict(cls, dict_):
-        """
-        define in WindMover and check wind_id matches wind
-        
-        invokes: super(WindMover,cls).new_from_dict(dict_)
-        """
-
-        if 'tide' in dict_:
-            try:
-                if dict_.get('tide').id != dict_.pop('tide_id'):
-                    raise ValueError('id of tide object does not match the tide_id parameter'
-                            )
-            except KeyError, ex:
-                ex.args = \
-                    ("Found 'tide' in dict but no '{0}' key".format(ex.args[0]),
-                     )
-                raise ex
-
-        return super(CatsMover, cls).new_from_dict(dict_)
+    _state.add(update=_update, create=_create)
+    _state.add_field([serializable.Field('filename', create=True,
+                                read=True, isdatafile=True, test_for_eq=False),
+                      serializable.Field('tide', create=True,
+                                update=True, save_reference=True)])
+    _schema = CatsMoverSchema
 
     def __init__(
         self,
@@ -106,8 +99,8 @@ class CatsMover(CyMover, serializable.Serializable):
     # Properties
 
     scale = property(lambda self: bool(self.mover.scale_type),
-                     lambda self, val: setattr(self.mover, 'scale_type'
-                     , int(val)))
+                     lambda self, val: setattr(self.mover,
+                            'scale_type', int(val)))
     scale_refpoint = property(lambda self: self.mover.ref_point,
                               lambda self, val: setattr(self.mover,
                               'ref_point', val))
@@ -115,19 +108,6 @@ class CatsMover(CyMover, serializable.Serializable):
     scale_value = property(lambda self: self.mover.scale_value,
                            lambda self, val: setattr(self.mover,
                            'scale_value', val))
-
-    # a test case for colander.drop
-    # ===========================================================================
-    # def scale_refpoint_to_dict(self):
-    #     if self.scale_refpoint is None:
-    #         return (None, None, None)
-    # ===========================================================================
-
-    def tide_id_to_dict(self):
-        if self.tide is None:
-            return None
-        else:
-            return self.tide.id
 
     @property
     def tide(self):
@@ -148,32 +128,52 @@ class CatsMover(CyMover, serializable.Serializable):
 
         self._tide = tide_obj
 
-    def from_dict(self, dict_):
+    def serialize(self, do='update'):
         """
-        For updating the object from dictionary
-        
-        'tide' object is not part of the state since it is not serialized/deserialized;
-        however, user can still update the tide attribute with a new Tide object. That must
-        be poped out of the dict here, then call super to process the standard dict_
+        Since 'wind' property is saved as a reference when used in save file
+        and 'create' option, need to add appropriate node to WindMover schema
         """
+        dict_ = self.to_dict(do)
+        #schema = CatsMover._schema()
+        schema = self.__class__._schema()
+        if do == 'update' and 'tide' in dict_:
+            schema.add(environment.TideSchema())
 
-        if 'tide' in dict_ and dict_.get('tide') is not None:
-            self.tide = dict_.pop('tide')
+        json_ = schema.serialize(dict_)
 
-        super(CatsMover, self).from_dict(dict_)
+        return json_
+
+    @classmethod
+    def deserialize(cls, json_):
+        """
+        append correct schema for wind object
+        """
+        #schema = CatsMover._schema()
+        schema = cls._schema()
+        if 'tide' in json_:
+            schema.add(environment.TideSchema())
+        _to_dict = schema.deserialize(json_)
+
+        return _to_dict
+
+
+class GridCurrentMoverSchema(ObjType, MoverSchema):
+    filename = SchemaNode(String(), missing=drop)
+    topology_file = SchemaNode(String(), missing=drop)
 
 
 class GridCurrentMover(CyMover, serializable.Serializable):
 
     _update = ['uncertain_duration', 'uncertain_time_delay',
                'uncertain_cross', 'uncertain_along', 'current_scale']
-    state = copy.deepcopy(CyMover.state)
+    _state = copy.deepcopy(CyMover._state)
 
-    state.add(update=_update)
-    state.add_field([serializable.Field('filename', create=True,
-                    read=True, isdatafile=True),
+    _state.add(update=_update)
+    _state.add_field([serializable.Field('filename', create=True,
+                    read=True, isdatafile=True, test_for_eq=False),
                     serializable.Field('topology_file', create=True,
-                    read=True, isdatafile=True)])
+                    read=True, isdatafile=True, test_for_eq=False)])
+    _schema = GridCurrentMoverSchema
 
     def __init__(
         self,
@@ -248,7 +248,7 @@ class GridCurrentMover(CyMover, serializable.Serializable):
         return info.format(self.mover, self)
 
     def __str__(self):
-        info = 'GridCurrentMover - current state.\n' \
+        info = 'GridCurrentMover - current _state.\n' \
             + '  uncertain_duration={0.uncertain_duration}\n' \
             + '  uncertain_time_delay={0.uncertain_time_delay}\n' \
             + '  uncertain_cross={0.uncertain_cross}\n' \
@@ -257,7 +257,6 @@ class GridCurrentMover(CyMover, serializable.Serializable):
             + '  active_stop time={1.active_stop}' \
             + '  current on/off status={1.on}'
         return info.format(self.mover, self)
-
 
     # Define properties using lambda functions: uses lambda function, which are
     #accessible via fget/fset as follows:
@@ -324,4 +323,206 @@ class GridCurrentMover(CyMover, serializable.Serializable):
         off_set_time = self.mover.get_offset_time()/3600.
         return (self.mover.get_offset_time())/3600.
 
+
+class ComponentMoverSchema(ObjType, MoverSchema):
+    '''static schema for ComponentMover'''
+    filename1 = SchemaNode(String(), missing=drop)
+    filename2 = SchemaNode(String(), missing=drop)
+    #scale = SchemaNode(Bool())
+    #ref_point = WorldPoint(missing=drop)
+    ref_point = LongLat(missing=drop)
+    #scale_value = SchemaNode(Float())
+
+
+class ComponentMover(CyMover, serializable.Serializable):
+
+    _state = copy.deepcopy(CyMover._state)
+
+    _update = [ 'ref_point', 'pat1_angle', 'pat1_speed', 'pat1_speed_units', 'pat1_scale_to_value',
+                    'pat2_angle', 'pat2_speed', 'pat2_speed_units', 'pat2_scale_to_value']
+    _create = []
+    _create.extend(_update)
+    _state.add(update=_update, create=_create)
+    _state.add_field([serializable.Field('filename1', create=True,
+                    read=True, isdatafile=True, test_for_eq=False),
+                      serializable.Field('filename2', create=True,
+                    read=True, isdatafile=True, test_for_eq=False),
+                      serializable.Field('wind', create=True,
+                                update=True, save_reference=True)])
+    _schema = ComponentMoverSchema
+
+    def __init__(
+        self,
+        filename1,
+        filename2=None,
+        wind=None,
+        **kwargs
+        ):
+        """
+        Uses super to invoke base class __init__ method. 
+        
+        :param filename: file containing currents for first Cats pattern
+        
+        Optional parameters (kwargs). Defaults are defined by CyCatsMover object.
+        
+        :param filename: file containing currents for second Cats pattern
+        
+        :param wind: a gnome.environment.Wind object to be used to drive the CatsMovers
+        will want a warning that mover will not be active without a wind
+        :param scale: a boolean to indicate whether to scale value at reference point or not
+        :param scale_value: value used for scaling at reference point
+        :param scale_refpoint: reference location (long, lat, z). The scaling applied to all data is determined by scaling the 
+                               raw value at this location.
+        
+        Remaining kwargs are passed onto Mover's __init__ using super. 
+        See Mover documentation for remaining valid kwargs.
+        """
+
+        if not os.path.exists(filename1):
+            raise ValueError('Path for Cats filename1 does not exist: {0}'.format(filename1))
+
+        if filename2 is not None:
+            if not os.path.exists(filename2):
+                raise ValueError('Path for Cats filename2 does not exist: {0}'.format(filename2))
+
+        self.filename1 = filename1  
+        self.filename2 = filename2  
+
+        self.mover = cy_component_mover.CyComponentMover()	# pass in parameters
+        self.mover.text_read(filename1, filename2)
+
+        self._wind = None
+        if wind is not None:
+            self.wind = wind
+
+        #self.scale = kwargs.pop('scale', self.mover.scale_type)
+        #self.scale_value = kwargs.get('scale_value',
+                #self.mover.scale_value)
+
+        # todo: no need to check for None since properties that are None are not persisted
+
+	
+        # I think this is required...
+        if 'scale_refpoint' in kwargs:
+            self.scale_refpoint = kwargs.pop('scale_refpoint')
+
+#         if self.scale and self.scale_value != 0.0 \
+#             and self.scale_refpoint is None:
+#             raise TypeError("Provide a reference point in 'scale_refpoint'."
+#                             )
+
+        super(ComponentMover, self).__init__(**kwargs)
+
+    def __repr__(self):
+        """
+        unambiguous representation of object
+        """
+
+        info = 'ComponentMover(filename={0})'.format(self.filename1)
+        return info
+
+    # Properties
+
+#     scale_type = property(lambda self: bool(self.mover.scale_type),
+#                      lambda self, val: setattr(self.mover, 'scale_type'
+#                      , int(val)))
+                     
+#     scale_by = property(lambda self: bool(self.mover.scale_by),
+#                      lambda self, val: setattr(self.mover, 'scale_by'
+#                      , int(val)))
+
+    ref_point = property(lambda self: self.mover.ref_point,
+                              lambda self, val: setattr(self.mover,
+                              'ref_point', val))
+
+    pat1_angle = property(lambda self: self.mover.pat1_angle,
+                           lambda self, val: setattr(self.mover,
+                           'pat1_angle', val))
+
+    pat1_speed = property(lambda self: self.mover.pat1_speed,
+                           lambda self, val: setattr(self.mover,
+                           'pat1_speed', val))
+
+    pat1_speed_units = property(lambda self: self.mover.pat1_speed_units,
+                           lambda self, val: setattr(self.mover,
+                           'pat1_speed_units', val))
+
+    pat1_scale_to_value = property(lambda self: self.mover.pat1_scale_to_value,
+                           lambda self, val: setattr(self.mover,
+                           'pat1_scale_to_value', val))
+
+    pat2_angle = property(lambda self: self.mover.pat2_angle,
+                           lambda self, val: setattr(self.mover,
+                           'pat2_angle', val))
+
+    pat2_speed = property(lambda self: self.mover.pat2_speed,
+                           lambda self, val: setattr(self.mover,
+                           'pat2_speed', val))
+
+    pat2_speed_units = property(lambda self: self.mover.pat2_speed_units,
+                           lambda self, val: setattr(self.mover,
+                           'pat2_speed_units', val))
+
+    pat2_scale_to_value = property(lambda self: self.mover.pat2_scale_to_value,
+                           lambda self, val: setattr(self.mover,
+                           'pat2_scale_to_value', val))
+                           
+
+
+    @property
+    def wind(self):
+        return self._wind
+
+    @wind.setter
+    def wind(self, wind_obj):
+        if not isinstance(wind_obj, environment.Wind):
+            raise TypeError('wind must be of type environment.Wind')
+
+        self.mover.set_ossm(wind_obj.ossm)
+
+        self._wind = wind_obj
+
+#     def from_dict(self, dict_):
+#         """
+#         For updating the object from dictionary
+#         
+#         'wind' object is not part of the _state since it is not serialized/deserialized;
+#         however, user can still update the tide attribute with a new Wind object. That must
+#         be popped out of the dict here, then call super to process the standard dict_
+#         """
+# 
+#         if 'wind' in dict_ and dict_.get('wind') is not None:
+#             self.wind = dict_.pop('wind')
+# 
+#         super(ComponentMover, self).from_dict(dict_)
+# 
+    def serialize(self, do='update'):
+        """
+        Since 'wind' property is saved as a reference when used in save file
+        and 'create' option, need to add appropriate node to WindMover schema
+        """
+        dict_ = self.to_dict(do)
+        #schema = movers_schema.ComponentMover()
+        schema = self.__class__._schema()
+        if do == 'update' and 'wind' in dict_:
+            #schema.add(Wind())
+            schema.add(environment.WindSchema())
+
+        json_ = schema.serialize(dict_)
+
+        return json_
+
+    @classmethod
+    def deserialize(cls, json_):
+        """
+        append correct schema for wind object
+        """
+        #schema = movers_schema.ComponentMover()
+        schema = cls._schema()
+        if 'wind' in json_:
+            #schema.add(Wind())
+            schema.add(environment.WindSchema())
+        _to_dict = schema.deserialize(json_)
+
+        return _to_dict
 

@@ -36,7 +36,9 @@ Latitude-Longitude
 
 Diffusion Coefficients
    Diffusion coefficients (for both vertical and horizontal random diffusion) are given in units of square centimeters per second cm^2/s
-   
+
+Droplet Diameter
+   Droplet Diameter is given and returned in meters   
 
 
 

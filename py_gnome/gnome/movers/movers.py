@@ -1,11 +1,31 @@
 import copy
 
-import numpy as np
+import numpy
+np = numpy
+from colander import (SchemaNode, MappingSchema, Bool, drop)
 
-from gnome import basic_types, GnomeId
+from gnome.persist.validators import convertible_to_seconds
+from gnome.persist.extend_colander import LocalDateTime
+
+from gnome import GnomeId
+#from gnome import basic_types
+from gnome.basic_types import (world_point,
+                               world_point_type,
+                               spill_type,
+                               status_code_type)
+
 from gnome.utilities import inf_datetime
 from gnome.utilities import time_utils, serializable
 from gnome.cy_gnome.cy_rise_velocity_mover import CyRiseVelocityMover
+
+
+class MoverSchema(MappingSchema):
+    'base mover schema - common to all movers'
+    on = SchemaNode(Bool(), default=True, missing=True)
+    active_start = SchemaNode(LocalDateTime(), missing=drop,
+                              validator=convertible_to_seconds)
+    active_stop = SchemaNode(LocalDateTime(), missing=drop,
+                             validator=convertible_to_seconds)
 
 
 class Mover(object):
@@ -17,10 +37,12 @@ class Mover(object):
     defined here. The get_move(...) method needs to be implemented by the
     derived class.
 
+    NOTE: Since base Mover class is not Serializable, it does not need
+    a class level _schema attribute
     """
 
-    state = copy.deepcopy(serializable.Serializable.state)
-    state.add(update=['on', 'active_start', 'active_stop'],
+    _state = copy.deepcopy(serializable.Serializable._state)
+    _state.add(update=['on', 'active_start', 'active_stop'],
               create=['on', 'active_start', 'active_stop'],
               read=['active'])
 
@@ -158,12 +180,10 @@ class CyMover(Mover):
         # produces errors, so that is not initialized here
 
         self.model_time = 0
-        self.positions = np.zeros((0, 3),
-                                  dtype=basic_types.world_point_type)
-        self.delta = np.zeros((0, 3),
-                              dtype=basic_types.world_point_type)
-        self.status_codes = np.zeros((0, 1),
-                dtype=basic_types.status_code_type)
+        self.positions = np.zeros((0, 3), dtype=world_point_type)
+        self.delta = np.zeros((0, 3), dtype=world_point_type)
+        self.status_codes = np.zeros((0, 1), dtype=status_code_type)
+
         # either a 1, or 2 depending on whether spill is certain or not
         self.spill_type = 0
 
@@ -239,8 +259,8 @@ class CyMover(Mover):
                 self.spill_type,
                 )
 
-        return self.delta.view(dtype=basic_types.world_point_type).reshape((-1,
-                len(basic_types.world_point)))
+        return self.delta.view(dtype=world_point_type).reshape((-1,
+                len(world_point)))
 
     def prepare_data_for_get_move(self, sc, model_time_datetime):
         """
@@ -263,17 +283,17 @@ class CyMover(Mover):
                              'data arrays\n' + err.message)
 
         if sc.uncertain:
-            self.spill_type = basic_types.spill_type.uncertainty
+            self.spill_type = spill_type.uncertainty
         else:
-            self.spill_type = basic_types.spill_type.forecast
+            self.spill_type = spill_type.forecast
 
         # Array is not the same size, change view and reshape
 
         self.positions = \
-            self.positions.view(dtype=basic_types.world_point).reshape(
+            self.positions.view(dtype=world_point).reshape(
                                                     (len(self.positions),))
         self.delta = np.zeros(len(self.positions),
-                              dtype=basic_types.world_point)
+                              dtype=world_point)
 
     def model_step_is_done(self, sc=None):
         """
@@ -298,118 +318,3 @@ class CyMover(Mover):
         else:
             if self.active:
                 self.mover.model_step_is_done()
-
-
-class WeatheringMover(Mover):
-
-    """
-    Python Weathering mover
-
-    """
-
-    def __init__(
-        self,
-        wind,
-        uncertain_duration=10800,
-        uncertain_time_delay=0,
-        uncertain_speed_scale=2.,
-        uncertain_angle_scale=0.4,
-        **kwargs
-        ):
-        """
-        :param wind: wind object
-        :param active: active flag
-        :param uncertain_duration:     Used by the cython wind mover.  We may still need these.
-        :param uncertain_time_delay:   Used by the cython wind mover.  We may still need these.
-        :param uncertain_speed_scale:  Used by the cython wind mover.  We may still need these.
-        :param uncertain_angle_scale:  Used by the cython wind mover.  We may still need these.
-        """
-
-        self.wind = wind
-        self.uncertain_duration = uncertain_duration
-        self.uncertain_time_delay = uncertain_time_delay
-        self.uncertain_speed_scale = uncertain_speed_scale
-        self.uncertain_angle_scale = uncertain_angle_scale
-
-        super(WeatheringMover, self).__init__(**kwargs)
-
-    def __repr__(self):
-        return 'WeatheringMover( wind=<wind_object>, uncertain_duration= %s, uncertain_time_delay=%s, uncertain_speed_scale=%s, uncertain_angle_scale=%s)' \
-            % (self.uncertain_duration, self.uncertain_time_delay,
-               self.uncertain_speed_scale, self.uncertain_angle_scale)
-
-    def validate_spill(self, spill):
-        try:
-            self.positions = spill['positions']
-
-            # reshape to our needs
-
-            self.positions = \
-                self.positions.view(dtype=basic_types.world_point).reshape((len(self.positions),
-                    ))
-            self.status_codes = spill['status_codes']
-        except KeyError, err:
-            raise ValueError('The spill does not have the required data arrays\n'
-                              + err.message)
-
-        # create an array of position deltas
-
-        self.delta = np.zeros(len(self.positions),
-                              dtype=basic_types.world_point)
-
-        if spill.uncertain:
-            self.spill_type = basic_types.spill_type.uncertainty
-        else:
-            self.spill_type = basic_types.spill_type.forecast
-
-    def prepare_for_model_step(
-        self,
-        sc,
-        time_step,
-        model_time_datetime,
-        ):
-        """
-        Right now this method just calls its super() method.
-        """
-
-        super(WeatheringMover, self).prepare_for_model_step(sc,
-                time_step, model_time_datetime)
-
-    def get_move(
-        self,
-        sc,
-        time_step,
-        model_time_datetime,
-        ):
-        """
-        :param spill: spill object
-        :param time_step: time step in seconds
-        :param model_time_datetime: current time of the model as a date time object
-        """
-
-        # validate our spill object
-
-        self.validate_spill(sc)
-
-        self.model_time = self.datetime_to_seconds(model_time_datetime)
-
-        # self.prepare_data_for_get_move(sc, model_time_datetime)
-
-        if self.active and len(self.positions) > 0:
-
-            # self.mover.get_move(  self.model_time,
-            #                      time_step,
-            #                      self.positions,
-            #                      self.delta,
-            #                      self.status_codes,
-            #                      self.spill_type,
-            #                      0)    # only ever 1 spill_container so this is always 0!
-
-            pass
-
-        # return self.delta
-
-        return self.delta.view(dtype=basic_types.world_point_type).reshape((-1,
-                len(basic_types.world_point)))
-
-

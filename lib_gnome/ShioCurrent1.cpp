@@ -593,7 +593,7 @@ short CurveFitOffsetCurve(COMPCURRENTS *answers,
 	double t;
 	short EbbToMinBFlood = 0, MinBFloodToFlood = 1;
 	short FloodToMinBEbb=2, MinBEbbToEbb=3;
-	short FloodToEbb=4, EbbToFlood=5;
+	short FloodToEbb=4, EbbToFlood=5, FloodToFlood=6, EbbToEbb=7;
 	short maxFlood = 1, minBFlood = 0, maxEbb = 3, minBEbb = 2;
 	double previousTime,nextTime,previousValue,nextValue;
 	double previousMinusOneTime,previousMinusOneValue;
@@ -671,9 +671,9 @@ short CurveFitOffsetCurve(COMPCURRENTS *answers,
             j++;
 	    }	
     // 04/16/2013 - G.K.:
-   /* NoOfMaxMins = j-2;
+    NoOfMaxMins = j-2;
 	
-	for (i=0; i< (NoOfMaxMins+2); i++){
+	/* for (i=0; i< (NoOfMaxMins+2); i++){
 		CArrayPtr[i] = MaxMinHdl[i];
 		TArrayPtr[i].val = MaxMinTimeHdl[i].val;
 		OldMaxMinFlagPtr[i] = MaxMinFlagHdl[i];
@@ -684,6 +684,8 @@ short CurveFitOffsetCurve(COMPCURRENTS *answers,
 		
 	numOfPoints = answers->nPts;
 		
+	zeroSlope = 0.0;
+			
  	for (i=0; i<numOfPoints; i++){
 	
 		t= startTime + i * (timestep/60.0);
@@ -696,7 +698,7 @@ short CurveFitOffsetCurve(COMPCURRENTS *answers,
 					  OldMaxMinFlagPtr,
 					  CArrayPtr,
 					  NoOfMaxMins,
-					   &flag);
+					  &flag);
 		
 		if(errorFlag == 0){
 				 		
@@ -715,8 +717,6 @@ short CurveFitOffsetCurve(COMPCURRENTS *answers,
 						&nextPlusOneValue,
 					 	0);
 						
-			zeroSlope = 0.0;
-			
 			if(flag==FloodToMinBEbb){
 				flag = 1;
 	 			DoHermite(zeroSlope,previousMinusOneTime,previousValue,previousTime,
@@ -757,6 +757,18 @@ short CurveFitOffsetCurve(COMPCURRENTS *answers,
 	 		          nextTime,zeroSlope,nextPlusOneTime,t,
 					  &SpeedValue,flag);
 			}
+            else if(flag==FloodToFlood){
+                flag = 0;
+	 			DoHermite(previousMinusOneValue,previousMinusOneTime,previousValue,previousTime,nextValue,
+	 		          nextTime,nextPlusOneValue,nextPlusOneTime,t,
+					  &SpeedValue,flag);
+            }
+            else if(flag==EbbToEbb){
+                flag = 0;
+	 			DoHermite(previousMinusOneValue,previousMinusOneTime,previousValue,previousTime,nextValue,
+	 		          nextTime,nextPlusOneValue,nextPlusOneTime,t,
+					  &SpeedValue,flag);
+            }
 			
 			TimeHdl[i].val = t;
 	 		ValHdl[i] = SpeedValue;
@@ -933,8 +945,10 @@ short DoOffSetCurrents (COMPCURRENTS *answers,  // Hdl to reference station heig
 		//if(rotFlag==3){
 			errorFlag = OffsetUV (answers,offset);
 		//}
-		return errorFlag;
-	}
+        // 02/24/14 G.K. - commented out next to apply interpolation cases for main stations too
+        // TODO: test it more for all key cases and rotary stations
+        // return errorFlag;	
+    }
 	
 	// OK we are OK with max and min corrections
 	// We now need to fix the full array
@@ -2246,7 +2260,7 @@ short GetFloodEbbKey(double t,
 	short i;
 	short EbbToMinBFlood = 0, MinBFloodToFlood = 1;
 	short FloodToMinBEbb=2, MinBEbbToEbb=3;
-	short FloodToEbb=4, EbbToFlood=5;
+	short FloodToEbb=4, EbbToFlood=5, FloodToFlood=6, EbbToEbb=7;
 	short errorFlag,previousIndex,nextIndex;
 	double previousValue,nextValue;
 	short maxFlood = 1, minBFlood = 0, maxEbb = 3, minBEbb = 2;
@@ -2338,7 +2352,7 @@ short GetFloodEbbKey(double t,
 		}
 	}
 	
-	// Now look for wierd ones with no zero velocities
+	// Now look for weird ones with no zero velocities
 
 	if(MaxMinFlagPtr[previousIndex]==minBFlood){
 		if(MaxMinFlagPtr[nextIndex]==maxFlood){
@@ -2366,6 +2380,12 @@ short GetFloodEbbKey(double t,
 			*flag = FloodToMinBEbb;
 			return 0;
 		}
+        // 03/05/2014 G.K.: multiple flood case
+		if(MaxMinFlagPtr[nextIndex] == maxFlood)
+        {
+			*flag = FloodToFlood;
+			return 0;
+		}
 		return 40;
 	}
 
@@ -2376,6 +2396,12 @@ short GetFloodEbbKey(double t,
 		}
 		if(MaxMinFlagPtr[nextIndex]==minBFlood){
 			*flag = EbbToMinBFlood;
+			return 0;
+		}
+        // 03/05/2014 G.K.: multiple ebb case
+		if(MaxMinFlagPtr[nextIndex] == maxEbb)
+        {
+			*flag = EbbToEbb;
 			return 0;
 		}
 		return 40;

@@ -10,7 +10,9 @@ Adds some for Python-only use
 """
 
 import sys
-import numpy as np
+
+import numpy
+np = numpy
 
 from cy_gnome.cy_basic_types import *  # pull everything from the cython code
 
@@ -87,3 +89,20 @@ status_code_type = np.int16
 # id_type is dtype for numpy array for 'spill_num'. This is NOT currently passed to C++
 
 id_type = np.uint16
+
+
+#------------------------------------------------
+# NOTE: This is only used to test that the python time_utils
+# converts from date to sec and sec to date in the same way
+# as the C++ code. Currently, cy_helpers defines the CyDateTime
+# class which is merely used for testing the time_utils conversions
+# test_cy_helpers.TestCyDateTime class contians these tests
+date_rec = np.dtype([
+        ('year', np.short),
+        ('month', np.short),
+        ('day', np.short),
+        ('hour', np.short),
+        ('minute', np.short),
+        ('second', np.short),
+        ('dayOfWeek', np.short),
+        ], align=True)

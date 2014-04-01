@@ -1,5 +1,6 @@
 import os
 from datetime import datetime
+import shutil
 
 import numpy as np
 import pytest
@@ -7,7 +8,7 @@ import pytest
 from hazpy import unit_conversion
 
 from gnome.basic_types import datetime_value_2d, velocity_rec
-from gnome.environment import Wind, ConstantWind
+from gnome.environment import Wind, constant_wind
 
 data_dir = os.path.join(os.path.dirname(__file__), 'sample_data')
 wind_file = os.path.join(data_dir, 'WindDataFromGnome.WND')
@@ -396,7 +397,7 @@ def test_constant_wind():
     tests the utility function for creating a constant wind
     """
 
-    wind = ConstantWind(10, 45, 'knots')
+    wind = constant_wind(10, 45, 'knots')
 
     dt = datetime(2013, 1, 10, 12, 0)
     assert np.allclose(wind.get_timeseries(datetime=dt, units='knots'
@@ -434,7 +435,7 @@ def test_new_from_dict_timeseries():
     create a new wind object and make sure it has same properties
     """
 
-    wm = ConstantWind(10, 45, 'knots')
+    wm = constant_wind(10, 45, 'knots')
     wm_state = wm.to_dict('create')
     print wm_state
 
@@ -443,6 +444,26 @@ def test_new_from_dict_timeseries():
     wm2 = Wind.new_from_dict(wm_state)
 
     assert wm == wm2
+
+
+@pytest.mark.parametrize(("do"), ['create', 'update'])
+def test_serialize_deserialize(wind_circ, do):
+    '''
+    wind_circ is a fixture
+    create - it creates new object after serializing original object
+        and tests equality of the two
+
+    update - tests serialize/deserialize and from_dict methods don't fail.
+        It doesn't update any properties.
+    '''
+    json_ = wind_circ['wind'].serialize(do)
+    dict_ = Wind.deserialize(json_)
+    if do == 'create':
+        new_w = Wind.new_from_dict(dict_)
+        assert new_w == wind_circ['wind']
+    else:
+        wind_circ['wind'].from_dict(dict_)
+        assert True
 
 
 def test_from_dict():
@@ -467,3 +488,20 @@ def test_from_dict():
     assert np.all(wm.timeseries['value'][0] == update_value)
 
 
+def test_eq():
+    """
+    tests the filename is not used for testing equality
+    even if filename changes but other attributes are the same, the objects
+    are equal
+    """
+    w = Wind(filename=wind_file)
+    w1 = Wind(filename=wind_file)
+    assert w == w1
+
+    p, f = os.path.split(wind_file)
+    f, e = os.path.splitext(f)
+    w_copy = os.path.join(p, '{0}_copy{1}'.format(f, e))
+    shutil.copy(wind_file, w_copy)
+    w2 = Wind(filename=w_copy)
+    w2.updated_at = w.updated_at    # match these before testing
+    assert w == w2

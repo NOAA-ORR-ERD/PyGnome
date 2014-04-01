@@ -1,7 +1,7 @@
 
 from cornice.resource import resource, view
 
-from gnome.persist import movers_schema
+from gnome.movers.random_movers import RandomMoverSchema
 
 from webgnome import util
 from webgnome import schema
@@ -133,7 +133,7 @@ class RandomMover(BaseResource):
         mover = model.movers.get(self.id)
         mover.from_dict(data)
 
-        return movers_schema.RandomMover().bind().serialize(mover.to_dict())
+        return RandomMoverSchema().bind().serialize(mover.to_dict())
 
     @view(validators=util.valid_mover_id)
     def delete(self):

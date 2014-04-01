@@ -17,7 +17,7 @@
 
 #include "netcdf.h"
 
-Boolean IsGridWindFile(char *path,short *selectedUnitsP)
+/*Boolean IsGridWindFile(char *path,short *selectedUnitsP)
 {
 	
 	Boolean	bIsValid = false;
@@ -56,7 +56,7 @@ done:
 		*selectedUnitsP = selectedUnits;
 	}
 	return bIsValid;
-}
+}*/
 
 TimeGridWindRect_c::TimeGridWindRect_c() : TimeGridVel_c()
 {
@@ -1494,7 +1494,7 @@ OSErr TimeGridWindCurv_c::ReorderPoints(char* errmsg)
 	OSErr err = 0;
 	
 	LONGH landWaterInfo = (LONGH)_NewHandleClear(fNumRows * fNumCols * sizeof(long));
-	LONGH maskH2 = (LONGH)_NewHandleClear(nv_ext * sizeof(long));
+	//LONGH maskH2 = (LONGH)_NewHandleClear(nv_ext * sizeof(long));
 	
 	LONGH ptIndexHdl = (LONGH)_NewHandleClear(nv_ext * sizeof(**ptIndexHdl));
 	LONGH verdatPtsH = (LONGH)_NewHandleClear(nv_ext * sizeof(**verdatPtsH));
@@ -1512,7 +1512,7 @@ OSErr TimeGridWindCurv_c::ReorderPoints(char* errmsg)
 	
 	VelocityFH velocityH = 0;
 	
-	if (!landWaterInfo || !ptIndexHdl || !gridCellInfo || !verdatPtsH || !maskH2) {err = memFullErr; goto done;}
+	if (!landWaterInfo || !ptIndexHdl || !gridCellInfo || !verdatPtsH /*|| !maskH2*/) {err = memFullErr; goto done;}
 	
 	err = ReadTimeData(indexOfStart,&velocityH,errmsg);	// try to use velocities to set grid
 	
@@ -1786,7 +1786,7 @@ done:
 			fGrid = 0;
 		}
 		if (verdatPtsH) {DisposeHandle((Handle)verdatPtsH); verdatPtsH = 0;}
-		if (maskH2) {DisposeHandle((Handle)maskH2); maskH2 = 0;}
+		//if (maskH2) {DisposeHandle((Handle)maskH2); maskH2 = 0;}
 	}
 	if (velocityH) {DisposeHandle((Handle)velocityH); velocityH = 0;}
 	return err;

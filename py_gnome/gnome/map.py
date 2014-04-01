@@ -27,45 +27,52 @@ This is a re-write of the C++ raster map approach
 
 import copy
 
-import numpy as np
+import numpy
+np = numpy
+from colander import SchemaNode, MappingSchema, String, Float, drop
 
 from gnome import GnomeId
+from gnome.persist import base_schema
 
-from gnome.utilities import map_canvas, serializable
+from gnome.utilities.map_canvas import BW_MapCanvas
+from gnome.utilities.serializable import Serializable, Field
 from gnome.utilities.file_tools import haz_files
 
 from gnome.basic_types import oil_status, world_point_type
 from gnome.cy_gnome.cy_land_check import check_land
 
-from gnome.utilities.geometry.cy_point_in_polygon import points_in_poly, \
-    point_in_poly
-
+from gnome.utilities.geometry.cy_point_in_polygon import (points_in_poly,
+                                                          point_in_poly)
 from gnome.utilities.geometry.polygons import PolygonSet
 
 
-class GnomeMap(serializable.Serializable):
+class GnomeMapSchema(base_schema.ObjType):
+    map_bounds = base_schema.LongLatBounds()
+    spillable_area = base_schema.LongLatBounds(missing=drop)
 
+
+class MapFromBNASchema(base_schema.ObjType):
+    filename = SchemaNode(String())
+    refloat_halflife = SchemaNode(Float())
+
+
+class GnomeMap(Serializable):
     """
     The very simplest map for GNOME -- all water
     with only a bounding box for the map bounds.
 
     This also serves as a description of the interface
     """
-
     _update = ['map_bounds', 'spillable_area']
     _create = []
     _create.extend(_update)
-    state = copy.deepcopy(serializable.Serializable.state)
-    state.add(create=_create, update=_update)
+    _state = copy.deepcopy(Serializable._state)
+    _state.add(create=_create, update=_update)
+    _schema = GnomeMapSchema
 
     refloat_halflife = None  # note -- no land, so never used
 
-    def __init__(
-        self,
-        map_bounds=None,
-        spillable_area=None,
-        id=None,
-        ):
+    def __init__(self, map_bounds=None, spillable_area=None, id=None):
         """
         This __init__ will be different for other implementations
 
@@ -85,14 +92,11 @@ class GnomeMap(serializable.Serializable):
             An NX2 array of points that describe a polygon
             if no map bounds is provided -- the whole world is valid
         """
-
         if map_bounds is not None:
             self.map_bounds = np.asarray(map_bounds,
                     dtype=np.float64).reshape(-1, 2)
         else:
-
             # using -360 to 360 to allow stuff to cross the dateline..
-
             self.map_bounds = np.array(((-360, 90), (360, 90), (360,
                     -90), (-360, -90)), dtype=np.float64)
 
@@ -118,9 +122,7 @@ class GnomeMap(serializable.Serializable):
         Note:
           coord is 3-d, but the concept of "on the map" is 2-d in this context,
           so depth is ignored.
-
         """
-
         coords = np.asarray(coords, dtype=world_point_type)
         on_map_mask = points_in_poly(self.map_bounds, coords)
         return on_map_mask
@@ -132,9 +134,7 @@ class GnomeMap(serializable.Serializable):
 
         :return:
          - Always returns False-- no land in this implementation
-
         """
-
         return False
 
     def in_water(self, coords):
@@ -148,14 +148,11 @@ class GnomeMap(serializable.Serializable):
          - False if the point is on land (or off map?)
 
          This implementation has no land, so always True in on the map.
-
         """
-
         return self.on_map(coords)
 
     def allowable_spill_position(self, coord):
         """
-
         :param coord: location for test.
         :type coord: 3-tuple of floats: (long, lat, depth)
 
@@ -165,9 +162,7 @@ class GnomeMap(serializable.Serializable):
 
         .. note:: it could be either off the map, or in a location that
                   spills aren't allowed
-
         """
-
         return points_in_poly(self.spillable_area, coord)
 
     def _set_off_map_status(self, spill):
@@ -178,9 +173,7 @@ class GnomeMap(serializable.Serializable):
 
         :param spill: current SpillContainer
         :type spill:  :class:`gnome.spill_container.SpillContainer`
-
         """
-
         next_positions = spill['next_positions']
         status_codes = spill['status_codes']
         off_map = np.logical_not(self.on_map(next_positions))
@@ -206,9 +199,7 @@ class GnomeMap(serializable.Serializable):
         self._set_off_map_status(spill)
 
         are called.
-
         """
-
         self.resurface_airborne_elements(spill)
         self._set_off_map_status(spill)
 
@@ -223,7 +214,6 @@ class GnomeMap(serializable.Serializable):
         .. note::
             This map class has no land, and so is a no-op.
         """
-
         pass
 
     def resurface_airborne_elements(self, spill_container):
@@ -237,20 +227,16 @@ class GnomeMap(serializable.Serializable):
         .. note::
             While this shouldn't occur according to the physics we're modeling,
             some movers may push elements up too high, or multiple movers may
-            add vertical movement that adds up to over the surface. e.g rise velocity.
+            add vertical movement that adds up to over the surface. e.g rise
+            velocity.
         """
-
         next_positions = spill_container['next_positions']
-
-        # next_positions[:,2] = np.where(next_positions[:,2]<0.0, 0.0,
-        #                               next_positions[:,2])
 
         np.maximum(next_positions[:, 2], 0.0, out=next_positions[:, 2])
         return None
 
 
 class RasterMap(GnomeMap):
-
     """
     A land water map implemented as a raster
 
@@ -259,29 +245,23 @@ class RasterMap(GnomeMap):
     It requires a constant refloat half-life in hours
 
     This will usually be initialized in a sub-class (from a BNA, etc)
-    NOTE: Nothing new added to state attribute for serialization
+    NOTE: Nothing new added to _state attribute for serialization
     """
+    # NOTE: spillable area can be both larger and smaller than land raster:
+    #       map bounds can also be larger or smaller:
+    #            both are done with a point in polygon check
+    #       if map is smaller than land polygons, no need for raster to be
+    #       larger than map -- but no impimented yet.
 
-    # # NOTE: spillable area can be both larger and smaller than land raster:
-    # #       map bounds can also be larger or smaller:
-    # #            both are done with a point in polygon check
-    # #       if map is smaller than land polygons, no need for raster to be
-    # #       larger than map -- but no impimented yet.
-
-    # # flags for what's in the bitmap
-    # # in theory -- it could be used for other data:
-    # #  refloat, other properties?
-    # # note the BW map_canvas only does 1, though.
+    # flags for what's in the bitmap
+    # in theory -- it could be used for other data:
+    #  refloat, other properties?
+    # note the BW map_canvas only does 1, though.
 
     land_flag = 1
 
-    def __init__(
-        self,
-        refloat_halflife,
-        bitmap_array,
-        projection,
-        **kwargs
-        ):
+    def __init__(self, refloat_halflife, bitmap_array, projection,
+                 **kwargs):
         """
         create a new RasterMap
 
@@ -333,22 +313,24 @@ class RasterMap(GnomeMap):
         self._refloat_halflife = value * 3600.0  # convert to seconds
 
     def save_as_image(self, filename):
-        """
+        '''
         Save the land-water raster as a PNG save_as_image
 
-        :param filename: the name of teh file to dave to.
-        """
+        :param filename: the name of the file to save to.
+        '''
+        from PIL import Image
 
-        from PIL import Image 
         bitmap = self.bitmap.copy()
+
         #change anyting not zero to 255 - to get black and white
         np.putmask(bitmap, self.bitmap > 0, 255)
         im = Image.fromarray(bitmap, mode='L')
+
         # to get it oriented right...
         im = im.transpose(Image.ROTATE_90)
         im = im.transpose(Image.FLIP_TOP_BOTTOM)
-        im.save(filename, format='PNG')
 
+        im.save(filename, format='PNG')
 
     def _on_land_pixel(self, coord):
         """
@@ -360,13 +342,10 @@ class RasterMap(GnomeMap):
         .. note:: Only used internally or for testing -- no need for external
                   API to use pixel coordinates.
         """
-
         try:
             return self.bitmap[coord[0], coord[1]] & self.land_flag
         except IndexError:
-
             # not on land if outside the land raster. (Might be off the map!)
-
             return False
 
     def on_land(self, coord):
@@ -380,7 +359,6 @@ class RasterMap(GnomeMap):
 
         .. note:: to_pixel() converts to array of points...
         """
-
         return self._on_land_pixel(self.projection.to_pixel(coord)[0])
 
     def _on_land_pixel_array(self, coords):
@@ -392,24 +370,22 @@ class RasterMap(GnomeMap):
 
         returns: a (N,) array of bools - true for particles that are on land
         """
-
         mask = map(point_in_poly, [self.map_bounds] * len(coords),
                    coords)
         racpy = np.copy(coords)[mask]
         mskgph = self.bitmap[racpy[:, 0], racpy[:, 1]]
         chrmgph = np.array([0] * len(coords))
         chrmgph[np.array(mask)] = mskgph
+
         return chrmgph
 
     def _in_water_pixel(self, coord):
         try:
             return not self.bitmap[coord[0], coord[1]] & self.land_flag
         except IndexError:
-
             # Note: this could be off map, which may be a different thing
             #       than on land....but off the map should have been tested
             #       first
-
             return True
 
     def in_water(self, coord):
@@ -420,17 +396,14 @@ class RasterMap(GnomeMap):
         :param coord: (lon, lat, depth) coordinate
 
         :return: true if the point given by coord is in the water
-
         """
-
         if not self.on_map(coord):
             return False
         else:
-
             # to_pixel makes a NX2 array
-
             return self._in_water_pixel(self.projection.to_pixel(coord,
-                    asint=True)[0])
+                                                                 asint=True)[0]
+                                        )
 
     def beach_elements(self, spill):
         """
@@ -447,12 +420,11 @@ class RasterMap(GnomeMap):
             It must have the following data arrays:
             ('prev_position', 'positions', 'last_water_pt', 'status_code')
         """
-
         self.resurface_airborne_elements(spill)
 
         # pull the data from the spill
-        # # is the last water point the same as the previous position? why not??
-        # # if beached, it won't move, if not, then we can use it?
+        # Is the last water point the same as the previous position? why not??
+        # If beached, it won't move, if not, then we can use it?
 
         start_pos = spill['positions']
         next_pos = spill['next_positions']
@@ -471,12 +443,10 @@ class RasterMap(GnomeMap):
         # call the actual hit code:
         # the status_code and last_water_point arrays are altered in-place
         # only check the ones that aren't already beached?
-
         self._check_land(self.bitmap, start_pos_pixel, next_pos_pixel,
                          status_codes, last_water_pos_pixel)
 
         # transform the points back to lat-long.
-
         beached = status_codes == oil_status.on_land
         next_pos[beached, :2] = \
             self.projection.to_lonlat(next_pos_pixel[beached])
@@ -493,7 +463,6 @@ class RasterMap(GnomeMap):
         :param spill_container: the current spill container
         :type spill_container:  :class:`gnome.spill_container.SpillContainer`
         """
-
         # index into array of particles on_land
 
         r_idx = np.where(spill_container['status_codes']
@@ -514,30 +483,21 @@ class RasterMap(GnomeMap):
             # maybe we should rename refloat_probability since
             # rnd <= refloat_probability to
             # refloat, maybe call it stay_on_land_probability
-
             r_idx = r_idx[np.where(rnd <= refloat_probability)[0]]
-
         elif self._refloat_halflife < 0.0:
-            r_idx = np.array((), np.bool) # fake for nothing gets refloated.
-
+            # fake for nothing gets refloated.
+            r_idx = np.array((), np.bool)
 
         if r_idx.size > 0:
-
             # check is not required, but why do this operation if no particles
             # need to be refloated
-
             spill_container['positions'][r_idx] = \
                 spill_container['last_water_positions'][r_idx]
             spill_container['status_codes'][r_idx] = oil_status.in_water
 
-    def _check_land(
-        self,
-        raster_map,
-        positions,
-        end_positions,
-        status_codes,
-        last_water_positions,
-        ):
+    def _check_land(self, raster_map,
+                    positions, end_positions,
+                    status_codes, last_water_positions):
         """
         Do the actual land-checking.  This method calls a Cython version:
             gnome.cy_gnome.cy_land_check.check_land()
@@ -545,7 +505,6 @@ class RasterMap(GnomeMap):
         The arguments 'status_codes', 'positions' and 'last_water_positions'
         are altered in place.
         """
-
         check_land(raster_map, positions, end_positions, status_codes,
                    last_water_positions)
 
@@ -558,7 +517,6 @@ class RasterMap(GnomeMap):
 
         :param coord: (lon, lat, depth) coordinate
         """
-
         if self.on_map(coord):
             if not self.on_land(coord):
                 if self.spillable_area is None:
@@ -579,28 +537,22 @@ class RasterMap(GnomeMap):
 
         :return: a numpy array of (x, y) pixel values
         """
-
         return self.projection.to_pixel(coords)
 
 
-class MapFromBNA(RasterMap, serializable.Serializable):
-
+class MapFromBNA(RasterMap):
     """
     A raster land-water map, created from a BNA file
     """
+    _state = copy.deepcopy(RasterMap._state)
+    _state.update(['map_bounds', 'spillable_area'], create=False)
+    _state.add(create=['refloat_halflife'], update=['refloat_halflife'])
+    _state.add_field(Field('filename', isdatafile=True, create=True,
+                            read=True, test_for_eq=False))
+    _schema = MapFromBNASchema
 
-    state = copy.deepcopy(RasterMap.state)
-    state.add(create=['refloat_halflife'], update=['refloat_halflife'])
-    state.add_field(serializable.Field('filename', isdatafile=True,
-                    create=True, read=True))
-
-    def __init__(
-        self,
-        filename,
-        refloat_halflife,
-        raster_size=1024 * 1024,
-        **kwargs
-        ):
+    def __init__(self, filename, refloat_halflife, raster_size=1024 * 1024,
+                 **kwargs):
         """
         Creates a GnomeMap (specifically a RasterMap) from a bna file.
         It is expected that you will get the spillable area and map bounds
@@ -623,8 +575,6 @@ class MapFromBNA(RasterMap, serializable.Serializable):
                    This is only used when loading object from save file.
         :type id: string
         """
-
-
         self.filename = filename
         polygons = haz_files.ReadBNA(filename, 'PolygonSet')
         map_bounds = None
@@ -651,9 +601,9 @@ class MapFromBNA(RasterMap, serializable.Serializable):
         BB = just_land.bounding_box
 
         # create spillable area and  bounds if they weren't in the BNA
-
         if map_bounds is None:
             map_bounds = BB.AsPoly()
+
         if spillable_area is None:
             spillable_area = map_bounds
 
@@ -666,13 +616,12 @@ class MapFromBNA(RasterMap, serializable.Serializable):
         # stretch the bounding box, to get approximate aspect ratio in
         # projected coords.
 
-        aspect_ratio = np.cos(BB.Center[1] * np.pi / 180) * BB.Width \
-            / BB.Height
+        aspect_ratio = np.cos(BB.Center[1] * np.pi / 180) \
+                     * (BB.Width / BB.Height)
         w = int(np.sqrt(raster_size * aspect_ratio))
         h = int(raster_size / w)
 
-        canvas = map_canvas.BW_MapCanvas((w, h),
-                                         land_polygons=just_land)
+        canvas = BW_MapCanvas((w, h), land_polygons=just_land)
         canvas.draw_background()
 
         # canvas.save_background("raster_map_test.png")
@@ -683,16 +632,11 @@ class MapFromBNA(RasterMap, serializable.Serializable):
 
         # __init__ the  RasterMap
 
-        RasterMap.__init__(  # hours
-            self,
-            refloat_halflife,
-            bitmap_array,
-            canvas.projection,
-            map_bounds=map_bounds,
-            spillable_area=spillable_area,
-            **kwargs
-            )
+        # hours
+        RasterMap.__init__(self, refloat_halflife, bitmap_array,
+                           canvas.projection,
+                           map_bounds=map_bounds,
+                           spillable_area=spillable_area,
+                           **kwargs)
 
         return None
-
-

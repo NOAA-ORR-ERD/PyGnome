@@ -37,6 +37,28 @@ Boolean IsShioFile(char* path)
 	return bIsOurFile;
 }
 
+bool IsShioFile(vector<string> &linesInFile)
+{
+	long line = 0;
+	string value;
+	
+	// the first line of the file needs to be "[StationInfo]"
+	if (ParseKeyedLine(linesInFile[line++], "[StationInfo]", value))
+		return true;
+	else
+		return false;
+}
+
+/*Boolean IsShioFile(char* path)
+{
+	vector<string> linesInFile;
+	
+	if (ReadLinesInFile(path, linesInFile))
+		return IsShioFile(linesInFile);
+	else
+		return false;
+}*/
+
 TShioTimeValue::TShioTimeValue(TMover *theOwner,TimeValuePairH tvals) : TOSSMTimeValue(theOwner)
 { 	// having this this function is inherited but meaningless
 	this->ProgrammerError("TShioTimeValue constructor");

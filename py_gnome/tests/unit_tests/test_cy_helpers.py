@@ -11,19 +11,7 @@ import numpy as np
 
 from gnome.cy_gnome import cy_helpers
 from gnome.utilities import time_utils
-
-# ===========================
-# only used in test_cy_helpers to validate time_utils.date_to_sec functionality
-
-date_rec = np.dtype([
-    ('year', np.short),
-    ('month', np.short),
-    ('day', np.short),
-    ('hour', np.short),
-    ('minute', np.short),
-    ('second', np.short),
-    ('dayOfWeek', np.short),
-    ], align=True)
+from gnome import basic_types
 
 
 class TestCyDateTime:
@@ -31,15 +19,9 @@ class TestCyDateTime:
     target = cy_helpers.CyDateTime()
     now = datetime.now()
 
-    daterec = np.empty((1, ), dtype=date_rec)
-    daterec['year'] = now.year
-    daterec['month'] = now.month
-    daterec['day'] = now.day
-    daterec['hour'] = now.hour
-    daterec['minute'] = now.minute
-    daterec['second'] = now.second
-    daterec['dayOfWeek'] = now.weekday()  # Gnome
-
+    daterec = np.empty((1, ), dtype=basic_types.date_rec)
+    daterec[0] = (now.year, now.month, now.day, now.hour, now.minute,
+        now.second, now.weekday())
     # use this time for testing
 
     pySec = time_utils.date_to_sec(now)
@@ -50,14 +32,9 @@ class TestCyDateTime:
         '''
 
         pyDate = time_utils.sec_to_timestruct(self.pySec)
-        date = np.empty((1, ), dtype=date_rec)
-        date['year'] = pyDate.tm_year
-        date['month'] = pyDate.tm_mon
-        date['day'] = pyDate.tm_mday
-        date['hour'] = pyDate.tm_hour
-        date['minute'] = pyDate.tm_min
-        date['second'] = pyDate.tm_sec
-        date['dayOfWeek'] = pyDate.tm_wday
+        date = np.empty((1, ), dtype=basic_types.date_rec)
+        date[0] = (pyDate.tm_year, pyDate.tm_mon, pyDate.tm_mday,
+            pyDate.tm_hour, pyDate.tm_min, pyDate.tm_sec, pyDate.tm_wday)
         return date
 
     def test_date_to_sec(self):
@@ -79,7 +56,7 @@ class TestCyDateTime:
         date = self.target.SecondsToDate(self.pySec)
 
         # let's also get the date from pyGnome function
-        # pyDate = self.sec_to_timestruct_from_pyGnome(self.pySec)
+        pyDate = self.sec_to_timestruct_from_pyGnome(self.pySec)
 
         # check assertions for everything except dayOfWeek - this doesn't match
         # however, I don't believe this is used anywhere
@@ -89,17 +66,15 @@ class TestCyDateTime:
         # The C++ time struct 0=Sunday and 6=Sat.
         # For Python time struct 0=Monday and 6=Sunday
 
-        print   # for pretty printing
-        for field in list(date):
-
+        print
+        for field in self.daterec.dtype.names:
             # fixme: dayOfWeek doesn't match - check if this is relevant?
             # for pyDate all fields must match
             # assert pyDate[field] == self.daterec[field][0]
 
             if field != 'dayOfWeek':
                 msg = 'expected {0}: {1}\t actual {0}: {2}'
-                print msg.format(field, date[field],
-                                 self.daterec[field][0])
+                print msg.format(field, date[field], self.daterec[field][0])
                 assert date[field] == self.daterec[field][0]
 
     def test_sec_to_date(self):

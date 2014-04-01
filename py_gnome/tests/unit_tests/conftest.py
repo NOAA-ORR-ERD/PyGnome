@@ -15,6 +15,7 @@ np = numpy
 
 import pytest
 
+import gnome
 from gnome.basic_types import datetime_value_2d
 from gnome.array_types import windages, windage_range, windage_persist
 
@@ -22,7 +23,6 @@ from gnome.map import MapFromBNA
 from gnome.model import Model
 
 from gnome.spill_container import SpillContainer
-from gnome.spill import PointLineSource
 
 from gnome.movers import SimpleMover
 
@@ -61,21 +61,30 @@ def mock_append_data_arrays(array_types, num_elements, data_arrays={}):
 
 
 def sample_sc_release(num_elements=10,
-    start_pos=(0.0, 0.0, 0.0),
-    release_time=datetime(2000, 1, 1, 1),
-    uncertain=False,
-    time_step=360,
-    spill=None,
-    arr_types=None,
-    element_type=None,
-    current_time=None):
+                      start_pos=(0.0, 0.0, 0.0),
+                      release_time=datetime(2000, 1, 1, 1),
+                      uncertain=False,
+                      time_step=360,
+                      spill=None,
+                      element_type=None,
+                      current_time=None,
+                      arr_types=None):
     """
-    initiailize a spill of type spill_obj, add it to a SpillContainer.
+    Initialize a Spill of type 'spill', add it to a SpillContainer.
     Invoke release_elements on SpillContainer, then return the spill container
     object
+
+    If 'spill' is None, define a Spill object with a PointLineRelease type
+    of release
     """
+    if current_time is None:
+        current_time = release_time
+
     if spill is None:
-        spill = PointLineSource(num_elements, start_pos, release_time)
+        spill = gnome.spill.point_line_release_spill(num_elements, start_pos,
+                                            release_time)
+    spill.mass = num_elements
+
     if element_type is not None:
         spill.element_type = element_type
 
@@ -187,6 +196,19 @@ def rq_rand():
 
 
 @pytest.fixture(scope='module')
+def sample_graph():
+    from gnome.utilities.weathering.graphs import Graph
+
+    return Graph(points=((1, 2, 3),
+                         (2, 3, 4),
+                         (3, 4, 5),),
+                 labels=('x', 'F1(x)', 'F2(x)'),
+                 formats=('', 'r-o', 'g->'),
+                 title='Custom line styles'
+                 )
+
+
+@pytest.fixture(scope='module')
 def wind_circ(rq_wind):
     """
     Create Wind object using the time series given by test fixture 'rq_wind'
@@ -223,7 +245,7 @@ def wind_circ(rq_wind):
 
 
 @pytest.fixture(scope='module')
-def sample_spatial_release():
+def sample_spatial_release_spill():
     """
     creates an example SpatialRelease object with
     start_positions: ((0., 0., 0.), (28.0, -75.0, 0.), (-15, 12, 4.0),
@@ -235,20 +257,21 @@ def sample_spatial_release():
     from gnome.spill import SpatialRelease
     start_positions = ((0., 0., 0.), (28.0, -75.0, 0.), (-15, 12, 4.0),
                    (80, -80, 100.0))
-    sp = SpatialRelease(start_positions, release_time=datetime(2012, 1, 1, 1))
+    rel = SpatialRelease(start_positions, release_time=datetime(2012, 1, 1, 1))
+    sp = gnome.spill.Spill(release=rel)
     return (sp, start_positions)
 
 
 @pytest.fixture(scope='module')
-def sample_vertical_plume_source():
+def sample_vertical_plume_spill():
     '''
     creates an example VerticalPlumeSource object
     '''
-    from gnome.spill import VerticalPlumeSource
+    from gnome.spill import VerticalPlumeRelease, Spill
     from gnome.utilities.plume import get_plume_data
 
     release_time = datetime.now()
-    vps = VerticalPlumeSource(num_elements=200,
+    vps = VerticalPlumeRelease(num_elements=200,
                               start_position=(28, -78, 0.),
                               release_time=release_time,
                               end_release_time=release_time + timedelta(hours=24),
@@ -256,14 +279,13 @@ def sample_vertical_plume_source():
                               )
 
     vps.plume_gen.time_step_delta = timedelta(hours=1).total_seconds()
-
-    return vps
+    return Spill(vps)
 
 
 @pytest.fixture(scope='module')
 def sample_sc_no_uncertainty():
     """
-    Sample spill container with 2 PointLineSource spills:
+    Sample spill container with 2 point_line_release_spill spills:
 
     - release_time for 2nd spill is 1 hour delayed
     - 2nd spill takes 4 hours to release and end_position is different so it
@@ -282,11 +304,10 @@ def sample_sc_no_uncertainty():
     end_position = (24.0, -79.5, 1.0)
     end_release_time = datetime(2012, 1, 1, 12) + timedelta(hours=4)
 
-    spills = [PointLineSource(num_elements,
+    spills = [gnome.spill.point_line_release_spill(num_elements,
+                              start_position, release_time, volume=10),
+              gnome.spill.point_line_release_spill(num_elements,
                               start_position,
-                              release_time,
-                              volume=10),
-              PointLineSource(num_elements, start_position,
                               release_time + timedelta(hours=1),
                               end_position, end_release_time,
                               volume=10),

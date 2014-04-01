@@ -18,7 +18,7 @@ import numpy.random as random
 
 from gnome.basic_types import oil_status
 
-from gnome.renderer import Renderer
+from gnome.outputters import Renderer
 from gnome.utilities.projections import GeoProjection
 
 from conftest import sample_sc_release

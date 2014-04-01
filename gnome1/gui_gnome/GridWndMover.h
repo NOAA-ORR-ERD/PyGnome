@@ -14,6 +14,11 @@
 #include "TypeDefs.h"
 #include "GridWndMover_c.h"
 #include "TWindMover.h"
+#include <vector>
+using namespace std;
+
+Boolean IsGridWindFile (char *path, short *selectedUnits);
+bool IsGridWindFile (std::vector<std::string> &linesInFile, short *selectedUnitsOut);
 
 // build off TWindMover or off TMover with a lot of WindMover carried along ??
 // for now new mover type but brought in under variable windmover

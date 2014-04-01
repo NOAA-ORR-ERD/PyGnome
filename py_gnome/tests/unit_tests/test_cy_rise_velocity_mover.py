@@ -27,10 +27,8 @@ class TestRiseVelocity:
 
     cm = CyTestMove()
     #rv = CyRiseVelocityMover(water_density=1020,
-     #                        water_viscosity=.000001)
+    #                        water_viscosity=.000001)
     rv = CyRiseVelocityMover()
-    #density = np.zeros((cm.num_le, ), dtype=np.double)
-    #droplet_size = np.zeros((cm.num_le, ), dtype=np.double)
 
     # set these values and try with NaNs
     # rise_velocity = np.zeros((cm.num_le,), dtype=np.double)
@@ -48,8 +46,6 @@ class TestRiseVelocity:
             self.cm.ref,
             delta,
             self.rise_velocity,
-            #self.density,
-            #self.droplet_size,
             self.cm.status,
             spill_type.forecast,
             )
@@ -71,9 +67,6 @@ class TestRiseVelocity:
         print 'get_move output:'
         print self.cm.delta.view(dtype=np.float64).reshape(-1, 3)
         assert np.all(self.cm.delta['z'] != 0)
-
-        # assert np.all(self.cm.delta['lat'] != 0)
-        # assert np.all(self.cm.delta['long'] != 0)
 
     def test_update_coef(self):
         """
@@ -102,21 +95,12 @@ class TestRiseVelocity:
         self.move(new_delta)  # get the move after changing coefficient
         print
 
-        # print '''vertical_diffusion_coef = {0.vertical_diffusion_coef}
-        #      '''.format(self.rm),
-        # print 'get_move output'
-
         print 'get_move output:'
         print new_delta.view(dtype=np.float64).reshape(-1, 3)
         print
         print '-- Norm of difference between movement vector --'
         print self._diff(delta, new_delta).reshape(-1, 1)
         assert np.all(delta['z'] != new_delta['z'])
-
-        # assert np.all(delta['lat'] != new_delta['lat'])
-        # assert np.all(delta['long'] != new_delta['long'])
-
-        # self.rv.vertical_diffusion_coef = 5        # reset it
 
     def test_zero_rise_velocity(self):
         """

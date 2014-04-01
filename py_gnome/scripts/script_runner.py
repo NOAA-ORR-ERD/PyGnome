@@ -12,8 +12,8 @@ import argparse
 import sys
 import imp
 
-from gnome.persist import scenario
 from gnome import scripting
+from gnome.model import load
 
 
 def run(model):
@@ -48,20 +48,18 @@ def save(model, saveloc):
         shutil.rmtree(saveloc)
     os.mkdir(saveloc)
     print 'saving ..'
-    sc = scenario.Scenario(saveloc, model)
-    sc.save()
+    model.save(saveloc)
 
 
 def run_from_save(saveloc):
     if not os.path.isdir(saveloc):
         raise ValueError('{0} does not appear to be a valid'
                          ' directory'.format(saveloc))
-    sc = scenario.Scenario(saveloc)
-    sc.load()
+    model = load(saveloc)
 
-    sc.model.rewind()
+    model.rewind()
 
-    run(sc.model)
+    run(model)
 
 
 def parse_args(argv):

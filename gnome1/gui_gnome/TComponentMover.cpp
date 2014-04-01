@@ -53,7 +53,7 @@ TComponentMover::TComponentMover (TMap *owner, char *name) : TCurrentMover (owne
 	return;
 }
 
-void TComponentMover::Dispose ()
+/*void TComponentMover::Dispose ()
 {
 	if (pattern1) {
 		pattern1 -> Dispose();
@@ -76,7 +76,7 @@ void TComponentMover::Dispose ()
 		DisposeHandle((Handle)fAveragedWindsHdl);
 		fAveragedWindsHdl = 0;
 	}
-}
+}*/
 
 Boolean TComponentMover::FunctionEnabled(ListItem item, short buttonID)
 {

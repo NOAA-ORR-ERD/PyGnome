@@ -20,9 +20,9 @@ from gnome.utilities import convert
 from gnome.movers import WindMover, constant_wind_mover, \
     wind_mover_from_file
 
-from gnome.spill import PointLineSource
+from gnome.spill import point_line_release_spill
 from gnome.spill_container import SpillContainer
-from gnome.elements import floating
+from gnome.spill.elements import floating
 
 from conftest import sample_sc_release
 
@@ -289,7 +289,7 @@ def test_windage_index():
     rel_time = datetime(2013, 1, 1, 0, 0)
     timestep = 30
     for i in range(2):
-        spill = PointLineSource(num_elements=5,
+        spill = point_line_release_spill(num_elements=5,
                                 start_position=(0., 0., 0.),
                                 release_time=rel_time + i * timedelta(hours=1),
                                 element_type=floating(windage_range=(i * .01 +
@@ -303,7 +303,7 @@ def test_windage_index():
                'windage_persist': array_types.windage_persist}
     sc.prepare_for_model_run(array_types=windage)
     sc.release_elements(timestep, rel_time)
-    wm = WindMover(environment.ConstantWind(5, 0))
+    wm = WindMover(environment.constant_wind(5, 0))
     wm.prepare_for_model_step(sc, timestep, rel_time)
     wm.model_step_is_done()  # need this to toggle _windage_is_set_flag
 
@@ -433,6 +433,38 @@ def test_wind_mover_from_file():
     assert wm.wind.filename == file_
 
 
+@pytest.mark.parametrize(("do"), ['create', 'update'])
+def test_serialize_deserialize(wind_circ, do):
+    """
+    tests and illustrates the funcitonality of serialize/deserialize for
+    WindMover.
+    """
+    wind = environment.Wind(filename=file_)
+    wm = WindMover(wind)
+    json_ = wm.serialize(do)
+    if do == 'create':
+        assert 'wind' not in json_
+
+        # reference to 'wind' object is made by the Model().save() function
+        # by default 'wind' object is not serialized in 'create' mode
+        # so for this test to work, add the 'wind' key, value back in before
+        # constructing new WindMover. In the real use case, the model does this
+        dict_ = wm.deserialize(json_)
+        dict_['wind'] = wind
+        wm2 = WindMover.new_from_dict(dict_)
+        assert wm == wm2
+
+    else:
+        assert 'wind' in json_
+
+        wind_update = wind_circ['wind']
+        json_['wind'] = wind_update.serialize(do)
+        dict_ = wm.deserialize(json_)
+        wm.from_dict(dict_)
+
+        assert wm.wind == wind_update
+
+
 def test_new_from_dict():
     """
     Currently only checks that new object can be created from dict
@@ -449,25 +481,9 @@ def test_new_from_dict():
     wm_state.update({'wind': wind2})
     wm2 = WindMover.new_from_dict(wm_state)
 
-    # check serializable state is correct
-
-    assert all([wm.__getattribute__(k) == wm2.__getattribute__(k)
-               for k in WindMover.state.get_names('create') if k
-               != 'wind_id' and k != 'obj_type'])
-    assert wm.wind.id == wm2.wind.id
-
-
-def test_exception_new_from_dict():
-
-    # WindMover does not modify Wind object!
-
-    wm = WindMover(environment.Wind(filename=file_))
-
-    wm_state = wm.to_dict('create')
-    wm_state.update({'wind': environment.Wind(filename=file_)})
-
-    with pytest.raises(ValueError):
-        WindMover.new_from_dict(wm_state)
+    assert wm is not wm2
+    assert wm.wind is not wm2.wind
+    assert wm == wm2
 
 
 def test_array_types():

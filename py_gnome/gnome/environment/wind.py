@@ -4,92 +4,143 @@ the Wind object defines the Wind conditions for the spill
 """
 
 import datetime
-import string
 import os
 import copy
 from itertools import chain
 
-import numpy as np
-from hazpy import unit_conversion
+import numpy
+np = numpy
 
-import gnome
-from gnome import basic_types, GnomeId
+from colander import (SchemaNode,
+                      String, Float, Range,
+                      OneOf, drop)
 
 # TODO: The name 'convert' is doubly defined as
 #       hazpy.unit_conversion.convert and...
 #       gnome.utilities.convert
 #       This will inevitably cause namespace collisions.
+from hazpy import unit_conversion
+from hazpy.unit_conversion import (ConvertDataUnits,
+                                   GetUnitNames,
+                                   InvalidUnitError)
 
-from gnome.utilities import time_utils, convert, serializable
+from gnome import basic_types
+from gnome.utilities import serializable
+from gnome.utilities.time_utils import sec_to_date, date_to_sec
+from gnome.utilities.convert import (to_time_value_pair,
+                                     tsformat,
+                                     to_datetime_value_2d)
+
+from .environment import Environment
+
+from gnome.persist.extend_colander import (DefaultTupleSchema,
+                      LocalDateTime, DatetimeValue2dArraySchema)
+from gnome.persist import validators, base_schema
+
 
 from gnome.cy_gnome.cy_ossm_time import CyOSSMTime
-from gnome.cy_gnome.cy_shio_time import CyShioTime
 
 
-class Environment(object):
+class WindTupleSchema(DefaultTupleSchema):
+    '''
+    Schema for each tuple in WindTimeSeries list
+    '''
+    datetime = SchemaNode(LocalDateTime(default_tzinfo=None),
+                          default=base_schema.now,
+                          validator=validators.convertible_to_seconds)
+    speed = SchemaNode(Float(),
+                       default=0,
+                       validator=Range(min=0,
+                                       min_err='wind speed must be '
+                                               'greater than or equal to 0'
+                                       )
+                       )
+    direction = SchemaNode(Float(), default=0,
+                           validator=Range(0, 360,
+                                           min_err='wind direction must be '
+                                                   'greater than or equal to '
+                                                   '0',
+                                           max_err='wind direction must be '
+                                                   'less than or equal to '
+                                                   '360deg'
+                                           )
+                           )
 
-    """
-    A base class for all classes in environment module
 
-    This is primarily to define a dtype such that the OrderedCollection
-    defined in the Model object requires it.
+class WindTimeSeriesSchema(DatetimeValue2dArraySchema):
+    '''
+    Schema for list of Wind tuples, to make the wind timeseries
+    '''
+    value = WindTupleSchema(default=(datetime.datetime.now(), 0, 0))
 
-    This base class just defines the id property
-    """
+    def validator(self, node, cstruct):
+        '''
+        validate wind timeseries numpy array
+        '''
+        validators.no_duplicate_datetime(node, cstruct)
+        validators.ascending_datetime(node, cstruct)
 
-    def __init__(self, **kwargs):
-        """
-        Base class - serves two purposes:
-        1) Defines the dtype for all objects that can be added to the Model's
-           environment OrderedCollection (Model.environment)
-        2) Defines the 'id' property used to uniquely identify an object
 
-        :param id: Unique Id identifying the newly created mover
-                   (a UUID as a string).
-                   This is used when loading an object from a persisted model
-        """
+class WindSchema(base_schema.ObjType):
+    '''
+    validate data after deserialize, before it is given back to pyGnome's
+    from_dict to set _state of object
+    '''
+    description = SchemaNode(String(), missing=drop)
+    latitude = SchemaNode(Float(), missing=drop)
+    longitude = SchemaNode(Float(), missing=drop)
+    name = SchemaNode(String(), missing=drop)
+    source_id = SchemaNode(String(), missing=drop)
+    source_type = SchemaNode(String(),
+                             validator=OneOf(basic_types.wind_datasource._attr),
+                             default='undefined', missing='undefined')
+    updated_at = SchemaNode(LocalDateTime(), missing=drop)
+    units = SchemaNode(String(), default='m/s')
 
-        self._gnome_id = GnomeId(id=kwargs.pop('id', None))
-
-    id = property(lambda self: self._gnome_id.id)
+    timeseries = WindTimeSeriesSchema(missing=drop)
+    filename = SchemaNode(String(), missing=drop)
+    name = 'wind'
 
 
 class Wind(Environment, serializable.Serializable):
-
-    """
+    '''
     Defines the Wind conditions for a spill
-    """
-
+    '''
     # removed 'id' from list below. id, filename and units cannot be updated
     # - read only properties
 
-    _update = [  # default units for input/output data
-        'name',
-        'latitude',
-        'longitude',
-        'description',
-        'source_id',
-        'source_type',
-        'updated_at',
-        'timeseries',
-        'units',
-        ]
-    _create = []  # used to create new obj or as readonly parameter
+    # default units for input/output data
+    _update = ['latitude',
+               'longitude',
+               'description',
+               'source_id',
+               'source_type',
+               'updated_at',
+               'timeseries',
+               'units',
+               ]
+
+    # used to create new obj or as readonly parameter
+    _create = []
     _create.extend(_update)
 
-    state = copy.deepcopy(serializable.Serializable.state)
-    state.add(create=_create, update=_update)
+    _state = copy.deepcopy(Environment._state)
+    _state.add(create=_create, update=_update)
+    _schema = WindSchema
 
     # add 'filename' as a Field object
-
-    state.add_field(serializable.Field('filename', isdatafile=True,
-                    create=True, read=True))
+    #'name',    is this for webgnome?
+    _state.add_field([serializable.Field('filename', isdatafile=True,
+                                         create=True, read=True,
+                                         test_for_eq=False),
+                      serializable.Field('name', isdatafile=True,
+                                         create=True, update=True,
+                                         test_for_eq=False),
+                      ])
 
     # list of valid velocity units for timeseries
-
     valid_vel_units = list(chain.from_iterable([item[1] for item in
-                           unit_conversion.ConvertDataUnits['Velocity'
-                           ].values()]))
+                                                ConvertDataUnits['Velocity'].values()]))
     valid_vel_units.extend(unit_conversion.GetUnitNames('Velocity'))
 
     def __init__(self, **kwargs):
@@ -125,9 +176,11 @@ class Wind(Environment, serializable.Serializable):
 
         :param format: (Optional) default timeseries format is
                        magnitude direction: 'r-theta'
-        :type format: string 'r-theta' or 'uv'. Converts string to integer
-                      defined by gnome.basic_types.ts_format.*
-                      TODO: 'format' is a python builtin keyword
+        :type format: string 'r-theta' or 'uv'. Default is 'r-theta'.
+                      Converts string to integer defined by
+                      gnome.basic_types.ts_format.*
+                      TODO: 'format' is a python builtin keyword.  We should
+                            not use it as an argument name
         :param name: (Optional) human readable string for wind object name.
                      Default is filename if data is from file or "Wind Object"
         :param source_type: (Optional) Default is undefined, but can be one of
@@ -145,43 +198,44 @@ class Wind(Environment, serializable.Serializable):
         """
 
         if 'timeseries' in kwargs and 'filename' in kwargs:
-            raise TypeError('Cannot instantiate Wind object with both timeseries and file as input'
-                            )
+            raise TypeError('Cannot instantiate Wind object with '
+                            'both timeseries and file as input')
 
         if 'timeseries' not in kwargs and 'filename' not in kwargs:
-            raise TypeError('Either provide a timeseries or a wind file with a header, containing wind data'
-                            )
+            raise TypeError('Either provide a timeseries or a wind file '
+                            'with a header, containing wind data')
 
         # default lat/long - can these be set from reading data in the file?
-
         self.longitude = None
         self.latitude = None
 
-        # format of data 'uv' or 'r-theta'. Default is 'r-theta'
-        # TODO: 'format' is a python builtin keyword
+        format_arg = kwargs.pop('format', 'r-theta')
 
-        format = kwargs.pop('format', 'r-theta')
         self.description = kwargs.pop('description', 'Wind Object')
+
         if 'timeseries' in kwargs:
             if 'units' not in kwargs:
-                raise TypeError("Provide 'units' argument with the 'timeseries' input"
-                                )
+                raise TypeError('units argument requires timeseries argument')
             timeseries = kwargs.pop('timeseries')
             units = kwargs.pop('units')
 
             self._check_units(units)
             self._check_timeseries(timeseries, units)
 
-            timeseries['value'] = self._convert_units(timeseries['value'
-                    ], format, units, 'meter per second')
+            timeseries['value'] = self._convert_units(timeseries['value'],
+                                                      format_arg, units,
+                                                      'meter per second')
 
             # ts_format is checked during conversion
-
-            time_value_pair = convert.to_time_value_pair(timeseries,
-                    format)
+            time_value_pair = to_time_value_pair(timeseries, format_arg)
 
             # this has same scope as CyWindMover object
-
+            #
+            # TODO: move this as a class attribute if we can.
+            #       I can see that we are instantiating the class,
+            #       but maybe we can find a way to not have to
+            #       pickle this attribute when we pickle a Wind instance
+            #
             self.ossm = CyOSSMTime(timeseries=time_value_pair)
 
             # do not set ossm.user_units since that only has a subset of
@@ -190,16 +244,17 @@ class Wind(Environment, serializable.Serializable):
             self._user_units = units
 
             self.name = kwargs.pop('name', 'Wind Object')
-            self.source_type = (kwargs.pop('source_type'
-                                ) if kwargs.get('source_type')
-                                in basic_types.wind_datasource._attr else 'undefined'
-                                )
+            self.source_type = (kwargs.pop('source_type')
+                                if kwargs.get('source_type')
+                                in basic_types.wind_datasource._attr
+                                else 'undefined')
         else:
-            ts_format = convert.tsformat(format)
+            ts_format = tsformat(format_arg)
             self.ossm = CyOSSMTime(filename=kwargs.pop('filename'),
                                    file_contains=ts_format)
             self._user_units = self.ossm.user_units
 
+            # TODO: not sure what this is for? .. for webgnome?
             self.name = kwargs.pop('name',
                                    os.path.split(self.ossm.filename)[1])
             self.source_type = 'file'  # this must be file
@@ -210,79 +265,72 @@ class Wind(Environment, serializable.Serializable):
         #                  default to datetime.datetime.now
         # not sure if this should be datetime or string
 
-        self.updated_at = kwargs.pop('updated_at',
-                (time_utils.sec_to_date(os.path.getmtime(self.ossm.filename)) if self.ossm.filename else datetime.datetime.now()))
+        self.updated_at = kwargs.pop('updated_at', None)
+        if not self.updated_at:
+            self.updated_at = (sec_to_date(os.path.getmtime(self.ossm.filename)
+                                           )
+                               if self.ossm.filename
+                               else datetime.datetime.now())
+
         self.source_id = kwargs.pop('source_id', 'undefined')
         self.longitude = kwargs.pop('longitude', self.longitude)
         self.latitude = kwargs.pop('latitude', self.latitude)
         super(Wind, self).__init__(**kwargs)
 
-    def _convert_units(
-        self,
-        data,
-        ts_format,
-        from_unit,
-        to_unit,
-        ):
-        """
+    def _convert_units(self, data, ts_format, from_unit, to_unit):
+        '''
         Private method to convert units for the 'value' stored in the
         date/time value pair
-        """
-
+        '''
         if from_unit != to_unit:
-            data[:, 0] = unit_conversion.convert('Velocity', from_unit,
-                    to_unit, data[:, 0])
+            data[:, 0] = unit_conversion.convert('Velocity',
+                                                 from_unit, to_unit,
+                                                 data[:, 0])
             if ts_format == basic_types.ts_format.uv:
-
                 # TODO: avoid clobbering the 'ts_format' namespace
-
                 data[:, 1] = unit_conversion.convert('Velocity',
-                        from_unit, to_unit, data[:, 1])
+                                                     from_unit, to_unit,
+                                                     data[:, 1])
 
         return data
 
     def _check_units(self, units):
-        """
+        '''
         Checks the user provided units are in list Wind.valid_vel_units
-        """
-
+        '''
         if units not in Wind.valid_vel_units:
-            raise unit_conversion.InvalidUnitError('Velocity units must be from following list to be valid: {0}'.format(Wind.valid_vel_units))
+            raise InvalidUnitError('A valid velocity unit must be one of: '
+                                   '{0}'.format(Wind.valid_vel_units))
 
     def _check_timeseries(self, timeseries, units):
-        """
+        '''
         Run some checks to make sure timeseries is valid
-        """
-
+        '''
         try:
             if timeseries.dtype != basic_types.datetime_value_2d:
-
                 # Both 'is' or '==' work in this case.  There is only one
                 # instance of basic_types.datetime_value_2d.
                 # Maybe in future we can consider working with a list,
                 # but that's a bit more cumbersome for different dtypes
-
-                raise ValueError('timeseries must be a numpy array containing basic_types.datetime_value_2d dtype'
-                                 )
+                raise ValueError('timeseries must be a numpy array containing '
+                                 'basic_types.datetime_value_2d dtype')
         except AttributeError, err:
-
             msg = 'timeseries is not a numpy array. {0}'
             raise AttributeError(msg.format(err.message))
 
         # check to make sure the time values are in ascending order
-
         if np.any(timeseries['time'][np.argsort(timeseries['time'])]
                   != timeseries['time']):
-            raise ValueError('timeseries are not in ascending order. The datetime values in the array must be in ascending order'
-                             )
+            raise ValueError('timeseries are not in ascending order. '
+                             'The datetime values in the array must be in '
+                             'ascending order')
 
         # check for duplicate entries
-
         unique = np.unique(timeseries['time'])
         if len(unique) != len(timeseries['time']):
-            msg = \
-                'timeseries must contain unique time entries. Number of duplicate entries {0}'
-            raise ValueError(msg.format(len(timeseries) - len(unique)))
+            raise ValueError('timeseries must contain unique time entries. '
+                             'Number of duplicate entries: '
+                             '{0}'.format(len(timeseries) - len(unique)))
 
     def __repr__(self):
         """
@@ -292,19 +340,19 @@ class Wind(Environment, serializable.Serializable):
         This timeseries are not output.  eval(repr(wind)) does not work for
         this object and the timeseries could be long, so only the syntax
         for obtaining the timeseries is given in repr
-        """
 
+        TODO: A hard-coded string is not really useful.  Maybe we should
+              provide some actual information pertaining to this class.
+        """
         return "Wind( timeseries=Wind.get_timeseries('uv'), format='uv')"
 
     def __str__(self):
-        """
+        '''
         Return string representation of this object
-        """
-
+        '''
         return 'Wind Object'
 
     def __eq__(self, other):
-
         # since this has numpy array - need to compare that as well
         # By default, tolerance for comparison is atol=1e-10, rtol=0
         # persisting data requires unit conversions and finite precision,
@@ -313,29 +361,20 @@ class Wind(Environment, serializable.Serializable):
         check = super(Wind, self).__eq__(other)
 
         if check:
-            if (self.timeseries['time'] != other.timeseries['time'
-                ]).all():
+            if (self.timeseries['time'] != other.timeseries['time']).all():
                 return False
             else:
                 return np.allclose(self.timeseries['value'],
                                    other.timeseries['value'], 1e-10, 0)
 
-        # user_units is also not part of state.create list so do explicit
+        # user_units is also not part of _state.create list so do explicit
         # check here
         # if self.user_units != other.user_units:
         #    return False
-
         return check
 
     def __ne__(self, other):
-        """
-        Compare inequality (!=) of two objects
-        """
-
-        if self == other:
-            return False
-        else:
-            return True
+        return not self == other
 
     # user_units = property( lambda self: self._user_units)
 
@@ -357,18 +396,14 @@ class Wind(Environment, serializable.Serializable):
         self._check_units(value)
         self._user_units = value
 
-    filename = property(lambda self: (self.ossm.filename,
-                        None)[self.ossm.filename == ''])
+    filename = property(lambda self: (self.ossm.filename, None
+                                      )[self.ossm.filename == ''])
     timeseries = property(lambda self: self.get_timeseries(),
                           lambda self, val: self.set_timeseries(val,
-                          units=self.units))
+                                                                units=self.units)
+                          )
 
-    def get_timeseries(
-        self,
-        datetime=None,
-        units=None,
-        format='r-theta',
-        ):
+    def get_timeseries(self, datetime=None, units=None, format='r-theta'):
         """
         Returns the timeseries in the requested format. If datetime=None,
         then the original timeseries that was entered is returned.
@@ -394,37 +429,26 @@ class Wind(Environment, serializable.Serializable):
                   Contains user specified datetime and the corresponding
                   values in user specified ts_format
         """
-
         if datetime is None:
-            datetimeval = \
-                convert.to_datetime_value_2d(self.ossm.timeseries,
-                    format)
+            datetimeval = to_datetime_value_2d(self.ossm.timeseries, format)
         else:
-            datetime = np.asarray(datetime, dtype='datetime64[s]'
-                                  ).reshape(-1)
+            datetime = np.asarray(datetime, dtype='datetime64[s]').reshape(-1)
             timeval = np.zeros((len(datetime), ),
                                dtype=basic_types.time_value_pair)
-            timeval['time'] = time_utils.date_to_sec(datetime)
+            timeval['time'] = date_to_sec(datetime)
             timeval['value'] = self.ossm.get_time_value(timeval['time'])
-            datetimeval = convert.to_datetime_value_2d(timeval, format)
+            datetimeval = to_datetime_value_2d(timeval, format)
 
-        if units is not None:
-            datetimeval['value'] = \
-                self._convert_units(datetimeval['value'], format,
-                                    'meter per second', units)
-        else:
-            datetimeval['value'] = \
-                self._convert_units(datetimeval['value'], format,
-                                    'meter per second', self.units)
+        if units is None:
+            units = self.units
+
+        datetimeval['value'] = self._convert_units(datetimeval['value'],
+                                                   format, 'meter per second',
+                                                   units)
 
         return datetimeval
 
-    def set_timeseries(
-        self,
-        datetime_value_2d,
-        units,
-        format='r-theta',
-        ):
+    def set_timeseries(self, datetime_value_2d, units, format='r-theta'):
         """
         Sets the timeseries of the Wind object to the new value given by
         a numpy array.  The format for the input data defaults to
@@ -441,14 +465,13 @@ class Wind(Environment, serializable.Serializable):
         :type format: either string or integer value defined by
                       basic_types.format.* (see cy_basic_types.pyx)
         """
-
         self._check_units(units)
         self._check_timeseries(datetime_value_2d, units)
         datetime_value_2d['value'] = \
-            self._convert_units(datetime_value_2d['value'], format,
-                                units, 'meter per second')
+            self._convert_units(datetime_value_2d['value'],
+                                format, units, 'meter per second')
 
-        timeval = convert.to_time_value_pair(datetime_value_2d, format)
+        timeval = to_time_value_pair(datetime_value_2d, format)
         self.ossm.timeseries = timeval
 
     def to_dict(self, do='update'):
@@ -460,21 +483,17 @@ class Wind(Environment, serializable.Serializable):
         Only timeseries or filename need to be saved to recreate the original
         object. If both are given, then 'filename' takes precedence.
         """
-
         dict_ = super(Wind, self).to_dict(do)
 
         if do == 'create':
             if self.filename is not None:
-
-                # dict_.pop('filename')
-            # else:
-
+                # we can't have both a filename and timeseries data
                 dict_.pop('timeseries')
 
         return dict_
 
 
-def ConstantWind(speed, direction, units='m/s'):
+def constant_wind(speed, direction, units='m/s'):
     """
     utility to create a constant wind "timeseries"
 
@@ -484,183 +503,8 @@ def ConstantWind(speed, direction, units='m/s'):
     :param unit='m/s': units for speed, as a string, i.e. "knots", "m/s",
                        "cm/s", etc.
     """
-
     wind_vel = np.zeros((1, ), dtype=basic_types.datetime_value_2d)
     wind_vel['time'][0] = datetime.datetime.now()  # just to have a time
     wind_vel['value'][0] = (speed, direction)
 
     return Wind(timeseries=wind_vel, format='r-theta', units=units)
-
-
-class Tide(Environment, serializable.Serializable):
-
-    """
-    todo: baseclass called ScaleTimeseries (or something like that)
-    ScaleCurrent
-    Define the tide for a spill
-
-    Currently, this internally defines and uses the CyShioTime object, which is
-    a cython wrapper around the C++ Shio object
-    """
-
-    state = copy.deepcopy(serializable.Serializable.state)
-
-    # no need to copy parent's state in this case
-
-    state.add(create=['yeardata'], update=['yeardata'])
-
-    # add 'filename' as a Field object
-
-    state.add_field(serializable.Field('filename', isdatafile=True,
-                    create=True, read=True))
-
-    def __init__(
-        self,
-        filename=None,
-        timeseries=None,
-        yeardata=os.path.join(os.path.dirname(gnome.__file__), 'data',
-                              'yeardata'),
-        **kwargs
-        ):
-        """
-        Tide information can be obtained from a filename or set as a
-        timeseries (timeseries is NOT TESTED YET)
-
-        Invokes super(Tides,self).__init__(\*\*kwargs) for parent class
-        initialization
-
-        It requires one of the following to initialize:
-              1. 'timeseries' assumed to be in 'uv' format
-                 (NOT TESTED/IMPLEMENTED OR USED YET)
-              2. a 'filename' containing a header that defines units amongst
-                 other meta data
-
-        :param timeseries: numpy array containing datetime_value_2d,
-                           ts_format is always 'uv'
-        :type timeseries: numpy.ndarray[basic_types.time_value_pair, ndim=1]
-        :param units: units associated with the timeseries data. If 'filename'
-                      is given, then units are read in from the filename.
-                      unit_conversion - NOT IMPLEMENTED YET
-        :type units:  (Optional) string, for example:
-                        'knot', 'meter per second', 'mile per hour' etc
-                      Default is None for now
-
-        :param filename: path to a long wind filename from which to read
-                         wind data
-
-        :param yeardata: (Optional) path to yeardata used for Shio data
-                         filenames. Default location is gnome/data/yeardata/
-
-        Remaining kwargs ('id' if present) are passed onto Environment's
-        __init__ using super.
-        See base class documentation for remaining valid kwargs.
-        """
-
-        # define locally so it is available even for OSSM files,
-        # though not used by OSSM files
-
-        self._yeardata = None
-
-        if timeseries is None and filename is None:
-            raise ValueError('Either provide timeseries or a valid filename containing Tide data'
-                             )
-
-        if timeseries is not None:
-
-#            if units is None:
-#                raise ValueError("Provide valid units as string or unicode " \
-#                                 "for timeseries")
-
-            # will probably need to move this function out
-            # self._check_timeseries(timeseries, units)
-
-            # data_format is checked during conversion
-
-            time_value_pair = convert.to_time_value_pair(timeseries,
-                    convert.tsformat('uv'))
-
-            # this has same scope as CyWindMover object
-
-            self.cy_obj = CyOSSMTime(timeseries=time_value_pair)
-
-            # not sure what these should be
-
-            self._user_units = kwargs.pop('units', None)
-        else:
-
-            # self.filename = os.path.abspath( filename)
-
-            self.cy_obj = self._obj_to_create(filename)
-
-            # self.yeardata = os.path.abspath( yeardata ) # set yeardata
-
-            self.yeardata = yeardata  # set yeardata
-
-        super(Tide, self).__init__(**kwargs)
-
-    @property
-    def yeardata(self):
-        return self._yeardata
-
-    @yeardata.setter
-    def yeardata(self, value):
-        """ only relevant if underlying cy_obj is CyShioTime"""
-
-        if not os.path.exists(value):
-            raise IOError('Path to yeardata files does not exist: {0}'.format(value))
-
-        # set private variable and also shio object's yeardata path
-
-        self._yeardata = value
-
-        if isinstance(self.cy_obj, CyShioTime):
-            self.cy_obj.set_shio_yeardata_path(value)
-
-    filename = property(lambda self: (self.cy_obj.filename,
-                        None)[self.cy_obj.filename == ''])
-
-    def _obj_to_create(self, filename):
-        """
-        open file, read a few lines to determine if it is an ossm file
-        or a shio file
-        """
-
-        # mode 'U' means universal newline support
-
-        fh = open(filename, 'rU')
-
-        lines = [fh.readline() for i in range(4)]
-
-        if len(lines[1]) == 0:
-
-            # look for \r for lines instead of \n
-
-            lines = string.split(lines[0], '\r', 4)
-
-        if len(lines[1]) == 0:
-
-            # if this is still 0, then throw an error!
-
-            raise ValueError('This does not appear to be a valid file format that can be read by OSSM or Shio to get tide information'
-                             )
-
-        # look for following keywords to determine if it is a Shio or OSSM file
-
-        shio_file = ['[StationInfo]', 'Type=', 'Name=', 'Latitude=']
-
-        if all([shio_file[i] == (lines[i])[:len(shio_file[i])] for i in
-               range(4)]):
-            return CyShioTime(filename)
-        elif len(string.split(lines[3], ',')) == 7:
-
-            # maybe log / display a warning that v=0 for tide file and will be
-            # ignored
-            # if float( string.split(lines[3],',')[-1]) != 0.0:
-
-            return CyOSSMTime(filename,
-                              file_contains=convert.tsformat('uv'))
-        else:
-            raise ValueError('This does not appear to be a valid file format that can be read by OSSM or Shio to get tide information'
-                             )
-
-

@@ -6,33 +6,21 @@ import datetime
 import logging
 import os
 import threading
-from gnome.renderer import Renderer
+from gnome.outputters import Renderer
+
 import numpy
+np = numpy
 
 from webgnome import util
 
-# XXX: This except block should not be necessary.
-try:
-    import gnome
-except ImportError:
-    print 'Import error! Could not find gnome library.'
-    # If we failed to find the model package,
-    # it could be that we are running webgnome
-    # from an in-place virtualenv.  Let's add
-    # a relative path to our py_gnome sources
-    # and see if we can import the Model.
-    # If we fail in this attempt...oh well.
-    import sys
-    import gnome
-    sys.path.append('../../../py_gnome')
-
-from gnome import basic_types
-from gnome.model import Model
-from gnome.movers import WindMover, RandomMover, CatsMover, GridCurrentMover
-from gnome.spill import PointLineSource
-from gnome.environment import Wind
-from gnome.map import MapFromBNA, GnomeMap
+from gnome.basic_types import world_point_type
 from gnome.utilities import projections
+
+from gnome.model import Model
+from gnome.map import MapFromBNA, GnomeMap
+from gnome.environment import Wind
+from gnome.spill import PointLineRelease
+from gnome.movers import WindMover, RandomMover, CatsMover, GridCurrentMover
 
 
 logger = logging.getLogger(__name__)
@@ -61,12 +49,11 @@ class BaseWebObject(object):
 
 class WebWind(BaseWebObject, Wind):
     default_name = 'Wind'
-    source_types = (
-        ('undefined', 'Undefined'),
-        ('manual', 'Manual Data'),
-        ('nws', 'NWS Wind Data'),
-        ('buoy', 'Buoy Station ID'),
-    )
+    source_types = (('undefined', 'Undefined'),
+                    ('manual', 'Manual Data'),
+                    ('nws', 'NWS Wind Data'),
+                    ('buoy', 'Buoy Station ID'),
+                    )
 
     @property
     def timeseries(self):
@@ -83,7 +70,7 @@ class WebWindMover(BaseWebObject, WindMover):
     webgnome-specific functionality.
     """
     default_name = 'Wind Mover'
-    state = copy.deepcopy(WindMover.state)
+    state = copy.deepcopy(WindMover._state)
     state.add(create=['uncertain_angle_scale_units', 'name'],
               update=['uncertain_angle_scale_units', 'name'])
 
@@ -101,7 +88,7 @@ class WebRandomMover(BaseWebObject, RandomMover):
     webgnome-specific functionality.
     """
     default_name = 'Random Mover'
-    state = copy.deepcopy(RandomMover.state)
+    state = copy.deepcopy(RandomMover._state)
     state.add(create=['name'], update=['name'])
 
     def __init__(self, *args, **kwargs):
@@ -115,12 +102,13 @@ class WebCatsMover(BaseWebObject, CatsMover):
     webgnome-specific functionality.
     """
     default_name = 'Cats Mover'
-    state = copy.deepcopy(CatsMover.state)
+    state = copy.deepcopy(CatsMover._state)
     state.add(create=['name'], update=['name'])
 
     def __init__(self, base_dir, filename, *args, **kwargs):
         filename = os.path.join(base_dir, filename)
         super(WebCatsMover, self).__init__(filename, *args, **kwargs)
+
 
 class WebGridCurrentMover(BaseWebObject, GridCurrentMover):
     """
@@ -128,21 +116,23 @@ class WebGridCurrentMover(BaseWebObject, GridCurrentMover):
     webgnome-specific functionality.
     """
     default_name = 'Grid Current Mover'
-    state = copy.deepcopy(GridCurrentMover.state)
+    state = copy.deepcopy(GridCurrentMover._state)
     state.add(create=['name'], update=['name'])
 
     def __init__(self, base_dir, filename, topology_file, *args, **kwargs):
         filename = os.path.join(base_dir, filename)
         topology_file = os.path.join(base_dir, topology_file)
-        super(WebGridCurrentMover, self).__init__(filename, topology_file, *args, **kwargs)
+        super(WebGridCurrentMover, self).__init__(filename, topology_file,
+                                                  *args, **kwargs)
 
-class WebPointSourceRelease(BaseWebObject, PointLineSource):
+
+class WebPointSourceRelease(BaseWebObject, PointLineRelease):
     """
     A subclass of :class:`gnome.movers.WindMover` that provides
     webgnome-specific functionality.
     """
     default_name = 'Spill'
-    state = copy.deepcopy(PointLineSource.state)
+    state = copy.deepcopy(PointLineRelease._state)
     state.add(create=['name'], update=['name'])
 
     def __init__(self, *args, **kwargs):
@@ -152,8 +142,7 @@ class WebPointSourceRelease(BaseWebObject, PointLineSource):
     def _reshape(self, lst):
         if lst is None:
             return
-        return numpy.asarray(
-            lst, dtype=basic_types.world_point_type).reshape((len(lst),))
+        return np.asarray(lst, dtype=world_point_type).reshape((len(lst),))
 
     def start_position_from_dict(self, start_position):
         self.start_position = self._reshape(start_position)
@@ -176,7 +165,7 @@ class WebMapFromBNA(BaseWebObject, MapFromBNA):
     webgnome-specific functionality.
     """
     default_name = 'Map'
-    state = copy.deepcopy(MapFromBNA.state)
+    state = copy.deepcopy(MapFromBNA._state)
     state.add(create=['name'], update=['name'])
 
     def __init__(self, base_dir, filename, *args, **kwargs):
@@ -227,7 +216,7 @@ class WebRenderer(BaseWebObject, Renderer):
 
 class WebGnomeMap(BaseWebObject, GnomeMap):
     default_name = 'Map'
-    state = copy.deepcopy(GnomeMap.state)
+    state = copy.deepcopy(GnomeMap._state)
     state.add(create=['name'], update=['name'])
 
 
@@ -274,15 +263,16 @@ class WebModel(BaseWebObject, Model):
         self.base_dir = os.path.join(self.package_root, data_dir, str(self.id))
         self.base_dir_relative = os.path.join(data_dir, str(self.id))
 
-        # The static data dir is for things like file uploads that are not bound
-        # to a datetime for caching purposes.
+        # The static data dir is for things like file uploads that are
+        # not bound to a datetime for caching purposes.
         self.static_data_dir = os.path.join(self.base_dir, 'data')
 
         # Create the base directory for all of the model's data.
         util.mkdir_p(self.base_dir)
         util.mkdir_p(self.static_data_dir)
 
-        # Patch the object with an empty ``time_steps`` array for the time being.
+        # Patch the object with an empty ``time_steps`` array for
+        # the time being.
         # TODO: Add output caching in the model?
         self.time_steps = []
         self.changed_at = datetime.datetime.now()
@@ -321,8 +311,9 @@ class WebModel(BaseWebObject, Model):
         This will change the data directory for images created for the model,
         effectively busting any cached versions of those images.
 
-        This method is called, among other places, in __init__, before the model
-        has a base_dir or an ID, so we defend against that possibility.
+        This method is called, among other places, in __init__,
+        before the model has a base_dir or an ID, so we defend against
+        that possibility.
 
         Note that previous data directories are kept around.
 
@@ -389,7 +380,8 @@ class WebModel(BaseWebObject, Model):
         background image for the current map.
         """
         if not self.map:
-            raise ValueError('Cannot setup a renderer if the model lacks a map')
+            raise ValueError('Cannot setup a renderer '
+                             'if the model lacks a map')
 
         if self.renderer:
             self.remove_renderer()
@@ -436,8 +428,7 @@ class WebModel(BaseWebObject, Model):
             if step_num == 0:
                 dt = self.start_time
             else:
-                delta = datetime.timedelta(
-                    seconds=step_num * self.time_step)
+                delta = datetime.timedelta(seconds=step_num * self.time_step)
                 dt = self.start_time + delta
             timestamps.append(dt)
 
@@ -471,20 +462,21 @@ class WebModel(BaseWebObject, Model):
 
         return data
 
-    def to_dict(self, include_spills=True, include_movers=True,
+    def to_dict(self,
+                include_spills=True,
+                include_movers=True,
                 include_wind=True):
         """
         Return a dictionary representation of this model. Includes subtrees
         (lists of dictionaries) for any movers and spills configured.
         """
-        data = {
-            'uncertain': self.uncertain,
-            'time_step': (self.time_step / 60.0) / 60.0,
-            'start_time': self.start_time,
-            'duration_days': 0,
-            'duration_hours': 0,
-            'id': self.id,
-        }
+        data = {'uncertain': self.uncertain,
+                'time_step': (self.time_step / 60.0) / 60.0,
+                'start_time': self.start_time,
+                'duration_days': 0,
+                'duration_hours': 0,
+                'id': self.id,
+                }
 
         if self.map and hasattr(self.map, 'to_dict'):
             data['map'] = self.map.to_dict('create')
@@ -532,7 +524,8 @@ class WebModel(BaseWebObject, Model):
             # Ignore obj_type - only used for serialization. TODO: Better way?
             map_data.pop('obj_type', None)
             # Make the filename, which is stored as a relative path, absolute
-            filename = os.path.join(self.package_root, map_data.pop('filename'))
+            filename = os.path.join(self.package_root,
+                                    map_data.pop('filename'))
             self.add_bna_map(filename, map_data)
 
         def add_to_collection(collection, data, cls):
@@ -624,15 +617,17 @@ class ModelManager(object):
         ``model_id``, else raises :class:`ModelManager.DoesNotExist`.
         """
         model_id = str(model_id)
+
         if not model_id in self.running_models:
             raise self.DoesNotExist
+
         return self.running_models.get(model_id)
 
     def delete(self, model_id):
         """
         Delete the model whose ID matches ``model_id``.
 
-        Using a ``model_id`` that does not exist in `running_models` is a no-op.
+        Using a model_id that does not exist in running_models is a no-op.
         """
         self.running_models.pop(model_id, None)
 
