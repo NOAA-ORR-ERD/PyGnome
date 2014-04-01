@@ -87,19 +87,19 @@ class WindSchema(base_schema.ObjType):
     from_dict to set _state of object
     '''
     description = SchemaNode(String(), missing=drop)
+    filename = SchemaNode(String(), missing=drop)
+    name = SchemaNode(String(), missing=drop)
+    updated_at = SchemaNode(LocalDateTime(), missing=drop)
+
     latitude = SchemaNode(Float(), missing=drop)
     longitude = SchemaNode(Float(), missing=drop)
-    name = SchemaNode(String(), missing=drop)
     source_id = SchemaNode(String(), missing=drop)
     source_type = SchemaNode(String(),
                              validator=OneOf(basic_types.wind_datasource._attr),
                              default='undefined', missing='undefined')
-    updated_at = SchemaNode(LocalDateTime(), missing=drop)
     units = SchemaNode(String(), default='m/s')
 
     timeseries = WindTimeSeriesSchema(missing=drop)
-    filename = SchemaNode(String(), missing=drop)
-    name = 'wind'
 
 
 class Wind(Environment, serializable.Serializable):
@@ -110,9 +110,10 @@ class Wind(Environment, serializable.Serializable):
     # - read only properties
 
     # default units for input/output data
-    _update = ['latitude',
-               'longitude',
+    _update = [
                'description',
+               'latitude',
+               'longitude',
                'source_id',
                'source_type',
                'updated_at',
@@ -336,21 +337,24 @@ class Wind(Environment, serializable.Serializable):
         """
         Return an unambiguous representation of this `Wind object` so it can
         be recreated
-
-        This timeseries are not output.  eval(repr(wind)) does not work for
-        this object and the timeseries could be long, so only the syntax
-        for obtaining the timeseries is given in repr
-
-        TODO: A hard-coded string is not really useful.  Maybe we should
-              provide some actual information pertaining to this class.
         """
+        self_ts = self.timeseries.__repr__()
+        return ('{0.__class__.__module__}.{0.__class__.__name__}('
+                'description="{0.description}", '
+                'source_id="{0.source_id}", '
+                'source_type="{0.source_type}", '
+                'units="{0.units}", '
+                'updated_at="{0.updated_at}", '
+                'timeseries={1}'
+                ')').format(self, self_ts)
+
         return "Wind( timeseries=Wind.get_timeseries('uv'), format='uv')"
 
     def __str__(self):
         '''
-        Return string representation of this object
+        Return a human readable string representation of this object
         '''
-        return 'Wind Object'
+        return "Wind( timeseries=Wind.get_timeseries('uv'), format='uv')"
 
     def __eq__(self, other):
         # since this has numpy array - need to compare that as well

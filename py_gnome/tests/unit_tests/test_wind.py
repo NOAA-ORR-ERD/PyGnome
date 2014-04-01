@@ -351,12 +351,14 @@ class TestWind:
         print 'get_uv:\t{0}'.format(get_uv.value[0])
         print 'time:  \t{0}'.format(dt)
         print '-----------------'
-        print 'u-bounds: ({0:0.4f},{1:0.4f});\t computed-u: ({2:0.4f})'.format(min(all_winds['uv'
-                ].value[:2, 0]), max(all_winds['uv'].value[:2, 0]),
-                get_uv.value[0, 0])
-        print 'v-bounds: ({0:0.4f},{1:0.4f});\t computed-v: ({2:0.4f})'.format(min(all_winds['uv'
-                ].value[:2, 1]), max(all_winds['uv'].value[:2, 1]),
-                get_uv.value[0, 1])
+        print ('u-bounds: ({0:0.4f},{1:0.4f});\t '
+               'computed-u: ({2:0.4f})'.format(min(all_winds['uv'].value[:2, 0]),
+                                               max(all_winds['uv'].value[:2, 0]),
+                                               get_uv.value[0, 0]))
+        print ('v-bounds: ({0:0.4f},{1:0.4f});\t '
+               'computed-v: ({2:0.4f})'.format(min(all_winds['uv'].value[:2, 1]),
+                                               max(all_winds['uv'].value[:2, 1]),
+                                               get_uv.value[0, 1]))
         print '-----------------'
         print 'FOR INFO ONLY: INTERPOLATION IS DONE IN (u,v) SPACE'
         print '(r,theta): '

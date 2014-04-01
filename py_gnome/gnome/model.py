@@ -122,6 +122,9 @@ class Model(Serializable):
         else:
             l_spills = c_spills
 
+        if 'obj_type' in dict_:
+            dict_.pop('obj_type')
+
         model = object.__new__(cls)
         model.__restore__(**dict_)
         [model.environment.add(obj) for obj in l_env]

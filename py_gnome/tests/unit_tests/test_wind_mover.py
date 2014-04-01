@@ -1,8 +1,11 @@
 import os
 from datetime import timedelta, datetime
 
-import numpy as np
 import pytest
+from pytest import raises
+
+import numpy
+np = numpy
 
 from hazpy import unit_conversion
 
@@ -36,18 +39,18 @@ def test_exceptions():
     """
     Test ValueError exception thrown if improper input arguments
     """
-    with pytest.raises(TypeError):
+    with raises(TypeError):
         WindMover()
 
-    with pytest.raises(ValueError):
+    with raises(ValueError):
         WindMover(environment.Wind(filename=file_),
                   uncertain_angle_units='xyz')
 
-    with pytest.raises(ValueError):
+    with raises(ValueError):
         wm = WindMover(environment.Wind(filename=file_))
         wm.set_uncertain_angle(.4, 'xyz')
 
-    with pytest.raises(TypeError):
+    with raises(TypeError):
         """
         violates duck typing so may want to remove. Though current WindMover's
         backend cython object looks for C++ OSSM object which is embedded in
@@ -251,7 +254,7 @@ class TestWindMover:
         curr_time = sec_to_date(date_to_sec(self.model_time) + self.time_step)
         tmp_windages = self.sc._data_arrays['windages']
         del self.sc._data_arrays['windages']
-        with pytest.raises(KeyError):
+        with raises(KeyError):
             self.wm.get_move(self.sc, self.time_step, curr_time)
         self.sc._data_arrays['windages'] = tmp_windages
 
@@ -402,7 +405,7 @@ def test_constant_wind_mover():
     tests the constant_wind_mover utility function
     """
 
-    with pytest.raises(Exception):
+    with raises(Exception):
 
         # it should raise an InvalidUnitError, but I don't want to have to
         # import unit_conversion just for that...

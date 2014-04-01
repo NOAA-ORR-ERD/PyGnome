@@ -135,9 +135,6 @@ cdef class CyOSSMTime(object):
         If this works properly, then eval(repr(<cy_ossm_time_obj>)) should
         product a copy of the CyOSSMTime object
         """
-        print '__repr__(): filename =', self.filename
-        print '__repr__(): file_contains =', self.file_contains
-
         self_ts = self.timeseries.__repr__()
         return ('{0.__class__.__module__}.{0.__class__.__name__}('
                 'filename="{0.filename}", '
