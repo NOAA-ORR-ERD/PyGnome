@@ -31,7 +31,8 @@ cdef class CyShioTime(object):
     def __init__(self,
                  path_,
                  daylight_savings_off=True,
-                 scale_factor=1):
+                 scale_factor=1,
+                 yeardata=None):
         """
         Init CyShioTime with defaults
         """
@@ -54,6 +55,9 @@ cdef class CyShioTime(object):
 
         else:
             raise IOError("No such file: " + path_)
+
+        if yeardata:
+            self.set_shio_yeardata_path(yeardata)
 
     def set_shio_yeardata_path(self, yeardata_path_):
         """
@@ -146,12 +150,11 @@ cdef class CyShioTime(object):
         Return an unambiguous representation of this object so it can be
         recreated
         """
-        # Tried the following, but eval(repr( obj_instance)) would not work
-        # on it so updated it to hard code the class name
-        # '{0.__class__}( "{0.filename}", daylight_savings_off={1})'.format(self, self.shio.daylight_savings_off)
         return ('{0.__class__.__module__}.{0.__class__.__name__}('
-                'filename="{0.filename}", '
-                'daylight_savings_off={0.shio.daylight_savings_off}'
+                '"{0.filename}", '
+                'daylight_savings_off={0.daylight_savings_off}, '
+                'scale_factor={0.scale_factor}, '
+                'yeardata="{0.yeardata}"'
                 ')'.format(self))
 
     def __str__(self):
@@ -171,6 +174,22 @@ cdef class CyShioTime(object):
                 "".format(self.get_info(), self))
 
         return info
+
+    def __eq(self, CyShioTime other):
+        attrs = ('filename', 'daylight_savings_off', 'scale_factor',
+                 'station', 'station_type', 'station_location',
+                 'yeardata')
+        return all([getattr(self, a) == getattr(other, a) for a in attrs])
+
+    def __richcmp__(self, CyShioTime other, int cmp):
+        if cmp not in (2, 3):
+            raise NotImplemented('CyOSSMTime does not support '
+                                 'this type of comparison.')
+
+        if cmp == 2:
+            return self.__eq(other)
+        elif cmp == 3:
+            return not self.__eq(other)
 
     def get_time_value(self, modelTime):
         """

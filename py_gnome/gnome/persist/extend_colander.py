@@ -1,11 +1,12 @@
 '''
-Extend standard colander types for gnome specific types
+Extend colander's basic types for serialization/deserialization
+of gnome specific types
 '''
-
 import datetime
-import time
 
 import numpy
+np = numpy
+
 from colander import Float, DateTime, Sequence, null, Tuple, \
     TupleSchema, SequenceSchema
 
@@ -13,19 +14,16 @@ import gnome.basic_types
 from gnome.utilities import inf_datetime
 
 
-"""
-Following extend colander's basic types for serialization/deserialization
-"""
-
 class LocalDateTime(DateTime):
-
     def __init__(self, *args, **kwargs):
         kwargs['default_tzinfo'] = kwargs.get('default_tzinfo', None)
         super(LocalDateTime, self).__init__(*args, **kwargs)
 
     def strip_timezone(self, _datetime):
-        if _datetime and isinstance(_datetime, datetime.datetime) \
-            or isinstance(_datetime, datetime.date):
+        if (_datetime and
+            (isinstance(_datetime, datetime.datetime) or
+             isinstance(_datetime, datetime.date))
+            ):
             _datetime = _datetime.replace(tzinfo=None)
         return _datetime
 
@@ -33,13 +31,12 @@ class LocalDateTime(DateTime):
         if isinstance(appstruct, datetime.datetime):
             appstruct = self.strip_timezone(appstruct)
             return super(LocalDateTime, self).serialize(node, appstruct)
-        elif isinstance(appstruct, inf_datetime.MinusInfTime) \
-            or isinstance(appstruct, inf_datetime.InfTime):
-
+        elif (isinstance(appstruct, inf_datetime.MinusInfTime) or
+              isinstance(appstruct, inf_datetime.InfTime)):
             return appstruct.isoformat()
 
     def deserialize(self, node, cstruct):
-        if cstruct == '-inf' or cstruct == 'inf':
+        if cstruct in ('inf', '-inf'):
             return inf_datetime.InfDateTime(cstruct)
         else:
             dt = super(LocalDateTime, self).deserialize(node, cstruct)
@@ -47,7 +44,6 @@ class LocalDateTime(DateTime):
 
 
 class DefaultTuple(Tuple):
-
     """
     A Tuple subclass that provides defaults from child nodes.
 
@@ -55,7 +51,6 @@ class DefaultTuple(Tuple):
     when ``appstruct`` is not provided, instead of creating a Tuple of
     default values.
     """
-
     def serialize(self, node, appstruct):
         items = super(DefaultTuple, self).serialize(node, appstruct)
 
@@ -66,14 +61,11 @@ class DefaultTuple(Tuple):
 
 
 class DatetimeValue2dArray(Sequence):
-
     """
     A subclass of :class:`colander.Sequence` that converts itself to a numpy
     array using :class:`gnome.basic_types.datetime_value_2d` as the data type.
     """
-
     def serialize(self, node, appstruct):
-
         if appstruct is null:  # colander.null
             return null
 
@@ -93,8 +85,8 @@ class DatetimeValue2dArray(Sequence):
         items = super(DatetimeValue2dArray, self).deserialize(node,
                 cstruct, accept_scalar=False)
         num_timeseries = len(items)
-        timeseries = numpy.zeros((num_timeseries,),
-                                 dtype=gnome.basic_types.datetime_value_2d)
+        timeseries = np.zeros((num_timeseries,),
+                              dtype=gnome.basic_types.datetime_value_2d)
 
         for (idx, value) in enumerate(items):
             timeseries['time'][idx] = value[0]
@@ -104,14 +96,12 @@ class DatetimeValue2dArray(Sequence):
 
 
 class TimeDelta(Float):
-
     """
     Add a type to serialize/deserialize timedelta objects
     """
-
     def serialize(self, node, appstruct):
         return super(TimeDelta, self).serialize(node,
-                appstruct.total_seconds())
+                                                appstruct.total_seconds())
 
     def deserialize(self, *args, **kwargs):
         sec = super(TimeDelta, self).deserialize(*args, **kwargs)
@@ -130,7 +120,4 @@ class DefaultTupleSchema(TupleSchema):
 
 
 class DatetimeValue2dArraySchema(SequenceSchema):
-
     schema_type = DatetimeValue2dArray
-
-

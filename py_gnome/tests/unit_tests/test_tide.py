@@ -5,6 +5,7 @@ Test all operations for cats mover work
 import os
 
 import pytest
+from pytest import raises
 
 from gnome.environment import Tide
 from gnome.utilities.remote_data import get_datafile
@@ -25,10 +26,10 @@ def test_exceptions():
 
     bad_file = os.path.join(lis_dir, 'CLISShio.txtX')
     bad_yeardata_path = os.path.join(data_dir, 'Data', 'yeardata')
-    with pytest.raises(IOError):
+    with raises(IOError):
         Tide(bad_file)
 
-    with pytest.raises(IOError):
+    with raises(IOError):
         Tide(shio_file, yeardata=bad_yeardata_path)
 
 
