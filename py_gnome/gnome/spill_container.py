@@ -602,7 +602,7 @@ class SpillContainerPair(SpillContainerPairData):
         '''
         return ident in self._spill_container.spills
 
-    def to_dict(self, do='update'):
+    def to_dict(self, json_='webapi'):
         """
         takes the instance of SpillContainerPair class and outputs a dict with:
             'certain_spills': call to_dict() on spills ordered collection
@@ -612,9 +612,9 @@ class SpillContainerPair(SpillContainerPairData):
             'uncertain_spills': call to_dict() on spills ordered collection
             stored in uncertain spill container
         """
-        dict_ = {'certain_spills': self._spill_container.spills.to_dict(do)}
+        dict_ = {'certain_spills': self._spill_container.spills.to_dict(json_)}
         if self.uncertain:
             dict_.update({'uncertain_spills':
-                          self._u_spill_container.spills.to_dict(do)})
+                          self._u_spill_container.spills.to_dict(json_)})
 
         return dict_

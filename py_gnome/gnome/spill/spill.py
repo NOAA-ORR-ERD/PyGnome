@@ -490,19 +490,19 @@ class Spill(serializable.Serializable):
         self.release.set_newparticle_positions(num_new_particles, current_time,
                                                time_step, data_arrays)
 
-    def serialize(self, do='update'):
+    def serialize(self, json_='webapi'):
         """
         override base serialize implementation
         Need to add node for release object and element_type object
         """
-        dict_ = self.to_dict(do)
+        toserial = self.to_dict(json_)
         schema = self.__class__._schema(
             release=self.release.__class__._schema())
 
-        json_ = schema.serialize(dict_)
-        json_['element_type'] = self.element_type.serialize(do)
+        o_json_ = schema.serialize(toserial)
+        o_json_['element_type'] = self.element_type.serialize(json_)
 
-        return json_
+        return o_json_
 
     @classmethod
     def deserialize(cls, json_):

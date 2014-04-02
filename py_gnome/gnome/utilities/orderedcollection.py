@@ -195,7 +195,7 @@ class OrderedCollection(object):
         else:
             return True
 
-    def to_dict(self, do='update'):
+    def to_dict(self, json_='webapi'):
         '''
         Method takes the instance of ordered collection and outputs a dict with
         two fields:
@@ -210,14 +210,14 @@ class OrderedCollection(object):
                 versus saving data out is different
 
         '''
-        if do == 'create':
+        if json_ == 'create':
             data = {'dtype': self.dtype,
                     'items': []}
         else:
             data = []
 
         for count, obj in enumerate(self):
-            if do == 'create':
+            if json_ == 'create':
                 try:
                     obj_type = \
                         '{0.__module__}.{0.__class__.__name__}'.format(obj)
