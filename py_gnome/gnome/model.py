@@ -47,8 +47,8 @@ class SpillContainerPairSchema(MappingSchema):
     there isn't a need
     '''
 
-    def __init__(self, do='update', **kwargs):
-        if do == 'create':
+    def __init__(self, json_='webapi', **kwargs):
+        if json_ == 'create':
             self.add(base_schema.OrderedCollection(name='certain_spills'))
             self.add(base_schema.OrderedCollection(name='uncertain_spills',
                                                    missing=drop))
@@ -73,11 +73,11 @@ class ModelSchema(base_schema.ObjType):
     map_id = SchemaNode(String(), missing=drop)
     cache_enabled = SchemaNode(Bool())
 
-    def __init__(self, do='update', **kwargs):
-        self.add(SpillContainerPairSchema(do, name='spills'))
+    def __init__(self, json_='webapi', **kwargs):
+        self.add(SpillContainerPairSchema(json_, name='spills'))
         oc_list = ['movers', 'weatherers', 'environment', 'outputters']
         for oc in oc_list:
-            if do == 'create':
+            if json_ == 'create':
                 self.add(base_schema.OrderedCollection(name=oc))
             else:
                 self.add(base_schema.OrderedCollectionIDList(name=oc))
@@ -777,18 +777,16 @@ class Model(Serializable):
             for file_ in filenames:
                 os.remove(os.path.join(dirpath, file_))
 
-    def serialize(self, do='update'):
+    def serialize(self, json_='webapi'):
         '''
-        for update, the ordered collections only contain the IDs of the objects
+        for webapi, the ordered collections only contain the IDs of the objects
         during serialization/deserialization as required by the WebAPI. For
         'create', the 'dtype' and 'items' returned by the ordered collection
         dict is kept for loading from save files and for information
         '''
-        toserial = self.to_dict(do)
-        schema = self.__class__._schema(do)
-        json_ = schema.serialize(toserial)
-
-        return json_
+        toserial = self.to_dict(json_)
+        schema = self.__class__._schema(json_)
+        return schema.serialize(toserial)
 
     @classmethod
     def deserialize(cls, json_):

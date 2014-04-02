@@ -186,39 +186,38 @@ def _uncertain_loop(pSpill, component):
     return u_delta
 
 
-@pytest.mark.parametrize(("do"), ['create', 'update'])
-def test_serialize_deserialize_wind(do):
+@pytest.mark.parametrize(("json_"), ['create', 'webapi'])
+def test_serialize_deserialize_wind(json_):
     """
     test to_dict function for Component mover with wind object
     create a new Component mover and make sure it has same properties
     """
 
     c_component = ComponentMover(curr1_file, wind=wnd)
-    json_ = c_component.serialize(do)
-    dict_ = c_component.deserialize(json_)
-    if do == 'create':
+    serial = c_component.serialize(json_)
+    dict_ = c_component.deserialize(serial)
+    if json_ == 'create':
         dict_.update({'wind': wnd})
         c2 = ComponentMover.new_from_dict(dict_)
         assert c_component == c2
     else:
-        assert json_['wind'] == wnd.serialize(do)
+        assert serial['wind'] == wnd.serialize(json_)
         c_component.from_dict(dict_)
         assert c_component.wind is wnd
 
 
-@pytest.mark.parametrize(("do"), ['create', 'update'])
-def test_serialize_deserialize_curronly(do):
+@pytest.mark.parametrize(("json_"), ['create', 'webapi'])
+def test_serialize_deserialize_curronly(json_):
     """
     test to_dict function for Component mover
     create a new component mover and make sure it has same properties
     """
 
     c_component = ComponentMover(curr1_file)
-    json_ = c_component.serialize(do)
-    dict_ = c_component.deserialize(json_)
-    if do == 'create':
+    serial = c_component.serialize(json_)
+    dict_ = c_component.deserialize(serial)
+    if json_ == 'create':
         c2 = ComponentMover.new_from_dict(dict_)
         assert c_component == c2
     else:
         c_component.from_dict(dict_)
-

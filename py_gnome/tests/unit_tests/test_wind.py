@@ -446,8 +446,8 @@ def test_new_from_dict_timeseries():
     assert wm == wm2
 
 
-@pytest.mark.parametrize(("do"), ['create', 'update'])
-def test_serialize_deserialize(wind_circ, do):
+@pytest.mark.parametrize(("json_"), ['create', 'webapi'])
+def test_serialize_deserialize(wind_circ, json_):
     '''
     wind_circ is a fixture
     create - it creates new object after serializing original object
@@ -456,9 +456,9 @@ def test_serialize_deserialize(wind_circ, do):
     update - tests serialize/deserialize and from_dict methods don't fail.
         It doesn't update any properties.
     '''
-    json_ = wind_circ['wind'].serialize(do)
-    dict_ = Wind.deserialize(json_)
-    if do == 'create':
+    serial = wind_circ['wind'].serialize(json_)
+    dict_ = Wind.deserialize(serial)
+    if json_ == 'create':
         new_w = Wind.new_from_dict(dict_)
         assert new_w == wind_circ['wind']
     else:

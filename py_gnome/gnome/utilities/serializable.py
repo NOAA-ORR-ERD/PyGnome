@@ -496,13 +496,32 @@ class Serializable(object):
 
         return cls(**dict_)
 
-    def to_dict(self, do='update'):
+    def _attrlist_to_dict(self, do=('update',)):
+        '''
+        returns list of object attributes that need to be serialized. By
+        default all fields that have 'update' == True are returned.
+        By default it converts the 'update' list of the _state object to dict;
+        however, do=('create',) or do=('update','read') will return the dict
+        with the union of the corresponding lists.
+        '''
+        list_ = []
+        for action in do:
+            if action == 'update':
+                list_.extend(self._state.get_names('update'))
+            elif action == 'create':
+                list_.extend(self._state.get_names('create'))
+            elif action == 'read':
+                list_.extend(self._state.get_names('read'))
+            else:
+                raise ValueError("input not understood. String must be one of "
+                    "following: 'update', 'create' or 'readonly'.")
+
+        return list_
+
+    def to_dict(self, json_='webapi'):
         """
         returns a dictionary containing the serialized representation of this
         object.
-        By default it converts the 'update' list of the _state object to dict;
-        however, do='create' or do='read' will return the dict with the
-        corresponding list.
 
         For every field, if there is a method defined on the object such that
         the method name is `{field_name}_to_dict`, use the return value of that
@@ -510,31 +529,25 @@ class Serializable(object):
 
         Note: any field in `list` that does not exist on the
         object and does not have a to_dict method will raise an AttributeError.
-        """
 
-        if do == 'update':
-            list_ = self._state.get_names('update')
-        elif do == 'create':
-            list_ = self._state.get_names('create')
-        elif do == 'read':
-            list_ = self._state.get_names('read')
+        :param json_='webapi': return the attributes for json payload for webapi
+            The other option is 'save' corresponding with json for save files.
+        """
+        if json_ == 'webapi':
+            list_ = self._attrlist_to_dict(do=('update', 'read'))
+        elif json_ == 'create':
+            list_ = self._attrlist_to_dict(do=('create',))
         else:
-            raise ValueError("input not understood. String must be one of following: 'update', 'create' or 'readonly'."
-                             )
+            # raise error if json_ payload is not for webapi or save files
+            # list_ = []
+            raise ValueError("desired json_ payload must be either for webapi "
+                "or for save files: ('webapi', 'create')")
 
         data = {}
         for key in list_:
-#==============================================================================
-#             to_dict_fn_name = '%s_to_dict' % key
-# 
-#             if hasattr(self, to_dict_fn_name):
-#                 value = getattr(self, to_dict_fn_name)()
-#             else:
-#                 value = getattr(self, key)
-#==============================================================================
             value = self.attr_to_dict(key)
             if hasattr(value, 'to_dict'):
-                value = value.to_dict(do)  # recursively call on contained objects
+                value = value.to_dict(json_)  # recursively call on contained objects
 
             if value is not None:  # no need to persist properties that are None!
                 data[key] = value
@@ -558,7 +571,7 @@ class Serializable(object):
         """
         modifies _state of the object using dictionary 'data'. 
         Only the self._state.update list contains properties that can me modified for existing object
-        
+
         Set the _state of this object using the dictionary ``data`` by looking up
         the value of each key in ``data`` that is also in  `list_`. Input list_ 
         contains the object's attributes (or fields) updated with data
@@ -684,7 +697,7 @@ class Serializable(object):
         else:
             return True
 
-    def serialize(self, do='update'):
+    def serialize(self, json_='webapi'):
         """
         Convert the dict returned by object's to_dict method to valid json
         format via colander schema
@@ -705,11 +718,11 @@ class Serializable(object):
             todo: revisit this to see if it still makes sense to have different
             attributes for different operations like 'update', 'create', 'read'
         """
-        dict_ = self.to_dict(do)
+        toserial = self.to_dict(json_)
         schema = self.__class__._schema()
-        json_ = schema.serialize(dict_)
+        serial = schema.serialize(toserial)
 
-        return json_
+        return serial
 
     @classmethod
     def deserialize(cls, json_):

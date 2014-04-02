@@ -288,7 +288,7 @@ def test_dump_update_option(images_dir, uncertain):
     os.makedirs(webapi_files)
 
     model = make_model(images_dir, uncertain)
-    json_ = model.serialize('update')
+    json_ = model.serialize('webapi')
     fname = os.path.join(webapi_files, 'Model.json')
     with open(fname, 'w') as outfile:
         json.dump(json_, outfile, indent=True)

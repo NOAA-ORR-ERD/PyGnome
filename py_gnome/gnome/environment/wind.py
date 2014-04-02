@@ -495,7 +495,7 @@ class Wind(Environment, serializable.Serializable):
         timeval = convert.to_time_value_pair(datetime_value_2d, format)
         self.ossm.timeseries = timeval
 
-    def to_dict(self, do='update'):
+    def to_dict(self, json_='webapi'):
         """
         Call base class to_dict using super
 
@@ -505,9 +505,9 @@ class Wind(Environment, serializable.Serializable):
         object. If both are given, then 'filename' takes precedence.
         """
 
-        dict_ = super(Wind, self).to_dict(do)
+        dict_ = super(Wind, self).to_dict(json_)
 
-        if do == 'create':
+        if json_ == 'create':
             if self.filename is not None:
 
                 # dict_.pop('filename')
