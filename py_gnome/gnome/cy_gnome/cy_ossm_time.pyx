@@ -134,6 +134,16 @@ cdef class CyOSSMTime(object):
         recreated.
         If this works properly, then eval(repr(<cy_ossm_time_obj>)) should
         product a copy of the CyOSSMTime object
+
+        (Note: the timeseries is a numpy array, and if it gets really big,
+               say 1000 elements or more, then the repr() will abbreviate,
+               and the representation will be ambiguous and not reproducible.
+               The way to increase this size threshold is with the command
+
+               np.set_printoptions(threshold=<really_big_number>).
+
+               But do we really want to do that?  One of our unit tests
+               has nearly 30000 elements in the timeseries.)
         """
         self_ts = self.timeseries.__repr__()
         return ('{0.__class__.__module__}.{0.__class__.__name__}('

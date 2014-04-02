@@ -45,20 +45,8 @@ class TimeSeriesTuple(DefaultTupleSchema):
     datetime = SchemaNode(LocalDateTime(default_tzinfo=None),
                           default=base_schema.now,
                           validator=validators.convertible_to_seconds)
-    u = SchemaNode(Float(),
-                   default=0,
-                   validator=Range(min=0,
-                                   min_err=('wind speed must be '
-                                            'greater than or equal to 0')
-                                   )
-                   )
-    v = SchemaNode(Float(),
-                   default=0,
-                   validator=Range(min=0,
-                                   min_err=('wind speed must be '
-                                            'greater than or equal to 0')
-                                   )
-                   )
+    u = SchemaNode(Float())
+    v = SchemaNode(Float())
 
 
 class TimeSeriesSchema(DatetimeValue2dArraySchema):
@@ -198,9 +186,7 @@ class Tide(Environment, Serializable):
                                       )[self.cy_obj.filename == ''])
 
     timeseries = property(lambda self: self.get_timeseries(),
-                          lambda self, val: self.set_timeseries(val,
-                                                                units=self.units)
-                          )
+                          lambda self, val: self.set_timeseries(val))
 
     def get_timeseries(self, datetime=None, format='uv'):
         """
@@ -224,9 +210,7 @@ class Tide(Environment, Serializable):
                   Contains user specified datetime and the corresponding
                   values in user specified ts_format
         """
-        if datetime is None:
-            datetimeval = to_datetime_value_2d(self.cy_obj.timeseries, format)
-        else:
+        if datetime:
             datetime = np.asarray(datetime, dtype='datetime64[s]').reshape(-1)
             timeval = np.zeros((len(datetime), ), dtype=time_value_pair)
 
@@ -234,6 +218,15 @@ class Tide(Environment, Serializable):
             timeval['value'] = self.cy_obj.get_time_value(timeval['time'])
 
             datetimeval = to_datetime_value_2d(timeval, format)
+        elif isinstance(self.cy_obj, CyOSSMTime):
+            datetimeval = to_datetime_value_2d(self.cy_obj.timeseries, format)
+        else:
+            # Here, we are probably managing a CyShioTime object, which
+            # has no timeseries attribute.
+            # As far as I can tell, it just interpolates model time values
+            # that you pass in.
+            # So if we don't specify any values, we get nothing back.
+            return None
 
         return datetimeval
 
@@ -252,8 +245,9 @@ class Tide(Environment, Serializable):
         :type format: either string or integer value defined by
                       basic_types.format.* (see cy_basic_types.pyx)
         """
-        timeval = to_time_value_pair(datetime_value_2d, format)
-        self.ossm.timeseries = timeval
+        if not isinstance(self.cy_obj, CyShioTime):
+            timeval = to_time_value_pair(datetime_value_2d, format)
+            self.cy_obj.timeseries = timeval
 
     def _obj_to_create(self, filename):
         """
@@ -284,8 +278,8 @@ class Tide(Environment, Serializable):
 
         shio_file = ['[StationInfo]', 'Type=', 'Name=', 'Latitude=']
 
-        if all([shio_file[i] == (lines[i])[:len(shio_file[i])] for i in
-               range(4)]):
+        if all([shio_file[i] == (lines[i])[:len(shio_file[i])]
+                for i in range(4)]):
             return CyShioTime(filename)
         elif len(string.split(lines[3], ',')) == 7:
 
