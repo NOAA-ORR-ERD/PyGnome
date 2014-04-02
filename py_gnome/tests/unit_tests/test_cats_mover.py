@@ -183,37 +183,38 @@ def _uncertain_loop(pSpill, cats):
     return u_delta
 
 
-@pytest.mark.parametrize(("do"), ['create', 'update'])
-def test_serialize_deserialize_tide(do):
+#@pytest.mark.parametrize(("json_"), ['create', 'webapi'])
+@pytest.mark.parametrize(("json_"), ['webapi'])
+def test_serialize_deserialize_tide(json_):
     """
     test to_dict function for Wind object
     create a new wind object and make sure it has same properties
     """
 
     c_cats = CatsMover(curr_file, tide=td)
-    json_ = c_cats.serialize(do)
-    dict_ = c_cats.deserialize(json_)
-    if do == 'create':
+    toserial = c_cats.serialize(json_)
+    dict_ = c_cats.deserialize(toserial)
+    if json_ == 'create':
         dict_.update({'tide': td})
         c2 = CatsMover.new_from_dict(dict_)
         assert c_cats == c2
     else:
-        assert json_['tide'] == td.serialize(do)
+        assert toserial['tide'] == td.serialize(json_)
         c_cats.from_dict(dict_)
         assert c_cats.tide is td
 
 
-@pytest.mark.parametrize(("do"), ['create', 'update'])
-def test_serialize_deserialize_curronly(do):
+@pytest.mark.parametrize(("json_"), ['create', 'webapi'])
+def test_serialize_deserialize_curronly(json_):
     """
     test to_dict function for Wind object
     create a new wind object and make sure it has same properties
     """
 
     c_cats = CatsMover(curr_file)
-    json_ = c_cats.serialize(do)
-    dict_ = c_cats.deserialize(json_)
-    if do == 'create':
+    toserial = c_cats.serialize(json_)
+    dict_ = c_cats.deserialize(toserial)
+    if json_ == 'create':
         c2 = CatsMover.new_from_dict(dict_)
         assert c_cats == c2
     else:

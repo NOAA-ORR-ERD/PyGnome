@@ -218,15 +218,15 @@ class TestOrderedCollection(object):
             != OrderedCollection([1, 2, 3, 4])
         assert OrderedCollection([1, 2, 3, 4, 5]) != [1, 2, 3, 4, 5]
 
-    @mark.parametrize('do', ['create', 'update'])
-    def test_to_dict(self, do):
+    @mark.parametrize('json_', ['create', 'webapi'])
+    def test_to_dict(self, json_):
         'added a to_dict() method - test this method'
 
         items = [SimpleMover(velocity=(i * 0.5, -1.0, 0.0)) for i in
                  range(2)]
         items.extend([RandomMover() for i in range(2)])
         mymovers = OrderedCollection(items, dtype=Mover)
-        self._to_dict_assert(mymovers, items, do)
+        self._to_dict_assert(mymovers, items, json_)
 
     @mark.parametrize('do', ['create', 'update'])
     def test_int_to_dict(self, do):
@@ -236,19 +236,19 @@ class TestOrderedCollection(object):
         oc = OrderedCollection(items)
         self._to_dict_assert(oc, items, do)
 
-    def _to_dict_assert(self, oc, items, do):
-        toserial = oc.to_dict(do)
-        if do == 'create':
+    def _to_dict_assert(self, oc, items, json_):
+        toserial = oc.to_dict(json_)
+        if json_ == 'create':
             assert toserial['dtype'] == oc.dtype
         for (i, mv) in enumerate(items):
-            if do == 'create':
+            if json_ == 'create':
                 try:
                     assert toserial['items'][i][0] == \
                         '{0}.{1}'.format(mv.__module__, mv.__class__.__name__)
                 except AttributeError:
                     assert toserial['items'][i][0] == mv.__class__.__name__
                 assert toserial['items'][i][1] == i
-            elif do == 'update':
+            elif json_ == 'webapi':
                 try:
                     assert toserial[i] == mv.id
                 except AttributeError:

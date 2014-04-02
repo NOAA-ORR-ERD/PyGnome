@@ -42,9 +42,9 @@ def test_file(filename):
     assert td.filename == filename
 
 
-@pytest.mark.parametrize(('filename', 'do'),
-                        [(shio_file, 'create'), (ossm_file, 'update')])
-def test_serialize_deserialize(filename, do):
+@pytest.mark.parametrize(('filename', 'json_'),
+                        [(shio_file, 'create'), (ossm_file, 'webapi')])
+def test_serialize_deserialize(filename, json_):
     '''
     create - it creates new object after serializing original object
         and tests equality of the two
@@ -53,9 +53,9 @@ def test_serialize_deserialize(filename, do):
         It doesn't update any properties.
     '''
     tide = Tide(filename)
-    json_ = tide.serialize(do)
-    dict_ = Tide.deserialize(json_)
-    if do == 'create':
+    serial = tide.serialize(json_)
+    dict_ = Tide.deserialize(serial)
+    if json_ == 'create':
         new_t = Tide.new_from_dict(dict_)
         assert new_t is not tide
         assert new_t == tide

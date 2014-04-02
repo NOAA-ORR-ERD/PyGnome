@@ -436,33 +436,33 @@ def test_wind_mover_from_file():
     assert wm.wind.filename == file_
 
 
-@pytest.mark.parametrize(("do"), ['create', 'update'])
-def test_serialize_deserialize(wind_circ, do):
+@pytest.mark.parametrize(("json_"), ['create', 'webapi'])
+def test_serialize_deserialize(wind_circ, json_):
     """
     tests and illustrates the funcitonality of serialize/deserialize for
     WindMover.
     """
     wind = environment.Wind(filename=file_)
     wm = WindMover(wind)
-    json_ = wm.serialize(do)
-    if do == 'create':
-        assert 'wind' not in json_
+    serial = wm.serialize(json_)
+    if json_ == 'create':
+        assert 'wind' not in serial
 
         # reference to 'wind' object is made by the Model().save() function
         # by default 'wind' object is not serialized in 'create' mode
         # so for this test to work, add the 'wind' key, value back in before
         # constructing new WindMover. In the real use case, the model does this
-        dict_ = wm.deserialize(json_)
+        dict_ = wm.deserialize(serial)
         dict_['wind'] = wind
         wm2 = WindMover.new_from_dict(dict_)
         assert wm == wm2
 
     else:
-        assert 'wind' in json_
+        assert 'wind' in serial
 
         wind_update = wind_circ['wind']
-        json_['wind'] = wind_update.serialize(do)
-        dict_ = wm.deserialize(json_)
+        serial['wind'] = wind_update.serialize(json_)
+        dict_ = wm.deserialize(serial)
         wm.from_dict(dict_)
 
         assert wm.wind == wind_update

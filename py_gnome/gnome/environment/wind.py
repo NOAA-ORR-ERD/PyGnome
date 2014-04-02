@@ -12,31 +12,34 @@ import numpy
 np = numpy
 
 from colander import (SchemaNode,
-                      String, Float, Range,
-                      OneOf, drop)
+                      drop,
+                      Range,
+                      String,
+                      OneOf,
+                      Float)
+
+from .environment import Environment
+from gnome.persist.extend_colander import (DefaultTupleSchema,
+                      LocalDateTime, DatetimeValue2dArraySchema)
+from gnome.persist import validators, base_schema
+
+#import gnome
+from gnome import basic_types
 
 # TODO: The name 'convert' is doubly defined as
 #       hazpy.unit_conversion.convert and...
 #       gnome.utilities.convert
 #       This will inevitably cause namespace collisions.
 from hazpy import unit_conversion
+from gnome.utilities.time_utils import sec_to_date, date_to_sec
 from hazpy.unit_conversion import (ConvertDataUnits,
                                    GetUnitNames,
                                    InvalidUnitError)
 
-from gnome import basic_types
 from gnome.utilities import serializable
-from gnome.utilities.time_utils import sec_to_date, date_to_sec
 from gnome.utilities.convert import (to_time_value_pair,
                                      tsformat,
                                      to_datetime_value_2d)
-
-from .environment import Environment
-
-from gnome.persist.extend_colander import (DefaultTupleSchema,
-                      LocalDateTime, DatetimeValue2dArraySchema)
-from gnome.persist import validators, base_schema
-
 
 from gnome.cy_gnome.cy_ossm_time import CyOSSMTime
 
@@ -142,7 +145,7 @@ class Wind(Environment, serializable.Serializable):
     # list of valid velocity units for timeseries
     valid_vel_units = list(chain.from_iterable([item[1] for item in
                                                 ConvertDataUnits['Velocity'].values()]))
-    valid_vel_units.extend(unit_conversion.GetUnitNames('Velocity'))
+    valid_vel_units.extend(GetUnitNames('Velocity'))
 
     def __init__(self, **kwargs):
         """
@@ -478,7 +481,7 @@ class Wind(Environment, serializable.Serializable):
         timeval = to_time_value_pair(datetime_value_2d, format)
         self.ossm.timeseries = timeval
 
-    def to_dict(self, do='update'):
+    def to_dict(self, json_='webapi'):
         """
         Call base class to_dict using super
 
@@ -487,9 +490,10 @@ class Wind(Environment, serializable.Serializable):
         Only timeseries or filename need to be saved to recreate the original
         object. If both are given, then 'filename' takes precedence.
         """
-        dict_ = super(Wind, self).to_dict(do)
 
-        if do == 'create':
+        dict_ = super(Wind, self).to_dict(json_)
+
+        if json_ == 'create':
             if self.filename is not None:
                 # we can't have both a filename and timeseries data
                 dict_.pop('timeseries')

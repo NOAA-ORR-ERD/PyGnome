@@ -19,8 +19,9 @@ class ObjType(MappingSchema):
     '''
     defines the obj_type which is stored by all gnome objects when persisting
     to save files
+    It also optionally stores the 'id' if present
     '''
-    #id = SchemaNode(String(), missing=drop)
+    id = SchemaNode(String(), missing=drop)
     obj_type = SchemaNode(String(), missing=drop)
 
 
