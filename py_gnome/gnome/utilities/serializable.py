@@ -569,12 +569,15 @@ class Serializable(object):
 
     def from_dict(self, data):
         """
-        modifies _state of the object using dictionary 'data'. 
-        Only the self._state.update list contains properties that can me modified for existing object
+        modifies attributes of the object using dictionary 'data'.
+        Only the fields in self._state with update=True contains properties
+        that can be modified for existing object
 
-        Set the _state of this object using the dictionary ``data`` by looking up
-        the value of each key in ``data`` that is also in  `list_`. Input list_ 
-        contains the object's attributes (or fields) updated with data
+        Update the attributes of this object using the dictionary ``data`` by
+        looking up the value of each key in ``data``.
+        The fields in self._state that have update=True are modified. The
+        remaining keys in 'data' are ignored. The object's _state attribute
+        defines what fields can be updated
 
         For every field, the choice of how to set the field is as follows:
 
