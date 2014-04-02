@@ -9,8 +9,6 @@ import shutil
 import numpy
 np = numpy
 
-import gnome
-
 
 class Field(object):  # ,serializable.Serializable):
     '''
@@ -436,7 +434,7 @@ class Serializable(object):
     object as a string.
     """
 
-    _state = State(create=['obj_type'])
+    _state = State(create=['obj_type'], read=['obj_type', 'id'])
 
     # =========================================================================
     # @classmethod

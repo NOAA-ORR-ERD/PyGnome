@@ -670,10 +670,8 @@ class Model(Serializable):
         self._save_json_to_file(saveloc, json_,
             '{0}.json'.format(self.map.__class__.__name__))
 
-        self._save_collection(saveloc, self.movers)
-        self._save_collection(saveloc, self.weatherers)
-        self._save_collection(saveloc, self.environment)
-        self._save_collection(saveloc, self.outputters)
+        for coll in ['movers', 'weatherers', 'environment', 'outputters']:
+            self._save_collection(saveloc, getattr(self, coll))
 
         for sc in self.spills.items():
             self._save_collection(saveloc, sc.spills)

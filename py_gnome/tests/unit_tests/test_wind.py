@@ -481,9 +481,10 @@ def test_from_dict():
     (wm_dict['timeseries'][0]['value'])[:] = update_value
     wm.from_dict(wm_dict)
 
+    updatable_attr = wm._state.get_field_by_attribute('update')
     for key in wm_dict.keys():
-        if key != 'timeseries':
-            assert wm.__getattribute__(key) == wm_dict.__getitem__(key)
+        if key in updatable_attr and key != 'timeseries':
+            assert getattr(wm, key) == wm_dict[key]
 
     assert np.all(wm.timeseries['value'][0] == update_value)
 

@@ -282,13 +282,32 @@ def test_load_midrun_ne_rewound_model(images_dir, uncertain):
     assert model != model2
 
 
-@pytest.mark.parametrize('uncertain', [False, True])
-def test_dump_update_option(images_dir, uncertain):
-    del_saveloc(webapi_files)
-    os.makedirs(webapi_files)
+class TestWebApi:
 
-    model = make_model(images_dir, uncertain)
-    json_ = model.serialize('webapi')
-    fname = os.path.join(webapi_files, 'Model.json')
-    with open(fname, 'w') as outfile:
-        json.dump(json_, outfile, indent=True)
+    def _write_to_file(self, fname, data):
+        with open(fname, 'w') as outfile:
+            json.dump(data, outfile, indent=True)
+
+    def _dump_collection(self, coll_):
+        # for each object in the model, dump the json
+        for count, obj in enumerate(coll_):
+            serial = obj.serialize('webapi')
+            fname = os.path.join(webapi_files,
+                '{0}_{1}.json'.format(obj.__class__.__name__, count))
+            self._write_to_file(fname, serial)
+
+    @pytest.mark.parametrize('uncertain', [False, True])
+    def test_dump_webapi_option(self, images_dir, uncertain):
+        model = make_model(images_dir, uncertain)
+        del_saveloc(webapi_files)
+        os.makedirs(webapi_files)
+        serial = model.serialize('webapi')
+        fname = os.path.join(webapi_files, 'Model.json')
+        self._write_to_file(fname, serial)
+
+        for coll in ['movers', 'weatherers', 'environment', 'outputters']:
+            self._dump_collection(getattr(model, coll))
+
+        for sc in model.spills.items():
+            if sc is uncertain:
+                self._dump_collection(sc)
