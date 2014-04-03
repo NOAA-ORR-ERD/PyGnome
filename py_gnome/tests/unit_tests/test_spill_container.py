@@ -644,22 +644,26 @@ class TestAddSpillContainerPair:
         for sp_tuple in zip(c_spill, u_spill):
             scp += sp_tuple
 
-        dict_ = scp.to_dict(json_)
+        toserial = scp.to_dict(json_)
 
-        for key in dict_.keys():
-            if key == 'certain_spills':
-                enum_spill = c_spill
-            elif key == 'uncertain_spills':
-                enum_spill = u_spill
+        if json_ == 'webapi':
+            alltrue = [spill.id == toserial[ix] \
+                            for ix, spill in enumerate(c_spill)]
+            assert all(alltrue)
 
-            for (i, spill) in enumerate(enum_spill):
-                if json_ == 'create':
-                    assert dict_[key]['items'][i][0] \
-                        == '{0}.{1}'.format(spill.__module__,
-                            spill.__class__.__name__)
-                    assert dict_[key]['items'][i][1] == i
-                elif json_ == 'webapi':
-                    assert dict_[key][i] == spill.id
+        elif json_ == 'create':
+            for key in toserial.keys():
+                if key == 'certain_spills':
+                    enum_spill = c_spill
+                elif key == 'uncertain_spills':
+                    enum_spill = u_spill
+
+                for (i, spill) in enumerate(enum_spill):
+                    if json_ == 'create':
+                        assert toserial[key]['items'][i][0] \
+                            == '{0}.{1}'.format(spill.__module__,
+                                spill.__class__.__name__)
+                        assert toserial[key]['items'][i][1] == i
 
 
 def test_get_spill_mask():

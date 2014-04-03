@@ -46,19 +46,9 @@ class SpillContainerPairSchema(MappingSchema):
     in this module. The SpillContainerPair object is not serializable since
     there isn't a need
     '''
-
-    def __init__(self, json_='webapi', **kwargs):
-        if json_ == 'create':
-            self.add(base_schema.OrderedCollection(name='certain_spills'))
-            self.add(base_schema.OrderedCollection(name='uncertain_spills',
-                                                   missing=drop))
-        else:
-            self.add(base_schema.OrderedCollectionIDList(
-                                                        name='certain_spills'))
-            self.add(base_schema.OrderedCollectionIDList(
-                                        name='uncertain_spills', missing=drop))
-
-        super(SpillContainerPairSchema, self).__init__(**kwargs)
+    certain_spills = base_schema.OrderedCollection(name='certain_spills')
+    uncertain_spills = base_schema.OrderedCollection(name='uncertain_spills',
+                                           missing=drop)
 
 
 class ModelSchema(base_schema.ObjType):
@@ -74,7 +64,11 @@ class ModelSchema(base_schema.ObjType):
     cache_enabled = SchemaNode(Bool())
 
     def __init__(self, json_='webapi', **kwargs):
-        self.add(SpillContainerPairSchema(json_, name='spills'))
+        if json_ == 'create':
+            self.add(SpillContainerPairSchema(name='spills'))
+        else:
+            self.add(base_schema.OrderedCollectionIDList(name='spills'))
+
         oc_list = ['movers', 'weatherers', 'environment', 'outputters']
         for oc in oc_list:
             if json_ == 'create':
