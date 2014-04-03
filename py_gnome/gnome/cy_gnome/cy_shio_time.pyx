@@ -14,6 +14,7 @@ from utils cimport (ShioTimeValue_c,
 
 from cy_helpers cimport to_bytes
 
+
 cdef class CyShioTime(object):
     """
     Cython wrapper around instantiating and using ShioTimeValue_c object
@@ -30,7 +31,8 @@ cdef class CyShioTime(object):
     def __init__(self,
                  path_,
                  daylight_savings_off=True,
-                 scale_factor=1):
+                 scale_factor=1,
+                 yeardata=None):
         """
         Init CyShioTime with defaults
         """
@@ -38,19 +40,24 @@ cdef class CyShioTime(object):
         self.shio.daylight_savings_off = daylight_savings_off
 
         if os.path.exists(path_):
-            path_= os.path.normpath(path_)
+            path_ = os.path.normpath(path_)
             file_ = to_bytes(unicode(path_))
             err = self.shio.ReadTimeValues(file_)
             if err != 0:
-                raise ValueError("File could not be correctly read by ShioTimeValue_c.ReadTimeValues(...)")
+                raise ValueError("File could not be correctly read by "
+                                 "ShioTimeValue_c.ReadTimeValues(...)")
 
-            # also set user_units for base class to -1 (undefined). For Shio, the units don't matter since it returns
+            # also set user_units for base class to -1 (undefined).
+            # For Shio, the units don't matter since it returns
             # the values by which the currents should be scaled
             self.shio.SetUserUnits(-1)
             self.scale_factor = scale_factor
 
         else:
             raise IOError("No such file: " + path_)
+
+        if yeardata:
+            self.set_shio_yeardata_path(yeardata)
 
     def set_shio_yeardata_path(self, yeardata_path_):
         """
@@ -66,9 +73,12 @@ cdef class CyShioTime(object):
         if os.path.exists(yeardata_path):
             if yeardata_path[-1] != os.sep:
                 yeardata_path = os.path.normpath(yeardata_path) + os.sep
-            err = self.shio.SetYearDataPath(yeardata_path)  # implicit conversion from bytes to char *
+
+            # implicit conversion from bytes to char *
+            err = self.shio.SetYearDataPath(yeardata_path)
             if err != 0:
-                raise ValueError("Path could not be correctly be set by ShioTimeValue_c.SetYearDataPath(...)")
+                raise ValueError("Path could not be correctly be set by "
+                                 "ShioTimeValue_c.SetYearDataPath(...)")
         else:
             raise IOError("No such file: " + yeardata_path)
 
@@ -101,7 +111,8 @@ cdef class CyShioTime(object):
 
         def __set__(self, value):
             """ set path of yeardata files """
-            self.set_shio_yeardata_path(value)  # todo: figure out how to change fYearDataPath directly
+            # TODO: figure out how to change fYearDataPath directly
+            self.set_shio_yeardata_path(value)
 
     property station_location:
         def __get__(self):
@@ -113,8 +124,8 @@ cdef class CyShioTime(object):
             wp['lat'][:] = wp['lat'][:] / 1.e6    # correct C++ scaling here
             wp['long'][:] = wp['long'][:] / 1.e6    # correct C++ scaling here
 
-            g_wp = np.zeros((1,), dtype=basic_types.world_point) 
-            g_wp[0] = (wp['long'], wp['lat'],0)
+            g_wp = np.zeros((1,), dtype=basic_types.world_point)
+            g_wp[0] = (wp['long'], wp['lat'], 0)
 
             return tuple(g_wp[0])
 
@@ -127,50 +138,85 @@ cdef class CyShioTime(object):
 
     property station_type:
         def __get__(self):
-            """ station type: 'C', 'H', 'P' - not sure what these refer to yet? """
+            """
+            station type: 'C', 'H', 'P' - not sure what these refer to yet?
+            """
             cdef bytes sType
             sType = self.shio.fStationType
             return sType
 
     def __repr__(self):
         """
-        Return an unambiguous representation of this object so it can be recreated 
+        Return an unambiguous representation of this object so it can be
+        recreated
         """
-        # Tried the following, but eval(repr( obj_instance)) would not work on it so updated it to hard code the class name
-        # '{0.__class__}( "{0.filename}", daylight_savings_off={1})'.format(self, self.shio.daylight_savings_off)
-        return 'CyShioTime( "{0.filename}", daylight_savings_off={1})'.format(self, self.shio.daylight_savings_off)
+        return ('{0.__class__.__module__}.{0.__class__.__name__}('
+                '"{0.filename}", '
+                'daylight_savings_off={0.daylight_savings_off}, '
+                'scale_factor={0.scale_factor}, '
+                'yeardata="{0.yeardata}"'
+                ')'.format(self))
 
     def __str__(self):
         """Return string representation of this object"""
-        """info = {'Long': round(g_wp[0]['long'], 2),'Lat': round( g_wp[0]['lat'], 2),
-                'StationName': sName, 'StationType': sType,
-                'DaylightSavingsOff': self.shio.daylight_savings_off}"""
+        """info = {'Long': round(g_wp[0]['long'], 2),
+                   'Lat': round( g_wp[0]['lat'], 2),
+                   'StationName': sName, 'StationType': sType,
+                   'DaylightSavingsOff': self.shio.daylight_savings_off}
+        """
 
-        info = "CyShioTime object - Info read from file:\n  File: {1.filename} \n  StationName : {0[StationName]},  StationType : {0[StationType]}\n  (Long, Lat) : ({0[Long]}, {0[Lat]})\n  DaylightSavingsOff : {0[DaylightSavingsOff]}".format(self.get_info(),self)
+        info = ("CyShioTime object - Info read from file:\n"
+                "  File: {1.filename} \n"
+                "  StationName : {0[StationName]},"
+                "  StationType : {0[StationType]}\n"
+                "  (Long, Lat) : ({0[Long]}, {0[Lat]})\n"
+                "  DaylightSavingsOff : {0[DaylightSavingsOff]}"
+                "".format(self.get_info(), self))
 
         return info
 
+    def __eq(self, CyShioTime other):
+        attrs = ('filename', 'daylight_savings_off', 'scale_factor',
+                 'station', 'station_type', 'station_location',
+                 'yeardata')
+        return all([getattr(self, a) == getattr(other, a) for a in attrs])
+
+    def __richcmp__(self, CyShioTime other, int cmp):
+        if cmp not in (2, 3):
+            raise NotImplemented('CyOSSMTime does not support '
+                                 'this type of comparison.')
+
+        if cmp == 2:
+            return self.__eq(other)
+        elif cmp == 3:
+            return not self.__eq(other)
+
     def get_time_value(self, modelTime):
         """
-        GetTimeValue - for a specified modelTime or array of model times, it computes
-        the values for the tides
+        GetTimeValue - for a specified modelTime or array of model times,
+        it computes the values for the tides
         """
         cdef cnp.ndarray[Seconds, ndim = 1] modelTimeArray
-        modelTimeArray = np.asarray(modelTime, basic_types.seconds).reshape((-1,))
+        modelTimeArray = np.asarray(modelTime,
+                                    basic_types.seconds).reshape((-1,))
 
-        # velocity record passed to OSSMTimeValue_c methods and returned back to python
-        cdef cnp.ndarray[VelocityRec, ndim = 1] vel_rec 
+        # velocity record passed to OSSMTimeValue_c methods and
+        # returned back to python
+        cdef cnp.ndarray[VelocityRec, ndim = 1] vel_rec
         cdef VelocityRec * velrec
 
         cdef unsigned int i
         cdef OSErr err
 
-        vel_rec = np.empty((modelTimeArray.size,), dtype=basic_types.velocity_rec)
+        vel_rec = np.empty((modelTimeArray.size,),
+                           dtype=basic_types.velocity_rec)
 
         for i in range(0, modelTimeArray.size):
-            err = self.shio.GetTimeValue( modelTimeArray[i], &vel_rec[i])
+            err = self.shio.GetTimeValue(modelTimeArray[i], &vel_rec[i])
             if err != 0:
-                raise ValueError("Error invoking ShioTimeValue_c.GetTimeValue method in CyShioTime: C++ OSERR = " + str(err))
+                raise ValueError("Error invoking ShioTimeValue_c.GetTimeValue "
+                                 "method in CyShioTime: C++ "
+                                 "OSERR = " + str(err))
 
         return vel_rec
 
@@ -178,13 +224,17 @@ cdef class CyShioTime(object):
         """
         Return ebb flood data for specified modelTime
         """
-        self.get_time_value(modelTime)  # initialize self.shio.fEbbFloodDataHdl for specified duration
+        # initialize self.shio.fEbbFloodDataHdl for specified duration
+        self.get_time_value(modelTime)
+
         cdef short tmp_size = sizeof(EbbFloodData)
         cdef cnp.ndarray[EbbFloodData, ndim = 1] ebb_flood
 
         if self.shio.fStationType == 'C':
-            sz = _GetHandleSize(<Handle>self.shio.fEbbFloodDataHdl)  # allocate memory and copy it over
-            ebb_flood = np.empty((sz / tmp_size,), dtype=basic_types.ebb_flood_data)
+            # allocate memory and copy it over
+            sz = _GetHandleSize(<Handle>self.shio.fEbbFloodDataHdl)
+            ebb_flood = np.empty((sz / tmp_size,),
+                                 dtype=basic_types.ebb_flood_data)
             memcpy(&ebb_flood[0], self.shio.fEbbFloodDataHdl[0], sz)
             return ebb_flood
         else:
@@ -194,15 +244,20 @@ cdef class CyShioTime(object):
         """
         Return high and low tide data for specified modelTime
         """
-        self.get_time_value(modelTime)  # initialize self.shio.fEbbFloodDataHdl for specified duration
+        # initialize self.shio.fEbbFloodDataHdl for specified duration
+        self.get_time_value(modelTime)
+
         cdef short tmp_size = sizeof(HighLowData)
         cdef cnp.ndarray[HighLowData, ndim = 1] high_low
 
         if self.shio.fStationType == 'H':
-            self.get_time_value(modelTime)  # initialize self.shio.fEbbFloodDataHdl for specified duration
-            sz = _GetHandleSize(<Handle>self.shio.fHighLowDataHdl)  # allocate memory and copy it over
-            high_low = np.empty((sz / tmp_size,), dtype=basic_types.ebb_flood_data)
+            # initialize self.shio.fEbbFloodDataHdl for specified duration
+            self.get_time_value(modelTime)
 
+            # allocate memory and copy it over
+            sz = _GetHandleSize(<Handle>self.shio.fHighLowDataHdl)
+            high_low = np.empty((sz / tmp_size,),
+                                dtype=basic_types.ebb_flood_data)
             memcpy(&high_low[0], self.shio.fHighLowDataHdl[0], sz)
             return high_low
         else:

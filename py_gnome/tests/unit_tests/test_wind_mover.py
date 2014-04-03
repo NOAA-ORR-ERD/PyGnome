@@ -1,8 +1,11 @@
 import os
 from datetime import timedelta, datetime
 
-import numpy as np
 import pytest
+from pytest import raises
+
+import numpy
+np = numpy
 
 from hazpy import unit_conversion
 
@@ -36,18 +39,18 @@ def test_exceptions():
     """
     Test ValueError exception thrown if improper input arguments
     """
-    with pytest.raises(TypeError):
+    with raises(TypeError):
         WindMover()
 
-    with pytest.raises(ValueError):
+    with raises(ValueError):
         WindMover(environment.Wind(filename=file_),
                   uncertain_angle_units='xyz')
 
-    with pytest.raises(ValueError):
+    with raises(ValueError):
         wm = WindMover(environment.Wind(filename=file_))
         wm.set_uncertain_angle(.4, 'xyz')
 
-    with pytest.raises(TypeError):
+    with raises(TypeError):
         """
         violates duck typing so may want to remove. Though current WindMover's
         backend cython object looks for C++ OSSM object which is embedded in
@@ -251,7 +254,7 @@ class TestWindMover:
         curr_time = sec_to_date(date_to_sec(self.model_time) + self.time_step)
         tmp_windages = self.sc._data_arrays['windages']
         del self.sc._data_arrays['windages']
-        with pytest.raises(KeyError):
+        with raises(KeyError):
             self.wm.get_move(self.sc, self.time_step, curr_time)
         self.sc._data_arrays['windages'] = tmp_windages
 
@@ -402,7 +405,7 @@ def test_constant_wind_mover():
     tests the constant_wind_mover utility function
     """
 
-    with pytest.raises(Exception):
+    with raises(Exception):
 
         # it should raise an InvalidUnitError, but I don't want to have to
         # import unit_conversion just for that...
@@ -433,33 +436,33 @@ def test_wind_mover_from_file():
     assert wm.wind.filename == file_
 
 
-@pytest.mark.parametrize(("do"), ['create', 'update'])
-def test_serialize_deserialize(wind_circ, do):
+@pytest.mark.parametrize(("json_"), ['create', 'webapi'])
+def test_serialize_deserialize(wind_circ, json_):
     """
     tests and illustrates the funcitonality of serialize/deserialize for
     WindMover.
     """
     wind = environment.Wind(filename=file_)
     wm = WindMover(wind)
-    json_ = wm.serialize(do)
-    if do == 'create':
-        assert 'wind' not in json_
+    serial = wm.serialize(json_)
+    if json_ == 'create':
+        assert 'wind' not in serial
 
         # reference to 'wind' object is made by the Model().save() function
         # by default 'wind' object is not serialized in 'create' mode
         # so for this test to work, add the 'wind' key, value back in before
         # constructing new WindMover. In the real use case, the model does this
-        dict_ = wm.deserialize(json_)
+        dict_ = wm.deserialize(serial)
         dict_['wind'] = wind
         wm2 = WindMover.new_from_dict(dict_)
         assert wm == wm2
 
     else:
-        assert 'wind' in json_
+        assert 'wind' in serial
 
         wind_update = wind_circ['wind']
-        json_['wind'] = wind_update.serialize(do)
-        dict_ = wm.deserialize(json_)
+        serial['wind'] = wind_update.serialize(json_)
+        dict_ = wm.deserialize(serial)
         wm.from_dict(dict_)
 
         assert wm.wind == wind_update

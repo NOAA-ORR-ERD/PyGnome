@@ -128,27 +128,23 @@ class CatsMover(CyMover, serializable.Serializable):
 
         self._tide = tide_obj
 
-    def serialize(self, do='update'):
+    def serialize(self, json_='webapi'):
         """
         Since 'wind' property is saved as a reference when used in save file
         and 'create' option, need to add appropriate node to WindMover schema
         """
-        dict_ = self.to_dict(do)
-        #schema = CatsMover._schema()
+        dict_ = self.to_dict(json_)
         schema = self.__class__._schema()
-        if do == 'update' and 'tide' in dict_:
+        if json_ == 'webapi' and 'tide' in dict_:
             schema.add(environment.TideSchema())
 
-        json_ = schema.serialize(dict_)
-
-        return json_
+        return schema.serialize(dict_)
 
     @classmethod
     def deserialize(cls, json_):
         """
         append correct schema for wind object
         """
-        #schema = CatsMover._schema()
         schema = cls._schema()
         if 'tide' in json_:
             schema.add(environment.TideSchema())
@@ -466,8 +462,6 @@ class ComponentMover(CyMover, serializable.Serializable):
     pat2_scale_to_value = property(lambda self: self.mover.pat2_scale_to_value,
                            lambda self, val: setattr(self.mover,
                            'pat2_scale_to_value', val))
-                           
-
 
     @property
     def wind(self):
@@ -482,35 +476,17 @@ class ComponentMover(CyMover, serializable.Serializable):
 
         self._wind = wind_obj
 
-#     def from_dict(self, dict_):
-#         """
-#         For updating the object from dictionary
-#         
-#         'wind' object is not part of the _state since it is not serialized/deserialized;
-#         however, user can still update the tide attribute with a new Wind object. That must
-#         be popped out of the dict here, then call super to process the standard dict_
-#         """
-# 
-#         if 'wind' in dict_ and dict_.get('wind') is not None:
-#             self.wind = dict_.pop('wind')
-# 
-#         super(ComponentMover, self).from_dict(dict_)
-# 
-    def serialize(self, do='update'):
+    def serialize(self, json_='webapi'):
         """
         Since 'wind' property is saved as a reference when used in save file
         and 'create' option, need to add appropriate node to WindMover schema
         """
-        dict_ = self.to_dict(do)
-        #schema = movers_schema.ComponentMover()
+        dict_ = self.to_dict(json_)
         schema = self.__class__._schema()
-        if do == 'update' and 'wind' in dict_:
-            #schema.add(Wind())
+        if json_ == 'webapi' and 'wind' in dict_:
             schema.add(environment.WindSchema())
 
-        json_ = schema.serialize(dict_)
-
-        return json_
+        return schema.serialize(dict_)
 
     @classmethod
     def deserialize(cls, json_):

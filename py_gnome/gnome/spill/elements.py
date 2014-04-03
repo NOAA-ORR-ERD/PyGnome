@@ -293,14 +293,13 @@ class DistributionBase(InitBaseClass, Serializable):
         dict_['distribution'] = eval(to_eval)
         return super(DistributionBase, cls).new_from_dict(dict_)
 
-    def serialize(self, do='update'):
+    def serialize(self, json_='webapi'):
         'Add distribution schema based on "distribution" - then serialize'
 
-        dict_ = self.to_dict(do)
+        dict_ = self.to_dict(json_)
         schema = self.__class__._schema(name=self.__class__.__name__,
                    distribution=self.distribution._schema(name='distribution'))
-        json_ = schema.serialize(dict_)
-        return json_
+        return schema.serialize(dict_)
 
     @classmethod
     def deserialize(cls, json_):
@@ -476,7 +475,7 @@ class ElementType(Serializable):
                     i.initialize(num_new_particles, spill, data_arrays,
                                  self.substance)
 
-    def to_dict(self, do='update'):
+    def to_dict(self, json_='webapi'):
         """
         call the to_dict method on each object in the initializers dict. Store
         results in dict and return.
@@ -484,11 +483,11 @@ class ElementType(Serializable):
         todo: the standard to_dict doesn't seem to fit well in this case. It
         works but perhaps can/should be revisited to make it simpler
         """
-        dict_ = super(ElementType, self).to_dict(do)
+        dict_ = super(ElementType, self).to_dict(json_)
 
         init = {}
         for key, val in dict_['initializers'].iteritems():
-            init[key] = val.to_dict(do)
+            init[key] = val.to_dict(json_)
 
         dict_['initializers'] = init
         return dict_
@@ -497,7 +496,7 @@ class ElementType(Serializable):
         'just return a deepcopy of the initializers'
         return copy.deepcopy(self.initializers)
 
-    def serialize(self, do='update'):
+    def serialize(self, json_='webapi'):
         """
         serialize each object in 'initializers' dict, then add it to the json
         for the ElementType object.
@@ -509,16 +508,16 @@ class ElementType(Serializable):
         schemas to the ElementType schema since they are not known ahead of
         time.
         """
-        dict_ = self.to_dict(do)
+        dict_ = self.to_dict(json_)
         #et_schema = elements_schema.ElementType()
         et_schema = self.__class__._schema()
-        json_ = et_schema.serialize(dict_)
+        et_json_ = et_schema.serialize(dict_)
         s_init = {}
         for i_key, i_val in self.initializers.iteritems():
-            s_init[i_key] = i_val.serialize(do)
+            s_init[i_key] = i_val.serialize(json_)
 
-        json_['initializers'] = s_init
-        return json_
+        et_json_['initializers'] = s_init
+        return et_json_
 
     @classmethod
     def deserialize(cls, json_):

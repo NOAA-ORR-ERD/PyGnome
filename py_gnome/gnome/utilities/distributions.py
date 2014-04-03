@@ -55,7 +55,6 @@ class UniformDistribution(Serializable):
     _state = copy.deepcopy(Serializable._state)
     _state += [Field('low', create=True, update=True),
                Field('high', create=True, update=True)]
-    _state.update('obj_type', update=True)  # required by deserialize
     _schema = UniformDistributionSchema
 
     'Uniform Probability Distribution'
@@ -84,7 +83,6 @@ class NormalDistribution(Serializable):
     _state = copy.deepcopy(Serializable._state)
     _state += [Field('mean', create=True, update=True),
                Field('sigma', create=True, update=True)]
-    _state.update('obj_type', update=True)  # required by deserialize
     _schema = NormalDistributionSchema
 
     'Normal Probability Distribution'
@@ -113,7 +111,6 @@ class LogNormalDistribution(Serializable):
     _state = copy.deepcopy(Serializable._state)
     _state += [Field('mean', create=True, update=True),
                Field('sigma', create=True, update=True)]
-    _state.update('obj_type', update=True)  # required by deserialize
     _schema = LogNormalDistributionSchema
 
     'Log Normal Probability Distribution'
@@ -144,7 +141,6 @@ class WeibullDistribution(Serializable):
                Field('lambda_', create=True, update=True),
                Field('min_', create=True, update=True),
                Field('max_', create=True, update=True)]
-    _state.update('obj_type', update=True)  # required by deserialize
     _schema = WeibullDistributionSchema
 
     'Log Normal Probability Distribution'

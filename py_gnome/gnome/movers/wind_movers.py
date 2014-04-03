@@ -281,20 +281,20 @@ class WindMover(WindMoversBase, serializable.Serializable):
             self._wind = value
             self.mover.set_ossm(self.wind.ossm)
 
-    def serialize(self, do='update'):
+    def serialize(self, json_='webapi'):
         """
         Since 'wind' property is saved as a reference when used in save file
         and 'create' option, need to add appropriate node to WindMover schema
         """
-        dict_ = self.to_dict(do)
+        toserial = self.to_dict(json_)
         schema = self.__class__._schema()
-        if do == 'update':
+        if json_ == 'webapi':
             # add wind schema
             schema.add(environment.WindSchema())
 
-        json_ = schema.serialize(dict_)
+        serial = schema.serialize(toserial)
 
-        return json_
+        return serial
 
     @classmethod
     def deserialize(cls, json_):

@@ -12,31 +12,34 @@ import numpy
 np = numpy
 
 from colander import (SchemaNode,
-                      String, Float, Range,
-                      OneOf, drop)
+                      drop,
+                      Range,
+                      String,
+                      OneOf,
+                      Float)
+
+from .environment import Environment
+from gnome.persist.extend_colander import (DefaultTupleSchema,
+                      LocalDateTime, DatetimeValue2dArraySchema)
+from gnome.persist import validators, base_schema
+
+#import gnome
+from gnome import basic_types
 
 # TODO: The name 'convert' is doubly defined as
 #       hazpy.unit_conversion.convert and...
 #       gnome.utilities.convert
 #       This will inevitably cause namespace collisions.
 from hazpy import unit_conversion
+from gnome.utilities.time_utils import sec_to_date, date_to_sec
 from hazpy.unit_conversion import (ConvertDataUnits,
                                    GetUnitNames,
                                    InvalidUnitError)
 
-from gnome import basic_types
 from gnome.utilities import serializable
-from gnome.utilities.time_utils import sec_to_date, date_to_sec
 from gnome.utilities.convert import (to_time_value_pair,
                                      tsformat,
                                      to_datetime_value_2d)
-
-from .environment import Environment
-
-from gnome.persist.extend_colander import (DefaultTupleSchema,
-                      LocalDateTime, DatetimeValue2dArraySchema)
-from gnome.persist import validators, base_schema
-
 
 from gnome.cy_gnome.cy_ossm_time import CyOSSMTime
 
@@ -87,19 +90,19 @@ class WindSchema(base_schema.ObjType):
     from_dict to set _state of object
     '''
     description = SchemaNode(String(), missing=drop)
+    filename = SchemaNode(String(), missing=drop)
+    name = SchemaNode(String(), missing=drop)
+    updated_at = SchemaNode(LocalDateTime(), missing=drop)
+
     latitude = SchemaNode(Float(), missing=drop)
     longitude = SchemaNode(Float(), missing=drop)
-    name = SchemaNode(String(), missing=drop)
     source_id = SchemaNode(String(), missing=drop)
     source_type = SchemaNode(String(),
                              validator=OneOf(basic_types.wind_datasource._attr),
                              default='undefined', missing='undefined')
-    updated_at = SchemaNode(LocalDateTime(), missing=drop)
     units = SchemaNode(String(), default='m/s')
 
     timeseries = WindTimeSeriesSchema(missing=drop)
-    filename = SchemaNode(String(), missing=drop)
-    name = 'wind'
 
 
 class Wind(Environment, serializable.Serializable):
@@ -110,9 +113,10 @@ class Wind(Environment, serializable.Serializable):
     # - read only properties
 
     # default units for input/output data
-    _update = ['latitude',
-               'longitude',
+    _update = [
                'description',
+               'latitude',
+               'longitude',
                'source_id',
                'source_type',
                'updated_at',
@@ -141,7 +145,7 @@ class Wind(Environment, serializable.Serializable):
     # list of valid velocity units for timeseries
     valid_vel_units = list(chain.from_iterable([item[1] for item in
                                                 ConvertDataUnits['Velocity'].values()]))
-    valid_vel_units.extend(unit_conversion.GetUnitNames('Velocity'))
+    valid_vel_units.extend(GetUnitNames('Velocity'))
 
     def __init__(self, **kwargs):
         """
@@ -336,21 +340,24 @@ class Wind(Environment, serializable.Serializable):
         """
         Return an unambiguous representation of this `Wind object` so it can
         be recreated
-
-        This timeseries are not output.  eval(repr(wind)) does not work for
-        this object and the timeseries could be long, so only the syntax
-        for obtaining the timeseries is given in repr
-
-        TODO: A hard-coded string is not really useful.  Maybe we should
-              provide some actual information pertaining to this class.
         """
+        self_ts = self.timeseries.__repr__()
+        return ('{0.__class__.__module__}.{0.__class__.__name__}('
+                'description="{0.description}", '
+                'source_id="{0.source_id}", '
+                'source_type="{0.source_type}", '
+                'units="{0.units}", '
+                'updated_at="{0.updated_at}", '
+                'timeseries={1}'
+                ')').format(self, self_ts)
+
         return "Wind( timeseries=Wind.get_timeseries('uv'), format='uv')"
 
     def __str__(self):
         '''
-        Return string representation of this object
+        Return a human readable string representation of this object
         '''
-        return 'Wind Object'
+        return "Wind( timeseries=Wind.get_timeseries('uv'), format='uv')"
 
     def __eq__(self, other):
         # since this has numpy array - need to compare that as well
@@ -474,7 +481,7 @@ class Wind(Environment, serializable.Serializable):
         timeval = to_time_value_pair(datetime_value_2d, format)
         self.ossm.timeseries = timeval
 
-    def to_dict(self, do='update'):
+    def to_dict(self, json_='webapi'):
         """
         Call base class to_dict using super
 
@@ -483,9 +490,10 @@ class Wind(Environment, serializable.Serializable):
         Only timeseries or filename need to be saved to recreate the original
         object. If both are given, then 'filename' takes precedence.
         """
-        dict_ = super(Wind, self).to_dict(do)
 
-        if do == 'create':
+        dict_ = super(Wind, self).to_dict(json_)
+
+        if json_ == 'create':
             if self.filename is not None:
                 # we can't have both a filename and timeseries data
                 dict_.pop('timeseries')

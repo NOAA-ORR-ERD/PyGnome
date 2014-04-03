@@ -42,43 +42,42 @@ mock_model = '''
  }
 '''
 
-mock_model = {"id": "10",
-              "map": None,
-              "uncertain": False,
-              "time": {
-                       "start": "{{ model start time }}",
-                       "stop": "{{ model stop time }}",
-                       "step": "{{ model step increment }}",
-                       "hours": "{{ model duration hours }}",
-                       "days": "{{ model duration days }}"
-                       },
-              "environments": [{"id": "{{ environment_id }}"},
-                               {"id": "{{ environment_id }}"}],
-              "movers": [{"id": "{{ mover_id }}"},
-                         {"id": "{{ mover_id }}"}],
-              "spills": [{"id": "{{ spill_id }}"},
-                         {"id": "{{ spill_id }}"}]
-              }
-
 
 class ModelTests(FunctionalTestBase):
-    def test_get_model(self):
-        resp = self.testapp.get('/model')
-        self.model_body = resp.json_body
-        print resp
-        pass
+    req_data = {'obj_type': 'gnome.model.Model',
+                'start_time': '2014-03-31T14:00:00',
+                'duration': 86400.0,
+                'time_step': 900.0,
+                'weathering_substeps': 1,
+                'cache_enabled': False,
+                'uncertain': False,
+                'map_id': None,
+                'environment': [],
+                'movers': [],
+                'outputters': [],
+                'certain_spills': [],
+                'weatherers': [],
+                }
 
-    def test_post_model(self):
-        start = datetime(2012, 12, 1, 2, 30)
-        data = {
-            'start_time': start.isoformat(),
-            'uncertain': True,
-            'time_step': 200,
-            'duration_days': 20,
-            'duration_hours': 1
-        }
+    def test_get_model_no_id(self):
+        self.testapp.get('/model', status=404)
 
-        print '\n\nModel Post Request payload: {0}'.format(data)
-        resp = self.testapp.post_json('/model', data)
-        print '\nModel Post Response payload: {0}'.format(resp.json_body)
-        pass
+    def test_get_model_invalid_id(self):
+        obj_id = 0xdeadbeef
+        self.testapp.get('/model/{0}'.format(obj_id), status=404)
+
+    def test_get_model_valid_id(self):
+        print '\n\nNot Implemented'
+
+    def test_put_model_no_id(self):
+        print '\n\nNot Implemented'
+
+        # TODO: Model serialize/deserialize needs to be working for this
+        #       Basically a proper format for the JSON request payload is
+        #       not really finalized yet.
+        #print '\n\nModel Put Request payload: {0}'.format(self.req_data)
+        #resp = self.testapp.put_json('/model', params=self.req_data)
+        #print '\nModel Put Response payload: {0}'.format(resp.json_body)
+
+        # TODO: This should be working, but we need to put some asserts
+        #       in here to validate what we are getting
