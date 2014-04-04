@@ -854,8 +854,11 @@ OSErr NetCDFMoverTri_c::ReorderPoints2(TMap **newMap, long *bndry_indices, long 
 	if (numVerdatPts!=nv) 
 	{
 		printNote("Not all vertex points were used");
+		// it seems this should be an error...
+		err = -1;
+		goto done;
 		// shrink handle
-		_SetHandleSize((Handle)verdatPtsH,numVerdatPts*sizeof(long));
+		//_SetHandleSize((Handle)verdatPtsH,numVerdatPts*sizeof(long));
 	}
 	
 	numVerdatPts = nv;	//for now, may reorder later
@@ -1189,8 +1192,11 @@ OSErr NetCDFMoverTri_c::ReorderPoints(TMap **newMap, long *bndry_indices, long *
 	if (numVerdatPts!=nv) 
 	{
 		printNote("Not all vertex points were used");
+		// it seems this should be an error...
+		err = -1;
+		goto done;
 		// shrink handle
-		_SetHandleSize((Handle)verdatPtsH,numVerdatPts*sizeof(long));
+		//_SetHandleSize((Handle)verdatPtsH,numVerdatPts*sizeof(long));
 	}
 	pts = (LongPointHdl)_NewHandle(sizeof(LongPoint)*(numVerdatPts));
 	if(pts == nil)

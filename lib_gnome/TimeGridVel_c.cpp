@@ -6516,8 +6516,11 @@ OSErr TimeGridVelTri_c::ReorderPoints2(long *bndry_indices, long *bndry_nums, lo
 	if (numVerdatPts!=nv) 
 	{
 		printNote("Not all vertex points were used");
+		// it seems this should be an error...
+		err = -1;
+		goto done;
 		// shrink handle
-		_SetHandleSize((Handle)verdatPtsH,numVerdatPts*sizeof(long));
+		//_SetHandleSize((Handle)verdatPtsH,numVerdatPts*sizeof(long));
 	}
 	
 	numVerdatPts = nv;	//for now, may reorder later
@@ -6796,8 +6799,11 @@ OSErr TimeGridVelTri_c::ReorderPoints(long *bndry_indices, long *bndry_nums, lon
 	if (numVerdatPts!=nv) 
 	{
 		printNote("Not all vertex points were used");
+		// it seems this should be an error...
+		err = -1;
+		goto done;
 		// shrink handle
-		_SetHandleSize((Handle)verdatPtsH,numVerdatPts*sizeof(long));
+		//_SetHandleSize((Handle)verdatPtsH,numVerdatPts*sizeof(long));
 	}
 	pts = (LongPointHdl)_NewHandle(sizeof(LongPoint)*(numVerdatPts));
 	if(pts == nil)

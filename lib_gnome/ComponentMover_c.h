@@ -57,7 +57,11 @@ public:
 	double			fScaleFactorAveragedWinds;
 	double			fPowerFactorAveragedWinds;
 	long				fPastHoursToAverage;
+#ifndef pyGNOME
 	TimeValuePairH	fAveragedWindsHdl;
+#else
+	VelocityRec		fAveragedWindVelocity;
+#endif
 	
 	//							optimize fields don't need to be saved
 	TC_OPTIMZE			fOptimize;
@@ -75,8 +79,12 @@ public:
 	virtual OSErr 		PrepareForModelStep(const Seconds&, const Seconds&, bool, int numLESets, int* LESetsSizesList); 
 	virtual void 		ModelStepIsDone();
 	OSErr				SetOptimizeVariables (char *errmsg, const Seconds& model_time, const Seconds& time_step);
+#ifndef pyGNOME
 	OSErr				CalculateAveragedWindsHdl(char *errmsg);
 	OSErr				GetAveragedWindValue(Seconds time, const Seconds& time_step, VelocityRec *avValue);
+#else
+	OSErr 				CalculateAveragedWindsVelocity(const Seconds& model_time, char *errmsg);
+#endif
 	virtual OSErr		AddUncertainty(long setIndex, long leIndex,VelocityRec *patVelocity,double timeStep);
 
 	virtual WorldPoint3D       GetMove(const Seconds& model_time, Seconds timeStep,long setIndex,long leIndex,LERec *theLE,LETYPE leType);
@@ -89,8 +97,9 @@ public:
 	TOSSMTimeValue		*GetTimeFile () { return (timeFile); }
 	
 	//virtual	OSErr TextRead(vector<string> &linesInFile);
+#ifdef pyGNOME
 	virtual	OSErr TextRead(char* catsPath1, char* catsPath2);
-
+#endif
 	OSErr get_move(int n, Seconds model_time, Seconds step_len, WorldPoint3D* ref, WorldPoint3D* delta, short* LE_status, LEType spillType, long spill_ID);
 };
 
