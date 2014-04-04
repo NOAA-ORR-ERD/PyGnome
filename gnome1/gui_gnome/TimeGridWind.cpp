@@ -144,6 +144,7 @@ Boolean TimeGridWindRect::VelocityStrAtPoint(WorldPoint3D wp, char *diagnosticSt
 	lengthU = sqrt(velocity.u * velocity.u + velocity.v * velocity.v);
 	//lengthS = this->fWindScale * lengthU;
 	lengthS = lengthU * fVar.fileScaleFactor;
+	if (lengthS > 1000000 || this->fVar.fileScaleFactor==0) return true;	// if bad data in file causes a crash
 	
 	StringWithoutTrailingZeros(uStr,lengthU,4);
 	StringWithoutTrailingZeros(sStr,lengthS,4);
@@ -431,6 +432,7 @@ Boolean TimeGridWindCurv::VelocityStrAtPoint(WorldPoint3D wp, char *diagnosticSt
 	lengthU = sqrt(velocity.u * velocity.u + velocity.v * velocity.v);
 	//lengthS = this->fWindScale * lengthU;	// pass this in if there is a dialog scale factor
 	lengthS = lengthU * fVar.fileScaleFactor;	
+	if (lengthS > 1000000 || this->fVar.fileScaleFactor==0) return true;	// if bad data in file causes a crash
 	
 	StringWithoutTrailingZeros(uStr,lengthU,4);
 	StringWithoutTrailingZeros(sStr,lengthS,4);

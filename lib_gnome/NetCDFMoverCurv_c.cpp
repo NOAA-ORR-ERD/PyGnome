@@ -229,6 +229,7 @@ Boolean NetCDFMoverCurv_c::VelocityStrAtPoint(WorldPoint3D wp, char *diagnosticS
 	//lengthS = this->fVar.curScale * lengthU;
 	//lengthS = this->fVar.curScale * fFileScaleFactor * lengthU;
 	lengthS = this->fVar.curScale * lengthU;
+	if (lengthS > 1000000 || this->fVar.curScale==0) return true;	// if bad data in file causes a crash
 	
 	StringWithoutTrailingZeros(uStr,lengthU,4);
 	StringWithoutTrailingZeros(sStr,lengthS,4);
