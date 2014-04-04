@@ -33,7 +33,7 @@ cdef class CyOSSMTime(object):
     def __dealloc__(self):
         del self.time_dep
 
-    def __init__(self, filename=None, file_contains=None,
+    def __init__(self, str filename=None, int file_contains=0,
                  cnp.ndarray[TimeValuePair, ndim=1] timeseries=None,
                  scale_factor=1):
         """
@@ -50,21 +50,24 @@ cdef class CyOSSMTime(object):
         NOTE: If timeseries are given, and data is velocity, it is always
               assumed to be in meters_per_sec
         """
-        if filename is None and timeseries is None:
-            raise ValueError('Object needs either a file to the time series '
-                             'file or timeseries')
+        if filename is None or filename == "":
+            if timeseries is None:
+                raise ValueError('Object needs either a file to the '
+                                 'time series file or timeseries')
+            else:
+                self._set_time_value_handle(timeseries)
 
-        if filename is not None:
-            if file_contains is None:
-                raise ValueError('No file_contains argument - need a valid '
-                                 'basic_types.ts_format.* value')
-
+                # UserUnits for velocity assumed to be meter per second.
+                # Leave undefined because the timeseries could be something
+                # other than velocity.
+                # TODO: check if OSSMTimeValue_c is only used for velocity data?
+                self.time_dep.SetUserUnits(-1)
+        else:
             # check file_contains is valid parameter
             # - both magnitude_direction and uv are valid inputs
             if file_contains not in basic_types.ts_format._int:
                 raise ValueError('file_contains can only contain integers 5, '
-                                 'or 1; also defined by '
-                                 'basic_types.ts_format.'
+                                 'or 1; also defined by basic_types.ts_format.'
                                  '<magnitude_direction or uv>')
 
             self.file_contains = file_contains
@@ -74,14 +77,6 @@ cdef class CyOSSMTime(object):
                 self._read_time_values(filename, file_contains, -1)
             else:
                 raise IOError("No such file: " + filename)
-        elif timeseries is not None:
-            self._set_time_value_handle(timeseries)
-
-            # UserUnits for velocity assumed to be meter per second.
-            # Leave undefined because the timeseries could be something
-            # other than velocity.
-            # TODO: check if OSSMTimeValue_c is only used for velocity data?
-            self.time_dep.SetUserUnits(-1)
 
         self.time_dep.fScaleFactor = scale_factor
 
@@ -161,7 +156,8 @@ cdef class CyOSSMTime(object):
     def __reduce__(self):
         return (CyOSSMTime, (self.filename,
                              self.file_contains,
-                             self.timeseries))
+                             self.timeseries,
+                             self.scale_factor))
 
     def __eq(self, CyOSSMTime other):
         scalar_attrs = ('filename', 'file_contains', 'scale_factor',

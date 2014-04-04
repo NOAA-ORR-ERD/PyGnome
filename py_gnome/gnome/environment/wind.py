@@ -44,13 +44,7 @@ from gnome.utilities.convert import (to_time_value_pair,
 from gnome.cy_gnome.cy_ossm_time import CyOSSMTime
 
 
-class WindTupleSchema(DefaultTupleSchema):
-    '''
-    Schema for each tuple in WindTimeSeries list
-    '''
-    datetime = SchemaNode(LocalDateTime(default_tzinfo=None),
-                          default=base_schema.now,
-                          validator=validators.convertible_to_seconds)
+class MagnitudeDirectionTuple(DefaultTupleSchema):
     speed = SchemaNode(Float(),
                        default=0,
                        validator=Range(min=0,
@@ -70,11 +64,21 @@ class WindTupleSchema(DefaultTupleSchema):
                            )
 
 
+class WindTupleSchema(DefaultTupleSchema):
+    '''
+    Schema for each tuple in WindTimeSeries list
+    '''
+    datetime = SchemaNode(LocalDateTime(default_tzinfo=None),
+                          default=base_schema.now,
+                          validator=validators.convertible_to_seconds)
+    mag_dir = MagnitudeDirectionTuple()
+
+
 class WindTimeSeriesSchema(DatetimeValue2dArraySchema):
     '''
     Schema for list of Wind tuples, to make the wind timeseries
     '''
-    value = WindTupleSchema(default=(datetime.datetime.now(), 0, 0))
+    value = WindTupleSchema(default=(datetime.datetime.now(), (0, 0)))
 
     def validator(self, node, cstruct):
         '''

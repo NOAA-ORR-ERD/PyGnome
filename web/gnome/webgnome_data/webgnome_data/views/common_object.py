@@ -33,13 +33,14 @@ def create_or_update_object(request, implemented_types):
 
     obj = get_session_object(obj_id_from_url(request), request.session)
     if obj:
-        if ObjectImplementsOneOf(obj, implemented_types):
+        try:
             UpdateObject(obj, json_request)
-        else:
-            raise HTTPUnsupportedMediaType()
+        except ValueError as e:
+            # TODO: We might want to log this message somewhere, as the
+            # response is a bit vague
+            raise HTTPUnsupportedMediaType(e)
     else:
         obj = CreateObject(json_request)
-        pass
 
     set_session_object(obj, request.session)
     return obj.serialize()
