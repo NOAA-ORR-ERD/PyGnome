@@ -25,8 +25,11 @@ def test_mem_use():
 def test_increase():
     """
     does it go up when you allocate objects?
+
+    Note: this may not pass if the python process has a bunch of spare memory allocated already..
     """
+    import array
     start = get_mem_use()
-    l = [i*5000.0 for i in xrange(10000)]
+    l = [array.array('b', b'some bytes'*1024) for i in xrange(10000)]
 
     assert get_mem_use() > start
