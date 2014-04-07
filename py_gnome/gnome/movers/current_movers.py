@@ -136,8 +136,7 @@ class CatsMover(CyMover, serializable.Serializable):
         toserial = self.to_dict(json_)
         schema = self.__class__._schema()
         if json_ == 'webapi' and 'tide' in toserial:
-            #schema.add(environment.TideSchema(name='tide'))
-            schema.add(ObjType(name='tide'))
+            schema.add(environment.TideSchema(name='tide'))
 
         return schema.serialize(toserial)
 
@@ -485,8 +484,7 @@ class ComponentMover(CyMover, serializable.Serializable):
         dict_ = self.to_dict(json_)
         schema = self.__class__._schema()
         if json_ == 'webapi' and 'wind' in dict_:
-            #schema.add(environment.WindSchema(name='wind'))
-            schema.add(ObjType(name='wind'))
+            schema.add(environment.WindSchema(name='wind'))
 
         return schema.serialize(dict_)
 
