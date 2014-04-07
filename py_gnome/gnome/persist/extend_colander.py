@@ -60,6 +60,28 @@ class DefaultTuple(Tuple):
         return items
 
 
+class VelocityArray(Tuple):
+    """
+    A subclass of :class:`colander.Sequence` that converts itself to a numpy
+    array representing a [velX, velY, velZ] value.
+    """
+    def serialize(self, node, appstruct):
+        if appstruct is null:  # colander.null
+            return null
+
+        return super(VelocityArray, self).serialize(node, list(appstruct))
+
+    def deserialize(self, node, cstruct):
+        if cstruct is null:
+            return null
+
+        return np.array(cstruct, dtype=np.float64)
+
+
+class VelocityArraySchema(TupleSchema):
+    schema_type = VelocityArray
+
+
 class DatetimeValue2dArray(Sequence):
     """
     A subclass of :class:`colander.Sequence` that converts itself to a numpy

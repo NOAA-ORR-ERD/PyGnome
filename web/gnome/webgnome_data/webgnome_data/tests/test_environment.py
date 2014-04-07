@@ -47,10 +47,9 @@ class WindTests(FunctionalTestBase):
         #print '\n\nEnvironment Put Request payload: {0}'.format(self.req_data)
         resp = self.testapp.put_json('/environment', params=self.req_data)
 
-        # TODO: This should be working, but we need to put some asserts
-        #       in here to validate what we are getting
-        #print ('\n\nEnvironment Put Response payload: '
-        #       '{0}'.format(resp.json_body))
+        # Note: For this test, we just verify that an object with the right
+        #       properties is returned.  We will validate the content in
+        #       more elaborate tests.
         assert 'id' in resp.json_body
         assert 'obj_type' in resp.json_body
         assert 'timeseries' in resp.json_body
@@ -62,8 +61,8 @@ class WindTests(FunctionalTestBase):
         resp = self.testapp.put_json('/environment/{0}'.format(obj_id),
                                      params=self.req_data)
 
-        # TODO: This should be working, but we need to put some asserts
-        #       in here to validate what we are getting
+        # Note: This test is very similar to a put with no ID, and has the same
+        #       asserts.
         assert 'id' in resp.json_body
         assert 'obj_type' in resp.json_body
         assert 'timeseries' in resp.json_body
