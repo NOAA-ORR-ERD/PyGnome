@@ -67,10 +67,10 @@ class ModelTests(FunctionalTestBase):
         self.testapp.get('/model/{0}'.format(obj_id), status=404)
 
     def test_get_model_valid_id(self):
-        print '\n\nNot Implemented'
+        print 'Not Implemented'
 
     def test_put_model_no_id(self):
-        print '\n\nNot Implemented'
+        print 'Not Implemented'
 
         # TODO: Model serialize/deserialize needs to be working for this
         #       Basically a proper format for the JSON request payload is

@@ -270,6 +270,7 @@ Boolean NetCDFMoverTri_c::VelocityStrAtPoint(WorldPoint3D wp, char *diagnosticSt
 	
 	lengthU = sqrt(velocity.u * velocity.u + velocity.v * velocity.v) * fFileScaleFactor;
 	lengthS = this->fVar.curScale * lengthU;
+	if (lengthS > 1000000 || this->fVar.curScale==0) return true;	// if bad data in file causes a crash
 	
 	StringWithoutTrailingZeros(uStr,lengthU,4);
 	StringWithoutTrailingZeros(sStr,lengthS,4);
@@ -854,8 +855,11 @@ OSErr NetCDFMoverTri_c::ReorderPoints2(TMap **newMap, long *bndry_indices, long 
 	if (numVerdatPts!=nv) 
 	{
 		printNote("Not all vertex points were used");
+		// it seems this should be an error...
+		err = -1;
+		goto done;
 		// shrink handle
-		_SetHandleSize((Handle)verdatPtsH,numVerdatPts*sizeof(long));
+		//_SetHandleSize((Handle)verdatPtsH,numVerdatPts*sizeof(long));
 	}
 	
 	numVerdatPts = nv;	//for now, may reorder later
@@ -1189,8 +1193,11 @@ OSErr NetCDFMoverTri_c::ReorderPoints(TMap **newMap, long *bndry_indices, long *
 	if (numVerdatPts!=nv) 
 	{
 		printNote("Not all vertex points were used");
+		// it seems this should be an error...
+		err = -1;
+		goto done;
 		// shrink handle
-		_SetHandleSize((Handle)verdatPtsH,numVerdatPts*sizeof(long));
+		//_SetHandleSize((Handle)verdatPtsH,numVerdatPts*sizeof(long));
 	}
 	pts = (LongPointHdl)_NewHandle(sizeof(LongPoint)*(numVerdatPts));
 	if(pts == nil)

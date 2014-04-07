@@ -565,6 +565,7 @@ CalcStr:
 	
 	lengthU = sqrt(velocity.u * velocity.u + velocity.v * velocity.v);
 	lengthS = lengthU * fVar.fileScaleFactor; //factor from dialog box vs factor from file - this should be passed in 
+	if (lengthS > 1000000 || this->fVar.fileScaleFactor==0) return true;	// if bad data in file causes a crash
 	
 	StringWithoutTrailingZeros(uStr,lengthU,4);
 	StringWithoutTrailingZeros(sStr,lengthS,4);
@@ -1174,6 +1175,7 @@ Boolean TimeGridVelCurv::VelocityStrAtPoint(WorldPoint3D wp, char *diagnosticStr
 	//lengthS = this->fVar.curScale * lengthU;
 	//lengthS = this->fVar.curScale * fFileScaleFactor * lengthU;
 	lengthS = lengthU * fVar.fileScaleFactor;	// pass this in
+	if (lengthS > 1000000 || this->fVar.fileScaleFactor==0) return true;	// if bad data in file causes a crash
 	
 	StringWithoutTrailingZeros(uStr,lengthU,4);
 	StringWithoutTrailingZeros(sStr,lengthS,4);
@@ -1933,6 +1935,7 @@ Boolean TimeGridVelTri::VelocityStrAtPoint(WorldPoint3D wp, char *diagnosticStr,
 	
 	lengthU = sqrt(velocity.u * velocity.u + velocity.v * velocity.v);
 	lengthS = lengthU * fVar.fileScaleFactor;
+	if (lengthS > 1000000 || this->fVar.fileScaleFactor==0) return true;	// if bad data in file causes a crash
 	
 	StringWithoutTrailingZeros(uStr,lengthU,4);
 	StringWithoutTrailingZeros(sStr,lengthS,4);
@@ -2621,6 +2624,7 @@ Boolean TimeGridCurRect::VelocityStrAtPoint(WorldPoint3D wp, char *diagnosticStr
 	lengthU = sqrt(velocity.u * velocity.u + velocity.v * velocity.v);
 	//lengthS = this->fVar.curScale * lengthU;
 	lengthS = lengthU;
+	if (lengthS > 1000000) return true;	// if bad data in file causes a crash
 	
 	StringWithoutTrailingZeros(uStr,lengthU,4);
 	StringWithoutTrailingZeros(sStr,lengthS,4);
@@ -3097,6 +3101,7 @@ Boolean TimeGridCurTri::VelocityStrAtPoint(WorldPoint3D wp, char *diagnosticStr,
 	lengthU = sqrt(velocity.u * velocity.u + velocity.v * velocity.v);
 	//lengthS = this->fVar.curScale * lengthU;
 	lengthS = this->fVar.fileScaleFactor * lengthU;
+	if (lengthS > 1000000 || this->fVar.fileScaleFactor==0) return true;	// if bad data in file causes a crash
 	
 	StringWithoutTrailingZeros(uStr,lengthU,4);
 	StringWithoutTrailingZeros(sStr,lengthS,4);

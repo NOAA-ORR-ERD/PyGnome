@@ -3,7 +3,13 @@ Helper functions to be used by views.
 
 Over time, these could be generalized into decorators, I suppose.
 '''
+import sys
+from itertools import izip_longest
+
 import json
+import numpy
+np = numpy
+from numpy import array, ndarray, void
 
 
 def FQNamesToIterList(names):
@@ -111,11 +117,51 @@ def CreateObject(json_obj):
     return py_class.new_from_dict(dict_)
 
 
-def UpdateObject(model_object, json_obj):
+def UpdateObject(obj, json_obj):
     '''
         Here we update our python object with a JSON payload
 
         For now, I don't think we will be too fancy about this.
         We will grow more sophistication as we need it.
     '''
-    pass
+    name, scope = FQNamesToList((json_obj['obj_type'],))[0]
+    py_class = PyClassFromName(name, scope)
+
+    dict_ = py_class.deserialize(json_obj)
+
+    return UpdateObjectAttributes(obj, dict_.iteritems())
+
+
+def UpdateObjectAttributes(obj, items):
+    #for k, v in items:
+    #    UpdateObjectAttribute(obj, k, v)
+    return all([UpdateObjectAttribute(obj, k, v) for k, v in items])
+
+
+def UpdateObjectAttribute(obj, attr, value):
+    if attr in ('id', 'obj_type'):
+        return False
+
+    if not ObjectAttributesAreEqual(getattr(obj, attr), value):
+        setattr(obj, attr, value)
+        return True
+    else:
+        return False
+
+
+def ObjectAttributesAreEqual(attr1, attr2):
+    '''
+        Recursive equality which includes sequence objects
+        (not really dicts yet though)
+    '''
+    if not type(attr1) == type(attr2):
+        return False
+
+    if isinstance(attr1, (list, tuple, ndarray, void)):
+        for x, y in izip_longest(attr1, attr2):
+            if not ObjectAttributesAreEqual(x, y):
+                # we want to short-circuit our iteration
+                return False
+        return True
+    else:
+        return attr1 == attr2

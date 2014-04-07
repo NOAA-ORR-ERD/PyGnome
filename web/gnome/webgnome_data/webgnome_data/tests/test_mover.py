@@ -24,17 +24,33 @@ class SimpleMoverTests(FunctionalTestBase):
         self.testapp.get('/mover/{0}'.format(obj_id), status=404)
 
     def test_get_valid_id(self):
-        # TODO: the strategy is to do a put with no id, which will create
-        #       the object on the server and return the id.  We will then
-        #       use the valid id to get the object.
-        print 'Not implemented'
+        # 1. create the object by performing a put with no id
+        # 2. get the valid id from the response
+        # 3. perform an additional get of the object with a valid id
+        # 4. check that our new JSON response matches the one from the create
+        resp1 = self.testapp.put_json('/mover', params=self.req_data)
+
+        obj_id = resp1.json_body['id']
+        resp2 = self.testapp.get('/mover/{0}'.format(obj_id))
+
+        assert resp2.json_body['id'] == obj_id
+        assert resp2.json_body['obj_type'] == resp1.json_body['obj_type']
+        assert resp2.json_body['active_start'] == resp1.json_body['active_start']
+        assert resp2.json_body['active_stop'] == resp1.json_body['active_stop']
+        assert resp2.json_body['velocity'] == resp1.json_body['velocity']
 
     def test_put_no_id(self):
         #print '\n\nMover Put Request payload: {0}'.format(self.req_data)
         resp = self.testapp.put_json('/mover', params=self.req_data)
 
-        # TODO: This should be working, but we need to put some asserts
-        #       in here to validate what we are getting
+        # Note: For this test, we just verify that an object with the right
+        #       properties is returned.  We will validate the content in
+        #       more elaborate tests.
+        assert 'id' in resp.json_body
+        assert 'obj_type' in resp.json_body
+        assert 'active_start' in resp.json_body
+        assert 'active_stop' in resp.json_body
+        assert 'velocity' in resp.json_body
 
     def test_put_invalid_id(self):
         obj_id = 0xdeadbeef
@@ -43,15 +59,45 @@ class SimpleMoverTests(FunctionalTestBase):
         resp = self.testapp.put_json('/mover/{0}'.format(obj_id),
                                      params=self.req_data)
 
-        # TODO: This should be working, but we need to put some asserts
-        #       in here to validate what we are getting
+        # Note: This test is very similar to a put with no ID, and has the same
+        #       asserts.
+        assert 'id' in resp.json_body
+        assert 'obj_type' in resp.json_body
+        assert 'active_start' in resp.json_body
+        assert 'active_stop' in resp.json_body
+        assert 'velocity' in resp.json_body
 
     def test_put_valid_id(self):
-        print 'Not implemented'
+        # 1. create the object by performing a put with no id
+        # 2. get the valid id from the response
+        # 3. update the properties in the JSON response
+        # 4. update the object by performing a put with a valid id
+        # 5. check that our new properties are in the new JSON response
+        resp = self.testapp.put_json('/mover', params=self.req_data)
 
-        # TODO: the strategy is to do a put with no id, which will create
-        #       the object on the server and return the id.  We will then
-        #       use the valid id to update something on the object.
+        obj_id = resp.json_body['id']
+        req_data = resp.json_body
+        self.perform_updates(req_data)
+
+        resp = self.testapp.put_json('/mover/{0}'.format(obj_id),
+                                     params=req_data)
+        self.check_updates(resp.json_body)
+
+    def perform_updates(self, json_obj):
+        '''
+            We can overload this function when subclassing our tests
+            for new object types.
+        '''
+        json_obj['velocity'] = [10.0, 10.0, 10.0]
+        json_obj['on'] = False
+
+    def check_updates(self, json_obj):
+        '''
+            We can overload this function when subclassing our tests
+            for new object types.
+        '''
+        assert json_obj[u'velocity'] == [10.0, 10.0, 10.0]
+        assert json_obj['on'] == False
 
 
 class WindMoverTests(SimpleMoverTests):
