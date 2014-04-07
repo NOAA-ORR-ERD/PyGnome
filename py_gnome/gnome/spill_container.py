@@ -612,9 +612,13 @@ class SpillContainerPair(SpillContainerPairData):
             'uncertain_spills': call to_dict() on spills ordered collection
             stored in uncertain spill container
         """
-        dict_ = {'certain_spills': self._spill_container.spills.to_dict(json_)}
-        if self.uncertain:
-            dict_.update({'uncertain_spills':
-                          self._u_spill_container.spills.to_dict(json_)})
+        if json_ == 'create':
+            dict_ = {'certain_spills':
+                                self._spill_container.spills.to_dict(json_)}
+            if self.uncertain:
+                dict_.update({'uncertain_spills':
+                        self._u_spill_container.spills.to_dict(json_)})
+            return dict_
 
-        return dict_
+        else:
+            return self._spill_container.spills.to_dict(json_)

@@ -8,25 +8,26 @@ can be, for testing and demonstration purposes
 
 It's a steady, uniform current -- one velocity and direction for everywhere
 at all time.
-
-
 """
-
 import copy
 
 import numpy
-from numpy import random
 np = numpy
+from numpy import random
+
 from colander import (SchemaNode, TupleSchema, Float)
 
-from gnome.persist.base_schema import ObjType
 from gnome.basic_types import oil_status, mover_type
-from gnome.movers import Mover, MoverSchema
 from gnome.utilities.projections import FlatEarthProjection as proj
 from gnome.utilities import serializable
 
+from gnome.movers import Mover, MoverSchema
 
-class SimpleMoverVelocitySchema(TupleSchema):
+from gnome.persist.base_schema import ObjType
+from gnome.persist.extend_colander import VelocityArraySchema
+
+
+class SimpleMoverVelocitySchema(VelocityArraySchema):
     '''
     Currently this is only used by SimpleMover so it is here. If it becomes
     more general purpose then move it to gnome.persist.base_schema

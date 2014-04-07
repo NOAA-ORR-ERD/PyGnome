@@ -38,6 +38,11 @@ from gnome.cy_gnome.cy_ossm_time import CyOSSMTime
 from gnome.cy_gnome.cy_shio_time import CyShioTime
 
 
+class UVTuple(DefaultTupleSchema):
+    u = SchemaNode(Float())
+    v = SchemaNode(Float())
+
+
 class TimeSeriesTuple(DefaultTupleSchema):
     '''
     Schema for each tuple in WindTimeSeries list
@@ -45,8 +50,7 @@ class TimeSeriesTuple(DefaultTupleSchema):
     datetime = SchemaNode(LocalDateTime(default_tzinfo=None),
                           default=base_schema.now,
                           validator=validators.convertible_to_seconds)
-    u = SchemaNode(Float())
-    v = SchemaNode(Float())
+    uv = UVTuple()
 
 
 class TimeSeriesSchema(DatetimeValue2dArraySchema):
@@ -69,6 +73,7 @@ class TideSchema(base_schema.ObjType):
     yeardata = SchemaNode(String(), missing=drop)
 
     timeseries = TimeSeriesSchema(missing=drop)
+    name = 'tide'
 
 
 class Tide(Environment, Serializable):

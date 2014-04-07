@@ -131,8 +131,8 @@ def make_model(images_dir, uncertain=False):
     c_mover.scale = True  # but do need to scale (based on river stage)
     c_mover.scale_refpoint = (-70.65, 42.58333)
     c_mover.scale_value = 1.
-    model.movers += c_mover
-    model.environment += c_mover.tide
+    #model.movers += c_mover
+    #model.environment += c_mover.tide
 
     print 'adding a cats mover:'
 

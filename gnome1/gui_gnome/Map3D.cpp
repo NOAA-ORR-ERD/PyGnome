@@ -4128,8 +4128,11 @@ OSErr Map3D_c::SetUpTriangleGrid2(long numNodes, long ntri, WORLDPOINTFH vertexP
 	if (numVerdatPts!=nv) 
 	{
 		printNote("Not all vertex points were used");
+		// it seems this should be an error...
+		err = -1;
+		goto done;
 		// shrink handle
-		_SetHandleSize((Handle)verdatPtsH,numVerdatPts*sizeof(long));
+		//_SetHandleSize((Handle)verdatPtsH,numVerdatPts*sizeof(long));
 	}
 	
 	numVerdatPts = nv;	//for now, may reorder later
@@ -4392,8 +4395,11 @@ OSErr Map3D_c::SetUpTriangleGrid(long numNodes, long numTri, WORLDPOINTFH vertex
 	if (numVerdatPts!=nv) 
 	{
 		printNote("Not all vertex points were used");
+		// it seems this should be an error...
+		err = -1;
+		goto done;
 		// shrink handle
-		_SetHandleSize((Handle)verdatPtsH,numVerdatPts*sizeof(long));
+		//_SetHandleSize((Handle)verdatPtsH,numVerdatPts*sizeof(long));
 	}
 	pts = (LongPointHdl)_NewHandle(sizeof(LongPoint)*(numVerdatPts));
 	depths = (FLOATH)_NewHandle(sizeof(float)*(numVerdatPts));

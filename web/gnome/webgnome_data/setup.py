@@ -10,10 +10,13 @@ here = os.path.abspath(os.path.dirname(__file__))
 with open(os.path.join(here, 'README.rst')) as f:
     README = f.read()
 
-requires = ['cornice',
+requires = [
             'waitress',
             'WebTest',
-            'pyramid_redis_sessions']
+            'webhelpers2',
+            'pyramid_redis_sessions',
+            'cornice',
+            ]
 
 
 setup(name='webgnome_data',

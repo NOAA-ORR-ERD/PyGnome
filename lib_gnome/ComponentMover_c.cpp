@@ -95,7 +95,11 @@ ComponentMover_c::ComponentMover_c () : CurrentMover_c ()
 	fScaleFactorAveragedWinds = 1.;
 	fPowerFactorAveragedWinds = 1.;
 	fPastHoursToAverage = 24;
+#ifndef pyGNOME
 	fAveragedWindsHdl = 0;
+#else
+	fAveragedWindVelocity.u = fAveragedWindVelocity.v = 0;
+#endif
 	
 	return;
 }
@@ -120,12 +124,12 @@ void ComponentMover_c::Dispose ()
 		delete timeFile;
 		timeFile = nil;
 	}
-#endif
 	if (fAveragedWindsHdl)
 	{
 		DisposeHandle((Handle)fAveragedWindsHdl);
 		fAveragedWindsHdl = 0;
 	}
+#endif
 	CurrentMover_c::Dispose ();
 }
 
@@ -161,7 +165,7 @@ OSErr ComponentMover_c::PrepareForModelStep(const Seconds& model_time, const Sec
 	//this -> fOptimize.isFirstStep = (model_time == start_time);
 	
 	// code goes here, I think this is redundant
-	if (this -> fOptimize.isFirstStep)
+	/*if (this -> fOptimize.isFirstStep)
 	{	
 		if (bUseAveragedWinds)
 		{
@@ -173,7 +177,7 @@ OSErr ComponentMover_c::PrepareForModelStep(const Seconds& model_time, const Sec
 			err = CalculateAveragedWindsHdl(errmsg);
 			if (err) {if (!errmsg[0]) strcpy(errmsg,"There is a problem with the averaged winds. Please check your inputs.");}
 		}
-	}
+	}*/
 done:
 	if (err)
 	{
@@ -183,13 +187,101 @@ done:
 	}
 	return err;
 }
+#ifdef pyGNOME
+OSErr ComponentMover_c::CalculateAveragedWindsVelocity(const Seconds& model_time, char *errmsg)
+{
+	OSErr err = 0;
+	long j;
+	VelocityRec avValue;
+	VelocityRec wVel = {0.,0.};
+	double pat1Theta = PI * -(0.5 + (pat1Angle / 180.0));
+	double pat2Theta = PI * -(0.5 + (pat2Angle / 180.0));
+	WorldPoint3D refPoint3D = {0,0,0.};
+	VelocityRec pat1ValRef;
+	double pat1ValRefLength;
+	
+	refPoint3D.p = refP;
+	pat1ValRef = pattern1 -> GetPatValue (refPoint3D);
+	pat1ValRefLength = sqrt (pat1ValRef.u * pat1ValRef.u + pat1ValRef.v * pat1ValRef.v);
 
+	strcpy(errmsg,"");
+	
+	long averageTimeSteps;
+	double averageSpeed=0.,averageDir = 0;
+	Seconds timeToGetAverageFor = model_time;
+	Seconds startPastTime  = timeToGetAverageFor - fPastHoursToAverage * 3600;
+	//INDEXH(fAveragedWindsHdl, i).time = model -> GetStartTime () + i * model -> GetTimeStep();
+	//averageTimeSteps = fPastHoursToAverage+1; // for now, will change to match model time steps...
+	averageTimeSteps = fPastHoursToAverage; // for now, will change to match model time steps...
+	// code goes here, may want to change to GetStartTime, GetEndTime, then check out of range
+	if (timeFile) timeFile->CheckStartTime(startPastTime);
+	else {err = -1; strcpy(errmsg,"There is no wind data to average"); return err;}
+	if (err==-1) 
+	{
+		if (bExtrapolateWinds)
+		{	// GetTimeValue() already extrapolates
+			err = 0;
+		}
+		else
+		{strcpy(errmsg,"There is not enough data in your wind file for the averaging"); return err;}
+		//printError("There is not enough data in your wind file for the averaging"); goto done;
+	}
+	if (err==-2) 
+	{
+		//strcpy(errmsg,"No point in averaging for constant wind."); goto done;
+		//fPastHoursToAverage=0; err=0;	// allow constant wind, only need one value though 
+		//printError("No point in averaging for constant wind."); goto done;
+		averageTimeSteps = 1; 
+		startPastTime = timeToGetAverageFor;	// this doesn't really matter with constant wind
+		err = 0;
+	}
+	//if (forTime > INDEXH(timeValues, n - 1).time) 
+	if (fPastHoursToAverage==0) averageTimeSteps = 1;	// just use the straight wind
+	for (j=0;j<averageTimeSteps;j++)
+	{
+		Seconds timeToAddToAverage = startPastTime + j*3600; // eventually this will be time step...
+		double		windSpeedToScale, windDir,theta;
+		// get the time file / wind mover value for this time
+		// get the mover first then repeat using it for the times..., but make sure get time value gets a value...
+		// check first value - 24, last value else will just use first/last value 
+		// also check if it's not a time file...
+		// check here that time is in the handle...
+		timeFile-> GetTimeValue (timeToAddToAverage, &wVel);	
+		
+		//windSpeedToScale = sqrt(wVel.u*wVel.u + wVel.v*wVel.v);
+		// code goes here, take the component first, then average ?
+		windSpeedToScale = wVel.u * cos (pat1Theta) + wVel.v * sin (pat1Theta);
+		//averageSpeed += (windSpeedToScale) * fScaleFactorAveragedWinds / pat1ValRefLength; //windSpeedToScale; //?? need the dot product too
+		//averageSpeed += (windSpeedToScale); //windSpeedToScale; //?? need the dot product too - seems this was done twice?
+		//windDir = fmod(atan2(wVel.u,wVel.v)*180/PI+360,360); // floating point remainder
+		windDir = atan2(wVel.u,wVel.v); // 
+		//windDir = fmod(-180,360); // not sure what above does...
+		//theta = fmod(theta+180,360); // rotate the vector cause wind is FROM this direction
+		//r=sqrt(u*u+v*v);
+		//	windDir = 0;
+		averageSpeed = averageSpeed + windSpeedToScale; // need to divide by averageTimeSteps
+		averageDir = averageDir + windDir;
+		//averageDir = averageDir + windSpeedToScale; // need to divide by averageTimeSteps
+		// if add up wind dir make sure it's -180 to 180 - not necessary
+	}
+	averageSpeed = averageSpeed / averageTimeSteps;
+	// apply power and scale - is this the right order?
+	if (averageSpeed<0) averageSpeed = -1. * pow(fabs(averageSpeed),fPowerFactorAveragedWinds);
+	else
+	/*if (fPowerFactorAveragedWinds!=1.)*/  averageSpeed = pow(averageSpeed,fPowerFactorAveragedWinds); 
+	//for now apply the scale factor in SetOptimizeVariables()
+	//averageSpeed = averageSpeed*fScaleFactorAveragedWinds; 
+	// code goes here bUseMainDialogScaleFactor = true do this way leave out fSFAW, = false just use fSFAW
+	averageDir = averageDir / averageTimeSteps;
+	//avValue.u = averageSpeed*sin(averageDir/*+PI*/);	// not sure about the pi
+	//avValue.v = averageSpeed*cos(averageDir/*+PI*/);
+	avValue.u = averageSpeed;	// not sure about the pi
+	avValue.v = 0;	// not sure about the pi
+}
+#else
 OSErr ComponentMover_c::CalculateAveragedWindsHdl(char *errmsg)
 {
 	OSErr err = 0;
-#ifdef pyGNOME
-	printNote("Averaged wind option has not been implemented for pyGNOME yet\n");
-#else
 	long i, j, numTimeSteps = (model -> GetEndTime () - model -> GetStartTime ()) / model -> GetTimeStep() + 1;
 	VelocityRec value, avValue;
 	TMover 		*mover;
@@ -378,9 +470,9 @@ done:
 			fAveragedWindsHdl = 0;
 		}
 	}
-#endif
 	return err;
 }
+#endif
 
 void ComponentMover_c::SetTimeFile(TOSSMTimeValue *newTimeFile)
 {
@@ -406,6 +498,7 @@ OSErr ComponentMover_c::SetOptimizeVariables (char *errmsg, const Seconds& model
 	
 	// get the time file / wind mover value for this time
 	
+#ifndef pyGNOME
 	if (timeMoverCode == kLinkToWindMover)
 	{
 		long 		i, j, m, n;
@@ -465,9 +558,6 @@ OSErr ComponentMover_c::SetOptimizeVariables (char *errmsg, const Seconds& model
 		}
 		else
 		{
-#ifdef pyGNOME
-	printNote("Link to wind mover option has not been implemented for pyGNOME yet\n");
-#else
 			TMap	*map = 0;
 			TMover 	*mover = 0;
 			for (j = 0, m = model -> mapList -> GetItemCount() ; j < m && !bFound ; j++) {
@@ -518,17 +608,23 @@ OSErr ComponentMover_c::SetOptimizeVariables (char *errmsg, const Seconds& model
 
 			}
 			// alert code goes here if mover is not found
-#endif
 		}
 	}
-	else {
+#else
+	//else {
 	// use timeFile (for python do it this way)
 		if (timeFile)
 		{
-			timeFile->GetTimeValue(model_time, &wVel);	// this needs to be defined
-		}
-	}
-	
+			if (bUseAveragedWinds)
+			{
+				err = CalculateAveragedWindsVelocity(model_time,errmsg);
+				wVel = fAveragedWindVelocity;	// don't need to store?
+			}
+			else
+				timeFile->GetTimeValue(model_time, &wVel);	// this needs to be defined
+		}	
+	//}
+#endif	
 	// code goes here, option for averaged winds to set a scale or use the main dialog scale, would pat1ValScale/pat2ValScale just be averaged wind value? 
 	
 	//if (bUseAveragedWinds && bUseMainDialogScaleFactor)
@@ -753,7 +849,7 @@ OSErr ComponentMover_c::AddUncertainty(long setIndex, long leIndex,VelocityRec *
 	return err;
 }
 
-
+#ifndef pyGNOME
 OSErr ComponentMover_c::GetAveragedWindValue(Seconds time, const Seconds& time_step, VelocityRec *avValue)
 {
 	long index, numValuesInHdl;
@@ -771,7 +867,8 @@ OSErr ComponentMover_c::GetAveragedWindValue(Seconds time, const Seconds& time_s
 
 	return noErr;
 }
-
+#endif
+#ifdef pyGNOME
 OSErr ComponentMover_c::TextRead(char *cats_path1, char *cats_path2) 
 {
 	OSErr err = 0;
@@ -805,5 +902,5 @@ OSErr ComponentMover_c::TextRead(char *cats_path1, char *cats_path2)
 	
 	return err;	
 }
-	
+#endif
 

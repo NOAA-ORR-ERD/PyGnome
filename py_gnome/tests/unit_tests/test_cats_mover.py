@@ -184,7 +184,7 @@ def _uncertain_loop(pSpill, cats):
 
 
 #@pytest.mark.parametrize(("json_"), ['create', 'webapi'])
-@pytest.mark.parametrize(("json_"), ['webapi'])
+@pytest.mark.parametrize(("json_"), ['webapi', 'create'])
 def test_serialize_deserialize_tide(json_):
     """
     test to_dict function for Wind object

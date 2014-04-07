@@ -60,6 +60,28 @@ class DefaultTuple(Tuple):
         return items
 
 
+class VelocityArray(Tuple):
+    """
+    A subclass of :class:`colander.Sequence` that converts itself to a numpy
+    array representing a [velX, velY, velZ] value.
+    """
+    def serialize(self, node, appstruct):
+        if appstruct is null:  # colander.null
+            return null
+
+        return super(VelocityArray, self).serialize(node, list(appstruct))
+
+    def deserialize(self, node, cstruct):
+        if cstruct is null:
+            return null
+
+        return np.array(cstruct, dtype=np.float64)
+
+
+class VelocityArraySchema(TupleSchema):
+    schema_type = VelocityArray
+
+
 class DatetimeValue2dArray(Sequence):
     """
     A subclass of :class:`colander.Sequence` that converts itself to a numpy
@@ -73,7 +95,7 @@ class DatetimeValue2dArray(Sequence):
 
         for wind_value in appstruct:
             dt = wind_value[0].astype(object)
-            series.append((dt, wind_value[1][0], wind_value[1][1]))
+            series.append((dt, (wind_value[1][0], wind_value[1][1])))
         appstruct = series
 
         return super(DatetimeValue2dArray, self).serialize(node, appstruct)
@@ -84,13 +106,8 @@ class DatetimeValue2dArray(Sequence):
 
         items = super(DatetimeValue2dArray, self).deserialize(node,
                 cstruct, accept_scalar=False)
-        num_timeseries = len(items)
-        timeseries = np.zeros((num_timeseries,),
-                              dtype=gnome.basic_types.datetime_value_2d)
 
-        for (idx, value) in enumerate(items):
-            timeseries['time'][idx] = value[0]
-            timeseries['value'][idx] = (value[1], value[2])
+        timeseries = np.array(items, dtype=gnome.basic_types.datetime_value_2d)
 
         return timeseries  # validator requires numpy array
 

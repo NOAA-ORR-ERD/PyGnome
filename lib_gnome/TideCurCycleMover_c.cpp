@@ -781,6 +781,7 @@ Boolean TideCurCycleMover_c::VelocityStrAtPoint(WorldPoint3D wp, char *diagnosti
 	
 	lengthU = sqrt(velocity.u * velocity.u + velocity.v * velocity.v);
 	lengthS = this->refScale * lengthU;
+	if (lengthS > 1000000 || this->refScale==0) return true;	// if bad data in file causes a crash
 	
 	StringWithoutTrailingZeros(uStr,lengthU,4);
 	StringWithoutTrailingZeros(sStr,lengthS,4);
