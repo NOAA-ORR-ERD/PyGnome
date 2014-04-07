@@ -31,10 +31,17 @@ class WindTests(FunctionalTestBase):
         self.testapp.get('/environment/{0}'.format(obj_id), status=404)
 
     def test_get_valid_id(self):
-        # TODO: the strategy is to do a put with no id, which will create
-        #       the object on the server and return the id.  We will then
-        #       use the valid id to get the object.
-        print 'Not implemented'
+        # 1. create the object by performing a put with no id
+        # 2. get the valid id from the response
+        # 3. perform an additional get of the object with a valid id
+        # 4. check that our new JSON response matches the one from the create
+        resp1 = self.testapp.put_json('/environment', params=self.req_data)
+
+        obj_id = resp1.json_body['id']
+        resp2 = self.testapp.get('/environment/{0}'.format(obj_id))
+
+        assert resp2.json_body['id'] == obj_id
+        assert resp2.json_body['obj_type'] == resp1.json_body['obj_type']
 
     def test_put_no_id(self):
         #print '\n\nEnvironment Put Request payload: {0}'.format(self.req_data)
@@ -64,11 +71,9 @@ class WindTests(FunctionalTestBase):
     def test_put_valid_id(self):
         # 1. create the object by performing a put with no id
         # 2. get the valid id from the response
-        # 3. update one of the properties in the JSON response
+        # 3. update the properties in the JSON response
         # 4. update the object by performing a put with a valid id
-        # 5. check that our new property is in the new JSON response
-        # 6. perform an additional get of the object with a valid id
-        # 7. check that our new property is in the JSON response
+        # 5. check that our new properties are in the new JSON response
         resp = self.testapp.put_json('/environment', params=self.req_data)
 
         obj_id = resp.json_body['id']
