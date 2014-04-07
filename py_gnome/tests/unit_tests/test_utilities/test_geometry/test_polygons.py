@@ -56,6 +56,11 @@ class Test_Polygon:
         P = Polygon([(1, 2), (3, 4), (5, 6)])
         assert np.array_equal(P[2], np.array((5, 6), dtype=np.float))
 
+    def test_slice(self):
+        P = Polygon([(1, 2), (3, 4), (5, 6)])
+        print P[:2]
+        assert P[:2] == Polygon([(1, 2), (3, 4)])     
+
     def test_metadata(self):
         m = {'name': 'a polygon', 'type': 'polyline'}
         P = Polygon([(1, 2), (3, 4), (5, 6)], metadata=m)
@@ -84,6 +89,11 @@ class Test_Polygon:
         print P.bounding_box
         assert P.bounding_box == np.array([[1., 2.], [7., 8.]],
                 dtype=np.float)
+
+    def test_size_zero(self):
+        P = Polygon( (), )
+        assert len(P) == 0
+
 
 
 class Test_PolygonSet:
@@ -118,6 +128,10 @@ class Test_PolygonSet:
         print poly_set[0].dtype
         assert poly_set[0].dtype == np.float32
 
+    def test_zero_length(self):
+        poly_set = PolygonSet()
+
+        assert len(poly_set) == 0
 
     # def test_pop(self):
     #    pass

@@ -1,5 +1,5 @@
 """
-polygon module, part of the geometry package
+Polygon module, part of the geometry package
 
 Assorted stuff for working with polygons
 """
@@ -51,6 +51,20 @@ class Polygon(np.ndarray):
         # We use the getattr method to set a defaults if 'obj' doesn't have the attributes
         self.metadata = getattr(obj, 'metadata', {})
  
+    def  __getitem__(self, index):
+        """
+        override __getitem__ to return a simple (2, ) ndarray, rather than a Polygon object
+        """
+        print "__getitem__ called", index
+        return np.asarray( np.ndarray.__getitem__(self, index) )
+
+    def __eq__(self, other):
+        if not isinstance(other, Polygon):
+            # a Polygon is never equal to anything else
+            return False
+        else:
+            return np.array_equal(self, other) and (self.metadata == other.metadata)
+
     def __str__(self):
         return "Polygon with %i points.\nmetadata: %s"%(self.shape[0], self.metadata)
 
@@ -67,10 +81,17 @@ class Polygon(np.ndarray):
         msg.append("],\n         metadata=%s\n       )"%repr(self.metadata) )
         return "".join(msg)
 
-    def _get_bounding_box(self):
-        return BBox.fromPoints(self)
-    bounding_box = property(_get_bounding_box)
 
+    @property
+    def points(self):
+        """
+        the points as a regular np.ndarray
+        """
+        return np.asarray(self)
+
+    @property
+    def bounding_box(self):
+        return BBox.fromPoints(self)
 
    
 class PolygonSet:
@@ -110,7 +131,7 @@ class PolygonSet:
 
         """
         if metadata is None:
-            metadata = getattr(polygon, 'metadata', None)
+            metadata = getattr(polygon, 'metadata', {})
         polygon = np.asarray(polygon, dtype=self.dtype).reshape((-1, 2))
         self._PointsArray = np.r_[self._PointsArray, polygon]
         self._IndexArray  = np.r_[self._IndexArray, (self._PointsArray.shape[0],) ]
@@ -212,6 +233,75 @@ class PolygonSet:
                        metadata = self._MetaDataList[index],
                        dtype = self.dtype)
         return poly
+
+    def __str__(self):
+        return "PolygonSet instance with %i polygons, %i total points"%(len(self), len(self._PointsArray))
+
+    def __repr__(self):
+        """ same as __str__ -- not good but more informative than nothing"""
+        return self.__str__()
+
+    def __eq__(self, other):
+        if not isinstance(other, PolygonSet):
+            #a PolygonSet is never equal to anything else
+            return False
+        else:
+            return np.array_equal(self._PointsArray, other._PointsArray) and self._MetaDataList == other._MetaDataList
+
+    def thin(self, scale):
+        """
+        Returns a new PolygonSet object, with the points thinned.
+
+        :param scale: The scale to use: it is the ratio of world coords
+                      (usually lat-lon degrees) to pixels.
+        :type scale: (x_scale, y_scale): tuple of floats
+
+        This is an algorithm designed for rendering. What is does
+        is scale the points as you would to draw them (integer pixels).
+        Then it removes any sequential duplicate points. Thus the rendered
+        results should be exactly the same as if you rendered the pre-thinned
+        polygons.
+
+        Polygons that are reduced to 1 point are removed.
+
+        NOTE: in a sequence of close points, the first point is retained.
+              Perhaps it would be better for the mean location of the
+              sequence to be used instead? It should make no difference
+              for rendering, but could make a difference for other purposes 
+        """
+        scale = np.asarray(scale, dtype=np.float64)
+
+        # Scale the polygons:
+
+        def scaling_fun(arr):
+            " scales, rounds, then re-scales back"
+            return np.round(arr * scale) / scale
+
+        scaled_polys = self.Copy()
+        scaled_polys.TransformData(scaling_fun)
+        # remove the duplicates:
+        new_polys = PolygonSet()
+        for i in xrange(len(scaled_polys)):
+            sc_poly = scaled_polys[i]
+            orig_poly = self[i]
+            last_point = np.asarray(sc_poly[0])
+            thinned = [orig_poly[0]]
+            for j in xrange(len(sc_poly)):
+                point = sc_poly[j]
+                print "comparing:", point, last_point
+                if not np.array_equal(point, last_point):
+                    thinned.append(orig_poly[j])
+                last_point = point
+            if len(thinned) > 1:
+                print "adding:", thinned
+                new_polys.append(Polygon(thinned, metadata=orig_poly.metadata))
+
+        return new_polys
+
+
+
+
+
 
 def test():
     #  a test function

@@ -2,7 +2,7 @@
 """
 renderer.py
 
-module to hold all teh map rendering code.
+module to hold all the map rendering code.
 
 """
 

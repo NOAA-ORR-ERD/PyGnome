@@ -11,6 +11,8 @@ dealing with spill_containers, etc, should be in the rendere subclass.
 
 """
 
+print "running map_canvas"
+
 import copy
 
 import numpy as np
@@ -179,6 +181,7 @@ class MapCanvas(object):
                               (max_long, max_lat) )
         """
 
+        print "resetting viewport"
         self.projection.set_scale(viewport_BB, self.image_size)
 
     @property

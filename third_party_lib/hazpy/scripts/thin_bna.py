@@ -2,6 +2,9 @@
 
 """
 script to "thin" a BNA file, using the "re-scale" approach
+
+NOTE: there is a version in py_gnome:
+  gnome.utilities.geometry.polygons
 """
 
 import sys
@@ -10,12 +13,7 @@ import numpy as np
 
 from hazpy.file_tools import haz_files
 
-try:
-    scale = sys.argv[1]
-    infilename = sys.argv[2]
-    scale = float(scale)
-except (IndexError, ValueError):
-    print """Usage:  thin_bna scale filename
+USAGE = """Usage:  thin_bna scale filename
 
 scale: a scale, in meters,  only accurate at the equator
 filename: name of the input bna file
@@ -23,6 +21,13 @@ filename: name of the input bna file
 the output will be a file in the same place as the input file,
 with "thinned" added to the name
 """
+
+try:
+    scale = sys.argv[1]
+    infilename = sys.argv[2]
+    scale = float(scale)
+except (IndexError, ValueError):
+    print USAGE
     sys.exit()
 
 outfilename = infilename.rsplit(".")
@@ -49,8 +54,10 @@ def scaling_fun(arr):
     
 def remove_dups(scaled, orig):
     """
-    returns a new Polygonset isntance, with points removed from orig that are
+    returns a new Polygonset instance, with points removed from orig that are
     duplicate in the scaled polygons
+
+    If a polygon is reduced to a single point, it is removed.
     """
     from hazpy.geometry import polygons
     new = polygons.PolygonSet()
