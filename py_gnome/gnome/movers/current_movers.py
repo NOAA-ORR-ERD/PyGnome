@@ -133,12 +133,12 @@ class CatsMover(CyMover, serializable.Serializable):
         Since 'wind' property is saved as a reference when used in save file
         and 'create' option, need to add appropriate node to WindMover schema
         """
-        dict_ = self.to_dict(json_)
+        toserial = self.to_dict(json_)
         schema = self.__class__._schema()
-        if json_ == 'webapi' and 'tide' in dict_:
-            schema.add(environment.TideSchema())
+        if json_ == 'webapi' and 'tide' in toserial:
+            schema.add(environment.TideSchema(name='tide'))
 
-        return schema.serialize(dict_)
+        return schema.serialize(toserial)
 
     @classmethod
     def deserialize(cls, json_):
@@ -484,7 +484,7 @@ class ComponentMover(CyMover, serializable.Serializable):
         dict_ = self.to_dict(json_)
         schema = self.__class__._schema()
         if json_ == 'webapi' and 'wind' in dict_:
-            schema.add(environment.WindSchema())
+            schema.add(environment.WindSchema(name='wind'))
 
         return schema.serialize(dict_)
 

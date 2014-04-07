@@ -103,6 +103,7 @@ class WindSchema(base_schema.ObjType):
     units = SchemaNode(String(), default='m/s')
 
     timeseries = WindTimeSeriesSchema(missing=drop)
+    name = 'wind'
 
 
 class Wind(Environment, serializable.Serializable):

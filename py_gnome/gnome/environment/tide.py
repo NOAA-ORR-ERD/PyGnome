@@ -69,6 +69,7 @@ class TideSchema(base_schema.ObjType):
     yeardata = SchemaNode(String(), missing=drop)
 
     timeseries = TimeSeriesSchema(missing=drop)
+    name = 'tide'
 
 
 class Tide(Environment, Serializable):
