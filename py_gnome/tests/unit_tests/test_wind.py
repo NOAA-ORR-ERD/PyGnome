@@ -387,7 +387,7 @@ def test_new_from_dict_filename():
     create a new wind object and make sure it has same properties
     """
     wm = Wind(filename=wind_file)
-    wm_state = wm.to_dict('create')
+    wm_state = wm.to_dict('save')
     print wm_state
 
     # this does not catch two objects with same ID
@@ -402,7 +402,7 @@ def test_new_from_dict_timeseries():
     create a new wind object and make sure it has same properties
     """
     wm = constant_wind(10, 45, 'knots')
-    wm_state = wm.to_dict('create')
+    wm_state = wm.to_dict('save')
     print wm_state
 
     # this does not catch two objects with same ID
@@ -411,7 +411,7 @@ def test_new_from_dict_timeseries():
     assert wm == wm2
 
 
-@pytest.mark.parametrize(("json_"), ['create', 'webapi'])
+@pytest.mark.parametrize(("json_"), ['save', 'webapi'])
 def test_serialize_deserialize(wind_circ, json_):
     '''
     wind_circ is a fixture
@@ -423,7 +423,7 @@ def test_serialize_deserialize(wind_circ, json_):
     '''
     serial = wind_circ['wind'].serialize(json_)
     dict_ = Wind.deserialize(serial)
-    if json_ == 'create':
+    if json_ == 'save':
         new_w = Wind.new_from_dict(dict_)
         assert new_w == wind_circ['wind']
     else:

@@ -218,7 +218,7 @@ class TestOrderedCollection(object):
             != OrderedCollection([1, 2, 3, 4])
         assert OrderedCollection([1, 2, 3, 4, 5]) != [1, 2, 3, 4, 5]
 
-    @mark.parametrize('json_', ['create', 'webapi'])
+    @mark.parametrize('json_', ['save', 'webapi'])
     def test_to_dict(self, json_):
         'added a to_dict() method - test this method'
 
@@ -228,7 +228,7 @@ class TestOrderedCollection(object):
         mymovers = OrderedCollection(items, dtype=Mover)
         self._to_dict_assert(mymovers, items, json_)
 
-    @mark.parametrize('do', ['create', 'update'])
+    @mark.parametrize('do', ['save', 'update'])
     def test_int_to_dict(self, do):
         '''added a to_dict() method - test this method for int dtype.
         Tests the try, except is working correctly'''
@@ -238,10 +238,10 @@ class TestOrderedCollection(object):
 
     def _to_dict_assert(self, oc, items, json_):
         toserial = oc.to_dict(json_)
-        if json_ == 'create':
+        if json_ == 'save':
             assert toserial['dtype'] == oc.dtype
         for (i, mv) in enumerate(items):
-            if json_ == 'create':
+            if json_ == 'save':
                 try:
                     assert toserial['items'][i][0] == \
                         '{0}.{1}'.format(mv.__module__, mv.__class__.__name__)

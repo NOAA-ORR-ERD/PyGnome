@@ -51,7 +51,7 @@ class Spill(serializable.Serializable):
     _create = []
     _create.extend(_update)
     _state = copy.deepcopy(serializable.Serializable._state)
-    _state.add(create=_create, update=_update, read=['num_released'])
+    _state.add(save=_create, update=_update, read=['num_released'])
     _schema = SpillSchema
 
     valid_vol_units = list(chain.from_iterable([item[1] for item in
@@ -209,11 +209,11 @@ class Spill(serializable.Serializable):
         objects. Check all properties here so nested objects properties
         can be checked in the __eq__ implementation within the nested objects
         """
-        if (self._state.get_field_by_attribute('create') !=
-            other._state.get_field_by_attribute('create')):
+        if (self._state.get_field_by_attribute('save') !=
+            other._state.get_field_by_attribute('save')):
             return False
 
-        for name in self._state.get_names('create'):
+        for name in self._state.get_names('save'):
             if not hasattr(self, name):
                 """
                 for an attribute like obj_type, base class has

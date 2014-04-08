@@ -55,7 +55,7 @@ class SimpleMover(Mover, serializable.Serializable):
 
     _state = copy.deepcopy(Mover._state)
     _state.add(update=['uncertainty_scale', 'velocity'],
-              create=['uncertainty_scale', 'velocity'])
+              save=['uncertainty_scale', 'velocity'])
     _schema = SimpleMoverSchema
 
     def __init__(

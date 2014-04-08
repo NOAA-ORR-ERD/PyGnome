@@ -64,14 +64,14 @@ class ModelSchema(base_schema.ObjType):
     cache_enabled = SchemaNode(Bool())
 
     def __init__(self, json_='webapi', **kwargs):
-        if json_ == 'create':
+        if json_ == 'save':
             self.add(SpillContainerPairSchema(name='spills'))
         else:
             self.add(base_schema.OrderedCollectionIDList(name='spills'))
 
         oc_list = ['movers', 'weatherers', 'environment', 'outputters']
         for oc in oc_list:
-            if json_ == 'create':
+            if json_ == 'save':
                 self.add(base_schema.OrderedCollection(name=oc))
             else:
                 self.add(base_schema.OrderedCollectionIDList(name=oc))
@@ -99,7 +99,7 @@ class Model(Serializable):
     _schema = ModelSchema
 
     # no need to copy parent's _state in this case
-    _state.add(create=_create, update=_update)
+    _state.add(save=_create, update=_update)
 
     @classmethod
     def new_from_dict(cls, dict_):
@@ -659,11 +659,11 @@ class Model(Serializable):
             os.mkdir(saveloc)
 
         self._empty_save_dir(saveloc)
-        json_ = self.serialize('create')
+        json_ = self.serialize('save')
         self._save_json_to_file(saveloc, json_,
             '{0}.json'.format(self.__class__.__name__))
 
-        json_ = self.map.serialize('create')
+        json_ = self.map.serialize('save')
         self._save_json_to_file(saveloc, json_,
             '{0}.json'.format(self.map.__class__.__name__))
 
@@ -695,7 +695,7 @@ class Model(Serializable):
         referenced by movers.
         """
         for count, obj in enumerate(coll_):
-            json_ = obj.serialize('create')
+            json_ = obj.serialize('save')
             for field in obj._state:
                 if field.save_reference:
                     'attribute is stored as a reference to environment list'
@@ -776,7 +776,7 @@ class Model(Serializable):
         '''
         for webapi, the ordered collections only contain the IDs of the objects
         during serialization/deserialization as required by the WebAPI. For
-        'create', the 'dtype' and 'items' returned by the ordered collection
+        'save', the 'dtype' and 'items' returned by the ordered collection
         dict is kept for loading from save files and for information
         '''
         toserial = self.to_dict(json_)
@@ -790,7 +790,7 @@ class Model(Serializable):
         use for the OC
         '''
         if isinstance(json_['movers'], dict):
-            schema = cls._schema('create')
+            schema = cls._schema('save')
         else:
             schema = cls._schema()
 

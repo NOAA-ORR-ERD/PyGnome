@@ -183,8 +183,8 @@ def _uncertain_loop(pSpill, cats):
     return u_delta
 
 
-#@pytest.mark.parametrize(("json_"), ['create', 'webapi'])
-@pytest.mark.parametrize(("json_"), ['webapi', 'create'])
+#@pytest.mark.parametrize(("json_"), ['save', 'webapi'])
+@pytest.mark.parametrize(("json_"), ['webapi', 'save'])
 def test_serialize_deserialize_tide(json_):
     """
     test to_dict function for Wind object
@@ -194,7 +194,7 @@ def test_serialize_deserialize_tide(json_):
     c_cats = CatsMover(curr_file, tide=td)
     toserial = c_cats.serialize(json_)
     dict_ = c_cats.deserialize(toserial)
-    if json_ == 'create':
+    if json_ == 'save':
         dict_.update({'tide': td})
         c2 = CatsMover.new_from_dict(dict_)
         assert c_cats == c2
@@ -204,7 +204,7 @@ def test_serialize_deserialize_tide(json_):
         assert c_cats.tide is td
 
 
-@pytest.mark.parametrize(("json_"), ['create', 'webapi'])
+@pytest.mark.parametrize(("json_"), ['save', 'webapi'])
 def test_serialize_deserialize_curronly(json_):
     """
     test to_dict function for Wind object
@@ -214,7 +214,7 @@ def test_serialize_deserialize_curronly(json_):
     c_cats = CatsMover(curr_file)
     toserial = c_cats.serialize(json_)
     dict_ = c_cats.deserialize(toserial)
-    if json_ == 'create':
+    if json_ == 'save':
         c2 = CatsMover.new_from_dict(dict_)
         assert c_cats == c2
     else:

@@ -55,9 +55,9 @@ class Renderer(Outputter, MapCanvas, serializable.Serializable):
 
     _create.extend(_update)
     _state = copy.deepcopy(serializable.Serializable._state)
-    _state.add(create=_create, update=_update)
+    _state.add(save=_create, update=_update)
     _state.add_field(serializable.Field('filename', isdatafile=True,
-                    create=True, read=True, test_for_eq=False))
+                    save=True, read=True, test_for_eq=False))
     _schema = RendererSchema
 
     @classmethod

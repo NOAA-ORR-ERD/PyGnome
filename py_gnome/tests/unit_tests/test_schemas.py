@@ -11,7 +11,7 @@ from gnome.utilities.weathering.graphs import GraphSchema
 
 class TestGraphSchema(object):
     def test_create(self, sample_graph):
-        serial_dict = GraphSchema().serialize(sample_graph.to_dict('create'))
+        serial_dict = GraphSchema().serialize(sample_graph.to_dict('save'))
         deserial_dict = GraphSchema().deserialize(serial_dict)
         new_graph = Graph.new_from_dict(deserial_dict)
 

@@ -31,10 +31,10 @@ class CatsMover(CyMover, serializable.Serializable):
     _update = ['scale', 'scale_refpoint', 'scale_value']
     _create = []
     _create.extend(_update)
-    _state.add(update=_update, create=_create)
-    _state.add_field([serializable.Field('filename', create=True,
+    _state.add(update=_update, save=_create)
+    _state.add_field([serializable.Field('filename', save=True,
                                 read=True, isdatafile=True, test_for_eq=False),
-                      serializable.Field('tide', create=True,
+                      serializable.Field('tide', save=True,
                                 update=True, save_reference=True)])
     _schema = CatsMoverSchema
 
@@ -131,7 +131,7 @@ class CatsMover(CyMover, serializable.Serializable):
     def serialize(self, json_='webapi'):
         """
         Since 'wind' property is saved as a reference when used in save file
-        and 'create' option, need to add appropriate node to WindMover schema
+        and 'save' option, need to add appropriate node to WindMover schema
         """
         toserial = self.to_dict(json_)
         schema = self.__class__._schema()
@@ -165,9 +165,9 @@ class GridCurrentMover(CyMover, serializable.Serializable):
     _state = copy.deepcopy(CyMover._state)
 
     _state.add(update=_update)
-    _state.add_field([serializable.Field('filename', create=True,
+    _state.add_field([serializable.Field('filename', save=True,
                     read=True, isdatafile=True, test_for_eq=False),
-                    serializable.Field('topology_file', create=True,
+                    serializable.Field('topology_file', save=True,
                     read=True, isdatafile=True, test_for_eq=False)])
     _schema = GridCurrentMoverSchema
 
@@ -338,12 +338,12 @@ class ComponentMover(CyMover, serializable.Serializable):
                     'pat2_angle', 'pat2_speed', 'pat2_speed_units', 'pat2_scale_to_value']
     _create = []
     _create.extend(_update)
-    _state.add(update=_update, create=_create)
-    _state.add_field([serializable.Field('filename1', create=True,
+    _state.add(update=_update, save=_create)
+    _state.add_field([serializable.Field('filename1', save=True,
                     read=True, isdatafile=True, test_for_eq=False),
-                      serializable.Field('filename2', create=True,
+                      serializable.Field('filename2', save=True,
                     read=True, isdatafile=True, test_for_eq=False),
-                      serializable.Field('wind', create=True,
+                      serializable.Field('wind', save=True,
                                 update=True, save_reference=True)])
     _schema = ComponentMoverSchema
 
@@ -479,7 +479,7 @@ class ComponentMover(CyMover, serializable.Serializable):
     def serialize(self, json_='webapi'):
         """
         Since 'wind' property is saved as a reference when used in save file
-        and 'create' option, need to add appropriate node to WindMover schema
+        and 'save' option, need to add appropriate node to WindMover schema
         """
         dict_ = self.to_dict(json_)
         schema = self.__class__._schema()

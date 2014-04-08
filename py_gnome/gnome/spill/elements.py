@@ -73,7 +73,7 @@ class InitWindages(InitBaseClass, Serializable):
     _create = []
     _create.extend(_update)
     _state = copy.deepcopy(InitBaseClass._state)
-    _state.add(create=_create, update=_update)
+    _state.add(save=_create, update=_update)
     _schema = InitWindagesSchema
 
     def __init__(self, windage_range=(0.01, 0.04), windage_persist=900):
@@ -282,7 +282,7 @@ class DistributionBase(InitBaseClass, Serializable):
     have to write it once.
     '''
     _state = copy.deepcopy(InitBaseClass._state)
-    _state.add(create=['distribution'], update=['distribution'])
+    _state.add(save=['distribution'], update=['distribution'])
     _schema = DistributionBaseSchema
 
     @classmethod
@@ -421,7 +421,7 @@ class InitRiseVelFromDropletSizeFromDist(DistributionBase):
 
 class ElementType(Serializable):
     _state = copy.deepcopy(Serializable._state)
-    _state.add(create=['initializers'], update=['initializers'])
+    _state.add(save=['initializers'], update=['initializers'])
     _schema = base_schema.ObjType
 
     @classmethod

@@ -67,7 +67,7 @@ class GnomeMap(Serializable):
     _create = []
     _create.extend(_update)
     _state = copy.deepcopy(Serializable._state)
-    _state.add(create=_create, update=_update)
+    _state.add(save=_create, update=_update)
     _schema = GnomeMapSchema
 
     refloat_halflife = None  # note -- no land, so never used
@@ -545,9 +545,9 @@ class MapFromBNA(RasterMap):
     A raster land-water map, created from a BNA file
     """
     _state = copy.deepcopy(RasterMap._state)
-    _state.update(['map_bounds', 'spillable_area'], create=False)
-    _state.add(create=['refloat_halflife'], update=['refloat_halflife'])
-    _state.add_field(Field('filename', isdatafile=True, create=True,
+    _state.update(['map_bounds', 'spillable_area'], save=False)
+    _state.add(save=['refloat_halflife'], update=['refloat_halflife'])
+    _state.add_field(Field('filename', isdatafile=True, save=True,
                             read=True, test_for_eq=False))
     _schema = MapFromBNASchema
 

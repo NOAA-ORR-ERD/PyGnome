@@ -151,12 +151,12 @@ class NetCDFOutput(Outputter, Serializable):
     _state = copy.deepcopy(Serializable._state)
 
     # data file should not be moved to save file location!
-    _state.add_field([Field('netcdf_filename', create=True, update=True),
-                     Field('which_data', create=True, update=True),
-                     #Field('netcdf_format', create=True, update=True),
-                     Field('compress', create=True, update=True),
-                     Field('_start_idx', create=True),
-                     Field('_middle_of_run', create=True),
+    _state.add_field([Field('netcdf_filename', save=True, update=True),
+                     Field('which_data', save=True, update=True),
+                     #Field('netcdf_format', save=True, update=True),
+                     Field('compress', save=True, update=True),
+                     Field('_start_idx', save=True),
+                     Field('_middle_of_run', save=True),
                      ])
     _schema = NetCDFOutputSchema
 

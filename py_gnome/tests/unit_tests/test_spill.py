@@ -628,7 +628,7 @@ class Test_point_line_release_spill:
         spill = point_line_release_spill(num_elements=self.num_elements,
                 start_position=self.start_position,
                 release_time=self.release_time)
-        serial = spill.serialize('create')
+        serial = spill.serialize('save')
         new_dict = Spill.deserialize(serial)    # classmethod
         new_spill = Spill.new_from_dict(new_dict)   # classmethod
         assert spill == new_spill
@@ -939,7 +939,7 @@ class TestVerticalPlumeRelease:
 #             end_release_time=datetime(2013, 2, 13, 9, 0)
 #             + timedelta(hours=6))
 #
-#     sp_state = spill.to_dict('create')
+#     sp_state = spill.to_dict('save')
 #     print sp_state
 #
 #     # this does not catch two objects with same ID
