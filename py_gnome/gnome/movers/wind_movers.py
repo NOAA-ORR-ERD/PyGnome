@@ -210,14 +210,14 @@ class WindMoversBase(CyMover):
             Returns a string containing properties of object.
             This can be called by __repr__ or __str__ to display props
         '''
-        info = ('uncertain_duration={0.uncertain_duration}\n  '
-                'uncertain_time_delay={0.uncertain_time_delay}\n  '
-                'uncertain_speed_scale={0.uncertain_speed_scale}\n  '
-                'uncertain_angle_scale={0.uncertain_angle_scale}\n  '
-                'uncertain_angle_units="{0.uncertain_angle_units}"\n  '
-                'active_start time={0.active_start}\n  '
-                'active_stop time={0.active_stop}\n  '
-                'current on/off status={0.on}\n')
+        info = ('  uncertain_duration={0.uncertain_duration}\n'
+                '  uncertain_time_delay={0.uncertain_time_delay}\n'
+                '  uncertain_speed_scale={0.uncertain_speed_scale}\n'
+                '  uncertain_angle_scale={0.uncertain_angle_scale}\n'
+                '  uncertain_angle_units="{0.uncertain_angle_units}"\n'
+                '  active_start time={0.active_start}\n'
+                '  active_stop time={0.active_stop}\n'
+                '  current on/off status={0.on}\n')
         return info.format(self)
 
 
@@ -259,8 +259,9 @@ class WindMover(WindMoversBase, serializable.Serializable):
         .. todo::
             We probably want to include more information.
         """
-        info = 'WindMover(\n{0})'.format(self._state_as_str())
-        return info
+        return ('{0.__class__.__module__}.{0.__class__.__name__}(\n'
+                '{1}'
+                ')'.format(self, self._state_as_str()))
 
     def __str__(self):
         info = ('WindMover - current _state. '

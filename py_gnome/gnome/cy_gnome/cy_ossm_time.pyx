@@ -33,7 +33,7 @@ cdef class CyOSSMTime(object):
     def __dealloc__(self):
         del self.time_dep
 
-    def __init__(self, str filename=None, int file_contains=0,
+    def __init__(self, basestring filename=None, int file_contains=0,
                  cnp.ndarray[TimeValuePair, ndim=1] timeseries=None,
                  scale_factor=1):
         """
@@ -142,7 +142,7 @@ cdef class CyOSSMTime(object):
         """
         self_ts = self.timeseries.__repr__()
         return ('{0.__class__.__module__}.{0.__class__.__name__}('
-                'filename="{0.filename}", '
+                'filename=u"{0.filename}", '
                 'file_contains={0.file_contains}, '
                 'timeseries={1}'
                 ')').format(self, self_ts)
