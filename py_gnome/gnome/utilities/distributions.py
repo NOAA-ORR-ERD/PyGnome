@@ -53,8 +53,8 @@ class WeibullDistributionSchema(ObjType):
 
 class UniformDistribution(Serializable):
     _state = copy.deepcopy(Serializable._state)
-    _state += [Field('low', create=True, update=True),
-               Field('high', create=True, update=True)]
+    _state += [Field('low', save=True, update=True),
+               Field('high', save=True, update=True)]
     _schema = UniformDistributionSchema
 
     'Uniform Probability Distribution'
@@ -81,8 +81,8 @@ class UniformDistribution(Serializable):
 
 class NormalDistribution(Serializable):
     _state = copy.deepcopy(Serializable._state)
-    _state += [Field('mean', create=True, update=True),
-               Field('sigma', create=True, update=True)]
+    _state += [Field('mean', save=True, update=True),
+               Field('sigma', save=True, update=True)]
     _schema = NormalDistributionSchema
 
     'Normal Probability Distribution'
@@ -109,8 +109,8 @@ class NormalDistribution(Serializable):
 
 class LogNormalDistribution(Serializable):
     _state = copy.deepcopy(Serializable._state)
-    _state += [Field('mean', create=True, update=True),
-               Field('sigma', create=True, update=True)]
+    _state += [Field('mean', save=True, update=True),
+               Field('sigma', save=True, update=True)]
     _schema = LogNormalDistributionSchema
 
     'Log Normal Probability Distribution'
@@ -137,10 +137,10 @@ class LogNormalDistribution(Serializable):
 
 class WeibullDistribution(Serializable):
     _state = copy.deepcopy(Serializable._state)
-    _state += [Field('alpha', create=True, update=True),
-               Field('lambda_', create=True, update=True),
-               Field('min_', create=True, update=True),
-               Field('max_', create=True, update=True)]
+    _state += [Field('alpha', save=True, update=True),
+               Field('lambda_', save=True, update=True),
+               Field('min_', save=True, update=True),
+               Field('max_', save=True, update=True)]
     _schema = WeibullDistributionSchema
 
     'Log Normal Probability Distribution'

@@ -25,7 +25,7 @@ class RandomMover(CyMover, Serializable):
     CyMover sets everything up that is common to all movers.
     """
     _state = copy.deepcopy(CyMover._state)
-    _state.add(update=['diffusion_coef'], create=['diffusion_coef'])
+    _state.add(update=['diffusion_coef'], save=['diffusion_coef'])
     _schema = RandomMoverSchema
 
     def __init__(self, **kwargs):
@@ -81,7 +81,7 @@ class RandomVerticalMover(CyMover, Serializable):
     _state.add(update=['vertical_diffusion_coef_above_ml',
                       'vertical_diffusion_coef_below_ml',
                       'mixed_layer_depth'],
-              create=['vertical_diffusion_coef_above_ml',
+              save=['vertical_diffusion_coef_above_ml',
                       'vertical_diffusion_coef_below_ml',
                       'mixed_layer_depth'])
     _schema = RandomVerticalMoverSchema

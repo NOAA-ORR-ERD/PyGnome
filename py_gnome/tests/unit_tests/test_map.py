@@ -204,7 +204,7 @@ class Test_GnomeMap:
         """
 
         gmap = gnome.map.GnomeMap()
-        dict_ = gmap.to_dict('create')
+        dict_ = gmap.to_dict('save')
         #dict_.pop('obj_type')
         gmap2 = gmap.new_from_dict(dict_)
 
@@ -557,7 +557,7 @@ def test_MapfromBNA_new_from_dict():
     """
 
     gmap = gnome.map.MapFromBNA(testmap, 6)
-    dict_ = gmap.to_dict('create')
+    dict_ = gmap.to_dict('save')
     map2 = gmap.new_from_dict(dict_)
     assert gmap == map2
 

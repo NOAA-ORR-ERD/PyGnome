@@ -16,14 +16,14 @@ class Field(object):  # ,serializable.Serializable):
     '''
     def __init__(self, name,
                  isdatafile=False,
-                 update=False, create=False, read=False,
+                 update=False, save=False, read=False,
                  save_reference=False,
                  test_for_eq=True):
         """
         Constructor for the Field object.
         The Field object is used to describe the property of an object.
         For instance, if a property is required to re-create the object from
-        a persisted _state, its 'create' attribute is True.
+        a persisted _state, its 'save' attribute is True.
         If the property describes a data file that will need to be moved
         when persisting the model, isdatafile should be True.
         The gnome.persist.scenario module contains a Scenario class that loads
@@ -50,11 +50,11 @@ class Field(object):  # ,serializable.Serializable):
             hooking up the correct Wind object to the WindMover, Weatherer etc
 
             NOTE: save_reference currently is only used when the field is
-            stored with 'create' flag.
+            stored with 'save' flag.
         :param bool test_for_eq: bool with default value of True
             when checking equality (__eq__()) of two gnome
             objects that are serializable, look for equality of attributes
-            corresponding with fields with 'create'=True and 'test_for_eq'=True
+            corresponding with fields with 'save'=True and 'test_for_eq'=True
             For instance, if a gnome.model.Model() object is saved, then loaded
             back from save file location, the filename attributes of objects
             that read data from file will point to different location. The
@@ -63,7 +63,7 @@ class Field(object):  # ,serializable.Serializable):
         """
         self.name = name
         self.isdatafile = isdatafile
-        self.create = create
+        self.save = save
         self.update = update
         self.read = read
         self.save_reference = save_reference
@@ -75,7 +75,7 @@ class Field(object):  # ,serializable.Serializable):
             return False
 
         if self.name == other.name and self.isdatafile \
-            == other.isdatafile and self.create == other.create \
+            == other.isdatafile and self.save == other.save \
             and self.update == other.update and self.read == other.read:
             return True
 
@@ -98,7 +98,7 @@ class Field(object):  # ,serializable.Serializable):
 
 
 class State(object):
-    def __init__(self, create=[], update=[], read=[], field=[]):
+    def __init__(self, save=[], update=[], read=[], field=[]):
         """
         Object keeps the list of properties that are output by
         Serializable.to_dict() method.
@@ -115,16 +115,16 @@ class State(object):
                        info, so readonly. It is not required for creating
                        new object.
         :type read:    list containing str
-        :param create: A list of strings which are properties that are
+        :param save: A list of strings which are properties that are
                        required to create new object when JSON is read from
                        save file.
                        Only the create properties are saved to save file.
-        :type create:  A list of str
+        :type save:  A list of str
         :param field:  A field object or a list of field objects that should
                        be added to the State for persistence.
         :type field:   Field object or list of Field objects.
 
-        For 'update', 'read', 'create', a Field object is create for each
+        For 'update', 'read', 'save', a Field object is created for each
         property in the list
 
         .. note:: Copy will create a new State object but reference original
@@ -133,7 +133,7 @@ class State(object):
         """
         self.fields = []
         self.add_field(field)
-        self.add(create=create, update=update, read=read)
+        self.add(save=save, update=update, read=read)
 
         # define valid attributes for Field object
 
@@ -194,7 +194,7 @@ class State(object):
         Adds a Field object or a list of Field objects to fields attribute
 
         Either use this to add a property to the _state object or use the 'add' method to add a property.
-        add_field gives more control since the attributes other than 'create','update','read' can be set
+        add_field gives more control since the attributes other than 'save','update','read' can be set
         directly when defining the Field object.
         """
         if isinstance(l_field, Field):
@@ -219,7 +219,7 @@ class State(object):
         for field_ in l_field:
             self.fields.append(field_)
 
-    def add(self, create=[], update=[], read=[]):
+    def add(self, save=[], update=[], read=[]):
         """
         Only checks to make sure 'read' and 'update' properties are disjoint. Also makes sure everything is a list. 
         
@@ -228,23 +228,23 @@ class State(object):
         :type update:  list containing str
         :param read:   a list of strings which are properties that are for info, so readonly. It is not required for creating new object.
         :type read:    list containing str
-        :param create: a list of strings which are properties that are required to create new object when 
+        :param save: a list of strings which are properties that are required to create new object when 
                         JSON is read from save file
-                       Only the create properties are saved to save file
-        :type create:  a list of str
+                       Only the save properties are saved to save file
+        :type save:  a list of str
         :param field:  a field object or a list of field objects that should be added to the State for persistence
         :type field:   Field object or list of Field objects
 
-        For 'update', 'read', 'create', a Field object is create for each
+        For 'update', 'read', 'save', a Field object is created for each
         property in the list
         """
-        if not all([isinstance(vals, list) for vals in [create, update,
+        if not all([isinstance(vals, list) for vals in [save, update,
                    read]]):
             raise ValueError('inputs must be a list of strings')
 
         update_ = list(set(update))
         read_ = list(set(read))
-        create_ = list(set(create))
+        create_ = list(set(save))
 
         if len(set(update_).intersection(set(read_))) > 0:
             raise AttributeError('update (read/write properties) and read (readonly props) lists lists must be disjoint'
@@ -254,12 +254,12 @@ class State(object):
         for item in update_:
             f = Field(item, update=True)
             if item in create_:
-                f.create = True
+                f.save = True
                 create_.remove(item)
             fields.append(f)
 
         for item in create_:
-            f = Field(item, create=True)
+            f = Field(item, save=True)
             if item in read_:
                 f.read = True
                 read_.remove(item)
@@ -294,13 +294,13 @@ class State(object):
         Kwargs are key,value pairs defining the _state of attributes.
         It must be one of the valid attributes of Field object (see Field object __dict__ for valid attributes) 
         :param update:     True or False
-        :param create:     True or False
+        :param save:     True or False
         :param read:       True or False
         :param isdatafield:True or False
         
         Usage:
         >>> _state = State(read=['test'])
-        >>> _state.update('test',read=False,update=True,create=True,isdatafile=True)
+        >>> _state.update('test',read=False,update=True,save=True,isdatafile=True)
         
         .. note::An exception will be raised if both 'read' and 'update' are True for a given field
         """
@@ -382,9 +382,9 @@ class State(object):
         """ returns the property names in self.fields. Can return all field names, or fieldnames with 
         an attribute equal to True. attr can also be a list:
         
-        >>> _state = State(read=['t0'],create=['t0','t1'])
-        >>> _state.get_names(['read','create'])    # returns 't0'
-        >>> _state.get_names('create')     # returns ['t0', 't1']
+        >>> _state = State(read=['t0'],save=['t0','t1'])
+        >>> _state.get_names(['read','save'])    # returns 't0'
+        >>> _state.get_names('save')     # returns ['t0', 't1']
         """
         if attr == 'all':
             return [field_.name for field_ in self.fields]
@@ -417,12 +417,12 @@ class Serializable(object):
     This class is intended as a mixin so to_dict and from_dict become part of
     the object and the object must define a _state attribute of type State().
 
-    The default _state=State(create=['id']) is a static variable for this class
+    The default _state=State(save=['id']) is a static variable for this class
     It uses the same convention as State to obtain the lists, 'update' for
-    updating  properties, 'read' for read-only properties and 'create' for a
+    updating  properties, 'read' for read-only properties and 'save' for a
     list of properties required to create new object.
 
-    The default _state contains 'id' in the create list. This is because all
+    The default _state contains 'id' in the save list. This is because all
     objects in a Model need 'id' to create a new one.
 
     Similarly, 'obj_type' is required for all objects, this is so the scenario
@@ -434,7 +434,7 @@ class Serializable(object):
     object as a string.
     """
 
-    _state = State(create=['obj_type'], read=['obj_type', 'id'])
+    _state = State(save=['obj_type'], read=['obj_type', 'id'])
 
     # =========================================================================
     # @classmethod
@@ -453,7 +453,7 @@ class Serializable(object):
     #    __init__ to extend the definition of the parent class _state attribute
     #
     #    It recursively looks for '_state' attribute in base classes
-    #    (cls.__bases__); gets the ('read','update','create') lists from each
+    #    (cls.__bases__); gets the ('read','update','save') lists from each
     #    base class and adds;
     #    and creates a new State() object with its own lists and the lists of
     #    the parents
@@ -465,18 +465,18 @@ class Serializable(object):
     #    """
     #    print "add_state"
     #    update = kwargs.pop('update',[])
-    #    create = kwargs.pop('create',[])
+    #    create = kwargs.pop('save',[])
     #    read   = kwargs.pop('read',[])
     #    for obj in cls.__bases__:
     #        if '_state' in obj.__dict__:
     #            update.extend( obj._state.get()['update'] )
-    #            create.extend( obj._state.get()['create'] )
+    #            create.extend( obj._state.get()['save'] )
     #            read.extend( obj._state.get()['read'] )
     #
     #    update = list( set(update) )
     #    create = list( set(create) )
     #    read = list( set(read) )
-    #    cls._state = State(update=update, create=create, read=read)
+    #    cls._state = State(update=update, save=create, read=read)
     # =========================================================================
 
     @classmethod
@@ -499,20 +499,20 @@ class Serializable(object):
         returns list of object attributes that need to be serialized. By
         default all fields that have 'update' == True are returned.
         By default it converts the 'update' list of the _state object to dict;
-        however, do=('create',) or do=('update','read') will return the dict
+        however, do=('save',) or do=('update','read') will return the dict
         with the union of the corresponding lists.
         '''
         list_ = []
         for action in do:
             if action == 'update':
                 list_.extend(self._state.get_names('update'))
-            elif action == 'create':
-                list_.extend(self._state.get_names('create'))
+            elif action == 'save':
+                list_.extend(self._state.get_names('save'))
             elif action == 'read':
                 list_.extend(self._state.get_names('read'))
             else:
                 raise ValueError("input not understood. String must be one of "
-                    "following: 'update', 'create' or 'readonly'.")
+                    "following: 'update', 'save' or 'readonly'.")
 
         return list_
 
@@ -533,13 +533,13 @@ class Serializable(object):
         """
         if json_ == 'webapi':
             list_ = self._attrlist_to_dict(do=('update', 'read'))
-        elif json_ == 'create':
-            list_ = self._attrlist_to_dict(do=('create',))
+        elif json_ == 'save':
+            list_ = self._attrlist_to_dict(do=('save',))
         else:
             # raise error if json_ payload is not for webapi or save files
             # list_ = []
             raise ValueError("desired json_ payload must be either for webapi "
-                "or for save files: ('webapi', 'create')")
+                "or for save files: ('webapi', 'save')")
 
         data = {}
         for key in list_:
@@ -660,11 +660,11 @@ class Serializable(object):
         if type(self) != type(other):
             return False
 
-        if (self._state.get_field_by_attribute('create') !=
-            other._state.get_field_by_attribute('create')):
+        if (self._state.get_field_by_attribute('save') !=
+            other._state.get_field_by_attribute('save')):
             return False
 
-        for name in self._state.get_names('create'):
+        for name in self._state.get_names('save'):
             if not self._state[name].test_for_eq:
                 continue
 
@@ -706,7 +706,7 @@ class Serializable(object):
         It uses the modules_dict defined in gnome.persist to find the correct
         schema module.
 
-        1. adds 'obj_type' field to _state for 'create' attribute so it is
+        1. adds 'obj_type' field to _state for 'save' attribute so it is
                 contained in serialized data. todo: check if this is needed
         2. do serialization and return json
 
@@ -717,7 +717,7 @@ class Serializable(object):
         Note: creating a new object versus 'update' or 'read' has a different
             set of fields for serialization so 'do' is required.
             todo: revisit this to see if it still makes sense to have different
-            attributes for different operations like 'update', 'create', 'read'
+            attributes for different operations like 'update', 'save', 'read'
         """
         toserial = self.to_dict(json_)
         schema = self.__class__._schema()

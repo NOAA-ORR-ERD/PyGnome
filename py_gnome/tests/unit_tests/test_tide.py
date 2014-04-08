@@ -44,7 +44,7 @@ def test_file(filename):
 
 
 @pytest.mark.parametrize(('filename', 'json_'),
-                        [(shio_file, 'create'), (ossm_file, 'webapi')])
+                        [(shio_file, 'save'), (ossm_file, 'webapi')])
 def test_serialize_deserialize(filename, json_):
     '''
     create - it creates new object after serializing original object
@@ -56,7 +56,7 @@ def test_serialize_deserialize(filename, json_):
     tide = Tide(filename)
     serial = tide.serialize(json_)
     dict_ = Tide.deserialize(serial)
-    if json_ == 'create':
+    if json_ == 'save':
         new_t = Tide.new_from_dict(dict_)
         assert new_t is not tide
         assert new_t == tide

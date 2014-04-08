@@ -210,14 +210,14 @@ class OrderedCollection(object):
                 versus saving data out is different
 
         '''
-        if json_ == 'create':
+        if json_ == 'save':
             data = {'dtype': self.dtype,
                     'items': []}
         else:
             data = []
 
         for count, obj in enumerate(self):
-            if json_ == 'create':
+            if json_ == 'save':
                 try:
                     obj_type = \
                         '{0.__module__}.{0.__class__.__name__}'.format(obj)

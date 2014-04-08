@@ -629,7 +629,7 @@ class TestAddSpillContainerPair:
         for sp, idx in zip(scp._u_spill_container.spills, range(len(c_spill))):
             assert sp.id == u_spill[idx].id
 
-    @pytest.mark.parametrize('json_', ['create', 'webapi'])
+    @pytest.mark.parametrize('json_', ['save', 'webapi'])
     def test_to_dict(self, json_):
         c_spill = [point_line_release_spill(self.num_elements,
                    self.start_position, self.start_time) for i in
@@ -651,7 +651,7 @@ class TestAddSpillContainerPair:
                             for ix, spill in enumerate(c_spill)]
             assert all(alltrue)
 
-        elif json_ == 'create':
+        elif json_ == 'save':
             for key in toserial.keys():
                 if key == 'certain_spills':
                     enum_spill = c_spill
@@ -659,7 +659,7 @@ class TestAddSpillContainerPair:
                     enum_spill = u_spill
 
                 for (i, spill) in enumerate(enum_spill):
-                    if json_ == 'create':
+                    if json_ == 'save':
                         assert toserial[key]['items'][i][0] \
                             == '{0}.{1}'.format(spill.__module__,
                                 spill.__class__.__name__)
@@ -793,8 +793,8 @@ def test_eq_spill_container_pair(uncertain):
         u_sp1 = [scp1.items()[1].spills[spill.id] for spill in
                  scp1.items()[1].spills][0]
 
-        temp = u_sp1.to_dict('create')
-        u_sp2 = u_sp1.new_from_dict(u_sp1.to_dict('create'))
+        temp = u_sp1.to_dict('save')
+        u_sp2 = u_sp1.new_from_dict(u_sp1.to_dict('save'))
 
         scp2.add((sp2, u_sp2))
     else:
@@ -891,7 +891,7 @@ def get_eq_spills():
     data array values and these will not match for the two spills.
 
     TODO: Currently does not persist the element_type object.
-    spill.to_dict('create') does not persist this attribute - Fix this.
+    spill.to_dict('save') does not persist this attribute - Fix this.
     """
     num_elements = 10
     release_time = datetime(2000, 1, 1, 1)
@@ -900,7 +900,7 @@ def get_eq_spills():
                             (28, -75, 0),
                             release_time,
                             element_type=floating(windage_range=(0, 0)))
-    dict_ = spill.to_dict('create')
+    dict_ = spill.to_dict('save')
     spill2 = spill.new_from_dict(dict_)
 
     # check here if equal spills didn't get created - fail this function

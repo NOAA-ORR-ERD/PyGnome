@@ -123,7 +123,7 @@ def test_element_type_serialize_deserialize(fcn, init_key):
     initializers = {init_key: fcn}
     element_type = ElementType(initializers)
 
-    json_ = element_type.serialize('create')
+    json_ = element_type.serialize('save')
     dict_ = element_type.deserialize(json_)
     element_type2 = ElementType.new_from_dict(dict_)
 

@@ -25,8 +25,8 @@ class RiseVelocityMover(CyMover, serializable.Serializable):
     """
 
     _state = copy.deepcopy(CyMover._state)
-    #_state.add(update=['water_density'], create=['water_density'])
-    #_state.add(update=['water_viscosity'], create=['water_viscosity'])
+    #_state.add(update=['water_density'], save=['water_density'])
+    #_state.add(update=['water_viscosity'], save=['water_viscosity'])
     _schema = RiseVelocityMoverSchema
 
     def __init__(

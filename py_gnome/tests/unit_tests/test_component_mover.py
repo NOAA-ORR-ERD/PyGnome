@@ -186,7 +186,7 @@ def _uncertain_loop(pSpill, component):
     return u_delta
 
 
-@pytest.mark.parametrize(("json_"), ['create', 'webapi'])
+@pytest.mark.parametrize(("json_"), ['save', 'webapi'])
 def test_serialize_deserialize_wind(json_):
     """
     test to_dict function for Component mover with wind object
@@ -196,7 +196,7 @@ def test_serialize_deserialize_wind(json_):
     c_component = ComponentMover(curr1_file, wind=wnd)
     serial = c_component.serialize(json_)
     dict_ = c_component.deserialize(serial)
-    if json_ == 'create':
+    if json_ == 'save':
         dict_.update({'wind': wnd})
         c2 = ComponentMover.new_from_dict(dict_)
         assert c_component == c2
@@ -206,7 +206,7 @@ def test_serialize_deserialize_wind(json_):
         assert c_component.wind is wnd
 
 
-@pytest.mark.parametrize(("json_"), ['create', 'webapi'])
+@pytest.mark.parametrize(("json_"), ['save', 'webapi'])
 def test_serialize_deserialize_curronly(json_):
     """
     test to_dict function for Component mover
@@ -216,7 +216,7 @@ def test_serialize_deserialize_curronly(json_):
     c_component = ComponentMover(curr1_file)
     serial = c_component.serialize(json_)
     dict_ = c_component.deserialize(serial)
-    if json_ == 'create':
+    if json_ == 'save':
         c2 = ComponentMover.new_from_dict(dict_)
         assert c_component == c2
     else:
