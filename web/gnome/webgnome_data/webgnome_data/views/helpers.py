@@ -105,16 +105,28 @@ def PyClassFromName(name, scope):
     return getattr(my_module, name)
 
 
-def CreateObject(json_obj):
+def CreateObject(json_obj, all_objects):
     '''
         Here we create a python object from our JSON payload
     '''
     name, scope = FQNamesToList((json_obj['obj_type'],))[0]
     py_class = PyClassFromName(name, scope)
 
-    dict_ = py_class.deserialize(json_obj)
+    obj_dict = py_class.deserialize(json_obj)
 
-    return py_class.new_from_dict(dict_)
+    print 'CreateObject(): dict_ = ', obj_dict
+    LinkObjectChildren(obj_dict, all_objects)
+
+    return py_class.new_from_dict(obj_dict)
+
+
+def LinkObjectChildren(obj_dict, all_objects):
+    for k, v in obj_dict.items():
+        if (isinstance(v, dict) and
+            'id' in v and
+            v['id'] in all_objects):
+            print 'need to link:', k, v
+            obj_dict[k] = all_objects[v['id']]
 
 
 def UpdateObject(obj, json_obj):

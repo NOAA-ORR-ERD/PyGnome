@@ -40,7 +40,7 @@ def create_or_update_object(request, implemented_types):
             # response is a bit vague
             raise HTTPUnsupportedMediaType(e)
     else:
-        obj = CreateObject(json_request)
+        obj = CreateObject(json_request, request.session['objects'])
 
     set_session_object(obj, request.session)
     return obj.serialize()
@@ -53,16 +53,23 @@ def obj_id_from_url(request):
     return obj_id[0] if obj_id else None
 
 
+def init_session_objects(session):
+    if not 'objects' in session:
+        session['objects'] = {}
+        session.changed()
+
+
 def get_session_object(obj_id, session):
-    if 'objects' in session and obj_id in session['objects']:
+    init_session_objects(session)
+
+    if obj_id in session['objects']:
         return session['objects'][obj_id]
     else:
         return None
 
 
 def set_session_object(obj, session):
-    if not 'objects' in session:
-        session['objects'] = {}
+    init_session_objects(session)
 
     try:
         session['objects'][obj.id] = obj
