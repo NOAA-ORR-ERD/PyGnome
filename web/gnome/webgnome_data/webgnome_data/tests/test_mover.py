@@ -104,19 +104,58 @@ class WindMoverTests(SimpleMoverTests):
     '''
         Tests out the Gnome Wind Mover API
     '''
+    wind_req_data = {'obj_type': 'gnome.environment.Wind',
+                     'description': u'Wind Object',
+                     'updated_at': '2014-03-26T14:52:45.385126',
+                     'source_type': u'undefined',
+                     'source_id': u'undefined',
+                     'timeseries': [('2012-11-06T20:10:30', (1.0, 0.0)),
+                                    ('2012-11-06T20:11:30', (1.0, 45.0)),
+                                    ('2012-11-06T20:12:30', (1.0, 90.0)),
+                                    ('2012-11-06T20:13:30', (1.0, 120.0)),
+                                    ('2012-11-06T20:14:30', (1.0, 180.0)),
+                                    ('2012-11-06T20:15:30', (1.0, 270.0))],
+                     'units': u'meter per second'
+                     }
+
     req_data = {'obj_type': 'gnome.movers.wind_movers.WindMover',
-                'active_start': '-inf',
-                'active_stop': 'inf',
-                'on': True,
-                'uncertain_angle_scale': 0.4,
-                'uncertain_angle_units': u'rad',
-                'uncertain_duration': 3.0,
-                'uncertain_speed_scale': 2.0,
-                'uncertain_time_delay': 0.0,
-                'wind': {'description': u'Wind Object',
-                         'source_id': u'undefined',
-                         'source_type': u'undefined',
-                         'timeseries': [('2014-03-31T16:01:13', 5.0, 45.0)],
-                         'units': u'm/s',
-                         'updated_at': '2014-03-31T16:02:35.530359'}
-                }
+                   'active_start': '-inf',
+                   'active_stop': 'inf',
+                   'on': True,
+                   'uncertain_angle_scale': 0.4,
+                   'uncertain_angle_units': u'rad',
+                   'uncertain_duration': 3.0,
+                   'uncertain_speed_scale': 2.0,
+                   'uncertain_time_delay': 0.0,
+                   'wind': None
+                   }
+
+    def get_wind_obj(self, req_data):
+        resp = self.testapp.put_json('/environment', params=req_data)
+        return resp.json_body
+
+    def test_get_valid_id(self):
+        print 'Not Implemented'
+
+    def test_put_no_id(self):
+        # WindMover reauires a valid Wind object for creation
+        wind_obj = self.get_wind_obj(self.wind_req_data)
+
+        self.req_data['wind'] = wind_obj
+        resp = self.testapp.put_json('/mover', params=self.req_data)
+        print 'resp.json_body', resp.json_body
+
+        # Note: For this test, we just verify that an object with the right
+        #       properties is returned.  We will validate the content in
+        #       more elaborate tests.
+        assert 'id' in resp.json_body
+        assert 'obj_type' in resp.json_body
+        assert 'active_start' in resp.json_body
+        assert 'active_stop' in resp.json_body
+        assert 'velocity' in resp.json_body
+
+    def test_put_invalid_id(self):
+        print 'Not Implemented'
+
+    def test_put_valid_id(self):
+        print 'Not Implemented'

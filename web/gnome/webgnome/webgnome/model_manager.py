@@ -71,7 +71,7 @@ class WebWindMover(BaseWebObject, WindMover):
     """
     default_name = 'Wind Mover'
     state = copy.deepcopy(WindMover._state)
-    state.add(create=['uncertain_angle_scale_units', 'name'],
+    state.add(save=['uncertain_angle_scale_units', 'name'],
               update=['uncertain_angle_scale_units', 'name'])
 
     def __init__(self, *args, **kwargs):
@@ -89,7 +89,7 @@ class WebRandomMover(BaseWebObject, RandomMover):
     """
     default_name = 'Random Mover'
     state = copy.deepcopy(RandomMover._state)
-    state.add(create=['name'], update=['name'])
+    state.add(save=['name'], update=['name'])
 
     def __init__(self, *args, **kwargs):
         self.on = kwargs.pop('on', True)
@@ -103,7 +103,7 @@ class WebCatsMover(BaseWebObject, CatsMover):
     """
     default_name = 'Cats Mover'
     state = copy.deepcopy(CatsMover._state)
-    state.add(create=['name'], update=['name'])
+    state.add(save=['name'], update=['name'])
 
     def __init__(self, base_dir, filename, *args, **kwargs):
         filename = os.path.join(base_dir, filename)
@@ -117,7 +117,7 @@ class WebGridCurrentMover(BaseWebObject, GridCurrentMover):
     """
     default_name = 'Grid Current Mover'
     state = copy.deepcopy(GridCurrentMover._state)
-    state.add(create=['name'], update=['name'])
+    state.add(save=['name'], update=['name'])
 
     def __init__(self, base_dir, filename, topology_file, *args, **kwargs):
         filename = os.path.join(base_dir, filename)
@@ -133,7 +133,7 @@ class WebPointSourceRelease(BaseWebObject, PointLineRelease):
     """
     default_name = 'Spill'
     state = copy.deepcopy(PointLineRelease._state)
-    state.add(create=['name'], update=['name'])
+    state.add(save=['name'], update=['name'])
 
     def __init__(self, *args, **kwargs):
         self.is_active = kwargs.pop('is_active', True)
@@ -166,7 +166,7 @@ class WebMapFromBNA(BaseWebObject, MapFromBNA):
     """
     default_name = 'Map'
     state = copy.deepcopy(MapFromBNA._state)
-    state.add(create=['name'], update=['name'])
+    state.add(save=['name'], update=['name'])
 
     def __init__(self, base_dir, filename, *args, **kwargs):
         self.base_dir = base_dir
@@ -217,7 +217,7 @@ class WebRenderer(BaseWebObject, Renderer):
 class WebGnomeMap(BaseWebObject, GnomeMap):
     default_name = 'Map'
     state = copy.deepcopy(GnomeMap._state)
-    state.add(create=['name'], update=['name'])
+    state.add(save=['name'], update=['name'])
 
 
 class WebModel(BaseWebObject, Model):
