@@ -114,7 +114,6 @@ def CreateObject(json_obj, all_objects):
 
     obj_dict = py_class.deserialize(json_obj)
 
-    print 'CreateObject(): dict_ = ', obj_dict
     LinkObjectChildren(obj_dict, all_objects)
 
     return py_class.new_from_dict(obj_dict)
@@ -122,10 +121,8 @@ def CreateObject(json_obj, all_objects):
 
 def LinkObjectChildren(obj_dict, all_objects):
     for k, v in obj_dict.items():
-        if (isinstance(v, dict) and
-            'id' in v and
-            v['id'] in all_objects):
-            print 'need to link:', k, v
+        if (ValueIsJsonObject(v)
+            and v['id'] in all_objects):
             obj_dict[k] = all_objects[v['id']]
 
 
@@ -154,11 +151,18 @@ def UpdateObjectAttribute(obj, attr, value):
     if attr in ('id', 'obj_type'):
         return False
 
-    if not ObjectAttributesAreEqual(getattr(obj, attr), value):
+    if (not ValueIsJsonObject(value)
+        and not ObjectAttributesAreEqual(getattr(obj, attr), value)):
         setattr(obj, attr, value)
         return True
     else:
         return False
+
+
+def ValueIsJsonObject(value):
+    return (isinstance(value, dict)
+            and 'id' in value
+            and 'obj_type' in value)
 
 
 def ObjectAttributesAreEqual(attr1, attr2):
