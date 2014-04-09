@@ -93,11 +93,11 @@ class Tide(Environment, Serializable):
     _create.extend(_update)
 
     _state = copy.deepcopy(Environment._state)
-    _state.add(create=_create, update=_update)
+    _state.add(save=_create, update=_update)
     _schema = TideSchema
 
     # add 'filename' as a Field object
-    _state.add_field(Field('filename', create=True, read=True, isdatafile=True,
+    _state.add_field(Field('filename', save=True, read=True, isdatafile=True,
                            test_for_eq=False))
 
     def __init__(self,

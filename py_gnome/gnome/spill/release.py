@@ -64,7 +64,7 @@ class Release(object):
     _create = ['num_released', 'start_time_invalid']
     _create.extend(_update)
     _state = copy.deepcopy(serializable.Serializable._state)
-    _state.add(create=_create, update=_update)
+    _state.add(save=_create, update=_update)
     _schema = ReleaseSchema
 
     def __init__(self, num_elements=0, release_time=None):
@@ -162,7 +162,7 @@ class PointLineRelease(Release, serializable.Serializable):
     _create = ['prev_release_pos']
     _create.extend(_update)
     _state = copy.deepcopy(Release._state)
-    _state.add(update=_update, create=_create)
+    _state.add(update=_update, save=_create)
     _schema = PointLineReleaseSchema
 
     @classmethod
@@ -404,7 +404,7 @@ class SpatialRelease(Release, serializable.Serializable):
     """
 
     _state = copy.deepcopy(Release._state)
-    _state.add(update=['start_position'], create=['start_position'])
+    _state.add(update=['start_position'], save=['start_position'])
 
     def __init__(
         self,

@@ -50,7 +50,7 @@ class WindMoversBase(CyMover):
     _state = copy.deepcopy(CyMover._state)
     _state.add(update=['uncertain_duration', 'uncertain_time_delay',
                       'uncertain_speed_scale'],
-              create=['uncertain_duration', 'uncertain_time_delay',
+              save=['uncertain_duration', 'uncertain_time_delay',
                       'uncertain_speed_scale', 'uncertain_angle_scale',
                       'uncertain_angle_units'],
               read=['uncertain_angle_scale'])
@@ -233,9 +233,9 @@ class WindMover(WindMoversBase, serializable.Serializable):
     array_types.windage dict since WindMover requires a windage array
     """
     _state = copy.deepcopy(WindMoversBase._state)
-    #_state.add(read=['wind_id'], create=['wind_id'])
+    #_state.add(read=['wind_id'], save=['wind_id'])
     # todo: probably need to make update=True for 'wind' as well
-    _state.add_field(serializable.Field('wind', create=True, update=True,
+    _state.add_field(serializable.Field('wind', save=True, update=True,
                                          save_reference=True))
     _schema = WindMoverSchema
 
@@ -285,7 +285,7 @@ class WindMover(WindMoversBase, serializable.Serializable):
     def serialize(self, json_='webapi'):
         """
         Since 'wind' property is saved as a reference when used in save file
-        and 'create' option, need to add appropriate node to WindMover schema
+        and 'save' option, need to add appropriate node to WindMover schema
         """
         toserial = self.to_dict(json_)
         schema = self.__class__._schema()
@@ -358,10 +358,10 @@ class GridWindMoverSchema(WindMoversBaseSchema):
 
 class GridWindMover(WindMoversBase, serializable.Serializable):
     _state = copy.deepcopy(WindMoversBase._state)
-    _state.add(update=['wind_scale'], create=['wind_scale'])
-    _state.add_field([serializable.Field('wind_file', create=True,
+    _state.add(update=['wind_scale'], save=['wind_scale'])
+    _state.add_field([serializable.Field('wind_file', save=True,
                     read=True, isdatafile=True, test_for_eq=False),
-                    serializable.Field('topology_file', create=True,
+                    serializable.Field('topology_file', save=True,
                     read=True, isdatafile=True, test_for_eq=False)])
 
     _schema = GridWindMoverSchema

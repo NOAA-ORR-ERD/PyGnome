@@ -74,7 +74,7 @@ class Graph(GnomeId, Serializable):
     _create.extend(_update)
 
     _state = copy.deepcopy(Serializable._state)
-    _state.add(create=_create, update=_update)
+    _state.add(save=_create, update=_update)
     _schema = GraphSchema
 
     default_labels = 'XYZABCDEFGHJKLMNPQRSTUVW'

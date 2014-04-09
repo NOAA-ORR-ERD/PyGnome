@@ -143,8 +143,8 @@ def test_new_from_dict():
     """
 
     rm = RandomMover()
-    print rm.to_dict('create')
-    rm2 = RandomMover.new_from_dict(rm.to_dict('create'))
+    print rm.to_dict('save')
+    rm2 = RandomMover.new_from_dict(rm.to_dict('save'))
     assert rm == rm2
 
 

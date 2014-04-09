@@ -43,7 +43,7 @@ class Mover(object):
 
     _state = copy.deepcopy(serializable.Serializable._state)
     _state.add(update=['on', 'active_start', 'active_stop'],
-              create=['on', 'active_start', 'active_stop'],
+              save=['on', 'active_start', 'active_stop'],
               read=['active'])
 
     def __init__(self, **kwargs):   # default min + max values for timespan

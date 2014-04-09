@@ -134,16 +134,16 @@ class Wind(Environment, serializable.Serializable):
     _create.extend(_update)
 
     _state = copy.deepcopy(Environment._state)
-    _state.add(create=_create, update=_update)
+    _state.add(save=_create, update=_update)
     _schema = WindSchema
 
     # add 'filename' as a Field object
     #'name',    is this for webgnome?
     _state.add_field([serializable.Field('filename', isdatafile=True,
-                                         create=True, read=True,
+                                         save=True, read=True,
                                          test_for_eq=False),
                       serializable.Field('name', isdatafile=True,
-                                         create=True, update=True,
+                                         save=True, update=True,
                                          test_for_eq=False),
                       ])
 
@@ -490,7 +490,7 @@ class Wind(Environment, serializable.Serializable):
         """
         Call base class to_dict using super
 
-        Then if to_dict is used to 'create' a dict for a save file and
+        Then if to_dict is used to 'save' a dict for a save file and
         'filename' is given, then remove 'timeseries' from the dict.
         Only timeseries or filename need to be saved to recreate the original
         object. If both are given, then 'filename' takes precedence.
@@ -498,7 +498,7 @@ class Wind(Environment, serializable.Serializable):
 
         dict_ = super(Wind, self).to_dict(json_)
 
-        if json_ == 'create':
+        if json_ == 'save':
             if self.filename is not None:
                 # we can't have both a filename and timeseries data
                 dict_.pop('timeseries')

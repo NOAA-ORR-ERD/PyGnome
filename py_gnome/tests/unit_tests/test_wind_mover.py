@@ -56,7 +56,7 @@ def test_exceptions():
         """
         violates duck typing so may want to remove. Though current WindMover's
         backend cython object looks for C++ OSSM object which is embedded in
-        environment.Wind object which is why this check was enforced. Can be
+        Wind object which is why this check was enforced. Can be
         re-evaluated if there is a need.
         """
         WindMover(wind=10)
@@ -425,7 +425,7 @@ def test_wind_mover_from_file():
     assert wm.wind.filename == file_
 
 
-@pytest.mark.parametrize(("json_"), ['create', 'webapi'])
+@pytest.mark.parametrize(("json_"), ['save', 'webapi'])
 def test_serialize_deserialize(wind_circ, json_):
     """
     tests and illustrates the funcitonality of serialize/deserialize for
@@ -434,12 +434,11 @@ def test_serialize_deserialize(wind_circ, json_):
     wind = Wind(filename=file_)
     wm = WindMover(wind)
     serial = wm.serialize(json_)
-
-    if json_ == 'create':
+    if json_ == 'save':
         assert 'wind' not in serial
 
         # reference to 'wind' object is made by the Model().save() function
-        # by default 'wind' object is not serialized in 'create' mode
+        # by default 'wind' object is not serialized in 'save' mode
         # so for this test to work, add the 'wind' key, value back in before
         # constructing new WindMover. In the real use case, the model does this
         dict_ = wm.deserialize(serial)
@@ -466,10 +465,11 @@ def test_new_from_dict():
     """
     wind = Wind(filename=file_)
     wm = WindMover(wind)  # WindMover does not modify Wind object!
-    wm_state = wm.to_dict('create')
+    wm_state = wm.to_dict('save')
 
     # must create a Wind object and add this to wm_state dict
-    wind2 = Wind.new_from_dict(wind.to_dict('create'))
+
+    wind2 = Wind.new_from_dict(wind.to_dict('save'))
     wm_state.update({'wind': wind2})
     wm2 = WindMover.new_from_dict(wm_state)
 

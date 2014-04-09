@@ -192,7 +192,7 @@ def test_new_from_dict():
     """
 
     c_grid = GridCurrentMover(curr_file,topology_file)
-    dict_ = c_grid.to_dict('create')
+    dict_ = c_grid.to_dict('save')
     c2 = GridCurrentMover.new_from_dict(dict_)
     assert c_grid == c2
 

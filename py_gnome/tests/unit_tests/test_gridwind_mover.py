@@ -187,7 +187,7 @@ def test_new_from_dict():
     """
 
     grid_wind = GridWindMover(wind_file,topology_file)
-    dict_ = grid_wind.to_dict('create')
+    dict_ = grid_wind.to_dict('save')
     gw2 = GridWindMover.new_from_dict(dict_)
     assert grid_wind == gw2
 
