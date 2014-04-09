@@ -22,8 +22,7 @@ datadir = os.path.join(os.path.dirname(__file__), r"sample_data")
 def test_exceptions():
     with raises(IOError):
         # bad path
-        CyOSSMTime(filename=os.path.join(datadir,
-                   'WindDataFromGnome.WNDX'),
+        CyOSSMTime(filename=os.path.join(datadir, 'WindDataFromGnome.WNDX'),
                    file_contains=ts_format.magnitude_direction)
 
     with raises(ValueError):
@@ -31,18 +30,17 @@ def test_exceptions():
         CyOSSMTime()
 
         # insufficient input info
-        CyOSSMTime(filename=os.path.join(datadir,
-                   'WindDataFromGnome.WND'))
+        CyOSSMTime(filename=os.path.join(datadir, 'WindDataFromGnome.WND'))
 
         # insufficient input info
         CyOSSMTime(filename=os.path.join(datadir,
-                   'WindDataFromGnome_BadUnits.WND'),
+                                         'WindDataFromGnome_BadUnits.WND'),
                    file_contains=ts_format.magnitude_direction)
 
     with raises(ValueError):
         # file_contains has wrong int type
-        CyOSSMTime(filename=os.path.join(datadir,
-                   'WindDataFromGnome.WND'), file_contains=0)
+        CyOSSMTime(filename=os.path.join(datadir, 'WindDataFromGnome.WND'),
+                   file_contains=0)
 
 
 def test_init_units():
@@ -52,7 +50,7 @@ def test_init_units():
     Updated so the user units are read from filename
     """
     ossmT2 = CyOSSMTime(filename=os.path.join(datadir,
-                        'WindDataFromGnome.WND'),
+                                              'WindDataFromGnome.WND'),
                         file_contains=ts_format.magnitude_direction)
     assert ossmT2.user_units == 'knot'
 
@@ -86,25 +84,18 @@ class TestTimeSeriesInit:
         print vel_rec
 
         tol = 1e-6
-        msg = '{0} is not within a tolerance of {1}'
-        np.testing.assert_allclose(vel_rec['u'], actual['u'],
-                                   tol, tol,
-                                   msg.format('get_time_value', tol),
-                                   0)
-        np.testing.assert_allclose(vel_rec['v'], actual['v'],
-                                   tol, tol,
-                                   msg.format('get_time_value', tol),
-                                   0)
+        msg = ('{0} is not within a tolerance of '
+               '{1}'.format('get_time_value', tol))
+        np.testing.assert_allclose(vel_rec['u'], actual['u'], tol, tol, msg, 0)
+        np.testing.assert_allclose(vel_rec['v'], actual['v'], tol, tol, msg, 0)
 
 
 class TestGetTimeValues:
     """
     Test get_time_value method for CyOSSMTime
     """
-
     # sample data generated and stored via Gnome GUI
-    ossmT = CyOSSMTime(filename=os.path.join(datadir,
-                       'WindDataFromGnome.WND'),
+    ossmT = CyOSSMTime(filename=os.path.join(datadir, 'WindDataFromGnome.WND'),
                        file_contains=ts_format.magnitude_direction)
 
     def test_get_time_value(self):
@@ -121,24 +112,20 @@ class TestGetTimeValues:
 
         # print t_val
         # assert False
-
         actual = np.array(t_val['value'], dtype=velocity_rec)
         time = np.array(t_val['time'], dtype=seconds)
 
         vel_rec = self.ossmT.get_time_value(time)
 
-        msg = '{0} is not within a tolerance of {1}'
         tol = 1e-6
+        msg = ('{0} is not within a tolerance of '
+               '{1}'.format('get_time_value', tol))
         # TODO: Figure out why following fails??
         # tol = 1e-3
         # np.testing.assert_allclose(vel_rec, actual, tol, tol,
         #                            msg.format('get_time_value', tol), 0)
-        np.testing.assert_allclose(vel_rec['u'], actual['u'], tol, tol,
-                                   msg.format('get_time_value', tol),
-                                   0)
-        np.testing.assert_allclose(vel_rec['v'], actual['v'], tol, tol,
-                                   msg.format('get_time_value', tol),
-                                   0)
+        np.testing.assert_allclose(vel_rec['u'], actual['u'], tol, tol, msg, 0)
+        np.testing.assert_allclose(vel_rec['v'], actual['v'], tol, tol, msg, 0)
 
     def test__set_time_value_handle_none(self):
         """Check TypeError exception for private method"""
@@ -161,20 +148,16 @@ class TestGetTimeValues:
 
         self.ossmT.timeseries = t_val
         new_val = self.ossmT.timeseries
-        tol = 1e-10
 
-        msg = '{0} is not within a tolerance of {1}'
-        np.testing.assert_allclose(t_val['time'], new_val['time'], tol, tol,
-                                   msg.format('get_time_value', tol),
-                                   0)
+        tol = 1e-10
+        msg = ('{0} is not within a tolerance of '
+               '{1}'.format('get_time_value', tol))
+        np.testing.assert_allclose(t_val['time'], new_val['time'],
+                                   tol, tol, msg, 0)
         np.testing.assert_allclose(t_val['value']['u'], new_val['value']['u'],
-                                   tol, tol,
-                                   msg.format('get_time_value', tol),
-                                   0)
+                                   tol, tol, msg, 0)
         np.testing.assert_allclose(t_val['value']['v'], new_val['value']['v'],
-                                   tol, tol,
-                                   msg.format('get_time_value', tol),
-                                   0)
+                                   tol, tol, msg, 0)
 
 
 class TestReadFileWithConstantWind:
@@ -182,8 +165,8 @@ class TestReadFileWithConstantWind:
     Read contents for a filename that contains a constant wind.
     This will be just 1 line in the text filename.
     """
-    ossmT = CyOSSMTime(filename=os.path.join(datadir,
-                       'WindDataFromGnomeConstantWind.WND'),
+    file_name = os.path.join(datadir, 'WindDataFromGnomeConstantWind.WND')
+    ossmT = CyOSSMTime(filename=file_name,
                        file_contains=ts_format.magnitude_direction)
 
     def test_get_time_value(self):
@@ -201,16 +184,15 @@ class TestReadFileWithConstantWind:
         time = np.array(t_val['time'] + (0, 100), dtype=seconds)
 
         vel_rec = self.ossmT.get_time_value(time)
-        tol = 1e-6
 
-        msg = '{0} is not within a tolerance of {1}'
+        tol = 1e-6
+        msg = ('{0} is not within a tolerance of '
+               '{1}'.format('get_time_value', tol))
         for vel in vel_rec:
             np.testing.assert_allclose(vel['u'], actual['u'], tol, tol,
-                                       msg.format('get_time_value', tol),
-                                       0)
+                                       msg, 0)
             np.testing.assert_allclose(vel['v'], actual['v'], tol, tol,
-                                       msg.format('get_time_value', tol),
-                                       0)
+                                       msg, 0)
 
 
 class TestObjectSerialization:
@@ -234,6 +216,7 @@ class TestObjectSerialization:
         from numpy import array
 
         new_ossm = eval(repr(self.ossmT))
+
         assert new_ossm == self.ossmT
         assert repr(new_ossm) == repr(self.ossmT)
 
@@ -241,8 +224,7 @@ class TestObjectSerialization:
         '''
             Test that the object can be pickled and unpickled
         '''
-        new_ossm = pickle.loads(pickle.dumps(self.ossmT,
-                                             pickle.HIGHEST_PROTOCOL))
+        new_ossm = pickle.loads(pickle.dumps(self.ossmT))
         assert new_ossm == self.ossmT
         assert repr(new_ossm) == repr(self.ossmT)
 

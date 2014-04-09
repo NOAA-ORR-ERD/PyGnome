@@ -63,6 +63,7 @@ cdef class CyWindMover(cy_mover.CyMover):
         self.wind.fIsConstantWind = 1
         self.wind.fConstantValue.u = 0
         self.wind.fConstantValue.v = 0
+
         self.wind.fDuration = uncertain_duration
         self.wind.fUncertainStartTime = uncertain_time_delay
         self.wind.fSpeedScale = uncertain_speed_scale
@@ -74,22 +75,47 @@ cdef class CyWindMover(cy_mover.CyMover):
         recreated via eval()
         '''
         info = ('{0.__class__.__module__}.{0.__class__.__name__}('
-                'uncertain_duration={0.wind.fDuration}, '
-                'uncertain_time_delay={0.wind.fUncertainStartTime},'
-                'uncertain_speed_scale={0.wind.fSpeedScale}, '
-                'uncertain_angle_scale={0.wind.fAngleScale}'
+                'uncertain_duration={0.uncertain_duration}, '
+                'uncertain_time_delay={0.uncertain_time_delay},'
+                'uncertain_speed_scale={0.uncertain_speed_scale}, '
+                'uncertain_angle_scale={0.uncertain_angle_scale}'
                 ')'.format(self))
         return info
 
     def __str__(self):
         'Return string representation of this object'
         info = ("{0.__class__.__name__} object - \n"
-                "  uncertain_duration: {0.wind.fDuration} \n"
-                "  uncertain_time_delay: {0.wind.fUncertainStartTime} \n"
-                "  uncertain_speed_scale: {0.wind.fSpeedScale}\n"
-                "  uncertain_angle_scale: {0.wind.fAngleScale}".format(self))
+                "  uncertain_duration: {0.uncertain_duration} \n"
+                "  uncertain_time_delay: {0.uncertain_time_delay} \n"
+                "  uncertain_speed_scale: {0.uncertain_speed_scale}\n"
+                "  uncertain_angle_scale: {0.uncertain_angle_scale}".format(self))
 
         return info
+
+    def __reduce__(self):
+        return (CyWindMover, (self.uncertain_duration,
+                              self.uncertain_time_delay,
+                              self.uncertain_speed_scale,
+                              self.uncertain_angle_scale))
+
+    def __eq(self, CyWindMover other):
+        scalar_attrs = ('uncertain_duration', 'uncertain_time_delay',
+                        'uncertain_speed_scale', 'uncertain_angle_scale')
+        for a in scalar_attrs:
+            if not getattr(self, a) == getattr(other, a):
+                return False
+
+        return True
+
+    def __richcmp__(self, CyWindMover other, int cmp):
+        if cmp not in (2, 3):
+            raise NotImplemented('CyWindMover does not support '
+                                 'this type of comparison.')
+
+        if cmp == 2:
+            return self.__eq(other)
+        elif cmp == 3:
+            return not self.__eq(other)
 
     property uncertain_duration:
         def __get__(self):
