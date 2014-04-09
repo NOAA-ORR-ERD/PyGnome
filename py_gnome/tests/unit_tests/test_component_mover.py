@@ -202,7 +202,7 @@ def test_serialize_deserialize_wind(json_):
         assert c_component == c2
     else:
         assert serial['wind'] == wnd.serialize(json_)
-        c_component.from_dict(dict_)
+        c_component.update_from_dict(dict_)
         assert c_component.wind is wnd
 
 
@@ -220,4 +220,4 @@ def test_serialize_deserialize_curronly(json_):
         c2 = ComponentMover.new_from_dict(dict_)
         assert c_component == c2
     else:
-        c_component.from_dict(dict_)
+        c_component.update_from_dict(dict_)

@@ -50,7 +50,7 @@ def test_serialize_deserialize(filename, json_):
     create - it creates new object after serializing original object
         and tests equality of the two
 
-    update - tests serialize/deserialize and from_dict methods don't fail.
+    update - tests serialize/deserialize and update_from_dict methods don't fail.
         It doesn't update any properties.
     '''
     tide = Tide(filename)
@@ -61,5 +61,5 @@ def test_serialize_deserialize(filename, json_):
         assert new_t is not tide
         assert new_t == tide
     else:
-        tide.from_dict(dict_)
+        tide.update_from_dict(dict_)
         assert True

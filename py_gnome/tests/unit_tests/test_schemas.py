@@ -34,5 +34,5 @@ class TestGraphSchema(object):
         '''
         serial_dict = GraphSchema().serialize(sample_graph.to_dict())
         deserial_dict = GraphSchema().deserialize(serial_dict)
-        sample_graph.from_dict(deserial_dict)
+        sample_graph.update_from_dict(deserial_dict)
         pass

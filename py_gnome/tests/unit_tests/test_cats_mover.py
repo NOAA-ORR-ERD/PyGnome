@@ -200,7 +200,7 @@ def test_serialize_deserialize_tide(json_):
         assert c_cats == c2
     else:
         assert toserial['tide'] == td.serialize(json_)
-        c_cats.from_dict(dict_)
+        c_cats.update_from_dict(dict_)
         assert c_cats.tide is td
 
 
@@ -218,4 +218,4 @@ def test_serialize_deserialize_curronly(json_):
         c2 = CatsMover.new_from_dict(dict_)
         assert c_cats == c2
     else:
-        c_cats.from_dict(dict_)
+        c_cats.update_from_dict(dict_)

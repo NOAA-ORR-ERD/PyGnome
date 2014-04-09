@@ -453,7 +453,7 @@ def test_serialize_deserialize(wind_circ, json_):
         wind_update = wind_circ['wind']
         serial['wind'] = wind_update.serialize(json_)
         dict_ = wm.deserialize(serial)
-        wm.from_dict(dict_)
+        wm.update_from_dict(dict_)
 
         assert wm.wind == wind_update
 

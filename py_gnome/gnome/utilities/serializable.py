@@ -411,10 +411,10 @@ class State(object):
 class Serializable(object):
 
     """
-    contains the to_dict and from_dict method to output properties of object
+    contains the to_dict and update_from_dict method to output properties of object
     in a list.
 
-    This class is intended as a mixin so to_dict and from_dict become part of
+    This class is intended as a mixin so to_dict and update_from_dict become part of
     the object and the object must define a _state attribute of type State().
 
     The default _state=State(save=['id']) is a static variable for this class
@@ -565,7 +565,7 @@ class Serializable(object):
 
         return value
 
-    def from_dict(self, data):
+    def update_from_dict(self, data):
         """
         modifies attributes of the object using dictionary 'data'.
         Only the fields in self._state with update=True contains properties
@@ -582,7 +582,7 @@ class Serializable(object):
         If there is a method defined on the object such that the method name is
         `{field_name}_from_dict`, call that method with the field's data.
 
-        If the field on the object has a ``from_dict`` method, then use that
+        If the field on the object has a ``update_from_dict`` method, then use that
         method instead.
 
         If neither method exists, then set the field with the value from
@@ -596,13 +596,13 @@ class Serializable(object):
             if not key in data:
                 continue
 
-            from_dict_fn_name = '%s_from_dict' % key
+            from_dict_fn_name = '%s_update_from_dict' % key
             value = data[key]
 
             if hasattr(self, from_dict_fn_name):
                 getattr(self, from_dict_fn_name)(value)
-            elif hasattr(getattr(self, key), 'from_dict'):
-                getattr(self, key).from_dict(value)
+            elif hasattr(getattr(self, key), 'update_from_dict'):
+                getattr(self, key).update_from_dict(value)
             else:
                 setattr(self, key, value)
 

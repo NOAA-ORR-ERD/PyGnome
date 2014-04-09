@@ -418,7 +418,7 @@ def test_serialize_deserialize(wind_circ, json_):
     create - it creates new object after serializing original object
         and tests equality of the two
 
-    update - tests serialize/deserialize and from_dict methods don't fail.
+    update - tests serialize/deserialize and update_from_dict methods don't fail.
         It doesn't update any properties.
     '''
     serial = wind_circ['wind'].serialize(json_)
@@ -427,14 +427,14 @@ def test_serialize_deserialize(wind_circ, json_):
         new_w = Wind.new_from_dict(dict_)
         assert new_w == wind_circ['wind']
     else:
-        wind_circ['wind'].from_dict(dict_)
+        wind_circ['wind'].update_from_dict(dict_)
         assert True
 
 
 def test_from_dict():
     """
-    test from_dict function for Wind object
-    update existing wind object from_dict
+    test update_from_dict function for Wind object
+    update existing wind object update_from_dict
     """
     wm = Wind(filename=wind_file)
     wm_dict = wm.to_dict()
@@ -442,7 +442,7 @@ def test_from_dict():
     # let's update timeseries
     update_value = np.array((10., 180.))
     (wm_dict['timeseries'][0]['value'])[:] = update_value
-    wm.from_dict(wm_dict)
+    wm.update_from_dict(wm_dict)
 
     updatable_attr = wm._state.get_field_by_attribute('update')
     for key in wm_dict.keys():

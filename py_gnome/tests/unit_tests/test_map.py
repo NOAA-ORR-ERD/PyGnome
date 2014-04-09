@@ -215,7 +215,7 @@ class Test_GnomeMap:
         dict_ = gmap.to_dict()
         dict_['map_bounds'] = ((-10, 10), (10, 10), (10, -10), (-10,
                                -10))
-        gmap.from_dict(dict_)
+        gmap.update_from_dict(dict_)
         assert gmap.map_bounds == dict_['map_bounds']
 
 
@@ -568,7 +568,7 @@ def test_MapfromBNA_from_dict():
     dict_['map_bounds'] = ((-10, 10), (10, 10), (10, -10), (-10, -10))
     dict_['spillable_area'] = ((-5, 5), (5, 5), (5, -5), (-5, -5))
     dict_['refloat_halflife'] = 2
-    gmap.from_dict(dict_)
+    gmap.update_from_dict(dict_)
     assert gmap.map_bounds == dict_['map_bounds']
     assert gmap.spillable_area == dict_['spillable_area']
     assert gmap.refloat_halflife == dict_['refloat_halflife']
