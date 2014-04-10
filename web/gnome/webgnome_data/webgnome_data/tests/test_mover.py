@@ -4,7 +4,27 @@ Functional tests for the Mover Web API
 from base import FunctionalTestBase
 
 
-class SimpleMoverTests(FunctionalTestBase):
+class BaseMoverTests(FunctionalTestBase):
+    '''
+        Tests out the Gnome Mover common APIs
+    '''
+    def test_get_no_id(self):
+        self.testapp.get('/mover', status=404)
+
+    def test_get_invalid_id(self):
+        obj_id = 0xdeadbeef
+        self.testapp.get('/mover/{0}'.format(obj_id), status=404)
+
+    def check_create_properties(self, response):
+        assert 'id' in response.json_body
+        assert 'obj_type' in response.json_body
+
+        assert 'on' in response.json_body
+        assert 'active_start' in response.json_body
+        assert 'active_stop' in response.json_body
+
+
+class SimpleMoverTests(BaseMoverTests):
     '''
         Tests out the Gnome Simple Mover API
     '''
@@ -16,13 +36,6 @@ class SimpleMoverTests(FunctionalTestBase):
                 'velocity': (1.0, 1.0, 1.0)
                 }
 
-    def test_get_no_id(self):
-        self.testapp.get('/mover', status=404)
-
-    def test_get_invalid_id(self):
-        obj_id = 0xdeadbeef
-        self.testapp.get('/mover/{0}'.format(obj_id), status=404)
-
     def test_get_valid_id(self):
         # 1. create the object by performing a put with no id
         # 2. get the valid id from the response
@@ -33,24 +46,14 @@ class SimpleMoverTests(FunctionalTestBase):
         obj_id = resp1.json_body['id']
         resp2 = self.testapp.get('/mover/{0}'.format(obj_id))
 
-        assert resp2.json_body['id'] == obj_id
-        assert resp2.json_body['obj_type'] == resp1.json_body['obj_type']
-        assert resp2.json_body['active_start'] == resp1.json_body['active_start']
-        assert resp2.json_body['active_stop'] == resp1.json_body['active_stop']
-        assert resp2.json_body['velocity'] == resp1.json_body['velocity']
+        for a in ('id', 'obj_type', 'active_start', 'active_stop'):
+            assert resp2.json_body[a] == resp1.json_body[a]
 
     def test_put_no_id(self):
         #print '\n\nMover Put Request payload: {0}'.format(self.req_data)
         resp = self.testapp.put_json('/mover', params=self.req_data)
 
-        # Note: For this test, we just verify that an object with the right
-        #       properties is returned.  We will validate the content in
-        #       more elaborate tests.
-        assert 'id' in resp.json_body
-        assert 'obj_type' in resp.json_body
-        assert 'active_start' in resp.json_body
-        assert 'active_stop' in resp.json_body
-        assert 'velocity' in resp.json_body
+        self.check_create_properties(resp)
 
     def test_put_invalid_id(self):
         obj_id = 0xdeadbeef
@@ -59,13 +62,7 @@ class SimpleMoverTests(FunctionalTestBase):
         resp = self.testapp.put_json('/mover/{0}'.format(obj_id),
                                      params=self.req_data)
 
-        # Note: This test is very similar to a put with no ID, and has the same
-        #       asserts.
-        assert 'id' in resp.json_body
-        assert 'obj_type' in resp.json_body
-        assert 'active_start' in resp.json_body
-        assert 'active_stop' in resp.json_body
-        assert 'velocity' in resp.json_body
+        self.check_create_properties(resp)
 
     def test_put_valid_id(self):
         # 1. create the object by performing a put with no id
@@ -82,6 +79,12 @@ class SimpleMoverTests(FunctionalTestBase):
         resp = self.testapp.put_json('/mover/{0}'.format(obj_id),
                                      params=req_data)
         self.check_updates(resp.json_body)
+
+    def check_create_properties(self, response):
+        super(SimpleMoverTests, self).check_create_properties(response)
+
+        # specific to SimpleMover()
+        assert 'velocity' in response.json_body
 
     def perform_updates(self, json_obj):
         '''
@@ -100,7 +103,7 @@ class SimpleMoverTests(FunctionalTestBase):
         assert json_obj['on'] == False
 
 
-class WindMoverTests(SimpleMoverTests):
+class WindMoverTests(BaseMoverTests):
     '''
         Tests out the Gnome Wind Mover API
     '''
@@ -130,32 +133,93 @@ class WindMoverTests(SimpleMoverTests):
                    'wind': None
                    }
 
-    def get_wind_obj(self, req_data):
-        resp = self.testapp.put_json('/environment', params=req_data)
-        return resp.json_body
-
     def test_get_valid_id(self):
-        print 'Not Implemented'
+        # 1. create a Wind object
+        # 2. create a WindMover object
+        # 3. get the WindMover valid id for use in the URL
+        # 4. perform an additional get of the object with a valid id
+        # 5. check that our new JSON response matches the one from the create
+        wind_obj = self.create_wind_obj(self.wind_req_data)
+        self.req_data['wind'] = wind_obj
+
+        resp1 = self.testapp.put_json('/mover', params=self.req_data)
+
+        obj_id = resp1.json_body['id']
+        resp2 = self.testapp.get('/mover/{0}'.format(obj_id))
+
+        for a in ('id', 'obj_type', 'active_start', 'active_stop'):
+            assert resp2.json_body[a] == resp1.json_body[a]
+
+        for a in ('uncertain_angle_scale',
+                  'uncertain_angle_units',
+                  'uncertain_duration',
+                  'uncertain_speed_scale',
+                  'uncertain_time_delay'):
+            assert resp2.json_body[a] == resp1.json_body[a]
 
     def test_put_no_id(self):
         # WindMover reauires a valid Wind object for creation
-        wind_obj = self.get_wind_obj(self.wind_req_data)
-
+        wind_obj = self.create_wind_obj(self.wind_req_data)
         self.req_data['wind'] = wind_obj
-        resp = self.testapp.put_json('/mover', params=self.req_data)
-        print 'resp.json_body', resp.json_body
 
-        # Note: For this test, we just verify that an object with the right
-        #       properties is returned.  We will validate the content in
-        #       more elaborate tests.
-        assert 'id' in resp.json_body
-        assert 'obj_type' in resp.json_body
-        assert 'active_start' in resp.json_body
-        assert 'active_stop' in resp.json_body
-        assert 'velocity' in resp.json_body
+        resp = self.testapp.put_json('/mover', params=self.req_data)
+
+        self.check_create_properties(resp)
 
     def test_put_invalid_id(self):
-        print 'Not Implemented'
+        # WindMover reauires a valid Wind object for creation
+        wind_obj = self.create_wind_obj(self.wind_req_data)
+        self.req_data['wind'] = wind_obj
+
+        obj_id = 0xdeadbeef
+        resp = self.testapp.put_json('/mover/{0}'.format(obj_id),
+                                     params=self.req_data)
+
+        self.check_create_properties(resp)
 
     def test_put_valid_id(self):
-        print 'Not Implemented'
+        # 1. create a Wind object
+        # 2. create a WindMover object
+        # 3. get the WindMover valid id for use in the URL
+        # 3. update the properties in the JSON response
+        # 4. update the object by performing a put with a valid id
+        # 5. check that our new properties are in the new JSON response
+
+        # WindMover reauires a valid Wind object for creation
+        wind_obj = self.create_wind_obj(self.wind_req_data)
+        self.req_data['wind'] = wind_obj
+
+        resp = self.testapp.put_json('/mover', params=self.req_data)
+
+        obj_id = resp.json_body['id']
+        req_data = resp.json_body
+
+        self.perform_updates(req_data)
+        resp = self.testapp.put_json('/mover/{0}'.format(obj_id),
+                                     params=req_data)
+        self.check_updates(resp.json_body)
+
+    def create_wind_obj(self, req_data):
+        resp = self.testapp.put_json('/environment', params=req_data)
+        return resp.json_body
+
+    def check_create_properties(self, response):
+        super(WindMoverTests, self).check_create_properties(response)
+
+        # specific to WindMover()
+        assert 'uncertain_angle_scale' in response.json_body
+        assert 'uncertain_angle_units' in response.json_body
+        assert 'uncertain_duration' in response.json_body
+        assert 'uncertain_speed_scale' in response.json_body
+        assert 'uncertain_time_delay' in response.json_body
+        assert 'wind' in response.json_body
+
+    def perform_updates(self, json_obj):
+        json_obj['uncertain_duration'] = 2.0
+        json_obj['uncertain_speed_scale'] = 3.0
+        json_obj['uncertain_time_delay'] = 4.0
+
+    def check_updates(self, json_obj):
+        assert json_obj['uncertain_duration'] == 2.0
+        assert json_obj['uncertain_speed_scale'] == 3.0
+        assert json_obj['uncertain_time_delay'] == 4.0

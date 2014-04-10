@@ -203,7 +203,8 @@ class WindMoversBase(CyMover):
                                 sc['windages'],
                                 self.status_codes, self.spill_type)
 
-        return self.delta.view(dtype=world_point_type).reshape((-1, len(world_point)))
+        return (self.delta.view(dtype=world_point_type)
+                .reshape((-1, len(world_point))))
 
     def _state_as_str(self):
         '''

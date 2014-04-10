@@ -99,6 +99,7 @@ ComponentMover_c::ComponentMover_c () : CurrentMover_c ()
 	fAveragedWindsHdl = 0;
 #else
 	fAveragedWindVelocity.u = fAveragedWindVelocity.v = 0;
+	timeMoverCode = kLinkToTimeFile; // maybe just leave as NONE ?
 #endif
 	
 	return;

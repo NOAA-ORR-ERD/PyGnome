@@ -15,7 +15,7 @@ class TideCurCycleMover : virtual public TideCurCycleMover_c,  public TCATSMover
 	public:
 							TideCurCycleMover (TMap *owner, char *name);
 						   ~TideCurCycleMover () { Dispose (); }
-		virtual void		Dispose ();
+	//virtual void		Dispose ();
 	//virtual OSErr		InitMover (); //  use TCATSMover version which sets grid ?
 	virtual ClassID 	GetClassID () { return TYPE_TIDECURCYCLEMOVER; }
 	virtual Boolean		IAm(ClassID id) { if(id==TYPE_TIDECURCYCLEMOVER) return TRUE; return TCATSMover::IAm(id); }

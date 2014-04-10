@@ -75,14 +75,14 @@ TideCurCycleMover::TideCurCycleMover (TMap *owner, char *name) : TCATSMover(owne
 }
 
 
-void TideCurCycleMover::Dispose ()
+/*void TideCurCycleMover::Dispose ()
 {
-	/*if (fGrid)
-	{
-		fGrid -> Dispose();
-		delete fGrid;
-		fGrid = nil;
-	}*/
+	//if (fGrid)
+	//{
+		//fGrid -> Dispose();
+		//delete fGrid;
+		//fGrid = nil;
+	//}
 
 	if(fTimeHdl) {DisposeHandle((Handle)fTimeHdl); fTimeHdl=0;}
 	if(fStartData.dataHdl)DisposeLoadedData(&fStartData); 
@@ -93,7 +93,7 @@ void TideCurCycleMover::Dispose ()
 
 
 	TCATSMover::Dispose ();
-}
+}*/
 
 
 Boolean IsTideCurCycleFile (char *path, short *gridType)
