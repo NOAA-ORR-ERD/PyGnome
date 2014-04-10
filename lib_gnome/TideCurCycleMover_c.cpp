@@ -22,6 +22,104 @@
 #include "Replacements.h"
 #endif
 
+#ifndef pyGNOME
+TideCurCycleMover_c::TideCurCycleMover_c (TMap *owner, char *name) : CATSMover_c(owner, name)
+{
+	fTimeHdl = 0;
+	
+	fUserUnits = kUndefined;
+	
+	memset(&fStartData,0,sizeof(fStartData));
+	fStartData.timeIndex = UNASSIGNEDINDEX; 
+	fStartData.dataHdl = 0; 
+	memset(&fEndData,0,sizeof(fEndData));
+	fEndData.timeIndex = UNASSIGNEDINDEX;
+	fEndData.dataHdl = 0;
+	
+	// Override TCurrentMover defaults
+	fDownCurUncertainty = -.5; 
+	fUpCurUncertainty = .5; 	
+	fRightCurUncertainty = .25;  
+	fLeftCurUncertainty = -.25; 
+	fDuration=24*3600.; //24 hrs as seconds 
+	fUncertainStartTime = 0.; // seconds
+	fEddyV0 = 0.0;	// fVar.uncertMinimumInMPS
+	//SetClassName (name); // short file name
+	
+	fVerdatToNetCDFH = 0;	
+	fVertexPtsH = 0;
+	fNumNodes = 0;
+	
+	//fPatternStartPoint = 2;	// some default
+	fPatternStartPoint = MaxFlood;	// this should be user input
+	fTimeAlpha = -1;
+	
+	fFillValue = -1e+34;
+	fDryValue = -1e+34;
+	//fDryValue = 999;
+	
+	fTopFilePath[0] = 0;	// don't seem to need this
+}
+#endif
+TideCurCycleMover_c::TideCurCycleMover_c () : CATSMover_c()
+{
+	fTimeHdl = 0;
+	
+	fUserUnits = kUndefined;
+	
+	memset(&fStartData,0,sizeof(fStartData));
+	fStartData.timeIndex = UNASSIGNEDINDEX; 
+	fStartData.dataHdl = 0; 
+	memset(&fEndData,0,sizeof(fEndData));
+	fEndData.timeIndex = UNASSIGNEDINDEX;
+	fEndData.dataHdl = 0;
+	
+	// Override TCurrentMover defaults
+	fDownCurUncertainty = -.5; 
+	fUpCurUncertainty = .5; 	
+	fRightCurUncertainty = .25;  
+	fLeftCurUncertainty = -.25; 
+	fDuration=24*3600.; //24 hrs as seconds 
+	fUncertainStartTime = 0.; // seconds
+	fEddyV0 = 0.0;	// fVar.uncertMinimumInMPS
+	//SetClassName (name); // short file name
+	
+	fVerdatToNetCDFH = 0;	
+	fVertexPtsH = 0;
+	fNumNodes = 0;
+	
+	//fPatternStartPoint = 2;	// some default
+	fPatternStartPoint = MaxFlood;	// this should be user input
+	fTimeAlpha = -1;
+	
+	fFillValue = -1e+34;
+	fDryValue = -1e+34;
+	//fDryValue = 999;
+	
+	fTopFilePath[0] = 0;	// don't seem to need this
+}
+
+void TideCurCycleMover_c::Dispose ()
+{
+	/*if (fGrid)
+	 {
+	 fGrid -> Dispose();
+	 delete fGrid;
+	 fGrid = nil;
+	 }*/
+	
+	if(fTimeHdl) {DisposeHandle((Handle)fTimeHdl); fTimeHdl=0;}
+	if(fStartData.dataHdl)DisposeLoadedData(&fStartData); 
+	if(fEndData.dataHdl)DisposeLoadedData(&fEndData);
+	
+	if(fVerdatToNetCDFH) {DisposeHandle((Handle)fVerdatToNetCDFH); fVerdatToNetCDFH=0;}
+	if(fVertexPtsH) {DisposeHandle((Handle)fVertexPtsH); fVertexPtsH=0;}
+	
+	
+	CATSMover_c::Dispose ();
+}
+
+
 LongPointHdl TideCurCycleMover_c::GetPointsHdl()
 {
 	return (dynamic_cast<TTriGridVel*>(fGrid)) -> GetPointsHdl();
@@ -887,8 +985,11 @@ OSErr TideCurCycleMover_c::ReorderPoints(TMap **newMap, short *bndry_indices, sh
 	if (numVerdatPts!=nv) 
 	{
 		printNote("Not all vertex points were used");
+		// it seems this should be an error...
+		err = -1;
+		goto done;
 		// shrink handle
-		_SetHandleSize((Handle)verdatPtsH,numVerdatPts*sizeof(long));
+		//_SetHandleSize((Handle)verdatPtsH,numVerdatPts*sizeof(long));
 	}
 	pts = (LongPointHdl)_NewHandle(sizeof(LongPoint)*(numVerdatPts));
 	if(pts == nil)

@@ -43,6 +43,13 @@ public:
 	char fTopFilePath[kMaxNameLen];
 	//Seconds model_start_time;	// for the diagnostic case - no time file look at the patterns in the file that have no absolute time associated with them
 	
+#ifndef pyGNOME
+	TideCurCycleMover_c (TMap *owner, char *name);
+#endif
+	TideCurCycleMover_c ();
+	~TideCurCycleMover_c () { Dispose (); }
+	virtual void		Dispose ();
+
 	virtual OSErr		AddUncertainty(long setIndex, long leIndex,VelocityRec *patVelocity,double timeStep,Boolean useEddyUncertainty);
 	
 	LongPointHdl 		GetPointsHdl();
