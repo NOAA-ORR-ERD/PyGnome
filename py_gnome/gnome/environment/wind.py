@@ -7,6 +7,7 @@ import datetime
 import os
 import copy
 from itertools import chain
+import tempfile
 
 import numpy
 np = numpy
@@ -95,7 +96,6 @@ class WindSchema(base_schema.ObjType):
     '''
     description = SchemaNode(String(), missing=drop)
     filename = SchemaNode(String(), missing=drop)
-    name = SchemaNode(String(), missing=drop)
     updated_at = SchemaNode(LocalDateTime(), missing=drop)
 
     latitude = SchemaNode(Float(), missing=drop)
@@ -122,11 +122,8 @@ class Wind(Environment, serializable.Serializable):
                'description',
                'latitude',
                'longitude',
-               'source_id',
-               'source_type',
+               'source_id',  # what is source ID? Buoy ID?
                'updated_at',
-               'timeseries',
-               'units',
                ]
 
     # used to create new obj or as readonly parameter
@@ -142,9 +139,16 @@ class Wind(Environment, serializable.Serializable):
     _state.add_field([serializable.Field('filename', isdatafile=True,
                                          save=True, read=True,
                                          test_for_eq=False),
-                      serializable.Field('name', isdatafile=True,
-                                         save=True, update=True,
+                      serializable.Field('name', save=True, update=True,
                                          test_for_eq=False),
+                      serializable.Field('timeseries', save=False,
+                                         update=True),
+                      # test for equality of units a little differently
+                      serializable.Field('units', save=False,
+                                         update=True, test_for_eq=False),
+                      # for save files, source_type is always file
+                      serializable.Field('source_type', save=True,
+                                         update=True, test_for_eq=False)
                       ])
 
     # list of valid velocity units for timeseries
@@ -217,6 +221,8 @@ class Wind(Environment, serializable.Serializable):
         # default lat/long - can these be set from reading data in the file?
         self.longitude = None
         self.latitude = None
+        self._tempfile = None
+        self._filename = None
 
         format_arg = kwargs.pop('format', 'r-theta')
 
@@ -259,7 +265,8 @@ class Wind(Environment, serializable.Serializable):
                                 else 'undefined')
         else:
             ts_format = tsformat(format_arg)
-            self.ossm = CyOSSMTime(filename=kwargs.pop('filename'),
+            self._filename = kwargs.pop('filename')
+            self.ossm = CyOSSMTime(filename=self._filename,
                                    file_contains=ts_format)
             self._user_units = self.ossm.user_units
 
@@ -314,6 +321,7 @@ class Wind(Environment, serializable.Serializable):
     def _check_timeseries(self, timeseries, units):
         '''
         Run some checks to make sure timeseries is valid
+        Also, make the resolution to minutes as opposed to seconds
         '''
         try:
             if timeseries.dtype != basic_types.datetime_value_2d:
@@ -341,6 +349,10 @@ class Wind(Environment, serializable.Serializable):
                              'Number of duplicate entries: '
                              '{0}'.format(len(timeseries) - len(unique)))
 
+        # make resolution to minutes in datetime
+        for ix, tm in enumerate(timeseries['time'].astype(datetime.datetime)):
+            timeseries['time'][ix] = tm.replace(second=0)
+
     def __repr__(self):
         """
         Return an unambiguous representation of this `Wind object` so it can
@@ -365,6 +377,11 @@ class Wind(Environment, serializable.Serializable):
         return "Wind( timeseries=Wind.get_timeseries('uv'), format='uv')"
 
     def __eq__(self, other):
+        '''
+        call super to test for equality of objects for all attributes
+        except 'units' and 'timeseries' - test 'timeseries' here by converting
+        to consistent units
+        '''
         # since this has numpy array - need to compare that as well
         # By default, tolerance for comparison is atol=1e-10, rtol=0
         # persisting data requires unit conversions and finite precision,
@@ -373,22 +390,24 @@ class Wind(Environment, serializable.Serializable):
         check = super(Wind, self).__eq__(other)
 
         if check:
-            if (self.timeseries['time'] != other.timeseries['time']).all():
+            sts = self.get_timeseries(units=self.units)
+            ots = other.get_timeseries(units=self.units)
+            if (sts['time'] != ots['time']).all():
                 return False
             else:
-                return np.allclose(self.timeseries['value'],
-                                   other.timeseries['value'], 1e-10, 0)
+                return np.allclose(sts['value'], ots['value'], 0, 1e-2)
 
-        # user_units is also not part of _state.create list so do explicit
-        # check here
-        # if self.user_units != other.user_units:
-        #    return False
         return check
 
     def __ne__(self, other):
         return not self == other
 
     # user_units = property( lambda self: self._user_units)
+
+    def __del__(self):
+        'close tempfile upon deletion'
+        if self._tempfile:
+            self._tempfile.close()
 
     @property
     def units(self):
@@ -408,11 +427,10 @@ class Wind(Environment, serializable.Serializable):
         self._check_units(value)
         self._user_units = value
 
-    filename = property(lambda self: (self.ossm.filename, None
-                                      )[self.ossm.filename == ''])
+    filename = property(lambda self: self._filename)
     timeseries = property(lambda self: self.get_timeseries(),
                           lambda self, val: self.set_timeseries(val,
-                                                                units=self.units)
+                                                            units=self.units)
                           )
 
     def get_timeseries(self, datetime=None, units=None, format='r-theta'):
@@ -496,14 +514,35 @@ class Wind(Environment, serializable.Serializable):
         object. If both are given, then 'filename' takes precedence.
         """
 
+        if json_ == 'save':
+            # write timeseries to a file and update filename
+            self._write_timeseries_to_file()
+            self._filename = self._tempfile.name
+
         dict_ = super(Wind, self).to_dict(json_)
 
-        if json_ == 'save':
-            if self.filename is not None:
-                # we can't have both a filename and timeseries data
-                dict_.pop('timeseries')
-
         return dict_
+
+    def _write_timeseries_to_file(self):
+        'write to file in current working directory'
+        self._tempfile = tempfile.NamedTemporaryFile(prefix='wind_')
+        header = ('Station Name\n'
+                  'Position\n'
+                  'knots\n'
+                  'LTime\n'
+                  '0,0,0,0,0,0,0,0\n')
+        self._tempfile.write(header)
+        val = self.get_timeseries(units='knots')['value']
+        dt = self.get_timeseries(units='knots')['time'].astype(
+            datetime.datetime)
+
+        for i, idt in enumerate(dt):
+            self._tempfile.write(
+            ('{0:02}, {1:02}, {2:04}, {3:02}, {4:02}, {5:02.4f}, {6:02.4f}\n').
+            format(idt.day, idt.month, idt.year, idt.hour,
+                    idt.minute, round(val[i, 0], 4), round(val[i, 1], 4)))
+
+        self._tempfile.flush()
 
 
 def constant_wind(speed, direction, units='m/s'):
@@ -517,7 +556,10 @@ def constant_wind(speed, direction, units='m/s'):
                        "cm/s", etc.
     """
     wind_vel = np.zeros((1, ), dtype=basic_types.datetime_value_2d)
-    wind_vel['time'][0] = datetime.datetime.now()  # just to have a time
+
+    # just to have a time accurate to minutes
+    wind_vel['time'][0] = datetime.datetime.now().replace(microsecond=0,
+                                                          second=0)
     wind_vel['value'][0] = (speed, direction)
 
     return Wind(timeseries=wind_vel, format='r-theta', units=units)

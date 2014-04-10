@@ -213,7 +213,7 @@ def wind_circ(rq_wind):
     """
     Create Wind object using the time series given by test fixture 'rq_wind'
     'wind' object where timeseries is defined as:
-         - 'time' defined by: [datetime(2012,11,06,20,10+i,30)
+         - 'time' defined by: [datetime(2012,11,06,20,10+i,0)
             for i in range(len(dtv_rq))]
          - 'value' defined by: (r,theta) values ferom rq_wind fixtures, units
             are 'm/s'
@@ -232,7 +232,7 @@ def wind_circ(rq_wind):
         06,
         20,
         10 + i,
-        30,
+        0,
         ) for i in range(len(dtv_rq))]
     dtv_rq.value = rq_wind['rq']
     dtv_uv = np.zeros((len(dtv_rq), ),

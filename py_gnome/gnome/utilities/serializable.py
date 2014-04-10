@@ -601,8 +601,9 @@ class Serializable(object):
 
             if hasattr(self, from_dict_fn_name):
                 getattr(self, from_dict_fn_name)(value)
-            elif hasattr(getattr(self, key), 'update_from_dict'):
-                getattr(self, key).update_from_dict(value)
+            # Note: Do not update properties of nested objects
+            #elif hasattr(getattr(self, key), 'update_from_dict'):
+            #    getattr(self, key).update_from_dict(value)
             else:
                 setattr(self, key, value)
 

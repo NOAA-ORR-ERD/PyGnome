@@ -183,7 +183,6 @@ def _uncertain_loop(pSpill, cats):
     return u_delta
 
 
-#@pytest.mark.parametrize(("json_"), ['save', 'webapi'])
 @pytest.mark.parametrize(("json_"), ['webapi', 'save'])
 def test_serialize_deserialize_tide(json_):
     """
@@ -199,7 +198,9 @@ def test_serialize_deserialize_tide(json_):
         c2 = CatsMover.new_from_dict(dict_)
         assert c_cats == c2
     else:
-        assert toserial['tide'] == td.serialize(json_)
+        #assert toserial['tide'] == td.serialize(json_)
+        assert 'tide' in toserial
+        dict_['tide'] = td  # no longer updating properties of nested objects
         c_cats.update_from_dict(dict_)
         assert c_cats.tide is td
 

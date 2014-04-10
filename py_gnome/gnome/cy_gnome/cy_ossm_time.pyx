@@ -24,9 +24,9 @@ cdef class CyOSSMTime(object):
 
         #Define user units for velocity. In C++, these are #defined as
         self._user_units_dict = {-1: 'undefined',
-                                 1: 'knot',
-                                 2: 'meter per second',
-                                 3: 'mile per hour'}
+                                 1: 'knots',
+                                 2: 'meters per second',
+                                 3: 'miles per hour'}
 
         self.file_contains = 0
 

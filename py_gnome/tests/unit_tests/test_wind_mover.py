@@ -450,12 +450,12 @@ def test_serialize_deserialize(wind_circ, json_):
     else:
         assert 'wind' in serial
 
-        wind_update = wind_circ['wind']
-        serial['wind'] = wind_update.serialize(json_)
+        #serial['wind'] = wind_update.serialize(json_)
         dict_ = wm.deserialize(serial)
+        dict_['wind'] = wind_circ['wind']
         wm.update_from_dict(dict_)
 
-        assert wm.wind == wind_update
+        assert wm.wind == wind_circ['wind']
 
 
 def test_new_from_dict():

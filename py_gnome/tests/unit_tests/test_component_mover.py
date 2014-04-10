@@ -201,7 +201,9 @@ def test_serialize_deserialize_wind(json_):
         c2 = ComponentMover.new_from_dict(dict_)
         assert c_component == c2
     else:
-        assert serial['wind'] == wnd.serialize(json_)
+        #assert serial['wind'] == wnd.serialize(json_)
+        assert 'wind' in serial
+        dict_['wind'] = wnd  # no longer updating properties of nested objects
         c_component.update_from_dict(dict_)
         assert c_component.wind is wnd
 

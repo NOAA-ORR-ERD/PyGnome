@@ -387,11 +387,11 @@ def test_new_from_dict_filename():
     create a new wind object and make sure it has same properties
     """
     wm = Wind(filename=wind_file)
-    wm_state = wm.to_dict('save')
-    print wm_state
+    serial = wm.serialize(json_='save')
+    dict_ = Wind.deserialize(serial)
 
     # this does not catch two objects with same ID
-    wm2 = Wind.new_from_dict(wm_state)
+    wm2 = Wind.new_from_dict(dict_)
 
     assert wm == wm2
 
@@ -402,11 +402,11 @@ def test_new_from_dict_timeseries():
     create a new wind object and make sure it has same properties
     """
     wm = constant_wind(10, 45, 'knots')
-    wm_state = wm.to_dict('save')
-    print wm_state
+    serial = wm.serialize(json_='save')
+    dict_ = Wind.deserialize(serial)
 
     # this does not catch two objects with same ID
-    wm2 = Wind.new_from_dict(wm_state)
+    wm2 = Wind.new_from_dict(dict_)
 
     assert wm == wm2
 
@@ -418,16 +418,17 @@ def test_serialize_deserialize(wind_circ, json_):
     create - it creates new object after serializing original object
         and tests equality of the two
 
-    update - tests serialize/deserialize and update_from_dict methods don't fail.
-        It doesn't update any properties.
+    update - tests serialize/deserialize and update_from_dict methods don't
+        fail. It doesn't update any properties.
     '''
-    serial = wind_circ['wind'].serialize(json_)
+    wind = wind_circ['wind']
+    serial = wind.serialize(json_)
     dict_ = Wind.deserialize(serial)
     if json_ == 'save':
         new_w = Wind.new_from_dict(dict_)
-        assert new_w == wind_circ['wind']
+        assert new_w == wind
     else:
-        wind_circ['wind'].update_from_dict(dict_)
+        wind.update_from_dict(dict_)
         assert True
 
 
@@ -471,3 +472,16 @@ def test_eq():
     w2 = Wind(filename=w_copy)
     w2.updated_at = w.updated_at    # match these before testing
     assert w == w2
+
+
+def test_timeseries_res_sec():
+    '''check the timeseries resolution is changed to minutes.
+    Drop seconds from datetime, if given'''
+    ts = np.zeros((3,), dtype=datetime_value_2d)
+    ts[:] = [(datetime(2014, 1, 1, 10, 10, 30), (1, 10)),
+             (datetime(2014, 1, 1, 11, 10, 10), (2, 10)),
+             (datetime(2014, 1, 1, 12, 10), (3, 10))]
+    w = Wind(timeseries=ts, units='m/s')
+    # check that seconds resolution has been dropped
+    for ix, dt in enumerate(w.timeseries['time'].astype(datetime)):
+        assert ts['time'][ix].astype(datetime).replace(second=0) == dt
