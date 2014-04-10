@@ -64,7 +64,7 @@ class Spill(serializable.Serializable):
     valid_mass_units.extend(uc.GetUnitNames('Mass'))
 
     @classmethod
-    def new_from_dict(cls, dict_):
+    def new_from_dict(cls, dict_, json_='save'):
         """
         create object using the same settings as persisted object.
         In addition, set the _state of other properties after initialization

@@ -165,6 +165,7 @@ class NetCDFOutput(Outputter, Serializable):
         '''
         creates a new object from dictionary
         '''
+        json_ = dict_.pop('json_')  # currently not required
         _middle_of_run = dict_.pop('_middle_of_run', None)
         _start_idx = dict_.pop('_start_idx', None)
         obj = cls(**dict_)

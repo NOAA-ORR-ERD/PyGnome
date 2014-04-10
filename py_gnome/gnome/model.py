@@ -104,17 +104,24 @@ class Model(Serializable):
     @classmethod
     def new_from_dict(cls, dict_):
         'Restore model from previously persisted _state'
+        json_ = dict_.pop('json_')
         l_env = dict_.pop('environment')
         l_out = dict_.pop('outputters')
         l_movers = dict_.pop('movers')
         l_weatherers = dict_.pop('weatherers')
-        c_spills = dict_.pop('certain_spills')
 
-        if 'uncertain_spills' in dict_:
-            u_spills = dict_.pop('uncertain_spills')
-            l_spills = zip(c_spills, u_spills)
+        if json_ == 'save':
+            c_spills = dict_.pop('certain_spills')
+
+            if 'uncertain_spills' in dict_:
+                u_spills = dict_.pop('uncertain_spills')
+                l_spills = zip(c_spills, u_spills)
+            else:
+                l_spills = c_spills
         else:
-            l_spills = c_spills
+            l_spills = dict_.pop('spills')
+            if 'id' in dict_:
+                dict_.pop('id')
 
         if 'obj_type' in dict_:
             dict_.pop('obj_type')

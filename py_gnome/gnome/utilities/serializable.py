@@ -489,8 +489,9 @@ class Serializable(object):
         # remove obj_type from dict since that is only used by scenario
         # module to load objects
         # In baseclass, cls() is used to get the obj_type
-        if 'obj_type' in dict_:
-            dict_.pop('obj_type')
+        for key in ['obj_type', 'json_', 'id']:
+            if key in dict_:
+                dict_.pop(key)
 
         return cls(**dict_)
 
@@ -530,6 +531,9 @@ class Serializable(object):
 
         :param json_='webapi': return the attributes for json payload for webapi
             The other option is 'save' corresponding with json for save files.
+
+        NOTE: add the json_='webapi' key to be serialized so we know what the
+        serialization is for
         """
         if json_ == 'webapi':
             list_ = self._attrlist_to_dict(do=('update', 'read'))
@@ -550,6 +554,7 @@ class Serializable(object):
             if value is not None:  # no need to persist properties that are None!
                 data[key] = value
 
+        data['json_'] = json_
         return data
 
     def attr_to_dict(self, name):

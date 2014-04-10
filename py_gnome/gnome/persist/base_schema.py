@@ -23,6 +23,7 @@ class ObjType(MappingSchema):
     '''
     id = SchemaNode(String(), missing=drop)
     obj_type = SchemaNode(String(), missing=drop)
+    json_ = SchemaNode(String())    # either 'webapi' or 'save'
 
 
 class OrderedCollectionIDList(SequenceSchema):

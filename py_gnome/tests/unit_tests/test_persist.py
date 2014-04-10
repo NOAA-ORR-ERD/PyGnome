@@ -311,3 +311,20 @@ class TestWebApi:
         for sc in model.spills.items():
             if sc is uncertain:
                 self._dump_collection(sc)
+
+    @pytest.mark.parametrize('uncertain', [False])
+    def test_model_rt(self, images_dir, uncertain):
+        model = make_model(images_dir, uncertain)
+        deserial = Model.deserialize(model.serialize('webapi'))
+
+        # update the dict so it gives a valid model to load
+        deserial['map'] = model.map
+        deserial.pop('map_id')
+        for coll in ['movers', 'weatherers', 'environment', 'outputters',
+                     'spills']:
+            for ix, item in enumerate(deserial[coll]):
+                deserial[coll][ix] = getattr(model, coll)[item]
+
+        m2 = Model.new_from_dict(deserial)
+        assert m2 == model
+        print m2
