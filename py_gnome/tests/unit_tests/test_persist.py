@@ -312,7 +312,7 @@ class TestWebApi:
             if sc is uncertain:
                 self._dump_collection(sc)
 
-    @pytest.mark.parametrize('uncertain', [False])
+    @pytest.mark.parametrize('uncertain', [False, True])
     def test_model_rt(self, images_dir, uncertain):
         model = make_model(images_dir, uncertain)
         deserial = Model.deserialize(model.serialize('webapi'))

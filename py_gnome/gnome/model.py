@@ -796,7 +796,8 @@ class Model(Serializable):
         check contents of orderered collections to figure out what schema to
         use for the OC
         '''
-        if isinstance(json_['movers'], dict):
+        if json_['json_'] == 'save':
+        #if isinstance(json_['movers'], dict):
             schema = cls._schema('save')
         else:
             schema = cls._schema()
