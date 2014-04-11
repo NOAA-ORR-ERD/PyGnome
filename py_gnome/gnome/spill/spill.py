@@ -82,18 +82,15 @@ class Spill(serializable.Serializable):
 
         return new_obj
 
-    def __init__(
-        self,
-        release,
-        element_type=None,
-        on=True,
-        volume=None,
-        volume_units='m^3',
-        # Is this total mass of the spill?
-        mass=None,
-        mass_units='g',
-        id=None,
-        ):
+    def __init__(self, release,
+                 element_type=None,
+                 on=True,
+                 volume=None,
+                 volume_units='m^3',
+                 # Is this total mass of the spill?
+                 mass=None,
+                 mass_units='g',
+                 id=None):
         """
         Base spill class. Spill used by a gnome model derive from this class
 
@@ -164,7 +161,6 @@ class Spill(serializable.Serializable):
 #             (self.element_type.initializers['windages']).windage_persist = \
 #                 windage_persist
 #==============================================================================
-
         self._gnome_id = GnomeId(id)
 
     def __deepcopy__(self, memo=None):

@@ -10,6 +10,7 @@ np = numpy
 
 from colander import (SchemaNode, drop, Bool, Int)
 
+from gnome import GnomeId
 from gnome.persist.base_schema import ObjType, WorldPoint
 from gnome.persist.extend_colander import LocalDateTime
 from gnome.persist.validators import convertible_to_seconds
@@ -17,12 +18,14 @@ from gnome.persist.validators import convertible_to_seconds
 from gnome.basic_types import world_point_type
 from gnome.utilities.plume import Plume, PlumeGenerator
 
-from gnome.utilities import serializable
+from gnome.utilities.serializable import Serializable
 
 
 class ReleaseSchema(ObjType):
     'Base class for Release schemas'
     num_elements = SchemaNode(Int(), default=1000)
+    release_time = SchemaNode(LocalDateTime(),
+                              validator=convertible_to_seconds)
 
     # used to create a new Release object if model is persisted mid-run
     num_released = SchemaNode(Int())
@@ -30,56 +33,47 @@ class ReleaseSchema(ObjType):
     name = 'release'
 
 
-class PointLineReleaseSchema(ReleaseSchema):
-    '''
-    Contains properties required by UpdateWindMover and CreateWindMover
-    TODO: also need a way to persist list of element_types
-    '''
-    start_position = WorldPoint()
-    release_time = SchemaNode(LocalDateTime(),
-                              validator=convertible_to_seconds)
-    end_position = WorldPoint(missing=drop)
-    end_release_time = SchemaNode(LocalDateTime(), missing=drop,
-                                  validator=convertible_to_seconds)
-
-    # following will be used when restoring a saved scenario that is
-    # partially run
-    num_released = SchemaNode(Int(), missing=drop)
-    start_time_invalid = SchemaNode(Bool(), missing=drop)
-
-    # Not sure how this will work w/ WebGnome
-    prev_release_pos = WorldPoint(missing=drop)
-    description = 'PointLineRelease object schema'
-
-
-class Release(object):
+class Release(Serializable):
     """
     base class for Release classes.
 
     It contains interface for Release objects
     """
-    _update = ['num_elements']
+    _update = ['num_elements', 'release_time',
+               'num_released', 'start_time_invalid']
+    _create = _update
 
-    # obj_type is no longer part of default so add it explicitly here
-    _create = ['num_released', 'start_time_invalid']
-    _create.extend(_update)
-    _state = copy.deepcopy(serializable.Serializable._state)
+    _state = copy.deepcopy(Serializable._state)
     _state.add(save=_create, update=_update)
+
     _schema = ReleaseSchema
 
-    def __init__(self, num_elements=0, release_time=None):
+    def __init__(self, release_time, num_elements=0,
+                 num_released=0, start_time_invalid=True):
         self.num_elements = num_elements
         self.release_time = release_time
 
         # number of new particles released at each timestep
-        self.num_released = 0
+        self.num_released = num_released
 
         # flag determines if the first time is valid. If the first call to
         # self.num_elements_to_release(current_time, time_step) has
         # current_time > self.release_time, then no particles are ever released
         # if current_time <= self.release_time, then toggle this flag since
         # model start time is valid
-        self.start_time_invalid = True
+        self.start_time_invalid = start_time_invalid
+
+    @property
+    def id(self):
+        if not hasattr(self, '_gnome_id'):
+            self._gnome_id = GnomeId()
+        return self._gnome_id.id
+
+    def __repr__(self):
+        return ('{0.__class__.__module__}.{0.__class__.__name__}('
+                'num_elements={0.num_elements}, '
+                'release_time={0.release_time}'
+                ')'.format(self))
 
     def num_elements_to_release(self, current_time, time_step):
         """
@@ -145,7 +139,29 @@ class Release(object):
         self.start_time_invalid = True
 
 
-class PointLineRelease(Release, serializable.Serializable):
+class PointLineReleaseSchema(ReleaseSchema):
+    '''
+    Contains properties required by UpdateWindMover and CreateWindMover
+    TODO: also need a way to persist list of element_types
+    '''
+    start_position = WorldPoint()
+    release_time = SchemaNode(LocalDateTime(),
+                              validator=convertible_to_seconds)
+    end_position = WorldPoint(missing=drop)
+    end_release_time = SchemaNode(LocalDateTime(), missing=drop,
+                                  validator=convertible_to_seconds)
+
+    # following will be used when restoring a saved scenario that is
+    # partially run
+    num_released = SchemaNode(Int(), missing=drop)
+    start_time_invalid = SchemaNode(Bool(), missing=drop)
+
+    # Not sure how this will work w/ WebGnome
+    prev_release_pos = WorldPoint(missing=drop)
+    description = 'PointLineRelease object schema'
+
+
+class PointLineRelease(Release, Serializable):
 
     """
     The primary spill source class  --  a release of floating
@@ -154,7 +170,6 @@ class PointLineRelease(Release, serializable.Serializable):
     """
 
     _update = ['start_position',
-               'release_time',
                'end_position',
                'end_release_time']
 
@@ -185,14 +200,9 @@ class PointLineRelease(Release, serializable.Serializable):
 
         return new_obj
 
-    def __init__(
-        self,
-        num_elements,
-        start_position,
-        release_time,
-        end_position=None,
-        end_release_time=None,
-        ):
+    def __init__(self, num_elements,
+                 start_position, release_time,
+                 end_position=None, end_release_time=None):
         """
         :param num_elements: total number of elements to be released
         :type num_elements: integer
@@ -214,8 +224,8 @@ class PointLineRelease(Release, serializable.Serializable):
         See base :class:`Release` documentation
         """
 
-        super(PointLineRelease, self).__init__(num_elements,
-                                               release_time)
+        super(PointLineRelease, self).__init__(release_time,
+                                               num_elements)
 
         if end_release_time is None:
             # also sets self._end_release_time
@@ -396,7 +406,7 @@ class PointLineRelease(Release, serializable.Serializable):
         self.prev_release_pos = self.start_position
 
 
-class SpatialRelease(Release, serializable.Serializable):
+class SpatialRelease(Release, Serializable):
 
     """
     A simple release class  --  a release of floating non-weathering particles,
@@ -406,11 +416,7 @@ class SpatialRelease(Release, serializable.Serializable):
     _state = copy.deepcopy(Release._state)
     _state.add(update=['start_position'], save=['start_position'])
 
-    def __init__(
-        self,
-        start_position,
-        release_time,
-        ):
+    def __init__(self, start_position, release_time):
         """
         :param release_time: time the LEs are released
         :type release_time: datetime.datetime
@@ -425,8 +431,8 @@ class SpatialRelease(Release, serializable.Serializable):
 
         self.start_position = np.asarray(start_position,
                 dtype=world_point_type).reshape((-1, 3))
-        super(SpatialRelease, self).__init__(self.start_position.shape[0],
-                                             release_time)
+        super(SpatialRelease, self).__init__(release_time,
+                                             self.start_position.shape[0])
 
     def num_elements_to_release(self, current_time, time_step):
         """
@@ -461,13 +467,18 @@ class SpatialRelease(Release, serializable.Serializable):
         data_arrays['positions'][:, :] = self.start_position
 
 
-class VerticalPlumeRelease(Release):
+class VerticalPlumeRelease(Release, Serializable):
     '''
     An Underwater Plume spill class -- a continuous release of particles,
     controlled by a contained spill generator object.
     - plume model generator will have an iteration method.  This will provide
       flexible looping and list comprehension behavior.
     '''
+    _state = copy.deepcopy(Release._state)
+
+    # what kinds of customized state attributes would we like to add here?
+    #_state.add(update=['start_position'], save=['start_position'])
+
     def __init__(self,
                  num_elements,
                  start_position,
@@ -490,7 +501,7 @@ class VerticalPlumeRelease(Release):
             -- (long, lat, z)
         '''
 
-        super(VerticalPlumeRelease, self).__init__(num_elements, release_time)
+        super(VerticalPlumeRelease, self).__init__(release_time, num_elements)
 
         self.start_position = np.array(start_position,
                             dtype=world_point_type).reshape((3, ))
