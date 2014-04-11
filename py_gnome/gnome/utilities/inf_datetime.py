@@ -33,7 +33,8 @@ class InfTime(object):
         return 'Infinite time object'
 
     def __repr__(self):
-        return 'InfTime()'
+        return ('{0.__class__.__module__}.{0.__class__.__name__}'
+                '()'.format(self))
 
     def isoformat(self):
         return 'inf'
@@ -98,7 +99,8 @@ class MinusInfTime(object):
         return 'Minus infinite time object'
 
     def __repr__(self):
-        return 'MinusInfTime()'
+        return ('{0.__class__.__module__}.{0.__class__.__name__}'
+                '()'.format(self))
 
     def isoformat(self):
         return '-inf'

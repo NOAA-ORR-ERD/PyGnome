@@ -3,8 +3,6 @@ Created on Feb 15, 2013
 '''
 
 import copy
-import os
-import shutil
 
 import numpy
 np = numpy
@@ -74,9 +72,11 @@ class Field(object):  # ,serializable.Serializable):
         if not isinstance(other, Field):
             return False
 
-        if self.name == other.name and self.isdatafile \
-            == other.isdatafile and self.save == other.save \
-            and self.update == other.update and self.read == other.read:
+        if (self.name == other.name and
+            self.isdatafile == other.isdatafile and
+            self.save == other.save and
+            self.update == other.update and
+            self.read == other.read):
             return True
 
     def __repr__(self):
@@ -693,16 +693,7 @@ class Serializable(object):
         return True
 
     def __ne__(self, other):
-        """
-        Checks if the object is not equal to another object (!=).
-        Complementary operator to ==, it calls self == other and if that fails,
-        it returns True since the two objects are not equal.
-        """
-
-        if self == other:
-            return False
-        else:
-            return True
+        return not self == other
 
     def serialize(self, json_='webapi'):
         """
