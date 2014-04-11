@@ -528,6 +528,6 @@ def point_line_release_spill(num_elements,
         on=True,
         volume=None,
         volume_units='m^3'):
-    release = PointLineRelease(num_elements, start_position, release_time,
+    release = PointLineRelease(release_time, num_elements, start_position,
                                end_position, end_release_time)
     return Spill(release, element_type, on, volume, volume_units)

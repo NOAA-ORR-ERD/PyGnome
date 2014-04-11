@@ -72,7 +72,7 @@ class Release(Serializable):
     def __repr__(self):
         return ('{0.__class__.__module__}.{0.__class__.__name__}('
                 'num_elements={0.num_elements}, '
-                'release_time={0.release_time}'
+                'release_time={0.release_time!r}'
                 ')'.format(self))
 
     def num_elements_to_release(self, current_time, time_step):
@@ -200,8 +200,7 @@ class PointLineRelease(Release, Serializable):
 
         return new_obj
 
-    def __init__(self, num_elements,
-                 start_position, release_time,
+    def __init__(self, release_time, num_elements, start_position,
                  end_position=None, end_release_time=None):
         """
         :param num_elements: total number of elements to be released
@@ -416,7 +415,7 @@ class SpatialRelease(Release, Serializable):
     _state = copy.deepcopy(Release._state)
     _state.add(update=['start_position'], save=['start_position'])
 
-    def __init__(self, start_position, release_time):
+    def __init__(self, release_time, start_position):
         """
         :param release_time: time the LEs are released
         :type release_time: datetime.datetime
@@ -479,12 +478,8 @@ class VerticalPlumeRelease(Release, Serializable):
     # what kinds of customized state attributes would we like to add here?
     #_state.add(update=['start_position'], save=['start_position'])
 
-    def __init__(self,
-                 num_elements,
-                 start_position,
-                 release_time,
-                 plume_data,
-                 end_release_time,
+    def __init__(self, release_time, num_elements, start_position,
+                 plume_data, end_release_time,
                  **kwargs):
         '''
         :param num_elements: total number of elements to be released
