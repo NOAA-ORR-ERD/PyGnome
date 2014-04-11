@@ -71,8 +71,8 @@ class Release(Serializable):
 
     def __repr__(self):
         return ('{0.__class__.__module__}.{0.__class__.__name__}('
-                'num_elements={0.num_elements}, '
-                'release_time={0.release_time!r}'
+                'release_time={0.release_time!r}, '
+                'num_elements={0.num_elements}'
                 ')'.format(self))
 
     def num_elements_to_release(self, current_time, time_step):
@@ -186,17 +186,22 @@ class PointLineRelease(Release, Serializable):
         create object using the same settings as persisted object.
         In addition, set the _state of other properties after initialization
         """
+        dict_.pop('id')
+        dict_.pop('obj_type')
         json_ = dict_.pop('json_')  # currently not used by anything
-        new_obj = cls(
-            num_elements=dict_.pop('num_elements'),
-            start_position=dict_.pop('start_position'),
-            release_time=dict_.pop('release_time'),
-            end_position=dict_.pop('end_position', None),
-            end_release_time=dict_.pop('end_release_time', None),
-            )
+        new_obj = cls(release_time=dict_.pop('release_time'),
+                      num_elements=dict_.pop('num_elements'),
+                      start_position=dict_.pop('start_position'),
+                      end_position=dict_.pop('end_position', None),
+                      end_release_time=dict_.pop('end_release_time', None),
+                      )
 
         for key in dict_.keys():
-            setattr(new_obj, key, dict_[key])
+            try:
+                setattr(new_obj, key, dict_[key])
+            except AttributeError:
+                print 'failed to set attribute {0}'.format(key)
+                raise
 
         return new_obj
 
@@ -261,6 +266,22 @@ class PointLineRelease(Release, Serializable):
         # number of new particles released at each timestep
         self.prev_release_pos = self.start_position.copy()
 
+    def __repr__(self):
+        return ('{0.__class__.__module__}.{0.__class__.__name__}('
+                'release_time={0.release_time!r}, '
+                'num_elements={0.num_elements}, '
+                'start_position={0.start_position!r}, '
+                'end_position={0.end_position!r}, '
+                'end_release_time={0.end_release_time!r}'
+                ')'.format(self))
+
+    def __reduce__(self):
+        return (PointLineRelease, (self.release_time,
+                                   self.num_elements,
+                                   self.start_position,
+                                   self.end_position,
+                                   self.end_release_time))
+
     @property
     def end_position(self):
         return self._end_position
@@ -289,7 +310,7 @@ class PointLineRelease(Release, Serializable):
         """
         # call base class method to check if start_time is valid
         super(PointLineRelease, self).num_elements_to_release(current_time,
-                                                             time_step)
+                                                              time_step)
         if self.start_time_invalid:
             return 0
 
@@ -304,8 +325,8 @@ class PointLineRelease(Release, Serializable):
             #print 'not time to release yet'
             return 0
 
-        delta_release = (self.end_release_time
-                              - self.release_time).total_seconds()
+        delta_release = ((self.end_release_time - self.release_time)
+                         .total_seconds())
         # instantaneous release. All particles released at this timestep
         if delta_release <= 0:
             return self.num_elements
@@ -331,12 +352,9 @@ class PointLineRelease(Release, Serializable):
         _num_new_particles = n_1 - n_0 + 1
         return _num_new_particles
 
-    def _init_positions_instantaneous_release(
-        self,
-        num_new_particles,
-        current_time,
-        time_step,
-        data_arrays):
+    def _init_positions_instantaneous_release(self, num_new_particles,
+                                              current_time, time_step,
+                                              data_arrays):
         """
         initialize all elements in the very first instant (timestep) of the run
         The particles can be released at a single 'point' or along a 'line'
