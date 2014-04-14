@@ -52,7 +52,7 @@ def test_init_units():
     ossmT2 = CyOSSMTime(filename=os.path.join(datadir,
                                               'WindDataFromGnome.WND'),
                         file_contains=ts_format.magnitude_direction)
-    assert ossmT2.user_units == 'knot'
+    assert ossmT2.user_units == 'knots'
 
 
 class TestTimeSeriesInit:
