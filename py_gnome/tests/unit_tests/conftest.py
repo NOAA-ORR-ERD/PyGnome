@@ -255,9 +255,11 @@ def sample_spatial_release_spill():
         should be equal to spill.start_positions
     """
     from gnome.spill import SpatialRelease
-    start_positions = ((0., 0., 0.), (28.0, -75.0, 0.), (-15, 12, 4.0),
-                   (80, -80, 100.0))
-    rel = SpatialRelease(start_positions, release_time=datetime(2012, 1, 1, 1))
+    start_positions = ((0., 0., 0.),
+                       (28.0, -75.0, 0.),
+                       (-15, 12, 4.0),
+                       (80, -80, 100.0))
+    rel = SpatialRelease(datetime(2012, 1, 1, 1), start_positions)
     sp = gnome.spill.Spill(release=rel)
     return (sp, start_positions)
 

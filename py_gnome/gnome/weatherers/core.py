@@ -30,7 +30,7 @@ class Weatherer(Mover, Serializable):
        in the way that it acts upon the model.  It contains the same API
        as the mover as well.
     '''
-    _state = copy.deepcopy(Serializable._state)
+    _state = copy.deepcopy(Mover._state)
     _schema = WeathererSchema
 
     def __init__(self, **kwargs):
@@ -44,10 +44,12 @@ class Weatherer(Mover, Serializable):
                                  'half_lives': half_lives})
 
     def __repr__(self):
-        return ('Weatherer(active_start={0}, active_stop={1},'
-                '\n    on={2}, active={3}'
-                '\n    )').format(self.active_start, self.active_stop,
-                                  self.on, self.active)
+        return ('{0.__class__.__module__}.{0.__class__.__name__}('
+                'active_start={0.active_start!r}, '
+                'active_stop={0.active_stop!r}, '
+                'on={0.on}, '
+                'active={0.active}'
+                ')'.format(self))
 
     def weather_elements(self, sc, time_step, model_time):
         '''

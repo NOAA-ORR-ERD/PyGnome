@@ -46,9 +46,12 @@ class ModelTests(FunctionalTestBase):
         print 'Not Implemented'
 
     def test_put_model_no_id(self):
-        print '\n\nModel Put Request payload: {0}'.format(self.req_data)
-        resp = self.testapp.put_json('/model', params=self.req_data)
-        print '\nModel Put Response payload: {0}'.format(resp.json_body)
+        if False:
+            print '\n\nModel Put Request payload: {0}'.format(self.req_data)
+            resp = self.testapp.put_json('/model', params=self.req_data)
+            print '\nModel Put Response payload: {0}'.format(resp.json_body)
+        else:
+            print 'Not Implemented'
 
         # TODO: This should be working, but we need to put some asserts
         #       in here to validate what we are getting

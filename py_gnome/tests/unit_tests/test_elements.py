@@ -4,7 +4,7 @@ Element Types are very simple classes. They simply define the initializers.
 These are also tested in the test_spill_container module since it allows for
 more comprehensive testing
 '''
-from datetime import timedelta
+from datetime import datetime, timedelta
 
 import pytest
 from pytest import raises
@@ -79,8 +79,11 @@ initializer_keys = ('windages',
                     'mass', 'mass',
                     'rise_vel', 'rise_vel', 'rise_vel', 'rise_vel',
                     'rise_vel')
-spill_list = (None, Spill(Release(), volume=10), Spill(Release(), mass=10),
-              None, None, None, None, Spill(Release()))
+spill_list = (None,
+              Spill(Release(datetime.now()), volume=10),
+              Spill(Release(datetime.now()), mass=10),
+              None, None, None, None,
+              Spill(Release(datetime.now())))
 
 
 @pytest.mark.parametrize(("fcn", "arr_types", "spill"),
@@ -170,7 +173,7 @@ def test_initailize_InitMassFromVolume():
     data_arrays = mock_append_data_arrays(mass_array, num_elems)
     substance = OilProps('oil_conservative')
 
-    spill = Spill(Release(10))
+    spill = Spill(Release(datetime.now(), 10))
     spill.volume = num_elems / (substance.get_density('kg/m^3') * 1000)
 
     fcn = InitMassFromVolume()
@@ -184,7 +187,7 @@ def test_initailize_InitMassFromTotalMass():
     data_arrays = mock_append_data_arrays(mass_array, num_elems)
     substance = OilProps('oil_conservative')
 
-    spill = Spill(Release())
+    spill = Spill(Release(datetime.now()))
     spill.release.num_elements = 10
     spill.mass = num_elems
 
@@ -214,13 +217,12 @@ def test_initialize_InitRiseVelFromDropletDist_weibull():
     num_elems = 10
     data_arrays = mock_append_data_arrays(rise_vel_diameter_array, num_elems)
     substance = OilProps('oil_conservative')
-    spill = Spill(Release())
+    spill = Spill(Release(datetime.now()))
 
     # (.001*.2) / (.693 ** (1 / 1.8)) - smaller droplet test case, in mm
     #                                   so multiply by .001
-    fcn = InitRiseVelFromDropletSizeFromDist(WeibullDistribution(alpha=1.8,
-                                                                 lambda_=.000248
-                                                                 ))
+    dist = WeibullDistribution(alpha=1.8, lambda_=.000248)
+    fcn = InitRiseVelFromDropletSizeFromDist(dist)
     fcn.initialize(num_elems, spill, data_arrays, substance)
 
     assert_dataarray_shape_size(rise_vel_array, data_arrays, num_elems)
@@ -234,15 +236,13 @@ def test_initialize_InitRiseVelFromDropletDist_weibull_with_min_max():
     num_elems = 1000
     data_arrays = mock_append_data_arrays(rise_vel_diameter_array, num_elems)
     substance = OilProps('oil_conservative')
-    spill = Spill(Release())
+    spill = Spill(Release(datetime.now()))
 
     # (.001*3.8) / (.693 ** (1 / 1.8)) - larger droplet test case, in mm
     #                                    so multiply by .001
-    fcn = InitRiseVelFromDropletSizeFromDist(WeibullDistribution(min_=0.002,
-                                                                 max_=0.004,
-                                                                 alpha=1.8,
-                                                                 lambda_=.00456
-                                                                 ))
+    dist = WeibullDistribution(min_=0.002, max_=0.004,
+                               alpha=1.8, lambda_=.00456)
+    fcn = InitRiseVelFromDropletSizeFromDist(dist)
     fcn.initialize(num_elems, spill, data_arrays, substance)
 
     # test for the larger droplet case above
@@ -261,8 +261,8 @@ def test_initialize_InitRiseVelFromDist_normal():
     num_elems = 1000
     data_arrays = mock_append_data_arrays(rise_vel_array, num_elems)
 
-    fcn = InitRiseVelFromDist(distribution=NormalDistribution(mean=0,
-                                                              sigma=0.1))
+    dist = NormalDistribution(mean=0, sigma=0.1)
+    fcn = InitRiseVelFromDist(distribution=dist)
     fcn.initialize(num_elems, None, data_arrays)
 
     assert_dataarray_shape_size(rise_vel_array, data_arrays, num_elems)
