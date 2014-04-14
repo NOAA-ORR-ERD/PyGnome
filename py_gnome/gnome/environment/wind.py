@@ -525,7 +525,7 @@ class Wind(Environment, serializable.Serializable):
 
     def _write_timeseries_to_file(self):
         'write to file in current working directory'
-        self._tempfile = tempfile.NamedTemporaryFile(prefix='wind_')
+        self._tempfile = tempfile.NamedTemporaryFile(prefix='wind_data_')
         header = ('Station Name\n'
                   'Position\n'
                   'knots\n'
