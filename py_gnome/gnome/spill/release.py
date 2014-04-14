@@ -186,9 +186,10 @@ class PointLineRelease(Release, Serializable):
         create object using the same settings as persisted object.
         In addition, set the _state of other properties after initialization
         """
-        dict_.pop('id')
-        dict_.pop('obj_type')
-        json_ = dict_.pop('json_')  # currently not used by anything
+        for key in ['obj_type', 'json_', 'id']:
+            if key in dict_:
+                dict_.pop(key)
+
         new_obj = cls(release_time=dict_.pop('release_time'),
                       num_elements=dict_.pop('num_elements'),
                       start_position=dict_.pop('start_position'),
