@@ -9,19 +9,48 @@ from pyramid.httpexceptions import (HTTPNotFound,
 
 from .helpers import (JSONImplementsOneOf,
                       ObjectImplementsOneOf,
-                      UpdateObject, CreateObject)
+                      UpdateObject, CreateObject,
+                      FQNamesToList,
+                      PyClassFromName)
 
 
 def get_object(request, implemented_types):
     '''Returns a Gnome object in JSON.'''
-    obj = get_session_object(obj_id_from_url(request), request.session)
-    if obj:
-        if ObjectImplementsOneOf(obj, implemented_types):
-            return obj.serialize()
-        else:
-            raise HTTPUnsupportedMediaType()
+    obj_id = obj_id_from_url(request)
+    if not obj_id:
+        return get_specifications(request, implemented_types)
     else:
-        raise HTTPNotFound()
+        obj = get_session_object(obj_id, request.session)
+        if obj:
+            if ObjectImplementsOneOf(obj, implemented_types):
+                return obj.serialize()
+            else:
+                raise HTTPUnsupportedMediaType()
+        else:
+            raise HTTPNotFound()
+
+
+def get_specifications(request, implemented_types):
+    specs = []
+    for t in implemented_types:
+        try:
+            name, scope = FQNamesToList((t,))[0]
+            cls = PyClassFromName(name, scope)
+            if cls:
+                spec = dict([(n, None)
+                             for n in cls._state.get_names(['read', 'update'])
+                             ])
+                spec['obj_type'] = t
+                specs.append(spec)
+        except ValueError as e:
+            # - I think for right now, we will just continue on to the
+            #   next type.
+            # - There could be some exceptions raised that are not handled
+            #   here.
+            #print 'failed to get class for {0}'.format(t)
+            #print 'error: {0}'.format(e)
+            raise
+    return specs
 
 
 def create_or_update_object(request, implemented_types):

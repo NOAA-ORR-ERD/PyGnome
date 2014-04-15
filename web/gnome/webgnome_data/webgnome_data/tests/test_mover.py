@@ -9,7 +9,13 @@ class BaseMoverTests(FunctionalTestBase):
         Tests out the Gnome Mover common APIs
     '''
     def test_get_no_id(self):
-        self.testapp.get('/mover', status=404)
+        resp = self.testapp.get('/mover')
+
+        #print 'Our Response:', resp.json_body
+        if hasattr(self, 'req_data'):
+            obj_type = self.req_data['obj_type'].split('.')[-1]
+            assert obj_type in [r['obj_type'].split('.')[-1]
+                                for r in resp.json_body]
 
     def test_get_invalid_id(self):
         obj_id = 0xdeadbeef
@@ -29,6 +35,7 @@ class SimpleMoverTests(BaseMoverTests):
         Tests out the Gnome Simple Mover API
     '''
     req_data = {'obj_type': 'gnome.movers.simple_mover.SimpleMover',
+                'json_': 'webapi',
                 'active_start': '-inf',
                 'active_stop': 'inf',
                 'on': True,
@@ -108,6 +115,7 @@ class WindMoverTests(BaseMoverTests):
         Tests out the Gnome Wind Mover API
     '''
     wind_req_data = {'obj_type': 'gnome.environment.Wind',
+                     'json_': 'webapi',
                      'description': u'Wind Object',
                      'updated_at': '2014-03-26T14:52:45.385126',
                      'source_type': u'undefined',
@@ -122,16 +130,17 @@ class WindMoverTests(BaseMoverTests):
                      }
 
     req_data = {'obj_type': 'gnome.movers.wind_movers.WindMover',
-                   'active_start': '-inf',
-                   'active_stop': 'inf',
-                   'on': True,
-                   'uncertain_angle_scale': 0.4,
-                   'uncertain_angle_units': u'rad',
-                   'uncertain_duration': 3.0,
-                   'uncertain_speed_scale': 2.0,
-                   'uncertain_time_delay': 0.0,
-                   'wind': None
-                   }
+                'json_': 'webapi',
+                'active_start': '-inf',
+                'active_stop': 'inf',
+                'on': True,
+                'uncertain_angle_scale': 0.4,
+                'uncertain_angle_units': u'rad',
+                'uncertain_duration': 3.0,
+                'uncertain_speed_scale': 2.0,
+                'uncertain_time_delay': 0.0,
+                'wind': None
+                }
 
     def test_get_valid_id(self):
         # 1. create a Wind object

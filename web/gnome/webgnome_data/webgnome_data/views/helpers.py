@@ -3,10 +3,8 @@ Helper functions to be used by views.
 
 Over time, these could be generalized into decorators, I suppose.
 '''
-import sys
 from itertools import izip_longest
 
-import json
 import numpy
 np = numpy
 from numpy import array, ndarray, void
@@ -25,9 +23,7 @@ def FQNamesToList(names):
     return list(FQNamesToIterList(names))
 
 
-def FilterFQNamesToIterList(names,
-                            name=None,
-                            namespace=None):
+def FilterFQNamesToIterList(names, name=None, namespace=None):
     for i in FQNamesToIterList(names):
         if ((name and i[0].find(name) >= 0) or
             (namespace and i[1].find(namespace) >= 0)):
@@ -43,7 +39,7 @@ def FQNamesToDict(names):
     return dict(FQNamesToIterList(names))
 
 
-def JSONImplementsOneOf(json_obj, obj_types):
+def JSONImplementedType(json_obj, obj_types):
     '''
         Here we determine if our JSON request payload implements an object
         contained within a set of implemented object types.
@@ -68,20 +64,23 @@ def JSONImplementsOneOf(json_obj, obj_types):
         :param obj_types: list of fully qualified object names.
     '''
     if not type(json_obj) == dict:
-        return False
+        raise ValueError('JSON needs to be a dict')
 
     if not 'obj_type' in json_obj:
+        raise ValueError('JSON object needs to contain an obj_type')
+
+    name, scope = FQNamesToList((json_obj['obj_type'],))[0]
+    if name in FQNamesToDict(obj_types):
+        return PyClassFromName(name, scope)
+
+    return None
+
+
+def JSONImplementsOneOf(json_obj, obj_types):
+    try:
+        return not JSONImplementedType(json_obj, obj_types) == None
+    except:
         return False
-
-    requested_name = FQNamesToList((json_obj['obj_type'],))[0][0]
-
-    if requested_name in FQNamesToDict(obj_types):
-        return True
-
-    # TODO: We will maybe want to further validate our JSON object, maybe
-    #       by using our schemas.  And we could do it here.
-
-    return False
 
 
 def ObjectImplementsOneOf(model_object, obj_types):
@@ -148,7 +147,7 @@ def UpdateObjectAttributes(obj, items):
 
 
 def UpdateObjectAttribute(obj, attr, value):
-    if attr in ('id', 'obj_type'):
+    if attr in ('id', 'obj_type', 'json_'):
         return False
 
     if (not ValueIsJsonObject(value)
