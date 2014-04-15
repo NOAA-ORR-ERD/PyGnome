@@ -28,11 +28,8 @@ class Environment(object):
            environment OrderedCollection (Model.environment)
         2) Defines the 'id' property used to uniquely identify an object
 
-        :param id: Unique Id identifying the newly created mover
-                   (a UUID as a string).
-                   This is used when loading an object from a persisted model
         """
 
-        self._gnome_id = GnomeId(id=kwargs.pop('id', None))
+        self._gnome_id = GnomeId()
 
     id = property(lambda self: self._gnome_id.id)

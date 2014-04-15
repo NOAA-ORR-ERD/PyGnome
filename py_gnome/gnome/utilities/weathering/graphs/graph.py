@@ -104,7 +104,7 @@ class Graph(GnomeId, Serializable):
         self.formats = formats
         self.title = title
 
-        self._gnome_id = GnomeId(id=kwargs.pop('id', None))
+        self._gnome_id = GnomeId()
 
     id = property(lambda self: self._gnome_id.id)
 

@@ -89,8 +89,7 @@ class Spill(serializable.Serializable):
                  volume_units='m^3',
                  # Is this total mass of the spill?
                  mass=None,
-                 mass_units='g',
-                 id=None):
+                 mass_units='g'):
         """
         Base spill class. Spill used by a gnome model derive from this class
 
@@ -101,7 +100,6 @@ class Spill(serializable.Serializable):
 
         :param on: Toggles the spill on/off (bool). Default is 'on'.
         :type on: bool
-        :type id: str
         :param volume: oil spilled volume (used to compute mass per particle)
             Default is None.
         :type volume: float
@@ -114,8 +112,6 @@ class Spill(serializable.Serializable):
             900 sec. -1 means the persistence is infinite so it is only set at
             the beginning of the run.
         :type windage_persist: integer seconds
-        :param id: Unique Id identifying the newly created mover (a UUID as a
-            string), used when loading from a persisted model
         :param element_type=None: list of various element_type that are
             released. These are spill specific properties of the elements.
         :type element_type: list of gnome.element_type.* objects
@@ -146,22 +142,7 @@ class Spill(serializable.Serializable):
         if mass is not None and volume is not None:
             raise ValueError("'mass' and 'volume' cannot both be set")
 
-#==============================================================================
-#         if windage_range is not None:
-#             if 'windages' not in self.element_type.initializers:
-#                 raise TypeError("'windage_range' cannot be set for specified"
-#                                 " element_type: {0}".format(element_type))
-#             (self.element_type.initializers['windages']).windage_range = \
-#                     windage_range
-# 
-#         if windage_persist is not None:
-#             if 'windages' not in self.element_type.initializers:
-#                 raise TypeError("'windage_persist' cannot be set for specified"
-#                                 " element_type: {0}".format(element_type))
-#             (self.element_type.initializers['windages']).windage_persist = \
-#                 windage_persist
-#==============================================================================
-        self._gnome_id = GnomeId(id)
+        self._gnome_id = GnomeId()
 
     def __deepcopy__(self, memo=None):
         """

@@ -181,7 +181,7 @@ class NetCDFOutput(Outputter, Serializable):
         return obj
 
     def __init__(self, netcdf_filename, which_data='standard', compress=True,
-                 id=None, **kwargs):
+                 **kwargs):
         """
         Constructor for Net_CDFOutput object. It reads data from cache and
         writes it to a NetCDF4 format file using the CF convention
@@ -193,10 +193,6 @@ class NetCDFOutput(Outputter, Serializable):
         :param which_data: If true, write all data to NetCDF, otherwise write
             only standard data. Default is False.
         :type which_data: string, one of: 'standard', 'most', 'all'
-
-        :param id: Unique Id identifying the newly created object (a UUID as a
-            string). This is used when loading an object from a persisted
-            _state. User should never have to set this.
 
         Optional arguments passed on to base class (kwargs):
 
@@ -248,7 +244,7 @@ class NetCDFOutput(Outputter, Serializable):
         # number of particles are released
         self._start_idx = 0
 
-        self._gnome_id = GnomeId(id)
+        self._gnome_id = GnomeId()
         super(NetCDFOutput, self).__init__(**kwargs)
 
     @property

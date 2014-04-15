@@ -151,7 +151,7 @@ class Model(Serializable):
                  map=gnome.map.GnomeMap(),
                  uncertain=False,
                  cache_enabled=False,
-                 id=None):
+                 **kwargs):
         '''
         Initializes a model. All arguments have a default.
 
@@ -167,15 +167,12 @@ class Model(Serializable):
         :param uncertain=False: Flag for setting uncertainty.
         :param cache_enabled=False: Flag for setting whether the model should
                                     cache results to disk.
-        :param id: Unique Id identifying the newly created mover (a UUID as a
-                   string).  This is used when loading an object from a
-                   persisted model
         '''
         self.__restore__(time_step, start_time, duration,
                          weathering_substeps,
                          map, uncertain, cache_enabled)
 
-        self._gnome_id = gnome.GnomeId(id)
+        self._gnome_id = gnome.GnomeId()
 
         # register callback with OrderedCollection
         self.movers.register_callback(self._callback_add_mover,

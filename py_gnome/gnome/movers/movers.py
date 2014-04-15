@@ -55,9 +55,6 @@ class Mover(object):
         :param on: boolean as to whether the object is on or not. Default is on
         :param active_start: datetime when the mover should be active
         :param active_stop: datetime after which the mover should be inactive
-        :param id: Unique Id identifying the newly created mover
-                   (a UUID as a string).
-                   This is used when loading an object from a persisted model
         """
 
         self._active = True
@@ -73,7 +70,7 @@ class Mover(object):
 
         self.active_start = active_start
         self.active_stop = active_stop
-        self._gnome_id = GnomeId(id=kwargs.pop('id', None))
+        self._gnome_id = GnomeId()
 
         # empty dict since no array_types required for all movers at present
         self.array_types = {}

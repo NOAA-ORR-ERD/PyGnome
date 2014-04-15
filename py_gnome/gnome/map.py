@@ -72,7 +72,7 @@ class GnomeMap(Serializable):
 
     refloat_halflife = None  # note -- no land, so never used
 
-    def __init__(self, map_bounds=None, spillable_area=None, id=None):
+    def __init__(self, map_bounds=None, spillable_area=None):
         """
         This __init__ will be different for other implementations
 
@@ -82,10 +82,6 @@ class GnomeMap(Serializable):
                            or smaller than the land raster
 
         :param spillable_area: The polygon bounding the spillable_area
-
-        :param id: unique ID of the object. Using UUID as a string.
-                   This is only used when loading object from save file.
-        :type id: string
 
         Note on 'map_bounds':
             ( (x1,y1), (x2,y2),(x3,y3),..)
@@ -106,7 +102,7 @@ class GnomeMap(Serializable):
             self.spillable_area = np.asarray(spillable_area,
                     dtype=np.float64).reshape(-1, 2)
 
-        self._gnome_id = GnomeId(id)
+        self._gnome_id = GnomeId()
 
     id = property(lambda self: self._gnome_id.id)
 

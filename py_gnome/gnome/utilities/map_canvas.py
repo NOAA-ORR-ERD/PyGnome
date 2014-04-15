@@ -102,9 +102,6 @@ class MapCanvas(object):
                            BW_MapCanvas inherits from MapCanvas and sets the
                            mode to 'L'
                            Default image_mode is 'P'.
-        :param id: unique identifier for a instance of this class
-                   (UUID given as a string).
-                   This is used when loading an object from a persisted model
         """
         self.image_size = image_size
         self.image_mode = kwargs.pop('image_mode', 'P')
@@ -136,7 +133,7 @@ class MapCanvas(object):
         # if self._viewport is None:
         #     self.viewport = self.map_BB
 
-        self._gnome_id = GnomeId(id=kwargs.pop('id', None))
+        self._gnome_id = GnomeId()
 
     id = property(lambda self: self._gnome_id.id)
 
