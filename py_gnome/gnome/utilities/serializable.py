@@ -98,7 +98,7 @@ class Field(object):  # ,serializable.Serializable):
 
 
 class State(object):
-    def __init__(self, save=[], update=[], read=[], field=[]):
+    def __init__(self, save=None, update=None, read=None, field=None):
         """
         Object keeps the list of properties that are output by
         Serializable.to_dict() method.
@@ -197,6 +197,9 @@ class State(object):
         add_field gives more control since the attributes other than 'save','update','read' can be set
         directly when defining the Field object.
         """
+        if l_field is None:
+            return
+
         if isinstance(l_field, Field):
             l_field = [l_field]
 
@@ -219,55 +222,63 @@ class State(object):
         for field_ in l_field:
             self.fields.append(field_)
 
-    def add(self, save=[], update=[], read=[]):
+    def add(self, save=None, update=None, read=None):
         """
         Only checks to make sure 'read' and 'update' properties are disjoint. Also makes sure everything is a list. 
         
         Args:
-        :param update: a list of strings which are properties that can be updated, so read/write capable
-        :type update:  list containing str
-        :param read:   a list of strings which are properties that are for info, so readonly. It is not required for creating new object.
-        :type read:    list containing str
-        :param save: a list of strings which are properties that are required to create new object when 
+        :param update: a tuple of strings which are properties that can be updated, so read/write capable
+        :type update:  tuple containing str
+        :param read:   a tuple of strings which are properties that are for info, so readonly. It is not required for creating new object.
+        :type read:    tuple containing str
+        :param save: a tuple of strings which are properties that are required to create new object when 
                         JSON is read from save file
                        Only the save properties are saved to save file
-        :type save:  a list of str
-        :param field:  a field object or a list of field objects that should be added to the State for persistence
-        :type field:   Field object or list of Field objects
+        :type save:  a tuple of str
+        :param field:  a field object or a tuple of field objects that should be added to the State for persistence
+        :type field:   Field object or tuple of Field objects
 
         For 'update', 'read', 'save', a Field object is created for each
-        property in the list
+        property in the tuple
         """
-        if not all([isinstance(vals, list) for vals in [save, update,
-                   read]]):
-            raise ValueError('inputs must be a list of strings')
+        save = self._check_inputs(save)
+        update = self._check_inputs(update)
+        read = self._check_inputs(read)
 
-        update_ = list(set(update))
-        read_ = list(set(read))
-        create_ = list(set(save))
-
-        if len(set(update_).intersection(set(read_))) > 0:
+        if len(set(update).intersection(set(read))) > 0:
             raise AttributeError('update (read/write properties) and read (readonly props) lists lists must be disjoint'
                                  )
 
         fields = []
-        for item in update_:
+        for item in update:
             f = Field(item, update=True)
-            if item in create_:
+            if item in save:
                 f.save = True
-                create_.remove(item)
+                save.remove(item)
             fields.append(f)
 
-        for item in create_:
+        for item in save:
             f = Field(item, save=True)
-            if item in read_:
+            if item in read:
                 f.read = True
-                read_.remove(item)
+                read.remove(item)
             fields.append(f)
 
-        [fields.append(Field(item, read=True)) for item in read_]
+        [fields.append(Field(item, read=True)) for item in read]
 
         self.add_field(fields)  # now add these to self.fields
+
+    def _check_inputs(self, vals):
+        'check inputs and convert to a list'
+        if vals is not None:
+            if isinstance(vals, basestring):
+                vals = [vals]
+            if not isinstance(vals, list) and not isinstance(vals, tuple):
+                raise ValueError('inputs must be a list of strings')
+            vals = list(set(vals))
+        else:
+            vals = []
+        return vals
 
     def remove(self, l_names):
         """
@@ -276,7 +287,7 @@ class State(object):
         """
 
         if isinstance(l_names, basestring):
-            l_names = [l_names]
+            l_names = l_names,
 
         for name in l_names:
             field = self.get_field_by_name(name)
@@ -434,7 +445,7 @@ class Serializable(object):
     object as a string.
     """
 
-    _state = State(save=['obj_type'], read=['obj_type', 'id'])
+    _state = State(save=('obj_type'), read=('obj_type', 'id'))
 
     # =========================================================================
     # @classmethod

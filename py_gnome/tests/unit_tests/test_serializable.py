@@ -21,9 +21,6 @@ update.sort()
 def test_init_exceptions():
     _state = State()
 
-    with pytest.raises(ValueError):
-        _state.add(save='c_test', update='c_update', read='c_read')
-
     with pytest.raises(TypeError):
         _state.add(test=['test'])  # 'test' is not a keyword
 
@@ -53,14 +50,26 @@ def test_state_init_field():
     assert len(_state.fields) == 1
 
 
+@pytest.mark.parametrize(("save_", "update_", "read_"),
+                    [('c_test', 'c_update', 'c_read'),
+                     (['c_test'], ['c_update'], ['c_read']),
+                     (('c_test',), ('c_update',), ('c_read',)),
+                     ])
+def test_init(save_, update_, read_):
+    'test various ways to initialize'
+    _state = State()
+    _state.add(save=save_, update=update_, read=read_)
+    assert True
+
+
 def test_state_init():
     '''
     Test initialization of _state
     '''
 
     _state = State(read=read, update=update, save=save,
-                  field=[Field('field0', read=True), Field('field1',
-                  save=True)])
+                  field=(Field('field0', read=True), Field('field1',
+                  save=True)))
 
     all_fields = []
     all_fields.extend(save)
