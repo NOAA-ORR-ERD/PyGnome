@@ -8,14 +8,17 @@ class BaseMoverTests(FunctionalTestBase):
     '''
         Tests out the Gnome Mover common APIs
     '''
+    req_data = {'obj_type': 'gnome.movers.simple_mover.SimpleMover',
+                }
+
     def test_get_no_id(self):
         resp = self.testapp.get('/mover')
 
-        #print 'Our Response:', resp.json_body
-        if hasattr(self, 'req_data'):
-            obj_type = self.req_data['obj_type'].split('.')[-1]
-            assert obj_type in [r['obj_type'].split('.')[-1]
-                                for r in resp.json_body]
+        assert 'obj_type' in self.req_data
+        obj_type = self.req_data['obj_type'].split('.')[-1]
+
+        assert (obj_type, obj_type) in [(name, obj['obj_type'].split('.')[-1])
+                            for name, obj in resp.json_body.iteritems()]
 
     def test_get_invalid_id(self):
         obj_id = 0xdeadbeef

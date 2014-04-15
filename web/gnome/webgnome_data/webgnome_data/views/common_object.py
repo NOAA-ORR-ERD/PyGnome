@@ -31,7 +31,7 @@ def get_object(request, implemented_types):
 
 
 def get_specifications(request, implemented_types):
-    specs = []
+    specs = {}
     for t in implemented_types:
         try:
             name, scope = FQNamesToList((t,))[0]
@@ -41,7 +41,7 @@ def get_specifications(request, implemented_types):
                              for n in cls._state.get_names(['read', 'update'])
                              ])
                 spec['obj_type'] = t
-                specs.append(spec)
+                specs[name] = spec
         except ValueError as e:
             # - I think for right now, we will just continue on to the
             #   next type.
