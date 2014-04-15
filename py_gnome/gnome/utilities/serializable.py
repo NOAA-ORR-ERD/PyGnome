@@ -273,7 +273,7 @@ class State(object):
         if vals is not None:
             if isinstance(vals, basestring):
                 vals = [vals]
-            if not isinstance(vals, list) and not isinstance(vals, tuple):
+            if not isinstance(vals, (list, tuple)):
                 raise ValueError('inputs must be a list of strings')
             vals = list(set(vals))
         else:
