@@ -61,7 +61,7 @@ class Renderer(Outputter, MapCanvas, serializable.Serializable):
     _schema = RendererSchema
 
     @classmethod
-    def new_from_dict(cls, dict_, json_='save'):
+    def new_from_dict(cls, dict_):
         """
         change projection_type from string to correct type
         """

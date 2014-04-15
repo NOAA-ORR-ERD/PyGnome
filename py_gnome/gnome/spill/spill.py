@@ -64,19 +64,20 @@ class Spill(serializable.Serializable):
     valid_mass_units.extend(uc.GetUnitNames('Mass'))
 
     @classmethod
-    def new_from_dict(cls, dict_, json_='save'):
+    def new_from_dict(cls, dict_):
         """
         create object using the same settings as persisted object.
         In addition, set the _state of other properties after initialization
         """
-        # create release object
-        # create element_type object
-        # then create Spill object
-        for name in ['release', 'element_type']:
-            obj_dict = dict_.pop(name)
-            obj_type = obj_dict.pop('obj_type')
-            obj = eval(obj_type).new_from_dict(obj_dict)
-            dict_[name] = obj
+        if dict_['json_'] == 'save':
+            # create release object
+            # create element_type object
+            # then create Spill object
+            for name in ['release', 'element_type']:
+                obj_dict = dict_.pop(name)
+                obj_type = obj_dict.pop('obj_type')
+                obj = eval(obj_type).new_from_dict(obj_dict)
+                dict_[name] = obj
 
         new_obj = super(Spill, cls).new_from_dict(dict_)
 
