@@ -27,7 +27,7 @@ from gnome.utilities.serializable import Serializable, Field
 
 from gnome.spill_container import SpillContainerPair
 
-from gnome.movers import Mover, WindMover, CatsMover
+from gnome.movers import Mover
 from gnome.weatherers import Weatherer
 
 from gnome.outputters import Outputter, NetCDFOutput
@@ -602,13 +602,12 @@ class Model(Serializable):
 
     def _callback_add_mover(self, obj_added):
         'Callback after mover has been added'
-        if isinstance(obj_added, WindMover):
+        if hasattr(obj_added, 'wind'):
             if obj_added.wind.id not in self.environment:
                 self.environment += obj_added.wind
 
-        if isinstance(obj_added, CatsMover):
-            if (obj_added.tide is not None and
-                obj_added.tide.id not in self.environment):
+        if hasattr(obj_added, 'tide') and obj_added.tide is not None:
+            if obj_added.tide.id not in self.environment:
                 self.environment += obj_added.tide
 
         self.rewind()  # rewind model if a new mover is added

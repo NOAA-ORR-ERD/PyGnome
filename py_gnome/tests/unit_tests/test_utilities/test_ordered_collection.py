@@ -46,7 +46,7 @@ class TestOrderedCollection(object):
 
     def test_contains(self):
         oc = OrderedCollection([1, 2, 3, 4, 5])
-        assert id(5) in oc
+        assert 5 in oc
 
     def test_getitem(self):
         oc = OrderedCollection([1, 2, 3, 4, 5])

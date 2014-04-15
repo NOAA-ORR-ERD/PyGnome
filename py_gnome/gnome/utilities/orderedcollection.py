@@ -137,7 +137,10 @@ class OrderedCollection(object):
             yield self._elems[i]
 
     def __contains__(self, ident):
-        return ident in self._index
+        try:
+            return ident.id in self._index
+        except AttributeError:
+            return id(ident) in self._index
 
     def __getitem__(self, ident):
         return self.get(ident)

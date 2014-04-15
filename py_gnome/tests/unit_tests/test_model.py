@@ -717,6 +717,12 @@ def test_callback_add_mover():
                       dtype=datetime_value_2d).reshape((1, ))
     model.movers += WindMover(Wind(timeseries=series, units=units))
 
+    # this should create a Wind object
+    new_wind = Wind(timeseries=series, units=units)
+    model.environment += new_wind
+    assert new_wind in model.environment
+    assert len(model.environment) == 2
+
     tide_file = get_datafile(os.path.join(tides_dir, 'CLISShio.txt'))
     tide_ = Tide(filename=tide_file)
 
@@ -729,12 +735,12 @@ def test_callback_add_mover():
         assert mover.active_start == inf_datetime.InfDateTime('-inf')
         assert mover.active_stop == inf_datetime.InfDateTime('inf')
 
-        if isinstance(mover, WindMover):
-            assert mover.wind.id in model.environment
+        if hasattr(mover, 'wind'):
+            assert mover.wind in model.environment
 
-        if isinstance(mover, CatsMover):
+        if hasattr(mover, 'tide'):
             if mover.tide is not None:
-                assert mover.tide.id in model.environment
+                assert mover.tide in model.environment
 
     # Add a mover with user defined active_start / active_stop values
     # - these should not be updated
