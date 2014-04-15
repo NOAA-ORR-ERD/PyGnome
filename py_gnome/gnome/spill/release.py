@@ -187,8 +187,7 @@ class PointLineRelease(Release, Serializable):
         In addition, set the _state of other properties after initialization
         """
         for key in ['obj_type', 'json_', 'id']:
-            if key in dict_:
-                dict_.pop(key)
+            dict_.pop(key, None)
 
         new_obj = cls(release_time=dict_.pop('release_time'),
                       num_elements=dict_.pop('num_elements'),

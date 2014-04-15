@@ -22,7 +22,13 @@ class ModelTests(FunctionalTestBase):
                 }
 
     def test_get_model_no_id(self):
-        self.testapp.get('/model', status=404)
+        resp = self.testapp.get('/model')
+
+        #print 'Our Response:', resp.json_body
+        if hasattr(self, 'req_data'):
+            obj_type = self.req_data['obj_type'].split('.')[-1]
+            assert obj_type in [r['obj_type'].split('.')[-1]
+                                for r in resp.json_body]
 
     def test_get_model_invalid_id(self):
         obj_id = 0xdeadbeef

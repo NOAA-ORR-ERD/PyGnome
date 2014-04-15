@@ -12,14 +12,21 @@ class WeathererTests(FunctionalTestBase):
         Tests out the Gnome Wind object API
     '''
     req_data = {'obj_type': u'gnome.weatherers.core.Weatherer',
+                'json_': 'webapi',
                 'id': u'b505b505-c0fe-11e3-b8f2-3c075404121a',
                 'active_start': '-inf',
                 'active_stop': 'inf',
-                'on': True
+                'on': True,
                 }
 
     def test_get_no_id(self):
-        self.testapp.get('/weatherer', status=404)
+        resp = self.testapp.get('/weatherer')
+
+        #print 'Our Response:', resp.json_body
+        if hasattr(self, 'req_data'):
+            obj_type = self.req_data['obj_type'].split('.')[-1]
+            assert obj_type in [r['obj_type'].split('.')[-1]
+                                for r in resp.json_body]
 
     def test_get_invalid_id(self):
         obj_id = 0xdeadbeef

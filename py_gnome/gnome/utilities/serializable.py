@@ -490,8 +490,7 @@ class Serializable(object):
         # module to load objects
         # In baseclass, cls() is used to get the obj_type
         for key in ['obj_type', 'json_', 'id']:
-            if key in dict_:
-                dict_.pop(key)
+            dict_.pop(key, None)
 
         return cls(**dict_)
 
