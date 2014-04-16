@@ -22,34 +22,50 @@ from gnome.utilities.serializable import Serializable
 
 
 class ReleaseSchema(ObjType):
-    'Base class for Release schemas'
+    'Base Class for Release Schemas'
     num_elements = SchemaNode(Int(), default=1000)
+    # used to create a new Release object if model is persisted mid-run
+    num_released = SchemaNode(Int(), missing=drop)
+
     release_time = SchemaNode(LocalDateTime(),
                               validator=convertible_to_seconds)
-
-    # used to create a new Release object if model is persisted mid-run
-    num_released = SchemaNode(Int())
-    start_time_invalid = SchemaNode(Bool())
+    start_time_invalid = SchemaNode(Bool(), missing=drop)
     name = 'release'
 
 
-class Release(Serializable):
+class PointLineReleaseSchema(ReleaseSchema):
+    '''
+    Contains properties required by UpdateWindMover and CreateWindMover
+    TODO: also need a way to persist list of element_types
+    '''
+    start_position = WorldPoint()
+    end_position = WorldPoint(missing=drop)
+    end_release_time = SchemaNode(LocalDateTime(), missing=drop,
+                                  validator=convertible_to_seconds)
+
+    # Not sure how this will work w/ WebGnome
+    prev_release_pos = WorldPoint(missing=drop)
+    description = 'PointLineRelease object schema'
+
+
+class Release(object):
     """
     base class for Release classes.
 
     It contains interface for Release objects
     """
-    _update = ['num_elements', 'release_time',
-               'num_released', 'start_time_invalid']
+    _update = ['num_elements', 'num_released',
+               'release_time', 'start_time_invalid']
     _create = _update
 
     _state = copy.deepcopy(Serializable._state)
     _state.add(save=_create, update=_update)
 
-    _schema = ReleaseSchema
-
     def __init__(self, release_time, num_elements=0,
                  num_released=0, start_time_invalid=True):
+        self._gnome_id = GnomeId()
+        print 'Release.__init__(): new gnome ID: {0}'.format(self._gnome_id.id)
+
         self.num_elements = num_elements
         self.release_time = release_time
 
@@ -63,11 +79,7 @@ class Release(Serializable):
         # model start time is valid
         self.start_time_invalid = start_time_invalid
 
-    @property
-    def id(self):
-        if not hasattr(self, '_gnome_id'):
-            self._gnome_id = GnomeId()
-        return self._gnome_id.id
+    id = property(lambda self: self._gnome_id.id)
 
     def __repr__(self):
         return ('{0.__class__.__module__}.{0.__class__.__name__}('
@@ -139,28 +151,6 @@ class Release(Serializable):
         self.start_time_invalid = True
 
 
-class PointLineReleaseSchema(ReleaseSchema):
-    '''
-    Contains properties required by UpdateWindMover and CreateWindMover
-    TODO: also need a way to persist list of element_types
-    '''
-    start_position = WorldPoint()
-    release_time = SchemaNode(LocalDateTime(),
-                              validator=convertible_to_seconds)
-    end_position = WorldPoint(missing=drop)
-    end_release_time = SchemaNode(LocalDateTime(), missing=drop,
-                                  validator=convertible_to_seconds)
-
-    # following will be used when restoring a saved scenario that is
-    # partially run
-    num_released = SchemaNode(Int(), missing=drop)
-    start_time_invalid = SchemaNode(Bool(), missing=drop)
-
-    # Not sure how this will work w/ WebGnome
-    prev_release_pos = WorldPoint(missing=drop)
-    description = 'PointLineRelease object schema'
-
-
 class PointLineRelease(Release, Serializable):
 
     """
@@ -176,8 +166,10 @@ class PointLineRelease(Release, Serializable):
     # not sure these should be user update able
     _create = ['prev_release_pos']
     _create.extend(_update)
+
     _state = copy.deepcopy(Release._state)
     _state.add(update=_update, save=_create)
+
     _schema = PointLineReleaseSchema
 
     @classmethod
