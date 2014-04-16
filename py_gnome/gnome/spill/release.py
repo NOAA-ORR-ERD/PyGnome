@@ -114,7 +114,7 @@ class Release(Serializable):
 
         return 0    # base class does not release any particles
 
-    def set_new_particle_positions(self,
+    def set_newparticle_positions(self,
         num_new_particles,
         current_time,
         time_step,
