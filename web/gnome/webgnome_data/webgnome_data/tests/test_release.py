@@ -19,11 +19,11 @@ class ReleaseTests(FunctionalTestBase):
     def test_get_no_id(self):
         resp = self.testapp.get('/release')
 
-        #print 'Our Response:', resp.json_body
-        if hasattr(self, 'req_data'):
-            obj_type = self.req_data['obj_type'].split('.')[-1]
-            assert obj_type in [r['obj_type'].split('.')[-1]
-                                for r in resp.json_body]
+        assert 'obj_type' in self.req_data
+        obj_type = self.req_data['obj_type'].split('.')[-1]
+
+        assert (obj_type, obj_type) in [(name, obj['obj_type'].split('.')[-1])
+                            for name, obj in resp.json_body.iteritems()]
 
     def test_get_invalid_id(self):
         obj_id = 0xdeadbeef
@@ -35,9 +35,11 @@ class ReleaseTests(FunctionalTestBase):
         # 3. perform an additional get of the object with a valid id
         # 4. check that our new JSON response matches the one from the create
         resp1 = self.testapp.put_json('/release', params=self.req_data)
+        print resp1
 
         obj_id = resp1.json_body['id']
         resp2 = self.testapp.get('/release/{0}'.format(obj_id))
+        print resp2
 
         assert resp2.json_body['id'] == obj_id
         assert resp2.json_body['obj_type'] == resp1.json_body['obj_type']
@@ -51,7 +53,9 @@ class ReleaseTests(FunctionalTestBase):
         #       more elaborate tests.
         assert 'id' in resp.json_body
         assert 'obj_type' in resp.json_body
-        assert 'timeseries' in resp.json_body
+        assert 'num_elements' in resp.json_body
+        assert 'num_released' in resp.json_body
+        assert 'start_time_invalid' in resp.json_body
 
     def test_put_invalid_id(self):
         obj_id = 0xdeadbeef
@@ -64,7 +68,9 @@ class ReleaseTests(FunctionalTestBase):
         #       asserts.
         assert 'id' in resp.json_body
         assert 'obj_type' in resp.json_body
-        assert 'timeseries' in resp.json_body
+        assert 'num_elements' in resp.json_body
+        assert 'num_released' in resp.json_body
+        assert 'start_time_invalid' in resp.json_body
 
     def test_put_valid_id(self):
         # 1. create the object by performing a put with no id
@@ -87,14 +93,38 @@ class ReleaseTests(FunctionalTestBase):
             We can overload this function when subclassing our tests
             for new object types.
         '''
-        json_obj['description'] = u'Wind Object (updated)'
+        json_obj['num_elements'] = 100
+        json_obj['num_released'] = 50
+        json_obj['start_time_invalid'] = False
 
     def check_updates(self, json_obj):
         '''
             We can overload this function when subclassing our tests
             for new object types.
         '''
-        assert 'id' in json_obj
-        assert 'obj_type' in json_obj
-        assert 'description' in json_obj
-        assert json_obj[u'description'] == u'Wind Object (updated)'
+        assert json_obj['num_elements'] == 100
+        assert json_obj['num_released'] == 50
+        assert json_obj['start_time_invalid'] == False
+
+
+class PointLineReleaseTests(ReleaseTests):
+    '''
+        Tests out the Gnome Release object API
+    '''
+    req_data = {
+                'obj_type': u'gnome.spill.release.PointLineRelease',
+                'json_': u'webapi',
+                'num_elements': 100,
+                'num_released': 0,
+                'release_time': '2014-04-15T13:22:20.930570',
+                'start_time_invalid': True,
+                'end_release_time': '2014-04-15T13:22:20.930570',
+                'end_position': (28.0, -78.0, 0.0),
+                'start_position': (28.0, -78.0, 0.0),
+                }
+
+    def perform_updates(self, json_obj):
+        super(PointLineReleaseTests, self).perform_updates(json_obj)
+
+    def check_updates(self, json_obj):
+        super(PointLineReleaseTests, self).check_updates(json_obj)
