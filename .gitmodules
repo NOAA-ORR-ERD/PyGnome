@@ -1,0 +1,3 @@
+[submodule "WebGnomeClient"]
+	path = WebGnomeClient
+	url = https://trac.orr.noaa.gov/git/WebGnomeClient
