@@ -637,7 +637,8 @@ class NetCDFOutput(Outputter, Serializable):
                                                         **kwargs)
 
     @classmethod
-    def read_data(klass, netcdf_file, time=None, which_data='standard'):
+    def read_data(klass, netcdf_file, time=None, index=None,
+                  which_data='standard'):
         """
         Read and create standard data arrays for a netcdf file that was created
         with NetCDFOutput class. Make it a class method since it is
@@ -646,18 +647,21 @@ class NetCDFOutput(Outputter, Serializable):
         standard is captured here.
 
         :param str netcdf_file: Name of the NetCDF file from which to read
-                                the data
-        :param datetime time: Index of the 'time' variable (or time_step)
-                              for which data is desired.
-                              Default is 0 so it returns data associated with
-                              first timestamp.
+            the data
+        :param datetime time: timestamp at which the data is desired. Looks in
+            the netcdf data's 'time' array and finds the closest time to this
+            and outputs this data. If both 'time' and 'index' are None, return
+            data if file only contains one 'time' else raise an error
+        :param int index: Index of the 'time' variable (or time_step). This is
+            only used if 'time' is None. If both 'time' and 'index' are None,
+            return data if file only contains one 'time' else raise an error
         :param which_data='standard': Which data arrays are desired options are
                                       ('standard', 'most', 'all',
                                       [list_of_array_names])
         :type which_data: string or sequence of strings.
 
         :return: A dict containing standard data closest to the indicated
-                 'time'. Standard data is defined as follows:
+            'time'. Standard data is defined as follows:
 
         Standard data arrays are numpy arrays of size N, where N is number of
         particles released at time step of interest. They are defined by the
@@ -690,25 +694,26 @@ class NetCDFOutput(Outputter, Serializable):
         with nc.Dataset(netcdf_file) as data:
             _start_ix = 0
 
-            # first find the index of timestep in which we are interested
+            # first find the index of index in which we are interested
             time_ = data.variables['time']
-            if time == None:
+            if time == None and index == None:
                 # there should only be 1 time in file. Read and
                 # return data associated with it
                 if len(time_) > 1:
                     raise ValueError('More than one time found in netcdf '
-                                     'file. Please specify time for which '
-                                     'data is desired')
+                                     'file. Please specify time/index for '
+                                     'which data is desired')
                 else:
                     index = 0
             else:
-                time_offset = nc.date2num(time, time_.units,
-                                          calendar=time_.calendar)
-                if time_offset < 0:
-                    'desired time is before start of model'
-                    index = 0
-                else:
-                    index = abs(time_[:] - time_offset).argmin()
+                if time is not None:
+                    time_offset = nc.date2num(time, time_.units,
+                                              calendar=time_.calendar)
+                    if time_offset < 0:
+                        'desired time is before start of model'
+                        index = 0
+                    else:
+                        index = abs(time_[:] - time_offset).argmin()
 
             for idx in range(index):
                 _start_ix += data.variables['particle_count'][idx]

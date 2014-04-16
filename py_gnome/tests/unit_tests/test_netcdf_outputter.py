@@ -339,8 +339,10 @@ def test_read_data_exception(model):
         NetCDFOutput.read_data(o_put.netcdf_filename)
 
 
-@pytest.mark.parametrize("output_ts_factor", [1, 2.4])
-def test_read_standard_arrays(model, output_ts_factor):
+@pytest.mark.parametrize(("output_ts_factor", "use_time"),
+                         [(1, True), (1, False),
+                          (2.4, True), (2.4, False)])
+def test_read_standard_arrays(model, output_ts_factor, use_time):
     """
     tests the data returned by read_data is correct when `which_data` flag is
     'standard'. It is only reading the standard_arrays
@@ -348,6 +350,9 @@ def test_read_standard_arrays(model, output_ts_factor):
     Test will only verify the data when time_stamp of model matches the
     time_stamp of data written out. output_ts_factor means not all data is
     written out.
+
+    The use_time flag says data is read by timestamp. If false, then it is read
+    by step number - either way, the result should be the same
     """
     model.rewind()
 
@@ -365,10 +370,14 @@ def test_read_standard_arrays(model, output_ts_factor):
     for file_ in (o_put.netcdf_filename, o_put._u_netcdf_filename):
         _found_a_matching_time = False
 
-        for step in range(0, model.num_time_steps, int(output_ts_factor)):
+        for idx, step in enumerate(range(0, model.num_time_steps,
+                                                    int(output_ts_factor))):
             scp = model._cache.load_timestep(step)
             curr_time = scp.LE('current_time_stamp', uncertain)
-            nc_data = NetCDFOutput.read_data(file_, curr_time)
+            if use_time:
+                nc_data = NetCDFOutput.read_data(file_, curr_time)
+            else:
+                nc_data = NetCDFOutput.read_data(file_, index=idx)
 
             # check time
             if curr_time == nc_data['current_time_stamp'].item():
