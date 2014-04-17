@@ -75,6 +75,10 @@ bool ParseLine(const std::string &strIn,
 bool ParseLine(const std::string &strIn,
 					DateTimeRec &out1,
 					VelocityRec &out2);
+bool ParseLine(const std::string &strIn,
+			   DateTimeRec &out1,
+			   std::string &out2,
+			   std::string &out3);
 bool ParseLine(std::istringstream &lineStream,
 			   VelocityRec &velOut);
 
