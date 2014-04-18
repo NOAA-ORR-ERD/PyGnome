@@ -183,6 +183,11 @@ class OilProps(object):
         '''
         self.oil = get_oil(oil_)
 
+    def __repr__(self):
+        return ('{0.__class__.__module__}.{0.__class__.__name__}('
+                'oil_={0.oil!r}'
+                ')'.format(self))
+
     name = property(lambda self: self.oil.name,
                     lambda self, val: setattr(self.oil, 'name', val))
     density = property(lambda self: self.get_density(),
