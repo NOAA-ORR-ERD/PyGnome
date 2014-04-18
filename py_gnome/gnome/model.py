@@ -481,7 +481,7 @@ class Model(Serializable):
             outputter.model_step_is_done()
 
     def write_output(self):
-        output_info = {'step_num': self.current_time_step}
+        output_info = {}
 
         for outputter in self.outputters:
             if self.current_time_step == self.num_time_steps - 1:
@@ -491,6 +491,9 @@ class Model(Serializable):
 
             if output is not None:
                 output_info.update(output)
+
+        if not output_info:
+            return {'step_num': self.current_time_step}
 
         return output_info
 
