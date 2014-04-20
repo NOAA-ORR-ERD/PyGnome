@@ -130,9 +130,6 @@ class Renderer(Outputter, MapCanvas, serializable.Serializable):
         :param image_mode: Image mode ('P' for palette or 'L' for Black and
             White image). BW_MapCanvas inherits from MapCanvas and sets the
             mode to 'L'. Default image_mode is 'P'.
-        :param id: unique identifier for a instance of this class (UUID given
-            as a string). This is used when loading an object from a persisted
-            model.
         """
 
         # set up the canvas
