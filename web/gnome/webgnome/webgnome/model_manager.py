@@ -456,7 +456,7 @@ class WebModel(BaseWebObject, Model):
             if key not in data:
                 data[key] = []
 
-            obj_data = obj.to_dict(do='create')
+            obj_data = obj.to_dict()
 
             data[key].append(obj_data)
 

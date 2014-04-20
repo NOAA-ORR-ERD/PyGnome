@@ -74,3 +74,9 @@ class GnomeId(object):
         obj_copy.__create_new_id()
 
         return obj_copy
+
+    def __eq__(self, other):
+        return self.id == other.id
+
+    def __ne__(self, other):
+        return not self == other

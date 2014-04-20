@@ -180,6 +180,17 @@ class Spill(serializable.Serializable):
         obj_copy.__dict__ = copy.copy(self.__dict__)
         return obj_copy
 
+    def __repr__(self):
+        return ('{0.__class__.__module__}.{0.__class__.__name__}('
+                'release={0.release!r}, '
+                'element_type={0.element_type}, '
+                'on={0.on}, '
+                'volume={0.volume}, '
+                'volume_units="{0.volume_units}", '
+                'mass={0.mass}, '
+                'mass_units="{0.mass_units}"'
+                ')'.format(self))
+
     def __eq__(self, other):
         """
         over ride base == operator defined in Serializable class.

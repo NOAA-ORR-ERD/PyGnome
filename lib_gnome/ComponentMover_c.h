@@ -25,7 +25,8 @@ class TOSSMTimeValue;
 class TComponentMover;
 
 
-class ComponentMover_c : virtual public CurrentMover_c {
+//class ComponentMover_c : virtual public CurrentMover_c {
+class DLL_API ComponentMover_c : virtual public CurrentMover_c {
 
 public:
 	TCATSMover			*pattern1;

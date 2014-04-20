@@ -45,8 +45,8 @@ class NwsWind(BaseResource):
 
             # create timeseries records and prune the
             # ones that have None values
-            ts = zip(times, speeds, directions)
-            ts = [r for r in ts if r[1] is not None and r[2] is not None]
+            ts = [(t, (s, d)) for t, s, d in zip(times, speeds, directions)
+                  if s is not None and d is not None]
 
             description = [n.text for n in doc.xpath('data/location/description')]
             description += [n.text for n in doc.xpath('data/location/area-description')]
@@ -57,6 +57,7 @@ class NwsWind(BaseResource):
 
 
         wind_data = {
+            'json_': 'webapi',
             'latitude': coordinates['lat'],
             'longitude': coordinates['long'],
             'source_type': 'nws',

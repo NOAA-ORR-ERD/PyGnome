@@ -55,7 +55,7 @@
 bool IsLongWindFile(vector<string> &linesInFile, short *selectedUnitsOut, bool *dataInGMTOut)
 {
 	long line = 0;
-	string currentLine;
+	string currentLine, val1Str, val2Str;
 
 	DateTimeRec time;
 	VelocityRec velocity;
@@ -101,8 +101,9 @@ bool IsLongWindFile(vector<string> &linesInFile, short *selectedUnitsOut, bool *
 		// tide files with header have same first 3 lines as long wind files, followed by data
 		std::replace(currentLine.begin(), currentLine.end(), ',', ' ');
 
-		if (!ParseLine(currentLine, time, velocity))
+		if (!ParseLine(currentLine, time, val1Str, val2Str))
 			return false;
+
 	}
 
 	// fifth line, grid.  For now we ignore this.
@@ -112,7 +113,8 @@ bool IsLongWindFile(vector<string> &linesInFile, short *selectedUnitsOut, bool *
 	currentLine = trim(linesInFile[line++]);
 
 	std::replace(currentLine.begin(), currentLine.end(), ',', ' ');
-	if (!ParseLine(currentLine, time, velocity))
+	//if (!ParseLine(currentLine, time, velocity))
+	if (!ParseLine(currentLine, time, val1Str, val2Str))
 		return false;
 
 	*selectedUnitsOut = selectedUnits;
@@ -252,7 +254,7 @@ Boolean IsHydrologyFile(char *path)
 bool IsOSSMTimeFile(vector<string> &linesInFile, short *selectedUnitsOut)
 {
 	long line = 0;
-	string currentLine;
+	string currentLine, val1Str, val2Str;
 
 	short selectedUnits = kUndefined;
 	DateTimeRec time;
@@ -279,7 +281,7 @@ bool IsOSSMTimeFile(vector<string> &linesInFile, short *selectedUnitsOut)
 	currentLine = trim(linesInFile[line++]);
 	std::replace(currentLine.begin(), currentLine.end(), ',', ' ');
 
-	if (!ParseLine(currentLine, time, velocity))
+	if (!ParseLine(currentLine, time, val1Str, val2Str))
 		return false;
 
 	*selectedUnitsOut = selectedUnits;

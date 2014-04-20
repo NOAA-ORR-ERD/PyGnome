@@ -587,6 +587,33 @@ bool ParseLine(const string &strIn,
 	return true;
 }
 
+bool ParseLine(const string &strIn,
+			   DateTimeRec &out1,
+			   string &out2,
+			   string &out3)
+{
+	DateTimeRec value1;
+	string value2, value3;
+	
+	istringstream lineStream(strIn);
+	lineStream >> value1.day >> value1.month >> value1.year
+	>> value1.hour >> value1.minute
+	>> value2 >> value3;
+	if (lineStream.fail())
+		return false;
+	
+	out1.day = value1.day;
+	out1.month = value1.month;
+	out1.year = value1.year;
+	out1.hour = value1.hour;
+	out1.minute = value1.minute;
+	
+	out2 = value2;
+	out3 = value3;
+	
+	return true;
+}
+
 // This one is slightly different than the others in that it takes
 // a stream.
 // This is so we can parse multiple velocities from
