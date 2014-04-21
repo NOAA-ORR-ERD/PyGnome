@@ -11,21 +11,23 @@ from gnome.utilities.serializable import Serializable
 from .outputter import Outputter
 
 from gnome.basic_types import oil_status
-from gnome import GnomeId
 from gnome import array_types as at
 
 
 class GeoJson(Outputter):
-    def __init__(self, **kwargs):
-        self._gnome_id = GnomeId()
-        super(GeoJson, self).__init__(**kwargs)
+    def __init__(self, round_data=True, roundto=4, **kwargs):
+        '''
+        :param bool round_data=True: if True, then round the numpy arrays
+            containing float to number of digits specified by 'roundto'.
+            Default is True
+        :param int roundto=4: round float arrays to these number of digits.
+            Default is 4.
 
-    @property
-    def id(self):
+        use super to pass optional **kwargs to base class __init__ method
         '''
-        Function returns the unique id to identify the object,
-        '''
-        return self._gnome_id.id
+        self.round_data = round_data
+        self.roundto = roundto
+        super(GeoJson, self).__init__(**kwargs)
 
     def write_output(self, step_num, islast_step=False):
         'dump data in geojson format'
@@ -79,5 +81,8 @@ class GeoJson(Outputter):
             'geojson expects int - it fails for a long'
             p_type = int
 
-        data = sc[name].astype(p_type).tolist()
+        if p_type is float and self.round_data:
+            data = sc[name].round(self.roundto).astype(p_type).tolist()
+        else:
+            data = sc[name].astype(p_type).tolist()
         return (data, add_props)
