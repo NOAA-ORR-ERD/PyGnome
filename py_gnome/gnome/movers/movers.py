@@ -7,8 +7,6 @@ from colander import (SchemaNode, MappingSchema, Bool, drop)
 from gnome.persist.validators import convertible_to_seconds
 from gnome.persist.extend_colander import LocalDateTime
 
-from gnome import GnomeId
-#from gnome import basic_types
 from gnome.basic_types import (world_point,
                                world_point_type,
                                spill_type,
@@ -70,7 +68,6 @@ class Mover(object):
 
         self.active_start = active_start
         self.active_stop = active_stop
-        self._gnome_id = GnomeId()
 
         # empty dict since no array_types required for all movers at present
         self.array_types = {}
@@ -79,8 +76,6 @@ class Mover(object):
     @property
     def active(self):
         return self._active
-
-    id = property(lambda self: self._gnome_id.id)
 
     def datetime_to_seconds(self, model_time):
         """

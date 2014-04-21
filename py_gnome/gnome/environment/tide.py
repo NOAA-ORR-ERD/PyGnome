@@ -110,9 +110,6 @@ class Tide(Environment, Serializable):
         Tide information can be obtained from a filename or set as a
         timeseries (timeseries is NOT TESTED YET)
 
-        Invokes super(Tides,self).__init__(\*\*kwargs) for parent class
-        initialization
-
         It requires one of the following to initialize:
               1. 'timeseries' assumed to be in 'uv' format
                  (NOT TESTED/IMPLEMENTED OR USED YET)
@@ -135,9 +132,6 @@ class Tide(Environment, Serializable):
         :param yeardata: (Optional) path to yeardata used for Shio data
                          filenames. Default location is gnome/data/yeardata/
 
-        Remaining kwargs ('id' if present) are passed onto Environment's
-        __init__ using super.
-        See base class documentation for remaining valid kwargs.
         """
 
         # define locally so it is available even for OSSM files,
@@ -165,8 +159,6 @@ class Tide(Environment, Serializable):
 
             # self.yeardata = os.path.abspath( yeardata ) # set yeardata
             self.yeardata = yeardata  # set yeardata
-
-        super(Tide, self).__init__(**kwargs)
 
     @property
     def yeardata(self):

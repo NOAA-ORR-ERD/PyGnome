@@ -35,6 +35,7 @@ from conftest import sample_sc_release
 
 datadir = os.path.join(os.path.dirname(__file__), r'sample_data')
 file_ = os.path.join(datadir, r'WindDataFromGnome.WND')
+file2_ = os.path.join(datadir, r'WindDataFromGnomeCardinal.WND')
 
 
 def test_exceptions():
@@ -423,6 +424,11 @@ def test_wind_mover_from_file():
     wm = wind_mover_from_file(file_)
     print wm.wind.filename
     assert wm.wind.filename == file_
+
+def test_wind_mover_from_file_cardinal():
+    wm = wind_mover_from_file(file2_)
+    print wm.wind.filename
+    assert wm.wind.filename == file2_
 
 
 @pytest.mark.parametrize(("json_"), ['save', 'webapi'])

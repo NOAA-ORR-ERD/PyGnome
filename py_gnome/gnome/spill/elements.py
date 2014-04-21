@@ -96,6 +96,12 @@ class InitWindages(InitBaseClass, Serializable):
         self.windage_persist = windage_persist
         self.windage_range = windage_range
 
+    def __repr__(self):
+        return ('{0.__class__.__module__}.{0.__class__.__name__}('
+                'windage_range={0.windage_range}, '
+                'windage_persist={0.windage_persist}'
+                ')'.format(self))
+
     @property
     def windage_persist(self):
         return self._windage_persist
@@ -463,6 +469,12 @@ class ElementType(Serializable):
         else:
             # assume object passed in is an OilProps object
             self.substance = substance
+
+    def __repr__(self):
+        return ('{0.__class__.__module__}.{0.__class__.__name__}('
+                'initializers={0.initializers}, '
+                'substance={0.substance!r}'
+                ')'.format(self))
 
     def set_newparticle_values(self, num_new_particles, spill, data_arrays):
         '''

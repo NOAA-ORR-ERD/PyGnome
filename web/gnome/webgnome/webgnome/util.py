@@ -1,28 +1,30 @@
 """
 util.py: Utility function for the webgnome package.
 """
-import argparse
-import errno
-import colander
-import datetime
-import inspect
-import json
-import logging
-import posixpath
-import math
-import os
-import shutil
 import sys
-import time
-import uuid
+import os
+import errno
 
+import inspect
+import posixpath
+import argparse
+import shutil
+import time
+import datetime
+import math
+import logging
+import uuid
+import json
 from functools import wraps
 from itertools import chain
-from gnome.utilities.cache import CacheError
-from webgnome.schema import LongLat
+
 from pyramid.exceptions import Forbidden
 from pyramid.renderers import JSON
+import colander
+
 from hazpy.unit_conversion.unit_data import ConvertDataUnits
+from gnome.utilities.cache import CacheError
+from webgnome.schema import LongLat
 
 
 logger = logging.getLogger(__file__)
@@ -49,10 +51,10 @@ def make_message(type_in, text):
 def encode_json_date(obj):
     """
     Render a :class:`datetime.datetime` or :class:`datetime.date` object using
-    the :meth:`datetime.isoformat` function, so it can be properly serialized to
-    JSON notation.
+    the :meth:`datetime.isoformat` function, so it can be properly serialized
+    to JSON notation.
     """
-    if isinstance(obj, datetime.datetime) or isinstance(obj, datetime.date):
+    if isinstance(obj, (datetime.datetime, datetime.date)):
         return obj.isoformat()
 
 
@@ -80,11 +82,10 @@ def json_date_adapter(obj, request):
     return encode_json_date(obj)
 
 
-gnome_json = JSON(adapters=(
-    (datetime.datetime, json_date_adapter),
-    (datetime.date, json_date_adapter),
-    (uuid.UUID, lambda obj, request: str(obj))
-))
+gnome_json = JSON(adapters=((datetime.datetime, json_date_adapter),
+                            (datetime.date, json_date_adapter),
+                            (uuid.UUID, lambda obj, request: str(obj)))
+                  )
 
 
 def to_json(obj, encoder=json_encoder):
@@ -108,8 +109,11 @@ class SchemaForm(object):
                 self.__dict__[field[0]] = field[1]
 
         def __repr__(self):
-            return 'ObjectValue(%s)' % (
-            ','.join(['%s=%s' % (k, v) for k, v in self.__dict__.items()]))
+            return ('ObjectValue('
+                    '{0})'.format(','.join(['{0}={1}'.format(k, v)
+                                            for k, v in self.__dict__.items()]
+                                           ))
+                    )
 
     def __init__(self, schema, obj=None):
         self.schema = schema().bind()
@@ -238,8 +242,8 @@ def valid_model_id(request):
 
 def valid_step_id(request):
     """
-    A Cornice validator that tests of a `step_id` value in the request matches a
-    step number the model has already generated.
+    A Cornice validator that tests of a `step_id` value in the request matches
+    a step number the model has already generated.
     """
     valid_model_id(request)
 
@@ -286,8 +290,8 @@ def valid_wind_id(request):
     try:
         request.validated['wind'] = model.environment[wind_id]
     except KeyError:
-        request.errors.add(
-            'body', 'wind_mover', 'The wind_id did not match an existing Wind.')
+        request.errors.add('body', 'wind_mover',
+                           'The wind_id did not match an existing Wind.')
         request.errors.status = 400
 
     return
@@ -401,7 +405,7 @@ def valid_renderer(request):
 
 def valid_filename(request):
     """
-    A Cornice validator that verifies that a 'filename' value in ``request``
+    A Cornice validator that verifies that a 'filename' value in `request`
     can be used safely to upload a file into the model's data directory.
     """
     valid_model_id(request)
@@ -423,7 +427,7 @@ def valid_filename(request):
 
 def valid_uploaded_file(request):
     """
-    A Cornice validator that verifies that a 'filename' specified in ``request``
+    A Cornice validator that verifies that a 'filename' specified in `request`
     exists in the data directory of the user's current model.
 
     Once validated, the absolute path of the file will be added to the
@@ -501,7 +505,7 @@ def valid_spill_id(request):
 
     model = request.validated['model']
     try:
-        spill = model.spills[request.matchdict['id']]
+        model.spills[request.matchdict['id']]
     except KeyError:
         request.errors.add('body', 'spill', 'Spill not found.')
         request.errors.status = 404
@@ -529,11 +533,12 @@ def require_model(f):
     Wrap a JSON view in a precondition that ensures the user has a valid model
     ID in his or her session.
 
-    If the key is missing or no model is found for that key, create a new model.
+    If the key is missing or no model is found for that key, create a new
+    model.
 
-    This decorator works on functions and methods. It returns a method decorator
-    if the first argument to the function is ``self``. Otherwise, it returns a
-    function decorator.
+    This decorator works on functions and methods. It returns a
+    method decorator if the first argument to the function is `self`.
+    Otherwise, it returns a function decorator.
     """
     args = inspect.getargspec(f)
 
@@ -563,24 +568,28 @@ def get_obj_class(obj):
 
 
 class DirectionConverter(object):
-    DIRECTIONS = [
-        "N",
-        "NNE",
-        "NE",
-        "ENE",
-        "E",
-        "ESE",
-        "SE",
-        "SSE",
-        "S",
-        "SSW",
-        "SW",
-        "WSW",
-        "W",
-        "WNW",
-        "NW",
-        "NNW"
-    ]
+    DIRECTIONS = ['N',
+                  'NNE',
+                  'NE',
+                  'ENE',
+                  'E',
+                  'ESE',
+                  'SE',
+                  'SSE',
+                  'S',
+                  'SSW',
+                  'SW',
+                  'WSW',
+                  'W',
+                  'WNW',
+                  'NW',
+                  'NNW']
+    degrees_in_cardinal = 360.0 / len(DIRECTIONS)
+    offset = (degrees_in_cardinal / 2)
+
+    @classmethod
+    def to_one_rotation(cls, degree):
+        return degree % 360
 
     @classmethod
     def is_cardinal_direction(cls, direction):
@@ -591,9 +600,11 @@ class DirectionConverter(object):
         """
         Convert an integer degree into a cardinal direction name.
         """
-        idx = int(math.floor((+(degree) + 360 / 32) / (360 / 16) % 16))
-        if idx:
-            return cls.DIRECTIONS[idx]
+        idx = (int((cls.to_one_rotation(degree) + cls.offset)
+                   / cls.degrees_in_cardinal)
+               % len(cls.DIRECTIONS))
+
+        return cls.DIRECTIONS[idx]
 
     @classmethod
     def get_degree(cls, cardinal_direction):
@@ -601,8 +612,7 @@ class DirectionConverter(object):
        Convert a cardinal direction name into an integer degree.
        """
         idx = cls.DIRECTIONS.index(cardinal_direction.upper())
-        if idx:
-            return (360.0 / 16) * idx
+        return cls.degrees_in_cardinal * idx
 
 
 def get_model_image_url(request, model, filename):
@@ -611,11 +621,11 @@ def get_model_image_url(request, model, filename):
 
     These are files in the model's base directory.
     """
-    return request.static_url('webgnome:static/%s/%s/%s/%s' % (
-        request.registry.settings['model_images_url_path'],
-        model.id,
-        get_filename_safe_time(model.changed_at),
-        filename))
+    return request.static_url('webgnome:static/{0}/{1}/{2}/{3}'
+                              ''.format(request.registry.settings['model_images_url_path'],
+                                        model.id,
+                                        get_filename_safe_time(model.changed_at),
+                                        filename))
 
 
 def get_filename_safe_time(_datetime=None):
@@ -657,14 +667,15 @@ def delete_keys_from_dict(target_dict, keys):
 
 def mkdir_p(path):
     """
-    Make direction at ``path`` by first creating parent directories, unless they
-    already exist. Similar to `mkdir -p` functionality in Unix/Linux.
+    Make directory at ``path`` by first creating parent directories,
+    unless they already exist.
+    Similar to `mkdir -p` functionality in Unix/Linux.
 
     http://stackoverflow.com/questions/600268/mkdir-p-functionality-in-python
     """
     try:
         os.makedirs(path)
-    except OSError as exc: # Python >2.5
+    except OSError as exc:
         if exc.errno == errno.EEXIST and os.path.isdir(path):
             pass
         else:
@@ -672,8 +683,6 @@ def mkdir_p(path):
 
 
 def monkey_patch_colander():
-    import colander
-
     # Recover boolean values which were coerced into strings.
     serialize_boolean = getattr(colander.Boolean, 'serialize')
 
@@ -713,8 +722,8 @@ def monkey_patch_colander():
     def patched_mapping_serialization(*args, **kwds):
         result = serialize_mapping(*args, **kwds)
         if result is not colander.null:
-            result = {k: v for k, v in result.iteritems() if
-                      v is not colander.null}
+            result = {k: v for k, v in result.iteritems()
+                      if v is not colander.null}
         return result
 
     setattr(colander.MappingSchema, 'serialize', patched_mapping_serialization)
@@ -736,8 +745,8 @@ class CleanDirectoryCommand(object):
         args = parser.parse_args()
 
         if not os.path.exists(self.directory):
-            print >> sys.stderr, \
-                'Directory does not exist: %s' % self.directory
+            print >> sys.stderr, ('Directory does not exist: '
+                                  '{0}'.format(self.directory))
 
         files = os.listdir(self.directory)
         files.sort()
@@ -746,8 +755,8 @@ class CleanDirectoryCommand(object):
             shutil.rmtree(self.directory)
             os.mkdir(self.directory)
 
-        print 'Files and directories deleted:\n%s' % '\n'.join(files)
-        print 'Total (top-level): %s' % len(files)
+        print 'Files and directories deleted:\n{0}'.format('\n'.join(files))
+        print 'Total (top-level): {0}'.format(len(files))
 
 
 def dirnames(path):
@@ -760,8 +769,9 @@ def dirnames(path):
 
 def get_location_files(location_file_dir, ignored_files=None):
     """
-    Return a list of valid location file names -- the names of directories found
-    in the path ``location_files_dir`` which contain a `config.json` file.
+    Return a list of valid location file names -- the names of directories
+    found in the path ``location_files_dir`` which contain a `config.json`
+    file.
 
     Ignores the `templates` directory.
     """
@@ -772,8 +782,8 @@ def get_location_files(location_file_dir, ignored_files=None):
     try:
         listing = dirnames(location_file_dir)
     except OSError as e:
-        logger.error('Could not access location file at path: %s. Error: %s' % (
-            location_file_dir, e))
+        logger.error('Could not access location file at path: {0}. '
+                     'Error: {1}'.format(location_file_dir, e))
 
     for ignored in ignored_files:
         listing.pop(listing.index(ignored))
@@ -782,9 +792,8 @@ def get_location_files(location_file_dir, ignored_files=None):
         config = os.path.join(location_file_dir, location_file, 'config.json')
 
         if not os.path.exists(config):
-            logger.error(
-                'Location file does not contain a conf.json file: '
-                '%s. Path: %s' % (location_file, config))
+            logger.error('Location file does not contain a conf.json file: '
+                         '{0}. Path: {1}'.format(location_file, config))
             continue
 
         location_files.append(location_file)
@@ -798,8 +807,8 @@ class LocationFileExists(OSError):
 
 def create_location_file(path, **data):
     """
-    Create a Location File directory at ``path`` and populate it with a skeleton
-    of required files.
+    Create a Location File directory at ``path`` and populate it with a
+    skeleton of required files.
     """
     if os.path.exists(path):
         raise LocationFileExists
@@ -831,11 +840,14 @@ def safe_join(directory, filename):
     :license: BSD, see LICENSE for more details.
     """
     _os_alt_seps = list(sep for sep in [os.path.sep, os.path.altsep]
-                    if sep not in (None, '/'))
+                        if sep not in (None, '/'))
     filename = posixpath.normpath(filename)
+
     for sep in _os_alt_seps:
         if sep in filename:
             return None
+
     if os.path.isabs(filename) or filename.startswith('../'):
         return None
+
     return os.path.join(directory, filename)

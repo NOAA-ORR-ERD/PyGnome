@@ -13,7 +13,6 @@ np = numpy
 
 from PIL import Image, ImageDraw
 
-from gnome import GnomeId
 from gnome.basic_types import oil_status
 
 from gnome.utilities.file_tools import haz_files
@@ -132,10 +131,6 @@ class MapCanvas(object):
 
         # if self._viewport is None:
         #     self.viewport = self.map_BB
-
-        self._gnome_id = GnomeId()
-
-    id = property(lambda self: self._gnome_id.id)
 
 # USE DEFAULT CONSTRUCTOR FOR CREATING EMPTY_MAP
 # =============================================================================

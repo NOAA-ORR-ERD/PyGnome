@@ -31,7 +31,6 @@ import numpy
 np = numpy
 from colander import SchemaNode, MappingSchema, String, Float, drop
 
-from gnome import GnomeId
 from gnome.persist import base_schema
 
 from gnome.utilities.map_canvas import BW_MapCanvas
@@ -101,10 +100,6 @@ class GnomeMap(Serializable):
         else:
             self.spillable_area = np.asarray(spillable_area,
                     dtype=np.float64).reshape(-1, 2)
-
-        self._gnome_id = GnomeId()
-
-    id = property(lambda self: self._gnome_id.id)
 
     def on_map(self, coords):
         """

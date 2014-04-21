@@ -2,6 +2,7 @@
 release objects that define how elements are released. A Spill() objects
 is composed of a release object and an ElementType
 '''
+import types
 import copy
 from datetime import timedelta
 
@@ -10,7 +11,6 @@ np = numpy
 
 from colander import (SchemaNode, drop, Bool, Int)
 
-from gnome import GnomeId
 from gnome.persist.base_schema import ObjType, WorldPoint
 from gnome.persist.extend_colander import LocalDateTime
 from gnome.persist.validators import convertible_to_seconds
@@ -63,8 +63,6 @@ class Release(object):
 
     def __init__(self, release_time, num_elements=0,
                  num_released=0, start_time_invalid=True):
-        self._gnome_id = GnomeId()
-        print 'Release.__init__(): new gnome ID: {0}'.format(self._gnome_id.id)
 
         self.num_elements = num_elements
         self.release_time = release_time
@@ -79,13 +77,22 @@ class Release(object):
         # model start time is valid
         self.start_time_invalid = start_time_invalid
 
-    id = property(lambda self: self._gnome_id.id)
-
     def __repr__(self):
         return ('{0.__class__.__module__}.{0.__class__.__name__}('
                 'release_time={0.release_time!r}, '
                 'num_elements={0.num_elements}'
                 ')'.format(self))
+
+    def __eq__(self, other):
+        scalar_attrs = ('release_time', 'num_elements', 'num_released',
+                        'start_time_invalid',
+                        #'_gnome_id',
+                        )
+        if not all([getattr(self, a) == getattr(other, a)
+                    for a in scalar_attrs]):
+            return False
+
+        return True
 
     def num_elements_to_release(self, current_time, time_step):
         """
@@ -126,11 +133,9 @@ class Release(object):
 
         return 0    # base class does not release any particles
 
-    def set_newparticle_positions(self,
-        num_new_particles,
-        current_time,
-        time_step,
-        data_arrays):
+    def set_newparticle_positions(self, num_new_particles,
+                                  current_time, time_step,
+                                  data_arrays):
         """
         derived object should set the 'positions' array for the data_arrays
         base class has no implementation
@@ -219,7 +224,6 @@ class PointLineRelease(Release, Serializable):
         num_elements and release_time passed to base class __init__ using super
         See base :class:`Release` documentation
         """
-
         super(PointLineRelease, self).__init__(release_time,
                                                num_elements)
 
@@ -258,6 +262,52 @@ class PointLineRelease(Release, Serializable):
         # number of new particles released at each timestep
         self.prev_release_pos = self.start_position.copy()
 
+    def __getstate__(self):
+        '''
+            Used by pickle.dump() and pickle.dumps()
+            Note: Dynamically set instance methods cannot be pickled methods.
+                  They should not be present in the resulting dict.
+        '''
+        return dict([(k, v)
+                     for k, v in self.__dict__.iteritems()
+                     if type(v) != types.MethodType])
+
+    def __setstate__(self, d):
+        '''
+            Used by pickle.load() and pickle.loads()
+            Note: We will need to explicitly reconstruct any instance methods
+                  that were dynamically set in __init__()
+        '''
+        self.__dict__ = d
+
+        # reconstruct our dynamically set methods.
+        if self.release_time == self.end_release_time:
+            self.set_newparticle_positions = \
+                self._init_positions_instantaneous_release
+        else:
+            self.set_newparticle_positions = \
+                self._init_positions_timevarying_release
+
+    def __eq__(self, other):
+        if not super(PointLineRelease, self).__eq__(other):
+            return False
+
+        scalar_attrs = ('delta_release', '_end_release_time')
+        if not all([(getattr(self, a) == getattr(other, a))
+                    for a in scalar_attrs]):
+            return False
+
+        vector_attrs = ('_end_position', 'delta_pos', 'prev_release_pos',
+                        'start_position')
+        if not all([all(getattr(self, a) == getattr(other, a))
+                    for a in vector_attrs]):
+            return False
+
+        return True
+
+    def __ne__(self, other):
+        return not self == other
+
     def __repr__(self):
         return ('{0.__class__.__module__}.{0.__class__.__name__}('
                 'release_time={0.release_time!r}, '
@@ -266,13 +316,6 @@ class PointLineRelease(Release, Serializable):
                 'end_position={0.end_position!r}, '
                 'end_release_time={0.end_release_time!r}'
                 ')'.format(self))
-
-    def __reduce__(self):
-        return (PointLineRelease, (self.release_time,
-                                   self.num_elements,
-                                   self.start_position,
-                                   self.end_position,
-                                   self.end_release_time))
 
     @property
     def end_position(self):

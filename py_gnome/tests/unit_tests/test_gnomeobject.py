@@ -17,16 +17,6 @@ def test_exceptions():
         go.id = uuid1()
 
 
-@pytest.mark.parametrize('value', [str(uuid1()), uuid1()])
-def test_assign_id(value):
-    """
-    Assign a new id from a UUID or a string
-    """
-
-    go = GnomeId(id=value)
-    assert go.id == str(value)
-
-
 def test_copy():
     go = GnomeId()
     go_c = copy.copy(go)
@@ -39,5 +29,3 @@ def test_deepcopy():
     go_c = copy.deepcopy(go)
     assert go.id != go_c.id
     assert go is not go_c
-
-

@@ -161,9 +161,6 @@ class Wind(Environment, serializable.Serializable):
         Initializes a wind object. It only takes keyword arguments as input,
         these are defined below.
 
-        Invokes super(Wind,self).__init__(\*\*kwargs) for parent class
-        initialization
-
         It requires one of the following to initialize:
               1. 'timeseries' along with 'units' or
               2. a 'filename' containing a header that defines units amongst
@@ -204,10 +201,6 @@ class Wind(Environment, serializable.Serializable):
                          wind data is obtained from NWS
         :param longitude: (Optional) longitude of station or location where
                          wind data is obtained from NWS
-
-        Remaining kwargs ('id' if present) are passed onto Environment's
-                          __init__ using super.
-        See base class documentation for remaining valid kwargs.
         """
 
         if 'timeseries' in kwargs and 'filename' in kwargs:
@@ -291,7 +284,6 @@ class Wind(Environment, serializable.Serializable):
         self.source_id = kwargs.pop('source_id', 'undefined')
         self.longitude = kwargs.pop('longitude', self.longitude)
         self.latitude = kwargs.pop('latitude', self.latitude)
-        super(Wind, self).__init__(**kwargs)
 
     def _convert_units(self, data, ts_format, from_unit, to_unit):
         '''

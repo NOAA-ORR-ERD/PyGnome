@@ -19,7 +19,7 @@ class Wind(BaseResource):
         model = data.pop('model')
         wind = WebWind(**data)
         model.environment.add(wind)
-        wind_data = wind.to_dict(do='create')
+        wind_data = wind.to_dict()
 
         return schema.WindSchema().bind().serialize(wind_data)
 
