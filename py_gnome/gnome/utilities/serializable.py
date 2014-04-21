@@ -499,9 +499,7 @@ class Serializable(GnomeId):
 
         This is base implementation and can be over-ridden by classes using mixin
         """
-        # remove obj_type from dict since that is only used by scenario
-        # module to load objects
-        # In baseclass, cls() is used to get the obj_type
+        # remove following since they are not used for object initialization
         for key in ['obj_type', 'json_', 'id']:
             dict_.pop(key, None)
 

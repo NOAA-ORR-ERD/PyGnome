@@ -54,28 +54,28 @@ class Release(object):
 
     It contains interface for Release objects
     """
-    _update = ['num_elements', 'num_released',
-               'release_time', 'start_time_invalid']
+    _update = ['num_elements',
+               'release_time']
     _create = _update
 
     _state = copy.deepcopy(Serializable._state)
     _state.add(save=_create, update=_update)
 
-    def __init__(self, release_time, num_elements=0,
-                 num_released=0, start_time_invalid=True):
+    def __init__(self, release_time, num_elements=0):
 
         self.num_elements = num_elements
         self.release_time = release_time
 
         # number of new particles released at each timestep
-        self.num_released = num_released
+        # set/updated by the derived Release classes at each timestep
+        self.num_released = 0
 
         # flag determines if the first time is valid. If the first call to
         # self.num_elements_to_release(current_time, time_step) has
         # current_time > self.release_time, then no particles are ever released
         # if current_time <= self.release_time, then toggle this flag since
         # model start time is valid
-        self.start_time_invalid = start_time_invalid
+        self.start_time_invalid = True
 
     def __repr__(self):
         return ('{0.__class__.__module__}.{0.__class__.__name__}('
@@ -83,16 +83,17 @@ class Release(object):
                 'num_elements={0.num_elements}'
                 ')'.format(self))
 
-    def __eq__(self, other):
-        scalar_attrs = ('release_time', 'num_elements', 'num_released',
-                        'start_time_invalid',
-                        #'_gnome_id',
-                        )
-        if not all([getattr(self, a) == getattr(other, a)
-                    for a in scalar_attrs]):
-            return False
-
-        return True
+#==============================================================================
+#     def __eq__(self, other):
+#         scalar_attrs = ('release_time', 'num_elements', 'num_released',
+#                         'start_time_invalid',
+#                         )
+#         if not all([getattr(self, a) == getattr(other, a)
+#                     for a in scalar_attrs]):
+#             return False
+# 
+#         return True
+#==============================================================================
 
     def num_elements_to_release(self, current_time, time_step):
         """
@@ -288,25 +289,27 @@ class PointLineRelease(Release, Serializable):
             self.set_newparticle_positions = \
                 self._init_positions_timevarying_release
 
-    def __eq__(self, other):
-        if not super(PointLineRelease, self).__eq__(other):
-            return False
-
-        scalar_attrs = ('delta_release', '_end_release_time')
-        if not all([(getattr(self, a) == getattr(other, a))
-                    for a in scalar_attrs]):
-            return False
-
-        vector_attrs = ('_end_position', 'delta_pos', 'prev_release_pos',
-                        'start_position')
-        if not all([all(getattr(self, a) == getattr(other, a))
-                    for a in vector_attrs]):
-            return False
-
-        return True
-
-    def __ne__(self, other):
-        return not self == other
+#==============================================================================
+#     def __eq__(self, other):
+#         if not super(PointLineRelease, self).__eq__(other):
+#             return False
+# 
+#         scalar_attrs = ('delta_release', '_end_release_time')
+#         if not all([(getattr(self, a) == getattr(other, a))
+#                     for a in scalar_attrs]):
+#             return False
+# 
+#         vector_attrs = ('_end_position', 'delta_pos', 'prev_release_pos',
+#                         'start_position')
+#         if not all([all(getattr(self, a) == getattr(other, a))
+#                     for a in vector_attrs]):
+#             return False
+# 
+#         return True
+# 
+#     def __ne__(self, other):
+#         return not self == other
+#==============================================================================
 
     def __repr__(self):
         return ('{0.__class__.__module__}.{0.__class__.__name__}('

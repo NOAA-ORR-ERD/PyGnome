@@ -178,20 +178,13 @@ def test_exception_no_model_to_load(images_dir):
         load(os.path.join(saveloc_))
 
 
-def test_save_load_model(images_dir):
+@pytest.mark.slow
+@pytest.mark.parametrize('uncertain', [False, True])
+def test_save_load_model(images_dir, uncertain):
     '''
     create a model, save it, then load it back up and check it is equal to
     original model
     '''
-    model = make_model(images_dir)
-    model.save(saveloc_)
-    model2 = load(saveloc_)
-    assert model == model2
-
-
-@pytest.mark.slow
-@pytest.mark.parametrize('uncertain', [False, True])
-def test_save_load_scenario(images_dir, uncertain):
     model = make_model(images_dir, uncertain)
 
     print 'saving scenario ..'
