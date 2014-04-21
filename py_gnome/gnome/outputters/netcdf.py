@@ -15,7 +15,7 @@ np = numpy
 from colander import SchemaNode, MappingSchema, String, drop, Int, Bool
 
 from gnome.persist import base_schema
-from gnome import __version__, GnomeId, array_types
+from gnome import __version__, array_types
 from gnome.basic_types import oil_status, world_point_type
 
 from gnome.utilities.serializable import Serializable, Field
@@ -244,15 +244,7 @@ class NetCDFOutput(Outputter, Serializable):
         # number of particles are released
         self._start_idx = 0
 
-        self._gnome_id = GnomeId()
         super(NetCDFOutput, self).__init__(**kwargs)
-
-    @property
-    def id(self):
-        '''
-        Function returns the unique id to identify the object,
-        '''
-        return self._gnome_id.id
 
     @property
     def middle_of_run(self):

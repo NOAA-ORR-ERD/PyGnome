@@ -37,7 +37,6 @@ from colander import (SchemaNode, SequenceSchema,
 
 from gnome.persist.base_schema import ObjType
 
-from gnome import GnomeId
 from gnome.utilities.serializable import Serializable
 
 
@@ -64,7 +63,7 @@ class GraphSchema(ObjType):
     formats = Formats()
 
 
-class Graph(GnomeId, Serializable):
+class Graph(Serializable):
     # default units for input/output data
     _update = ['points',
                'labels',
@@ -103,10 +102,6 @@ class Graph(GnomeId, Serializable):
         self.labels = labels
         self.formats = formats
         self.title = title
-
-        self._gnome_id = GnomeId()
-
-    id = property(lambda self: self._gnome_id.id)
 
     def __del__(self):
         '''

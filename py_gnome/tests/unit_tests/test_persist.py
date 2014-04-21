@@ -311,6 +311,13 @@ class TestWebApi:
         for sc in model.spills.items():
             if sc is not uncertain:
                 self._dump_collection(sc.spills)
+                # dump release object and element_type object
+                for idx, spill in enumerate(sc.spills):
+                    for obj in ['release', 'element_type']:
+                        serial = getattr(spill, obj).serialize('webapi')
+                        fname = os.path.join(webapi_files,
+                            'Spill{0}_{1}.json'.format(idx, obj))
+                        self._write_to_file(fname, serial)
 
     @pytest.mark.parametrize('uncertain', [False, True])
     def test_model_rt(self, images_dir, uncertain):

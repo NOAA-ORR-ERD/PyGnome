@@ -53,11 +53,12 @@ def test_init_exceptions():
 def test_deepcopy():
     """
     tests that a deepcopy results in a copy so objects are not the same
-    todo: how should this work
+    todo: how should this work?
     """
     sp1 = Spill(Release(release_time=datetime.now()))
     sp2 = copy.deepcopy(sp1)
     assert sp1 is not sp2
+    assert sp1.id != sp2.id
 
     # try deleting the copy, and see if any errors result
     del sp2
@@ -71,6 +72,7 @@ def test_copy():
     sp1 = Spill(Release(release_time=datetime.now()))
     sp2 = copy.copy(sp1)
     assert sp1 is not sp2
+    assert sp1.id != sp2.id
 
     # try deleting the copy, and see if any errors result
     del sp1

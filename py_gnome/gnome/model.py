@@ -172,8 +172,6 @@ class Model(Serializable):
                          weathering_substeps,
                          map, uncertain, cache_enabled)
 
-        self._gnome_id = gnome.GnomeId()
-
         # register callback with OrderedCollection
         self.movers.register_callback(self._callback_add_mover,
                                       ('add', 'replace'))
@@ -268,10 +266,6 @@ class Model(Serializable):
     @cache_enabled.setter
     def cache_enabled(self, enabled):
         self._cache.enabled = enabled
-
-    @property
-    def id(self):
-        return self._gnome_id.id
 
     @property
     def start_time(self):

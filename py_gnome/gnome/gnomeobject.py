@@ -10,25 +10,6 @@ class GnomeId(object):
     '''
     _id = None
 
-    def __init__(self, id=None):
-        '''
-        Sets the ID of the object.
-
-        :param id: (optional) input valid UUID to set
-        '''
-        if id is not None:
-            if isinstance(id, UUID):
-                self._id = str(id)
-            elif isinstance(id, basestring):
-                # check if our string is a valid uuid.  Throws an error if not
-                UUID(id)
-                self._id = id
-            else:
-                raise ValueError('id cannot be set. It is not a UUID object, '
-                                 'nor a valid UUID in string format')
-        else:
-            self.__create_new_id()
-
     @property
     def id(self):
         '''
@@ -36,6 +17,8 @@ class GnomeId(object):
 
         :return: a unique ID assigned during construction
         '''
+        if not self._id:
+            self.__create_new_id()
         return self._id
 
     def __create_new_id(self):

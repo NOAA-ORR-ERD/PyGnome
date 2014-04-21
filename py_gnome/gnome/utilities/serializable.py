@@ -7,6 +7,8 @@ import copy
 import numpy
 np = numpy
 
+from gnome import GnomeId
+
 
 class Field(object):  # ,serializable.Serializable):
     '''
@@ -419,7 +421,7 @@ class State(object):
         return names
 
 
-class Serializable(object):
+class Serializable(GnomeId):
 
     """
     contains the to_dict and update_from_dict method to output properties of object

@@ -18,7 +18,6 @@ uc = unit_conversion
 from colander import (SchemaNode, Bool)
 
 import gnome    # required by new_from_dict
-from gnome import GnomeId
 from gnome.utilities import serializable
 from gnome.persist.base_schema import ObjType
 
@@ -51,7 +50,7 @@ class Spill(serializable.Serializable):
     _create = []
     _create.extend(_update)
     _state = copy.deepcopy(serializable.Serializable._state)
-    _state.add(save=_create, update=_update, read=['num_released'])
+    _state.add(save=_create, update=_update)
     _schema = SpillSchema
 
     valid_vol_units = list(chain.from_iterable([item[1] for item in
@@ -143,43 +142,6 @@ class Spill(serializable.Serializable):
         if mass is not None and volume is not None:
             raise ValueError("'mass' and 'volume' cannot both be set")
 
-        self._gnome_id = GnomeId()
-
-    def __deepcopy__(self, memo=None):
-        """
-        the deepcopy implementation
-
-        we need this, as we don't want the spill_nums copied, but do want
-        everything else.
-
-        got the method from:
-
-        http://stackoverflow.com/questions/3253439/python-copy-how-to-inherit-the-default-copying-behaviour
-
-        Despite what that thread says for __copy__, the built-in deepcopy()
-        ends up using recursion
-        """
-
-        obj_copy = object.__new__(type(self))
-
-        # recursively calls deepcopy on GnomeId object
-        obj_copy.__dict__ = copy.deepcopy(self.__dict__, memo)
-        return obj_copy
-
-    def __copy__(self):
-        """
-        Make a shallow copy of the object
-
-        It makes a shallow copy of all attributes defined in __dict__
-        Since it is a shallow copy of the dict, the _gnome_id object is not
-        copied, but merely referenced
-        This seems to be standard python copy behavior so leave as is.
-        """
-
-        obj_copy = object.__new__(type(self))
-        obj_copy.__dict__ = copy.copy(self.__dict__)
-        return obj_copy
-
     def __repr__(self):
         return ('{0.__class__.__module__}.{0.__class__.__name__}('
                 'release={0.release!r}, '
@@ -233,10 +195,6 @@ class Spill(serializable.Serializable):
                 raise uc.InvalidUnitError('Mass units must be from '
                                           'following list to be valid: '
                                           '{0}'.format(self.valid_mass_units))
-
-    @property
-    def id(self):
-        return self._gnome_id.id
 
     def set(self, prop, val):
         """

@@ -11,7 +11,6 @@ np = numpy
 
 from colander import (SchemaNode, drop, Bool, Int)
 
-from gnome import GnomeId
 from gnome.persist.base_schema import ObjType, WorldPoint
 from gnome.persist.extend_colander import LocalDateTime
 from gnome.persist.validators import convertible_to_seconds
@@ -64,7 +63,6 @@ class Release(object):
 
     def __init__(self, release_time, num_elements=0,
                  num_released=0, start_time_invalid=True):
-        self._gnome_id = GnomeId()
 
         self.num_elements = num_elements
         self.release_time = release_time
@@ -78,8 +76,6 @@ class Release(object):
         # if current_time <= self.release_time, then toggle this flag since
         # model start time is valid
         self.start_time_invalid = start_time_invalid
-
-    id = property(lambda self: self._gnome_id.id)
 
     def __repr__(self):
         return ('{0.__class__.__module__}.{0.__class__.__name__}('
