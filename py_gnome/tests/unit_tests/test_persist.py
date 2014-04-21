@@ -309,8 +309,8 @@ class TestWebApi:
             self._dump_collection(getattr(model, coll))
 
         for sc in model.spills.items():
-            if sc is uncertain:
-                self._dump_collection(sc)
+            if sc is not uncertain:
+                self._dump_collection(sc.spills)
 
     @pytest.mark.parametrize('uncertain', [False, True])
     def test_model_rt(self, images_dir, uncertain):
