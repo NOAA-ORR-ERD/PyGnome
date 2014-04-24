@@ -29,16 +29,14 @@ Initializers for various element types
 
 class InitBaseClass(object):
     """
-    created a base class that simply removes the 'id' field from
-    Serializable._state
+    All Init* classes will define the _state attribute, so just do so in a
+    base class.
 
-    All Init* classes will need to do this so just do so in a base class.
+    It also documents that all initializers must implement an initialize method
 
     todo/Note:
     This may change as the persistence code changes. Currently, 'id' and
     'obj_type' are part of base Serializable._state
-    The 'id' was a unique identifier for all Gnome objects; however, it is
-    only required by subset of objects so this may undergo a refactor
     """
     _state = copy.deepcopy(Serializable._state)
 
