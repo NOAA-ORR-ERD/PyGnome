@@ -342,6 +342,24 @@ def test_element_types(elem_type, arr_types, sample_sc_no_uncertainty):
                         assert np.all(sc[key][spill_mask] == 0)
 
 
+@pytest.mark.parametrize(("fcn"), fcn_list)
+def test_serialize_deserialize_initializers(fcn):
+    for json_ in ('save', 'webapi'):
+        cls = fcn.__class__
+        dict_ = cls.deserialize(fcn.serialize(json_))
+
+        if json_ == 'webapi':
+            if 'distribution' in dict_:
+                'webapi will replace dict with object so mock it here'
+                dict_['distribution'] = eval(dict_['distribution']['obj_type']).new_from_dict(dict_['distribution'])
+
+        n_obj = cls.new_from_dict(dict_)
+        # following is requirement for 'save' files
+        # if object has no read only parameters, then this is true for 'webapi'
+        # as well
+        assert n_obj == fcn
+
+
 @pytest.mark.parametrize(("json_"), ['save', 'webapi'])
 def test_serialize_deserialize(json_):
     et = floating()
