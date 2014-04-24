@@ -3,6 +3,7 @@ Created on Feb 15, 2013
 '''
 
 import copy
+import inspect
 
 import numpy
 np = numpy
@@ -424,11 +425,12 @@ class State(object):
 class Serializable(GnomeId):
 
     """
-    contains the to_dict and update_from_dict method to output properties of object
-    in a list.
+    contains the to_dict and update_from_dict method to output properties of
+    object in a list.
 
-    This class is intended as a mixin so to_dict and update_from_dict become part of
-    the object and the object must define a _state attribute of type State().
+    This class is intended as a mixin so to_dict and update_from_dict become
+    part of the object and the object must define a _state attribute of type
+    State().
 
     The default _state=State(save=['id']) is a static variable for this class
     It uses the same convention as State to obtain the lists, 'update' for
@@ -497,13 +499,43 @@ class Serializable(GnomeId):
         """
         creates a new object from dictionary
 
-        This is base implementation and can be over-ridden by classes using mixin
+        This is base implementation and can be over-ridden by classes using
+        this mixin
         """
-        # remove following since they are not used for object initialization
-        for key in ['obj_type', 'json_', 'id']:
-            dict_.pop(key, None)
+        rqd = {}
+        for parent in cls.mro():
+            if inspect.ismethod(parent.__init__):
+                kwargs = inspect.getargspec(parent.__init__)[0][1:]
 
-        return cls(**dict_)
+                # pop kwargs for object creation into rqd dict
+                rqd.update({key: dict_.pop(key) for key in kwargs
+                                                            if key in dict_})
+
+        # create object with required input arguments
+        new_obj = cls(**rqd)
+
+        if dict_.pop('json_') == 'save':
+            # remove following since they are not attributes of object
+            for key in ['obj_type', 'id']:
+                dict_.pop(key, None)
+
+            # set remaining attributes to restore state of object when it was
+            # persisted to save files (ie could be mid-run)
+            for key in dict_.keys():
+                try:
+                    setattr(new_obj, key, dict_[key])
+                except AttributeError:
+                    print 'failed to set attribute {0}'.format(key)
+                    raise
+        else:
+            # for webapi, ignore the readonly attributes and set only
+            # attributes that are updatable. At present, the 'webapi' uses
+            # new_from_dict to create a new object only. It does not restore
+            # the state of a previously persisted object
+            if dict_:
+                new_obj.update_from_dict(dict_)
+
+        return new_obj
 
     def _attrlist_to_dict(self, do=('update',)):
         '''

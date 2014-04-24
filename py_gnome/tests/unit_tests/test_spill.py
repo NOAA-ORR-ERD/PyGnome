@@ -639,17 +639,25 @@ class Test_point_line_release_spill:
         sp.release.end_release_time = None
         assert sp.release.release_time == sp.release.end_release_time
 
-    def test_serialization_deserialization(self):
+    @pytest.mark.parametrize(("json_"), ['save', 'webapi'])
+    def test_serialization_deserialization(self, json_):
         """
         tests serializatin/deserialization of the Spill object
         """
         spill = point_line_release_spill(num_elements=self.num_elements,
                                          start_position=self.start_position,
                                          release_time=self.release_time)
-        serial = spill.serialize('save')
-        new_dict = Spill.deserialize(serial)    # classmethod
-        new_spill = Spill.new_from_dict(new_dict)   # classmethod
-        assert spill == new_spill
+        dict_ = Spill.deserialize(spill.serialize(json_))
+        if json_ == 'save':
+            new_spill = Spill.new_from_dict(dict_)
+            assert spill == new_spill
+        else:
+            # for webapi, make new objects from nested objects before creating
+            # new element_type
+            dict_['element_type'] = spill.element_type
+            dict_['release'] = spill.release
+            new_spill = Spill.new_from_dict(dict_)
+            assert True
 
 
 """ A few more line release (point_line_release_spill) tests """

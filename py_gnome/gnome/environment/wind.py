@@ -122,6 +122,7 @@ class Wind(Environment, serializable.Serializable):
                'description',
                'latitude',
                'longitude',
+               'source_type',
                'source_id',  # what is source ID? Buoy ID?
                'updated_at',
                ]
@@ -146,30 +147,34 @@ class Wind(Environment, serializable.Serializable):
                       # test for equality of units a little differently
                       serializable.Field('units', save=False,
                                          update=True, test_for_eq=False),
-                      # for save files, source_type is always file
-                      serializable.Field('source_type', save=True,
-                                         update=True, test_for_eq=False)
                       ])
 
     # list of valid velocity units for timeseries
     valid_vel_units = list(chain.from_iterable([item[1] for item in
-                                                ConvertDataUnits['Velocity'].values()]))
+                                    ConvertDataUnits['Velocity'].values()]))
     valid_vel_units.extend(GetUnitNames('Velocity'))
 
-    def __init__(self, **kwargs):
+    def __init__(self,
+        timeseries=None,
+        units=None,
+        filename=None,
+        format='r-theta',
+        latitude=None,
+        longitude=None,
+        **kwargs):
         """
-        Initializes a wind object. It only takes keyword arguments as input,
-        these are defined below.
-
+        Initializes a wind object
         It requires one of the following to initialize:
               1. 'timeseries' along with 'units' or
               2. a 'filename' containing a header that defines units amongst
                  other meta data
 
+        If both are given, it will read data from the file
+
         All other keywords are optional.
         Optional parameters (kwargs):
 
-        :param timeseries: (Required) numpy array containing time_value_pair
+        :param timeseries: numpy array containing time_value_pair
         :type timeseries: numpy.ndarray[basic_types.time_value_pair, ndim=1]
 
         :param filename: path to a long wind file from which to read wind data
@@ -203,39 +208,22 @@ class Wind(Environment, serializable.Serializable):
                          wind data is obtained from NWS
         """
 
-        if 'timeseries' in kwargs and 'filename' in kwargs:
-            raise TypeError('Cannot instantiate Wind object with '
-                            'both timeseries and file as input')
-
-        if 'timeseries' not in kwargs and 'filename' not in kwargs:
+        if (timeseries is None and filename is None):
             raise TypeError('Either provide a timeseries or a wind file '
-                            'with a header, containing wind data')
+                'with a header, containing wind data')
 
-        # default lat/long - can these be set from reading data in the file?
-        self.longitude = None
-        self.latitude = None
         self._tempfile = None
         self._filename = None
 
-        format_arg = kwargs.pop('format', 'r-theta')
-
-        self.description = kwargs.pop('description', 'Wind Object')
-
-        if 'timeseries' in kwargs:
-            if 'units' not in kwargs:
-                raise TypeError('units argument requires timeseries argument')
-            timeseries = kwargs.pop('timeseries')
-            units = kwargs.pop('units')
-
+        if not filename:
             self._check_units(units)
             self._check_timeseries(timeseries, units)
-
             timeseries['value'] = self._convert_units(timeseries['value'],
-                                                      format_arg, units,
-                                                      'meter per second')
+                                                  format, units,
+                                                  'meter per second')
 
             # ts_format is checked during conversion
-            time_value_pair = to_time_value_pair(timeseries, format_arg)
+            time_value_pair = to_time_value_pair(timeseries, format)
 
             # this has same scope as CyWindMover object
             #
@@ -245,45 +233,27 @@ class Wind(Environment, serializable.Serializable):
             #       pickle this attribute when we pickle a Wind instance
             #
             self.ossm = CyOSSMTime(timeseries=time_value_pair)
-
-            # do not set ossm.user_units since that only has a subset of
-            # possible units
-
             self._user_units = units
-
-            self.name = kwargs.pop('name', 'Wind Object')
             self.source_type = (kwargs.pop('source_type')
                                 if kwargs.get('source_type')
                                 in basic_types.wind_datasource._attr
                                 else 'undefined')
+            self.name = kwargs.pop('name', None)
         else:
-            ts_format = tsformat(format_arg)
-            self._filename = kwargs.pop('filename')
+            ts_format = tsformat(format)
+            self._filename = filename
             self.ossm = CyOSSMTime(filename=self._filename,
                                    file_contains=ts_format)
             self._user_units = self.ossm.user_units
 
-            # TODO: not sure what this is for? .. for webgnome?
-            self.name = kwargs.pop('name',
-                                   os.path.split(self.ossm.filename)[1])
             self.source_type = 'file'  # this must be file
-
-        # For default: if read from file and filename exists,
-        #                  then use last modified time of file
-        #              else
-        #                  default to datetime.datetime.now
-        # not sure if this should be datetime or string
+            self.name = kwargs.pop('name', os.path.split(self.filename)[1])
 
         self.updated_at = kwargs.pop('updated_at', None)
-        if not self.updated_at:
-            self.updated_at = (sec_to_date(os.path.getmtime(self.ossm.filename)
-                                           )
-                               if self.ossm.filename
-                               else datetime.datetime.now())
-
         self.source_id = kwargs.pop('source_id', 'undefined')
-        self.longitude = kwargs.pop('longitude', self.longitude)
-        self.latitude = kwargs.pop('latitude', self.latitude)
+        self.longitude = longitude
+        self.latitude = latitude
+        self.description = kwargs.pop('description', 'Wind Object')
 
     def _convert_units(self, data, ts_format, from_unit, to_unit):
         '''

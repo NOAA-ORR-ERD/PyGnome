@@ -17,7 +17,7 @@ from gnome.persist import base_schema
 import gnome    # implicitly used when loading from dict by new_from_dict
 from gnome.outputters import Outputter
 from gnome.utilities.map_canvas import MapCanvas
-from gnome.utilities import serializable
+from gnome.utilities.serializable import Serializable, Field
 from gnome.utilities.file_tools import haz_files
 
 
@@ -35,7 +35,7 @@ class RendererSchema(base_schema.ObjType, MappingSchema):
     draw_ontop = SchemaNode(String())
 
 
-class Renderer(Outputter, MapCanvas, serializable.Serializable):
+class Renderer(Outputter, MapCanvas, Serializable):
 
     """
     Map Renderer
@@ -54,27 +54,26 @@ class Renderer(Outputter, MapCanvas, serializable.Serializable):
     _create = ['image_size', 'projection_class', 'draw_ontop']
 
     _create.extend(_update)
-    _state = copy.deepcopy(serializable.Serializable._state)
+    _state = copy.deepcopy(Serializable._state)
     _state.add(save=_create, update=_update)
-    _state.add_field(serializable.Field('filename', isdatafile=True,
+    _state.add_field(Field('filename', isdatafile=True,
                     save=True, read=True, test_for_eq=False))
     _schema = RendererSchema
 
     @classmethod
     def new_from_dict(cls, dict_):
         """
-        change projection_type from string to correct type
+        change projection_type from string to correct type for loading from
+        save file
         """
+        if dict_['json_'] == 'save':
+            proj = eval(dict_.pop('projection_class'))
+            viewport = dict_.pop('viewport')
 
-        proj = eval(dict_.pop('projection_class'))
-        viewport = dict_.pop('viewport')
-
-        # filename = dict_.pop('filename')
-        # images_dir = dict_.pop('images_dir')
-        # obj =  cls(filename, images_dir, projection_class=proj, **dict_)
-
-        obj = cls(projection_class=proj, **dict_)
-        obj.viewport = viewport
+            obj = cls(projection_class=proj, **dict_)
+            obj.viewport = viewport
+        else:
+            obj = super(Renderer, cls).new_from_dict(dict_)
         return obj
 
     def __init__(
@@ -287,8 +286,13 @@ class Renderer(Outputter, MapCanvas, serializable.Serializable):
         return scp[0].current_time_stamp
 
     def projection_class_to_dict(self):
-        """ store projection class as a string for now since that is all that
-        is required for persisting """
+        """
+        store projection class as a string for now since that is all that
+        is required for persisting
+        todo: This may not be the case for all projection classes, but keep
+        simple for now so we don't have to make the projection classes
+        serializable
+        """
 
         return '{0}.{1}'.format(self.projection.__module__,
                                 self.projection.__class__.__name__)

@@ -160,26 +160,6 @@ class NetCDFOutput(Outputter, Serializable):
                      ])
     _schema = NetCDFOutputSchema
 
-    @classmethod
-    def new_from_dict(cls, dict_):
-        '''
-        creates a new object from dictionary
-        '''
-        json_ = dict_.pop('json_')  # currently not required
-        _middle_of_run = dict_.pop('_middle_of_run', None)
-        _start_idx = dict_.pop('_start_idx', None)
-        obj = cls(**dict_)
-
-        if _middle_of_run is None or _start_idx is None:
-            raise KeyError('Expected netcdf_outputter to contain keys'
-                           ' _middle_of_run and _start_idx')
-
-        # If prepare_for_model_run is called, these will be reset
-        obj._middle_of_run = _middle_of_run
-        obj._start_idx = _start_idx
-
-        return obj
-
     def __init__(self, netcdf_filename, which_data='standard', compress=True,
                  **kwargs):
         """

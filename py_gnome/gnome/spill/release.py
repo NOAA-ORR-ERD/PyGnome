@@ -44,7 +44,7 @@ class PointLineReleaseSchema(ReleaseSchema):
                                   validator=convertible_to_seconds)
 
     # Not sure how this will work w/ WebGnome
-    prev_release_pos = WorldPoint(missing=drop)
+    #prev_release_pos = WorldPoint(missing=drop)
     description = 'PointLineRelease object schema'
 
 
@@ -170,38 +170,14 @@ class PointLineRelease(Release, Serializable):
                'end_release_time']
 
     # not sure these should be user update able
-    _create = ['prev_release_pos']
+    #_create = ['prev_release_pos']
+    _create = []
     _create.extend(_update)
 
     _state = copy.deepcopy(Release._state)
     _state.add(update=_update, save=_create)
 
     _schema = PointLineReleaseSchema
-
-    @classmethod
-    def new_from_dict(cls, dict_):
-        """
-        create object using the same settings as persisted object.
-        In addition, set the _state of other properties after initialization
-        """
-        for key in ['obj_type', 'json_', 'id']:
-            dict_.pop(key, None)
-
-        new_obj = cls(release_time=dict_.pop('release_time'),
-                      num_elements=dict_.pop('num_elements'),
-                      start_position=dict_.pop('start_position'),
-                      end_position=dict_.pop('end_position', None),
-                      end_release_time=dict_.pop('end_release_time', None),
-                      )
-
-        for key in dict_.keys():
-            try:
-                setattr(new_obj, key, dict_[key])
-            except AttributeError:
-                print 'failed to set attribute {0}'.format(key)
-                raise
-
-        return new_obj
 
     def __init__(self, release_time, num_elements, start_position,
                  end_position=None, end_release_time=None):
@@ -261,7 +237,7 @@ class PointLineRelease(Release, Serializable):
                               - self.release_time).total_seconds()
 
         # number of new particles released at each timestep
-        self.prev_release_pos = self.start_position.copy()
+        #self.prev_release_pos = self.start_position.copy()
 
     def __getstate__(self):
         '''
@@ -458,7 +434,7 @@ class PointLineRelease(Release, Serializable):
         reset to initial conditions -- i.e. nothing released.
         """
         super(PointLineRelease, self).rewind()
-        self.prev_release_pos = self.start_position
+        #self.prev_release_pos = self.start_position.copy()
 
 
 class SpatialRelease(Release, Serializable):

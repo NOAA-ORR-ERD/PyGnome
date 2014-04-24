@@ -19,6 +19,7 @@ from gnome.spill import point_line_release_spill
 
 from gnome.movers import RandomMover
 from gnome.outputters import NetCDFOutput
+from gnome.model import Model
 
 base_dir = os.path.dirname(__file__)
 
@@ -44,6 +45,8 @@ def model(sample_model, request):
     model.outputters += NetCDFOutput(os.path.join(base_dir,
                                                   u'sample_model.nc'))
 
+    model.rewind()
+
     def cleanup():
         'cleanup outputters was added to sample_model and delete files'
 
@@ -58,10 +61,12 @@ def model(sample_model, request):
             if hasattr(o_put, 'netcdf_filename'):
                 if os.path.exists(o_put.netcdf_filename):
                     os.remove(o_put.netcdf_filename)
+                    print "deleted: {0}".format(o_put.netcdf_filename)
 
                 if (o_put._u_netcdf_filename is not None
                     and os.path.exists(o_put._u_netcdf_filename)):
                     os.remove(o_put._u_netcdf_filename)
+                    print "deleted: {0}".format(o_put._u_netcdf_filename)
 
     request.addfinalizer(cleanup)
     return model
@@ -517,6 +522,50 @@ def test_write_output_post_run(model, output_ts_factor):
 
     # add this back in so cleanup script deletes the generated *.nc files
     model.outputters += o_put
+
+
+@pytest.mark.parametrize(("json_"), ['save', 'webapi'])
+def test_serialize_deserialize(json_):
+    '''
+    todo: this behaves in unexpected ways when using the 'model' testfixture.
+    For now, define a model in here for the testing - not sure where the
+    problem lies
+    '''
+    s_time = datetime(2014, 1, 1, 1, 1, 1)
+    model = Model(start_time=s_time)
+    model.spills += point_line_release_spill(num_elements=5,
+        start_position=(0, 0, 0),
+        release_time=model.start_time)
+
+    o_put = NetCDFOutput(os.path.join(base_dir, u'xtemp.nc'))
+    model.outputters += o_put
+    model.movers += RandomMover(diffusion_coef=100000)
+
+    #==========================================================================
+    # o_put = [model.outputters[outputter.id]
+    #          for outputter in model.outputters
+    #          if isinstance(outputter, NetCDFOutput)][0]
+    #==========================================================================
+
+    model.rewind()
+    print "step: {0}, _start_idx: {1}".format(-1, o_put._start_idx)
+    for ix in range(2):
+        model.step()
+        print "step: {0}, _start_idx: {1}".format(ix, o_put._start_idx)
+
+    #for json_ in ('save', 'webapi'):
+    dict_ = o_put.deserialize(o_put.serialize(json_))
+    o_put2 = NetCDFOutput.new_from_dict(dict_)
+    if json_ == 'save':
+        assert o_put == o_put2
+    else:
+        # _start_idx and _middle_of_run should not match
+        assert o_put._start_idx != o_put2._start_idx
+        assert o_put._middle_of_run != o_put2._middle_of_run
+        assert o_put != o_put2
+
+    if os.path.exists(o_put.netcdf_filename):
+        print '\n{0} exists'.format(o_put.netcdf_filename)
 
 
 def _run_model(model):

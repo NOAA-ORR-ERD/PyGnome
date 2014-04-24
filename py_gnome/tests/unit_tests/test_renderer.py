@@ -228,5 +228,13 @@ def test_set_viewport():
     r.save_background(os.path.join(output_dir, 'star_upper_left.png'))
 
 
+@pytest.mark.parametrize(("json_"), ['save', 'webapi'])
+def test_serialize_deserialize(json_):
+    r = Renderer(bna_sample, output_dir)
+    r2 = Renderer.new_from_dict(r.deserialize(r.serialize(json_)))
+    if json_ == 'save':
+        assert r == r2
+
+
 if __name__ == '__main__':
     test_set_viewport()

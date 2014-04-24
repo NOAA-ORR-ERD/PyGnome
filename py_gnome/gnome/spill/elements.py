@@ -293,10 +293,12 @@ class DistributionBase(InitBaseClass, Serializable):
 
     @classmethod
     def new_from_dict(cls, dict_):
-        distribution = dict_.get('distribution')
-        to_eval = '{0}.new_from_dict(distribution)'.format(
+        if dict_['json_'] == 'save':
+            distribution = dict_.get('distribution')
+            to_eval = '{0}.new_from_dict(distribution)'.format(
                                                     distribution['obj_type'])
-        dict_['distribution'] = eval(to_eval)
+            dict_['distribution'] = eval(to_eval)
+
         return super(DistributionBase, cls).new_from_dict(dict_)
 
     def serialize(self, json_='webapi'):
@@ -434,12 +436,14 @@ class ElementType(Serializable):
     def new_from_dict(cls, dict_):
         """
         primarily need to reconstruct objects for initializers dict
+        if loading from save files
         """
-        init = dict_.get('initializers')
-        for name, val in init.iteritems():
-            type_ = val.pop('obj_type')
-            obj = eval(type_).new_from_dict(val)
-            init[name] = obj
+        if dict_['json_'] == 'save':
+            init = dict_.get('initializers')
+            for name, val in init.iteritems():
+                type_ = val.pop('obj_type')
+                obj = eval(type_).new_from_dict(val)
+                init[name] = obj
 
         return super(ElementType, cls).new_from_dict(dict_)
 

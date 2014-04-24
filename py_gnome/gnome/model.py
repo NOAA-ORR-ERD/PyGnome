@@ -150,8 +150,7 @@ class Model(Serializable):
                  weathering_substeps=1,
                  map=gnome.map.GnomeMap(),
                  uncertain=False,
-                 cache_enabled=False,
-                 **kwargs):
+                 cache_enabled=False):
         '''
         Initializes a model. All arguments have a default.
 

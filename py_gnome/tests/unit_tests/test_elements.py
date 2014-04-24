@@ -12,7 +12,7 @@ from pytest import raises
 import numpy
 np = numpy
 
-
+import gnome
 from gnome import array_types
 from gnome.spill.elements import (InitWindages,
                             InitMassFromVolume,
@@ -340,3 +340,21 @@ def test_element_types(elem_type, arr_types, sample_sc_no_uncertainty):
                         assert np.all(sc[key][spill_mask] != 0)
                     else:
                         assert np.all(sc[key][spill_mask] == 0)
+
+
+@pytest.mark.parametrize(("json_"), ['save', 'webapi'])
+def test_serialize_deserialize(json_):
+    et = floating()
+    dict_ = ElementType.deserialize(et.serialize(json_))
+
+    # for webapi, make new objects from nested objects before creating
+    # new element_type
+    if json_ == 'webapi':
+        dict_['initializers'] = et.initializers
+    n_et = ElementType.new_from_dict(dict_)
+    # following is not a requirement for webapi, but it is infact the case
+    assert n_et == et
+    #==========================================================================
+    # if json_ == 'save':
+    #     assert n_et == et
+    #==========================================================================

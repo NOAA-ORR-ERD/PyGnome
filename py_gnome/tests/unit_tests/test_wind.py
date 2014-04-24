@@ -28,10 +28,6 @@ def test_exceptions(invalid_rq):
     dtv.time = [datetime(2012, 11, 06, 20, 10 + i, 30,) for i in range(4)]
     dtv.value = (1, 0)
 
-    # both timeseries and file are given
-    with raises(TypeError):
-        Wind(timeseries=dtv, filename='')
-
     # nether timeseries, nor file are give
 
     with raises(TypeError):
@@ -76,7 +72,7 @@ def test_exceptions(invalid_rq):
         Wind(timeseries=dtv_rq, units='meter per second')
 
     # exception raised since no units given for timeseries during init
-    with raises(TypeError):
+    with raises(unit_conversion.InvalidUnitError):
         Wind(timeseries=dtv)
 
     # no units during set_timeseries
