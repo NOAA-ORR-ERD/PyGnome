@@ -1,7 +1,11 @@
 #!/usr/bin/env python
 
 """
-Tests the spill code.
+Tests Spill() class and the various release() classes
+
+Release objects were factored out but the tests are still all in here
+todo: create simple tests for release objects separate from these more complex
+tests
 """
 
 from datetime import datetime, timedelta
@@ -15,7 +19,9 @@ np = numpy
 
 from gnome.spill import (Spill,
                          Release,
-                         point_line_release_spill)
+                         point_line_release_spill,
+                         PointLineRelease,
+                         SpatialRelease)
 from gnome.spill.elements import floating
 import gnome.array_types
 
@@ -1027,6 +1033,31 @@ def test_setget():
 
     spill.set('windage_persist', -1)
     assert spill.get('windage_persist') == -1
+
+
+# todo: add SpatialRelease schema, then complete this test
+rel_time = datetime(2012, 8, 20, 13)
+rel_type = [PointLineRelease(rel_time, 5, (0, 0, 0))]
+            #SpatialRelease(rel_time, np.zeros((4, 3), dtype=np.float64))]
+
+
+@pytest.mark.parametrize("rel_type", rel_type)
+def test_release_serialization_deserialization(rel_type):
+    '''
+    test for a mid run state.
+    'save' preserves midrun parameters
+    'webapi' does not
+    '''
+    cls = rel_type.__class__
+    rel_type.num_released = 100  # read only parameter for releases
+    for json_ in ('save', 'webapi'):
+        dict_ = cls.deserialize(rel_type.serialize(json_))
+        n_rel = cls.new_from_dict(dict_)
+        if json_ == 'save':
+            assert n_rel == rel_type
+        else:
+            assert n_rel != rel_type
+
 
 if __name__ == '__main__':
 

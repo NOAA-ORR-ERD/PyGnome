@@ -30,11 +30,13 @@ class SpillSchema(ObjType):
     on = SchemaNode(Bool(), default=True, missing=True,
         description='on/off status of spill')
 
-    def __init__(self, **kwargs):
-        'add release object to schema instance'
-        rel = kwargs.pop('release')
-        self.add(rel)
-        super(SpillSchema, self).__init__(**kwargs)
+    #==========================================================================
+    # def __init__(self, **kwargs):
+    #     'add release object to schema instance'
+    #     rel = kwargs.pop('release')
+    #     self.add(rel)
+    #     super(SpillSchema, self).__init__(**kwargs)
+    #==========================================================================
 
 
 class Spill(serializable.Serializable):
@@ -443,27 +445,35 @@ class Spill(serializable.Serializable):
         Need to add node for release object and element_type object
         """
         toserial = self.to_dict(json_)
-        schema = self.__class__._schema(
-            release=self.release.__class__._schema())
+        schema = self.__class__._schema()
+        #schema = self.__class__._schema(
+        #    release=self.release.__class__._schema(json_))
 
         o_json_ = schema.serialize(toserial)
         o_json_['element_type'] = self.element_type.serialize(json_)
+        o_json_['release'] = self.release.serialize(json_)
 
         return o_json_
 
     @classmethod
     def deserialize(cls, json_):
         """
-        need to create schema dynamically for Spill() before deserialization
+        Instead of creating schema dynamically for Spill() before
+        deserialization, call nested object's serialize/deserialize methods
         """
-        rel_name = json_['release']['obj_type']
-        rel_schema = eval(rel_name)._schema()
-        schema = cls._schema(release=rel_schema)
+        #======================================================================
+        # rel_name = json_['release']['obj_type']
+        # rel_schema = eval(rel_name)._schema(json_['json_'])
+        # schema = cls._schema(release=rel_schema)
+        #======================================================================
+        schema = cls._schema()
 
         dict_ = schema.deserialize(json_)
         element_type = json_['element_type']['obj_type']
         dict_['element_type'] = eval(element_type).deserialize(
                                                         json_['element_type'])
+        rel = json_['release']['obj_type']
+        dict_['release'] = eval(rel).deserialize(json_['release'])
 
         return dict_
 

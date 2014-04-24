@@ -24,13 +24,18 @@ from gnome.utilities.serializable import Serializable
 class ReleaseSchema(ObjType):
     'Base Class for Release Schemas'
     num_elements = SchemaNode(Int(), default=1000)
-    # used to create a new Release object if model is persisted mid-run
-    num_released = SchemaNode(Int(), missing=drop)
 
     release_time = SchemaNode(LocalDateTime(),
                               validator=convertible_to_seconds)
-    start_time_invalid = SchemaNode(Bool(), missing=drop)
     name = 'release'
+
+    def __init__(self, json_='webapi', **kwargs):
+        if json_ == 'save':
+            # used to create a new Release object if model is persisted mid-run
+            self.add(SchemaNode(Int(), name='num_released'))
+            self.add(SchemaNode(Bool(), name='start_time_invalid'))
+
+        super(ReleaseSchema, self).__init__(**kwargs)
 
 
 class PointLineReleaseSchema(ReleaseSchema):
@@ -56,10 +61,12 @@ class Release(object):
     """
     _update = ['num_elements',
                'release_time']
-    _create = _update
+    _create = ['num_released', 'start_time_invalid']
+    _create.extend(_update)
 
     _state = copy.deepcopy(Serializable._state)
-    _state.add(save=_create, update=_update)
+    _state.add(save=_create, update=_update,
+               read=('num_released', 'start_time_invalid'))
 
     def __init__(self, release_time, num_elements=0):
 
@@ -155,6 +162,19 @@ class Release(object):
         """
         self.num_released = 0
         self.start_time_invalid = True
+
+    def serialize(self, json_='webapi'):
+        'define schema based on type of desired output'
+        toserial = self.to_dict(json_)
+        schema = self.__class__._schema(json_)
+        serial = schema.serialize(toserial)
+
+        return serial
+
+    @classmethod
+    def deserialize(cls, json_):
+        schema = cls._schema(json_['json_'])
+        return schema.deserialize(json_)
 
 
 class PointLineRelease(Release, Serializable):
