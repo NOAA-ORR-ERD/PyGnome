@@ -11,18 +11,21 @@ module to define classes for GNOME output:
 import copy
 from datetime import timedelta
 
-from colander import SchemaNode, MappingSchema, Bool
+from colander import SchemaNode, MappingSchema, Bool, drop
 
-from gnome.persist import base_schema
+
+from gnome.persist import base_schema, extend_colander
 from gnome.utilities.serializable import Serializable, Field
 
 
 class BaseSchema(base_schema.ObjType, MappingSchema):
+    'Base schema for all outputters - they all contain the following'
     output_zero_step = SchemaNode(Bool())
     output_last_step = SchemaNode(Bool())
+    output_timestep = SchemaNode(extend_colander.TimeDelta(), missing=drop)
 
 
-class Outputter(object):
+class Outputter(Serializable):
     '''
     base class for all outputters
     Since this outputter doesn't do anything, it'll never be used as part
@@ -30,9 +33,9 @@ class Outputter(object):
     '''
     _state = copy.deepcopy(Serializable._state)
     _state += (Field('output_zero_step', save=True, update=True),
-               Field('output_last_step', save=True, update=True),)
-               #todo: figure out how to serialize timedelta object
-               #Field('output_timestep', save=True, update=True))
+               Field('output_last_step', save=True, update=True),
+               Field('output_timestep', save=True, update=True))
+    _schema = BaseSchema
 
     def __init__(self,
                  cache=None,

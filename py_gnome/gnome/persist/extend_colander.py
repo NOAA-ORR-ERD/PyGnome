@@ -8,7 +8,7 @@ import numpy
 np = numpy
 
 from colander import Float, DateTime, Sequence, null, Tuple, \
-    TupleSchema, SequenceSchema
+    TupleSchema, SequenceSchema, null
 
 import gnome.basic_types
 from gnome.utilities import inf_datetime
@@ -117,12 +117,18 @@ class TimeDelta(Float):
     Add a type to serialize/deserialize timedelta objects
     """
     def serialize(self, node, appstruct):
-        return super(TimeDelta, self).serialize(node,
-                                                appstruct.total_seconds())
+        if appstruct is not null:
+            return super(TimeDelta, self).serialize(node,
+                                                    appstruct.total_seconds())
+        else:
+            return super(TimeDelta, self).serialize(node, null)
 
     def deserialize(self, *args, **kwargs):
         sec = super(TimeDelta, self).deserialize(*args, **kwargs)
-        return datetime.timedelta(seconds=sec)
+        if sec is not null:
+            return datetime.timedelta(seconds=sec)
+        else:
+            return sec
 
 """
 Following define new schemas for above custom types. This is so

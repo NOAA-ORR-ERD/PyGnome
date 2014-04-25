@@ -35,7 +35,7 @@ class RendererSchema(BaseSchema):
     draw_ontop = SchemaNode(String())
 
 
-class Renderer(Outputter, MapCanvas, serializable.Serializable):
+class Renderer(Outputter, MapCanvas):
 
     """
     Map Renderer
