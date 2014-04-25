@@ -15,13 +15,13 @@ from colander import SchemaNode, MappingSchema, String, drop
 from gnome.persist import base_schema
 
 import gnome    # implicitly used when loading from dict by new_from_dict
-from gnome.outputters import Outputter
+from . import Outputter, BaseSchema
 from gnome.utilities.map_canvas import MapCanvas
 from gnome.utilities import serializable
 from gnome.utilities.file_tools import haz_files
 
 
-class RendererSchema(base_schema.ObjType, MappingSchema):
+class RendererSchema(BaseSchema):
 
     # not sure if bounding box needs defintion separate from LongLatBounds
     viewport = base_schema.LongLatBounds()
@@ -54,7 +54,7 @@ class Renderer(Outputter, MapCanvas, serializable.Serializable):
     _create = ['image_size', 'projection_class', 'draw_ontop']
 
     _create.extend(_update)
-    _state = copy.deepcopy(serializable.Serializable._state)
+    _state = copy.deepcopy(Outputter._state)
     _state.add(save=_create, update=_update)
     _state.add_field(serializable.Field('filename', isdatafile=True,
                     save=True, read=True, test_for_eq=False))

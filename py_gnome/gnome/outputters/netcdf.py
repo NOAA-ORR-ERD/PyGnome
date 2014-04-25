@@ -21,7 +21,8 @@ from gnome.basic_types import oil_status, world_point_type
 from gnome.utilities.serializable import Serializable, Field
 from gnome.utilities.time_utils import round_time
 
-from . import Outputter
+from . import Outputter, BaseSchema
+
 
 # Big dict that stores the attributes for the standard data arrays
 # in the output
@@ -72,10 +73,11 @@ var_attributes = {
                               'units': 'm s-1'},
     'next_positions': {},
     'last_water_positions': {},
+    'spill_id': {'long_name': 'unique uuid of spill that released particle'}
     }
 
 
-class NetCDFOutputSchema(base_schema.ObjType, MappingSchema):
+class NetCDFOutputSchema(BaseSchema):
     'colander schema for serialize/deserialize object'
     netcdf_filename = SchemaNode(String(), missing=drop)
     all_data = SchemaNode(Bool(), missing=drop)
@@ -148,7 +150,7 @@ class NetCDFOutput(Outputter, Serializable):
                               ]
 
     # define _state for serialization
-    _state = copy.deepcopy(Serializable._state)
+    _state = copy.deepcopy(Outputter._state)
 
     # data file should not be moved to save file location!
     _state.add_field([Field('netcdf_filename', save=True, update=True),
@@ -424,6 +426,9 @@ class NetCDFOutput(Outputter, Serializable):
                 rootgrp.createDimension('three', 3)
                 rootgrp.createDimension('four', 4)
                 rootgrp.createDimension('five', 5)
+                # hack for storing the spill_id which is a 36lenght char array
+                # todo: revisit and discuss w/ Chris
+                rootgrp.createDimension('thirty-six', 36)
 
                 # create the time variable
                 time_ = rootgrp.createVariable('time',
@@ -479,6 +484,11 @@ class NetCDFOutput(Outputter, Serializable):
                         elif at.shape == (2,):
                             shape = ('data', 'two')
                             chunksizes = (self._chunksize, 2)
+                        # todo: revisit this w/ Chris - what is best way to
+                        # persist 'spill_id' to netcdf file
+                        elif var_name == 'spill_id':
+                            shape = ('data', 'thirty-six')
+                            chunksizes = (self._chunksize, 36)
                         else:
                             shape = ('data',)
                             chunksizes = (self._chunksize,)

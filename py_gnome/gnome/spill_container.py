@@ -142,9 +142,14 @@ class SpillContainerData(object):
             for key, val in self.__dict__[item].iteritems():
                 other_val = other.__dict__[item][key]
                 if isinstance(val, np.ndarray):
-                    if not np.allclose(val, other_val, 0,
+                    try:
+                        if not np.allclose(val, other_val, 0,
                                        self._array_allclose_atol):
-                        return False
+                            return False
+                    except TypeError:
+                        # not implemented for this dtype, so just check equality
+                        if not np.all(val == other_val):
+                            return False
                 else:
                     if val != other_val:
                         return False
@@ -234,6 +239,7 @@ class SpillContainer(SpillContainerData):
                              'last_water_positions': array_types.last_water_positions,
                              'status_codes': array_types.status_codes,
                              'spill_num': array_types.spill_num,
+                             'spill_id': array_types.spill_id,
                              'id': array_types.id,
                              'rise_vel': array_types.rise_vel,
                              'droplet_diameter': array_types.droplet_diameter,
@@ -354,6 +360,9 @@ class SpillContainer(SpillContainerData):
                 # correctly
                 self._array_types['spill_num'].initial_value = \
                                 self.spills.index(sp.id, renumber=False)
+                # set spill_id initial value to spill's id
+                # make it a tuple since spill_id is a char array
+                self._array_types['spill_id'].initial_value = tuple(sp.id)
 
                 if len(self['spill_num']) > 0:
                     # unique identifier for each new element released

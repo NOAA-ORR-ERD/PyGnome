@@ -8,14 +8,32 @@ module to define classes for GNOME output:
   - saving to other formats ?
 
 """
-
+import copy
 from datetime import timedelta
+
+from colander import SchemaNode, MappingSchema, Bool
+
+from gnome.persist import base_schema
+from gnome.utilities.serializable import Serializable, Field
+
+
+class BaseSchema(base_schema.ObjType, MappingSchema):
+    output_zero_step = SchemaNode(Bool())
+    output_last_step = SchemaNode(Bool())
 
 
 class Outputter(object):
     '''
     base class for all outputters
+    Since this outputter doesn't do anything, it'll never be used as part
+    of a gnome model. As such, it should never need to be serialized
     '''
+    _state = copy.deepcopy(Serializable._state)
+    _state += (Field('output_zero_step', save=True, update=True),
+               Field('output_last_step', save=True, update=True),)
+               #todo: figure out how to serialize timedelta object
+               #Field('output_timestep', save=True, update=True))
+
     def __init__(self,
                  cache=None,
                  output_timestep=None,
