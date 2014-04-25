@@ -4,6 +4,7 @@ Tests the SpillContainer class
 '''
 
 from datetime import datetime, timedelta
+import copy
 
 import pytest
 from pytest import raises
@@ -793,8 +794,10 @@ def test_eq_spill_container_pair(uncertain):
         u_sp1 = [scp1.items()[1].spills[spill.id] for spill in
                  scp1.items()[1].spills][0]
 
-        temp = u_sp1.to_dict('save')
-        u_sp2 = u_sp1.new_from_dict(u_sp1.to_dict('save'))
+        u_sp2 = copy.deepcopy(u_sp1)
+        # deepcopy does not match ids!
+        # for test, we need these to match so force them to be equal here
+        u_sp2._id = u_sp1.id
 
         scp2.add((sp2, u_sp2))
     else:
@@ -900,8 +903,12 @@ def get_eq_spills():
                             (28, -75, 0),
                             release_time,
                             element_type=floating(windage_range=(0, 0)))
-    dict_ = spill.to_dict('save')
-    spill2 = spill.new_from_dict(dict_)
+    #dict_ = spill.to_dict('save')
+    #spill2 = spill.new_from_dict(dict_)
+    spill2 = copy.deepcopy(spill)
+
+    # IDs will not match! force this so our tests work
+    spill2._id = spill.id
 
     # check here if equal spills didn't get created - fail this function
     assert spill == spill2
