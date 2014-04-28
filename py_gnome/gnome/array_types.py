@@ -138,6 +138,9 @@ _default_values = \
      'last_water_positions': ((3,), world_point_type, (0., 0., 0.)),
      'status_codes': ((), status_code_type, oil_status.in_water),
      'spill_num': ((), id_type, 0),
+     # store id as char array so we can store data to netcdf if we want to do
+     # a midrun save
+     'spill_id': ((36,), 'a1', 0),
      'id': ((), np.uint32, 0, IdArrayType),
      'mass': ((), np.float64, 0),
      'windages': ((), windage_type, 0),

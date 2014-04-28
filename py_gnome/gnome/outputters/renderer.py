@@ -10,18 +10,18 @@ import os
 import glob
 import copy
 
-from colander import SchemaNode, MappingSchema, String, drop
+from colander import SchemaNode, String, drop
 
 from gnome.persist import base_schema
 
 import gnome    # implicitly used when loading from dict by new_from_dict
-from gnome.outputters import Outputter
+from . import Outputter, BaseSchema
 from gnome.utilities.map_canvas import MapCanvas
-from gnome.utilities.serializable import Serializable, Field
+from gnome.utilities.serializable import Field
 from gnome.utilities.file_tools import haz_files
 
 
-class RendererSchema(base_schema.ObjType, MappingSchema):
+class RendererSchema(BaseSchema):
 
     # not sure if bounding box needs defintion separate from LongLatBounds
     viewport = base_schema.LongLatBounds()
@@ -35,7 +35,7 @@ class RendererSchema(base_schema.ObjType, MappingSchema):
     draw_ontop = SchemaNode(String())
 
 
-class Renderer(Outputter, MapCanvas, Serializable):
+class Renderer(Outputter, MapCanvas):
 
     """
     Map Renderer
@@ -54,7 +54,7 @@ class Renderer(Outputter, MapCanvas, Serializable):
     _create = ['image_size', 'projection_class', 'draw_ontop']
 
     _create.extend(_update)
-    _state = copy.deepcopy(Serializable._state)
+    _state = copy.deepcopy(Outputter._state)
     _state.add(save=_create, update=_update)
     _state.add_field(Field('filename', isdatafile=True,
                     save=True, read=True, test_for_eq=False))
@@ -129,9 +129,6 @@ class Renderer(Outputter, MapCanvas, Serializable):
         :param image_mode: Image mode ('P' for palette or 'L' for Black and
             White image). BW_MapCanvas inherits from MapCanvas and sets the
             mode to 'L'. Default image_mode is 'P'.
-        :param id: unique identifier for a instance of this class (UUID given
-            as a string). This is used when loading an object from a persisted
-            model.
         """
 
         # set up the canvas
