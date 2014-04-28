@@ -315,6 +315,7 @@ OSErr ForEachItemInFolder(short vRefNum, long dirID, CHARPTR pathName,
 						  OSErr (*proc)(CINFOPBRECPTR), Boolean (*filter)(CINFOPBRECPTR));
 OSErr DeleteFilesInFolder(short vRefNum, long dirID, CHARPTR pathName);
 OSErr DeleteFilesInFolderSpecifiedByFullPathWithDelimiter(char* path);
+OSErr CreateFoldersInDirectoryPath(char *path);
 #ifdef MAC
 Boolean IsBundledApplication(char *path);
 void ChopExtensionAndHiddenPackageFolders(char *fullPath);
