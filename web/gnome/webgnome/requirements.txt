@@ -16,6 +16,7 @@ pytz
 python-dateutil # 2.1
 
 # since this is still beta release, need version for pip to find it
+#git+https://github.com/mikeorr/WebHelpers2.git#egg=WebHelpers2
 WebHelpers2>=2.0b3
 
 pyramid

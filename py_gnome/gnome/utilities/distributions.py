@@ -23,31 +23,34 @@ class UniformDistributionSchema(ObjType):
 
 class NormalDistributionSchema(ObjType):
     mean = SchemaNode(Float(), name='mean',
-        description='mean for normal distribution')
+                      description='mean for normal distribution')
     sigma = SchemaNode(Float(), name='sigma',
-        description='standard deviation for normal distribution')
+                       description='standard deviation for normal distribution'
+                       )
     name = 'normal'
 
 
-class LogNormalDistributionSchema(ObjType):
-    '''same parameters as Normal - keep in its own class to since serialize/
-    deserialize automatically looks for this class name. Helps keep things
-    consistent.
+class LogNormalDistributionSchema(NormalDistributionSchema):
     '''
-    NormalDistributionSchema(name='lognormal')
+        Same parameters as Normal
+        - keep in its own class since serialize/deserialize automatically
+          looks for this class name. Helps keep things consistent.
+    '''
+    name = 'lognormal'
 
 
 class WeibullDistributionSchema(ObjType):
     alpha = SchemaNode(Float(), name='alpha',
-        description='shape parameter for weibull distribution')
+                       description='shape parameter for weibull distribution')
     lambda_ = SchemaNode(Float(), name='lambda_', default=1.0,
-        description='scale parameter for weibull distribution')
+                         description='scale parameter for weibull distribution'
+                         )
     min_ = SchemaNode(Float(), name='min_',
-        description='lower bound? for weibull distribution',
-        missing=drop)
+                      description='lower bound? for weibull distribution',
+                      missing=drop)
     max_ = SchemaNode(Float(), name='max_',
-        description='upper bound? for weibull distribution',
-        missing=drop)
+                      description='upper bound? for weibull distribution',
+                      missing=drop)
     name = 'weibull'
 
 
