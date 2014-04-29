@@ -1414,10 +1414,36 @@ void GetKmlTemplateDirectory(char* directoryPath)
 	strcat(directoryPath, "/Contents/Resources/Data/kml_template/");
 #else
 	//dataDirectory = wxGetCwd();
-	PathNameFromDirID(TATdirID,TATvRefNum,applicationFolderPath);
-	my_p2cstr((StringPtr)applicationFolderPath);
-	strcpy(directoryPath,applicationFolderPath);
-	strcat(directoryPath,"Data\\kml_template\\");	// where to keep this on windows??
+	{
+		char szPath[MAX_PATH], testTemplatePath[MAX_PATH];
+		long size;
+		OSErr err = 0;
+
+		if(SUCCEEDED(SHGetFolderPath(NULL, 
+							CSIDL_LOCAL_APPDATA|CSIDL_FLAG_CREATE, 
+                             NULL, 
+                             0, 							 
+							 szPath)))
+		{
+			AddDelimiterAtEndIfNeeded(szPath);
+			strcat(szPath,"Data\\kml_template\\");
+			strcpy(testTemplatePath,szPath);
+			strcat(testTemplatePath,"moss.kml");
+			err = MyGetFileSize(0, 0, testTemplatePath, &size);
+				//if (size != sizeof(settings))
+					//hdelete(0, 0, szPath);
+	
+			//if (size>0) err = ReadFileContents(NONTERMINATED,0, 0,szPath, (char *)&settings, sizeof(Settings), 0);
+		}
+		if (err || size <= 0)
+		{
+			PathNameFromDirID(TATdirID,TATvRefNum,applicationFolderPath);
+			my_p2cstr((StringPtr)applicationFolderPath);
+			strcpy(directoryPath,applicationFolderPath);
+			strcat(directoryPath,"Data\\kml_template\\");	// where to keep this on windows??
+		}
+		else strcpy(directoryPath,szPath);
+	}
 #endif
 	return;
 }
@@ -1448,7 +1474,11 @@ OSErr TModel::SaveKmlLEFile (Seconds fileTime, short fileNumber)
 	FILE *source, *target;
 	
 	GetKmlTemplateDirectory(template_folder);
+#if TARGET_API_MAC_CARBON
 	ConvertUnixPathToTraditionalPath((const char *) template_folder,template_path, kMaxNameLen);
+#else
+	strcpy(template_path,template_folder);
+#endif
 	sprintf(source_file,"%s%c%s",template_path,DIRDELIMITER,"x.png");
 	
 	sprintf(userPath,"%s%c",gKMLPath,DIRDELIMITER);
@@ -1474,6 +1504,8 @@ OSErr TModel::SaveKmlLEFile (Seconds fileTime, short fileNumber)
 
 #if TARGET_API_MAC_CARBON
 	err = ConvertTraditionalPathToUnixPath((const char *) gKMLPath, outPath, kMaxNameLen) ;
+#else
+	strcpy(outPath,gKMLPath);
 #endif
 	strcpy(source_file,template_folder);
 	strcat(source_file,"moss.kml");
@@ -1758,7 +1790,11 @@ OSErr TModel::SaveKmlLEFileSeries (Seconds fileTime, short fileNumber)
 	GetKmlTemplateDirectory(template_folder);
 	if(fileNumber==0)
 	{
+#if TARGET_API_MAC_CARBON
 		ConvertUnixPathToTraditionalPath((const char *) template_folder,template_path, kMaxNameLen);
+#else
+		strcpy(template_path,template_folder);
+#endif
 		sprintf(source_file,"%s%c%s",template_path,DIRDELIMITER,"x.png");
 		
 		sprintf(userPath,"%s%c",gKMLPath,DIRDELIMITER);
@@ -1784,6 +1820,8 @@ OSErr TModel::SaveKmlLEFileSeries (Seconds fileTime, short fileNumber)
 	}
 #if TARGET_API_MAC_CARBON
 	err = ConvertTraditionalPathToUnixPath((const char *) gKMLPath, outPath, kMaxNameLen) ;
+#else
+	strcpy(outPath,gKMLPath);
 #endif
 	
 	if (fileNumber==0)
@@ -2161,6 +2199,8 @@ OSErr TModel::FinishKmlFile ()
 	
 #if TARGET_API_MAC_CARBON
 	err = ConvertTraditionalPathToUnixPath((const char *) gKMLPath, outPath, kMaxNameLen) ;
+#else
+	strcpy(outPath,gKMLPath);
 #endif
 	
 	sprintf(target_file,"%s%c%s",outPath,NEWDIRDELIMITER,"moss.kml");

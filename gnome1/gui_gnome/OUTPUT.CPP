@@ -3411,13 +3411,14 @@ OSErr SaveAsHelper(Boolean bOnlyAdvancedSaveFile)
 			 err = -1; goto done;
 			 }*/
 			// force them through the header screen for the moss 3 file info
-			gPMShowPrintButtons = false;
+			/*gPMShowPrintButtons = false;
 			if(fileType == FT_KMLLEFILE) gPMShowTrajectoryTime = false;
 			else gPMShowTrajectoryTime = true;// let user  set trajectory time for FT_MOSSSAVEFILE
 			item = MyModalDialog(M53, mapWindow, 0, PMInit, PMClick);
 			gPMShowPrintButtons = true;
 			gPMShowTrajectoryTime = true;
 			if (item != M53OK) {err = -1;goto done;} // note: might be user cancel
+			*/
 			//
 			if(!gKMLPath[0]) strcpy(gKMLPath,"moss");
 			err = AskUserForSaveFilename(gKMLPath,path,".MOS",false);

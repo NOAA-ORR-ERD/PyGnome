@@ -4281,9 +4281,11 @@ BEGIN
     15206                   "GNOME Splot File Series (for GNOME Analyst)"
     15207                   "NetCDF LE File At Current Time"
     15208                   "NetCDF LE File for Model Run"
-    15209                   "TAP Binary LE File"
-    15210                   "BNA Map File (for GNOME Analyst)"
-    15211                   "Wind Data File"
+    15209                   "KML LE File At Current Time"
+    15210                   "KML LE File for Model Run"
+    15211                   "TAP Binary LE File"
+    15212                   "BNA Map File (for GNOME Analyst)"
+    15213                   "Wind Data File"
 END
 
 STRINGTABLE DISCARDABLE 
@@ -4296,9 +4298,11 @@ BEGIN
     15306                   "GNOME Splot File Series (for GNOME Analyst)"
     15307                   "NetCDF LE File At Current Time"
     15308                   "NetCDF LE File for Model Run"
-    15309                   "TAP Binary LE File"
-    15310                   "BNA Map File (for GNOME Analyst)"
-    15311                   "Wind Data File"
+    15309                   "KML LE File At Current Time"
+    15310                   "KML LE File for Model Run"
+    15311                   "TAP Binary LE File"
+    15312                   "BNA Map File (for GNOME Analyst)"
+    15313                   "Wind Data File"
 END
 
 STRINGTABLE DISCARDABLE 
@@ -5346,14 +5350,16 @@ END
 STRINGTABLE DISCARDABLE 
 BEGIN
     15408                   "NetCDF LE File for Model Run"
-    15409                   "TAP Binary LE File"
-    15410                   "BNA Map File (for GNOME Analyst)"
-    15411                   "Wind Data File"
-    15412                   "Extended Topology"
-    15413                   "Triangle Concentration"
-    15414                   "Budget Table"
-    15415                   "Snapshot"
-    15416                   "Snapshot Series"
+    15409                   "KML LE File At Current Time"
+    15410                   "KML LE File for Model Run"
+    15411                   "TAP Binary LE File"
+    15412                   "BNA Map File (for GNOME Analyst)"
+    15413                   "Wind Data File"
+    15414                   "Extended Topology"
+    15415                   "Triangle Concentration"
+    15416                   "Budget Table"
+    15417                   "Snapshot"
+    15418                   "Snapshot Series"
 END
 
 STRINGTABLE DISCARDABLE 
@@ -5392,7 +5398,7 @@ END
 
 STRINGTABLE DISCARDABLE 
 BEGIN
-    15312                   "Extended Topology"
+    15314                   "Extended Topology"
 END
 
 #endif    // English (U.S.) resources
