@@ -1750,6 +1750,17 @@ char *Date2String(DateTimeRec *time, char *s)
 	return s;
 }
 
+char *Date2KmlString(DateTimeRec *time, char *s)
+{
+	short year = time->year;
+	if (time->year < 100)
+		year = year+2000; 
+	sprintf(s, "%04hd-%02hd-%02hdT%02hd:%02hd:%02hdZ",
+			year, time->month, time->day,
+			time->hour, time->minute, time->second);
+	
+	return s;
+}
 
 void SplitPathFile(CHARPTR fullPath, CHARPTR fileName)
 {

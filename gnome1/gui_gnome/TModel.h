@@ -146,6 +146,9 @@ public:
 	OSErr 				GetTempLEOutputFilePathName(short fileNumber, char* path,short *vRefNumPtr);//JLM
 	OSErr 				GetTempLEOutputFilePathNameTake2(short fileNumber, char* path,short *vRefNumPtr);//JLM
 	OSErr				SaveOSSMLEFile (Seconds fileTime, short n);
+	OSErr				SaveKmlLEFile (Seconds fileTime, short n);
+	OSErr				SaveKmlLEFileSeries (Seconds fileTime, short n);
+	OSErr				FinishKmlFile ();
 	OSErr				SaveMossLEFile (Seconds fileTime, short n);
 	OSErr				SaveSimpleAsciiLEFile (Seconds fileTime, short fileNumber);
 	Seconds				GetLastComputeTime () { return lastComputeTime; }

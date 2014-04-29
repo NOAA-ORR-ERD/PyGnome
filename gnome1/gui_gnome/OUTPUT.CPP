@@ -2925,7 +2925,9 @@ OSErr CopyMapViewToClipboard()
 
 
 char gMossPath[256];
+char gKMLPath[256];
 Boolean gSaveMossFiles = false;
+Boolean gSaveKMLFile = false;
 
 /////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
@@ -3053,9 +3055,11 @@ short ItemNumToFileType(short itemNum, short userMode)
 				case 6: return FT_TATSAVEFILESERIES; 
 				case 7: return FT_NETCDFLEFILESNAPSHOT;
 				case 8: return FT_NETCDFLEFILE;
-				case 9: return FT_TAPLEFILE;
-				case 10: return FT_SAVEBNAMAP; 
-				case 11: return FT_SAVEWIND; 
+				case 9: return FT_KMLLEFILESNAPSHOT;
+				case 10: return FT_KMLLEFILE;
+				case 11: return FT_TAPLEFILE;
+				case 12: return FT_SAVEBNAMAP; 
+				case 13: return FT_SAVEWIND; 
 			}
 		case ADVANCEDMODE:
 			switch(itemNum)
@@ -3068,15 +3072,17 @@ short ItemNumToFileType(short itemNum, short userMode)
 				case 6: return FT_TATSAVEFILESERIES; 
 				case 7: return FT_NETCDFLEFILESNAPSHOT;
 				case 8: return FT_NETCDFLEFILE;
-				case 9: return FT_TAPLEFILE; 
-				case 10: return FT_SAVEBNAMAP; 
-				case 11: return FT_SAVEWIND; 
+				case 9: return FT_KMLLEFILESNAPSHOT;
+				case 10: return FT_KMLLEFILE;
+				case 11: return FT_TAPLEFILE; 
+				case 12: return FT_SAVEBNAMAP; 
+				case 13: return FT_SAVEWIND; 
 				//case 9: if (gDispersedOilVersion) return FT_OUTPUTCONC;  else return FT_SAVETOPOLOGY;
-				case 12: return FT_SAVETOPOLOGY; 	// code goes here, add export topology to dispersed oil version...
-				case 13: return FT_OUTPUTCONC; 	// code goes here, add export topology to dispersed oil version...
-				case 14: return FT_BUDGETTABLE;
-				case 15: return FT_PICTSAVEFILE;
-				case 16: return FT_PICTSAVEFILESERIES;
+				case 14: return FT_SAVETOPOLOGY; 	// code goes here, add export topology to dispersed oil version...
+				case 15: return FT_OUTPUTCONC; 	// code goes here, add export topology to dispersed oil version...
+				case 16: return FT_BUDGETTABLE;
+				case 17: return FT_PICTSAVEFILE;
+				case 18: return FT_PICTSAVEFILESERIES;
 			}
 			break;
 	}
@@ -3350,6 +3356,7 @@ OSErr SaveAsHelper(Boolean bOnlyAdvancedSaveFile)
 			{
 				case FT_MOSSSAVEFILE: // single time
 					err = model->SaveMossLEFile(model->GetModelTime(), -1); // a negative fileNumber means use the file name the user selected
+					//err = model->SaveKmlLEFile(model->GetModelTime(), -1); // a negative fileNumber means use the file name the user selected
 					break;
 				case FT_MOSSSAVEFILESERIES:
 				{
@@ -3384,6 +3391,7 @@ OSErr SaveAsHelper(Boolean bOnlyAdvancedSaveFile)
 					{
 						model->Run(model->GetStartTime());
 					}
+					//model->FinishKmlFile();
 					// reset the OutputTimeStep for now
 					model->SetOutputStep(saveOutputTimeStep);
 					gSaveMossFiles = false;
@@ -3393,6 +3401,86 @@ OSErr SaveAsHelper(Boolean bOnlyAdvancedSaveFile)
 			break;
 			
 		
+		case FT_KMLLEFILESNAPSHOT:
+		case FT_KMLLEFILE:
+			err = CantSaveIfNoSpill();
+			if(err) goto done; 
+			/*if (!model->IsUncertain()) // this error message was due to a bug in the GNOME Arc Tool which has been fixed 12/1/08
+			 {	
+			 MULTICHOICEALERT(1692,"",TRUE);	// ok is only option
+			 err = -1; goto done;
+			 }*/
+			// force them through the header screen for the moss 3 file info
+			gPMShowPrintButtons = false;
+			if(fileType == FT_KMLLEFILE) gPMShowTrajectoryTime = false;
+			else gPMShowTrajectoryTime = true;// let user  set trajectory time for FT_MOSSSAVEFILE
+			item = MyModalDialog(M53, mapWindow, 0, PMInit, PMClick);
+			gPMShowPrintButtons = true;
+			gPMShowTrajectoryTime = true;
+			if (item != M53OK) {err = -1;goto done;} // note: might be user cancel
+			//
+			if(!gKMLPath[0]) strcpy(gKMLPath,"moss");
+			err = AskUserForSaveFilename(gKMLPath,path,".MOS",false);
+			if(err) goto done; // note: might be user cancel
+			//
+			// update the window before running, since we just invalidated part of the window 
+			// with our dialog box
+#ifdef IBM
+			UpdateWindow(mapWindow); // causes WM_PAINT to be sent
+#else
+			UpdateMapWindow();
+#endif
+			/////
+			strcpy(gKMLPath,path);
+			switch(fileType)
+		{
+			case FT_KMLLEFILESNAPSHOT: // single time
+				//err = model->SaveMossLEFile(model->GetModelTime(), -1); // a negative fileNumber means use the file name the user selected
+				err = model->SaveKmlLEFile(model->GetModelTime(), -1); // a negative fileNumber means use the file name the user selected
+				break;
+			case FT_KMLLEFILE:
+			{
+				// we need to save the series from the beginning
+				// but we want to use the saved series if we can so that we don't have to reset
+				Boolean haveToReset = false;
+				saveOutputTimeStep = model->GetOutputStep();	// this is actually not doing anything I think...
+				if (OutputOptionsDialog(0)) return -1;	// may have to reset ?
+				model->SuppressDirt(DIRTY_EVERYTHING);// so non-advanced users don't have the runbar reset
+				if (model->bHindcast) 
+					model->SetModelToPastTime (model->GetEndTime());
+				else
+					model->SetModelToPastTime (model->GetStartTime());
+				//if (OutputOptionsDialog(0)) return -1;	// may have to reset ?
+				if( (!(model->bHindcast) && model->GetModelTime() != model->GetStartTime()) || ( model->bHindcast && model->GetModelTime() != model->GetEndTime()) || saveOutputTimeStep != model->GetOutputStep())
+				{	// in cases where the past times are not available 
+					// the time would have been set to the closest available saved time.
+					// Not equaling model->GetStartTime() means the past times are not available
+					// so we have to reset and re-run the model to save the files
+					haveToReset = true;
+				}
+				model->SuppressDirt(0);
+				if(haveToReset) model->Reset();
+				//
+				gSaveKMLFile = true;
+				//model->Run(model->GetEndTime());
+				if (!(model->bHindcast)) 
+				{
+					model->Run(model->GetEndTime());
+				}
+				else
+				{
+					model->Run(model->GetStartTime());
+				}
+				model->FinishKmlFile();
+				// reset the OutputTimeStep for now
+				model->SetOutputStep(saveOutputTimeStep);
+				gSaveKMLFile = false;
+				break;
+			}
+		}
+		break;
+			
+			
 		case FT_TATSAVEFILE:
 		case FT_TATSAVEFILESERIES:
 		{

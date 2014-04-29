@@ -574,12 +574,16 @@ resource 'MENU' (153, "P Advanced Save File Type", preload) {
 		/* [8] */
 		"NetCDF LE File for Model Run", noIcon, noKey, noMark, plain,
 		/* [9] */
-		"TAP Binary LE File", noIcon, noKey, noMark, plain,
+		"KML LE File At Current Time", noIcon, noKey, noMark, plain,
 		/* [10] */
-		"BNA Map File (for GNOME Analyst)", noIcon, noKey, noMark, plain,
+		"KML LE File for Model Run", noIcon, noKey, noMark, plain,
 		/* [11] */
-		"Wind Data File", noIcon, noKey, noMark, plain,
+		"TAP Binary LE File", noIcon, noKey, noMark, plain,
+		/* [12] */
+		"BNA Map File (for GNOME Analyst)", noIcon, noKey, noMark, plain,
 		/* [13] */
+		"Wind Data File", noIcon, noKey, noMark, plain,
+		/* [15] */
 		"Extended Topology", noIcon, noKey, noMark, plain
 	}
 };
@@ -610,10 +614,14 @@ resource 'MENU' (152, "P Intermediate Save File Type", preload) {
 		/* [8] */
 		"NetCDF LE File for Model Run", noIcon, noKey, noMark, plain,
 		/* [9] */
-		"TAP Binary LE File", noIcon, noKey, noMark, plain,
+		"KML LE File At Current Time", noIcon, noKey, noMark, plain,
 		/* [10] */
-		"BNA Map File (for GNOME Analyst)", noIcon, noKey, noMark, plain,
+		"KML LE File for Model Run", noIcon, noKey, noMark, plain,
 		/* [11] */
+		"TAP Binary LE File", noIcon, noKey, noMark, plain,
+		/* [12] */
+		"BNA Map File (for GNOME Analyst)", noIcon, noKey, noMark, plain,
+		/* [13] */
 		"Wind Data File", noIcon, noKey, noMark, plain
 	}
 };
@@ -730,20 +738,24 @@ resource 'MENU' (154, "P Dispersed Oil Save File Type", preload) {
 		/* [8] */
 		"NetCDF LE File for Model Run", noIcon, noKey, noMark, plain,
 		/* [9] */
-		"TAP Binary LE File", noIcon, noKey, noMark, plain,
+		"KML LE File At Current Time", noIcon, noKey, noMark, plain,
 		/* [10] */
-		"BNA Map File (for GNOME Analyst)", noIcon, noKey, noMark, plain,
+		"KML LE File for Model Run", noIcon, noKey, noMark, plain,
 		/* [11] */
-		"Wind Data File", noIcon, noKey, noMark, plain,
+		"TAP Binary LE File", noIcon, noKey, noMark, plain,
 		/* [12] */
-		"Extended Topology", noIcon, noKey, noMark, plain,
+		"BNA Map File (for GNOME Analyst)", noIcon, noKey, noMark, plain,
 		/* [13] */
-		"Triangle Concentration Area", noIcon, noKey, noMark, plain,
+		"Wind Data File", noIcon, noKey, noMark, plain,
 		/* [14] */
-		"Budget Table", noIcon, noKey, noMark, plain,
+		"Extended Topology", noIcon, noKey, noMark, plain,
 		/* [15] */
-		"Snapshot", noIcon, noKey, noMark, plain,
+		"Triangle Concentration Area", noIcon, noKey, noMark, plain,
 		/* [16] */
+		"Budget Table", noIcon, noKey, noMark, plain,
+		/* [17] */
+		"Snapshot", noIcon, noKey, noMark, plain,
+		/* [18] */
 		"Snapshot Series", noIcon, noKey, noMark, plain
 	}
 };
