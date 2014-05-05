@@ -938,7 +938,7 @@ OSErr NetCDFMover::Read(BFPB *bfpb)
 			}
 			if (err = ReadMacValue(bfpb, &fOverLap)) return err;
 			if (err = ReadMacValue(bfpb, &fOverLapStartTime)) return err;
-		}
+		//}
 		// otherwise ask the user, trusting that user actually chooses the same data file (should insist name is the same?)
 		if(!bPathIsValid)
 		{
@@ -974,6 +974,7 @@ OSErr NetCDFMover::Read(BFPB *bfpb)
 			}
 #endif
 			err = ReadInputFileNames(newPath);
+		}
 		}
 	}
 	
