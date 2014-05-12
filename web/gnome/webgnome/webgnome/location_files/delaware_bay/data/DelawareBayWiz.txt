@@ -32,12 +32,14 @@ MESSAGE createMover;TO Delaware River Map;TYPE Cats; NAME Flood tides.cur;PATH r
 MESSAGE setfield;TO Flood tides.cur; scaleType constant;refP 75.081667 W 38.7995 N; scaleValue 1; timeFile resNum 10005; EddyDiffusion 100000;
 --
 MESSAGE createMover;TO Delaware River Map;TYPE Component; NAME Wind Driven Currents;
-MESSAGE createMover;TO Wind Driven Currents;TYPE Cats; PATTERN 1; NAME NW 30kt winds.cur;PATH resnum 10007;
+MESSAGE createMover;TO Wind Driven Currents;TYPE Cats; PATTERN 1; NAME NW 30 kt winds.cur;PATH resnum 10007;
 MESSAGE setfield;TO Wind Driven Currents; scaleType WINDMOVER;refP 75.263166 W 39.142833 N; 
-MESSAGE setfield;TO Wind Driven Currents; pat1Angle 315; pat1Speed 30; pat1SpeedUnits knots; pat1ScaleToValue 0.314426;
-MESSAGE createMover;TO Wind Driven Currents;TYPE Cats; PATTERN 2; NAME SW 30kt winds.cur;PATH resnum 10008;
+--MESSAGE setfield;TO Wind Driven Currents; pat1Angle 315; pat1Speed 30; pat1SpeedUnits knots; pat1ScaleToValue 0.314426;
+MESSAGE setfield;TO Wind Driven Currents; pat1Angle 315; pat1Speed 30; pat1SpeedUnits knots; pat1ScaleToValue 0.502035;
+MESSAGE createMover;TO Wind Driven Currents;TYPE Cats; PATTERN 2; NAME SW 30 kt winds.cur;PATH resnum 10008;
 MESSAGE setfield;TO Wind Driven Currents; scaleType WINDMOVER;refP 75.263166 W 39.142833 N; 
-MESSAGE setfield;TO Wind Driven Currents; pat2Angle 225; pat2Speed 30; pat2SpeedUnits knots; pat2ScaleToValue 0.032882;
+--MESSAGE setfield;TO Wind Driven Currents; pat2Angle 225; pat2Speed 30; pat2SpeedUnits knots; pat2ScaleToValue 0.032882;
+MESSAGE setfield;TO Wind Driven Currents; pat2Angle 225; pat2Speed 30; pat2SpeedUnits knots; pat2ScaleToValue 0.021869;
 MESSAGE setfield;TO Wind Driven Currents;scaleBy WindStress;
 
 -------------------------------------------

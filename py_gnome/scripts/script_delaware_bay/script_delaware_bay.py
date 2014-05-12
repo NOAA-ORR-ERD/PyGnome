@@ -130,11 +130,13 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     comp_mover.pat1_angle = 315
     comp_mover.pat1_speed = 30
     comp_mover.pat1_speed_units = 1
-    comp_mover.pat1ScaleToValue = .314426
+    #comp_mover.pat1ScaleToValue = .314426
+    comp_mover.pat1_scale_to_value = .502035
     comp_mover.pat2_angle = 225
     comp_mover.pat2_speed = 30
     comp_mover.pat2_speed_units = 1
-    comp_mover.pat2ScaleToValue = .032882
+    #comp_mover.pat2ScaleToValue = .032882
+    comp_mover.pat2_scale_to_value = .021869
 
     model.movers += comp_mover
 
