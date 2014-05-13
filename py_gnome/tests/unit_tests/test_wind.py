@@ -292,12 +292,14 @@ class TestWind:
         Output should be an interpolated value between the values of the 0th
         and 1st index of timeseries.
         """
-        dt = (all_winds['rq'].time[0].astype(object) +
-              (all_winds['rq'].time[1] - all_winds['rq'].time[0])
-               .astype(object) / 2)
+        t0 = all_winds['rq'].time[0].astype(object)
+        t1 = all_winds['rq'].time[1].astype(object)
+        dt = t0 + ((t1 - t0) / 2)
+
         get_rq = (all_winds['wind']
                   .get_timeseries(format='r-theta', datetime=dt)
                   .view(dtype=np.recarray))
+
         get_uv = (all_winds['wind']
                   .get_timeseries(format='uv', datetime=dt)
                   .view(dtype=np.recarray))
