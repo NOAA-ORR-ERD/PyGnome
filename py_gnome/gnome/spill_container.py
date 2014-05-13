@@ -341,7 +341,7 @@ class SpillContainer(SpillContainerData):
         for name, atype in self._array_types.iteritems():
             # initialize all arrays even if 0 length
             self._data_arrays[name] = np.r_[self._data_arrays[name],
-                                    atype.initialize(num_released)]
+                                            atype.initialize(num_released)]
 
     def release_elements(self, time_step, model_time):
         """
@@ -428,7 +428,8 @@ class SpillContainerPairData(object):
             self._u_spill_container = u_sc
 
     def __repr__(self):
-        return '{0.__class__},\n  uncertain={0.uncertain}\n '.format(self)
+        return ('{0.__class__.__name__},\n'
+                '  uncertain={0.uncertain}\n '.format(self))
 
     @property
     def uncertain(self):
@@ -520,8 +521,9 @@ class SpillContainerPair(SpillContainerPairData):
 
     def __repr__(self):
         'unambiguous repr'
-        return ("{0.__class__},\n  uncertain={0.uncertain}\n  Spills: {1}"
-                .format(self, self._spill_container.spills))
+        return ('{0.__class__.__name__},\n'
+                '  uncertain={0.uncertain}\n'
+                '  Spills: {1}'.format(self, self._spill_container.spills))
 
     @property
     def uncertain(self):
@@ -551,14 +553,14 @@ class SpillContainerPair(SpillContainerPairData):
         if isinstance(spill, tuple):
             if self.uncertain:
                 if len(spill) != 2:
-                    raise ValueError("You can only add a tuple containing a"\
-                                     " certain/uncertain spill pair"\
-                                     " (spill, uncertain_spill)")
+                    raise ValueError('You can only add a tuple containing a '
+                                     'certain/uncertain spill pair '
+                                     '(spill, uncertain_spill)')
                 self._u_spill_container.spills += spill[1]
             else:
                 if len(spill) != 1:
-                    raise ValueError("Uncertainty is off. Tuple must only"\
-                                     " contain (certain_spill,)")
+                    raise ValueError('Uncertainty is off. Tuple must only '
+                                     'contain (certain_spill,)')
 
             self._spill_container.spills += spill[0]
         else:
@@ -623,10 +625,10 @@ class SpillContainerPair(SpillContainerPairData):
         """
         if json_ == 'save':
             dict_ = {'certain_spills':
-                                self._spill_container.spills.to_dict(json_)}
+                     self._spill_container.spills.to_dict(json_)}
             if self.uncertain:
                 dict_.update({'uncertain_spills':
-                        self._u_spill_container.spills.to_dict(json_)})
+                              self._u_spill_container.spills.to_dict(json_)})
             return dict_
 
         else:

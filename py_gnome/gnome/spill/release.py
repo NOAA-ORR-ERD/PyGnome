@@ -59,8 +59,8 @@ class Release(object):
 
     It contains interface for Release objects
     """
-    _update = ['num_elements',
-               'release_time']
+    _update = ['num_elements', 'release_time']
+
     _create = ['num_released', 'start_time_invalid']
     _create.extend(_update)
 
@@ -69,7 +69,6 @@ class Release(object):
                read=('num_released', 'start_time_invalid'))
 
     def __init__(self, release_time, num_elements=0):
-
         self.num_elements = num_elements
         self.release_time = release_time
 
@@ -98,7 +97,7 @@ class Release(object):
 #         if not all([getattr(self, a) == getattr(other, a)
 #                     for a in scalar_attrs]):
 #             return False
-# 
+#
 #         return True
 #==============================================================================
 
@@ -178,19 +177,13 @@ class Release(object):
 
 
 class PointLineRelease(Release, Serializable):
-
     """
     The primary spill source class  --  a release of floating
     non-weathering particles, can be instantaneous or continuous, and be
     released at a single point, or over a line.
     """
+    _update = ['start_position', 'end_position', 'end_release_time']
 
-    _update = ['start_position',
-               'end_position',
-               'end_release_time']
-
-    # not sure these should be user update able
-    #_create = ['prev_release_pos']
     _create = []
     _create.extend(_update)
 
@@ -229,8 +222,8 @@ class PointLineRelease(Release, Serializable):
             self.end_release_time = release_time
         else:
             if release_time > end_release_time:
-                raise ValueError('end_release_time must be greater than'
-                    ' release_time')
+                raise ValueError('end_release_time must be greater than '
+                                 'release_time')
             self.end_release_time = end_release_time
 
         if self.release_time == self.end_release_time:
@@ -265,8 +258,7 @@ class PointLineRelease(Release, Serializable):
             Note: Dynamically set instance methods cannot be pickled methods.
                   They should not be present in the resulting dict.
         '''
-        return dict([(k, v)
-                     for k, v in self.__dict__.iteritems()
+        return dict([(k, v) for k, v in self.__dict__.iteritems()
                      if type(v) != types.MethodType])
 
     def __setstate__(self, d):
@@ -284,28 +276,6 @@ class PointLineRelease(Release, Serializable):
         else:
             self.set_newparticle_positions = \
                 self._init_positions_timevarying_release
-
-#==============================================================================
-#     def __eq__(self, other):
-#         if not super(PointLineRelease, self).__eq__(other):
-#             return False
-# 
-#         scalar_attrs = ('delta_release', '_end_release_time')
-#         if not all([(getattr(self, a) == getattr(other, a))
-#                     for a in scalar_attrs]):
-#             return False
-# 
-#         vector_attrs = ('_end_position', 'delta_pos', 'prev_release_pos',
-#                         'start_position')
-#         if not all([all(getattr(self, a) == getattr(other, a))
-#                     for a in vector_attrs]):
-#             return False
-# 
-#         return True
-# 
-#     def __ne__(self, other):
-#         return not self == other
-#==============================================================================
 
     def __repr__(self):
         return ('{0.__class__.__module__}.{0.__class__.__name__}('
@@ -354,15 +324,14 @@ class PointLineRelease(Release, Serializable):
 
         # it's been called before the release_time
         if current_time + timedelta(seconds=time_step) \
-            <= self.release_time:  # don't want to barely pick it up...
-            # not there yet...
+            <= self.release_time:
             #print 'not time to release yet'
             return 0
 
         delta_release = ((self.end_release_time - self.release_time)
                          .total_seconds())
-        # instantaneous release. All particles released at this timestep
         if delta_release <= 0:
+            # instantaneous release. All particles released at this timestep
             return self.num_elements
 
         # time varying release
@@ -371,7 +340,8 @@ class PointLineRelease(Release, Serializable):
         # index of end of current time step
         # a tiny bit to make it open on the right.
         n_1 = int(((current_time - self.release_time).total_seconds()
-                  + time_step) / delta_release
+                   + time_step)
+                  / delta_release
                   * (self.num_elements - 1))
 
         n_1 = min(n_1, self.num_elements - 1)  # don't want to go over the end.
@@ -458,12 +428,10 @@ class PointLineRelease(Release, Serializable):
 
 
 class SpatialRelease(Release, Serializable):
-
     """
     A simple release class  --  a release of floating non-weathering particles,
     with their initial positions pre-specified
     """
-
     _state = copy.deepcopy(Release._state)
     _state.add(update=['start_position'], save=['start_position'])
 
@@ -479,7 +447,6 @@ class SpatialRelease(Release, Serializable):
         num_elements and release_time passed to base class __init__ using super
         See base :class:`Release` documentation
         """
-
         self.start_position = np.asarray(start_position,
                 dtype=world_point_type).reshape((-1, 3))
         super(SpatialRelease, self).__init__(release_time,
@@ -491,7 +458,7 @@ class SpatialRelease(Release, Serializable):
         """
         # call base class method to check if start_time is valid
         super(SpatialRelease, self).num_elements_to_release(current_time,
-                                                             time_step)
+                                                            time_step)
         if self.start_time_invalid:
             return 0
 
@@ -502,7 +469,7 @@ class SpatialRelease(Release, Serializable):
         return self.num_elements
 
     def set_newparticle_positions(self, num_new_particles, current_time,
-                               time_step, data_arrays):
+                                  time_step, data_arrays):
         """
         set positions for new elements added by the SpillContainer
 
@@ -547,14 +514,12 @@ class VerticalPlumeRelease(Release, Serializable):
         :type start_positions: (num_elements, 3) numpy array of float64
             -- (long, lat, z)
         '''
-
         super(VerticalPlumeRelease, self).__init__(release_time, num_elements)
 
         self.start_position = np.array(start_position,
-                            dtype=world_point_type).reshape((3, ))
+                                       dtype=world_point_type).reshape((3, ))
 
-        plume = Plume(position=start_position,
-                      plume_data=plume_data)
+        plume = Plume(position=start_position, plume_data=plume_data)
         time_step_delta = timedelta(hours=1).total_seconds()
         self.plume_gen = PlumeGenerator(release_time=release_time,
                                         end_release_time=end_release_time,
@@ -573,7 +538,6 @@ class VerticalPlumeRelease(Release, Serializable):
         elem_counts = self.plume_gen.elems_in_range(current_time, next_time)
 
         for coord, count in zip(self.plume_gen.plume.coords, elem_counts):
-            print coord, count
             for c in (coord,) * count:
                 yield tuple(c)
 
@@ -584,8 +548,8 @@ class VerticalPlumeRelease(Release, Serializable):
         return len([e for e in self._plume_elem_coords(current_time,
                                                        time_step)])
 
-    def set_newparticle_positions(self, num_new_particles, current_time,
-                               time_step, data_arrays):
+    def set_newparticle_positions(self, num_new_particles,
+                                  current_time, time_step, data_arrays):
         '''
         Set positions for new elements added by the SpillContainer
         '''
@@ -598,11 +562,6 @@ class VerticalPlumeRelease(Release, Serializable):
                                ' match the number calculated from the '
                                'time range.')
 
-        # call the base Spill class set_newparticle_values()
-        #super(VerticalPlumeRelease,
-        #      self).set_newparticle_positions(num_new_particles,
-        #                                   current_time, time_step,
-        #                                   data_arrays)
         self.num_released += num_new_particles
         data_arrays['positions'][-self.coords.shape[0]:, :] = self.coords
 
