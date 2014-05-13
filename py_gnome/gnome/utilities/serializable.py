@@ -71,7 +71,6 @@ class Field(object):  # ,serializable.Serializable):
         self.test_for_eq = test_for_eq
 
     def __eq__(self, other):
-        'Check equality'
         if not isinstance(other, Field):
             return False
 
@@ -84,20 +83,16 @@ class Field(object):  # ,serializable.Serializable):
 
     def __repr__(self):
         'unambiguous object representation'
-        obj = 'Field( '
-        for attr, val in self.__dict__.iteritems():
-            obj += '{0}={1}, '.format(attr, val)
-        obj = obj[:-2] + obj[-2:].replace(', ', ' )')
-
-        return obj
+        attr_vals = ', '.join(['{0}={1}'.format(attr, val)
+                               for attr, val in self.__dict__.iteritems()])
+        return ('{0.__class__.__module__}.{0.__class__.__name__}'
+                '({1})'.format(self, attr_vals))
 
     def __str__(self):
-        info = 'Field object: '
-        for attr, val in self.__dict__.iteritems():
-            info += '{0}={1}, '.format(attr, val)
-        info = info[:-2] + info[-2:].replace(', ', '')
-
-        return info
+        attr_vals = ', '.join(['{0}={1}'.format(attr, val)
+                               for attr, val in self.__dict__.iteritems()])
+        return ('Field Object: '
+                '{1}'.format(self, attr_vals))
 
 
 class State(object):
@@ -196,9 +191,10 @@ class State(object):
         """
         Adds a Field object or a list of Field objects to fields attribute
 
-        Either use this to add a property to the _state object or use the 'add' method to add a property.
-        add_field gives more control since the attributes other than 'save','update','read' can be set
-        directly when defining the Field object.
+        Either use this to add a property to the _state object or use the
+        'add' method to add a property.  add_field gives more control since
+        the attributes other than 'save','update','read' can be set directly
+        when defining the Field object.
         """
         if l_field is None:
             return
@@ -227,19 +223,26 @@ class State(object):
 
     def add(self, save=None, update=None, read=None):
         """
-        Only checks to make sure 'read' and 'update' properties are disjoint. Also makes sure everything is a list. 
-        
-        Args:
-        :param update: a tuple of strings which are properties that can be updated, so read/write capable
-        :type update:  tuple containing str
-        :param read:   a tuple of strings which are properties that are for info, so readonly. It is not required for creating new object.
-        :type read:    tuple containing str
-        :param save: a tuple of strings which are properties that are required to create new object when 
-                        JSON is read from save file
-                       Only the save properties are saved to save file
-        :type save:  a tuple of str
-        :param field:  a field object or a tuple of field objects that should be added to the State for persistence
-        :type field:   Field object or tuple of Field objects
+        Only checks to make sure 'read' and 'update' properties are disjoint.
+        Also makes sure everything is a list.
+
+        Arguments:
+        :param update: A tuple of strings which are properties that can be
+                       updated, so read/write capable
+        :type update: Tuple containing str
+
+        :param read: A tuple of strings which are properties that are for info,
+                     so readonly. It is not required for creating new object.
+        :type read: Tuple containing str
+
+        :param save: A tuple of strings which are properties that are required
+                     to create new object when JSON is read from save file.
+                     Only the save properties are saved to save file
+        :type save: A tuple of str
+
+        :param field: A field object or a tuple of field objects that should be
+                      added to the State for persistence
+        :type field: Field object or tuple of Field objects
 
         For 'update', 'read', 'save', a Field object is created for each
         property in the tuple
@@ -249,8 +252,9 @@ class State(object):
         read = self._check_inputs(read)
 
         if len(set(update).intersection(set(read))) > 0:
-            raise AttributeError('update (read/write properties) and read (readonly props) lists lists must be disjoint'
-                                 )
+            raise AttributeError('update (read/write properties) and '
+                                 'read (readonly props) lists lists '
+                                 'must be disjoint')
 
         fields = []
         for item in update:
@@ -285,8 +289,9 @@ class State(object):
 
     def remove(self, l_names):
         """
-        Analogous to add method, this removes Field objects associated with l_names from the list
-        Provide a list containing the names (string) of properties to be removed
+        Analogous to add method, this removes Field objects associated with
+        l_names from the list.
+        l_names is a list containing the names (string) of properties.
         """
 
         if isinstance(l_names, basestring):
@@ -297,8 +302,9 @@ class State(object):
             if field == []:
                 return
             # do not raise error - if field doesn't exist, do nothing
-            #    raise ValueError('Cannot remove {0} since self.fields does not'
-            #        ' contain a field with this name'.format(name))
+            #    raise ValueError('Cannot remove {0} since self.fields '
+            #                     'does not contain a field '
+            #                     'with this name'.format(name))
 
             self.fields.remove(field)
 
@@ -306,26 +312,31 @@ class State(object):
         """
         update the attributes of an existing field
         Kwargs are key,value pairs defining the _state of attributes.
-        It must be one of the valid attributes of Field object (see Field object __dict__ for valid attributes) 
+        It must be one of the valid attributes of Field object
+        (see Field object __dict__ for valid attributes)
         :param update:     True or False
         :param save:     True or False
         :param read:       True or False
         :param isdatafield:True or False
-        
+
         Usage:
         >>> _state = State(read=['test'])
-        >>> _state.update('test',read=False,update=True,save=True,isdatafile=True)
-        
-        .. note::An exception will be raised if both 'read' and 'update' are True for a given field
+        >>> _state.update('test', read=False, update=True, save=True,
+        ...               isdatafile=True)
+
+        .. note:: An exception will be raised if both 'read' and 'update' are
+                  True for a given field
         """
         for key in kwargs.keys():
             if key not in self._valid_field_attr:
-                raise AttributeError('{0} is not a valid attribute of Field object. It cannot be updated.'.format(key))
+                raise AttributeError('{0} is not a valid attribute '
+                                     'of Field object. '
+                                     'It cannot be updated.'.format(key))
 
         if 'read' in kwargs.keys() and 'update' in kwargs.keys():
             if kwargs.get('read') and kwargs.get('update'):
-                raise AttributeError("The 'read' attribute and 'update' attribute cannot both be True"
-                        )
+                raise AttributeError("The 'read' and 'update' attribute "
+                                     "cannot both be True")
 
         l_field = self.get_field_by_name(l_names)
         if not isinstance(l_field, list):
@@ -344,13 +355,13 @@ class State(object):
                 setattr(field, 'update', update_)
             elif read_ is not None:
                 if field.update and read_:
-                    raise AttributeError("The 'read' attribute and 'update' attribute cannot both be True"
-                            )
+                    raise AttributeError("The 'read' and 'update' attribute "
+                                         "cannot both be True")
                 setattr(field, 'read', read_)
             elif update_ is not None:
                 if field.read and update_:
-                    raise AttributeError("The 'read' attribute and 'update' attribute cannot both be True"
-                            )
+                    raise AttributeError("The 'read' and 'update' attribute "
+                                         "cannot both be True")
                 setattr(field, 'update', update_)
 
         read_ = None
@@ -364,8 +375,8 @@ class State(object):
             for (key, val) in kwargs.iteritems():
                 if key == 'update' and val == True:
                     if getattr(field, 'read'):
-                        raise AttributeError("The 'read' attribute and 'update' attribute cannot both be True"
-                                )
+                        raise AttributeError("The 'read' and 'update' "
+                                             "attribute cannot both be True")
 
                 setattr(field, key, val)
 
@@ -386,16 +397,19 @@ class State(object):
     def get_field_by_attribute(self, attr):
         'returns a list of fields where attr is true'
         if attr not in self._valid_field_attr:
-            raise AttributeError('{0} is not valid attribute. Field.__dict__ contains: {1}'.format(attr,
-                                 self._valid_field_attr))
+            raise AttributeError('{0} is not valid attribute. '
+                                 'Field.__dict__ contains: '
+                                 '{1}'.format(attr, self._valid_field_attr))
 
         out = [field for field in self.fields if getattr(field, attr)]
         return out
 
     def get_names(self, attr='all'):
-        """ returns the property names in self.fields. Can return all field names, or fieldnames with 
-        an attribute equal to True. attr can also be a list:
-        
+        """
+        Returns the property names in self.fields. Can return all field names,
+        or fieldnames with an attribute equal to True.
+        attr can also be a list:
+
         >>> _state = State(read=['t0'],save=['t0','t1'])
         >>> _state.get_names(['read','save'])    # returns 't0'
         >>> _state.get_names('save')     # returns ['t0', 't1']
@@ -408,16 +422,15 @@ class State(object):
         if isinstance(attr, list):
             for at in attr:
                 names.extend([field_.name for field_ in self.fields
-                             if getattr(field_, at)])
+                              if getattr(field_, at)])
         else:
             if attr not in self._valid_field_attr:
                 raise AttributeError('{0} is not valid attribute. '
-                                     'Field.__dict__ contains: '
-                                     '{1}'.format(attr, self._valid_field_attr)
-                                     )
+                                     'Field.__dict__ contains: {1}'
+                                     .format(attr, self._valid_field_attr))
 
             names.extend([field_.name for field_ in self.fields
-                         if getattr(field_, attr)])
+                          if getattr(field_, attr)])
 
         return names
 
@@ -509,7 +522,7 @@ class Serializable(GnomeId):
 
                 # pop kwargs for object creation into rqd dict
                 rqd.update({key: dict_.pop(key) for key in kwargs
-                                                            if key in dict_})
+                            if key in dict_})
 
         # create object with required input arguments
         new_obj = cls(**rqd)
@@ -545,17 +558,15 @@ class Serializable(GnomeId):
         however, do=('save',) or do=('update','read') will return the dict
         with the union of the corresponding lists.
         '''
+        actions = {'update', 'save', 'read'}
         list_ = []
+
         for action in do:
-            if action == 'update':
-                list_.extend(self._state.get_names('update'))
-            elif action == 'save':
-                list_.extend(self._state.get_names('save'))
-            elif action == 'read':
-                list_.extend(self._state.get_names('read'))
+            if action in actions:
+                list_.extend(self._state.get_names(action))
             else:
                 raise ValueError("input not understood. String must be one of "
-                    "following: 'update', 'save' or 'readonly'.")
+                                 "following: 'update', 'save' or 'readonly'.")
 
         return list_
 
@@ -571,8 +582,10 @@ class Serializable(GnomeId):
         Note: any field in `list` that does not exist on the
         object and does not have a to_dict method will raise an AttributeError.
 
-        :param json_='webapi': return the attributes for json payload for webapi
-            The other option is 'save' corresponding with json for save files.
+        :param json_='webapi': return the attributes for json payload for
+                               webapi.
+                               The other option is 'save' corresponding with
+                               json for save files.
 
         NOTE: add the json_='webapi' key to be serialized so we know what the
         serialization is for
@@ -591,9 +604,9 @@ class Serializable(GnomeId):
         for key in list_:
             value = self.attr_to_dict(key)
             if hasattr(value, 'to_dict'):
-                value = value.to_dict(json_)  # recursively call on contained objects
+                value = value.to_dict(json_)  # recursive call
 
-            if value is not None:  # no need to persist properties that are None!
+            if value is not None:  # no need to persist None valued properties
                 data[key] = value
 
         data['json_'] = json_
@@ -605,6 +618,7 @@ class Serializable(GnomeId):
         single attribute to_dict instead of doing a whole list of fields
         """
         to_dict_fn_name = '%s_to_dict' % name
+
         if hasattr(self, to_dict_fn_name):
             value = getattr(self, to_dict_fn_name)()
         else:
@@ -629,14 +643,12 @@ class Serializable(GnomeId):
         If there is a method defined on the object such that the method name is
         `{field_name}_from_dict`, call that method with the field's data.
 
-        If the field on the object has a ``update_from_dict`` method, then use that
-        method instead.
+        If the field on the object has a ``update_from_dict`` method,
+        then use that method instead.
 
         If neither method exists, then set the field with the value from
         ``data`` directly on the object.
         """
-        # return self._from_dict(self._state.update, data)
-
         list_ = self._state.get_names('update')
 
         for key in list_:
@@ -653,17 +665,6 @@ class Serializable(GnomeId):
             #    getattr(self, key).update_from_dict(value)
             else:
                 setattr(self, key, value)
-
-                # =============================================================
-                # try:
-                #    setattr(self, key, value)
-                # except AttributeError, err:
-                #    print err.args
-                #    print err.message
-                #    print "==========="
-                #    raise AttributeError("Failed to set {0}".format(key))
-                # =============================================================
-        # return self    # not required
 
     def obj_type_to_dict(self):
         """
@@ -720,8 +721,8 @@ class Serializable(GnomeId):
                 self_attr = getattr(self, name)
                 other_attr = getattr(other, name)
             else:
-                '''not an attribute, let attr_to_dict call appropriate function
-                and check the dicts are equal'''
+                # not an attribute, let attr_to_dict call appropriate function
+                # and check the dicts are equal
                 self_attr = self.attr_to_dict(name)
                 other_attr = other.attr_to_dict(name)
 
