@@ -8,7 +8,7 @@
 #
 #setuptools      # needed before pip can be installed
 #numpy>=1.7.0   
-#Cython>=0.17.1
+#Cython>=0.2
 #netCDF4         # requires netcdf-4 binaries 
 #PIL>=1.1.7
 #matplotlib
@@ -21,6 +21,7 @@ pytest>=2.3.4
 sphinx
 progressbar
 six
+geojson
 
 git+https://github.com/NOAA-ORR-ERD/hazpy.unit_conversion.git#egg=hazpy.unit_conversion
 
