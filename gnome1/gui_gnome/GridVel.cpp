@@ -1215,16 +1215,19 @@ OSErr TTriGridVel3D::Read(BFPB *bfpb)
 	//if (version != TTriGridVel3DREADWRITEVERSION) { printSaveFileVersionError(); return -1; }
 	if (version <1 || version > TTriGridVel3DREADWRITEVERSION) { printSaveFileVersionError(); return -1; }
 
-	if (err = ReadMacValue(bfpb, &numDepths)) goto done;	
-	fDepthsH = (FLOATH)_NewHandleClear(sizeof(float)*numDepths);
-	if (!fDepthsH)
-		{ TechError("TTriGridVel3D::Read()", "_NewHandleClear()", 0); goto done; }
+	if (err = ReadMacValue(bfpb, &numDepths)) goto done;
 	
-	for (i = 0 ; i < numDepths ; i++) {
-		if (err = ReadMacValue(bfpb, &val)) goto done;
-		INDEXH(fDepthsH, i) = val;
+	if (numDepths>0)
+	{	
+		fDepthsH = (FLOATH)_NewHandleClear(sizeof(float)*numDepths);
+		if (!fDepthsH)
+			{ TechError("TTriGridVel3D::Read()", "_NewHandleClear()", 0); goto done; }
+		
+		for (i = 0 ; i < numDepths ; i++) {
+			if (err = ReadMacValue(bfpb, &val)) goto done;
+			INDEXH(fDepthsH, i) = val;
+		}
 	}
-
 	if (version>1)
 	{
 		if (err = ReadMacValue(bfpb, &numOutputValues)) goto done;	

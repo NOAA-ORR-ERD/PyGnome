@@ -512,7 +512,8 @@ float NetCDFMoverCurv_c::GetTotalDepth(WorldPoint refPoint,long ptIndex)
 			return totalDepth;
 		}
 		if (fGrid->GetClassID()==TYPE_TRIGRIDVEL3D)
-			depthsHdl = ((TTriGridVel3D*)fGrid)->GetDepths();
+			//depthsHdl = ((TTriGridVel3D*)fGrid)->GetDepths();
+			depthsHdl = dynamic_cast<TriGridVel3D_c *>(fGrid) -> GetDepths();
 		if (!depthsHdl || interpolationVal.ptIndex1<0 ) 
 			//return -1;	// some error alert, no depth info to check
 			return totalDepth;	// assume 2D
