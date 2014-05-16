@@ -3,17 +3,14 @@ Created on Feb 26, 2013
 
 Define general purpose functions that can used as validators
 '''
-
-import datetime
 import time
 
 import numpy
-from colander import Invalid, OneOf
+np = numpy
 
-from colander import (Invalid, OneOf)
+from colander import Invalid
 
 from gnome.utilities.inf_datetime import InfTime, MinusInfTime
-
 
 
 def positive(node, value):
@@ -28,7 +25,7 @@ def convertible_to_seconds(node, value):
 
     try:
         time.mktime(list(value.timetuple()))
-    except (OverflowError, ValueError) as e:
+    except (OverflowError, ValueError):
         raise Invalid(node, 'Invalid date.')
 
 
@@ -38,17 +35,18 @@ def no_duplicate_datetime(node, values):
     datetime_value_2d
     Reject ``values`` if it contains duplicates.
     """
-
     try:
-        unique = numpy.unique(values['time'])
+        unique = np.unique(values['time'])
     except AttributeError:
         return
 
     num_dups = len(values) - len(unique)
 
     if num_dups:
-        raise Invalid(
-            node, 'Duplicate time entries are not allowed. Found %s duplicates.' % num_dups)
+        raise Invalid(node,
+                      'Duplicate time entries are not allowed. '
+                      'Found {0} duplicates.'.format(num_dups))
+
 
 def ascending_datetime(node, values):
     """
@@ -56,13 +54,15 @@ def ascending_datetime(node, values):
     (like datetime_value_2d)
     are in ascending order
     """
-
     # check to make sure the time values are in ascending order
-    if numpy.any( values['time'][numpy.argsort( values['time'])] != values['time']):
-        raise Invalid(node, 'The datetime values in the timeseries must be in ascending order')
+    if np.any(values['time'][np.argsort(values['time'])]
+              != values['time']):
+        raise Invalid(node,
+                      'The datetime values in the timeseries must be in '
+                      'ascending order')
 
 
-#===============================================================================
+#==============================================================================
 # def degrees_true(node, direction):
 #    if 0 > direction > 360:
 #        raise Invalid(
@@ -92,4 +92,4 @@ def ascending_datetime(node, values):
 #        degrees_true(node, float(value))
 #    except ValueError:
 #        cardinal_direction(node, value.upper())
-#===============================================================================
+#==============================================================================

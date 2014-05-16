@@ -338,7 +338,7 @@ def test_timespan():
     # value is given as (r,theta)
     model_time = rel_time
     time_val = np.zeros((1, ), dtype=datetime_value_2d)
-    time_val['time'] = np.datetime64(rel_time.isoformat())
+    time_val['time'] = rel_time
     time_val['value'] = (2., 25.)
 
     wm = WindMover(Wind(timeseries=time_val, units='meter per second'),
@@ -377,7 +377,7 @@ def test_active():
     # value is given as (r,theta)
 
     time_val = np.zeros((1, ), dtype=datetime_value_2d)
-    time_val['time'] = np.datetime64(rel_time.isoformat())
+    time_val['time'] = rel_time
     time_val['value'] = (2., 25.)
 
     wm = WindMover(Wind(timeseries=time_val, units='meter per second'),

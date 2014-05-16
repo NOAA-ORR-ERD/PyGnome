@@ -62,7 +62,7 @@ class InitWindagesSchema(base_schema.ObjType):
     """
     windage_range = WindageSchema()
     windage_persist = SchemaNode(Int(), default=900,
-        description='windage persistence in minutes')
+                                 description='windage persistence in minutes')
     name = 'windages'
 
 
@@ -225,8 +225,8 @@ class InitMassFromTotalMass(InitBaseClass, Serializable):
 
     def initialize(self, num_new_particles, spill, data_arrays, substance):
         if spill.mass is None:
-            raise ValueError('mass attribute of spill is None - cannot'
-                             ' compute particle mass without total mass')
+            raise ValueError('mass attribute of spill is None - cannot '
+                             'compute particle mass without total mass')
 
         _total_mass = spill.get_mass('g')
         data_arrays['mass'][-num_new_particles:] = (_total_mass /
@@ -238,17 +238,16 @@ class InitMassFromVolume(InitBaseClass, Serializable):
     Initialize the 'mass' array based on total volume spilled and the type of
     substance. No parameters, as it uses the volume specified elsewhere.
     """
-
     _state = copy.deepcopy(InitBaseClass._state)
     _schema = base_schema.ObjType
 
     def initialize(self, num_new_particles, spill, data_arrays, substance):
         if spill.volume is None:
-            raise ValueError('volume attribute of spill is None - cannot'
-                             ' compute mass without volume')
+            raise ValueError('volume attribute of spill is None - cannot '
+                             'compute mass without volume')
 
-        _total_mass = substance.get_density('kg/m^3') \
-            * spill.get_volume('m^3') * 1000
+        _total_mass = (substance.get_density('kg/m^3')
+                       * spill.get_volume('m^3') * 1000)
         data_arrays['mass'][-num_new_particles:] = (_total_mass /
                                                     spill.release.num_elements)
 
@@ -527,6 +526,7 @@ class ElementType(Serializable):
         et_schema = self.__class__._schema()
         et_json_ = et_schema.serialize(dict_)
         s_init = {}
+
         for i_key, i_val in self.initializers.iteritems():
             s_init[i_key] = i_val.serialize(json_)
 
@@ -542,6 +542,7 @@ class ElementType(Serializable):
         et_schema = cls._schema()
         dict_ = et_schema.deserialize(json_)
         d_init = {}
+
         for i_key, i_val in json_['initializers'].iteritems():
             deserial = eval(i_val['obj_type']).deserialize(i_val)
             #deserial = schema.deserialize(i_val)

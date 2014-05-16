@@ -10,7 +10,7 @@ import datetime
 import numpy
 np = numpy
 
-from colander import SchemaNode, String, Float, Range, drop
+from colander import SchemaNode, String, Float, drop
 
 import gnome
 from gnome.basic_types import time_value_pair
@@ -29,8 +29,7 @@ from gnome.persist.extend_colander import (DefaultTupleSchema,
 from gnome.utilities.time_utils import date_to_sec
 from gnome.utilities.convert import (to_time_value_pair,
                                      to_datetime_value_2d,
-                                     tsformat,
-                                     )
+                                     tsformat)
 
 from gnome.utilities.serializable import Serializable, Field
 
@@ -86,8 +85,7 @@ class Tide(Environment, Serializable):
     Currently, this internally defines and uses the CyShioTime object, which is
     a cython wrapper around the C++ Shio object
     """
-    _update = ['yeardata',
-               'timeseries']
+    _update = ['yeardata', 'timeseries']
 
     _create = []
     _create.extend(_update)
@@ -133,15 +131,13 @@ class Tide(Environment, Serializable):
                          filenames. Default location is gnome/data/yeardata/
 
         """
-
         # define locally so it is available even for OSSM files,
         # though not used by OSSM files
-
         self._yeardata = None
 
         if timeseries is None and filename is None:
-            raise ValueError('Either provide timeseries or a valid filename'
-                ' containing Tide data')
+            raise ValueError('Either provide timeseries or a valid filename '
+                             'containing Tide data')
 
         if timeseries is not None:
             # data_format is checked during conversion
@@ -166,14 +162,14 @@ class Tide(Environment, Serializable):
 
     @yeardata.setter
     def yeardata(self, value):
-        """ only relevant if underlying cy_obj is CyShioTime"""
-
+        """
+        only relevant if underlying cy_obj is CyShioTime
+        """
         if not os.path.exists(value):
-            raise IOError('Path to yeardata files does not exist:'
-                ' {0}'.format(value))
+            raise IOError('Path to yeardata files does not exist: '
+                          '{0}'.format(value))
 
         # set private variable and also shio object's yeardata path
-
         self._yeardata = value
 
         if isinstance(self.cy_obj, CyShioTime):
@@ -251,40 +247,33 @@ class Tide(Environment, Serializable):
         open file, read a few lines to determine if it is an ossm file
         or a shio file
         """
-
         # mode 'U' means universal newline support
-
         fh = open(filename, 'rU')
 
         lines = [fh.readline() for i in range(4)]
 
         if len(lines[1]) == 0:
-
             # look for \r for lines instead of \n
-
             lines = string.split(lines[0], '\r', 4)
 
         if len(lines[1]) == 0:
-
             # if this is still 0, then throw an error!
-
-            raise ValueError('This does not appear to be a valid file format'
-                ' that can be read by OSSM or Shio to get tide information')
+            raise ValueError('This does not appear to be a valid file format '
+                             'that can be read by OSSM or Shio to get '
+                             'tide information')
 
         # look for following keywords to determine if it is a Shio or OSSM file
-
         shio_file = ['[StationInfo]', 'Type=', 'Name=', 'Latitude=']
 
         if all([shio_file[i] == (lines[i])[:len(shio_file[i])]
                 for i in range(4)]):
             return CyShioTime(filename)
         elif len(string.split(lines[3], ',')) == 7:
-
             # maybe log / display a warning that v=0 for tide file and will be
             # ignored
             # if float( string.split(lines[3],',')[-1]) != 0.0:
-
             return CyOSSMTime(filename, file_contains=tsformat('uv'))
         else:
-            raise ValueError('This does not appear to be a valid file format'
-                ' that can be read by OSSM or Shio to get tide information')
+            raise ValueError('This does not appear to be a valid file format '
+                             'that can be read by OSSM or Shio to get '
+                             'tide information')

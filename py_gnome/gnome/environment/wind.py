@@ -12,16 +12,13 @@ import tempfile
 import numpy
 np = numpy
 
-from colander import (SchemaNode,
-                      drop,
-                      Range,
-                      String,
-                      OneOf,
-                      Float)
+from colander import (SchemaNode, drop, OneOf,
+                      Float, String, Range)
 
 from .environment import Environment
 from gnome.persist.extend_colander import (DefaultTupleSchema,
-                      LocalDateTime, DatetimeValue2dArraySchema)
+                                           LocalDateTime,
+                                           DatetimeValue2dArraySchema)
 from gnome.persist import validators, base_schema
 
 #import gnome
@@ -118,14 +115,12 @@ class Wind(Environment, serializable.Serializable):
     # - read only properties
 
     # default units for input/output data
-    _update = [
-               'description',
+    _update = ['description',
                'latitude',
                'longitude',
                'source_type',
                'source_id',  # what is source ID? Buoy ID?
-               'updated_at',
-               ]
+               'updated_at']
 
     # used to create new obj or as readonly parameter
     _create = []
@@ -154,14 +149,10 @@ class Wind(Environment, serializable.Serializable):
                                     ConvertDataUnits['Velocity'].values()]))
     valid_vel_units.extend(GetUnitNames('Velocity'))
 
-    def __init__(self,
-        timeseries=None,
-        units=None,
-        filename=None,
-        format='r-theta',
-        latitude=None,
-        longitude=None,
-        **kwargs):
+    def __init__(self, timeseries=None, units=None,
+                 filename=None, format='r-theta',
+                 latitude=None, longitude=None,
+                 **kwargs):
         """
         Initializes a wind object
         It requires one of the following to initialize:
@@ -207,10 +198,9 @@ class Wind(Environment, serializable.Serializable):
         :param longitude: (Optional) longitude of station or location where
                          wind data is obtained from NWS
         """
-
         if (timeseries is None and filename is None):
             raise TypeError('Either provide a timeseries or a wind file '
-                'with a header, containing wind data')
+                            'with a header, containing wind data')
 
         self._tempfile = None
         self._filename = None
@@ -218,9 +208,10 @@ class Wind(Environment, serializable.Serializable):
         if not filename:
             self._check_units(units)
             self._check_timeseries(timeseries, units)
+
             timeseries['value'] = self._convert_units(timeseries['value'],
-                                                  format, units,
-                                                  'meter per second')
+                                                      format, units,
+                                                      'meter per second')
 
             # ts_format is checked during conversion
             time_value_pair = to_time_value_pair(timeseries, format)
@@ -264,6 +255,7 @@ class Wind(Environment, serializable.Serializable):
             data[:, 0] = unit_conversion.convert('Velocity',
                                                  from_unit, to_unit,
                                                  data[:, 0])
+
             if ts_format == basic_types.ts_format.uv:
                 # TODO: avoid clobbering the 'ts_format' namespace
                 data[:, 1] = unit_conversion.convert('Velocity',
@@ -313,13 +305,10 @@ class Wind(Environment, serializable.Serializable):
 
         # make resolution to minutes in datetime
         for ix, tm in enumerate(timeseries['time'].astype(datetime.datetime)):
+            print 'tm[{0}]:'.format(ix), tm
             timeseries['time'][ix] = tm.replace(second=0)
 
     def __repr__(self):
-        """
-        Return an unambiguous representation of this `Wind object` so it can
-        be recreated
-        """
         self_ts = self.timeseries.__repr__()
         return ('{0.__class__.__module__}.{0.__class__.__name__}('
                 'description="{0.description}", '
@@ -330,12 +319,7 @@ class Wind(Environment, serializable.Serializable):
                 'timeseries={1}'
                 ')').format(self, self_ts)
 
-        return "Wind( timeseries=Wind.get_timeseries('uv'), format='uv')"
-
     def __str__(self):
-        '''
-        Return a human readable string representation of this object
-        '''
         return "Wind( timeseries=Wind.get_timeseries('uv'), format='uv')"
 
     def __eq__(self, other):
@@ -354,6 +338,7 @@ class Wind(Environment, serializable.Serializable):
         if check:
             sts = self.get_timeseries(units=self.units)
             ots = other.get_timeseries(units=self.units)
+
             if (sts['time'] != ots['time']).all():
                 return False
             else:
@@ -385,7 +370,6 @@ class Wind(Environment, serializable.Serializable):
         or one of the associated abbreviations
             unit_conversion.GetUnitAbbreviation()
         """
-
         self._check_units(value)
         self._user_units = value
 
@@ -475,14 +459,12 @@ class Wind(Environment, serializable.Serializable):
         Only timeseries or filename need to be saved to recreate the original
         object. If both are given, then 'filename' takes precedence.
         """
-
         if json_ == 'save':
             # write timeseries to a file and update filename
             self._write_timeseries_to_file()
             self._filename = self._tempfile.name
 
         dict_ = super(Wind, self).to_dict(json_)
-
         return dict_
 
     def _write_timeseries_to_file(self):
@@ -495,14 +477,20 @@ class Wind(Environment, serializable.Serializable):
                   '0,0,0,0,0,0,0,0\n')
         self._tempfile.write(header)
         val = self.get_timeseries(units='knots')['value']
-        dt = self.get_timeseries(units='knots')['time'].astype(
-            datetime.datetime)
+        dt = (self.get_timeseries(units='knots')['time']
+              .astype(datetime.datetime))
 
         for i, idt in enumerate(dt):
-            self._tempfile.write(
-            ('{0:02}, {1:02}, {2:04}, {3:02}, {4:02}, {5:02.4f}, {6:02.4f}\n').
-            format(idt.day, idt.month, idt.year, idt.hour,
-                    idt.minute, round(val[i, 0], 4), round(val[i, 1], 4)))
+            self._tempfile.write('{0.day:02}, '
+                                 '{0.month:02}, '
+                                 '{0.year:04}, '
+                                 '{0.hour:02}, '
+                                 '{0.minute:02}, '
+                                 '{1:02.4f}, {2:02.4f}\n'
+                                 .format(idt,
+                                         round(val[i, 0], 4),
+                                         round(val[i, 1], 4))
+                                 )
 
         self._tempfile.flush()
 

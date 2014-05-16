@@ -5,9 +5,8 @@ A "spill" is essentially a source of elements. These classes provide
 the logic about where an when the elements are released
 
 """
-
 import copy
-import inspect
+from inspect import getmembers, ismethod
 from itertools import chain
 
 import numpy
@@ -30,38 +29,29 @@ class SpillSchema(ObjType):
     on = SchemaNode(Bool(), default=True, missing=True,
         description='on/off status of spill')
 
-    #==========================================================================
-    # def __init__(self, **kwargs):
-    #     'add release object to schema instance'
-    #     rel = kwargs.pop('release')
-    #     self.add(rel)
-    #     super(SpillSchema, self).__init__(**kwargs)
-    #==========================================================================
-
 
 class Spill(serializable.Serializable):
-
     """
     base class for a source of elements
 
     .. note:: This class is not serializable since it will not be used in
               PyGnome. It does not release any elements
     """
-
     _update = ['on', 'release', 'element_type']
+
     _create = []
     _create.extend(_update)
+
     _state = copy.deepcopy(serializable.Serializable._state)
     _state.add(save=_create, update=_update)
     _schema = SpillSchema
 
     valid_vol_units = list(chain.from_iterable([item[1] for item in
-                           unit_conversion.ConvertDataUnits['Volume'
-                           ].values()]))
+                           uc.ConvertDataUnits['Volume'].values()]))
     valid_vol_units.extend(unit_conversion.GetUnitNames('Volume'))
 
     valid_mass_units = list(chain.from_iterable([item[1] for item in
-                           uc.ConvertDataUnits['Mass'].values()]))
+                            uc.ConvertDataUnits['Mass'].values()]))
     valid_mass_units.extend(uc.GetUnitNames('Mass'))
 
     @classmethod
@@ -87,11 +77,9 @@ class Spill(serializable.Serializable):
     def __init__(self, release,
                  element_type=None,
                  on=True,
-                 volume=None,
-                 volume_units='m^3',
+                 volume=None, volume_units='m^3',
                  # Is this total mass of the spill?
-                 mass=None,
-                 mass_units='g'):
+                 mass=None, mass_units='g'):
         """
         Base spill class. Spill used by a gnome model derive from this class
 
@@ -118,8 +106,6 @@ class Spill(serializable.Serializable):
             released. These are spill specific properties of the elements.
         :type element_type: list of gnome.element_type.* objects
         """
-
-        #self.num_elements = num_elements
         self.release = release
         if element_type is None:
             element_type = elements.floating()
@@ -224,8 +210,9 @@ class Spill(serializable.Serializable):
                     setattr(init, prop, val)
                     break
                 else:
-                    raise AttributeError("{0} attribute does not exist"
-                        " in element_type or release object".format(prop))
+                    raise AttributeError('{0} attribute does not exist '
+                                         'in element_type '
+                                         'or release object'.format(prop))
 
     def get(self, prop=None):
         """
@@ -240,9 +227,8 @@ class Spill(serializable.Serializable):
             all_props = []
 
             # release properties
-            rel_props = inspect.getmembers(self.release,
-                            predicate=lambda props: \
-                                (False, True)[not inspect.ismethod(props)])
+            rel_props = getmembers(self.release,
+                                   predicate=lambda p: (not ismethod(p)))
             'remove _state - update this after we change _state to _state'
             rel_props = [a[0] for a in rel_props
                             if not a[0].startswith('_') and a[0] != '_state']
@@ -250,9 +236,8 @@ class Spill(serializable.Serializable):
             all_props.extend(rel_props)
 
             # element_type properties
-            et_props = inspect.getmembers(self.element_type,
-                            predicate=lambda props: \
-                                (False, True)[not inspect.ismethod(props)])
+            et_props = getmembers(self.element_type,
+                                  predicate=lambda p: (not ismethod(p)))
             'remove _state - update this after we change _state to _state'
             et_props = [a[0] for a in et_props
                             if not a[0].startswith('_') and a[0] != '_state']
@@ -262,8 +247,7 @@ class Spill(serializable.Serializable):
             # properties for each of the initializer objects
             i_props = []
             for val in self.element_type.initializers.values():
-                toadd = inspect.getmembers(val, lambda props: \
-                                    (False, True)[not inspect.ismethod(props)])
+                toadd = getmembers(val, lambda p: (not ismethod(p)))
                 i_props.extend([a[0] for a in toadd
                             if not a[0].startswith('_') and a[0] != '_state'])
 

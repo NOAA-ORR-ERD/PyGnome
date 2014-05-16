@@ -9,14 +9,8 @@ import shutil
 
 import numpy
 np = numpy
-from colander import (MappingSchema,
-                      SchemaNode,
-                      Float,
-                      Int,
-                      Bool,
-                      String,
-                      drop
-                      )
+from colander import (MappingSchema, SchemaNode,
+                      Float, Int, Bool, String, drop)
 
 from gnome.environment import Environment
 
@@ -32,11 +26,7 @@ from gnome.weatherers import Weatherer
 
 from gnome.outputters import Outputter, NetCDFOutput
 
-from gnome.persist import (
-    extend_colander,
-    base_schema,
-    validators
-    )
+from gnome.persist import (extend_colander, base_schema, validators)
 
 
 class SpillContainerPairSchema(MappingSchema):
@@ -48,7 +38,7 @@ class SpillContainerPairSchema(MappingSchema):
     '''
     certain_spills = base_schema.OrderedCollection(name='certain_spills')
     uncertain_spills = base_schema.OrderedCollection(name='uncertain_spills',
-                                           missing=drop)
+                                                     missing=drop)
 
 
 class ModelSchema(base_schema.ObjType):
@@ -186,7 +176,6 @@ class Model(Serializable):
         This is because new_from_dict will use this to restore the model _state
         when doing a midrun persistence.
         '''
-
         # making sure basic stuff is in place before properties are set
         self.environment = OrderedCollection(dtype=Environment)
         self.movers = OrderedCollection(dtype=Mover)
@@ -303,8 +292,8 @@ class Model(Serializable):
 
     @current_time_step.setter
     def current_time_step(self, step):
-        self.model_time = self._start_time + timedelta(seconds=step
-                * self.time_step)
+        self.model_time = self._start_time + timedelta(seconds=step *
+                                                       self.time_step)
         self._current_time_step = step
 
     @property
@@ -571,8 +560,10 @@ class Model(Serializable):
         while True:
             try:
                 results = self.step()
+
                 if log:
                     print results
+
                 output_data.append(results)
             except StopIteration:
                 print 'Done with the model run'
@@ -585,7 +576,7 @@ class Model(Serializable):
         returns importable gnome object type as a string
         '''
         return '{0}.{1}'.format(self.map.__module__,
-            self.map.__class__.__name__)
+                                self.map.__class__.__name__)
 
     def map_id_to_dict(self):
         '''
@@ -626,11 +617,7 @@ class Model(Serializable):
         return check
 
     def __ne__(self, other):
-        'Compare inequality (!=) of two objects'
-        if self == other:
-            return False
-        else:
-            return True
+        return not self == other
 
     '''
     Following methods are for saving a Model instance or creating a new
@@ -660,11 +647,11 @@ class Model(Serializable):
         self._empty_save_dir(saveloc)
         json_ = self.serialize('save')
         self._save_json_to_file(saveloc, json_,
-            '{0}.json'.format(self.__class__.__name__))
+                                '{0}.json'.format(self.__class__.__name__))
 
         json_ = self.map.serialize('save')
         self._save_json_to_file(saveloc, json_,
-            '{0}.json'.format(self.map.__class__.__name__))
+                                '{0}.json'.format(self.map.__class__.__name__))
 
         for coll in ['movers', 'weatherers', 'environment', 'outputters']:
             self._save_collection(saveloc, getattr(self, coll))
@@ -675,7 +662,7 @@ class Model(Serializable):
         # persist model _state since middle of run
         if self.current_time_step > -1:
             self._save_spill_data(os.path.join(saveloc,
-                                                'spills_data_arrays.nc'))
+                                               'spills_data_arrays.nc'))
 
     def _save_collection(self, saveloc, coll_):
         """
@@ -704,7 +691,9 @@ class Model(Serializable):
                         json_[field.name] = index
 
             self._save_json_to_file(saveloc, json_,
-                '{0}_{1}.json'.format(obj.__class__.__name__, count))
+                                    '{0.__class__.__name__}_'
+                                    '{1}.json'.format(obj, count)
+                                    )
 
     def _save_json_to_file(self, saveloc, data, name):
         """
@@ -727,7 +716,7 @@ class Model(Serializable):
         'name' of the fields with True 'isdatafile' attribute then move that
         datafile and update the key in the to_json to point to new location
 
-        todo: maybe this belongs in serializable base class? Revisit this
+        TODO: maybe this belongs in serializable base class? Revisit this
         """
         _state = eval('{0}._state'.format(json_['obj_type']))
         fields = _state.get_field_by_attribute('isdatafile')
@@ -746,9 +735,7 @@ class Model(Serializable):
 
     def _save_spill_data(self, datafile):
         """ save the data arrays for current timestep to NetCDF """
-        nc_out = NetCDFOutput(datafile,
-                              which_data='all',
-                              cache=self._cache)
+        nc_out = NetCDFOutput(datafile, which_data='all', cache=self._cache)
         nc_out.prepare_for_model_run(model_start_time=self.start_time,
                                      uncertain=self.uncertain,
                                      spills=self.spills)
@@ -788,8 +775,8 @@ class Model(Serializable):
         check contents of orderered collections to figure out what schema to
         use for the OC
         '''
-        if json_['json_'] == 'save':
         #if isinstance(json_['movers'], dict):
+        if json_['json_'] == 'save':
             schema = cls._schema('save')
         else:
             schema = cls._schema()
@@ -836,11 +823,12 @@ def _load_and_deserialize_json(fname):
         if field.name not in json_data:
             continue
         json_data[field.name] = os.path.join(saveloc,
-                json_data[field.name])
+                                             json_data[field.name])
 
     if refs:
-        refs = {field.name: json_data.pop(field.name) for field in refs
-                 if field.name in json_data}
+        refs = {field.name: json_data.pop(field.name)
+                for field in refs
+                if field.name in json_data}
 
     to_eval = ('{0}.deserialize(json_data)'.format(json_data['obj_type']))
     _to_dict = eval(to_eval)
@@ -877,8 +865,7 @@ def _load_collection(saveloc, coll_dict, l_env=None):
     obj_list = []
 
     for type_idx in coll_dict['items']:
-        type_ = type_idx[0]
-        idx = type_idx[1]
+        type_, idx = type_idx[:2]
         fname = '{0}_{1}.json'.format(type_.rsplit('.', 1)[1], idx)
         obj_dict = _load_and_deserialize_json(os.path.join(saveloc, fname))
 
@@ -913,12 +900,10 @@ def _load_spill_data(saveloc, model):
 
     for sc in model.spills.items():
         if sc.uncertain:
-            data = NetCDFOutput.read_data(u_spill_data,
-                                          time=None,
+            data = NetCDFOutput.read_data(u_spill_data, time=None,
                                           which_data='all')
         else:
-            data = NetCDFOutput.read_data(spill_data,
-                                          time=None,
+            data = NetCDFOutput.read_data(spill_data, time=None,
                                           which_data='all')
 
         sc.current_time_stamp = data.pop('current_time_stamp').item()

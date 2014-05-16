@@ -1,6 +1,6 @@
 
 ###fixme:
-### needs some re-catoring -- more clear distiction between public and
+### needs some refactoring -- more clear distinction between public and
 ###                           private API:
 
 # on_land, in_water, etc -- need that?
@@ -29,7 +29,7 @@ import copy
 
 import numpy
 np = numpy
-from colander import SchemaNode, MappingSchema, String, Float, drop
+from colander import SchemaNode, String, Float, drop
 
 from gnome.persist import base_schema
 
@@ -92,14 +92,17 @@ class GnomeMap(Serializable):
                     dtype=np.float64).reshape(-1, 2)
         else:
             # using -360 to 360 to allow stuff to cross the dateline..
-            self.map_bounds = np.array(((-360, 90), (360, 90), (360,
-                    -90), (-360, -90)), dtype=np.float64)
+            self.map_bounds = np.array(((-360, 90),
+                                        (360, 90),
+                                        (360, -90),
+                                        (-360, -90)),
+                                       dtype=np.float64)
 
         if spillable_area is None:
             self.spillable_area = self.map_bounds
         else:
             self.spillable_area = np.asarray(spillable_area,
-                    dtype=np.float64).reshape(-1, 2)
+                                             dtype=np.float64).reshape(-1, 2)
 
     def on_map(self, coords):
         """
@@ -248,6 +251,7 @@ class RasterMap(GnomeMap):
     # in theory -- it could be used for other data:
     #  refloat, other properties?
     # note the BW map_canvas only does 1, though.
+    seconds_in_hour = 60 * 60
 
     land_flag = 1
 
@@ -283,12 +287,7 @@ class RasterMap(GnomeMap):
 
         :type id: string
         """
-
-                                    # hours
-
-        # convert to seconds
-
-        self._refloat_halflife = refloat_halflife * 60.0 * 60.0
+        self._refloat_halflife = refloat_halflife * self.seconds_in_hour
 
         self.bitmap = bitmap_array
         self.projection = projection
@@ -297,11 +296,11 @@ class RasterMap(GnomeMap):
 
     @property
     def refloat_halflife(self):
-        return self._refloat_halflife / 3600.0  # convert to hours
+        return self._refloat_halflife / self.seconds_in_hour
 
     @refloat_halflife.setter
     def refloat_halflife(self, value):
-        self._refloat_halflife = value * 3600.0  # convert to seconds
+        self._refloat_halflife = value * self.seconds_in_hour
 
     def save_as_image(self, filename):
         '''
@@ -361,8 +360,7 @@ class RasterMap(GnomeMap):
 
         returns: a (N,) array of bools - true for particles that are on land
         """
-        mask = map(point_in_poly, [self.map_bounds] * len(coords),
-                   coords)
+        mask = map(point_in_poly, [self.map_bounds] * len(coords), coords)
         racpy = np.copy(coords)[mask]
         mskgph = self.bitmap[racpy[:, 0], racpy[:, 1]]
         chrmgph = np.array([0] * len(coords))
@@ -425,11 +423,10 @@ class RasterMap(GnomeMap):
         # transform to pixel coords:
         # NOTE: must be integers!
 
-        start_pos_pixel = self.projection.to_pixel(start_pos,
-                asint=True)
+        start_pos_pixel = self.projection.to_pixel(start_pos, asint=True)
         next_pos_pixel = self.projection.to_pixel(next_pos, asint=True)
-        last_water_pos_pixel = \
-            self.projection.to_pixel(last_water_positions, asint=True)
+        last_water_pos_pixel = self.projection.to_pixel(last_water_positions,
+                                                        asint=True)
 
         # call the actual hit code:
         # the status_code and last_water_point arrays are altered in-place
@@ -467,7 +464,7 @@ class RasterMap(GnomeMap):
             # refloat particles based on probability
 
             refloat_probability = 1.0 - 0.5 ** (float(time_step)
-                    / self._refloat_halflife)
+                                                / self._refloat_halflife)
             rnd = np.random.uniform(0, 1, len(r_idx))
 
             # subset of indices that will refloat
@@ -486,8 +483,7 @@ class RasterMap(GnomeMap):
                 spill_container['last_water_positions'][r_idx]
             spill_container['status_codes'][r_idx] = oil_status.in_water
 
-    def _check_land(self, raster_map,
-                    positions, end_positions,
+    def _check_land(self, raster_map, positions, end_positions,
                     status_codes, last_water_positions):
         """
         Do the actual land-checking.  This method calls a Cython version:
@@ -607,8 +603,8 @@ class MapFromBNA(RasterMap):
         # stretch the bounding box, to get approximate aspect ratio in
         # projected coords.
 
-        aspect_ratio = np.cos(BB.Center[1] * np.pi / 180) \
-                     * (BB.Width / BB.Height)
+        aspect_ratio = (np.cos(BB.Center[1] * np.pi / 180) *
+                        (BB.Width / BB.Height))
         w = int(np.sqrt(raster_size * aspect_ratio))
         h = int(raster_size / w)
 
