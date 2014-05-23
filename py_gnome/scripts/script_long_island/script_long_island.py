@@ -60,7 +60,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     model.spills += spill
 
     print 'adding a RandomMover:'
-    model.movers += RandomMover(diffusion_coef=500000)
+    model.movers += RandomMover(diffusion_coef=500000,uncertain_factor=2)
 
     print 'adding a wind mover:'
     series = np.zeros((5, ), dtype=datetime_value_2d)

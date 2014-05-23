@@ -14,7 +14,8 @@ from gnome.cy_gnome.cy_random_vertical_mover import CyRandomVerticalMover
 
 
 class RandomMoverSchema(ObjType, MoverSchema):
-    diffusion_coef = SchemaNode(Float())
+    diffusion_coef = SchemaNode(Float(), default=100000)
+    uncertain_factor = SchemaNode(Float(), default=2)
 
 
 class RandomMover(CyMover, Serializable):
@@ -25,7 +26,8 @@ class RandomMover(CyMover, Serializable):
     CyMover sets everything up that is common to all movers.
     """
     _state = copy.deepcopy(CyMover._state)
-    _state.add(update=['diffusion_coef'], save=['diffusion_coef'])
+    _state.add(update=['diffusion_coef', 'uncertain_factor'],
+              save=['diffusion_coef', 'uncertain_factor'])
     _schema = RandomMoverSchema
 
     def __init__(self, **kwargs):
@@ -35,13 +37,15 @@ class RandomMover(CyMover, Serializable):
         Optional parameters (kwargs)
         :param diffusion_coef: Diffusion coefficient for random diffusion.
                                Default is 100,000 cm2/sec
+        :param uncertain_factor: Uncertainty factor.
+                               Default is 2
 
         Remaining kwargs are passed onto :class:`gnome.movers.Mover` __init__
         using super.  See Mover documentation for remaining valid kwargs.
         """
         self.mover = \
-            CyRandomMover(diffusion_coef=kwargs.pop('diffusion_coef',
-                          100000))
+            CyRandomMover(diffusion_coef=kwargs.pop('diffusion_coef',100000),
+                          uncertain_factor=kwargs.pop('uncertain_factor',2))
         super(RandomMover, self).__init__(**kwargs)
 
     @property
@@ -52,6 +56,14 @@ class RandomMover(CyMover, Serializable):
     def diffusion_coef(self, value):
         self.mover.diffusion_coef = value
 
+    @property
+    def uncertain_factor(self):
+        return self.mover.uncertain_factor
+
+    @uncertain_factor.setter
+    def uncertain_factor(self, value):
+        self.mover.uncertain_factor = value
+
     def __repr__(self):
         """
         .. todo::
@@ -59,8 +71,9 @@ class RandomMover(CyMover, Serializable):
         """
 
         return ('RandomMover(diffusion_coef={0}, '
-                'active_start={1}, active_stop={2}, '
-                'on={3})'.format(self.diffusion_coef,
+                'uncertain_factor={1}, '
+                'active_start={2}, active_stop={3}, '
+                'on={4})'.format(self.diffusion_coef, self.uncertain_factor,
                                  self.active_start, self.active_stop, self.on))
 
 
