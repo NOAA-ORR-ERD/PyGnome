@@ -28,6 +28,8 @@ def test_exceptions():
     with pytest.raises(ValueError):
         RandomMover(diffusion_coef=-1000)
 
+    with pytest.raises(ValueError):
+        RandomMover(uncertain_factor=0)
 
 class TestRandomMover:
 
@@ -73,6 +75,10 @@ class TestRandomMover:
     def test_change_diffusion_coef(self):
         self.mover.diffusion_coef = 200000
         assert self.mover.diffusion_coef == 200000
+
+    def test_change_uncertain_factor(self):
+        self.mover.uncertain_factor = 3
+        assert self.mover.uncertain_factor == 3
 
     def test_prepare_for_model_step(self):
         """

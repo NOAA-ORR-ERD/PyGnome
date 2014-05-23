@@ -113,6 +113,7 @@ cdef extern from "CATSMover_c.h":
    cdef cppclass CATSMover_c(CurrentMover_c):
         CATSMover_c() except +
         double          fEddyDiffusion
+        double          fEddyV0
         short           scaleType                 
         double          scaleValue
         Boolean         bTimeFileActive

@@ -23,6 +23,9 @@ def test_exceptions():
     with pytest.raises(ValueError):
         CyRandomMover(diffusion_coef=-.0001)
 
+    with pytest.raises(ValueError):
+        CyRandomMover(uncertain_factor=.5)
+
 
 class TestRandom:
 

@@ -31,19 +31,30 @@ cdef class CyCatsMover(cy_mover.CyMover):
         del self.mover  # since this is allocated in this class, free memory here as well
         self.cats = NULL
     
-    def __init__(self, scale_type=0, scale_value=1, diffusion_coefficient=0):
+    def __init__(self, scale_type=0, scale_value=1,
+                 uncertain_duration=48*3600, uncertain_time_delay=0,
+                 up_cur_uncertain=.3, down_cur_uncertain=-.3,
+                 right_cur_uncertain=.1, left_cur_uncertain=-.1,
+                 uncertain_eddy_diffusion=0, uncertain_eddy_v0=.1):
         """
         Initialize the CyCatsMover which sets the properties for the underlying C++ CATSMover_c object
 
         :param scale_type=0: There are 3 options in c++, however only two options are used SCALE_NONE = 0, SCALE_CONSTANT = 1.
                            The python CatsMover wrapper only sets either 0 or 1. Default is NONE.
         :param scale_value=1: The value by which to scale the data. By default, this is 1 which means no scaling
-        :param diffusion_coefficient=0: Diffusion coefficient for eddy diffusion. Default is 0.
+        :param uncertain_duration: how often does a given uncertain element gets reset
+        :param uncertain_time_delay: when does the uncertainly kick in.
+        :param up_cur_uncertain: Scale for uncertainty along the flow
+        :param down_cur_uncertain: Scale for uncertainty along the flow
+        :param right_cur_uncertain: Scale for uncertainty across the flow
+        :param left_cur_uncertain: Scale for uncertainty across the flow
+        :param uncertain_eddy_diffusion: Diffusion coefficient for eddy diffusion. Default is 0.
+        :param uncertain_eddy_v0: Default is .1 (Check that this is still used)
         """
         cdef WorldPoint p
         self.cats.scaleType = scale_type
         self.cats.scaleValue = scale_value
-        self.cats.fEddyDiffusion = diffusion_coefficient
+        self.cats.fEddyDiffusion = uncertain_eddy_diffusion
         self.cats.refZ = -999 # default to -1
         ## should not have to do this manually.
         ## make-shifting for now.
@@ -65,12 +76,61 @@ cdef class CyCatsMover(cy_mover.CyMover):
         def __set__(self,value):
             self.cats.scaleValue = value
             
-    property eddy_diffusion:
+    property uncertain_duration:
+        def __get__(self):
+            return self.cats.fDuration
+
+        def __set__(self, value):
+            self.cats.fDuration = value
+
+    property uncertain_time_delay:
+        def __get__(self):
+            return self.cats.fUncertainStartTime
+
+        def __set__(self, value):
+            self.cats.fUncertainStartTime = value
+
+    property up_cur_uncertain:
+        def __get__(self):
+            return self.cats.fUpCurUncertainty
+        
+        def __set__(self,value):
+            self.cats.fUpCurUncertainty = value    
+    
+    property down_cur_uncertain:
+        def __get__(self):
+            return self.cats.fDownCurUncertainty
+        
+        def __set__(self,value):
+            self.cats.fDownCurUncertainty = value    
+    
+    property right_cur_uncertain:
+        def __get__(self):
+            return self.cats.fRightCurUncertainty
+        
+        def __set__(self,value):
+            self.cats.fRightCurUncertainty = value    
+    
+    property left_cur_uncertain:
+        def __get__(self):
+            return self.cats.fLeftCurUncertainty
+        
+        def __set__(self,value):
+            self.cats.fLeftCurUncertainty = value    
+    
+    property uncertain_eddy_diffusion:
         def __get__(self):
             return self.cats.fEddyDiffusion
         
         def __set__(self,value):
             self.cats.fEddyDiffusion = value    
+    
+    property uncertain_eddy_v0:
+        def __get__(self):
+            return self.cats.fEddyV0
+        
+        def __set__(self,value):
+            self.cats.fEddyV0 = value    
     
     property ref_point:
         def __get__(self):
@@ -109,7 +169,7 @@ cdef class CyCatsMover(cy_mover.CyMover):
         
         Probably want to return filename as well  
         """
-        repr_ = '{0}(scale_type={1.scale_type}, scale_value={1.scale_value}, diffusion_coefficient={1.eddy_diffusion})'.format(self.__class__.__name__, self)
+        repr_ = '{0}(scale_type={1.scale_type}, scale_value={1.scale_value}, uncertain_eddy_diffusion={1.eddy_diffusion})'.format(self.__class__.__name__, self)
         return repr_
       
     def __str__(self):

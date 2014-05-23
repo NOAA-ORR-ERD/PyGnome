@@ -22,13 +22,26 @@ class CatsMoverSchema(ObjType, MoverSchema):
     scale = SchemaNode(Bool())
     scale_refpoint = WorldPoint(missing=drop)
     scale_value = SchemaNode(Float())
+    #the following six could be shared with grid_current in a currents base class
+    uncertain_duration = SchemaNode(Float(),default=48)
+    uncertain_time_delay = SchemaNode(Float(),default=0)
+    down_cur_uncertain = SchemaNode(Float(),default=-.3)
+    up_cur_uncertain = SchemaNode(Float(),default=.3)
+    right_cur_uncertain = SchemaNode(Float(),default=.1)
+    left_cur_uncertain = SchemaNode(Float(),default=-.1)
+    uncertain_eddy_diffusion = SchemaNode(Float(),default=0)
+    uncertain_eddy_v0 = SchemaNode(Float(),default=.1)
 
 
 class CatsMover(CyMover, serializable.Serializable):
 
     _state = copy.deepcopy(CyMover._state)
 
-    _update = ['scale', 'scale_refpoint', 'scale_value']
+    _update = ['scale', 'scale_refpoint', 'scale_value',
+                      'uncertain_duration', 'uncertain_time_delay',
+                      'up_cur_uncertain', 'down_cur_uncertain',
+                      'right_cur_uncertain', 'left_cur_uncertain',
+                      'uncertain_eddy_diffusion', 'uncertain_eddy_v0']
     _create = []
     _create.extend(_update)
     _state.add(update=_update, save=_create)
@@ -57,6 +70,14 @@ class CatsMover(CyMover, serializable.Serializable):
         :param scale_refpoint: reference location (long, lat, z). The scaling applied to all data is determined by scaling the 
                                raw value at this location.
         
+        :param uncertain_duration: how often does a given uncertain element gets reset
+        :param uncertain_time_delay: when does the uncertainly kick in.
+        :param up_cur_uncertain: Scale for uncertainty along the flow
+        :param down_cur_uncertain: Scale for uncertainty along the flow
+        :param right_cur_uncertain: Scale for uncertainty across the flow
+        :param left_cur_uncertain: Scale for uncertainty across the flow
+        :param uncertain_eddy_diffusion: Diffusion coefficient for eddy diffusion. Default is 0.
+        :param uncertain_eddy_v0: Default is .1 (Check that this is still used)
         Remaining kwargs are passed onto Mover's __init__ using super. 
         See Mover documentation for remaining valid kwargs.
         """
@@ -76,6 +97,14 @@ class CatsMover(CyMover, serializable.Serializable):
         self.scale_value = kwargs.get('scale_value',
                 self.mover.scale_value)
 
+        self.uncertain_start_time = kwargs.pop('uncertain_duration',48)
+        self.uncertain_time_delay = kwargs.pop('uncertain_time_delay', 0)
+        self.up_cur_uncertain = kwargs.pop('up_cur_uncertain', .3)
+        self.down_cur_uncertain = kwargs.pop('down_cur_uncertain', -.3)
+        self.right_cur_uncertain = kwargs.pop('right_cur_uncertain', .1)
+        self.left_cur_uncertain = kwargs.pop('left_cur_uncertain', -.1)
+        self.uncertain_eddy_diffusion = kwargs.pop('uncertain_eddy_diffusion', 0)
+        self.uncertain_eddy_v0 = kwargs.pop('uncertain_eddy_v0', .1)
         # todo: no need to check for None since properties that are None are not persisted
 
         if 'scale_refpoint' in kwargs:
@@ -108,6 +137,57 @@ class CatsMover(CyMover, serializable.Serializable):
     scale_value = property(lambda self: self.mover.scale_value,
                            lambda self, val: setattr(self.mover,
                            'scale_value', val))
+
+#     @property
+#     def uncertain_duration(self):
+#         return self._seconds_to_hours(self.mover.uncertain_duration)
+# 
+#     @uncertain_duration.setter
+#     def uncertain_duration(self, val):
+#         self.mover.uncertain_duration = self._hours_to_seconds(val)
+# 
+#     @property
+#     def uncertain_time_delay(self):
+#         return self._seconds_to_hours(self.mover.uncertain_time_delay)
+# 
+#     @uncertain_time_delay.setter
+#     def uncertain_time_delay(self, val):
+#         self.mover.uncertain_time_delay = self._hours_to_seconds(val)
+# 
+    uncertain_duration = property(lambda self: \
+                                  self.mover.uncertain_duration/3600.,
+                                  lambda self, val: setattr(self.mover,
+                                  'uncertain_duration', val*3600.))
+
+    uncertain_time_delay = property(lambda self: \
+                                    self.mover.uncertain_time_delay/3600.,
+                                    lambda self, val: \
+                                    setattr(self.mover,
+                                    'uncertain_time_delay', val*3600.))
+
+    up_cur_uncertain = property(lambda self: \
+            self.mover.up_cur_uncertain, lambda self, val: \
+            setattr(self.mover, 'up_cur_uncertain', val))
+
+    down_cur_uncertain = property(lambda self: \
+            self.mover.down_cur_uncertain, lambda self, val: \
+            setattr(self.mover, 'down_cur_uncertain', val))
+
+    right_cur_uncertain = property(lambda self: \
+            self.mover.right_cur_uncertain, lambda self, val: \
+            setattr(self.mover, 'right_cur_uncertain', val))
+
+    left_cur_uncertain = property(lambda self: \
+            self.mover.left_cur_uncertain, lambda self, val: \
+            setattr(self.mover, 'left_cur_uncertain', val))
+
+    uncertain_eddy_diffusion = property(lambda self: \
+            self.mover.uncertain_eddy_diffusion, lambda self, val: \
+            setattr(self.mover, 'uncertain_eddy_diffusion', val))
+
+    uncertain_eddy_v0 = property(lambda self: \
+            self.mover.uncertain_eddy_v0, lambda self, val: \
+            setattr(self.mover, 'uncertain_eddy_v0', val))
 
     @property
     def tide(self):
@@ -156,15 +236,22 @@ class CatsMover(CyMover, serializable.Serializable):
 class GridCurrentMoverSchema(ObjType, MoverSchema):
     filename = SchemaNode(String(), missing=drop)
     topology_file = SchemaNode(String(), missing=drop)
+    current_scale = SchemaNode(Float(), default=1)
+    uncertain_duration = SchemaNode(Float(), default=24)
+    uncertain_time_delay = SchemaNode(Float(), default=0)
+    uncertain_along = SchemaNode(Float(), default=.5)
+    uncertain_cross = SchemaNode(Float(), default=.25)
 
 
 class GridCurrentMover(CyMover, serializable.Serializable):
 
     _update = ['uncertain_duration', 'uncertain_time_delay',
                'uncertain_cross', 'uncertain_along', 'current_scale']
+    _save = ['uncertain_duration', 'uncertain_time_delay',
+               'uncertain_cross', 'uncertain_along', 'current_scale']
     _state = copy.deepcopy(CyMover._state)
 
-    _state.add(update=_update)
+    _state.add(update=_update,save=_save)
     _state.add_field([serializable.Field('filename', save=True,
                     read=True, isdatafile=True, test_for_eq=False),
                     serializable.Field('topology_file', save=True,
