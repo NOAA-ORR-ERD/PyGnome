@@ -382,11 +382,17 @@ def test_new_from_dict_filename():
     test to_dict function for Wind object
     create a new wind object and make sure it has same properties
     """
-    wm = Wind(filename=wind_file)
-    serial = wm.serialize(json_='save')
-    dict_ = Wind.deserialize(serial)
 
+    print "running test_new_from_dict_filename"
+    print "creating wind object"
+    wm = Wind(filename=wind_file)
+    print "serializing"
+    serial = wm.serialize(json_='save')
+    print "deserializing"
+    dict_ = Wind.deserialize(serial)
+    print "filename:", dict_['filename']
     # this does not catch two objects with same ID
+    print "bulding new one"
     wm2 = Wind.new_from_dict(dict_)
 
     assert wm == wm2
@@ -481,3 +487,12 @@ def test_timeseries_res_sec():
     # check that seconds resolution has been dropped
     for ix, dt in enumerate(w.timeseries['time'].astype(datetime)):
         assert ts['time'][ix].astype(datetime).replace(second=0) == dt
+
+if __name__ == "__main__":
+    # special_cases = ['test_exceptions','test_init']
+    # names =  dir()
+    # for name in names:
+    #     if name not in special_cases and name.startswith('test_'):
+    #         print "running:", name
+    #         locals()[name]()
+    test_new_from_dict_filename()

@@ -5,22 +5,29 @@
 ##    since they have binary dependencies. Following packages are commented
 ##    so pip does not try to install them. Please look at install directions
 ##    in README.md for instructions on installing for your OS.
-#
-#setuptools      # needed before pip can be installed
+
+## making sure pip is up to date first
+pip>=1.5.6
+
+#setuptools      # needed before pip can be installed anyway...
 #numpy>=1.7.0   
-#Cython>=0.17.1
 #netCDF4         # requires netcdf-4 binaries 
-#PIL>=1.1.7
 #matplotlib
 #
 ## End Binary packages ##
 
+##Binary dependencies that can probably be pip installed
+# these have binary wheels for Windows at least...
+pillow
+
+
 ## Python only packages: can be pip installed ##
-Pyrex>=0.9.8.6
-pytest>=2.3.4
+Cython>=0.20.1
+pytest
 sphinx
 progressbar
 six
+geojson
 
 git+https://github.com/NOAA-ORR-ERD/hazpy.unit_conversion.git#egg=hazpy.unit_conversion
 
