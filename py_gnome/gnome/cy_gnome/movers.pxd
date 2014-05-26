@@ -78,6 +78,7 @@ cdef extern from "Random_c.h":
     cdef cppclass Random_c(Mover_c):
         Random_c() except +
         double fDiffusionCoefficient
+        double fUncertaintyFactor
         OSErr get_move(int n, unsigned long model_time, unsigned long step_len, WorldPoint3D* ref, WorldPoint3D* delta, short* LE_status, LEType spillType, long spillID)        
         
 cdef extern from "RandomVertical_c.h":
@@ -112,6 +113,7 @@ cdef extern from "CATSMover_c.h":
    cdef cppclass CATSMover_c(CurrentMover_c):
         CATSMover_c() except +
         double          fEddyDiffusion
+        double          fEddyV0
         short           scaleType                 
         double          scaleValue
         Boolean         bTimeFileActive

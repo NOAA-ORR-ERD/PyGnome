@@ -25,14 +25,18 @@ cdef class CyRandomMover(cy_mover.CyMover):
         del self.mover
         self.rand = NULL
         
-    def __init__(self, diffusion_coef=100000):
+    def __init__(self, diffusion_coef=100000, uncertain_factor=2):
         """
         Default diffusion_coef = 100,000 [cm**2/sec]
+        Default uncertain_factor = 2
         """
         if diffusion_coef < 0:
             raise ValueError("CyRandomMover must have a value greater than or equal to 0 for diffusion_coef")
+        if uncertain_factor < 1:
+            raise ValueError("CyRandomMover must have a value greater than or equal to 1 for uncertain_factor")
         
         self.rand.fDiffusionCoefficient = diffusion_coef
+        self.rand.fUncertaintyFactor = uncertain_factor
     
     property diffusion_coef:
         def __get__(self):
@@ -43,11 +47,20 @@ cdef class CyRandomMover(cy_mover.CyMover):
                 raise ValueError("CyRandomMover must have a value greater than or equal to 0 for diffusion_coef")
             self.rand.fDiffusionCoefficient = value
 
+    property uncertain_factor:
+        def __get__(self):
+            return self.rand.fUncertaintyFactor
+        
+        def __set__(self, value):
+            if value < 1:
+                raise ValueError("CyRandomMover must have a value greater than or equal to 1 for uncertain_factor")
+            self.rand.fUncertaintyFactor = value
+
     def __repr__(self):
         """
         unambiguous repr of object, reuse for str() method
         """
-        return "CyRandomMover(diffusion_coef=%s)" % self.diffusion_coef
+        return "CyRandomMover(diffusion_coef=%s, uncertain_factor=%s)" % (self.diffusion_coef, self.uncertain_factor)
     
     def get_move(self, 
                  model_time, 
