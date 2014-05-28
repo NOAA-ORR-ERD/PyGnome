@@ -215,6 +215,8 @@ class TestObjectSerialization:
         import gnome
         from numpy import array
 
+#        print "repr of ossmT"
+#        print repr(self.ossmT)
         new_ossm = eval(repr(self.ossmT))
 
         assert new_ossm == self.ossmT
@@ -230,6 +232,8 @@ class TestObjectSerialization:
 
 
 if __name__ == '__main__':
-    tt = TestTimeSeriesInit()
-    tt.test_init_timeseries()
-    tt.test_get_time_value()
+    # tt = TestTimeSeriesInit()
+    # tt.test_init_timeseries()
+    # tt.test_get_time_value()
+    T = TestObjectSerialization()
+    T.test_repr()
