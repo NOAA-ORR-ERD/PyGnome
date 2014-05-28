@@ -671,18 +671,18 @@ OSErr OSSMTimeValue_c::ReadNDBCWind(vector<string> &linesInFile, long numHeaderL
 
 		if (lineStream.fail()) {
 			err = -1;
-			string errMsg = "OSSMTimeValue_c::ReadNDBCWind(), Invalid date in data row: '";
+			string errMsg = "Invalid date in data row: '";
 			errMsg += linesInFile[i] + "'";
-			TechError((char*)errMsg.c_str(), 0, 0);
+			TechError("OSSMTimeValue_c::ReadNDBCWind()",(char*)errMsg.c_str(), 0);
 			goto done;
 		}
 
 		// check date is valid
 		if (!DateIsValid(time)){
 			err = -1;
-			string errMsg = "OSSMTimeValue_c::ReadNDBCWind(), Invalid date in data row: '";
+			string errMsg = "Invalid date in data row: '";
 			errMsg += linesInFile[i] + "'";
-			TechError((char*)errMsg.c_str(), 0, 0);
+			TechError( "OSSMTimeValue_c::ReadNDBCWind()",(char*)errMsg.c_str(), 0);
 			goto done;
 		}
 
@@ -692,7 +692,7 @@ OSErr OSSMTimeValue_c::ReadNDBCWind(vector<string> &linesInFile, long numHeaderL
 		if (lineStream.fail()) {
 			// scan will allow comment at end of line, for now just ignore
 			err = -1;
-			TechError("OSSMTimeValue_c::ReadTimeValues(): failed to scan data values", 0, 0);
+			TechError("OSSMTimeValue_c::ReadTimeValues()", "scan data values", 0);
 			goto done;
 		}
 
@@ -947,7 +947,7 @@ OSErr OSSMTimeValue_c::ReadTimeValues(char *path, short format, short unitsIfKno
 		if (lineStream.fail()) {
 			// scan will allow comment at end of line, for now just ignore 
 			err = -1;
-			TechError("TOSSMTimeValue::ReadTimeValues(): failed to scan date/time", 0, 0);
+			TechError("TOSSMTimeValue::ReadTimeValues()", "scan date/time", 0);
 			goto done;
 		}
 
@@ -967,7 +967,7 @@ OSErr OSSMTimeValue_c::ReadTimeValues(char *path, short format, short unitsIfKno
 		if (lineStream.fail()) {
 			// scan will allow comment at end of line, for now just ignore
 			err = -1;
-			TechError("TOSSMTimeValue::ReadTimeValues(): failed to scan data values", 0, 0);
+			TechError("TOSSMTimeValue::ReadTimeValues()", "scan data values", 0);
 			goto done;
 		}
 

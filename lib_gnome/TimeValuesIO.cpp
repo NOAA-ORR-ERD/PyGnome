@@ -92,6 +92,7 @@ bool IsLongWindFile(vector<string> &linesInFile, short *selectedUnitsOut, bool *
 		dataInGMT = true;
 	else {
 		dataInGMT = false;
+		
 		// If we don't choose the ltime or gmtime, I guess we need to have
 		// a specific date/time entry on this line.  I would like to have good
 		// examples of these entries, but it looks like it's probably in the
@@ -99,10 +100,12 @@ bool IsLongWindFile(vector<string> &linesInFile, short *selectedUnitsOut, bool *
 		// Bushy says the flags can be things like PST, but they all boil down to local time
 		// check if this is a valid data line, then it is probably a valid tide file
 		// tide files with header have same first 3 lines as long wind files, followed by data
-		std::replace(currentLine.begin(), currentLine.end(), ',', ' ');
+		
+		// Not sure what is going on here - this is not an optional line
+		//std::replace(currentLine.begin(), currentLine.end(), ',', ' ');
 
-		if (!ParseLine(currentLine, time, val1Str, val2Str))
-			return false;
+		//if (!ParseLine(currentLine, time, val1Str, val2Str))
+			//return false;
 
 	}
 
