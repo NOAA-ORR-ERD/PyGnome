@@ -53,9 +53,8 @@ class Polygon(np.ndarray):
  
     def  __getitem__(self, index):
         """
-        override __getitem__ to return a simple (2, ) ndarray, rather than a Polygon object
+        Override __getitem__ to return a simple (2, ) ndarray, rather than a Polygon object
         """
-        print "__getitem__ called", index
         return np.asarray( np.ndarray.__getitem__(self, index) )
 
     def __eq__(self, other):
@@ -92,6 +91,60 @@ class Polygon(np.ndarray):
     @property
     def bounding_box(self):
         return BBox.fromPoints(self)
+
+    @staticmethod
+    def _scaling_fun(arr, scale):
+        """
+        scales and rounds -- does it all in place.
+        """
+        arr *= scale
+        np.round(arr, out=arr)
+        return arr
+
+    def thin(self, scale):
+        """
+        Returns a new Polygon object, with the points thinned.
+
+        :param scale: The scale to use: it is the ratio of world coords
+                      (usually lat-lon degrees) to pixels.
+        :type scale: (x_scale, y_scale): tuple of floats
+
+        This is an algorithm designed for rendering. What it does
+        is scale the points as you would to draw them (integer pixels).
+        Then it removes any sequential duplicate points. Thus the rendered
+        results should be exactly the same as if you rendered the pre-thinned
+        polygons.
+
+        Polygons that are reduced to 1 point are removed.
+
+        If the polygon has teh first and last point the same, that property
+        is preserved
+        
+        NOTE: in a sequence of close points, the first point is retained.
+              Perhaps it would be better for the mean location of the
+              sequence to be used instead? It should make no difference
+              for rendering, but could make a difference for other purposes 
+        """
+        scale = np.asarray(scale, dtype=np.float64)
+
+        orig_poly = self
+        sc_poly = self._scaling_fun(np.array(self), scale)
+        prev_point = np.asarray(sc_poly[0])
+        # special_case if last point matches first point
+        last_same = 1 if np.array_equal(orig_poly[0], orig_poly[-1]) else 0
+        thinned = [orig_poly[0]]
+        for j in xrange(len(sc_poly)-last_same):
+            point = sc_poly[j]
+            if not np.array_equal(point, prev_point):
+                thinned.append(orig_poly[j])
+            prev_point = point
+        if len(thinned) > 1:
+            if last_same:
+                thinned.append(orig_poly[0])
+            return Polygon(thinned, metadata=orig_poly.metadata)
+        else:
+            return Polygon((), metadata=orig_poly.metadata)
+
 
    
 class PolygonSet:
@@ -269,38 +322,12 @@ class PolygonSet:
               sequence to be used instead? It should make no difference
               for rendering, but could make a difference for other purposes 
         """
-        scale = np.asarray(scale, dtype=np.float64)
-
-        # Scale the polygons:
-
-        def scaling_fun(arr):
-            " scales, rounds, then re-scales back"
-            return np.round(arr * scale) / scale
-
-        scaled_polys = self.Copy()
-        scaled_polys.TransformData(scaling_fun)
-        # remove the duplicates:
         new_polys = PolygonSet()
-        for i in xrange(len(scaled_polys)):
-            sc_poly = scaled_polys[i]
-            orig_poly = self[i]
-            last_point = np.asarray(sc_poly[0])
-            thinned = [orig_poly[0]]
-            for j in xrange(len(sc_poly)):
-                point = sc_poly[j]
-                print "comparing:", point, last_point
-                if not np.array_equal(point, last_point):
-                    thinned.append(orig_poly[j])
-                last_point = point
-            if len(thinned) > 1:
-                print "adding:", thinned
-                new_polys.append(Polygon(thinned, metadata=orig_poly.metadata))
-
+        for poly in self:
+            poly = poly.thin(scale)
+            if len(poly):
+                new_polys.append(poly)
         return new_polys
-
-
-
-
 
 
 def test():

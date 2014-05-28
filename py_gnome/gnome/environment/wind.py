@@ -354,7 +354,11 @@ class Wind(Environment, serializable.Serializable):
     def __del__(self):
         'close tempfile upon deletion'
         if self._tempfile:
-            self._tempfile.close()
+            try:
+                os.remove(self._tempfile.name)
+            except OSError:
+                # must be gone already
+                pass  
 
     @property
     def units(self):
@@ -468,8 +472,9 @@ class Wind(Environment, serializable.Serializable):
         return dict_
 
     def _write_timeseries_to_file(self):
-        'write to file in current working directory'
-        self._tempfile = tempfile.NamedTemporaryFile(prefix='wind_data_')
+        '''write to temp file '''
+
+        self._tempfile = tempfile.NamedTemporaryFile(prefix='wind_data_', delete=False)
         header = ('Station Name\n'
                   'Position\n'
                   'knots\n'
@@ -477,8 +482,7 @@ class Wind(Environment, serializable.Serializable):
                   '0,0,0,0,0,0,0,0\n')
         self._tempfile.write(header)
         val = self.get_timeseries(units='knots')['value']
-        dt = (self.get_timeseries(units='knots')['time']
-              .astype(datetime.datetime))
+        dt = self.get_timeseries(units='knots')['time'].astype(datetime.datetime)
 
         for i, idt in enumerate(dt):
             self._tempfile.write('{0.day:02}, '
@@ -492,7 +496,7 @@ class Wind(Environment, serializable.Serializable):
                                          round(val[i, 1], 4))
                                  )
 
-        self._tempfile.flush()
+        self._tempfile.close()
 
 
 def constant_wind(speed, direction, units='m/s'):

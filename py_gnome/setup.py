@@ -197,16 +197,19 @@ if sys.platform is "darwin" or "win32":
         for dll in glob.glob(os.path.join(dlls_path, '*.dll')):
             dlls_dst = os.path.join(os.getcwd(), 'gnome/cy_gnome/')
 
+            dll_name = os.path.split(dll)[1]
             if sys.argv[1] == 'cleanall' or sys.argv[1] == 'clean':
-                dll_name = os.path.split(dll)[1]
                 rm_dll = os.path.join(dlls_dst, dll_name)
                 if os.path.exists(rm_dll):
                     os.remove(rm_dll)
                     print "deleted: " + rm_dll
             else:
-                print "copy: " + dll + " to: " + dlls_dst
-                shutil.copy(dll, dlls_dst)
-
+                # Note: wierd permissions/file locking thing on Windows -- 
+                #       couldn't delte or overwrite the dll...
+                #       so only copy if it's not there already
+                if not os.path.isfile(os.path.join(dlls_dst, dll_name)):
+                    print "copy: " + dll + " to: " + dlls_dst
+                    shutil.copy(dll, dlls_dst)
         netcdf_names = ('netcdf',)
     else:
         netcdf_names = ('hdf5', 'hdf5_hl', 'netcdf', 'netcdf_c++4')

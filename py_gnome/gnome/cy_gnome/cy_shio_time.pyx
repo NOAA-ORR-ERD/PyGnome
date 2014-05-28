@@ -151,10 +151,10 @@ cdef class CyShioTime(object):
         recreated
         """
         return ('{0.__class__.__module__}.{0.__class__.__name__}('
-                '"{0.filename}", '
+                '{0.filename!r}, '
                 'daylight_savings_off={0.daylight_savings_off}, '
                 'scale_factor={0.scale_factor}, '
-                'yeardata="{0.yeardata}"'
+                'yeardata={0.yeardata!r}'
                 ')'.format(self))
 
     def __str__(self):

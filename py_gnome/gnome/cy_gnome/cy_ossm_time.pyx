@@ -139,10 +139,12 @@ cdef class CyOSSMTime(object):
 
                But do we really want to do that?  One of our unit tests
                has nearly 30000 elements in the timeseries.)
+
+        NOTE: this may fail with a unicode file name.
         """
         self_ts = self.timeseries.__repr__()
         return ('{0.__class__.__module__}.{0.__class__.__name__}('
-                'filename=u"{0.filename}", '
+                'filename=r"{0.filename}", '
                 'file_contains={0.file_contains}, '
                 'timeseries={1}'
                 ')').format(self, self_ts)

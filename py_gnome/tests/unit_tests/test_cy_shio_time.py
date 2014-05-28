@@ -124,8 +124,10 @@ def test_eq():
 
 
 def test_eval_repr():
+    print "in test_eval_repr: shio_file is:", shio_file
     shio = CyShioTime(shio_file)
 
+    print "the repr is:", repr(shio)
     other_shio = eval(repr(shio))
     assert shio == other_shio
 
