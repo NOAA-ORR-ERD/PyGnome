@@ -835,13 +835,14 @@ OSErr Map3D::MakeBitmaps()
 		Rect bitMapRect;
 		long bmWidth, bmHeight;
 		WorldRect wRect = this -> GetMapBounds();
-		LandBitMapWidthHeight(wRect,&bmWidth,&bmHeight);
+		if (err) goto done;
+		err = LandBitMapWidthHeight(wRect,&bmWidth,&bmHeight);
+		if (err) goto done;
 		MySetRect (&bitMapRect, 0, 0, bmWidth, bmHeight);
 		fWaterBitmap = GetBlackAndWhiteBitmap(DrawFilledWaterTriangles2,this,wRect,bitMapRect,&err);
 		if(err) goto done;
 		fLandBitmap = GetBlackAndWhiteBitmap(DrawWideLandSegments2,this,wRect,bitMapRect,&err); 
-		if(err) goto done;
-	
+		if(err) goto done;	
 	}
 done:	
 	if(err)
@@ -1332,23 +1333,24 @@ OSErr Map3D::Read(BFPB *bfpb)
 	
 	if (!(this->IAm(TYPE_COMPOUNDMAP)))
 	{
-	Rect bitMapRect;
-	long bmWidth, bmHeight;
-	WorldRect wRect = this -> GetMapBounds(); // bounds have been read in by the base class
-	LandBitMapWidthHeight(wRect,&bmWidth,&bmHeight);
-	MySetRect (&bitMapRect, 0, 0, bmWidth, bmHeight);
+		Rect bitMapRect;
+		long bmWidth, bmHeight;
+		WorldRect wRect = this -> GetMapBounds(); // bounds have been read in by the base class
+		err = LandBitMapWidthHeight(wRect,&bmWidth,&bmHeight);
+		if (err) {printError("Unable to recreate bitmap in Map3D::Read"); return err;}
+		MySetRect (&bitMapRect, 0, 0, bmWidth, bmHeight);
 
-	fLandBitmap = GetBlackAndWhiteBitmap(DrawWideLandSegments2,this,wRect,bitMapRect,&err);
+		fLandBitmap = GetBlackAndWhiteBitmap(DrawWideLandSegments2,this,wRect,bitMapRect,&err);
 
-	if(!err)
-	fWaterBitmap = GetBlackAndWhiteBitmap(DrawFilledWaterTriangles2,this,wRect,bitMapRect,&err);
+		if(!err)
+			fWaterBitmap = GetBlackAndWhiteBitmap(DrawFilledWaterTriangles2,this,wRect,bitMapRect,&err);
  		
-	switch(err) 
-	{
-		case noErr: break;
-		case memFullErr: printError("Out of memory in Map::Read"); break;
-		default: TechError("Map3D::Read", "GetBlackAndWhiteBitmap", err); break;
-	}
+		switch(err) 
+		{
+			case noErr: break;
+			case memFullErr: printError("Out of memory in Map::Read"); break;
+			default: TechError("Map3D::Read", "GetBlackAndWhiteBitmap", err); break;
+		}
 	}
 	return 0;
 }

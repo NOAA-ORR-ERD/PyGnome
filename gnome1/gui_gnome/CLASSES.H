@@ -631,7 +631,7 @@ Boolean IsBlackPixel(WorldPoint p,WorldRect mapBounds,BitMap bm);
 #else
 Boolean IsBlackPixel(WorldPoint p,WorldRect mapBounds,HDIB bm);
 #endif
-void 	LandBitMapWidthHeight(WorldRect wRect, long *width, long* height);
+OSErr 	LandBitMapWidthHeight(WorldRect wRect, long *width, long* height);
 OSErr	AddMapsDialog ();
 OSErr	AddMapsDialog2 ();
 
