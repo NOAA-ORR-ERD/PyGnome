@@ -276,7 +276,7 @@ OSErr TVectorMap::InitMap () // JLM,7/31/98 this function was missing so base cl
 Boolean gHighRes = true;
 //Boolean gHighRes = false;
 long gDesiredNumBits = 40000000L;
-void LandBitMapWidthHeight(WorldRect wRect, long *width, long* height)
+OSErr LandBitMapWidthHeight(WorldRect wRect, long *width, long* height)
 {	// we can use the aspect ratio to get better fits
 	// but make sure the width is a multiple of 32 !!!!
 	//#define BWMAPWIDTH 3200 // pixels
@@ -288,6 +288,7 @@ void LandBitMapWidthHeight(WorldRect wRect, long *width, long* height)
 	long desiredNumBits =  10000000L;// use approx 40 million bits
 	double fraction,latDist,lngDist;
 	long w,h;
+	OSErr err = 0;
 	
 	//if (gHighRes) desiredNumBits = 40000000L;
 	if (gHighRes) desiredNumBits = 100000000L;	// try something bigger 2/14/13
@@ -297,11 +298,18 @@ void LandBitMapWidthHeight(WorldRect wRect, long *width, long* height)
 	latDist = fabs(LatToDistance(wRect.loLat - wRect.hiLat)); // in kilometers
 	lngDist = fabs(LongToDistance(wRect.loLong - wRect.hiLong,center));// in kilometers
 	
+	// return error if either latDist or lngDist = 0
 	if(lngDist > 0 ) fraction = latDist/lngDist;
-	else fraction = 0.5; // this should not happen
+	//else fraction = 0.5; // this should not happen
+	//else fraction = 1.; // this should not happen
+	else return -1;
+	if(latDist == 0) return -1;
 	
-	if(fraction < 0.01) fraction = 0.01; // minimum aspect ratios
-	if(fraction < 0.99) fraction = 0.99;
+	//if(fraction < 0.01) fraction = 0.01; // minimum aspect ratios
+	//if(fraction < 0.99) fraction = 0.99;
+	
+	if(fraction < 0.1) fraction = 0.1; // minimum aspect ratios - probably even bigger value since .25 caused a problem...
+	if(fraction > 10.) fraction = 10.;
 	
 	// fraction = latDist/lngDist = height/width;
 	// height*width = 1 meg
@@ -313,8 +321,14 @@ void LandBitMapWidthHeight(WorldRect wRect, long *width, long* height)
 	
 	h = desiredNumBits/w;
 	
+	// there is a hard limit on height and width of 16384 (2^14)
+	if (w > 16384) w = 16384;
+	if (h > 16384) h = 16384;
+	
 	*width = w;
 	*height = h; 
+	
+	return err;
 }
 
 OSErr TVectorMap::InitMap (char *path)
@@ -378,7 +392,8 @@ OSErr TVectorMap::InitMap (char *path)
 
 	SetMapBounds (wRect);
 	SetExtendedBounds (wRect);
-	LandBitMapWidthHeight(wRect,&bmWidth,&bmHeight);
+	err = LandBitMapWidthHeight(wRect,&bmWidth,&bmHeight);
+	if (err){printError("Unable to create bitmap in TVectorMap::InitMap"); return err;}
 	MySetRect (&bitMapRect, 0, 0, bmWidth, bmHeight);
 
 	fLandWaterBitmap = GetBlackAndWhiteBitmap(DrawLandLayer,this,wRect,bitMapRect,&err);
@@ -1310,7 +1325,8 @@ OSErr TVectorMap::Read(BFPB *bfpb)
 	
 	long bmWidth, bmHeight;
 	//if (err = ReadMacValue(bfpb, &fBitMapResMultiple)) return err;
-	LandBitMapWidthHeight(wRect,&bmWidth,&bmHeight);
+	err = LandBitMapWidthHeight(wRect,&bmWidth,&bmHeight);
+	if (err) {printError("Unable to recreate bitmap in TVectorMap::Read"); return err;}
 	MySetRect (&bitMapRect, 0, 0, bmWidth, bmHeight);
 
 	fLandWaterBitmap = GetBlackAndWhiteBitmap(DrawLandLayer,this,wRect,bitMapRect,&err);
@@ -1591,21 +1607,22 @@ OSErr TVectorMap::ReplaceMap()
 		long bmWidth, bmHeight;
 		Rect bitMapRect;
 		ImportESIData(path);
-		if(this->HaveESIMapLayer()){
-		WorldRect esiMapBounds,wRect;
-		this->esiMapLayer -> GetLayerScope (&LayerLBounds, true);
-		esiMapBounds.hiLat = LayerLBounds.top;
-		esiMapBounds.loLat = LayerLBounds.bottom;
-		esiMapBounds.loLong = LayerLBounds.left;
-		esiMapBounds.hiLong = LayerLBounds.right;
-		wRect = UnionWRect(esiMapBounds,fMapBounds);
-		LandBitMapWidthHeight(wRect,&bmWidth,&bmHeight);
-		MySetRect (&bitMapRect, 0, 0, bmWidth, bmHeight);
-		if(!err && this->HaveESIMapLayer())
-		fESIBitmap = GetBlackAndWhiteBitmap(DrawESIMapLayer,this,wRect,bitMapRect,&err);
-		return err;
+		if(this->HaveESIMapLayer())
+		{
+			WorldRect esiMapBounds,wRect;
+			this->esiMapLayer -> GetLayerScope (&LayerLBounds, true);
+			esiMapBounds.hiLat = LayerLBounds.top;
+			esiMapBounds.loLat = LayerLBounds.bottom;
+			esiMapBounds.loLong = LayerLBounds.left;
+			esiMapBounds.hiLong = LayerLBounds.right;
+			wRect = UnionWRect(esiMapBounds,fMapBounds);
+			err = LandBitMapWidthHeight(wRect,&bmWidth,&bmHeight);
+			if (err) {printError("Unable to create bitmap in TVectorMap::ReplaceMap"); return err;}
+			MySetRect (&bitMapRect, 0, 0, bmWidth, bmHeight);
+			if(!err && this->HaveESIMapLayer())
+			fESIBitmap = GetBlackAndWhiteBitmap(DrawESIMapLayer,this,wRect,bitMapRect,&err);
+			return err;
 		}
-
 
 	}
 #if !TARGET_API_MAC_CARBON
@@ -2848,7 +2865,8 @@ OSErr TVectorMap::ChangeMapBox(WorldPoint p, WorldPoint p2)
 	
 	map->SetMapBounds (mapBounds);
 	map->SetExtendedBounds (mapBounds);
-	LandBitMapWidthHeight(mapBounds,&bmWidth,&bmHeight);
+	err = LandBitMapWidthHeight(mapBounds,&bmWidth,&bmHeight);
+	if (err) {printError("Unable to make bitmap in TVectorMap::ChangeMapBox");return err;}
 	MySetRect (&bitMapRect, 0, 0, bmWidth, bmHeight);
 	
 	if(!err && map->HaveMapBoundsLayer())

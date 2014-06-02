@@ -1210,7 +1210,8 @@ OSErr TCompoundMap::Read(BFPB *bfpb)
  Rect bitMapRect;
  long bmWidth, bmHeight;
  WorldRect wRect = this -> GetMapBounds();
- LandBitMapWidthHeight(wRect,&bmWidth,&bmHeight);
+ err = LandBitMapWidthHeight(wRect,&bmWidth,&bmHeight);
+ if (err) goto done;
  MySetRect (&bitMapRect, 0, 0, bmWidth, bmHeight);
  fWaterBitmap = GetBlackAndWhiteBitmap(DrawFilledWaterTriangles,this,wRect,bitMapRect,&err);
  if(err) goto done;
