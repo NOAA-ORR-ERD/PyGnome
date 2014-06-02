@@ -1390,7 +1390,8 @@ OSErr PtCurMap::MakeBitmaps()
 		Rect bitMapRect;
 		long bmWidth, bmHeight;
 		WorldRect wRect = this -> GetMapBounds();
-		LandBitMapWidthHeight(wRect,&bmWidth,&bmHeight);
+		err = LandBitMapWidthHeight(wRect,&bmWidth,&bmHeight);
+		if (err) goto done;
 		MySetRect (&bitMapRect, 0, 0, bmWidth, bmHeight);
 		fWaterBitmap = GetBlackAndWhiteBitmap(DrawFilledWaterTriangles,this,wRect,bitMapRect,&err);
 		if(err) goto done;
@@ -1451,7 +1452,8 @@ OSErr PtCurMap::AddMover(TMover *theMover, short where)
 		Rect bitMapRect;
 		long bmWidth, bmHeight;
 		WorldRect wRect = this -> GetMapBounds();
-		LandBitMapWidthHeight(wRect,&bmWidth,&bmHeight);
+		err = LandBitMapWidthHeight(wRect,&bmWidth,&bmHeight);
+		if (err) goto done;
 		MySetRect (&bitMapRect, 0, 0, bmWidth, bmHeight);
 		fWaterBitmap = GetBlackAndWhiteBitmap(DrawFilledWaterTriangles,this,wRect,bitMapRect,&err);
 		if(err) goto done;
@@ -2075,23 +2077,24 @@ OSErr PtCurMap::Read(BFPB *bfpb)
 	
 	if (!(this->IAm(TYPE_COMPOUNDMAP)))
 	{
-	Rect bitMapRect;
-	long bmWidth, bmHeight;
-	WorldRect wRect = this -> GetMapBounds(); // bounds have been read in by the base class
-	LandBitMapWidthHeight(wRect,&bmWidth,&bmHeight);
-	MySetRect (&bitMapRect, 0, 0, bmWidth, bmHeight);
+		Rect bitMapRect;
+		long bmWidth, bmHeight;
+		WorldRect wRect = this -> GetMapBounds(); // bounds have been read in by the base class
+		err = LandBitMapWidthHeight(wRect,&bmWidth,&bmHeight);
+		if (err) {printError("Unable to recreate bitmap in PtCurMap::Read"); return err;}
+		MySetRect (&bitMapRect, 0, 0, bmWidth, bmHeight);
 
-	fLandBitmap = GetBlackAndWhiteBitmap(DrawWideLandSegments,this,wRect,bitMapRect,&err);
+		fLandBitmap = GetBlackAndWhiteBitmap(DrawWideLandSegments,this,wRect,bitMapRect,&err);
 
-	if(!err)
-	fWaterBitmap = GetBlackAndWhiteBitmap(DrawFilledWaterTriangles,this,wRect,bitMapRect,&err);
- 		
-	switch(err) 
-	{
-		case noErr: break;
-		case memFullErr: printError("Out of memory in PtCurMap::Read"); break;
-		default: TechError("PtCurMap::Read", "GetBlackAndWhiteBitmap", err); break;
-	}
+		if(!err)
+			fWaterBitmap = GetBlackAndWhiteBitmap(DrawFilledWaterTriangles,this,wRect,bitMapRect,&err);
+			
+		switch(err) 
+		{
+			case noErr: break;
+			case memFullErr: printError("Out of memory in PtCurMap::Read"); break;
+			default: TechError("PtCurMap::Read", "GetBlackAndWhiteBitmap", err); break;
+		}
 	}
 	return 0;
 }
