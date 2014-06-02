@@ -218,6 +218,14 @@ class TestOrderedCollection(object):
             != OrderedCollection([1, 2, 3, 4])
         assert OrderedCollection([1, 2, 3, 4, 5]) != [1, 2, 3, 4, 5]
 
+    def test_getbyindex(self):
+        oc = OrderedCollection(['x', 'a', 'p', 'd'])
+        assert oc.get_by_index(1) == 'a'
+        oc[id('a')] = 'b'
+        assert oc.get_by_index(1) == 'b'
+        del oc[id('b')]
+        assert oc.get_by_index(1) == 'p'
+
     @mark.parametrize('json_', ['save', 'webapi'])
     def test_to_dict(self, json_):
         'added a to_dict() method - test this method'

@@ -129,6 +129,11 @@ class OrderedCollection(object):
         else:
             return idx
 
+    def get_by_index(self, index):
+        'return object at specified index or ordered collection'
+        ix = sorted(self._index.values())[index]
+        return self._elems[ix]
+
     def __len__(self):
         return len(self._index.keys())
 
