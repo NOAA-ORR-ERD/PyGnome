@@ -133,7 +133,6 @@ def test_exceptions_middle_of_run(model):
     """
     model.rewind()
     model.step()
-
     o_put = [model.outputters[outputter.id]
              for outputter in model.outputters
              if isinstance(outputter, NetCDFOutput)][0]
@@ -208,7 +207,7 @@ def test_write_output_standard(model):
     for file_ in (o_put.netcdf_filename, o_put._u_netcdf_filename):
         with nc.Dataset(file_) as data:
             dv = data.variables
-            time_ = nc.num2date(dv['time'], dv['time'].units,
+            time_ = nc.num2date(dv['time'][:], dv['time'].units,
                                 calendar=dv['time'].calendar)
 
             idx = np.cumsum((dv['particle_count'])[:])
