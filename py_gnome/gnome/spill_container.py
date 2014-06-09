@@ -239,7 +239,6 @@ class SpillContainer(SpillContainerData):
                              'last_water_positions': array_types.last_water_positions,
                              'status_codes': array_types.status_codes,
                              'spill_num': array_types.spill_num,
-                             'spill_id': array_types.spill_id,
                              'id': array_types.id,
                              'rise_vel': array_types.rise_vel,
                              'droplet_diameter': array_types.droplet_diameter,
@@ -350,7 +349,10 @@ class SpillContainer(SpillContainerData):
         This calls release_elements on all of the contained spills, and adds
         the elements to the data arrays
         """
-        for sp in [sp for sp in self.spills if sp.on]:
+        for sp in self.spills:
+            if not sp.on:
+                continue
+
             num_released = sp.num_elements_to_release(model_time, time_step)
 
             if num_released > 0:
@@ -360,9 +362,6 @@ class SpillContainer(SpillContainerData):
                 # correctly
                 self._array_types['spill_num'].initial_value = \
                                 self.spills.index(sp.id, renumber=False)
-                # set spill_id initial value to spill's id
-                # make it a tuple since spill_id is a char array
-                self._array_types['spill_id'].initial_value = tuple(sp.id)
 
                 if len(self['spill_num']) > 0:
                     # unique identifier for each new element released
@@ -370,6 +369,14 @@ class SpillContainer(SpillContainerData):
                     # initialize function just calls:
                     #  range(initial_value, num_released + initial_value)
                     self._array_types['id'].initial_value = self['id'][-1] + 1
+                else:
+                    # always reset the value of first particle released to 0
+                    # when we have uncertain spills - this will be non-zero
+                    # for uncertain spill even if no particles are released
+                    # because the certian spill released particles and it gets
+                    # incremented. To be safe, always reset to 0 when no
+                    # particles are released
+                    self._array_types['id'].initial_value = 0
 
                 # append to data arrays
                 self._append_data_arrays(num_released)
@@ -398,6 +405,10 @@ class SpillContainer(SpillContainerData):
                 .format(sorted(self._data_arrays.keys())))
 
     __repr__ = __str__
+
+    def get_by_index(self, index):
+        'return the spill object from ordered collection at index'
+        return self.spills.get_by_index(index)
 
 
 class SpillContainerPairData(object):
@@ -633,3 +644,20 @@ class SpillContainerPair(SpillContainerPairData):
 
         else:
             return self._spill_container.spills.to_dict(json_)
+
+    def spill_by_index(self, index, uncertain=False):
+        '''return either the forecast spill or the uncertain spill at
+        specified index'''
+        if uncertain:
+            return self._u_spill_container.get_by_index(index)
+        else:
+            return self._spill_container.get_by_index(index)
+
+    @property
+    def num_released(self):
+        'elements released by (forecast, uncertain) spills'
+        if self.uncertain:
+            return (self._spill_container.num_released,
+                    self._u_spill_container.num_released)
+        else:
+            return (self._spill_container.num_released,)

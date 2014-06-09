@@ -630,6 +630,25 @@ class TestAddSpillContainerPair:
         for sp, idx in zip(scp._u_spill_container.spills, range(len(c_spill))):
             assert sp.id == u_spill[idx].id
 
+    def test_release_particles(self):
+        spill = [point_line_release_spill(self.num_elements,
+                 self.start_position, self.start_time) for i in
+                 range(2)]
+
+        scp = SpillContainerPair(True)
+        scp += spill[0]
+        scp += spill[1]
+        for sc in scp.items():
+            sc.prepare_for_model_run(windage_at)
+            # model sets this for each step
+            sc.current_time_stamp = self.start_time
+            sc.release_elements(100, self.start_time)
+
+        for key in ['id', 'spill_num', 'age']:
+            c_val = scp.LE(key)
+            u_val = scp.LE(key, 'uncertain')
+            assert np.all(c_val == u_val)
+
     @pytest.mark.parametrize('json_', ['save', 'webapi'])
     def test_to_dict(self, json_):
         c_spill = [point_line_release_spill(self.num_elements,
