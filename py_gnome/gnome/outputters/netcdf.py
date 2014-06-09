@@ -73,7 +73,6 @@ var_attributes = {
                               'units': 'm s-1'},
     'next_positions': {},
     'last_water_positions': {},
-    'spill_id': {'long_name': 'unique uuid of spill that released particle'}
     }
 
 
@@ -406,9 +405,6 @@ class NetCDFOutput(Outputter, Serializable):
                 rootgrp.createDimension('three', 3)
                 rootgrp.createDimension('four', 4)
                 rootgrp.createDimension('five', 5)
-                # hack for storing the spill_id which is a 36lenght char array
-                # todo: revisit and discuss w/ Chris
-                rootgrp.createDimension('thirty-six', 36)
 
                 # create the time variable
                 time_ = rootgrp.createVariable('time',
@@ -464,11 +460,6 @@ class NetCDFOutput(Outputter, Serializable):
                         elif at.shape == (2,):
                             shape = ('data', 'two')
                             chunksizes = (self._chunksize, 2)
-                        # todo: revisit this w/ Chris - what is best way to
-                        # persist 'spill_id' to netcdf file
-                        elif var_name == 'spill_id':
-                            shape = ('data', 'thirty-six')
-                            chunksizes = (self._chunksize, 36)
                         else:
                             shape = ('data',)
                             chunksizes = (self._chunksize,)
