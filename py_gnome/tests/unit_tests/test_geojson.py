@@ -35,7 +35,7 @@ def model(sample_model):
 
     model.outputters += GeoJson(output_dir=output_dir)
 
-    N = 1  # a line of ten points
+    N = 10  # a line of ten points
     line_pos = np.zeros((N, 3), dtype=np.float64)
     line_pos[:, 0] = np.linspace(rel_start_pos[0], rel_end_pos[0], N)
     line_pos[:, 1] = np.linspace(rel_start_pos[1], rel_end_pos[1], N)
@@ -52,6 +52,7 @@ def model(sample_model):
 
     model.spills += Spill(release)
 
+    model.rewind()
     return model
 
 
