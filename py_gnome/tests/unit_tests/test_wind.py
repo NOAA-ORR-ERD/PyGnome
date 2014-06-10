@@ -115,6 +115,12 @@ def test_units():
     assert wm.units == new_units
 
 
+def test_default_init():
+    wind = Wind()
+    assert wind.timeseries == np.zeros((1,), dtype=datetime_value_2d)
+    assert wind.units == 'mps'
+
+
 def test_init(wind_circ):
     """
     figure out how to pass the parameter to above fixture

@@ -154,13 +154,13 @@ class Wind(Environment, serializable.Serializable):
                  latitude=None, longitude=None,
                  **kwargs):
         """
-        Initializes a wind object
-        It requires one of the following to initialize:
-              1. 'timeseries' along with 'units' or
-              2. a 'filename' containing a header that defines units amongst
-                 other meta data
-
+        Initializes a wind object from timeseries or datafile
         If both are given, it will read data from the file
+
+        If neither are given, timeseries gets initialized as:
+            timeseries = np.zeros((1,), dtype=basic_types.datetime_value_2d)
+            units = 'mps'
+        If user provides timeseries, they *must* also provide units
 
         All other keywords are optional.
         Optional parameters (kwargs):
@@ -199,8 +199,8 @@ class Wind(Environment, serializable.Serializable):
                          wind data is obtained from NWS
         """
         if (timeseries is None and filename is None):
-            raise TypeError('Either provide a timeseries or a wind file '
-                            'with a header, containing wind data')
+            timeseries = np.zeros((1,), dtype=basic_types.datetime_value_2d)
+            units = 'mps'
 
         self._tempfile = None
         self._filename = None
@@ -305,7 +305,7 @@ class Wind(Environment, serializable.Serializable):
 
         # make resolution to minutes in datetime
         for ix, tm in enumerate(timeseries['time'].astype(datetime.datetime)):
-            print 'tm[{0}]:'.format(ix), tm
+            #print 'tm[{0}]:'.format(ix), tm
             timeseries['time'][ix] = tm.replace(second=0)
 
     def __repr__(self):
