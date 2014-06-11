@@ -305,7 +305,6 @@ class Wind(Environment, serializable.Serializable):
 
         # make resolution to minutes in datetime
         for ix, tm in enumerate(timeseries['time'].astype(datetime.datetime)):
-            print 'tm[{0}]:'.format(ix), tm
             timeseries['time'][ix] = tm.replace(second=0)
 
     def __repr__(self):
