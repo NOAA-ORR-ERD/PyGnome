@@ -56,9 +56,10 @@ class OrderedCollection(object):
         remove None elements from self._elems and renumber the indices in
         self._index
         '''
-        self._elems = [elem for elem in self._elems if elem is not None]
-        for ix, elem in enumerate(self._elems):
-            self._index[self._s_id(elem)] = ix
+        if None in self._elems:
+            self._elems = [elem for elem in self._elems if elem is not None]
+            for ix, elem in enumerate(self._elems):
+                self._index[self._s_id(elem)] = ix
 
     def get(self, ident):
         '''
