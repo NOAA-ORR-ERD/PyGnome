@@ -3,7 +3,6 @@
 '''
 test code for the model class
 '''
-
 import os
 import shutil
 from datetime import datetime, timedelta
@@ -15,23 +14,21 @@ import pytest
 from pytest import raises
 
 from gnome.basic_types import datetime_value_2d
-from gnome.spill.elements import floating
-
 from gnome.utilities import inf_datetime
-from gnome.model import Model
-from gnome.spill import Spill, SpatialRelease, point_line_release_spill
 from gnome.utilities.remote_data import get_datafile
 
 import gnome.map
 from gnome.environment import Wind, Tide
+from gnome.model import Model
 
-from gnome.movers.simple_mover import SimpleMover
-from gnome.movers import RandomMover, WindMover, CatsMover
+from gnome.spill import Spill, SpatialRelease, point_line_release_spill
+from gnome.spill.elements import floating
+
+from gnome.movers import SimpleMover, RandomMover, WindMover, CatsMover
 
 from gnome.weatherers import Weatherer
 from gnome.outputters import Renderer
 
-from gnome.model import Model
 
 basedir = os.path.dirname(__file__)
 datadir = os.path.join(basedir, 'sample_data')

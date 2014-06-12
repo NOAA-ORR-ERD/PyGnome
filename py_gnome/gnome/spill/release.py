@@ -476,13 +476,8 @@ class SpatialRelease(Release, Serializable):
         .. note:: this releases all the elements at their initial positions at
             the release_time
         """
-        # call the base Spill class set_newparticle_values()
-        #super(SpatialRelease, self).set_newparticle_values(num_new_particles,
-        #                                                    current_time,
-        #                                                    time_step,
-        #                                                    data_arrays)
         self.num_released = self.num_elements
-        data_arrays['positions'][:, :] = self.start_position
+        data_arrays['positions'][-self.num_released:] = self.start_position
 
 
 class VerticalPlumeRelease(Release, Serializable):

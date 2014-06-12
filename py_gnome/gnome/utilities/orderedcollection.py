@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+import types
 
 
 class OrderedCollection(object):
@@ -129,6 +130,11 @@ class OrderedCollection(object):
         else:
             return idx
 
+    def get_by_index(self, index):
+        'return object at specified index or ordered collection'
+        ix = sorted(self._index.values())[index]
+        return self._elems[ix]
+
     def __len__(self):
         return len(self._index.keys())
 
@@ -197,6 +203,38 @@ class OrderedCollection(object):
             return False
         else:
             return True
+
+    def __getstate__(self):
+        '''
+            Used by pickle.dump() and pickle.dumps()
+            Notes:
+            - Dynamically set instance methods cannot be pickled methods.
+              They should not be present in the resulting dict.
+            - self.callbacks contains keys that are instance methods,
+              and we would like to save them somehow.
+        '''
+        ret = dict([(k, v) for k, v in self.__dict__.iteritems()
+                    if type(v) != types.MethodType
+                    and k not in ('callbacks',)])
+
+        callbacks = [((k.im_self, k.im_func.func_name), v)
+                     for k, v in self.callbacks.items()]
+        ret['callbacks'] = callbacks
+
+        return ret
+
+    def __setstate__(self, d):
+        '''
+            Used by pickle.load() and pickle.loads()
+            Note: We will need to explicitly reconstruct any instance methods
+                  that were dynamically set in __init__()
+        '''
+        d['callbacks'] = dict([(getattr(*obj), name)
+                               for obj, name in d['callbacks']])
+        self.__dict__ = d
+
+        # reconstruct our dynamically set methods.
+        # let's see what we need to do after some testing.
 
     def to_dict(self, json_='webapi'):
         '''

@@ -1,11 +1,11 @@
 #!/usr/bin/env python
-
+import os
+import shutil
+import types
 from datetime import datetime, timedelta
 import glob
 import copy
-import os
 import json
-import shutil
 
 import numpy
 np = numpy
@@ -44,7 +44,7 @@ class SpillContainerPairSchema(MappingSchema):
 class ModelSchema(base_schema.ObjType):
     'Colander schema for Model object'
     time_step = SchemaNode(Float())
-    weathering_substeps = SchemaNode(Int())
+    weathering_substeps = SchemaNode(Int(), missing=drop)
     start_time = SchemaNode(extend_colander.LocalDateTime(),
                             validator=validators.convertible_to_seconds)
     duration = SchemaNode(extend_colander.TimeDelta())  # max duration?
