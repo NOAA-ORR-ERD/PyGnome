@@ -36,6 +36,12 @@ def test_remake():
         assert oc._index[s_id(elem)] == ix
 
 
+def test_remake_emptyoc():
+    'empty OC'
+    oc = OrderedCollection(dtype=int)
+    oc.remake()
+
+
 class TestOrderedCollection(object):
 
     def test_init(self):

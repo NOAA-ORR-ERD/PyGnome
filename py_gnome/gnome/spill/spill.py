@@ -148,6 +148,9 @@ class Spill(serializable.Serializable):
         objects. Check all properties here so nested objects properties
         can be checked in the __eq__ implementation within the nested objects
         """
+        if not self._check_type(other):
+            return False
+
         if (self._state.get_field_by_attribute('save') !=
             other._state.get_field_by_attribute('save')):
             return False

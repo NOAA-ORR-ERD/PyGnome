@@ -278,6 +278,9 @@ class SpillContainer(SpillContainerData):
         self._reset_arrays()
         self.initialize_data_arrays()
 
+        # remake() spills ordered collection
+        self.spills.remake()
+
     def get_spill_mask(self, spill):
         return self['spill_num'] == self.spills.index(spill)
 
@@ -317,6 +320,9 @@ class SpillContainer(SpillContainerData):
         # let's keep those. A rewind will reset data_arrays.
         self._array_types.update(array_types)
         self.initialize_data_arrays()
+
+        # remake() spills ordered collection
+        self.spills.remake()
 
     def initialize_data_arrays(self):
         """

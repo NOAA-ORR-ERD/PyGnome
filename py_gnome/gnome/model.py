@@ -229,6 +229,11 @@ class Model(Serializable):
         for outputter in self.outputters:
             outputter.rewind()
 
+        # remake orderedcollections defined by model
+        for oc in [self.movers, self.weatherers,
+                   self.outputters, self.environment]:
+            oc.remake()
+
 #    def write_from_cache(self, filetype='netcdf', time_step='all'):
 #        """
 #        write the already-cached data to an output files.
@@ -331,6 +336,11 @@ class Model(Serializable):
         Sets up each mover for the model run
         '''
         self.spills.rewind()  # why is rewind for spills here?
+
+        # remake orderedcollections defined by model
+        for oc in [self.movers, self.weatherers,
+                   self.outputters, self.environment]:
+            oc.remake()
 
         array_types = {}
 
