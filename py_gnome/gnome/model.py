@@ -1,11 +1,11 @@
 #!/usr/bin/env python
-
+import os
+import shutil
+import types
 from datetime import datetime, timedelta
 import glob
 import copy
-import os
 import json
-import shutil
 
 import numpy
 np = numpy
