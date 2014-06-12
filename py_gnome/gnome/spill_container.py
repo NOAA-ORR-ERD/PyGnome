@@ -278,9 +278,6 @@ class SpillContainer(SpillContainerData):
         self._reset_arrays()
         self.initialize_data_arrays()
 
-        # remake() spills ordered collection
-        self.spills.remake()
-
     def get_spill_mask(self, spill):
         return self['spill_num'] == self.spills.index(spill)
 
