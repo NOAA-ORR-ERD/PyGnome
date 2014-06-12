@@ -686,8 +686,8 @@ class Model(Serializable):
                 if field.save_reference:
                     'attribute is stored as a reference to environment list'
                     if getattr(obj, field.name) is not None:
-                        obj_id = getattr(obj, field.name).id
-                        index = self.environment.index(obj_id)
+                        ref_obj = getattr(obj, field.name)
+                        index = self.environment.index(ref_obj)
                         json_[field.name] = index
 
             self._save_json_to_file(saveloc, json_,

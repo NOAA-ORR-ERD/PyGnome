@@ -73,7 +73,7 @@ def test_model_outputgeojson(model):
 def test_spill_id_geojson(model):
     'test geojson outputter with a model since simplest to do that'
     # default is to round data
-    roundto = model.outputters.get_by_index(0).roundto
+    roundto = model.outputters[0].roundto
     for ix in range(3):
         output = model.step()
         l_id = model.spills.LE('id')

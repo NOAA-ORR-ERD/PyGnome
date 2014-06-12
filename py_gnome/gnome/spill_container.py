@@ -279,7 +279,7 @@ class SpillContainer(SpillContainerData):
         self.initialize_data_arrays()
 
     def get_spill_mask(self, spill):
-        return self['spill_num'] == self.spills.index(spill.id)
+        return self['spill_num'] == self.spills.index(spill)
 
     def uncertain_copy(self):
         """
@@ -361,7 +361,7 @@ class SpillContainer(SpillContainerData):
                 # particles - just another way to set value of spill_num
                 # correctly
                 self._array_types['spill_num'].initial_value = \
-                                self.spills.index(sp.id, renumber=False)
+                                self.spills.index(sp)
 
                 if len(self['spill_num']) > 0:
                     # unique identifier for each new element released
@@ -406,9 +406,9 @@ class SpillContainer(SpillContainerData):
 
     __repr__ = __str__
 
-    def get_by_index(self, index):
+    def spill_by_index(self, index):
         'return the spill object from ordered collection at index'
-        return self.spills.get_by_index(index)
+        return self.spills[index]
 
 
 class SpillContainerPairData(object):
@@ -649,9 +649,9 @@ class SpillContainerPair(SpillContainerPairData):
         '''return either the forecast spill or the uncertain spill at
         specified index'''
         if uncertain:
-            return self._u_spill_container.get_by_index(index)
+            return self._u_spill_container.spill_by_index(index)
         else:
-            return self._spill_container.get_by_index(index)
+            return self._spill_container.spill_by_index(index)
 
     @property
     def num_released(self):

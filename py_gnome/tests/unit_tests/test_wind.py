@@ -28,11 +28,6 @@ def test_exceptions(invalid_rq):
     dtv.time = [datetime(2012, 11, 06, 20, 10 + i, 30,) for i in range(4)]
     dtv.value = (1, 0)
 
-    # nether timeseries, nor file are give
-
-    with raises(TypeError):
-        Wind()
-
     # incorrect type of numpy array for init
 
     with raises(ValueError):
