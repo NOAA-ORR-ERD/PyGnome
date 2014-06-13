@@ -63,13 +63,39 @@ def test_file_delete():
         open(os.path.join(output_dir, fg_format % i), 'w'
              ).write('some junk')
 
-    r.prepare_for_model_run(model_start_time=datetime.now(),
-                            num_time_steps=10)
+    r.prepare_for_model_run(model_start_time=datetime.now())
 
     # there should only be a background image now.
 
     files = os.listdir(output_dir)
     assert files == [r.background_map_name]
+
+
+def test_rewind():
+    'test rewind calls base function and clear_output_dir'
+    r = Renderer(bna_sample, output_dir)
+    bg_name = r.background_map_name
+    fg_format = r.foreground_filename_format
+
+    # dump some files into output dir:
+
+    open(os.path.join(output_dir, bg_name), 'w').write('some junk')
+
+    for i in range(5):
+        open(os.path.join(output_dir, fg_format % i), 'w'
+             ).write('some junk')
+
+    now = datetime.now()
+    r.prepare_for_model_run(model_start_time=now)
+
+    assert r._model_start_time == now
+
+    r.rewind()
+    assert r._model_start_time is None  # check super is called correctly
+    # there should only be a background image now.
+
+    files = os.listdir(output_dir)
+    assert files == []
 
 
 def test_render_elements():

@@ -314,7 +314,7 @@ class NetCDFOutput(Outputter, Serializable):
                              .format(file_))
 
     def prepare_for_model_run(self, model_start_time,
-                              cache=None, uncertain=False, spills=None,
+                              spills=None, uncertain=False,
                               **kwargs):
         """
         .. function:: prepare_for_model_run(model_start_time,
@@ -362,7 +362,6 @@ class NetCDFOutput(Outputter, Serializable):
         remaining **kwargs to base class method
         """
         super(NetCDFOutput, self).prepare_for_model_run(model_start_time,
-                                                        cache,
                                                         **kwargs)
 
         if spills is None and self.which_data in ('all', 'most'):
@@ -594,20 +593,6 @@ class NetCDFOutput(Outputter, Serializable):
 
         self._middle_of_run = False
         self._start_idx = 0
-
-    def write_output_post_run(self, model_start_time, num_time_steps,
-                              cache=None, uncertain=False, spills=None,
-                              **kwargs):
-        '''
-        Define all the positional input arguments. Pass these onto baseclass
-        write_output_post_run as correct kwargs
-        '''
-        super(NetCDFOutput, self).write_output_post_run(model_start_time,
-                                                        num_time_steps,
-                                                        cache,
-                                                        uncertain=uncertain,
-                                                        spills=spills,
-                                                        **kwargs)
 
     @classmethod
     def read_data(klass, netcdf_file, time=None, index=None,

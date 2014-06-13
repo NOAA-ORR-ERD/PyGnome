@@ -4,6 +4,7 @@ tests for geojson outputter
 import geojson
 import os
 import shutil
+from glob import glob
 
 import numpy as np
 import pytest
@@ -20,8 +21,8 @@ datadir = os.path.join(basedir, 'sample_data')
 output_dir = os.path.join(basedir, 'geojson_output')
 
 
-@pytest.fixture(scope='function')
-def model(sample_model):
+@pytest.fixture(scope='module')
+def model(sample_model, request):
     if os.path.isdir(output_dir):
         shutil.rmtree(output_dir)
     os.mkdir(output_dir)
@@ -32,8 +33,6 @@ def model(sample_model):
 
     model.cache_enabled = True
     model.uncertain = True
-
-    model.outputters += GeoJson(output_dir=output_dir)
 
     N = 10  # a line of ten points
     line_pos = np.zeros((N, 3), dtype=np.float64)
@@ -51,8 +50,9 @@ def model(sample_model):
                            release_time=model.start_time)
 
     model.spills += Spill(release)
-
+    model.outputters += GeoJson(output_dir=output_dir)
     model.rewind()
+
     return model
 
 
@@ -64,15 +64,50 @@ def test_init():
     assert g.round_data
 
 
-def test_model_outputgeojson(model):
+def test_rewind(model):
     'test geojson outputter with a model since simplest to do that'
+    model.rewind()
     model.full_run()
-    assert os.path.exists(output_dir)
+    files = glob(os.path.join(output_dir, '*.geojson'))
+    assert len(files) == model.num_time_steps
+
+    model.rewind()
+
+    files = glob(os.path.join(output_dir, '*.geojson'))
+    assert len(files) == 0
 
 
-def test_spill_id_geojson(model):
+def test_model_dump_outputgeojson(model):
+    'test geojson outputter with a model since simplest to do that'
+    model.rewind()
+    model.full_run()
+    files = glob(os.path.join(output_dir, '*.geojson'))
+    assert len(files) == model.num_time_steps
+
+
+@pytest.mark.parametrize("output_ts_factor", [1])
+def test_write_output_post_run(model, output_ts_factor):
+    model.rewind()
+    o_geojson = model.outputters[-1]
+    del model.outputters[-1]
+
+    model.full_run()
+    files = glob(os.path.join(output_dir, '*.geojson'))
+    assert len(files) == 0
+
+    o_geojson.write_output_post_run(model.start_time,
+                                    model.num_time_steps,
+                                    cache=model._cache,
+                                    spills=model.spills)
+    files = glob(os.path.join(output_dir, '*.geojson'))
+    assert len(files) == model.num_time_steps
+    model.outputters += o_geojson
+
+
+def test_geojson(model):
     'test geojson outputter with a model since simplest to do that'
     # default is to round data
+    model.rewind()
     roundto = model.outputters[0].roundto
     for ix in range(3):
         output = model.step()

@@ -4,6 +4,7 @@ Does not contain a schema for persistence yet
 '''
 import copy
 import os
+from glob import glob
 
 import numpy as np
 from geojson import Point, Feature, FeatureCollection, dump
@@ -50,6 +51,7 @@ class GeoJson(Outputter, Serializable):
     '''
 
     outputfile_format = 'geojson_%05i.geojson'
+    outputfile_glob = 'geojson_*.geojson'
     _state = copy.deepcopy(Outputter._state)
 
     def __init__(self,
@@ -72,16 +74,14 @@ class GeoJson(Outputter, Serializable):
         self.output_dir = output_dir
         super(GeoJson, self).__init__(**kwargs)
 
-    def prepare_for_model_run(self, model_start_time, cache=None,
-                              **kwargs):
+    def prepare_for_model_run(self, model_start_time, spills, **kwargs):
         '''
         geo_json outputter also requires spills to be passed in - this is
         because it needs to match the 'spill_num' from the data array to the
         spill object's ID. The keyword, spills is the SpillContainerPair object
         '''
-        self.sc_pair = kwargs.pop('spills')
-        super(GeoJson, self).prepare_for_model_run(model_start_time,
-                                                        cache, **kwargs)
+        self.sc_pair = spills
+        super(GeoJson, self).prepare_for_model_run(model_start_time, **kwargs)
 
     def write_output(self, step_num, islast_step=False):
         'dump data in geojson format'
@@ -173,3 +173,10 @@ class GeoJson(Outputter, Serializable):
         else:
             data = data_array.astype(p_type).tolist()
         return data
+
+    def rewind(self):
+        'remove previously written files'
+        super(GeoJson, self).rewind()
+        files = glob(os.path.join(self.output_dir, self.outputfile_glob))
+        for file_ in files:
+            os.remove(file_)

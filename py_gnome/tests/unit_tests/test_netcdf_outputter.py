@@ -487,11 +487,15 @@ def test_write_output_post_run(model, output_ts_factor):
 
     _run_model(model)
 
+    assert (not os.path.exists(o_put.netcdf_filename))
+    if o_put._u_netcdf_filename:
+        assert (not os.path.exists(o_put._u_netcdf_filename))
+
     # now write netcdf output
     o_put.write_output_post_run(model.start_time,
                                 model.num_time_steps,
-                                model._cache,
-                                model.uncertain)
+                                cache=model._cache,
+                                uncertain=model.uncertain)
 
     assert os.path.exists(o_put.netcdf_filename)
     if model.uncertain:
