@@ -218,22 +218,25 @@ class Outputter(Serializable):
             run. Currently this is known and fixed.
         :type num_time_steps: int
 
-        Optional argument - incase cache needs to be updated
+        Optional argument - depending on the outputter, the following maybe
+        required. For instance, the 'spills' are required by NetCDFOutput,
+        GeoJson, but not Renderer in prepare_for_model_run(). The **kwargs here
+        are those required by prepare_for_model_run() for an outputter
 
         :param cache=None: Sets the cache object to be used for the data.
             If None, it will use the one already set up.
         :type cache: As defined in cache module (gnome.utilities.cache).
             Currently only ElementCache is defined/used.
 
-        also added **kwargs since a derived class like NetCDFOutput, GeoJson
-        could require additional variables in prepare_for_model_run(). The
-        additional parameters given as kwargs are:
-
         :param uncertain: is there uncertain data to write. Used by
             NetCDFOutput to setup attributes for uncertain data file
+        :type uncertain: bool
+
         :param spills: SpillContainerPair object containing spill information
             Used by both the NetCDFOutput and by GeoJson to obtain spill_id
             from spill_num
+        :type spills: This is the Model's spills attribute which refers to the
+            SpillContainerPair object
 
         Follows the iteration in Model().step() for each step_num
         """
