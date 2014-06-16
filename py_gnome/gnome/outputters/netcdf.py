@@ -25,7 +25,8 @@ from . import Outputter, BaseSchema
 
 
 # Big dict that stores the attributes for the standard data arrays
-# in the output
+# in the output - these are constants. The instance var_attributes are stored
+# with the NetCDFOutput object
 var_attributes = {
     'time': {'long_name': 'time since the beginning of the simulation',
              'standard_name': 'time',
@@ -59,13 +60,11 @@ var_attributes = {
             },
     'status_codes': {'long_name': 'particle status code',
                      'flag_values': " ".join(["%i" % i for i in oil_status._int]),
-                     'flag_meanings': " ".join(["%i: %s" % pair for pair in sorted(zip(oil_status._int,
+                     'flag_meanings': " ".join(["%i: %s," % pair for pair in sorted(zip(oil_status._int,
                                         oil_status._attr))])
                     },
     'id': {'long_name': 'particle ID',
           },
-    'spill_num': {'long_name': 'spill to which the particle belongs',
-                 },
     'droplet_diameter': {'long_name': 'diameter of oil droplet class',
                          'units': 'meters'
                         },
@@ -225,6 +224,13 @@ class NetCDFOutput(Outputter, Serializable):
         # number of particles are released
         self._start_idx = 0
 
+        # spill_num's attributes are instance attributes.
+        # 'spill_names' is set based on the names of spill's as defined by user
+        self._var_attributes = {
+            'spill_num':
+                        {'long_name': 'spill to which the particle belongs',
+                         'spills_map': ''}
+                         }
         super(NetCDFOutput, self).__init__(**kwargs)
 
     @property
@@ -313,8 +319,16 @@ class NetCDFOutput(Outputter, Serializable):
                              'does not exist in which to save data.'
                              .format(file_))
 
+    def _update_spill_names(self, spills):
+        '''
+        update spill_names list in NC attribute 'spill_num'
+        '''
+        names = " ".join(["{0}: {1}, ".format(ix, spill.name)
+                                        for ix, spill in enumerate(spills)])
+        self._var_attributes['spill_num']['spills_map'] = names
+
     def prepare_for_model_run(self, model_start_time,
-                              spills=None, uncertain=False,
+                              spills, uncertain=False,
                               **kwargs):
         """
         .. function:: prepare_for_model_run(model_start_time,
@@ -363,16 +377,9 @@ class NetCDFOutput(Outputter, Serializable):
         """
         super(NetCDFOutput, self).prepare_for_model_run(model_start_time,
                                                         **kwargs)
-
-        if spills is None and self.which_data in ('all', 'most'):
-            raise ValueError('"which_data" flag is "{0}", '
-                             'however spills is None.  '
-                             'Please provide valid model.spills so we know '
-                             'which additional data to write.'
-                             .format(self.which_data))
-
         self._uncertain = uncertain
 
+        self._update_spill_names(spills)
         if self._uncertain:
             name, ext = os.path.splitext(self.netcdf_filename)
             self._u_netcdf_filename = '{0}_uncertain{1}'.format(name, ext)
@@ -471,42 +478,10 @@ class NetCDFOutput(Outputter, Serializable):
                                                  )
 
                     # add attributes
-                    try:
+                    if var_name in var_attributes:
                         var.setncatts(var_attributes[var_name])
-                    except KeyError:
-                        # just continue if var_name not in the attributes
-                        pass
-
-                # if self.which_data in ('all', 'most'):
-                #     rootgrp.createDimension('world_point', 3)
-                #     self.arr_types = dict()
-
-                #     at = spills.items()[0].array_types
-                #     [self.arr_types.update({key: atype}) for (key,
-                #      atype) in at.iteritems() if key
-                #      not in self.arr_types and key
-                #      not in self.standard_data]
-
-                #     # create variables
-
-                #     for (key, val) in self.arr_types.iteritems():
-                #         if len(val.shape) == 0:
-                #             rootgrp.createVariable(key,
-                #                                    val.dtype,
-                #                                    'data',
-                #                                    zlib=self._compress,
-                #                                    chunksizes=(self._chunksize,),
-                #                                    )
-                #         elif val.shape[0] == 3:
-                #             rootgrp.createVariable(key,
-                #                                    val.dtype,
-                #                                    ('data', 'world_point'),
-                #                                    zlib=self._compress,
-                #                                    chunksizes=(self._chunksize, 3),
-                #                                    )
-                #         else:
-                #             raise ValueError('{0} has an undefined dimension:'
-                #                              ' {1}'.format(key, val.shape))
+                    elif var_name in self._var_attributes:
+                        var.setncatts(self._var_attributes[var_name])
 
         # need to keep track of starting index for writing data since variable
         # number of particles are released
