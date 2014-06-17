@@ -1054,6 +1054,12 @@ def test_setget():
     spill.set('windage_persist', -1)
     assert spill.get('windage_persist') == -1
 
+    spill.set('windage_range', (0.4, 0.4))
+    assert spill.get('windage_range') == (0.4, 0.4)
+
+    spill.set('windage_range', [0.4, 0.4])
+    assert spill.get('windage_range') == [0.4, 0.4]
+
 
 # todo: add SpatialRelease schema, then complete this test
 rel_time = datetime(2012, 8, 20, 13)
