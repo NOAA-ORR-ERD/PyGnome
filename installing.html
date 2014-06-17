@@ -1,5 +1,3 @@
-
-
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
   "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 
@@ -15,7 +13,7 @@
     
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
-        URL_ROOT:    '',
+        URL_ROOT:    './',
         VERSION:     '0.1.1',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
@@ -38,9 +36,6 @@
           <a href="genindex.html" title="General Index"
              accesskey="I">index</a></li>
         <li class="right" >
-          <a href="py-modindex.html" title="Python Module Index"
-             >modules</a> |</li>
-        <li class="right" >
           <a href="structure.html" title="GNOME Structure"
              accesskey="N">next</a> |</li>
         <li class="right" >
@@ -57,13 +52,15 @@
             
   <div class="section" id="installing">
 <h1>Installing<a class="headerlink" href="#installing" title="Permalink to this headline">¶</a></h1>
-<p>pyGNOME consists of compiled C++ code (<cite>libgnome</cite>), compiled Cython code (<cite>*.pyx</cite> files), and compiled python extensions. It can be installed either from source, in which case you&#8217;ll need an appropriate compiler, or from binaries provided by NOAA</p>
+<p>pyGNOME consists of compiled C++ code (<cite>libgnome</cite>), compiled Cython code (<cite>*.pyx</cite> files), and compiled python extensions.
+It can be installed either from source, in which case you&#8217;ll need an appropriate compiler, or from binaries provided by NOAA</p>
 <div class="section" id="dependencies">
 <h2>Dependencies<a class="headerlink" href="#dependencies" title="Permalink to this headline">¶</a></h2>
-<p>pyGNOME depends on a number of third party packages &#8211; the complete list can be found in the <cite>requirements.txt</cite> file. This file can also be processed by the <cite>pip</cite> package installer, which (if all goes well) will auto install all the dependencies.</p>
+<p>pyGNOME depends on a number of third party packages &#8211; the complete list can be found in the <cite>requirements.txt</cite> file.
+This file can also be processed by the <cite>pip</cite> package installer, which (if all goes well) will auto install all the dependencies.</p>
 </div>
-<div class="section" id="binary-instalation">
-<h2>Binary Instalation<a class="headerlink" href="#binary-instalation" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="binary-installation">
+<h2>Binary Installation<a class="headerlink" href="#binary-installation" title="Permalink to this headline">¶</a></h2>
 <p>(to be filled in when we have binaries to provide!)</p>
 </div>
 <div class="section" id="building">
@@ -75,20 +72,21 @@ $ python setup.py install</pre>
 <dl class="docutils">
 <dt>or::</dt>
 <dd>$ python setup.py develop</dd>
+<dt>(develop mode installs links to the code, rather than copying the code into python&#8217;s site-packages.</dt>
+<dd>It is helpful if you want to update the code, and have the new version run right away.)</dd>
 </dl>
-<p>(develop mode installs links to the code, rather than copying the code into python&#8217;s site-packages &#8211; it is helpful if you want to update the code, and have the new version run right away.)</p>
 <p>(MORE HERE!!)</p>
 <div class="section" id="mac-os-x">
 <h3>Mac OS-X<a class="headerlink" href="#mac-os-x" title="Permalink to this headline">¶</a></h3>
-<p>Mac-specifc intructions here</p>
+<p>Mac-specific instructions here</p>
 </div>
 <div class="section" id="windows">
 <h3>Windows<a class="headerlink" href="#windows" title="Permalink to this headline">¶</a></h3>
-<p>Windows-specifc intructions here</p>
+<p>Windows-specific instructions here</p>
 </div>
 <div class="section" id="linux">
 <h3>Linux<a class="headerlink" href="#linux" title="Permalink to this headline">¶</a></h3>
-<p>Linux-specifc intructions here</p>
+<p>Linux-specific instructions here</p>
 </div>
 </div>
 </div>
@@ -103,7 +101,7 @@ $ python setup.py install</pre>
   <ul>
 <li><a class="reference internal" href="#">Installing</a><ul>
 <li><a class="reference internal" href="#dependencies">Dependencies</a></li>
-<li><a class="reference internal" href="#binary-instalation">Binary Instalation</a></li>
+<li><a class="reference internal" href="#binary-installation">Binary Installation</a></li>
 <li><a class="reference internal" href="#building">Building</a><ul>
 <li><a class="reference internal" href="#mac-os-x">Mac OS-X</a></li>
 <li><a class="reference internal" href="#windows">Windows</a></li>
@@ -149,9 +147,6 @@ $ python setup.py install</pre>
           <a href="genindex.html" title="General Index"
              >index</a></li>
         <li class="right" >
-          <a href="py-modindex.html" title="Python Module Index"
-             >modules</a> |</li>
-        <li class="right" >
           <a href="structure.html" title="GNOME Structure"
              >next</a> |</li>
         <li class="right" >
@@ -162,7 +157,7 @@ $ python setup.py install</pre>
     </div>
     <div class="footer">
         &copy; Copyright 2012, NOAA Emergecny Response Division.
-      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.3.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.
     </div>
   </body>
 </html>
