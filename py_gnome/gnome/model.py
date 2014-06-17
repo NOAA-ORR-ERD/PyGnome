@@ -411,10 +411,10 @@ class Model(Serializable):
           particular time range should not be run multiple times.  It is
           expected that we are processing a sequence of contiguous time ranges.
         - Note: If there are multiple sequential weathering processes, some
-                inaccuracy could occur.  A proposed solution is to
-                'super-sample' the model time step so that it will be replaced
-                with many smaller time steps.  We'll have to see if this pans
-                out in practice.
+            inaccuracy could occur.  A proposed solution is to
+            'super-sample' the model time step so that it will be replaced
+            with many smaller time steps.  We'll have to see if this pans
+            out in practice.
         '''
         for sc in self.spills.items():
             for w in self.weatherers:
@@ -552,9 +552,8 @@ class Model(Serializable):
         '''
         Do a full run of the model.
 
-        :param rewind=True: whether to rewind the model first
-                            -- if set to false, model will be run from the
-                               current step to the end
+        :param rewind=True: whether to rewind the model first -- if set to
+            false, model will be run from the current step to the end
         :returns: list of outputter info dicts
         '''
         if rewind:

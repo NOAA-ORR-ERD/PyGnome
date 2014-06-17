@@ -24,6 +24,7 @@ class GeoJson(Outputter, Serializable):
     collection of Features. Each Feature contains a Point object with
     associated properties. Following is the format for a particle - the
     data in <> are the results for each element.
+    ::
     {
     "type": "FeatureCollection",
     "features": [
