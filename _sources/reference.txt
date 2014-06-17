@@ -44,9 +44,15 @@ Class Reference:
 .. automodule:: gnome.map
    :members:
 
-``gnome.spill`` -- the pyGNOME spill class
+``gnome.spill`` -- classes in the spill module
 ---------------------------------------------------
-.. automodule:: gnome.spill
+.. automodule:: gnome.spill.spill
+   :members:
+   
+.. automodule:: gnome.spill.release
+   :members:
+   
+.. automodule:: gnome.spill.elements
    :members:
 
 ``gnome.movers`` -- pyGNOME mover classes
@@ -77,14 +83,21 @@ Class Reference:
 .. automodule:: gnome.environment
    :members:
 
-``gnome.outputter`` -- pyGNOME outputter classes
+``gnome.outputter`` -- pyGNOME outputters module
 ---------------------------------------------------
-.. automodule:: gnome.outputter
-    :members:
-.. automodule:: gnome.renderer
+.. automodule:: gnome.outputters.outputter
     :members:
     :show-inheritance:
-.. automodule:: gnome.netcdf_outputter
+
+.. automodule:: gnome.outputters.renderer
+    :members:
+    :show-inheritance:
+
+.. automodule:: gnome.outputters.netcdf
+    :members:
+    :show-inheritance:
+
+.. automodule:: gnome.outputters.geo_json
     :members:
     :show-inheritance:
 

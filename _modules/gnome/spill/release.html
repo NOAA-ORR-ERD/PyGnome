@@ -1,0 +1,661 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>gnome.spill.release &mdash; pyGNOME 0.1.1 documentation</title>
+    
+    <link rel="stylesheet" href="../../../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../',
+        VERSION:     '0.1.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../_static/doctools.js"></script>
+    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="pyGNOME 0.1.1 documentation" href="../../../index.html" />
+    <link rel="up" title="Module code" href="../../index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../../index.html">pyGNOME 0.1.1 documentation</a> &raquo;</li>
+          <li><a href="../../index.html" accesskey="U">Module code</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <h1>Source code for gnome.spill.release</h1><div class="highlight"><pre>
+<span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">release objects that define how elements are released. A Spill() objects</span>
+<span class="sd">is composed of a release object and an ElementType</span>
+<span class="sd">&#39;&#39;&#39;</span>
+<span class="kn">import</span> <span class="nn">types</span>
+<span class="kn">import</span> <span class="nn">copy</span>
+<span class="kn">from</span> <span class="nn">datetime</span> <span class="kn">import</span> <span class="n">timedelta</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span>
+<span class="n">np</span> <span class="o">=</span> <span class="n">numpy</span>
+
+<span class="kn">from</span> <span class="nn">colander</span> <span class="kn">import</span> <span class="p">(</span><span class="n">SchemaNode</span><span class="p">,</span> <span class="n">drop</span><span class="p">,</span> <span class="n">Bool</span><span class="p">,</span> <span class="n">Int</span><span class="p">)</span>
+
+<span class="kn">from</span> <span class="nn">gnome.persist.base_schema</span> <span class="kn">import</span> <span class="n">ObjType</span><span class="p">,</span> <span class="n">WorldPoint</span>
+<span class="kn">from</span> <span class="nn">gnome.persist.extend_colander</span> <span class="kn">import</span> <span class="n">LocalDateTime</span>
+<span class="kn">from</span> <span class="nn">gnome.persist.validators</span> <span class="kn">import</span> <span class="n">convertible_to_seconds</span>
+
+<span class="kn">from</span> <span class="nn">gnome.basic_types</span> <span class="kn">import</span> <span class="n">world_point_type</span>
+<span class="kn">from</span> <span class="nn">gnome.utilities.plume</span> <span class="kn">import</span> <span class="n">Plume</span><span class="p">,</span> <span class="n">PlumeGenerator</span>
+
+<span class="kn">from</span> <span class="nn">gnome.utilities.serializable</span> <span class="kn">import</span> <span class="n">Serializable</span>
+
+
+<div class="viewcode-block" id="ReleaseSchema"><a class="viewcode-back" href="../../../reference.html#gnome.spill.release.ReleaseSchema">[docs]</a><span class="k">class</span> <span class="nc">ReleaseSchema</span><span class="p">(</span><span class="n">ObjType</span><span class="p">):</span>
+    <span class="s">&#39;Base Class for Release Schemas&#39;</span>
+    <span class="n">num_elements</span> <span class="o">=</span> <span class="n">SchemaNode</span><span class="p">(</span><span class="n">Int</span><span class="p">(),</span> <span class="n">default</span><span class="o">=</span><span class="mi">1000</span><span class="p">)</span>
+
+    <span class="n">release_time</span> <span class="o">=</span> <span class="n">SchemaNode</span><span class="p">(</span><span class="n">LocalDateTime</span><span class="p">(),</span>
+                              <span class="n">validator</span><span class="o">=</span><span class="n">convertible_to_seconds</span><span class="p">)</span>
+    <span class="n">name</span> <span class="o">=</span> <span class="s">&#39;release&#39;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">json_</span><span class="o">=</span><span class="s">&#39;webapi&#39;</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">json_</span> <span class="o">==</span> <span class="s">&#39;save&#39;</span><span class="p">:</span>
+            <span class="c"># used to create a new Release object if model is persisted mid-run</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">SchemaNode</span><span class="p">(</span><span class="n">Int</span><span class="p">(),</span> <span class="n">name</span><span class="o">=</span><span class="s">&#39;num_released&#39;</span><span class="p">))</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">SchemaNode</span><span class="p">(</span><span class="n">Bool</span><span class="p">(),</span> <span class="n">name</span><span class="o">=</span><span class="s">&#39;start_time_invalid&#39;</span><span class="p">))</span>
+
+        <span class="nb">super</span><span class="p">(</span><span class="n">ReleaseSchema</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+</div>
+<div class="viewcode-block" id="PointLineReleaseSchema"><a class="viewcode-back" href="../../../reference.html#gnome.spill.release.PointLineReleaseSchema">[docs]</a><span class="k">class</span> <span class="nc">PointLineReleaseSchema</span><span class="p">(</span><span class="n">ReleaseSchema</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Contains properties required by UpdateWindMover and CreateWindMover</span>
+<span class="sd">    TODO: also need a way to persist list of element_types</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="n">start_position</span> <span class="o">=</span> <span class="n">WorldPoint</span><span class="p">()</span>
+    <span class="n">end_position</span> <span class="o">=</span> <span class="n">WorldPoint</span><span class="p">(</span><span class="n">missing</span><span class="o">=</span><span class="n">drop</span><span class="p">)</span>
+    <span class="n">end_release_time</span> <span class="o">=</span> <span class="n">SchemaNode</span><span class="p">(</span><span class="n">LocalDateTime</span><span class="p">(),</span> <span class="n">missing</span><span class="o">=</span><span class="n">drop</span><span class="p">,</span>
+                                  <span class="n">validator</span><span class="o">=</span><span class="n">convertible_to_seconds</span><span class="p">)</span>
+
+    <span class="c"># Not sure how this will work w/ WebGnome</span>
+    <span class="c">#prev_release_pos = WorldPoint(missing=drop)</span>
+    <span class="n">description</span> <span class="o">=</span> <span class="s">&#39;PointLineRelease object schema&#39;</span>
+
+</div>
+<div class="viewcode-block" id="Release"><a class="viewcode-back" href="../../../reference.html#gnome.spill.release.Release">[docs]</a><span class="k">class</span> <span class="nc">Release</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    base class for Release classes.</span>
+
+<span class="sd">    It contains interface for Release objects</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">_update</span> <span class="o">=</span> <span class="p">[</span><span class="s">&#39;num_elements&#39;</span><span class="p">,</span> <span class="s">&#39;release_time&#39;</span><span class="p">]</span>
+
+    <span class="n">_create</span> <span class="o">=</span> <span class="p">[</span><span class="s">&#39;num_released&#39;</span><span class="p">,</span> <span class="s">&#39;start_time_invalid&#39;</span><span class="p">]</span>
+    <span class="n">_create</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">_update</span><span class="p">)</span>
+
+    <span class="n">_state</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">Serializable</span><span class="o">.</span><span class="n">_state</span><span class="p">)</span>
+    <span class="n">_state</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">save</span><span class="o">=</span><span class="n">_create</span><span class="p">,</span> <span class="n">update</span><span class="o">=</span><span class="n">_update</span><span class="p">,</span>
+               <span class="n">read</span><span class="o">=</span><span class="p">(</span><span class="s">&#39;num_released&#39;</span><span class="p">,</span> <span class="s">&#39;start_time_invalid&#39;</span><span class="p">))</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">release_time</span><span class="p">,</span> <span class="n">num_elements</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">num_elements</span> <span class="o">=</span> <span class="n">num_elements</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">release_time</span> <span class="o">=</span> <span class="n">release_time</span>
+
+        <span class="c"># number of new particles released at each timestep</span>
+        <span class="c"># set/updated by the derived Release classes at each timestep</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">num_released</span> <span class="o">=</span> <span class="mi">0</span>
+
+        <span class="c"># flag determines if the first time is valid. If the first call to</span>
+        <span class="c"># self.num_elements_to_release(current_time, time_step) has</span>
+        <span class="c"># current_time &gt; self.release_time, then no particles are ever released</span>
+        <span class="c"># if current_time &lt;= self.release_time, then toggle this flag since</span>
+        <span class="c"># model start time is valid</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">start_time_invalid</span> <span class="o">=</span> <span class="bp">True</span>
+
+    <span class="k">def</span> <span class="nf">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">(</span><span class="s">&#39;{0.__class__.__module__}.{0.__class__.__name__}(&#39;</span>
+                <span class="s">&#39;release_time={0.release_time!r}, &#39;</span>
+                <span class="s">&#39;num_elements={0.num_elements}&#39;</span>
+                <span class="s">&#39;)&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="p">))</span>
+
+<span class="c">#==============================================================================</span>
+<span class="c">#     def __eq__(self, other):</span>
+<span class="c">#         scalar_attrs = (&#39;release_time&#39;, &#39;num_elements&#39;, &#39;num_released&#39;,</span>
+<span class="c">#                         &#39;start_time_invalid&#39;,</span>
+<span class="c">#                         )</span>
+<span class="c">#         if not all([getattr(self, a) == getattr(other, a)</span>
+<span class="c">#                     for a in scalar_attrs]):</span>
+<span class="c">#             return False</span>
+<span class="c">#</span>
+<span class="c">#         return True</span>
+<span class="c">#==============================================================================</span>
+
+<div class="viewcode-block" id="Release.num_elements_to_release"><a class="viewcode-back" href="../../../reference.html#gnome.spill.release.Release.num_elements_to_release">[docs]</a>    <span class="k">def</span> <span class="nf">num_elements_to_release</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">current_time</span><span class="p">,</span> <span class="n">time_step</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Determines the number of elements to be released during:</span>
+<span class="sd">        current_time + time_step. Base class has partial (incomplete)</span>
+<span class="sd">        implementation.</span>
+
+<span class="sd">        This base class method checks if current_time in first step</span>
+<span class="sd">        is valid and toggles the self.start_time_invalid flag if it is valid.</span>
+<span class="sd">        If current_time &lt;= self.release_time the first time this is called,</span>
+<span class="sd">        then toggle start_time_invalid to True.</span>
+
+<span class="sd">        Subclasses should define the complete implementation and return number</span>
+<span class="sd">        of new particles to be released once this check passes. Be sure to call</span>
+<span class="sd">        the base class method first if start_time_invalid flag should be</span>
+<span class="sd">        checked.</span>
+
+<span class="sd">        :param current_time: current time</span>
+<span class="sd">        :type current_time: datetime.datetime</span>
+<span class="sd">        :param time_step: the time step, sometimes used to decide how many</span>
+<span class="sd">            should get released.</span>
+<span class="sd">        :type time_step: integer seconds</span>
+
+<span class="sd">        :returns: the number of elements that will be released. This is taken</span>
+<span class="sd">            by SpillContainer to initialize all data_arrays.</span>
+
+<span class="sd">        self.num_released is updated after self.set_newparticle_values is</span>
+<span class="sd">        called. Particles are considered released after the values are set.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">release_time</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&quot;release_time attribute cannot be None&quot;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="p">(</span><span class="n">current_time</span> <span class="o">&lt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">release_time</span> <span class="ow">and</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">start_time_invalid</span><span class="p">):</span>
+            <span class="c"># start time is valid</span>
+            <span class="c"># It&#39;s fine to release elements in subsequent steps</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">start_time_invalid</span> <span class="o">=</span> <span class="bp">False</span>
+
+        <span class="k">return</span> <span class="mi">0</span>    <span class="c"># base class does not release any particles</span>
+</div>
+<div class="viewcode-block" id="Release.set_newparticle_positions"><a class="viewcode-back" href="../../../reference.html#gnome.spill.release.Release.set_newparticle_positions">[docs]</a>    <span class="k">def</span> <span class="nf">set_newparticle_positions</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">num_new_particles</span><span class="p">,</span>
+                                  <span class="n">current_time</span><span class="p">,</span> <span class="n">time_step</span><span class="p">,</span>
+                                  <span class="n">data_arrays</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        derived object should set the &#39;positions&#39; array for the data_arrays</span>
+<span class="sd">        base class has no implementation</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">pass</span>
+</div>
+<div class="viewcode-block" id="Release.rewind"><a class="viewcode-back" href="../../../reference.html#gnome.spill.release.Release.rewind">[docs]</a>    <span class="k">def</span> <span class="nf">rewind</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        rewinds the Release to original status (before anything has been</span>
+<span class="sd">        released).</span>
+
+<span class="sd">        Base class sets &#39;num_released&#39;=0 and &#39;start_time_invalid&#39;=True</span>
+<span class="sd">        properties to original _state.</span>
+<span class="sd">        Subclasses should overload for additional functions required to reset</span>
+<span class="sd">        _state.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">num_released</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">start_time_invalid</span> <span class="o">=</span> <span class="bp">True</span>
+</div>
+<div class="viewcode-block" id="Release.serialize"><a class="viewcode-back" href="../../../reference.html#gnome.spill.release.Release.serialize">[docs]</a>    <span class="k">def</span> <span class="nf">serialize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">json_</span><span class="o">=</span><span class="s">&#39;webapi&#39;</span><span class="p">):</span>
+        <span class="s">&#39;define schema based on type of desired output&#39;</span>
+        <span class="n">toserial</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">to_dict</span><span class="p">(</span><span class="n">json_</span><span class="p">)</span>
+        <span class="n">schema</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__class__</span><span class="o">.</span><span class="n">_schema</span><span class="p">(</span><span class="n">json_</span><span class="p">)</span>
+        <span class="n">serial</span> <span class="o">=</span> <span class="n">schema</span><span class="o">.</span><span class="n">serialize</span><span class="p">(</span><span class="n">toserial</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">serial</span>
+</div>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">deserialize</span><span class="p">(</span><span class="n">cls</span><span class="p">,</span> <span class="n">json_</span><span class="p">):</span>
+        <span class="n">schema</span> <span class="o">=</span> <span class="n">cls</span><span class="o">.</span><span class="n">_schema</span><span class="p">(</span><span class="n">json_</span><span class="p">[</span><span class="s">&#39;json_&#39;</span><span class="p">])</span>
+        <span class="k">return</span> <span class="n">schema</span><span class="o">.</span><span class="n">deserialize</span><span class="p">(</span><span class="n">json_</span><span class="p">)</span>
+
+</div>
+<div class="viewcode-block" id="PointLineRelease"><a class="viewcode-back" href="../../../reference.html#gnome.spill.release.PointLineRelease">[docs]</a><span class="k">class</span> <span class="nc">PointLineRelease</span><span class="p">(</span><span class="n">Release</span><span class="p">,</span> <span class="n">Serializable</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    The primary spill source class  --  a release of floating</span>
+<span class="sd">    non-weathering particles, can be instantaneous or continuous, and be</span>
+<span class="sd">    released at a single point, or over a line.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">_update</span> <span class="o">=</span> <span class="p">[</span><span class="s">&#39;start_position&#39;</span><span class="p">,</span> <span class="s">&#39;end_position&#39;</span><span class="p">,</span> <span class="s">&#39;end_release_time&#39;</span><span class="p">]</span>
+
+    <span class="n">_create</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">_create</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">_update</span><span class="p">)</span>
+
+    <span class="n">_state</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">Release</span><span class="o">.</span><span class="n">_state</span><span class="p">)</span>
+    <span class="n">_state</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">update</span><span class="o">=</span><span class="n">_update</span><span class="p">,</span> <span class="n">save</span><span class="o">=</span><span class="n">_create</span><span class="p">)</span>
+
+    <span class="n">_schema</span> <span class="o">=</span> <span class="n">PointLineReleaseSchema</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">release_time</span><span class="p">,</span> <span class="n">num_elements</span><span class="p">,</span> <span class="n">start_position</span><span class="p">,</span>
+                 <span class="n">end_position</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">end_release_time</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        :param num_elements: total number of elements to be released</span>
+<span class="sd">        :type num_elements: integer</span>
+
+<span class="sd">        :param release_time: time the LEs are released (datetime object)</span>
+<span class="sd">        :type release_time: datetime.datetime</span>
+
+<span class="sd">        :param start_position: initial location the elements are released</span>
+<span class="sd">        :type start_position: 3-tuple of floats (long, lat, z)</span>
+
+<span class="sd">        :param end_position=None: optional. For moving source, the end position</span>
+<span class="sd">        :type end_position: 3-tuple of floats (long, lat, z)</span>
+
+<span class="sd">        :param end_release_time=None: optional -- for a release over time, the</span>
+<span class="sd">            end release time</span>
+<span class="sd">        :type end_release_time: datetime.datetime</span>
+
+<span class="sd">        num_elements and release_time passed to base class __init__ using super</span>
+<span class="sd">        See base :class:`Release` documentation</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">PointLineRelease</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="n">release_time</span><span class="p">,</span>
+                                               <span class="n">num_elements</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">end_release_time</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="c"># also sets self._end_release_time</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">end_release_time</span> <span class="o">=</span> <span class="n">release_time</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">release_time</span> <span class="o">&gt;</span> <span class="n">end_release_time</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&#39;end_release_time must be greater than &#39;</span>
+                                 <span class="s">&#39;release_time&#39;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">end_release_time</span> <span class="o">=</span> <span class="n">end_release_time</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">release_time</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">end_release_time</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">set_newparticle_positions</span> <span class="o">=</span> \
+                <span class="bp">self</span><span class="o">.</span><span class="n">_init_positions_instantaneous_release</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">set_newparticle_positions</span> <span class="o">=</span> \
+                <span class="bp">self</span><span class="o">.</span><span class="n">_init_positions_timevarying_release</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">start_position</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">start_position</span><span class="p">,</span>
+                            <span class="n">dtype</span><span class="o">=</span><span class="n">world_point_type</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">((</span><span class="mi">3</span><span class="p">,</span> <span class="p">))</span>
+        <span class="k">if</span> <span class="n">end_position</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="c"># also sets self._end_position</span>
+            <span class="n">end_position</span> <span class="o">=</span> <span class="n">start_position</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">end_position</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">end_position</span><span class="p">,</span>
+                <span class="n">dtype</span><span class="o">=</span><span class="n">world_point_type</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">((</span><span class="mi">3</span><span class="p">,</span> <span class="p">))</span>
+
+        <span class="c"># only needs to be computed once</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">delta_pos</span> <span class="o">=</span> <span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">end_position</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">start_position</span><span class="p">)</span> <span class="o">/</span>
+                          <span class="nb">max</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_elements</span> <span class="o">-</span> <span class="mi">1</span><span class="p">))</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">delta_release</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">end_release_time</span>
+                              <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">release_time</span><span class="p">)</span><span class="o">.</span><span class="n">total_seconds</span><span class="p">()</span>
+
+        <span class="c"># number of new particles released at each timestep</span>
+        <span class="c">#self.prev_release_pos = self.start_position.copy()</span>
+
+    <span class="k">def</span> <span class="nf">__getstate__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">            Used by pickle.dump() and pickle.dumps()</span>
+<span class="sd">            Note: Dynamically set instance methods cannot be pickled methods.</span>
+<span class="sd">                  They should not be present in the resulting dict.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">return</span> <span class="nb">dict</span><span class="p">([(</span><span class="n">k</span><span class="p">,</span> <span class="n">v</span><span class="p">)</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">__dict__</span><span class="o">.</span><span class="n">iteritems</span><span class="p">()</span>
+                     <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="o">!=</span> <span class="n">types</span><span class="o">.</span><span class="n">MethodType</span><span class="p">])</span>
+
+    <span class="k">def</span> <span class="nf">__setstate__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">d</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">            Used by pickle.load() and pickle.loads()</span>
+<span class="sd">            Note: We will need to explicitly reconstruct any instance methods</span>
+<span class="sd">                  that were dynamically set in __init__()</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__dict__</span> <span class="o">=</span> <span class="n">d</span>
+
+        <span class="c"># reconstruct our dynamically set methods.</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">release_time</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">end_release_time</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">set_newparticle_positions</span> <span class="o">=</span> \
+                <span class="bp">self</span><span class="o">.</span><span class="n">_init_positions_instantaneous_release</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">set_newparticle_positions</span> <span class="o">=</span> \
+                <span class="bp">self</span><span class="o">.</span><span class="n">_init_positions_timevarying_release</span>
+
+    <span class="k">def</span> <span class="nf">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">(</span><span class="s">&#39;{0.__class__.__module__}.{0.__class__.__name__}(&#39;</span>
+                <span class="s">&#39;release_time={0.release_time!r}, &#39;</span>
+                <span class="s">&#39;num_elements={0.num_elements}, &#39;</span>
+                <span class="s">&#39;start_position={0.start_position!r}, &#39;</span>
+                <span class="s">&#39;end_position={0.end_position!r}, &#39;</span>
+                <span class="s">&#39;end_release_time={0.end_release_time!r}&#39;</span>
+                <span class="s">&#39;)&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="p">))</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">end_position</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_end_position</span>
+
+    <span class="nd">@end_position.setter</span>
+    <span class="k">def</span> <span class="nf">end_position</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">val</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">val</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_end_position</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">start_position</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_end_position</span> <span class="o">=</span> <span class="n">val</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">end_release_time</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_end_release_time</span>
+
+    <span class="nd">@end_release_time.setter</span>
+    <span class="k">def</span> <span class="nf">end_release_time</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">val</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">val</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_end_release_time</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">release_time</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_end_release_time</span> <span class="o">=</span> <span class="n">val</span>
+
+<div class="viewcode-block" id="PointLineRelease.num_elements_to_release"><a class="viewcode-back" href="../../../reference.html#gnome.spill.release.PointLineRelease.num_elements_to_release">[docs]</a>    <span class="k">def</span> <span class="nf">num_elements_to_release</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">current_time</span><span class="p">,</span> <span class="n">time_step</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        return number of particles released in current_time + time_step</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c"># call base class method to check if start_time is valid</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">PointLineRelease</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">num_elements_to_release</span><span class="p">(</span><span class="n">current_time</span><span class="p">,</span>
+                                                              <span class="n">time_step</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">start_time_invalid</span><span class="p">:</span>
+            <span class="k">return</span> <span class="mi">0</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_released</span> <span class="o">&gt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_elements</span><span class="p">:</span>
+            <span class="c"># nothing left to release</span>
+            <span class="k">return</span> <span class="mi">0</span>
+
+        <span class="c"># it&#39;s been called before the release_time</span>
+        <span class="k">if</span> <span class="n">current_time</span> <span class="o">+</span> <span class="n">timedelta</span><span class="p">(</span><span class="n">seconds</span><span class="o">=</span><span class="n">time_step</span><span class="p">)</span> \
+            <span class="o">&lt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">release_time</span><span class="p">:</span>
+            <span class="c">#print &#39;not time to release yet&#39;</span>
+            <span class="k">return</span> <span class="mi">0</span>
+
+        <span class="n">delta_release</span> <span class="o">=</span> <span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">end_release_time</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">release_time</span><span class="p">)</span>
+                         <span class="o">.</span><span class="n">total_seconds</span><span class="p">())</span>
+        <span class="k">if</span> <span class="n">delta_release</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="c"># instantaneous release. All particles released at this timestep</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_elements</span>
+
+        <span class="c"># time varying release</span>
+        <span class="n">n_0</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_released</span>  <span class="c"># always want to start at previous released</span>
+
+        <span class="c"># index of end of current time step</span>
+        <span class="c"># a tiny bit to make it open on the right.</span>
+        <span class="n">n_1</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(((</span><span class="n">current_time</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">release_time</span><span class="p">)</span><span class="o">.</span><span class="n">total_seconds</span><span class="p">()</span>
+                   <span class="o">+</span> <span class="n">time_step</span><span class="p">)</span>
+                  <span class="o">/</span> <span class="n">delta_release</span>
+                  <span class="o">*</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">num_elements</span> <span class="o">-</span> <span class="mi">1</span><span class="p">))</span>
+
+        <span class="n">n_1</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">n_1</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_elements</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>  <span class="c"># don&#39;t want to go over the end.</span>
+        <span class="k">if</span> <span class="n">n_1</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_released</span> <span class="o">-</span> <span class="mi">1</span><span class="p">:</span>  <span class="c"># indexes from zero</span>
+            <span class="c"># none to release this time step</span>
+            <span class="k">return</span> <span class="mi">0</span>
+
+        <span class="c"># JS: not sure why we want to release 1 extra particle?</span>
+        <span class="c"># but leave algorithm as it is. Since n_0 = 0 at first iteration,</span>
+        <span class="c"># _num_new_particles at 1st step is 1 more than _num_new_particles in</span>
+        <span class="c"># subsequent steps for a fixed time_step</span>
+        <span class="n">_num_new_particles</span> <span class="o">=</span> <span class="n">n_1</span> <span class="o">-</span> <span class="n">n_0</span> <span class="o">+</span> <span class="mi">1</span>
+        <span class="k">return</span> <span class="n">_num_new_particles</span>
+</div>
+    <span class="k">def</span> <span class="nf">_init_positions_instantaneous_release</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">num_new_particles</span><span class="p">,</span>
+                                              <span class="n">current_time</span><span class="p">,</span> <span class="n">time_step</span><span class="p">,</span>
+                                              <span class="n">data_arrays</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        initialize all elements in the very first instant (timestep) of the run</span>
+<span class="sd">        The particles can be released at a single &#39;point&#39; or along a &#39;line&#39;</span>
+
+<span class="sd">        For each axis (x,y,z), it evenly spaces all elements along a line:</span>
+<span class="sd">            np.linspace( self.start_position, self.end_position,</span>
+<span class="sd">                         self._num_new_particles)</span>
+
+<span class="sd">        If self.start_position == self.end_position, then all particles are</span>
+<span class="sd">        released at self.start_position.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">num_new_particles</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">return</span>
+
+        <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">start_position</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">end_position</span><span class="p">):</span>
+            <span class="c"># point release</span>
+            <span class="n">data_arrays</span><span class="p">[</span><span class="s">&#39;positions&#39;</span><span class="p">][</span><span class="o">-</span><span class="n">num_new_particles</span><span class="p">:,</span> <span class="p">:]</span> <span class="o">=</span> \
+                <span class="bp">self</span><span class="o">.</span><span class="n">start_position</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c"># line release</span>
+            <span class="n">data_arrays</span><span class="p">[</span><span class="s">&#39;positions&#39;</span><span class="p">][</span><span class="o">-</span><span class="n">num_new_particles</span><span class="p">:,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">=</span> \
+                <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">start_position</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
+                            <span class="bp">self</span><span class="o">.</span><span class="n">end_position</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
+                            <span class="n">num_new_particles</span><span class="p">)</span>
+            <span class="n">data_arrays</span><span class="p">[</span><span class="s">&#39;positions&#39;</span><span class="p">][</span><span class="o">-</span><span class="n">num_new_particles</span><span class="p">:,</span> <span class="mi">1</span><span class="p">]</span> <span class="o">=</span> \
+                <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">start_position</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span>
+                            <span class="bp">self</span><span class="o">.</span><span class="n">end_position</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span>
+                            <span class="n">num_new_particles</span><span class="p">)</span>
+            <span class="n">data_arrays</span><span class="p">[</span><span class="s">&#39;positions&#39;</span><span class="p">][</span><span class="o">-</span><span class="n">num_new_particles</span><span class="p">:,</span> <span class="mi">2</span><span class="p">]</span> <span class="o">=</span> \
+                <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">start_position</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span>
+                            <span class="bp">self</span><span class="o">.</span><span class="n">end_position</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span>
+                            <span class="n">num_new_particles</span><span class="p">)</span>
+
+        <span class="c"># expect self.num_released to be 0 before the instantaneous release</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">num_released</span> <span class="o">+=</span> <span class="n">num_new_particles</span>
+
+    <span class="k">def</span> <span class="nf">_init_positions_timevarying_release</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">num_new_particles</span><span class="p">,</span>
+                                            <span class="n">current_time</span><span class="p">,</span> <span class="n">time_step</span><span class="p">,</span>
+                                            <span class="n">data_arrays</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Time varying release of particles. Initialize particles as they are</span>
+<span class="sd">        released in each timestep</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">num_new_particles</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">return</span>
+
+        <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">start_position</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">end_position</span><span class="p">):</span>
+            <span class="c"># point release</span>
+            <span class="n">data_arrays</span><span class="p">[</span><span class="s">&#39;positions&#39;</span><span class="p">][</span><span class="o">-</span><span class="n">num_new_particles</span><span class="p">:]</span> <span class="o">=</span> \
+                <span class="bp">self</span><span class="o">.</span><span class="n">start_position</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c"># continuous line release</span>
+            <span class="n">n_0</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_released</span>
+            <span class="n">n_1</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_released</span> <span class="o">+</span> <span class="n">num_new_particles</span>
+            <span class="n">n</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">n_0</span><span class="p">,</span> <span class="n">n_1</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">((</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
+            <span class="n">data_arrays</span><span class="p">[</span><span class="s">&#39;positions&#39;</span><span class="p">][</span><span class="o">-</span><span class="n">num_new_particles</span><span class="p">:]</span> <span class="o">=</span> \
+                <span class="bp">self</span><span class="o">.</span><span class="n">start_position</span> <span class="o">+</span> <span class="n">n</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">delta_pos</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">num_released</span> <span class="o">+=</span> <span class="n">num_new_particles</span>
+
+<div class="viewcode-block" id="PointLineRelease.rewind"><a class="viewcode-back" href="../../../reference.html#gnome.spill.release.PointLineRelease.rewind">[docs]</a>    <span class="k">def</span> <span class="nf">rewind</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        reset to initial conditions -- i.e. nothing released.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">PointLineRelease</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">rewind</span><span class="p">()</span>
+        <span class="c">#self.prev_release_pos = self.start_position.copy()</span>
+
+</div></div>
+<div class="viewcode-block" id="SpatialRelease"><a class="viewcode-back" href="../../../reference.html#gnome.spill.release.SpatialRelease">[docs]</a><span class="k">class</span> <span class="nc">SpatialRelease</span><span class="p">(</span><span class="n">Release</span><span class="p">,</span> <span class="n">Serializable</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    A simple release class  --  a release of floating non-weathering particles,</span>
+<span class="sd">    with their initial positions pre-specified</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">_state</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">Release</span><span class="o">.</span><span class="n">_state</span><span class="p">)</span>
+    <span class="n">_state</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">update</span><span class="o">=</span><span class="p">[</span><span class="s">&#39;start_position&#39;</span><span class="p">],</span> <span class="n">save</span><span class="o">=</span><span class="p">[</span><span class="s">&#39;start_position&#39;</span><span class="p">])</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">release_time</span><span class="p">,</span> <span class="n">start_position</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        :param release_time: time the LEs are released</span>
+<span class="sd">        :type release_time: datetime.datetime</span>
+
+<span class="sd">        :param start_positions: locations the LEs are released</span>
+<span class="sd">        :type start_positions: (num_elements, 3) numpy array of float64</span>
+<span class="sd">            -- (long, lat, z)</span>
+
+<span class="sd">        num_elements and release_time passed to base class __init__ using super</span>
+<span class="sd">        See base :class:`Release` documentation</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">start_position</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">start_position</span><span class="p">,</span>
+                <span class="n">dtype</span><span class="o">=</span><span class="n">world_point_type</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">((</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">))</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">SpatialRelease</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="n">release_time</span><span class="p">,</span>
+                                             <span class="bp">self</span><span class="o">.</span><span class="n">start_position</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+
+<div class="viewcode-block" id="SpatialRelease.num_elements_to_release"><a class="viewcode-back" href="../../../reference.html#gnome.spill.release.SpatialRelease.num_elements_to_release">[docs]</a>    <span class="k">def</span> <span class="nf">num_elements_to_release</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">current_time</span><span class="p">,</span> <span class="n">time_step</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        return number of particles released in current_time + time_step</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c"># call base class method to check if start_time is valid</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">SpatialRelease</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">num_elements_to_release</span><span class="p">(</span><span class="n">current_time</span><span class="p">,</span>
+                                                            <span class="n">time_step</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">start_time_invalid</span><span class="p">:</span>
+            <span class="k">return</span> <span class="mi">0</span>
+
+        <span class="k">if</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">num_released</span> <span class="o">&gt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_elements</span> <span class="ow">or</span>
+            <span class="n">current_time</span> <span class="o">+</span> <span class="n">timedelta</span><span class="p">(</span><span class="n">seconds</span><span class="o">=</span><span class="n">time_step</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">release_time</span><span class="p">):</span>
+            <span class="k">return</span> <span class="mi">0</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_elements</span>
+</div>
+<div class="viewcode-block" id="SpatialRelease.set_newparticle_positions"><a class="viewcode-back" href="../../../reference.html#gnome.spill.release.SpatialRelease.set_newparticle_positions">[docs]</a>    <span class="k">def</span> <span class="nf">set_newparticle_positions</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">num_new_particles</span><span class="p">,</span> <span class="n">current_time</span><span class="p">,</span>
+                                  <span class="n">time_step</span><span class="p">,</span> <span class="n">data_arrays</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        set positions for new elements added by the SpillContainer</span>
+
+<span class="sd">        .. note:: this releases all the elements at their initial positions at</span>
+<span class="sd">            the release_time</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">num_released</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_elements</span>
+        <span class="n">data_arrays</span><span class="p">[</span><span class="s">&#39;positions&#39;</span><span class="p">][</span><span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">num_released</span><span class="p">:]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">start_position</span>
+
+</div></div>
+<div class="viewcode-block" id="VerticalPlumeRelease"><a class="viewcode-back" href="../../../reference.html#gnome.spill.release.VerticalPlumeRelease">[docs]</a><span class="k">class</span> <span class="nc">VerticalPlumeRelease</span><span class="p">(</span><span class="n">Release</span><span class="p">,</span> <span class="n">Serializable</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    An Underwater Plume spill class -- a continuous release of particles,</span>
+<span class="sd">    controlled by a contained spill generator object.</span>
+<span class="sd">    - plume model generator will have an iteration method.  This will provide</span>
+<span class="sd">      flexible looping and list comprehension behavior.</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="n">_state</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">Release</span><span class="o">.</span><span class="n">_state</span><span class="p">)</span>
+
+    <span class="c"># what kinds of customized state attributes would we like to add here?</span>
+    <span class="c">#_state.add(update=[&#39;start_position&#39;], save=[&#39;start_position&#39;])</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">release_time</span><span class="p">,</span> <span class="n">num_elements</span><span class="p">,</span> <span class="n">start_position</span><span class="p">,</span>
+                 <span class="n">plume_data</span><span class="p">,</span> <span class="n">end_release_time</span><span class="p">,</span>
+                 <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        :param num_elements: total number of elements to be released</span>
+<span class="sd">        :type num_elements: integer</span>
+
+<span class="sd">        :param start_position: initial location the elements are released</span>
+<span class="sd">        :type start_position: 3-tuple of floats (long, lat, z)</span>
+
+<span class="sd">        :param release_time: time the LEs are released</span>
+<span class="sd">        :type release_time: datetime.datetime</span>
+
+<span class="sd">        :param start_positions: locations the LEs are released</span>
+<span class="sd">        :type start_positions: (num_elements, 3) numpy array of float64</span>
+<span class="sd">            -- (long, lat, z)</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">VerticalPlumeRelease</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="n">release_time</span><span class="p">,</span> <span class="n">num_elements</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">start_position</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">start_position</span><span class="p">,</span>
+                                       <span class="n">dtype</span><span class="o">=</span><span class="n">world_point_type</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">((</span><span class="mi">3</span><span class="p">,</span> <span class="p">))</span>
+
+        <span class="n">plume</span> <span class="o">=</span> <span class="n">Plume</span><span class="p">(</span><span class="n">position</span><span class="o">=</span><span class="n">start_position</span><span class="p">,</span> <span class="n">plume_data</span><span class="o">=</span><span class="n">plume_data</span><span class="p">)</span>
+        <span class="n">time_step_delta</span> <span class="o">=</span> <span class="n">timedelta</span><span class="p">(</span><span class="n">hours</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">total_seconds</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">plume_gen</span> <span class="o">=</span> <span class="n">PlumeGenerator</span><span class="p">(</span><span class="n">release_time</span><span class="o">=</span><span class="n">release_time</span><span class="p">,</span>
+                                        <span class="n">end_release_time</span><span class="o">=</span><span class="n">end_release_time</span><span class="p">,</span>
+                                        <span class="n">time_step_delta</span><span class="o">=</span><span class="n">time_step_delta</span><span class="p">,</span>
+                                        <span class="n">plume</span><span class="o">=</span><span class="n">plume</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_elements</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">plume_gen</span><span class="o">.</span><span class="n">set_le_mass_from_total_le_count</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">num_elements</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_plume_elem_coords</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">current_time</span><span class="p">,</span> <span class="n">time_step</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Return a list of positions for all elements released within</span>
+<span class="sd">        current_time + time_step</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="n">next_time</span> <span class="o">=</span> <span class="n">current_time</span> <span class="o">+</span> <span class="n">timedelta</span><span class="p">(</span><span class="n">seconds</span><span class="o">=</span><span class="n">time_step</span><span class="p">)</span>
+        <span class="n">elem_counts</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">plume_gen</span><span class="o">.</span><span class="n">elems_in_range</span><span class="p">(</span><span class="n">current_time</span><span class="p">,</span> <span class="n">next_time</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">coord</span><span class="p">,</span> <span class="n">count</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">plume_gen</span><span class="o">.</span><span class="n">plume</span><span class="o">.</span><span class="n">coords</span><span class="p">,</span> <span class="n">elem_counts</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="p">(</span><span class="n">coord</span><span class="p">,)</span> <span class="o">*</span> <span class="n">count</span><span class="p">:</span>
+                <span class="k">yield</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">c</span><span class="p">)</span>
+
+<div class="viewcode-block" id="VerticalPlumeRelease.num_elements_to_release"><a class="viewcode-back" href="../../../reference.html#gnome.spill.release.VerticalPlumeRelease.num_elements_to_release">[docs]</a>    <span class="k">def</span> <span class="nf">num_elements_to_release</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">current_time</span><span class="p">,</span> <span class="n">time_step</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Return number of particles released in current_time + time_step</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">return</span> <span class="nb">len</span><span class="p">([</span><span class="n">e</span> <span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_plume_elem_coords</span><span class="p">(</span><span class="n">current_time</span><span class="p">,</span>
+                                                       <span class="n">time_step</span><span class="p">)])</span>
+</div>
+<div class="viewcode-block" id="VerticalPlumeRelease.set_newparticle_positions"><a class="viewcode-back" href="../../../reference.html#gnome.spill.release.VerticalPlumeRelease.set_newparticle_positions">[docs]</a>    <span class="k">def</span> <span class="nf">set_newparticle_positions</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">num_new_particles</span><span class="p">,</span>
+                                  <span class="n">current_time</span><span class="p">,</span> <span class="n">time_step</span><span class="p">,</span> <span class="n">data_arrays</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Set positions for new elements added by the SpillContainer</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="n">coords</span> <span class="o">=</span> <span class="p">[</span><span class="n">e</span> <span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_plume_elem_coords</span><span class="p">(</span><span class="n">current_time</span><span class="p">,</span> <span class="n">time_step</span><span class="p">)]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">coords</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="nb">tuple</span><span class="p">(</span><span class="n">coords</span><span class="p">),</span>
+                                 <span class="n">dtype</span><span class="o">=</span><span class="n">world_point_type</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">((</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">))</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">coords</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">!=</span> <span class="n">num_new_particles</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s">&#39;The Specified number of new particals does not&#39;</span>
+                               <span class="s">&#39; match the number calculated from the &#39;</span>
+                               <span class="s">&#39;time range.&#39;</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">num_released</span> <span class="o">+=</span> <span class="n">num_new_particles</span>
+        <span class="n">data_arrays</span><span class="p">[</span><span class="s">&#39;positions&#39;</span><span class="p">][</span><span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">coords</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]:,</span> <span class="p">:]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">coords</span>
+</div>
+<div class="viewcode-block" id="VerticalPlumeRelease.rewind"><a class="viewcode-back" href="../../../reference.html#gnome.spill.release.VerticalPlumeRelease.rewind">[docs]</a>    <span class="k">def</span> <span class="nf">rewind</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Rewind to initial conditions -- i.e. nothing released.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">num_released</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">start_time_invalid</span> <span class="o">=</span> <span class="bp">True</span></div></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../../index.html">pyGNOME 0.1.1 documentation</a> &raquo;</li>
+          <li><a href="../../index.html" >Module code</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2012, NOAA Emergecny Response Division.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.
+    </div>
+  </body>
+</html>

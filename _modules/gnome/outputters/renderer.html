@@ -1,0 +1,388 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>gnome.outputters.renderer &mdash; pyGNOME 0.1.1 documentation</title>
+    
+    <link rel="stylesheet" href="../../../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../',
+        VERSION:     '0.1.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../_static/doctools.js"></script>
+    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="pyGNOME 0.1.1 documentation" href="../../../index.html" />
+    <link rel="up" title="Module code" href="../../index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../../index.html">pyGNOME 0.1.1 documentation</a> &raquo;</li>
+          <li><a href="../../index.html" accesskey="U">Module code</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <h1>Source code for gnome.outputters.renderer</h1><div class="highlight"><pre>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">renderer.py</span>
+
+<span class="sd">module to hold all the map rendering code.</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">glob</span>
+<span class="kn">import</span> <span class="nn">copy</span>
+
+<span class="kn">from</span> <span class="nn">colander</span> <span class="kn">import</span> <span class="n">SchemaNode</span><span class="p">,</span> <span class="n">String</span><span class="p">,</span> <span class="n">drop</span>
+
+<span class="kn">from</span> <span class="nn">gnome.persist</span> <span class="kn">import</span> <span class="n">base_schema</span>
+
+<span class="kn">import</span> <span class="nn">gnome</span>    <span class="c"># implicitly used when loading from dict by new_from_dict</span>
+<span class="kn">from</span> <span class="nn">.</span> <span class="kn">import</span> <span class="n">Outputter</span><span class="p">,</span> <span class="n">BaseSchema</span>
+<span class="kn">from</span> <span class="nn">gnome.utilities.map_canvas</span> <span class="kn">import</span> <span class="n">MapCanvas</span>
+<span class="kn">from</span> <span class="nn">gnome.utilities.serializable</span> <span class="kn">import</span> <span class="n">Field</span>
+<span class="kn">from</span> <span class="nn">gnome.utilities.file_tools</span> <span class="kn">import</span> <span class="n">haz_files</span>
+
+
+<span class="k">class</span> <span class="nc">RendererSchema</span><span class="p">(</span><span class="n">BaseSchema</span><span class="p">):</span>
+
+    <span class="c"># not sure if bounding box needs defintion separate from LongLatBounds</span>
+    <span class="n">viewport</span> <span class="o">=</span> <span class="n">base_schema</span><span class="o">.</span><span class="n">LongLatBounds</span><span class="p">()</span>
+
+    <span class="c"># following are only used when creating objects, not updating -</span>
+    <span class="c"># so missing=drop</span>
+    <span class="n">filename</span> <span class="o">=</span> <span class="n">SchemaNode</span><span class="p">(</span><span class="n">String</span><span class="p">(),</span> <span class="n">missing</span><span class="o">=</span><span class="n">drop</span><span class="p">)</span>
+    <span class="n">projection_class</span> <span class="o">=</span> <span class="n">SchemaNode</span><span class="p">(</span><span class="n">String</span><span class="p">(),</span> <span class="n">missing</span><span class="o">=</span><span class="n">drop</span><span class="p">)</span>
+    <span class="n">image_size</span> <span class="o">=</span> <span class="n">base_schema</span><span class="o">.</span><span class="n">ImageSize</span><span class="p">(</span><span class="n">missing</span><span class="o">=</span><span class="n">drop</span><span class="p">)</span>
+    <span class="n">images_dir</span> <span class="o">=</span> <span class="n">SchemaNode</span><span class="p">(</span><span class="n">String</span><span class="p">())</span>
+    <span class="n">draw_ontop</span> <span class="o">=</span> <span class="n">SchemaNode</span><span class="p">(</span><span class="n">String</span><span class="p">())</span>
+
+
+<span class="k">class</span> <span class="nc">Renderer</span><span class="p">(</span><span class="n">Outputter</span><span class="p">,</span> <span class="n">MapCanvas</span><span class="p">):</span>
+<div class="viewcode-block" id="Renderer"><a class="viewcode-back" href="../../../reference.html#gnome.outputters.renderer.Renderer">[docs]</a>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Map Renderer</span>
+
+<span class="sd">    class that writes map images for GNOME results:</span>
+<span class="sd">        writes the frames for the LE &quot;movies&quot;, etc.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">background_map_name</span> <span class="o">=</span> <span class="s">&#39;background_map.png&#39;</span>
+    <span class="n">foreground_filename_format</span> <span class="o">=</span> <span class="s">&#39;foreground_</span><span class="si">%05i</span><span class="s">.png&#39;</span>
+    <span class="n">foreground_filename_glob</span> <span class="o">=</span> <span class="s">&#39;foreground_?????.png&#39;</span>
+
+    <span class="c"># todo: how should images_dir be saved? Absolute? Currently, it is relative</span>
+    <span class="n">_update</span> <span class="o">=</span> <span class="p">[</span><span class="s">&#39;viewport&#39;</span><span class="p">,</span> <span class="s">&#39;map_BB&#39;</span><span class="p">,</span> <span class="s">&#39;images_dir&#39;</span><span class="p">,</span> <span class="s">&#39;image_size&#39;</span><span class="p">,</span> <span class="s">&#39;draw_ontop&#39;</span><span class="p">]</span>
+    <span class="n">_create</span> <span class="o">=</span> <span class="p">[</span><span class="s">&#39;image_size&#39;</span><span class="p">,</span> <span class="s">&#39;projection_class&#39;</span><span class="p">,</span> <span class="s">&#39;draw_ontop&#39;</span><span class="p">]</span>
+
+    <span class="n">_create</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">_update</span><span class="p">)</span>
+    <span class="n">_state</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">Outputter</span><span class="o">.</span><span class="n">_state</span><span class="p">)</span>
+    <span class="n">_state</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">save</span><span class="o">=</span><span class="n">_create</span><span class="p">,</span> <span class="n">update</span><span class="o">=</span><span class="n">_update</span><span class="p">)</span>
+    <span class="n">_state</span><span class="o">.</span><span class="n">add_field</span><span class="p">(</span><span class="n">Field</span><span class="p">(</span><span class="s">&#39;filename&#39;</span><span class="p">,</span> <span class="n">isdatafile</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span>
+                    <span class="n">save</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">read</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">test_for_eq</span><span class="o">=</span><span class="bp">False</span><span class="p">))</span>
+    <span class="n">_schema</span> <span class="o">=</span> <span class="n">RendererSchema</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">new_from_dict</span><span class="p">(</span><span class="n">cls</span><span class="p">,</span> <span class="n">dict_</span><span class="p">):</span>
+<div class="viewcode-block" id="Renderer.new_from_dict"><a class="viewcode-back" href="../../../reference.html#gnome.outputters.renderer.Renderer.new_from_dict">[docs]</a>        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        change projection_type from string to correct type for loading from</span>
+<span class="sd">        save file</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">dict_</span><span class="p">[</span><span class="s">&#39;json_&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s">&#39;save&#39;</span><span class="p">:</span>
+            <span class="n">proj</span> <span class="o">=</span> <span class="nb">eval</span><span class="p">(</span><span class="n">dict_</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s">&#39;projection_class&#39;</span><span class="p">))</span>
+            <span class="n">viewport</span> <span class="o">=</span> <span class="n">dict_</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s">&#39;viewport&#39;</span><span class="p">)</span>
+
+            <span class="n">obj</span> <span class="o">=</span> <span class="n">cls</span><span class="p">(</span><span class="n">projection_class</span><span class="o">=</span><span class="n">proj</span><span class="p">,</span> <span class="o">**</span><span class="n">dict_</span><span class="p">)</span>
+            <span class="n">obj</span><span class="o">.</span><span class="n">viewport</span> <span class="o">=</span> <span class="n">viewport</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">obj</span> <span class="o">=</span> <span class="nb">super</span><span class="p">(</span><span class="n">Renderer</span><span class="p">,</span> <span class="n">cls</span><span class="p">)</span><span class="o">.</span><span class="n">new_from_dict</span><span class="p">(</span><span class="n">dict_</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">obj</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span></div>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">filename</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
+        <span class="n">images_dir</span><span class="o">=</span><span class="s">&#39;./&#39;</span><span class="p">,</span>
+        <span class="n">image_size</span><span class="o">=</span><span class="p">(</span><span class="mi">800</span><span class="p">,</span> <span class="mi">600</span><span class="p">),</span>
+        <span class="n">cache</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
+        <span class="n">output_timestep</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
+        <span class="n">output_zero_step</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span>
+        <span class="n">output_last_step</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span>
+        <span class="n">draw_ontop</span><span class="o">=</span><span class="s">&#39;forecast&#39;</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">kwargs</span>
+        <span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Init the image renderer.</span>
+
+<span class="sd">        Following args are passed to base class Outputter&#39;s init:</span>
+
+<span class="sd">        :param cache: sets the cache object from which to read data. The model</span>
+<span class="sd">            will automatically set this param</span>
+
+<span class="sd">        :param output_timestep: default is None in which case everytime the</span>
+<span class="sd">            write_output is called, output is written. If set, then output is</span>
+<span class="sd">            written every output_timestep starting from model_start_time.</span>
+<span class="sd">        :type output_timestep: timedelta object</span>
+
+<span class="sd">        :param output_zero_step: default is True. If True then output for</span>
+<span class="sd">            initial step (showing initial release conditions) is written</span>
+<span class="sd">            regardless of output_timestep</span>
+<span class="sd">        :type output_zero_step: boolean</span>
+
+<span class="sd">        :param output_last_step: default is True. If True then output for</span>
+<span class="sd">            final step is written regardless of output_timestep</span>
+<span class="sd">        :type output_last_step: boolean</span>
+
+<span class="sd">        :param draw_ontop: draw &#39;forecast&#39; or &#39;uncertain&#39; LEs on top. Default</span>
+<span class="sd">            is to draw &#39;forecast&#39; LEs, which are in black on top</span>
+<span class="sd">        :type draw_ontop: str</span>
+
+<span class="sd">        Remaining kwargs are passed onto baseclass&#39;s __init__ with a direct</span>
+<span class="sd">        call: MapCanvas.__init__(..)</span>
+
+<span class="sd">        Optional parameters (kwargs)</span>
+
+<span class="sd">        :param projection_class: gnome.utilities.projections class to use.</span>
+<span class="sd">            Default is gnome.utilities.projections.FlatEarthProjection</span>
+<span class="sd">        :param map_BB:  map bounding box. Default is to use</span>
+<span class="sd">            land_polygons.bounding_box. If land_polygons is None, then this is</span>
+<span class="sd">            the whole world, defined by ((-180,-90),(180, 90))</span>
+<span class="sd">        :param viewport: viewport of map -- what gets drawn and on what scale.</span>
+<span class="sd">            Default is to set viewport = map_BB</span>
+<span class="sd">        :param image_mode: Image mode (&#39;P&#39; for palette or &#39;L&#39; for Black and</span>
+<span class="sd">            White image). BW_MapCanvas inherits from MapCanvas and sets the</span>
+<span class="sd">            mode to &#39;L&#39;. Default image_mode is &#39;P&#39;.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="c"># set up the canvas</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_filename</span> <span class="o">=</span> <span class="n">filename</span>
+        <span class="k">if</span> <span class="n">filename</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">polygons</span> <span class="o">=</span> <span class="n">haz_files</span><span class="o">.</span><span class="n">ReadBNA</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="s">&#39;PolygonSet&#39;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">polygons</span> <span class="o">=</span> <span class="bp">None</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">images_dir</span> <span class="o">=</span> <span class="n">images_dir</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">last_filename</span> <span class="o">=</span> <span class="s">&#39;&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">draw_ontop</span> <span class="o">=</span> <span class="n">draw_ontop</span>
+
+        <span class="n">Outputter</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cache</span><span class="p">,</span> <span class="n">output_timestep</span><span class="p">,</span> <span class="n">output_zero_step</span><span class="p">,</span>
+                           <span class="n">output_last_step</span><span class="p">)</span>
+        <span class="n">MapCanvas</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">image_size</span><span class="p">,</span> <span class="n">land_polygons</span><span class="o">=</span><span class="n">polygons</span><span class="p">,</span>
+                           <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+    <span class="n">filename</span> <span class="o">=</span> <span class="nb">property</span><span class="p">(</span><span class="k">lambda</span> <span class="bp">self</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_filename</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">draw_ontop</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_draw_ontop</span>
+
+    <span class="nd">@draw_ontop.setter</span>
+    <span class="k">def</span> <span class="nf">draw_ontop</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">val</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">val</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="s">&#39;forecast&#39;</span><span class="p">,</span> <span class="s">&#39;uncertain&#39;</span><span class="p">]:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&quot;&#39;draw_ontop&#39; must be either &#39;forecast&#39; or&quot;</span>
+                            <span class="s">&quot;&#39;uncertain&#39;. {0} is invalid.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">val</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_draw_ontop</span> <span class="o">=</span> <span class="n">val</span>
+
+    <span class="k">def</span> <span class="nf">images_dir_to_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">images_dir</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">prepare_for_model_run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_start_time</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<div class="viewcode-block" id="Renderer.prepare_for_model_run"><a class="viewcode-back" href="../../../reference.html#gnome.outputters.renderer.Renderer.prepare_for_model_run">[docs]</a>        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        prepares the renderer for a model run.</span>
+
+<span class="sd">        Parameters passed to base class (use super): model_start_time, cache</span>
+
+<span class="sd">        Does not take any other input arguments; however, to keep the interface</span>
+<span class="sd">        the same for all outputters, define **kwargs and pass into base class</span>
+
+<span class="sd">        In this case, it draws the background image and clears the previous</span>
+<span class="sd">        images. If you want to save the previous images, a new output dir</span>
+<span class="sd">        should be set.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="nb">super</span><span class="p">(</span><span class="n">Renderer</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">prepare_for_model_run</span><span class="p">(</span><span class="n">model_start_time</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">clear_output_dir</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">draw_background</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">save_background</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">images_dir</span><span class="p">,</span>
+                             <span class="bp">self</span><span class="o">.</span><span class="n">background_map_name</span><span class="p">))</span>
+
+    <span class="k">def</span> <span class="nf">clear_output_dir</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span></div>
+
+        <span class="c"># clear out output dir:</span>
+        <span class="c"># don&#39;t need to do this -- it will get written over.</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">os</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">images_dir</span><span class="p">,</span>
+                      <span class="bp">self</span><span class="o">.</span><span class="n">background_map_name</span><span class="p">))</span>
+        <span class="k">except</span> <span class="ne">OSError</span><span class="p">:</span>
+
+                        <span class="c"># it&#39;s not there to delete..</span>
+
+            <span class="k">pass</span>
+
+        <span class="n">foreground_filenames</span> <span class="o">=</span> <span class="n">glob</span><span class="o">.</span><span class="n">glob</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">images_dir</span><span class="p">,</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">foreground_filename_glob</span><span class="p">))</span>
+        <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">foreground_filenames</span><span class="p">:</span>
+            <span class="n">os</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">rewind</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="Renderer.rewind"><a class="viewcode-back" href="../../../reference.html#gnome.outputters.renderer.Renderer.rewind">[docs]</a>        <span class="sd">&#39;&#39;&#39;call parent class&#39;s rewind.</span>
+<span class="sd">        Call clear_output_dir to delete output files&#39;&#39;&#39;</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">Renderer</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">rewind</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">clear_output_dir</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">write_output</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">step_num</span><span class="p">,</span> <span class="n">islast_step</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span></div>
+<div class="viewcode-block" id="Renderer.write_output"><a class="viewcode-back" href="../../../reference.html#gnome.outputters.renderer.Renderer.write_output">[docs]</a>        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Render the map image, according to current parameters.</span>
+
+<span class="sd">        :param step_num: the model step number you want rendered.</span>
+<span class="sd">        :type step_num: int</span>
+
+<span class="sd">        :param islast_step: default is False. Flag that indicates that step_num</span>
+<span class="sd">            is last step. If &#39;output_last_step&#39; is True then this is written</span>
+<span class="sd">            out</span>
+<span class="sd">        :type islast_step: bool</span>
+
+<span class="sd">        :returns: A dict of info about this step number if this step</span>
+<span class="sd">            is to be output, None otherwise.</span>
+<span class="sd">            &#39;step_num&#39;: step_num</span>
+<span class="sd">            &#39;image_filename&#39;: filename</span>
+<span class="sd">            &#39;time_stamp&#39;: time_stamp # as ISO string</span>
+
+<span class="sd">        use super to call base class write_output method</span>
+
+<span class="sd">        If this is last step, then data is written; otherwise</span>
+<span class="sd">        prepare_for_model_step determines whether to write the output for</span>
+<span class="sd">        this step based on output_timestep</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="nb">super</span><span class="p">(</span><span class="n">Renderer</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">write_output</span><span class="p">(</span><span class="n">step_num</span><span class="p">,</span> <span class="n">islast_step</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_write_step</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">None</span>
+
+        <span class="n">image_filename</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">images_dir</span><span class="p">,</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">foreground_filename_format</span> <span class="o">%</span> <span class="n">step_num</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">create_foreground_image</span><span class="p">()</span>
+
+        <span class="c"># do a function call so data arrays get garbage collected after</span>
+        <span class="c"># function exists</span>
+        <span class="n">current_time_stamp</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_draw</span><span class="p">(</span><span class="n">step_num</span><span class="p">)</span>
+
+        <span class="c"># get the timestamp:</span>
+        <span class="n">time_stamp</span> <span class="o">=</span> <span class="n">current_time_stamp</span><span class="o">.</span><span class="n">isoformat</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">save_foreground</span><span class="p">(</span><span class="n">image_filename</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">last_filename</span> <span class="o">=</span> <span class="n">image_filename</span>
+
+        <span class="c"># update self._next_output_time if data is successfully written</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_update_next_output_time</span><span class="p">(</span><span class="n">step_num</span><span class="p">,</span> <span class="n">current_time_stamp</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="p">{</span><span class="s">&#39;step_num&#39;</span><span class="p">:</span> <span class="n">step_num</span><span class="p">,</span> <span class="s">&#39;image_filename&#39;</span><span class="p">:</span> <span class="n">image_filename</span><span class="p">,</span>
+                <span class="s">&#39;time_stamp&#39;</span><span class="p">:</span> <span class="n">time_stamp</span><span class="p">}</span>
+
+    <span class="k">def</span> <span class="nf">_draw</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">step_num</span><span class="p">):</span></div>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        create a small function so data arrays are garbage collected from</span>
+<span class="sd">        memory after this function exits - it returns current_time_stamp</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="c"># draw data for self.draw_ontop second so it draws on top</span>
+        <span class="n">scp</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cache</span><span class="o">.</span><span class="n">load_timestep</span><span class="p">(</span><span class="n">step_num</span><span class="p">)</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">scp</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">draw_elements</span><span class="p">(</span><span class="n">scp</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">draw_ontop</span> <span class="o">==</span> <span class="s">&#39;forecast&#39;</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">draw_elements</span><span class="p">(</span><span class="n">scp</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">draw_elements</span><span class="p">(</span><span class="n">scp</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">draw_elements</span><span class="p">(</span><span class="n">scp</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">draw_elements</span><span class="p">(</span><span class="n">scp</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+
+        <span class="k">return</span> <span class="n">scp</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">current_time_stamp</span>
+
+    <span class="k">def</span> <span class="nf">projection_class_to_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="Renderer.projection_class_to_dict"><a class="viewcode-back" href="../../../reference.html#gnome.outputters.renderer.Renderer.projection_class_to_dict">[docs]</a>        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        store projection class as a string for now since that is all that</span>
+<span class="sd">        is required for persisting</span>
+<span class="sd">        todo: This may not be the case for all projection classes, but keep</span>
+<span class="sd">        simple for now so we don&#39;t have to make the projection classes</span>
+<span class="sd">        serializable</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">return</span> <span class="s">&#39;{0}.{1}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">projection</span><span class="o">.</span><span class="n">__module__</span><span class="p">,</span>
+                                <span class="bp">self</span><span class="o">.</span><span class="n">projection</span><span class="o">.</span><span class="n">__class__</span><span class="o">.</span><span class="n">__name__</span><span class="p">)</span>
+</pre></div></div></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../../index.html">pyGNOME 0.1.1 documentation</a> &raquo;</li>
+          <li><a href="../../index.html" >Module code</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2012, NOAA Emergecny Response Division.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.
+    </div>
+  </body>
+</html>

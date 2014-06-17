@@ -1,0 +1,747 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>gnome.spill.elements &mdash; pyGNOME 0.1.1 documentation</title>
+    
+    <link rel="stylesheet" href="../../../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../',
+        VERSION:     '0.1.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../_static/doctools.js"></script>
+    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="pyGNOME 0.1.1 documentation" href="../../../index.html" />
+    <link rel="up" title="Module code" href="../../index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../../index.html">pyGNOME 0.1.1 documentation</a> &raquo;</li>
+          <li><a href="../../index.html" accesskey="U">Module code</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <h1>Source code for gnome.spill.elements</h1><div class="highlight"><pre>
+<span class="c">#!/usr/bin/env python</span>
+<span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">Types of elements that a spill can expect</span>
+<span class="sd">These are properties that are spill specific like:</span>
+<span class="sd">  &#39;floating&#39; element_types would contain windage_range, windage_persist</span>
+<span class="sd">  &#39;subsurface_dist&#39; element_types would contain rise velocity distribution info</span>
+<span class="sd">  &#39;nonweathering&#39; element_types would set use_droplet_size flag to False</span>
+<span class="sd">  &#39;weathering&#39; element_types would use droplet_size, densities, mass?</span>
+<span class="sd">&#39;&#39;&#39;</span>
+<span class="kn">import</span> <span class="nn">copy</span>
+<span class="kn">import</span> <span class="nn">numpy</span>
+<span class="n">np</span> <span class="o">=</span> <span class="n">numpy</span>
+<span class="kn">from</span> <span class="nn">colander</span> <span class="kn">import</span> <span class="n">SchemaNode</span><span class="p">,</span> <span class="n">Int</span><span class="p">,</span> <span class="n">Float</span><span class="p">,</span> <span class="n">Range</span><span class="p">,</span> <span class="n">TupleSchema</span>
+
+<span class="kn">import</span> <span class="nn">gnome</span>    <span class="c"># required by new_from_dict</span>
+<span class="kn">from</span> <span class="nn">gnome.utilities.rand</span> <span class="kn">import</span> <span class="n">random_with_persistance</span>
+<span class="kn">from</span> <span class="nn">gnome.utilities.compute_fraction</span> <span class="kn">import</span> <span class="n">fraction_below_d</span>
+<span class="kn">from</span> <span class="nn">gnome.utilities.serializable</span> <span class="kn">import</span> <span class="n">Serializable</span>
+<span class="kn">from</span> <span class="nn">gnome.utilities.distributions</span> <span class="kn">import</span> <span class="n">UniformDistribution</span>
+
+<span class="kn">from</span> <span class="nn">gnome.cy_gnome.cy_rise_velocity_mover</span> <span class="kn">import</span> <span class="n">rise_velocity_from_drop_size</span>
+<span class="kn">from</span> <span class="nn">gnome.db.oil_library.oil_props</span> <span class="kn">import</span> <span class="p">(</span><span class="n">OilProps</span><span class="p">,</span> <span class="n">OilPropsFromDensity</span><span class="p">)</span>
+
+<span class="kn">from</span> <span class="nn">gnome.persist</span> <span class="kn">import</span> <span class="n">base_schema</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Initializers for various element types</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+
+<div class="viewcode-block" id="InitBaseClass"><a class="viewcode-back" href="../../../reference.html#gnome.spill.elements.InitBaseClass">[docs]</a><span class="k">class</span> <span class="nc">InitBaseClass</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    All Init* classes will define the _state attribute, so just do so in a</span>
+<span class="sd">    base class.</span>
+
+<span class="sd">    It also documents that all initializers must implement an initialize method</span>
+
+<span class="sd">    todo/Note:</span>
+<span class="sd">    This may change as the persistence code changes. Currently, &#39;id&#39; and</span>
+<span class="sd">    &#39;obj_type&#39; are part of base Serializable._state</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">_state</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">Serializable</span><span class="o">.</span><span class="n">_state</span><span class="p">)</span>
+
+<div class="viewcode-block" id="InitBaseClass.initialize"><a class="viewcode-back" href="../../../reference.html#gnome.spill.elements.InitBaseClass.initialize">[docs]</a>    <span class="k">def</span> <span class="nf">initialize</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        all classes that derive from Base class must implement initialize</span>
+<span class="sd">        method</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">pass</span>
+
+</div></div>
+<span class="k">class</span> <span class="nc">WindageSchema</span><span class="p">(</span><span class="n">TupleSchema</span><span class="p">):</span>
+    <span class="n">min_windage</span> <span class="o">=</span> <span class="n">SchemaNode</span><span class="p">(</span><span class="n">Float</span><span class="p">(),</span> <span class="n">validator</span><span class="o">=</span><span class="n">Range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">),</span>
+                             <span class="n">default</span><span class="o">=</span><span class="mf">0.01</span><span class="p">)</span>
+    <span class="n">max_windage</span> <span class="o">=</span> <span class="n">SchemaNode</span><span class="p">(</span><span class="n">Float</span><span class="p">(),</span> <span class="n">validator</span><span class="o">=</span><span class="n">Range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">),</span>
+                             <span class="n">default</span><span class="o">=</span><span class="mf">0.04</span><span class="p">)</span>
+    <span class="n">name</span> <span class="o">=</span> <span class="s">&#39;windage_range&#39;</span>
+
+
+<div class="viewcode-block" id="InitWindagesSchema"><a class="viewcode-back" href="../../../reference.html#gnome.spill.elements.InitWindagesSchema">[docs]</a><span class="k">class</span> <span class="nc">InitWindagesSchema</span><span class="p">(</span><span class="n">base_schema</span><span class="o">.</span><span class="n">ObjType</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    windages initializer values</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">windage_range</span> <span class="o">=</span> <span class="n">WindageSchema</span><span class="p">()</span>
+    <span class="n">windage_persist</span> <span class="o">=</span> <span class="n">SchemaNode</span><span class="p">(</span><span class="n">Int</span><span class="p">(),</span> <span class="n">default</span><span class="o">=</span><span class="mi">900</span><span class="p">,</span>
+                                 <span class="n">description</span><span class="o">=</span><span class="s">&#39;windage persistence in minutes&#39;</span><span class="p">)</span>
+    <span class="n">name</span> <span class="o">=</span> <span class="s">&#39;windages&#39;</span>
+
+</div>
+<span class="k">class</span> <span class="nc">InitWindages</span><span class="p">(</span><span class="n">InitBaseClass</span><span class="p">,</span> <span class="n">Serializable</span><span class="p">):</span>
+    <span class="n">_update</span> <span class="o">=</span> <span class="p">[</span><span class="s">&#39;windage_range&#39;</span><span class="p">,</span> <span class="s">&#39;windage_persist&#39;</span><span class="p">]</span>
+    <span class="n">_create</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">_create</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">_update</span><span class="p">)</span>
+    <span class="n">_state</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">InitBaseClass</span><span class="o">.</span><span class="n">_state</span><span class="p">)</span>
+    <span class="n">_state</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">save</span><span class="o">=</span><span class="n">_create</span><span class="p">,</span> <span class="n">update</span><span class="o">=</span><span class="n">_update</span><span class="p">)</span>
+    <span class="n">_schema</span> <span class="o">=</span> <span class="n">InitWindagesSchema</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">windage_range</span><span class="o">=</span><span class="p">(</span><span class="mf">0.01</span><span class="p">,</span> <span class="mf">0.04</span><span class="p">),</span> <span class="n">windage_persist</span><span class="o">=</span><span class="mi">900</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Initializes the windages, windage_range, windage_persist data arrays.</span>
+<span class="sd">        Initial values for windages use infinite persistence. These are updated</span>
+<span class="sd">        by the WindMover for particles with non-zero persistence.</span>
+
+<span class="sd">        Optional arguments:</span>
+
+<span class="sd">        :param windage_range=(0.01, 0.04): the windage range of the elements</span>
+<span class="sd">            default is (0.01, 0.04) from 1% to 4%.</span>
+<span class="sd">        :type windage_range: tuple: (min, max)</span>
+
+<span class="sd">        :param windage_persist=-1: Default is 900s, so windage is updated every</span>
+<span class="sd">            900 sec. -1 means the persistence is infinite so it is only set at</span>
+<span class="sd">            the beginning of the run.</span>
+<span class="sd">        :type windage_persist: integer seconds</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">windage_persist</span> <span class="o">=</span> <span class="n">windage_persist</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">windage_range</span> <span class="o">=</span> <span class="n">windage_range</span>
+
+    <span class="k">def</span> <span class="nf">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">(</span><span class="s">&#39;{0.__class__.__module__}.{0.__class__.__name__}(&#39;</span>
+                <span class="s">&#39;windage_range={0.windage_range}, &#39;</span>
+                <span class="s">&#39;windage_persist={0.windage_persist}&#39;</span>
+                <span class="s">&#39;)&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="p">))</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">windage_persist</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_windage_persist</span>
+
+    <span class="nd">@windage_persist.setter</span>
+    <span class="k">def</span> <span class="nf">windage_persist</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">val</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">val</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&quot;&#39;windage_persist&#39; cannot be 0. &quot;</span>
+                             <span class="s">&quot;For infinite windage, windage_persist=-1 &quot;</span>
+                             <span class="s">&quot;otherwise windage_persist &gt; 0.&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_windage_persist</span> <span class="o">=</span> <span class="n">val</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">windage_range</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_windage_range</span>
+
+    <span class="nd">@windage_range.setter</span>
+    <span class="k">def</span> <span class="nf">windage_range</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">val</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">val</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">)</span> <span class="ow">or</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">val</span><span class="p">)</span><span class="o">.</span><span class="n">size</span> <span class="o">!=</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&quot;&#39;windage_range&#39; &gt;= (0, 0). &quot;</span>
+                             <span class="s">&quot;Nominal values vary between 1% to 4%. &quot;</span>
+                             <span class="s">&quot;Default windage_range=(0.01, 0.04)&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_windage_range</span> <span class="o">=</span> <span class="n">val</span>
+
+    <span class="k">def</span> <span class="nf">initialize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">num_new_particles</span><span class="p">,</span> <span class="n">spill</span><span class="p">,</span> <span class="n">data_arrays</span><span class="p">,</span>
+                   <span class="n">substance</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Since windages exists in data_arrays, so must windage_range and</span>
+<span class="sd">        windage_persist if this initializer is used/called</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="p">(</span><span class="n">data_arrays</span><span class="p">[</span><span class="s">&#39;windage_range&#39;</span><span class="p">][</span><span class="o">-</span><span class="n">num_new_particles</span><span class="p">:,</span> <span class="mi">0</span><span class="p">],</span>
+         <span class="n">data_arrays</span><span class="p">[</span><span class="s">&#39;windage_range&#39;</span><span class="p">][</span><span class="o">-</span><span class="n">num_new_particles</span><span class="p">:,</span> <span class="mi">1</span><span class="p">],</span>
+         <span class="n">data_arrays</span><span class="p">[</span><span class="s">&#39;windage_persist&#39;</span><span class="p">][</span><span class="o">-</span><span class="n">num_new_particles</span><span class="p">:])</span> <span class="o">=</span> \
+            <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">windage_range</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
+             <span class="bp">self</span><span class="o">.</span><span class="n">windage_range</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span>
+             <span class="bp">self</span><span class="o">.</span><span class="n">windage_persist</span><span class="p">)</span>
+
+        <span class="c"># initialize all windages - ignore persistence during initialization</span>
+        <span class="c"># if we have infinite persistence, these values are never updated</span>
+        <span class="n">random_with_persistance</span><span class="p">(</span>
+                    <span class="n">data_arrays</span><span class="p">[</span><span class="s">&#39;windage_range&#39;</span><span class="p">][</span><span class="o">-</span><span class="n">num_new_particles</span><span class="p">:][:,</span> <span class="mi">0</span><span class="p">],</span>
+                    <span class="n">data_arrays</span><span class="p">[</span><span class="s">&#39;windage_range&#39;</span><span class="p">][</span><span class="o">-</span><span class="n">num_new_particles</span><span class="p">:][:,</span> <span class="mi">1</span><span class="p">],</span>
+                    <span class="n">data_arrays</span><span class="p">[</span><span class="s">&#39;windages&#39;</span><span class="p">][</span><span class="o">-</span><span class="n">num_new_particles</span><span class="p">:])</span>
+
+
+<div class="viewcode-block" id="InitMassComponentsFromOilProps"><a class="viewcode-back" href="../../../reference.html#gnome.spill.elements.InitMassComponentsFromOilProps">[docs]</a><span class="k">class</span> <span class="nc">InitMassComponentsFromOilProps</span><span class="p">(</span><span class="n">InitBaseClass</span><span class="p">,</span> <span class="n">Serializable</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">       Initialize the mass components based on given Oil properties</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="n">_state</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">InitBaseClass</span><span class="o">.</span><span class="n">_state</span><span class="p">)</span>
+    <span class="n">_schema</span> <span class="o">=</span> <span class="n">base_schema</span><span class="o">.</span><span class="n">ObjType</span>
+
+<div class="viewcode-block" id="InitMassComponentsFromOilProps.initialize"><a class="viewcode-back" href="../../../reference.html#gnome.spill.elements.InitMassComponentsFromOilProps.initialize">[docs]</a>    <span class="k">def</span> <span class="nf">initialize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">num_new_particles</span><span class="p">,</span> <span class="n">spill</span><span class="p">,</span> <span class="n">data_arrays</span><span class="p">,</span> <span class="n">substance</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">           :param int num_new_particles: Number of new particles to initialize</span>
+<span class="sd">           :param Spill spill: The spill object from which the new particles</span>
+<span class="sd">                               are coming from.</span>
+<span class="sd">           :param data_arrays: The numpy arrays that make up the collective</span>
+<span class="sd">                               properties of our particles.</span>
+<span class="sd">           :type data_arrays: dict(&lt;name&gt;: &lt;np.ndarray&gt;,</span>
+<span class="sd">                                   ...</span>
+<span class="sd">                                   )</span>
+<span class="sd">           :param OilProps substance: The Oil Properties associated with the</span>
+<span class="sd">                                      spill.</span>
+<span class="sd">                                      (TODO: Why is this not simply contained</span>
+<span class="sd">                                             in the Spill??</span>
+<span class="sd">                                             Why the extra argument??)</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">if</span> <span class="n">spill</span><span class="o">.</span><span class="n">mass</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&#39;mass attribute of spill is None - cannot &#39;</span>
+                             <span class="s">&#39;compute particle mass without total mass&#39;</span><span class="p">)</span>
+
+        <span class="n">total_mass</span> <span class="o">=</span> <span class="n">spill</span><span class="o">.</span><span class="n">get_mass</span><span class="p">(</span><span class="s">&#39;g&#39;</span><span class="p">)</span>
+        <span class="n">le_mass</span> <span class="o">=</span> <span class="n">total_mass</span> <span class="o">/</span> <span class="n">spill</span><span class="o">.</span><span class="n">release</span><span class="o">.</span><span class="n">num_elements</span>
+
+        <span class="n">mass_fractions</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="o">*</span><span class="n">substance</span><span class="o">.</span><span class="n">mass_components</span><span class="p">)[</span><span class="mi">0</span><span class="p">],</span>
+                                    <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+        <span class="n">masses</span> <span class="o">=</span> <span class="n">mass_fractions</span> <span class="o">*</span> <span class="n">le_mass</span>
+
+        <span class="n">data_arrays</span><span class="p">[</span><span class="s">&#39;mass_components&#39;</span><span class="p">][</span><span class="o">-</span><span class="n">num_new_particles</span><span class="p">:]</span> <span class="o">=</span> <span class="n">masses</span>
+
+</div></div>
+<div class="viewcode-block" id="InitHalfLivesFromOilProps"><a class="viewcode-back" href="../../../reference.html#gnome.spill.elements.InitHalfLivesFromOilProps">[docs]</a><span class="k">class</span> <span class="nc">InitHalfLivesFromOilProps</span><span class="p">(</span><span class="n">InitBaseClass</span><span class="p">,</span> <span class="n">Serializable</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">       Initialize the half-lives of our mass components based on given Oil</span>
+<span class="sd">       properties.</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="n">_state</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">InitBaseClass</span><span class="o">.</span><span class="n">_state</span><span class="p">)</span>
+    <span class="n">_schema</span> <span class="o">=</span> <span class="n">base_schema</span><span class="o">.</span><span class="n">ObjType</span>
+
+<div class="viewcode-block" id="InitHalfLivesFromOilProps.initialize"><a class="viewcode-back" href="../../../reference.html#gnome.spill.elements.InitHalfLivesFromOilProps.initialize">[docs]</a>    <span class="k">def</span> <span class="nf">initialize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">num_new_particles</span><span class="p">,</span> <span class="n">spill</span><span class="p">,</span> <span class="n">data_arrays</span><span class="p">,</span> <span class="n">substance</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">           :param int num_new_particles: Number of new particles to initialize</span>
+<span class="sd">           :param Spill spill: The spill object from which the new particles</span>
+<span class="sd">                               are coming from.</span>
+<span class="sd">           :param data_arrays: The numpy arrays that make up the collective</span>
+<span class="sd">                               properties of our particles.</span>
+<span class="sd">           :type data_arrays: dict(&lt;name&gt;: &lt;np.ndarray&gt;,</span>
+<span class="sd">                                   ...</span>
+<span class="sd">                                   )</span>
+<span class="sd">           :param OilProps substance: The Oil Properties associated with the</span>
+<span class="sd">                                      spill.</span>
+<span class="sd">                                      (TODO: Why is this not simply contained</span>
+<span class="sd">                                             in the Spill??</span>
+<span class="sd">                                             Why the extra argument??)</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="n">half_lives</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="o">*</span><span class="n">substance</span><span class="o">.</span><span class="n">mass_components</span><span class="p">)[</span><span class="mi">1</span><span class="p">],</span>
+                                <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+
+        <span class="n">data_arrays</span><span class="p">[</span><span class="s">&#39;half_lives&#39;</span><span class="p">][</span><span class="o">-</span><span class="n">num_new_particles</span><span class="p">:]</span> <span class="o">=</span> <span class="n">half_lives</span>
+
+
+<span class="c"># do following two classes work for a time release spill?</span>
+
+</div></div>
+<div class="viewcode-block" id="InitMassFromTotalMass"><a class="viewcode-back" href="../../../reference.html#gnome.spill.elements.InitMassFromTotalMass">[docs]</a><span class="k">class</span> <span class="nc">InitMassFromTotalMass</span><span class="p">(</span><span class="n">InitBaseClass</span><span class="p">,</span> <span class="n">Serializable</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Initialize the &#39;mass&#39; array based on total mass spilled</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">_state</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">InitBaseClass</span><span class="o">.</span><span class="n">_state</span><span class="p">)</span>
+    <span class="n">_schema</span> <span class="o">=</span> <span class="n">base_schema</span><span class="o">.</span><span class="n">ObjType</span>
+
+    <span class="k">def</span> <span class="nf">initialize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">num_new_particles</span><span class="p">,</span> <span class="n">spill</span><span class="p">,</span> <span class="n">data_arrays</span><span class="p">,</span> <span class="n">substance</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">spill</span><span class="o">.</span><span class="n">mass</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&#39;mass attribute of spill is None - cannot &#39;</span>
+                             <span class="s">&#39;compute particle mass without total mass&#39;</span><span class="p">)</span>
+
+        <span class="n">_total_mass</span> <span class="o">=</span> <span class="n">spill</span><span class="o">.</span><span class="n">get_mass</span><span class="p">(</span><span class="s">&#39;g&#39;</span><span class="p">)</span>
+        <span class="n">data_arrays</span><span class="p">[</span><span class="s">&#39;mass&#39;</span><span class="p">][</span><span class="o">-</span><span class="n">num_new_particles</span><span class="p">:]</span> <span class="o">=</span> <span class="p">(</span><span class="n">_total_mass</span> <span class="o">/</span>
+                                                    <span class="n">spill</span><span class="o">.</span><span class="n">release</span><span class="o">.</span><span class="n">num_elements</span><span class="p">)</span>
+
+</div>
+<div class="viewcode-block" id="InitMassFromVolume"><a class="viewcode-back" href="../../../reference.html#gnome.spill.elements.InitMassFromVolume">[docs]</a><span class="k">class</span> <span class="nc">InitMassFromVolume</span><span class="p">(</span><span class="n">InitBaseClass</span><span class="p">,</span> <span class="n">Serializable</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Initialize the &#39;mass&#39; array based on total volume spilled and the type of</span>
+<span class="sd">    substance. No parameters, as it uses the volume specified elsewhere.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">_state</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">InitBaseClass</span><span class="o">.</span><span class="n">_state</span><span class="p">)</span>
+    <span class="n">_schema</span> <span class="o">=</span> <span class="n">base_schema</span><span class="o">.</span><span class="n">ObjType</span>
+
+    <span class="k">def</span> <span class="nf">initialize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">num_new_particles</span><span class="p">,</span> <span class="n">spill</span><span class="p">,</span> <span class="n">data_arrays</span><span class="p">,</span> <span class="n">substance</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">spill</span><span class="o">.</span><span class="n">volume</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&#39;volume attribute of spill is None - cannot &#39;</span>
+                             <span class="s">&#39;compute mass without volume&#39;</span><span class="p">)</span>
+
+        <span class="n">_total_mass</span> <span class="o">=</span> <span class="p">(</span><span class="n">substance</span><span class="o">.</span><span class="n">get_density</span><span class="p">(</span><span class="s">&#39;kg/m^3&#39;</span><span class="p">)</span>
+                       <span class="o">*</span> <span class="n">spill</span><span class="o">.</span><span class="n">get_volume</span><span class="p">(</span><span class="s">&#39;m^3&#39;</span><span class="p">)</span> <span class="o">*</span> <span class="mi">1000</span><span class="p">)</span>
+        <span class="n">data_arrays</span><span class="p">[</span><span class="s">&#39;mass&#39;</span><span class="p">][</span><span class="o">-</span><span class="n">num_new_particles</span><span class="p">:]</span> <span class="o">=</span> <span class="p">(</span><span class="n">_total_mass</span> <span class="o">/</span>
+                                                    <span class="n">spill</span><span class="o">.</span><span class="n">release</span><span class="o">.</span><span class="n">num_elements</span><span class="p">)</span>
+
+</div>
+<div class="viewcode-block" id="InitMassFromPlume"><a class="viewcode-back" href="../../../reference.html#gnome.spill.elements.InitMassFromPlume">[docs]</a><span class="k">class</span> <span class="nc">InitMassFromPlume</span><span class="p">(</span><span class="n">InitBaseClass</span><span class="p">,</span> <span class="n">Serializable</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Initialize the &#39;mass&#39; array based on mass flux from the plume spilled</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">_state</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">InitBaseClass</span><span class="o">.</span><span class="n">_state</span><span class="p">)</span>
+    <span class="n">_schema</span> <span class="o">=</span> <span class="n">base_schema</span><span class="o">.</span><span class="n">ObjType</span>
+
+    <span class="k">def</span> <span class="nf">initialize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">num_new_particles</span><span class="p">,</span> <span class="n">spill</span><span class="p">,</span> <span class="n">data_arrays</span><span class="p">,</span> <span class="n">substance</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">spill</span><span class="o">.</span><span class="n">plume_gen</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&#39;plume_gen attribute of spill is None - cannot&#39;</span>
+                             <span class="s">&#39; compute mass without plume mass flux&#39;</span><span class="p">)</span>
+
+        <span class="n">data_arrays</span><span class="p">[</span><span class="s">&#39;mass&#39;</span><span class="p">][</span><span class="o">-</span><span class="n">num_new_particles</span><span class="p">:]</span> <span class="o">=</span> \
+            <span class="n">spill</span><span class="o">.</span><span class="n">plume_gen</span><span class="o">.</span><span class="n">mass_of_an_le</span> <span class="o">*</span> <span class="mi">1000</span>
+
+</div>
+<div class="viewcode-block" id="DistributionBaseSchema"><a class="viewcode-back" href="../../../reference.html#gnome.spill.elements.DistributionBaseSchema">[docs]</a><span class="k">class</span> <span class="nc">DistributionBaseSchema</span><span class="p">(</span><span class="n">base_schema</span><span class="o">.</span><span class="n">ObjType</span><span class="p">):</span>
+    <span class="s">&#39;Add schema to base class since all derived classes use same schema&#39;</span>
+    <span class="n">description</span> <span class="o">=</span> <span class="s">&#39;dynamically adds distribution schema to self&#39;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="n">dist</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s">&#39;distribution&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">dist</span><span class="p">)</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">DistributionBaseSchema</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+</div>
+<div class="viewcode-block" id="DistributionBase"><a class="viewcode-back" href="../../../reference.html#gnome.spill.elements.DistributionBase">[docs]</a><span class="k">class</span> <span class="nc">DistributionBase</span><span class="p">(</span><span class="n">InitBaseClass</span><span class="p">,</span> <span class="n">Serializable</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Define a base class for all initializers that contain a distribution.</span>
+<span class="sd">    Keep the code to serialize/deserialize distribution objects here so we only</span>
+<span class="sd">    have to write it once.</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="n">_state</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">InitBaseClass</span><span class="o">.</span><span class="n">_state</span><span class="p">)</span>
+    <span class="n">_state</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">save</span><span class="o">=</span><span class="p">[</span><span class="s">&#39;distribution&#39;</span><span class="p">],</span> <span class="n">update</span><span class="o">=</span><span class="p">[</span><span class="s">&#39;distribution&#39;</span><span class="p">])</span>
+    <span class="n">_schema</span> <span class="o">=</span> <span class="n">DistributionBaseSchema</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">new_from_dict</span><span class="p">(</span><span class="n">cls</span><span class="p">,</span> <span class="n">dict_</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">dict_</span><span class="p">[</span><span class="s">&#39;json_&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s">&#39;save&#39;</span><span class="p">:</span>
+            <span class="n">distribution</span> <span class="o">=</span> <span class="n">dict_</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;distribution&#39;</span><span class="p">)</span>
+            <span class="n">to_eval</span> <span class="o">=</span> <span class="s">&#39;{0}.new_from_dict(distribution)&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                                                    <span class="n">distribution</span><span class="p">[</span><span class="s">&#39;obj_type&#39;</span><span class="p">])</span>
+            <span class="n">dict_</span><span class="p">[</span><span class="s">&#39;distribution&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">eval</span><span class="p">(</span><span class="n">to_eval</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="nb">super</span><span class="p">(</span><span class="n">DistributionBase</span><span class="p">,</span> <span class="n">cls</span><span class="p">)</span><span class="o">.</span><span class="n">new_from_dict</span><span class="p">(</span><span class="n">dict_</span><span class="p">)</span>
+
+<div class="viewcode-block" id="DistributionBase.serialize"><a class="viewcode-back" href="../../../reference.html#gnome.spill.elements.DistributionBase.serialize">[docs]</a>    <span class="k">def</span> <span class="nf">serialize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">json_</span><span class="o">=</span><span class="s">&#39;webapi&#39;</span><span class="p">):</span>
+        <span class="s">&#39;Add distribution schema based on &quot;distribution&quot; - then serialize&#39;</span>
+
+        <span class="n">dict_</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">to_dict</span><span class="p">(</span><span class="n">json_</span><span class="p">)</span>
+        <span class="n">schema</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__class__</span><span class="o">.</span><span class="n">_schema</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">__class__</span><span class="o">.</span><span class="n">__name__</span><span class="p">,</span>
+                   <span class="n">distribution</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">distribution</span><span class="o">.</span><span class="n">_schema</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s">&#39;distribution&#39;</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">schema</span><span class="o">.</span><span class="n">serialize</span><span class="p">(</span><span class="n">dict_</span><span class="p">)</span>
+</div>
+    <span class="nd">@classmethod</span>
+<div class="viewcode-block" id="DistributionBase.deserialize"><a class="viewcode-back" href="../../../reference.html#gnome.spill.elements.DistributionBase.deserialize">[docs]</a>    <span class="k">def</span> <span class="nf">deserialize</span><span class="p">(</span><span class="n">cls</span><span class="p">,</span> <span class="n">json_</span><span class="p">):</span>
+        <span class="s">&#39;Add distribution schema based on &quot;distribution&quot; - then deserialize&#39;</span>
+        <span class="n">dist_type</span> <span class="o">=</span> <span class="n">json_</span><span class="p">[</span><span class="s">&#39;distribution&#39;</span><span class="p">][</span><span class="s">&#39;obj_type&#39;</span><span class="p">]</span>
+        <span class="n">to_eval</span> <span class="o">=</span> <span class="s">&quot;{0}._schema(name=&#39;distribution&#39;)&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">dist_type</span><span class="p">)</span>
+        <span class="n">dist_schema</span> <span class="o">=</span> <span class="nb">eval</span><span class="p">(</span><span class="n">to_eval</span><span class="p">)</span>
+        <span class="n">schema</span> <span class="o">=</span> <span class="n">cls</span><span class="o">.</span><span class="n">_schema</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">cls</span><span class="o">.</span><span class="n">__name__</span><span class="p">,</span> <span class="n">distribution</span><span class="o">=</span><span class="n">dist_schema</span><span class="p">)</span>
+        <span class="n">dict_</span> <span class="o">=</span> <span class="n">schema</span><span class="o">.</span><span class="n">deserialize</span><span class="p">(</span><span class="n">json_</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">dict_</span>
+
+</div></div>
+<span class="k">class</span> <span class="nc">InitRiseVelFromDist</span><span class="p">(</span><span class="n">DistributionBase</span><span class="p">):</span>
+    <span class="n">_state</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">DistributionBase</span><span class="o">.</span><span class="n">_state</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">distribution</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Set the rise velocity parameters to be sampled from a distribution.</span>
+
+<span class="sd">        Use distribution to define rise_vel</span>
+
+<span class="sd">        :param distribution: An object capable of generating a probability</span>
+<span class="sd">                             distribution.</span>
+<span class="sd">        :type distribution: Right now, we have:</span>
+<span class="sd">                              - UniformDistribution</span>
+<span class="sd">                              - NormalDistribution</span>
+<span class="sd">                              - LogNormalDistribution</span>
+<span class="sd">                              - WeibullDistribution</span>
+<span class="sd">                            New distribution classes could be made.  The only</span>
+<span class="sd">                            requirement is they need to have a set_values()</span>
+<span class="sd">                            method which accepts a NumPy array.</span>
+<span class="sd">                            (presumably, this function will also modify</span>
+<span class="sd">                             the array in some way)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">InitRiseVelFromDist</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">distribution</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">distribution</span> <span class="o">=</span> <span class="n">distribution</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">distribution</span> <span class="o">=</span> <span class="n">UniformDistribution</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">initialize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">num_new_particles</span><span class="p">,</span> <span class="n">spill</span><span class="p">,</span> <span class="n">data_arrays</span><span class="p">,</span>
+                   <span class="n">substance</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="s">&#39;Update values of &quot;rise_vel&quot; data array for new particles&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">distribution</span><span class="o">.</span><span class="n">set_values</span><span class="p">(</span>
+                            <span class="n">data_arrays</span><span class="p">[</span><span class="s">&#39;rise_vel&#39;</span><span class="p">][</span><span class="o">-</span><span class="n">num_new_particles</span><span class="p">:])</span>
+
+
+<span class="k">class</span> <span class="nc">InitRiseVelFromDropletSizeFromDist</span><span class="p">(</span><span class="n">DistributionBase</span><span class="p">):</span>
+    <span class="n">_state</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">DistributionBase</span><span class="o">.</span><span class="n">_state</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">distribution</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
+                 <span class="n">water_density</span><span class="o">=</span><span class="mf">1020.0</span><span class="p">,</span> <span class="n">water_viscosity</span><span class="o">=</span><span class="mf">1.0e-6</span><span class="p">,</span>
+                 <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Set the droplet size from a distribution. Use the C++ get_rise_velocity</span>
+<span class="sd">        function exposed via cython (rise_velocity_from_drop_size) to obtain</span>
+<span class="sd">        rise_velocity from droplet size. Even though the droplet size is not</span>
+<span class="sd">        changing over time, it is still stored in data array, as it can be</span>
+<span class="sd">        useful for post-processing (called &#39;droplet_diameter&#39;)</span>
+
+<span class="sd">        Use distribution to define rise_vel</span>
+
+<span class="sd">        :param distribution: An object capable of generating a probability</span>
+<span class="sd">                             distribution.</span>
+<span class="sd">        :type distribution: Right now, we have:</span>
+<span class="sd">                              - UniformDistribution</span>
+<span class="sd">                              - NormalDistribution</span>
+<span class="sd">                              - LogNormalDistribution</span>
+<span class="sd">                              - WeibullDistribution</span>
+<span class="sd">                            New distribution classes could be made.  The only</span>
+<span class="sd">                            requirement is they need to have a set_values()</span>
+<span class="sd">                            method which accepts a NumPy array.</span>
+<span class="sd">                            (presumably, this function will also modify</span>
+<span class="sd">                             the array in some way)</span>
+
+<span class="sd">        :param water_density: 1020.0 [kg/m3]</span>
+<span class="sd">        :type water_density: float</span>
+<span class="sd">        :param water_viscosity: 1.0e-6 [m^2/s]</span>
+<span class="sd">        :type water_viscosity: float</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">InitRiseVelFromDropletSizeFromDist</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">distribution</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">distribution</span> <span class="o">=</span> <span class="n">distribution</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">distribution</span> <span class="o">=</span> <span class="n">UniformDistribution</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">water_viscosity</span> <span class="o">=</span> <span class="n">water_viscosity</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">water_density</span> <span class="o">=</span> <span class="n">water_density</span>
+
+    <span class="k">def</span> <span class="nf">initialize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">num_new_particles</span><span class="p">,</span> <span class="n">spill</span><span class="p">,</span> <span class="n">data_arrays</span><span class="p">,</span> <span class="n">substance</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Update values of &#39;rise_vel&#39; and &#39;droplet_diameter&#39; data arrays for</span>
+<span class="sd">        new particles. First create a droplet_size array sampled from specified</span>
+<span class="sd">        distribution, then use the cython wrapped (C++) function to set the</span>
+<span class="sd">        &#39;rise_vel&#39; based on droplet size and properties like LE_density,</span>
+<span class="sd">        water density and water_viscosity:</span>
+<span class="sd">        gnome.cy_gnome.cy_rise_velocity_mover.rise_velocity_from_drop_size()</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">drop_size</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">num_new_particles</span><span class="p">,</span> <span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+        <span class="n">le_density</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">num_new_particles</span><span class="p">,</span> <span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">distribution</span><span class="o">.</span><span class="n">set_values</span><span class="p">(</span><span class="n">drop_size</span><span class="p">)</span>
+
+        <span class="n">data_arrays</span><span class="p">[</span><span class="s">&#39;droplet_diameter&#39;</span><span class="p">][</span><span class="o">-</span><span class="n">num_new_particles</span><span class="p">:]</span> <span class="o">=</span> <span class="n">drop_size</span>
+        <span class="n">le_density</span><span class="p">[:]</span> <span class="o">=</span> <span class="n">substance</span><span class="o">.</span><span class="n">density</span>
+
+        <span class="c"># now update rise_vel with droplet size - dummy for now</span>
+        <span class="n">rise_velocity_from_drop_size</span><span class="p">(</span>
+                                <span class="n">data_arrays</span><span class="p">[</span><span class="s">&#39;rise_vel&#39;</span><span class="p">][</span><span class="o">-</span><span class="n">num_new_particles</span><span class="p">:],</span>
+                                <span class="n">le_density</span><span class="p">,</span> <span class="n">drop_size</span><span class="p">,</span>
+                                <span class="bp">self</span><span class="o">.</span><span class="n">water_viscosity</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">water_density</span><span class="p">)</span>
+
+
+<span class="sd">&quot;&quot;&quot; ElementType classes&quot;&quot;&quot;</span>
+
+
+<span class="k">class</span> <span class="nc">ElementType</span><span class="p">(</span><span class="n">Serializable</span><span class="p">):</span>
+    <span class="n">_state</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">Serializable</span><span class="o">.</span><span class="n">_state</span><span class="p">)</span>
+    <span class="n">_state</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">save</span><span class="o">=</span><span class="p">[</span><span class="s">&#39;initializers&#39;</span><span class="p">],</span> <span class="n">update</span><span class="o">=</span><span class="p">[</span><span class="s">&#39;initializers&#39;</span><span class="p">])</span>
+    <span class="n">_schema</span> <span class="o">=</span> <span class="n">base_schema</span><span class="o">.</span><span class="n">ObjType</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">new_from_dict</span><span class="p">(</span><span class="n">cls</span><span class="p">,</span> <span class="n">dict_</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        primarily need to reconstruct objects for initializers dict</span>
+<span class="sd">        if loading from save files</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">dict_</span><span class="p">[</span><span class="s">&#39;json_&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s">&#39;save&#39;</span><span class="p">:</span>
+            <span class="n">init</span> <span class="o">=</span> <span class="n">dict_</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;initializers&#39;</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">val</span> <span class="ow">in</span> <span class="n">init</span><span class="o">.</span><span class="n">iteritems</span><span class="p">():</span>
+                <span class="n">type_</span> <span class="o">=</span> <span class="n">val</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s">&#39;obj_type&#39;</span><span class="p">)</span>
+                <span class="n">obj</span> <span class="o">=</span> <span class="nb">eval</span><span class="p">(</span><span class="n">type_</span><span class="p">)</span><span class="o">.</span><span class="n">new_from_dict</span><span class="p">(</span><span class="n">val</span><span class="p">)</span>
+                <span class="n">init</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">obj</span>
+
+        <span class="k">return</span> <span class="nb">super</span><span class="p">(</span><span class="n">ElementType</span><span class="p">,</span> <span class="n">cls</span><span class="p">)</span><span class="o">.</span><span class="n">new_from_dict</span><span class="p">(</span><span class="n">dict_</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">initializers</span><span class="p">,</span> <span class="n">substance</span><span class="o">=</span><span class="s">&#39;oil_conservative&#39;</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Define initializers for the type of elements</span>
+
+<span class="sd">        :param dict initializers: a dict of initializers where the keys</span>
+<span class="sd">            correspond with names in data_arrays (stored in SpillContainer)</span>
+<span class="sd">            and the values are the initializer classes used to initialize</span>
+<span class="sd">            these data arrays upon release</span>
+
+<span class="sd">        :param substance=&#39;oil_conservative&#39;: Type of oil spilled.</span>
+<span class="sd">            If this is a string, or an oillibrary.models.Oil object, then</span>
+<span class="sd">            create gnome.spill.OilProps(oil) object. If this is a</span>
+<span class="sd">            gnome.spill.OilProps object, then simply instance oil_props</span>
+<span class="sd">            variable to it: self.oil_props = oil</span>
+<span class="sd">        :type substance: either str, or oillibrary.models.Oil object or</span>
+<span class="sd">                         gnome.spill.OilProps</span>
+<span class="sd">        :param density=None: Allow user to set oil density directly.</span>
+<span class="sd">        :param density_units=&#39;kg/m^3: Only used if a density is input.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">initializers</span> <span class="o">=</span> <span class="n">initializers</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">substance</span><span class="p">,</span> <span class="nb">basestring</span><span class="p">):</span>
+            <span class="c"># leave for now to preserve tests</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">substance</span> <span class="o">=</span> <span class="n">OilProps</span><span class="p">(</span><span class="n">substance</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c"># assume object passed in is an OilProps object</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">substance</span> <span class="o">=</span> <span class="n">substance</span>
+
+    <span class="k">def</span> <span class="nf">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">(</span><span class="s">&#39;{0.__class__.__module__}.{0.__class__.__name__}(&#39;</span>
+                <span class="s">&#39;initializers={0.initializers}, &#39;</span>
+                <span class="s">&#39;substance={0.substance!r}&#39;</span>
+                <span class="s">&#39;)&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="p">))</span>
+
+    <span class="k">def</span> <span class="nf">set_newparticle_values</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">num_new_particles</span><span class="p">,</span> <span class="n">spill</span><span class="p">,</span> <span class="n">data_arrays</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        call all initializers. This will set the initial values for all</span>
+<span class="sd">        data_arrays.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">if</span> <span class="n">num_new_particles</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">i</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">initializers</span><span class="o">.</span><span class="n">iteritems</span><span class="p">():</span>
+                <span class="k">if</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">data_arrays</span><span class="p">:</span>
+                    <span class="n">i</span><span class="o">.</span><span class="n">initialize</span><span class="p">(</span><span class="n">num_new_particles</span><span class="p">,</span> <span class="n">spill</span><span class="p">,</span> <span class="n">data_arrays</span><span class="p">,</span>
+                                 <span class="bp">self</span><span class="o">.</span><span class="n">substance</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">to_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">json_</span><span class="o">=</span><span class="s">&#39;webapi&#39;</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        call the to_dict method on each object in the initializers dict. Store</span>
+<span class="sd">        results in dict and return.</span>
+
+<span class="sd">        todo: the standard to_dict doesn&#39;t seem to fit well in this case. It</span>
+<span class="sd">        works but perhaps can/should be revisited to make it simpler</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">dict_</span> <span class="o">=</span> <span class="nb">super</span><span class="p">(</span><span class="n">ElementType</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">to_dict</span><span class="p">(</span><span class="n">json_</span><span class="p">)</span>
+
+        <span class="n">init</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">val</span> <span class="ow">in</span> <span class="n">dict_</span><span class="p">[</span><span class="s">&#39;initializers&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">iteritems</span><span class="p">():</span>
+            <span class="n">init</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">val</span><span class="o">.</span><span class="n">to_dict</span><span class="p">(</span><span class="n">json_</span><span class="p">)</span>
+
+        <span class="n">dict_</span><span class="p">[</span><span class="s">&#39;initializers&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">init</span>
+        <span class="k">return</span> <span class="n">dict_</span>
+
+    <span class="k">def</span> <span class="nf">initializers_to_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="s">&#39;just return a deepcopy of the initializers&#39;</span>
+        <span class="k">return</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">initializers</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">serialize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">json_</span><span class="o">=</span><span class="s">&#39;webapi&#39;</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        serialize each object in &#39;initializers&#39; dict, then add it to the json</span>
+<span class="sd">        for the ElementType object.</span>
+
+<span class="sd">        Note: the to_dict() method returns a dict of initializers as well;</span>
+<span class="sd">        however, the schemas associated with the initializers are dynamic</span>
+<span class="sd">        (eg initializers that contain a distribution). It is easier to call the</span>
+<span class="sd">        initializer&#39;s serialize() method instead of adding the initializer&#39;s</span>
+<span class="sd">        schemas to the ElementType schema since they are not known ahead of</span>
+<span class="sd">        time.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">dict_</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">to_dict</span><span class="p">(</span><span class="n">json_</span><span class="p">)</span>
+        <span class="c">#et_schema = elements_schema.ElementType()</span>
+        <span class="n">et_schema</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__class__</span><span class="o">.</span><span class="n">_schema</span><span class="p">()</span>
+        <span class="n">et_json_</span> <span class="o">=</span> <span class="n">et_schema</span><span class="o">.</span><span class="n">serialize</span><span class="p">(</span><span class="n">dict_</span><span class="p">)</span>
+        <span class="n">s_init</span> <span class="o">=</span> <span class="p">{}</span>
+
+        <span class="k">for</span> <span class="n">i_key</span><span class="p">,</span> <span class="n">i_val</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">initializers</span><span class="o">.</span><span class="n">iteritems</span><span class="p">():</span>
+            <span class="n">s_init</span><span class="p">[</span><span class="n">i_key</span><span class="p">]</span> <span class="o">=</span> <span class="n">i_val</span><span class="o">.</span><span class="n">serialize</span><span class="p">(</span><span class="n">json_</span><span class="p">)</span>
+
+        <span class="n">et_json_</span><span class="p">[</span><span class="s">&#39;initializers&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">s_init</span>
+        <span class="k">return</span> <span class="n">et_json_</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">deserialize</span><span class="p">(</span><span class="n">cls</span><span class="p">,</span> <span class="n">json_</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        deserialize each object in the &#39;initializers&#39; dict, then add it to</span>
+<span class="sd">        deserialized ElementType dict</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">et_schema</span> <span class="o">=</span> <span class="n">cls</span><span class="o">.</span><span class="n">_schema</span><span class="p">()</span>
+        <span class="n">dict_</span> <span class="o">=</span> <span class="n">et_schema</span><span class="o">.</span><span class="n">deserialize</span><span class="p">(</span><span class="n">json_</span><span class="p">)</span>
+        <span class="n">d_init</span> <span class="o">=</span> <span class="p">{}</span>
+
+        <span class="k">for</span> <span class="n">i_key</span><span class="p">,</span> <span class="n">i_val</span> <span class="ow">in</span> <span class="n">json_</span><span class="p">[</span><span class="s">&#39;initializers&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">iteritems</span><span class="p">():</span>
+            <span class="n">deserial</span> <span class="o">=</span> <span class="nb">eval</span><span class="p">(</span><span class="n">i_val</span><span class="p">[</span><span class="s">&#39;obj_type&#39;</span><span class="p">])</span><span class="o">.</span><span class="n">deserialize</span><span class="p">(</span><span class="n">i_val</span><span class="p">)</span>
+            <span class="c">#deserial = schema.deserialize(i_val)</span>
+            <span class="n">d_init</span><span class="p">[</span><span class="n">i_key</span><span class="p">]</span> <span class="o">=</span> <span class="n">deserial</span>
+
+        <span class="n">dict_</span><span class="p">[</span><span class="s">&#39;initializers&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">d_init</span>
+
+        <span class="k">return</span> <span class="n">dict_</span>
+
+
+<div class="viewcode-block" id="floating"><a class="viewcode-back" href="../../../reference.html#gnome.spill.elements.floating">[docs]</a><span class="k">def</span> <span class="nf">floating</span><span class="p">(</span><span class="n">windage_range</span><span class="o">=</span><span class="p">(</span><span class="o">.</span><span class="mo">01</span><span class="p">,</span> <span class="o">.</span><span class="mo">04</span><span class="p">),</span> <span class="n">windage_persist</span><span class="o">=</span><span class="mi">900</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Helper function returns an ElementType object containing &#39;windages&#39;</span>
+<span class="sd">    initializer with user specified windage_range and windage_persist.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">ElementType</span><span class="p">({</span><span class="s">&#39;windages&#39;</span><span class="p">:</span> <span class="n">InitWindages</span><span class="p">(</span><span class="n">windage_range</span><span class="p">,</span>
+                                                 <span class="n">windage_persist</span><span class="p">)})</span>
+
+</div>
+<div class="viewcode-block" id="plume"><a class="viewcode-back" href="../../../reference.html#gnome.spill.elements.plume">[docs]</a><span class="k">def</span> <span class="nf">plume</span><span class="p">(</span><span class="n">distribution_type</span><span class="o">=</span><span class="s">&#39;droplet_size&#39;</span><span class="p">,</span>
+          <span class="n">distribution</span><span class="o">=</span><span class="s">&#39;weibull&#39;</span><span class="p">,</span>
+          <span class="n">windage_range</span><span class="o">=</span><span class="p">(</span><span class="o">.</span><span class="mo">01</span><span class="p">,</span> <span class="o">.</span><span class="mo">04</span><span class="p">),</span>
+          <span class="n">windage_persist</span><span class="o">=</span><span class="mi">900</span><span class="p">,</span>
+          <span class="n">substance_name</span><span class="o">=</span><span class="s">&#39;oil_conservative&#39;</span><span class="p">,</span>
+          <span class="n">density</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
+          <span class="n">density_units</span><span class="o">=</span><span class="s">&#39;kg/m^3&#39;</span><span class="p">,</span>
+          <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Helper function returns an ElementType object containing &#39;rise_vel&#39;</span>
+<span class="sd">    and &#39;windages&#39;</span>
+<span class="sd">    initializer with user specified parameters for distribution.</span>
+
+<span class="sd">    See below docs for details on the parameters.</span>
+
+<span class="sd">    :param str distribution_type: default =&#39;droplet_size&#39;</span>
+<span class="sd">                                  available options:</span>
+<span class="sd">                                  - &#39;droplet_size&#39;: Droplet size is samples</span>
+<span class="sd">                                                    from the specified</span>
+<span class="sd">                                                    distribution. Rise velocity</span>
+<span class="sd">                                                    is calculated.</span>
+<span class="sd">                                  - &#39;rise_velocity&#39;: rise velocity is directly</span>
+<span class="sd">                                                     sampled from the specified</span>
+<span class="sd">                                                     distribution. No droplet</span>
+<span class="sd">                                                     size is computed.</span>
+<span class="sd">    :param distribution=&#39;weibull&#39;:</span>
+<span class="sd">    :param windage_range=(.01, .04):</span>
+<span class="sd">    :param windage_persist=900:</span>
+<span class="sd">    :param substance_name=&#39;oil_conservative&#39;:</span>
+<span class="sd">    :param density = None:</span>
+<span class="sd">    :param density_units = &#39;kg/m^3&#39;:</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">density</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="n">substance</span> <span class="o">=</span> <span class="n">OilPropsFromDensity</span><span class="p">(</span><span class="n">density</span><span class="p">,</span> <span class="n">substance_name</span><span class="p">,</span> <span class="n">density_units</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">substance</span> <span class="o">=</span> <span class="n">OilProps</span><span class="p">(</span><span class="n">substance_name</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">distribution_type</span> <span class="o">==</span> <span class="s">&#39;droplet_size&#39;</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">ElementType</span><span class="p">({</span><span class="s">&#39;rise_vel&#39;</span><span class="p">:</span> <span class="n">InitRiseVelFromDropletSizeFromDist</span><span class="p">(</span><span class="n">distribution</span><span class="o">=</span><span class="n">distribution</span><span class="p">,</span>
+                                                                           <span class="o">**</span><span class="n">kwargs</span><span class="p">),</span>
+                            <span class="s">&#39;windages&#39;</span><span class="p">:</span> <span class="n">InitWindages</span><span class="p">(</span><span class="n">windage_range</span><span class="p">,</span>
+                                                     <span class="n">windage_persist</span><span class="p">),</span>
+                            <span class="s">&#39;mass&#39;</span><span class="p">:</span> <span class="n">InitMassFromVolume</span><span class="p">()},</span>
+                           <span class="n">substance</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">distribution_type</span> <span class="o">==</span> <span class="s">&#39;rise_velocity&#39;</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">ElementType</span><span class="p">({</span><span class="s">&#39;rise_vel&#39;</span><span class="p">:</span> <span class="n">InitRiseVelFromDist</span><span class="p">(</span><span class="n">distribution</span><span class="o">=</span><span class="n">distribution</span><span class="p">,</span>
+                                                            <span class="o">**</span><span class="n">kwargs</span><span class="p">),</span>
+                            <span class="s">&#39;windages&#39;</span><span class="p">:</span> <span class="n">InitWindages</span><span class="p">(</span><span class="n">windage_range</span><span class="p">,</span>
+                                                     <span class="n">windage_persist</span><span class="p">),</span>
+                            <span class="s">&#39;mass&#39;</span><span class="p">:</span> <span class="n">InitMassFromVolume</span><span class="p">()},</span>
+                           <span class="n">substance</span><span class="p">)</span>
+
+
+<span class="c">## Add docstring from called classes</span>
+</div>
+<span class="n">plume</span><span class="o">.</span><span class="n">__doc__</span> <span class="o">+=</span> <span class="p">(</span><span class="s">&quot;</span><span class="se">\n</span><span class="s">Documentation of OilPropsFromDensity:</span><span class="se">\n</span><span class="s">&quot;</span> <span class="o">+</span>
+                   <span class="n">OilPropsFromDensity</span><span class="o">.</span><span class="n">__init__</span><span class="o">.</span><span class="n">__doc__</span> <span class="o">+</span>
+                   <span class="s">&quot;</span><span class="se">\n</span><span class="s">Documentation of InitRiseVelFromDropletSizeFromDist:</span><span class="se">\n</span><span class="s">&quot;</span> <span class="o">+</span>
+                   <span class="n">InitRiseVelFromDropletSizeFromDist</span><span class="o">.</span><span class="n">__init__</span><span class="o">.</span><span class="n">__doc__</span> <span class="o">+</span>
+                   <span class="s">&quot;</span><span class="se">\n</span><span class="s">Documentation of InitRiseVelFromDist:</span><span class="se">\n</span><span class="s">&quot;</span> <span class="o">+</span>
+                   <span class="n">InitRiseVelFromDist</span><span class="o">.</span><span class="n">__init__</span><span class="o">.</span><span class="n">__doc__</span> <span class="o">+</span>
+                   <span class="s">&quot;</span><span class="se">\n</span><span class="s">Documentation of InitWindages:</span><span class="se">\n</span><span class="s">&quot;</span> <span class="o">+</span>
+                   <span class="n">InitWindages</span><span class="o">.</span><span class="n">__init__</span><span class="o">.</span><span class="n">__doc__</span> <span class="o">+</span>
+                   <span class="s">&quot;</span><span class="se">\n</span><span class="s">Documentation of InitMassFromVolume:</span><span class="se">\n</span><span class="s">&quot;</span> <span class="o">+</span>
+                   <span class="n">InitMassFromVolume</span><span class="o">.</span><span class="n">__init__</span><span class="o">.</span><span class="n">__doc__</span>
+                   <span class="p">)</span>
+
+
+<div class="viewcode-block" id="plume_from_model"><a class="viewcode-back" href="../../../reference.html#gnome.spill.elements.plume_from_model">[docs]</a><span class="k">def</span> <span class="nf">plume_from_model</span><span class="p">(</span><span class="n">distribution_type</span><span class="o">=</span><span class="s">&#39;droplet_size&#39;</span><span class="p">,</span>
+                     <span class="n">distribution</span><span class="o">=</span><span class="s">&#39;weibull&#39;</span><span class="p">,</span>
+                     <span class="n">windage_range</span><span class="o">=</span><span class="p">(</span><span class="o">.</span><span class="mo">01</span><span class="p">,</span> <span class="o">.</span><span class="mo">04</span><span class="p">),</span>
+                     <span class="n">windage_persist</span><span class="o">=</span><span class="mi">900</span><span class="p">,</span>
+                     <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Helper function returns an ElementType object containing &#39;rise_vel&#39;</span>
+<span class="sd">    and &#39;windages&#39;</span>
+<span class="sd">    initializer with user specified parameters for distribution.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">distribution_type</span> <span class="o">==</span> <span class="s">&#39;droplet_size&#39;</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">ElementType</span><span class="p">({</span><span class="s">&#39;rise_vel&#39;</span><span class="p">:</span> <span class="n">InitRiseVelFromDropletSizeFromDist</span><span class="p">(</span><span class="n">distribution</span><span class="o">=</span><span class="n">distribution</span><span class="p">,</span>
+                                                 <span class="o">**</span><span class="n">kwargs</span><span class="p">),</span>
+                            <span class="s">&#39;windages&#39;</span><span class="p">:</span> <span class="n">InitWindages</span><span class="p">(</span><span class="n">windage_range</span><span class="p">,</span>
+                                                     <span class="n">windage_persist</span><span class="p">),</span>
+                            <span class="s">&#39;mass&#39;</span><span class="p">:</span> <span class="n">InitMassFromPlume</span><span class="p">()})</span>
+    <span class="k">elif</span> <span class="n">distribution_type</span> <span class="o">==</span> <span class="s">&#39;rise_velocity&#39;</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">ElementType</span><span class="p">({</span><span class="s">&#39;rise_vel&#39;</span><span class="p">:</span> <span class="n">InitRiseVelFromDist</span><span class="p">(</span><span class="n">distribution</span><span class="o">=</span><span class="n">distribution</span><span class="p">,</span>
+                                                 <span class="o">**</span><span class="n">kwargs</span><span class="p">),</span>
+                            <span class="s">&#39;windages&#39;</span><span class="p">:</span> <span class="n">InitWindages</span><span class="p">(</span><span class="n">windage_range</span><span class="p">,</span>
+                                                     <span class="n">windage_persist</span><span class="p">),</span>
+                            <span class="s">&#39;mass&#39;</span><span class="p">:</span> <span class="n">InitMassFromPlume</span><span class="p">()})</span></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../../index.html">pyGNOME 0.1.1 documentation</a> &raquo;</li>
+          <li><a href="../../index.html" >Module code</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2012, NOAA Emergecny Response Division.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.
+    </div>
+  </body>
+</html>
