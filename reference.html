@@ -84,7 +84,7 @@ At the C++ level, each mover has a <cite>get_move</cite> method that takes the c
 <span id="gnome-model-the-pygnome-model-class"></span><h2><tt class="docutils literal"><span class="pre">gnome.model</span></tt> &#8211; the pyGNOME model class<a class="headerlink" href="#module-gnome.model" title="Permalink to this headline">¶</a></h2>
 <dl class="class">
 <dt id="gnome.model.Model">
-<em class="property">class </em><tt class="descclassname">gnome.model.</tt><tt class="descname">Model</tt><big>(</big><em>time_step=datetime.timedelta(0</em>, <em>900)</em>, <em>start_time=datetime.datetime(2014</em>, <em>6</em>, <em>17</em>, <em>15</em>, <em>0)</em>, <em>duration=datetime.timedelta(1)</em>, <em>weathering_substeps=1</em>, <em>map=&lt;gnome.map.GnomeMap object at 0x103e8cb90&gt;</em>, <em>uncertain=False</em>, <em>cache_enabled=False</em><big>)</big><a class="reference internal" href="_modules/gnome/model.html#Model"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.model.Model" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><tt class="descclassname">gnome.model.</tt><tt class="descname">Model</tt><big>(</big><em>time_step=datetime.timedelta(0</em>, <em>900)</em>, <em>start_time=datetime.datetime(2014</em>, <em>6</em>, <em>17</em>, <em>22</em>, <em>0)</em>, <em>duration=datetime.timedelta(1)</em>, <em>weathering_substeps=1</em>, <em>map=&lt;gnome.map.GnomeMap object at 0x104903510&gt;</em>, <em>uncertain=False</em>, <em>cache_enabled=False</em><big>)</big><a class="reference internal" href="_modules/gnome/model.html#Model"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.model.Model" title="Permalink to this definition">¶</a></dt>
 <dd><p>PyGNOME Model Class</p>
 <p>Initializes a model. All arguments have a default.</p>
 <table class="docutils field-list" frame="void" rules="none">
@@ -727,11 +727,6 @@ PyGnome. It does not release any elements</p>
 <li><strong>volume</strong> (<em>float</em>) &#8211; oil spilled volume (used to compute mass per particle)
 Default is None.</li>
 <li><strong>volume_units=m^3</strong> &#8211; volume units</li>
-<li><strong>0.04)</strong> (<em>windage_range=(0.01,</em>) &#8211; the windage range of the elements
-default is (0.01, 0.04) from 1% to 4%.</li>
-<li><strong>windage_persist=-1</strong> &#8211; Default is 900s, so windage is updated every
-900 sec. -1 means the persistence is infinite so it is only set at
-the beginning of the run.</li>
 <li><strong>element_type=None</strong> &#8211; list of various element_type that are
 released. These are spill specific properties of the elements.</li>
 </ul>
@@ -749,10 +744,11 @@ deserialization, call nested object&#8217;s serialize/deserialize methods</p>
 <dl class="method">
 <dt id="gnome.spill.spill.Spill.get">
 <tt class="descname">get</tt><big>(</big><em>prop=None</em><big>)</big><a class="reference internal" href="_modules/gnome/spill/spill.html#Spill.get"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gnome.spill.spill.Spill.get" title="Permalink to this definition">¶</a></dt>
-<dd><p>if prop is None then return all the user defined properties of
-&#8216;release&#8217; object and list of initializers in &#8216;element_type&#8217; object</p>
-<p>for get(), return all properties of embedded release object and
-element_type initializer objects</p>
+<dd><p>for get(), return all properties of embedded release object and
+element_type initializer objects. If &#8216;prop&#8217; is not None, then return
+the property</p>
+<p>For example: get(&#8216;windage_range&#8217;) returns the &#8216;windage_range&#8217; assuming
+the element_type = floating()</p>
 </dd></dl>
 
 <dl class="method">
@@ -827,6 +823,8 @@ It can also be a property of one of the initializers contained in
 the &#8216;ElementType&#8217; object.</p>
 <p>If the property doesn&#8217;t exist for any of these, then an error is raised
 since user cannot set a property that does not exist using this method</p>
+<p>For example: set(&#8216;windage_range&#8217;, (0.4, 0.4)) sets the windage_range
+assuming the element_type is floating</p>
 </dd></dl>
 
 <dl class="method">
