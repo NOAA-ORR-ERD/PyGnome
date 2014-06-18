@@ -74,7 +74,6 @@ class Polygon(np.ndarray):
             try:
                 pstr.append("[%s, %s]"%(point[0], point[1]) )
             except IndexError:
-                print "IndexError in __repr__: an error in a point?"
                 pass
         msg.append( ",\n          ".join(pstr) )
         msg.append("],\n         metadata=%s\n       )"%repr(self.metadata) )
