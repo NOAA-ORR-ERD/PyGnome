@@ -485,7 +485,7 @@ class VerticalPlumeRelease(Release, Serializable):
     An Underwater Plume spill class -- a continuous release of particles,
     controlled by a contained spill generator object.
     - plume model generator will have an iteration method.  This will provide
-      flexible looping and list comprehension behavior.
+    flexible looping and list comprehension behavior.
     '''
     _state = copy.deepcopy(Release._state)
 

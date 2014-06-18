@@ -33,10 +33,7 @@ class SpillSchema(ObjType):
 
 class Spill(serializable.Serializable):
     """
-    base class for a source of elements
-
-    .. note:: This class is not serializable since it will not be used in
-              PyGnome. It does not release any elements
+    Models a spill
     """
     _update = ['on', 'release', 'element_type', 'name']
 
@@ -81,25 +78,35 @@ class Spill(serializable.Serializable):
                  volume=None, volume_units='m^3',
                  # Is this total mass of the spill?
                  mass=None, mass_units='g',
-                 name=None):
+                 name='Spill'):
         """
-        Base spill class. Spill used by a gnome model derive from this class
+        Spills used by the gnome model. It contains a release object, which
+        releases elements. It also contains an element_type object which
+        contains the type of substance spilled and it initializes data arrays
+        to non-default values (non-zero).
 
-        :param num_elements: number of LEs - default is 0.
-        :type num_elements: int
+        :param release: an object defining how elements are to be released
+        :type release: derived from a gnome.spill.Release object
 
-        Optional parameters (kwargs):
+        **Optional parameters (kwargs):**
 
-        :param on: Toggles the spill on/off (bool). Default is 'on'.
-        :type on: bool
-        :param volume: oil spilled volume (used to compute mass per particle)
-            Default is None.
-        :type volume: float
-        :param volume_units=m^3: volume units
-        :type volume_units: str
         :param element_type=None: list of various element_type that are
             released. These are spill specific properties of the elements.
         :type element_type: list of gnome.element_type.* objects
+        :param on=True: Toggles the spill on/off (bool).
+        :type on: bool
+        :param volume=None: oil spilled volume (used for mass per particle)
+        :type volume: float
+        :param volume_units=m^3: volume units
+        :type volume_units: str
+        :param mass=None:
+        :type mass: float
+        :param mass_units='g':
+        :type mass_units: str
+        :param name='Spill': a name for the spill
+        :type name: str
+
+        ::note: Define either 'volume' or 'mass', cannot set both.
         """
         self.release = release
         if element_type is None:
@@ -125,7 +132,7 @@ class Spill(serializable.Serializable):
         if mass is not None and volume is not None:
             raise ValueError("'mass' and 'volume' cannot both be set")
 
-        self.name = (name, 'Spill')[name is None]
+        self.name = name
 
     def __repr__(self):
         return ('{0.__class__.__module__}.{0.__class__.__name__}('

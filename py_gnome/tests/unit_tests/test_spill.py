@@ -41,6 +41,7 @@ def test_init():
                   == (0.01, 0.04))
     assert (spill.element_type.initializers['windages'].windage_persist
             == 900)
+    assert spill.name == 'Spill'
 
 
 def test_init_exceptions():
