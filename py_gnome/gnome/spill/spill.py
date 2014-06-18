@@ -97,13 +97,6 @@ class Spill(serializable.Serializable):
         :type volume: float
         :param volume_units=m^3: volume units
         :type volume_units: str
-        :param windage_range=(0.01, 0.04): the windage range of the elements
-            default is (0.01, 0.04) from 1% to 4%.
-        :type windage_range: tuple: (min, max)
-        :param windage_persist=-1: Default is 900s, so windage is updated every
-            900 sec. -1 means the persistence is infinite so it is only set at
-            the beginning of the run.
-        :type windage_persist: integer seconds
         :param element_type=None: list of various element_type that are
             released. These are spill specific properties of the elements.
         :type element_type: list of gnome.element_type.* objects
@@ -200,6 +193,9 @@ class Spill(serializable.Serializable):
 
         If the property doesn't exist for any of these, then an error is raised
         since user cannot set a property that does not exist using this method
+
+        For example: set('windage_range', (0.4, 0.4)) sets the windage_range
+        assuming the element_type is floating
         """
         if prop == 'num_released':
             raise AttributeError("cannot set attribute")
@@ -223,11 +219,12 @@ class Spill(serializable.Serializable):
 
     def get(self, prop=None):
         """
-        if prop is None then return all the user defined properties of
-        'release' object and list of initializers in 'element_type' object
-
         for get(), return all properties of embedded release object and
-        element_type initializer objects
+        element_type initializer objects. If 'prop' is not None, then return
+        the property
+
+        For example: get('windage_range') returns the 'windage_range' assuming
+        the element_type = floating()
         """
         'Return all properties'
         if prop is None:
@@ -236,9 +233,7 @@ class Spill(serializable.Serializable):
             # release properties
             rel_props = getmembers(self.release,
                                    predicate=lambda p: (not ismethod(p)))
-            'remove _state - update this after we change _state to _state'
-            rel_props = [a[0] for a in rel_props
-                            if not a[0].startswith('_') and a[0] != '_state']
+            rel_props = [a[0] for a in rel_props if not a[0].startswith('_')]
 
             all_props.extend(rel_props)
 
