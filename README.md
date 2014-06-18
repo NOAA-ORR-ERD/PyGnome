@@ -91,9 +91,9 @@ See [Build PyGnome/WebGnome](https://github.com/NOAA-ORR-ERD/GNOME2#build-pygnom
 ### Windows 7 (32-bit, using VS-2008 express edition) ###
 
 - PyGnome requires PIL. 
-  It statically links against netcdf-3, included with PyGnome source code
+- PyGnome statically links against the netcdf library, included with PyGnome source code
 
-Binary dependencies for PyGnome are obtained from
+Binary dependencies for PyGnome can obtained from
 [Chris Gohlke's website](http://www.lfd.uci.edu/~gohlke/pythonlibs/).
 
 #### Binary Dependencies ####
@@ -103,14 +103,14 @@ Download and install the newest Windows executable distribution of [Python 2.7](
 Make sure the distribution is named consistently with the Python environment you desire.
 For example, binaries ending in *win32-py2.7.exe are for Python 2.7.* (32-bit)
 
-There exist some packages that GNOME depends on that have very complex and brittle build processes,
-or that have unreasonable build dependencies.
-Fortunately, [Chris Gohlke's website](http://www.lfd.uci.edu/~gohlke/pythonlibs/) contains pre-compiled binary distributions
-for many of these packages.  
+A number of the packages that GNOME depends on have very complex and brittle build processes, and depend on third-party libraries that can be a challenge to build.
+
+Fortunately, [Chris Gohlke's website](http://www.lfd.uci.edu/~gohlke/pythonlibs/) contains pre-compiled binary distributions for many of these packages.  
+
 *(The full list of dependent packages and their minimum versions can be found in the file
  GNOME2/py_gnome/requirements.txt)*
 
-Here are the binary packages we need:
+Here are the binary packages required:
 
 1. [setuptools](http://www.lfd.uci.edu/~gohlke/pythonlibs/#setuptools)
 2. [pip](http://www.lfd.uci.edu/~gohlke/pythonlibs/#pip)  
