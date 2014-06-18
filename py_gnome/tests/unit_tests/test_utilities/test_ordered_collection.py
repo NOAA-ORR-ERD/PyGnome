@@ -8,6 +8,40 @@ from gnome.movers import Mover, RandomMover
 from gnome.utilities.orderedcollection import OrderedCollection
 
 
+def s_id(val):
+    'all IDs are stored as strings'
+    return str(id(val))
+
+
+def test_getslice():
+    # getting a slice returns a new list
+    l_ = range(6)
+    oc = OrderedCollection(l_)
+    b = oc[:3]
+    b[0] = 10
+    assert b != l_
+    assert l_[::2] == oc[::2]
+
+
+def test_remake():
+    'remakes internal lists without None enteries'
+    oc = OrderedCollection(['p', 'q', 'ab', 'adsf', 'ss'])
+    del oc[0]
+    del oc[3]
+    assert oc._elems[0] is None
+    assert oc._elems[3] is None
+    oc.remake()
+    for ix, elem in enumerate(oc._elems):
+        assert elem is not None
+        assert oc._index[s_id(elem)] == ix
+
+
+def test_remake_emptyoc():
+    'empty OC'
+    oc = OrderedCollection(dtype=int)
+    oc.remake()
+
+
 class TestOrderedCollection(object):
 
     def test_init(self):
@@ -48,38 +82,58 @@ class TestOrderedCollection(object):
         oc = OrderedCollection([1, 2, 3, 4, 5])
         assert 5 in oc
 
+    def test_not_contains(self):
+        oc = OrderedCollection([1, 2, 3, 4, 5])
+        assert 10 not in oc
+
     def test_getitem(self):
         oc = OrderedCollection([1, 2, 3, 4, 5])
-        assert oc[id(3)] == 3
+        oc[s_id(3)]
+        assert oc[s_id(3)] == 3
         with raises(KeyError):
-            oc[id(6)]
+            oc[s_id(6)]
+
+    def test_getitem_byindex(self):
+        oc = OrderedCollection(['x', 'a', 'p', 'd'])
+        assert oc[1] == 'a'
+        oc[s_id('a')] = 'b'
+        assert oc[1] == 'b'
+        del oc[1]
+        assert oc[1] == 'p'
+
+    def test_setitem_exceptions(self):
+        'Use add to add an element'
+        oc = OrderedCollection([1, 2, 3, 4, 5])
+        with raises(KeyError):
+            oc[s_id(6)] = 6
+
+        with raises(IndexError):
+            oc[5] = 6
 
     def test_setitem(self):
         oc = OrderedCollection([1, 2, 3, 4, 5])
-        oc[id(6)] = 6
+        oc[s_id(4)] = 7
+        oc[0] = 0
         assert [i for i in oc] == [
-            1,
-            2,
-            3,
-            4,
-            5,
-            6,
-            ]
-        oc[id(4)] = 7
-        assert [i for i in oc] == [
-            1,
+            0,
             2,
             3,
             7,
             5,
-            6,
             ]
 
     def test_delitem(self):
         oc = OrderedCollection([1, 2, 3, 4, 5])
         with raises(KeyError):
-            del oc[id(6)]
-        del oc[id(4)]
+            del oc[s_id(6)]
+        del oc[s_id(4)]
+        assert [i for i in oc] == [1, 2, 3, 5]
+
+    def test_delitem_byindex(self):
+        oc = OrderedCollection([1, 2, 3, 4, 5])
+        with raises(IndexError):
+            del oc[5]
+        del oc[3]
         assert [i for i in oc] == [1, 2, 3, 5]
 
     def test_iadd(self):
@@ -123,46 +177,42 @@ class TestOrderedCollection(object):
     def test_remove(self):
         oc = OrderedCollection([1, 2, 3, 4, 5])
         with raises(KeyError):
-            oc.remove(id(6))
-        oc.remove(id(4))
+            oc.remove(s_id(6))
+        oc.remove(s_id(4))
         assert [i for i in oc] == [1, 2, 3, 5]
+
+        oc.remove(2)
+        assert [i for i in oc] == [1, 2, 5]
 
     def test_replace(self):
         oc = OrderedCollection([1, 2, 3, 4, 5])
-        oc.replace(id(6), 6)
+        oc.replace(s_id(4), 7)  # replace by object ID
+        oc.replace(0, 0)    # replace by index
         assert [i for i in oc] == [
-            1,
-            2,
-            3,
-            4,
-            5,
-            6,
-            ]
-        oc.replace(id(4), 7)
-        assert [i for i in oc] == [
-            1,
+            0,
             2,
             3,
             7,
             5,
-            6,
             ]
-        assert oc[id(7)] == 7
+        assert oc[s_id(7)] == 7
         with raises(KeyError):
-
             # our key should also be gone after the delete
-
-            oc[id(4)]
+            oc[s_id(4)]
         with raises(TypeError):
-            oc.replace(id(7), 'not an int')
+            oc.replace(s_id(7), 'not an int')
 
     def test_index(self):
+        'behaves like index for a list'
         oc = OrderedCollection([1, 2, 3, 4, 5])
-        assert oc.index(id(3)) == 2
-        oc[id(3)] = 6
-        assert oc.index(id(6)) == 2
-        del oc[id(6)]
-        assert oc.index(id(4)) == 2
+        assert oc.index(3) == 2
+        assert oc.index(s_id(3)) == 2
+        oc[s_id(3)] = 6
+        assert oc.index(6) == 2
+        assert oc.index(s_id(6)) == 2
+        del oc[s_id(6)]
+        assert oc.index(4) == 2
+        assert oc.index(s_id(4)) == 2
 
     def test_with_movers(self):
         mover_1 = SimpleMover(velocity=(1.0, -1.0, 0.0))
@@ -306,7 +356,7 @@ class TestCallbacks:
 
         oc += self.to_add
 
-        del oc[id(self.to_add[0])]
+        del oc[s_id(self.to_add[0])]
 
         assert self.to_add[0].rm_callback
         assert self.to_add[0].add_callback
@@ -334,7 +384,7 @@ class TestCallbacks:
 
         oc += self.to_add
         rep = ObjToAdd()
-        oc[id(self.to_add[0])] = rep
+        oc[s_id(self.to_add[0])] = rep
 
         for obj in oc:
             assert not obj.add_callback
@@ -365,7 +415,7 @@ class TestCallbacks:
             assert not obj.replace_callback
 
         rep = ObjToAdd()
-        oc[id(self.to_add[0])] = rep
+        oc[s_id(self.to_add[0])] = rep
 
         for obj in oc:
             assert obj.add_callback

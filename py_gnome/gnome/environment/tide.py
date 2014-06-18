@@ -85,7 +85,7 @@ class Tide(Environment, Serializable):
     Currently, this internally defines and uses the CyShioTime object, which is
     a cython wrapper around the C++ Shio object
     """
-    _update = ['yeardata', 'timeseries']
+    _update = ['timeseries']
 
     _create = []
     _create.extend(_update)

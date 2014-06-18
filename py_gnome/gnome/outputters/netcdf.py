@@ -25,7 +25,8 @@ from . import Outputter, BaseSchema
 
 
 # Big dict that stores the attributes for the standard data arrays
-# in the output
+# in the output - these are constants. The instance var_attributes are stored
+# with the NetCDFOutput object
 var_attributes = {
     'time': {'long_name': 'time since the beginning of the simulation',
              'standard_name': 'time',
@@ -59,13 +60,11 @@ var_attributes = {
             },
     'status_codes': {'long_name': 'particle status code',
                      'flag_values': " ".join(["%i" % i for i in oil_status._int]),
-                     'flag_meanings': " ".join(["%i: %s" % pair for pair in sorted(zip(oil_status._int,
+                     'flag_meanings': " ".join(["%i: %s," % pair for pair in sorted(zip(oil_status._int,
                                         oil_status._attr))])
                     },
     'id': {'long_name': 'particle ID',
           },
-    'spill_num': {'long_name': 'spill to which the particle belongs',
-                 },
     'droplet_diameter': {'long_name': 'diameter of oil droplet class',
                          'units': 'meters'
                         },
@@ -73,7 +72,6 @@ var_attributes = {
                               'units': 'm s-1'},
     'next_positions': {},
     'last_water_positions': {},
-    'spill_id': {'long_name': 'unique uuid of spill that released particle'}
     }
 
 
@@ -99,11 +97,11 @@ class NetCDFOutput(Outputter, Serializable):
                 os.path.join(base_dir,'sample_model.nc'), which_data='most')
 
     `which_data` flag is used to set which data to add to the netcdf file:
-        'standard' : the basic stuff most people would want
-        'most': everything the model is tracking except the internal-use-only
-                arrays
-        'all': everything tracked by the model (mostly used for diagnostics of
-               save files)
+    'standard' : the basic stuff most people would want
+    'most': everything the model is tracking except the internal-use-only
+        arrays
+    'all': everything tracked by the model (mostly used for diagnostics of
+        save files)
 
 
     .. note::
@@ -113,7 +111,7 @@ class NetCDFOutput(Outputter, Serializable):
        The attribute: `.arrays_to_output` is a set of the data arrays that
        will be added to the netcdf file. array names may be added to or removed
        from this set before a model run to customize what gets output:
-           `the_netcdf_outputter.arrays_to_output.add['rise_vel']`
+            `the_netcdf_outputter.arrays_to_output.add['rise_vel']`
 
        Since some of the names of the netcdf variables are different from the
        names in the SpillContainer data_arrays, this list uses the netcdf names
@@ -195,7 +193,7 @@ class NetCDFOutput(Outputter, Serializable):
             final step is written regardless of output_timestep
         :type output_last_step: boolean
 
-        use super to pass optional **kwargs to base class __init__ method
+        use super to pass optional kwargs to base class __init__ method
         """
         self._check_netcdf_filename(netcdf_filename)
         self._netcdf_filename = netcdf_filename
@@ -226,6 +224,13 @@ class NetCDFOutput(Outputter, Serializable):
         # number of particles are released
         self._start_idx = 0
 
+        # spill_num's attributes are instance attributes.
+        # 'spill_names' is set based on the names of spill's as defined by user
+        self._var_attributes = {
+            'spill_num':
+                        {'long_name': 'spill to which the particle belongs',
+                         'spills_map': ''}
+                         }
         super(NetCDFOutput, self).__init__(**kwargs)
 
     @property
@@ -314,8 +319,16 @@ class NetCDFOutput(Outputter, Serializable):
                              'does not exist in which to save data.'
                              .format(file_))
 
+    def _update_spill_names(self, spills):
+        '''
+        update spill_names list in NC attribute 'spill_num'
+        '''
+        names = " ".join(["{0}: {1}, ".format(ix, spill.name)
+                                        for ix, spill in enumerate(spills)])
+        self._var_attributes['spill_num']['spills_map'] = names
+
     def prepare_for_model_run(self, model_start_time,
-                              cache=None, uncertain=False, spills=None,
+                              spills, uncertain=False,
                               **kwargs):
         """
         .. function:: prepare_for_model_run(model_start_time,
@@ -345,36 +358,28 @@ class NetCDFOutput(Outputter, Serializable):
                                written to netcdf_filename + '_uncertain.nc'
 
         :param spills: If 'which_data' flag is set to 'all' or 'most', then
-                       model must provide the model.spills object
-                       (SpillContainerPair object) so NetCDF variables can be
-                       defined for the remaining data arrays.
-                       If spills is None, but which_data flag is 'all' or
-                       'most', a ValueError will be raised.
-                       It does not make sense to write 'all' or 'most' but not
-                       provide 'model.spills'.
+            model must provide the model.spills object
+            (SpillContainerPair object) so NetCDF variables can be
+            defined for the remaining data arrays.
+            If spills is None, but which_data flag is 'all' or
+            'most', a ValueError will be raised.
+            It does not make sense to write 'all' or 'most' but not
+            provide 'model.spills'.
         :type spills: gnome.spill_container.SpillContainerPair object.
 
         .. note::
-        Does not take any other input arguments; however, to keep the interface
-            the same for all outputters, define **kwargs in case future
-            outputters require different arguments.
+            Does not take any other input arguments; however, to keep the
+            interface the same for all outputters, define kwargs in case
+            future outputters require different arguments.
 
         use super to pass model_start_time, cache=None and
-        remaining **kwargs to base class method
+        remaining kwargs to base class method
         """
         super(NetCDFOutput, self).prepare_for_model_run(model_start_time,
-                                                        cache,
                                                         **kwargs)
-
-        if spills is None and self.which_data in ('all', 'most'):
-            raise ValueError('"which_data" flag is "{0}", '
-                             'however spills is None.  '
-                             'Please provide valid model.spills so we know '
-                             'which additional data to write.'
-                             .format(self.which_data))
-
         self._uncertain = uncertain
 
+        self._update_spill_names(spills)
         if self._uncertain:
             name, ext = os.path.splitext(self.netcdf_filename)
             self._u_netcdf_filename = '{0}_uncertain{1}'.format(name, ext)
@@ -406,9 +411,6 @@ class NetCDFOutput(Outputter, Serializable):
                 rootgrp.createDimension('three', 3)
                 rootgrp.createDimension('four', 4)
                 rootgrp.createDimension('five', 5)
-                # hack for storing the spill_id which is a 36lenght char array
-                # todo: revisit and discuss w/ Chris
-                rootgrp.createDimension('thirty-six', 36)
 
                 # create the time variable
                 time_ = rootgrp.createVariable('time',
@@ -464,11 +466,6 @@ class NetCDFOutput(Outputter, Serializable):
                         elif at.shape == (2,):
                             shape = ('data', 'two')
                             chunksizes = (self._chunksize, 2)
-                        # todo: revisit this w/ Chris - what is best way to
-                        # persist 'spill_id' to netcdf file
-                        elif var_name == 'spill_id':
-                            shape = ('data', 'thirty-six')
-                            chunksizes = (self._chunksize, 36)
                         else:
                             shape = ('data',)
                             chunksizes = (self._chunksize,)
@@ -481,42 +478,10 @@ class NetCDFOutput(Outputter, Serializable):
                                                  )
 
                     # add attributes
-                    try:
+                    if var_name in var_attributes:
                         var.setncatts(var_attributes[var_name])
-                    except KeyError:
-                        # just continue if var_name not in the attributes
-                        pass
-
-                # if self.which_data in ('all', 'most'):
-                #     rootgrp.createDimension('world_point', 3)
-                #     self.arr_types = dict()
-
-                #     at = spills.items()[0].array_types
-                #     [self.arr_types.update({key: atype}) for (key,
-                #      atype) in at.iteritems() if key
-                #      not in self.arr_types and key
-                #      not in self.standard_data]
-
-                #     # create variables
-
-                #     for (key, val) in self.arr_types.iteritems():
-                #         if len(val.shape) == 0:
-                #             rootgrp.createVariable(key,
-                #                                    val.dtype,
-                #                                    'data',
-                #                                    zlib=self._compress,
-                #                                    chunksizes=(self._chunksize,),
-                #                                    )
-                #         elif val.shape[0] == 3:
-                #             rootgrp.createVariable(key,
-                #                                    val.dtype,
-                #                                    ('data', 'world_point'),
-                #                                    zlib=self._compress,
-                #                                    chunksizes=(self._chunksize, 3),
-                #                                    )
-                #         else:
-                #             raise ValueError('{0} has an undefined dimension:'
-                #                              ' {1}'.format(key, val.shape))
+                    elif var_name in self._var_attributes:
+                        var.setncatts(self._var_attributes[var_name])
 
         # need to keep track of starting index for writing data since variable
         # number of particles are released
@@ -604,20 +569,6 @@ class NetCDFOutput(Outputter, Serializable):
         self._middle_of_run = False
         self._start_idx = 0
 
-    def write_output_post_run(self, model_start_time, num_time_steps,
-                              cache=None, uncertain=False, spills=None,
-                              **kwargs):
-        '''
-        Define all the positional input arguments. Pass these onto baseclass
-        write_output_post_run as correct kwargs
-        '''
-        super(NetCDFOutput, self).write_output_post_run(model_start_time,
-                                                        num_time_steps,
-                                                        cache,
-                                                        uncertain=uncertain,
-                                                        spills=spills,
-                                                        **kwargs)
-
     @classmethod
     def read_data(klass, netcdf_file, time=None, index=None,
                   which_data='standard'):
@@ -638,8 +589,7 @@ class NetCDFOutput(Outputter, Serializable):
             only used if 'time' is None. If both 'time' and 'index' are None,
             return data if file only contains one 'time' else raise an error
         :param which_data='standard': Which data arrays are desired options are
-                                      ('standard', 'most', 'all',
-                                      [list_of_array_names])
+            ('standard', 'most', 'all', [list_of_array_names])
         :type which_data: string or sequence of strings.
 
         :return: A dict containing standard data closest to the indicated
@@ -648,15 +598,12 @@ class NetCDFOutput(Outputter, Serializable):
         Standard data arrays are numpy arrays of size N, where N is number of
         particles released at time step of interest. They are defined by the
         class attribute "standard_arrays", currently:
+
             'current_time_stamp': datetime object associated with this data
-            'positions'         : NX3 array. Corresponds with NetCDF variables
-                                  'longitude', 'latitude', 'depth'
-            'status_codes'      : NX1 array. Corresponds with NetCDF variable
-                                  'status_codes'
-            'spill_num'         : NX1 array. Corresponds with NetCDF variable
-                                  'spill_num'
-            'id'                : NX1 array showing particle id. Corresponds
-                                  with NetCDF variable 'id'
+            'positions'         : NX3 array. NetCDF variables: 'longitude', 'latitude', 'depth'
+            'status_codes'      : NX1 array. NetCDF variable :'status_codes'
+            'spill_num'         : NX1 array. NetCDF variable: 'spill_num'
+            'id'                : NX1 array of particle id. NetCDF variable 'id'
             'mass'              : NX1 array showing 'mass' of each particle
 
         standard_arrays = ['latitude',
@@ -668,6 +615,7 @@ class NetCDFOutput(Outputter, Serializable):
                            'mass',
                            'age',
                            ]
+
         """
         if not os.path.exists(netcdf_file):
             raise IOError('File not found: {0}'.format(netcdf_file))

@@ -28,11 +28,6 @@ def test_exceptions(invalid_rq):
     dtv.time = [datetime(2012, 11, 06, 20, 10 + i, 30,) for i in range(4)]
     dtv.value = (1, 0)
 
-    # nether timeseries, nor file are give
-
-    with raises(TypeError):
-        Wind()
-
     # incorrect type of numpy array for init
 
     with raises(ValueError):
@@ -113,6 +108,12 @@ def test_units():
     assert wm.units != new_units
     wm.units = new_units
     assert wm.units == new_units
+
+
+def test_default_init():
+    wind = Wind()
+    assert wind.timeseries == np.zeros((1,), dtype=datetime_value_2d)
+    assert wind.units == 'mps'
 
 
 def test_init(wind_circ):

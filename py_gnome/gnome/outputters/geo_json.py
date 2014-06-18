@@ -4,6 +4,7 @@ Does not contain a schema for persistence yet
 '''
 import copy
 import os
+from glob import glob
 
 import numpy as np
 from geojson import Point, Feature, FeatureCollection, dump
@@ -13,7 +14,7 @@ from gnome.utilities.serializable import Serializable
 from .outputter import Outputter
 
 from gnome.basic_types import oil_status
-from gnome import array_types as at
+from gnome import array_types
 from gnome.utilities.time_utils import date_to_sec
 
 
@@ -23,6 +24,7 @@ class GeoJson(Outputter, Serializable):
     collection of Features. Each Feature contains a Point object with
     associated properties. Following is the format for a particle - the
     data in <> are the results for each element.
+    ::
     {
     "type": "FeatureCollection",
     "features": [
@@ -50,6 +52,7 @@ class GeoJson(Outputter, Serializable):
     '''
 
     outputfile_format = 'geojson_%05i.geojson'
+    outputfile_glob = 'geojson_*.geojson'
     _state = copy.deepcopy(Outputter._state)
 
     def __init__(self,
@@ -72,6 +75,15 @@ class GeoJson(Outputter, Serializable):
         self.output_dir = output_dir
         super(GeoJson, self).__init__(**kwargs)
 
+    def prepare_for_model_run(self, model_start_time, spills, **kwargs):
+        '''
+        geo_json outputter also requires spills to be passed in - this is
+        because it needs to match the 'spill_num' from the data array to the
+        spill object's ID. The keyword, spills is the SpillContainerPair object
+        '''
+        self.sc_pair = spills
+        super(GeoJson, self).prepare_for_model_run(model_start_time, **kwargs)
+
     def write_output(self, step_num, islast_step=False):
         'dump data in geojson format'
         super(GeoJson, self).write_output(step_num, islast_step)
@@ -81,22 +93,41 @@ class GeoJson(Outputter, Serializable):
 
         features = []
         for sc in self.cache.load_timestep(step_num).items():
+
+            time = date_to_sec(sc.current_time_stamp)
+            position = self._dataarray_p_types(sc['positions'])
+            status = self._dataarray_p_types(sc['status_codes'])
+            p_id = self._dataarray_p_types(sc['id'])
+
+            all_nums = np.unique(sc['spill_num'])
+            id_len = len(self.sc_pair.spill_by_index(0).id)
+            spill_id = np.chararray(len(p_id,), itemsize=id_len)
+
+            # NOTE: spill_num are not renumbered if a spill is deleted;
+            # HOWEVER, if a spill is deleted, a callback in the model should
+            # shrink the OrderedCollection and everything should get renumbered
+            for num in all_nums:
+                if not sc.uncertain:
+                    spill_id[sc['spill_num'] == num] = \
+                        self.sc_pair.spill_by_index(num).id
+                else:
+                    spill_id[sc['spill_num'] == num] = \
+                        self.sc_pair.spill_by_index(num, True).id
+
             sc_type = 'forecast'
             if sc.uncertain:
                 sc_type = 'uncertain'
 
-            time = date_to_sec(sc.current_time_stamp)
-            position = self._dataarray_p_types(sc, 'positions')
-            status = self._dataarray_p_types(sc, 'status_codes')
-            p_id = self._dataarray_p_types(sc, 'id')
+            spill_id = self._dataarray_p_types(spill_id)
+
             for ix, pos in enumerate(position):
-                st_code = oil_status._attr[oil_status._int == status]
+                st_code = oil_status._attr[oil_status._int.index(status[ix])]
                 feature = Feature(geometry=Point(pos[:2]),
                                 id=p_id[ix],
                                 properties={'depth': pos[2],
                                     'step_num': step_num,
                                     'spill_type': sc_type,
-                                    'spill_id': sc['spill_id'][ix].tostring(),
+                                    'spill_id': spill_id[ix],
                                     'current_time': time,
                                     'status_code': st_code})
 
@@ -115,25 +146,38 @@ class GeoJson(Outputter, Serializable):
 
         return output_info
 
-    def _dataarray_p_types(self, sc, name):
+    def _dataarray_p_types(self, data_array):
         '''
         return array as list with appropriate python dtype
         This is partly to make sure the dtype of the list elements is a python
         data type else geojson fails
         '''
-        try:
-            # assume dtype for the array_type is a numpy dtype
-            p_type = type(np.asscalar(getattr(at, name).dtype(0)))
-        except AttributeError:
-            # the dtype for the array_type is already a python type
-            p_type = type(getattr(at, name).dtype(0))
+        p_type = type(np.asscalar(data_array.dtype.type(0)))
+
+        #======================================================================
+        # try:
+        #     # convert numpy dtype to python type
+        #     #p_type = type(np.asscalar(data_array.dtype(0)))
+        #     #p_type = type(np.asscalar(getattr(array_types, name).dtype(0)))
+        # except AttributeError:
+        #     # the dtype for the array is already a python type
+        #     #p_type = type(data_array.dtype(0))
+        #     p_type = type(getattr(array_types, name).dtype(0))
+        #======================================================================
 
         if p_type is long:
             'geojson expects int - it fails for a long'
             p_type = int
 
         if p_type is float and self.round_data:
-            data = sc[name].round(self.roundto).astype(p_type).tolist()
+            data = data_array.round(self.roundto).astype(p_type).tolist()
         else:
-            data = sc[name].astype(p_type).tolist()
+            data = data_array.astype(p_type).tolist()
         return data
+
+    def rewind(self):
+        'remove previously written files'
+        super(GeoJson, self).rewind()
+        files = glob(os.path.join(self.output_dir, self.outputfile_glob))
+        for file_ in files:
+            os.remove(file_)

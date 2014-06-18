@@ -876,6 +876,26 @@ class TestSpatialRelease:
         assert np.alltrue(data_arrays['positions'] == self.start_positions)
         assert num == 0
 
+    def test_set_newparticle_positions(self):
+        'define two spatial releases and check positions are set correctly'
+        sp2 = Spill(SpatialRelease(self.sp.release.release_time,
+                                  ((0, 0, 0), (0, 0, 0))))
+        (data_arrays, num) = release_elements(self.sp,
+                                            self.sp.release.release_time, 600)
+        assert (self.sp.get('num_released') == self.sp.release.num_elements and
+                self.sp.release.num_elements == num)
+
+        (data_arrays, num2) = release_elements(sp2,
+                                              sp2.release.release_time,
+                                              600,
+                                              data_arrays)
+        assert (sp2.get('num_released') == sp2.release.num_elements and
+                len(data_arrays['positions']) == num2 + num)
+        assert (np.all(data_arrays['positions'][:num, :] ==
+                self.sp.get('start_position')))
+        assert (np.all(data_arrays['positions'][num:, :] ==
+                sp2.get('start_position')))
+
 
 class TestVerticalPlumeRelease:
     @pytest.fixture(autouse=True)
@@ -1033,6 +1053,12 @@ def test_setget():
 
     spill.set('windage_persist', -1)
     assert spill.get('windage_persist') == -1
+
+    spill.set('windage_range', (0.4, 0.4))
+    assert spill.get('windage_range') == (0.4, 0.4)
+
+    spill.set('windage_range', [0.4, 0.4])
+    assert spill.get('windage_range') == [0.4, 0.4]
 
 
 # todo: add SpatialRelease schema, then complete this test

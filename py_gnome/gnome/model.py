@@ -1,11 +1,11 @@
 #!/usr/bin/env python
-
+import os
+import shutil
+import types
 from datetime import datetime, timedelta
 import glob
 import copy
-import os
 import json
-import shutil
 
 import numpy
 np = numpy
@@ -44,7 +44,7 @@ class SpillContainerPairSchema(MappingSchema):
 class ModelSchema(base_schema.ObjType):
     'Colander schema for Model object'
     time_step = SchemaNode(Float())
-    weathering_substeps = SchemaNode(Int())
+    weathering_substeps = SchemaNode(Int(), missing=drop)
     start_time = SchemaNode(extend_colander.LocalDateTime(),
                             validator=validators.convertible_to_seconds)
     duration = SchemaNode(extend_colander.TimeDelta())  # max duration?
@@ -332,6 +332,11 @@ class Model(Serializable):
         '''
         self.spills.rewind()  # why is rewind for spills here?
 
+        # remake orderedcollections defined by model
+        for oc in [self.movers, self.weatherers,
+                   self.outputters, self.environment]:
+            oc.remake()
+
         array_types = {}
 
         for mover in self.movers:
@@ -406,10 +411,10 @@ class Model(Serializable):
           particular time range should not be run multiple times.  It is
           expected that we are processing a sequence of contiguous time ranges.
         - Note: If there are multiple sequential weathering processes, some
-                inaccuracy could occur.  A proposed solution is to
-                'super-sample' the model time step so that it will be replaced
-                with many smaller time steps.  We'll have to see if this pans
-                out in practice.
+            inaccuracy could occur.  A proposed solution is to
+            'super-sample' the model time step so that it will be replaced
+            with many smaller time steps.  We'll have to see if this pans
+            out in practice.
         '''
         for sc in self.spills.items():
             for w in self.weatherers:
@@ -547,9 +552,8 @@ class Model(Serializable):
         '''
         Do a full run of the model.
 
-        :param rewind=True: whether to rewind the model first
-                            -- if set to false, model will be run from the
-                               current step to the end
+        :param rewind=True: whether to rewind the model first -- if set to
+            false, model will be run from the current step to the end
         :returns: list of outputter info dicts
         '''
         if rewind:
@@ -686,8 +690,8 @@ class Model(Serializable):
                 if field.save_reference:
                     'attribute is stored as a reference to environment list'
                     if getattr(obj, field.name) is not None:
-                        obj_id = getattr(obj, field.name).id
-                        index = self.environment.index(obj_id)
+                        ref_obj = getattr(obj, field.name)
+                        index = self.environment.index(ref_obj)
                         json_[field.name] = index
 
             self._save_json_to_file(saveloc, json_,

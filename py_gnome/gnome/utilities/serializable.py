@@ -673,6 +673,16 @@ class Serializable(GnomeId):
         """
         return '{0.__module__}.{0.__class__.__name__}'.format(self)
 
+    def _check_type(self, other):
+        'check basic type equality'
+        if self is other:
+            return True
+
+        if type(self) == type(other):
+            return True
+
+        return False
+
     def __eq__(self, other):
         """
         .. function:: __eq__(other)
@@ -703,10 +713,7 @@ class Serializable(GnomeId):
         NOTE: This class does not have __init__ method and super is not used.
         """
 
-        if self is other:
-            return True
-
-        if type(self) != type(other):
+        if not self._check_type(other):
             return False
 
         if (self._state.get_field_by_attribute('save') !=
