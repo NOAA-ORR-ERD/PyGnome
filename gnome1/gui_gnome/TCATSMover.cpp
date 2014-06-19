@@ -1,6 +1,7 @@
 #include "TCATSMover.h"
 #include "GridCurMover.h"
 #include "TideCurCycleMover.h"
+#include "CurrentCycleMover.h"
 #include "TWindMover.h"
 #include "TShioTimeValue.h"
 #include "DagTreePD.h"
@@ -2177,7 +2178,90 @@ TCurrentMover *CreateAndInitCurrentsMover (TMap *owner, Boolean askForFile, char
 	else if (IsTideCurCycleFile(path, &gridType))
 	{	// could combine with isnetcdffile by adding an extra parameter
 		WorldPoint p = {0,0};
-		if (gridType!=TRIANGULAR) {err=-1; printNote("Tidal current cycle movers are only implemented for triangle grids."); goto Error;}
+		if (gridType!=TRIANGULAR) {err=-1; printNote("Current cycle movers are only implemented for triangle grids."); goto Error;}
+#ifdef GUI_GNOME
+		timeGrid = new TimeGridVelTri();
+		//timeGrid = new TimeGridVel();
+		if (timeGrid)
+		{
+			Point where;
+			OSType typeList[] = { 'NULL', 'NULL', 'NULL', 'NULL' };
+			MySFReply reply;
+			Boolean bTopFile = false;
+			topFilePath[0]=0;
+			// code goes here, store path as unix
+			if (gridType!=REGULAR)	// move this outside, pass the path in
+			{
+				short buttonSelected;
+				buttonSelected  = MULTICHOICEALERT(1688,"Do you have an extended topology file to load?",FALSE);
+				switch(buttonSelected){
+					case 1: // there is an extended top file
+						bTopFile = true;
+						break;  
+					case 3: // no extended top file
+						bTopFile = false;
+						break;
+					case 4: // cancel
+						//err=-1;// stay at this dialog
+						break;
+				}
+			}
+			if(bTopFile)
+			{
+#if TARGET_API_MAC_CARBON
+				mysfpgetfile(&where, "", -1, typeList,
+							 (MyDlgHookUPP)0, &reply, M38c, MakeModalFilterUPP(STDFilter));
+				if (!reply.good)
+				{
+				}
+				else
+					strcpy(topFilePath, reply.fullPath);
+				
+#else
+				where = CenteredDialogUpLeft(M38c);
+				sfpgetfile(&where, "",
+						   (FileFilterUPP)0,
+						   -1, typeList,
+						   (DlgHookUPP)0,
+						   &reply, M38c,
+						   (ModalFilterUPP)MakeUPP((ProcPtr)STDFilter, uppModalFilterProcInfo));
+				if (!reply.good) 
+				{
+				}
+				
+				my_p2cstr(reply.fName);
+				
+#ifdef MAC
+				GetFullPath(reply.vRefNum, 0, (char *)reply.fName, topFilePath);
+#else
+				strcpy(topFilePath, reply.fName);
+#endif
+#endif		
+			}
+			CurrentCycleMover *newCurrentCycleMover = new CurrentCycleMover(owner, fileName);
+			if (!newCurrentCycleMover)
+			{ 
+				TechError("CreateAndInitCurrentsMover()", "new newCurrentCycleMover()", 0);
+				return 0;
+			}
+			newMover = newCurrentCycleMover;
+		
+			timeGrid->bIsCycleMover = true;
+			err = newCurrentCycleMover->InitMover(timeGrid);	// dummy variables for now
+			if(err) goto Error;
+			
+	#if TARGET_API_MAC_CARBON
+			err = ConvertTraditionalPathToUnixPath((const char *) path, outPath, kMaxNameLen) ;
+			if (!err) strcpy(path,outPath);
+			err = ConvertTraditionalPathToUnixPath((const char *) topFilePath, outPath, kMaxNameLen) ;
+			if (!err) strcpy(topFilePath,outPath);
+	#endif
+			//err = newCurrentCycleMover->TextRead(path,newMap,""); // outside users may supply their own map
+			err = timeGrid->TextRead(path,topFilePath); // outside users may supply their own map
+			if(err) goto Error;	
+		}
+		else{err=-1; goto Error;}
+#else
 		TideCurCycleMover *newTideCurCycleMover = new TideCurCycleMover(owner, fileName);
 		if (!newTideCurCycleMover)
 		{ 
@@ -2191,6 +2275,7 @@ TCurrentMover *CreateAndInitCurrentsMover (TMap *owner, Boolean askForFile, char
 		
 		err = newTideCurCycleMover->TextRead(path,newMap,""); // outside users may supply their own map
 		if(err) goto Error;	
+#endif
 	}
 	else if (IsADCPFile(path))
 	{

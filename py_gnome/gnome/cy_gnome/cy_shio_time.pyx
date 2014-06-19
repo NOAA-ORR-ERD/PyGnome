@@ -30,7 +30,8 @@ cdef class CyShioTime(object):
 
     def __init__(self,
                  path_,
-                 daylight_savings_off=True,
+                 #daylight_savings_off=True, # this means dst is always off
+                 daylight_savings_off=False, # let shio figure it out by default
                  scale_factor=1,
                  yeardata=None):
         """

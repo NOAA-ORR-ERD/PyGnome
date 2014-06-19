@@ -76,6 +76,7 @@ public:
 	OSErr					ReadHydrologyHeader (vector<string> &linesInFile);
 	OSErr					ReadHydrologyHeader (char *path);
 
+	virtual OSErr 			GetLocationInTideCycle(const Seconds& model_time, short *ebbFloodType, float *fraction) {*ebbFloodType=0; *fraction=0; return 0;}
 	
 protected:
 	OSErr					GetInterpolatedComponent (Seconds forTime, double *value, short index);

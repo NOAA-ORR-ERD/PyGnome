@@ -170,7 +170,7 @@ Boolean IsADCPFile(char *path)
 	return bIsValid;
 }
 
-void ShowUnscaledValue2(DialogPtr dialog)
+/*void ShowUnscaledValue2(DialogPtr dialog)
 {
 	double length;
 	WorldPoint p;
@@ -180,7 +180,7 @@ void ShowUnscaledValue2(DialogPtr dialog)
 	velocity = sharedADCPMover->GetPatValue(p);
 	length = sqrt(velocity.u * velocity.u + velocity.v * velocity.v);
 	Float2EditText(dialog, M16UNSCALEDVALUE, length, 4);
-}
+}*/
 
 Boolean ADCPMover::OkToAddToUniversalMap()
 {

@@ -1788,6 +1788,8 @@ OSErr			ADCPSettingsDialog (ADCPMover *mover, TMap *owner, Boolean *timeFileChan
 
 OSErr			CATSSettingsDialog (TCATSMover *mover, TMap *owner, Boolean *timeFileChanged);
 
+OSErr			CurrentCycleSettingsDialog (CurrentCycleMover *mover, TMap *owner, Boolean *timeFileChanged);
+
 TCATSMover 		*CreateAndInitCatsCurrentsMover (TMap *owner, Boolean askForFile, char* givenPath,char* givenFileName);
 
 ADCPMover 		*CreateAndInitADCPCurrentsMover (TMap *owner, Boolean askForFile, char* givenPath,char* givenFileName);

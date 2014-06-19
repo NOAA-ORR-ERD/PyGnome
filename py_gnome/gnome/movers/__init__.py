@@ -24,7 +24,9 @@ from current_movers import (CatsMoverSchema,
                             ComponentMoverSchema,
                             ComponentMover,
                             GridCurrentMoverSchema,
-                            GridCurrentMover)
+                            GridCurrentMover,
+                            CurrentCycleMoverSchema,
+                            CurrentCycleMover)
 from vertical_movers import RiseVelocityMoverSchema, RiseVelocityMover
 
 __all__ = [Mover,
@@ -48,5 +50,7 @@ __all__ = [Mover,
            ComponentMover,
            GridCurrentMoverSchema,
            GridCurrentMover,
+           CurrentCycleMoverSchema,
+           CurrentCycleMover,
            RiseVelocityMoverSchema,
            RiseVelocityMover]

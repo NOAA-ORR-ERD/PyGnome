@@ -257,6 +257,12 @@ TimeGridVel_c::TimeGridVel_c ()
 	fFillValue = -1e+34;
 	//fIsNavy = false;	
 	
+	fOffset = 0;
+	fFraction = 0;
+	fTimeAlpha = -1;
+	bIsCycleMover = false;
+	fModelStartTime = 0;
+	
 	memset(&fStartData,0,sizeof(fStartData));
 	fStartData.timeIndex = UNASSIGNEDINDEX; 
 	fStartData.dataHdl = 0; 
@@ -337,6 +343,63 @@ Boolean TimeGridVel_c::CheckInterval(long &timeDataInterval, const Seconds& mode
 			return false;
 	}
 	
+	if (bIsCycleMover)
+	{
+		// need some sort of check for if time grid exists and is active
+		//short ebbFloodType;
+		//float fraction;
+		long numTimes = GetNumTimesInFile(), /*offset,*/ index1, index2;
+		float  numSegmentsPerFloodEbb = numTimes/4.;
+		if (fFraction==0 && fOffset==0)
+		{
+			if (fModelStartTime==0)	// haven't called prepareformodelstep yet, so get the first (or could set it...)
+				time = (*fTimeHdl)[0];
+			else
+				time = time - fModelStartTime;
+			//time = time - model->GetStartTime();
+			fTimeAlpha = -1;
+			if(fStartData.timeIndex!=UNASSIGNEDINDEX && fEndData.timeIndex!=UNASSIGNEDINDEX)
+			{
+				if (time>=(*fTimeHdl)[fStartData.timeIndex] && time<=(*fTimeHdl)[fEndData.timeIndex])
+				{	// we already have the right interval loaded
+					timeDataInterval = fEndData.timeIndex;
+					return true;
+				}
+			}
+			
+			for (i=0;i<numTimes;i++) 
+			{	// find the time interval
+				if (time>=(*fTimeHdl)[i] && time<=(*fTimeHdl)[i+1])
+				{
+					timeDataInterval = i+1; // first interval is between 0 and 1, and so on
+					return false;
+				}
+			}	
+			// don't allow time before first or after last
+			if (time<(*fTimeHdl)[0]) 
+				timeDataInterval = 0;
+			if (time>(*fTimeHdl)[numTimes-1]) 
+				timeDataInterval = numTimes;
+			return false;	// need to decide what to do here
+			//timeDataInterval = 1;
+			//return false;
+		}
+		index1 = floor(numSegmentsPerFloodEbb * (fFraction + fOffset));	// round, floor?
+		index2 = ceil(numSegmentsPerFloodEbb * (fFraction + fOffset));	// round, floor?
+		timeDataInterval = index2;	// first interval is between 0 and 1, and so on
+		if (fFraction==0) timeDataInterval++;
+		// do we need this?
+		fTimeAlpha = timeDataInterval-numSegmentsPerFloodEbb * (fFraction + fOffset);
+		// check if index2==numTimes, then need to cycle back to zero
+		// check if index1==index2, then only need one file loaded
+		if (index2==12) index2=0;	// code goes here - this is assuming always have 12 patterns - should be numTimes?
+		if(fStartData.timeIndex==index1 && fEndData.timeIndex==index2)
+		{
+			return true;			
+		}
+		return false;
+	}
+
 	if (fStartData.timeIndex != UNASSIGNEDINDEX &&
 		fEndData.timeIndex != UNASSIGNEDINDEX)
 	{
@@ -1267,7 +1330,9 @@ OSErr TimeGridVel_c::SetInterval(char *errmsg, const Seconds& model_time)
 			}
 		}
 		else {
-			if (fAllowExtrapolationInTime && timeDataInterval == numTimesInFile) {
+			if(fTimeAlpha>=0 && timeDataInterval == numTimesInFile)
+				indexOfEnd = 0;	// start over
+			else if (fAllowExtrapolationInTime && timeDataInterval == numTimesInFile) {
 				fStartData.timeIndex = numTimesInFile-1;//check if time > last model time in all files
 				fEndData.timeIndex = UNASSIGNEDINDEX;//check if time > last model time in all files
 			}
@@ -5415,6 +5480,19 @@ VelocityRec TimeGridVelTri_c::GetScaledPatValue(const Seconds& model_time, World
 		endTime = (*fTimeHdl)[fEndData.timeIndex] + fTimeShift;
 		timeAlpha = (endTime - model_time)/(double)(endTime - startTime);
 		
+		// Calculate the time weight factor
+		if (fTimeAlpha==-1)
+		{
+			//Seconds relTime = time - model->GetStartTime();
+			Seconds relTime = model_time - fModelStartTime;
+			startTime = (*fTimeHdl)[fStartData.timeIndex];
+			endTime = (*fTimeHdl)[fEndData.timeIndex];
+			//timeAlpha = (endTime - model_time)/(double)(endTime - startTime);
+			timeAlpha = (endTime - relTime)/(double)(endTime - startTime);
+		}
+		else
+			timeAlpha = fTimeAlpha;
+
 		// Calculate the interpolated velocity at the point
 		if (interpolationVal.ptIndex1 >= 0) 
 		{
@@ -5571,6 +5649,19 @@ VelocityRec TimeGridVelTri_c::GetScaledPatValue3D(const Seconds& model_time, Int
 		endTime = (*fTimeHdl)[fEndData.timeIndex];
 		timeAlpha = (endTime - model_time)/(double)(endTime - startTime);
 		
+		// Calculate the time weight factor
+		if (fTimeAlpha==-1)
+		{
+			//Seconds relTime = time - model->GetStartTime();
+			Seconds relTime = model_time - fModelStartTime;
+			startTime = (*fTimeHdl)[fStartData.timeIndex];
+			endTime = (*fTimeHdl)[fEndData.timeIndex];
+			//timeAlpha = (endTime - model_time)/(double)(endTime - startTime);
+			timeAlpha = (endTime - relTime)/(double)(endTime - startTime);
+		}
+		else
+			timeAlpha = fTimeAlpha;
+
 		if (pt1depthIndex1!=-1)
 		{
 			if (pt1depthIndex2!=-1) 
@@ -5654,7 +5745,7 @@ OSErr TimeGridVelTri_c::TextRead(const char *path, const char *topFilePath)
 	long *bndry_indices = 0, *bndry_nums = 0, *bndry_type = 0, *top_verts = 0, *top_neighbors = 0;
 	double timeConversion = 1., scale_factor = 1.;
 	float timeVal;
-	Seconds startTime, startTime2;
+	Seconds startTime, startTime2=0;
 
 	size_t nodeLength, nbndLength, neleLength, recs, t_len, sigmaLength = 0;
 	static size_t latIndex = 0, lonIndex = 0, timeIndex, ptIndex = 0;
@@ -5706,7 +5797,7 @@ OSErr TimeGridVelTri_c::TextRead(const char *path, const char *topFilePath)
 	}
 	else {
 		DateTimeRec time;
-		char unitStr[24], junk[10];
+		char unitStr[24], junk[10], junk2[10], junk3[10];
 
 		timeUnits = new char[t_len + 1];
 
@@ -5720,24 +5811,36 @@ OSErr TimeGridVelTri_c::TextRead(const char *path, const char *topFilePath)
 		StringSubstitute(timeUnits, ':', ' ');
 		StringSubstitute(timeUnits, '-', ' ');
 		
-		numScanned = sscanf(timeUnits, "%s %s %hd %hd %hd %hd %hd %hd",
-							unitStr, junk, &time.year, &time.month, &time.day,
-							&time.hour, &time.minute, &time.second);
-		if (numScanned == 5) {
-			time.hour = 0;
-			time.minute = 0;
-			time.second = 0;
+		if (bIsCycleMover)
+		{
+			numScanned=sscanf(timeUnits, "%s %s %s %s",
+							  unitStr, junk, &junk2, &junk3) ;
+			if (numScanned<4) // really only care about 1	
+			{ err = -1; TechError("TimeGridVelTri_c::TextRead()", "sscanf() == 4", 0); goto done; }
 		}
-		else if (numScanned == 7) // has two extra time entries ??
-			time.second = 0;
-		else if (numScanned < 8) {
-			// has two extra time entries ??
-			err = -1;
-			TechError("TimeGridVelTri_c::TextRead()", "sscanf() == 8", 0);
-			goto done;
-		}
+		else 
+		{
+
+			numScanned = sscanf(timeUnits, "%s %s %hd %hd %hd %hd %hd %hd",
+								unitStr, junk, &time.year, &time.month, &time.day,
+								&time.hour, &time.minute, &time.second);
+			if (numScanned == 5) {
+				time.hour = 0;
+				time.minute = 0;
+				time.second = 0;
+			}
+			else if (numScanned == 7) // has two extra time entries ??
+				time.second = 0;
+			else if (numScanned < 8) {
+				// has two extra time entries ??
+
+				err = -1;
+				TechError("TimeGridVelTri_c::TextRead()", "sscanf() == 8", 0);
+				goto done;
+			}
 
 		DateToSeconds(&time, &startTime2);	// code goes here, which start Time to use ??
+		}
 		if (!strcmpnocase(unitStr, "HOURS") || !strcmpnocase(unitStr, "HOUR"))
 			timeConversion = 3600.;
 		else if (!strcmpnocase(unitStr, "MINUTES") || !strcmpnocase(unitStr, "MINUTE"))
@@ -6417,6 +6520,10 @@ OSErr TimeGridVelTri_c::ReadTimeData(long index,VelocityFH *velocityH, char* err
 			if (curr_uvals[j*numVelsAtDepthLevel+i]==fill_value)
 				curr_uvals[j*numVelsAtDepthLevel+i]=0.;
 			if (curr_vvals[j*numVelsAtDepthLevel+i]==fill_value)
+				curr_vvals[j*numVelsAtDepthLevel+i]=0.;
+			if (curr_uvals[j*numVelsAtDepthLevel+i]==dry_value)
+				curr_uvals[j*numVelsAtDepthLevel+i]=0.;
+			if (curr_vvals[j*numVelsAtDepthLevel+i]==dry_value)
 				curr_vvals[j*numVelsAtDepthLevel+i]=0.;
 			//if (fVar.gridType==MULTILAYER /*sigmaReversed*/)
 			/*{
