@@ -319,7 +319,6 @@ class TestWebApi:
 
         # update the dict so it gives a valid model to load
         deserial['map'] = model.map
-        deserial.pop('map_id')
         for coll in ['movers', 'weatherers', 'environment', 'outputters',
                      'spills']:
             for ix, item in enumerate(deserial[coll]):
