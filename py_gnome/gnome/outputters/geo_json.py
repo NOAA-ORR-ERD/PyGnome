@@ -24,30 +24,34 @@ class GeoJson(Outputter, Serializable):
     collection of Features. Each Feature contains a Point object with
     associated properties. Following is the format for a particle - the
     data in <> are the results for each element.
-    {
-    "type": "FeatureCollection",
-    "features": [
+
+    ::
+
         {
-            "geometry": {
-                "type": "Point",
-                "coordinates": [
-                    <LONGITUDE>,
-                    <LATITUDE>
-                ]
+        "type": "FeatureCollection",
+        "features": [
+            {
+                "geometry": {
+                    "type": "Point",
+                    "coordinates": [
+                        <LONGITUDE>,
+                        <LATITUDE>
+                    ]
+                },
+                "type": "Feature",
+                "id": <PARTICLE_ID>,
+                "properties": {::
+                    "current_time": <TIME IN SEC SINCE EPOCH>,
+                    "status_code": <>,
+                    "spill_id": <UUID OF SPILL OBJECT THAT RELEASED PARTICLE>,
+                    "depth": <DEPTH>,
+                    "spill_type": <FORECAST OR UNCERTAIN>,
+                    "step_num": <OUTPUT ASSOCIATED WITH THIS STEP NUMBER>
+                }
             },
-            "type": "Feature",
-            "id": <PARTICLE_ID>,
-            "properties": {
-                "current_time": <TIME IN SEC SINCE EPOCH>,
-                "status_code": <>,
-                "spill_id": <UUID OF SPILL OBJECT THAT RELEASED PARTICLE>,
-                "depth": <DEPTH>,
-                "spill_type": <FORECAST OR UNCERTAIN>,
-                "step_num": <OUTPUT ASSOCIATED WITH THIS STEP NUMBER>
-            }
-        },
-        ...
-    }
+            ...
+        }
+
     '''
 
     outputfile_format = 'geojson_%05i.geojson'
@@ -67,7 +71,7 @@ class GeoJson(Outputter, Serializable):
             Default is 4.
         :param str output_dir='./': output directory for geojson files
 
-        use super to pass optional **kwargs to base class __init__ method
+        use super to pass optional \*\*kwargs to base class __init__ method
         '''
         self.round_data = round_data
         self.roundto = roundto
@@ -152,17 +156,6 @@ class GeoJson(Outputter, Serializable):
         data type else geojson fails
         '''
         p_type = type(np.asscalar(data_array.dtype.type(0)))
-
-        #======================================================================
-        # try:
-        #     # convert numpy dtype to python type
-        #     #p_type = type(np.asscalar(data_array.dtype(0)))
-        #     #p_type = type(np.asscalar(getattr(array_types, name).dtype(0)))
-        # except AttributeError:
-        #     # the dtype for the array is already a python type
-        #     #p_type = type(data_array.dtype(0))
-        #     p_type = type(getattr(array_types, name).dtype(0))
-        #======================================================================
 
         if p_type is long:
             'geojson expects int - it fails for a long'

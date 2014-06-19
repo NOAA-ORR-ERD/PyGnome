@@ -1,14 +1,14 @@
 .. _reference:
 
-``pyGNOME`` Reference
+PyGnome Reference
 ===========================
 
-pyGNOMEis a wrapper around a set of C++ libraries. THe C++ code is designed to be used by itself, or from Python, though using it in Python is easier. The API is perhaps a bit klunky -- the C++ code was all orginally written as part of a monolithic GUI program -- we have separated the GUI parts, and cleaned up the API so that the pieces can be used individually.
+PyGnomeis a wrapper around a set of C++ libraries. THe C++ code is designed to be used by itself, or from Python, though using it in Python is easier. The API is perhaps a bit klunky -- the C++ code was all orginally written as part of a monolithic GUI program -- we have separated the GUI parts, and cleaned up the API so that the pieces can be used individually.
 
 Basic Structure
-------------------
+-------------------
 
-There are a handlful of core base classes you need to use pyGNOME for anything useful:
+There are a handlful of core base classes you need to use PyGnome for anything useful:
 
 a model:
    This is the main class that keeps track of all the pieces, runs the loop through time, etc. The code comes with a full-featured version -- you may want a simpler one if you aren't doing a full-on oil spill model.
@@ -27,29 +27,42 @@ spills:
 a map:
    A map keeps track of where land and water are.  The simplest map is all the earth with no land.  It has methods to ask if a location is on land, if a location is "spillable", etc.  The most commonly used map for surface oil spills is intialized with a `*.bna` file describing polygons of land -- this is rasterized into a land-eater bitmap.  During the run, the model calls the `'beach_LEs` method, which determines which particles have hit land in the last time step, and sets those particles to "beached".
 
-
 Class Reference:
----------------------
+-------------------
 
-.. automodule:: gnome
-   :members:
-
-``gnome.model`` -- the pyGNOME model class
---------------------------------------------------
+``gnome.model`` -- the PyGnome model class
+---------------------------------------------------
 .. automodule:: gnome.model
+.. autoclass:: Model
    :members:
+   :undoc-members:
+   :show-inheritance:
       
-``gnome.map`` -- the pyGNOME map class
+``gnome.map`` -- the PyGnome map class
 ---------------------------------------------------
 .. automodule:: gnome.map
    :members:
 
-``gnome.spill`` -- the pyGNOME spill class
+``gnome.spill`` -- classes in the spill module
 ---------------------------------------------------
 .. automodule:: gnome.spill
+.. autoclass:: Spill
    :members:
+   :inherited-members:
+.. autoclass:: Release
+   :members:
+   :inherited-members:
+.. autoclass:: PointLineRelease
+   :members:
+   :inherited-members:
+.. autoclass:: SpatialRelease
+   :members:
+   :inherited-members:
+.. autoclass:: VerticalPlumeRelease
+   :members:
+   :inherited-members:
 
-``gnome.movers`` -- pyGNOME mover classes
+``gnome.movers`` -- PyGnome mover classes
 ---------------------------------------------------
 .. automodule:: gnome.movers
 .. autoclass:: Mover
@@ -62,9 +75,6 @@ Class Reference:
 .. autoclass:: GridCurrentMover
     :members:
     :inherited-members:
-.. autoclass:: WindMoversBase
-    :members:
-    :inherited-members:
 .. autoclass:: WindMover
    :members:
    :show-inheritance:
@@ -72,23 +82,37 @@ Class Reference:
     :members:
     :inherited-members:
 
-``gnome.weather`` -- pyGNOME environment classes
+``gnome.weather`` -- PyGnome environment classes
 ---------------------------------------------------
 .. automodule:: gnome.environment
+.. autoclass:: Tide
+    :members:
+    :inherited-members:
+.. autoclass:: Wind
+    :members:
+    :inherited-members:
+
+``gnome.outputter`` -- PyGnome outputters module
+---------------------------------------------------
+.. automodule:: gnome.outputters
+.. :autoclass:: Outputter
+    :members:
+    :show-inheritance:
+.. :autoclass:: Renderer
+    :members:
+    :show-inheritance:
+.. :autoclass:: NetCDFOutput
+    :members:
+    :show-inheritance:
+.. autoclass:: GeoJson
+    :members:
+    :show-inheritance:
+
+``gnome.persist`` -- PyGnome persistance classes
+---------------------------------------------------
+.. automodule:: gnome.persist.base_schema
    :members:
-
-``gnome.outputter`` -- pyGNOME outputter classes
----------------------------------------------------
-.. automodule:: gnome.outputter
-    :members:
-.. automodule:: gnome.renderer
-    :members:
-    :show-inheritance:
-.. automodule:: gnome.netcdf_outputter
-    :members:
-    :show-inheritance:
-
-``gnome.persist`` -- pyGNOME persistance classes
----------------------------------------------------
-.. automodule:: gnome.persist
+.. automodule:: gnome.persist.extend_colander
+   :members:
+.. automodule:: gnome.persist.validators
    :members:

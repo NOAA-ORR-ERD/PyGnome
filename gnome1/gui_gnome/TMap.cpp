@@ -13,6 +13,7 @@
 #include "GridCurMover.h"
 #include "GridWndMover.h"
 #include "TideCurCycleMover.h"
+#include "CurrentCycleMover.h"
 #include "EditWindsDialog.h"
 #include "NetCDFMoverCurv.h"
 #include "NetCDFWindMover.h"
@@ -169,6 +170,7 @@ OSErr TMap::Read(BFPB *bfpb)
 			case TYPE_COMPOUNDMOVER: mover = new TCompoundMover(dynamic_cast<TMap *>(this), ""); break;
 			case TYPE_ADCPMOVER: mover = new ADCPMover(dynamic_cast<TMap *>(this), ""); break;
 			case TYPE_GRIDCURRENTMOVER: mover = new GridCurrentMover(dynamic_cast<TMap *>(this), ""); break;
+			case TYPE_CURRENTCYCLEMOVER: mover = new CurrentCycleMover(dynamic_cast<TMap *>(this), ""); break;
 			case TYPE_GRIDWINDMOVER: mover = new GridWindMover(dynamic_cast<TMap *>(this), ""); break;
 			default: printError("Unrecognized mover type in TMap::Read()."); return -1;
 		}
@@ -875,6 +877,9 @@ OSErr TMap::AddItem(ListItem item)
 								break;
 							case TYPE_ADCPMOVER:
 								err = ADCPSettingsDialog (dynamic_cast<ADCPMover*>(newMover), dynamic_cast<TMap *>(this), &timeFileChanged);
+								break;
+							case TYPE_CURRENTCYCLEMOVER:
+								err = CurrentCycleSettingsDialog (dynamic_cast<CurrentCycleMover *>(newMover), dynamic_cast<TMap *>(this), &timeFileChanged);
 								break;
 							case TYPE_GRIDCURRENTMOVER:
 							case TYPE_NETCDFMOVER:

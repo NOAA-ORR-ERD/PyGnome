@@ -58,6 +58,14 @@ public:
 
 	float fFillValue;
 	//double fFileScaleFactor;	
+	
+	// fields for the CurrentCycleMover
+	long fOffset;
+	float fFraction;
+	float fTimeAlpha;
+	float fModelStartTime;
+	Boolean bIsCycleMover;
+	
 	Boolean fOverLap;
 	Seconds fOverLapStartTime;
 	PtCurFileInfoH	fInputFilesHdl;
@@ -92,6 +100,8 @@ public:
 	
 	void SetTimeShift(long timeShift){fTimeShift = timeShift;}
 	long GetTimeShift(){return fTimeShift;}
+	
+	void SetTimeCycleInfo(float fraction, long offset) {fFraction = fraction; fOffset = offset;}
 	
 	virtual Seconds 		GetStartTimeValue(long index);
 	virtual Seconds 		GetTimeValue(long index);

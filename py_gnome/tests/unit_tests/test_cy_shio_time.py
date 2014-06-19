@@ -64,15 +64,15 @@ def test_properties_read_from_file():
 
             assert val == data[s_idx + len(item):e_idx]
 
-    assert shio.daylight_savings_off
+    assert not shio.daylight_savings_off
     assert shio.filename == shio_file
 
 
 def test_daylight_savings_off():
     shio = CyShioTime(shio_file)
-    assert shio.daylight_savings_off
-    shio.daylight_savings_off = False
     assert not shio.daylight_savings_off
+    shio.daylight_savings_off = True
+    assert shio.daylight_savings_off
 
 
 def test_scale_factor():
@@ -101,7 +101,7 @@ def test_eq():
     assert shio == other_shio
 
     other_shio = CyShioTime(shio_file)
-    other_shio.daylight_savings_off = False
+    other_shio.daylight_savings_off = True
     assert shio != other_shio
 
     other_shio = CyShioTime(shio_file)

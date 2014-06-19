@@ -226,9 +226,9 @@ class Renderer(Outputter, MapCanvas):
 
         :returns: A dict of info about this step number if this step
             is to be output, None otherwise.
-                   'step_num': step_num
-                   'image_filename': filename
-                   'time_stamp': time_stamp # as ISO string
+            'step_num': step_num
+            'image_filename': filename
+            'time_stamp': time_stamp # as ISO string
 
         use super to call base class write_output method
 

@@ -790,6 +790,11 @@ void TellPlayersAboutNewDirt(void);
 #include "GridCurrentMover_c.h"
 #include "GridCurrentMover.h"
 
+//++ CurrentCycleMover
+
+#include "CurrentCycleMover_c.h"
+#include "CurrentCycleMover.h"
+
 //++ GridWindMover
 
 #include "GridWindMover_c.h"

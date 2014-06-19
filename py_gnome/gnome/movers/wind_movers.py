@@ -316,8 +316,8 @@ def wind_mover_from_file(filename, **kwargs):
     Creates a wind mover from a wind time-series file (OSM long wind format)
 
     :param filename: The full path to the data file
-    :param **kwargs: All keyword arguments are passed on to the WindMover
-                     constructor
+    :param kwargs: All keyword arguments are passed on to the WindMover
+        constructor
 
     :returns mover: returns a wind mover, built from the file
     """
@@ -380,7 +380,7 @@ class GridWindMover(WindMoversBase, serializable.Serializable):
         :param time_offset: Time zone shift if data is in GMT
 
         Pass optional arguments to base class
-        uses super: super(GridWindMover,self).__init__(**kwargs)
+        uses super: super(GridWindMover,self).__init__(\*\*kwargs)
         """
 
         if not os.path.exists(wind_file):

@@ -1,7 +1,7 @@
 Installing
 ==========
 
-pyGNOME consists of compiled C++ code (`libgnome`), compiled Cython code (`*.pyx` files), and compiled python extensions.
+PyGnome consists of compiled C++ code (`libgnome`), compiled Cython code (`*.pyx` files), and compiled python extensions.
 It can be installed either from source, in which case you'll need an appropriate compiler, or from binaries provided by NOAA
 
 Dependencies
@@ -22,7 +22,9 @@ Ideally, it is as simple as::
 
     $ python setup.py build
     $ python setup.py install
+
 or::
+
     $ python setup.py develop
 
 (develop mode installs links to the code, rather than copying the code into python's site-packages.
