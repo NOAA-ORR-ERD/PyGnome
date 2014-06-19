@@ -41,6 +41,7 @@ def test_init():
                   == (0.01, 0.04))
     assert (spill.element_type.initializers['windages'].windage_persist
             == 900)
+    assert spill.name == 'Spill'
 
 
 def test_init_exceptions():
@@ -1053,6 +1054,12 @@ def test_setget():
 
     spill.set('windage_persist', -1)
     assert spill.get('windage_persist') == -1
+
+    spill.set('windage_range', (0.4, 0.4))
+    assert spill.get('windage_range') == (0.4, 0.4)
+
+    spill.set('windage_range', [0.4, 0.4])
+    assert spill.get('windage_range') == [0.4, 0.4]
 
 
 # todo: add SpatialRelease schema, then complete this test

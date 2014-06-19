@@ -27,7 +27,7 @@ import glob
 import shutil
 
 # to support "develop" mode:
-from setuptools import setup
+from setuptools import setup, find_packages
 
 from distutils.extension import Extension
 from Cython.Distutils import build_ext
@@ -457,9 +457,26 @@ extensions.append(Extension("gnome.utilities.geometry.cy_point_in_polygon",
 
 setup(name='pyGnome',
       version=__version__,
-      requires=['numpy'],
+      ext_modules=extensions,
+      packages=find_packages(),
+      package_dir={'gnome': 'gnome'},
+      package_data={'gnome': ['data/yeardata/*']},
+      requires=['numpy'],   # want other packages here?
       cmdclass={'build_ext': build_ext},
-      ext_modules=extensions
+      #scripts,
+
+      #metadata for upload to PyPI
+      author="Gnome team at NOAA ORR",
+      author_email="orr.gnome@noaa.gov",
+      description=("GNOME (General NOAA Operational Modeling Environment) is "
+                    "the modeling tool the Office of Response and "
+                    "Restoration's (OR&R) Emergency Response Division uses to "
+                    "predict the possible route, or trajectory, a pollutant "
+                    "might follow in or on a body of water, such as in an "
+                    "oil spill."),
+      #license=
+      keywords="gnome oilspill modeling",
+      url="https://github.com/NOAA-ORR-ERD/GNOME2"
      )
 
 # Change current working directory back to what user originally had

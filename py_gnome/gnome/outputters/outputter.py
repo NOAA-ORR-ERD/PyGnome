@@ -67,10 +67,10 @@ class Outputter(Serializable):
         self.output_zero_step = output_zero_step
         self.output_last_step = output_last_step
 
-        # internally used variables - set in prepare_for_model_run
+        # reset internally used variables
         self.rewind()
 
-    def prepare_for_model_run(self, model_start_time, cache=None,
+    def prepare_for_model_run(self, model_start_time, spills=None,
                               **kwargs):
         """
         This method gets called by the model at the beginning of a new run.
@@ -93,6 +93,7 @@ class Outputter(Serializable):
         also added **kwargs since a derived class like NetCDFOutput could
         require additional variables.
         """
+        cache = kwargs.pop('cache', None)
         if cache is not None:
             self.cache = cache
 
@@ -176,6 +177,7 @@ class Outputter(Serializable):
         Called by model.rewind()
 
         Reset variables set during prepare_for_model_run() to init conditions
+        Make sure all child classes call parent rewind() first!
         '''
         self._model_start_time = None
         self._next_output_time = None
@@ -203,7 +205,7 @@ class Outputter(Serializable):
             self._next_output_time = time_stamp + self.output_timestep
 
     def write_output_post_run(self, model_start_time, num_time_steps,
-                              cache=None, **kwargs):
+                              **kwargs):
         """
         If the model has already been run and the data is cached, then use
         this function to write output. In this case, num_time_steps is known
@@ -217,20 +219,29 @@ class Outputter(Serializable):
             run. Currently this is known and fixed.
         :type num_time_steps: int
 
-        Optional argument - incase cache needs to be updated
+        Optional argument - depending on the outputter, the following maybe
+        required. For instance, the 'spills' are required by NetCDFOutput,
+        GeoJson, but not Renderer in prepare_for_model_run(). The **kwargs here
+        are those required by prepare_for_model_run() for an outputter
 
         :param cache=None: Sets the cache object to be used for the data.
             If None, it will use the one already set up.
         :type cache: As defined in cache module (gnome.utilities.cache).
             Currently only ElementCache is defined/used.
 
-        also added **kwargs since a derived class like NetCDFOutput could
-        require additional variables in prepare_for_model_run() as is the
-        case for netcdf_outputter
+        :param uncertain: is there uncertain data to write. Used by
+            NetCDFOutput to setup attributes for uncertain data file
+        :type uncertain: bool
+
+        :param spills: SpillContainerPair object containing spill information
+            Used by both the NetCDFOutput and by GeoJson to obtain spill_id
+            from spill_num
+        :type spills: This is the Model's spills attribute which refers to the
+            SpillContainerPair object
 
         Follows the iteration in Model().step() for each step_num
         """
-        self.prepare_for_model_run(model_start_time, cache, **kwargs)
+        self.prepare_for_model_run(model_start_time, **kwargs)
         model_time = model_start_time
         last_step = False
 

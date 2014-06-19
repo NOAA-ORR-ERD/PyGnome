@@ -15,7 +15,7 @@ np = numpy
 import netCDF4 as nc
 
 from gnome.spill.elements import floating
-from gnome.spill import point_line_release_spill
+from gnome.spill import point_line_release_spill, Spill, Release
 
 from gnome.movers import RandomMover
 from gnome.outputters import NetCDFOutput
@@ -84,14 +84,20 @@ def test_init_exceptions():
         NetCDFOutput('invalid_path_to_file/file.nc')
 
 
-def test_exceptions():
+def test_exceptions(model):
     t_file = os.path.join(base_dir, 'temp.nc')
+    spill_pair = model.spills
 
-    # clean up temporary file from previos run
-    if os.path.exists(t_file):
-        print 'remove temporary file {0}'.format(t_file)
-        os.remove(t_file)
+    def _del_temp_file():
+        # clean up temporary file from previous run
+        try:
+            print 'remove temporary file {0}'.format(t_file)
+            os.remove(t_file)
+        except:
+            pass
 
+    # begin tests
+    _del_temp_file()
     netcdf = NetCDFOutput(t_file, which_data='all')
 
     with raises(TypeError):
@@ -99,31 +105,30 @@ def test_exceptions():
         netcdf.prepare_for_model_run(num_time_steps=4)
 
     with raises(TypeError):
-        # need to pass in model start time
+        # need to pass in model start time and spills
         netcdf.prepare_for_model_run()
-
-    with raises(ValueError):
-        # needs a spills object for "all"
-        netcdf.prepare_for_model_run(model_start_time=datetime.now(),
-                                     num_time_steps=4,)
 
     with raises(ValueError):
         # need a cache object
         netcdf.write_output(0)
 
     with raises(ValueError):
-        # raise error because file 'temp.nc' should already exist
-        netcdf.prepare_for_model_run(model_start_time=datetime.now(),
-                                     num_time_steps=4)
+        netcdf.which_data = 'some random string'
 
     with raises(ValueError):
-        # which_data is 'all' but spills are not provided so raise an error
-        netcdf.rewind()
-        netcdf.which_data = 'all'
+        # raise error because file 'temp.nc' should exist after 1st call
         netcdf.prepare_for_model_run(model_start_time=datetime.now(),
+                                     spills=spill_pair,
                                      num_time_steps=4)
-    with raises(ValueError):
-        netcdf.which_data = 'some random string'
+        netcdf.prepare_for_model_run(model_start_time=datetime.now(),
+                                     spills=spill_pair,
+                                     num_time_steps=4)
+
+    with raises(AttributeError):
+        'cannot change after prepare_for_model_run has been called'
+        netcdf.which_data = 'all'
+
+    _del_temp_file()
 
 
 def test_exceptions_middle_of_run(model):
@@ -487,11 +492,16 @@ def test_write_output_post_run(model, output_ts_factor):
 
     _run_model(model)
 
+    assert (not os.path.exists(o_put.netcdf_filename))
+    if o_put._u_netcdf_filename:
+        assert (not os.path.exists(o_put._u_netcdf_filename))
+
     # now write netcdf output
     o_put.write_output_post_run(model.start_time,
                                 model.num_time_steps,
-                                model._cache,
-                                model.uncertain)
+                                spills=model.spills,
+                                cache=model._cache,
+                                uncertain=model.uncertain)
 
     assert os.path.exists(o_put.netcdf_filename)
     if model.uncertain:
@@ -566,6 +576,50 @@ def test_serialize_deserialize(json_):
     if os.path.exists(o_put.netcdf_filename):
         print '\n{0} exists'.format(o_put.netcdf_filename)
 
+
+def test_var_attr_spill_num():
+    '''
+    call prepare_for_model_run and ensure the spill_num attributes are written
+    correctly. Just a simple test that creates two models and adds a spill to
+    each. It then runs both models and checks that the correct spill_name
+    exists in 'spills_map' attribute for NetCDF output variable 'spill_num'
+    '''
+    def _make_run_model(spill, nc_name):
+        'internal funtion'
+        m = Model()
+        m.outputters += NetCDFOutput(nc_name)
+        m.spills += spill
+        _run_model(m)
+        return m
+
+    def _del_nc_file(nc_name):
+        try:
+            os.remove(nc_name)
+        except:
+            pass
+
+    spills = []
+    model = []
+    nc_name = []
+    for ix in (0, 1):
+        spills.append(Spill(Release(datetime.now()),
+                                    name='m{0}_spill'.format(ix)))
+        nc_name.append(os.path.join(base_dir, 'temp_m{0}.nc'.format(ix)))
+        _del_nc_file(nc_name[ix])
+        _make_run_model(spills[ix], nc_name[ix])
+
+    # open and check the correct spill_name exists in each netcdf file
+    for ix, f_ in enumerate(nc_name):
+        with nc.Dataset(f_) as data:
+            assert (spills[ix].name in data.variables['spill_num'].spills_map)
+            if ix == 0:
+                assert (spills[1].name not in
+                        data.variables['spill_num'].spills_map)
+            if ix == 1:
+                assert (spills[0].name not in
+                        data.variables['spill_num'].spills_map)
+
+            _del_nc_file(nc_name[ix])
 
 def _run_model(model):
     'helper function'

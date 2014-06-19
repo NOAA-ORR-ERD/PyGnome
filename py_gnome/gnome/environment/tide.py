@@ -85,7 +85,7 @@ class Tide(Environment, Serializable):
     Currently, this internally defines and uses the CyShioTime object, which is
     a cython wrapper around the C++ Shio object
     """
-    _update = ['yeardata', 'timeseries']
+    _update = ['timeseries']
 
     _create = []
     _create.extend(_update)
@@ -109,26 +109,24 @@ class Tide(Environment, Serializable):
         timeseries (timeseries is NOT TESTED YET)
 
         It requires one of the following to initialize:
+
               1. 'timeseries' assumed to be in 'uv' format
                  (NOT TESTED/IMPLEMENTED OR USED YET)
               2. a 'filename' containing a header that defines units amongst
                  other meta data
 
         :param timeseries: numpy array containing datetime_value_2d,
-                           ts_format is always 'uv'
+            ts_format is always 'uv'
         :type timeseries: numpy.ndarray[basic_types.time_value_pair, ndim=1]
         :param units: units associated with the timeseries data. If 'filename'
-                      is given, then units are read in from the filename.
-                      unit_conversion - NOT IMPLEMENTED YET
-        :type units:  (Optional) string, for example:
-                        'knot', 'meter per second', 'mile per hour' etc
-                      Default is None for now
-
+            is given, then units are read in from the filename.
+            unit_conversion - NOT IMPLEMENTED YET
+        :type units=None:  (Optional) string, for example:
+            'knot', 'meter per second', 'mile per hour' etc
         :param filename: path to a long wind filename from which to read
-                         wind data
-
-        :param yeardata: (Optional) path to yeardata used for Shio data
-                         filenames. Default location is gnome/data/yeardata/
+            wind data
+        :param yeardata='gnome/data/yeardata/': path to yeardata used for Shio
+            data.
 
         """
         # define locally so it is available even for OSSM files,

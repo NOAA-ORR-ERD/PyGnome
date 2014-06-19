@@ -35,10 +35,10 @@ class RandomMover(CyMover, Serializable):
         Uses super to invoke base class __init__ method.
 
         Optional parameters (kwargs)
+
         :param diffusion_coef: Diffusion coefficient for random diffusion.
-                               Default is 100,000 cm2/sec
-        :param uncertain_factor: Uncertainty factor.
-                               Default is 2
+            Default is 100,000 cm2/sec
+        :param uncertain_factor: Uncertainty factor. Default is 2
 
         Remaining kwargs are passed onto :class:`gnome.movers.Mover` __init__
         using super.  See Mover documentation for remaining valid kwargs.
@@ -65,11 +65,6 @@ class RandomMover(CyMover, Serializable):
         self.mover.uncertain_factor = value
 
     def __repr__(self):
-        """
-        .. todo::
-            We probably want to include more information.
-        """
-
         return ('RandomMover(diffusion_coef={0}, '
                 'uncertain_factor={1}, '
                 'active_start={2}, active_stop={3}, '
@@ -105,13 +100,9 @@ class RandomVerticalMover(CyMover, Serializable):
 
         Optional parameters (kwargs)
         :param vertical_diffusion_coef_above_ml: Vertical diffusion coefficient
-                                                 for random diffusion above the
-                                                 mixed layer.
-                                                 Default is 5 cm2/s
+            for random diffusion above the mixed layer. Default is 5 cm2/s
         :param vertical_diffusion_coef_below_ml: Vertical diffusion coefficient
-                                                 for random diffusion below the
-                                                 mixed layer.
-                                                 Default is .11 cm2/s
+            for random diffusion below the mixed layer. Default is .11 cm2/s
         :param mixed_layer_depth: Mixed layer depth. Default is 10 meters.
 
         Remaining kwargs are passed onto Mover's __init__ using super.

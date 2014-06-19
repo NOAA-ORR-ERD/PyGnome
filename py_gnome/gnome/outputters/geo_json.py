@@ -4,6 +4,7 @@ Does not contain a schema for persistence yet
 '''
 import copy
 import os
+from glob import glob
 
 import numpy as np
 from geojson import Point, Feature, FeatureCollection, dump
@@ -23,33 +24,38 @@ class GeoJson(Outputter, Serializable):
     collection of Features. Each Feature contains a Point object with
     associated properties. Following is the format for a particle - the
     data in <> are the results for each element.
-    {
-    "type": "FeatureCollection",
-    "features": [
+
+    ::
+
         {
-            "geometry": {
-                "type": "Point",
-                "coordinates": [
-                    <LONGITUDE>,
-                    <LATITUDE>
-                ]
+        "type": "FeatureCollection",
+        "features": [
+            {
+                "geometry": {
+                    "type": "Point",
+                    "coordinates": [
+                        <LONGITUDE>,
+                        <LATITUDE>
+                    ]
+                },
+                "type": "Feature",
+                "id": <PARTICLE_ID>,
+                "properties": {::
+                    "current_time": <TIME IN SEC SINCE EPOCH>,
+                    "status_code": <>,
+                    "spill_id": <UUID OF SPILL OBJECT THAT RELEASED PARTICLE>,
+                    "depth": <DEPTH>,
+                    "spill_type": <FORECAST OR UNCERTAIN>,
+                    "step_num": <OUTPUT ASSOCIATED WITH THIS STEP NUMBER>
+                }
             },
-            "type": "Feature",
-            "id": <PARTICLE_ID>,
-            "properties": {
-                "current_time": <TIME IN SEC SINCE EPOCH>,
-                "status_code": <>,
-                "spill_id": <UUID OF SPILL OBJECT THAT RELEASED PARTICLE>,
-                "depth": <DEPTH>,
-                "spill_type": <FORECAST OR UNCERTAIN>,
-                "step_num": <OUTPUT ASSOCIATED WITH THIS STEP NUMBER>
-            }
-        },
-        ...
-    }
+            ...
+        }
+
     '''
 
     outputfile_format = 'geojson_%05i.geojson'
+    outputfile_glob = 'geojson_*.geojson'
     _state = copy.deepcopy(Outputter._state)
 
     def __init__(self,
@@ -65,23 +71,21 @@ class GeoJson(Outputter, Serializable):
             Default is 4.
         :param str output_dir='./': output directory for geojson files
 
-        use super to pass optional **kwargs to base class __init__ method
+        use super to pass optional \*\*kwargs to base class __init__ method
         '''
         self.round_data = round_data
         self.roundto = roundto
         self.output_dir = output_dir
         super(GeoJson, self).__init__(**kwargs)
 
-    def prepare_for_model_run(self, model_start_time, cache=None,
-                              **kwargs):
+    def prepare_for_model_run(self, model_start_time, spills, **kwargs):
         '''
         geo_json outputter also requires spills to be passed in - this is
         because it needs to match the 'spill_num' from the data array to the
         spill object's ID. The keyword, spills is the SpillContainerPair object
         '''
-        self.sc_pair = kwargs.pop('spills')
-        super(GeoJson, self).prepare_for_model_run(model_start_time,
-                                                        cache, **kwargs)
+        self.sc_pair = spills
+        super(GeoJson, self).prepare_for_model_run(model_start_time, **kwargs)
 
     def write_output(self, step_num, islast_step=False):
         'dump data in geojson format'
@@ -153,17 +157,6 @@ class GeoJson(Outputter, Serializable):
         '''
         p_type = type(np.asscalar(data_array.dtype.type(0)))
 
-        #======================================================================
-        # try:
-        #     # convert numpy dtype to python type
-        #     #p_type = type(np.asscalar(data_array.dtype(0)))
-        #     #p_type = type(np.asscalar(getattr(array_types, name).dtype(0)))
-        # except AttributeError:
-        #     # the dtype for the array is already a python type
-        #     #p_type = type(data_array.dtype(0))
-        #     p_type = type(getattr(array_types, name).dtype(0))
-        #======================================================================
-
         if p_type is long:
             'geojson expects int - it fails for a long'
             p_type = int
@@ -173,3 +166,10 @@ class GeoJson(Outputter, Serializable):
         else:
             data = data_array.astype(p_type).tolist()
         return data
+
+    def rewind(self):
+        'remove previously written files'
+        super(GeoJson, self).rewind()
+        files = glob(os.path.join(self.output_dir, self.outputfile_glob))
+        for file_ in files:
+            os.remove(file_)

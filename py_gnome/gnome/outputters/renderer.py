@@ -138,16 +138,15 @@ class Renderer(Outputter, MapCanvas):
             polygons = haz_files.ReadBNA(filename, 'PolygonSet')
         else:
             polygons = None
+
+        self.images_dir = images_dir
+        self.last_filename = ''
+        self.draw_ontop = draw_ontop
+
         Outputter.__init__(self, cache, output_timestep, output_zero_step,
                            output_last_step)
         MapCanvas.__init__(self, image_size, land_polygons=polygons,
                            **kwargs)
-
-        self.images_dir = images_dir
-
-        self.last_filename = ''
-
-        self.draw_ontop = draw_ontop
 
     filename = property(lambda self: self._filename)
 
@@ -165,10 +164,7 @@ class Renderer(Outputter, MapCanvas):
     def images_dir_to_dict(self):
         return os.path.abspath(self.images_dir)
 
-    def prepare_for_model_run(self,
-        model_start_time,
-        cache=None,
-        **kwargs):
+    def prepare_for_model_run(self, model_start_time, **kwargs):
         """
         prepares the renderer for a model run.
 
@@ -183,8 +179,7 @@ class Renderer(Outputter, MapCanvas):
 
         """
 
-        super(Renderer, self).prepare_for_model_run(model_start_time,
-                cache, **kwargs)
+        super(Renderer, self).prepare_for_model_run(model_start_time, **kwargs)
 
         self.clear_output_dir()
 
@@ -211,6 +206,12 @@ class Renderer(Outputter, MapCanvas):
         for name in foreground_filenames:
             os.remove(name)
 
+    def rewind(self):
+        '''call parent class's rewind.
+        Call clear_output_dir to delete output files'''
+        super(Renderer, self).rewind()
+        self.clear_output_dir()
+
     def write_output(self, step_num, islast_step=False):
         """
         Render the map image, according to current parameters.
@@ -225,9 +226,9 @@ class Renderer(Outputter, MapCanvas):
 
         :returns: A dict of info about this step number if this step
             is to be output, None otherwise.
-                   'step_num': step_num
-                   'image_filename': filename
-                   'time_stamp': time_stamp # as ISO string
+            'step_num': step_num
+            'image_filename': filename
+            'time_stamp': time_stamp # as ISO string
 
         use super to call base class write_output method
 

@@ -631,6 +631,8 @@ class TestAddSpillContainerPair:
             assert sp.id == u_spill[idx].id
 
     def test_release_particles(self):
+        '''test that the 'id' for uncertain spill container's data is
+        starting from 0'''
         spill = [point_line_release_spill(self.num_elements,
                  self.start_position, self.start_time) for i in
                  range(2)]
@@ -648,6 +650,22 @@ class TestAddSpillContainerPair:
             c_val = scp.LE(key)
             u_val = scp.LE(key, 'uncertain')
             assert np.all(c_val == u_val)
+
+    def test_spill_by_index(self):
+        'test spill_by_index returns the correct spill object'
+        spill = [point_line_release_spill(self.num_elements,
+                                          self.start_position, self.start_time),
+                 point_line_release_spill(self.num_elements,
+                                          self.start_position, self.start_time)]
+
+        scp = SpillContainerPair(True)
+        scp += spill[0]
+        scp += spill[1]
+        for ix in range(2):
+            assert scp.spill_by_index(ix) is spill[ix]
+            u_spill = scp.spill_by_index(ix, uncertain=True)
+            assert u_spill is not spill[ix]
+            assert scp.items()[1].spills[ix] is u_spill
 
     @pytest.mark.parametrize('json_', ['save', 'webapi'])
     def test_to_dict(self, json_):

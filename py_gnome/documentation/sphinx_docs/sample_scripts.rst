@@ -1,4 +1,4 @@
-.. _tutorial-1:
+.. _scripts_tutorial:
 
 Sample Scripts
 =====================

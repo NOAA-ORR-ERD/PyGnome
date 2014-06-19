@@ -14,7 +14,7 @@ np = numpy
 
 from hazpy import unit_conversion
 uc = unit_conversion
-from colander import (SchemaNode, Bool)
+from colander import (SchemaNode, Bool, String)
 
 import gnome    # required by new_from_dict
 from gnome.utilities import serializable
@@ -28,16 +28,14 @@ class SpillSchema(ObjType):
     'Spill class schema'
     on = SchemaNode(Bool(), default=True, missing=True,
         description='on/off status of spill')
+    name = SchemaNode(String())
 
 
 class Spill(serializable.Serializable):
     """
-    base class for a source of elements
-
-    .. note:: This class is not serializable since it will not be used in
-              PyGnome. It does not release any elements
+    Models a spill
     """
-    _update = ['on', 'release', 'element_type']
+    _update = ['on', 'release', 'element_type', 'name']
 
     _create = []
     _create.extend(_update)
@@ -79,32 +77,36 @@ class Spill(serializable.Serializable):
                  on=True,
                  volume=None, volume_units='m^3',
                  # Is this total mass of the spill?
-                 mass=None, mass_units='g'):
+                 mass=None, mass_units='g',
+                 name='Spill'):
         """
-        Base spill class. Spill used by a gnome model derive from this class
+        Spills used by the gnome model. It contains a release object, which
+        releases elements. It also contains an element_type object which
+        contains the type of substance spilled and it initializes data arrays
+        to non-default values (non-zero).
 
-        :param num_elements: number of LEs - default is 0.
-        :type num_elements: int
+        :param release: an object defining how elements are to be released
+        :type release: derived from a gnome.spill.Release object
 
-        Optional parameters (kwargs):
+        **Optional parameters (kwargs):**
 
-        :param on: Toggles the spill on/off (bool). Default is 'on'.
-        :type on: bool
-        :param volume: oil spilled volume (used to compute mass per particle)
-            Default is None.
-        :type volume: float
-        :param volume_units=m^3: volume units
-        :type volume_units: str
-        :param windage_range=(0.01, 0.04): the windage range of the elements
-            default is (0.01, 0.04) from 1% to 4%.
-        :type windage_range: tuple: (min, max)
-        :param windage_persist=-1: Default is 900s, so windage is updated every
-            900 sec. -1 means the persistence is infinite so it is only set at
-            the beginning of the run.
-        :type windage_persist: integer seconds
         :param element_type=None: list of various element_type that are
             released. These are spill specific properties of the elements.
         :type element_type: list of gnome.element_type.* objects
+        :param on=True: Toggles the spill on/off (bool).
+        :type on: bool
+        :param volume=None: oil spilled volume (used for mass per particle)
+        :type volume: float
+        :param volume_units=m^3: volume units
+        :type volume_units: str
+        :param mass=None:
+        :type mass: float
+        :param mass_units='g':
+        :type mass_units: str
+        :param name='Spill': a name for the spill
+        :type name: str
+
+        ::note: Define either 'volume' or 'mass', cannot set both.
         """
         self.release = release
         if element_type is None:
@@ -129,6 +131,8 @@ class Spill(serializable.Serializable):
 
         if mass is not None and volume is not None:
             raise ValueError("'mass' and 'volume' cannot both be set")
+
+        self.name = name
 
     def __repr__(self):
         return ('{0.__class__.__module__}.{0.__class__.__name__}('
@@ -196,6 +200,9 @@ class Spill(serializable.Serializable):
 
         If the property doesn't exist for any of these, then an error is raised
         since user cannot set a property that does not exist using this method
+
+        For example: set('windage_range', (0.4, 0.4)) sets the windage_range
+        assuming the element_type is floating
         """
         if prop == 'num_released':
             raise AttributeError("cannot set attribute")
@@ -219,11 +226,12 @@ class Spill(serializable.Serializable):
 
     def get(self, prop=None):
         """
-        if prop is None then return all the user defined properties of
-        'release' object and list of initializers in 'element_type' object
-
         for get(), return all properties of embedded release object and
-        element_type initializer objects
+        element_type initializer objects. If 'prop' is not None, then return
+        the property
+
+        For example: get('windage_range') returns the 'windage_range' assuming
+        the element_type = floating()
         """
         'Return all properties'
         if prop is None:
@@ -232,9 +240,7 @@ class Spill(serializable.Serializable):
             # release properties
             rel_props = getmembers(self.release,
                                    predicate=lambda p: (not ismethod(p)))
-            'remove _state - update this after we change _state to _state'
-            rel_props = [a[0] for a in rel_props
-                            if not a[0].startswith('_') and a[0] != '_state']
+            rel_props = [a[0] for a in rel_props if not a[0].startswith('_')]
 
             all_props.extend(rel_props)
 
@@ -475,7 +481,9 @@ def point_line_release_spill(num_elements,
         element_type=None,
         on=True,
         volume=None,
-        volume_units='m^3'):
+        volume_units='m^3',
+        name='Point/Line Release'):
     release = PointLineRelease(release_time, num_elements, start_position,
                                end_position, end_release_time)
-    return Spill(release, element_type, on, volume, volume_units)
+    return Spill(release, element_type, on, volume, volume_units,
+                 name=name)
