@@ -36,8 +36,8 @@ class SpillContainerPairSchema(MappingSchema):
     in this module. The SpillContainerPair object is not serializable since
     there isn't a need
     '''
-    certain_spills = base_schema.OrderedCollection(name='certain_spills')
-    uncertain_spills = base_schema.OrderedCollection(name='uncertain_spills',
+    certain_spills = base_schema.OrderedCollectionItemsList(name='certain_spills')
+    uncertain_spills = base_schema.OrderedCollectionItemsList(name='uncertain_spills',
                                                      missing=drop)
 
 
@@ -57,14 +57,11 @@ class ModelSchema(base_schema.ObjType):
         if json_ == 'save':
             self.add(SpillContainerPairSchema(name='spills'))
         else:
-            self.add(base_schema.OrderedCollectionIDList(name='spills'))
+            self.add(base_schema.OrderedCollectionItemsList(name='spills'))
 
         oc_list = ['movers', 'weatherers', 'environment', 'outputters']
         for oc in oc_list:
-            if json_ == 'save':
-                self.add(base_schema.OrderedCollection(name=oc))
-            else:
-                self.add(base_schema.OrderedCollectionIDList(name=oc))
+            self.add(base_schema.OrderedCollectionItemsList(name=oc))
 
         super(ModelSchema, self).__init__(**kwargs)
 
@@ -681,26 +678,33 @@ class Model(Serializable):
             os.mkdir(saveloc)
 
         self._empty_save_dir(saveloc)
-        json_ = self.serialize('save')
-        self._save_json_to_file(saveloc, json_,
-                                '{0}.json'.format(self.__class__.__name__))
+        model_json = self.serialize('save')
 
         json_ = self.map.serialize('save')
         self._save_json_to_file(saveloc, json_,
                                 '{0}.json'.format(self.map.__class__.__name__))
 
         for coll in ['movers', 'weatherers', 'environment', 'outputters']:
-            self._save_collection(saveloc, getattr(self, coll))
+            self._save_collection(saveloc, getattr(self, coll),
+                                    model_json[coll])
 
         for sc in self.spills.items():
-            self._save_collection(saveloc, sc.spills)
+            if sc.uncertain:
+                key = 'uncertain_spills'
+            else:
+                key = 'certain_spills'
+            self._save_collection(saveloc, sc.spills,
+                                    model_json['spills'][key])
 
         # persist model _state since middle of run
         if self.current_time_step > -1:
             self._save_spill_data(os.path.join(saveloc,
                                                'spills_data_arrays.nc'))
 
-    def _save_collection(self, saveloc, coll_):
+        self._save_json_to_file(saveloc, model_json,
+                                '{0}.json'.format(self.__class__.__name__))
+
+    def _save_collection(self, saveloc, coll_, model_coll_json):
         """
         Function loops over an orderedcollection or any other iterable
         containing a list of objects. It calls the to_dict method for each
@@ -726,10 +730,10 @@ class Model(Serializable):
                         index = self.environment.index(ref_obj)
                         json_[field.name] = index
 
-            self._save_json_to_file(saveloc, json_,
-                                    '{0.__class__.__name__}_'
-                                    '{1}.json'.format(obj, count)
-                                    )
+            fname = '{0.__class__.__name__}_{1}.json'.format(obj, count)
+            model_coll_json[count]['json_file'] = fname
+            model_coll_json[count].pop('id')
+            self._save_json_to_file(saveloc, json_, fname)
 
     def _save_json_to_file(self, saveloc, data, name):
         """
@@ -900,9 +904,10 @@ def _load_collection(saveloc, coll_dict, l_env=None):
     """
     obj_list = []
 
-    for type_idx in coll_dict['items']:
-        type_, idx = type_idx[:2]
-        fname = '{0}_{1}.json'.format(type_.rsplit('.', 1)[1], idx)
+    for item in coll_dict:
+        type_ = item['obj_type']
+        #fname = '{0}_{1}.json'.format(type_.rsplit('.', 1)[1], idx)
+        fname = item['json_file']
         obj_dict = _load_and_deserialize_json(os.path.join(saveloc, fname))
 
         _state = eval('{0}._state'.format(type_))

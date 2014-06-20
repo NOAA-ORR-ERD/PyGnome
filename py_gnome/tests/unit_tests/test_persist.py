@@ -323,7 +323,7 @@ class TestWebApi:
         for coll in ['movers', 'weatherers', 'environment', 'outputters',
                      'spills']:
             for ix, item in enumerate(deserial[coll]):
-                deserial[coll][ix] = getattr(model, coll)[item]
+                deserial[coll][ix] = getattr(model, coll)[item['id']]
 
         m2 = Model.new_from_dict(deserial)
         assert m2 == model
