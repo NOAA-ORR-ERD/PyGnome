@@ -49,7 +49,6 @@ class ModelSchema(base_schema.ObjType):
                             validator=validators.convertible_to_seconds)
     duration = SchemaNode(extend_colander.TimeDelta())  # max duration?
     uncertain = SchemaNode(Bool())
-    map_id = SchemaNode(String(), missing=drop)
     cache_enabled = SchemaNode(Bool())
 
     def __init__(self, json_='webapi',
