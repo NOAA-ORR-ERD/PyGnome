@@ -5,21 +5,20 @@
 
 <img src="http://gnome.orr.noaa.gov/py_gnome_testdata/GnomeIcon128.png" alt="Gnome Logo" title="Gnome" align="right">
 
-The General NOAA Operational Modeling Environment.
-
-GNOME ( General NOAA Operational Modeling Environment ) is a modeling tool
-developed by the National Oceanic and Atmospheric Administration (NOAA),
-Office of Response and Restoration (ORR), Emergency Response Division.
+**GNOME** ( General NOAA Operational Modeling Environment ) is a modeling tool
+developed by the National Oceanic and Atmospheric Administration (**NOAA**),
+Office of Response and Restoration (**ORR**), Emergency Response Division.
 
 
 It is designed to support oil and other hazardous material spills in the coastal environment.
 
-This repository contains the source code to the currently under-development version of the model.
-
-**This is code that is under active development -- it should not be considered endorsed or supported by NOAA for any use.**
-
-For a supported version, please see our main web site:  
-http://response.restoration.noaa.gov/gnome
+> ###Disclaimer:
+> **This code is under active development.  Thus...**
+> - **It should not be considered an officially endorsed NOAA product.**
+> - **Output produced by this code should not be considered endorsed by NOAA.**
+>
+> **For a supported version, please see our main web site:**
+> http://response.restoration.noaa.gov/gnome
 
 ## Installation in Development Mode ##
 
@@ -86,7 +85,7 @@ For Linux use appropriate package manager (apt-get on ubuntu) to download/instal
 6. python-cjson is a webgnome dependency that can be pip installed. Currently commented in requirements.txt
 
 The remaining dependencies are python packages and can be installed using pip install -r requirements.txt  
-See [Build PyGnome/WebGnome](https://github.com/NOAA-ORR-ERD/GNOME2#build-pygnomewebgnome) section below.
+See [Build PyGnome](https://github.com/NOAA-ORR-ERD/GNOME2#build-pygnome) section below.
 
 ### Windows 7 (32-bit, using VS-2008 express edition) ###
 
@@ -140,7 +139,7 @@ Here are the binary packages required:
 The remaining dependencies are python packages and can be installed using the command:
 `pip install -r requirements.txt`
 
-See [Build PyGnome/WebGnome](https://github.com/NOAA-ORR-ERD/GNOME2#build-pygnomewebgnome) section below.
+See [Build PyGnome](https://github.com/NOAA-ORR-ERD/GNOME2#build-pygnome) section below.
 
 ### Windows 7 (64-bit, using VS-2008 express edition) ###
 
@@ -149,7 +148,7 @@ binary dependencies.
 There are however some extra steps you need to perform in order to build py_gnome.
 
 If you are not on a 64 bit Windows system, you may skip forward to the section
-[Build PyGnome/WebGnome](https://github.com/NOAA-ORR-ERD/GNOME2#build-pygnomewebgnome)
+[Build PyGnome](https://github.com/NOAA-ORR-ERD/GNOME2#build-pygnome)
 
 1. Download and install the windows SDK.  Here is the link that we are using:  
    [Microsoft Windows SDK for Windows 7 and .NET Framework 3.5 SP1](http://www.microsoft.com/en-us/download/details.aspx?id=3138)
@@ -167,44 +166,46 @@ If you are not on a 64 bit Windows system, you may skip forward to the section
 
 4. Stay inside this Build console for all further build actions.
 
-### Build PyGnome/WebGnome ###
+### Build PyGnome ###
 
 1. Clone the GNOME2 repository.  
-```
-    $ git clone https://github.com/NOAA-ORR-ERD/GNOME2.git  
-```
+	```
+	    $ git clone https://github.com/NOAA-ORR-ERD/GNOME2.git  
+	```
 
 
 2. pip install all of GNOME's python package dependencies.
-```
-    $ cd GNOME2/py_gnome
-    $ pip install -r requirements.txt
-```
+	```
+	    $ cd GNOME2/py_gnome
+	    $ pip install -r requirements.txt
+	```
 
 3. build the py_gnome module in develop mode first as install mode may still need some testing/work.
-```
-    $ python setup.py develop  
-```
+	```
+	    $ python setup.py develop  
+	```
 
 4. If this successfully completes, then run unit_tests
-```
-    $ py.test --runslow tests/unit_tests/  
-```
+	```
+	    $ py.test --runslow tests/unit_tests/  
+	```
 
-5. Once all of the py_gnome unit tests pass, install webgnome requirements and build webgnome.
-```
-    $ cd ../web/gnome/webgnome
-    $ pip install -r requirements
-    $ python setup.py develop
-```
+Once all of the py_gnome unit tests pass, PyGnome is now built and ready to be put to use.
+You can use the `gnome` module inside your python scripts to build a variety of modelling
+scenarios.
 
-6. Once the webgnome build succeeds, you can test it with the following command.
-```
-    $ nosetests webgnome/tests/*  
-```
+### Accessing GNOME from the Web ###
 
-7. Run development server  
-    `$ pserve development.ini --reload`
+Scripting is of course the most featureful way to access GNOME's capabilities.
+However we do have a few projects in development that will allow a user to create and run
+GNOME models from a web browser.
 
-The WebGnome server will start up at the location [http://localhost:6543/](http://localhost:6543/)
-by default, but you can change this configuration in development.ini.
+If you are curious, you can check out the following projects:
+
+- [WebGnomeAPI](https://github.com/NOAA-ORR-ERD/WebGnomeAPI):
+  A web server that implements the PyGnome interface
+- [WebGnomeClient](https://github.com/NOAA-ORR-ERD/WebGnomeClient):
+  A Web application for setting up and running PyGnome models
+
+*(Fair Warning: These two projects are very new, and are not claimed to implement the full
+  capabilities of PyGnome.)*
