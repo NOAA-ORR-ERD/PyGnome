@@ -197,11 +197,28 @@ cdef extern from "GridCurrentMover_c.h":
         OSErr 		    get_move(int n, unsigned long model_time, unsigned long step_len, WorldPoint3D* ref, WorldPoint3D* delta, short* LE_status, LEType spillType, long spillID)
         void 		    SetTimeGrid(TimeGridVel_c *newTimeGrid)
         OSErr           TextRead(char *path,char *topFilePath)
-        OSErr          ExportTopology(char *topFilePath)
+        OSErr           ExportTopology(char *topFilePath)
         void 		    SetExtrapolationInTime(bool extrapolate)
         bool 		    GetExtrapolationInTime()
         void 		    SetTimeShift(long timeShift)
         long 		    GetTimeShift()
+        
+cdef extern from "CurrentCycleMover_c.h":
+    
+    cdef cppclass CurrentCycleMover_c(GridCurrentMover_c):
+        OSSMTimeValue_c *timeDep
+        Boolean bTimeFileActive
+        short fPatternStartPoint
+        WorldPoint      refP
+        
+        CurrentCycleMover_c ()
+        WorldPoint3D    GetMove(Seconds&,Seconds&,Seconds&,Seconds&, long, long, LERec *, LETYPE)
+        #OSErr 		    get_move(int n, unsigned long model_time, unsigned long step_len, WorldPoint3D* ref, WorldPoint3D* delta, short* LE_status, LEType spillType, long spillID)
+        #void 		    SetTimeGrid(TimeGridVel_c *newTimeGrid)
+        #OSErr           TextRead(char *path,char *topFilePath)
+        #OSErr           ExportTopology(char *topFilePath)
+        void  			SetTimeDep(OSSMTimeValue_c *ossm)
+        void  			SetRefPosition (WorldPoint p)    
         
 cdef extern from "GridWindMover_c.h":
     

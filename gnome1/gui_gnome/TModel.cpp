@@ -4736,6 +4736,14 @@ OSErr TModel::Step ()
 							}
 							// ..
 							break;
+						case TYPE_CURRENTCYCLEMOVER:
+							time_val_ptr = ((CurrentCycleMover*)thisMover)->timeDep;
+							if(time_val_ptr) {
+								if(time_val_ptr->GetClassID() == TYPE_SHIOTIMEVALUES)
+									dynamic_cast<TShioTimeValue*>(time_val_ptr)->daylight_savings_off = settings.daylightSavingsTimeFlag;
+							}
+							// ..
+							break;
 						default:
 							break;
 					}
@@ -4792,6 +4800,14 @@ OSErr TModel::Step ()
 							break;
 						case TYPE_TIDECURCYCLEMOVER:
 							time_val_ptr = ((TideCurCycleMover*)thisMover)->timeDep;
+							if(time_val_ptr) {
+								if(time_val_ptr->GetClassID() == TYPE_SHIOTIMEVALUES)
+									dynamic_cast<TShioTimeValue*>(time_val_ptr)->daylight_savings_off = settings.daylightSavingsTimeFlag;
+							}
+							break;
+							// ..
+						case TYPE_CURRENTCYCLEMOVER:
+							time_val_ptr = ((CurrentCycleMover*)thisMover)->timeDep;
 							if(time_val_ptr) {
 								if(time_val_ptr->GetClassID() == TYPE_SHIOTIMEVALUES)
 									dynamic_cast<TShioTimeValue*>(time_val_ptr)->daylight_savings_off = settings.daylightSavingsTimeFlag;

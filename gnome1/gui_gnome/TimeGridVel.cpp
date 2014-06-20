@@ -32,6 +32,11 @@ TimeGridVel::TimeGridVel (/*TMap *owner, char *name*/)
 	
 	//fFileScaleFactor = 1.;	// let user set a scale factor in addition to what is in the file
 	
+	fOffset = 0;
+	fFraction = 0;
+	fTimeAlpha = -1;
+	bIsCycleMover = false;
+	
 	memset(&fStartData,0,sizeof(fStartData));
 	fStartData.timeIndex = UNASSIGNEDINDEX; 
 	fStartData.dataHdl = 0; 
@@ -1856,6 +1861,20 @@ Boolean TimeGridVelTri::VelocityStrAtPoint(WorldPoint3D wp, char *diagnosticStr,
 		endTime = (*fTimeHdl)[fEndData.timeIndex] + fTimeShift;
 		timeAlpha = (endTime - time)/(double)(endTime - startTime);
 		
+		if (bIsCycleMover)
+		{
+			if(fTimeAlpha==-1)
+			{
+				Seconds relTime, modelStartTime = model->GetStartTime();
+				if (modelStartTime==0)	// haven't called prepareformodelstep yet, so get the first (or could set it...)
+					relTime = (*fTimeHdl)[0];
+				else
+					relTime = time - modelStartTime;
+				timeAlpha = (endTime - relTime)/(double)(endTime - startTime);
+			}
+			else
+				timeAlpha = fTimeAlpha;
+		}
 		if (bVelocitiesOnTriangles)
 		{
 			pt1depthIndex1 = -1;
@@ -2026,6 +2045,20 @@ void TimeGridVelTri::Draw(Rect r, WorldRect view,double refScale,double arrowSca
 					endTime = (*fTimeHdl)[fEndData.timeIndex] + fTimeShift;
 					timeAlpha = (endTime - time)/(double)(endTime - startTime);
 				}
+				if (bIsCycleMover)
+				{
+					if(fTimeAlpha==-1)
+					{
+						Seconds relTime, modelStartTime = model->GetStartTime();
+						if (modelStartTime==0)	// haven't called prepareformodelstep yet, so get the first (or could set it...)
+							relTime = (*fTimeHdl)[0];
+						else
+							relTime = time - modelStartTime;
+						timeAlpha = (endTime - relTime)/(double)(endTime - startTime);
+					}
+					else
+						timeAlpha = fTimeAlpha;
+				}
 				//endTime = (*fTimeHdl)[fEndData.timeIndex] + fTimeShift;
 				//timeAlpha = (endTime - time)/(double)(endTime - startTime);
 			}
@@ -2176,6 +2209,20 @@ void TimeGridVelTri::Draw(Rect r, WorldRect view,double refScale,double arrowSca
 				{	//return false;
 					endTime = (*fTimeHdl)[fEndData.timeIndex] + fTimeShift;
 					timeAlpha = (endTime - time)/(double)(endTime - startTime);
+				}
+				if (bIsCycleMover)
+				{
+					if(fTimeAlpha==-1)
+					{
+						Seconds relTime, modelStartTime = model->GetStartTime();
+						if (modelStartTime==0)	// haven't called prepareformodelstep yet, so get the first (or could set it...)
+							relTime = (*fTimeHdl)[0];
+						else
+							relTime = time - modelStartTime;
+						timeAlpha = (endTime - relTime)/(double)(endTime - startTime);
+					}
+					else
+						timeAlpha = fTimeAlpha;
 				}
 				//endTime = (*fTimeHdl)[fEndData.timeIndex] + fTimeShift;
 				//timeAlpha = (endTime - time)/(double)(endTime - startTime);
