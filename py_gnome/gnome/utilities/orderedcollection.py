@@ -309,29 +309,25 @@ class OrderedCollection(object):
                 versus saving data out is different
 
         '''
-        if json_ == 'save':
-            data = {'dtype': self.dtype,
-                    'items': []}
-        else:
-            data = []
+        items = []
 
         for count, obj in enumerate(self):
-            if json_ == 'save':
-                try:
-                    obj_type = \
-                        '{0.__module__}.{0.__class__.__name__}'.format(obj)
-                except AttributeError:
-                    obj_type = '{0.__class__.__name__}'.format(obj)
+            try:
+                obj_type = '{0.__module__}.{0.__class__.__name__}'.format(obj)
+            except AttributeError:
+                obj_type = '{0.__class__.__name__}'.format(obj)
+            item = {'obj_type': obj_type}
+            item.update({'id': self._s_id(obj)})
+            #==================================================================
+            # if json_ == 'save':
+            #     item.update({'file_suffix': count})
+            # else:
+            #     item.update({'id': self._s_id(obj)})
+            #==================================================================
 
-                data['items'].append((obj_type, count))
+            items.append(item)
 
-            else:
-                if hasattr(obj, 'id'):
-                    data.append(obj.id)
-                else:
-                    data.append(id(obj))
-
-        return data
+        return items
 
     def register_callback(self, callback,
                           events=('add', 'remove', 'replace')):

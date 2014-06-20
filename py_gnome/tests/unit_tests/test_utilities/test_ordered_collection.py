@@ -288,21 +288,19 @@ class TestOrderedCollection(object):
 
     def _to_dict_assert(self, oc, items, json_):
         toserial = oc.to_dict(json_)
-        if json_ == 'save':
-            assert toserial['dtype'] == oc.dtype
         for (i, mv) in enumerate(items):
             if json_ == 'save':
                 try:
-                    assert toserial['items'][i][0] == \
+                    assert toserial[i]['obj_type'] == \
                         '{0}.{1}'.format(mv.__module__, mv.__class__.__name__)
                 except AttributeError:
-                    assert toserial['items'][i][0] == mv.__class__.__name__
-                assert toserial['items'][i][1] == i
+                    assert toserial[i]['obj_type'] == mv.__class__.__name__
+                assert toserial[i]['file_suffix'] == i
             elif json_ == 'webapi':
                 try:
-                    assert toserial[i] == mv.id
+                    assert toserial[i]['id'] == mv.id
                 except AttributeError:
-                    assert toserial[i] == id(mv)
+                    assert toserial[i] == s_id(mv)
 
 
 class ObjToAdd:
