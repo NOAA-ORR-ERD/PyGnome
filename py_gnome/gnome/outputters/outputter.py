@@ -70,7 +70,8 @@ class Outputter(Serializable):
         # reset internally used variables
         self.rewind()
 
-    def prepare_for_model_run(self, model_start_time, **kwargs):
+    def prepare_for_model_run(self, model_start_time, spills=None,
+                              **kwargs):
         """
         This method gets called by the model at the beginning of a new run.
         Do what you need to do to prepare.

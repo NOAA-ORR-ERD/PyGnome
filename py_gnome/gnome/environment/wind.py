@@ -158,45 +158,44 @@ class Wind(Environment, serializable.Serializable):
         If both are given, it will read data from the file
 
         If neither are given, timeseries gets initialized as:
+
             timeseries = np.zeros((1,), dtype=basic_types.datetime_value_2d)
             units = 'mps'
+
         If user provides timeseries, they *must* also provide units
 
-        All other keywords are optional.
-        Optional parameters (kwargs):
+        All other keywords are optional. Optional parameters (kwargs):
 
         :param timeseries: numpy array containing time_value_pair
         :type timeseries: numpy.ndarray[basic_types.time_value_pair, ndim=1]
-
         :param filename: path to a long wind file from which to read wind data
         :param units: units associated with the timeseries data. If 'filename'
-                      is given, then units are read in from the file.
-                      get_timeseries() will use these as default units to
-                      output data, unless user specifies otherwise.
-                      These units must be valid as defined in the hazpy
-                      unit_conversion module:
-                      unit_conversion.GetUnitNames('Velocity')
+            is given, then units are read in from the file.
+            get_timeseries() will use these as default units to
+            output data, unless user specifies otherwise.
+            These units must be valid as defined in the hazpy
+            unit_conversion module:
+            unit_conversion.GetUnitNames('Velocity')
         :type units:  string, for example: 'knot', 'meter per second',
-                      'mile per hour' etc.
-                      Default units for input/output timeseries data
-
+            'mile per hour' etc.
+            Default units for input/output timeseries data
         :param format: (Optional) default timeseries format is
-                       magnitude direction: 'r-theta'
+            magnitude direction: 'r-theta'
         :type format: string 'r-theta' or 'uv'. Default is 'r-theta'.
-                      Converts string to integer defined by
-                      gnome.basic_types.ts_format.*
-                      TODO: 'format' is a python builtin keyword.  We should
-                            not use it as an argument name
+            Converts string to integer defined by
+            gnome.basic_types.ts_format.*
+            TODO: 'format' is a python builtin keyword.  We should
+            not use it as an argument name
         :param name: (Optional) human readable string for wind object name.
-                     Default is filename if data is from file or "Wind Object"
+            Default is filename if data is from file or "Wind Object"
         :param source_type: (Optional) Default is undefined, but can be one of
-                            the following:
-                              ['buoy', 'manual', 'undefined', 'file', 'nws']
-                            If data is read from file, then it is 'file'
+            the following: ['buoy', 'manual', 'undefined', 'file', 'nws']
+            If data is read from file, then it is 'file'
         :param latitude: (Optional) latitude of station or location where
-                         wind data is obtained from NWS
+            wind data is obtained from NWS
         :param longitude: (Optional) longitude of station or location where
-                         wind data is obtained from NWS
+            wind data is obtained from NWS
+
         """
         if (timeseries is None and filename is None):
             timeseries = np.zeros((1,), dtype=basic_types.datetime_value_2d)
@@ -369,9 +368,9 @@ class Wind(Environment, serializable.Serializable):
         User can set default units for input/output data
 
         These are given as string and must be one of the units defined in
-            unit_conversion.GetUnitNames('Velocity')
+        unit_conversion.GetUnitNames('Velocity')
         or one of the associated abbreviations
-            unit_conversion.GetUnitAbbreviation()
+        unit_conversion.GetUnitAbbreviation()
         """
         self._check_units(value)
         self._user_units = value

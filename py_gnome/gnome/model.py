@@ -79,8 +79,12 @@ class ModelSchema(base_schema.ObjType):
 
 
 class Model(Serializable):
-    'PyGNOME Model Class'
-    _update = ['start_time',
+    '''
+    PyGnome Model Class
+    '''
+    _update = ['time_step',
+               'weathering_substeps',
+               'start_time',
                'duration',
                'time_step',
                'uncertain',
@@ -154,20 +158,22 @@ class Model(Serializable):
                  uncertain=False,
                  cache_enabled=False):
         '''
-        Initializes a model. All arguments have a default.
+
+        Initializes a model.
+        All arguments have a default.
 
         :param time_step=timedelta(minutes=15): model time step in seconds
-                                                or as a timedelta object
+            or as a timedelta object
         :param start_time=datetime.now(): start time of model, datetime
-                                          object. Rounded to the nearest hour.
+            object. Rounded to the nearest hour.
         :param duration=timedelta(days=1): How long to run the model,
-                                           a timedelta object.
+            a timedelta object.
         :param int weathering_substeps=1: How many weathering substeps to
-                                          run inside a single model time step.
+            run inside a single model time step.
         :param map=gnome.map.GnomeMap(): The land-water map.
         :param uncertain=False: Flag for setting uncertainty.
         :param cache_enabled=False: Flag for setting whether the model should
-                                    cache results to disk.
+            cache results to disk.
         '''
         if not map:
             map = gnome.map.GnomeMap()
@@ -215,7 +221,7 @@ class Model(Serializable):
     def reset(self, **kwargs):
         '''
         Resets model to defaults -- Caution -- clears all movers, spills, etc.
-        Takes same keyword arguments as __init__
+        Takes same keyword arguments as :meth:`__init__()`
         '''
         self.__init__(**kwargs)
 
@@ -251,12 +257,15 @@ class Model(Serializable):
 
     @property
     def uncertain(self):
+        '''
+        Uncertainty attribute of the model. If flag is toggled, rewind model
+        '''
         return self.spills.uncertain
 
     @uncertain.setter
     def uncertain(self, uncertain_value):
         '''
-        only if uncertainty switch is toggled, then restart model
+        Uncertainty attribute of the model
         '''
         if self.spills.uncertain != uncertain_value:
             self.spills.uncertain = uncertain_value  # update uncertainty
@@ -264,6 +273,9 @@ class Model(Serializable):
 
     @property
     def cache_enabled(self):
+        '''
+        If True, then generated data is cached
+        '''
         return self._cache.enabled
 
     @cache_enabled.setter
@@ -272,6 +284,9 @@ class Model(Serializable):
 
     @property
     def start_time(self):
+        '''
+        Start time of the simulation
+        '''
         return self._start_time
 
     @start_time.setter
@@ -281,6 +296,9 @@ class Model(Serializable):
 
     @property
     def time_step(self):
+        '''
+        time step over which the dynamics is computed
+        '''
         return self._time_step
 
     @time_step.setter
@@ -303,6 +321,9 @@ class Model(Serializable):
 
     @property
     def current_time_step(self):
+        '''
+        Current timestep of the simulation
+        '''
         return self._current_time_step
 
     @current_time_step.setter
@@ -313,6 +334,9 @@ class Model(Serializable):
 
     @property
     def duration(self):
+        '''
+        total duration of the model run
+        '''
         return self._duration
 
     @duration.setter
@@ -330,6 +354,9 @@ class Model(Serializable):
 
     @property
     def map(self):
+        '''
+        land water map used for simulation
+        '''
         return self._map
 
     @map.setter
@@ -339,6 +366,11 @@ class Model(Serializable):
 
     @property
     def num_time_steps(self):
+        '''
+        Read only attribute
+        computed number of timesteps based on py:attribute:`duration` and
+        py:attribute:`time_step`
+        '''
         return self._num_time_steps
 
     def setup_model_run(self):
@@ -420,16 +452,18 @@ class Model(Serializable):
     def weather_elements(self):
         '''
         Weathers elements:
+
         - loops through all the weatherers, passing in the spill_container
           and the time range
         - a weatherer modifies the data arrays in the spill container, so a
           particular time range should not be run multiple times.  It is
           expected that we are processing a sequence of contiguous time ranges.
         - Note: If there are multiple sequential weathering processes, some
-                inaccuracy could occur.  A proposed solution is to
-                'super-sample' the model time step so that it will be replaced
-                with many smaller time steps.  We'll have to see if this pans
-                out in practice.
+          inaccuracy could occur.  A proposed solution is to
+          'super-sample' the model time step so that it will be replaced
+          with many smaller time steps.  We'll have to see if this pans
+          out in practice.
+
         '''
         for sc in self.spills.items():
             for w in self.weatherers:
@@ -567,9 +601,8 @@ class Model(Serializable):
         '''
         Do a full run of the model.
 
-        :param rewind=True: whether to rewind the model first
-                            -- if set to false, model will be run from the
-                               current step to the end
+        :param rewind=True: whether to rewind the model first -- if set to
+            false, model will be run from the current step to the end
         :returns: list of outputter info dicts
         '''
         if rewind:

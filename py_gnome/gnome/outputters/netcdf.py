@@ -97,11 +97,11 @@ class NetCDFOutput(Outputter, Serializable):
                 os.path.join(base_dir,'sample_model.nc'), which_data='most')
 
     `which_data` flag is used to set which data to add to the netcdf file:
-        'standard' : the basic stuff most people would want
-        'most': everything the model is tracking except the internal-use-only
-                arrays
-        'all': everything tracked by the model (mostly used for diagnostics of
-               save files)
+    'standard' : the basic stuff most people would want
+    'most': everything the model is tracking except the internal-use-only
+        arrays
+    'all': everything tracked by the model (mostly used for diagnostics of
+        save files)
 
 
     .. note::
@@ -111,7 +111,7 @@ class NetCDFOutput(Outputter, Serializable):
        The attribute: `.arrays_to_output` is a set of the data arrays that
        will be added to the netcdf file. array names may be added to or removed
        from this set before a model run to customize what gets output:
-           `the_netcdf_outputter.arrays_to_output.add['rise_vel']`
+            `the_netcdf_outputter.arrays_to_output.add['rise_vel']`
 
        Since some of the names of the netcdf variables are different from the
        names in the SpillContainer data_arrays, this list uses the netcdf names
@@ -193,7 +193,7 @@ class NetCDFOutput(Outputter, Serializable):
             final step is written regardless of output_timestep
         :type output_last_step: boolean
 
-        use super to pass optional **kwargs to base class __init__ method
+        use super to pass optional kwargs to base class __init__ method
         """
         self._check_netcdf_filename(netcdf_filename)
         self._netcdf_filename = netcdf_filename
@@ -358,22 +358,22 @@ class NetCDFOutput(Outputter, Serializable):
                                written to netcdf_filename + '_uncertain.nc'
 
         :param spills: If 'which_data' flag is set to 'all' or 'most', then
-                       model must provide the model.spills object
-                       (SpillContainerPair object) so NetCDF variables can be
-                       defined for the remaining data arrays.
-                       If spills is None, but which_data flag is 'all' or
-                       'most', a ValueError will be raised.
-                       It does not make sense to write 'all' or 'most' but not
-                       provide 'model.spills'.
+            model must provide the model.spills object
+            (SpillContainerPair object) so NetCDF variables can be
+            defined for the remaining data arrays.
+            If spills is None, but which_data flag is 'all' or
+            'most', a ValueError will be raised.
+            It does not make sense to write 'all' or 'most' but not
+            provide 'model.spills'.
         :type spills: gnome.spill_container.SpillContainerPair object.
 
         .. note::
-        Does not take any other input arguments; however, to keep the interface
-            the same for all outputters, define **kwargs in case future
-            outputters require different arguments.
+            Does not take any other input arguments; however, to keep the
+            interface the same for all outputters, define kwargs in case
+            future outputters require different arguments.
 
         use super to pass model_start_time, cache=None and
-        remaining **kwargs to base class method
+        remaining kwargs to base class method
         """
         super(NetCDFOutput, self).prepare_for_model_run(model_start_time,
                                                         **kwargs)
@@ -589,8 +589,7 @@ class NetCDFOutput(Outputter, Serializable):
             only used if 'time' is None. If both 'time' and 'index' are None,
             return data if file only contains one 'time' else raise an error
         :param which_data='standard': Which data arrays are desired options are
-                                      ('standard', 'most', 'all',
-                                      [list_of_array_names])
+            ('standard', 'most', 'all', [list_of_array_names])
         :type which_data: string or sequence of strings.
 
         :return: A dict containing standard data closest to the indicated
@@ -599,15 +598,12 @@ class NetCDFOutput(Outputter, Serializable):
         Standard data arrays are numpy arrays of size N, where N is number of
         particles released at time step of interest. They are defined by the
         class attribute "standard_arrays", currently:
+
             'current_time_stamp': datetime object associated with this data
-            'positions'         : NX3 array. Corresponds with NetCDF variables
-                                  'longitude', 'latitude', 'depth'
-            'status_codes'      : NX1 array. Corresponds with NetCDF variable
-                                  'status_codes'
-            'spill_num'         : NX1 array. Corresponds with NetCDF variable
-                                  'spill_num'
-            'id'                : NX1 array showing particle id. Corresponds
-                                  with NetCDF variable 'id'
+            'positions'         : NX3 array. NetCDF variables: 'longitude', 'latitude', 'depth'
+            'status_codes'      : NX1 array. NetCDF variable :'status_codes'
+            'spill_num'         : NX1 array. NetCDF variable: 'spill_num'
+            'id'                : NX1 array of particle id. NetCDF variable 'id'
             'mass'              : NX1 array showing 'mass' of each particle
 
         standard_arrays = ['latitude',
@@ -619,6 +615,7 @@ class NetCDFOutput(Outputter, Serializable):
                            'mass',
                            'age',
                            ]
+
         """
         if not os.path.exists(netcdf_file):
             raise IOError('File not found: {0}'.format(netcdf_file))
