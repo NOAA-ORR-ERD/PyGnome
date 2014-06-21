@@ -49,11 +49,11 @@ class ModelSchema(base_schema.ObjType):
                             validator=validators.convertible_to_seconds)
     duration = SchemaNode(extend_colander.TimeDelta())  # max duration?
     uncertain = SchemaNode(Bool())
-    map = SchemaNode(String(), missing=drop)
-    map_id = SchemaNode(String(), missing=drop)
     cache_enabled = SchemaNode(Bool())
 
-    def __init__(self, json_='webapi', **kwargs):
+    def __init__(self, json_='webapi',
+                 maptype='gnome.map.GnomeMap',
+                 **kwargs):
         if json_ == 'save':
             self.add(SpillContainerPairSchema(name='spills'))
         else:
@@ -62,6 +62,15 @@ class ModelSchema(base_schema.ObjType):
         oc_list = ['movers', 'weatherers', 'environment', 'outputters']
         for oc in oc_list:
             self.add(base_schema.OrderedCollectionItemsList(name=oc))
+
+        if maptype:
+            name, scope = (list(reversed(maptype.rsplit('.', 1)))
+                           if maptype.find('.') >= 0
+                           else [maptype, ''])
+            map_module = __import__(scope, globals(), locals(),
+                                    [str(name)], -1)
+            map_class = getattr(map_module, name)
+            self.add(map_class._schema(name='map'))
 
         super(ModelSchema, self).__init__(**kwargs)
 
@@ -74,17 +83,19 @@ class Model(Serializable):
                'weathering_substeps',
                'start_time',
                'duration',
+               'time_step',
                'uncertain',
+               'cache_enabled',
+               'weathering_substeps',
+               'map',
                'movers',
                'weatherers',
                'environment',
                'spills',
-               'outputters',
-               'cache_enabled']
-    _create = ['map']
+               'outputters']
+    _create = []
     _create.extend(_update)
     _state = copy.deepcopy(Serializable._state)
-    _state += Field('map_id', update=True)
     _schema = ModelSchema
 
     # no need to copy parent's _state in this case
@@ -115,6 +126,9 @@ class Model(Serializable):
         if 'obj_type' in dict_:
             dict_.pop('obj_type')
 
+        if 'map' not in dict_ or dict_['map'] == None:
+            dict_['map'] = gnome.map.GnomeMap()
+
         model = object.__new__(cls)
         model.__restore__(**dict_)
         [model.environment.add(obj) for obj in l_env]
@@ -137,7 +151,7 @@ class Model(Serializable):
                  start_time=round_time(datetime.now(), 3600),
                  duration=timedelta(days=1),
                  weathering_substeps=1,
-                 map=gnome.map.GnomeMap(),
+                 map=None,
                  uncertain=False,
                  cache_enabled=False):
         '''
@@ -158,6 +172,9 @@ class Model(Serializable):
         :param cache_enabled=False: Flag for setting whether the model should
             cache results to disk.
         '''
+        if not map:
+            map = gnome.map.GnomeMap()
+
         self.__restore__(time_step, start_time, duration,
                          weathering_substeps,
                          map, uncertain, cache_enabled)
@@ -604,19 +621,6 @@ class Model(Serializable):
 
         return output_data
 
-    def map_to_dict(self):
-        '''
-        returns importable gnome object type as a string
-        '''
-        return '{0}.{1}'.format(self.map.__module__,
-                                self.map.__class__.__name__)
-
-    def map_id_to_dict(self):
-        '''
-        return the ID of map object - used for 'update' option
-        '''
-        return self.map.id
-
     def _callback_add_mover(self, obj_added):
         'Callback after mover has been added'
         if hasattr(obj_added, 'wind'):
@@ -679,10 +683,6 @@ class Model(Serializable):
 
         self._empty_save_dir(saveloc)
         model_json = self.serialize('save')
-
-        json_ = self.map.serialize('save')
-        self._save_json_to_file(saveloc, json_,
-                                '{0}.json'.format(self.map.__class__.__name__))
 
         for coll in ['movers', 'weatherers', 'environment', 'outputters']:
             self._save_collection(saveloc, getattr(self, coll),
@@ -806,7 +806,9 @@ class Model(Serializable):
         dict is kept for loading from save files and for information
         '''
         toserial = self.to_dict(json_)
-        schema = self.__class__._schema(json_)
+
+        schema = self.__class__._schema(json_=json_,
+                                        maptype=toserial['map']['obj_type'])
         return schema.serialize(toserial)
 
     @classmethod
@@ -815,11 +817,14 @@ class Model(Serializable):
         check contents of orderered collections to figure out what schema to
         use for the OC
         '''
-        #if isinstance(json_['movers'], dict):
-        if json_['json_'] == 'save':
-            schema = cls._schema('save')
+        if ('map' in json_ and
+            isinstance(json_['map'], dict) and
+            'obj_type' in json_['map']):
+            schema = cls._schema(json_=json_['json_'],
+                                 maptype=json_['map']['obj_type'])
         else:
-            schema = cls._schema()
+            schema = cls._schema(json_=json_['json_'],
+                                 maptype=None)
 
         return schema.deserialize(json_)
 
@@ -860,10 +865,9 @@ def _load_and_deserialize_json(fname):
     saveloc = os.path.split(fname)[0]
 
     for field in fields:
-        if field.name not in json_data:
-            continue
-        json_data[field.name] = os.path.join(saveloc,
-                                             json_data[field.name])
+        if field.name in json_data:
+            json_data[field.name] = os.path.join(saveloc,
+                                                 json_data[field.name])
 
     if refs:
         refs = {field.name: json_data.pop(field.name)
@@ -967,12 +971,7 @@ def load(saveloc):
 
     model_dict = _load_and_deserialize_json(model_file)
 
-    # create map object and add to model_dict
-    # todo: remove map_id
-    map_type = model_dict['map']
-    mapfile = os.path.join(saveloc, map_type.rsplit('.', 1)[1] + '.json')
-    map_ = _load_json_from_file_to_obj(mapfile)
-    model_dict['map'] = map_  # replace map object in the dict
+    model_dict['map'] = _dict_to_obj(model_dict['map'])
 
     # pop lists that correspond with ordered collections
     # create a list of associated objects and put it back into model_dict
