@@ -26,29 +26,18 @@ class ObjType(MappingSchema):
     json_ = SchemaNode(String())    # either 'webapi' or 'save'
 
 
-class OrderedCollectionIDList(SequenceSchema):
-    '''
-    This schema only contains the IDs of objects in the ordereredcollection
-    '''
-    obj_id = SchemaNode(String())
-
-
-class OrderedCollectionListItemsTuple(TupleSchema):
+class OrderedCollectionItemMap(MappingSchema):
     '''
     This stores the obj_type and obj_index. An alternative schema for
     orderedcollection just stores the IDs (UUIDs) of objects in list
     '''
     obj_type = SchemaNode(String())
-    obj_idx = SchemaNode(String())
+    json_file = SchemaNode(String(), missing=drop)
+    id = SchemaNode(String(), missing=drop)
 
 
 class OrderedCollectionItemsList(SequenceSchema):
-    items = OrderedCollectionListItemsTuple()
-
-
-class OrderedCollection(MappingSchema):
-    dtype = SchemaNode(String(), missing=drop)
-    items = OrderedCollectionItemsList(missing=drop)
+    item = OrderedCollectionItemMap()
 
 
 class LongLat(TupleSchema):

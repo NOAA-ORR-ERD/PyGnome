@@ -685,7 +685,7 @@ class TestAddSpillContainerPair:
         toserial = scp.to_dict(json_)
 
         if json_ == 'webapi':
-            alltrue = [spill.id == toserial[ix] \
+            alltrue = [spill.id == toserial[ix]['id'] \
                             for ix, spill in enumerate(c_spill)]
             assert all(alltrue)
 
@@ -698,10 +698,10 @@ class TestAddSpillContainerPair:
 
                 for (i, spill) in enumerate(enum_spill):
                     if json_ == 'save':
-                        assert toserial[key]['items'][i][0] \
+                        assert toserial[key][i]['obj_type'] \
                             == '{0}.{1}'.format(spill.__module__,
                                 spill.__class__.__name__)
-                        assert toserial[key]['items'][i][1] == i
+                        #assert toserial[key][i]['file_suffix'] == i
 
 
 def test_get_spill_mask():
