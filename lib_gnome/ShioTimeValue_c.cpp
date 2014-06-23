@@ -234,9 +234,9 @@ Boolean ShioTimeValue_c::DaylightSavingTimeInEffect(DateTimeRec *dateStdTime)	//
 	// last Sunday in October at 0200.             
 	
 	//return false;	// code goes here, outside US don't use daylight savings
-// 	if (settings.daylightSavingsTimeFlag == DAYLIGHTSAVINGSOFF) return false; // minus AH 07/09/2012
+// 	if (settings.daylightSavingsTimeFlag == DAYLIGHTSAVINGSOFF) return false; 
 	
-	if (this->daylight_savings_off == DAYLIGHTSAVINGSOFF) return false;	// AH 07/09/2012
+	if (this->daylight_savings_off == DAYLIGHTSAVINGSOFF) return false;	
 	
 	switch(dateStdTime->month)
 	{

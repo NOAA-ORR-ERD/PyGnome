@@ -874,7 +874,11 @@ void TideCurCycleMover::Draw(Rect r, WorldRect view)
 				if (fTimeAlpha==-1)
 				{
 					//Seconds relTime = time - model->GetStartTime();
-					Seconds relTime = time - fModelStartTime;
+					Seconds relTime;
+					if (fModelStartTime==0)	// haven't called prepareformodelstep yet, so get the first (or could set it...)
+						relTime = (*fTimeHdl)[0];
+					else
+						relTime = time - fModelStartTime;
 					startTime = (*fTimeHdl)[fStartData.timeIndex];
 					endTime = (*fTimeHdl)[fEndData.timeIndex];
 					//timeAlpha = (endTime - time)/(double)(endTime - startTime);
