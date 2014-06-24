@@ -660,7 +660,7 @@ class Model(Serializable):
     Following methods are for saving a Model instance or creating a new
     model instance from a saved location
     '''
-    def save(self, saveloc):
+    def save(self, saveloc, name=None):
         """
         save model in json format to user specified saveloc
 
@@ -733,45 +733,48 @@ class Model(Serializable):
             fname = '{0.__class__.__name__}_{1}.json'.format(obj, count)
             model_coll_json[count]['json_file'] = fname
             model_coll_json[count].pop('id')
-            self._save_json_to_file(saveloc, json_, fname)
+            #self._save_json_to_file(saveloc, json_, fname)
+            obj.save(saveloc, fname)
 
-    def _save_json_to_file(self, saveloc, data, name):
-        """
-        write json data to file
-
-        :param dict data: JSON data to be saved
-        :param obj: gnome object corresponding w/ data
-        """
-
-        fname = os.path.join(saveloc, name)
-        data = self._move_data_file(saveloc, data)  # if there is a
-
-        with open(fname, 'w') as outfile:
-            json.dump(data, outfile, indent=True)
-
-    def _move_data_file(self, saveloc, json_):
-        """
-        Look at _state attribute of object. Find all fields with 'isdatafile'
-        attribute as True. If there is a key in to_json corresponding with
-        'name' of the fields with True 'isdatafile' attribute then move that
-        datafile and update the key in the to_json to point to new location
-
-        TODO: maybe this belongs in serializable base class? Revisit this
-        """
-        _state = eval('{0}._state'.format(json_['obj_type']))
-        fields = _state.get_field_by_attribute('isdatafile')
-
-        for field in fields:
-            if field.name not in json_:
-                continue
-
-            value = json_[field.name]
-
-            if os.path.exists(value) and os.path.isfile(value):
-                shutil.copy(value, saveloc)
-                json_[field.name] = os.path.split(json_[field.name])[1]
-
-        return json_
+#==============================================================================
+#     def _save_json_to_file(self, saveloc, data, name):
+#         """
+#         write json data to file
+# 
+#         :param dict data: JSON data to be saved
+#         :param obj: gnome object corresponding w/ data
+#         """
+# 
+#         fname = os.path.join(saveloc, name)
+#         data = self._move_data_file(saveloc, data)  # if there is a
+# 
+#         with open(fname, 'w') as outfile:
+#             json.dump(data, outfile, indent=True)
+# 
+#     def _move_data_file(self, saveloc, json_):
+#         """
+#         Look at _state attribute of object. Find all fields with 'isdatafile'
+#         attribute as True. If there is a key in to_json corresponding with
+#         'name' of the fields with True 'isdatafile' attribute then move that
+#         datafile and update the key in the to_json to point to new location
+# 
+#         TODO: maybe this belongs in serializable base class? Revisit this
+#         """
+#         _state = eval('{0}._state'.format(json_['obj_type']))
+#         fields = _state.get_field_by_attribute('isdatafile')
+# 
+#         for field in fields:
+#             if field.name not in json_:
+#                 continue
+# 
+#             value = json_[field.name]
+# 
+#             if os.path.exists(value) and os.path.isfile(value):
+#                 shutil.copy(value, saveloc)
+#                 json_[field.name] = os.path.split(json_[field.name])[1]
+# 
+#         return json_
+#==============================================================================
 
     def _save_spill_data(self, datafile):
         """ save the data arrays for current timestep to NetCDF """

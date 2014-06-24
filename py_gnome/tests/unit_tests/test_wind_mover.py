@@ -36,6 +36,7 @@ from conftest import sample_sc_release
 datadir = os.path.join(os.path.dirname(__file__), r'sample_data')
 file_ = os.path.join(datadir, r'WindDataFromGnome.WND')
 file2_ = os.path.join(datadir, r'WindDataFromGnomeCardinal.WND')
+saveloc = os.path.join(os.path.dirname(__file__), './temp_save')
 
 
 def test_exceptions():
@@ -425,6 +426,7 @@ def test_wind_mover_from_file():
     print wm.wind.filename
     assert wm.wind.filename == file_
 
+
 def test_wind_mover_from_file_cardinal():
     wm = wind_mover_from_file(file2_)
     print wm.wind.filename
@@ -462,6 +464,19 @@ def test_serialize_deserialize(wind_circ, json_):
         wm.update_from_dict(dict_)
 
         assert wm.wind == wind_circ['wind']
+
+
+def test_save_load():
+    """
+    tests and illustrates the funcitonality of save/load for
+    WindMover
+    """
+    wind = Wind(filename=file_)
+    wm = WindMover(wind)
+    wm.save(saveloc, name='WindMover_save_test.json')
+    # todo: decide if following should work - curently it does but maybe
+    # we don't want it to work
+    #wm.save(saveloc, name='WindMover_save_test.json')
 
 
 def test_new_from_dict():

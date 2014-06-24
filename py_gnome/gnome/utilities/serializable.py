@@ -4,11 +4,15 @@ Created on Feb 15, 2013
 
 import copy
 import inspect
+import os
+import json
+import shutil
 
 import numpy
 np = numpy
 
 from gnome import GnomeId
+from gnome.persist import Savable
 
 
 class Field(object):  # ,serializable.Serializable):
@@ -28,10 +32,11 @@ class Field(object):  # ,serializable.Serializable):
         If the property describes a data file that will need to be moved
         when persisting the model, isdatafile should be True.
         The gnome.persist.scenario module contains a Scenario class that loads
-        and saves a model.
-        It looks for these attributes to correctly save/load it.
+        and saves a model. It looks for these attributes to correctly save/load
+        it.
 
         It sets all attributes to False by default.
+
         :param str name: Name of the property being described by this Field
             object
         :param bool isdatafile: Is the property a datafile that should be
@@ -50,8 +55,9 @@ class Field(object):  # ,serializable.Serializable):
             stored as a reference. The Model.load function is responsible for
             hooking up the correct Wind object to the WindMover, Weatherer etc
 
-            NOTE: save_reference currently is only used when the field is
-            stored with 'save' flag.
+            .. note:: save_reference currently is only used when the field is
+                stored with 'save' flag.
+
         :param bool test_for_eq: bool with default value of True
             when checking equality (__eq__()) of two gnome
             objects that are serializable, look for equality of attributes
@@ -61,6 +67,7 @@ class Field(object):  # ,serializable.Serializable):
             that read data from file will point to different location. The
             objects are still equal. To avoid this problem, we can customize
             whether to use a field when testing for equality or not.
+
         """
         self.name = name
         self.isdatafile = isdatafile
@@ -435,7 +442,7 @@ class State(object):
         return names
 
 
-class Serializable(GnomeId):
+class Serializable(GnomeId, Savable):
 
     """
     contains the to_dict and update_from_dict method to output properties of
@@ -444,6 +451,9 @@ class Serializable(GnomeId):
     This class is intended as a mixin so to_dict and update_from_dict become
     part of the object and the object must define a _state attribute of type
     State().
+
+    It mixes in the GnomeId class since all Serializable gnome objects will
+    have an Id as well
 
     The default _state=State(save=['id']) is a static variable for this class
     It uses the same convention as State to obtain the lists, 'update' for
@@ -780,3 +790,6 @@ class Serializable(GnomeId):
         instance of the object described by the json schema
         """
         return cls._schema().deserialize(json_)
+
+
+
