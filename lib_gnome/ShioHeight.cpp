@@ -16,13 +16,6 @@
 #include "Replacements.h"
 #endif
 
-#ifdef MAC
-#ifdef MPW
-#pragma SEGMENT SHIO
-#endif
-#endif
-
-
 
 using namespace std;
 
@@ -848,6 +841,8 @@ Error:
 	//if(TArrayPtr) {free(TArrayPtr); TArrayPtr = NULL;}
 	if (HArrayPtr) {delete [] HArrayPtr; HArrayPtr=0;}
 	if (TArrayPtr) {delete [] TArrayPtr; TArrayPtr=0;}
+	if (pSlopesMult) {delete [] pSlopesMult; pSlopesMult=0;}
+	if (pSlopesAdd) {delete [] pSlopesAdd; pSlopesAdd=0;}
 
 	return(errorFlag);
 }
