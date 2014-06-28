@@ -26,7 +26,10 @@ from gnome.weatherers import Weatherer
 
 from gnome.outputters import Outputter, NetCDFOutput
 
-from gnome.persist import (extend_colander, base_schema, validators)
+from gnome.persist import (extend_colander,
+                           base_schema,
+                           validators,
+                           References)
 
 
 class SpillContainerPairSchema(MappingSchema):
@@ -660,65 +663,44 @@ class Model(Serializable):
     Following methods are for saving a Model instance or creating a new
     model instance from a saved location
     '''
-    def save(self, saveloc, name=None):
-        """
-        save model in json format to user specified saveloc
-
-        :param saveloc: A valid directory. Model files are either persisted
-                        here or a new model is re-created from the files
-                        stored here. The files are clobbered when save() is
-                        called.
-        :type saveloc: A path as a string or unicode
-        """
-        path_, savedir = os.path.split(saveloc)
-        if path_ == '':
-            path_ = '.'
-
-        if not os.path.exists(path_):
-            raise ValueError('"{0}" does not exist. \nCannot create "{1}"'
-                             .format(path_, savedir))
-
-        if not os.path.exists(saveloc):
-            os.mkdir(saveloc)
-
+    def save(self, saveloc, references=None, name=None):
+        # Note: Defining references=References() in the function definition
+        # keeps the references object in memory between tests - it changes the
+        # scope of Referneces() to be outside the Model() instance. We don't
+        # want this
+        references = (references, References())[references is None]
+        self._make_saveloc(saveloc)
         self._empty_save_dir(saveloc)
-        model_json = self.serialize('save')
-
-        for coll in ['movers', 'weatherers', 'environment', 'outputters']:
-            self._save_collection(saveloc, getattr(self, coll),
-                                    model_json[coll])
+        json_ = self.serialize('save')
+        for oc in ['movers', 'weatherers', 'environment', 'outputters']:
+            coll_ = getattr(self, oc)
+            self._save_collection(saveloc, coll_, references, json_[oc])
 
         for sc in self.spills.items():
             if sc.uncertain:
                 key = 'uncertain_spills'
             else:
                 key = 'certain_spills'
-            self._save_collection(saveloc, sc.spills,
-                                    model_json['spills'][key])
 
-        # persist model _state since middle of run
-        if self.current_time_step > -1:
-            self._save_spill_data(os.path.join(saveloc,
-                                               'spills_data_arrays.nc'))
+            self._save_collection(saveloc, sc.spills, references,
+                                                    json_['spills'][key])
 
-        self._save_json_to_file(saveloc, model_json,
-                                '{0}.json'.format(self.__class__.__name__))
+        # there should be no more references
+        self._json_to_saveloc(json_, saveloc, references, name)
+        if references.reference(self) != name:
+            # todo: want a warning here instead of an exception
+            raise Exception("{0} already exists, cannot name "
+                "the model's json file: {0}".format(name))
+            pass
+        return references
 
-    def _save_collection(self, saveloc, coll_, model_coll_json):
+    def _save_collection(self, saveloc, coll_, refs, coll_json):
         """
-        Function loops over an orderedcollection or any other iterable
-        containing a list of objects. It calls the to_dict method for each
-        object, then converts it o valid json (dict_to_json),
-        and finally saves it to file (_save_json_to_file)
+        Reference objects inside OrderedCollections. Since the OC itself
+        isn't a reference but the objects in the list are a reference, do
+        something a little differently here
 
         :param OrderedCollection coll_: ordered collection to be saved
-
-        Note: The movers and weatherer objects reference the environment
-        collection. If a field is saved as reference (field.save_reference is
-        True), then this function adds json_[field.name] = index where
-        index is the index into the environment array for the reference
-        object. Currently, only objects in the environment collection are
-        referenced by movers.
         """
         for count, obj in enumerate(coll_):
             json_ = obj.serialize('save')
@@ -729,52 +711,15 @@ class Model(Serializable):
                         ref_obj = getattr(obj, field.name)
                         index = self.environment.index(ref_obj)
                         json_[field.name] = index
-
-            fname = '{0.__class__.__name__}_{1}.json'.format(obj, count)
-            model_coll_json[count]['json_file'] = fname
-            model_coll_json[count].pop('id')
-            #self._save_json_to_file(saveloc, json_, fname)
-            obj.save(saveloc, fname)
-
-#==============================================================================
-#     def _save_json_to_file(self, saveloc, data, name):
-#         """
-#         write json data to file
-# 
-#         :param dict data: JSON data to be saved
-#         :param obj: gnome object corresponding w/ data
-#         """
-# 
-#         fname = os.path.join(saveloc, name)
-#         data = self._move_data_file(saveloc, data)  # if there is a
-# 
-#         with open(fname, 'w') as outfile:
-#             json.dump(data, outfile, indent=True)
-# 
-#     def _move_data_file(self, saveloc, json_):
-#         """
-#         Look at _state attribute of object. Find all fields with 'isdatafile'
-#         attribute as True. If there is a key in to_json corresponding with
-#         'name' of the fields with True 'isdatafile' attribute then move that
-#         datafile and update the key in the to_json to point to new location
-# 
-#         TODO: maybe this belongs in serializable base class? Revisit this
-#         """
-#         _state = eval('{0}._state'.format(json_['obj_type']))
-#         fields = _state.get_field_by_attribute('isdatafile')
-# 
-#         for field in fields:
-#             if field.name not in json_:
-#                 continue
-# 
-#             value = json_[field.name]
-# 
-#             if os.path.exists(value) and os.path.isfile(value):
-#                 shutil.copy(value, saveloc)
-#                 json_[field.name] = os.path.split(json_[field.name])[1]
-# 
-#         return json_
-#==============================================================================
+            obj_ref = refs.get_reference(obj)
+            if obj_ref is None:
+                # try following name - if 'fname' already exists in references,
+                # then obj.save() assigns a different name to file
+                fname = '{0.__class__.__name__}_{1}.json'.format(obj, count)
+                obj.save(saveloc, refs, fname)
+                coll_json[count]['id'] = refs.reference(obj)
+            else:
+                coll_json[count]['id'] = obj_ref
 
     def _save_spill_data(self, datafile):
         """ save the data arrays for current timestep to NetCDF """

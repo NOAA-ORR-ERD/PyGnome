@@ -11,6 +11,7 @@ import pytest
 from gnome.movers import GridWindMover
 from gnome.utilities import time_utils
 from gnome.utilities.remote_data import get_datafile
+from gnome.persist import load
 
 from conftest import sample_sc_release
 # default settings are the same for both objects
@@ -180,15 +181,17 @@ def _uncertain_loop(pSpill, wind):
     return u_delta
 
 
-def test_new_from_dict():
+def test_serialize_deserialize():
     """
     test to_dict function for GridWind object
     create a new grid_wind object and make sure it has same properties
     """
 
-    grid_wind = GridWindMover(wind_file,topology_file)
-    dict_ = grid_wind.to_dict('save')
+    grid_wind = GridWindMover(wind_file, topology_file)
+    serial = grid_wind.serialize('webapi')
+    dict_ = GridWindMover.deserialize(serial)
     gw2 = GridWindMover.new_from_dict(dict_)
+
     assert grid_wind == gw2
 
-
+    grid_wind.update_from_dict(dict_)

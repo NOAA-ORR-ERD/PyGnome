@@ -21,7 +21,8 @@ from gnome.utilities.remote_data import get_datafile
 from gnome.map import MapFromBNA
 from gnome.environment import Wind, Tide
 
-from gnome.model import Model, load
+from gnome.model import Model
+from gnome.persist import load
 from gnome.spill import point_line_release_spill
 from gnome.movers import RandomMover, WindMover, CatsMover
 from gnome.weatherers import Weatherer
@@ -159,27 +160,14 @@ def test_init_exception(images_dir):
 
 
 def test_dir_gets_created(images_dir):
-    model = make_model(images_dir)
+    model = make_model(images_dir, True)
     assert not os.path.exists(saveloc_)
     model.save(os.path.join(saveloc_))
     assert os.path.exists(saveloc_)
 
 
-def test_exception_no_model_to_load(images_dir):
-    '''
-    raises exception since the saveloc_ from where to load the model is empty.
-    There are no Model.txt files that can be loaded
-    '''
-    try:
-        os.remove(os.path.join(saveloc_, 'Model.json'))
-    except:
-        pass
-    with raises(ValueError):
-        load(os.path.join(saveloc_))
-
-
-@pytest.mark.slow
-@pytest.mark.parametrize('uncertain', [False, True])
+#@pytest.mark.slow
+@pytest.mark.parametrize('uncertain', [False])#, True])
 def test_save_load_model(images_dir, uncertain):
     '''
     create a model, save it, then load it back up and check it is equal to
@@ -188,10 +176,10 @@ def test_save_load_model(images_dir, uncertain):
     model = make_model(images_dir, uncertain)
 
     print 'saving scenario ..'
-    model.save(saveloc_)
+    model.save(saveloc_, name='Model.json')
 
     print 'loading scenario ..'
-    model2 = load(saveloc_)
+    model2 = load(os.path.join(saveloc_, 'Model.json'))
 
     assert model == model2
 

@@ -9,7 +9,7 @@ from glob import glob
 import numpy as np
 from geojson import Point, Feature, FeatureCollection, dump
 
-from gnome.utilities.serializable import Serializable
+from gnome.utilities.serializable import Serializable, Field
 
 from .outputter import Outputter
 
@@ -57,6 +57,12 @@ class GeoJson(Outputter, Serializable):
     outputfile_format = 'geojson_%05i.geojson'
     outputfile_glob = 'geojson_*.geojson'
     _state = copy.deepcopy(Outputter._state)
+
+    # need a schema and also need to override save so output_dir
+    # is saved correctly - maybe point it to saveloc
+    _state += [Field('round_data', update=True, save=True),
+               Field('round_to', update=True, save=True),
+               Field('output_dir', update=True, save=True)]
 
     def __init__(self,
         round_data=True,

@@ -494,9 +494,9 @@ class CurrentCycleMover(CyMover, serializable.Serializable):
         self._tide = None
         if tide is not None:
             self.tide = tide
-            print "self._tide"
-            print self._tide
-            print self.tide
+            #print "self._tide"
+            #print self._tide
+            #print self.tide
 
         super(CurrentCycleMover, self).__init__(**kwargs)
 

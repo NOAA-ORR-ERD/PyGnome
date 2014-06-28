@@ -177,7 +177,7 @@ class MapCanvas(object):
                             ( (min_long, min_lat),
                               (max_long, max_lat) )
         """
-        print "resetting viewport"
+        #print "resetting viewport"
         self.projection.set_scale(viewport_BB, self.image_size)
 
     @property

@@ -50,7 +50,7 @@ class Renderer(Outputter, MapCanvas):
     foreground_filename_glob = 'foreground_?????.png'
 
     # todo: how should images_dir be saved? Absolute? Currently, it is relative
-    _update = ['viewport', 'map_BB', 'images_dir', 'image_size', 'draw_ontop']
+    _update = ['viewport', 'map_BB', 'image_size', 'draw_ontop']
     _create = ['image_size', 'projection_class', 'draw_ontop']
 
     _create.extend(_update)
@@ -58,6 +58,7 @@ class Renderer(Outputter, MapCanvas):
     _state.add(save=_create, update=_update)
     _state.add_field(Field('filename', isdatafile=True,
                     save=True, read=True, test_for_eq=False))
+    _state += Field('images_dir', save=True, update=True, test_for_eq=False)
     _schema = RendererSchema
 
     @classmethod
@@ -294,3 +295,25 @@ class Renderer(Outputter, MapCanvas):
 
         return '{0}.{1}'.format(self.projection.__module__,
                                 self.projection.__class__.__name__)
+
+    def save(self, saveloc, references=None, name=None):
+        '''
+        update the 'images_dir' key in the json_ to point to directory
+        inside saveloc, then save the json
+        '''
+        json_ = self.serialize('save')
+        out_dir = os.path.split(json_['images_dir'])[1]
+        os.mkdir(os.path.join(saveloc, out_dir))
+
+        # store images_dir relative to saveloc
+        json_['images_dir'] = os.path.join('./', out_dir)
+
+        return self._json_to_saveloc(json_, saveloc, references, name)
+
+    @classmethod
+    def load(cls, saveloc, json_data, references=None):
+        '''
+        append saveloc path to 'images_dir' then call super to load object
+        '''
+        json_data['images_dir'] = os.path.join(saveloc, json_data['images_dir'])
+        return super(Renderer, cls).load(saveloc, json_data, references)

@@ -11,6 +11,7 @@ import pytest
 from gnome.movers import GridCurrentMover
 from gnome.utilities import time_utils
 from gnome.utilities.remote_data import get_datafile
+from gnome.persist import load
 
 from conftest import sample_sc_release
 
@@ -135,6 +136,7 @@ def test_scale_value():
     print c_grid.current_scale
     assert c_grid.current_scale == 2
 
+
 def test_extrapolate():
     """
     test setting / getting properties
@@ -143,6 +145,7 @@ def test_extrapolate():
     c_grid.extrapolate = True
     print c_grid.extrapolate
     assert c_grid.extrapolate == True
+
 
 def test_offset_time():
     """
@@ -185,15 +188,17 @@ def _uncertain_loop(pSpill, curr):
     return u_delta
 
 
-def test_new_from_dict():
+def test_serialize_deserialize():
     """
     test to_dict function for Grid Current object
     create a new grid_current object and make sure it has same properties
     """
 
-    c_grid = GridCurrentMover(curr_file,topology_file)
-    dict_ = c_grid.to_dict('save')
+    c_grid = GridCurrentMover(curr_file, topology_file)
+    serial = c_grid.serialize('webapi')
+    dict_ = GridCurrentMover.deserialize(serial)
     c2 = GridCurrentMover.new_from_dict(dict_)
     assert c_grid == c2
 
+    c_grid.update_from_dict(dict_)  # tests no failures
 

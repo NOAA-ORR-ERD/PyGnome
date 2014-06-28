@@ -5,6 +5,8 @@ import os
 import shutil
 import json
 
+import gnome    # used in eval to 'load' gnome object from json
+
 
 class References(object):
     '''
@@ -17,19 +19,61 @@ class References(object):
     def __init__(self):
         self._refs = {}
 
-    def reference(self, obj):
+    def __contains__(self, obj):
+        if self.get_reference(obj):
+            return True
+        else:
+            return False
+
+    def get_reference(self, obj):
         '''
-        Get a unique reference to the object. By default this string is the
-        filename in which the json for the object is stored
+        return key if obj already exists in references list
+        else return None
         '''
-        # return key if obj already exists in references list
         for key, item in self._refs.iteritems():
             if item is obj:
                 return key
+        return None
 
-        ref = "{0}_{1}.json".format(obj.__class__.__name__, len(self._refs))
-        self._refs[ref] = obj
-        return ref
+    def _add_reference_with_name(self, obj, name):
+        '''
+        add an object reference specified by 'name'
+        '''
+        if self.retrieve(name):
+            if self.retrieve(name) is not obj:
+                raise ValueError('a different object is referenced by '
+                    '{0}'.format(name))
+        else:
+            # make sure object doesn't already exist
+            if self.get_reference(obj):
+                raise ValueError('this object is already referenced by '
+                    '{0}'.format(self.get_reference(obj)))
+
+            else:
+                self._refs[name] = obj
+
+    def reference(self, obj, name=None):
+        '''
+        Get a unique reference to the object. By default this string is the
+        filename in which the json for the object is stored
+        If a reference to obj already exists, then it is returned
+
+        :param obj: object for which a reference must be added
+        :param name=None: add an object reference specified by 'name' for
+            filename
+        '''
+        if name is not None:
+            return self._add_reference_with_name(obj, name)
+
+        key = self.get_reference(obj)
+        if key is not None:
+            return key
+
+        key = "{0}_{1}.json".format(obj.__class__.__name__,
+                len(self._refs))
+
+        self._refs[key] = obj
+        return key
 
     def retrieve(self, ref):
         '''
@@ -41,7 +85,7 @@ class References(object):
             return None
 
 
-def load(fname, references):
+def load(fname, references=None):
     '''
     read json from file and load the appropriate object
     This is a general purpose load method that look at the json['obj_type']
@@ -51,10 +95,13 @@ def load(fname, references):
         json_data = json.load(infile)
 
     # create a reference to the object being loaded
+    saveloc, name = os.path.split(fname)
     obj_type = json_data.pop('obj_type')
-    to_eval = ('{0}.load(saveloc, json_data, references)'.format(obj_type))
-    obj = eval(to_eval)
-    references[fname] = obj
+    obj = eval(obj_type).load(saveloc, json_data, references)
+
+    # after loading, add the object to references
+    if references:
+        references.reference(obj, name)
     return obj
 
 
@@ -64,6 +111,66 @@ class Savable(object):
     gnome objects. Mix this in with the Serializable class so all gnome objects
     can save/load themselves
     '''
+    def _json_to_saveloc(self,
+                         json_,
+                         saveloc,
+                         references=None,
+                         name=None):
+        '''
+        break up save into two steps so child classes can modify json if
+        desired before saving
+        '''
+
+        references = (references, References())[references is None]
+        for field in self._state:
+            if (field.save_reference and
+                getattr(self, field.name) is not None):
+                '''
+                attribute is stored as a reference
+                json_ will not contain a key for the referenced objects
+                Add a key with the reference
+                '''
+                obj = getattr(self, field.name)
+                ref = references.reference(obj)
+                json_[field.name] = ref
+                if not os.path.exists(os.path.join(saveloc, ref)):
+                    obj.save(saveloc, references, name=ref)
+
+        f_name = \
+            (name, '{0}.json'.format(self.__class__.__name__))[name is None]
+
+        # add yourself to references
+        try:
+            references.reference(self, f_name)
+        except ValueError:
+            # f_name already assigned to an object, so let References() assign
+            # a different filename
+            f_name = references.reference(self)
+
+        # move datafiles to saveloc
+        json_ = self._move_data_file(saveloc, json_)
+        full_name = os.path.join(saveloc, f_name)
+
+        with open(full_name, 'w') as outfile:
+            json.dump(json_, outfile, indent=True)
+
+        return references
+
+    def _make_saveloc(self, saveloc):
+        '''
+        Create the last leave in saveloc path if it doesn't exist
+        '''
+        path_, savedir = os.path.split(saveloc)
+        if path_ == '':
+            path_ = '.'
+
+        if not os.path.exists(path_):
+            raise ValueError('"{0}" does not exist. \nCannot create "{1}"'
+                             .format(path_, savedir))
+
+        if not os.path.exists(saveloc):
+            os.mkdir(saveloc)
+
     def save(self, saveloc, references=None, name=None):
         """
         save object serialized to json format to user specified saveloc
@@ -81,40 +188,10 @@ class Savable(object):
             how a reference a nested object.
         """
 
+        self._make_saveloc(saveloc)
         json_ = self.serialize('save')
-        if references is None:
-            refs = References()
-
-        for field in self._state:
-            if (field.save_reference and
-                getattr(self, field.name) is not None):
-                '''
-                attribute is stored as a reference
-                json_ will not contain a key for the referenced objects
-                Add a key with the reference
-                '''
-                obj = getattr(self, field.name)
-                ref = refs.reference(obj)
-                json_[field.name] = ref
-                obj.save(saveloc, references=references, name=ref)
-
-        f_name = \
-            (name, '{0}.json'.format(self.__class__.__name__))[name is None]
-        self._save_json_to_file(saveloc, json_, f_name)
-
-    def _save_json_to_file(self, saveloc, data, name):
-        """
-        write json data to file
-
-        :param dict data: JSON data to be saved
-        :param obj: gnome object corresponding w/ data
-        """
-
-        fname = os.path.join(saveloc, name)
-        data = self._move_data_file(saveloc, data)  # if there is a
-
-        with open(fname, 'w') as outfile:
-            json.dump(data, outfile, indent=True)
+        return self._json_to_saveloc(json_, saveloc, references=references,
+            name=name)
 
     def _move_data_file(self, saveloc, json_):
         """
@@ -132,10 +209,12 @@ class Savable(object):
                 continue
 
             value = json_[field.name]
+            if value != os.path.join(saveloc, os.path.split(value)[1]):
+                if os.path.exists(value) and os.path.isfile(value):
+                    shutil.copy(value, saveloc)
 
-            if os.path.exists(value) and os.path.isfile(value):
-                shutil.copy(value, saveloc)
-                json_[field.name] = os.path.split(json_[field.name])[1]
+            # always want to update the reference so it is relative to saveloc
+            json_[field.name] = os.path.split(value)[1]
 
         return json_
 
@@ -146,30 +225,31 @@ class Savable(object):
 
         :param saveloc: location of data files
         '''
-        if references is None:
-            references = References()
-
         datafiles = cls._state.get_field_by_attribute('isdatafile')
         ref_fields = cls._state.get_field_by_attribute('save_reference')
 
+        # fix datafiles path from relative to absolute so we can load datafiles
         for field in datafiles:
             if field.name in json_data:
                 json_data[field.name] = os.path.join(saveloc,
                                                      json_data[field.name])
 
         # pop references from json_data, create objects for them
+        ref_dict = {}
         if ref_fields:
-            ref_dict = {}
             for field in ref_fields:
-                ref_filename = os.path.join(saveloc, json_data.pop(field.name))
-                ref_obj = load(ref_filename, references)
-                ref_dict[field.name] = ref_obj
+                if field.name in json_data:
+                    ref_filename = os.path.join(saveloc,
+                                                    json_data.pop(field.name))
+                    ref_obj = load(ref_filename, references)
+                    ref_dict[field.name] = ref_obj
 
         # deserialize after removing references
-        to_eval = ('{0}.deserialize(json_data)'.format(json_data['obj_type']))
-        _to_dict = eval(to_eval)
+        _to_dict = cls.deserialize(json_data)
 
-        if ref_fields:
-            _to_dict.update(ref_fields)
+        if ref_dict:
+            _to_dict.update(ref_dict)
 
-        return _to_dict
+        obj = cls.new_from_dict(_to_dict)
+
+        return obj

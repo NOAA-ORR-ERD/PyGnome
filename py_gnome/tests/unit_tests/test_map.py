@@ -17,6 +17,7 @@ from gnome.basic_types import oil_status, status_code_type
 from gnome.utilities.projections import NoProjection
 
 from gnome.map import MapFromBNA, RasterMap
+from gnome.persist import load
 
 from conftest import sample_sc_release
 
@@ -551,20 +552,17 @@ class Test_MapfromBNA:
         assert not self.bna_map.on_map(point)
 
 
-def test_MapfromBNA_new_from_dict():
+def test_serialize_deserialize():
     """
     test create new object from to_dict
     """
 
     gmap = gnome.map.MapFromBNA(testmap, 6)
-    dict_ = gmap.to_dict('save')
+    serial = gmap.serialize('webapi')
+    dict_ = gnome.map.MapFromBNA.deserialize(serial)
     map2 = gmap.new_from_dict(dict_)
     assert gmap == map2
 
-
-def test_MapfromBNA_from_dict():
-    gmap = gnome.map.MapFromBNA(testmap, 6)
-    dict_ = gmap.to_dict()
     dict_['map_bounds'] = ((-10, 10), (10, 10), (10, -10), (-10, -10))
     dict_['spillable_area'] = ((-5, 5), (5, 5), (5, -5), (-5, -5))
     dict_['refloat_halflife'] = 2

@@ -14,7 +14,7 @@ from gnome.outputters import GeoJson
 from gnome.spill import SpatialRelease, Spill, point_line_release_spill
 from gnome.utilities.time_utils import date_to_sec
 from gnome.basic_types import oil_status
-
+from gnome.persist import load
 
 basedir = os.path.dirname(__file__)
 datadir = os.path.join(basedir, 'sample_data')

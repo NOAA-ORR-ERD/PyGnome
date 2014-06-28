@@ -5,6 +5,7 @@ These are also tested in the test_spill_container module since it allows for
 more comprehensive testing
 '''
 from datetime import datetime, timedelta
+import os
 
 import pytest
 from pytest import raises
@@ -28,6 +29,7 @@ from gnome.utilities.distributions import (NormalDistribution,
 
 from gnome.spill import Spill, Release
 from gnome.db.oil_library.oil_props import OilProps
+from gnome.persist import load
 
 from conftest import mock_append_data_arrays
 
@@ -372,7 +374,22 @@ def test_serialize_deserialize(json_):
     n_et = ElementType.new_from_dict(dict_)
     # following is not a requirement for webapi, but it is infact the case
     assert n_et == et
-    #==========================================================================
-    # if json_ == 'save':
-    #     assert n_et == et
-    #==========================================================================
+
+
+test_l = []
+test_l.extend(fcn_list)
+test_l.extend([ElementType(initializers={'init': fcn}) for fcn in fcn_list])
+test_l.append(floating())
+
+
+@pytest.mark.parametrize(("test_obj"), test_l)
+def test_save_load(clean_temp, test_obj):
+    '''
+    test save/load for initializers and for ElementType objects containing
+    each initializer
+    These are stored as nested objects in the Spill but this should also work
+    so test it here
+    '''
+    refs = test_obj.save(clean_temp)
+    test_obj2 = load(os.path.join(clean_temp, refs.reference(test_obj)))
+    assert test_obj == test_obj2

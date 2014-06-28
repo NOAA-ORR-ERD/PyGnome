@@ -130,3 +130,10 @@ def test_to_datetime_value_2d_uv(wind_ts, out_ts_format):
     assert np.all(out_dtval.time == wind_ts['dtv_rq'].time)
     assert np.allclose(out_dtval.value, wind_ts['dtv_uv'].value, atol,
                        rtol)
+
+
+def test_to_datetime_value_2d_output_array(wind_ts):
+    out_array = to_datetime_value_2d(wind_ts['tv'], 'r-theta')
+    print "--------------"
+    print type(out_array[:2])
+    print type(out_array[0])
