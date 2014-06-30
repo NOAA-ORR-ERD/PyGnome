@@ -1,11 +1,11 @@
 # GNOME2 #
 
-## [Project Documentation](http://noaa-orr-erd.github.io/GNOME2/) ##
+## [Project Documentation](http://noaa-orr-erd.github.io/PyGnome/) ##
 ## [FAQ -- Troubleshoot](https://github.com/NOAA-ORR-ERD/GNOME2/wiki/FAQ---Troubleshoot) ##
 
 <img src="http://gnome.orr.noaa.gov/py_gnome_testdata/GnomeIcon128.png" alt="Gnome Logo" title="Gnome" align="right">
 
-**GNOME** ( General NOAA Operational Modeling Environment ) is a modeling tool
+**GNOME** (General NOAA Operational Modeling Environment) is a modeling tool
 developed by the National Oceanic and Atmospheric Administration (**NOAA**),
 Office of Response and Restoration (**ORR**), Emergency Response Division.
 
@@ -26,14 +26,11 @@ Since this is development work, it might be good to create and run this in a vir
 [Virtual env](http://www.virtualenv.org/en/latest/) and 
 [Virtual env wrapper](http://virtualenvwrapper.readthedocs.org/en/latest/) eases management of virtual environments.
 
-A virtualenv is *not required* to run PyGnome or WebGnome.
+A virtualenv is *not required* to run PyGnome.
 Depending on your access level/permissions, you may require a virtualenv if you cannot 
 install python packages in the global site-packages. 
 
 ### Linux (Tested in 32-bit, raring 13.04) ###
-
-- PyGnome uses NetCDF and also currently uses PIL. 
-- WebGnome requires libxml and npm.
 
 For Linux use appropriate package manager (apt-get on ubuntu) to download/install binary dependencies.
 
@@ -47,23 +44,15 @@ For Linux use appropriate package manager (apt-get on ubuntu) to download/instal
 
    This did not build symlinks to libraries for me in /usr/lib, so had to
    manually create them:  
-```
-    $ sudo ln -s /usr/lib/`uname -i`-linux-gnu/libfreetype.so /usr/lib/  
-    $ sudo ln -s /usr/lib/`uname -i`-linux-gnu/libjpeg.so /usr/lib/  
-    $ sudo ln -s /usr/lib/`uname -i`-linux-gnu/libz.so /usr/lib/  
-```
+	```
+	    $ sudo ln -s /usr/lib/`uname -i`-linux-gnu/libfreetype.so /usr/lib/
+	    $ sudo ln -s /usr/lib/`uname -i`-linux-gnu/libjpeg.so /usr/lib/
+	    $ sudo ln -s /usr/lib/`uname -i`-linux-gnu/libz.so /usr/lib/
+	```
     
 2. netCDF4 python module requires NetCDF libraries: libhdf5-serial-dev, libnetcdf-dev
 
-3. libxml used by webgnome requires: libxml2-dev, libxslt1-dev
-
-4. npm is a javascript package manager used by webgnome
-
-```
-    $ sudo apt-get install libhdf5-serial-dev libnetcdf-dev libxml2-dev libxslt1-dev npm
-```
-
-5. The following python packages, documented in PyGnome's requirements.txt,
+3. The following python packages, documented in PyGnome's requirements.txt,
    may need to be manually installed. Binaries for 
    [Numpy](http://packages.ubuntu.com/raring/python/python-numpy) and 
    [Cython](http://packages.ubuntu.com/raring/python/cython) can be installed using apt-get. 
@@ -82,18 +71,10 @@ For Linux use appropriate package manager (apt-get on ubuntu) to download/instal
         $ pip install PIL
    ```
 
-6. python-cjson is a webgnome dependency that can be pip installed. Currently commented in requirements.txt
-
 The remaining dependencies are python packages and can be installed using pip install -r requirements.txt  
 See [Build PyGnome](https://github.com/NOAA-ORR-ERD/GNOME2#build-pygnome) section below.
 
 ### Windows 7 (32-bit, using VS-2008 express edition) ###
-
-- PyGnome requires PIL. 
-- PyGnome statically links against the netcdf library, included with PyGnome source code
-
-Binary dependencies for PyGnome can obtained from
-[Chris Gohlke's website](http://www.lfd.uci.edu/~gohlke/pythonlibs/).
 
 #### Binary Dependencies ####
 

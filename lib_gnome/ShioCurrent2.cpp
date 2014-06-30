@@ -15,12 +15,6 @@
 #endif
 
 
-#ifdef MAC
-#ifdef MPW
-#pragma SEGMENT SHIO
-#endif
-#endif
-
 #include <iostream>
 using namespace std;
 
@@ -786,7 +780,7 @@ Retry:
 				MaxMinTHdl[MaxMinCount].val = theMinBFTime;
 				tHdl[MaxMinCount] = 0;
 				if(MaxMinCount + 1 < maxPeaks) 
-                    MaxMinCount++;		// othewise, keep writing over last value
+                    MaxMinCount++;		// otherwise, keep writing over last value
 				//MaxMinCount = MaxMinCount + 1;
 			}
 	
@@ -819,7 +813,7 @@ Retry:
 				MaxMinTHdl[MaxMinCount].val = theMinBETime;
 				tHdl[MaxMinCount] = 2;
 				if(MaxMinCount + 1 < maxPeaks) 
-                    MaxMinCount++;		// othewise, keep writing over last value
+                    MaxMinCount++;		// otherwise, keep writing over last value
 				//MaxMinCount = MaxMinCount + 1;
 			}
 	
@@ -830,7 +824,7 @@ Retry:
 				tHdl[MaxMinCount] = 0;
 				if(theCurrent<0)tHdl[MaxMinCount] = 1;
 				if(MaxMinCount + 1 < maxPeaks) 
-                    MaxMinCount++;		// othewise, keep writing over last value
+                    MaxMinCount++;		// otherwise, keep writing over last value
 				//MaxMinCount = MaxMinCount + 1;
 			}
 		}

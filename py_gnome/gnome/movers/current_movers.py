@@ -19,11 +19,10 @@ from gnome.cy_gnome import cy_cats_mover, cy_shio_time, cy_ossm_time, \
 class CatsMoverSchema(ObjType, MoverSchema):
     '''static schema for CatsMover'''
     filename = SchemaNode(String(), missing=drop)
-    scale = SchemaNode(Bool(), missing=drop)
+    scale = SchemaNode(Bool())
     scale_refpoint = WorldPoint(missing=drop)
-    scale_value = SchemaNode(Float(), missing=drop)
-    # the following six could be shared with grid_current in a currents base
-    # class
+    scale_value = SchemaNode(Float())
+    #the following six could be shared with grid_current in a currents base class
     uncertain_duration = SchemaNode(Float(), missing=drop)
     uncertain_time_delay = SchemaNode(Float(), missing=drop)
     down_cur_uncertain = SchemaNode(Float(), missing=drop)
