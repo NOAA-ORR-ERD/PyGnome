@@ -14,8 +14,8 @@ from gnome.cy_gnome.cy_random_vertical_mover import CyRandomVerticalMover
 
 
 class RandomMoverSchema(ObjType, MoverSchema):
-    diffusion_coef = SchemaNode(Float(), default=100000)
-    uncertain_factor = SchemaNode(Float(), default=2)
+    diffusion_coef = SchemaNode(Float(), missing=drop)
+    uncertain_factor = SchemaNode(Float(), missing=drop)
 
 
 class RandomMover(CyMover, Serializable):
@@ -73,9 +73,9 @@ class RandomMover(CyMover, Serializable):
 
 
 class RandomVerticalMoverSchema(ObjType, MoverSchema):
-    vertical_diffusion_coef_above_ml = SchemaNode(Float())
-    vertical_diffusion_coef_below_ml = SchemaNode(Float())
-    mixed_layer_depth = SchemaNode(Float())
+    vertical_diffusion_coef_above_ml = SchemaNode(Float(), missing=drop)
+    vertical_diffusion_coef_below_ml = SchemaNode(Float(), missing=drop)
+    mixed_layer_depth = SchemaNode(Float(), missing=drop)
 
 
 class RandomVerticalMover(CyMover, Serializable):
