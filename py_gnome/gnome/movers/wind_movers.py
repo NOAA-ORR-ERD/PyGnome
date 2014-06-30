@@ -30,11 +30,11 @@ from gnome.persist.base_schema import ObjType
 
 
 class WindMoversBaseSchema(ObjType, MoverSchema):
-    uncertain_duration = SchemaNode(Float(), default=24)
-    uncertain_time_delay = SchemaNode(Float(), default=0)
-    uncertain_speed_scale = SchemaNode(Float(), default=2)
-    uncertain_angle_scale = SchemaNode(Float(), default=0.4)
-    uncertain_angle_units = SchemaNode(String(), default='rad', missing=drop)
+    uncertain_duration = SchemaNode(Float(), missing=drop)
+    uncertain_time_delay = SchemaNode(Float(), missing=drop)
+    uncertain_speed_scale = SchemaNode(Float(), missing=drop)
+    uncertain_angle_scale = SchemaNode(Float(), missing=drop)
+    uncertain_angle_units = SchemaNode(String(), missing=drop)
 
 
 class WindMoverSchema(WindMoversBaseSchema):

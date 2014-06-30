@@ -19,18 +19,19 @@ from gnome.cy_gnome import cy_cats_mover, cy_shio_time, cy_ossm_time, \
 class CatsMoverSchema(ObjType, MoverSchema):
     '''static schema for CatsMover'''
     filename = SchemaNode(String(), missing=drop)
-    scale = SchemaNode(Bool())
+    scale = SchemaNode(Bool(), missing=drop)
     scale_refpoint = WorldPoint(missing=drop)
-    scale_value = SchemaNode(Float())
-    #the following six could be shared with grid_current in a currents base class
-    uncertain_duration = SchemaNode(Float(),default=48)
-    uncertain_time_delay = SchemaNode(Float(),default=0)
-    down_cur_uncertain = SchemaNode(Float(),default=-.3)
-    up_cur_uncertain = SchemaNode(Float(),default=.3)
-    right_cur_uncertain = SchemaNode(Float(),default=.1)
-    left_cur_uncertain = SchemaNode(Float(),default=-.1)
-    uncertain_eddy_diffusion = SchemaNode(Float(),default=0)
-    uncertain_eddy_v0 = SchemaNode(Float(),default=.1)
+    scale_value = SchemaNode(Float(), missing=drop)
+    # the following six could be shared with grid_current in a currents base
+    # class
+    uncertain_duration = SchemaNode(Float(), missing=drop)
+    uncertain_time_delay = SchemaNode(Float(), missing=drop)
+    down_cur_uncertain = SchemaNode(Float(), missing=drop)
+    up_cur_uncertain = SchemaNode(Float(), missing=drop)
+    right_cur_uncertain = SchemaNode(Float(), missing=drop)
+    left_cur_uncertain = SchemaNode(Float(), missing=drop)
+    uncertain_eddy_diffusion = SchemaNode(Float(), missing=drop)
+    uncertain_eddy_v0 = SchemaNode(Float(), missing=drop)
 
 
 class CatsMover(CyMover, serializable.Serializable):

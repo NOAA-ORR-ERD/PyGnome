@@ -166,8 +166,8 @@ def test_dir_gets_created(images_dir):
     assert os.path.exists(saveloc_)
 
 
-#@pytest.mark.slow
-@pytest.mark.parametrize('uncertain', [False])#, True])
+@pytest.mark.slow
+@pytest.mark.parametrize('uncertain', [False, True])
 def test_save_load_model(images_dir, uncertain):
     '''
     create a model, save it, then load it back up and check it is equal to
@@ -199,7 +199,7 @@ def test_save_load_midrun_scenario(images_dir, uncertain):
     model.save(saveloc_)
 
     print 'loading scenario ..'
-    model2 = load(saveloc_)
+    model2 = load(os.path.join(saveloc_, 'Model.json'))
 
     for sc in zip(model.spills.items(), model2.spills.items()):
         sc[0]._array_allclose_atol = 1e-5  # need to change both atol
@@ -228,7 +228,7 @@ def test_save_load_midrun_no_movers(images_dir, uncertain):
     model.save(saveloc_)
 
     print 'loading scenario ..'
-    model2 = load(saveloc_)
+    model2 = load(os.path.join(saveloc_, 'Model.json'))
 
     for sc in zip(model.spills.items(), model2.spills.items()):
         # need to change both atol since reading persisted data
@@ -257,7 +257,7 @@ def test_load_midrun_ne_rewound_model(images_dir, uncertain):
     model.save(saveloc_)
 
     model.rewind()
-    model2 = load(saveloc_)
+    model2 = load(os.path.join(saveloc_, 'Model.json'))
 
     assert model.spills != model2.spills
     assert model != model2
@@ -315,3 +315,11 @@ class TestWebApi:
         m2 = Model.new_from_dict(deserial)
         assert m2 == model
         print m2
+
+
+def test_location_file():
+    '''
+    Simple test to check if json_ contains nothing - default model is created
+    '''
+    model = Model.load('.', {'json_': 'save'})
+    assert model == Model()

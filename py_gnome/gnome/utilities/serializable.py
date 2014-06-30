@@ -519,6 +519,30 @@ class Serializable(GnomeId, Savable):
     # =========================================================================
 
     @classmethod
+    def _restore_attr_from_save(cls, new_obj, dict_):
+        '''
+        restore attributes from save files that are not set during init - broke
+        out some functionality of new_from_dict so when child classes override
+        it, they can make use of this as well
+        '''
+        # remove following since they are not attributes of object
+        for key in ['obj_type', 'id']:
+            if key in dict_:
+                del dict_[key]
+
+        # set remaining attributes to restore state of object when it was
+        # persisted to save files (ie could be mid-run)
+        for key in dict_.keys():
+            if not hasattr(new_obj, key):
+                raise AttributeError('{0} is not an attribute '
+                    'of {1}'.format(key, cls.__name__))
+            try:
+                setattr(new_obj, key, dict_[key])
+            except AttributeError:
+                print 'failed to set attribute {0}'.format(key)
+                raise
+
+    @classmethod
     def new_from_dict(cls, dict_):
         """
         creates a new object from dictionary
@@ -539,22 +563,7 @@ class Serializable(GnomeId, Savable):
         new_obj = cls(**rqd)
 
         if dict_.pop('json_') == 'save':
-            # remove following since they are not attributes of object
-            for key in ['obj_type', 'id']:
-                if key in dict_:
-                    del dict_[key]
-
-            # set remaining attributes to restore state of object when it was
-            # persisted to save files (ie could be mid-run)
-            for key in dict_.keys():
-                if not hasattr(new_obj, key):
-                    raise AttributeError('{0} is not an attribute '
-                        'of {1}'.format(key, cls.__name__))
-                try:
-                    setattr(new_obj, key, dict_[key])
-                except AttributeError:
-                    print 'failed to set attribute {0}'.format(key)
-                    raise
+            cls._restore_attr_from_save(new_obj, dict_)
         else:
             # for webapi, ignore the readonly attributes and set only
             # attributes that are updatable. At present, the 'webapi' uses
