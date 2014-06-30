@@ -16,12 +16,6 @@
 #include "Replacements.h"
 #endif
 
-#ifdef MAC
-#ifdef MPW
-#pragma SEGMENT SHIO
-#endif
-#endif
-
 using namespace std;
 
 /***************************************************************************************/
