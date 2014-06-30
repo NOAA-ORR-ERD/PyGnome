@@ -4,7 +4,7 @@ Movers using diffusion as the forcing function
 
 import copy
 
-from colander import (SchemaNode, Float)
+from colander import (SchemaNode, Float, drop)
 
 from gnome.persist.base_schema import ObjType
 from gnome.utilities.serializable import Serializable
