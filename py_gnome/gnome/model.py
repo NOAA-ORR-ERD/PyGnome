@@ -10,14 +10,14 @@ import json
 import numpy
 np = numpy
 from colander import (MappingSchema, SchemaNode,
-                      Float, Int, Bool, String, drop)
+                      Float, Int, Bool, drop)
 
 from gnome.environment import Environment
 
 import gnome.utilities.cache
 from gnome.utilities.time_utils import round_time
 from gnome.utilities.orderedcollection import OrderedCollection
-from gnome.utilities.serializable import Serializable, Field
+from gnome.utilities.serializable import Serializable
 
 from gnome.spill_container import SpillContainerPair
 
@@ -49,19 +49,17 @@ class ModelSchema(base_schema.ObjType):
     time_step = SchemaNode(Float())
     weathering_substeps = SchemaNode(Int(), missing=drop)
     start_time = SchemaNode(extend_colander.LocalDateTime(),
-                            validator=validators.convertible_to_seconds)
+                            validator=validators.convertible_to_seconds,
+                            missing=drop)
     duration = SchemaNode(extend_colander.TimeDelta())  # max duration?
-    uncertain = SchemaNode(Bool())
-    cache_enabled = SchemaNode(Bool())
+    uncertain = SchemaNode(Bool(), missing=drop)
+    cache_enabled = SchemaNode(Bool(), missing=drop)
+    spills = base_schema.OrderedCollectionItemsList()
+    uncertain_spills = base_schema.OrderedCollectionItemsList(missing=drop)
 
-    def __init__(self, json_='webapi',
+    def __init__(self,
                  maptype='gnome.map.GnomeMap',
                  **kwargs):
-        if json_ == 'save':
-            self.add(SpillContainerPairSchema(name='spills'))
-        else:
-            self.add(base_schema.OrderedCollectionItemsList(name='spills'))
-
         oc_list = ['movers', 'weatherers', 'environment', 'outputters']
         for oc in oc_list:
             self.add(base_schema.OrderedCollectionItemsList(name=oc))
@@ -96,7 +94,7 @@ class Model(Serializable):
                'environment',
                'spills',
                'outputters']
-    _create = []
+    _create = ['uncertain_spills']
     _create.extend(_update)
     _state = copy.deepcopy(Serializable._state)
     _schema = ModelSchema
@@ -663,6 +661,23 @@ class Model(Serializable):
     Following methods are for saving a Model instance or creating a new
     model instance from a saved location
     '''
+    def spills_to_dict(self):
+        '''
+        return the spills ordered collection for serialization
+        '''
+        return self.spills.to_dict()['spills']
+
+    def uncertain_spills_to_dict(self):
+        '''
+        return the uncertain_spills ordered collection for serialization/save
+        files
+        '''
+        if self.uncertain:
+            dict_ = self.spills.to_dict()
+            return dict_['uncertain_spills']
+
+        return None
+
     def save(self, saveloc, references=None, name=None):
         # Note: Defining references=References() in the function definition
         # keeps the references object in memory between tests - it changes the
@@ -680,14 +695,14 @@ class Model(Serializable):
             if sc.uncertain:
                 key = 'uncertain_spills'
             else:
-                key = 'certain_spills'
+                key = 'spills'
 
             self._save_collection(saveloc, sc.spills, references,
-                                                    json_['spills'][key])
+                                                    json_[key])
 
         # there should be no more references
         self._json_to_saveloc(json_, saveloc, references, name)
-        if references.reference(self) != name:
+        if name and references.reference(self) != name:
             # todo: want a warning here instead of an exception
             raise Exception("{0} already exists, cannot name "
                 "the model's json file: {0}".format(name))
@@ -753,10 +768,9 @@ class Model(Serializable):
         'save', the 'dtype' and 'items' returned by the ordered collection
         dict is kept for loading from save files and for information
         '''
-        toserial = self.to_dict(json_)
 
-        schema = self.__class__._schema(json_=json_,
-                                        maptype=toserial['map']['obj_type'])
+        toserial = self.to_serialize(json_)
+        schema = self.__class__._schema(maptype=toserial['map']['obj_type'])
         return schema.serialize(toserial)
 
     @classmethod
@@ -766,13 +780,10 @@ class Model(Serializable):
         use for the OC
         '''
         if ('map' in json_ and
-            isinstance(json_['map'], dict) and
             'obj_type' in json_['map']):
-            schema = cls._schema(json_=json_['json_'],
-                                 maptype=json_['map']['obj_type'])
+            schema = cls._schema(maptype=json_['map']['obj_type'])
         else:
-            schema = cls._schema(json_=json_['json_'],
-                                 maptype=None)
+            schema = cls._schema(maptype=None)
 
         return schema.deserialize(json_)
 

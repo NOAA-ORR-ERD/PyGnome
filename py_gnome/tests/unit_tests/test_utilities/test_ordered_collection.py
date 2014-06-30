@@ -10,7 +10,10 @@ from gnome.utilities.orderedcollection import OrderedCollection
 
 def s_id(val):
     'all IDs are stored as strings'
-    return str(id(val))
+    try:
+        return val.id
+    except AttributeError:
+        return str(id(val))
 
 
 def test_getslice():
@@ -278,29 +281,25 @@ class TestOrderedCollection(object):
         mymovers = OrderedCollection(items, dtype=Mover)
         self._to_dict_assert(mymovers, items, json_)
 
-    @mark.parametrize('do', ['save', 'update'])
-    def test_int_to_dict(self, do):
+    @mark.parametrize('json_', ['save', 'webapi'])
+    def test_int_to_dict(self, json_):
         '''added a to_dict() method - test this method for int dtype.
         Tests the try, except is working correctly'''
         items = range(5)
         oc = OrderedCollection(items)
-        self._to_dict_assert(oc, items, do)
+        self._to_dict_assert(oc, items, json_)
 
     def _to_dict_assert(self, oc, items, json_):
-        toserial = oc.to_dict(json_)
+        toserial = oc.to_dict()
+        print toserial
         for (i, mv) in enumerate(items):
-            if json_ == 'save':
-                try:
-                    assert toserial[i]['obj_type'] == \
-                        '{0}.{1}'.format(mv.__module__, mv.__class__.__name__)
-                except AttributeError:
-                    assert toserial[i]['obj_type'] == mv.__class__.__name__
-                #assert toserial[i]['file_suffix'] == i
-            elif json_ == 'webapi':
-                try:
-                    assert toserial[i]['id'] == mv.id
-                except AttributeError:
-                    assert toserial[i] == s_id(mv)
+            try:
+                assert toserial[i]['obj_type'] == \
+                    '{0}.{1}'.format(mv.__module__, mv.__class__.__name__)
+            except AttributeError:
+                assert toserial[i]['obj_type'] == mv.__class__.__name__
+
+            assert toserial[i]['id'] == s_id(mv)
 
 
 class ObjToAdd:

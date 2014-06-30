@@ -67,14 +67,22 @@ class Renderer(Outputter, MapCanvas):
         change projection_type from string to correct type for loading from
         save file
         """
-        if dict_['json_'] == 'save':
+        if 'projection_class' in dict_:
+            '''
+            assume dict_ is from a save file since only the save file stores
+            the 'projection_class'
+            todo:
+            The 'projection_class' isn't stored as a nested object - should
+            revisit this and see if we can make it consistent with nested
+            objects .. but this works!
+            '''
             proj = eval(dict_.pop('projection_class'))
             viewport = dict_.pop('viewport')
 
             obj = cls(projection_class=proj, **dict_)
             obj.viewport = viewport
-        else:
-            obj = super(Renderer, cls).new_from_dict(dict_)
+
+        obj = super(Renderer, cls).new_from_dict(dict_)
         return obj
 
     def __init__(

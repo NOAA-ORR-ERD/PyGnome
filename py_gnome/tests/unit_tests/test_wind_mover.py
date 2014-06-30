@@ -449,8 +449,8 @@ def test_serialize_deserialize(wind_circ):
     assert wm.wind == wind_circ['wind']
 
 
-@pytest.mark.parametrize("refs", [None, References()])
-def test_save_load(clean_temp, refs):
+@pytest.mark.parametrize("save_ref", [False, True])
+def test_save_load(clean_temp, save_ref):
     """
     tests and illustrates the functionality of save/load for
     WindMover
@@ -459,9 +459,10 @@ def test_save_load(clean_temp, refs):
     wind = Wind(filename=file_)
     wm = WindMover(wind)
     wm_fname = 'WindMover_save_test.json'
-
-    if refs:
+    refs = None
+    if save_ref:
         w_fname = 'Wind.json'
+        refs = References()
         refs.reference(wind, w_fname)
         wind.save(saveloc, refs, w_fname)
 
@@ -473,24 +474,26 @@ def test_save_load(clean_temp, refs):
     assert (obj.wind == wind and obj.wind is not wind)
 
 
-def test_new_from_dict():
-    """
-    Currently only checks that new object can be created from dict
-    It does not check equality of objects
-    """
-    wind = Wind(filename=file_)
-    wm = WindMover(wind)  # WindMover does not modify Wind object!
-    wm_state = wm.to_dict('save')
-
-    # must create a Wind object and add this to wm_state dict
-
-    wind2 = Wind.new_from_dict(wind.to_dict('save'))
-    wm_state.update({'wind': wind2})
-    wm2 = WindMover.new_from_dict(wm_state)
-
-    assert wm is not wm2
-    assert wm.wind is not wm2.wind
-    assert wm == wm2
+#==============================================================================
+# def test_new_from_dict():
+#     """
+#     Currently only checks that new object can be created from dict
+#     It does not check equality of objects
+#     """
+#     wind = Wind(filename=file_)
+#     wm = WindMover(wind)  # WindMover does not modify Wind object!
+#     wm_state = wm.to_dict('save')
+# 
+#     # must create a Wind object and add this to wm_state dict
+# 
+#     wind2 = Wind.new_from_dict(wind.to_dict('save'))
+#     wm_state.update({'wind': wind2})
+#     wm2 = WindMover.new_from_dict(wm_state)
+# 
+#     assert wm is not wm2
+#     assert wm.wind is not wm2.wind
+#     assert wm == wm2
+#==============================================================================
 
 
 def test_array_types():

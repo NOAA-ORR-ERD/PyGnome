@@ -294,37 +294,21 @@ class OrderedCollection(object):
         # reconstruct our dynamically set methods.
         # let's see what we need to do after some testing.
 
-    def to_dict(self, json_='webapi'):
+    def to_dict(self):
         '''
-        Method takes the instance of ordered collection and outputs a dict with
-        two fields:
-            dtype: associated dtype for each object in the order in which
-                it is added
-            items: contains a list of tuples containing -
-                (importable object name as string, index into collection):
-                [(object, 0), (object, 1)]
-                The index is always going to be range(number of objects)
-            id: a list of IDs for each object. This is not part of the items
-                tuple because serialize/deserialize to/from JSON for webapi
-                versus saving data out is different
-
+        Method takes the instance of ordered collection and outputs a list of
+        dicts, each with two fields:
+            {obj_type: object type <module.class>,
+            id: IDs of each object.}
         '''
         items = []
 
-        for count, obj in enumerate(self):
+        for obj in self:
             try:
                 obj_type = '{0.__module__}.{0.__class__.__name__}'.format(obj)
             except AttributeError:
                 obj_type = '{0.__class__.__name__}'.format(obj)
-            item = {'obj_type': obj_type}
-            item.update({'id': self._s_id(obj)})
-            #==================================================================
-            # if json_ == 'save':
-            #     item.update({'file_suffix': count})
-            # else:
-            #     item.update({'id': self._s_id(obj)})
-            #==================================================================
-
+            item = {'obj_type': obj_type, 'id': self._s_id(obj)}
             items.append(item)
 
         return items

@@ -11,7 +11,10 @@ Designed to be run with py.test
 
 from __future__ import division
 import os
+
 import numpy as np
+import pytest
+
 import gnome.map
 from gnome.basic_types import oil_status, status_code_type
 from gnome.utilities.projections import NoProjection
@@ -198,18 +201,6 @@ class Test_GnomeMap:
 
         assert gmap.allowable_spill_position((370.0, -87.0, 0.)) \
             is False
-
-    def test_GnomeMap_new_from_dict(self):
-        """
-        test create new object from to_dict
-        """
-
-        gmap = gnome.map.GnomeMap()
-        dict_ = gmap.to_dict('save')
-        #dict_.pop('obj_type')
-        gmap2 = gmap.new_from_dict(dict_)
-
-        assert gmap == gmap2
 
     def test_GnomeMap_from_dict(self):
         gmap = gnome.map.GnomeMap()
@@ -552,7 +543,8 @@ class Test_MapfromBNA:
         assert not self.bna_map.on_map(point)
 
 
-def test_serialize_deserialize():
+@pytest.mark.parametrize("json_", ('save', 'webapi'))
+def test_serialize_deserialize(json_):
     """
     test create new object from to_dict
     """

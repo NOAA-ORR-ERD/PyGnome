@@ -164,7 +164,7 @@ class Release(object):
 
     def serialize(self, json_='webapi'):
         'define schema based on type of desired output'
-        toserial = self.to_dict(json_)
+        toserial = self.to_serialize(json_)
         schema = self.__class__._schema(json_)
         serial = schema.serialize(toserial)
 

@@ -81,7 +81,7 @@ class TestWeatherer:
         weatherer.model_step_is_done()
 
         print '\ndecayed_mass:\n', decayed_mass
-        assert np.allclose(decayed_mass.sum(1), 0.5)
+        assert np.allclose(decayed_mass.sum(1), test_sc['mass'] * .5)
 
     @pytest.mark.parametrize("test_sc", [sc, u_sc])
     def test_one_weather(self, test_sc):
@@ -106,8 +106,9 @@ class TestWeatherer:
         weatherer.model_step_is_done()
 
         print '\nsc["mass"]:\n', test_sc['mass']
-        assert np.allclose(test_sc['mass'], 0.5)
-        assert np.allclose(test_sc['mass_components'].sum(1), 0.5)
+        assert np.allclose(test_sc['mass'], 0.5 * saved_mass)
+        assert np.allclose(test_sc['mass_components'].sum(1),
+            0.5 * saved_components.sum(1))
 
         test_sc['mass'] = saved_mass
         test_sc['mass_components'] = saved_components
@@ -148,7 +149,7 @@ class TestWeatherer:
         weatherer.model_step_is_done()
 
         print '\ndecayed_mass:\n', decayed_mass
-        assert np.allclose(decayed_mass.sum(1), 1.)
+        assert np.allclose(decayed_mass.sum(1), 1. * test_sc['mass'])
 
         # setup test case 2
         model_time = rel_time - timedelta(minutes=15)
@@ -159,7 +160,7 @@ class TestWeatherer:
         weatherer.model_step_is_done()
 
         print '\ndecayed_mass:\n', decayed_mass
-        assert np.allclose(decayed_mass.sum(1), 1.)
+        assert np.allclose(decayed_mass.sum(1), 1. * test_sc['mass'])
 
         # setup test case 3
         model_time = rel_time - timedelta(minutes=15)
@@ -170,7 +171,7 @@ class TestWeatherer:
         weatherer.model_step_is_done()
 
         print '\ndecayed_mass:\n', decayed_mass
-        assert np.allclose(decayed_mass.sum(1), 0.5)
+        assert np.allclose(decayed_mass.sum(1), 0.5 * test_sc['mass'])
 
     @pytest.mark.parametrize("test_sc", [sc, u_sc])
     def test_out_of_bounds_time_step(self, test_sc):
@@ -201,7 +202,7 @@ class TestWeatherer:
         weatherer.model_step_is_done()
 
         print '\ndecayed_mass:\n', decayed_mass
-        assert np.allclose(decayed_mass.sum(1), 0.5)
+        assert np.allclose(decayed_mass.sum(1), 0.5 * test_sc['mass'])
 
     @pytest.mark.parametrize("test_sc", [sc, u_sc])
     def test_model_time_range_surrounds_active_range(self, test_sc):
@@ -231,4 +232,4 @@ class TestWeatherer:
         weatherer.model_step_is_done()
 
         print '\ndecayed_mass:\n', decayed_mass
-        assert np.allclose(decayed_mass.sum(1), 0.5)
+        assert np.allclose(decayed_mass.sum(1), 0.5 * test_sc['mass'])

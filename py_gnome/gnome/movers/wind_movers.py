@@ -288,7 +288,7 @@ class WindMover(WindMoversBase, serializable.Serializable):
         Since 'wind' property is saved as a reference when used in save file
         and 'save' option, need to add appropriate node to WindMover schema
         """
-        toserial = self.to_dict(json_)
+        toserial = self.to_serialize(json_)
         schema = self.__class__._schema()
         if json_ == 'webapi':
             # add wind schema
