@@ -830,12 +830,9 @@ class Model(Serializable):
         check contents of orderered collections to figure out what schema to
         use for the OC
         '''
-        if ('map' in json_ and json_['json_'] == 'webapi'):
-            schema = cls._schema(maptype=json_['map']['obj_type'])
-        else:
-            schema = cls._schema(maptype=None)
-
-        deserial = schema.deserialize(json_)
+        deserial = cls._schema().deserialize(json_)
+        if 'map' in json_ and json_['map']:
+            deserial['map'] = json_['map']
 
         return deserial
 
