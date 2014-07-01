@@ -108,6 +108,12 @@ Class Reference:
     :members:
     :show-inheritance:
 
+``gnome.utilities`` -- PyGnome utilities module
+---------------------------------------------------
+.. automodule:: gnome.utilities.serializable
+    :members:
+    :show-inheritance:
+
 ``gnome.persist`` -- PyGnome persistance classes
 ---------------------------------------------------
 .. automodule:: gnome.persist.base_schema

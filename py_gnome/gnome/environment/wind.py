@@ -201,19 +201,11 @@ class Wind(Environment, serializable.Serializable):
             timeseries = np.zeros((1,), dtype=basic_types.datetime_value_2d)
             units = 'mps'
 
-        self._tempfile = None
         self._filename = None
 
         if not filename:
-            self._check_units(units)
-            self._check_timeseries(timeseries, units)
-
-            timeseries['value'] = self._convert_units(timeseries['value'],
-                                                      format, units,
-                                                      'meter per second')
-
-            # ts_format is checked during conversion
-            time_value_pair = to_time_value_pair(timeseries, format)
+            time_value_pair = self._convert_to_time_value_pair(timeseries,
+                units, format)
 
             # this has same scope as CyWindMover object
             #
@@ -349,15 +341,6 @@ class Wind(Environment, serializable.Serializable):
 
     # user_units = property( lambda self: self._user_units)
 
-    def __del__(self):
-        'close tempfile upon deletion'
-        if self._tempfile:
-            try:
-                os.remove(self._tempfile.name)
-            except OSError:
-                # must be gone already
-                pass  
-
     @property
     def units(self):
         return self._user_units
@@ -380,6 +363,28 @@ class Wind(Environment, serializable.Serializable):
                           lambda self, val: self.set_timeseries(val,
                                                             units=self.units)
                           )
+
+    def _convert_to_time_value_pair(self, datetime_value_2d, units, format):
+        '''
+        format datetime_value_2d so it is a numpy array with
+        dtype=basic_types.time_value_pair as the C++ code expects
+        '''
+        # following fails for 0-d objects so make sure we have a 1-D array
+        # to work with
+        datetime_value_2d = np.asarray(datetime_value_2d,
+            dtype=basic_types.datetime_value_2d)
+        if datetime_value_2d.shape == ():
+            datetime_value_2d = np.asarray([datetime_value_2d],
+                dtype=basic_types.datetime_value_2d)
+
+        self._check_units(units)
+        self._check_timeseries(datetime_value_2d, units)
+        datetime_value_2d['value'] = \
+            self._convert_units(datetime_value_2d['value'],
+                                format, units, 'meter per second')
+
+        timeval = to_time_value_pair(datetime_value_2d, format)
+        return timeval
 
     def get_timeseries(self, datetime=None, units=None, format='r-theta'):
         """
@@ -443,58 +448,46 @@ class Wind(Environment, serializable.Serializable):
         :type format: either string or integer value defined by
                       basic_types.format.* (see cy_basic_types.pyx)
         """
-        self._check_units(units)
-        self._check_timeseries(datetime_value_2d, units)
-        datetime_value_2d['value'] = \
-            self._convert_units(datetime_value_2d['value'],
-                                format, units, 'meter per second')
-
-        timeval = to_time_value_pair(datetime_value_2d, format)
+        timeval = self._convert_to_time_value_pair(datetime_value_2d, units, format)
         self.ossm.timeseries = timeval
 
-    def to_dict(self, json_='webapi'):
-        """
-        Call base class to_dict using super
+    def save(self, saveloc, references=None, name=None):
+        '''
+        Write Wind timeseries to file, then call save method using super
+        '''
+        name = (name, 'Wind.json')[name is None]
+        datafile = os.path.join(saveloc,
+                                os.path.splitext(name)[0] + '_data.WND')
+        self._write_timeseries_to_file(datafile)
+        self._filename = datafile
+        return super(Wind, self).save(saveloc, references, name)
 
-        Then if to_dict is used to 'save' a dict for a save file and
-        'filename' is given, then remove 'timeseries' from the dict.
-        Only timeseries or filename need to be saved to recreate the original
-        object. If both are given, then 'filename' takes precedence.
-        """
-        if json_ == 'save':
-            # write timeseries to a file and update filename
-            self._write_timeseries_to_file()
-            self._filename = self._tempfile.name
-
-        dict_ = super(Wind, self).to_dict(json_)
-        return dict_
-
-    def _write_timeseries_to_file(self):
+    def _write_timeseries_to_file(self, datafile):
         '''write to temp file '''
 
-        self._tempfile = tempfile.NamedTemporaryFile(prefix='wind_data_', delete=False)
         header = ('Station Name\n'
                   'Position\n'
                   'knots\n'
                   'LTime\n'
                   '0,0,0,0,0,0,0,0\n')
-        self._tempfile.write(header)
         val = self.get_timeseries(units='knots')['value']
         dt = self.get_timeseries(units='knots')['time'].astype(datetime.datetime)
 
-        for i, idt in enumerate(dt):
-            self._tempfile.write('{0.day:02}, '
-                                 '{0.month:02}, '
-                                 '{0.year:04}, '
-                                 '{0.hour:02}, '
-                                 '{0.minute:02}, '
-                                 '{1:02.4f}, {2:02.4f}\n'
-                                 .format(idt,
-                                         round(val[i, 0], 4),
-                                         round(val[i, 1], 4))
-                                 )
+        with open(datafile, 'w') as file_:
+            file_.write(header)
 
-        self._tempfile.close()
+            for i, idt in enumerate(dt):
+                file_.write('{0.day:02}, '
+                            '{0.month:02}, '
+                            '{0.year:04}, '
+                            '{0.hour:02}, '
+                            '{0.minute:02}, '
+                            '{1:02.4f}, {2:02.4f}\n'
+                            .format(idt,
+                                    round(val[i, 0], 4),
+                                    round(val[i, 1], 4))
+                            )
+        file_.close()   # just incase we get issues on windows
 
 
 def constant_wind(speed, direction, units='m/s'):

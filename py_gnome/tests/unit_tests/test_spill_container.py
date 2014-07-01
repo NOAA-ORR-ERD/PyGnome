@@ -18,8 +18,8 @@ from gnome.basic_types import (oil_status,
                                id_type)
 from gnome import array_types
 from gnome.spill.elements import (ElementType,
+                            InitMassFromTotalMass,
                             InitWindages,
-                            InitMassFromVolume,
                             InitRiseVelFromDist,
                             floating)
 
@@ -476,12 +476,12 @@ def test_ordered_collection_api():
 
 """ tests w/ element types set for two spills """
 el0 = ElementType({'windages': InitWindages((0.02, 0.02), -1),
-                   'mass': InitMassFromVolume(),
+                   'mass': InitMassFromTotalMass(),
                    'rise_vel': InitRiseVelFromDist(distribution=UniformDistribution(low=1, high=10))
                    })
 
 el1 = ElementType({'windages': InitWindages(),
-                   'mass': InitMassFromVolume(),
+                   'mass': InitMassFromTotalMass(),
                    'rise_vel': InitRiseVelFromDist()})
 
 arr_types = {'windages': array_types.windages,
@@ -682,26 +682,22 @@ class TestAddSpillContainerPair:
         for sp_tuple in zip(c_spill, u_spill):
             scp += sp_tuple
 
-        toserial = scp.to_dict(json_)
+        toserial = scp.to_dict()
+        assert 'spills' in toserial
+        assert 'uncertain_spills' in toserial
 
-        if json_ == 'webapi':
-            alltrue = [spill.id == toserial[ix]['id'] \
-                            for ix, spill in enumerate(c_spill)]
+        for key in ('spills', 'uncertain_spills'):
+            if key == 'spills':
+                check = c_spill
+            else:
+                check = u_spill
+
+            alltrue = [check[ix].id == spill['id'] \
+                                for ix, spill in enumerate(toserial[key])]
             assert all(alltrue)
-
-        elif json_ == 'save':
-            for key in toserial.keys():
-                if key == 'certain_spills':
-                    enum_spill = c_spill
-                elif key == 'uncertain_spills':
-                    enum_spill = u_spill
-
-                for (i, spill) in enumerate(enum_spill):
-                    if json_ == 'save':
-                        assert toserial[key][i]['obj_type'] \
-                            == '{0}.{1}'.format(spill.__module__,
-                                spill.__class__.__name__)
-                        #assert toserial[key][i]['file_suffix'] == i
+            alltrue = [check[ix].obj_type_to_dict() == spill['obj_type'] \
+                                for ix, spill in enumerate(toserial[key])]
+            assert all(alltrue)
 
 
 def test_get_spill_mask():

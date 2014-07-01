@@ -213,7 +213,7 @@ class CatsMover(CyMover, serializable.Serializable):
         Since 'wind' property is saved as a reference when used in save file
         and 'save' option, need to add appropriate node to WindMover schema
         """
-        toserial = self.to_dict(json_)
+        toserial = self.to_serialize(json_)
         schema = self.__class__._schema()
         if json_ == 'webapi' and 'tide' in toserial:
             schema.add(environment.TideSchema(name='tide'))
@@ -494,9 +494,9 @@ class CurrentCycleMover(CyMover, serializable.Serializable):
         self._tide = None
         if tide is not None:
             self.tide = tide
-            print "self._tide"
-            print self._tide
-            print self.tide
+            #print "self._tide"
+            #print self._tide
+            #print self.tide
 
         super(CurrentCycleMover, self).__init__(**kwargs)
 
@@ -583,7 +583,7 @@ class CurrentCycleMover(CyMover, serializable.Serializable):
         Since 'tide' property is saved as a reference when used in save file
         and 'save' option, need to add appropriate node to CurrentCycleMover schema
         """
-        toserial = self.to_dict(json_)
+        toserial = self.to_serialize(json_)
         schema = self.__class__._schema()
         if json_ == 'webapi' and 'tide' in toserial:
             schema.add(environment.TideSchema(name='tide'))
@@ -796,7 +796,7 @@ class ComponentMover(CyMover, serializable.Serializable):
         Since 'wind' property is saved as a reference when used in save file
         and 'save' option, need to add appropriate node to WindMover schema
         """
-        dict_ = self.to_dict(json_)
+        dict_ = self.to_serialize(json_)
         schema = self.__class__._schema()
         if json_ == 'webapi' and 'wind' in dict_:
             schema.add(environment.WindSchema(name='wind'))

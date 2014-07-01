@@ -52,32 +52,12 @@ class Spill(serializable.Serializable):
                             uc.ConvertDataUnits['Mass'].values()]))
     valid_mass_units.extend(uc.GetUnitNames('Mass'))
 
-    @classmethod
-    def new_from_dict(cls, dict_):
-        """
-        create object using the same settings as persisted object.
-        In addition, set the _state of other properties after initialization
-        """
-        if dict_['json_'] == 'save':
-            # create release object
-            # create element_type object
-            # then create Spill object
-            for name in ['release', 'element_type']:
-                obj_dict = dict_.pop(name)
-                obj_type = obj_dict.pop('obj_type')
-                obj = eval(obj_type).new_from_dict(obj_dict)
-                dict_[name] = obj
-
-        new_obj = super(Spill, cls).new_from_dict(dict_)
-
-        return new_obj
-
     def __init__(self, release,
                  element_type=None,
                  on=True,
                  volume=None, volume_units='m^3',
                  # Is this total mass of the spill?
-                 mass=None, mass_units='g',
+                 mass=None, mass_units='kg',
                  name='Spill'):
         """
         Spills used by the gnome model. It contains a release object, which
@@ -101,7 +81,7 @@ class Spill(serializable.Serializable):
         :type volume_units: str
         :param mass=None:
         :type mass: float
-        :param mass_units='g':
+        :param mass_units='kg':
         :type mass_units: str
         :param name='Spill': a name for the spill
         :type name: str
@@ -116,21 +96,25 @@ class Spill(serializable.Serializable):
         self.on = on    # spill is active or not
 
         # mass/volume, type of oil spilled
-        self._check_units(volume_units)
-        self._volume_units = volume_units   # user defined for display
-        self._volume = volume
-        if volume is not None:
-            self._volume = unit_conversion.convert('Volume', volume_units,
-                'm^3', volume)
-
-        self._check_units(mass_units, 'Mass')
-        self._mass_units = mass_units   # user defined for display
-        self._mass = mass
-        if mass is not None:
-            self._mass = uc.convert('Mass', mass_units, 'g', mass)
-
         if mass is not None and volume is not None:
             raise ValueError("'mass' and 'volume' cannot both be set")
+
+        self._check_units(volume_units)
+        self._volume_units = volume_units   # user defined for display
+        self._check_units(mass_units, 'Mass')
+        self._mass_units = mass_units   # user defined for display
+        self._volume = None
+        self._mass = None
+
+        if volume is not None:
+            self._volume = uc.convert('Volume', volume_units,
+                'm^3', volume)
+            self._mass = (self.element_type.substance.get_density('kg/m^3') *
+                self._volume)
+        elif mass is not None:
+            self._mass = uc.convert('Mass', mass_units, 'kg', mass)
+            self._volume = (self._mass /
+                    self.element_type.substance.get_density('kg/m^3'))
 
         self.name = name
 
@@ -308,7 +292,7 @@ class Spill(serializable.Serializable):
 
     # returns the mass in mass_units specified by user
     mass = property(lambda self: self.get_mass(),
-                      lambda self, value: self.set_mass(value, 'g'))
+                      lambda self, value: self.set_mass(value, 'kg'))
 
     def get_volume(self, units=None):
         """
@@ -347,10 +331,10 @@ class Spill(serializable.Serializable):
             return self._mass
 
         if units is None:
-            return uc.convert('Mass', 'g', self.mass_units, self._mass)
+            return uc.convert('Mass', 'kg', self.mass_units, self._mass)
         else:
             self._check_units(units, 'Mass')
-            return uc.convert('Mass', 'g', units, self._mass)
+            return uc.convert('Mass', 'kg', units, self._mass)
 
     def set_mass(self, mass, units):
         '''
@@ -359,7 +343,7 @@ class Spill(serializable.Serializable):
         User can also specify desired output units in the function.
         '''
         self._check_units(units, 'Mass')
-        self._mass = uc.convert('Mass', units, 'g', mass)
+        self._mass = uc.convert('Mass', units, 'kg', mass)
         self.mass_units = units
 
     def uncertain_copy(self):
@@ -437,7 +421,7 @@ class Spill(serializable.Serializable):
         override base serialize implementation
         Need to add node for release object and element_type object
         """
-        toserial = self.to_dict(json_)
+        toserial = self.to_serialize(json_)
         schema = self.__class__._schema()
         #schema = self.__class__._schema(
         #    release=self.release.__class__._schema(json_))
@@ -454,11 +438,6 @@ class Spill(serializable.Serializable):
         Instead of creating schema dynamically for Spill() before
         deserialization, call nested object's serialize/deserialize methods
         """
-        #======================================================================
-        # rel_name = json_['release']['obj_type']
-        # rel_schema = eval(rel_name)._schema(json_['json_'])
-        # schema = cls._schema(release=rel_schema)
-        #======================================================================
         schema = cls._schema()
 
         dict_ = schema.deserialize(json_)
@@ -467,6 +446,17 @@ class Spill(serializable.Serializable):
                                                         json_['element_type'])
         rel = json_['release']['obj_type']
         dict_['release'] = eval(rel).deserialize(json_['release'])
+
+        if json_['json_'] == 'save':
+            '''
+            convert nested dict back into objects. For the 'webapi', we're not
+            always creating a new object so do this only for 'save' files
+            '''
+            for name in ['release', 'element_type']:
+                obj_dict = dict_.pop(name)
+                obj_type = obj_dict.pop('obj_type')
+                obj = eval(obj_type).new_from_dict(obj_dict)
+                dict_[name] = obj
 
         return dict_
 

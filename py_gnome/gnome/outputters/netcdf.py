@@ -151,7 +151,8 @@ class NetCDFOutput(Outputter, Serializable):
     _state = copy.deepcopy(Outputter._state)
 
     # data file should not be moved to save file location!
-    _state.add_field([Field('netcdf_filename', save=True, update=True),
+    _state.add_field([Field('netcdf_filename', save=True, update=True,
+                            test_for_eq=False),
                      Field('which_data', save=True, update=True),
                      #Field('netcdf_format', save=True, update=True),
                      Field('compress', save=True, update=True),
@@ -690,3 +691,26 @@ class NetCDFOutput(Outputter, Serializable):
                     arrays_dict[array_name] = (data.variables[array_name][_start_ix:_stop_ix])
 
         return arrays_dict
+
+    def save(self, saveloc, references=None, name=None):
+        '''
+        See baseclass :meth:`~gnome.persist.Savable.save`
+
+        update netcdf_filename to point to saveloc, then call base class save
+        using super
+        '''
+        json_ = self.serialize('save')
+        fname = os.path.split(json_['netcdf_filename'])[1]
+        json_['netcdf_filename'] = os.path.join('./', fname)
+        return self._json_to_saveloc(json_, saveloc, references, name)
+
+    @classmethod
+    def load(cls, saveloc, json_data, references=None):
+        '''
+        update path to 'netcdf_filename' in json_data, then finsih loading
+        by calling super class' load method
+        '''
+        json_data['netcdf_filename'] = os.path.join(saveloc,
+                                        json_data['netcdf_filename'])
+
+        return super(NetCDFOutput, cls).load(saveloc, json_data, references)

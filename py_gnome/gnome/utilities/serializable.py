@@ -4,11 +4,15 @@ Created on Feb 15, 2013
 
 import copy
 import inspect
+import os
+import json
+import shutil
 
 import numpy
 np = numpy
 
 from gnome import GnomeId
+from gnome.persist import Savable
 
 
 class Field(object):  # ,serializable.Serializable):
@@ -28,20 +32,21 @@ class Field(object):  # ,serializable.Serializable):
         If the property describes a data file that will need to be moved
         when persisting the model, isdatafile should be True.
         The gnome.persist.scenario module contains a Scenario class that loads
-        and saves a model.
-        It looks for these attributes to correctly save/load it.
+        and saves a model. It looks for these attributes to correctly save/load
+        it.
 
         It sets all attributes to False by default.
+
         :param str name: Name of the property being described by this Field
             object
-        :param bool isdatafile: Is the property a datafile that should be
+        :param bool isdatafile=False: Is the property a datafile that should be
             moved during persistence?
-        :param bool update: Is the property update-able by the web app?
-        :param bool create: Is the property required to re-create the object
+        :param bool update=False: Is the property update-able by the web app?
+        :param bool create=False: Is the property required to re-create the object
             when loading from a save file?
-        :param bool read: If property is not updateable, perhaps make it
+        :param bool read=False: If property is not updateable, perhaps make it
             read only so web app has information about the object
-        :param bool save_reference: bool with default value of False.
+        :param bool save_reference=False: bool with default value of False.
             if the property is object, you can either
             serialize the object and store it as a nested structure or just
             store a reference to the object. For instance, the WindMover
@@ -50,9 +55,10 @@ class Field(object):  # ,serializable.Serializable):
             stored as a reference. The Model.load function is responsible for
             hooking up the correct Wind object to the WindMover, Weatherer etc
 
-            NOTE: save_reference currently is only used when the field is
-            stored with 'save' flag.
-        :param bool test_for_eq: bool with default value of True
+            .. note:: save_reference currently is only used when the field is
+                stored with 'save' flag.
+
+        :param bool test_for_eq=True: bool with default value of True
             when checking equality (__eq__()) of two gnome
             objects that are serializable, look for equality of attributes
             corresponding with fields with 'save'=True and 'test_for_eq'=True
@@ -61,6 +67,7 @@ class Field(object):  # ,serializable.Serializable):
             that read data from file will point to different location. The
             objects are still equal. To avoid this problem, we can customize
             whether to use a field when testing for equality or not.
+
         """
         self.name = name
         self.isdatafile = isdatafile
@@ -134,7 +141,8 @@ class State(object):
         self.add(save=save, update=update, read=read)
 
         # define valid attributes for Field object
-
+        # Field object is in flux - more properties were added so make
+        # _valid_field_attr dynamic
         test_obj = Field('test')
         self._valid_field_attr = test_obj.__dict__.keys()
 
@@ -435,7 +443,7 @@ class State(object):
         return names
 
 
-class Serializable(GnomeId):
+class Serializable(GnomeId, Savable):
 
     """
     contains the to_dict and update_from_dict method to output properties of
@@ -444,6 +452,9 @@ class Serializable(GnomeId):
     This class is intended as a mixin so to_dict and update_from_dict become
     part of the object and the object must define a _state attribute of type
     State().
+
+    It mixes in the GnomeId class since all Serializable gnome objects will
+    have an Id as well
 
     The default _state=State(save=['id']) is a static variable for this class
     It uses the same convention as State to obtain the lists, 'update' for
@@ -508,6 +519,30 @@ class Serializable(GnomeId):
     # =========================================================================
 
     @classmethod
+    def _restore_attr_from_save(cls, new_obj, dict_):
+        '''
+        restore attributes from save files that are not set during init - broke
+        out some functionality of new_from_dict so when child classes override
+        it, they can make use of this as well
+        '''
+        # remove following since they are not attributes of object
+        for key in ['obj_type', 'id']:
+            if key in dict_:
+                del dict_[key]
+
+        # set remaining attributes to restore state of object when it was
+        # persisted to save files (ie could be mid-run)
+        for key in dict_.keys():
+            if not hasattr(new_obj, key):
+                raise AttributeError('{0} is not an attribute '
+                    'of {1}'.format(key, cls.__name__))
+            try:
+                setattr(new_obj, key, dict_[key])
+            except AttributeError:
+                print 'failed to set attribute {0}'.format(key)
+                raise
+
+    @classmethod
     def new_from_dict(cls, dict_):
         """
         creates a new object from dictionary
@@ -528,18 +563,7 @@ class Serializable(GnomeId):
         new_obj = cls(**rqd)
 
         if dict_.pop('json_') == 'save':
-            # remove following since they are not attributes of object
-            for key in ['obj_type', 'id']:
-                dict_.pop(key, None)
-
-            # set remaining attributes to restore state of object when it was
-            # persisted to save files (ie could be mid-run)
-            for key in dict_.keys():
-                try:
-                    setattr(new_obj, key, dict_[key])
-                except AttributeError:
-                    print 'failed to set attribute {0}'.format(key)
-                    raise
+            cls._restore_attr_from_save(new_obj, dict_)
         else:
             # for webapi, ignore the readonly attributes and set only
             # attributes that are updatable. At present, the 'webapi' uses
@@ -550,7 +574,7 @@ class Serializable(GnomeId):
 
         return new_obj
 
-    def _attrlist_to_dict(self, do=('update',)):
+    def _attrlist(self, do=('update', 'read')):
         '''
         returns list of object attributes that need to be serialized. By
         default all fields that have 'update' == True are returned.
@@ -570,7 +594,7 @@ class Serializable(GnomeId):
 
         return list_
 
-    def to_dict(self, json_='webapi'):
+    def to_dict(self):
         """
         returns a dictionary containing the serialized representation of this
         object.
@@ -590,26 +614,22 @@ class Serializable(GnomeId):
         NOTE: add the json_='webapi' key to be serialized so we know what the
         serialization is for
         """
-        if json_ == 'webapi':
-            list_ = self._attrlist_to_dict(do=('update', 'read'))
-        elif json_ == 'save':
-            list_ = self._attrlist_to_dict(do=('save',))
-        else:
-            # raise error if json_ payload is not for webapi or save files
-            # list_ = []
-            raise ValueError("desired json_ payload must be either for webapi "
-                "or for save files: ('webapi', 'save')")
+        list_ = self._state.get_names('all')
 
         data = {}
         for key in list_:
             value = self.attr_to_dict(key)
             if hasattr(value, 'to_dict'):
-                value = value.to_dict(json_)  # recursive call
+                value = value.to_dict()  # recursive call
 
-            if value is not None:  # no need to persist None valued properties
+            if value is not None:
+                # some issue in colander monkey patch and the Wind schema
+                # if None values are not pruned - take them out for now
+                # this also means the default values will not be applied
+                # on serialized -- that's ok though since we don't define
+                # defaults in colander
                 data[key] = value
 
-        data['json_'] = json_
         return data
 
     def attr_to_dict(self, name):
@@ -745,6 +765,37 @@ class Serializable(GnomeId):
     def __ne__(self, other):
         return not self == other
 
+    def to_serialize(self, json_='webapi'):
+        '''
+        invoke to_dict() which converts all attributes defined in _state to
+        dict. If json_='save', it subselects the Fields with save=True. If
+        json_='webapi', it subselects Fields with (update=True, read=True)
+        '''
+        dict_ = self.to_dict()
+        if json_ == 'webapi':
+            attrlist = self._attrlist()
+        elif json_ == 'save':
+            attrlist = self._attrlist(do=('save',))
+        else:
+            raise ValueError("desired json_ payload must be either for webapi "
+                "or for save files: ('webapi', 'save')")
+
+        toserial = {}
+        for key in attrlist:
+            if key in dict_:
+                # if attribute is None, then dict_ does not contain it
+                if (hasattr(self, key) and
+                    hasattr(getattr(self, key), 'to_serialize')):
+                    attr = getattr(self, key)
+                    # recursively call for nested objects
+                    toserial[key] = attr.to_serialize(json_)
+                else:
+                    # not a nested object
+                    toserial[key] = dict_[key]
+
+        toserial['json_'] = json_
+        return toserial
+
     def serialize(self, json_='webapi'):
         """
         Convert the dict returned by object's to_dict method to valid json
@@ -766,7 +817,7 @@ class Serializable(GnomeId):
             todo: revisit this to see if it still makes sense to have different
             attributes for different operations like 'update', 'save', 'read'
         """
-        toserial = self.to_dict(json_)
+        toserial = self.to_serialize(json_)
         schema = self.__class__._schema()
         serial = schema.serialize(toserial)
 
@@ -780,3 +831,6 @@ class Serializable(GnomeId):
         instance of the object described by the json schema
         """
         return cls._schema().deserialize(json_)
+
+
+

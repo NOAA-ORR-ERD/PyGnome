@@ -6,11 +6,12 @@ from datetime import datetime, timedelta
 import glob
 import copy
 import json
+import inspect
 
 import numpy
 np = numpy
 from colander import (MappingSchema, SchemaNode,
-                      Float, Int, Bool, String, drop)
+                      Float, Int, Bool, drop)
 
 from gnome.environment import Environment
 
@@ -26,7 +27,11 @@ from gnome.weatherers import Weatherer
 
 from gnome.outputters import Outputter, NetCDFOutput
 
-from gnome.persist import (extend_colander, base_schema, validators)
+from gnome.persist import (extend_colander,
+                           base_schema,
+                           validators,
+                           References,
+                           load)
 
 
 class SpillContainerPairSchema(MappingSchema):
@@ -43,25 +48,24 @@ class SpillContainerPairSchema(MappingSchema):
 
 class ModelSchema(base_schema.ObjType):
     'Colander schema for Model object'
-    time_step = SchemaNode(Float())
+    time_step = SchemaNode(Float(), missing=drop)
     weathering_substeps = SchemaNode(Int(), missing=drop)
     start_time = SchemaNode(extend_colander.LocalDateTime(),
-                            validator=validators.convertible_to_seconds)
-    duration = SchemaNode(extend_colander.TimeDelta())  # max duration?
-    uncertain = SchemaNode(Bool())
-    cache_enabled = SchemaNode(Bool())
+                            validator=validators.convertible_to_seconds,
+                            missing=drop)
+    duration = SchemaNode(extend_colander.TimeDelta(), missing=drop)  # max duration?
+    uncertain = SchemaNode(Bool(), missing=drop)
+    cache_enabled = SchemaNode(Bool(), missing=drop)
+    spills = base_schema.OrderedCollectionItemsList(missing=drop)
+    uncertain_spills = base_schema.OrderedCollectionItemsList(missing=drop)
+    movers = base_schema.OrderedCollectionItemsList(missing=drop)
+    weatherers = base_schema.OrderedCollectionItemsList(missing=drop)
+    environment = base_schema.OrderedCollectionItemsList(missing=drop)
+    outputters = base_schema.OrderedCollectionItemsList(missing=drop)
 
-    def __init__(self, json_='webapi',
+    def __init__(self,
                  maptype='gnome.map.GnomeMap',
                  **kwargs):
-        if json_ == 'save':
-            self.add(SpillContainerPairSchema(name='spills'))
-        else:
-            self.add(base_schema.OrderedCollectionItemsList(name='spills'))
-
-        oc_list = ['movers', 'weatherers', 'environment', 'outputters']
-        for oc in oc_list:
-            self.add(base_schema.OrderedCollectionItemsList(name=oc))
 
         if maptype:
             name, scope = (list(reversed(maptype.rsplit('.', 1)))
@@ -91,8 +95,8 @@ class Model(Serializable):
                'movers',
                'weatherers',
                'environment',
-               'spills',
-               'outputters']
+               'outputters'
+               ]
     _create = []
     _create.extend(_update)
     _state = copy.deepcopy(Serializable._state)
@@ -101,36 +105,51 @@ class Model(Serializable):
     # no need to copy parent's _state in this case
     _state.add(save=_create, update=_update)
 
+    # override __eq__ since 'spills' and 'uncertain_spills' need to be checked
+    # They both have _to_dict() methods to return underlying ordered
+    # collections and that would not be the correct way to check equality
+    _state += [Field('spills', save=True, update=True, test_for_eq=False),
+               Field('uncertain_spills', save=True, test_for_eq=False)]
+
+    # list of OrderedCollections
+    _oc_list = ['movers', 'weatherers', 'environment', 'outputters']
+
     @classmethod
     def new_from_dict(cls, dict_):
         'Restore model from previously persisted _state'
         json_ = dict_.pop('json_')
-        l_env = dict_.pop('environment')
-        l_out = dict_.pop('outputters')
-        l_movers = dict_.pop('movers')
-        l_weatherers = dict_.pop('weatherers')
+        l_env = dict_.pop('environment', [])
+        l_out = dict_.pop('outputters', [])
+        l_movers = dict_.pop('movers', [])
+        l_weatherers = dict_.pop('weatherers', [])
+        c_spills = dict_.pop('spills', [])
 
-        if json_ == 'save':
-            c_spills = dict_.pop('certain_spills')
-
-            if 'uncertain_spills' in dict_:
-                u_spills = dict_.pop('uncertain_spills')
-                l_spills = zip(c_spills, u_spills)
-            else:
-                l_spills = c_spills
+        if 'uncertain_spills' in dict_:
+            u_spills = dict_.pop('uncertain_spills')
+            l_spills = zip(c_spills, u_spills)
         else:
-            l_spills = dict_.pop('spills')
-            if 'id' in dict_:
-                dict_.pop('id')
+            l_spills = c_spills
 
-        if 'obj_type' in dict_:
-            dict_.pop('obj_type')
+        # define defaults for properties that a location file may not contain
+        kwargs = inspect.getargspec(cls.__init__)
+        default_restore = dict(zip(kwargs[0][1:], kwargs[3]))
 
-        if 'map' not in dict_ or dict_['map'] == None:
-            dict_['map'] = gnome.map.GnomeMap()
+        if json_ == 'webapi':
+            # default is to enable cache
+            default_restore['cache_enabled'] = True
+
+        for key in default_restore:
+            default_restore[key] = dict_.pop(key, default_restore[key])
 
         model = object.__new__(cls)
-        model.__restore__(**dict_)
+        model.__restore__(**default_restore)
+
+        # if there are other values in dict_, setattr
+        if json_ == 'webapi':
+            model.update_from_dict(dict_)
+        else:
+            cls._restore_attr_from_save(model, dict_)
+
         [model.environment.add(obj) for obj in l_env]
         [model.outputters.add(obj) for obj in l_out]
         [model.spills.add(obj) for obj in l_spills]
@@ -144,6 +163,8 @@ class Model(Serializable):
         model.weatherers.register_callback(model._callback_add_weatherer,
                                            ('add', 'replace'))
 
+        # restore the spill data outside this method - let's not try to find
+        # the saveloc here
         return model
 
     def __init__(self,
@@ -172,12 +193,10 @@ class Model(Serializable):
         :param cache_enabled=False: Flag for setting whether the model should
             cache results to disk.
         '''
-        if not map:
-            map = gnome.map.GnomeMap()
 
         self.__restore__(time_step, start_time, duration,
                          weathering_substeps,
-                         map, uncertain, cache_enabled)
+                         uncertain, cache_enabled, map)
 
         # register callback with OrderedCollection
         self.movers.register_callback(self._callback_add_mover,
@@ -187,8 +206,7 @@ class Model(Serializable):
                                           ('add', 'replace'))
 
     def __restore__(self, time_step, start_time, duration,
-                    weathering_substeps,
-                    map, uncertain, cache_enabled):
+                    weathering_substeps, uncertain, cache_enabled, map):
         '''
         Take out initialization that does not register the callback here.
         This is because new_from_dict will use this to restore the model _state
@@ -212,6 +230,9 @@ class Model(Serializable):
         self._start_time = start_time
         self._duration = duration
         self.weathering_substeps = weathering_substeps
+        if not map:
+            map = gnome.map.GnomeMap()
+
         self._map = map
         self.time_step = time_step  # this calls rewind() !
 
@@ -644,7 +665,7 @@ class Model(Serializable):
     def __eq__(self, other):
         check = super(Model, self).__eq__(other)
         if check:
-            # also check the data in spill_container object
+            # also check the data in ordered collections
             if type(self.spills) != type(other.spills):
                 return False
 
@@ -660,65 +681,69 @@ class Model(Serializable):
     Following methods are for saving a Model instance or creating a new
     model instance from a saved location
     '''
-    def save(self, saveloc):
-        """
-        save model in json format to user specified saveloc
+    def spills_to_dict(self):
+        '''
+        return the spills ordered collection for serialization
+        '''
+        return self.spills.to_dict()['spills']
 
-        :param saveloc: A valid directory. Model files are either persisted
-                        here or a new model is re-created from the files
-                        stored here. The files are clobbered when save() is
-                        called.
-        :type saveloc: A path as a string or unicode
-        """
-        path_, savedir = os.path.split(saveloc)
-        if path_ == '':
-            path_ = '.'
+    def uncertain_spills_to_dict(self):
+        '''
+        return the uncertain_spills ordered collection for serialization/save
+        files
+        '''
+        if self.uncertain:
+            dict_ = self.spills.to_dict()
+            return dict_['uncertain_spills']
 
-        if not os.path.exists(path_):
-            raise ValueError('"{0}" does not exist. \nCannot create "{1}"'
-                             .format(path_, savedir))
+        return None
 
-        if not os.path.exists(saveloc):
-            os.mkdir(saveloc)
-
+    def save(self, saveloc, references=None, name=None):
+        # Note: Defining references=References() in the function definition
+        # keeps the references object in memory between tests - it changes the
+        # scope of Referneces() to be outside the Model() instance. We don't
+        # want this
+        references = (references, References())[references is None]
+        self._make_saveloc(saveloc)
         self._empty_save_dir(saveloc)
-        model_json = self.serialize('save')
+        json_ = self.serialize('save')
 
-        for coll in ['movers', 'weatherers', 'environment', 'outputters']:
-            self._save_collection(saveloc, getattr(self, coll),
-                                    model_json[coll])
+        for oc in self._oc_list:
+            coll_ = getattr(self, oc)
+            self._save_collection(saveloc, coll_, references, json_[oc])
 
         for sc in self.spills.items():
             if sc.uncertain:
                 key = 'uncertain_spills'
             else:
-                key = 'certain_spills'
-            self._save_collection(saveloc, sc.spills,
-                                    model_json['spills'][key])
+                key = 'spills'
 
-        # persist model _state since middle of run
+            self._save_collection(saveloc, sc.spills, references, json_[key])
+
         if self.current_time_step > -1:
+            '''
+            hard code the filename - can make this an attribute if user wants
+            to change it - but not sure if that will ever be needed?
+            '''
             self._save_spill_data(os.path.join(saveloc,
-                                               'spills_data_arrays.nc'))
+                                        'spills_data_arrays.nc'))
 
-        self._save_json_to_file(saveloc, model_json,
-                                '{0}.json'.format(self.__class__.__name__))
+        # there should be no more references
+        self._json_to_saveloc(json_, saveloc, references, name)
+        if name and references.reference(self) != name:
+            # todo: want a warning here instead of an exception
+            raise Exception("{0} already exists, cannot name "
+                "the model's json file: {0}".format(name))
+            pass
+        return references
 
-    def _save_collection(self, saveloc, coll_, model_coll_json):
+    def _save_collection(self, saveloc, coll_, refs, coll_json):
         """
-        Function loops over an orderedcollection or any other iterable
-        containing a list of objects. It calls the to_dict method for each
-        object, then converts it o valid json (dict_to_json),
-        and finally saves it to file (_save_json_to_file)
+        Reference objects inside OrderedCollections. Since the OC itself
+        isn't a reference but the objects in the list are a reference, do
+        something a little differently here
 
         :param OrderedCollection coll_: ordered collection to be saved
-
-        Note: The movers and weatherer objects reference the environment
-        collection. If a field is saved as reference (field.save_reference is
-        True), then this function adds json_[field.name] = index where
-        index is the index into the environment array for the reference
-        object. Currently, only objects in the environment collection are
-        referenced by movers.
         """
         for count, obj in enumerate(coll_):
             json_ = obj.serialize('save')
@@ -729,49 +754,15 @@ class Model(Serializable):
                         ref_obj = getattr(obj, field.name)
                         index = self.environment.index(ref_obj)
                         json_[field.name] = index
-
-            fname = '{0.__class__.__name__}_{1}.json'.format(obj, count)
-            model_coll_json[count]['json_file'] = fname
-            model_coll_json[count].pop('id')
-            self._save_json_to_file(saveloc, json_, fname)
-
-    def _save_json_to_file(self, saveloc, data, name):
-        """
-        write json data to file
-
-        :param dict data: JSON data to be saved
-        :param obj: gnome object corresponding w/ data
-        """
-
-        fname = os.path.join(saveloc, name)
-        data = self._move_data_file(saveloc, data)  # if there is a
-
-        with open(fname, 'w') as outfile:
-            json.dump(data, outfile, indent=True)
-
-    def _move_data_file(self, saveloc, json_):
-        """
-        Look at _state attribute of object. Find all fields with 'isdatafile'
-        attribute as True. If there is a key in to_json corresponding with
-        'name' of the fields with True 'isdatafile' attribute then move that
-        datafile and update the key in the to_json to point to new location
-
-        TODO: maybe this belongs in serializable base class? Revisit this
-        """
-        _state = eval('{0}._state'.format(json_['obj_type']))
-        fields = _state.get_field_by_attribute('isdatafile')
-
-        for field in fields:
-            if field.name not in json_:
-                continue
-
-            value = json_[field.name]
-
-            if os.path.exists(value) and os.path.isfile(value):
-                shutil.copy(value, saveloc)
-                json_[field.name] = os.path.split(json_[field.name])[1]
-
-        return json_
+            obj_ref = refs.get_reference(obj)
+            if obj_ref is None:
+                # try following name - if 'fname' already exists in references,
+                # then obj.save() assigns a different name to file
+                fname = '{0.__class__.__name__}_{1}.json'.format(obj, count)
+                obj.save(saveloc, refs, fname)
+                coll_json[count]['id'] = refs.reference(obj)
+            else:
+                coll_json[count]['id'] = obj_ref
 
     def _save_spill_data(self, datafile):
         """ save the data arrays for current timestep to NetCDF """
@@ -780,6 +771,40 @@ class Model(Serializable):
                                      uncertain=self.uncertain,
                                      spills=self.spills)
         nc_out.write_output(self.current_time_step)
+
+    def _load_spill_data(self, spill_data):
+        """
+        load NetCDF file and add spill data back in - designed for savefiles
+        """
+
+        if not os.path.exists(spill_data):
+            return
+
+        if self.uncertain:
+            saveloc, spill_data_fname = os.path.split(spill_data)
+            spill_data_fname, ext = os.path.splitext(spill_data_fname)
+            u_spill_data = os.path.join(saveloc,
+                '{0}_uncertain{1}'.format(spill_data_fname, ext))
+
+        array_types = {}
+
+        for m in self.movers:
+            array_types.update(m.array_types)
+
+        for w in self.weatherers:
+            array_types.update(w.array_types)
+
+        for sc in self.spills.items():
+            if sc.uncertain:
+                data = NetCDFOutput.read_data(u_spill_data, time=None,
+                                              which_data='all')
+            else:
+                data = NetCDFOutput.read_data(spill_data, time=None,
+                                              which_data='all')
+
+            sc.current_time_stamp = data.pop('current_time_stamp').item()
+            sc._data_arrays = data
+            sc._array_types.update(array_types)
 
     def _empty_save_dir(self, saveloc):
         '''
@@ -805,10 +830,8 @@ class Model(Serializable):
         'save', the 'dtype' and 'items' returned by the ordered collection
         dict is kept for loading from save files and for information
         '''
-        toserial = self.to_dict(json_)
-
-        schema = self.__class__._schema(json_=json_,
-                                        maptype=toserial['map']['obj_type'])
+        toserial = self.to_serialize(json_)
+        schema = self.__class__._schema(maptype=toserial['map']['obj_type'])
         return schema.serialize(toserial)
 
     @classmethod
@@ -817,180 +840,71 @@ class Model(Serializable):
         check contents of orderered collections to figure out what schema to
         use for the OC
         '''
-        if ('map' in json_ and
-            isinstance(json_['map'], dict) and
-            'obj_type' in json_['map']):
-            schema = cls._schema(json_=json_['json_'],
-                                 maptype=json_['map']['obj_type'])
+        if ('map' in json_ and json_['json_'] == 'webapi'):
+            schema = cls._schema(maptype=json_['map']['obj_type'])
         else:
-            schema = cls._schema(json_=json_['json_'],
-                                 maptype=None)
+            schema = cls._schema(maptype=None)
 
-        return schema.deserialize(json_)
+        deserial = schema.deserialize(json_)
 
-'''
-'load' and the following functions don't really need to be part of the Model
-class - no need to make them classmethods. Use it to load a new model instance
-from json files stored in save file location - sufficient to make these part of
-the model module.
-'''
+        return deserial
 
+    @classmethod
+    def load(cls, saveloc, json_data, references=None):
+        '''
+        '''
+        references = (references, References())[references is None]
 
-def _dict_to_obj(obj_dict):
-    '''
-    create object from a dict. The dict contains (keyword,value) pairs
-    used to create new object
-    '''
-    type_ = obj_dict.pop('obj_type')
-    to_eval = '{0}.new_from_dict(obj_dict)'.format(type_)
-    obj = eval(to_eval)
+        # model has no datafiles or 'save_reference' attributes so no need to
+        # do anything special for it. But let's add this as a check anyway
+        datafiles = cls._state.get_field_by_attribute('isdatafile')
+        ref_fields = cls._state.get_field_by_attribute('save_reference')
+        if (datafiles or ref_fields):
+            raise Exception("Model.load() assumes none of the attributes "
+                "defining the state 'isdatafile' or is 'save_reference'. "
+                "If this changes, then we need to make this more robust.")
 
-    return obj
+        # deserialize after removing references
+        _to_dict = cls.deserialize(json_data)
 
+        # load nested map object and add it - currently, 'load' is only used
+        # for laoding save files/location files, so it assumes:
+        # json_data['json_'] == 'save'
+        if ('map' in json_data):
+            map_obj = eval(json_data['map']['obj_type']).load(saveloc,
+                json_data['map'], references)
+            _to_dict['map'] = map_obj
 
-def _load_and_deserialize_json(fname):
-    '''
-    load json data from file and deserialize it
+        # load collections
+        for oc in cls._oc_list:
+            if oc in _to_dict:
+                _to_dict[oc] = cls._load_collection(saveloc, _to_dict[oc],
+                    references)
+        for spill in ['spills', 'uncertain_spills']:
+            if spill in _to_dict:
+                _to_dict[spill] = cls._load_collection(saveloc, _to_dict[spill],
+                    references)
+            # also need to load spill data for mid-run save!
 
-    :param fname:
-    :param saveloc:
-    '''
-    with open(fname, 'r') as infile:
-        json_data = json.load(infile)
+        model = cls.new_from_dict(_to_dict)
 
-    _state = eval('{0}._state'.format(json_data['obj_type']))
-    fields = _state.get_field_by_attribute('isdatafile')
-    refs = _state.get_field_by_attribute('save_reference')
+        model._load_spill_data(os.path.join(saveloc, 'spills_data_arrays.nc'))
 
-    saveloc = os.path.split(fname)[0]
+        return model
 
-    for field in fields:
-        if field.name in json_data:
-            json_data[field.name] = os.path.join(saveloc,
-                                                 json_data[field.name])
-
-    if refs:
-        refs = {field.name: json_data.pop(field.name)
-                for field in refs
-                if field.name in json_data}
-
-    to_eval = ('{0}.deserialize(json_data)'.format(json_data['obj_type']))
-    _to_dict = eval(to_eval)
-
-    if refs:
-        _to_dict.update(refs)
-
-    return _to_dict
-
-
-def _load_json_from_file_to_obj(fname):
-    dict_ = _load_and_deserialize_json(fname)
-    obj_ = _dict_to_obj(dict_)
-
-    return obj_
-
-
-def _load_collection(saveloc, coll_dict, l_env=None):
-    """
-    Load collection - dict contains output of OrderedCollection.to_dict()
-
-    'dtype' - currently not used for anything
-    'items' - for each object in list, use this to find and load the
-                json file, convert it to a valid dict, then create a new
-                object using new_from_dict 'items' contains a list of
-                tuples (object_type, id of object)
-
-    :returns: a list of objects corresponding with the data in 'items'
-
-    .. note:: while this applies to ordered collections. It can work for
-              any iterable that contains 'items' in the dict with above
-              format.
-    """
-    obj_list = []
-
-    for item in coll_dict:
-        type_ = item['obj_type']
-        #fname = '{0}_{1}.json'.format(type_.rsplit('.', 1)[1], idx)
-        fname = item['json_file']
-        obj_dict = _load_and_deserialize_json(os.path.join(saveloc, fname))
-
-        _state = eval('{0}._state'.format(type_))
-        refs = _state.get_field_by_attribute('save_reference')
-        for field in refs:
-            if field.name in obj_dict:
-                obj_dict[field.name] = l_env[obj_dict.get(field.name)]
-
-        obj = _dict_to_obj(obj_dict)
-        obj_list.append(obj)
-
-    return obj_list
-
-
-def _load_spill_data(saveloc, model):
-    """ load NetCDF file and add spill data back in """
-    spill_data = os.path.join(saveloc, 'spills_data_arrays.nc')
-    if not os.path.exists(spill_data):
-        return
-
-    if model.uncertain:
-        u_spill_data = os.path.join(saveloc, 'spills_data_arrays_uncertain.nc')
-
-    array_types = {}
-
-    for m in model.movers:
-        array_types.update(m.array_types)
-
-    for w in model.weatherers:
-        array_types.update(w.array_types)
-
-    for sc in model.spills.items():
-        if sc.uncertain:
-            data = NetCDFOutput.read_data(u_spill_data, time=None,
-                                          which_data='all')
-        else:
-            data = NetCDFOutput.read_data(spill_data, time=None,
-                                          which_data='all')
-
-        sc.current_time_stamp = data.pop('current_time_stamp').item()
-        sc._data_arrays = data
-        sc._array_types.update(array_types)
-
-
-def load(saveloc):
-    """
-    reconstruct the model from saveloc. It stores the re-created model
-    inside 'model' attribute. Function also returns the recreated model.
-
-    :returns: a model object re-created from the save files
-    """
-    model_file = glob.glob(os.path.join(saveloc, 'Model.json'))
-    if model_file == []:
-        raise ValueError('No Model.json files find in {0}'.format(saveloc))
-    else:
-        model_file = model_file[0]
-
-    model_dict = _load_and_deserialize_json(model_file)
-
-    model_dict['map'] = _dict_to_obj(model_dict['map'])
-
-    # pop lists that correspond with ordered collections
-    # create a list of associated objects and put it back into model_dict
-    for key in ['weatherers', 'environment', 'outputters', 'spills']:
-        list_ = model_dict.pop(key)
-        if key == 'spills':
-            model_dict['certain_spills'] = \
-                _load_collection(saveloc, list_['certain_spills'])
-            if ('uncertain' in model_dict and model_dict['uncertain']):
-                model_dict['uncertain_spills'] = \
-                    _load_collection(saveloc, list_['uncertain_spills'])
-        else:
-            model_dict[key] = _load_collection(saveloc, list_)
-
-    l_movers = model_dict.pop('movers')
-    model_dict['movers'] = \
-        _load_collection(saveloc, l_movers, model_dict['environment'])
-
-    model = _dict_to_obj(model_dict)
-    _load_spill_data(saveloc, model)
-
-    return model
+    @classmethod
+    def _load_collection(cls, saveloc, l_coll_dict, refs):
+        '''
+        doesn't need to be classmethod of the Model, but its only used by
+        Model at present
+        '''
+        l_coll = []
+        for item in l_coll_dict:
+            i_ref = item['id']
+            if refs.retrieve(i_ref):
+                l_coll.append(refs.retrieve(i_ref))
+            else:
+                f_name = os.path.join(saveloc, item['id'])
+                obj = load(f_name, refs)    # will add obj to refs
+                l_coll.append(obj)
+        return (l_coll)

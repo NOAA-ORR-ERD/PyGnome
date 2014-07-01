@@ -20,6 +20,7 @@ from gnome.spill import point_line_release_spill, Spill, Release
 from gnome.movers import RandomMover
 from gnome.outputters import NetCDFOutput
 from gnome.model import Model
+from gnome.persist import load
 
 base_dir = os.path.dirname(__file__)
 
@@ -620,6 +621,7 @@ def test_var_attr_spill_num():
                         data.variables['spill_num'].spills_map)
 
             _del_nc_file(nc_name[ix])
+
 
 def _run_model(model):
     'helper function'

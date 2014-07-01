@@ -217,7 +217,9 @@ class InitHalfLivesFromOilProps(InitBaseClass, Serializable):
 
 class InitMassFromTotalMass(InitBaseClass, Serializable):
     """
-    Initialize the 'mass' array based on total mass spilled
+    Initialize the 'mass' array based on total mass spilled.
+    todo: are both InitMassFromTotalMass and InitMassFromTotalVolume required?
+    If one is known, isn't the other one known too?
     """
 
     _state = copy.deepcopy(InitBaseClass._state)
@@ -233,23 +235,27 @@ class InitMassFromTotalMass(InitBaseClass, Serializable):
                                                     spill.release.num_elements)
 
 
-class InitMassFromVolume(InitBaseClass, Serializable):
-    """
-    Initialize the 'mass' array based on total volume spilled and the type of
-    substance. No parameters, as it uses the volume specified elsewhere.
-    """
-    _state = copy.deepcopy(InitBaseClass._state)
-    _schema = base_schema.ObjType
-
-    def initialize(self, num_new_particles, spill, data_arrays, substance):
-        if spill.volume is None:
-            raise ValueError('volume attribute of spill is None - cannot '
-                             'compute mass without volume')
-
-        _total_mass = (substance.get_density('kg/m^3')
-                       * spill.get_volume('m^3') * 1000)
-        data_arrays['mass'][-num_new_particles:] = (_total_mass /
-                                                    spill.release.num_elements)
+# NOT REQUIRED. IF DENSITY IS KNOWN, WE CAN COMPUTE TOTAL MASS IN SPILL - THEN
+# USE InitMassFromTotalMass as initializer
+#==============================================================================
+# class InitMassFromVolume(InitBaseClass, Serializable):
+#     """
+#     Initialize the 'mass' array based on total volume spilled and the type of
+#     substance. No parameters, as it uses the volume specified elsewhere.
+#     """
+#     _state = copy.deepcopy(InitBaseClass._state)
+#     _schema = base_schema.ObjType
+# 
+#     def initialize(self, num_new_particles, spill, data_arrays, substance):
+#         if spill.volume is None:
+#             raise ValueError('volume attribute of spill is None - cannot '
+#                              'compute mass without volume')
+# 
+#         _total_mass = (substance.get_density('kg/m^3')
+#                        * spill.get_volume('m^3') * 1000)
+#         data_arrays['mass'][-num_new_particles:] = (_total_mass /
+#                                                     spill.release.num_elements)
+#==============================================================================
 
 
 class InitMassFromPlume(InitBaseClass, Serializable):
@@ -288,20 +294,10 @@ class DistributionBase(InitBaseClass, Serializable):
     _state.add(save=['distribution'], update=['distribution'])
     _schema = DistributionBaseSchema
 
-    @classmethod
-    def new_from_dict(cls, dict_):
-        if dict_['json_'] == 'save':
-            distribution = dict_.get('distribution')
-            to_eval = '{0}.new_from_dict(distribution)'.format(
-                                                    distribution['obj_type'])
-            dict_['distribution'] = eval(to_eval)
-
-        return super(DistributionBase, cls).new_from_dict(dict_)
-
     def serialize(self, json_='webapi'):
         'Add distribution schema based on "distribution" - then serialize'
 
-        dict_ = self.to_dict(json_)
+        dict_ = self.to_serialize(json_)
         schema = self.__class__._schema(name=self.__class__.__name__,
                    distribution=self.distribution._schema(name='distribution'))
         return schema.serialize(dict_)
@@ -314,6 +310,14 @@ class DistributionBase(InitBaseClass, Serializable):
         dist_schema = eval(to_eval)
         schema = cls._schema(name=cls.__name__, distribution=dist_schema)
         dict_ = schema.deserialize(json_)
+
+        # convert nested object ['distribution'] saved as a
+        # dict, back to an object if json_ == 'save' here itself
+        if json_['json_'] == 'save':
+            distribution = dict_.get('distribution')
+            to_eval = '{0}.new_from_dict(distribution)'.format(
+                                                    distribution['obj_type'])
+            dict_['distribution'] = eval(to_eval)
 
         return dict_
 
@@ -429,21 +433,6 @@ class ElementType(Serializable):
     _state.add(save=['initializers'], update=['initializers'])
     _schema = base_schema.ObjType
 
-    @classmethod
-    def new_from_dict(cls, dict_):
-        """
-        primarily need to reconstruct objects for initializers dict
-        if loading from save files
-        """
-        if dict_['json_'] == 'save':
-            init = dict_.get('initializers')
-            for name, val in init.iteritems():
-                type_ = val.pop('obj_type')
-                obj = eval(type_).new_from_dict(val)
-                init[name] = obj
-
-        return super(ElementType, cls).new_from_dict(dict_)
-
     def __init__(self, initializers, substance='oil_conservative'):
         '''
         Define initializers for the type of elements
@@ -488,7 +477,7 @@ class ElementType(Serializable):
                     i.initialize(num_new_particles, spill, data_arrays,
                                  self.substance)
 
-    def to_dict(self, json_='webapi'):
+    def to_dict(self):
         """
         call the to_dict method on each object in the initializers dict. Store
         results in dict and return.
@@ -496,11 +485,11 @@ class ElementType(Serializable):
         todo: the standard to_dict doesn't seem to fit well in this case. It
         works but perhaps can/should be revisited to make it simpler
         """
-        dict_ = super(ElementType, self).to_dict(json_)
+        dict_ = super(ElementType, self).to_dict()
 
         init = {}
         for key, val in dict_['initializers'].iteritems():
-            init[key] = val.to_dict(json_)
+            init[key] = val.to_dict()
 
         dict_['initializers'] = init
         return dict_
@@ -521,7 +510,7 @@ class ElementType(Serializable):
         schemas to the ElementType schema since they are not known ahead of
         time.
         """
-        dict_ = self.to_dict(json_)
+        dict_ = self.to_serialize(json_)
         #et_schema = elements_schema.ElementType()
         et_schema = self.__class__._schema()
         et_json_ = et_schema.serialize(dict_)
@@ -545,8 +534,16 @@ class ElementType(Serializable):
 
         for i_key, i_val in json_['initializers'].iteritems():
             deserial = eval(i_val['obj_type']).deserialize(i_val)
-            #deserial = schema.deserialize(i_val)
-            d_init[i_key] = deserial
+
+            if json_['json_'] == 'save':
+                '''
+                If loading from save file, convert the dict_ to new object
+                here itself
+                '''
+                obj = eval(deserial['obj_type']).new_from_dict(deserial)
+                d_init[i_key] = obj
+            else:
+                d_init[i_key] = deserial
 
         dict_['initializers'] = d_init
 
@@ -604,14 +601,14 @@ def plume(distribution_type='droplet_size',
                                                                            **kwargs),
                             'windages': InitWindages(windage_range,
                                                      windage_persist),
-                            'mass': InitMassFromVolume()},
+                            'mass': InitMassFromTotalMass()},
                            substance)
     elif distribution_type == 'rise_velocity':
         return ElementType({'rise_vel': InitRiseVelFromDist(distribution=distribution,
                                                             **kwargs),
                             'windages': InitWindages(windage_range,
                                                      windage_persist),
-                            'mass': InitMassFromVolume()},
+                            'mass': InitMassFromTotalMass()},
                            substance)
 
 
@@ -626,7 +623,7 @@ plume.__doc__ += ("\nDocumentation of OilPropsFromDensity:\n" +
                    "\nDocumentation of InitWindages:\n" +
                    InitWindages.__init__.__doc__ +
                    "\nDocumentation of InitMassFromVolume:\n" +
-                   InitMassFromVolume.__init__.__doc__
+                   InitMassFromTotalMass.__init__.__doc__
                    )
 
 

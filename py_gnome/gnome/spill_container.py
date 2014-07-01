@@ -627,26 +627,25 @@ class SpillContainerPair(SpillContainerPairData):
         '''
         return ident in self._spill_container.spills
 
-    def to_dict(self, json_='webapi'):
+    def to_dict(self):
         """
         takes the instance of SpillContainerPair class and outputs a dict with:
-            'certain_spills': call to_dict() on spills ordered collection
+            'spills': call to_dict() on spills ordered collection
             stored in certain spill container
 
         if uncertain, then also return:
             'uncertain_spills': call to_dict() on spills ordered collection
             stored in uncertain spill container
-        """
-        if json_ == 'save':
-            dict_ = {'certain_spills':
-                     self._spill_container.spills.to_dict(json_)}
-            if self.uncertain:
-                dict_.update({'uncertain_spills':
-                              self._u_spill_container.spills.to_dict(json_)})
-            return dict_
 
-        else:
-            return self._spill_container.spills.to_dict(json_)
+        The input param json_ is not used. It is there to keep the same
+        interface for all to_dict() functions
+        """
+        dict_ = {'spills':
+                 self._spill_container.spills.to_dict()}
+        if self.uncertain:
+            dict_.update({'uncertain_spills':
+                          self._u_spill_container.spills.to_dict()})
+        return dict_
 
     def spill_by_index(self, index, uncertain=False):
         '''return either the forecast spill or the uncertain spill at

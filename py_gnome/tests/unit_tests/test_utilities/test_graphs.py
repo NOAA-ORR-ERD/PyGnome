@@ -11,7 +11,7 @@ from gnome.utilities.weathering.graphs import GraphSchema
 
 class TestGraphSchema(object):
     def test_create(self, sample_graph):
-        serial_dict = GraphSchema().serialize(sample_graph.to_dict('save'))
+        serial_dict = GraphSchema().serialize(sample_graph.to_serialize('save'))
         deserial_dict = GraphSchema().deserialize(serial_dict)
         new_graph = Graph.new_from_dict(deserial_dict)
 
@@ -32,7 +32,7 @@ class TestGraphSchema(object):
            Just tests methods don't fail and the schema is properly defined.
            It doesn't update any properties.
         '''
-        serial_dict = GraphSchema().serialize(sample_graph.to_dict())
+        serial_dict = GraphSchema().serialize(sample_graph.to_serialize())
         deserial_dict = GraphSchema().deserialize(serial_dict)
         sample_graph.update_from_dict(deserial_dict)
         pass

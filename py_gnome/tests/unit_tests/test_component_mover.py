@@ -12,6 +12,7 @@ from gnome.movers import ComponentMover
 from gnome.environment import Wind
 from gnome.utilities import time_utils
 from gnome.utilities.remote_data import get_datafile
+from gnome.persist import load
 
 from conftest import sample_sc_release
 
@@ -186,40 +187,20 @@ def _uncertain_loop(pSpill, component):
     return u_delta
 
 
-@pytest.mark.parametrize(("json_"), ['save', 'webapi'])
-def test_serialize_deserialize_wind(json_):
+@pytest.mark.parametrize("wind", (None, wnd))
+def test_serialize_deserialize(wind):
     """
     test to_dict function for Component mover with wind object
     create a new Component mover and make sure it has same properties
     """
 
-    c_component = ComponentMover(curr1_file, wind=wnd)
-    serial = c_component.serialize(json_)
+    c_component = ComponentMover(curr1_file, wind=wind)
+    serial = c_component.serialize('webapi')
     dict_ = c_component.deserialize(serial)
-    if json_ == 'save':
-        dict_.update({'wind': wnd})
-        c2 = ComponentMover.new_from_dict(dict_)
-        assert c_component == c2
-    else:
+    if wind:
         #assert serial['wind'] == wnd.serialize(json_)
         assert 'wind' in serial
         dict_['wind'] = wnd  # no longer updating properties of nested objects
-        c_component.update_from_dict(dict_)
         assert c_component.wind is wnd
-
-
-@pytest.mark.parametrize(("json_"), ['save', 'webapi'])
-def test_serialize_deserialize_curronly(json_):
-    """
-    test to_dict function for Component mover
-    create a new component mover and make sure it has same properties
-    """
-
-    c_component = ComponentMover(curr1_file)
-    serial = c_component.serialize(json_)
-    dict_ = c_component.deserialize(serial)
-    if json_ == 'save':
-        c2 = ComponentMover.new_from_dict(dict_)
-        assert c_component == c2
     else:
         c_component.update_from_dict(dict_)

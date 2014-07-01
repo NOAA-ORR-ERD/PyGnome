@@ -5,6 +5,7 @@ These are also tested in the test_spill_container module since it allows for
 more comprehensive testing
 '''
 from datetime import datetime, timedelta
+import os
 
 import pytest
 from pytest import raises
@@ -15,7 +16,6 @@ np = numpy
 import gnome
 from gnome import array_types
 from gnome.spill.elements import (InitWindages,
-                            InitMassFromVolume,
                             InitMassFromTotalMass,
                             InitRiseVelFromDist,
                             InitRiseVelFromDropletSizeFromDist,
@@ -28,6 +28,7 @@ from gnome.utilities.distributions import (NormalDistribution,
 
 from gnome.spill import Spill, Release
 from gnome.db.oil_library.oil_props import OilProps
+from gnome.persist import load
 
 from conftest import mock_append_data_arrays
 
@@ -57,7 +58,7 @@ def assert_dataarray_shape_size(arr_types, data_arrays, num_released):
 
 """ Initializers - following are used for parameterizing tests """
 fcn_list = (InitWindages(),
-            InitMassFromVolume(),
+            InitMassFromTotalMass(),
             InitMassFromTotalMass(),
             InitRiseVelFromDist(),
             InitRiseVelFromDist(distribution=NormalDistribution(mean=0,
@@ -168,19 +169,21 @@ class TestInitConstantWindageRange:
         with raises(ValueError):
             obj.windage_persist = bad_wp
 
-
-def test_initailize_InitMassFromVolume():
-    data_arrays = mock_append_data_arrays(mass_array, num_elems)
-    substance = OilProps('oil_conservative')
-
-    spill = Spill(Release(datetime.now(), 10))
-    spill.volume = num_elems / (substance.get_density('kg/m^3') * 1000)
-
-    fcn = InitMassFromVolume()
-    fcn.initialize(num_elems, spill, data_arrays, substance)
-
-    assert_dataarray_shape_size(mass_array, data_arrays, num_elems)
-    assert np.all(1. == data_arrays['mass'])
+# REMOVED - WAS REDUNDANT INITIALIZER
+#==============================================================================
+# def test_initailize_InitMassFromVolume():
+#     data_arrays = mock_append_data_arrays(mass_array, num_elems)
+#     substance = OilProps('oil_conservative')
+# 
+#     spill = Spill(Release(datetime.now(), 10))
+#     spill.volume = num_elems / (substance.get_density('kg/m^3') * 1000)
+# 
+#     fcn = InitMassFromVolume()
+#     fcn.initialize(num_elems, spill, data_arrays, substance)
+# 
+#     assert_dataarray_shape_size(mass_array, data_arrays, num_elems)
+#     assert np.all(1. == data_arrays['mass'])
+#==============================================================================
 
 
 def test_initailize_InitMassFromTotalMass():
@@ -189,7 +192,7 @@ def test_initailize_InitMassFromTotalMass():
 
     spill = Spill(Release(datetime.now()))
     spill.release.num_elements = 10
-    spill.mass = num_elems
+    spill.set_mass(num_elems, units='g')
 
     fcn = InitMassFromTotalMass()
     fcn.initialize(num_elems, spill, data_arrays, substance)
@@ -280,9 +283,6 @@ arr_types = {'windages': array_types.windages,
 
 inp_params = [((floating(),
                 ElementType({'windages': InitWindages(),
-                             'mass': InitMassFromVolume()})), arr_types),
-              ((floating(),
-                ElementType({'windages': InitWindages(),
                              'mass': InitMassFromTotalMass()})), arr_types),
               ((floating(),
                 ElementType({'windages': InitWindages(),
@@ -290,9 +290,6 @@ inp_params = [((floating(),
               ((floating(),
                 ElementType({'mass': InitMassFromTotalMass(),
                              'rise_vel': InitRiseVelFromDist()})), arr_types),
-              ((floating(),
-                ElementType({'mass': InitMassFromVolume(),
-                             'rise_vel': InitRiseVelFromDist()})), arr_types)
               ]
 
 
@@ -360,19 +357,37 @@ def test_serialize_deserialize_initializers(fcn):
         assert n_obj == fcn
 
 
-@pytest.mark.parametrize(("json_"), ['save', 'webapi'])
-def test_serialize_deserialize(json_):
+test_l = []
+test_l.extend(fcn_list)
+test_l.extend([ElementType(initializers={'init': fcn}) for fcn in fcn_list])
+test_l.append(floating())
+
+
+@pytest.mark.parametrize(("test_obj"), ['webapi'])
+def test_serialize_deserialize(test_obj):
+    '''
+    serialize/deserialize for 'save' optio is tested in test_save_load
+    This tests serialize/deserilize with 'webapi' option
+    '''
     et = floating()
-    dict_ = ElementType.deserialize(et.serialize(json_))
+    dict_ = ElementType.deserialize(et.serialize('webapi'))
 
     # for webapi, make new objects from nested objects before creating
     # new element_type
-    if json_ == 'webapi':
-        dict_['initializers'] = et.initializers
+    dict_['initializers'] = et.initializers
     n_et = ElementType.new_from_dict(dict_)
     # following is not a requirement for webapi, but it is infact the case
     assert n_et == et
-    #==========================================================================
-    # if json_ == 'save':
-    #     assert n_et == et
-    #==========================================================================
+
+
+@pytest.mark.parametrize(("test_obj"), test_l)
+def test_save_load(clean_temp, test_obj):
+    '''
+    test save/load for initializers and for ElementType objects containing
+    each initializer. Tests serialize/deserialize as well.
+    These are stored as nested objects in the Spill but this should also work
+    so test it here
+    '''
+    refs = test_obj.save(clean_temp)
+    test_obj2 = load(os.path.join(clean_temp, refs.reference(test_obj)))
+    assert test_obj == test_obj2

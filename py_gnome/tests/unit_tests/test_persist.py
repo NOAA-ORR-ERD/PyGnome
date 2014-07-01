@@ -21,7 +21,8 @@ from gnome.utilities.remote_data import get_datafile
 from gnome.map import MapFromBNA
 from gnome.environment import Wind, Tide
 
-from gnome.model import Model, load
+from gnome.model import Model
+from gnome.persist import load
 from gnome.spill import point_line_release_spill
 from gnome.movers import RandomMover, WindMover, CatsMover
 from gnome.weatherers import Weatherer
@@ -159,23 +160,10 @@ def test_init_exception(images_dir):
 
 
 def test_dir_gets_created(images_dir):
-    model = make_model(images_dir)
+    model = make_model(images_dir, True)
     assert not os.path.exists(saveloc_)
     model.save(os.path.join(saveloc_))
     assert os.path.exists(saveloc_)
-
-
-def test_exception_no_model_to_load(images_dir):
-    '''
-    raises exception since the saveloc_ from where to load the model is empty.
-    There are no Model.txt files that can be loaded
-    '''
-    try:
-        os.remove(os.path.join(saveloc_, 'Model.json'))
-    except:
-        pass
-    with raises(ValueError):
-        load(os.path.join(saveloc_))
 
 
 @pytest.mark.slow
@@ -188,10 +176,10 @@ def test_save_load_model(images_dir, uncertain):
     model = make_model(images_dir, uncertain)
 
     print 'saving scenario ..'
-    model.save(saveloc_)
+    model.save(saveloc_, name='Model.json')
 
     print 'loading scenario ..'
-    model2 = load(saveloc_)
+    model2 = load(os.path.join(saveloc_, 'Model.json'))
 
     assert model == model2
 
@@ -211,7 +199,7 @@ def test_save_load_midrun_scenario(images_dir, uncertain):
     model.save(saveloc_)
 
     print 'loading scenario ..'
-    model2 = load(saveloc_)
+    model2 = load(os.path.join(saveloc_, 'Model.json'))
 
     for sc in zip(model.spills.items(), model2.spills.items()):
         sc[0]._array_allclose_atol = 1e-5  # need to change both atol
@@ -240,7 +228,7 @@ def test_save_load_midrun_no_movers(images_dir, uncertain):
     model.save(saveloc_)
 
     print 'loading scenario ..'
-    model2 = load(saveloc_)
+    model2 = load(os.path.join(saveloc_, 'Model.json'))
 
     for sc in zip(model.spills.items(), model2.spills.items()):
         # need to change both atol since reading persisted data
@@ -269,7 +257,7 @@ def test_load_midrun_ne_rewound_model(images_dir, uncertain):
     model.save(saveloc_)
 
     model.rewind()
-    model2 = load(saveloc_)
+    model2 = load(os.path.join(saveloc_, 'Model.json'))
 
     assert model.spills != model2.spills
     assert model != model2
@@ -327,3 +315,11 @@ class TestWebApi:
         m2 = Model.new_from_dict(deserial)
         assert m2 == model
         print m2
+
+
+def test_location_file():
+    '''
+    Simple test to check if json_ contains nothing - default model is created
+    '''
+    model = Model.load('.', {'json_': 'save'})
+    assert model == Model()

@@ -12,6 +12,7 @@ from gnome.movers import CurrentCycleMover
 from gnome.environment import Tide
 from gnome.utilities import time_utils
 from gnome.utilities.remote_data import get_datafile
+from gnome.persist import load
 
 from conftest import sample_sc_release
 
@@ -103,7 +104,7 @@ def test_certain_uncertain():
     assert np.all(delta[:, :2] == u_delta[:, :2])
 
 
-c_cycle = CurrentCycleMover(curr_file,topology_file)
+c_cycle = CurrentCycleMover(curr_file, topology_file)
 
 
 def test_default_props():
@@ -138,6 +139,7 @@ def test_scale_value():
     print c_cycle.current_scale
     assert c_cycle.current_scale == 2
 
+
 def test_extrapolate():
     """
     test setting / getting properties
@@ -146,6 +148,7 @@ def test_extrapolate():
     c_cycle.extrapolate = True
     print c_cycle.extrapolate
     assert c_cycle.extrapolate == True
+
 
 def test_offset_time():
     """
@@ -188,52 +191,21 @@ def _uncertain_loop(pSpill, curr):
     return u_delta
 
 
-def test_new_from_dict():
-    """
-    test to_dict function for Current Cycle object
-    create a new current_cycle object and make sure it has same properties
-    """
-
-    c_cycle = CurrentCycleMover(curr_file,topology_file)
-    dict_ = c_cycle.to_dict('save')
-    c2 = CurrentCycleMover.new_from_dict(dict_)
-    assert c_cycle == c2
-
-
-@pytest.mark.parametrize(("json_"), ['webapi', 'save'])
-def test_serialize_deserialize_tide(json_):
+@pytest.mark.parametrize(("tide"), (None, td))
+def test_serialize_deserialize(tide):
     """
     test to_dict function for Wind object
     create a new wind object and make sure it has same properties
     """
 
-    c_cycle = CurrentCycleMover(curr_file, topology_file, tide=td)
-    toserial = c_cycle.serialize(json_)
+    c_cycle = CurrentCycleMover(curr_file, topology_file, tide=tide)
+    toserial = c_cycle.serialize('webapi')
     dict_ = c_cycle.deserialize(toserial)
-    if json_ == 'save':
-        dict_.update({'tide': td})
-        cc2 = CurrentCycleMover.new_from_dict(dict_)
-        assert c_cycle == cc2
-    else:
+    if tide:
         #assert toserial['tide'] == td.serialize(json_)
         assert 'tide' in toserial
-        dict_['tide'] = td  # no longer updating properties of nested objects
+        dict_['tide'] = tide  # no longer updating properties of nested objects
         c_cycle.update_from_dict(dict_)
-        assert c_cycle.tide is td
-
-
-@pytest.mark.parametrize(("json_"), ['save', 'webapi'])
-def test_serialize_deserialize_curronly(json_):
-    """
-    test to_dict function for Wind object
-    create a new wind object and make sure it has same properties
-    """
-
-    c_cycle = CurrentCycleMover(curr_file, topology_file)
-    toserial = c_cycle.serialize(json_)
-    dict_ = c_cycle.deserialize(toserial)
-    if json_ == 'save':
-        cc2 = CurrentCycleMover.new_from_dict(dict_)
-        assert c_cycle == cc2
+        assert c_cycle.tide is tide
     else:
         c_cycle.update_from_dict(dict_)

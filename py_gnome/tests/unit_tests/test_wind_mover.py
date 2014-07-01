@@ -28,7 +28,7 @@ from gnome.spill.elements import floating
 from gnome.movers import (WindMover,
                           constant_wind_mover,
                           wind_mover_from_file)
-
+from gnome.persist import References, load
 from conftest import sample_sc_release
 
 """ WindMover tests """
@@ -425,63 +425,75 @@ def test_wind_mover_from_file():
     print wm.wind.filename
     assert wm.wind.filename == file_
 
+
 def test_wind_mover_from_file_cardinal():
     wm = wind_mover_from_file(file2_)
     print wm.wind.filename
     assert wm.wind.filename == file2_
 
 
-@pytest.mark.parametrize(("json_"), ['save', 'webapi'])
-def test_serialize_deserialize(wind_circ, json_):
+def test_serialize_deserialize(wind_circ):
     """
-    tests and illustrates the funcitonality of serialize/deserialize for
+    tests and illustrate the funcitonality of serialize/deserialize for
     WindMover.
     """
     wind = Wind(filename=file_)
     wm = WindMover(wind)
-    serial = wm.serialize(json_)
-    if json_ == 'save':
-        assert 'wind' not in serial
+    serial = wm.serialize('webapi')
+    assert 'wind' in serial
 
-        # reference to 'wind' object is made by the Model().save() function
-        # by default 'wind' object is not serialized in 'save' mode
-        # so for this test to work, add the 'wind' key, value back in before
-        # constructing new WindMover. In the real use case, the model does this
-        dict_ = wm.deserialize(serial)
-        dict_['wind'] = wind
+    dict_ = wm.deserialize(serial)
+    dict_['wind'] = wind_circ['wind']
+    wm.update_from_dict(dict_)
 
-        wm2 = WindMover.new_from_dict(dict_)
-        assert wm == wm2
-
-    else:
-        assert 'wind' in serial
-
-        #serial['wind'] = wind_update.serialize(json_)
-        dict_ = wm.deserialize(serial)
-        dict_['wind'] = wind_circ['wind']
-        wm.update_from_dict(dict_)
-
-        assert wm.wind == wind_circ['wind']
+    assert wm.wind == wind_circ['wind']
 
 
-def test_new_from_dict():
+@pytest.mark.parametrize("save_ref", [False, True])
+def test_save_load(clean_temp, save_ref):
     """
-    Currently only checks that new object can be created from dict
-    It does not check equality of objects
+    tests and illustrates the functionality of save/load for
+    WindMover
     """
+    saveloc = clean_temp
     wind = Wind(filename=file_)
-    wm = WindMover(wind)  # WindMover does not modify Wind object!
-    wm_state = wm.to_dict('save')
+    wm = WindMover(wind)
+    wm_fname = 'WindMover_save_test.json'
+    refs = None
+    if save_ref:
+        w_fname = 'Wind.json'
+        refs = References()
+        refs.reference(wind, w_fname)
+        wind.save(saveloc, refs, w_fname)
 
-    # must create a Wind object and add this to wm_state dict
+    wm.save(saveloc, references=refs, name=wm_fname)
 
-    wind2 = Wind.new_from_dict(wind.to_dict('save'))
-    wm_state.update({'wind': wind2})
-    wm2 = WindMover.new_from_dict(wm_state)
+    l_refs = References()
+    obj = load(os.path.join(saveloc, wm_fname), l_refs)
+    assert (obj == wm and obj is not wm)
+    assert (obj.wind == wind and obj.wind is not wind)
 
-    assert wm is not wm2
-    assert wm.wind is not wm2.wind
-    assert wm == wm2
+
+#==============================================================================
+# def test_new_from_dict():
+#     """
+#     Currently only checks that new object can be created from dict
+#     It does not check equality of objects
+#     """
+#     wind = Wind(filename=file_)
+#     wm = WindMover(wind)  # WindMover does not modify Wind object!
+#     wm_state = wm.to_dict('save')
+# 
+#     # must create a Wind object and add this to wm_state dict
+# 
+#     wind2 = Wind.new_from_dict(wind.to_dict('save'))
+#     wm_state.update({'wind': wind2})
+#     wm2 = WindMover.new_from_dict(wm_state)
+# 
+#     assert wm is not wm2
+#     assert wm.wind is not wm2.wind
+#     assert wm == wm2
+#==============================================================================
 
 
 def test_array_types():

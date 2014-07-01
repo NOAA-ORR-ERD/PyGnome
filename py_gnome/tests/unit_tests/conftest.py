@@ -9,6 +9,7 @@ module
 import os
 from datetime import datetime, timedelta
 import copy
+import shutil
 
 import numpy
 np = numpy
@@ -25,6 +26,11 @@ from gnome.model import Model
 from gnome.spill_container import SpillContainer
 
 from gnome.movers import SimpleMover
+from gnome.persist import load
+from gnome.utilities.remote_data import get_datafile
+
+
+base_dir = os.path.dirname(__file__)
 
 
 def mock_append_data_arrays(array_types, num_elements, data_arrays={}):
@@ -104,6 +110,42 @@ def sample_sc_release(num_elements=10,
     sc.prepare_for_model_run(arr_types)
     sc.release_elements(time_step, current_time)
     return sc
+
+
+def testdata():
+    'define all the testdata files here'
+    s_data = os.path.join(base_dir, 'sample_data')
+    lis = os.path.join(s_data, 'long_island_sound')
+    dbay = os.path.join(s_data, 'delaware_bay')
+    curr_dir = os.path.join(s_data, 'currents')
+    tide_dir = os.path.join(s_data, 'tides')
+    wind_dir = os.path.join(s_data, 'winds')
+    testmap = os.path.join(base_dir, '../sample_data', 'MapBounds_Island.bna')
+    bna_sample = os.path.join(s_data, r"MapBounds_2Spillable2Islands2Lakes.bna")
+
+    data = dict()
+
+    data['CatsMover'] = \
+        {'curr': get_datafile(os.path.join(lis, 'tidesWAC.CUR')),
+         'tide': get_datafile(os.path.join(lis, 'CLISShio.txt'))}
+    data['ComponentMover'] = \
+        {'curr': get_datafile(os.path.join(dbay, 'NW30ktwinds.cur')),
+         'wind': get_datafile(os.path.join(dbay, 'ConstantWind.WND'))}
+    data['CurrentCycleMover'] = \
+        {'curr': get_datafile(os.path.join(curr_dir, 'PQBayCur.nc4')),
+         'topology': get_datafile(os.path.join(curr_dir, 'PassamaquoddyTOP.dat')),
+         'tide': get_datafile(os.path.join(tide_dir, 'EstesHead.txt'))}
+    data['GridCurrentMover'] = \
+        {'curr': get_datafile(os.path.join(curr_dir, 'ChesBay.nc')),
+         'topology': get_datafile(os.path.join(curr_dir, 'ChesBay.dat'))}
+    data['GridWindMover'] = \
+        {'wind': get_datafile(os.path.join(wind_dir, 'WindSpeedDirSubset.nc')),
+         'topology': get_datafile(os.path.join(wind_dir, 'WindSpeedDirSubsetTop.dat'))}
+    data['MapFromBNA'] = {'testmap': testmap}
+    data['Renderer'] = {'bna_sample': bna_sample,
+                        'output_dir': os.path.join(base_dir, 'renderer_output')}
+
+    return data
 
 
 @pytest.fixture(scope='module')
@@ -373,3 +415,16 @@ def sample_model():
 
     return {'model': model, 'release_start_pos': start_points,
             'release_end_pos': end_points}
+
+
+@pytest.fixture(scope='function', params=['relpath', 'abspath'])
+def clean_temp(request):
+    temp = os.path.join(base_dir, 'temp')   # absolute path
+    if os.path.exists(temp):
+        shutil.rmtree(temp)
+
+    os.mkdir(temp)    # let path get created by save_load
+    if request.param == 'relpath':
+        return os.path.relpath(temp)    # do save/load tests with relative path
+    else:
+        return temp
