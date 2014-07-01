@@ -37,33 +37,35 @@ from gnome.cy_gnome.cy_ossm_time import CyOSSMTime
 from gnome.cy_gnome.cy_shio_time import CyShioTime
 
 
-class UVTuple(DefaultTupleSchema):
-    u = SchemaNode(Float())
-    v = SchemaNode(Float())
-
-
-class TimeSeriesTuple(DefaultTupleSchema):
-    '''
-    Schema for each tuple in WindTimeSeries list
-    '''
-    datetime = SchemaNode(LocalDateTime(default_tzinfo=None),
-                          default=base_schema.now,
-                          validator=validators.convertible_to_seconds)
-    uv = UVTuple()
-
-
-class TimeSeriesSchema(DatetimeValue2dArraySchema):
-    '''
-    Schema for list of Wind tuples, to make the wind timeseries
-    '''
-    value = TimeSeriesTuple(default=(datetime.datetime.now(), 0, 0))
-
-    def validator(self, node, cstruct):
-        '''
-        validate wind timeseries numpy array
-        '''
-        validators.no_duplicate_datetime(node, cstruct)
-        validators.ascending_datetime(node, cstruct)
+#==============================================================================
+# class UVTuple(DefaultTupleSchema):
+#     u = SchemaNode(Float())
+#     v = SchemaNode(Float())
+# 
+# 
+# class TimeSeriesTuple(DefaultTupleSchema):
+#     '''
+#     Schema for each tuple in WindTimeSeries list
+#     '''
+#     datetime = SchemaNode(LocalDateTime(default_tzinfo=None),
+#                           default=base_schema.now,
+#                           validator=validators.convertible_to_seconds)
+#     uv = UVTuple()
+# 
+# 
+# class TimeSeriesSchema(DatetimeValue2dArraySchema):
+#     '''
+#     Schema for list of Wind tuples, to make the wind timeseries
+#     '''
+#     value = TimeSeriesTuple(default=(datetime.datetime.now(), 0, 0))
+# 
+#     def validator(self, node, cstruct):
+#         '''
+#         validate wind timeseries numpy array
+#         '''
+#         validators.no_duplicate_datetime(node, cstruct)
+#         validators.ascending_datetime(node, cstruct)
+#==============================================================================
 
 
 class TideSchema(base_schema.ObjType):
@@ -71,7 +73,7 @@ class TideSchema(base_schema.ObjType):
     filename = SchemaNode(String(), missing=drop)
     yeardata = SchemaNode(String(), missing=drop)
 
-    timeseries = TimeSeriesSchema(missing=drop)
+    #timeseries = TimeSeriesSchema(missing=drop)
     name = 'tide'
 
 
