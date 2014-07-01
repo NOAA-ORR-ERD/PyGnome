@@ -53,7 +53,7 @@ class ModelSchema(base_schema.ObjType):
     start_time = SchemaNode(extend_colander.LocalDateTime(),
                             validator=validators.convertible_to_seconds,
                             missing=drop)
-    duration = SchemaNode(extend_colander.TimeDelta(), missing=drop)  # max duration?
+    duration = SchemaNode(extend_colander.TimeDelta(), missing=drop)
     uncertain = SchemaNode(Bool(), missing=drop)
     cache_enabled = SchemaNode(Bool(), missing=drop)
     spills = base_schema.OrderedCollectionItemsList(missing=drop)
@@ -62,21 +62,6 @@ class ModelSchema(base_schema.ObjType):
     weatherers = base_schema.OrderedCollectionItemsList(missing=drop)
     environment = base_schema.OrderedCollectionItemsList(missing=drop)
     outputters = base_schema.OrderedCollectionItemsList(missing=drop)
-
-    def __init__(self,
-                 maptype='gnome.map.GnomeMap',
-                 **kwargs):
-
-        if maptype:
-            name, scope = (list(reversed(maptype.rsplit('.', 1)))
-                           if maptype.find('.') >= 0
-                           else [maptype, ''])
-            map_module = __import__(scope, globals(), locals(),
-                                    [str(name)], -1)
-            map_class = getattr(map_module, name)
-            self.add(map_class._schema(name='map'))
-
-        super(ModelSchema, self).__init__(**kwargs)
 
 
 class Model(Serializable):
@@ -708,6 +693,10 @@ class Model(Serializable):
         self._empty_save_dir(saveloc)
         json_ = self.serialize('save')
 
+        # map is the only nested structure - let's manually call
+        # _move_data_file on it
+        self.map._move_data_file(saveloc, json_['map'])
+
         for oc in self._oc_list:
             coll_ = getattr(self, oc)
             self._save_collection(saveloc, coll_, references, json_[oc])
@@ -825,14 +814,15 @@ class Model(Serializable):
 
     def serialize(self, json_='webapi'):
         '''
-        for webapi, the ordered collections only contain the IDs of the objects
-        during serialization/deserialization as required by the WebAPI. For
-        'save', the 'dtype' and 'items' returned by the ordered collection
-        dict is kept for loading from save files and for information
+        Serialize Model object
+        Serialize the 'map' and save it as a nested object instead of
+        reference
         '''
         toserial = self.to_serialize(json_)
-        schema = self.__class__._schema(maptype=toserial['map']['obj_type'])
-        return schema.serialize(toserial)
+        schema = self.__class__._schema()
+        o_json_ = schema.serialize(toserial)
+        o_json_['map'] = self.map.serialize(json_)
+        return o_json_
 
     @classmethod
     def deserialize(cls, json_):

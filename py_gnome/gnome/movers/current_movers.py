@@ -808,10 +808,11 @@ class ComponentMover(CyMover, serializable.Serializable):
         """
         append correct schema for wind object
         """
-        #schema = movers_schema.ComponentMover()
         schema = cls._schema()
         if 'wind' in json_:
-            #schema.add(Wind())
+            # for 'webapi', there will be nested Wind structure
+            # for 'save' option, there should be no nested 'wind'. It is
+            # removed, loaded and added back after deserialization
             schema.add(environment.WindSchema())
         _to_dict = schema.deserialize(json_)
 

@@ -239,9 +239,12 @@ class Savable(object):
         if ref_fields:
             for field in ref_fields:
                 if field.name in json_data:
-                    ref_filename = os.path.join(saveloc,
-                                                    json_data.pop(field.name))
-                    ref_obj = load(ref_filename, references)
+                    i_ref = json_data.pop(field.name)
+                    ref_obj = references.retrieve(i_ref)
+                    if not ref_obj:
+                        ref_filename = os.path.join(saveloc, i_ref)
+                        ref_obj = load(ref_filename, references)
+
                     ref_dict[field.name] = ref_obj
 
         # deserialize after removing references

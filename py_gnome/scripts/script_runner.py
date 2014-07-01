@@ -13,7 +13,7 @@ import sys
 import imp
 
 from gnome import scripting
-from gnome.model import load
+from gnome.persist import load
 
 
 def run(model):
@@ -51,11 +51,11 @@ def save(model, saveloc):
     model.save(saveloc)
 
 
-def run_from_save(saveloc):
-    if not os.path.isdir(saveloc):
+def run_from_save(saveloc_model):
+    if not os.path.isfile(saveloc_model):
         raise ValueError('{0} does not appear to be a valid'
-                         ' directory'.format(saveloc))
-    model = load(saveloc)
+                         ' json file'.format(saveloc_model))
+    model = load(saveloc_model)
 
     model.rewind()
 

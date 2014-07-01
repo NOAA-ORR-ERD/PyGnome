@@ -55,7 +55,7 @@ for script in scripts:
     print 'completed saving model _state for: {0}'.format(script)
 
     try:
-        script_runner.run_from_save(saveloc)
+        script_runner.run_from_save(os.path.join(saveloc, 'Model.json'))
         print ('completed loading and running saved model _state '
                'from: {0}'.format(saveloc))
     except Exception, ex:
