@@ -69,6 +69,11 @@ class ElementCache(object):
     Cache for element data -- i.e. the data associated with the particles.
     This caches UncertainSpillContainerPair
     The cache can be accessed to re-draw the LE movies, etc.
+
+    TODO: This is a really fragile module in terms of handling multiple
+          instances.  The __del__() method of previous instances can clear
+          the _cache_dir at the whim of the GC.
+          We may want to manage this differently.
     """
     def __init__(self, cache_dir=None, enabled=True):
         """
@@ -89,7 +94,7 @@ class ElementCache(object):
         self.recent = {}
 
         # flag for whether to enable disk cache
-        self.enabled = True
+        self.enabled = enabled
 
     def __del__(self):
         'Clear out the cache when this object is deleted'
@@ -209,9 +214,9 @@ class ElementCache(object):
     def rewind(self):
         'Rewinds the cache -- clearing out everything'
         # clean out the in-memory cache
-
         self.recent = {}
 
         # clean out the disk cache
-        shutil.rmtree(self._cache_dir)
+        if os.path.isdir(self._cache_dir):
+            shutil.rmtree(self._cache_dir)
         os.mkdir(self._cache_dir)
