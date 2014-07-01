@@ -88,6 +88,7 @@ class CatsMover(CyMover, serializable.Serializable):
         self.filename = filename  # check if this is stored with cy_cats_mover?
         self.mover = cy_cats_mover.CyCatsMover()
         self.mover.text_read(filename)
+        self.name = os.path.split(filename)[1]
 
         self._tide = None
         if tide is not None:

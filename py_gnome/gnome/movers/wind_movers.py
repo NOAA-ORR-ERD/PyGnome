@@ -251,6 +251,7 @@ class WindMover(WindMoversBase, serializable.Serializable):
         """
         self.mover = CyWindMover()
         self.wind = wind
+        self.name = wind.name
 
         # set optional attributes
         super(WindMover, self).__init__(**kwargs)
@@ -396,7 +397,7 @@ class GridWindMover(WindMoversBase, serializable.Serializable):
         self.wind_file = wind_file
         self.topology_file = topology_file
         self.mover = CyGridWindMover(wind_scale=kwargs.pop('wind_scale', 1))
-
+        self.name = os.path.split(wind_file)[1]
         super(GridWindMover, self).__init__(**kwargs)
 
         self.mover.text_read(wind_file, topology_file)

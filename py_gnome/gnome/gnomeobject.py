@@ -63,3 +63,19 @@ class GnomeId(object):
 
     def __ne__(self, other):
         return not self == other
+
+    @property
+    def name(self):
+        '''
+        define as property in base class so all objects will have a name
+        by default
+        '''
+        try:
+            return self._name
+        except AttributeError:
+            self._name = self.__class__.__name__
+            return self._name
+
+    @name.setter
+    def name(self, val):
+        self._name = val

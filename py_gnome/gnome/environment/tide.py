@@ -148,6 +148,7 @@ class Tide(Environment, Serializable):
 
             # not sure what these should be
             self._user_units = kwargs.pop('units', None)
+            self.name = kwargs.pop('name', self.__class__.__name__)
         else:
             # self.filename = os.path.abspath( filename)
 
@@ -155,6 +156,7 @@ class Tide(Environment, Serializable):
 
             # self.yeardata = os.path.abspath( yeardata ) # set yeardata
             self.yeardata = yeardata  # set yeardata
+            self.name = kwargs.pop('name', os.path.split(self.filename)[1])
 
     @property
     def yeardata(self):

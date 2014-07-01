@@ -28,14 +28,13 @@ class SpillSchema(ObjType):
     'Spill class schema'
     on = SchemaNode(Bool(), default=True, missing=True,
         description='on/off status of spill')
-    name = SchemaNode(String())
 
 
 class Spill(serializable.Serializable):
     """
     Models a spill
     """
-    _update = ['on', 'release', 'element_type', 'name']
+    _update = ['on', 'release', 'element_type']
 
     _create = []
     _create.extend(_update)

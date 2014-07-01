@@ -473,7 +473,8 @@ class Serializable(GnomeId, Savable):
     object as a string.
     """
 
-    _state = State(save=('obj_type'), read=('obj_type', 'id'))
+    _state = State(save=('obj_type', 'name'), read=('obj_type', 'id'),
+        update=('name',))
 
     # =========================================================================
     # @classmethod

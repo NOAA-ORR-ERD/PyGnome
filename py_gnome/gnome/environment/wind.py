@@ -135,14 +135,13 @@ class Wind(Environment, serializable.Serializable):
     _state.add_field([serializable.Field('filename', isdatafile=True,
                                          save=True, read=True,
                                          test_for_eq=False),
-                      serializable.Field('name', save=True, update=True,
-                                         test_for_eq=False),
                       serializable.Field('timeseries', save=False,
                                          update=True),
                       # test for equality of units a little differently
                       serializable.Field('units', save=False,
                                          update=True, test_for_eq=False),
                       ])
+    _state['name'].test_for_eq = False
 
     # list of valid velocity units for timeseries
     valid_vel_units = list(chain.from_iterable([item[1] for item in
@@ -220,7 +219,7 @@ class Wind(Environment, serializable.Serializable):
                                 if kwargs.get('source_type')
                                 in basic_types.wind_datasource._attr
                                 else 'undefined')
-            self.name = kwargs.pop('name', None)
+            self.name = kwargs.pop('name', self.__class__.__name__)
         else:
             ts_format = tsformat(format)
             self._filename = filename

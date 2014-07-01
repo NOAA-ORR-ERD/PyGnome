@@ -200,6 +200,7 @@ class NetCDFOutput(Outputter, Serializable):
         self._netcdf_filename = netcdf_filename
         self._uncertain = False
         self._u_netcdf_filename = None
+        self.name = os.path.split(netcdf_filename)[1]
 
         # flag to keep track of _state of the object - is True after calling
         # prepare_for_model_run
