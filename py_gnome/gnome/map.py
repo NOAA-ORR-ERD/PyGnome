@@ -26,6 +26,7 @@ This is a re-write of the C++ raster map approach
 """
 
 import copy
+import os
 
 import numpy
 np = numpy
@@ -566,6 +567,7 @@ class MapFromBNA(RasterMap):
         polygons = haz_files.ReadBNA(filename, 'PolygonSet')
         map_bounds = None
         spillable_area = None
+        self.name = os.path.split(filename)[1]
 
         # find the spillable area and map bounds:
         # and create a new polygonset without them
