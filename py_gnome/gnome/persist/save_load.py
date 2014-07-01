@@ -232,6 +232,7 @@ class Savable(object):
 
         :param saveloc: location of data files
         '''
+        references = (references, References())[references is None]
         datafiles = cls._state.get_field_by_attribute('isdatafile')
         ref_fields = cls._state.get_field_by_attribute('save_reference')
 
