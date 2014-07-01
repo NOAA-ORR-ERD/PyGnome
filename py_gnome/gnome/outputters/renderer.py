@@ -151,7 +151,6 @@ class Renderer(Outputter, MapCanvas):
         self.images_dir = images_dir
         self.last_filename = ''
         self.draw_ontop = draw_ontop
-        self.name = images_dir
 
         Outputter.__init__(self, cache, output_timestep, output_zero_step,
                            output_last_step)

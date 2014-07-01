@@ -81,7 +81,6 @@ class GeoJson(Outputter, Serializable):
         '''
         self.round_data = round_data
         self.roundto = roundto
-        self.output_dir = output_dir
         self.name = output_dir
         super(GeoJson, self).__init__(**kwargs)
 
