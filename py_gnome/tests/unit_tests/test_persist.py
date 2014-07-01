@@ -176,10 +176,12 @@ def test_save_load_model(images_dir, uncertain):
     model = make_model(images_dir, uncertain)
 
     print 'saving scenario ..'
-    model.save(saveloc_, name='Model.json')
+    #model.save(saveloc_, name='Model.json')
+    model.save(saveloc_)
 
     print 'loading scenario ..'
-    model2 = load(os.path.join(saveloc_, 'Model.json'))
+    #model2 = load(os.path.join(saveloc_, 'Model.json'))
+    model2 = load(saveloc_)
 
     assert model == model2
 

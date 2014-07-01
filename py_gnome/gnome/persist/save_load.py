@@ -90,7 +90,14 @@ def load(fname, references=None):
     read json from file and load the appropriate object
     This is a general purpose load method that look at the json['obj_type']
     and invokes json['obj_type'].load(json) method
+
+    :param fname: .json file to load. If this is a directory, then look for a
+        default name of 'Model.json' to load
+    :param references=None:
     '''
+    if os.path.isdir(fname):
+        fname = os.path.join(fname, 'Model.json')
+
     with open(fname, 'r') as infile:
         json_data = json.load(infile)
 
