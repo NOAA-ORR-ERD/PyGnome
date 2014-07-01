@@ -32,7 +32,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     print 'initializing the model'
 
     start_time = datetime(2014, 6, 9, 0, 0)
-    mapfile = get_datafile(os.path.join(base_dir, './PassamaquoddyMap.BNA'))
+    mapfile = get_datafile(os.path.join(base_dir, './PassamaquoddyMap.bna'))
 
     gnome_map = MapFromBNA(mapfile, refloat_halflife=1)  # hours
 
