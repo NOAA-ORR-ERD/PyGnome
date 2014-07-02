@@ -8,6 +8,9 @@ import copy
 import json
 import inspect
 
+from pprint import PrettyPrinter
+pp = PrettyPrinter(indent=2)
+
 import numpy
 np = numpy
 from colander import (MappingSchema, SchemaNode,
@@ -28,10 +31,11 @@ from gnome.weatherers import Weatherer
 from gnome.outputters import Outputter, NetCDFOutput
 
 from gnome.persist import (extend_colander,
-                           base_schema,
                            validators,
                            References,
                            load)
+from gnome.persist.base_schema import (ObjType,
+                                       OrderedCollectionItemsList)
 
 
 class SpillContainerPairSchema(MappingSchema):
@@ -41,12 +45,12 @@ class SpillContainerPairSchema(MappingSchema):
     in this module. The SpillContainerPair object is not serializable since
     there isn't a need
     '''
-    certain_spills = base_schema.OrderedCollectionItemsList(name='certain_spills')
-    uncertain_spills = base_schema.OrderedCollectionItemsList(name='uncertain_spills',
-                                                     missing=drop)
+    certain_spills = OrderedCollectionItemsList(name='certain_spills')
+    uncertain_spills = OrderedCollectionItemsList(name='uncertain_spills',
+                                                  missing=drop)
 
 
-class ModelSchema(base_schema.ObjType):
+class ModelSchema(ObjType):
     'Colander schema for Model object'
     time_step = SchemaNode(Float(), missing=drop)
     weathering_substeps = SchemaNode(Int(), missing=drop)
@@ -56,12 +60,12 @@ class ModelSchema(base_schema.ObjType):
     duration = SchemaNode(extend_colander.TimeDelta(), missing=drop)
     uncertain = SchemaNode(Bool(), missing=drop)
     cache_enabled = SchemaNode(Bool(), missing=drop)
-    spills = base_schema.OrderedCollectionItemsList(missing=drop)
-    uncertain_spills = base_schema.OrderedCollectionItemsList(missing=drop)
-    movers = base_schema.OrderedCollectionItemsList(missing=drop)
-    weatherers = base_schema.OrderedCollectionItemsList(missing=drop)
-    environment = base_schema.OrderedCollectionItemsList(missing=drop)
-    outputters = base_schema.OrderedCollectionItemsList(missing=drop)
+    spills = OrderedCollectionItemsList(missing=drop)
+    uncertain_spills = OrderedCollectionItemsList(missing=drop)
+    movers = OrderedCollectionItemsList(missing=drop)
+    weatherers = OrderedCollectionItemsList(missing=drop)
+    environment = OrderedCollectionItemsList(missing=drop)
+    outputters = OrderedCollectionItemsList(missing=drop)
 
 
 class Model(Serializable):
@@ -653,12 +657,17 @@ class Model(Serializable):
 
     def __eq__(self, other):
         check = super(Model, self).__eq__(other)
+        print 'Model.__eq__(): super check =', check
         if check:
             # also check the data in ordered collections
             if type(self.spills) != type(other.spills):
+                print 'Model.__eq__(): spill types:', (type(self.spills),
+                                                       type(other.spills))
                 return False
 
             if self.spills != other.spills:
+                print 'Model.__eq__(): spills:'
+                pp.pprint((self.spills, other.spills))
                 return False
 
         return check
@@ -819,24 +828,65 @@ class Model(Serializable):
     def serialize(self, json_='webapi'):
         '''
         Serialize Model object
-        Serialize the 'map' and save it as a nested object instead of
-        reference
+        treat special-case attributes of Model.
         '''
         toserial = self.to_serialize(json_)
         schema = self.__class__._schema()
         o_json_ = schema.serialize(toserial)
         o_json_['map'] = self.map.serialize(json_)
+
+        if json_ == 'webapi':
+            for attr in ('environment', 'outputters', 'weatherers', 'movers'):
+                o_json_[attr] = self.serialize_oc(attr, json_)
+
         return o_json_
+
+    def serialize_oc(self, attr, json_='webapi'):
+        '''
+        Serialize Model attributes of type ordered collection
+        '''
+        json_out = []
+        attr = getattr(self, attr)
+        if isinstance(attr, OrderedCollection):
+            for item in attr:
+                json_out.append(item.serialize(json_))
+        return json_out
 
     @classmethod
     def deserialize(cls, json_):
         '''
-        check contents of orderered collections to figure out what schema to
-        use for the OC
+        treat special-case attributes of Model.
         '''
         deserial = cls._schema().deserialize(json_)
+
         if 'map' in json_ and json_['map']:
             deserial['map'] = json_['map']
+
+        if json_['json_'] == 'webapi':
+            for attr in ('environment', 'outputters', 'weatherers', 'movers'):
+                if attr in json_ and json_[attr]:
+                    deserial[attr] = cls.deserialize_oc(json_[attr])
+
+        return deserial
+
+    @classmethod
+    def deserialize_oc(cls, json_):
+        '''
+        check contents of orderered collections to figure out what schema to
+        use.
+        Basically, the json serialized ordered collection looks like a regular
+        list.
+        '''
+        deserial = []
+        for item in json_:
+            fqn = item['obj_type']
+            name, scope = (list(reversed(fqn.rsplit('.', 1)))
+                           if fqn.find('.') >= 0
+                           else [fqn, ''])
+            my_module = __import__(scope, globals(), locals(), [str(name)], -1)
+            py_class = getattr(my_module, name)
+
+            deserial.append(py_class.deserialize(item))
 
         return deserial
 
@@ -873,8 +923,9 @@ class Model(Serializable):
                     references)
         for spill in ['spills', 'uncertain_spills']:
             if spill in _to_dict:
-                _to_dict[spill] = cls._load_collection(saveloc, _to_dict[spill],
-                    references)
+                _to_dict[spill] = cls._load_collection(saveloc,
+                                                       _to_dict[spill],
+                                                       references)
             # also need to load spill data for mid-run save!
 
         model = cls.new_from_dict(_to_dict)
