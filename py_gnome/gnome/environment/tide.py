@@ -103,6 +103,7 @@ class Tide(Environment, Serializable):
     def __init__(self,
                  filename=None,
                  timeseries=None,
+                 units=None,
                  yeardata=os.path.join(os.path.dirname(gnome.__file__),
                                        'data', 'yeardata'),
                  **kwargs):
@@ -117,9 +118,8 @@ class Tide(Environment, Serializable):
               2. a 'filename' containing a header that defines units amongst
                  other meta data
 
-        :param timeseries: numpy array containing datetime_value_2d,
-            ts_format is always 'uv'
-        :type timeseries: numpy.ndarray[basic_types.time_value_pair, ndim=1]
+        :param timeseries: numpy array containing tide data
+        :type timeseries: numpy.ndarray with dtype=datetime_value_1d
         :param units: units associated with the timeseries data. If 'filename'
             is given, then units are read in from the filename.
             unit_conversion - NOT IMPLEMENTED YET
@@ -185,25 +185,22 @@ class Tide(Environment, Serializable):
     timeseries = property(lambda self: self.get_timeseries(),
                           lambda self, val: self.set_timeseries(val))
 
-    def get_timeseries(self, datetime=None, format='uv'):
+    def get_timeseries(self, datetime=None):
         """
         Returns the timeseries in the requested format. If datetime=None,
         then the original timeseries that was entered is returned.
         If datetime is a list containing datetime objects, then the wind value
         for each of those date times is determined by the underlying
-        CyOSSMTime object and the timeseries is returned.
+        CyOSSMTime object and the timeseries is returned. If object is
+        initialized from Shio and not timeseries or OSSM file, None is returned
 
         The output format is defined by the strings 'r-theta', 'uv'
 
         :param datetime: [optional] datetime object or list of datetime
                          objects for which the value is desired
         :type datetime: datetime object
-        :param format: output format for the times series:
-                       either 'r-theta' or 'uv'
-        :type format: either string or integer value defined by
-                      basic_types.ts_format.* (see cy_basic_types.pyx)
 
-        :returns: numpy array containing dtype=basic_types.datetime_value_2d.
+        :returns: numpy array containing dtype=basic_types.datetime_value_1d.
                   Contains user specified datetime and the corresponding
                   values in user specified ts_format
         """

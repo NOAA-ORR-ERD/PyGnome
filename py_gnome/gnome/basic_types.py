@@ -50,8 +50,15 @@ world_point_type = np.float64
 windage_type = np.float64
 water_current_type = np.float64
 
-datetime_value_2d = np.dtype([('time', 'datetime64[s]'), ('value',
-                             mover_type, (2, ))], align=True)
+# value has two components: (u, v) or (r, theta) etc
+datetime_value_2d = np.dtype([('time', 'datetime64[s]'),
+    ('value', mover_type, (2, ))], align=True)
+
+# value has one component: (u,)
+# convert from datetime_value_1d to time_value_pair by setting 2nd component
+# of value to 0.0
+datetime_value_1d = np.dtype([('time', 'datetime64[s]'),
+    ('value', mover_type, (1,))], align=True)
 
 # enums that are same as C++ values are defined in cy_basic_types
 # Define enums that are independent of C++ here so we
