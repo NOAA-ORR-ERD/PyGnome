@@ -41,7 +41,8 @@ class Outputter(Serializable):
                  cache=None,
                  output_timestep=None,
                  output_zero_step=True,
-                 output_last_step=True):
+                 output_last_step=True,
+                 name=None):
         """
         sets attributes for all outputters, like output_timestep, cache
 
@@ -66,6 +67,9 @@ class Outputter(Serializable):
         self.output_timestep = output_timestep
         self.output_zero_step = output_zero_step
         self.output_last_step = output_last_step
+
+        if name:
+            self.name = name
 
         # reset internally used variables
         self.rewind()

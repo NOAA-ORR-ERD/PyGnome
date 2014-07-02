@@ -68,7 +68,7 @@ class Release(object):
     _state.add(save=_create, update=_update,
                read=('num_released', 'start_time_invalid'))
 
-    def __init__(self, release_time, num_elements=0):
+    def __init__(self, release_time, num_elements=0, name=None):
         self.num_elements = num_elements
         self.release_time = release_time
 
@@ -83,23 +83,14 @@ class Release(object):
         # model start time is valid
         self.start_time_invalid = True
 
+        if name:
+            self.name = name
+
     def __repr__(self):
         return ('{0.__class__.__module__}.{0.__class__.__name__}('
                 'release_time={0.release_time!r}, '
                 'num_elements={0.num_elements}'
                 ')'.format(self))
-
-#==============================================================================
-#     def __eq__(self, other):
-#         scalar_attrs = ('release_time', 'num_elements', 'num_released',
-#                         'start_time_invalid',
-#                         )
-#         if not all([getattr(self, a) == getattr(other, a)
-#                     for a in scalar_attrs]):
-#             return False
-#
-#         return True
-#==============================================================================
 
     def num_elements_to_release(self, current_time, time_step):
         """
