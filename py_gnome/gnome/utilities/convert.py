@@ -29,7 +29,7 @@ def to_time_value_pair(datetime_value_2d, in_ts_format):
     time_value_pair = np.zeros((len(datetime_value_2d), ),
                                dtype=basic_types.time_value_pair)
 
-    if type(in_ts_format) is str:
+    if isinstance(in_ts_format, basestring):
         in_ts_format = tsformat(in_ts_format)
 
     if in_ts_format == basic_types.ts_format.magnitude_direction:
@@ -70,7 +70,7 @@ def to_datetime_value_2d(time_value_pair, out_ts_format):
     datetime_value_2d = np.zeros((len(time_value_pair), ),
                                  dtype=basic_types.datetime_value_2d)
 
-    if type(out_ts_format) is str:
+    if isinstance(out_ts_format, basestring):
         out_ts_format = tsformat(out_ts_format)
 
     # convert time_value_pair to datetime_value_2d in desired output format
