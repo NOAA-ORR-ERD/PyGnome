@@ -184,7 +184,7 @@ class PointLineRelease(Release, Serializable):
     _schema = PointLineReleaseSchema
 
     def __init__(self, release_time, num_elements, start_position,
-                 end_position=None, end_release_time=None):
+                 end_position=None, end_release_time=None, name=None):
         """
         :param num_elements: total number of elements to be released
         :type num_elements: integer
@@ -206,7 +206,8 @@ class PointLineRelease(Release, Serializable):
         See base :class:`Release` documentation
         """
         super(PointLineRelease, self).__init__(release_time,
-                                               num_elements)
+                                               num_elements,
+                                               name)
 
         if end_release_time is None:
             # also sets self._end_release_time
@@ -426,7 +427,7 @@ class SpatialRelease(Release, Serializable):
     _state = copy.deepcopy(Release._state)
     _state.add(update=['start_position'], save=['start_position'])
 
-    def __init__(self, release_time, start_position):
+    def __init__(self, release_time, start_position, name=None):
         """
         :param release_time: time the LEs are released
         :type release_time: datetime.datetime
@@ -441,7 +442,8 @@ class SpatialRelease(Release, Serializable):
         self.start_position = np.asarray(start_position,
                 dtype=world_point_type).reshape((-1, 3))
         super(SpatialRelease, self).__init__(release_time,
-                                             self.start_position.shape[0])
+                                             self.start_position.shape[0],
+                                             name)
 
     def num_elements_to_release(self, current_time, time_step):
         """
@@ -484,8 +486,7 @@ class VerticalPlumeRelease(Release, Serializable):
     #_state.add(update=['start_position'], save=['start_position'])
 
     def __init__(self, release_time, num_elements, start_position,
-                 plume_data, end_release_time,
-                 **kwargs):
+                 plume_data, end_release_time, name=None):
         '''
         :param num_elements: total number of elements to be released
         :type num_elements: integer
@@ -500,7 +501,8 @@ class VerticalPlumeRelease(Release, Serializable):
         :type start_positions: (num_elements, 3) numpy array of float64
             -- (long, lat, z)
         '''
-        super(VerticalPlumeRelease, self).__init__(release_time, num_elements)
+        super(VerticalPlumeRelease, self).__init__(release_time,
+                                                num_elements, name)
 
         self.start_position = np.array(start_position,
                                        dtype=world_point_type).reshape((3, ))
