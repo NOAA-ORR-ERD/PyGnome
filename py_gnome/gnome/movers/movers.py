@@ -71,6 +71,7 @@ class Mover(object):
 
         # empty dict since no array_types required for all movers at present
         self.array_types = {}
+        self.name = kwargs.pop('name', self.__class__.__name__)
 
     # Methods for active property definition
     @property

@@ -159,7 +159,8 @@ class Model(Serializable):
                  weathering_substeps=1,
                  map=None,
                  uncertain=False,
-                 cache_enabled=False):
+                 cache_enabled=False,
+                 name=None):
         '''
 
         Initializes a model.
@@ -181,7 +182,7 @@ class Model(Serializable):
 
         self.__restore__(time_step, start_time, duration,
                          weathering_substeps,
-                         uncertain, cache_enabled, map)
+                         uncertain, cache_enabled, map, name)
 
         # register callback with OrderedCollection
         self.movers.register_callback(self._callback_add_mover,
@@ -191,7 +192,7 @@ class Model(Serializable):
                                           ('add', 'replace'))
 
     def __restore__(self, time_step, start_time, duration,
-                    weathering_substeps, uncertain, cache_enabled, map):
+                    weathering_substeps, uncertain, cache_enabled, map, name):
         '''
         Take out initialization that does not register the callback here.
         This is because new_from_dict will use this to restore the model _state
@@ -217,6 +218,9 @@ class Model(Serializable):
         self.weathering_substeps = weathering_substeps
         if not map:
             map = gnome.map.GnomeMap()
+
+        if name:
+            self.name = name
 
         self._map = map
         self.time_step = time_step  # this calls rewind() !

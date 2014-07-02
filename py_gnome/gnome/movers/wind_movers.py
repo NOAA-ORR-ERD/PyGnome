@@ -322,8 +322,7 @@ def wind_mover_from_file(filename, **kwargs):
 
     :returns mover: returns a wind mover, built from the file
     """
-    w = environment.Wind(filename=filename,
-                         ts_format=ts_format.magnitude_direction)
+    w = environment.Wind(filename=filename, format='r-theta')
     wm = WindMover(w, **kwargs)
 
     return wm

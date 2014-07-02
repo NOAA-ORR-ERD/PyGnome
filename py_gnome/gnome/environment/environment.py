@@ -15,3 +15,12 @@ class Environment(object):
     defined in the Model object requires it.
     """
     _state = copy.deepcopy(serializable.Serializable._state)
+
+    def __init__(self, name=None):
+        '''
+        base class for environment objects
+
+        :param name=None:
+        '''
+        if name:
+            self.name = name 

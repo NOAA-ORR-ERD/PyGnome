@@ -235,6 +235,7 @@ class Wind(Environment, serializable.Serializable):
         self.longitude = longitude
         self.latitude = latitude
         self.description = kwargs.pop('description', 'Wind Object')
+        super(Wind, self).__init__(**kwargs)
 
     def _convert_units(self, data, ts_format, from_unit, to_unit):
         '''

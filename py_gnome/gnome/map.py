@@ -72,7 +72,7 @@ class GnomeMap(Serializable):
 
     refloat_halflife = None  # note -- no land, so never used
 
-    def __init__(self, map_bounds=None, spillable_area=None):
+    def __init__(self, map_bounds=None, spillable_area=None, name=None):
         """
         This __init__ will be different for other implementations
 
@@ -567,7 +567,7 @@ class MapFromBNA(RasterMap):
         polygons = haz_files.ReadBNA(filename, 'PolygonSet')
         map_bounds = None
         spillable_area = None
-        self.name = os.path.split(filename)[1]
+        self.name = kwargs.pop('name', os.path.split(filename)[1])
 
         # find the spillable area and map bounds:
         # and create a new polygonset without them

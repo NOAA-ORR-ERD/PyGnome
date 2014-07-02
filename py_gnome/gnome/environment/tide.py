@@ -158,6 +158,8 @@ class Tide(Environment, Serializable):
             self.yeardata = yeardata  # set yeardata
             self.name = kwargs.pop('name', os.path.split(self.filename)[1])
 
+        super(Tide, self).__init__(**kwargs)
+
     @property
     def yeardata(self):
         return self._yeardata
