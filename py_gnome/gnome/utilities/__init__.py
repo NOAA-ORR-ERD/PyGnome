@@ -5,7 +5,7 @@ a few small things here, 'cause why not?
 
 """
 
-import sys
+import sys, warnings
 
 div = {'GB': 1024*1024*1024,
        'MB': 1024*1024,
@@ -100,4 +100,11 @@ else: # for posix systems only tested on OS-X for now
                'MB': 1024*1024,
                'KB': 1024,
                }
-        return resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / float(div[units])
+        d = div[units]
+        if sys.platform == 'darwin':
+            pass
+        elif sys.platform.startswith("linux"):
+            d /= 1024
+        else:
+            warning.warn("memory use reported may not be correct on this platform")
+        return resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / float(d)
