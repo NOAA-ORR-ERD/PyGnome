@@ -5,7 +5,6 @@ from release import (Release,
                      PointLineRelease,
                      SpatialRelease,
                      VerticalPlumeRelease)
-import elements
 
 __all__ = [Spill,
            SpillSchema,
@@ -16,4 +15,4 @@ __all__ = [Spill,
            PointLineRelease,
            SpatialRelease,
            VerticalPlumeRelease,
-           elements]
+           ]
