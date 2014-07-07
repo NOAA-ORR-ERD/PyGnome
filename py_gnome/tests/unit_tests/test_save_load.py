@@ -13,6 +13,7 @@ from conftest import testdata
 import pytest
 
 testdata = testdata()
+base_dir = os.path.dirname(__file__)
 
 
 def test_exceptions():
@@ -94,21 +95,23 @@ l_movers = (environment.Tide(testdata['CatsMover']['tide']),
             movers.ComponentMover(testdata['ComponentMover']['curr'],
                 wind=environment.Wind(
                     filename=testdata['ComponentMover']['wind'])),
-            movers.CurrentCycleMover(testdata['CurrentCycleMover']['curr'],
-                topology_file=testdata['CurrentCycleMover']['topology'],
-                tide=environment.Tide(testdata['CurrentCycleMover']['tide'])),
-            movers.CurrentCycleMover(testdata['CurrentCycleMover']['curr'],
-                topology_file=testdata['CurrentCycleMover']['topology']),
-            movers.GridCurrentMover(testdata['GridCurrentMover']['curr'],
-                testdata['GridCurrentMover']['topology']),
-            movers.GridWindMover(testdata['GridWindMover']['wind'],
-                testdata['GridWindMover']['topology']),
+            #===================================================================
+            # movers.CurrentCycleMover(testdata['CurrentCycleMover']['curr'],
+            #   topology_file=testdata['CurrentCycleMover']['topology'],
+            #   tide=environment.Tide(testdata['CurrentCycleMover']['tide'])),
+            # movers.CurrentCycleMover(testdata['CurrentCycleMover']['curr'],
+            #   topology_file=testdata['CurrentCycleMover']['topology']),
+            # movers.GridCurrentMover(testdata['GridCurrentMover']['curr'],
+            #   testdata['GridCurrentMover']['topology']),
+            # movers.GridWindMover(testdata['GridWindMover']['wind'],
+            #   testdata['GridWindMover']['topology']),
+            #===================================================================
             movers.RandomVerticalMover(),
             movers.SimpleMover(velocity=(10.0, 10.0, 0.0)),
             map.MapFromBNA(testdata['MapFromBNA']['testmap'], 6),
             outputters.NetCDFOutput(os.path.join(base_dir, u'xtemp.nc')),
             outputters.Renderer(testdata['Renderer']['bna_sample'],
-                testdata['Renderer']['output_dir']),
+               testdata['Renderer']['output_dir']),
             spill.PointLineRelease(datetime.now(), 10, (0, 0, 0)),
             spill.point_line_release_spill(10, (0, 0, 0), datetime.now()),
             weatherers.Weatherer(),
@@ -122,6 +125,47 @@ l_movers = (environment.Tide(testdata['CatsMover']['tide']),
 
 @pytest.mark.parametrize("obj", l_movers)
 def test_save_load(clean_temp, obj):
+    'test save/load functionality'
+    refs = obj.save(clean_temp)
+    obj2 = load(os.path.join(clean_temp, refs.reference(obj)))
+    assert obj == obj2
+
+
+'''
+Following movers fail on windows with clean_temp fixture. The clean_temp fixture
+deletes ./temp directory before each run of test_save_load(). This is causing
+an issue in windows for the NetCDF files - for some reason it is not able to
+delete the netcdf data files. All files are being closed in C++, but until we
+find the solution, lets break up above tests and not call clean_temp for
+following tests.
+'''
+
+l_movers2 = (movers.CurrentCycleMover(testdata['CurrentCycleMover']['curr'],
+                topology_file=testdata['CurrentCycleMover']['topology'],
+                tide=environment.Tide(testdata['CurrentCycleMover']['tide'])),
+             movers.CurrentCycleMover(testdata['CurrentCycleMover']['curr'],
+               topology_file=testdata['CurrentCycleMover']['topology']),
+             movers.GridCurrentMover(testdata['GridCurrentMover']['curr'],
+               testdata['GridCurrentMover']['topology']),
+             movers.GridWindMover(testdata['GridWindMover']['wind'],
+               testdata['GridWindMover']['topology']),
+            )
+
+
+@pytest.mark.parametrize("obj", l_movers2)
+def test_save_load2(obj):
+    'test save/load functionality'
+
+    temp = os.path.join(base_dir, 'temp')
+    for dir_ in (temp, os.path.relpath(temp, base_dir)):
+        refs = obj.save(dir_)
+        obj2 = load(os.path.join(dir_, refs.reference(obj)))
+        assert obj == obj2
+
+
+@pytest.mark.xfail
+@pytest.mark.parametrize("obj", l_movers2[:1])
+def test_save_load_netcdf(clean_temp, obj):
     'test save/load functionality'
     refs = obj.save(clean_temp)
     obj2 = load(os.path.join(clean_temp, refs.reference(obj)))
