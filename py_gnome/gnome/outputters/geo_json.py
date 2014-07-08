@@ -81,9 +81,9 @@ class GeoJson(Outputter, Serializable):
         **kwargs):
         '''
         :param bool round_data=True: if True, then round the numpy arrays
-            containing float to number of digits specified by 'roundto'.
+            containing float to number of digits specified by 'round_to'.
             Default is True
-        :param int roundto=4: round float arrays to these number of digits.
+        :param int round_to=4: round float arrays to these number of digits.
             Default is 4.
         :param str output_dir='./': output directory for geojson files
 
@@ -180,7 +180,7 @@ class GeoJson(Outputter, Serializable):
             p_type = int
 
         if p_type is float and self.round_data:
-            data = data_array.round(self.roundto).astype(p_type).tolist()
+            data = data_array.round(self.round_to).astype(p_type).tolist()
         else:
             data = data_array.astype(p_type).tolist()
         return data
