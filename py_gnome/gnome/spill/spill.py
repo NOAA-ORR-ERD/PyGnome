@@ -186,6 +186,10 @@ class Spill(serializable.Serializable):
 
         For example: set('windage_range', (0.4, 0.4)) sets the windage_range
         assuming the element_type is floating
+
+        .. fixme: There is an issue in that if two initializers have the same
+        property - could be the case if they both define a 'distribution', then
+        it does not know which one to return
         """
         if prop == 'num_released':
             raise AttributeError("cannot set attribute")
@@ -215,6 +219,11 @@ class Spill(serializable.Serializable):
 
         For example: get('windage_range') returns the 'windage_range' assuming
         the element_type = floating()
+
+        .. fixme: There is an issue in that if two initializers have the same
+        property - could be the case if they both define a 'distribution', then
+        it does not know which one to return
+
         """
         'Return all properties'
         if prop is None:
@@ -260,6 +269,43 @@ class Spill(serializable.Serializable):
         # return None?
         raise AttributeError("{0} attribute does not exist in element_type"
             " or release object".format(prop))
+
+    def is_initializer(self, key):
+        '''
+        a way to test whether an initializer for the given 'key' or data_array
+        exists
+        '''
+        if key in self.element_type.initializers:
+            return True
+        else:
+            return False
+
+    def get_initializer(self, key):
+        '''
+        returns the initializer associated with 'key'.
+
+        The 'key' refers to the data_array that a mover requires and that the
+        initializer is setting. For instance,
+
+            {'rise_vel' : InitRiseVelFromDist()}
+
+        is an initializer that sets the 'rise_vel' if a RiseVelocityMover is
+        included in the Model.
+        '''
+        if self.is_initializer(key):
+            return self.element_type.initializers[key]
+
+    def set_initializer(self, key, init):
+        '''
+        set the given initializer. The 'key' refers to the data_array that a
+        mover requires and that the initializer is setting. For instance,
+
+            {'rise_vel' : InitRiseVelFromDist()}
+
+        is an initializer that sets the 'rise_vel' if a RiseVelocityMover is
+        included in the Model.
+        '''
+        self.element_type.initializers[key] = init
 
     @property
     def volume_units(self):

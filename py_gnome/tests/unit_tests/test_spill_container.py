@@ -21,12 +21,13 @@ from gnome.spill.elements import (ElementType,
                             InitMassFromTotalMass,
                             InitWindages,
                             InitRiseVelFromDist,
+                            InitRiseVelFromDropletSizeFromDist,
                             floating)
 
 from gnome.utilities.distributions import UniformDistribution
 
 from gnome.spill_container import SpillContainer, SpillContainerPair
-from gnome.spill import point_line_release_spill
+from gnome.spill import point_line_release_spill, Spill, Release
 
 
 # additional array_type for testing spill_container functionality
@@ -916,6 +917,51 @@ def test_model_step_is_done():
 
     assert np.count_nonzero(sc['spill_num'] == 0) == num_elements - 3
     assert np.count_nonzero(sc['spill_num'] == 1) == num_elements - 4
+
+
+def test_SpillContainer_add_array_types():
+    '''
+    Test an array_type is dynamically added/subtracted from SpillContainer if
+    it is contained in Initailizer's array_types property.
+
+    For example:
+
+        Add 'rise_vel' initializer, InitRiseVelFromDropletSizeFromDist()) is
+        added to Spill's element_type object. Now, the array_types for this
+        initailizer are 'rise_vel' and 'droplet_diameter'. Only if a
+        RiseVelocityMover is added to the model in which case the Model
+        provides 'rise_vel' as an array_type to the SpillContainer to append
+        it to its own list, then the SpillContainer will also add the
+        'droplet_diameter' array_type that is additionally set by the
+        Initializer but is not explicitly required by the Mover.
+    '''
+    sc = SpillContainer()
+    s = Spill(Release(datetime(2014, 1, 1, 12, 0), 0))
+    s.set_initializer('rise_vel', InitRiseVelFromDropletSizeFromDist())
+    sc.spills += s
+    assert 'rise_vel' not in sc.array_types
+    assert 'droplet_diameter' not in sc.array_types
+
+    # Now say you added RiseVelocityMover and the Model collects ArrayTypes
+    # from all movers and passes it into SpillContainer's prepare_for_model_run
+    #
+    sc.prepare_for_model_run(array_types={'rise_vel': array_types.rise_vel})
+    assert 'rise_vel' in sc.array_types
+    assert 'droplet_diameter' in sc.array_types
+
+    # calling prepare_for_model_run without different array_types keeps the
+    # previously added 'rise_vel' array_types - always rewind if you want to
+    # clear out the state and reset array_types to original data
+    sc.prepare_for_model_run()
+    assert 'rise_vel' in sc.array_types
+    assert 'droplet_diameter' in sc.array_types
+
+    # Now let's rewind array_types and these extra properties should disappear
+    # they are only added after the prepare_for_model_run step
+    sc.rewind()
+    sc.prepare_for_model_run()
+    assert 'rise_vel' not in sc.array_types
+    assert 'droplet_diameter' not in sc.array_types
 
 
 def get_eq_spills():
