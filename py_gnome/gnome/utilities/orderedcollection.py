@@ -100,6 +100,9 @@ class OrderedCollection(object):
                                              self.dtype,
                                              type(elem)))
 
+    def append(self, elem):
+        self.add(elem)
+
     def remove(self, ident):
         '''
         Remove an object from the collection:
