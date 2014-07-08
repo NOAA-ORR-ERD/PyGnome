@@ -114,7 +114,12 @@ def test_geojson(model):
         l_id = model.spills.LE('id')
         uncertain = False
         for elem in range(sum(model.spills.num_released)):
-            g_elem = output['geojson']['features'][elem]
+            #g_elem = output['geojson']['features'][elem]
+            with open(output['output_filename']) as file_:
+                geojson_out = geojson.load(file_)
+
+            g_elem = geojson_out['features'][elem]
+
             match = np.where(l_id == g_elem['id'])[0][0]
 
             if g_elem['properties']['spill_type'] == 'uncertain':
