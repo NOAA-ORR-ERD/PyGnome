@@ -8,14 +8,24 @@ from glob import glob
 
 import numpy as np
 from geojson import Point, Feature, FeatureCollection, dump
+from colander import SchemaNode, String, drop, Int, Bool
 
 from gnome.utilities.serializable import Serializable, Field
 
-from .outputter import Outputter
+from .outputter import Outputter, BaseSchema
 
 from gnome.basic_types import oil_status
 from gnome import array_types
 from gnome.utilities.time_utils import date_to_sec
+
+
+class GeoJsonSchema(BaseSchema):
+    '''
+    Nothing is required for initialization
+    '''
+    round_data = SchemaNode(Bool(), missing=drop)
+    round_to = SchemaNode(Int(), missing=drop)
+    output_dir = SchemaNode(String(), missing=drop)
 
 
 class GeoJson(Outputter, Serializable):
@@ -66,7 +76,7 @@ class GeoJson(Outputter, Serializable):
 
     def __init__(self,
         round_data=True,
-        roundto=4,
+        round_to=4,
         output_dir='./',
         **kwargs):
         '''
@@ -80,7 +90,7 @@ class GeoJson(Outputter, Serializable):
         use super to pass optional \*\*kwargs to base class __init__ method
         '''
         self.round_data = round_data
-        self.roundto = roundto
+        self.round_to = round_to
         self.output_dir = output_dir
         super(GeoJson, self).__init__(**kwargs)
 
