@@ -148,8 +148,10 @@ class GeoJson(Outputter, Serializable):
         with open(output_filename, 'w') as outfile:
             dump(geojson, outfile, indent=True)
 
+        # decided geojson should only be output to file
+        # read data from file and send it to web client
         output_info = {'step_num': step_num,
-                       'geojson': geojson,
+                       #'geojson': geojson,
                        'time_stamp': sc.current_time_stamp,
                        'output_filename': output_filename}
 
