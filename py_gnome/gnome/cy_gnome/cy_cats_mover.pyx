@@ -4,7 +4,7 @@ cimport numpy as cnp
 import numpy as np
 
 from type_defs cimport *
-from movers cimport CATSMover_c,Mover_c
+from movers cimport CATSMover_c, Mover_c
 from gnome import basic_types
 from gnome.cy_gnome.cy_ossm_time cimport CyOSSMTime
 from gnome.cy_gnome.cy_shio_time cimport CyShioTime
@@ -13,7 +13,8 @@ from gnome.cy_gnome.cy_helpers cimport to_bytes
 
 """
 Dynamic casts are not currently supported in Cython - define it here instead.
-Since this function is custom for each mover, just keep it with the definition for each mover
+Since this function is custom for each mover, just keep it with the definition
+for each mover
 """
 cdef extern from *:
     CATSMover_c* dynamic_cast_ptr "dynamic_cast<CATSMover_c *>" (Mover_c *) except NULL
@@ -22,17 +23,18 @@ cdef extern from *:
 cdef class CyCatsMover(cy_mover.CyMover):
 
     cdef CATSMover_c *cats
-    
+
     def __cinit__(self):
         self.mover = new CATSMover_c()
         self.cats = dynamic_cast_ptr(self.mover)
-    
+
     def __dealloc__(self):
-        del self.mover  # since this is allocated in this class, free memory here as well
+        # since this is allocated in this class, free memory here as well
+        del self.mover
         self.cats = NULL
-    
+
     def __init__(self, scale_type=0, scale_value=1,
-                 uncertain_duration=48*3600, uncertain_time_delay=0,
+                 uncertain_duration=48 * 3600, uncertain_time_delay=0,
                  up_cur_uncertain=.3, down_cur_uncertain=-.3,
                  right_cur_uncertain=.1, left_cur_uncertain=-.1,
                  uncertain_eddy_diffusion=0, uncertain_eddy_v0=.1):
@@ -55,27 +57,26 @@ cdef class CyCatsMover(cy_mover.CyMover):
         self.cats.scaleType = scale_type
         self.cats.scaleValue = scale_value
         self.cats.fEddyDiffusion = uncertain_eddy_diffusion
-        self.cats.refZ = -999 # default to -1
+        self.cats.refZ = -999  # default to -1
         ## should not have to do this manually.
         ## make-shifting for now.
         #self.cats.fOptimize.isOptimizedForStep = 0
         #self.cats.fOptimize.isFirstStep = 1
 
-
     property scale_type:
         def __get__(self):
             return self.cats.scaleType
-        
-        def __set__(self,value):
+
+        def __set__(self, value):
             self.cats.scaleType = value
-    
+
     property scale_value:
         def __get__(self):
             return self.cats.scaleValue
-        
-        def __set__(self,value):
+
+        def __set__(self, value):
             self.cats.scaleValue = value
-            
+
     property uncertain_duration:
         def __get__(self):
             return self.cats.fDuration
@@ -93,139 +94,161 @@ cdef class CyCatsMover(cy_mover.CyMover):
     property up_cur_uncertain:
         def __get__(self):
             return self.cats.fUpCurUncertainty
-        
-        def __set__(self,value):
-            self.cats.fUpCurUncertainty = value    
-    
+
+        def __set__(self, value):
+            self.cats.fUpCurUncertainty = value
+
     property down_cur_uncertain:
         def __get__(self):
             return self.cats.fDownCurUncertainty
-        
-        def __set__(self,value):
-            self.cats.fDownCurUncertainty = value    
-    
+
+        def __set__(self, value):
+            self.cats.fDownCurUncertainty = value
+
     property right_cur_uncertain:
         def __get__(self):
             return self.cats.fRightCurUncertainty
-        
-        def __set__(self,value):
-            self.cats.fRightCurUncertainty = value    
-    
+
+        def __set__(self, value):
+            self.cats.fRightCurUncertainty = value
+
     property left_cur_uncertain:
         def __get__(self):
             return self.cats.fLeftCurUncertainty
-        
-        def __set__(self,value):
-            self.cats.fLeftCurUncertainty = value    
-    
+
+        def __set__(self, value):
+            self.cats.fLeftCurUncertainty = value
+
     property uncertain_eddy_diffusion:
         def __get__(self):
             return self.cats.fEddyDiffusion
-        
-        def __set__(self,value):
-            self.cats.fEddyDiffusion = value    
-    
+
+        def __set__(self, value):
+            self.cats.fEddyDiffusion = value
+
     property uncertain_eddy_v0:
         def __get__(self):
             return self.cats.fEddyV0
-        
-        def __set__(self,value):
-            self.cats.fEddyV0 = value    
-    
+
+        def __set__(self, value):
+            self.cats.fEddyV0 = value
+
     property ref_point:
         def __get__(self):
             """
-            returns the tuple containing (long, lat, z) of reference point if it is defined
-            either by the user or obtained from the Shio object; otherwise it returns None 
-            
-            todo: make sure this is consistent with the format of CyShioTime.ref_point
+            returns the tuple containing (long, lat, z) of reference point
+            if it is defined either by the user or obtained from the
+            Shio object; otherwise it returns None
+
+            TODO: make sure this is consistent with the format of
+                  CyShioTime.ref_point
             """
             if self.cats.refZ == -999:
                 return None
             else:
-                return (self.cats.refP.pLong/1.e6, self.cats.refP.pLat/1.e6, self.cats.refZ)
-    
-        def __set__(self,ref_point):
+                return (self.cats.refP.pLong / 1.e6,
+                        self.cats.refP.pLat / 1.e6,
+                        self.cats.refZ)
+
+        def __set__(self, ref_point):
             """
             accepts a list or a tuple
-            will not work with a numpy array since indexing assumes a list or a tuple
-            
-            takes only (long, lat, z), if length is bigger than 3, it uses the 1st 3 datapoints
-            
-            todo: make sure this is consistent with the format of CyShioTime.ref_point 
+            will not work with a numpy array since indexing assumes a list
+            or a tuple
+
+            takes only (long, lat, z), if length is bigger than 3, it uses the
+            first 3 data points
+
+            TODO: make sure this is consistent with the format of
+                  CyShioTime.ref_point
             """
-            ref_point = np.asarray(ref_point)   # make it a numpy array
+            ref_point = np.asarray(ref_point)  # make it a numpy array
             cdef WorldPoint p
-            p.pLong = ref_point[0]*10**6    # should this happen in C++?
-            p.pLat = ref_point[1]*10**6
+            p.pLong = ref_point[0] * 10 ** 6  # should this happen in C++?
+            p.pLat = ref_point[1] * 10 ** 6
             if len(ref_point) == 2:
                 self.cats.SetRefPosition(p, 0)
             else:
                 self.cats.SetRefPosition(p, ref_point[2])
-         
+
     def __repr__(self):
         """
-        Return an unambiguous representation of this object so it can be recreated
-        
-        Probably want to return filename as well  
+        Return an unambiguous representation of this object so it can be
+        recreated
+
+        Probably want to return filename as well
         """
-        repr_ = '{0}(scale_type={1.scale_type}, scale_value={1.scale_value}, uncertain_eddy_diffusion={1.eddy_diffusion})'.format(self.__class__.__name__, self)
-        return repr_
-      
+        return ('{0.__class__.__name__}(scale_type={0.scale_type}, '
+                'scale_value={0.scale_value}, '
+                'uncertain_eddy_diffusion={0.uncertain_eddy_diffusion})'
+                .format(self))
+
     def __str__(self):
         """Return string representation of this object"""
-        
-        info  = "{0} object - see attributes for more info\n".format(self.__class__.__name__)
-        info += "  scale type = {0.scale_type}\n".format(self)
-        info += "  scale value = {0.scale_value}\n".format(self)
-        info += "  eddy diffusion coef = {0.eddy_diffusion}\n".format(self)
-        
-        return info
-         
+        return ('{0.__class__.__name__} object '
+                '- see attributes for more info\n'
+                '  scale type = {0.scale_type}\n'
+                '  scale value = {0.scale_value}\n'
+                '  eddy diffusion coef = {0.uncertain_eddy_diffusion}\n'
+                .format(self))
+
+    def __reduce__(self):
+        return (CyCatsMover, (self.scale_type, self.scale_value,
+                              self.uncertain_duration,
+                              self.uncertain_time_delay,
+                              self.up_cur_uncertain,
+                              self.down_cur_uncertain,
+                              self.right_cur_uncertain,
+                              self.left_cur_uncertain,
+                              self.uncertain_eddy_diffusion,
+                              self.uncertain_eddy_v0))
+
     def set_shio(self, CyShioTime cy_shio):
         """
-        Takes a CyShioTime object as input and sets C++ Cats mover properties from the Shio object.
+        Takes a CyShioTime object as input and sets C++ Cats mover properties
+        from the Shio object.
         """
         self.cats.SetTimeDep(cy_shio.shio)
         self.cats.SetRefPosition(cy_shio.shio.GetStationLocation(), 0)
         self.cats.bTimeFileActive = True
         self.cats.scaleType = 1
         return True
-        
+
     def set_ossm(self, CyOSSMTime ossm):
         """
-        Takes a CyOSSMTime object as input and sets C++ Cats mover properties from the OSSM object.
+        Takes a CyOSSMTime object as input and sets C++ Cats mover properties
+        from the OSSM object.
         """
         self.cats.SetTimeDep(ossm.time_dep)
         self.cats.bTimeFileActive = True   # What is this?
         return True
-            
+
     def text_read(self, fname):
         """
         read the current file
         """
         cdef OSErr err
         cdef bytes path_
-        
+
         fname = os.path.normpath(fname)
-        path_ = to_bytes( unicode(fname))
-        
+        path_ = to_bytes(unicode(fname))
+
         if os.path.exists(path_):
             err = self.cats.TextRead(path_)
             if err != False:
-                raise ValueError("CATSMover.text_read(..) returned an error. OSErr: {0}".format(err))
+                raise ValueError('CATSMover.text_read(..) returned an error. '
+                                 'OSErr: {0}'.format(err))
         else:
             raise IOError("No such file: " + path_)
-        
-        return True
-    
 
-    def get_move(self, 
-                 model_time, 
-                 step_len, 
-                 cnp.ndarray[WorldPoint3D, ndim=1] ref_points, 
-                 cnp.ndarray[WorldPoint3D, ndim=1] delta, 
-                 cnp.ndarray[short] LE_status, 
+        return True
+
+    def get_move(self,
+                 model_time,
+                 step_len,
+                 cnp.ndarray[WorldPoint3D, ndim=1] ref_points,
+                 cnp.ndarray[WorldPoint3D, ndim=1] delta,
+                 cnp.ndarray[short] LE_status,
                  LEType spill_type):
         """
         .. function:: get_move(self,
@@ -236,9 +259,9 @@ cdef class CyCatsMover(cy_mover.CyMover):
                  cnp.ndarray[cnp.npy_double] windages,
                  cnp.ndarray[short] LE_status,
                  LEType LE_type)
-                 
+
         Invokes the underlying C++ WindMover_c.get_move(...)
-        
+
         :param model_time: current model time
         :param step_len: step length over which delta is computed
         :param ref_points: current locations of LE particles
@@ -252,26 +275,30 @@ cdef class CyCatsMover(cy_mover.CyMover):
         :returns: none
         """
         cdef OSErr err
-            
+
         N = len(ref_points)
- 
-        err = self.cats.get_move(N, model_time, step_len, &ref_points[0], &delta[0], &LE_status[0], spill_type, 0)
+
+        err = self.cats.get_move(N, model_time, step_len,
+                                 &ref_points[0], &delta[0], &LE_status[0],
+                                 spill_type, 0)
         if err == 1:
-            raise ValueError("Make sure numpy arrays for ref_points, delta and windages are defined")
-        
+            raise ValueError('Make sure numpy arrays for ref_points, delta, '
+                             'and windages are defined')
+
         """
-        Can probably raise this error before calling the C++ code - but the C++ also throwing this error
+        Can probably raise this error before calling the C++ code
+        - but the C++ also throwing this error
         """
         if err == 2:
-            raise ValueError("The value for spill type can only be 'forecast' or 'uncertainty' - you've chosen: " + str(spill_type))
-        
-    
-    #===========================================================================
+            raise ValueError('The value for spill type can only be '
+                             '"forecast" or "uncertainty" '
+                             '- you have chosen: {0!s}'.format(spill_type))
+
+    #==========================================================================
     # TODO: What are these used for
     # def compute_velocity_scale(self, model_time):
     #    self.mover.ComputeVelocityScale(model_time)
-    #    
+    #
     # def set_velocity_scale(self, scale_value):
     #    self.mover.refScale = scale_value
-    #===========================================================================
-        
+    #==========================================================================
