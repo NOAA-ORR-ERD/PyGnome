@@ -115,6 +115,9 @@ class NetCDFOutput(Outputter, Serializable):
        Since some of the names of the netcdf variables are different from the
        names in the SpillContainer data_arrays, this list uses the netcdf names
     """
+    which_data_lu = {'standard', 'most', 'all'}
+    compress_lu = {True, False}
+
     cf_attributes = {'comment': 'Particle output from the NOAA PyGnome model',
                      'source': 'PyGnome version {0}'.format(__version__),
                      'references': 'TBD',
@@ -170,9 +173,11 @@ class NetCDFOutput(Outputter, Serializable):
             store the NetCDF data.
         :type netcdf_filename: str. or unicode
 
-        :param which_data: If true, write all data to NetCDF, otherwise write
-            only standard data. Default is False.
-        :type which_data: string, one of: 'standard', 'most', 'all'
+        :param which_data: If 'all', write all data to NetCDF.
+            If 'standard', write only standard data.
+            Not sure what 'most' means.
+            Default is 'standard'.
+        :type which_data: {'standard', 'most', 'all'}
 
         Optional arguments passed on to base class (kwargs):
 
@@ -205,14 +210,24 @@ class NetCDFOutput(Outputter, Serializable):
         # prepare_for_model_run
         self._middle_of_run = False
 
-        self._which_data = which_data.lower()
+        if which_data.lower() in self.which_data_lu:
+            self._which_data = which_data.lower()
+        else:
+            raise ValueError('which_data must be one of: '
+                             '{"standard", "most", "all"}')
+
         self.arrays_to_output = set(self.standard_arrays)
 
         # this is only updated in prepare_for_model_run if which_data is
         # 'all' or 'most'
         #self.arr_types = None
         self._format = 'NETCDF4'
-        self._compress = compress
+
+        if compress in self.compress_lu:
+            self._compress = compress
+        else:
+            raise ValueError('compress must be one of: {True, False}')
+
 
         # 1k is about right for 1000LEs and one time step.
         # up to 0.5MB tested better for large datasets, but
@@ -260,12 +275,12 @@ class NetCDFOutput(Outputter, Serializable):
         if self.middle_of_run:
             raise AttributeError('This attribute cannot be changed in the '
                                  'middle of a run')
+
+        if value in self.which_data_lu:
+            self._which_data = value
         else:
-            if value not in ('standard', 'most', 'all'):
-                raise ValueError('which_data must be one of: '
-                                 '"standard", "most", "all"')
-            else:
-                self._which_data = value
+            raise ValueError('which_data must be one of: '
+                             '{"standard", "most", "all"}')
 
     @property
     def chunksize(self):
@@ -286,10 +301,13 @@ class NetCDFOutput(Outputter, Serializable):
     @compress.setter
     def compress(self, value):
         if self.middle_of_run:
-            raise AttributeError('This attribute cannot be changed '
-                                 'in the middle of a run')
-        else:
+            raise AttributeError('This attribute cannot be changed in the '
+                                 'middle of a run')
+
+        if value in self.compress_lu:
             self._compress = value
+        else:
+            raise ValueError('compress must be one of: {True, False}')
 
     @property
     def netcdf_format(self):
