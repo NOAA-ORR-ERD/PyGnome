@@ -60,7 +60,7 @@ def test_init():
     'simple initialization passes'
     g = GeoJson()
     assert g.output_dir == './'
-    assert g.roundto == 4
+    assert g.round_to == 4
     assert g.round_data
 
 
@@ -108,13 +108,18 @@ def test_geojson(model):
     'test geojson outputter with a model since simplest to do that'
     # default is to round data
     model.rewind()
-    roundto = model.outputters[0].roundto
+    round_to = model.outputters[0].round_to
     for ix in range(3):
         output = model.step()
         l_id = model.spills.LE('id')
         uncertain = False
         for elem in range(sum(model.spills.num_released)):
-            g_elem = output['geojson']['features'][elem]
+            #g_elem = output['geojson']['features'][elem]
+            with open(output['output_filename']) as file_:
+                geojson_out = geojson.load(file_)
+
+            g_elem = geojson_out['features'][elem]
+
             match = np.where(l_id == g_elem['id'])[0][0]
 
             if g_elem['properties']['spill_type'] == 'uncertain':
@@ -129,7 +134,7 @@ def test_geojson(model):
             # (long, lat)
             assert np.allclose(
                 model.spills.LE('positions', uncertain)[match, :2],
-                g_elem['geometry']['coordinates'], atol=10 ** -roundto)
+                g_elem['geometry']['coordinates'], atol=10 ** -round_to)
 
             # depth
             assert (model.spills.LE('positions', uncertain)[match, 2] ==

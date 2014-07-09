@@ -8,14 +8,24 @@ from glob import glob
 
 import numpy as np
 from geojson import Point, Feature, FeatureCollection, dump
+from colander import SchemaNode, String, drop, Int, Bool
 
 from gnome.utilities.serializable import Serializable, Field
 
-from .outputter import Outputter
+from .outputter import Outputter, BaseSchema
 
 from gnome.basic_types import oil_status
 from gnome import array_types
 from gnome.utilities.time_utils import date_to_sec
+
+
+class GeoJsonSchema(BaseSchema):
+    '''
+    Nothing is required for initialization
+    '''
+    round_data = SchemaNode(Bool(), missing=drop)
+    round_to = SchemaNode(Int(), missing=drop)
+    output_dir = SchemaNode(String(), missing=drop)
 
 
 class GeoJson(Outputter, Serializable):
@@ -66,21 +76,21 @@ class GeoJson(Outputter, Serializable):
 
     def __init__(self,
         round_data=True,
-        roundto=4,
+        round_to=4,
         output_dir='./',
         **kwargs):
         '''
         :param bool round_data=True: if True, then round the numpy arrays
-            containing float to number of digits specified by 'roundto'.
+            containing float to number of digits specified by 'round_to'.
             Default is True
-        :param int roundto=4: round float arrays to these number of digits.
+        :param int round_to=4: round float arrays to these number of digits.
             Default is 4.
         :param str output_dir='./': output directory for geojson files
 
         use super to pass optional \*\*kwargs to base class __init__ method
         '''
         self.round_data = round_data
-        self.roundto = roundto
+        self.round_to = round_to
         self.output_dir = output_dir
         super(GeoJson, self).__init__(**kwargs)
 
@@ -148,8 +158,10 @@ class GeoJson(Outputter, Serializable):
         with open(output_filename, 'w') as outfile:
             dump(geojson, outfile, indent=True)
 
+        # decided geojson should only be output to file
+        # read data from file and send it to web client
         output_info = {'step_num': step_num,
-                       'geojson': geojson,
+                       #'geojson': geojson,
                        'time_stamp': sc.current_time_stamp,
                        'output_filename': output_filename}
 
@@ -168,7 +180,7 @@ class GeoJson(Outputter, Serializable):
             p_type = int
 
         if p_type is float and self.round_data:
-            data = data_array.round(self.roundto).astype(p_type).tolist()
+            data = data_array.round(self.round_to).astype(p_type).tolist()
         else:
             data = data_array.astype(p_type).tolist()
         return data

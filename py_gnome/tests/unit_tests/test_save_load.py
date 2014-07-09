@@ -119,7 +119,7 @@ l_movers = (environment.Tide(testdata['CatsMover']['tide']),
             #movers.RiseVelocityMover(),
             # todo: This is incomplete - no _schema for SpatialRelease, GeoJson
             #spill.SpatialRelease(datetime.now(), ((0, 0, 0), (1, 2, 0))),
-            #outputters.GeoJson(),
+            outputters.GeoJson(),
             )
 
 

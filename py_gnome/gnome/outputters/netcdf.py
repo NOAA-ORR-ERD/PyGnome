@@ -12,9 +12,8 @@ import netCDF4 as nc
 
 import numpy
 np = numpy
-from colander import SchemaNode, MappingSchema, String, drop, Int, Bool
+from colander import SchemaNode, String, drop, Int, Bool
 
-from gnome.persist import base_schema
 from gnome import __version__, array_types
 from gnome.basic_types import oil_status, world_point_type
 
