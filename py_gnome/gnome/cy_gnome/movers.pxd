@@ -8,24 +8,13 @@ from libc.stdint cimport int32_t
 from type_defs cimport *
 from utils cimport OSSMTimeValue_c  
 
+from grids cimport GridVel_c, TimeGridVel_c
 """
 Following are used by some of the methods of the movers
 Currently, it looks like all methods are exposed from C++ so
 these are declared here. This may get smaller as we work through the
 cython files since there maybe no need to expose all the C++ functionality.
 """    
-cdef extern from "GridVel_c.h":
-    cdef cppclass GridVel_c:
-        pass
-
-cdef extern from "TimeGridVel_c.h":
-    cdef cppclass TimeGridVel_c:
-        OSErr                TextRead(char *path, char *topFilePath)
-        OSErr                ReadInputFileNames(char *fileNamesPath)    # not used by pyx -- just used for some testing right now
-        OSErr                ReadTimeData(long index, VelocityFH *velocityH, char* errmsg)
-        void                 DisposeLoadedData(LoadedData * dataPtr)
-        void                 ClearLoadedData(LoadedData * dataPtr)
-        void                 DisposeAllLoadedData()
     
 # TODO: pre-processor directive for cython, but what is its purpose?
 # comment for now so it doesn't give compile time errors - not sure LELIST_c is used anywhere either

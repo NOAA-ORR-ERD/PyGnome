@@ -16,7 +16,7 @@
 #endif
 
 #include "netcdf.h"
-
+using std::cout;
 /*Boolean IsGridWindFile(char *path,short *selectedUnitsP)
 {
 	
@@ -60,7 +60,7 @@ done:
 
 TimeGridWindRect_c::TimeGridWindRect_c() : TimeGridVel_c()
 {
-	
+	cout << "\nin TimeGridWindRect_c";
 }
 
 void TimeGridWindRect_c::Dispose()
@@ -76,7 +76,7 @@ VelocityRec TimeGridWindRect_c::GetScaledPatValue(const Seconds& model_time, Wor
 	long index; 
 	long depthIndex1,depthIndex2;	// default to -1?
 	Seconds startTime,endTime;
-	
+
 	VelocityRec	windVelocity = {0.,0.};
 	OSErr err = 0;
 	
@@ -152,7 +152,7 @@ OSErr TimeGridWindRect_c::TextRead(const char *path, const char *topFilePath)
 	char errmsg[256] = "";
 	char fileName[256],s[256],*modelTypeStr=0;
 	char  outPath[256];
-	
+	cout << "\nin TimeGridWindRect_c::TextRead";
 	if (!path || !path[0])
 		return 0;
 	//cerr << "TimeGridWindRect_c::TextRead(): path = " << path << endl;

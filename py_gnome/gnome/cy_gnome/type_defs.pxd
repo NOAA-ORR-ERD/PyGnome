@@ -126,3 +126,11 @@ cdef extern from "TypeDefs.h":
         M19DEGREESMAGNITUDE
         M19MAGNITUDEDIRECTION
         M19DIRECTIONMAGNITUDE
+
+    # Used by Wind/Current Grids (cy_grid.pyx)
+    ctypedef enum GridType:
+        REGULAR=1
+        REGULAR_SWAFS
+        CURVILINEAR
+        TRIANGULAR
+        REGRIDDED
