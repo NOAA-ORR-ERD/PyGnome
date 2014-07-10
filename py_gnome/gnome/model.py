@@ -836,7 +836,8 @@ class Model(Serializable):
         o_json_['map'] = self.map.serialize(json_)
 
         if json_ == 'webapi':
-            for attr in ('environment', 'outputters', 'weatherers', 'movers'):
+            for attr in ('environment', 'outputters', 'weatherers', 'movers',
+                         'spills'):
                 o_json_[attr] = self.serialize_oc(attr, json_)
 
         return o_json_
@@ -847,7 +848,7 @@ class Model(Serializable):
         '''
         json_out = []
         attr = getattr(self, attr)
-        if isinstance(attr, OrderedCollection):
+        if isinstance(attr, (OrderedCollection, SpillContainerPair)):
             for item in attr:
                 json_out.append(item.serialize(json_))
         return json_out
@@ -863,7 +864,8 @@ class Model(Serializable):
             deserial['map'] = json_['map']
 
         if json_['json_'] == 'webapi':
-            for attr in ('environment', 'outputters', 'weatherers', 'movers'):
+            for attr in ('environment', 'outputters', 'weatherers', 'movers',
+                         'spills'):
                 if attr in json_ and json_[attr]:
                     deserial[attr] = cls.deserialize_oc(json_[attr])
 
