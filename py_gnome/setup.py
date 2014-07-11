@@ -235,7 +235,8 @@ extension_names = ['cy_mover',
                    'cy_grid_map',
                    'cy_shio_time',
                    'cy_grid',
-                   #'cy_timegridwind',
+                   'cy_grid_rect',
+                   'cy_grid_curv'
                    ]
 
 cpp_files = ['RectGridVeL_c.cpp',
