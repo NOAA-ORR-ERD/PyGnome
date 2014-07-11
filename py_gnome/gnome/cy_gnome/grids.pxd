@@ -35,3 +35,6 @@ cdef extern from "TimeGridVel_c.h":
 
     cdef cppclass TimeGridWindRect_c(TimeGridVel_c):
         pass
+
+    cdef cppclass TimeGridWindCurv_c(TimeGridWindRect_c):
+        pass

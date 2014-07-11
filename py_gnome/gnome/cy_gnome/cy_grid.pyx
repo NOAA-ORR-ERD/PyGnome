@@ -1,11 +1,14 @@
 from type_defs cimport OSErr, VelocityRec, WorldPoint3D
 from libcpp cimport bool
 
+import cython
 import numpy as np
 
-from grids cimport TimeGridVel_c, TimeGridWindRect_c
+from grids cimport TimeGridVel_c
+from gnome.basic_types import velocity_rec
 
 
+@cython.final
 cdef class CyTimeGridVel(object):
     def __init__(self):
         self.timegrid = NULL
@@ -27,8 +30,9 @@ cdef class CyTimeGridVel(object):
         cdef char errmsg[256]
 
         location = np.asarray(location)
-        ref_point.p.pLong = location[0]
-        ref_point.p.pLat = location[1]
+        # do the multiply by 1000000 here - this is what gnome expects
+        ref_point.p.pLong = location[0]*1000000
+        ref_point.p.pLat = location[1]*1000000
         if len(location) == 2:
             ref_point.z = 0
         else:
@@ -39,21 +43,5 @@ cdef class CyTimeGridVel(object):
             raise Exception('SetInterval error message: {0}'.format(errmsg))
 
         vel = self.timegrid.GetScaledPatValue(time, ref_point)
-        return vel
-
-
-cdef extern from *:
-    TimeGridWindRect_c* dynamic_cast_ptr "dynamic_cast<TimeGridWindRect_c *>" (TimeGridVel_c *) except NULL
-
-cdef class CyTimeGridWindRect(CyTimeGridVel):
-    '''
-    cython wrapper around TimeGridWindRect_c C++ class
-    '''
-    cdef TimeGridWindRect_c * timegridwind
-
-    def __cinit__(self):
-        self.timegrid = new TimeGridWindRect_c()
-        self.timegridwind = dynamic_cast_ptr(self.timegrid)
-
-    def __init__(self, basestring datafile, basestring topology=None):
-        self.load_data(datafile, topology)
+        # return as velocity_rec dtype array
+        return np.asarray(tuple(vel.values()), dtype=velocity_rec)
