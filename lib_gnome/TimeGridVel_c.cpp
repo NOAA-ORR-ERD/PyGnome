@@ -26,8 +26,6 @@
 #include "Replacements.h"
 #endif
 
-using std::cout;
-
 // NOTE!! if the input variable path does point to a NetCDFPaths file,
 // the input variable is overwritten with the path to the first NetCDF file.
 // The original input value of path is copied to fileNamesPath in such a case.
@@ -278,7 +276,6 @@ TimeGridVel_c::TimeGridVel_c ()
 	fMaxDepthForExtrapolation = 0.;	// assume 2D is just surface
 	
 	fNumCols = fNumRows = 0;
-	cout << "in TimeGridVel_c";
 }
 
 void TimeGridVel_c::Dispose ()
