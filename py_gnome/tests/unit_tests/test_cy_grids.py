@@ -11,11 +11,12 @@ from gnome.cy_gnome.cy_grid_rect import CyTimeGridWindRect
 from gnome.cy_gnome.cy_grid_curv import CyTimeGridWindCurv
 from gnome.utilities.time_utils import date_to_sec
 from gnome.basic_types import velocity_rec
+from gnome.utilities.remote_data import get_datafile
 
 wind_base = os.path.join(os.path.dirname(__file__), 'sample_data/winds/')
-f = os.path.join(wind_base, 'test_wind.cdf')
-f2 = os.path.join(wind_base, 'WindSpeedDirSubset.nc')
-t2 = os.path.join(wind_base, 'WindSpeedDirSubsetTop.dat')
+f = get_datafile(os.path.join(wind_base, 'test_wind.cdf'))
+f2 = get_datafile(os.path.join(wind_base, 'WindSpeedDirSubset.nc'))
+t2 = get_datafile(os.path.join(wind_base, 'WindSpeedDirSubsetTop.dat'))
 
 
 def test_grid_wind_rect():
@@ -45,5 +46,4 @@ def test_grid_wind_curv():
     time = date_to_sec(datetime(2006, 3, 31, 21))
     vel = curv.get_value(time, (-122.934656, 38.27594))
     print "Curv grid - vel: {0}\n".format(vel)
-    for key in vel:
-        assert vel[key] != 0
+    assert vel.item() != 0
