@@ -22,11 +22,7 @@ np = numpy
 from hazpy import unit_conversion
 uc = unit_conversion
 
-from gnome.db.oil_library.models import Oil, DBSession
-from gnome.db.oil_library.initializedb import (initialize_sql,
-                                               load_database)
-
-from gnome.utilities.remote_data import get_datafile
+from oil_library.models import Oil, DBSession
 
 
 # Some standard oils - scope is module level, non-public
@@ -63,11 +59,8 @@ _sample_oils = {
 currently, the DB is stored locally - use this for now till we have
 a persistent DB that we can query
 '''
-#_oillib_path = os.path.join(os.path.split(os.path.realpath(__file__))[0],
-#                           '../../../../web/gnome/webgnome/webgnome/data')
-_oillib_path = os.path.join(os.path.split(os.path.realpath(__file__))[0],
-                            '../../data')
-_db_file = os.path.join(_oillib_path, 'OilLibrary.db')
+_oillib_path = os.path.dirname(__file__)
+_db_file = os.path.join(_oillib_path, 'OilLib.db')
 # No need to create DB, we'll just download the DB file from remote server:
 # (http://gnome.orr.noaa.gov/py_gnome_testdata/)
 # At some point, DB will be persisted on server and we just need to

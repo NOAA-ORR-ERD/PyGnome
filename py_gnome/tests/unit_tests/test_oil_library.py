@@ -12,7 +12,7 @@ transaction = pytest.importorskip('transaction')
 from sqlalchemy import create_engine
 from sqlalchemy.exc import IntegrityError
 
-from gnome.db.oil_library.models import DBSession, Base, Oil, Synonym, \
+from oil_library.models import DBSession, Base, Oil, Synonym, \
     Density, KVis, DVis, Cut, Toxicity
 
 from gnome.utilities.remote_data import get_datafile

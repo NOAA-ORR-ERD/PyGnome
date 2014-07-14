@@ -20,9 +20,10 @@ requires = [
     'SQLAlchemy',
     'transaction',
     'zope.sqlalchemy',
+    'hazpy.unit_conversion',
     ]
 
-s=setup(name='OilLibrary',
+setup(name='OilLibrary',
       version='0.0',
       description='OilLibrary',
       long_description=README, 

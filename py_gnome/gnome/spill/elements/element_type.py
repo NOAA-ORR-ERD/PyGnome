@@ -16,7 +16,7 @@ from .initializers import (InitRiseVelFromDropletSizeFromDist,
                            InitWindages,
                            InitMassFromTotalMass,
                            InitMassFromPlume)
-from gnome.db.oil_library.oil_props import (OilProps, OilPropsFromDensity)
+from oil_library.oil_props import (OilProps, OilPropsFromDensity)
 
 from gnome.persist import base_schema
 
