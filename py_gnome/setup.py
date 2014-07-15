@@ -62,7 +62,7 @@ def target_path(name='temp'):
 
 class cleandev(clean):
     def run(self):
-        self.all = True
+        # call base class clean
         clean.run(self)
 
         # clean remaining cython/cpp files
@@ -87,8 +87,8 @@ class cleandev(clean):
             print "Deleting auto-generated directory: {0}".format(dir_)
             try:
                 shutil.rmtree(dir_)
-            except OSError as e:
-                print e
+            except OSError:
+                pass
 
 
 ## 64 bit Windows Notes:
