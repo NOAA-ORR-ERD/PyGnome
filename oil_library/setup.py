@@ -1,20 +1,45 @@
 #!/usr/bin/env python
 import sys, os
+import glob
+import shutil
 from subprocess import call
 
 from setuptools import setup, find_packages
-from setuptools.command.install import install
+from setuptools.command.develop import develop
+from distutils.command.clean import clean
 
 here = os.path.abspath(os.path.dirname(__file__))
 README = open(os.path.join(here, 'README.txt')).read()
+pkg_name = 'OilLibrary'
 
+class InstallDB(develop):
+    def run(self):
+        develop.run(self)
+        if os.path.exists(os.path.join(here, 'oil_library', 'OilLib.db')):
+            print 'OilLibrary database exists - do not remake!'
+        else:
+            call("initialize_OilLibrary_db")
+            print 'OilLibrary database successfully generated from file!'
 
-if "cleanall" in "".join(sys.argv[1:]):
-    print "Deleting files .."
-    os.system(r'find . -name \*.pyc -exec rm -v {} \;')
-    os.system('rm -rv OilLibrary.egg-info')
-    os.system('rm -v OilLibrary.db')
-    sys.argv[1] = 'clean'   # this is what distutils understands
+class cleandev(clean):
+    def run(self):
+        self.all = True
+        clean.run(self)
+        
+        src = os.path.join(here, r'oil_library')
+        to_rm = glob.glob(os.path.join(src, r'*.pyc'))
+        to_rm.extend([os.path.join(here,'{0}.egg-info'.format(pkg_name)),
+                      os.path.join(src, 'OilLib.db')])
+        for f in to_rm:
+            try:
+                if os.path.isdir(f):
+                    shutil.rmtree(f)
+                else:
+                    os.remove(f)
+            except:
+                pass
+
+            print "Deleting {0} ..".format(f)
 
 requires = [
     'SQLAlchemy',
@@ -23,7 +48,7 @@ requires = [
     'hazpy.unit_conversion',
     ]
 
-setup(name='OilLibrary',
+s=setup(name=pkg_name,
       version='0.0',
       description='OilLibrary',
       long_description=README, 
@@ -36,6 +61,8 @@ setup(name='OilLibrary',
       install_requires=requires,
       tests_require=requires,
       package_data={'oil_library': ['OilLib']},
+      cmdclass={'develop': InstallDB,
+                'cleandev': cleandev},
       entry_points = {
               'console_scripts': [
                 'initialize_OilLibrary_db = oil_library.initializedb:make_db',
@@ -45,10 +72,5 @@ setup(name='OilLibrary',
 
 # make database post install - couldn't call this directly so used
 # console script
-#===================
-#import oil_library
-#inst_loc = os.path.dirname(oil_library.__file__)
-#if not os.path.exists(os.path.join(inst_loc, 'OilLib.db')):
-#===================
-call("initialize_OilLibrary_db")
-print 'OilLibrary database successfully generated from file!'
+if 'install' in s.script_args:
+    call("initialize_OilLibrary_db")
