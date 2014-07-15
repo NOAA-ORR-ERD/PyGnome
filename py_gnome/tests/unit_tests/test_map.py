@@ -437,7 +437,7 @@ class TestRefloat:
 
 class Test_MapfromBNA:
 
-    bna_map = MapFromBNA(testmap, 6, raster_size=1000)
+    bna_map = MapFromBNA(testmap, refloat_halflife=6, raster_size=1000)
 
     def test_map_in_water(self):
         '''
