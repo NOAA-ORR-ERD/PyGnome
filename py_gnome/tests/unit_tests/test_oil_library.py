@@ -64,6 +64,7 @@ class BaseTestCase(unittest.TestCase):
 
     def setUp(self):
         self.session = DBSession()
+        #self.session.bind = self.engine # why the explicit bind?
         transaction.begin()
 
     def tearDown(self):

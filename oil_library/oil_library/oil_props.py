@@ -56,27 +56,10 @@ _sample_oils = {
     }
 
 '''
-currently, the DB is stored locally - use this for now till we have
-a persistent DB that we can query
+currently, the DB is created and located when package is installed
 '''
 _oillib_path = os.path.dirname(__file__)
 _db_file = os.path.join(_oillib_path, 'OilLib.db')
-# No need to create DB, we'll just download the DB file from remote server:
-# (http://gnome.orr.noaa.gov/py_gnome_testdata/)
-# At some point, DB will be persisted on server and we just need to
-# query it. At no point should this be creating the DB.
-#==============================================================================
-# def _db_from_flatfile():
-#     """
-#     creates the sqllite database from the OilLib flatfile
-#     """
-#     oillib_file = os.path.join(_oillib_path, 'OilLib')
-#     sqlalchemy_url = 'sqlite:///{0}'.format(_db_file)
-#     settings = {'sqlalchemy.url': sqlalchemy_url,
-#             'oillib.file': oillib_file}
-#     initialize_sql(settings)
-#     load_database(settings)
-#==============================================================================
 
 
 MassComponent = namedtuple('MassComponent',
@@ -123,13 +106,10 @@ def get_oil(oil_name):
         return Oil(**_sample_oils[oil_name])
 
     else:
-        if not os.path.exists(_db_file):
-            '''
-            if db_file doesn't exist in webgnome, then download it from
-            remote_data.data_server and put it in py_gnome/gnome/data/
-            '''
-            #_db_from_flatfile()
-            get_datafile(_db_file)
+        '''
+        db_file should exist - if it doesn't then create if first
+        should we raise error here?
+        '''
 
         # not sure we want to do it this way - but let's use for now
         engine = sqlalchemy.create_engine('sqlite:///' + _db_file)
