@@ -882,15 +882,18 @@ OSErr NetCDFMover::Read(BFPB *bfpb)
 	}
 	if (version>3)
 	{
-		if (err = ReadMacValue(bfpb, &numPoints)) goto done;	
-		fDepthDataInfo = (DepthDataInfoH)_NewHandle(sizeof(DepthDataInfo)*numPoints);
-		if(!fDepthDataInfo)
-		{TechError("NetCDFMover::Read()", "_NewHandle()", 0); err = memFullErr; goto done;}
-		for (i = 0 ; i < numPoints ; i++) {
-			if (err = ReadMacValue(bfpb, &depthData.totalDepth)) goto done;
-			if (err = ReadMacValue(bfpb, &depthData.indexToDepthData)) goto done;
-			if (err = ReadMacValue(bfpb, &depthData.numDepths)) goto done;
-			INDEXH(fDepthDataInfo, i) = depthData;
+		if (err = ReadMacValue(bfpb, &numPoints)) goto done;
+		if (numPoints > 0)
+		{	
+			fDepthDataInfo = (DepthDataInfoH)_NewHandle(sizeof(DepthDataInfo)*numPoints);
+			if(!fDepthDataInfo)
+			{TechError("NetCDFMover::Read()", "_NewHandle()", 0); err = memFullErr; goto done;}
+			for (i = 0 ; i < numPoints ; i++) {
+				if (err = ReadMacValue(bfpb, &depthData.totalDepth)) goto done;
+				if (err = ReadMacValue(bfpb, &depthData.indexToDepthData)) goto done;
+				if (err = ReadMacValue(bfpb, &depthData.numDepths)) goto done;
+				INDEXH(fDepthDataInfo, i) = depthData;
+			}
 		}
 	}
 	if (version > 1) {if (err = ReadMacValue(bfpb, &fTimeShift)) goto done;}
