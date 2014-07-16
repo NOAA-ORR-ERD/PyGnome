@@ -16,8 +16,6 @@ from itertools import chain
 from collections import namedtuple
 
 import sqlalchemy
-import numpy
-np = numpy
 
 from hazpy import unit_conversion
 uc = unit_conversion
@@ -179,7 +177,7 @@ class OilProps(object):
                  - Figure out where we will get the half-lives data.
         '''
         mc = (1., 0., 0., 0., 0.)
-        hl = ((15. * 60), np.inf, np.inf, np.inf, np.inf)
+        hl = ((15. * 60), float('nan'), float('nan'), float('nan'), float('nan'))
         return [MassComponent(*n) for n in zip(mc, hl)]
 
     def get_density(self, units='kg/m^3'):

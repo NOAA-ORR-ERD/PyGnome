@@ -15,10 +15,8 @@ from sqlalchemy.exc import IntegrityError
 from oil_library.models import DBSession, Base, Oil, Synonym, \
     Density, KVis, DVis, Cut, Toxicity
 
-from gnome.utilities.remote_data import get_datafile
-
 here = os.path.dirname(__file__)
-data_dir = os.path.join(here, 'sample_data', 'oil_library')
+data_dir = os.path.join(here, 'sample_data')
 db_file = os.path.join(data_dir, r'OilLibrary.db')
 
 
@@ -32,8 +30,7 @@ def make_db():
             from gnome.db.oil_library.initializedb import initialize_sql, \
                 load_database
 
-            oillib_file = get_datafile(os.path.join(data_dir,
-                    'OilLib.smaller'))
+            oillib_file = os.path.join(data_dir, 'OilLib.smaller')
 
             sqlalchemy_url = 'sqlite:///{0}'.format(db_file)
             settings = {'sqlalchemy.url': sqlalchemy_url,
@@ -61,10 +58,11 @@ class BaseTestCase(unittest.TestCase):
     def setUpClass(cls):
         cls.engine = create_engine(sqlalchemy_url)
         Base.metadata.create_all(cls.engine)
+        print Base
 
     def setUp(self):
         self.session = DBSession()
-        #self.session.bind = self.engine # why the explicit bind?
+        self.session.bind = self.engine
         transaction.begin()
 
     def tearDown(self):
