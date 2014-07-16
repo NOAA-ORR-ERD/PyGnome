@@ -177,7 +177,7 @@ class OilProps(object):
                  - Figure out where we will get the half-lives data.
         '''
         mc = (1., 0., 0., 0., 0.)
-        hl = ((15. * 60), float('nan'), float('nan'), float('nan'), float('nan'))
+        hl = ((15. * 60), float('inf'), float('inf'), float('inf'), float('inf'))
         return [MassComponent(*n) for n in zip(mc, hl)]
 
     def get_density(self, units='kg/m^3'):
