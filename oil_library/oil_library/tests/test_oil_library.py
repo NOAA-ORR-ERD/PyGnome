@@ -62,7 +62,8 @@ class BaseTestCase(unittest.TestCase):
 
     def setUp(self):
         self.session = DBSession()
-        self.session.bind = self.engine
+        if not self.session.bind:
+            self.session.bind = self.engine
         transaction.begin()
 
     def tearDown(self):
