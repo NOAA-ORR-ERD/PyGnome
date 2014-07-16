@@ -16,17 +16,11 @@ from itertools import chain
 from collections import namedtuple
 
 import sqlalchemy
-import numpy
-np = numpy
 
 from hazpy import unit_conversion
 uc = unit_conversion
 
-from gnome.db.oil_library.models import Oil, DBSession
-from gnome.db.oil_library.initializedb import (initialize_sql,
-                                               load_database)
-
-from gnome.utilities.remote_data import get_datafile
+from oil_library.models import Oil, DBSession
 
 
 # Some standard oils - scope is module level, non-public
@@ -60,30 +54,10 @@ _sample_oils = {
     }
 
 '''
-currently, the DB is stored locally - use this for now till we have
-a persistent DB that we can query
+currently, the DB is created and located when package is installed
 '''
-#_oillib_path = os.path.join(os.path.split(os.path.realpath(__file__))[0],
-#                           '../../../../web/gnome/webgnome/webgnome/data')
-_oillib_path = os.path.join(os.path.split(os.path.realpath(__file__))[0],
-                            '../../data')
-_db_file = os.path.join(_oillib_path, 'OilLibrary.db')
-# No need to create DB, we'll just download the DB file from remote server:
-# (http://gnome.orr.noaa.gov/py_gnome_testdata/)
-# At some point, DB will be persisted on server and we just need to
-# query it. At no point should this be creating the DB.
-#==============================================================================
-# def _db_from_flatfile():
-#     """
-#     creates the sqllite database from the OilLib flatfile
-#     """
-#     oillib_file = os.path.join(_oillib_path, 'OilLib')
-#     sqlalchemy_url = 'sqlite:///{0}'.format(_db_file)
-#     settings = {'sqlalchemy.url': sqlalchemy_url,
-#             'oillib.file': oillib_file}
-#     initialize_sql(settings)
-#     load_database(settings)
-#==============================================================================
+_oillib_path = os.path.dirname(__file__)
+_db_file = os.path.join(_oillib_path, 'OilLib.db')
 
 
 MassComponent = namedtuple('MassComponent',
@@ -130,13 +104,10 @@ def get_oil(oil_name):
         return Oil(**_sample_oils[oil_name])
 
     else:
-        if not os.path.exists(_db_file):
-            '''
-            if db_file doesn't exist in webgnome, then download it from
-            remote_data.data_server and put it in py_gnome/gnome/data/
-            '''
-            #_db_from_flatfile()
-            get_datafile(_db_file)
+        '''
+        db_file should exist - if it doesn't then create if first
+        should we raise error here?
+        '''
 
         # not sure we want to do it this way - but let's use for now
         engine = sqlalchemy.create_engine('sqlite:///' + _db_file)
@@ -206,7 +177,7 @@ class OilProps(object):
                  - Figure out where we will get the half-lives data.
         '''
         mc = (1., 0., 0., 0., 0.)
-        hl = ((15. * 60), np.inf, np.inf, np.inf, np.inf)
+        hl = ((15. * 60), float('inf'), float('inf'), float('inf'), float('inf'))
         return [MassComponent(*n) for n in zip(mc, hl)]
 
     def get_density(self, units='kg/m^3'):

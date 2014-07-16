@@ -76,7 +76,7 @@ VelocityRec TimeGridWindRect_c::GetScaledPatValue(const Seconds& model_time, Wor
 	long index; 
 	long depthIndex1,depthIndex2;	// default to -1?
 	Seconds startTime,endTime;
-	
+
 	VelocityRec	windVelocity = {0.,0.};
 	OSErr err = 0;
 	
@@ -153,7 +153,7 @@ OSErr TimeGridWindRect_c::TextRead(const char *path, const char *topFilePath)
 	char fileName[256],s[256],*modelTypeStr=0;
 	char  outPath[256];
 	
-	if (!path || !path[0])
+    if (!path || !path[0])
 		return 0;
 	//cerr << "TimeGridWindRect_c::TextRead(): path = " << path << endl;
 
