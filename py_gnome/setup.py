@@ -40,7 +40,7 @@ except: # gnome won't import if it's not built (properly) yet...
     __version__ = "alpha"
 
 # could run setup from anywhere
-SETUP_PATH = os.path.dirname(__file__)
+SETUP_PATH = os.path.dirname(os.path.abspath(__file__))
 
 # cd to SETUP_PATH, run develop or install, then cd back
 CWD = os.getcwd()
