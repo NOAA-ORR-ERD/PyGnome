@@ -44,7 +44,7 @@ Boolean IsNetCDFFile (char *path, short *gridType);
 Boolean IsNetCDFPathsFile (char *path, Boolean *isNetCDFPathsFile, char *fileNamesPath, short *gridType);
 //Boolean IsGridWindFile(char *path,short *selectedUnits);
 
-class TimeGridVel_c
+class DLL_API TimeGridVel_c
 {
 public:
 	
@@ -340,7 +340,7 @@ public:
 };
 
 
-class TimeGridWindRect_c : virtual public TimeGridVel_c
+class DLL_API TimeGridWindRect_c : virtual public TimeGridVel_c
 {
 public:
 	
@@ -359,7 +359,7 @@ public:
 };
 
 
-class TimeGridWindCurv_c : virtual public TimeGridWindRect_c
+class DLL_API TimeGridWindCurv_c : virtual public TimeGridWindRect_c
 {
 public:
 	
