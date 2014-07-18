@@ -596,6 +596,9 @@ class SpillContainerPair(SpillContainerPairData):
             if self.uncertain:
                 self._u_spill_container.spills += spill.uncertain_copy()
 
+    def append(self, spill):
+        self.add(spill)
+
     def remove(self, ident):
         '''
         remove object from spill_container.spills and the corresponding
