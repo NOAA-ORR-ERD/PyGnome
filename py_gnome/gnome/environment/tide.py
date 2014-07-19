@@ -72,6 +72,8 @@ class TideSchema(base_schema.ObjType):
     'Tide object schema'
     filename = SchemaNode(String(), missing=drop)
 
+    scale_factor = SchemaNode(Float(), missing=drop)
+
     #timeseries = TimeSeriesSchema(missing=drop)
     name = 'tide'
 
@@ -91,6 +93,10 @@ class Tide(Environment, Serializable):
     _schema = TideSchema
 
     # add 'filename' as a Field object
+    _update = ['scale_factor']
+    _create = []
+    _create.extend(_update)
+    _state.add(update=_update, save=_create)
     _state.add_field(Field('filename', save=True, read=True, isdatafile=True,
                            test_for_eq=False))
 
@@ -130,6 +136,8 @@ class Tide(Environment, Serializable):
         # self.yeardata = os.path.abspath( yeardata ) # set yeardata
         self.yeardata = yeardata  # set yeardata
         self.name = kwargs.pop('name', os.path.split(self.filename)[1])
+        self.scale_factor = kwargs.get('scale_factor',
+                self.cy_obj.scale_factor)
 
         super(Tide, self).__init__(**kwargs)
 
@@ -154,6 +162,10 @@ class Tide(Environment, Serializable):
 
     filename = property(lambda self: (self.cy_obj.filename, None
                                       )[self.cy_obj.filename == ''])
+
+    scale_factor = property(lambda self: \
+            self.cy_obj.scale_factor, lambda self, val: \
+            setattr(self.cy_obj, 'scale_factor', val))
 
     def _obj_to_create(self, filename):
         """
