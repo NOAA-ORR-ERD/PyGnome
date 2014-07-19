@@ -5,6 +5,10 @@ cache system for caching element data on disk for
 accessing again for output, etc.
 
 """
+import gc
+import sys
+from pprint import PrettyPrinter
+pp = PrettyPrinter(indent=2)
 
 import os
 import warnings
@@ -84,10 +88,17 @@ class ElementCache(object):
                                If not provided, a temp dir will be created by
                                the python tempfile module
         """
+        print ('ElementCache.__init__(): self = ', self)
         if cache_dir is None:
             self._cache_dir = os.path.join(tempfile.mkdtemp(dir=_cache_dir))
+            print ('ElementCache.__init__(): new cache dir: ',
+                   self._cache_dir)
         else:
+            print ('ElementCache.__init__(): reusing cache dir: ',
+                   cache_dir)
             self._cache_dir = cache_dir
+        print ('ElementCache.__init__(): our cache dir exists?: ',
+               os.path.isdir(self._cache_dir))
 
         # dict to hold recent data so we don't need to pull from the
         # file system
@@ -98,7 +109,13 @@ class ElementCache(object):
 
     def __del__(self):
         'Clear out the cache when this object is deleted'
-        clean_up_cache(dir_name=self._cache_dir)
+        shared_dirs = [o for o in gc.get_objects()
+                       if (isinstance(o, ElementCache)
+                           and not o is self
+                           and o._cache_dir == self._cache_dir)]
+
+        if not shared_dirs:
+            clean_up_cache(dir_name=self._cache_dir)
 
     def _make_filename(self, step_num, uncertain=False):
         """
@@ -108,6 +125,7 @@ class ElementCache(object):
 
         This here so that loading and saving use the same code
         """
+        print '_make_filename(): our cache dir exists?: ', os.path.isdir(self._cache_dir)
         if uncertain:
             return os.path.join(self._cache_dir,
                                 'step_%06i_uncert.npz' % step_num)
@@ -140,10 +158,8 @@ class ElementCache(object):
             # could be threaded -- data is a copy, so doesn't need to be
             #                      re-used by anything
             if self.enabled:
-                if sc.uncertain:
-                    np.savez(self._make_filename(step_num, True), **data)
-                else:
-                    np.savez(self._make_filename(step_num), **data)
+                filename = self._make_filename(step_num, sc.uncertain)
+                np.savez(filename, **data)
 
     def load_timestep(self, step_num):
         """

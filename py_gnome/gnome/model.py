@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+import sys
 import os
 import shutil
 import types
@@ -106,6 +107,7 @@ class Model(Serializable):
     @classmethod
     def new_from_dict(cls, dict_):
         'Restore model from previously persisted _state'
+        print 'Model.new_from_dict()...'
         json_ = dict_.pop('json_')
         l_env = dict_.pop('environment', [])
         l_out = dict_.pop('outputters', [])
@@ -183,6 +185,7 @@ class Model(Serializable):
         :param cache_enabled=False: Flag for setting whether the model should
             cache results to disk.
         '''
+        print 'Model.__init__()...'
 
         self.__restore__(time_step, start_time, duration,
                          weathering_substeps,
@@ -210,6 +213,8 @@ class Model(Serializable):
         # contains both certain/uncertain spills
         self.spills = SpillContainerPair(uncertain)
 
+        print 'Model.__restore__(): setting ElementCache()'
+        sys.stdout.flush()
         self._cache = gnome.utilities.cache.ElementCache()
         self._cache.enabled = cache_enabled
 
@@ -531,13 +536,15 @@ class Model(Serializable):
         output_info = {}
 
         for outputter in self.outputters:
+            print 'outputter = ', outputter.__class__.__name__
             if self.current_time_step == self.num_time_steps - 1:
                 output = outputter.write_output(self.current_time_step, True)
             else:
                 output = outputter.write_output(self.current_time_step)
 
+            print 'output = ', output
             if output is not None:
-                output_info.update(output)
+                output_info[outputter.__class__.__name__] = output
 
         if not output_info:
             return {'step_num': self.current_time_step}
