@@ -36,7 +36,7 @@ import numpy as np
 
 try:
     from gnome import __version__
-except: # gnome won't import if it's not built (properly) yet...
+except:  # gnome won't import if it's not built (properly) yet...
     __version__ = "alpha"
 
 # could run setup from anywhere
@@ -352,14 +352,15 @@ elif sys.platform == "linux2":
     ## else the compile fails saying temp.linux-i686-2.7 is not found
     ## required for develop or install mode
     build_temp = target_path()
-    if 'clean' not in sys.argv[1] and not os.path.exists(build_temp):
+    if 'clean' not in sys.argv[1:] and not os.path.exists(build_temp):
         os.makedirs(build_temp)
 
     ## Not sure calling setup twice is the way to go - but do this for now
     ## NOTE: This is also linking against the netcdf library (*.so), not
     ## the static netcdf. We didn't build a NETCDF static library.
     setup(name='pyGnome',  # not required since ext defines this
-          cmdclass={'build_ext': build_ext},
+          cmdclass={'build_ext': build_ext,
+                    'cleandev': cleandev},
           ext_modules=[Extension('gnome.cy_gnome.libgnome',
                                  cpp_files,
                                  language='c++',
@@ -438,6 +439,7 @@ extensions.append(Extension("gnome.utilities.geometry.cy_point_in_polygon",
                             )
                   )
 
+
 setup(name='pyGnome',
       version=__version__,
       ext_modules=extensions,
@@ -447,6 +449,7 @@ setup(name='pyGnome',
       requires=['numpy'],   # want other packages here?
       cmdclass={'build_ext': build_ext,
                 'cleandev': cleandev},
+
       #scripts,
 
       #metadata for upload to PyPI
