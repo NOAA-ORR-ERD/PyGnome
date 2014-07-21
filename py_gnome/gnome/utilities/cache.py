@@ -88,17 +88,10 @@ class ElementCache(object):
                                If not provided, a temp dir will be created by
                                the python tempfile module
         """
-        print ('ElementCache.__init__(): self = ', self)
         if cache_dir is None:
             self._cache_dir = os.path.join(tempfile.mkdtemp(dir=_cache_dir))
-            print ('ElementCache.__init__(): new cache dir: ',
-                   self._cache_dir)
         else:
-            print ('ElementCache.__init__(): reusing cache dir: ',
-                   cache_dir)
             self._cache_dir = cache_dir
-        print ('ElementCache.__init__(): our cache dir exists?: ',
-               os.path.isdir(self._cache_dir))
 
         # dict to hold recent data so we don't need to pull from the
         # file system
@@ -109,13 +102,15 @@ class ElementCache(object):
 
     def __del__(self):
         'Clear out the cache when this object is deleted'
-        shared_dirs = [o for o in gc.get_objects()
-                       if (isinstance(o, ElementCache)
-                           and not o is self
-                           and o._cache_dir == self._cache_dir)]
+        if os.path.isdir(_cache_dir):
+            subdirs = os.listdir(_cache_dir)
+            allocated_dirs = set([os.path.basename(o._cache_dir)
+                                  for o in gc.get_objects()
+                                  if (isinstance(o, ElementCache))])
 
-        if not shared_dirs:
-            clean_up_cache(dir_name=self._cache_dir)
+            for d in subdirs:
+                if d not in allocated_dirs:
+                    shutil.rmtree(os.path.join(_cache_dir, d))
 
     def _make_filename(self, step_num, uncertain=False):
         """
