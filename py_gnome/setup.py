@@ -79,16 +79,18 @@ class cleandev(clean):
                             shutil.rmtree(f)
                         else:
                             os.remove(f)
-                    except OSError:
-                        pass
+                    except OSError as err:
+                        print("Failed to remove {0}. Error: {1}".format(f, err)) 
+                        #raise
 
         rm_dir = ['pyGnome.egg-info', 'build']
         for dir_ in rm_dir:
             print "Deleting auto-generated directory: {0}".format(dir_)
             try:
                 shutil.rmtree(dir_)
-            except OSError:
-                pass
+            except OSError as err:
+                print("Failed to remove {0}. Error: {1}".format(dir_, err)) 
+                #pass
 
 
 ## 64 bit Windows Notes:
