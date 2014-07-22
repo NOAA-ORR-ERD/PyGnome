@@ -7,7 +7,7 @@ __init__.py for the gnome package
 
 """
 
-from movers import Mover, MoverSchema, CyMover
+from movers import Mover, ProcessSchema, CyMover
 from simple_mover import SimpleMover, SimpleMoverSchema
 from wind_movers import (WindMover,
                          WindMoverSchema,
@@ -31,7 +31,7 @@ from vertical_movers import RiseVelocityMoverSchema, RiseVelocityMover
 
 __all__ = [Mover,
            CyMover,
-           MoverSchema,
+           ProcessSchema,
            SimpleMover,
            SimpleMoverSchema,
            WindMover,

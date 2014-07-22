@@ -13,25 +13,25 @@ from gnome.persist.extend_colander import LocalDateTime
 from gnome.array_types import mass_components, half_lives
 from gnome.utilities.serializable import Serializable
 
-from gnome.movers.movers import Mover
+from gnome.movers.movers import Process, ProcessSchema
 
 
-class WeathererSchema(ObjType):
-    on = SchemaNode(Bool(), default=True, missing=True)
-    active_start = SchemaNode(LocalDateTime(), missing=drop,
-                              validator=convertible_to_seconds)
-    active_stop = SchemaNode(LocalDateTime(), missing=drop,
-                             validator=convertible_to_seconds)
+class WeathererSchema(ObjType, ProcessSchema):
+    '''
+    used to serialize object so need ObjType schema and it only contains
+    attributes defined in base class (ProcessSchema)
+    '''
+    pass
 
 
-class Weatherer(Mover, Serializable):
+class Weatherer(Process, Serializable):
     '''
        Base Weathering agent.  This is almost exactly like the base Mover
        in the way that it acts upon the model.  It contains the same API
        as the mover as well.
     '''
-    _state = copy.deepcopy(Mover._state)
-    _schema = WeathererSchema
+    _state = copy.deepcopy(Process._state)
+    _schema = WeathererSchema  # nothing new added so use this schema
 
     def __init__(self, **kwargs):
         '''
@@ -58,13 +58,10 @@ class Weatherer(Mover, Serializable):
            weatherer control what happens to the elements instead of the model,
            as happens with the movers.
         '''
-        hl = self.get_move(sc, time_step, model_time)
+        m0, f, time = self._xform_inputs(sc, time_step, model_time)
+        hl = self._halflife(m0, f, time)
         sc['mass_components'][:] = hl
         sc['mass'][:] = hl.sum(1)
-
-    def get_move(self, sc, time_step, model_time):
-        m0, f, time = self._xform_inputs(sc, time_step, model_time)
-        return self._halflife(m0, f, time)
 
     def _xform_inputs(self, sc, time_step, model_time):
         'make sure our inputs are a good fit for our calculations'
