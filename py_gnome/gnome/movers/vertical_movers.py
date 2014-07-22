@@ -4,13 +4,13 @@ from colander import (SchemaNode, Float)
 
 from gnome.persist.base_schema import ObjType
 from gnome.utilities import serializable
-from gnome.movers import CyMover, MoverSchema
+from gnome.movers import CyMover, ProcessSchema
 from gnome.cy_gnome.cy_rise_velocity_mover import CyRiseVelocityMover
 from gnome.array_types import rise_vel
 from gnome.basic_types import world_point, world_point_type
 
 
-class RiseVelocityMoverSchema(ObjType, MoverSchema):
+class RiseVelocityMoverSchema(ObjType, ProcessSchema):
     water_density = SchemaNode(Float())
     water_viscosity = SchemaNode(Float())
 

@@ -9,14 +9,14 @@ from colander import (SchemaNode, Bool, String, Float, drop)
 
 from gnome.persist.base_schema import ObjType, WorldPoint, LongLat
 
-from gnome.movers import CyMover, MoverSchema
+from gnome.movers import CyMover, ProcessSchema
 from gnome import environment
 from gnome.utilities import serializable
 from gnome.cy_gnome import cy_cats_mover, cy_shio_time, cy_ossm_time, \
     cy_gridcurrent_mover, cy_component_mover, cy_currentcycle_mover
 
 
-class CatsMoverSchema(ObjType, MoverSchema):
+class CatsMoverSchema(ObjType, ProcessSchema):
     '''static schema for CatsMover'''
     filename = SchemaNode(String(), missing=drop)
     scale = SchemaNode(Bool())
@@ -234,7 +234,7 @@ class CatsMover(CyMover, serializable.Serializable):
         return _to_dict
 
 
-class GridCurrentMoverSchema(ObjType, MoverSchema):
+class GridCurrentMoverSchema(ObjType, ProcessSchema):
     filename = SchemaNode(String(), missing=drop)
     topology_file = SchemaNode(String(), missing=drop)
     current_scale = SchemaNode(Float(), default=1)
@@ -408,7 +408,7 @@ class GridCurrentMover(CyMover, serializable.Serializable):
         return (self.mover.get_offset_time())/3600.
 
 
-class CurrentCycleMoverSchema(ObjType, MoverSchema):
+class CurrentCycleMoverSchema(ObjType, ProcessSchema):
     filename = SchemaNode(String(), missing=drop)
     topology_file = SchemaNode(String(), missing=drop)
     current_scale = SchemaNode(Float(), default=1)
@@ -636,7 +636,7 @@ class CurrentCycleMover(CyMover, serializable.Serializable):
         return (self.mover.get_offset_time())/3600.
 
 
-class ComponentMoverSchema(ObjType, MoverSchema):
+class ComponentMoverSchema(ObjType, ProcessSchema):
     '''static schema for ComponentMover'''
     filename1 = SchemaNode(String(), missing=drop)
     filename2 = SchemaNode(String(), missing=drop)

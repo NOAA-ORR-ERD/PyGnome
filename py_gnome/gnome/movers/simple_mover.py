@@ -21,7 +21,7 @@ from gnome.basic_types import oil_status, mover_type
 from gnome.utilities.projections import FlatEarthProjection as proj
 from gnome.utilities import serializable
 
-from gnome.movers import Mover, MoverSchema
+from gnome.movers import Mover, ProcessSchema
 
 from gnome.persist.base_schema import ObjType
 from gnome.persist.extend_colander import VelocityArraySchema
@@ -37,7 +37,7 @@ class SimpleMoverVelocitySchema(VelocityArraySchema):
     vel_z = SchemaNode(Float())
 
 
-class SimpleMoverSchema(ObjType, MoverSchema):
+class SimpleMoverSchema(ObjType, ProcessSchema):
     uncertainty_scale = SchemaNode(Float())
     velocity = SimpleMoverVelocitySchema()
 
