@@ -135,7 +135,9 @@ class Mover(Process):
         for each element of the spill as a numpy array of size
         (number_elements X 3) and dtype = gnome.basic_types.world_point_type
 
-        Not implemented in base class
+        Base class returns an array of numpy.nan for delta to indicate the
+        get_move is not implemented yet.
+
         Each class derived from Mover object must implement it's own get_move
 
         :param sc: an instance of gnome.spill_container.SpillContainer class
@@ -145,8 +147,10 @@ class Mover(Process):
         All movers must implement get_move() since that's what the model calls
         """
 
-        raise NotImplementedError('Each mover that derives from Mover base'
-                                  ' class must implement get_move(...)')
+        positions = sc['positions']
+        delta = np.zeros_like(positions)
+        delta[:] = np.nan
+        return delta
 
 
 class CyMover(Mover):
