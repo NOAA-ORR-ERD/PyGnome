@@ -349,6 +349,7 @@ def test_read_data_exception(model):
         NetCDFOutput.read_data(o_put.netcdf_filename)
 
 
+@pytest.mark.slow
 @pytest.mark.parametrize(("output_ts_factor", "use_time"),
                          [(1, True), (1, False),
                           (2.4, True), (2.4, False)])
@@ -421,6 +422,7 @@ def test_read_standard_arrays(model, output_ts_factor, use_time):
         uncertain = True
 
 
+@pytest.mark.slow
 def test_read_all_arrays(model):
     """
     tests the data returned by read_data is correct when `which_data` flag is
@@ -471,6 +473,7 @@ def test_read_all_arrays(model):
         uncertain = True
 
 
+@pytest.mark.slow
 @pytest.mark.parametrize("output_ts_factor", [1, 2])
 def test_write_output_post_run(model, output_ts_factor):
     """
