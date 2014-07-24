@@ -120,7 +120,6 @@ class ElementCache(object):
 
         This here so that loading and saving use the same code
         """
-        print '_make_filename(): our cache dir exists?: ', os.path.isdir(self._cache_dir)
         if uncertain:
             return os.path.join(self._cache_dir,
                                 'step_%06i_uncert.npz' % step_num)

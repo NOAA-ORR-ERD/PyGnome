@@ -107,7 +107,6 @@ class Model(Serializable):
     @classmethod
     def new_from_dict(cls, dict_):
         'Restore model from previously persisted _state'
-        print 'Model.new_from_dict()...'
         json_ = dict_.pop('json_')
         l_env = dict_.pop('environment', [])
         l_out = dict_.pop('outputters', [])
@@ -185,7 +184,6 @@ class Model(Serializable):
         :param cache_enabled=False: Flag for setting whether the model should
             cache results to disk.
         '''
-        print 'Model.__init__()...'
 
         self.__restore__(time_step, start_time, duration,
                          weathering_substeps,
@@ -213,8 +211,6 @@ class Model(Serializable):
         # contains both certain/uncertain spills
         self.spills = SpillContainerPair(uncertain)
 
-        print 'Model.__restore__(): setting ElementCache()'
-        sys.stdout.flush()
         self._cache = gnome.utilities.cache.ElementCache()
         self._cache.enabled = cache_enabled
 
