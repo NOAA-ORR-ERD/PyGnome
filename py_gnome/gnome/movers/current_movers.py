@@ -27,7 +27,8 @@ class CatsMoverSchema(ObjType, ProcessSchema):
     scale = SchemaNode(Bool())
     scale_refpoint = WorldPoint(missing=drop)
     scale_value = SchemaNode(Float())
-    #the following six could be shared with grid_current in a currents base class
+    # the following six could be shared with grid_current
+    # in a currents base class
     uncertain_duration = SchemaNode(Float(), missing=drop)
     uncertain_time_delay = SchemaNode(Float(), missing=drop)
     down_cur_uncertain = SchemaNode(Float(), missing=drop)

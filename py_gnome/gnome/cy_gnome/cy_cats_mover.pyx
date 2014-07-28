@@ -37,27 +37,56 @@ cdef class CyCatsMover(cy_mover.CyMover):
                  uncertain_duration=48 * 3600, uncertain_time_delay=0,
                  up_cur_uncertain=.3, down_cur_uncertain=-.3,
                  right_cur_uncertain=.1, left_cur_uncertain=-.1,
-                 uncertain_eddy_diffusion=0, uncertain_eddy_v0=.1):
+                 uncertain_eddy_diffusion=0, uncertain_eddy_v0=.1,
+                 ref_point=None):
         """
-        Initialize the CyCatsMover which sets the properties for the underlying C++ CATSMover_c object
+        Initialize the CyCatsMover which sets the properties for the underlying
+        C++ CATSMover_c object
 
-        :param scale_type=0: There are 3 options in c++, however only two options are used SCALE_NONE = 0, SCALE_CONSTANT = 1.
-                           The python CatsMover wrapper only sets either 0 or 1. Default is NONE.
-        :param scale_value=1: The value by which to scale the data. By default, this is 1 which means no scaling
-        :param uncertain_duration: how often does a given uncertain element gets reset
+        :param scale_type=0: There are 3 options in c++, however only
+                             two options are used:
+                             - SCALE_NONE = 0
+                             - SCALE_CONSTANT = 1
+                             The python CatsMover wrapper sets only 0 or 1.
+                             Default is NONE.
+        :param scale_value=1: The value by which to scale the data.
+                              By default, this is 1 which means no scaling
+        :param uncertain_duration: how often does a given uncertain element
+                                   get reset
         :param uncertain_time_delay: when does the uncertainly kick in.
         :param up_cur_uncertain: Scale for uncertainty along the flow
         :param down_cur_uncertain: Scale for uncertainty along the flow
         :param right_cur_uncertain: Scale for uncertainty across the flow
         :param left_cur_uncertain: Scale for uncertainty across the flow
-        :param uncertain_eddy_diffusion: Diffusion coefficient for eddy diffusion. Default is 0.
+        :param uncertain_eddy_diffusion: Diffusion coefficient for
+                                         eddy diffusion. Default is 0.
         :param uncertain_eddy_v0: Default is .1 (Check that this is still used)
+        :param ref_point: Reference point used by C++ CATSMover_c
+                          Default (long, lat, z) = (0., 0., -999)
         """
         cdef WorldPoint p
         self.cats.scaleType = scale_type
         self.cats.scaleValue = scale_value
+        self.cats.fDuration = uncertain_duration
+        self.cats.fUncertainStartTime = uncertain_time_delay
+
+        self.cats.fUpCurUncertainty = up_cur_uncertain
+        self.cats.fDownCurUncertainty = down_cur_uncertain
+        self.cats.fLeftCurUncertainty = left_cur_uncertain
+        self.cats.fRightCurUncertainty = right_cur_uncertain
+
         self.cats.fEddyDiffusion = uncertain_eddy_diffusion
-        self.cats.refZ = -999  # default to -1
+
+        if not ref_point:
+            # defaults
+            ref_point = (0., 0., -999)
+
+        if not isinstance(ref_point, (list, tuple)) or len(ref_point) != 3:
+            raise ValueError('CyCatsMover.__init__(): ref_point needs to be '
+                             'in the format (long, lat, z)')
+
+        self.ref_point = ref_point
+
         ## should not have to do this manually.
         ## make-shifting for now.
         #self.cats.fOptimize.isOptimizedForStep = 0
@@ -201,7 +230,8 @@ cdef class CyCatsMover(cy_mover.CyMover):
                               self.right_cur_uncertain,
                               self.left_cur_uncertain,
                               self.uncertain_eddy_diffusion,
-                              self.uncertain_eddy_v0))
+                              self.uncertain_eddy_v0,
+                              self.ref_point))
 
     def set_shio(self, CyShioTime cy_shio):
         """
@@ -270,8 +300,10 @@ cdef class CyCatsMover(cy_mover.CyMover):
         :type delta: numpy array of WorldPoint3D
         :param LE_windage: windage to be applied to each particle
         :type LE_windage: numpy array of numpy.npy_int16
-        :param le_status: status of each particle - movement is only on particles in water
-        :param spill_type: LEType defining whether spill is forecast or uncertain 
+        :param le_status: Status of each particle - movement is only on
+                          particles in water
+        :param spill_type: LEType defining whether spill is forecast
+                           or uncertain
         :returns: none
         """
         cdef OSErr err
