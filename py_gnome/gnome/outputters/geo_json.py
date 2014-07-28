@@ -162,7 +162,7 @@ class GeoJson(Outputter, Serializable):
         # read data from file and send it to web client
         output_info = {'step_num': step_num,
                        #'geojson': geojson,
-                       'time_stamp': sc.current_time_stamp,
+                       'time_stamp': sc.current_time_stamp.isoformat(),
                        'output_filename': output_filename}
 
         return output_info

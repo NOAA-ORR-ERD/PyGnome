@@ -1,14 +1,15 @@
 cimport numpy as cnp
 import numpy as np
 
-# following exist in gnome.cy_gnome 
+# following exist in gnome.cy_gnome
 from type_defs cimport *
-from movers cimport RandomVertical_c,Mover_c
+from movers cimport RandomVertical_c, Mover_c
 cimport cy_mover
 
 """
 Dynamic casts are not currently supported in Cython - define it here instead.
-Since this function is custom for each mover, just keep it with the definition for each mover
+Since this function is custom for each mover, just keep it with the definition
+for each mover
 """
 cdef extern from *:
     RandomVertical_c* dynamic_cast_ptr "dynamic_cast<RandomVertical_c *>" (Mover_c *) except NULL
@@ -20,69 +21,98 @@ cdef class CyRandomVerticalMover(cy_mover.CyMover):
     def __cinit__(self):
         self.mover = new RandomVertical_c()
         self.rand = dynamic_cast_ptr(self.mover)
-        
+
     def __dealloc__(self):
         del self.mover
         self.rand = NULL
-        
-    def __init__(self, vertical_diffusion_coef_above_ml=5, vertical_diffusion_coef_below_ml=.11, mixed_layer_depth=10.):
+
+    def __init__(self,
+                 vertical_diffusion_coef_above_ml=5,
+                 vertical_diffusion_coef_below_ml=.11,
+                 mixed_layer_depth=10.):
         """
         Default vertical_diffusion_coef_above_ml = 5 [cm**2/sec]
         Default vertical_diffusion_coef_below_ml = .11 [cm**2/sec]
         Default mixed_layer_depth = 10. [meters]
         """
         if vertical_diffusion_coef_above_ml < 0:
-            raise ValueError("CyRandomVerticalMover must have a value greater than or equal to 0 for vertical_diffusion_coef above mixed layer")
-        
+            raise ValueError('CyRandomVerticalMover must have a value '
+                             'greater than or equal to 0 '
+                             'for vertical_diffusion_coef above mixed layer')
+
         if vertical_diffusion_coef_below_ml < 0:
-            raise ValueError("CyRandomVerticalMover must have a value greater than or equal to 0 for vertical_diffusion_coef below mixed layer")
+            raise ValueError('CyRandomVerticalMover must have a value '
+                             'greater than or equal to 0 '
+                             'for vertical_diffusion_coef below mixed layer')
 
         if mixed_layer_depth < 0:
-            raise ValueError("CyRandomVerticalMover must have a value greater than or equal to 0 for mixed_layer_depth")
+            raise ValueError('CyRandomVerticalMover must have a value '
+                             'greater than or equal to 0 '
+                             'for mixed_layer_depth')
 
         self.rand.fVerticalDiffusionCoefficient = vertical_diffusion_coef_above_ml
         self.rand.fVerticalBottomDiffusionCoefficient = vertical_diffusion_coef_below_ml
         self.rand.fMixedLayerDepth = mixed_layer_depth
-    
+
     property vertical_diffusion_coef_above_ml:
         def __get__(self):
             return self.rand.fVerticalDiffusionCoefficient
-        
+
         def __set__(self, value):
             if value < 0:
-                raise ValueError("CyRandomVerticalMover must have a value greater than or equal to 0 for vertical_diffusion_coef above mixed layer")
+                raise ValueError('CyRandomVerticalMover must have a value '
+                                 'greater than or equal to 0 '
+                                 'for vertical_diffusion_coef '
+                                 'above mixed layer')
             self.rand.fVerticalDiffusionCoefficient = value
 
     property vertical_diffusion_coef_below_ml:
         def __get__(self):
             return self.rand.fVerticalBottomDiffusionCoefficient
-        
+
         def __set__(self, value):
             if value < 0:
-                raise ValueError("CyRandomVerticalMover must have a value greater than or equal to 0 for vertical_diffusion_coef below mixed layer")
+                raise ValueError('CyRandomVerticalMover must have a value '
+                                 'greater than or equal to 0 '
+                                 'for vertical_diffusion_coef '
+                                 'below mixed layer')
             self.rand.fVerticalBottomDiffusionCoefficient = value
 
     property mixed_layer_depth:
         def __get__(self):
             return self.rand.fMixedLayerDepth
-        
+
         def __set__(self, value):
             if value < 0:
-                raise ValueError("CyRandomVerticalMover must have a value greater than or equal to 0 for mixed_layer_depth")
+                raise ValueError('CyRandomVerticalMover must have a value '
+                                 'greater than or equal to 0 '
+                                 'for mixed_layer_depth')
             self.rand.fMixedLayerDepth = value
 
     def __repr__(self):
         """
         unambiguous repr of object, reuse for str() method
         """
-        return "CyRandomVerticalMover(vertical_diffusion_coef_above_ml=%s,vertical_diffusion_coef_below_ml=%s,mixed_layer_depth=%s)" % (self.vertical_diffusion_coef_above_ml,self.vertical_diffusion_coef_below_ml,self.mixed_layer_depth)
-    
-    def get_move(self, 
-                 model_time, 
-                 step_len, 
-                 cnp.ndarray[WorldPoint3D, ndim=1] ref_points, 
-                 cnp.ndarray[WorldPoint3D, ndim=1] delta, 
-                 cnp.ndarray[short] LE_status, 
+        return ('CyRandomVerticalMover('
+                'vertical_diffusion_coef_above_ml={0}, '
+                'vertical_diffusion_coef_below_ml={1}, '
+                'mixed_layer_depth={2})'
+                .format(self.vertical_diffusion_coef_above_ml,
+                        self.vertical_diffusion_coef_below_ml,
+                        self.mixed_layer_depth))
+
+    def __reduce__(self):
+        return (CyRandomVerticalMover,
+                (self.vertical_diffusion_coef_above_ml,
+                 self.vertical_diffusion_coef_below_ml,
+                 self.mixed_layer_depth))
+
+    def get_move(self,
+                 model_time,
+                 step_len,
+                 cnp.ndarray[WorldPoint3D, ndim=1] ref_points,
+                 cnp.ndarray[WorldPoint3D, ndim=1] delta,
+                 cnp.ndarray[short] LE_status,
                  LEType spill_type):
         """
         .. function:: get_move(self,
@@ -93,9 +123,9 @@ cdef class CyRandomVerticalMover(cy_mover.CyMover):
                  np.ndarray[np.npy_int16] LE_status,
                  LE_type,
                  spill_ID)
-                 
+
         Invokes the underlying C++ Random_c.get_move(...)
-        
+
         :param model_time: current model time
         :param step_len: step length over which delta is computed
         :param ref_points: current locations of LE particles
@@ -107,15 +137,20 @@ cdef class CyRandomVerticalMover(cy_mover.CyMover):
         :returns: none
         """
         cdef OSErr err
-        N = len(ref_points) # set a data type?
-            
-        err = self.rand.get_move(N, model_time, step_len, &ref_points[0], &delta[0], &LE_status[0], spill_type, 0)
+        N = len(ref_points)  # set a data type?
+
+        err = self.rand.get_move(N, model_time, step_len,
+                                 &ref_points[0], &delta[0], &LE_status[0],
+                                 spill_type, 0)
         if err == 1:
-            raise ValueError("Make sure numpy arrays for ref_points, delta are defined")
-        
+            raise ValueError('Make sure numpy arrays for ref_points, delta '
+                             'are defined')
+
         """
-        Can probably raise this error before calling the C++ code - but the C++ also throwing this error
+        Can probably raise this error before calling the C++ code
+        - but the C++ also throwing this error
         """
         if err == 2:
-            raise ValueError("The value for spill type can only be 'forecast' or 'uncertainty' - you've chosen: " + str(spill_type))
-        
+            raise ValueError("The value for spill type can only be "
+                             "'forecast' or 'uncertainty' "
+                             "- you've chosen: {0!s}".format(spill_type))

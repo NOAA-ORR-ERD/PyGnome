@@ -92,12 +92,15 @@ OSErr NetCDFWindMoverCurv::Read(BFPB *bfpb)
 	if (version != NetCDFWindMoverCurvREADWRITEVERSION) { printSaveFileVersionError(); return -1; }
 	////
 	if (err = ReadMacValue(bfpb, &numPoints)) goto done;	
-	fVerdatToNetCDFH = (LONGH)_NewHandleClear(sizeof(long)*numPoints);	// for curvilinear
-	if(!fVerdatToNetCDFH)
-	{TechError("NetCDFWindMoverCurv::Read()", "_NewHandle()", 0); err = memFullErr; goto done;}
-	for (i = 0 ; i < numPoints ; i++) {
-		if (err = ReadMacValue(bfpb, &index)) goto done;
-		INDEXH(fVerdatToNetCDFH, i) = index;
+	if (numPoints > 0)
+	{
+		fVerdatToNetCDFH = (LONGH)_NewHandleClear(sizeof(long)*numPoints);	// for curvilinear
+		if(!fVerdatToNetCDFH)
+		{TechError("NetCDFWindMoverCurv::Read()", "_NewHandle()", 0); err = memFullErr; goto done;}
+		for (i = 0 ; i < numPoints ; i++) {
+			if (err = ReadMacValue(bfpb, &index)) goto done;
+			INDEXH(fVerdatToNetCDFH, i) = index;
+		}
 	}
 	
 	if (err = ReadMacValue(bfpb, &numPoints)) goto done;	

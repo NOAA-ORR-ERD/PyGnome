@@ -115,7 +115,8 @@ def test_geojson(model):
         uncertain = False
         for elem in range(sum(model.spills.num_released)):
             #g_elem = output['geojson']['features'][elem]
-            with open(output['output_filename']) as file_:
+            print 'output:', output
+            with open(output['GeoJson']['output_filename']) as file_:
                 geojson_out = geojson.load(file_)
 
             g_elem = geojson_out['features'][elem]

@@ -7,6 +7,7 @@ designed to be run with py.test
 """
 
 import os
+import pickle
 
 import numpy as np
 
@@ -52,23 +53,51 @@ def test_cache_clear_on_delete():
     assert os.path.isdir(d3)
     assert os.path.isdir(d4)
 
-    del c3
-    assert not os.path.isdir(d3)
+    # the ElementCache's directory will not immediately
+    # be removed when it is deallocated, but will be removed upon
+    # the deallocation of the next ElementCache.  This is by
+    # design.
+    del c1
     assert os.path.isdir(d1)
     assert os.path.isdir(d2)
+    assert os.path.isdir(d3)
     assert os.path.isdir(d4)
 
     del c2
+    assert not os.path.isdir(d1)
+    assert os.path.isdir(d2)
+    assert os.path.isdir(d3)
+    assert os.path.isdir(d4)
+
+    del c3
     assert not os.path.isdir(d2)
-    assert os.path.isdir(d1)
+    assert os.path.isdir(d3)
     assert os.path.isdir(d4)
 
     del c4
-    assert not os.path.isdir(d4)
-    assert os.path.isdir(d1)
+    assert not os.path.isdir(d3)
+    assert os.path.isdir(d4)
 
-    del c1
-    assert not os.path.isdir(d1)
+
+def test_cache_pickle_unpickle():
+    '''
+        Pickling and unpickling of our ElementCache objects
+        presents a somewhat difficult problem in which not
+        all use cases can reasonably be covered.
+        However we would at least like to cover the simple case
+        of pickling an ElementCache and reloading it to the
+        same variable.
+    '''
+    c1 = cache.ElementCache()
+    d1 = c1._cache_dir
+    print 'our cache_dir:', d1
+
+    print 'pickling c1...'
+    str1 = pickle.dumps(c1)
+    print 'unpickling c1...'
+    c1 = pickle.loads(str1)
+    assert c1._cache_dir == d1
+    assert os.path.isdir(d1)
 
 
 def test_write():

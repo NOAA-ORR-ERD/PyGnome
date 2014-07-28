@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+import sys
 import os
 import shutil
 import types
@@ -531,13 +532,15 @@ class Model(Serializable):
         output_info = {}
 
         for outputter in self.outputters:
+            print 'outputter = ', outputter.__class__.__name__
             if self.current_time_step == self.num_time_steps - 1:
                 output = outputter.write_output(self.current_time_step, True)
             else:
                 output = outputter.write_output(self.current_time_step)
 
+            print 'output = ', output
             if output is not None:
-                output_info.update(output)
+                output_info[outputter.__class__.__name__] = output
 
         if not output_info:
             return {'step_num': self.current_time_step}
