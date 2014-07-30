@@ -1,5 +1,6 @@
 import sys
 import transaction
+import os
 
 from .oil_library_parse import OilLibraryFile
 
@@ -187,3 +188,26 @@ def add_toxicity_lethal_concentrations(oil, row_dict):
             toxargs[hour96[lbl_offset:]] = row_dict.get(hour96)
             #print toxargs
             oil.toxicities.append(Toxicity(**toxargs))
+
+
+def make_db(oillib_file=None, db_file=None):
+    '''
+    Entry point for console_script installed by setup
+    '''
+    pck_loc = os.path.split(__file__)[0]
+
+    if not db_file:
+        db_file = os.path.join(pck_loc, 'OilLib.db')
+
+    if not oillib_file:
+        oillib_file = os.path.join(pck_loc, 'OilLib')
+
+    sqlalchemy_url = 'sqlite:///{0}'.format(db_file)
+    settings = {'sqlalchemy.url': sqlalchemy_url,
+                'oillib.file': oillib_file}
+    try:
+        initialize_sql(settings)
+        load_database(settings)
+    except:
+        print "FAILED TO CREATED OIL LIBRARY DATABASE \n"
+        raise

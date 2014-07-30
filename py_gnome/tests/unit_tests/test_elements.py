@@ -27,7 +27,7 @@ from gnome.utilities.distributions import (NormalDistribution,
                                            WeibullDistribution)
 
 from gnome.spill import Spill, Release
-from gnome.db.oil_library.oil_props import OilProps
+from oil_library.oil_props import OilProps
 from gnome.persist import load
 
 from conftest import mock_append_data_arrays

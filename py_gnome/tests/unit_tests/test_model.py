@@ -7,6 +7,9 @@ import os
 import shutil
 from datetime import datetime, timedelta
 
+from pprint import PrettyPrinter
+pp = PrettyPrinter(indent=2)
+
 import numpy
 np = numpy
 
@@ -27,8 +30,7 @@ from gnome.spill.elements import floating
 from gnome.movers import SimpleMover, RandomMover, WindMover, CatsMover
 
 from gnome.weatherers import Weatherer
-from gnome.outputters import Renderer
-
+from gnome.outputters import Renderer, GeoJson
 
 basedir = os.path.dirname(__file__)
 datadir = os.path.join(basedir, 'sample_data')
@@ -271,6 +273,7 @@ def test_simple_run_with_image_output():
     # the land-water map
     gnome_map = gnome.map.MapFromBNA(testmap, refloat_halflife=6)  # hours
     renderer = gnome.outputters.Renderer(testmap, images_dir, size=(400, 300))
+    geo_json = GeoJson(output_dir=images_dir)
 
     model = Model(time_step=timedelta(minutes=15),
                   start_time=start_time, duration=timedelta(hours=1),
@@ -279,6 +282,8 @@ def test_simple_run_with_image_output():
                   )
 
     model.outputters += renderer
+    model.outputters += geo_json
+
     a_mover = SimpleMover(velocity=(1., -1., 0.))
     model.movers += a_mover
     assert len(model.movers) == 1
@@ -304,7 +309,8 @@ def test_simple_run_with_image_output():
         try:
             image_info = model.step()
             num_steps_output += 1
-            print image_info
+            print 'image_info:'
+            pp.pprint(image_info)
         except StopIteration:
             print 'Done with the model run'
             break
@@ -784,7 +790,7 @@ def test_simple_run_no_spills(model):
 
     for step in model:
         print 'just ran time step: %s' % model.current_time_step
-        assert step['step_num'] == model.current_time_step
+        assert step['Renderer']['step_num'] == model.current_time_step
 
     assert True
 

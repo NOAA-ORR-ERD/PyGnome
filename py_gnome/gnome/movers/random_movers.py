@@ -8,12 +8,12 @@ from colander import (SchemaNode, Float, drop)
 
 from gnome.persist.base_schema import ObjType
 from gnome.utilities.serializable import Serializable
-from gnome.movers import CyMover, MoverSchema
+from gnome.movers import CyMover, ProcessSchema
 from gnome.cy_gnome.cy_random_mover import CyRandomMover
 from gnome.cy_gnome.cy_random_vertical_mover import CyRandomVerticalMover
 
 
-class RandomMoverSchema(ObjType, MoverSchema):
+class RandomMoverSchema(ObjType, ProcessSchema):
     diffusion_coef = SchemaNode(Float(), missing=drop)
     uncertain_factor = SchemaNode(Float(), missing=drop)
 
@@ -72,7 +72,7 @@ class RandomMover(CyMover, Serializable):
                                  self.active_start, self.active_stop, self.on))
 
 
-class RandomVerticalMoverSchema(ObjType, MoverSchema):
+class RandomVerticalMoverSchema(ObjType, ProcessSchema):
     vertical_diffusion_coef_above_ml = SchemaNode(Float(), missing=drop)
     vertical_diffusion_coef_below_ml = SchemaNode(Float(), missing=drop)
     mixed_layer_depth = SchemaNode(Float(), missing=drop)

@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+import sys
 import os
 import shutil
 import types
@@ -535,13 +536,15 @@ class Model(Serializable):
         output_info = {}
 
         for outputter in self.outputters:
+            print 'outputter = ', outputter.__class__.__name__
             if self.current_time_step == self.num_time_steps - 1:
                 output = outputter.write_output(self.current_time_step, True)
             else:
                 output = outputter.write_output(self.current_time_step)
 
+            print 'output = ', output
             if output is not None:
-                output_info.update(output)
+                output_info[outputter.__class__.__name__] = output
 
         if not output_info:
             return {'step_num': self.current_time_step}
@@ -840,7 +843,8 @@ class Model(Serializable):
         o_json_['map'] = self.map.serialize(json_)
 
         if json_ == 'webapi':
-            for attr in ('environment', 'outputters', 'weatherers', 'movers'):
+            for attr in ('environment', 'outputters', 'weatherers', 'movers',
+                         'spills'):
                 o_json_[attr] = self.serialize_oc(attr, json_)
 
         return o_json_
@@ -851,7 +855,7 @@ class Model(Serializable):
         '''
         json_out = []
         attr = getattr(self, attr)
-        if isinstance(attr, OrderedCollection):
+        if isinstance(attr, (OrderedCollection, SpillContainerPair)):
             for item in attr:
                 json_out.append(item.serialize(json_))
         return json_out
@@ -867,7 +871,8 @@ class Model(Serializable):
             deserial['map'] = json_['map']
 
         if json_['json_'] == 'webapi':
-            for attr in ('environment', 'outputters', 'weatherers', 'movers'):
+            for attr in ('environment', 'outputters', 'weatherers', 'movers',
+                         'spills'):
                 if attr in json_ and json_[attr]:
                     deserial[attr] = cls.deserialize_oc(json_[attr])
 

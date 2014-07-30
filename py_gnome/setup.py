@@ -19,7 +19,6 @@ It needs to be imported before any other extensions
 
 """
 
-## NOTE: this works with "distribute" package, but not with setuptools.
 import os
 import sys
 import sysconfig
@@ -28,6 +27,7 @@ import shutil
 
 # to support "develop" mode:
 from setuptools import setup, find_packages
+from distutils.command.clean import clean
 
 from distutils.extension import Extension
 from Cython.Distutils import build_ext
@@ -36,22 +36,15 @@ import numpy as np
 
 try:
     from gnome import __version__
-except: # gnome won't import if it's not built (properly) yet...
+except:  # gnome won't import if it's not built (properly) yet...
     __version__ = "alpha"
 
 # could run setup from anywhere
-(SETUP_PATH, SETUP_FILE) = os.path.split(sys.argv[0])
-
-if SETUP_PATH == '':
-    SETUP_PATH = '.'
+SETUP_PATH = os.path.dirname(os.path.abspath(__file__))
 
 # cd to SETUP_PATH, run develop or install, then cd back
 CWD = os.getcwd()
-
-if SETUP_PATH:
-    """ Additional check, though should not be needed since SETUP_PATH should
-    always exist """
-    os.chdir(SETUP_PATH)
+os.chdir(SETUP_PATH)
 
 
 def target_dir(name):
@@ -67,48 +60,37 @@ def target_path(name='temp'):
     return os.path.join('build', target_dir(name))
 
 
-if "clean" in "".join(sys.argv[1:]):
-    target = 'clean'
-else:
-    target = 'build'
+class cleandev(clean):
+    def run(self):
+        # call base class clean
+        clean.run(self)
 
-if "cleanall" in "".join(sys.argv[1:]):
-    target = 'clean'
+        # clean remaining cython/cpp files
+        t_path = [os.path.join(SETUP_PATH, 'gnome', 'cy_gnome'),
+                  os.path.join(SETUP_PATH, 'gnome', 'utilities', 'geometry')]
+        exts = ['*.so', 'cy_*.pyd', 'cy_*.cpp', 'cy_*.c']
 
-    rm_files = ['gnome/cy_gnome/*.so',
-                'gnome/cy_gnome/cy_*.pyd',
-                'gnome/cy_gnome/cy_*.cpp',
-                'gnome/utilities/geometry/cy_*.pyd',
-                'gnome/utilities/geometry/cy_*.so',
-                'gnome/utilities/geometry/cy_*.c',
-                ]
+        for temp in t_path:
+            for ext in exts:
+                for f in glob.glob(os.path.join(temp, ext)):
+                    print "Deleting auto-generated file: {0}".format(f)
+                    try:
+                        if os.path.isdir(f):
+                            shutil.rmtree(f)
+                        else:
+                            os.remove(f)
+                    except OSError as err:
+                        print("Failed to remove {0}. Error: {1}".format(f, err)) 
+                        #raise
 
-    for files_ in rm_files:
-        for file_ in glob.glob(files_):
-            print "Deleting auto-generated files: {0}".format(file_)
-            os.remove(file_)
-
-    rm_dir = ['pyGnome.egg-info', 'build']
-    for dir_ in rm_dir:
-        print "Deleting auto-generated directory: {0}".format(dir_)
-        try:
-            shutil.rmtree(dir_)
-        except OSError as e:
-            print e
-
-    # this is what distutils understands
-    sys.argv[1] = 'clean'
-
-
-# only for windows
-if "debug" in "".join(sys.argv[2:]):
-    config = 'debug'
-else:
-    config = 'release'    # only used by windows
-
-
-if sys.argv.count(config) != 0:
-    sys.argv.remove(config)
+        rm_dir = ['pyGnome.egg-info', 'build']
+        for dir_ in rm_dir:
+            print "Deleting auto-generated directory: {0}".format(dir_)
+            try:
+                shutil.rmtree(dir_)
+            except OSError as err:
+                print("Failed to remove {0}. Error: {1}".format(dir_, err)) 
+                #pass
 
 
 ## 64 bit Windows Notes:
@@ -234,6 +216,9 @@ extension_names = ['cy_mover',
                    'cy_land_check',
                    'cy_grid_map',
                    'cy_shio_time',
+                   'cy_grid',
+                   'cy_grid_rect',
+                   'cy_grid_curv'
                    ]
 
 cpp_files = ['RectGridVeL_c.cpp',
@@ -369,14 +354,15 @@ elif sys.platform == "linux2":
     ## else the compile fails saying temp.linux-i686-2.7 is not found
     ## required for develop or install mode
     build_temp = target_path()
-    if 'clean' not in sys.argv[1] and not os.path.exists(build_temp):
+    if 'clean' not in sys.argv[1:] and not os.path.exists(build_temp):
         os.makedirs(build_temp)
 
     ## Not sure calling setup twice is the way to go - but do this for now
     ## NOTE: This is also linking against the netcdf library (*.so), not
     ## the static netcdf. We didn't build a NETCDF static library.
     setup(name='pyGnome',  # not required since ext defines this
-          cmdclass={'build_ext': build_ext},
+          cmdclass={'build_ext': build_ext,
+                    'cleandev': cleandev},
           ext_modules=[Extension('gnome.cy_gnome.libgnome',
                                  cpp_files,
                                  language='c++',
@@ -455,6 +441,7 @@ extensions.append(Extension("gnome.utilities.geometry.cy_point_in_polygon",
                             )
                   )
 
+
 setup(name='pyGnome',
       version=__version__,
       ext_modules=extensions,
@@ -462,7 +449,9 @@ setup(name='pyGnome',
       package_dir={'gnome': 'gnome'},
       package_data={'gnome': ['data/yeardata/*']},
       requires=['numpy'],   # want other packages here?
-      cmdclass={'build_ext': build_ext},
+      cmdclass={'build_ext': build_ext,
+                'cleandev': cleandev},
+
       #scripts,
 
       #metadata for upload to PyPI

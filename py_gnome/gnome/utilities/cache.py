@@ -5,6 +5,10 @@ cache system for caching element data on disk for
 accessing again for output, etc.
 
 """
+import gc
+import sys
+from pprint import PrettyPrinter
+pp = PrettyPrinter(indent=2)
 
 import os
 import warnings
@@ -98,7 +102,15 @@ class ElementCache(object):
 
     def __del__(self):
         'Clear out the cache when this object is deleted'
-        clean_up_cache(dir_name=self._cache_dir)
+        if os.path.isdir(_cache_dir):
+            subdirs = os.listdir(_cache_dir)
+            allocated_dirs = set([os.path.basename(o._cache_dir)
+                                  for o in gc.get_objects()
+                                  if (isinstance(o, ElementCache))])
+
+            for d in subdirs:
+                if d not in allocated_dirs:
+                    shutil.rmtree(os.path.join(_cache_dir, d))
 
     def _make_filename(self, step_num, uncertain=False):
         """
@@ -140,10 +152,8 @@ class ElementCache(object):
             # could be threaded -- data is a copy, so doesn't need to be
             #                      re-used by anything
             if self.enabled:
-                if sc.uncertain:
-                    np.savez(self._make_filename(step_num, True), **data)
-                else:
-                    np.savez(self._make_filename(step_num), **data)
+                filename = self._make_filename(step_num, sc.uncertain)
+                np.savez(filename, **data)
 
     def load_timestep(self, step_num):
         """

@@ -17,8 +17,11 @@ from gnome.utilities import time_utils, serializable
 from gnome.cy_gnome.cy_rise_velocity_mover import CyRiseVelocityMover
 
 
-class MoverSchema(MappingSchema):
-    'base mover schema - common to all movers'
+class ProcessSchema(MappingSchema):
+    '''
+    base Process schema - attributes common to all movers/weatherers
+    defined at one place
+    '''
     on = SchemaNode(Bool(), default=True, missing=True)
     active_start = SchemaNode(LocalDateTime(), missing=drop,
                               validator=convertible_to_seconds)
@@ -26,23 +29,21 @@ class MoverSchema(MappingSchema):
                              validator=convertible_to_seconds)
 
 
-class Mover(object):
+class Process(object):
 
     """
-    Base class from which all Python movers can inherit
+    Base class from which all Python movers/weatherers can inherit
 
-    It defines the interface for a Python mover. The model expects the methods
-    defined here. The get_move(...) method needs to be implemented by the
-    derived class.
+    It defines the base functionality for mover/weatherer.
 
-    NOTE: Since base Mover class is not Serializable, it does not need
-    a class level _schema attribute
+    NOTE: Since base class is not Serializable, it does not need
+    a class level _schema attribute.
     """
 
     _state = copy.deepcopy(serializable.Serializable._state)
     _state.add(update=['on', 'active_start', 'active_stop'],
-              save=['on', 'active_start', 'active_stop'],
-              read=['active'])
+               save=['on', 'active_start', 'active_stop'],
+               read=['active'])
 
     def __init__(self, **kwargs):   # default min + max values for timespan
         """
@@ -117,28 +118,6 @@ class Mover(object):
         else:
             self._active = False
 
-    def get_move(
-        self,
-        sc,
-        time_step,
-        model_time_datetime,
-        ):
-        """
-        Compute the move in (long,lat,z) space. It returns the delta move
-        for each element of the spill as a numpy array of size
-        (number_elements X 3) and dtype = gnome.basic_types.world_point_type
-
-        Not implemented in base class
-        Each class derived from Mover object must implement it's own get_move
-
-        :param sc: an instance of gnome.spill_container.SpillContainer class
-        :param time_step: time step in seconds
-        :param model_time_datetime: current model time as datetime object
-        """
-
-        raise NotImplementedError('Each mover that derives from Mover base'
-                                  ' class must implement get_move(...)')
-
     def model_step_is_done(self, sc=None):
         """
         This method gets called by the model when after everything else is done
@@ -147,6 +126,31 @@ class Mover(object):
         """
 
         pass
+
+
+class Mover(Process):
+    def get_move(self, sc, time_step, model_time_datetime):
+        """
+        Compute the move in (long,lat,z) space. It returns the delta move
+        for each element of the spill as a numpy array of size
+        (number_elements X 3) and dtype = gnome.basic_types.world_point_type
+
+        Base class returns an array of numpy.nan for delta to indicate the
+        get_move is not implemented yet.
+
+        Each class derived from Mover object must implement it's own get_move
+
+        :param sc: an instance of gnome.spill_container.SpillContainer class
+        :param time_step: time step in seconds
+        :param model_time_datetime: current model time as datetime object
+
+        All movers must implement get_move() since that's what the model calls
+        """
+
+        positions = sc['positions']
+        delta = np.zeros_like(positions)
+        delta[:] = np.nan
+        return delta
 
 
 class CyMover(Mover):

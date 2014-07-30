@@ -62,28 +62,6 @@ class TestWeatherer:
                                          'half_lives': half_lives}
 
     @pytest.mark.parametrize("test_sc", [sc, u_sc])
-    def test_one_move(self, test_sc):
-        '''
-           calls one get_move step and checks that we decayed at the expected
-           rate.
-        '''
-        weatherer = Weatherer()
-
-        print '\nsc["mass"]:\n', test_sc['mass']
-
-        model_time = rel_time
-        time_step = 15 * secs_in_minute
-
-        weatherer.prepare_for_model_run()
-        weatherer.prepare_for_model_step(test_sc, time_step, model_time)
-
-        decayed_mass = weatherer.get_move(test_sc, time_step, model_time)
-        weatherer.model_step_is_done()
-
-        print '\ndecayed_mass:\n', decayed_mass
-        assert np.allclose(decayed_mass.sum(1), test_sc['mass'] * .5)
-
-    @pytest.mark.parametrize("test_sc", [sc, u_sc])
     def test_one_weather(self, test_sc):
         '''
            calls one weathering step and checks that we decayed at the expected
@@ -108,7 +86,7 @@ class TestWeatherer:
         print '\nsc["mass"]:\n', test_sc['mass']
         assert np.allclose(test_sc['mass'], 0.5 * saved_mass)
         assert np.allclose(test_sc['mass_components'].sum(1),
-            0.5 * saved_components.sum(1))
+                           0.5 * saved_components.sum(1))
 
         test_sc['mass'] = saved_mass
         test_sc['mass_components'] = saved_components
@@ -132,6 +110,7 @@ class TestWeatherer:
               The decay will be calculated for this partial time duration.
         '''
         # rel_time = datetime(2012, 8, 20, 13)
+        orig_mass = np.copy(test_sc['mass'])
         stop_time = rel_time + timedelta(hours=1)
 
         print '\nsc["mass"]:\n', test_sc['mass']
@@ -145,33 +124,30 @@ class TestWeatherer:
         weatherer.prepare_for_model_run()
 
         weatherer.prepare_for_model_step(test_sc, time_step, model_time)
-        decayed_mass = weatherer.get_move(test_sc, time_step, model_time)
+        weatherer.weather_elements(test_sc, time_step, model_time)
         weatherer.model_step_is_done()
 
-        print '\ndecayed_mass:\n', decayed_mass
-        assert np.allclose(decayed_mass.sum(1), 1. * test_sc['mass'])
+        assert np.allclose(test_sc['mass'], 1. * orig_mass)
 
         # setup test case 2
         model_time = rel_time - timedelta(minutes=15)
         time_step = 15 * secs_in_minute
 
         weatherer.prepare_for_model_step(test_sc, time_step, model_time)
-        decayed_mass = weatherer.get_move(test_sc, time_step, model_time)
+        weatherer.weather_elements(test_sc, time_step, model_time)
         weatherer.model_step_is_done()
 
-        print '\ndecayed_mass:\n', decayed_mass
-        assert np.allclose(decayed_mass.sum(1), 1. * test_sc['mass'])
+        assert np.allclose(test_sc['mass'], 1. * orig_mass)
 
         # setup test case 3
         model_time = rel_time - timedelta(minutes=15)
         time_step = 30 * secs_in_minute
 
         weatherer.prepare_for_model_step(test_sc, time_step, model_time)
-        decayed_mass = weatherer.get_move(test_sc, time_step, model_time)
+        weatherer.weather_elements(test_sc, time_step, model_time)
         weatherer.model_step_is_done()
 
-        print '\ndecayed_mass:\n', decayed_mass
-        assert np.allclose(decayed_mass.sum(1), 0.5 * test_sc['mass'])
+        assert np.allclose(test_sc['mass'], 0.5 * orig_mass)
 
     @pytest.mark.parametrize("test_sc", [sc, u_sc])
     def test_out_of_bounds_time_step(self, test_sc):
@@ -185,6 +161,7 @@ class TestWeatherer:
               The decay will be calculated for this partial time duration.
         '''
         # rel_time = datetime(2012, 8, 20, 13)
+        orig_mass = np.copy(test_sc['mass'])
         stop_time = rel_time + timedelta(hours=1)
 
         print '\nsc["mass"]:\n', test_sc['mass']
@@ -198,11 +175,10 @@ class TestWeatherer:
         weatherer.prepare_for_model_run()
 
         weatherer.prepare_for_model_step(test_sc, time_step, model_time)
-        decayed_mass = weatherer.get_move(test_sc, time_step, model_time)
+        weatherer.weather_elements(test_sc, time_step, model_time)
         weatherer.model_step_is_done()
 
-        print '\ndecayed_mass:\n', decayed_mass
-        assert np.allclose(decayed_mass.sum(1), 0.5 * test_sc['mass'])
+        assert np.allclose(test_sc['mass'], 0.5 * orig_mass)
 
     @pytest.mark.parametrize("test_sc", [sc, u_sc])
     def test_model_time_range_surrounds_active_range(self, test_sc):
@@ -215,6 +191,7 @@ class TestWeatherer:
               (active_start --> active_stop)
               The decay will be calculated for this partial time duration.
         '''
+        orig_mass = np.copy(test_sc['mass'])
         stop_time = rel_time + timedelta(minutes=15)
 
         print '\nsc["mass"]:\n', test_sc['mass']
@@ -228,8 +205,7 @@ class TestWeatherer:
         weatherer.prepare_for_model_run()
 
         weatherer.prepare_for_model_step(test_sc, time_step, model_time)
-        decayed_mass = weatherer.get_move(test_sc, time_step, model_time)
+        weatherer.weather_elements(test_sc, time_step, model_time)
         weatherer.model_step_is_done()
 
-        print '\ndecayed_mass:\n', decayed_mass
-        assert np.allclose(decayed_mass.sum(1), 0.5 * test_sc['mass'])
+        assert np.allclose(test_sc['mass'], 0.5 * orig_mass)

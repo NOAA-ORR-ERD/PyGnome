@@ -26,8 +26,6 @@
 #include "Replacements.h"
 #endif
 
-
-
 // NOTE!! if the input variable path does point to a NetCDFPaths file,
 // the input variable is overwritten with the path to the first NetCDF file.
 // The original input value of path is copied to fileNamesPath in such a case.

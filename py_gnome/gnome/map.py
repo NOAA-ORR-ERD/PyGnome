@@ -53,7 +53,7 @@ class GnomeMapSchema(base_schema.ObjType):
 
 class MapFromBNASchema(base_schema.ObjType):
     filename = SchemaNode(String())
-    refloat_halflife = SchemaNode(Float())
+    refloat_halflife = SchemaNode(Float(), missing=drop)
 
 
 class GnomeMap(Serializable):
@@ -256,8 +256,7 @@ class RasterMap(GnomeMap):
 
     land_flag = 1
 
-    def __init__(self, refloat_halflife, bitmap_array, projection,
-                 **kwargs):
+    def __init__(self, bitmap_array, projection, **kwargs):
         """
         create a new RasterMap
 
@@ -288,6 +287,7 @@ class RasterMap(GnomeMap):
 
         :type id: string
         """
+        refloat_halflife = kwargs.pop('refloat_halflife', 1)
         self._refloat_halflife = refloat_halflife * self.seconds_in_hour
 
         self.bitmap = bitmap_array
@@ -539,7 +539,7 @@ class MapFromBNA(RasterMap):
                             read=True, test_for_eq=False))
     _schema = MapFromBNASchema
 
-    def __init__(self, filename, refloat_halflife, raster_size=1024 * 1024,
+    def __init__(self, filename, raster_size=1024 * 1024,
                  **kwargs):
         """
         Creates a GnomeMap (specifically a RasterMap) from a bna file.
@@ -622,7 +622,7 @@ class MapFromBNA(RasterMap):
         # __init__ the  RasterMap
 
         # hours
-        RasterMap.__init__(self, refloat_halflife, bitmap_array,
+        RasterMap.__init__(self, bitmap_array,
                            canvas.projection,
                            map_bounds=map_bounds,
                            spillable_area=spillable_area,

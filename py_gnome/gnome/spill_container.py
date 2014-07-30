@@ -240,8 +240,8 @@ class SpillContainer(SpillContainerData):
                              'status_codes': array_types.status_codes,
                              'spill_num': array_types.spill_num,
                              'id': array_types.id,
-                             'rise_vel': array_types.rise_vel,
-                             'droplet_diameter': array_types.droplet_diameter,
+                             #'rise_vel': array_types.rise_vel,
+                             #'droplet_diameter': array_types.droplet_diameter,
                              'mass': array_types.mass,
                              'age': array_types.age}
         self._data_arrays = {}
@@ -310,12 +310,25 @@ class SpillContainer(SpillContainerData):
         :param array_types: a dict of additional array_types to append to
             standard array_types attribute. The data_arrays are initialized and
             appended based on the values of array_types attribute
+
+        .. note:: The SpillContainer cycles through each of the keys in
+        array_types and checks to see if there is an associated initializer
+        in each Spill. If a corresponding initializer is found, it gets the
+        array_types from initializer and appends them to its own list. For
+        most initializers like 
         """
         # Question - should we purge any new arrays that were added in previous
         # call to prepare_for_model_run()?
         # No! If user made modifications to _array_types before running model,
         # let's keep those. A rewind will reset data_arrays.
         self._array_types.update(array_types)
+
+        # for each array_types, use the key to get the associated initializer
+        for key in array_types:
+            for spill in self.spills:
+                if spill.is_initializer(key):
+                    self._array_types.update(
+                        spill.get_initializer(key).array_types)
         self.initialize_data_arrays()
 
         # remake() spills ordered collection
@@ -582,6 +595,9 @@ class SpillContainerPair(SpillContainerPairData):
 
             if self.uncertain:
                 self._u_spill_container.spills += spill.uncertain_copy()
+
+    def append(self, spill):
+        self.add(spill)
 
     def remove(self, ident):
         '''

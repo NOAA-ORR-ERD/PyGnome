@@ -450,12 +450,14 @@ def test_serialize_deserialize(wind_circ):
 
 
 @pytest.mark.parametrize("save_ref", [False, True])
-def test_save_load(clean_temp, save_ref):
+def test_save_load(save_ref):
     """
     tests and illustrates the functionality of save/load for
     WindMover
     """
-    saveloc = clean_temp
+    #saveloc = clean_temp
+    base_dir = os.path.dirname(__file__)
+    saveloc = os.path.join(base_dir, 'temp')
     wind = Wind(filename=file_)
     wm = WindMover(wind)
     wm_fname = 'WindMover_save_test.json'

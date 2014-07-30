@@ -20,7 +20,7 @@ from gnome import array_types
 from gnome.utilities import serializable, rand
 
 from gnome import environment
-from gnome.movers import CyMover, MoverSchema
+from gnome.movers import CyMover, ProcessSchema
 from gnome.cy_gnome.cy_wind_mover import CyWindMover
 from gnome.cy_gnome.cy_gridwind_mover import CyGridWindMover
 
@@ -29,7 +29,7 @@ from gnome.persist.base_schema import ObjType
 #from gnome.persist.environment_schema import Wind
 
 
-class WindMoversBaseSchema(ObjType, MoverSchema):
+class WindMoversBaseSchema(ObjType, ProcessSchema):
     uncertain_duration = SchemaNode(Float(), missing=drop)
     uncertain_time_delay = SchemaNode(Float(), missing=drop)
     uncertain_speed_scale = SchemaNode(Float(), missing=drop)
