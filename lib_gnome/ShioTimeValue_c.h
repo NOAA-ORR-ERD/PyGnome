@@ -69,7 +69,6 @@ protected:
 	long 		I_SHIOEBBFLOODS(void);
 	
 public:						
-	char					fStationName[MAXSTATIONNAMELEN];
 	char					fStationType;
 	bool					daylight_savings_off;	// AH 07/09/2012
 	EbbFloodDataH			fEbbFloodDataHdl;	// values to show on list for tidal currents
