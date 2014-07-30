@@ -124,3 +124,6 @@ if __name__ == "__main__":
     model = make_model()
     for step in model:
         print step
+    for sc in model.spills.items():
+        print "sc:", sc
+
