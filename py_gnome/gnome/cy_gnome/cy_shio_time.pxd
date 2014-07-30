@@ -5,6 +5,7 @@ This file must have the same name as the pyx file, but with a pxd suffix
 """
 
 from utils cimport ShioTimeValue_c
+from cy_ossm_time cimport CyOSSMTime
 
-cdef class CyShioTime:
+cdef class CyShioTime(CyOSSMTime):
     cdef ShioTimeValue_c * shio

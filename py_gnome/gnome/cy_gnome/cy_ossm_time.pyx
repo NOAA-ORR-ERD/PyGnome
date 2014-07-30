@@ -9,7 +9,7 @@ from gnome import basic_types
 from type_defs cimport *
 from utils cimport _NewHandle, _GetHandleSize
 from utils cimport OSSMTimeValue_c
-from cy_helpers cimport to_bytes
+from cy_helpers import filename_as_bytes
 
 
 cdef class CyOSSMTime(object):
@@ -18,71 +18,83 @@ cdef class CyOSSMTime(object):
     # declared in pxd file
     #cdef OSSMTimeValue_c * time_dep
     #cdef object _user_units_dict
-
     def __cinit__(self):
-        self.time_dep = new OSSMTimeValue_c()
+        if type(self) == CyOSSMTime:
+            self.time_dep = new OSSMTimeValue_c()
+        else:
+            self.time_dep = NULL
 
-        #Define user units for velocity. In C++, these are #defined as
+        # Define user units for velocity. In C++, these are #defined as
         self._user_units_dict = {-1: 'undefined',
                                  1: 'knots',
                                  2: 'meters per second',
                                  3: 'miles per hour'}
 
-        self.file_contains = 0
+        # initialize this in init function
+        self._file_format = 0
 
     def __dealloc__(self):
-        del self.time_dep
+        if self.time_dep is not NULL:
+            del self.time_dep
 
-    def __init__(self, basestring filename=None, int file_contains=0,
+    def __init__(self, basestring filename=None, int file_format=0,
                  cnp.ndarray[TimeValuePair, ndim=1] timeseries=None,
                  scale_factor=1):
         """
         Initialize object - takes either file or time value pair to initialize
-        :param file: path to file containing time series data.
-                     It valid user_units are defined in the file, it uses them;
-                     otherwise, it defaults the user_units to meters_per_sec.
-        :param file_contains: enum type defined in cy_basic_types to define
-                              contents of data file
-        :param timeseries: numpy array containing time series data in
-                           time_value_pair structure as defined in type_defs
-        If both are given, it will read data from the file
 
-        NOTE: If timeseries are given, and data is velocity, it is always
-              assumed to be in meters_per_sec
+        :param basestring filename: path to file containing time series data.
+            It valid user_units are defined in the file, it uses them;
+            otherwise, it defaults the user_units to meters_per_sec.
+        :param int file_format: one of the values defined by enum type,
+            gnome.basic_types.ts_format
+        :param ndarray timeseries: numpy array containing time series data in
+            time_value_pair structure as defined in type_defs
+            If both are given, it will read data from the file
+        :param int scale_factor: The timeseries is scaled by this constant
+
+        .. note::
+
+        * If timeseries are given, and data is velocity, it is always
+          assumed to be in meters_per_sec and in 'uv' format
+        * If neither file, nor timeseries are given, then set timeseries to
+          zeros. The user_units are only set when read from file - else they
+          are left as 'undefined'
+        * The _file_format property is set even when timeseries are entered
+          just for completeness; however, it is always 'uv' format for
+          timeseries
+
         """
-        if filename is None or filename == "":
-            if timeseries is None:
-                raise ValueError('Object needs either a file to the '
-                                 'time series file or timeseries')
-            else:
-                self._set_time_value_handle(timeseries)
+        if (filename is None or filename == "") and (timeseries is None):
+            timeseries = np.zeros((1,), dtype=basic_types.time_value_pair)
 
-                # UserUnits for velocity assumed to be meter per second.
-                # Leave undefined because the timeseries could be something
-                # other than velocity.
-                # TODO: check if OSSMTimeValue_c is only used for velocity data?
-                self.time_dep.SetUserUnits(-1)
-        else:
-            # check file_contains is valid parameter
-            # - both magnitude_direction and uv are valid inputs
-            if file_contains not in basic_types.ts_format._int:
-                raise ValueError('file_contains can only contain integers 5, '
-                                 'or 1; also defined by basic_types.ts_format.'
-                                 '<magnitude_direction or uv>')
-
-            self.file_contains = file_contains
-
-            if os.path.exists(filename):
-                # user_units should be read from the file
-                self._read_time_values(filename, file_contains, -1)
-            else:
+        # type of data contained in file, 'uv' or 'r-theta' format
+        if filename is not None:
+            if not os.path.exists(filename):
                 raise IOError("No such file: " + filename)
 
+            self._file_format = file_format
+            self._read_time_values(filename)
+        else:
+            self._set_time_value_handle(timeseries)
+            self._file_format = basic_types.ts_format.uv
+            # UserUnits for velocity assumed to be meter per second.
+            # Leave undefined because the timeseries could be something
+            # other than velocity.
+            # TODO: check if OSSMTimeValue_c is only used for velocity data?
+            self.time_dep.SetUserUnits(-1)
         self.time_dep.fScaleFactor = scale_factor
 
     property user_units:
         def __get__(self):
-            'returns units for the time series'
+            '''
+            These are the units for the data as it originally was read in from
+            the file. Once data is read, it is converted to MKS units and this
+            is never used. It is also not settable since it is set by C++ only
+            upon file read. When setting the timeseries from a numpy data
+            array, we always assume the data is in MKS units - no conversion
+            happens in cython code
+            '''
             try:
                 return self._user_units_dict[self.time_dep.GetUserUnits()]
             except KeyError:
@@ -100,10 +112,6 @@ cdef class CyOSSMTime(object):
         def __set__(self, value):
             self._set_time_value_handle(value)
 
-#     property filename:
-#         def __get__(self):
-#             return <bytes>self.time_dep.fileName
-#
     property filename:
         def __get__(self):
             return <bytes>self.time_dep.filePath
@@ -117,11 +125,29 @@ cdef class CyOSSMTime(object):
 
     property station_location:
         def __get__(self):
-            # will replace this once OSSMTime contains values
-            return np.array((0, 0, 0), dtype=basic_types.world_point)
+            #return np.array((0, 0, 0), dtype=basic_types.world_point)
+            """ get station location as read from file """
+            cdef cnp.ndarray[WorldPoint, ndim = 1] wp
+            wp = np.zeros((1,), dtype=basic_types.w_point_2d)
+
+            wp[0] = self.time_dep.GetStationLocation()
+            wp['lat'][:] = wp['lat'][:] / 1.e6    # correct C++ scaling here
+            wp['long'][:] = wp['long'][:] / 1.e6    # correct C++ scaling here
+
+            g_wp = np.zeros((1,), dtype=basic_types.world_point)
+            g_wp[0] = (wp['long'], wp['lat'], 0)
+
+            return tuple(g_wp[0])
 
         def __set__(self, value):
             self.station_location = value
+
+    property station:
+        def __get__(self):
+            """ get station name as read from SHIO file """
+            cdef bytes sName
+            sName = self.time_dep.fStationName
+            return sName
 
     def __repr__(self):
         """
@@ -145,7 +171,7 @@ cdef class CyOSSMTime(object):
         self_ts = self.timeseries.__repr__()
         return ('{0.__class__.__module__}.{0.__class__.__name__}('
                 'filename=r"{0.filename}", '
-                'file_contains={0.file_contains}, '
+                'file_format={0._file_format}, '
                 'timeseries={1}'
                 ')').format(self, self_ts)
 
@@ -157,12 +183,12 @@ cdef class CyOSSMTime(object):
 
     def __reduce__(self):
         return (CyOSSMTime, (self.filename,
-                             self.file_contains,
+                             self._file_format,
                              self.timeseries,
                              self.scale_factor))
 
     def __eq(self, CyOSSMTime other):
-        scalar_attrs = ('filename', 'file_contains', 'scale_factor',
+        scalar_attrs = ('filename', '_file_format', 'scale_factor',
                         'station_location', 'user_units')
         vector_attrs = ('timeseries',)
         if not all([getattr(self, a) == getattr(other, a)
@@ -188,7 +214,7 @@ cdef class CyOSSMTime(object):
     def get_time_value(self, modelTime):
         """
           GetTimeValue - for a specified modelTime or array of model times,
-                         it returns the values.
+              it returns the values.
         """
         cdef cnp.ndarray[Seconds, ndim = 1] modelTimeArray
         modelTimeArray = np.asarray(modelTime,
@@ -214,8 +240,9 @@ cdef class CyOSSMTime(object):
 
         return vel_rec
 
-    def _read_time_values(self, filename, file_contains, user_units=-1):
+    def _read_time_values(self, filename):
         """
+        For OSSMTimeValue_c().ReadTimeValues()
             Format for the data file. This is an enum type in C++
             defined below. These are defined in cy_basic_types such that
             python can see them.
@@ -234,6 +261,7 @@ cdef class CyOSSMTime(object):
             The default format is Magnitude and direction as defined for wind
 
             Units are defined by following integers:
+                Undefined: -1
                 Knots: 1
                 MilesPerHour: 2
                 MetersPerSec: 3
@@ -241,17 +269,26 @@ cdef class CyOSSMTime(object):
             Make this private since the constructor will likely call this
             when object is instantiated
         """
-        filename = os.path.normpath(filename)
+        file_ = filename_as_bytes(filename)
 
-        cdef bytes file_
-        file_ = to_bytes(unicode(filename))
+        if self._file_format not in basic_types.ts_format._int:
+            raise ValueError('_file_format can only contain integers 5, '
+                             'or 1; also defined by basic_types.ts_format.'
+                             '<magnitude_direction or uv>')
 
-        err = self.time_dep.ReadTimeValues(file_, file_contains, user_units)
+        err = self.time_dep.ReadTimeValues(file_, self._file_format, -1)
+        self._raise_errors(err)
 
+    def _raise_errors(self, err):
+        'Raise appropriate error'
         if err == 1:
             # TODO: need to define error codes in C++
             # and raise other exceptions
             raise ValueError("Valid user units not found in file")
+
+        if err != 0:
+            raise IOError('Error occurred in C++: '
+                    '{0}().ReadTimeValues()'.format(self.__class__.__name__))
 
     def _set_time_value_handle(self,
                                cnp.ndarray[TimeValuePair, ndim=1] time_val):
