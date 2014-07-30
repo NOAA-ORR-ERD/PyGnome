@@ -15,6 +15,7 @@ from gnome import basic_types
 from gnome.basic_types import ts_format, seconds, velocity_rec
 
 from gnome.cy_gnome.cy_ossm_time import CyOSSMTime
+from gnome.cy_gnome.cy_shio_time import CyShioTime
 
 datadir = os.path.join(os.path.dirname(__file__), r"sample_data")
 
@@ -23,24 +24,22 @@ def test_exceptions():
     with raises(IOError):
         # bad path
         CyOSSMTime(filename=os.path.join(datadir, 'WindDataFromGnome.WNDX'),
-                   file_contains=ts_format.magnitude_direction)
+                   file_format=ts_format.magnitude_direction)
 
     with raises(ValueError):
-        # no inputs
-        CyOSSMTime()
-
         # insufficient input info
         CyOSSMTime(filename=os.path.join(datadir, 'WindDataFromGnome.WND'))
 
+    with raises(ValueError):
         # insufficient input info
         CyOSSMTime(filename=os.path.join(datadir,
                                          'WindDataFromGnome_BadUnits.WND'),
-                   file_contains=ts_format.magnitude_direction)
+                   file_format=ts_format.magnitude_direction)
 
     with raises(ValueError):
-        # file_contains has wrong int type
+        # file_format has wrong int type
         CyOSSMTime(filename=os.path.join(datadir, 'WindDataFromGnome.WND'),
-                   file_contains=0)
+                   file_format=0)
 
 
 def test_init_units():
@@ -51,7 +50,7 @@ def test_init_units():
     """
     ossmT2 = CyOSSMTime(filename=os.path.join(datadir,
                                               'WindDataFromGnome.WND'),
-                        file_contains=ts_format.magnitude_direction)
+                        file_format=ts_format.magnitude_direction)
     assert ossmT2.user_units == 'knots'
 
 
@@ -72,7 +71,8 @@ class TestTimeSeriesInit:
         t_val = ossm.timeseries
 
         assert ossm.user_units == 'undefined'  # meters/second
-        msg = 'CyOSSMTime.get_time_value did not return expected numpy array'
+        msg = ('{0}().get_time_value() did not return expected '
+               'numpy array').format(obj.__class__.__name__)
         np.testing.assert_array_equal(t_val, self.tval, msg, 0)
 
     def test_get_time_value(self):
@@ -96,7 +96,7 @@ class TestGetTimeValues:
     """
     # sample data generated and stored via Gnome GUI
     ossmT = CyOSSMTime(filename=os.path.join(datadir, 'WindDataFromGnome.WND'),
-                       file_contains=ts_format.magnitude_direction)
+                       file_format=ts_format.magnitude_direction)
 
     def test_get_time_value(self):
         """
@@ -167,7 +167,7 @@ class TestReadFileWithConstantWind:
     """
     file_name = os.path.join(datadir, 'WindDataFromGnomeConstantWind.WND')
     ossmT = CyOSSMTime(filename=file_name,
-                       file_contains=ts_format.magnitude_direction)
+                       file_format=ts_format.magnitude_direction)
 
     def test_get_time_value(self):
         """ Test get_time_values method. It gets the time value pair
@@ -201,7 +201,7 @@ class TestObjectSerialization:
         available to the CyOSSMTime object.
     '''
     ossmT = CyOSSMTime(filename=os.path.join(datadir, 'WindDataFromGnome.WND'),
-                       file_contains=ts_format.magnitude_direction)
+                       file_format=ts_format.magnitude_direction)
 
     def test_repr(self):
         '''
