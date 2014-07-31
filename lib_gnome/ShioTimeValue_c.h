@@ -45,8 +45,6 @@ class DLL_API ShioTimeValue_c : virtual public OSSMTimeValue_c {
 protected:
 
 	// instance variables
-	double fLatitude;
-	double fLongitude;
 	CONSTITUENT2 fConstituent;
 	HEIGHTOFFSET fHeightOffset;
 	CURRENTOFFSET fCurrentOffset;
@@ -88,7 +86,7 @@ public:
 	virtual long			GetNumEbbFloodValues ();	
 	virtual long			GetNumHighLowValues ();
 	virtual OSErr			GetTimeValue(const Seconds& current_time, VelocityRec *value);
-	virtual WorldPoint		GetStationLocation (void);
+	//virtual WorldPoint		GetStationLocation (void);
 	
 	virtual	double			GetDeriv (Seconds t1, double val1, Seconds t2, double val2, Seconds theTime);
 	virtual	OSErr			GetConvertedHeightValue(Seconds forTime, VelocityRec *value);

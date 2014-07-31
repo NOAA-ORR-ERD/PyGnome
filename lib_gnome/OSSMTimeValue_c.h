@@ -33,7 +33,7 @@ public:
 	short					fUserUnits; //JLM
 	double					fScaleFactor; // user input for scaling height derivatives or hydrology files
 	char 					fStationName [kMaxNameLen];
-	WorldPoint				fStationPosition;
+	WorldPoint3D			fStationPosition;
 	Boolean					bOSSMStyle;
 	double					fTransport;
 	double					fVelAtRefPt;
@@ -61,7 +61,7 @@ public:
 	virtual TimeValuePairH	GetTimeValueHandle () { return timeValues; }
 	virtual void			SetTimeValueHandle (TimeValuePairH t) ;
 	
-	virtual WorldPoint		GetStationLocation (void) {return fStationPosition;}
+	virtual WorldPoint3D	GetStationLocation (void) {return fStationPosition;}
 	virtual short			GetUserUnits(){return fUserUnits;}
 	virtual void			SetUserUnits(short userUnits){fUserUnits=userUnits;}
 	virtual double			GetMaxValue();

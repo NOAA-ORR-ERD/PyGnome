@@ -60,7 +60,7 @@ public:
 	virtual			   ~CATSMover_c () { Dispose (); }
 	virtual void		Dispose ();
 	virtual OSErr		AddUncertainty(long setIndex, long leIndex,VelocityRec *patVelocity,double timeStep,Boolean useEddyUncertainty);
-	void				SetRefPosition (WorldPoint p, long z) { refP = p; refZ = z; }
+	void				SetRefPosition (WorldPoint3D pos) { refP = pos.p; refZ = pos.z; }
 	void				GetRefPosition (WorldPoint *p, long *z) { (*p) = refP; (*z) = refZ; }
 	virtual WorldRect GetGridBounds(){return fGrid->GetBounds();}	
 	void				SetTimeDep (TOSSMTimeValue *newTimeDep);
