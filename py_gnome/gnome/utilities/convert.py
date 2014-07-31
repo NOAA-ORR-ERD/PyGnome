@@ -146,7 +146,8 @@ def tsformat(format_):
     """
 
     try:
-        getattr(basic_types.ts_format, format_)
+        format_ = (format_, 'r_theta')[format_ == 'r-theta']
+        return getattr(basic_types.ts_format, format_)
     except AttributeError:
-        raise AttributeError("timeseries format can only be 'r-theta' or 'uv',"
-            " format entered is not recognized as valid format")
+        raise ValueError("timeseries format can only be 'r-theta' or 'uv',"
+            " format entered is not recognized: {0}".format(format_))
