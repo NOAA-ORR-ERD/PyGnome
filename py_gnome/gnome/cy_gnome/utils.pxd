@@ -31,6 +31,7 @@ cdef extern from "OSSMTimeValue_c.h":
         string          fileName
         string          filePath
         double          fScaleFactor
+        WorldPoint3D    fStationPosition
 
         # make char array a string - easier to work with in Cython
         string          fStationName
@@ -43,7 +44,7 @@ cdef extern from "OSSMTimeValue_c.h":
         short           GetUserUnits()
         void            SetUserUnits(short)
         void            Dispose()
-        WorldPoint      GetStationLocation()
+        WorldPoint3D    GetStationLocation()
 
 """
 ShioTimeValue_c.h derives from OSSMTimeValue_c - so no need to redefine methods

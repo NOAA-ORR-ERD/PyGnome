@@ -191,14 +191,13 @@ cdef class CyCatsMover(cy_mover.CyMover):
             TODO: make sure this is consistent with the format of
                   CyShioTime.ref_point
             """
-            ref_point = np.asarray(ref_point)  # make it a numpy array
-            cdef WorldPoint p
-            p.pLong = ref_point[0] * 10 ** 6  # should this happen in C++?
-            p.pLat = ref_point[1] * 10 ** 6
-            if len(ref_point) == 2:
-                self.cats.SetRefPosition(p, 0)
-            else:
-                self.cats.SetRefPosition(p, ref_point[2])
+            cdef WorldPoint3D pos
+
+            pos.p.pLong = ref_point[0] * 10 ** 6  # should this happen in C++?
+            pos.p.pLat = ref_point[1] * 10 ** 6
+            pos.z = ref_point[2]
+
+            self.cats.SetRefPosition(pos)
 
     def __repr__(self):
         """
@@ -239,7 +238,7 @@ cdef class CyCatsMover(cy_mover.CyMover):
         from the Shio object.
         """
         self.cats.SetTimeDep(cy_shio.shio)
-        self.cats.SetRefPosition(cy_shio.shio.GetStationLocation(), 0)
+        self.ref_point = cy_shio.station_location
         self.cats.bTimeFileActive = True
         self.cats.scaleType = 1
         return True

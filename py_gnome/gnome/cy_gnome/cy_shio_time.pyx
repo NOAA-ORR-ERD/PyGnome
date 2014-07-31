@@ -39,22 +39,16 @@ cdef class CyShioTime(CyOSSMTime):
 
     def __init__(self,
                  basestring filename=None,
-                 cnp.ndarray[TimeValuePair, ndim=1] timeseries=None,
                  scale_factor=1,
                  daylight_savings_off=False,  # let shio figure out by default
                  yeardata=None):
         """
         Invoke super and call CyOSSMTime.__init__ with filename, timeseries,
-        scale_factor. The file_format is always set to 'uv' for Shio which
-        indicates that there should be no conversion on the data. Though for
-        Shio, this does not matter
-
-        There is no undefined
+        scale_factor. The file_format is always set to 0 since shio is neither
+        in 'uv', nor 'r-theta' format and Shio does not use this for data read
         """
-        super(CyShioTime, self).__init__(filename,
-                                         basic_types.ts_format.uv,
-                                         timeseries,
-                                         scale_factor=scale_factor)
+        super(CyShioTime, self).__init__(filename, 0, scale_factor)
+
         # base class will set file_format to basic_types.ts_format.uv
         self.shio.daylight_savings_off = daylight_savings_off
         if not yeardata:
@@ -93,7 +87,6 @@ cdef class CyShioTime(CyOSSMTime):
         '''
         file_ = filename_as_bytes(filename)
         err = self.shio.ReadTimeValues(file_)
-        self._file_format = 0   # shio constituents file
         self._raise_errors(err)
 
     property daylight_savings_off:
