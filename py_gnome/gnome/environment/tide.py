@@ -33,7 +33,7 @@ from gnome.utilities.convert import (to_time_value_pair,
 
 from gnome.utilities.serializable import Serializable, Field
 
-from gnome.cy_gnome.cy_ossm_time import CyOSSMTime
+from gnome.cy_gnome.cy_ossm_time import CyTimeseries
 from gnome.cy_gnome.cy_shio_time import CyShioTime
 
 
@@ -197,7 +197,7 @@ class Tide(Environment, Serializable):
             # maybe log / display a warning that v=0 for tide file and will be
             # ignored
             # if float( string.split(lines[3],',')[-1]) != 0.0:
-            return CyOSSMTime(filename, file_contains=tsformat('uv'))
+            return CyTimeseries(filename, file_format=tsformat('uv'))
         else:
             raise ValueError('This does not appear to be a valid file format '
                              'that can be read by OSSM or Shio to get '

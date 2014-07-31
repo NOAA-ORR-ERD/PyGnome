@@ -39,7 +39,7 @@ from gnome.utilities.convert import (to_time_value_pair,
                                      tsformat,
                                      to_datetime_value_2d)
 
-from gnome.cy_gnome.cy_ossm_time import CyOSSMTime
+from gnome.cy_gnome.cy_ossm_time import CyTimeseries
 
 
 class MagnitudeDirectionTuple(DefaultTupleSchema):
@@ -213,7 +213,7 @@ class Wind(Environment, serializable.Serializable):
             #       but maybe we can find a way to not have to
             #       pickle this attribute when we pickle a Wind instance
             #
-            self.ossm = CyOSSMTime(timeseries=time_value_pair)
+            self.ossm = CyTimeseries(timeseries=time_value_pair)
             self._user_units = units
             self.source_type = (kwargs.pop('source_type')
                                 if kwargs.get('source_type')
@@ -223,8 +223,8 @@ class Wind(Environment, serializable.Serializable):
         else:
             ts_format = tsformat(format)
             self._filename = filename
-            self.ossm = CyOSSMTime(filename=self._filename,
-                                   file_contains=ts_format)
+            self.ossm = CyTimeseries(filename=self._filename,
+                                   file_format=ts_format)
             self._user_units = self.ossm.user_units
 
             self.source_type = 'file'  # this must be file
@@ -392,7 +392,7 @@ class Wind(Environment, serializable.Serializable):
         then the original timeseries that was entered is returned.
         If datetime is a list containing datetime objects, then the wind value
         for each of those date times is determined by the underlying
-        CyOSSMTime object and the timeseries is returned.
+        CyTimeseries object and the timeseries is returned.
 
         The output format is defined by the strings 'r-theta', 'uv'
 

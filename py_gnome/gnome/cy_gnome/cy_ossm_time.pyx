@@ -13,12 +13,17 @@ from cy_helpers import filename_as_bytes
 
 
 cdef class CyOSSMTime(object):
-
-    # underlying C++ object that is instantiated
-    # declared in pxd file
-    #cdef OSSMTimeValue_c * time_dep
-    #cdef object _user_units_dict
+    '''
+    Base class for CyShioTime and CyTimeseries. Since CyShioTime does not have
+    anything like timeseries, set/get for timeseries and initializing from
+    timeseries doesn't make sense for Shio. This base class captures the set of
+    common properties/methods between children.
+    '''
     def __cinit__(self):
+        '''
+        Child classes must initialize the appropriate C++ objects themselves.
+        If self is not CyOSSMTime, then set self.time_dep = NULL
+        '''
         if type(self) == CyOSSMTime:
             self.time_dep = new OSSMTimeValue_c()
         else:
@@ -37,8 +42,7 @@ cdef class CyOSSMTime(object):
         if self.time_dep is not NULL:
             del self.time_dep
 
-    def __init__(self, basestring filename=None, int file_format=0,
-                 cnp.ndarray[TimeValuePair, ndim=1] timeseries=None,
+    def __init__(self, basestring filename, int file_format=0,
                  scale_factor=1):
         """
         Initialize object - takes either file or time value pair to initialize
@@ -48,41 +52,17 @@ cdef class CyOSSMTime(object):
             otherwise, it defaults the user_units to meters_per_sec.
         :param int file_format: one of the values defined by enum type,
             gnome.basic_types.ts_format
-        :param ndarray timeseries: numpy array containing time series data in
-            time_value_pair structure as defined in type_defs
-            If both are given, it will read data from the file
         :param int scale_factor: The timeseries is scaled by this constant
 
-        .. note::
-
-        * If timeseries are given, and data is velocity, it is always
-          assumed to be in meters_per_sec and in 'uv' format
-        * If neither file, nor timeseries are given, then set timeseries to
-          zeros. The user_units are only set when read from file - else they
-          are left as 'undefined'
-        * The _file_format property is set even when timeseries are entered
-          just for completeness; however, it is always 'uv' format for
-          timeseries
-
+        .. note:: This is a wrapper around CyOSSMTime. CyTimeseries in same
+            module extends its functionality. CyTimeseries can set/get
+            timeseries and also initialize from timeseries instead of file
         """
-        if (filename is None or filename == "") and (timeseries is None):
-            timeseries = np.zeros((1,), dtype=basic_types.time_value_pair)
+        if not os.path.exists(filename):
+            raise IOError("No such file: " + filename)
 
-        # type of data contained in file, 'uv' or 'r-theta' format
-        if filename is not None:
-            if not os.path.exists(filename):
-                raise IOError("No such file: " + filename)
-
-            self._file_format = file_format
-            self._read_time_values(filename)
-        else:
-            self._set_time_value_handle(timeseries)
-            self._file_format = basic_types.ts_format.uv
-            # UserUnits for velocity assumed to be meter per second.
-            # Leave undefined because the timeseries could be something
-            # other than velocity.
-            # TODO: check if OSSMTimeValue_c is only used for velocity data?
-            self.time_dep.SetUserUnits(-1)
+        self._file_format = file_format
+        self._read_time_values(filename)
         self.time_dep.fScaleFactor = scale_factor
 
     property user_units:
@@ -101,17 +81,6 @@ cdef class CyOSSMTime(object):
                 raise ValueError('C++ GetUserUnits() gave a result which is '
                                  'outside the expected bounds.')
 
-    property timeseries:
-        def __get__(self):
-            """
-            returns the time series stored in the OSSMTimeValue_c object.
-            It returns a memcpy of it.
-            """
-            return self._get_time_value_handle()
-
-        def __set__(self, value):
-            self._set_time_value_handle(value)
-
     property filename:
         def __get__(self):
             return <bytes>self.time_dep.filePath
@@ -125,22 +94,33 @@ cdef class CyOSSMTime(object):
 
     property station_location:
         def __get__(self):
-            #return np.array((0, 0, 0), dtype=basic_types.world_point)
             """ get station location as read from file """
-            cdef cnp.ndarray[WorldPoint, ndim = 1] wp
-            wp = np.zeros((1,), dtype=basic_types.w_point_2d)
+            cdef cnp.ndarray[WorldPoint3D, ndim = 1] wp
+            #wp = np.zeros((1,), dtype=basic_types.w_point_2d)
+            wp = np.zeros((1,), dtype=basic_types.world_point)
 
             wp[0] = self.time_dep.GetStationLocation()
             wp['lat'][:] = wp['lat'][:] / 1.e6    # correct C++ scaling here
             wp['long'][:] = wp['long'][:] / 1.e6    # correct C++ scaling here
+            wp['z'][:] = wp['z']
 
             g_wp = np.zeros((1,), dtype=basic_types.world_point)
             g_wp[0] = (wp['long'], wp['lat'], 0)
 
             return tuple(g_wp[0])
 
-        def __set__(self, value):
-            self.station_location = value
+        def __set__(self, val):
+            '''
+            todo: Double check this
+            '''
+            #cdef cnp.ndarray[WorldPoint, ndim = 1] wp
+            cdef WorldPoint3D wp
+
+            wp.p.pLat = val[0] * 1e6
+            wp.p.pLong = val[1] * 1e6
+            wp.z = val[2]
+
+            self.time_dep.fStationPosition = wp
 
     property station:
         def __get__(self):
@@ -156,47 +136,28 @@ cdef class CyOSSMTime(object):
         If this works properly, then eval(repr(<cy_ossm_time_obj>)) should
         product a copy of the CyOSSMTime object
 
-        (Note: the timeseries is a numpy array, and if it gets really big,
-               say 1000 elements or more, then the repr() will abbreviate,
-               and the representation will be ambiguous and not reproducible.
-               The way to increase this size threshold is with the command
-
-               np.set_printoptions(threshold=<really_big_number>).
-
-               But do we really want to do that?  One of our unit tests
-               has nearly 30000 elements in the timeseries.)
-
         NOTE: this may fail with a unicode file name.
         """
-        self_ts = self.timeseries.__repr__()
         return ('{0.__class__.__module__}.{0.__class__.__name__}('
                 'filename=r"{0.filename}", '
-                'file_format={0._file_format}, '
-                'timeseries={1}'
-                ')').format(self, self_ts)
+                'file_format={0._file_format}'
+                ')').format(self)
 
     def __str__(self):
         """Return string info about the object"""
         return ('{0.__class__.__name__}'
-                '(filename="{0.filename}", '
-                'timeseries=<see timeseries attribute>)').format(self)
+                '(filename="{0.filename}"').format(self)
 
     def __reduce__(self):
         return (CyOSSMTime, (self.filename,
                              self._file_format,
-                             self.timeseries,
                              self.scale_factor))
 
     def __eq(self, CyOSSMTime other):
         scalar_attrs = ('filename', '_file_format', 'scale_factor',
                         'station_location', 'user_units')
-        vector_attrs = ('timeseries',)
         if not all([getattr(self, a) == getattr(other, a)
                     for a in scalar_attrs]):
-            return False
-
-        if not all([all(getattr(self, a) == getattr(other, a))
-                    for a in vector_attrs]):
             return False
 
         return True
@@ -289,6 +250,128 @@ cdef class CyOSSMTime(object):
         if err != 0:
             raise IOError('Error occurred in C++: '
                     '{0}().ReadTimeValues()'.format(self.__class__.__name__))
+
+
+cdef class CyTimeseries(CyOSSMTime):
+    '''
+    Extends base class CyOSSMTime functionality to set/get timeseries and
+    initialize an object from timeseries in addition to a filename
+
+    Python classes should use this object since we want to set/get timeseries
+    '''
+    def __cinit__(self):
+        '''
+        Child classes must initialize the appropriate C++ objects themselves.
+        If self is not CyTimeseries, then set self.time_dep = NULL.
+
+        Though this class doesn't have children, leave logic should it be
+        extended
+        '''
+        if type(self) == CyTimeseries:
+            self.time_dep = new OSSMTimeValue_c()
+        else:
+            self.time_dep = NULL
+
+    def __init__(self, basestring filename=None, int file_format=0,
+                 cnp.ndarray[TimeValuePair, ndim=1] timeseries=None,
+                 scale_factor=1):
+        """
+        Initialize object - takes either file or time value pair to initialize
+
+        :param basestring filename: path to file containing time series data.
+            It valid user_units are defined in the file, it uses them;
+            otherwise, it defaults the user_units to meters_per_sec.
+        :param int file_format: one of the values defined by enum type,
+            gnome.basic_types.ts_format
+        :param ndarray timeseries: numpy array containing time series data in
+            time_value_pair structure as defined in type_defs
+            If both are given, it will read data from the file
+        :param int scale_factor: The timeseries is scaled by this constant
+
+        .. note::
+
+        * If timeseries are given, and data is velocity, it is always
+          assumed to be in meters_per_sec and in 'uv' format
+        * If neither file, nor timeseries are given, then set timeseries to
+          zeros. The user_units are only set when read from file - else they
+          are left as 'undefined'
+        * The _file_format property is set even when timeseries are entered
+          just for completeness; however, it is always 'uv' format for
+          timeseries
+
+        """
+        if (filename is None or filename == "") and (timeseries is None):
+            timeseries = np.zeros((1,), dtype=basic_types.time_value_pair)
+
+        # type of data contained in file, 'uv' or 'r-theta' format
+        if filename is not None:
+            super(CyTimeseries, self).__init__(filename,
+                                               file_format, scale_factor)
+        else:
+            self._set_time_value_handle(timeseries)
+            self._file_format = 0
+            # UserUnits for velocity assumed to be meter per second.
+            # Leave undefined because the timeseries could be something
+            # other than velocity.
+            # TODO: check if OSSMTimeValue_c is only used for velocity data?
+            self.time_dep.SetUserUnits(-1)
+
+    property timeseries:
+        def __get__(self):
+            """
+            returns the time series stored in the OSSMTimeValue_c object.
+            It returns a memcpy of it.
+            """
+            return self._get_time_value_handle()
+
+        def __set__(self, value):
+            self._set_time_value_handle(value)
+
+    def __repr__(self):
+        """
+        Return an unambiguous representation of this object so it can be
+        recreated.
+        If this works properly, then eval(repr(<cy_ossm_time_obj>)) should
+        product a copy of the CyOSSMTime object
+
+        (Note: the timeseries is a numpy array, and if it gets really big,
+               say 1000 elements or more, then the repr() will abbreviate,
+               and the representation will be ambiguous and not reproducible.
+               The way to increase this size threshold is with the command
+
+               np.set_printoptions(threshold=<really_big_number>).
+
+               But do we really want to do that?  One of our unit tests
+               has nearly 30000 elements in the timeseries.)
+
+        NOTE: this may fail with a unicode file name.
+        """
+        self_ts = self.timeseries.__repr__()
+        parent = super(CyTimeseries, self).__repr__()
+        child = '{0}, timeseries={1})'.format(parent[:-1], self_ts)
+        return child
+
+    def __str__(self):
+        """Return string info about the object"""
+        parent = super(CyTimeseries, self).__str__()
+        child = parent[:-1] + ' timeseries=<see timeseries attribute>)'
+
+    def __reduce__(self):
+        return (CyTimeseries, (self.filename,
+                             self._file_format,
+                             self.timeseries,
+                             self.scale_factor))
+
+    def __eq(self, CyTimeseries other):
+        if not super(CyTimeseries, self).__eq(other):
+            return False
+
+        vector_attrs = ('timeseries',)
+        if not all([all(getattr(self, a) == getattr(other, a))
+                    for a in vector_attrs]):
+            return False
+
+        return True
 
     def _set_time_value_handle(self,
                                cnp.ndarray[TimeValuePair, ndim=1] time_val):
