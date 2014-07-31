@@ -8,7 +8,7 @@ from gnome.basic_types import datetime_value_2d, time_value_pair, \
     ts_format, datetime_value_1d
 
 from gnome.utilities.convert import to_time_value_pair, \
-    to_datetime_value_2d, to_datetime_value_1d
+    to_datetime_value_2d, to_datetime_value_1d, tsformat
 
 import pytest
 
@@ -94,6 +94,13 @@ def test_exceptions(wind_ts, invalid_rq):
         to_time_value_pair(invalid_dtv_rq,
                            ts_format.magnitude_direction)
 
+
+@pytest.mark.parametrize("format_", ['uv', 'r-theta', 'r_theta'])
+def test_ts_format(format_):
+    if format_ == 'uv':
+        assert tsformat(format_) == ts_format.uv
+    else:
+        assert tsformat(format_) == ts_format.r_theta
 
 # tolerance for numpy.allclose(...)
 

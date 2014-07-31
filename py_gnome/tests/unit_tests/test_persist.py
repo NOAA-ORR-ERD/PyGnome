@@ -130,7 +130,7 @@ def make_model(images_dir, uncertain=False):
     c_mover = CatsMover(d_file1, tide=Tide(d_file2))
 
     c_mover.scale = True  # but do need to scale (based on river stage)
-    c_mover.scale_refpoint = (-70.65, 42.58333)
+    c_mover.scale_refpoint = (-70.65, 42.58333, 0.0)
     c_mover.scale_value = 1.
     #model.movers += c_mover
     #model.environment += c_mover.tide
@@ -140,7 +140,7 @@ def make_model(images_dir, uncertain=False):
     d_file1 = get_datafile(os.path.join(datafiles, 'MassBaySewage.cur'))
     c_mover = CatsMover(d_file1)
     c_mover.scale = True  # but do need to scale (based on river stage)
-    c_mover.scale_refpoint = (-70.78333, 42.39333)
+    c_mover.scale_refpoint = (-70.78333, 42.39333, 0.0)
 
     # the scale factor is 0 if user inputs no sewage outfall effects
     c_mover.scale_value = .04
