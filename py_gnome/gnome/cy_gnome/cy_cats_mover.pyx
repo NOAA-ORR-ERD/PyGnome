@@ -4,12 +4,14 @@ cimport numpy as cnp
 import numpy as np
 
 from type_defs cimport *
-from movers cimport CATSMover_c, Mover_c
+from movers cimport Mover_c
+from current_movers cimport CATSMover_c
+from cy_current_mover cimport CyCurrentMover, dc_mover_to_cmover
+
 from gnome import basic_types
 from gnome.cy_gnome.cy_ossm_time cimport CyOSSMTime
 from gnome.cy_gnome.cy_shio_time cimport CyShioTime
-from gnome.cy_gnome cimport cy_mover
-from gnome.cy_gnome.cy_helpers cimport to_bytes
+from gnome.cy_gnome.cy_helpers import filename_as_bytes
 
 """
 Dynamic casts are not currently supported in Cython - define it here instead.
@@ -17,28 +19,32 @@ Since this function is custom for each mover, just keep it with the definition
 for each mover
 """
 cdef extern from *:
-    CATSMover_c* dynamic_cast_ptr "dynamic_cast<CATSMover_c *>" (Mover_c *) except NULL
+    CATSMover_c* dynamic_cast_ptr "dynamic_cast<CATSMover_c *>" \
+        (Mover_c *) except NULL
 
 
-cdef class CyCatsMover(cy_mover.CyMover):
+cdef class CyCatsMover(CyCurrentMover):
 
     cdef CATSMover_c *cats
 
     def __cinit__(self):
+        'No plans to subclass CATSMover so no check to see if called by child'
         self.mover = new CATSMover_c()
+        print 'CATSMover_c.__cinit__: created self.mover'
+        self.curr_mover = dc_mover_to_cmover(self.mover)
         self.cats = dynamic_cast_ptr(self.mover)
 
     def __dealloc__(self):
         # since this is allocated in this class, free memory here as well
         del self.mover
+        print 'CATSMover_c.__dealloc__: deleted self.mover'
+        self.mover = NULL
+        self.curr_mover = NULL
         self.cats = NULL
 
-    def __init__(self, scale_type=0, scale_value=1,
-                 uncertain_duration=48 * 3600, uncertain_time_delay=0,
-                 up_cur_uncertain=.3, down_cur_uncertain=-.3,
-                 right_cur_uncertain=.1, left_cur_uncertain=-.1,
+    def __init__(self, scale_value=1,
                  uncertain_eddy_diffusion=0, uncertain_eddy_v0=.1,
-                 ref_point=None):
+                 ref_point=None, **kwargs):
         """
         Initialize the CyCatsMover which sets the properties for the underlying
         C++ CATSMover_c object
@@ -64,21 +70,14 @@ cdef class CyCatsMover(cy_mover.CyMover):
         :param ref_point: Reference point used by C++ CATSMover_c
                           Default (long, lat, z) = (0., 0., -999)
         """
-        cdef WorldPoint p
-        self.cats.scaleType = scale_type
+        # If scale_value = 1, then scaleType is essentially None since scaling
+        # by 1 doesn't do anything. So always set scaleType to be 1
+        self.cats.scaleType = 1
         self.cats.scaleValue = scale_value
-        self.cats.fDuration = uncertain_duration
-        self.cats.fUncertainStartTime = uncertain_time_delay
-
-        self.cats.fUpCurUncertainty = up_cur_uncertain
-        self.cats.fDownCurUncertainty = down_cur_uncertain
-        self.cats.fLeftCurUncertainty = left_cur_uncertain
-        self.cats.fRightCurUncertainty = right_cur_uncertain
-
         self.cats.fEddyDiffusion = uncertain_eddy_diffusion
 
         if not ref_point:
-            # defaults
+            # defaults (-999, -999, -999)
             ref_point = (0., 0., -999)
 
         if not isinstance(ref_point, (list, tuple)) or len(ref_point) != 3:
@@ -86,18 +85,11 @@ cdef class CyCatsMover(cy_mover.CyMover):
                              'in the format (long, lat, z)')
 
         self.ref_point = ref_point
-
+        super(CyCatsMover, self).__init__(**kwargs)
         ## should not have to do this manually.
         ## make-shifting for now.
         #self.cats.fOptimize.isOptimizedForStep = 0
         #self.cats.fOptimize.isFirstStep = 1
-
-    property scale_type:
-        def __get__(self):
-            return self.cats.scaleType
-
-        def __set__(self, value):
-            self.cats.scaleType = value
 
     property scale_value:
         def __get__(self):
@@ -105,48 +97,6 @@ cdef class CyCatsMover(cy_mover.CyMover):
 
         def __set__(self, value):
             self.cats.scaleValue = value
-
-    property uncertain_duration:
-        def __get__(self):
-            return self.cats.fDuration
-
-        def __set__(self, value):
-            self.cats.fDuration = value
-
-    property uncertain_time_delay:
-        def __get__(self):
-            return self.cats.fUncertainStartTime
-
-        def __set__(self, value):
-            self.cats.fUncertainStartTime = value
-
-    property up_cur_uncertain:
-        def __get__(self):
-            return self.cats.fUpCurUncertainty
-
-        def __set__(self, value):
-            self.cats.fUpCurUncertainty = value
-
-    property down_cur_uncertain:
-        def __get__(self):
-            return self.cats.fDownCurUncertainty
-
-        def __set__(self, value):
-            self.cats.fDownCurUncertainty = value
-
-    property right_cur_uncertain:
-        def __get__(self):
-            return self.cats.fRightCurUncertainty
-
-        def __set__(self, value):
-            self.cats.fRightCurUncertainty = value
-
-    property left_cur_uncertain:
-        def __get__(self):
-            return self.cats.fLeftCurUncertainty
-
-        def __set__(self, value):
-            self.cats.fLeftCurUncertainty = value
 
     property uncertain_eddy_diffusion:
         def __get__(self):
@@ -206,31 +156,30 @@ cdef class CyCatsMover(cy_mover.CyMover):
 
         Probably want to return filename as well
         """
-        return ('{0.__class__.__name__}(scale_type={0.scale_type}, '
-                'scale_value={0.scale_value}, '
-                'uncertain_eddy_diffusion={0.uncertain_eddy_diffusion})'
-                .format(self))
+        b_repr = super(CyCatsMover, self).__repr__()
+        c_repr = b_repr[:-1] + ('scale_value={0.scale_value}, '
+                                'uncertain_eddy_diffusion='
+                                '{0.uncertain_eddy_diffusion})').format(self)
+        return c_repr
 
     def __str__(self):
         """Return string representation of this object"""
-        return ('{0.__class__.__name__} object '
-                '- see attributes for more info\n'
-                '  scale type = {0.scale_type}\n'
-                '  scale value = {0.scale_value}\n'
-                '  eddy diffusion coef = {0.uncertain_eddy_diffusion}\n'
-                .format(self))
+        b_str = super(CyCatsMover, self).__str__()
+        c_str = b_str + ('  scale value = {0.scale_value}\n'
+                         '  eddy diffusion coef={0.uncertain_eddy_diffusion}\n'
+                         .format(self))
+        return c_str
 
     def __reduce__(self):
-        return (CyCatsMover, (self.scale_type, self.scale_value,
-                              self.uncertain_duration,
-                              self.uncertain_time_delay,
-                              self.up_cur_uncertain,
-                              self.down_cur_uncertain,
-                              self.right_cur_uncertain,
-                              self.left_cur_uncertain,
-                              self.uncertain_eddy_diffusion,
-                              self.uncertain_eddy_v0,
-                              self.ref_point))
+        b_reduce = super(CyCatsMover, self).__reduce__()
+        props = [self.uncertain_eddy_diffusion,
+                 self.uncertain_eddy_v0,
+                 self.ref_point,
+                 self.scale_value]
+        for prop in b_reduce[1]:
+            props.append(prop)
+
+        return (CyCatsMover, tuple(props))
 
     def set_shio(self, CyShioTime cy_shio):
         """
@@ -257,19 +206,11 @@ cdef class CyCatsMover(cy_mover.CyMover):
         read the current file
         """
         cdef OSErr err
-        cdef bytes path_
-
-        fname = os.path.normpath(fname)
-        path_ = to_bytes(unicode(fname))
-
-        if os.path.exists(path_):
-            err = self.cats.TextRead(path_)
-            if err != False:
-                raise ValueError('CATSMover.text_read(..) returned an error. '
-                                 'OSErr: {0}'.format(err))
-        else:
-            raise IOError("No such file: " + path_)
-
+        path_ = filename_as_bytes(fname)
+        err = self.cats.TextRead(path_)
+        if err != False:
+            raise ValueError('CATSMover.text_read(..) returned an error. '
+                             'OSErr: {0}'.format(err))
         return True
 
     def get_move(self,

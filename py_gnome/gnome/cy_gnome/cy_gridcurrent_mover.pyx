@@ -3,7 +3,8 @@ import numpy as np
 import os
 
 from type_defs cimport *
-from movers cimport Mover_c, GridCurrentMover_c, TimeGridVel_c
+from movers cimport Mover_c
+from current_movers cimport GridCurrentMover_c
 from gnome.cy_gnome cimport cy_mover
 from gnome.cy_gnome.cy_helpers cimport to_bytes
 

@@ -4,7 +4,8 @@ cimport numpy as cnp
 import numpy as np
 
 from type_defs cimport *
-from movers cimport ComponentMover_c, CATSMover_c, Mover_c
+from movers cimport Mover_c
+from current_movers cimport ComponentMover_c, CATSMover_c
 from gnome import basic_types
 from gnome.cy_gnome.cy_ossm_time cimport CyOSSMTime
 #from gnome.cy_gnome.cy_shio_time cimport CyShioTime
