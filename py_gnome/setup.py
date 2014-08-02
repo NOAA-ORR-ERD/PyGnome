@@ -204,6 +204,7 @@ if sys.platform is "darwin" or "win32":
 extension_names = ['cy_mover',
                    'cy_helpers',
                    'cy_wind_mover',
+                   'cy_current_mover',
                    'cy_cats_mover',
                    'cy_component_mover',
                    'cy_gridcurrent_mover',

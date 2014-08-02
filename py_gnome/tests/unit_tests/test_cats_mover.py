@@ -122,15 +122,6 @@ def test_default_props():
     assert c_cats.scale_refpoint is None
 
 
-def test_scale():
-    """
-    test setting / getting properties
-    """
-
-    c_cats.scale = True
-    assert c_cats.scale == True
-
-
 def test_scale_value():
     """
     test setting / getting properties

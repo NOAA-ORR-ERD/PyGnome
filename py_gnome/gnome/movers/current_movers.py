@@ -43,14 +43,14 @@ class CatsMover(CyMover, serializable.Serializable):
 
     _state = copy.deepcopy(CyMover._state)
 
-    _update = ['scale', 'scale_refpoint', 'scale_value',
+    _update = ['scale_refpoint', 'scale_value',
                'uncertain_duration', 'uncertain_time_delay',
                'up_cur_uncertain', 'down_cur_uncertain',
                'right_cur_uncertain', 'left_cur_uncertain',
                'uncertain_eddy_diffusion', 'uncertain_eddy_v0']
     _create = []
     _create.extend(_update)
-    _state.add(update=_update, save=_create)
+    _state.add(update=_update, save=_create, read=['scale'])
     _state.add_field([serializable.Field('filename',
                                          save=True, read=True, isdatafile=True,
                                          test_for_eq=False),
@@ -107,7 +107,6 @@ class CatsMover(CyMover, serializable.Serializable):
         if tide is not None:
             self.tide = tide
 
-        self.scale = kwargs.pop('scale', self.mover.scale_type)
         self.scale_value = kwargs.get('scale_value',
                                       self.mover.scale_value)
 
@@ -141,10 +140,12 @@ class CatsMover(CyMover, serializable.Serializable):
 
     # Properties
 
-    scale = property(lambda self: bool(self.mover.scale_type),
-                     lambda self, val: setattr(self.mover,
-                                               'scale_type',
-                                               int(val)))
+    @property
+    def scale(self):
+        if self.scale_value != 1:
+            return True
+        else:
+            return False
 
     scale_refpoint = property(lambda self: self.mover.ref_point,
                               lambda self, val: setattr(self.mover,
