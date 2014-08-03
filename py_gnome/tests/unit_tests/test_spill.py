@@ -1064,7 +1064,9 @@ def test_setget():
 
 # todo: add SpatialRelease schema, then complete this test
 rel_time = datetime(2012, 8, 20, 13)
-rel_type = [PointLineRelease(rel_time, 5, (0, 0, 0))]
+rel_type = [PointLineRelease(release_time=rel_time,
+                             num_elements=5,
+                             start_position=(0, 0, 0))]
             #SpatialRelease(rel_time, np.zeros((4, 3), dtype=np.float64))]
 
 
