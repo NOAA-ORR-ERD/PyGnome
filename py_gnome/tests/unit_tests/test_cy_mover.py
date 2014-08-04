@@ -10,6 +10,7 @@ The functions being tested do not produce any results.
 '''
 
 from gnome.cy_gnome import cy_mover
+from gnome.cy_gnome import cy_current_mover
 
 cm = cy_mover.CyMover()
 
@@ -39,5 +40,3 @@ def test_prepare_for_model_step():
 def test_model_step_is_done():
     cm.model_step_is_done()
     assert True
-
-

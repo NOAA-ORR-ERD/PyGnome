@@ -30,45 +30,34 @@ cdef class CyCatsMover(CyCurrentMover):
     def __cinit__(self):
         'No plans to subclass CATSMover so no check to see if called by child'
         self.mover = new CATSMover_c()
-        print 'CATSMover_c.__cinit__: created self.mover'
         self.curr_mover = dc_mover_to_cmover(self.mover)
         self.cats = dynamic_cast_ptr(self.mover)
 
     def __dealloc__(self):
         # since this is allocated in this class, free memory here as well
         del self.mover
-        print 'CATSMover_c.__dealloc__: deleted self.mover'
         self.mover = NULL
         self.curr_mover = NULL
         self.cats = NULL
 
     def __init__(self, scale_value=1,
                  uncertain_eddy_diffusion=0, uncertain_eddy_v0=.1,
-                 ref_point=None, **kwargs):
+                 ref_point=None, *args, **kwargs):
         """
         Initialize the CyCatsMover which sets the properties for the underlying
         C++ CATSMover_c object
 
-        :param scale_type=0: There are 3 options in c++, however only
-                             two options are used:
-                             - SCALE_NONE = 0
-                             - SCALE_CONSTANT = 1
-                             The python CatsMover wrapper sets only 0 or 1.
-                             Default is NONE.
         :param scale_value=1: The value by which to scale the data.
-                              By default, this is 1 which means no scaling
-        :param uncertain_duration: how often does a given uncertain element
-                                   get reset
-        :param uncertain_time_delay: when does the uncertainly kick in.
-        :param up_cur_uncertain: Scale for uncertainty along the flow
-        :param down_cur_uncertain: Scale for uncertainty along the flow
-        :param right_cur_uncertain: Scale for uncertainty across the flow
-        :param left_cur_uncertain: Scale for uncertainty across the flow
+            By default, this is 1 which means no scaling
         :param uncertain_eddy_diffusion: Diffusion coefficient for
-                                         eddy diffusion. Default is 0.
+            eddy diffusion. Default is 0.
         :param uncertain_eddy_v0: Default is .1 (Check that this is still used)
-        :param ref_point: Reference point used by C++ CATSMover_c
-                          Default (long, lat, z) = (0., 0., -999)
+        :param ref_point: Reference point used by C++ CATSMover_c.
+            Default (long, lat, z) = (0., 0., -999)
+
+        .. note:: See base class for remaining properties which can be given
+        as *args, or **kwargs. The *args is for pickling to work since it
+        doesn't understand kwargs.
         """
         # If scale_value = 1, then scaleType is essentially None since scaling
         # by 1 doesn't do anything. So always set scaleType to be 1
@@ -85,7 +74,7 @@ cdef class CyCatsMover(CyCurrentMover):
                              'in the format (long, lat, z)')
 
         self.ref_point = ref_point
-        super(CyCatsMover, self).__init__(**kwargs)
+        super(CyCatsMover, self).__init__(*args, **kwargs)
         ## should not have to do this manually.
         ## make-shifting for now.
         #self.cats.fOptimize.isOptimizedForStep = 0
@@ -157,9 +146,13 @@ cdef class CyCatsMover(CyCurrentMover):
         Probably want to return filename as well
         """
         b_repr = super(CyCatsMover, self).__repr__()
-        c_repr = b_repr[:-1] + ('scale_value={0.scale_value}, '
-                                'uncertain_eddy_diffusion='
-                                '{0.uncertain_eddy_diffusion})').format(self)
+        b_add = b_repr[b_repr.find('(') + 1:]
+        c_repr = ('{0.__class__.__name__}(scale_value={0.scale_value}, '
+                  'uncertain_eddy_diffusion={0.uncertain_eddy_diffusion}, '
+                  'uncertain_eddy_v0={0.uncertain_eddy_v0}, '
+                  'ref_point=').format(self)
+        # append ref_point and base class props:
+        c_repr += 'ref_point=%s, ' % str(self.ref_point) + b_add
         return c_repr
 
     def __str__(self):
@@ -171,13 +164,14 @@ cdef class CyCatsMover(CyCurrentMover):
         return c_str
 
     def __reduce__(self):
-        b_reduce = super(CyCatsMover, self).__reduce__()
-        props = [self.uncertain_eddy_diffusion,
+        'optional arguments are omitted'
+        props = [self.scale_value,
+                 self.uncertain_eddy_diffusion,
                  self.uncertain_eddy_v0,
-                 self.ref_point,
-                 self.scale_value]
-        for prop in b_reduce[1]:
-            props.append(prop)
+                 self.ref_point]
+        b_props = super(CyCatsMover, self).__reduce__()
+        for b_prop in b_props[1]:
+            props.append(b_prop)
 
         return (CyCatsMover, tuple(props))
 
