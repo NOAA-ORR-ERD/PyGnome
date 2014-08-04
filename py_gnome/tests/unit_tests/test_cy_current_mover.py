@@ -1,6 +1,7 @@
 '''
-Test base class functionality CyCurrentMover
-Also test pickling of all current movers
+Test setting/getting properties defined in base class and pickle/unpickle
+This is done for CyCurrentMover and all its children as parametrized tests
+in this module
 '''
 import pickle
 
@@ -10,30 +11,25 @@ from gnome.cy_gnome.cy_current_mover import CyCurrentMover
 from gnome.cy_gnome.cy_cats_mover import CyCatsMover
 
 
-def test_init():
-    c = CyCurrentMover()
-    assert c.uncertain_duration == 172800
-    assert c.uncertain_time_delay == 0
-    assert c.up_cur_uncertain == 0.3
-    assert c.down_cur_uncertain == -0.3
-    assert c.right_cur_uncertain == 0.1
-    assert c.left_cur_uncertain == -0.1
-
-
-@pytest.mark.parametrize("prop", ['uncertain_duration',
-                                  'uncertain_time_delay',
-                                  'up_cur_uncertain',
-                                  'down_cur_uncertain',
-                                  'right_cur_uncertain',
-                                  'left_cur_uncertain'])
-def test_props(prop):
-    c = CyCurrentMover()
-    setattr(c, prop, 4)
-    assert getattr(c, prop) == 4
-
-
 'Test pickling all objects that derive from CyCurrentMover - parametrized test'
 obj = [CyCurrentMover, CyCatsMover]
+
+
+@pytest.mark.parametrize("obj", obj)
+def test_init(obj, CyCurrentMover_props):
+    props = CyCurrentMover_props
+    c = obj()
+    for prop in props:
+        assert getattr(c, prop[0]) == prop[1]
+
+
+@pytest.mark.parametrize("obj", obj)
+def test_props(obj, CyCurrentMover_props):
+    props = CyCurrentMover_props
+    c = obj()
+    for prop in props:
+        setattr(c, prop[0], 4)
+        assert getattr(c, prop[0]) == 4
 
 
 @pytest.mark.parametrize("obj", obj)

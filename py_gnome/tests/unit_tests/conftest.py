@@ -428,3 +428,21 @@ def clean_temp(request):
         return os.path.relpath(temp)    # do save/load tests with relative path
     else:
         return temp
+
+
+'''
+Default properties for CyCurrentMover base class - double check cython
+derived classes are getting/setting cython base class properties correctly
+'''
+
+
+@pytest.fixture(scope='function')
+def CyCurrentMover_props():
+    'gives the property names and default values for CyCurrentMover base class'
+    default_prop = (('uncertain_duration', 172800),
+                    ('uncertain_time_delay', 0),
+                    ('up_cur_uncertain', 0.3),
+                    ('down_cur_uncertain', -0.3),
+                    ('right_cur_uncertain', 0.1),
+                    ('left_cur_uncertain', -0.1))
+    return default_prop
