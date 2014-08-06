@@ -63,9 +63,6 @@ class GeoJson(Outputter, Serializable):
         }
 
     '''
-
-    outputfile_format = 'geojson_%05i.geojson'
-    outputfile_glob = 'geojson_*.geojson'
     _state = copy.deepcopy(Outputter._state)
 
     # need a schema and also need to override save so output_dir
@@ -73,12 +70,10 @@ class GeoJson(Outputter, Serializable):
     _state += [Field('round_data', update=True, save=True),
                Field('round_to', update=True, save=True),
                Field('output_dir', update=True, save=True)]
+    _schema = GeoJsonSchema
 
-    def __init__(self,
-        round_data=True,
-        round_to=4,
-        output_dir='./',
-        **kwargs):
+    def __init__(self, round_data=True, round_to=4, output_dir='./',
+                 **kwargs):
         '''
         :param bool round_data=True: if True, then round the numpy arrays
             containing float to number of digits specified by 'round_to'.
@@ -92,6 +87,7 @@ class GeoJson(Outputter, Serializable):
         self.round_data = round_data
         self.round_to = round_to
         self.output_dir = output_dir
+
         super(GeoJson, self).__init__(**kwargs)
 
     def prepare_for_model_run(self, model_start_time, spills, **kwargs):
@@ -112,7 +108,6 @@ class GeoJson(Outputter, Serializable):
 
         features = []
         for sc in self.cache.load_timestep(step_num).items():
-
             time = date_to_sec(sc.current_time_stamp)
             position = self._dataarray_p_types(sc['positions'])
             status = self._dataarray_p_types(sc['status_codes'])
@@ -142,21 +137,18 @@ class GeoJson(Outputter, Serializable):
             for ix, pos in enumerate(position):
                 st_code = oil_status._attr[oil_status._int.index(status[ix])]
                 feature = Feature(geometry=Point(pos[:2]),
-                                id=p_id[ix],
-                                properties={'depth': pos[2],
-                                    'step_num': step_num,
-                                    'spill_type': sc_type,
-                                    'spill_id': spill_id[ix],
-                                    'current_time': time,
-                                    'status_code': st_code})
+                                  id=p_id[ix],
+                                  properties={'depth': pos[2],
+                                              'step_num': step_num,
+                                              'spill_type': sc_type,
+                                              'spill_id': spill_id[ix],
+                                              'current_time': time,
+                                              'status_code': st_code})
 
                 features.append(feature)
 
         geojson = FeatureCollection(features)
-        output_filename = os.path.join(self.output_dir,
-                                    self.outputfile_format % step_num)
-        with open(output_filename, 'w') as outfile:
-            dump(geojson, outfile, indent=True)
+        output_filename = self.output_filename(geojson, step_num)
 
         # decided geojson should only be output to file
         # read data from file and send it to web client
@@ -166,6 +158,16 @@ class GeoJson(Outputter, Serializable):
                        'output_filename': output_filename}
 
         return output_info
+
+    def output_filename(self, json_content, step_num):
+        file_format = 'geojson_{0:06d}.geojson'
+        filename = os.path.join(self.output_dir,
+                                file_format.format(step_num))
+
+        with open(filename, 'w') as outfile:
+            dump(json_content, outfile, indent=True)
+
+        return filename
 
     def _dataarray_p_types(self, data_array):
         '''
@@ -188,6 +190,9 @@ class GeoJson(Outputter, Serializable):
     def rewind(self):
         'remove previously written files'
         super(GeoJson, self).rewind()
-        files = glob(os.path.join(self.output_dir, self.outputfile_glob))
-        for file_ in files:
-            os.remove(file_)
+        self.clean_output_files()
+
+    def clean_output_files(self):
+        files = glob(os.path.join(self.output_dir, 'geojson_*.geojson'))
+        for f in files:
+            os.remove(f)

@@ -8,6 +8,7 @@ from datetime import datetime, timedelta
 
 import pytest
 from pytest import raises
+
 from conftest import sample_sc_release
 
 import numpy
@@ -17,11 +18,10 @@ from gnome.utilities.inf_datetime import InfDateTime
 
 from gnome.array_types import mass, rise_vel, mass_components, half_lives
 from gnome.spill.elements import (ElementType,
-                            InitMassFromTotalMass,
-                            InitRiseVelFromDist,
-                            InitMassComponentsFromOilProps,
-                            InitHalfLivesFromOilProps
-                            )
+                                  InitMassFromTotalMass,
+                                  InitRiseVelFromDist,
+                                  InitMassComponentsFromOilProps,
+                                  InitHalfLivesFromOilProps)
 
 from gnome.weatherers import Weatherer
 
