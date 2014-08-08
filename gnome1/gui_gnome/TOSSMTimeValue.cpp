@@ -28,6 +28,7 @@ TOSSMTimeValue::TOSSMTimeValue(TMover *theOwner,TimeValuePairH tvals,short userU
 	bOSSMStyle = true;
 	fTransport = 0;
 	fVelAtRefPt = 0;
+	fInterpolationType = LINEAR;	// changed from hermite 8/6/14
 }
 
 
@@ -44,6 +45,7 @@ TOSSMTimeValue::TOSSMTimeValue(TMover *theOwner) : TTimeValue(theOwner)
 	bOSSMStyle = true;
 	fTransport = 0;
 	fVelAtRefPt = 0;
+	fInterpolationType = LINEAR;	// changed from hermite 8/6/14
 }
 
 #define TOSSMMAXNUMDATALINESINLIST 201
@@ -148,9 +150,12 @@ Boolean TOSSMTimeValue::FunctionEnabled(ListItem item, short buttonID)
 }
 
 
+//#define TOSSMTimeValueREADWRITEVERSION 2 // changed hydrology dialog 2/22/02 
+#define TOSSMTimeValueREADWRITEVERSION 3 // added interpolation type 8/6/14
+
 OSErr TOSSMTimeValue::Write(BFPB *bfpb)
 {
-	long i, n = 0, version = /*1*/2;	// changed hydrology dialog 2/22/02
+	long i, n = 0, version = TOSSMTimeValueREADWRITEVERSION;	
 	ClassID id = GetClassID ();
 	TimeValuePair pair;
 	OSErr err = 0;
@@ -182,6 +187,8 @@ OSErr TOSSMTimeValue::Write(BFPB *bfpb)
 			if (err = WriteMacValue(bfpb, pair.value.v)) return err;
 		}
 	
+	if (err = WriteMacValue(bfpb, fInterpolationType)) return err;
+	
 	return 0;
 }
 
@@ -201,7 +208,7 @@ OSErr TOSSMTimeValue::Read(BFPB *bfpb)
 	if (id != GetClassID ()) { TechError("TOSSMTimeValue::Read()", "id != TYPE_OSSMTIMEVALUES", 0); return -1; }
 	if (err = ReadMacValue(bfpb, &version)) return err;
 	//if (version != 1) { printSaveFileVersionError(); return -1; }
-	if (version > 2) { printSaveFileVersionError(); return -1; }
+	if (version > TOSSMTimeValueREADWRITEVERSION) { printSaveFileVersionError(); return -1; }
 	if (err = ReadMacValue(bfpb, fileName, kMaxNameLen)) return err;
 
 	// these two fields were not in older versions...
@@ -234,6 +241,15 @@ OSErr TOSSMTimeValue::Read(BFPB *bfpb)
 			}
 	}
 	
+	if (version>2)
+	{
+		//if (err = ReadMacValue(bfpb, fStationName, kMaxNameLen)) return err;
+		//if (err = ReadMacValue(bfpb, &fStationPosition.pLat)) return err;	// could get this from CATSMover refP
+		//if (err = ReadMacValue(bfpb, &fStationPosition.pLong)) return err;
+		if (err = ReadMacValue(bfpb, &fInterpolationType)) return err;
+	}
+	else fInterpolationType = HERMITE;
+
 	return err;
 }
 
