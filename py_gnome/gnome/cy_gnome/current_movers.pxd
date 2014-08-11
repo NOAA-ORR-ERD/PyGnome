@@ -29,10 +29,10 @@ cdef extern from "CATSMover_c.h":
         short           scaleType   # set this automatically!
         double          scaleValue
         Boolean         bTimeFileActive
-        WorldPoint3D    refPt3D
 
-        int   TextRead(char* path)
-        void  SetRefPosition (WorldPoint3D p)
+        int             TextRead(char* path)
+        void            SetRefPosition(WorldPoint3D p)
+        WorldPoint3D    GetRefPosition()
 
         OSErr get_move(int n, unsigned long model_time, unsigned long step_len,
                        WorldPoint3D* ref, WorldPoint3D* delta, short* LE_status,

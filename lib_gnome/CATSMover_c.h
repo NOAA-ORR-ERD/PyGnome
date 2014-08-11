@@ -60,7 +60,8 @@ public:
 	virtual void		Dispose ();
 	virtual OSErr		AddUncertainty(long setIndex, long leIndex,VelocityRec *patVelocity,double timeStep,Boolean useEddyUncertainty);
 	void				SetRefPosition(WorldPoint3D pos) {this->refPt3D = pos; }
-	void				GetRefPosition (WorldPoint3D *pos) { *(pos) = refPt3D; }
+	void				GetRefPosition (WorldPoint3D *pos) { (*pos) = this->refPt3D; }
+	WorldPoint3D		GetRefPosition () { return this->refPt3D; }	// overloaded for pyGnome
 	virtual WorldRect GetGridBounds(){return fGrid->GetBounds();}	
 	void				SetTimeDep (TOSSMTimeValue *newTimeDep);
 	TOSSMTimeValue		*GetTimeDep () { return (timeDep); }

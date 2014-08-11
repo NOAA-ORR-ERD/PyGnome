@@ -111,20 +111,11 @@ cdef class CyCatsMover(CyCurrentMover):
             TODO: make sure this is consistent with the format of
                   CyShioTime.ref_point
             """
-            if self.cats.refPt3D.z == -999:
+            ref = self.cats.GetRefPosition()
+            if int(ref.z) == -999:
                 return None
             else:
-                return (self.cats.refPt3D.p.pLong / 1.e6,
-                        self.cats.refPt3D.p.pLat / 1.e6,
-                        self.cats.refPt3D.z)
-            #==================================================================
-            # if self.cats.refZ == -999:
-            #     return None
-            # else:
-            #     return (self.cats.refP.pLong / 1.e6,
-            #             self.cats.refP.pLat / 1.e6,
-            #             self.cats.refZ)
-            #==================================================================
+                return (ref.p.pLong / 1.e6, ref.p.pLat / 1.e6, ref.z)
 
         def __set__(self, ref_point):
             """
