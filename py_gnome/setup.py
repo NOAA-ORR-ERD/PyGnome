@@ -470,3 +470,26 @@ setup(name='pyGnome',
 
 # Change current working directory back to what user originally had
 os.chdir(CWD)
+
+# ## total kludge to get linking to work right with Anaconda:
+## note: this doesn't work, as the env variable goes away with new process.
+## but I kept the code here, as we might want to use something similar some day.
+# # is this an Anaconda environment:
+# if sys.platform == 'darwin':
+#     import sys, os
+#     sub_path = "Anaconda/anaconda/lib/python2.7"
+#     for p in sys.path:
+#         print p
+#         if p.endswith(sub_path):
+#             print "found Anaconda lib path"
+#             break
+#     else:
+#         print "didn't find an Anaconda path"
+#         p = ''
+#     if p:
+#         print "setting lib path for Anaconda"
+#         lib_path = os.path.split(p)[0]
+#         print lib_path
+#         os.system("export DYLD_LIBRARY_PATH=%s"%lib_path)
+#         #os.environ['DYLD_LIBRARY_PATH'] = lib_path
+

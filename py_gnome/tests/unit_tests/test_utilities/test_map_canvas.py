@@ -103,4 +103,26 @@ def test_basemap_wide():
 
     assert True
 
+def test_draw_raster_map():
+    """
+    tests drawing the raster map
+    """
+    import gnome
+    polygons = haz_files.ReadBNA(input_file, 'PolygonSet')
+
+    gmap = map_canvas.MapCanvas((1000, 1000), polygons)
+    gmap.viewport = ((-127.47,48.10),(-127.22, 48.24))
+    gmap.draw_background()
+
+    # make a raster map out of the BNA:
+    raster_map = gnome.map.MapFromBNA(input_file, raster_size=10000)
+
+    gmap.draw_raster_map(raster_map, outline=True)
+
+    gmap.save_background(os.path.join(basedir, 'raster.png'))
+    
+    assert False
+
+
+
 

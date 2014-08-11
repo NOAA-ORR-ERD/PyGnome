@@ -260,11 +260,6 @@ class RasterMap(GnomeMap):
         """
         create a new RasterMap
 
-        :param refloat_halflife: The halflife for refloating off land
-                                 -- assumed to be the same for all land.
-                                 0.0 means all refloat every time step
-                                 < 0.0 means never re-float.
-        :type refloat_halflife: float. Units are hours
 
         :param bitmap_array: A numpy array that stores the land-water map
         :type bitmap_array: a (W,H) numpy array of type uint8
@@ -274,6 +269,12 @@ class RasterMap(GnomeMap):
         :type projection: :class:`gnome.map_canvas.Projection`
 
         Optional arguments (kwargs)
+
+        :param refloat_halflife: The halflife for refloating off land
+                                 -- assumed to be the same for all land.
+                                 0.0 means all refloat every time step
+                                 < 0.0 means never re-float.
+        :type refloat_halflife: float. Units are hours
 
         :param map_bounds: The polygon bounding the map -- could be larger
                            or smaller than the land raster
@@ -322,6 +323,7 @@ class RasterMap(GnomeMap):
         im = im.transpose(Image.FLIP_TOP_BOTTOM)
 
         im.save(filename, format='PNG')
+
 
     def _on_land_pixel(self, coord):
         """

@@ -13,6 +13,8 @@ Used by map_canvas code and map code.
 
 NOTE: all coordinates are takes as (lon, lat, depth (even though depth is always ignored
 """
+# make sure to get float division everywhere
+from __future__ import division
 
 import numpy as np
 
@@ -165,7 +167,7 @@ class GeoProjection(object):
         (z is ignored, and there is no z in the returned array)
         
         returns:  the pixel coords as a similar Nx2 array of integer x,y coordinates
-        (using the y = 0 at the top, and y increasing down) -- a
+        (using the y = 0 at the top, and y increasing down)
         
         NOTE: the values between the minimum of a pixel value to less than the
               max of a pixel range are in that pixel, so  a point exactly at 
@@ -254,29 +256,18 @@ class GeoProjection(object):
         (using the y = 0 at the top, and y increasing down)
          """
 
-        # # note: untested!
-
         coords = np.asarray(coords)
         if np.issubdtype(coords.dtype, int):
-
             # convert to float64:
-
             coords = coords.astype(np.float64)
 
             # add 0.5 to shift to center of pixel
-
             coords += 0.5
-
         # shift to pixel center coords
-
         coords -= self.offset
-
         # scale to lat-lon
-
         coords /= self.scale
-
         # shift from center:
-
         coords += self.center
 
         return coords
@@ -329,7 +320,7 @@ class FlatEarthProjection(GeoProjection):
     def lonlat_to_meters(lon_lat, ref_positions):
         """
         Converts from delta longitude-latitude to delta meters, using the
-        Flat-Earth projection. This shold be a reversal of meters_to_latlon.
+        Flat-Earth projection. This should be a reversal of meters_to_latlon.
         
         This function mainly used for testing
 
@@ -434,10 +425,19 @@ class FlatEarthProjection(GeoProjection):
 
         bounding_box = np.asarray(bounding_box, dtype=np.float64)
 
+        print "\nin set_scale"
+        print "bounding box:", bounding_box
+
         self.center = np.mean(bounding_box, axis=0)
-        self.offset = np.array(image_size, dtype=np.float64) / 2
+        self.offset = np.array(image_size, dtype=np.float64) / 2.0
+
+        print "center, offset:", self.center, self.offset
+        bb = bounding_box
+        print (bb[0,0] + bb[1,0])/2
+        print (bb[0,1] + bb[1,1])/2
 
         lon_scale = np.cos(np.deg2rad(self.center[1]))
+        print "lon_scale",lon_scale
 
         # compute BB to fit image
 
@@ -446,6 +446,8 @@ class FlatEarthProjection(GeoProjection):
         # width scaled to longitude
 
         w = (bounding_box[1, 0] - bounding_box[0, 0]) * lon_scale
+
+        print "width/height ratio", w, h, w/h
 
         if w / h > image_size[0] / image_size[1]:
             s = image_size[0] / w
