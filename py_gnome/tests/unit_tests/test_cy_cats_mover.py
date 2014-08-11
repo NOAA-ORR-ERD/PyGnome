@@ -136,7 +136,7 @@ def test_default_props():
     """
 
     assert c_cats.scale_value == 1
-    assert c_cats.uncertain_eddy_diffusion = 0
+    assert c_cats.uncertain_eddy_diffusion == 0
     assert c_cats.ref_point is None
 
 

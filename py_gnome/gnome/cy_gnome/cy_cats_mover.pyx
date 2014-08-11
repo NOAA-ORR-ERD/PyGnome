@@ -53,7 +53,7 @@ cdef class CyCatsMover(CyCurrentMover):
             eddy diffusion. Default is 0.
         :param uncertain_eddy_v0: Default is .1 (Check that this is still used)
         :param ref_point: Reference point used by C++ CATSMover_c.
-            Default (long, lat, z) = (0., 0., -999)
+            Default (long, lat, z) = (-999, -999, -999)
 
         .. note:: See base class for remaining properties which can be given
         as *args, or **kwargs. The *args is for pickling to work since it
@@ -67,7 +67,7 @@ cdef class CyCatsMover(CyCurrentMover):
 
         if not ref_point:
             # defaults (-999, -999, -999)
-            ref_point = (0., 0., -999)
+            ref_point = (-999, -999, -999)
 
         if not isinstance(ref_point, (list, tuple)) or len(ref_point) != 3:
             raise ValueError('CyCatsMover.__init__(): ref_point needs to be '
@@ -111,12 +111,20 @@ cdef class CyCatsMover(CyCurrentMover):
             TODO: make sure this is consistent with the format of
                   CyShioTime.ref_point
             """
-            if self.cats.refZ == -999:
+            if self.cats.refPt3D.z == -999:
                 return None
             else:
-                return (self.cats.refP.pLong / 1.e6,
-                        self.cats.refP.pLat / 1.e6,
-                        self.cats.refZ)
+                return (self.cats.refPt3D.p.pLong / 1.e6,
+                        self.cats.refPt3D.p.pLat / 1.e6,
+                        self.cats.refPt3D.z)
+            #==================================================================
+            # if self.cats.refZ == -999:
+            #     return None
+            # else:
+            #     return (self.cats.refP.pLong / 1.e6,
+            #             self.cats.refP.pLat / 1.e6,
+            #             self.cats.refZ)
+            #==================================================================
 
         def __set__(self, ref_point):
             """
@@ -164,16 +172,14 @@ cdef class CyCatsMover(CyCurrentMover):
         return c_str
 
     def __reduce__(self):
-        'optional arguments are omitted'
+        '''
+        required or pickle/unpickle
+        '''
         props = [self.scale_value,
                  self.uncertain_eddy_diffusion,
                  self.uncertain_eddy_v0,
                  self.ref_point]
-        b_props = super(CyCatsMover, self).__reduce__()
-        for b_prop in b_props[1]:
-            props.append(b_prop)
-
-        return (CyCatsMover, tuple(props))
+        return self._append_base_reduce(props)
 
     def set_shio(self, CyShioTime cy_shio):
         """

@@ -4,167 +4,173 @@ cimport numpy as cnp
 import numpy as np
 
 from type_defs cimport *
-from movers cimport Mover_c
+
+from cy_current_mover cimport CyCurrentMover, dc_mover_to_cmover
 from current_movers cimport ComponentMover_c, CATSMover_c
+from movers cimport Mover_c
 from gnome import basic_types
 from gnome.cy_gnome.cy_ossm_time cimport CyOSSMTime
 #from gnome.cy_gnome.cy_shio_time cimport CyShioTime
 from gnome.cy_gnome cimport cy_mover
-from gnome.cy_gnome.cy_helpers cimport to_bytes
+from gnome.cy_gnome.cy_helpers import filename_as_bytes
 
 """
 Dynamic casts are not currently supported in Cython - define it here instead.
 Since this function is custom for each mover, just keep it with the definition for each mover
 """
 cdef extern from *:
-    ComponentMover_c* dynamic_cast_ptr "dynamic_cast<ComponentMover_c *>" (Mover_c *) except NULL
-    #CATSMover_c* dynamic_cast_ptr "dynamic_cast<CATSMover_c *>" (Mover_c *) except NULL
+    ComponentMover_c* dynamic_cast_ptr "dynamic_cast<ComponentMover_c *>" \
+        (Mover_c *) except NULL
 
 
-cdef class CyComponentMover(cy_mover.CyMover):
+cdef class CyComponentMover(CyCurrentMover):
 
     cdef ComponentMover_c *component
     #cdef CATSMover_c *cats_pattern1
     #cdef CATSMover_c *cats_pattern2
     #cdef CATSMover_c *catsmover1
     #cdef CATSMover_c *catsmover2
-    
+
     def __cinit__(self):
+        'No plans to subclass this so no check to see who is calling me'
         self.mover = new ComponentMover_c()
+        self.curr_mover = dc_mover_to_cmover(self.mover)
         self.component = dynamic_cast_ptr(self.mover)
-    
+
     def __dealloc__(self):
-        del self.mover  # since this is allocated in this class, free memory here as well
+        # since this is allocated in this class, free memory here as well
+        del self.mover
+        self.curr_mover = NULL
         self.component = NULL
-    
+
     def text_read(self, cats_file1, cats_file2=None):
         """
         .. function::text_read
 
         """
         cdef OSErr err
-        cdef bytes pattern1, pattern2
 
-        cats_file1 = os.path.normpath(cats_file1)
-        pattern1 = to_bytes(unicode(cats_file1))
+        for c_file in (cats_file1, cats_file2):
+            if c_file:
+                pattern = filename_as_bytes(c_file)
+                err = self.component.TextRead(pattern, '')
+                if err != 0:
+                    '''
+                    For now just raise an OSError - until the types of possible
+                    errors are defined and enumerated
+                    '''
+                    raise OSError("ComponentMover_c.TextRead returned an error"
+                                  " for {0}".format(pattern))
 
-        if cats_file2 is None:
-            err = self.component.TextRead(pattern1, '')
-        else:
-            cats_file2 = os.path.normpath(cats_file2)
-            pattern2 = to_bytes(unicode(cats_file2))
-            err = self.component.TextRead(pattern1, pattern2)
-
-        if err != 0:
-            """
-            For now just raise an OSError - until the types of possible errors
-            are defined and enumerated
-            """
-            raise OSError("ComponentMover_c.TextRead returned an error.")
-
-    def __init__(self, pat1_angle=0, pat1_speed=10, pat1_speed_units = 2, pat1_scale_to_value=.1):
+    def __init__(self,
+                 pat1_angle=0,
+                 pat1_speed=10,
+                 pat1_speed_units=2,
+                 pat1_scale_to_value=0.1,
+                 *args, **kwargs):
         """
-        Initialize the CyComponentMover which sets the properties for the underlying C++ ComponentMover_c object
+        Initialize the CyComponentMover which sets the properties for the
+        underlying C++ ComponentMover_c object
 
         :param pat1_angle=0: The angle for pattern 1
-        :param pat1_speed=10: 
+        :param pat1_speed=10: speed for pattern 1
         :param pat1_speed_units=m/s: Speed units
-        :param pat1_scale_to_value=0.1: 
-
-		Optional parameters:
+        :param pat1_scale_to_value=0.1:
         :param pat2_angle=0: The angle for pattern 2
-        :param pat2_speed=10: 
+        :param pat2_speed=10:
         :param pat2_speed_units=m/s: Speed units
-        :param pat2_scale_to_value=0.1: 
+        :param pat2_scale_to_value=0.1:
 
+        .. note:: See base class for remaining properties which can be given
+        as *args, or **kwargs. The *args is for pickling to work since it
+        doesn't understand kwargs.
         """
-        cdef WorldPoint p
         self.component.pat1Angle = pat1_angle
         self.component.pat1Speed = pat1_speed
         self.component.pat1SpeedUnits = pat1_speed_units
         self.component.pat1ScaleToValue = pat1_scale_to_value
-        #self.catsmover1 = NULL
-        #self.catsmover2 = NULL
 
     property pat1_angle:
         def __get__(self):
             return self.component.pat1Angle
-        
-        def __set__(self,value):
+
+        def __set__(self, value):
             self.component.pat1Angle = value
-    
+
     property pat1_speed:
         def __get__(self):
             return self.component.pat1Speed
-        
-        def __set__(self,value):
+
+        def __set__(self, value):
             self.component.pat1Speed = value
-            
+
     property pat1_speed_units:
         def __get__(self):
             return self.component.pat1SpeedUnits
-        
-        def __set__(self,value):
+
+        def __set__(self, value):
             self.component.pat1SpeedUnits = value
-            
+
     property pat1_scale_to_value:
         def __get__(self):
             return self.component.pat1ScaleToValue
-        
-        def __set__(self,value):
-            self.component.pat1ScaleToValue = value    
-    
+
+        def __set__(self, value):
+            self.component.pat1ScaleToValue = value
+
     property pat2_angle:
         def __get__(self):
             return self.component.pat2Angle
-        
-        def __set__(self,value):
+
+        def __set__(self, value):
             self.component.pat2Angle = value
-    
+
     property pat2_speed:
         def __get__(self):
             return self.component.pat2Speed
-        
-        def __set__(self,value):
+
+        def __set__(self, value):
             self.component.pat2Speed = value
-            
+
     property pat2_speed_units:
         def __get__(self):
             return self.component.pat2SpeedUnits
-        
-        def __set__(self,value):
+
+        def __set__(self, value):
             self.component.pat2SpeedUnits = value
-            
+
     property pat2_scale_to_value:
         def __get__(self):
             return self.component.pat2ScaleToValue
-        
-        def __set__(self,value):
-            self.component.pat2ScaleToValue = value    
-    
+
+        def __set__(self, value):
+            self.component.pat2ScaleToValue = value
+
     property ref_point:
         def __get__(self):
             """
             returns the tuple containing (long, lat) of reference point if it is defined
             by the user otherwise it returns None 
-            
+
             """
-            return (self.component.refP.pLong/1.e6, self.component.refP.pLat/1.e6)
-    
-        def __set__(self,ref_point):
+            return (self.component.refP.pLong/1.e6,
+                    self.component.refP.pLat/1.e6,
+                    0.0)
+
+        def __set__(self, ref_point):
             """
             accepts a list or a tuple
             will not work with a numpy array since indexing assumes a list or a tuple
-            
+
             takes only (long, lat), if length is bigger than 2, it uses the 1st 2 datapoints
-            
+
             """
             ref_point = np.asarray(ref_point)   # make it a numpy array
             cdef WorldPoint p
             p.pLong = ref_point[0]*10**6    # should this happen in C++?
             p.pLat = ref_point[1]*10**6
             self.component.SetRefPosition(p)
-         
+
     def __repr__(self):
         """
         Return an unambiguous representation of this object so it can be recreated
