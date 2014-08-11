@@ -1,35 +1,70 @@
 
-from sqlalchemy import (
-    Table,
-    Column,
-    Integer,
-    Text,
-    String,
-    Float,
-    Boolean,
-    Enum,
-    ForeignKey,
-    )
+from sqlalchemy import (Table,
+                        Column,
+                        Integer,
+                        Text,
+                        String,
+                        Float,
+                        Boolean,
+                        Enum,
+                        ForeignKey)
 
-from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.ext.declarative import declarative_base as real_declarative_base
 
-from sqlalchemy.orm import (
-    scoped_session,
-    sessionmaker,
-    relationship,
-    )
+from sqlalchemy.orm.relationships import RelationshipProperty
+from sqlalchemy.orm import (scoped_session,
+                            sessionmaker,
+                            relationship)
 
 from zope.sqlalchemy import ZopeTransactionExtension
 
 DBSession = scoped_session(sessionmaker(extension=ZopeTransactionExtension()))
-Base = declarative_base()
+
+#Base = declarative_base()
+
+# Let's make this a class decorator
+declarative_base = lambda cls: real_declarative_base(cls=cls)
+
+
+@declarative_base
+class Base(object):
+    """
+    Add some default properties and methods to the SQLAlchemy declarative base.
+    """
+
+    @property
+    def columns(self):
+        return [c.name for c in self.__table__.columns]
+
+    @property
+    def relationship_columns(self):
+        return sorted([p.key for p in self.__mapper__.iterate_properties
+                if isinstance(p, RelationshipProperty)])
+
+    @property
+    def columnitems(self):
+        ret = dict((c, getattr(self, c)) for c in self.columns)
+        for r in self.relationship_columns:
+            try:
+                ret[r] = [a.tojson() for a in getattr(self, r)]
+            except TypeError:
+                # backref objects are expected to generate this exception
+                pass
+        return ret
+
+    def __repr__(self):
+        return '{}({})'.format(self.__class__.__name__, self.columnitems)
+
+    def tojson(self):
+        return self.columnitems
 
 
 # UNMAPPED association table (Oil <--many-to-many--> Synonym)
 oil_to_synonym = Table('oil_to_synonym', Base.metadata,
-        Column('oil_id', Integer, ForeignKey('oils.id')),
-        Column('synonym_id', Integer, ForeignKey('synonyms.id')),
-        )
+                       Column('oil_id', Integer, ForeignKey('oils.id')),
+                       Column('synonym_id', Integer,
+                              ForeignKey('synonyms.id')),
+                       )
 
 
 class Oil(Base):
@@ -157,7 +192,8 @@ class Oil(Base):
         self.conrandson_residuum = kwargs.get('Conrandson Residuum')
         self.conrandson_crude = kwargs.get('Conrandson Crude')
         self.dispersability_temp = kwargs.get('Dispersability Temp (K)')
-        self.preferred_oils = True if kwargs.get('Preferred Oils') == 'X' else False
+        self.preferred_oils = (True if kwargs.get('Preferred Oils') == 'X'
+                               else False)
         self.koy = kwargs.get('K0Y')
 
     @property
@@ -182,9 +218,11 @@ class Oil(Base):
         # first we get the kinematic viscosities if they exist
         ret = []
         if self.kvis:
-            ret = [(k.meters_squared_per_sec, k.ref_temp,
-                    0.0 if k.weathering == None else k.weathering)
+            ret = [(k.meters_squared_per_sec,
+                    k.ref_temp,
+                    (0.0 if k.weathering == None else k.weathering))
                     for k in self.kvis]
+
         if self.dvis:
             # If we have any DVis records, we need to get the
             # dynamic viscosities, convert to kinematic, and
@@ -194,31 +232,40 @@ class Oil(Base):
             # the closest temperature in order to calculate the kinematic.
             # There are lots of oil entries where the dvis do not have
             # matching densities for (temp, weathering)
-            densities = [(d.kg_per_m_cubed, d.ref_temp,
-                         0.0 if d.weathering == None else d.weathering)
+            densities = [(d.kg_per_m_cubed,
+                          d.ref_temp,
+                          (0.0 if d.weathering == None else d.weathering))
                          for d in self.densities]
+
             for v, t, w in [(d.kg_per_msec, d.ref_temp, d.weathering)
                             for d in self.dvis]:
                 if w == None:
                     w = 0.0
+
                 # if we already have a KVis at the same
                 # (temperature, weathering), we do not need
                 # another one
-                if len([vv for vv in ret if vv[1] == t and vv[2] == w]) > 0:
+                if len([vv for vv in ret
+                        if vv[1] == t and vv[2] == w]) > 0:
                     continue
 
                 # grab the densities with matching weathering
                 dlist = [(d[0], abs(t - d[1]))
-                                for d in densities
-                                if d[2] == w]
+                         for d in densities
+                         if d[2] == w]
+
                 if len(dlist) == 0:
                     continue
+
                 # grab the density with the closest temperature
                 density = sorted(dlist, key=lambda x: x[1])[0][0]
+
                 # kvis = dvis/density
                 ret.append(((v / density), t, w))
+
         ret.sort(key=lambda x: (x[2], x[1]))
         kwargs = ['(m^2/s)', 'Ref Temp (K)', 'Weathering']
+
         # caution: although we will have a list of real
         #          KVis objects, they are not persisted
         #          in the database.
