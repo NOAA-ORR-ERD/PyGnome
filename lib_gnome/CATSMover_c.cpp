@@ -39,7 +39,9 @@ CATSMover_c::CATSMover_c () : CurrentMover_c() {
 	bTimeFileActive = false;
 	fEddyDiffusion = 0; // JLM 5/20/991e6; // cm^2/sec
 	fEddyV0 = 0.1; // JLM 5/20/99
-
+	refPt3D.p.pLong = -999; // JS - see if we can initialize to NULL
+	refPt3D.p.pLat = -999;
+	refPt3D.z = -999;
 	bApplyLogProfile = false;
 
 	memset(&fOptimize, 0, sizeof(fOptimize));
@@ -95,22 +97,18 @@ OSErr CATSMover_c::ComputeVelocityScale(const Seconds& model_time)
 {
 	double length;
 	VelocityRec myVelocity;
-	WorldPoint3D refPt3D = { {0, 0}, 0.};
 
 	if (this->timeDep && this->timeDep->fFileType == HYDROLOGYFILE) {
 		this->refScale = this->timeDep->fScaleFactor;
 		return noErr;
 	}
 
-	refPt3D.p = refP;
-	refPt3D.z = 0.;
-
 	switch (scaleType) {
 		case SCALE_NONE:
 			this->refScale = 1;
 			return noErr;
 		case SCALE_CONSTANT:
-			myVelocity = GetPatValue(refPt3D);
+			myVelocity = GetPatValue(this->refPt3D);
 			length = sqrt(myVelocity.u * myVelocity.u + myVelocity.v * myVelocity.v);
 
 			/// check for too small lengths
@@ -145,12 +143,12 @@ OSErr CATSMover_c::ComputeVelocityScale(const Seconds& model_time)
 						// JLM, note: we are implicitly matching by file name above
 						// JLM: This code left out the possibility of a time file
 						// so use GetScaledPatValue() instead
-						theirVelocity = mover->GetScaledPatValue(model_time, refPt3D, 0);
+						theirVelocity = mover->GetScaledPatValue(model_time, this->refPt3D, 0);
 
 						theirLengthSq = (theirVelocity.u * theirVelocity.u + theirVelocity.v * theirVelocity.v);
 
 						// JLM, we need to adjust the movers pattern 
-						myVelocity = GetPatValue(refPt3D);
+						myVelocity = GetPatValue(this->refPt3D);
 						myLengthSq = (myVelocity.u * myVelocity.u + myVelocity.v * myVelocity.v);
 
 						// next problem is that the scale 
