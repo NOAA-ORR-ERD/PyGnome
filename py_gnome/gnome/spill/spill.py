@@ -270,42 +270,68 @@ class Spill(serializable.Serializable):
         raise AttributeError("{0} attribute does not exist in element_type"
             " or release object".format(prop))
 
-    def is_initializer(self, key):
-        '''
-        a way to test whether an initializer for the given 'key' or data_array
-        exists
-        '''
-        if key in self.element_type.initializers:
-            return True
-        else:
+    def is_initializer(self, name):
+        init = [i for i in self.element_type.initializers if i.name == name]
+        if len(init) == 0:
             return False
+        else:
+            return True
 
-    def get_initializer(self, key):
+    def get_initializer(self, name):
         '''
-        returns the initializer associated with 'key'.
+        returns the initializer with given 'name'
 
-        The 'key' refers to the data_array that a mover requires and that the
-        initializer is setting. For instance,
+        The default 'name' of an initializer is the data_array that a mover
+        requires and that the initializer is setting. For instance,
 
-            {'rise_vel' : InitRiseVelFromDist()}
+            init = InitRiseVelFromDist()
+            init.name is 'rise_vel' by default
 
         is an initializer that sets the 'rise_vel' if a RiseVelocityMover is
-        included in the Model.
+        included in the Model. User can change the name of the initializer
         '''
-        if self.is_initializer(key):
-            return self.element_type.initializers[key]
+        init = [i for i in self.element_type.initializers if i.name == name]
 
-    def set_initializer(self, key, init):
+        if len(init) == 0:
+            return None
+        else:
+            return (init, init[0])[len(init) == 1]
+
+    def set_initializer(self, init):
         '''
-        set the given initializer. The 'key' refers to the data_array that a
+        set the given initializer. Function looks for first initializer in list
+        with same 'name' and replaces it if found else it appends this to list
+        of initializers.
+        The default 'name' of an initializer refers to the data_array that a
         mover requires and that the initializer is setting. For instance,
 
-            {'rise_vel' : InitRiseVelFromDist()}
+            init = InitRiseVelFromDist()
+            init.name is 'rise_vel' by default
 
         is an initializer that sets the 'rise_vel' if a RiseVelocityMover is
         included in the Model.
         '''
-        self.element_type.initializers[key] = init
+        ix = [ix for ix, i in enumerate(self.element_type.initializers)
+              if i.name == init.name][0]
+        self.element_type.initializers[ix] = init
+
+    def del_initializer(self, name):
+        '''
+        delete the initializer with given 'name'
+
+        The default 'name' of an initializer is the data_array that a mover
+        requires and that the initializer is setting. For instance,
+
+            init = InitRiseVelFromDist()
+            init.name is 'rise_vel' by default
+
+        is an initializer that sets the 'rise_vel' if a RiseVelocityMover is
+        included in the Model. User can change the name of the initializer
+        '''
+        ixs = [ix for ix, i in enumerate(self.element_type.initializers)
+               if i.name == name]
+        for ix in ixs:
+            del self.element_type.initializers[ix]
 
     @property
     def volume_units(self):

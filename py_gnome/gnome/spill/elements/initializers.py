@@ -100,6 +100,7 @@ class InitWindages(InitBaseClass, Serializable):
                                  'windage_range': array_types.windage_range,
                                  'windage_persist': array_types.windage_persist
                                  })
+        self.name = 'windages'
 
     def __repr__(self):
         return ('{0.__class__.__module__}.{0.__class__.__name__}('
@@ -166,6 +167,7 @@ class InitMassComponentsFromOilProps(InitBaseClass, Serializable):
         super(InitMassComponentsFromOilProps, self).__init__()
         self.array_types.update({'mass_components': array_types.mass_components
                                  })
+        self.name = 'mass_components'
 
     def initialize(self, num_new_particles, spill, data_arrays, substance):
         '''
@@ -211,6 +213,7 @@ class InitHalfLivesFromOilProps(InitBaseClass, Serializable):
         """
         super(InitHalfLivesFromOilProps, self).__init__()
         self.array_types.update({'half_lives': array_types.half_lives})
+        self.name = 'half_lives'
 
     def initialize(self, num_new_particles, spill, data_arrays, substance):
         '''
@@ -253,6 +256,7 @@ class InitMassFromTotalMass(InitBaseClass, Serializable):
         """
         super(InitMassFromTotalMass, self).__init__()
         self.array_types.update({'mass': array_types.mass})
+        self.name = 'mass'
 
     def initialize(self, num_new_particles, spill, data_arrays, substance):
         if spill.mass is None:
@@ -300,6 +304,7 @@ class InitMassFromPlume(InitBaseClass, Serializable):
         """
         super(InitMassFromPlume, self).__init__()
         self.array_types.update({'mass': array_types.mass})
+        self.name = 'mass'
 
     def initialize(self, num_new_particles, spill, data_arrays, substance):
         if spill.plume_gen is None:
@@ -388,6 +393,7 @@ class InitRiseVelFromDist(DistributionBase):
             self.distribution = UniformDistribution()
 
         self.array_types.update({'rise_vel': array_types.rise_vel})
+        self.name = 'rise_vel'
 
     def initialize(self, num_new_particles, spill, data_arrays,
                    substance=None):
@@ -440,6 +446,7 @@ class InitRiseVelFromDropletSizeFromDist(DistributionBase):
         self.water_density = water_density
         self.array_types.update({'rise_vel': array_types.rise_vel,
                             'droplet_diameter': array_types.droplet_diameter})
+        self.name = 'rise_vel'
 
     def initialize(self, num_new_particles, spill, data_arrays, substance):
         """

@@ -76,10 +76,12 @@ arrays_ = (windages,
            mass_array, mass_array,
            rise_vel_array, rise_vel_array, rise_vel_array, rise_vel_array,
            rise_vel_diameter_array)
-initializer_keys = ('windages',
-                    'mass', 'mass',
-                    'rise_vel', 'rise_vel', 'rise_vel', 'rise_vel',
-                    'rise_vel')
+#==============================================================================
+# initializer_keys = ('windages',
+#                     'mass', 'mass',
+#                     'rise_vel', 'rise_vel', 'rise_vel', 'rise_vel',
+#                     'rise_vel')
+#==============================================================================
 spill_list = (None,
               Spill(Release(datetime.now()), volume=10),
               Spill(Release(datetime.now()), mass=10),
@@ -118,14 +120,16 @@ def test_correct_particles_set_by_initializers(fcn, arr_types, spill):
         assert np.any(0 != data_arrays[key][-num_elems:])
 
 
-@pytest.mark.parametrize(("fcn", "init_key"),
-                         zip(fcn_list, initializer_keys))
-def test_element_type_serialize_deserialize(fcn, init_key):
+#==============================================================================
+# @pytest.mark.parametrize(("fcn", "init_key"),
+#                          zip(fcn_list, initializer_keys))
+#==============================================================================
+@pytest.mark.parametrize("fcn", fcn_list)
+def test_element_type_serialize_deserialize(fcn):
     '''
     test serialization/deserialization of ElementType for various initiailzers
     '''
-    initializers = {init_key: fcn}
-    element_type = ElementType(initializers)
+    element_type = ElementType(initializers=[fcn])
 
     json_ = element_type.serialize('save')
     dict_ = element_type.deserialize(json_)
@@ -282,14 +286,14 @@ arr_types = {'windages': array_types.windages,
              'rise_vel': array_types.rise_vel}
 
 inp_params = [((floating(),
-                ElementType({'windages': InitWindages(),
-                             'mass': InitMassFromTotalMass()})), arr_types),
+                ElementType([InitWindages(),
+                             InitMassFromTotalMass()])), arr_types),
               ((floating(),
-                ElementType({'windages': InitWindages(),
-                             'rise_vel': InitRiseVelFromDist()})), arr_types),
+                ElementType([InitWindages(),
+                             InitRiseVelFromDist()])), arr_types),
               ((floating(),
-                ElementType({'mass': InitMassFromTotalMass(),
-                             'rise_vel': InitRiseVelFromDist()})), arr_types),
+                ElementType([InitMassFromTotalMass(),
+                             InitRiseVelFromDist()])), arr_types),
               ]
 
 
@@ -359,7 +363,7 @@ def test_serialize_deserialize_initializers(fcn):
 
 test_l = []
 test_l.extend(fcn_list)
-test_l.extend([ElementType(initializers={'init': fcn}) for fcn in fcn_list])
+test_l.extend([ElementType(initializers=fcn) for fcn in fcn_list])
 test_l.append(floating())
 
 
