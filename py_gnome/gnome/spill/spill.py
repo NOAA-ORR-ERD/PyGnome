@@ -56,7 +56,8 @@ class Spill(serializable.Serializable):
                  on=True,
                  volume=None, volume_units='m^3',
                  # Is this total mass of the spill?
-                 mass=None, mass_units='kg',
+                 mass=None,
+                 mass_units='kg',
                  name='Spill'):
         """
         Spills used by the gnome model. It contains a release object, which
@@ -202,7 +203,7 @@ class Spill(serializable.Serializable):
         elif hasattr(self.element_type, prop):
             setattr(self.element_type, prop, val)
         else:
-            for init in self.element_type.initializers.values():
+            for init in self.element_type.initializers:
                 if hasattr(init, prop):
                     setattr(init, prop, val)
                     break
@@ -247,7 +248,7 @@ class Spill(serializable.Serializable):
 
             # properties for each of the initializer objects
             i_props = []
-            for val in self.element_type.initializers.values():
+            for val in self.element_type.initializers:
                 toadd = getmembers(val, lambda p: (not ismethod(p)))
                 i_props.extend([a[0] for a in toadd
                             if not a[0].startswith('_') and a[0] != '_state'])
@@ -261,7 +262,7 @@ class Spill(serializable.Serializable):
         if hasattr(self.element_type, prop):
             return getattr(self.element_type, prop)
 
-        for init in self.element_type.initializers.values():
+        for init in self.element_type.initializers:
             if hasattr(init, prop):
                 return getattr(init, prop)
 
@@ -270,16 +271,37 @@ class Spill(serializable.Serializable):
         raise AttributeError("{0} attribute does not exist in element_type"
             " or release object".format(prop))
 
-    def is_initializer(self, name):
-        init = [i for i in self.element_type.initializers if i.name == name]
-        if len(init) == 0:
-            return False
-        else:
-            return True
+    def get_initializer_by_name(self, name):
+        ''' get first initializer in list whose name matches 'name' '''
+        init = [i for i in enumerate(self.element_type.initializers)
+                if i.name == name]
 
-    def get_initializer(self, name):
+        if len(init) == 0:
+            return None
+        else:
+            return init[0]
+
+    def is_initializer(self, key):
         '''
-        returns the initializer with given 'name'
+        Returns True if an initializer is present in the list which sets the
+        data_array corresponding with 'key', otherwise returns False
+        '''
+        for i in self.element_type.initializers:
+            if key in i.array_types:
+                return True
+
+        return False
+
+    def get_initializer(self, key=None):
+        '''
+        if key is None, return list of all initializers else return initializer
+        that sets given 'key'. 'key' refers to the data_array initialized by
+        initializer. For instance, if key='rise_vel', function will look in
+        all initializers to find the one whose array_types contain 'rise_vel'.
+
+        If multiple initializers set 'key', then return the first one in the
+        list. Although nothing prevents the user from having two initializers
+        for the same data_array, it doesn't make much sense.
 
         The default 'name' of an initializer is the data_array that a mover
         requires and that the initializer is setting. For instance,
@@ -290,30 +312,32 @@ class Spill(serializable.Serializable):
         is an initializer that sets the 'rise_vel' if a RiseVelocityMover is
         included in the Model. User can change the name of the initializer
         '''
-        init = [i for i in self.element_type.initializers if i.name == name]
+        if key is None:
+            return self.element_type.initializers
 
-        if len(init) == 0:
-            return None
-        else:
-            return (init, init[0])[len(init) == 1]
+        init = None
+        for i in self.element_type.initializers:
+            if key in i.array_types:
+                return i
+
+        return init
 
     def set_initializer(self, init):
         '''
-        set the given initializer. Function looks for first initializer in list
-        with same 'name' and replaces it if found else it appends this to list
-        of initializers.
-        The default 'name' of an initializer refers to the data_array that a
-        mover requires and that the initializer is setting. For instance,
+        set/add given initializer. Function looks for first initializer in list
+        with same array_types and replaces it if found else it appends this to
+        list of initializers.
 
-            init = InitRiseVelFromDist()
-            init.name is 'rise_vel' by default
-
-        is an initializer that sets the 'rise_vel' if a RiseVelocityMover is
-        included in the Model.
+        .. note:: nothing prevents user from defining two initializers that
+        set the same data_arrays; however, there isn't a use case for it
         '''
         ix = [ix for ix, i in enumerate(self.element_type.initializers)
-              if i.name == init.name][0]
-        self.element_type.initializers[ix] = init
+              if sorted(i.array_types.keys()) ==
+              sorted(init.array_types.keys())]
+        if len(ix) == 0:
+            self.element_type.initializers.append(init)
+        else:
+            self.element_type.initializers[ix[0]] = init
 
     def del_initializer(self, name):
         '''
@@ -321,12 +345,13 @@ class Spill(serializable.Serializable):
 
         The default 'name' of an initializer is the data_array that a mover
         requires and that the initializer is setting. For instance,
+        the following is an initializer that sets the 'rise_vel' if a
+        RiseVelocityMover is included in the Model.
 
             init = InitRiseVelFromDist()
             init.name is 'rise_vel' by default
 
-        is an initializer that sets the 'rise_vel' if a RiseVelocityMover is
-        included in the Model. User can change the name of the initializer
+        If name = 'rise_vel', all initializers with this name will be deleted
         '''
         ixs = [ix for ix, i in enumerate(self.element_type.initializers)
                if i.name == name]
@@ -363,7 +388,7 @@ class Spill(serializable.Serializable):
 
     # returns the mass in mass_units specified by user
     mass = property(lambda self: self.get_mass(),
-                      lambda self, value: self.set_mass(value, 'kg'))
+                    lambda self, value: self.set_mass(value, self.mass_units))
 
     def get_volume(self, units=None):
         """

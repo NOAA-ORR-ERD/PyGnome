@@ -11,6 +11,7 @@ import copy
 import numpy
 np = numpy
 from colander import SchemaNode, Int, Float, Range, TupleSchema
+from collections import OrderedDict
 
 import gnome    # required by new_from_dict
 from gnome.utilities.rand import random_with_persistance
@@ -40,7 +41,18 @@ class InitBaseClass(object):
     _state = copy.deepcopy(Serializable._state)
 
     def __init__(self):
-        self.array_types = {}
+        # make it an ordered dict so first element in array_types for any
+        # initializer will be the primary data_array that is required by a
+        # mover or weatherer. All other data_arrays are set by the initializer
+        # by may not be directly required by a mover/weather. An example is
+        # InitRiseVelFromDropletSizeFromDist() which stores the
+        # droplet_diameter in the data_arrays even though it isn't required by
+        # the mover
+        #
+        # NOTE: It is not necessary to make this an OrderedDict since the
+        # data_arrays will contain all array_types set by the initializer if
+        # the mover sets the primary data_array (ie rise_vel for above example)
+        self.array_types = OrderedDict()
 
     def initialize(self):
         """
@@ -263,7 +275,7 @@ class InitMassFromTotalMass(InitBaseClass, Serializable):
             raise ValueError('mass attribute of spill is None - cannot '
                              'compute particle mass without total mass')
 
-        _total_mass = spill.get_mass('g')
+        _total_mass = spill.get_mass('kg')
         data_arrays['mass'][-num_new_particles:] = (_total_mass /
                                                     spill.release.num_elements)
 

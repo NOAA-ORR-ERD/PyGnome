@@ -32,10 +32,10 @@ class ElementType(Serializable):
         '''
         Define initializers for the type of elements
 
-        :param dict initializers: a dict of initializers where the keys
-            correspond with names in data_arrays (stored in SpillContainer)
-            and the values are the initializer classes used to initialize
-            these data arrays upon release
+        :param iterbale initializers: a list/tuple of initializer classes used
+            to initialize these data arrays upon release. If this is not an
+            iterable, then just append 'initializer' to list of initializers
+            assuming it is just a single initializer object
 
         :param substance='oil_conservative': Type of oil spilled.
             If this is a string, or an oillibrary.models.Oil object, then
@@ -47,7 +47,14 @@ class ElementType(Serializable):
         :param density=None: Allow user to set oil density directly.
         :param density_units='kg/m^3: Only used if a density is input.
         '''
-        self.initializers = initializers
+        self.initializers = []
+        try:
+            self.initializers.extend(initializers)
+        except TypeError:
+            # initializers is not an iterable so assume its an object and just
+            # append it to list
+            self.initializers.append(initializers)
+
         if isinstance(substance, basestring):
             # leave for now to preserve tests
             self.substance = OilProps(substance)
@@ -61,14 +68,29 @@ class ElementType(Serializable):
                 'substance={0.substance!r}'
                 ')'.format(self))
 
+    @property
+    def array_types(self):
+        '''
+        compile/return dict of array_types set by all initializers contained
+        by ElementType object
+        '''
+        at = {}
+        for init in self.initializers:
+            at.update(init.array_types)
+
+        return at
+
     def set_newparticle_values(self, num_new_particles, spill, data_arrays):
         '''
         call all initializers. This will set the initial values for all
         data_arrays.
         '''
         if num_new_particles > 0:
-            for key, i in self.initializers.iteritems():
-                if key in data_arrays:
+            for i in self.initializers:
+                # If a mover is using an initializers, the data_arrays will
+                # contain all
+                p_key = i.array_types.keys()[0]
+                if p_key in data_arrays:
                     i.initialize(num_new_particles, spill, data_arrays,
                                  self.substance)
 

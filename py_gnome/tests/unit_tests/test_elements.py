@@ -173,22 +173,6 @@ class TestInitConstantWindageRange:
         with raises(ValueError):
             obj.windage_persist = bad_wp
 
-# REMOVED - WAS REDUNDANT INITIALIZER
-#==============================================================================
-# def test_initailize_InitMassFromVolume():
-#     data_arrays = mock_append_data_arrays(mass_array, num_elems)
-#     substance = OilProps('oil_conservative')
-# 
-#     spill = Spill(Release(datetime.now(), 10))
-#     spill.volume = num_elems / (substance.get_density('kg/m^3') * 1000)
-# 
-#     fcn = InitMassFromVolume()
-#     fcn.initialize(num_elems, spill, data_arrays, substance)
-# 
-#     assert_dataarray_shape_size(mass_array, data_arrays, num_elems)
-#     assert np.all(1. == data_arrays['mass'])
-#==============================================================================
-
 
 def test_initailize_InitMassFromTotalMass():
     data_arrays = mock_append_data_arrays(mass_array, num_elems)
@@ -202,7 +186,8 @@ def test_initailize_InitMassFromTotalMass():
     fcn.initialize(num_elems, spill, data_arrays, substance)
 
     assert_dataarray_shape_size(mass_array, data_arrays, num_elems)
-    assert np.all(1. == data_arrays['mass'])
+    mass_per_le = spill.get_mass('kg')/spill.release.num_elements
+    assert np.all(mass_per_le == data_arrays['mass'])
 
 
 def test_initialize_InitRiseVelFromDist_uniform():
@@ -330,14 +315,13 @@ def test_element_types(elem_type, arr_types, sample_sc_no_uncertainty):
         sc.release_elements(time_step, current_time)
 
         for spill in sc.spills:
-            spill.element_type
             spill_mask = sc.get_spill_mask(spill)
+            # todo: need better API for access
+            s_arr_types = spill.get('array_types').keys()
 
             if np.any(spill_mask):
                 for key in arr_types:
-                    if (key in spill.element_type.initializers or
-                        ('windages' in spill.element_type.initializers and
-                         key in ['windage_range', 'windage_persist'])):
+                    if key in s_arr_types:
                         assert np.all(sc[key][spill_mask] != 0)
                     else:
                         assert np.all(sc[key][spill_mask] == 0)
@@ -367,13 +351,13 @@ test_l.extend([ElementType(initializers=fcn) for fcn in fcn_list])
 test_l.append(floating())
 
 
-@pytest.mark.parametrize(("test_obj"), ['webapi'])
-def test_serialize_deserialize(test_obj):
+def test_serialize_deserialize():
     '''
-    serialize/deserialize for 'save' optio is tested in test_save_load
+    serialize/deserialize for 'save' option is tested in test_save_load
     This tests serialize/deserilize with 'webapi' option
     '''
     et = floating()
+    et.initializers.append(InitMassFromTotalMass())
     dict_ = ElementType.deserialize(et.serialize('webapi'))
 
     # for webapi, make new objects from nested objects before creating

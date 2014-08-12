@@ -37,10 +37,8 @@ arr_types = {'positions': gnome.array_types.positions}
 def test_init():
     spill = Spill(Release(release_time=datetime.now()))
 
-    assert np.all(spill.element_type.initializers['windages'].windage_range
-                  == (0.01, 0.04))
-    assert (spill.element_type.initializers['windages'].windage_persist
-            == 900)
+    assert np.all(spill.get('windage_range') == (0.01, 0.04))
+    assert (spill.get('windage_persist') == 900)
     assert spill.name == 'Spill'
 
 
