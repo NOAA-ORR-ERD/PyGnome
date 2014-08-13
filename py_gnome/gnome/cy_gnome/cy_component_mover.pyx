@@ -40,6 +40,7 @@ cdef class CyComponentMover(CyCurrentMover):
     def __dealloc__(self):
         # since this is allocated in this class, free memory here as well
         del self.mover
+        self.mover = NULL
         self.curr_mover = NULL
         self.component = NULL
 

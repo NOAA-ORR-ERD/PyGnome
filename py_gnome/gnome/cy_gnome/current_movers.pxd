@@ -52,15 +52,17 @@ cdef extern from "ComponentMover_c.h":
         double          pat1ScaleToValue
         double          pat2ScaleToValue
         long            scaleBy
-        WorldPoint      refP
         Boolean         bUseAveragedWinds
         Boolean         bExtrapolateWinds
         double          fScaleFactorAveragedWinds
         double          fPowerFactorAveragedWinds
         long            fPastHoursToAverage
+        WorldPoint      refP
 
-        int   TextRead(char* catsPath1, char* catsPath2)
-        void  SetRefPosition (WorldPoint p)    
+        int             TextRead(char* catsPath1, char* catsPath2)
+        void            SetRefPosition(WorldPoint p)
+        #void            SetRefPosition(WorldPoint3D p)
+        #WorldPoint3D    GetRefPosition()
 
         OSErr get_move(int n, unsigned long model_time, unsigned long step_len, WorldPoint3D* ref, WorldPoint3D* delta, short* LE_status, LEType spillType, long spillID)
         void  SetTimeFile(OSSMTimeValue_c *ossm)    

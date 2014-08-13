@@ -148,8 +148,7 @@ cdef class CyCatsMover(CyCurrentMover):
         b_add = b_repr[b_repr.find('(') + 1:]
         c_repr = ('{0.__class__.__name__}(scale_value={0.scale_value}, '
                   'uncertain_eddy_diffusion={0.uncertain_eddy_diffusion}, '
-                  'uncertain_eddy_v0={0.uncertain_eddy_v0}, '
-                  'ref_point=').format(self)
+                  'uncertain_eddy_v0={0.uncertain_eddy_v0}, ').format(self)
         # append ref_point and base class props:
         c_repr += 'ref_point=%s, ' % str(self.ref_point) + b_add
         return c_repr
@@ -159,6 +158,7 @@ cdef class CyCatsMover(CyCurrentMover):
         b_str = super(CyCatsMover, self).__str__()
         c_str = b_str + ('  scale value = {0.scale_value}\n'
                          '  eddy diffusion coef={0.uncertain_eddy_diffusion}\n'
+                         '  ref_point={0.ref_point}\n'
                          .format(self))
         return c_str
 

@@ -37,7 +37,7 @@ class ComponentMove(cy_fixtures.CyTestMove):
         self.component.set_ossm(wm.ossm)
         #self.component.set_ossm(self.ossm)
         self.component.text_read(cats1_file,cats2_file)
-        self.component.ref_point = (-75.262319, 39.142987)
+        self.component.ref_point = (-75.262319, 39.142987, 0)
 
         super(ComponentMove, self).__init__()
         self.ref[:] = (-75.262319, 39.142987, 0)
@@ -168,7 +168,7 @@ def test_ref_point():
     test setting / getting properties
     """
 
-    tgt = (1, 2)
+    tgt = (1, 2, 0)
     c_component.ref_point = tgt  # can be a list or a tuple
     assert c_component.ref_point == tuple(tgt)
     c_component.ref_point = list(tgt)  # can be a list or a tuple
