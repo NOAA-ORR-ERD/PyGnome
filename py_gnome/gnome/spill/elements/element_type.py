@@ -226,18 +226,16 @@ def plume(distribution_type='droplet_size',
         substance = OilProps(substance_name)
 
     if distribution_type == 'droplet_size':
-        return ElementType({'rise_vel': InitRiseVelFromDropletSizeFromDist(distribution=distribution,
-                                                                           **kwargs),
-                            'windages': InitWindages(windage_range,
-                                                     windage_persist),
-                            'mass': InitMassFromTotalMass()},
+        return ElementType([InitRiseVelFromDropletSizeFromDist(
+                                distribution=distribution, **kwargs),
+                            InitWindages(windage_range, windage_persist),
+                            InitMassFromTotalMass()],
                            substance)
     elif distribution_type == 'rise_velocity':
-        return ElementType({'rise_vel': InitRiseVelFromDist(distribution=distribution,
-                                                            **kwargs),
-                            'windages': InitWindages(windage_range,
-                                                     windage_persist),
-                            'mass': InitMassFromTotalMass()},
+        return ElementType([InitRiseVelFromDist(distribution=distribution,
+                                                **kwargs),
+                            InitWindages(windage_range, windage_persist),
+                            InitMassFromTotalMass()],
                            substance)
 
 
