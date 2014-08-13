@@ -201,8 +201,7 @@ class InitMassComponentsFromOilProps(InitBaseClass, Serializable):
             raise ValueError('mass attribute of spill is None - cannot '
                              'compute particle mass without total mass')
 
-        total_mass = spill.get_mass('g')
-        le_mass = total_mass / spill.release.num_elements
+        le_mass = data_arrays['mass'][-num_new_particles:]
 
         mass_fractions = np.asarray(zip(*substance.mass_components)[0],
                                     dtype=np.float64)
@@ -278,30 +277,6 @@ class InitMassFromTotalMass(InitBaseClass, Serializable):
         _total_mass = spill.get_mass('kg')
         data_arrays['mass'][-num_new_particles:] = (_total_mass /
                                                     spill.release.num_elements)
-
-
-# NOT REQUIRED. IF DENSITY IS KNOWN, WE CAN COMPUTE TOTAL MASS IN SPILL - THEN
-# USE InitMassFromTotalMass as initializer
-#==============================================================================
-# class InitMassFromVolume(InitBaseClass, Serializable):
-#     """
-#     Initialize the 'mass' array based on total volume spilled and the type of
-#     substance. No parameters, as it uses the volume specified elsewhere.
-#     """
-#     _state = copy.deepcopy(InitBaseClass._state)
-#     _schema = base_schema.ObjType
-# 
-#     def initialize(self, num_new_particles, spill, data_arrays, substance):
-#         if spill.volume is None:
-#             raise ValueError('volume attribute of spill is None - cannot '
-#                              'compute mass without volume')
-# 
-#         _total_mass = (substance.get_density('kg/m^3')
-#                        * spill.get_volume('m^3') * 1000)
-#         data_arrays['mass'][-num_new_particles:] = (_total_mass /
-#                                                     spill.release.num_elements)
-#==============================================================================
-
 
 class InitMassFromPlume(InitBaseClass, Serializable):
     """

@@ -61,7 +61,6 @@ class TestWeatherer:
         assert weatherer.array_types == {'mass_components': mass_components,
                                          'half_lives': half_lives}
 
-    @pytest.mark.xfail
     @pytest.mark.parametrize("test_sc", [sc, u_sc])
     def test_one_weather(self, test_sc):
         '''
