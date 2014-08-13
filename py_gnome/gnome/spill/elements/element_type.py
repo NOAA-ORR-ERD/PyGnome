@@ -32,10 +32,10 @@ class ElementType(Serializable):
         '''
         Define initializers for the type of elements
 
-        :param dict initializers: a dict of initializers where the keys
-            correspond with names in data_arrays (stored in SpillContainer)
-            and the values are the initializer classes used to initialize
-            these data arrays upon release
+        :param iterbale initializers: a list/tuple of initializer classes used
+            to initialize these data arrays upon release. If this is not an
+            iterable, then just append 'initializer' to list of initializers
+            assuming it is just a single initializer object
 
         :param substance='oil_conservative': Type of oil spilled.
             If this is a string, or an oillibrary.models.Oil object, then
@@ -47,7 +47,14 @@ class ElementType(Serializable):
         :param density=None: Allow user to set oil density directly.
         :param density_units='kg/m^3: Only used if a density is input.
         '''
-        self.initializers = initializers
+        self.initializers = []
+        try:
+            self.initializers.extend(initializers)
+        except TypeError:
+            # initializers is not an iterable so assume its an object and just
+            # append it to list
+            self.initializers.append(initializers)
+
         if isinstance(substance, basestring):
             # leave for now to preserve tests
             self.substance = OilProps(substance)
@@ -61,14 +68,29 @@ class ElementType(Serializable):
                 'substance={0.substance!r}'
                 ')'.format(self))
 
+    @property
+    def array_types(self):
+        '''
+        compile/return dict of array_types set by all initializers contained
+        by ElementType object
+        '''
+        at = {}
+        for init in self.initializers:
+            at.update(init.array_types)
+
+        return at
+
     def set_newparticle_values(self, num_new_particles, spill, data_arrays):
         '''
         call all initializers. This will set the initial values for all
         data_arrays.
         '''
         if num_new_particles > 0:
-            for key, i in self.initializers.iteritems():
-                if key in data_arrays:
+            for i in self.initializers:
+                # If a mover is using an initializers, the data_arrays will
+                # contain all
+                p_key = i.array_types.keys()[0]
+                if p_key in data_arrays:
                     i.initialize(num_new_particles, spill, data_arrays,
                                  self.substance)
 
@@ -82,9 +104,9 @@ class ElementType(Serializable):
         """
         dict_ = super(ElementType, self).to_dict()
 
-        init = {}
-        for key, val in dict_['initializers'].iteritems():
-            init[key] = val.to_dict()
+        init = []
+        for val in dict_['initializers']:
+            init.append(val.to_dict())
 
         dict_['initializers'] = init
         return dict_
@@ -106,13 +128,14 @@ class ElementType(Serializable):
         time.
         """
         dict_ = self.to_serialize(json_)
-        #et_schema = elements_schema.ElementType()
         et_schema = self.__class__._schema()
         et_json_ = et_schema.serialize(dict_)
-        s_init = {}
+        #s_init = {}
+        s_init = []
 
-        for i_key, i_val in self.initializers.iteritems():
-            s_init[i_key] = i_val.serialize(json_)
+        for i_val in self.initializers:
+            s_init.append(i_val.serialize(json_))
+            #s_init[i_key] = i_val.serialize(json_)
 
         et_json_['initializers'] = s_init
         return et_json_
@@ -125,9 +148,10 @@ class ElementType(Serializable):
         """
         et_schema = cls._schema()
         dict_ = et_schema.deserialize(json_)
-        d_init = {}
+        #d_init = {}
+        d_init = []
 
-        for i_key, i_val in json_['initializers'].iteritems():
+        for i_val in json_['initializers']:
             deserial = eval(i_val['obj_type']).deserialize(i_val)
 
             if json_['json_'] == 'save':
@@ -136,9 +160,11 @@ class ElementType(Serializable):
                 here itself
                 '''
                 obj = eval(deserial['obj_type']).new_from_dict(deserial)
-                d_init[i_key] = obj
+                #d_init[i_key] = obj
+                d_init.append(obj)
             else:
-                d_init[i_key] = deserial
+                #d_init[i_key] = deserial
+                d_init.append(deserial)
 
         dict_['initializers'] = d_init
 
@@ -150,8 +176,7 @@ def floating(windage_range=(.01, .04), windage_persist=900):
     Helper function returns an ElementType object containing 'windages'
     initializer with user specified windage_range and windage_persist.
     """
-    return ElementType({'windages': InitWindages(windage_range,
-                                                 windage_persist)})
+    return ElementType([InitWindages(windage_range, windage_persist)])
 
 
 def floating_mass(windage_range=(.01, .04), windage_persist=900):
@@ -159,9 +184,8 @@ def floating_mass(windage_range=(.01, .04), windage_persist=900):
     Helper function returns an ElementType object containing 'windages'
     initializer with user specified windage_range and windage_persist.
     """
-    return ElementType({'windages': InitWindages(windage_range,
-                                                 windage_persist),
-                        'mass': InitMassFromTotalMass()})
+    return ElementType([InitWindages(windage_range, windage_persist),
+                        InitMassFromTotalMass()])
 
 
 def plume(distribution_type='droplet_size',
@@ -202,18 +226,16 @@ def plume(distribution_type='droplet_size',
         substance = OilProps(substance_name)
 
     if distribution_type == 'droplet_size':
-        return ElementType({'rise_vel': InitRiseVelFromDropletSizeFromDist(distribution=distribution,
-                                                                           **kwargs),
-                            'windages': InitWindages(windage_range,
-                                                     windage_persist),
-                            'mass': InitMassFromTotalMass()},
+        return ElementType([InitRiseVelFromDropletSizeFromDist(
+                                distribution=distribution, **kwargs),
+                            InitWindages(windage_range, windage_persist),
+                            InitMassFromTotalMass()],
                            substance)
     elif distribution_type == 'rise_velocity':
-        return ElementType({'rise_vel': InitRiseVelFromDist(distribution=distribution,
-                                                            **kwargs),
-                            'windages': InitWindages(windage_range,
-                                                     windage_persist),
-                            'mass': InitMassFromTotalMass()},
+        return ElementType([InitRiseVelFromDist(distribution=distribution,
+                                                **kwargs),
+                            InitWindages(windage_range, windage_persist),
+                            InitMassFromTotalMass()],
                            substance)
 
 
@@ -243,14 +265,12 @@ def plume_from_model(distribution_type='droplet_size',
     initializer with user specified parameters for distribution.
     """
     if distribution_type == 'droplet_size':
-        return ElementType({'rise_vel': InitRiseVelFromDropletSizeFromDist(distribution=distribution,
-                                                 **kwargs),
-                            'windages': InitWindages(windage_range,
-                                                     windage_persist),
-                            'mass': InitMassFromPlume()})
+        return ElementType([InitRiseVelFromDropletSizeFromDist(
+                                distribution=distribution, **kwargs),
+                            InitWindages(windage_range, windage_persist),
+                            InitMassFromPlume()])
     elif distribution_type == 'rise_velocity':
-        return ElementType({'rise_vel': InitRiseVelFromDist(distribution=distribution,
+        return ElementType([InitRiseVelFromDist(distribution=distribution,
                                                  **kwargs),
-                            'windages': InitWindages(windage_range,
-                                                     windage_persist),
-                            'mass': InitMassFromPlume()})
+                            InitWindages(windage_range, windage_persist),
+                            InitMassFromPlume()])

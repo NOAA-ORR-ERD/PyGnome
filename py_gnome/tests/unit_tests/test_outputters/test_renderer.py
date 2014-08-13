@@ -21,11 +21,13 @@ from gnome.basic_types import oil_status
 from gnome.outputters import Renderer
 from gnome.utilities.projections import GeoProjection
 
-from conftest import sample_sc_release
+from ..conftest import sample_sc_release
 
 here = os.path.dirname(__file__)
-output_dir = os.path.join(here, r"renderer_output_dir")
-data_dir = os.path.join(here, r"sample_data")
+up_one = os.path.dirname(here)
+
+output_dir = os.path.join(up_one, r"renderer_output_dir")
+data_dir = os.path.join(up_one, r"sample_data")
 bna_sample = os.path.join(data_dir,
                           r"MapBounds_2Spillable2Islands2Lakes.bna")
 

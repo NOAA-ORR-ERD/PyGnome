@@ -37,10 +37,8 @@ arr_types = {'positions': gnome.array_types.positions}
 def test_init():
     spill = Spill(Release(release_time=datetime.now()))
 
-    assert np.all(spill.element_type.initializers['windages'].windage_range
-                  == (0.01, 0.04))
-    assert (spill.element_type.initializers['windages'].windage_persist
-            == 900)
+    assert np.all(spill.get('windage_range') == (0.01, 0.04))
+    assert (spill.get('windage_persist') == 900)
     assert spill.name == 'Spill'
 
 
@@ -1064,7 +1062,9 @@ def test_setget():
 
 # todo: add SpatialRelease schema, then complete this test
 rel_time = datetime(2012, 8, 20, 13)
-rel_type = [PointLineRelease(rel_time, 5, (0, 0, 0))]
+rel_type = [PointLineRelease(release_time=rel_time,
+                             num_elements=5,
+                             start_position=(0, 0, 0))]
             #SpatialRelease(rel_time, np.zeros((4, 3), dtype=np.float64))]
 
 

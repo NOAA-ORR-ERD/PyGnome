@@ -37,11 +37,11 @@ OSSMTimeValue_c::OSSMTimeValue_c() : TimeValue_c()
 	bOSSMStyle = true;
 	fTransport = 0;
 	fVelAtRefPt = 0;
-#ifdef pyGNOME
+//#ifdef pyGNOME
 	fInterpolationType = LINEAR;
-#else
-	fInterpolationType = HERMITE;
-#endif
+//#else
+	//fInterpolationType = HERMITE;
+//#endif
 }
 
 #ifndef pyGNOME
@@ -60,7 +60,8 @@ OSSMTimeValue_c::OSSMTimeValue_c(TMover *theOwner) : TimeValue_c(theOwner)
 	bOSSMStyle = true;
 	fTransport = 0;
 	fVelAtRefPt = 0;
-	fInterpolationType = HERMITE;	// pyGNOME doesn't use this constructor
+	//fInterpolationType = HERMITE;	// pyGNOME doesn't use this constructor
+	fInterpolationType = LINEAR;	// pyGNOME doesn't use this constructor
 }
 #endif
 
@@ -232,7 +233,7 @@ OSErr OSSMTimeValue_c::GetInterpolatedComponent(Seconds forTime, double *value, 
 	if ((err = GetTimeChange(a, b, &dt)) != 0)
 		return err;
 
-	// use linear interpolation for pyGNOME, default is HERMITE
+	// use linear interpolation as default 8/8/14
 	if (fInterpolationType == LINEAR) {
 		slope = dv / dt;
 

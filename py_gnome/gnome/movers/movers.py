@@ -2,6 +2,7 @@ import copy
 
 import numpy
 np = numpy
+
 from colander import (SchemaNode, MappingSchema, Bool, drop)
 
 from gnome.persist.validators import convertible_to_seconds
@@ -30,7 +31,6 @@ class ProcessSchema(MappingSchema):
 
 
 class Process(object):
-
     """
     Base class from which all Python movers/weatherers can inherit
 
@@ -39,7 +39,6 @@ class Process(object):
     NOTE: Since base class is not Serializable, it does not need
     a class level _schema attribute.
     """
-
     _state = copy.deepcopy(serializable.Serializable._state)
     _state.add(update=['on', 'active_start', 'active_stop'],
                save=['on', 'active_start', 'active_stop'],
@@ -55,9 +54,9 @@ class Process(object):
         :param active_start: datetime when the mover should be active
         :param active_stop: datetime after which the mover should be inactive
         """
-
         self._active = True
         self.on = kwargs.pop('on', True)  # turn the mover on / off for the run
+
         active_start = kwargs.pop('active_start',
                                   inf_datetime.InfDateTime('-inf'))
         active_stop = kwargs.pop('active_stop',
@@ -84,7 +83,6 @@ class Process(object):
         Put the time conversion call here - in case we decide to change it, it
         only updates here
         """
-
         return time_utils.date_to_sec(model_time)
 
     def prepare_for_model_run(self):
@@ -92,15 +90,9 @@ class Process(object):
         Override this method if a derived mover class needs to perform any
         actions prior to a model run
         """
-
         pass
 
-    def prepare_for_model_step(
-        self,
-        sc,
-        time_step,
-        model_time_datetime,
-        ):
+    def prepare_for_model_step(self, sc, time_step, model_time_datetime):
         """
         sets active flag based on time_span and on flag. If
             model_time > active_start and model_time < active_stop then set
@@ -111,9 +103,9 @@ class Process(object):
         :param model_time_datetime: current model time as datetime object
 
         """
-
-        if self.active_start <= model_time_datetime \
-            and self.active_stop > model_time_datetime and self.on:
+        if (self.active_start <= model_time_datetime and
+            self.active_stop > model_time_datetime and
+            self.on):
             self._active = True
         else:
             self._active = False
@@ -124,7 +116,6 @@ class Process(object):
         in a time step. Put any code need for clean-up, etc in here in
         subclassed movers.
         """
-
         pass
 
 
@@ -146,10 +137,10 @@ class Mover(Process):
 
         All movers must implement get_move() since that's what the model calls
         """
-
         positions = sc['positions']
         delta = np.zeros_like(positions)
         delta[:] = np.nan
+
         return delta
 
 
@@ -170,7 +161,6 @@ class CyMover(Mover):
 
         All kwargs passed on to super class
         """
-
         super(CyMover, self).__init__(**kwargs)
 
         # initialize variables here for readability, though self.mover = None
@@ -188,15 +178,9 @@ class CyMover(Mover):
         """
         Calls the contained cython mover's prepare_for_model_run()
         """
-
         self.mover.prepare_for_model_run()
 
-    def prepare_for_model_step(
-        self,
-        sc,
-        time_step,
-        model_time_datetime,
-        ):
+    def prepare_for_model_step(self, sc, time_step, model_time_datetime):
         """
         Default implementation of prepare_for_model_step(...)
          - Sets the mover's active flag if time is within specified timespan
@@ -210,27 +194,22 @@ class CyMover(Mover):
         Uses super to invoke Mover class prepare_for_model_step and does a
         couple more things specific to CyMover.
         """
-
         super(CyMover, self).prepare_for_model_step(sc, time_step,
-                model_time_datetime)
+                                                    model_time_datetime)
         if self.active:
             uncertain_spill_count = 0
             uncertain_spill_size = np.array((0, ), dtype=np.int32)
+
             if sc.uncertain:
                 uncertain_spill_count = 1
                 uncertain_spill_size = np.array((sc.num_released, ),
-                        dtype=np.int32)
+                                                dtype=np.int32)
 
             self.mover.prepare_for_model_step(
                         self.datetime_to_seconds(model_time_datetime),
                         time_step, uncertain_spill_count, uncertain_spill_size)
 
-    def get_move(
-        self,
-        sc,
-        time_step,
-        model_time_datetime,
-        ):
+    def get_move(self, sc, time_step, model_time_datetime):
         """
         Base implementation of Cython wrapped C++ movers
         Override for things like the WindMover since it has a different
@@ -240,21 +219,15 @@ class CyMover(Mover):
         :param time_step: time step in seconds
         :param model_time_datetime: current model time as datetime object
         """
-
         self.prepare_data_for_get_move(sc, model_time_datetime)
 
         # only call get_move if mover is active, it is on and there are LEs
         # that have been released
 
         if self.active and len(self.positions) > 0:
-            self.mover.get_move(
-                self.model_time,
-                time_step,
-                self.positions,
-                self.delta,
-                self.status_codes,
-                self.spill_type,
-                )
+            self.mover.get_move(self.model_time, time_step,
+                                self.positions, self.delta,
+                                self.status_codes, self.spill_type)
 
         return self.delta.view(dtype=world_point_type).reshape((-1,
                 len(world_point)))
@@ -267,11 +240,9 @@ class CyMover(Mover):
         :param sc: an instance of gnome.spill_container.SpillContainer class
         :param model_time_datetime: current model time as datetime object
         """
-
         self.model_time = self.datetime_to_seconds(model_time_datetime)
 
         # Get the data:
-
         try:
             self.positions = sc['positions']
             self.status_codes = sc['status_codes']
@@ -298,7 +269,6 @@ class CyMover(Mover):
         in a time step, and is intended to perform any necessary clean-up
         operations. Subclassed movers can override this method.
         """
-
         if sc is not None:
             if sc.uncertain:
                 if self.active:

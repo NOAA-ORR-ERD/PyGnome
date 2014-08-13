@@ -4,12 +4,14 @@ is composed of a release object and an ElementType
 '''
 import types
 import copy
-from datetime import timedelta
+from datetime import datetime, timedelta
 
 import numpy
 np = numpy
 
-from colander import (SchemaNode, drop, Bool, Int)
+from colander import (iso8601,
+                      SchemaNode, SequenceSchema,
+                      drop, Bool, Int)
 
 from gnome.persist.base_schema import ObjType, WorldPoint
 from gnome.persist.extend_colander import LocalDateTime
@@ -21,10 +23,8 @@ from gnome.utilities.plume import Plume, PlumeGenerator
 from gnome.utilities.serializable import Serializable
 
 
-class ReleaseSchema(ObjType):
+class BaseReleaseSchema(ObjType):
     'Base Class for Release Schemas'
-    num_elements = SchemaNode(Int(), default=1000)
-
     release_time = SchemaNode(LocalDateTime(),
                               validator=convertible_to_seconds)
     name = 'release'
@@ -35,7 +35,12 @@ class ReleaseSchema(ObjType):
             self.add(SchemaNode(Int(), name='num_released'))
             self.add(SchemaNode(Bool(), name='start_time_invalid'))
 
-        super(ReleaseSchema, self).__init__(**kwargs)
+        super(BaseReleaseSchema, self).__init__(**kwargs)
+
+
+class ReleaseSchema(BaseReleaseSchema):
+    'Base Class for Release Schemas'
+    num_elements = SchemaNode(Int(), default=1000)
 
 
 class PointLineReleaseSchema(ReleaseSchema):
@@ -51,6 +56,19 @@ class PointLineReleaseSchema(ReleaseSchema):
     # Not sure how this will work w/ WebGnome
     #prev_release_pos = WorldPoint(missing=drop)
     description = 'PointLineRelease object schema'
+
+
+class StartPositions(SequenceSchema):
+    start_position = WorldPoint()
+
+
+class SpatialReleaseSchema(BaseReleaseSchema):
+    '''
+    Contains properties required by UpdateWindMover and CreateWindMover
+    TODO: also need a way to persist list of element_types
+    '''
+    description = 'SpatialRelease object schema'
+    start_position = StartPositions()
 
 
 class Release(object):
@@ -183,8 +201,13 @@ class PointLineRelease(Release, Serializable):
 
     _schema = PointLineReleaseSchema
 
-    def __init__(self, release_time, num_elements, start_position,
-                 end_position=None, end_release_time=None, name=None):
+    def __init__(self,
+                 release_time,
+                 start_position,
+                 num_elements,
+                 end_release_time=None,
+                 end_position=None,
+                 name=None):
         """
         :param num_elements: total number of elements to be released
         :type num_elements: integer
@@ -424,8 +447,15 @@ class SpatialRelease(Release, Serializable):
     A simple release class  --  a release of floating non-weathering particles,
     with their initial positions pre-specified
     """
+    _update = ['start_position']
+
+    _create = []
+    _create.extend(_update)
+
     _state = copy.deepcopy(Release._state)
-    _state.add(update=['start_position'], save=['start_position'])
+    _state.add(update=_update, save=_create)
+
+    _schema = SpatialReleaseSchema
 
     def __init__(self, release_time, start_position, name=None):
         """
@@ -444,6 +474,19 @@ class SpatialRelease(Release, Serializable):
         super(SpatialRelease, self).__init__(release_time,
                                              self.start_position.shape[0],
                                              name)
+
+    @classmethod
+    def new_from_dict(cls, dict_):
+        '''
+            Custom new_from_dict() functionality for SpatialRelease
+        '''
+        if ('release_time' in dict_ and
+            not isinstance(dict_['release_time'], datetime)):
+            print 'handling release_time...'
+            dict_['release_time'] = iso8601.parse_date(dict_['release_time'],
+                                                       default_timezone=None)
+
+        return super(SpatialRelease, cls).new_from_dict(dict_)
 
     def num_elements_to_release(self, current_time, time_step):
         """

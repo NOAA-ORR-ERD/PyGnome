@@ -10,53 +10,63 @@ from gnome import basic_types
 
 cdef class CyMover(object):
     """
-    Class serves as a base class for cython wrappers around C++ movers. The C++ movers derive
-    from Mover_c.cpp. This provides the default implementation for prepare_for_model_run, prepare_for_model_step
+    Class serves as a base class for cython wrappers around C++ movers.
+    The C++ movers derive from Mover_c.cpp. This provides the default
+    implementation for prepare_for_model_run, prepare_for_model_step
     and model_step_is_done.
 
-    In general, the cython wrappers (cy_*) will instantiate the correct C++ object, say cy_wind_mover
-    instantiates self.mover as a WindMover_c object. 
+    In general, the cython wrappers (cy_*) will instantiate the correct
+    C++ object, say cy_wind_mover instantiates self.mover as a WindMover_c
+    object.
 
-    It would be desirable to make it so the user cannot instantiate an object of type CyMover, so it only
-    serves as a base class; however, since I don't believe I can do that - CyMover.__init__() sets self.mover = NULL 
-    This is so the application doesn't crash if the user instantiates a CyMover object
-    in Python. Though this object doesn't do anything and it does not have a get_move method.
+    It would be desirable to make it so the user cannot instantiate an object
+    of type CyMover, so it only serves as a base class; however, since I don't
+    believe I can do that - CyMover.__init__() sets self.mover = NULL
+    This is so the application doesn't crash if the user instantiates a
+    CyMover object in Python. Though this object doesn't do anything and it
+    does not have a get_move method.
     """
     def __init__(self,
                  uncertain_duration=48*3600):
         """
-        By default it sets self.mover=NULL. This is only so Python doesn't crash if user
-        instantiates a CyMover object in Python. Though the main purpose of this class is to serve
-        as a base class to all the cython wrappers around the C++ movers.
+        By default it sets self.mover=NULL. This is only so Python doesn't
+        crash if user instantiates a CyMover object in Python.
+        Though the main purpose of this class is to serve as a base class
+        to all the cython wrappers around the C++ movers.
         """
         self.mover = NULL
 
     def __repr__(self):
         """
-        Return an unambiguous representation of this object so it can be recreated 
+        Return an unambiguous representation of this object so it can be
+        recreated
         """
-        repr_ = '{0}()'.format(self.__class__.__name__)
-        return repr_
+        return '{0}()'.format(self.__class__.__name__)
 
     def __str__(self):
         """Return string representation of this object"""
-
-        info  = "{0} object - see attributes for more info".format(self.__class__.__name__)
-
-        return info
+        return ('{0} object - see attributes for more info'
+                .format(self.__class__.__name__))
 
     def prepare_for_model_run(self):
         """
-        default implementation. It calls the C++ objects's PrepareForModelRun() method
+        default implementation. It calls the C++ objects's
+        PrepareForModelRun() method
         """
         if self.mover:
             self.mover.PrepareForModelRun()
 
-    def prepare_for_model_step(self, Seconds model_time, Seconds step_len, numSets=0, cnp.ndarray[int32_t] setSizes=None):
+    def prepare_for_model_step(self,
+                               Seconds model_time,
+                               Seconds step_len,
+                               numSets=0,
+                               cnp.ndarray[int32_t] setSizes=None):
         """
-        .. function:: prepare_for_model_step(self, model_time, step_len, uncertain)
+        .. function:: prepare_for_model_step(self, model_time, step_len,
+                                             uncertain)
 
-        prepares the mover for time step, calls the underlying C++ mover objects PrepareForModelStep(..)
+        prepares the mover for time step, calls the underlying C++ mover
+        objects PrepareForModelStep(..)
 
         :param model_time: current model time.
         :param step_len: length of the time step over which the get move
@@ -72,14 +82,16 @@ cdef class CyMover(object):
                                                      False, 0, NULL)
             else:
                 err = self.mover.PrepareForModelStep(model_time, step_len,
-                                                     True, numSets, &setSizes[0])
+                                                     True, numSets,
+                                                     &setSizes[0])
 
             if err != 0:
                 """
                 For now just raise an OSError - until the types of possible
                 errors are defined and enumerated
                 """
-                raise OSError("PrepareForModelStep returned an error: {0}".format(err))
+                raise OSError("PrepareForModelStep returned an error: {0}"
+                              .format(err))
 
     def model_step_is_done(self, cnp.ndarray[short] LE_status=None):
         """
