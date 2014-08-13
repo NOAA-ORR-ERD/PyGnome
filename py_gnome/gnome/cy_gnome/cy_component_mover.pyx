@@ -51,17 +51,17 @@ cdef class CyComponentMover(CyCurrentMover):
         """
         cdef OSErr err
 
-        for c_file in (cats_file1, cats_file2):
-            if c_file:
-                pattern = filename_as_bytes(c_file)
-                err = self.component.TextRead(pattern, '')
-                if err != 0:
-                    '''
-                    For now just raise an OSError - until the types of possible
-                    errors are defined and enumerated
-                    '''
-                    raise OSError("ComponentMover_c.TextRead returned an error"
-                                  " for {0}".format(pattern))
+        f1 = filename_as_bytes(cats_file1)
+        if cats_file2:
+            f2 = filename_as_bytes(cats_file2)
+            err = self.component.TextRead(f1, f2)
+            if err != 0:
+                '''
+                For now just raise an OSError - until the types of possible
+                errors are defined and enumerated
+                '''
+                raise OSError("ComponentMover_c.TextRead returned an error"
+                              " for {0}, {1}".format(f1, f2))
 
     def __init__(self,
                  pat1_angle=0,
