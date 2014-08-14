@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-import sys, os
+import os
 import glob
 import shutil
 from subprocess import call
@@ -15,10 +15,10 @@ pkg_name = 'OilLibrary'
 class cleandev(clean):
     def run(self):
         clean.run(self)
-        
+
         src = os.path.join(here, r'oil_library')
         to_rm = glob.glob(os.path.join(src, r'*.pyc'))
-        to_rm.extend([os.path.join(here,'{0}.egg-info'.format(pkg_name)),
+        to_rm.extend([os.path.join(here, '{0}.egg-info'.format(pkg_name)),
                       os.path.join(here, 'build'),
                       os.path.join(here, 'dist'),
                       os.path.join(src, 'OilLib.db')])
@@ -41,28 +41,28 @@ requires = [
     'pytest'
     ]
 
-s=setup(name=pkg_name,
-      version='0.0',
-      description='OilLibrary',
-      long_description=README, 
-      author='ADIOS/GNOME team at NOAA ORR',
-      author_email='orr.gnome@noaa.gov',
-      url='',
-      keywords='adios weathering oilspill modeling',
-      packages=find_packages(),
-      include_package_data=True,
-      install_requires=requires,
-      tests_require=requires,
-      package_data={'oil_library': ['OilLib',
-                                    'tests/*.py',
-                                    'tests/sample_data/*']},
-      cmdclass={'cleandev': cleandev},
-      entry_points = {
-              'console_scripts': [
-                'initialize_OilLibrary_db = oil_library.initializedb:make_db',
-                      ],
-              }
-      )
+s = setup(name=pkg_name,
+          version='0.0',
+          description='OilLibrary',
+          long_description=README,
+          author='ADIOS/GNOME team at NOAA ORR',
+          author_email='orr.gnome@noaa.gov',
+          url='',
+          keywords='adios weathering oilspill modeling',
+          packages=find_packages(),
+          include_package_data=True,
+          install_requires=requires,
+          tests_require=requires,
+          package_data={'oil_library': ['OilLib',
+                                        'tests/*.py',
+                                        'tests/sample_data/*']},
+          cmdclass={'cleandev': cleandev},
+          entry_points={
+                  'console_scripts': [('initialize_OilLibrary_db = '
+                                       'oil_library.initializedb:make_db'),
+                                      ],
+                        }
+          )
 
 # make database post install - couldn't call this directly so used
 # console script

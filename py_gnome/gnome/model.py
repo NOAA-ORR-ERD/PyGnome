@@ -9,9 +9,6 @@ import copy
 import json
 import inspect
 
-from pprint import PrettyPrinter
-pp = PrettyPrinter(indent=2)
-
 import numpy
 np = numpy
 from colander import (MappingSchema, SchemaNode,
@@ -67,6 +64,7 @@ class ModelSchema(ObjType):
     weatherers = OrderedCollectionItemsList(missing=drop)
     environment = OrderedCollectionItemsList(missing=drop)
     outputters = OrderedCollectionItemsList(missing=drop)
+    num_time_steps = SchemaNode(Int(), missing=drop)
 
 
 class Model(Serializable):
@@ -99,7 +97,8 @@ class Model(Serializable):
     # They both have _to_dict() methods to return underlying ordered
     # collections and that would not be the correct way to check equality
     _state += [Field('spills', save=True, update=True, test_for_eq=False),
-               Field('uncertain_spills', save=True, test_for_eq=False)]
+               Field('uncertain_spills', save=True, test_for_eq=False),
+               Field('num_time_steps', read=True)]
 
     # list of OrderedCollections
     _oc_list = ['movers', 'weatherers', 'environment', 'outputters']
@@ -326,9 +325,11 @@ class Model(Serializable):
         except AttributeError:
             self._time_step = int(time_step)
 
-        # there is a zeroth time step
-        self._num_time_steps = int(self._duration.total_seconds()
-                                   // self._time_step) + 1
+        # We do not count any remainder time.
+        initial_0th_step = 1
+        self._num_time_steps = (initial_0th_step +
+                                int(self._duration.total_seconds()
+                                    // self._time_step))
         self.rewind()
 
     @property
@@ -360,9 +361,11 @@ class Model(Serializable):
             self.rewind()
         self._duration = duration
 
-        # there is a zeroth time step
-        self._num_time_steps = int(self._duration.total_seconds()
-                                   // self.time_step) + 1
+        # We do not count any remainder time.
+        initial_0th_step = 1
+        self._num_time_steps = (initial_0th_step +
+                                int(self._duration.total_seconds()
+                                    // self._time_step))
 
     @property
     def map(self):
@@ -532,13 +535,11 @@ class Model(Serializable):
         output_info = {}
 
         for outputter in self.outputters:
-            print 'outputter = ', outputter.__class__.__name__
             if self.current_time_step == self.num_time_steps - 1:
                 output = outputter.write_output(self.current_time_step, True)
             else:
                 output = outputter.write_output(self.current_time_step)
 
-            print 'output = ', output
             if output is not None:
                 output_info[outputter.__class__.__name__] = output
 
@@ -669,8 +670,6 @@ class Model(Serializable):
                 return False
 
             if self.spills != other.spills:
-                print 'Model.__eq__(): spills:'
-                pp.pprint((self.spills, other.spills))
                 return False
 
         return check

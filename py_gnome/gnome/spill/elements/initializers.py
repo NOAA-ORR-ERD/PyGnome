@@ -11,6 +11,7 @@ import copy
 import numpy
 np = numpy
 from colander import SchemaNode, Int, Float, Range, TupleSchema
+from collections import OrderedDict
 
 import gnome    # required by new_from_dict
 from gnome.utilities.rand import random_with_persistance
@@ -40,7 +41,18 @@ class InitBaseClass(object):
     _state = copy.deepcopy(Serializable._state)
 
     def __init__(self):
-        self.array_types = {}
+        # make it an ordered dict so first element in array_types for any
+        # initializer will be the primary data_array that is required by a
+        # mover or weatherer. All other data_arrays are set by the initializer
+        # by may not be directly required by a mover/weather. An example is
+        # InitRiseVelFromDropletSizeFromDist() which stores the
+        # droplet_diameter in the data_arrays even though it isn't required by
+        # the mover
+        #
+        # NOTE: It is not necessary to make this an OrderedDict since the
+        # data_arrays will contain all array_types set by the initializer if
+        # the mover sets the primary data_array (ie rise_vel for above example)
+        self.array_types = OrderedDict()
 
     def initialize(self):
         """
@@ -100,6 +112,7 @@ class InitWindages(InitBaseClass, Serializable):
                                  'windage_range': array_types.windage_range,
                                  'windage_persist': array_types.windage_persist
                                  })
+        self.name = 'windages'
 
     def __repr__(self):
         return ('{0.__class__.__module__}.{0.__class__.__name__}('
@@ -166,6 +179,7 @@ class InitMassComponentsFromOilProps(InitBaseClass, Serializable):
         super(InitMassComponentsFromOilProps, self).__init__()
         self.array_types.update({'mass_components': array_types.mass_components
                                  })
+        self.name = 'mass_components'
 
     def initialize(self, num_new_particles, spill, data_arrays, substance):
         '''
@@ -187,8 +201,7 @@ class InitMassComponentsFromOilProps(InitBaseClass, Serializable):
             raise ValueError('mass attribute of spill is None - cannot '
                              'compute particle mass without total mass')
 
-        total_mass = spill.get_mass('g')
-        le_mass = total_mass / spill.release.num_elements
+        le_mass = data_arrays['mass'][-num_new_particles:]
 
         mass_fractions = np.asarray(zip(*substance.mass_components)[0],
                                     dtype=np.float64)
@@ -211,6 +224,7 @@ class InitHalfLivesFromOilProps(InitBaseClass, Serializable):
         """
         super(InitHalfLivesFromOilProps, self).__init__()
         self.array_types.update({'half_lives': array_types.half_lives})
+        self.name = 'half_lives'
 
     def initialize(self, num_new_particles, spill, data_arrays, substance):
         '''
@@ -253,39 +267,16 @@ class InitMassFromTotalMass(InitBaseClass, Serializable):
         """
         super(InitMassFromTotalMass, self).__init__()
         self.array_types.update({'mass': array_types.mass})
+        self.name = 'mass'
 
     def initialize(self, num_new_particles, spill, data_arrays, substance):
         if spill.mass is None:
             raise ValueError('mass attribute of spill is None - cannot '
                              'compute particle mass without total mass')
 
-        _total_mass = spill.get_mass('g')
+        _total_mass = spill.get_mass('kg')
         data_arrays['mass'][-num_new_particles:] = (_total_mass /
                                                     spill.release.num_elements)
-
-
-# NOT REQUIRED. IF DENSITY IS KNOWN, WE CAN COMPUTE TOTAL MASS IN SPILL - THEN
-# USE InitMassFromTotalMass as initializer
-#==============================================================================
-# class InitMassFromVolume(InitBaseClass, Serializable):
-#     """
-#     Initialize the 'mass' array based on total volume spilled and the type of
-#     substance. No parameters, as it uses the volume specified elsewhere.
-#     """
-#     _state = copy.deepcopy(InitBaseClass._state)
-#     _schema = base_schema.ObjType
-# 
-#     def initialize(self, num_new_particles, spill, data_arrays, substance):
-#         if spill.volume is None:
-#             raise ValueError('volume attribute of spill is None - cannot '
-#                              'compute mass without volume')
-# 
-#         _total_mass = (substance.get_density('kg/m^3')
-#                        * spill.get_volume('m^3') * 1000)
-#         data_arrays['mass'][-num_new_particles:] = (_total_mass /
-#                                                     spill.release.num_elements)
-#==============================================================================
-
 
 class InitMassFromPlume(InitBaseClass, Serializable):
     """
@@ -300,6 +291,7 @@ class InitMassFromPlume(InitBaseClass, Serializable):
         """
         super(InitMassFromPlume, self).__init__()
         self.array_types.update({'mass': array_types.mass})
+        self.name = 'mass'
 
     def initialize(self, num_new_particles, spill, data_arrays, substance):
         if spill.plume_gen is None:
@@ -388,6 +380,7 @@ class InitRiseVelFromDist(DistributionBase):
             self.distribution = UniformDistribution()
 
         self.array_types.update({'rise_vel': array_types.rise_vel})
+        self.name = 'rise_vel'
 
     def initialize(self, num_new_particles, spill, data_arrays,
                    substance=None):
@@ -440,6 +433,7 @@ class InitRiseVelFromDropletSizeFromDist(DistributionBase):
         self.water_density = water_density
         self.array_types.update({'rise_vel': array_types.rise_vel,
                             'droplet_diameter': array_types.droplet_diameter})
+        self.name = 'rise_vel'
 
     def initialize(self, num_new_particles, spill, data_arrays, substance):
         """

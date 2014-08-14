@@ -76,10 +76,12 @@ arrays_ = (windages,
            mass_array, mass_array,
            rise_vel_array, rise_vel_array, rise_vel_array, rise_vel_array,
            rise_vel_diameter_array)
-initializer_keys = ('windages',
-                    'mass', 'mass',
-                    'rise_vel', 'rise_vel', 'rise_vel', 'rise_vel',
-                    'rise_vel')
+#==============================================================================
+# initializer_keys = ('windages',
+#                     'mass', 'mass',
+#                     'rise_vel', 'rise_vel', 'rise_vel', 'rise_vel',
+#                     'rise_vel')
+#==============================================================================
 spill_list = (None,
               Spill(Release(datetime.now()), volume=10),
               Spill(Release(datetime.now()), mass=10),
@@ -118,14 +120,16 @@ def test_correct_particles_set_by_initializers(fcn, arr_types, spill):
         assert np.any(0 != data_arrays[key][-num_elems:])
 
 
-@pytest.mark.parametrize(("fcn", "init_key"),
-                         zip(fcn_list, initializer_keys))
-def test_element_type_serialize_deserialize(fcn, init_key):
+#==============================================================================
+# @pytest.mark.parametrize(("fcn", "init_key"),
+#                          zip(fcn_list, initializer_keys))
+#==============================================================================
+@pytest.mark.parametrize("fcn", fcn_list)
+def test_element_type_serialize_deserialize(fcn):
     '''
     test serialization/deserialization of ElementType for various initiailzers
     '''
-    initializers = {init_key: fcn}
-    element_type = ElementType(initializers)
+    element_type = ElementType(initializers=[fcn])
 
     json_ = element_type.serialize('save')
     dict_ = element_type.deserialize(json_)
@@ -169,22 +173,6 @@ class TestInitConstantWindageRange:
         with raises(ValueError):
             obj.windage_persist = bad_wp
 
-# REMOVED - WAS REDUNDANT INITIALIZER
-#==============================================================================
-# def test_initailize_InitMassFromVolume():
-#     data_arrays = mock_append_data_arrays(mass_array, num_elems)
-#     substance = OilProps('oil_conservative')
-# 
-#     spill = Spill(Release(datetime.now(), 10))
-#     spill.volume = num_elems / (substance.get_density('kg/m^3') * 1000)
-# 
-#     fcn = InitMassFromVolume()
-#     fcn.initialize(num_elems, spill, data_arrays, substance)
-# 
-#     assert_dataarray_shape_size(mass_array, data_arrays, num_elems)
-#     assert np.all(1. == data_arrays['mass'])
-#==============================================================================
-
 
 def test_initailize_InitMassFromTotalMass():
     data_arrays = mock_append_data_arrays(mass_array, num_elems)
@@ -198,7 +186,8 @@ def test_initailize_InitMassFromTotalMass():
     fcn.initialize(num_elems, spill, data_arrays, substance)
 
     assert_dataarray_shape_size(mass_array, data_arrays, num_elems)
-    assert np.all(1. == data_arrays['mass'])
+    mass_per_le = spill.get_mass('kg')/spill.release.num_elements
+    assert np.all(mass_per_le == data_arrays['mass'])
 
 
 def test_initialize_InitRiseVelFromDist_uniform():
@@ -282,14 +271,14 @@ arr_types = {'windages': array_types.windages,
              'rise_vel': array_types.rise_vel}
 
 inp_params = [((floating(),
-                ElementType({'windages': InitWindages(),
-                             'mass': InitMassFromTotalMass()})), arr_types),
+                ElementType([InitWindages(),
+                             InitMassFromTotalMass()])), arr_types),
               ((floating(),
-                ElementType({'windages': InitWindages(),
-                             'rise_vel': InitRiseVelFromDist()})), arr_types),
+                ElementType([InitWindages(),
+                             InitRiseVelFromDist()])), arr_types),
               ((floating(),
-                ElementType({'mass': InitMassFromTotalMass(),
-                             'rise_vel': InitRiseVelFromDist()})), arr_types),
+                ElementType([InitMassFromTotalMass(),
+                             InitRiseVelFromDist()])), arr_types),
               ]
 
 
@@ -326,14 +315,13 @@ def test_element_types(elem_type, arr_types, sample_sc_no_uncertainty):
         sc.release_elements(time_step, current_time)
 
         for spill in sc.spills:
-            spill.element_type
             spill_mask = sc.get_spill_mask(spill)
+            # todo: need better API for access
+            s_arr_types = spill.get('array_types').keys()
 
             if np.any(spill_mask):
                 for key in arr_types:
-                    if (key in spill.element_type.initializers or
-                        ('windages' in spill.element_type.initializers and
-                         key in ['windage_range', 'windage_persist'])):
+                    if key in s_arr_types:
                         assert np.all(sc[key][spill_mask] != 0)
                     else:
                         assert np.all(sc[key][spill_mask] == 0)
@@ -359,17 +347,17 @@ def test_serialize_deserialize_initializers(fcn):
 
 test_l = []
 test_l.extend(fcn_list)
-test_l.extend([ElementType(initializers={'init': fcn}) for fcn in fcn_list])
+test_l.extend([ElementType(initializers=fcn) for fcn in fcn_list])
 test_l.append(floating())
 
 
-@pytest.mark.parametrize(("test_obj"), ['webapi'])
-def test_serialize_deserialize(test_obj):
+def test_serialize_deserialize():
     '''
-    serialize/deserialize for 'save' optio is tested in test_save_load
+    serialize/deserialize for 'save' option is tested in test_save_load
     This tests serialize/deserilize with 'webapi' option
     '''
     et = floating()
+    et.initializers.append(InitMassFromTotalMass())
     dict_ = ElementType.deserialize(et.serialize('webapi'))
 
     # for webapi, make new objects from nested objects before creating

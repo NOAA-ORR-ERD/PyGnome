@@ -7,9 +7,6 @@ import os
 import shutil
 from datetime import datetime, timedelta
 
-from pprint import PrettyPrinter
-pp = PrettyPrinter(indent=2)
-
 import numpy
 np = numpy
 
@@ -126,8 +123,10 @@ def test_release_end_of_step(duration):
     model = Model(time_step=timedelta(minutes=15),
                   duration=timedelta(hours=duration))
 
-    model.spills += point_line_release_spill(10, (0.0, 0.0, 0.0), model.start_time,
-                        end_release_time=model.start_time + model.duration)
+    end_release_time = model.start_time + model.duration
+    model.spills += point_line_release_spill(10, (0.0, 0.0, 0.0),
+                                             model.start_time,
+                                             end_release_time=end_release_time)
 
     model.movers += SimpleMover(velocity=(1., -1., 0.0))
 
@@ -305,12 +304,9 @@ def test_simple_run_with_image_output():
     # image_info = model.next_image()
     num_steps_output = 0
     while True:
-        print 'calling step'
         try:
-            image_info = model.step()
+            model.step()
             num_steps_output += 1
-            print 'image_info:'
-            pp.pprint(image_info)
         except StopIteration:
             print 'Done with the model run'
             break

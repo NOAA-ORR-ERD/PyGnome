@@ -277,12 +277,16 @@ OSErr CATSMover_c::PrepareForModelRun()
 }
 
 
-OSErr CATSMover_c::PrepareForModelStep(const Seconds &model_time, const Seconds &time_step,
-									   bool uncertain, int numLESets, int *LESetsSizesList)
+OSErr CATSMover_c::PrepareForModelStep(const Seconds &model_time,
+									   const Seconds &time_step,
+									   bool uncertain,
+									   int numLESets, int *LESetsSizesList)
 {
 	OSErr err = 0;
 
-	err = CurrentMover_c::PrepareForModelStep(model_time, time_step, uncertain, numLESets, LESetsSizesList);
+	err = CurrentMover_c::PrepareForModelStep(model_time, time_step,
+											  uncertain,
+											  numLESets, LESetsSizesList);
 	if (err)
 		return err; // note: this calls UpdateUncertainty()
 
@@ -293,7 +297,8 @@ OSErr CATSMover_c::PrepareForModelStep(const Seconds &model_time, const Seconds 
 	if (err) 
 		printError("An error occurred in TCATSMover::PrepareForModelStep");
 
-	// in m/s, note: DIVIDED by timestep because this is later multiplied by the timestep
+	// in m/s
+	//note: DIVIDED by timestep because this is later multiplied by the timestep
 	this->fOptimize.isOptimizedForStep = true;
 	this->fOptimize.value = sqrt(6 * (fEddyDiffusion / 10000) / time_step);
 

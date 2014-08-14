@@ -1,7 +1,6 @@
 '''
 tests for geojson outputter
 '''
-import geojson
 import os
 import shutil
 from glob import glob
@@ -16,9 +15,11 @@ from gnome.utilities.time_utils import date_to_sec
 from gnome.basic_types import oil_status
 from gnome.persist import load
 
-basedir = os.path.dirname(__file__)
-datadir = os.path.join(basedir, 'sample_data')
-output_dir = os.path.join(basedir, 'geojson_output')
+here = os.path.dirname(__file__)
+up_one = os.path.dirname(here)
+
+datadir = os.path.join(up_one, 'sample_data')
+output_dir = os.path.join(up_one, 'geojson_output')
 
 
 @pytest.fixture(scope='module')
