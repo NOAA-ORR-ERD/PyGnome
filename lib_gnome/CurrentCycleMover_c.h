@@ -40,7 +40,8 @@ public:
 	TOSSMTimeValue *timeDep;
 	Boolean bTimeFileActive;
 
-	WorldPoint 		refP; 					// location of tide station or map-join pin
+	//WorldPoint 		refP; 					// location of tide station or map-join pin
+	WorldPoint3D		refPt3D;
 	//LONGH fVerdatToNetCDFH;		// these two fields will be in curvilinear if we extend there
 	//WORLDPOINTFH fVertexPtsH;	// may not need this if set pts in dagtree	
 	//long fNumNodes;
@@ -77,7 +78,9 @@ public:
 	//VelocityRec 		GetEndVelocity(long index, Boolean *isDryPt);
 	
 	void				SetTimeDep(TOSSMTimeValue *newTimeDep) {timeDep = newTimeDep;}
-	void				SetRefPosition (WorldPoint p) { refP = p;}
+	//void				SetRefPosition (WorldPoint p) { refP = p;}
+	void				SetRefPosition(WorldPoint3D refPt3D) {this->refPt3D = refPt3D;}
+	WorldPoint3D		GetRefPosition() {return refPt3D;}
 
 	virtual WorldPoint3D       GetMove(const Seconds& model_time, Seconds timeStep,long setIndex,long leIndex,LERec *thisLE,LETYPE leType);
 	virtual OSErr 		PrepareForModelRun(); 

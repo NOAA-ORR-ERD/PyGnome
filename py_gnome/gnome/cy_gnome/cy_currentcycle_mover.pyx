@@ -166,7 +166,6 @@ cdef class CyCurrentCycleMover(cy_mover.CyMover):
         
         def __set__(self, value):
             self.current_cycle.SetTimeShift(value)
-        
 
     def extrapolate_in_time(self, extrapolate):
         self.current_cycle.SetExtrapolationInTime(extrapolate)
@@ -182,9 +181,7 @@ cdef class CyCurrentCycleMover(cy_mover.CyMover):
         Takes a CyShioTime object as input and sets C++ CurrentCycle mover properties from the Shio object.
         """
         self.current_cycle.SetTimeDep(cy_shio.shio)
-        #self.current_cycle.SetRefPosition(cy_shio.shio.GetStationLocation())
-        station_loc = cy_shio.station_location
-        self.current_cycle.SetRefPosition(station_loc[:2])
+        self.current_cycle.SetRefPosition(cy_shio.shio.GetStationLocation())
         self.current_cycle.bTimeFileActive = True
         #self.current_cycle.scaleType = 1
         return True

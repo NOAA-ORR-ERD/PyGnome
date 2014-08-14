@@ -38,8 +38,11 @@ CurrentCycleMover_c::CurrentCycleMover_c () : GridCurrentMover_c()
 	timeDep = 0;
 	bTimeFileActive = true;
 	fPatternStartPoint = MaxFlood;	// this should be user input
-	refP.pLat = 0;
-	refP.pLong = 0;
+	//refP.pLat = 0;
+	//refP.pLong = 0;
+	refPt3D.p.pLong = 0;
+	refPt3D.p.pLat = 0;
+	refPt3D.z = 0;
 }
 
 void CurrentCycleMover_c::Dispose ()

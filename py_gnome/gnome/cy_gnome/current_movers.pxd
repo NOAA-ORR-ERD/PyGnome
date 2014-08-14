@@ -66,7 +66,7 @@ cdef extern from "ComponentMover_c.h":
 
 
 cdef extern from "GridCurrentMover_c.h":
-    
+
     cdef struct UncertaintyParameters:
         double     alongCurUncertainty
         double     crossCurUncertainty
@@ -80,7 +80,7 @@ cdef extern from "GridCurrentMover_c.h":
         TimeGridVel_c    *timeGrid
         Boolean fIsOptimizedForStep
         Boolean fAllowVerticalExtrapolationOfCurrents
-        
+
         GridCurrentMover_c ()
         WorldPoint3D    GetMove(Seconds&,Seconds&,Seconds&,Seconds&, long, long, LERec *, LETYPE)
         OSErr             get_move(int n, unsigned long model_time, unsigned long step_len, WorldPoint3D* ref, WorldPoint3D* delta, short* LE_status, LEType spillType, long spillID)
@@ -91,15 +91,15 @@ cdef extern from "GridCurrentMover_c.h":
         bool             GetExtrapolationInTime()
         void             SetTimeShift(long timeShift)
         long             GetTimeShift()
-        
+
 cdef extern from "CurrentCycleMover_c.h":
-    
+
     cdef cppclass CurrentCycleMover_c(GridCurrentMover_c):
         OSSMTimeValue_c *timeDep
         Boolean bTimeFileActive
         short fPatternStartPoint
         WorldPoint      refP
-        
+
         CurrentCycleMover_c ()
         WorldPoint3D    GetMove(Seconds&,Seconds&,Seconds&,Seconds&, long, long, LERec *, LETYPE)
         #OSErr             get_move(int n, unsigned long model_time, unsigned long step_len, WorldPoint3D* ref, WorldPoint3D* delta, short* LE_status, LEType spillType, long spillID)
@@ -107,4 +107,5 @@ cdef extern from "CurrentCycleMover_c.h":
         #OSErr           TextRead(char *path,char *topFilePath)
         #OSErr           ExportTopology(char *topFilePath)
         void              SetTimeDep(OSSMTimeValue_c *ossm)
-        void              SetRefPosition (WorldPoint p)
+        void              SetRefPosition(WorldPoint3D p)
+        WorldPoint3D      GetRefPosition()
