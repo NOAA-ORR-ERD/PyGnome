@@ -43,7 +43,7 @@ class CatsMover(CyMover, serializable.Serializable):
 
     _state = copy.deepcopy(CyMover._state)
 
-    _update = ['scale_refpoint', 'scale_value', 'scale'
+    _update = ['scale', 'scale_refpoint', 'scale_value',
                'uncertain_duration', 'uncertain_time_delay',
                'up_cur_uncertain', 'down_cur_uncertain',
                'right_cur_uncertain', 'left_cur_uncertain',
@@ -107,6 +107,7 @@ class CatsMover(CyMover, serializable.Serializable):
         if tide is not None:
             self.tide = tide
 
+        self.scale = kwargs.pop('scale', self.mover.scale_type)
         self.scale_value = kwargs.get('scale_value',
                                       self.mover.scale_value)
 
@@ -127,7 +128,7 @@ class CatsMover(CyMover, serializable.Serializable):
 
         if (self.scale and
             self.scale_value != 0.0 and
-            self.scale_refpoint is None):
+                self.scale_refpoint is None):
             raise TypeError("Provide a reference point in 'scale_refpoint'.")
 
         super(CatsMover, self).__init__(**kwargs)
@@ -140,12 +141,10 @@ class CatsMover(CyMover, serializable.Serializable):
 
     # Properties
 
-    @property
-    def scale(self):
-        if self.scale_value != 1:
-            return True
-        else:
-            return False
+    scale = property(lambda self: bool(self.mover.scale_type),
+                     lambda self, val: setattr(self.mover,
+                                               'scale_type',
+                                               int(val)))
 
     scale_refpoint = property(lambda self: self.mover.ref_point,
                               lambda self, val: setattr(self.mover,
@@ -691,8 +690,7 @@ class ComponentMoverSchema(ObjType, ProcessSchema):
     filename1 = SchemaNode(String(), missing=drop)
     filename2 = SchemaNode(String(), missing=drop)
     #scale = SchemaNode(Bool())
-    #ref_point = WorldPoint(missing=drop)
-    ref_point = LongLat(missing=drop)
+    scale_refpoint = WorldPoint(missing=drop)
     #scale_value = SchemaNode(Float())
 
 
@@ -700,7 +698,7 @@ class ComponentMover(CyMover, serializable.Serializable):
 
     _state = copy.deepcopy(CyMover._state)
 
-    _update = ['ref_point',
+    _update = ['scale_refpoint',
                'pat1_angle', 'pat1_speed', 'pat1_speed_units',
                'pat1_scale_to_value',
                'pat2_angle', 'pat2_speed', 'pat2_speed_units',
@@ -801,9 +799,9 @@ class ComponentMover(CyMover, serializable.Serializable):
 #                      lambda self, val: setattr(self.mover, 'scale_by'
 #                      , int(val)))
 
-    ref_point = property(lambda self: self.mover.ref_point,
-                         lambda self, val: setattr(self.mover,
-                                                   'ref_point', val))
+    scale_refpoint = property(lambda self: self.mover.ref_point,
+                              lambda self, val: setattr(self.mover,
+                                                        'ref_point', val))
 
     pat1_angle = property(lambda self: self.mover.pat1_angle,
                           lambda self, val: setattr(self.mover,

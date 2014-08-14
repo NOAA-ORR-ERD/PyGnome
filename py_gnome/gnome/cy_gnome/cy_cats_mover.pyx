@@ -40,28 +40,31 @@ cdef class CyCatsMover(CyCurrentMover):
         self.curr_mover = NULL
         self.cats = NULL
 
-    def __init__(self, scale_value=1,
+    def __init__(self, scale_type=0, scale_value=1,
                  uncertain_eddy_diffusion=0, uncertain_eddy_v0=.1,
                  ref_point=None, *args, **kwargs):
         """
         Initialize the CyCatsMover which sets the properties for the underlying
         C++ CATSMover_c object
 
+        :param scale_type=0: There are 3 options in c++, however only
+            two options are used:
+                - SCALE_NONE = 0
+                - SCALE_CONSTANT = 1
+            The python CatsMover wrapper sets only 0 or 1. Default is NONE.
         :param scale_value=1: The value by which to scale the data.
             By default, this is 1 which means no scaling
         :param uncertain_eddy_diffusion: Diffusion coefficient for
             eddy diffusion. Default is 0.
         :param uncertain_eddy_v0: Default is .1 (Check that this is still used)
         :param ref_point: Reference point used by C++ CATSMover_c.
-            Default (long, lat, z) = (-999, -999, -999)
+            Default (long, lat, z) = (0, 0, -999)
 
         .. note:: See base class for remaining properties which can be given
         as *args, or **kwargs. The *args is for pickling to work since it
         doesn't understand kwargs.
         """
-        # If scale_value = 1, then scaleType is essentially None since scaling
-        # by 1 doesn't do anything. So always set scaleType to be 1
-        self.cats.scaleType = 1
+        self.cats.scaleType = scale_type
         self.cats.scaleValue = scale_value
         self.cats.fEddyDiffusion = uncertain_eddy_diffusion
 
@@ -74,6 +77,14 @@ cdef class CyCatsMover(CyCurrentMover):
         ## make-shifting for now.
         #self.cats.fOptimize.isOptimizedForStep = 0
         #self.cats.fOptimize.isFirstStep = 1
+
+    property scale_type:
+        def __get__(self):
+            return self.cats.scaleType
+
+        def __set__(self, value):
+            'This should be 0 or 1'
+            self.cats.scaleType = value
 
     property scale_value:
         def __get__(self):
@@ -145,7 +156,8 @@ cdef class CyCatsMover(CyCurrentMover):
         """
         b_repr = super(CyCatsMover, self).__repr__()
         b_add = b_repr[b_repr.find('(') + 1:]
-        c_repr = ('{0.__class__.__name__}(scale_value={0.scale_value}, '
+        c_repr = ('{0.__class__.__name__}(scale_type={0.scale_type}, '
+                  'scale_value={0.scale_value}, '
                   'uncertain_eddy_diffusion={0.uncertain_eddy_diffusion}, '
                   'uncertain_eddy_v0={0.uncertain_eddy_v0}, ').format(self)
         # append ref_point and base class props:
@@ -155,7 +167,8 @@ cdef class CyCatsMover(CyCurrentMover):
     def __str__(self):
         """Return string representation of this object"""
         b_str = super(CyCatsMover, self).__str__()
-        c_str = b_str + ('  scale value = {0.scale_value}\n'
+        c_str = b_str + ('  scale type = {0.scale_type}\n'
+                         '  scale value = {0.scale_value}\n'
                          '  eddy diffusion coef={0.uncertain_eddy_diffusion}\n'
                          '  ref_point={0.ref_point}\n'
                          .format(self))
@@ -165,7 +178,8 @@ cdef class CyCatsMover(CyCurrentMover):
         '''
         required or pickle/unpickle
         '''
-        props = [self.scale_value,
+        props = [self.scale_type,
+                 self.scale_value,
                  self.uncertain_eddy_diffusion,
                  self.uncertain_eddy_v0,
                  self.ref_point]
