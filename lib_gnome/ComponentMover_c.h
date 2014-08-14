@@ -35,7 +35,8 @@ public:
 	Boolean				bPat2Open;
 	TOSSMTimeValue		*timeFile;
 	
-	WorldPoint			refP;
+	//WorldPoint			refP;
+	WorldPoint3D		refPt3D;
 	Boolean 			bRefPointOpen;
 	
 	double				pat1Angle;
@@ -91,8 +92,11 @@ public:
 	virtual WorldPoint3D       GetMove(const Seconds& model_time, Seconds timeStep,long setIndex,long leIndex,LERec *theLE,LETYPE leType);
 	virtual	Boolean 		VelocityStrAtPoint(WorldPoint3D wp, char *diagnosticStr);	
 
-	void				SetRefPosition (WorldPoint p) { refP = p;}
-	void				GetRefPosition (WorldPoint *p) { (*p) = refP;}
+	//void				SetRefPosition (WorldPoint p) { refP = p;}
+	//void				GetRefPosition (WorldPoint *p) { (*p) = refP;}
+	void				SetRefPosition (WorldPoint3D p) { refPt3D = p;}
+	void				GetRefPosition (WorldPoint3D *p) { (*p) = this->refPt3D;}
+	WorldPoint3D		GetRefPosition () { return this->refPt3D;}	// overload to make PyGnome simpler
 
 	void				SetTimeFile (TOSSMTimeValue *newTimeFile);
 	TOSSMTimeValue		*GetTimeFile () { return (timeFile); }

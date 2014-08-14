@@ -9,10 +9,11 @@ import pytest
 
 from gnome.cy_gnome.cy_current_mover import CyCurrentMover
 from gnome.cy_gnome.cy_cats_mover import CyCatsMover
+from gnome.cy_gnome.cy_component_mover import CyComponentMover
 
 
 'Test pickling all objects that derive from CyCurrentMover - parametrized test'
-obj = [CyCurrentMover, CyCatsMover]
+obj = [CyCurrentMover, CyCatsMover, CyComponentMover]
 
 
 @pytest.mark.parametrize("obj", obj)

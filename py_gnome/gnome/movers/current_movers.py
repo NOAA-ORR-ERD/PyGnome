@@ -43,14 +43,14 @@ class CatsMover(CyMover, serializable.Serializable):
 
     _state = copy.deepcopy(CyMover._state)
 
-    _update = ['scale_refpoint', 'scale_value',
+    _update = ['scale_refpoint', 'scale_value', 'scale'
                'uncertain_duration', 'uncertain_time_delay',
                'up_cur_uncertain', 'down_cur_uncertain',
                'right_cur_uncertain', 'left_cur_uncertain',
                'uncertain_eddy_diffusion', 'uncertain_eddy_v0']
     _create = []
     _create.extend(_update)
-    _state.add(update=_update, save=_create, read=['scale'])
+    _state.add(update=_update, save=_create)
     _state.add_field([serializable.Field('filename',
                                          save=True, read=True, isdatafile=True,
                                          test_for_eq=False),

@@ -65,15 +65,10 @@ cdef class CyCatsMover(CyCurrentMover):
         self.cats.scaleValue = scale_value
         self.cats.fEddyDiffusion = uncertain_eddy_diffusion
 
-        if not ref_point:
-            # defaults (-999, -999, -999)
-            ref_point = (-999, -999, -999)
+        if ref_point is not None:
+            # defaults (0, 0, -999)
+            self.ref_point = ref_point
 
-        if not isinstance(ref_point, (list, tuple)) or len(ref_point) != 3:
-            raise ValueError('CyCatsMover.__init__(): ref_point needs to be '
-                             'in the format (long, lat, z)')
-
-        self.ref_point = ref_point
         super(CyCatsMover, self).__init__(*args, **kwargs)
         ## should not have to do this manually.
         ## make-shifting for now.
@@ -130,6 +125,10 @@ cdef class CyCatsMover(CyCurrentMover):
                   CyShioTime.ref_point
             """
             cdef WorldPoint3D pos
+
+            if not isinstance(ref_point, (list, tuple)) or len(ref_point) != 3:
+                raise ValueError('ref_point needs to be '
+                                 'in the format (long, lat, z)')
 
             pos.p.pLong = ref_point[0] * 10 ** 6  # should this happen in C++?
             pos.p.pLat = ref_point[1] * 10 ** 6

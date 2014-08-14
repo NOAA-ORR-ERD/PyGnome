@@ -26,7 +26,7 @@ ComponentMover_c::ComponentMover_c (TMap *owner, char *name) : CurrentMover_c (o
 	bPat2Open = true;
 	timeFile = nil;
 	
-	memset(&refP,0,sizeof(refP));
+	memset(&refPt3D,0,sizeof(refPt3D));
 	bRefPointOpen = false;
 	pat1Angle = 0;
 	pat2Angle = pat1Angle + 90;
@@ -67,7 +67,7 @@ ComponentMover_c::ComponentMover_c () : CurrentMover_c ()
 	//bPat2Open = true;
 	timeFile = nil;
 	
-	memset(&refP,0,sizeof(refP));
+	memset(&refPt3D,0,sizeof(refPt3D));
 	//bRefPointOpen = false;
 	pat1Angle = 0;
 	pat2Angle = pat1Angle + 90;
@@ -197,12 +197,13 @@ OSErr ComponentMover_c::CalculateAveragedWindsVelocity(const Seconds& model_time
 	VelocityRec wVel = {0.,0.};
 	double pat1Theta = PI * -(0.5 + (pat1Angle / 180.0));
 	double pat2Theta = PI * -(0.5 + (pat2Angle / 180.0));
-	WorldPoint3D refPoint3D = {0,0,0.};
+	//WorldPoint3D refPoint3D = {0,0,0.};
 	VelocityRec pat1ValRef;
 	double pat1ValRefLength;
 	
-	refPoint3D.p = refP;
-	pat1ValRef = pattern1 -> GetPatValue (refPoint3D);
+	//refPoint3D.p = refP;
+	//pat1ValRef = pattern1 -> GetPatValue (refPoint3D);
+	pat1ValRef = pattern1 -> GetPatValue(this->refPt3D);
 	pat1ValRefLength = sqrt (pat1ValRef.u * pat1ValRef.u + pat1ValRef.v * pat1ValRef.v);
 
 	strcpy(errmsg,"");
@@ -290,12 +291,13 @@ OSErr ComponentMover_c::CalculateAveragedWindsHdl(char *errmsg)
 	Boolean		bFound = false;
 	double pat1Theta = PI * -(0.5 + (pat1Angle / 180.0));
 	double pat2Theta = PI * -(0.5 + (pat2Angle / 180.0));
-	WorldPoint3D refPoint3D = {0,0,0.};
+	//WorldPoint3D refPoint3D = {0,0,0.};
 	VelocityRec pat1ValRef;
 	double pat1ValRefLength;
 	
-	refPoint3D.p = refP;
-	pat1ValRef = pattern1 -> GetPatValue (refPoint3D);
+	//refPoint3D.p = refP;
+	//pat1ValRef = pattern1 -> GetPatValue (refPoint3D);
+	pat1ValRef = pattern1 -> GetPatValue (this->refPt3D);
 	pat1ValRefLength = sqrt (pat1ValRef.u * pat1ValRef.u + pat1ValRef.v * pat1ValRef.v);
 
 	strcpy(errmsg,"");
@@ -490,12 +492,12 @@ OSErr ComponentMover_c::SetOptimizeVariables (char *errmsg, const Seconds& model
 	double		pat1SpeedMPS,pat2SpeedMPS,pat1Theta,pat2Theta;
 	double		pat1ValRefLength,pat2ValRefLength;
 	double		windSpeedToScale;
-	WorldPoint3D refPoint3D = {0,0,0.};
+	//WorldPoint3D refPoint3D = {0,0,0.};
 	
 	strcpy(errmsg,"");
 	
 	wVel.u = wVel.v = 0;
-	refPoint3D.p = refP;
+	//refPoint3D.p = refP;
 	
 	// get the time file / wind mover value for this time
 	
@@ -645,7 +647,8 @@ OSErr ComponentMover_c::SetOptimizeVariables (char *errmsg, const Seconds& model
 	dot1 = wVel.u*ref1Wind.u + wVel.v*ref1Wind.v;
 	dot2 = wVel.u*ref2Wind.u + wVel.v*ref2Wind.v;
 	
-	pat1ValRef = pattern1 -> GetPatValue (refPoint3D);
+	//pat1ValRef = pattern1 -> GetPatValue (refPoint3D);
+	pat1ValRef = pattern1 -> GetPatValue (this->refPt3D);
 	pat1ValRefLength = sqrt (pat1ValRef.u * pat1ValRef.u + pat1ValRef.v * pat1ValRef.v);
 	
 	// code goes here, some restriction on when WINDSTRESS scaling can be used?
@@ -672,7 +675,8 @@ OSErr ComponentMover_c::SetOptimizeVariables (char *errmsg, const Seconds& model
 	}
 	if (pattern2) 
 	{
-		pat2ValRef = pattern2 -> GetPatValue (refPoint3D);
+		//pat2ValRef = pattern2 -> GetPatValue (refPoint3D);
+		pat2ValRef = pattern2 -> GetPatValue(this->refPt3D);
 		pat2ValRefLength = sqrt (pat2ValRef.u * pat2ValRef.u + pat2ValRef.v * pat2ValRef.v);
 		if (!bUseAveragedWinds || (bUseAveragedWinds && bUseMainDialogScaleFactor))	// averaged winds shouldn't be an issue here
 		{

@@ -90,8 +90,8 @@ cdef class CyMover(object):
                 For now just raise an OSError - until the types of possible
                 errors are defined and enumerated
                 """
-                raise OSError("PrepareForModelStep returned an error: {0}"
-                              .format(err))
+                raise OSError("{0.__class__.__name__} returned an error: {1}"
+                              .format(self, err))
 
     def model_step_is_done(self, cnp.ndarray[short] LE_status=None):
         """
