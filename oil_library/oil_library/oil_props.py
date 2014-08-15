@@ -98,10 +98,12 @@ class OilProps(object):
         '''
         self._r_oil = oil_
         self.num_pc = 5     # probably determine this from data
-        self.mass_components = [0.] * self.num_pc
-        self.mass_components[0] = 1.
-        self.hl = [float('inf')] * self.num_pc
-        self.hl[0] = 15.*60
+        #======================================================================
+        # self.mass_components = [0.] * self.num_pc
+        # self.mass_components[0] = 1.
+        # self.hl = [float('inf')] * self.num_pc
+        # self.hl[0] = 15.*60
+        #======================================================================
         self._water_temp = water_temp
 
         self.boiling_point = boiling_point(self.num_pc, self.get('api'))
@@ -139,23 +141,21 @@ class OilProps(object):
             self.vapor_pressure_ratio.append(
                 vapor_pressure_ratio(bp, self._water_temp))
 
-    #==========================================================================
-    # @property
-    # def mass_components(self):
-    #     '''
-    #        Gets the mass components of our _r_oil
-    #        - Set 'mass_components' array based on mass fractions
-    #          (distillation cuts?) that are found in the _r_oil library
-    #        - Set 'half-lives' array based on ???
-    #        TODO: Right now this is just a stub that returns a hardcoded value
-    #              for testing purposes.
-    #              - Try to query our distillation cuts and see if they are usable.
-    #              - Figure out where we will get the half-lives data.
-    #     '''
-    #     mc = (1., 0., 0., 0., 0.)
-    #     hl = ((15. * 60), float('inf'), float('inf'), float('inf'), float('inf'))
-    #     return [MassComponent(*n) for n in zip(mc, hl)]
-    #==========================================================================
+    @property
+    def mass_components(self):
+        '''
+           Gets the mass components of our _r_oil
+           - Set 'mass_components' array based on mass fractions
+             (distillation cuts?) that are found in the _r_oil library
+           - Set 'half-lives' array based on ???
+           TODO: Right now this is just a stub that returns a hardcoded value
+                 for testing purposes.
+                 - Try to query our distillation cuts and see if they are usable.
+                 - Figure out where we will get the half-lives data.
+        '''
+        mc = (1., 0., 0., 0., 0.)
+        hl = ((15. * 60), float('inf'), float('inf'), float('inf'), float('inf'))
+        return [MassComponent(*n) for n in zip(mc, hl)]
 
     def get_density(self, units='kg/m^3'):
         '''

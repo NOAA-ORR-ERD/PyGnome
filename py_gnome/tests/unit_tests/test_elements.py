@@ -27,7 +27,7 @@ from gnome.utilities.distributions import (NormalDistribution,
                                            WeibullDistribution)
 
 from gnome.spill import Spill, Release
-from oil_library.oil_props import OilProps
+from oil_library import get_oil
 from gnome.persist import load
 
 from conftest import mock_append_data_arrays
@@ -101,7 +101,7 @@ def test_correct_particles_set_by_initializers(fcn, arr_types, spill):
     # the values for the correct elements are set
     data_arrays = mock_append_data_arrays(arr_types, num_elems)
     data_arrays = mock_append_data_arrays(arr_types, num_elems, data_arrays)
-    substance = OilProps('oil_conservative')
+    substance = get_oil('oil_conservative')
 
     if spill is not None:
         spill.release.num_elements = 10
@@ -176,7 +176,7 @@ class TestInitConstantWindageRange:
 
 def test_initailize_InitMassFromTotalMass():
     data_arrays = mock_append_data_arrays(mass_array, num_elems)
-    substance = OilProps('oil_conservative')
+    substance = get_oil('oil_conservative')
 
     spill = Spill(Release(datetime.now()))
     spill.release.num_elements = 10
@@ -208,7 +208,7 @@ def test_initialize_InitRiseVelFromDropletDist_weibull():
     'Test initialize data_arrays with Weibull dist'
     num_elems = 10
     data_arrays = mock_append_data_arrays(rise_vel_diameter_array, num_elems)
-    substance = OilProps('oil_conservative')
+    substance = get_oil('oil_conservative')
     spill = Spill(Release(datetime.now()))
 
     # (.001*.2) / (.693 ** (1 / 1.8)) - smaller droplet test case, in mm
@@ -227,7 +227,7 @@ def test_initialize_InitRiseVelFromDropletDist_weibull_with_min_max():
     'Test initialize data_arrays with Weibull dist'
     num_elems = 1000
     data_arrays = mock_append_data_arrays(rise_vel_diameter_array, num_elems)
-    substance = OilProps('oil_conservative')
+    substance = get_oil('oil_conservative')
     spill = Spill(Release(datetime.now()))
 
     # (.001*3.8) / (.693 ** (1 / 1.8)) - larger droplet test case, in mm

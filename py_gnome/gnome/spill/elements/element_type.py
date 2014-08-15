@@ -16,7 +16,7 @@ from .initializers import (InitRiseVelFromDropletSizeFromDist,
                            InitWindages,
                            InitMassFromTotalMass,
                            InitMassFromPlume)
-from oil_library.oil_props import (OilProps, OilPropsFromDensity)
+from oil_library import (get_oil, oil_from_density)
 
 from gnome.persist import base_schema
 
@@ -37,13 +37,10 @@ class ElementType(Serializable):
             iterable, then just append 'initializer' to list of initializers
             assuming it is just a single initializer object
 
-        :param substance='oil_conservative': Type of oil spilled.
-            If this is a string, or an oillibrary.models.Oil object, then
-            create gnome.spill.OilProps(oil) object. If this is a
-            gnome.spill.OilProps object, then simply instance oil_props
-            variable to it: self.oil_props = oil
-        :type substance: either str, or oillibrary.models.Oil object or
-                         gnome.spill.OilProps
+        :param substance='oil_conservative': Type of oil spilled. If this is a
+            string, then use get_oil to get the OilProps object, else assume it
+            is an OilProps object
+        :type substance: str or OilProps
         :param density=None: Allow user to set oil density directly.
         :param density_units='kg/m^3: Only used if a density is input.
         '''
@@ -57,9 +54,8 @@ class ElementType(Serializable):
 
         if isinstance(substance, basestring):
             # leave for now to preserve tests
-            self.substance = OilProps(substance)
+            self.substance = get_oil(substance)
         else:
-            # assume object passed in is an OilProps object
             self.substance = substance
 
     def __repr__(self):
@@ -241,9 +237,7 @@ def plume(distribution_type='droplet_size',
 
 ## Add docstring from called classes
 
-plume.__doc__ += ("\nDocumentation of OilPropsFromDensity:\n" +
-                   OilPropsFromDensity.__init__.__doc__ +
-                   "\nDocumentation of InitRiseVelFromDropletSizeFromDist:\n" +
+plume.__doc__ += ("\nDocumentation of InitRiseVelFromDropletSizeFromDist:\n" +
                    InitRiseVelFromDropletSizeFromDist.__init__.__doc__ +
                    "\nDocumentation of InitRiseVelFromDist:\n" +
                    InitRiseVelFromDist.__init__.__doc__ +

@@ -115,6 +115,9 @@ def get_oil(oil_name):
 
 def oil_from_density(density, name='user_oil', units='kg/m^3'):
     """
+    This should be a more general oil_from_props so we can define an OilProps
+    object from any properties defined for the raw Oil object
+
     :param name: name of oil
     :param density: density of oil
     :param units='API': units of density
