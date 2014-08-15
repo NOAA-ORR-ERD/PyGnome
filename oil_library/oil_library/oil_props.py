@@ -3,7 +3,7 @@ OilProps class which serves as a wrapper around
 gnome.db.oil_library.models.Oil class
 
 It also contains a dict containing a small number of sample_oils if user does
-not wish to query database to use an oil.
+not wish to query database to use an _r_oil.
 
 It contains a function that takes a string for 'oil_name' and returns and Oil
 object used to initialize and OilProps object
@@ -18,8 +18,6 @@ import math
 from hazpy import unit_conversion
 uc = unit_conversion
 
-from oil_library import Oil
-
 
 MassComponent = namedtuple('MassComponent',
                            ''' fraction,
@@ -27,7 +25,7 @@ MassComponent = namedtuple('MassComponent',
                            ''')
 
 
-def boiling_point(num_pc=5, api):
+def boiling_point(num_pc, api):
     '''
     return an array of boiling points for each psuedo-components
     Assume 5 pseudo-components
@@ -78,20 +76,27 @@ def mw_saturate(bp):
     return mw_s
 
 
-class OilProps(Oil):
+class OilProps(object):
     '''
-    Class gets the oil properties, specifically, it
+    Class gets derived oil properties, specifically, it
     has a property called density that returns a scalar as opposed to a
     list of Densities. Default for the property is to return value in SI units
     (kg/m^3)
 
-    It can also return Density in user specified units
+    It contains the raw database properties as well in _r_oil property
     '''
 
-    def __init__(self, water_temp=289):
+    def __init__(self, oil_, water_temp=289):
         '''
-        :param water_temp:
+        If oil_ is amongst self._sample_oils dict, then use the properties
+        defined here. If not, then query the Oil database to check if oil_
+        exists and get the properties from DB.
+
+        :param oil_: Oil object that maps to entity in OilLib database
+        :type oil_: Oil object
+        :param water_temp: water temperature in 'K'
         '''
+        self._r_oil = oil_
         self.num_pc = 5     # probably determine this from data
         self.mass_components = [0.] * self.num_pc
         self.mass_components[0] = 1.
@@ -99,7 +104,7 @@ class OilProps(Oil):
         self.hl[0] = 15.*60
         self._water_temp = water_temp
 
-        self.boiling_point = boiling_point(self.num_pc, self.api)
+        self.boiling_point = boiling_point(self.num_pc, self.get('api'))
         self.vapor_pressure_ratio = []
         self.mw_saturates = []
         for bp in self.boiling_point:
@@ -108,15 +113,19 @@ class OilProps(Oil):
             self.mw_saturates.append(mw_saturate(bp))
 
     def __repr__(self):
-        return ('{0.__class__.__module__}.{0.__class__.__name__}'
-                '()'.format(self))
-        #return ('{0.__class__.__module__}.{0.__class__.__name__}('
-        #        'oil_={0.oil!r}'
-        #        ')'.format(self))
+        return ('{0.__class__.__module__}.{0.__class__.__name__}('
+                'oil_={0._r_oil!r}, water_temp={0.water_temp}'
+                ')'.format(self))
 
     density = property(lambda self: self.get_density())
-    water_temp = property(lambda self: self.get_water_temp(),
-        lambda self, val: self.set_water_temp(val, units='K'))
+    water_temp = property(lambda self: self.get_water_temp())
+    name = property(lambda self: self._r_oil.name,
+                    lambda self, val: setattr(self._r_oil, 'name', val))
+    api = property(lambda self: self.get('api'))
+
+    def get(self, prop):
+        'get raw oil props'
+        return getattr(self._r_oil, prop)
 
     def get_water_temp(self, units='K'):
         return uc.convert('Temperature', 'K', units, self._water_temp)
@@ -130,21 +139,23 @@ class OilProps(Oil):
             self.vapor_pressure_ratio.append(
                 vapor_pressure_ratio(bp, self._water_temp))
 
-    @property
-    def mass_components(self):
-        '''
-           Gets the mass components of our oil
-           - Set 'mass_components' array based on mass fractions
-             (distillation cuts?) that are found in the oil library
-           - Set 'half-lives' array based on ???
-           TODO: Right now this is just a stub that returns a hardcoded value
-                 for testing purposes.
-                 - Try to query our distillation cuts and see if they are usable.
-                 - Figure out where we will get the half-lives data.
-        '''
-        mc = (1., 0., 0., 0., 0.)
-        hl = ((15. * 60), float('inf'), float('inf'), float('inf'), float('inf'))
-        return [MassComponent(*n) for n in zip(mc, hl)]
+    #==========================================================================
+    # @property
+    # def mass_components(self):
+    #     '''
+    #        Gets the mass components of our _r_oil
+    #        - Set 'mass_components' array based on mass fractions
+    #          (distillation cuts?) that are found in the _r_oil library
+    #        - Set 'half-lives' array based on ???
+    #        TODO: Right now this is just a stub that returns a hardcoded value
+    #              for testing purposes.
+    #              - Try to query our distillation cuts and see if they are usable.
+    #              - Figure out where we will get the half-lives data.
+    #     '''
+    #     mc = (1., 0., 0., 0., 0.)
+    #     hl = ((15. * 60), float('inf'), float('inf'), float('inf'), float('inf'))
+    #     return [MassComponent(*n) for n in zip(mc, hl)]
+    #==========================================================================
 
     def get_density(self, units='kg/m^3'):
         '''
@@ -154,7 +165,7 @@ class OilProps(Oil):
 
         if self.api is None:
             raise ValueError("Oil with name '{0}' does not contain 'api'"
-                             " property.".format(self.oil.name))
+                             " property.".format(self._r_oil.name))
 
         # since Oil object can have various densities depending on temperature,
         # lets return API in correct units

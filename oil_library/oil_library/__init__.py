@@ -130,11 +130,12 @@ def oil_from_density(density, name='user_oil', units='kg/m^3'):
     if units not in valid_density_units:
         raise uc.InvalidUnitError('Desired density units must be from '
                                   'following list to be valid: '
-                                  '{0}'.format(self.valid_density_units))
+                                  '{0}'.format(valid_density_units))
 
     if units != 'API':
         api = uc.convert('Density', units, 'API Degree', density)
     else:
         api = density
 
-    return Oil(**{'Oil Name': name, 'API': api})
+    oil_ = Oil(**{'Oil Name': name, 'API': api})
+    return OilProps(oil_)
