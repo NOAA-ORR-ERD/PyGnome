@@ -98,3 +98,11 @@ class Weatherer(Process, Serializable):
         total_mass = M_0 * (half ** (time / factors))
 
         return total_mass
+
+    def _exp_decay(self, M_0, lambda_, time):
+        '''
+        Exponential decay: x(t) = exp(lambda_*time)
+        The lambda_ should be 'negative' in order for function to decay
+        '''
+        half_life_factors = -np.log(2, len(M_0))
+        self._halflife(M_0, half_life_factors, time)
