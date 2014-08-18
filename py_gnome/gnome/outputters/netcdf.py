@@ -52,7 +52,7 @@ var_attributes = {
               'axis': 'z positive down',
               },
     'mass': {'long_name': 'mass of particle',
-             'units': 'grams',
+             'units': 'kilograms',
              },
     'age': {'long_name': 'age of particle from time of release',
             'units': 'seconds',

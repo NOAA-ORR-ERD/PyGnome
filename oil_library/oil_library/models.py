@@ -11,7 +11,8 @@ from sqlalchemy import (Table,
 
 from sqlalchemy.ext.declarative import declarative_base as real_declarative_base
 
-from sqlalchemy.orm.relationships import RelationshipProperty
+from sqlalchemy.orm.relationships import (RelationshipProperty,
+                                          ONETOMANY, MANYTOONE, MANYTOMANY)
 from sqlalchemy.orm import (scoped_session,
                             sessionmaker,
                             relationship)
@@ -32,31 +33,48 @@ class Base(object):
     Add some default properties and methods to the SQLAlchemy declarative base.
     """
 
+    def relationships(self, direction):
+        return sorted([p.key for p in self.__mapper__.iterate_properties
+                       if (isinstance(p, RelationshipProperty)
+                           and p.direction == direction)])
+
+    @property
+    def one_to_many_relationships(self):
+        return self.relationships(ONETOMANY)
+
+    @property
+    def many_to_many_relationships(self):
+        return self.relationships(MANYTOMANY)
+
+    @property
+    def many_to_one_relationships(self):
+        return self.relationships(MANYTOONE)
+
     @property
     def columns(self):
         return [c.name for c in self.__table__.columns]
 
-    @property
-    def relationship_columns(self):
-        return sorted([p.key for p in self.__mapper__.iterate_properties
-                if isinstance(p, RelationshipProperty)])
-
-    @property
-    def columnitems(self):
+    def columnitems(self, recurse=True):
         ret = dict((c, getattr(self, c)) for c in self.columns)
-        for r in self.relationship_columns:
-            try:
-                ret[r] = [a.tojson() for a in getattr(self, r)]
-            except TypeError:
-                # backref objects are expected to generate this exception
-                pass
+        if recurse:
+            # Note: Right now our schema has a maximum of one level of
+            #       indirection between objects, so short-circuiting the
+            #       recursion in all cases is just fine.
+            #       If we were to design a deeper schema, this would need
+            #       to change.
+            for r in self.one_to_many_relationships:
+                ret[r] = [a.tojson(recurse=False) for a in getattr(self, r)]
+            for r in self.many_to_many_relationships:
+                ret[r] = [a.tojson(recurse=False) for a in getattr(self, r)]
+            for r in self.many_to_one_relationships:
+                ret[r] = getattr(self, r).tojson(recurse=False)
         return ret
 
     def __repr__(self):
         return '{}({})'.format(self.__class__.__name__, self.columnitems)
 
-    def tojson(self):
-        return self.columnitems
+    def tojson(self, recurse=True):
+        return self.columnitems(recurse)
 
 
 # UNMAPPED association table (Oil <--many-to-many--> Synonym)

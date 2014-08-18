@@ -476,14 +476,15 @@ def test_ordered_collection_api():
 
 
 """ tests w/ element types set for two spills """
-el0 = ElementType({'windages': InitWindages((0.02, 0.02), -1),
-                   'mass': InitMassFromTotalMass(),
-                   'rise_vel': InitRiseVelFromDist(distribution=UniformDistribution(low=1, high=10))
-                   })
+el0 = ElementType([InitWindages((0.02, 0.02), -1),
+                   InitMassFromTotalMass(),
+                   InitRiseVelFromDist(
+                       distribution=UniformDistribution(low=1, high=10))
+                   ])
 
-el1 = ElementType({'windages': InitWindages(),
-                   'mass': InitMassFromTotalMass(),
-                   'rise_vel': InitRiseVelFromDist()})
+el1 = ElementType([InitWindages(),
+                   InitMassFromTotalMass(),
+                   InitRiseVelFromDist()])
 
 arr_types = {'windages': array_types.windages,
              'windage_range': array_types.windage_range,
@@ -491,8 +492,7 @@ arr_types = {'windages': array_types.windages,
              'rise_vel': array_types.rise_vel}
 
 
-@pytest.mark.parametrize(("elem_type", "arr_types"),
-        [((el0, el1), arr_types)])
+@pytest.mark.parametrize(("elem_type", "arr_types"), [((el0, el1), arr_types)])
 def test_element_types(elem_type, arr_types, sample_sc_no_uncertainty):
     """
     Tests that the spill_container's data_arrays associated with initializers
@@ -937,7 +937,7 @@ def test_SpillContainer_add_array_types():
     '''
     sc = SpillContainer()
     s = Spill(Release(datetime(2014, 1, 1, 12, 0), 0))
-    s.set_initializer('rise_vel', InitRiseVelFromDropletSizeFromDist())
+    s.set_initializer(InitRiseVelFromDropletSizeFromDist())
     sc.spills += s
     assert 'rise_vel' not in sc.array_types
     assert 'droplet_diameter' not in sc.array_types
