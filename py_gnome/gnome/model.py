@@ -109,7 +109,7 @@ class Model(Serializable):
         json_ = dict_.pop('json_')
         l_env = dict_.pop('environment', [])
         l_out = dict_.pop('outputters', [])
-        l_movers = dict_.pop('movers', [])
+        g_objects = dict_.pop('movers', [])
         l_weatherers = dict_.pop('weatherers', [])
         c_spills = dict_.pop('spills', [])
 
@@ -142,7 +142,7 @@ class Model(Serializable):
         [model.environment.add(obj) for obj in l_env]
         [model.outputters.add(obj) for obj in l_out]
         [model.spills.add(obj) for obj in l_spills]
-        [model.movers.add(obj) for obj in l_movers]
+        [model.movers.add(obj) for obj in g_objects]
         [model.weatherers.add(obj) for obj in l_weatherers]
 
         # register callback with OrderedCollection

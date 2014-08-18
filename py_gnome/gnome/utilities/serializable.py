@@ -649,7 +649,7 @@ class Serializable(GnomeId, Savable):
 
     def update_from_dict(self, data):
         """
-        modifies attributes of the object using dictionary 'data'.
+        modifies state (attributes) of the object using dictionary 'data'.
         Only the fields in self._state with update=True contains properties
         that can be modified for existing object
 
@@ -665,7 +665,7 @@ class Serializable(GnomeId, Savable):
         `{field_name}_from_dict`, call that method with the field's data.
 
         If the field on the object has a ``update_from_dict`` method,
-        then use that method instead.
+        then use that method instead since it is a nested object.
 
         If neither method exists, then set the field with the value from
         ``data`` directly on the object.
@@ -673,7 +673,7 @@ class Serializable(GnomeId, Savable):
         list_ = self._state.get_names('update')
 
         for key in list_:
-            if not key in data:
+            if key not in data:
                 continue
 
             from_dict_fn_name = '%s_update_from_dict' % key
@@ -681,9 +681,8 @@ class Serializable(GnomeId, Savable):
 
             if hasattr(self, from_dict_fn_name):
                 getattr(self, from_dict_fn_name)(value)
-            # Note: Do not update properties of nested objects
-            #elif hasattr(getattr(self, key), 'update_from_dict'):
-            #    getattr(self, key).update_from_dict(value)
+            elif hasattr(getattr(self, key), 'update_from_dict'):
+                getattr(self, key).update_from_dict(value)
             else:
                 setattr(self, key, value)
 

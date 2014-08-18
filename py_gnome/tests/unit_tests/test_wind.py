@@ -487,3 +487,21 @@ def test_timeseries_res_sec():
     # check that seconds resolution has been dropped
     for ix, dt in enumerate(w.timeseries['time'].astype(datetime)):
         assert ts['time'][ix].astype(datetime).replace(second=0) == dt
+
+
+j_wind = {'json_': 'webapi',
+          'description': 'update_description',
+          'latitude': 90,
+          'longitude': 90,
+          'source_type': 'manual',
+          'source_id': 'still_undefined',
+          'units': 'knots',
+          'timeseries': [["2014-01-01T12:30:00", [5, 180]]],
+          }
+
+
+def test_update_from_dict():
+    wind = constant_wind(10, 45, 'mps')
+    d_wind = wind.deserialize(j_wind)
+    wind.update_from_dict(d_wind)
+    print wind

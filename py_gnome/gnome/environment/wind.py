@@ -147,6 +147,7 @@ class Wind(Environment, serializable.Serializable):
     valid_vel_units = list(chain.from_iterable([item[1] for item in
                                     ConvertDataUnits['Velocity'].values()]))
     valid_vel_units.extend(GetUnitNames('Velocity'))
+    del item    # keep the namespace clean
 
     def __init__(self, timeseries=None, units=None,
                  filename=None, format='r-theta',
