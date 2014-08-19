@@ -86,6 +86,14 @@ oil_to_synonym = Table('oil_to_synonym', Base.metadata,
                        )
 
 
+# UNMAPPED association table (Oil <--many-to-many--> Category)
+oil_to_category = Table('oil_to_category', Base.metadata,
+                       Column('oil_id', Integer, ForeignKey('oils.id')),
+                       Column('category_id', Integer,
+                              ForeignKey('categories.id')),
+                       )
+
+
 class Oil(Base):
     __tablename__ = 'oils'
     id = Column(Integer, primary_key=True)
@@ -139,6 +147,8 @@ class Oil(Base):
     # relationship fields
     synonyms = relationship('Synonym', secondary=oil_to_synonym,
                             backref='oils')
+    categories = relationship('Category', secondary=oil_to_category,
+                              backref='oils')
     densities = relationship('Density', backref='oil',
                              cascade="all, delete, delete-orphan")
     kvis = relationship('KVis', backref='oil',
@@ -431,10 +441,6 @@ class Category(Base):
                             # - remote_side is required to reference the
                             #   'remote' column in the join condition.
                             backref=backref("parent", remote_side=id),
-
-                            # children will be represented as a dictionary
-                            # on the "name" attribute.
-                            #collection_class=attribute_mapped_collection('name'),
                             )
 
     def __init__(self, name, parent=None):
