@@ -1,64 +1,51 @@
 '''
-GeoJson outputter
-Does not contain a schema for persistence yet
+Weathering Outputter
 '''
+from pprint import PrettyPrinter
+pp = PrettyPrinter(indent=2)
+
 import copy
 import os
 from glob import glob
 
 import numpy as np
 from geojson import Point, Feature, FeatureCollection, dump
-from colander import SchemaNode, String, drop, Int, Bool
+from colander import SchemaNode, String, drop
 
 from gnome.utilities.serializable import Serializable, Field
 
 from .outputter import Outputter, BaseSchema
 
 from gnome.basic_types import oil_status
-from gnome import array_types
 from gnome.utilities.time_utils import date_to_sec
 
 
-class GeoJsonSchema(BaseSchema):
-    '''
-    Nothing is required for initialization
-    '''
-    round_data = SchemaNode(Bool(), missing=drop)
-    round_to = SchemaNode(Int(), missing=drop)
+class WeatheringOutputSchema(BaseSchema):
     output_dir = SchemaNode(String(), missing=drop)
 
 
-class GeoJson(Outputter, Serializable):
+class WeatheringOutput(Outputter, Serializable):
     '''
-    class that outputs GNOME results in a geojson format. The output is a
-    collection of Features. Each Feature contains a Point object with
-    associated properties. Following is the format for a particle - the
-    data in <> are the results for each element.
+    class that outputs GNOME weathering results.
+    The output is the aggregation of properties for all LEs (aka Mass Balance)
+    for a particular time step.
+    There are a number of different things we would like to graph:
+    - Evaporation
+    - Dissolution
+    - Dissipation
+    - Biodegradation
+    - ???
 
-    ::
+    However at this time we will simply try to implement an outputter for the
+    halflife Weatherer.
+    Following is the output format.
 
         {
-        "type": "FeatureCollection",
-        "features": [
-            {
-                "geometry": {
-                    "type": "Point",
-                    "coordinates": [
-                        <LONGITUDE>,
-                        <LATITUDE>
-                    ]
-                },
-                "type": "Feature",
-                "id": <PARTICLE_ID>,
-                "properties": {::
-                    "current_time": <TIME IN SEC SINCE EPOCH>,
-                    "status_code": <>,
-                    "spill_id": <UUID OF SPILL OBJECT THAT RELEASED PARTICLE>,
-                    "depth": <DEPTH>,
-                    "spill_type": <FORECAST OR UNCERTAIN>,
-                    "step_num": <OUTPUT ASSOCIATED WITH THIS STEP NUMBER>
-                }
-            },
+        "type": "WeatheringGraphs",
+        "half_life": {"properties": {"mass_components": <Component values>,
+                                     "mass": <total Mass value>,
+                                     }
+                      },
             ...
         }
 
@@ -67,47 +54,42 @@ class GeoJson(Outputter, Serializable):
 
     # need a schema and also need to override save so output_dir
     # is saved correctly - maybe point it to saveloc
-    _state += [Field('round_data', update=True, save=True),
-               Field('round_to', update=True, save=True),
-               Field('output_dir', update=True, save=True)]
-    _schema = GeoJsonSchema
+    _state += [Field('output_dir', update=True, save=True)]
+    _schema = WeatheringOutputSchema
 
-    def __init__(self, round_data=True, round_to=4, output_dir='./',
+    def __init__(self, output_dir='./',
                  **kwargs):
         '''
-        :param bool round_data=True: if True, then round the numpy arrays
-            containing float to number of digits specified by 'round_to'.
-            Default is True
-        :param int round_to=4: round float arrays to these number of digits.
-            Default is 4.
         :param str output_dir='./': output directory for geojson files
 
         use super to pass optional \*\*kwargs to base class __init__ method
         '''
-        self.round_data = round_data
-        self.round_to = round_to
         self.output_dir = output_dir
 
-        super(GeoJson, self).__init__(**kwargs)
+        super(WeatheringOutput, self).__init__(**kwargs)
 
     def prepare_for_model_run(self, model_start_time, spills, **kwargs):
         '''
-        geo_json outputter also requires spills to be passed in - this is
-        because it needs to match the 'spill_num' from the data array to the
-        spill object's ID. The keyword, spills is the SpillContainerPair object
+        Weathering outputter also requires spills to be passed in.
+        This is because it needs to match the 'spill_num' from the data array
+        to the spill object's ID.
+        The keyword, spills is the SpillContainerPair object
         '''
         self.sc_pair = spills
-        super(GeoJson, self).prepare_for_model_run(model_start_time, **kwargs)
+        super(WeatheringOutput, self).prepare_for_model_run(model_start_time,
+                                                            **kwargs)
 
     def write_output(self, step_num, islast_step=False):
-        'dump data in geojson format'
-        super(GeoJson, self).write_output(step_num, islast_step)
+        super(WeatheringOutput, self).write_output(step_num, islast_step)
 
         if not self._write_step:
             return None
 
         features = []
+        print 'WeatheringOutput.write_output(): our spill container',
+        print self.cache.load_timestep(step_num).items()
         for sc in self.cache.load_timestep(step_num).items():
+
             time = date_to_sec(sc.current_time_stamp)
             position = self._dataarray_p_types(sc['positions'])
             status = self._dataarray_p_types(sc['status_codes'])
@@ -137,13 +119,13 @@ class GeoJson(Outputter, Serializable):
             for ix, pos in enumerate(position):
                 st_code = oil_status._attr[oil_status._int.index(status[ix])]
                 feature = Feature(geometry=Point(pos[:2]),
-                                  id=p_id[ix],
-                                  properties={'depth': pos[2],
-                                              'step_num': step_num,
-                                              'spill_type': sc_type,
-                                              'spill_id': spill_id[ix],
-                                              'current_time': time,
-                                              'status_code': st_code})
+                                id=p_id[ix],
+                                properties={'depth': pos[2],
+                                    'step_num': step_num,
+                                    'spill_type': sc_type,
+                                    'spill_id': spill_id[ix],
+                                    'current_time': time,
+                                    'status_code': st_code})
 
                 features.append(feature)
 
@@ -169,6 +151,16 @@ class GeoJson(Outputter, Serializable):
 
         return filename
 
+    def clean_output_files(self):
+        files = glob(os.path.join(self.output_dir, 'geojson_*.geojson'))
+        for f in files:
+            os.remove(f)
+
+    def rewind(self):
+        'remove previously written files'
+        super(WeatheringOutput, self).rewind()
+        self.clean_output_files()
+
     def _dataarray_p_types(self, data_array):
         '''
         return array as list with appropriate python dtype
@@ -181,18 +173,4 @@ class GeoJson(Outputter, Serializable):
             'geojson expects int - it fails for a long'
             p_type = int
 
-        if p_type is float and self.round_data:
-            data = data_array.round(self.round_to).astype(p_type).tolist()
-        else:
-            data = data_array.astype(p_type).tolist()
-        return data
-
-    def rewind(self):
-        'remove previously written files'
-        super(GeoJson, self).rewind()
-        self.clean_output_files()
-
-    def clean_output_files(self):
-        files = glob(os.path.join(self.output_dir, 'geojson_*.geojson'))
-        for f in files:
-            os.remove(f)
+        return data_array.astype(p_type).tolist()

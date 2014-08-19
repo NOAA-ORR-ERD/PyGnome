@@ -607,13 +607,16 @@ checkTriPts:
 				(pt.h == (*ptsH)[secondPoint].h && pt.v == (*ptsH)[secondPoint].v) ||
 				(pt.h == (*ptsH)[thirdPoint].h && pt.v == (*ptsH)[thirdPoint].v))
 			{
+				//char errmsg[256];
+				//sprintf(errmsg,"on vertex triNum = %ld\n",triNum);
+				//printNote(errmsg);
 				return (triNum);
 			}
 
 			/////////////////////////////////////////////////
 			// check all triangles that include any of the original vertices in case we're close
 			// this caused large runs to grind to a halt when LEs beached
-			/*long numTri = _GetHandleSize((Handle)topH)/sizeof(Topology);
+			long numTri = _GetHandleSize((Handle)topH)/sizeof(Topology);
 			long testPt1,testPt2,testPt3,triIndex;
 			for (triIndex=0;triIndex<numTri;triIndex++)
 			{
@@ -636,6 +639,41 @@ checkTriPts:
 							direction = Right_or_Left_of_Segment(ptsH,testPt3,testPt1,pt);
 							if(direction == -1)
 							{
+								//char errmsg[256];
+								//sprintf(errmsg,"first try triNum = %ld\n",triIndex);
+								//printNote(errmsg);
+								return (triIndex); 
+							}
+						}
+					}
+				}
+			}
+			//long numTri = _GetHandleSize((Handle)topH)/sizeof(Topology);
+			//long testPt1,testPt2,testPt3,triIndex;
+			/*for (triIndex=0;triIndex<numTri;triIndex++)
+			{
+				testPt1 = (*longH)[triIndex*6];
+				testPt2 = (*longH)[triIndex*6+1];
+				testPt3 = (*longH)[triIndex*6+2];
+
+				//if(firstPoint==testPt1 || firstPoint==testPt2 || firstPoint==testPt3 ||
+					//secondPoint==testPt1 || secondPoint==testPt2 || secondPoint==testPt3 ||
+					//thirdPoint==testPt1 || thirdPoint==testPt2 || thirdPoint==testPt3
+					//&& triIndex != triNumIndex)	// already checked main triangle
+				{
+					direction = Right_or_Left_of_Segment(ptsH,testPt1,testPt2,pt);
+					if (direction == -1) // left
+					{
+						// Am I in the triangle directly to the left of the segment?
+						direction = Right_or_Left_of_Segment(ptsH,testPt2,testPt3,pt);
+						if(direction == -1)
+						{
+							direction = Right_or_Left_of_Segment(ptsH,testPt3,testPt1,pt);
+							if(direction == -1)
+							{
+								char errmsg[256];
+								sprintf(errmsg,"second try triNum = %ld\n",triIndex);
+								printNote(errmsg);
 								return (triIndex); 
 							}
 						}
@@ -643,7 +681,7 @@ checkTriPts:
 				}
 			}*/
 			/////////////////////////////////////////////////
-			
+			//printNote("Got Here\n");
 			return(-8); 				// This is a special case caused by not being able
 										// to confirm that a point is in the infinite triangle.
 										// To see the change, have the function return -8 for triNum and

@@ -22,7 +22,8 @@ from gnome.outputters import NetCDFOutput
 from gnome.model import Model
 from gnome.persist import load
 
-base_dir = os.path.dirname(__file__)
+here = os.path.dirname(__file__)
+up_one = os.path.dirname(here)
 
 
 @pytest.fixture(scope='module')
@@ -43,7 +44,7 @@ def model(sample_model, request):
 
     model.movers += RandomMover(diffusion_coef=100000)
 
-    model.outputters += NetCDFOutput(os.path.join(base_dir,
+    model.outputters += NetCDFOutput(os.path.join(up_one,
                                                   u'sample_model.nc'))
 
     model.rewind()
@@ -86,7 +87,7 @@ def test_init_exceptions():
 
 
 def test_exceptions(model):
-    t_file = os.path.join(base_dir, 'temp.nc')
+    t_file = os.path.join(up_one, 'temp.nc')
     spill_pair = model.spills
 
     def _del_temp_file():
@@ -550,7 +551,7 @@ def test_serialize_deserialize(json_):
         start_position=(0, 0, 0),
         release_time=model.start_time)
 
-    o_put = NetCDFOutput(os.path.join(base_dir, u'xtemp.nc'))
+    o_put = NetCDFOutput(os.path.join(up_one, u'xtemp.nc'))
     model.outputters += o_put
     model.movers += RandomMover(diffusion_coef=100000)
 
@@ -608,7 +609,7 @@ def test_var_attr_spill_num():
     for ix in (0, 1):
         spills.append(Spill(Release(datetime.now()),
                                     name='m{0}_spill'.format(ix)))
-        nc_name.append(os.path.join(base_dir, 'temp_m{0}.nc'.format(ix)))
+        nc_name.append(os.path.join(up_one, 'temp_m{0}.nc'.format(ix)))
         _del_nc_file(nc_name[ix])
         _make_run_model(spills[ix], nc_name[ix])
 

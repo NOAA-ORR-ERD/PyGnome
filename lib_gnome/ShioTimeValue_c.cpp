@@ -225,64 +225,121 @@ long  ShioTimeValue_c::I_SHIOEBBFLOODS(void)
 	
 }
 
-Boolean ShioTimeValue_c::DaylightSavingTimeInEffect(DateTimeRec *dateStdTime)	// AH 07/09/2012
-
+Boolean ShioTimeValue_c::DaylightSavingTimeInEffect(DateTimeRec *dateStdTime)	
 {
 	// Assume that the change from standard to daylight
 	// savings time is on the first Sunday in April at 0200 and 
 	// the switch back to Standard time is on the
 	// last Sunday in October at 0200.             
 	
+	// Starting in 2007 change from standard to daylight 
+	// savings time is on the second Sunday in March at 0200 and 
+	// the switch back to Standard time is on the
+	// first Sunday in November at 0200.             
+	
 	//return false;	// code goes here, outside US don't use daylight savings
 // 	if (settings.daylightSavingsTimeFlag == DAYLIGHTSAVINGSOFF) return false; 
 	
 	if (this->daylight_savings_off == DAYLIGHTSAVINGSOFF) return false;	
 	
-	switch(dateStdTime->month)
+	if (dateStdTime->year < 2007)
 	{
-		case 1:
-		case 2:
-		case 3:
-		case 11:
-		case 12:
-			return false;
-			
-		case 5:
-		case 6:
-		case 7:
-		case 8:
-		case 9:
-			return true;
-			
-		case 4: // april
-			if(dateStdTime->day > 7) return true; // past the first week
-			if(dateStdTime->dayOfWeek == 1) 
-			{	// first sunday
-				if(dateStdTime->hour >= 2) return true;  // after 2AM
-				else return false; // before 2AM
-			}
-			else
-			{	// not Sunday
-				short prevSundayDay = dateStdTime->day - dateStdTime->dayOfWeek + 1;
-				if(prevSundayDay >= 1) return true; // previous Sunday was this month, so we are after the magic Sunday
-				else return false;// previous Sunday was previous month, so we are before the magic Sunday
-			}
-			
-		case 10://Oct
-			if(dateStdTime->day < 25) return true; // before the last week
-			if(dateStdTime->dayOfWeek == 1) 
-			{	// last sunday
-				if(dateStdTime->hour >= 2) return false;  // after 2AM
-				else return true; // before 2AM
-			}
-			else
-			{	// not Sunday
-				short nextSundayDay = dateStdTime->day - dateStdTime->dayOfWeek + 8;
-				if(nextSundayDay > 31) return false; // next Sunday is next month, so we are after the magic Sunday
-				else return true;// next Sunday is this month, so we are before the magic Sunday
-			}
-			
+		switch(dateStdTime->month)
+		{
+			case 1:
+			case 2:
+			case 3:
+			case 11:
+			case 12:
+				return false;
+				
+			case 5:
+			case 6:
+			case 7:
+			case 8:
+			case 9:
+				return true;
+				
+			case 4: // april
+				if(dateStdTime->day > 7) return true; // past the first week
+				if(dateStdTime->dayOfWeek == 1) 
+				{	// first sunday
+					if(dateStdTime->hour >= 2) return true;  // after 2AM
+					else return false; // before 2AM
+				}
+				else
+				{	// not Sunday
+					short prevSundayDay = dateStdTime->day - dateStdTime->dayOfWeek + 1;
+					if(prevSundayDay >= 1) return true; // previous Sunday was this month, so we are after the magic Sunday
+					else return false;// previous Sunday was previous month, so we are before the magic Sunday
+				}
+				
+			case 10://Oct
+				if(dateStdTime->day < 25) return true; // before the last week
+				if(dateStdTime->dayOfWeek == 1) 
+				{	// last sunday
+					if(dateStdTime->hour >= 2) return false;  // after 2AM
+					else return true; // before 2AM
+				}
+				else
+				{	// not Sunday
+					short nextSundayDay = dateStdTime->day - dateStdTime->dayOfWeek + 8;
+					if(nextSundayDay > 31) return false; // next Sunday is next month, so we are after the magic Sunday
+					else return true;// next Sunday is this month, so we are before the magic Sunday
+				}				
+		}
 	}
+	else 
+	{
+		switch(dateStdTime->month)
+		{
+			case 1:
+			case 2:
+			//case 3:
+			//case 11:
+			case 12:
+				return false;
+				
+			case 4:
+			case 5:
+			case 6:
+			case 7:
+			case 8:
+			case 9:
+			case 10:
+				return true;
+				
+			case 3: // March
+				if(dateStdTime->day < 8) return false; // before the second week
+				if(dateStdTime->day > 14) return true; // past the second week
+				if(dateStdTime->dayOfWeek == 1) 
+				{	// first sunday
+					if(dateStdTime->hour >= 2) return true;  // after 2AM
+					else return false; // before 2AM
+				}
+				else
+				{	// not Sunday
+					short prevSundayDay = dateStdTime->day - dateStdTime->dayOfWeek + 1;
+					if(prevSundayDay >= 8) return true; // previous Sunday was this month, so we are after the magic Sunday
+					else return false;// previous Sunday was previous month, so we are before the magic Sunday
+				}
+				
+			case 11: // Nov
+				if(dateStdTime->day > 7) return false; // after the first week
+				if(dateStdTime->dayOfWeek == 1) 
+				{	// first sunday
+					if(dateStdTime->hour >= 2) return false;  // after 2AM
+					else return true; // before 2AM
+				}
+				else
+				{	// not Sunday
+					short nextSundayDay = dateStdTime->day - dateStdTime->dayOfWeek + 8;
+					if(nextSundayDay > 14) return false; // next Sunday is next month, so we are after the magic Sunday
+					else return true;// next Sunday is this month, so we are before the magic Sunday
+				}				
+		}
+	}
+
 	return false;// shouldn't get here
 }
 

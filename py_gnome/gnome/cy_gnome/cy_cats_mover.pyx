@@ -8,7 +8,7 @@ from movers cimport CATSMover_c, Mover_c
 from gnome import basic_types
 from gnome.cy_gnome.cy_ossm_time cimport CyOSSMTime
 from gnome.cy_gnome.cy_shio_time cimport CyShioTime
-from gnome.cy_gnome cimport cy_mover
+from gnome.cy_gnome.cy_mover cimport CyMover
 from gnome.cy_gnome.cy_helpers cimport to_bytes
 
 """
@@ -20,7 +20,7 @@ cdef extern from *:
     CATSMover_c* dynamic_cast_ptr "dynamic_cast<CATSMover_c *>" (Mover_c *) except NULL
 
 
-cdef class CyCatsMover(cy_mover.CyMover):
+cdef class CyCatsMover(CyMover):
 
     cdef CATSMover_c *cats
 

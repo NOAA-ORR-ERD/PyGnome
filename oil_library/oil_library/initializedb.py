@@ -1,22 +1,20 @@
+import os
 import sys
 import transaction
-import os
-
-from .oil_library_parse import OilLibraryFile
 
 from sqlalchemy import engine_from_config
 
-from .models import (
-    DBSession,
-    Base,
-    Oil,
-    Synonym,
-    Density,
-    KVis,
-    DVis,
-    Cut,
-    Toxicity,
-    )
+from .oil_library_parse import OilLibraryFile
+
+from .models import (DBSession,
+                     Base,
+                     Oil,
+                     Synonym,
+                     Density,
+                     KVis,
+                     DVis,
+                     Cut,
+                     Toxicity)
 
 
 def initialize_sql(settings):
@@ -46,22 +44,30 @@ def load_database(settings):
         for r in fd.readlines():
             if len(r) < 10:
                 print 'got record:', r
+
             # 3a. for each row, we populate the Oil object
             add_oil_object(session, fd.file_columns, r)
+
             if rowcount % 100 == 0:
                 sys.stderr.write('.')
+
             rowcount += 1
+
         print 'finished!!!  %d rows processed.' % (rowcount)
 
 
 def purge_old_records(session):
     oilobjs = session.query(Oil).filter(Oil.custom == False)
+
     rowcount = 0
     for o in oilobjs:
         session.delete(o)
+
         if rowcount % 100 == 0:
             sys.stderr.write('.')
+
         rowcount += 1
+
     transaction.commit()
     return rowcount
 
@@ -99,94 +105,87 @@ def add_synonyms(session, oil, row_dict):
 
 def add_densities(oil, row_dict):
     for i in range(1, 5):
-        kg_m3 = 'Density#%d (kg/m^3)' % (i)
-        ref_temp = 'Density#%d Ref Temp (K)' % (i)
-        w = 'Density#%d Weathering' % (i)
-        if row_dict.get(kg_m3) or row_dict.get(ref_temp) or row_dict.get(w):
+        obj_args = ('(kg/m^3)', 'Ref Temp (K)', 'Weathering')
+        row_fields = ['Density#{0} {1}'.format(i, a) for a in obj_args]
+
+        if any([row_dict.get(k) for k in row_fields]):
             densityargs = {}
-            densityargs[kg_m3[10:]] = row_dict.get(kg_m3)
-            densityargs[ref_temp[10:]] = row_dict.get(ref_temp)
-            densityargs[w[10:]] = row_dict.get(w)
-            #print densityargs
+
+            for col, arg in zip(row_fields, obj_args):
+                densityargs[arg] = row_dict.get(col)
+
             oil.densities.append(Density(**densityargs))
 
 
 def add_kinematic_viscosities(oil, row_dict):
     for i in range(1, 7):
-        m2_s = 'KVis#%d (m^2/s)' % (i)
-        ref_temp = 'KVis#%d Ref Temp (K)' % (i)
-        w = 'KVis#%d Weathering' % (i)
-        if row_dict.get(m2_s) or row_dict.get(ref_temp) or row_dict.get(w):
+        obj_args = ('(m^2/s)', 'Ref Temp (K)', 'Weathering')
+        row_fields = ['KVis#{0} {1}'.format(i, a) for a in obj_args]
+
+        if any([row_dict.get(k) for k in row_fields]):
             kvisargs = {}
-            kvisargs[m2_s[7:]] = row_dict.get(m2_s)
-            kvisargs[ref_temp[7:]] = row_dict.get(ref_temp)
-            kvisargs[w[7:]] = row_dict.get(w)
-            #print kvisargs
+
+            for col, arg in zip(row_fields, obj_args):
+                kvisargs[arg] = row_dict.get(col)
+
             oil.kvis.append(KVis(**kvisargs))
 
 
 def add_dynamic_viscosities(oil, row_dict):
     for i in range(1, 7):
-        kg_ms = 'DVis#%d (kg/ms)' % (i)
-        ref_temp = 'DVis#%d Ref Temp (K)' % (i)
-        w = 'DVis#%d Weathering' % (i)
-        if row_dict.get(kg_ms) or row_dict.get(ref_temp) or row_dict.get(w):
+        obj_args = ('(kg/ms)', 'Ref Temp (K)', 'Weathering')
+        row_fields = ['DVis#{0} {1}'.format(i, a) for a in obj_args]
+
+        if any([row_dict.get(k) for k in row_fields]):
             dvisargs = {}
-            dvisargs[kg_ms[7:]] = row_dict.get(kg_ms)
-            dvisargs[ref_temp[7:]] = row_dict.get(ref_temp)
-            dvisargs[w[7:]] = row_dict.get(w)
-            #print dvisargs
+
+            for col, arg in zip(row_fields, obj_args):
+                dvisargs[arg] = row_dict.get(col)
+
             oil.dvis.append(DVis(**dvisargs))
 
 
 def add_distillation_cuts(oil, row_dict):
     for i in range(1, 16):
-        vapor_temp = 'Cut#%d Vapor Temp (K)' % (i)
-        liquid_temp = 'Cut#%d Liquid Temp (K)' % (i)
-        fraction = 'Cut#%d Fraction' % (i)
-        if row_dict.get(vapor_temp) or row_dict.get(liquid_temp) or row_dict.get(fraction):
+        obj_args = ('Vapor Temp (K)', 'Liquid Temp (K)', 'Fraction')
+        row_fields = ['Cut#{0} {1}'.format(i, a) for a in obj_args]
+
+        if any([row_dict.get(k) for k in row_fields]):
             cutargs = {}
-            lbl_offset = len(str(i)) + 5
-            cutargs[vapor_temp[lbl_offset:]] = row_dict.get(vapor_temp)
-            cutargs[liquid_temp[lbl_offset:]] = row_dict.get(liquid_temp)
-            cutargs[fraction[lbl_offset:]] = row_dict.get(fraction)
-            #print cutargs
+
+            for col, arg in zip(row_fields, obj_args):
+                cutargs[arg] = row_dict.get(col)
+
             oil.cuts.append(Cut(**cutargs))
 
 
 def add_toxicity_effective_concentrations(oil, row_dict):
     for i in range(1, 4):
-        species = 'Tox_EC(%d)Species' % (i)
-        hour24 = 'Tox_EC(%d)24h' % (i)
-        hour48 = 'Tox_EC(%d)48h' % (i)
-        hour96 = 'Tox_EC(%d)96h' % (i)
-        if row_dict.get(species) or row_dict.get(hour24) or row_dict.get(hour48) or row_dict.get(hour96):
+        obj_args = ('Species', '24h', '48h', '96h')
+        row_fields = ['Tox_EC({0}){1}'.format(i, a) for a in obj_args]
+
+        if any([row_dict.get(k) for k in row_fields]):
             toxargs = {}
-            lbl_offset = len(str(i)) + 8
             toxargs['Toxicity Type'] = 'EC'
-            toxargs[species[lbl_offset:]] = row_dict.get(species)
-            toxargs[hour24[lbl_offset:]] = row_dict.get(hour24)
-            toxargs[hour48[lbl_offset:]] = row_dict.get(hour48)
-            toxargs[hour96[lbl_offset:]] = row_dict.get(hour96)
-            #print toxargs
+
+            for col, arg in zip(row_fields, obj_args):
+                toxargs[arg] = row_dict.get(col)
+
             oil.toxicities.append(Toxicity(**toxargs))
 
 
 def add_toxicity_lethal_concentrations(oil, row_dict):
     for i in range(1, 4):
-        species = 'Tox_LC(%d)Species' % (i)
-        hour24 = 'Tox_LC(%d)24h' % (i)
-        hour48 = 'Tox_LC(%d)48h' % (i)
-        hour96 = 'Tox_LC(%d)96h' % (i)
-        if row_dict.get(species) or row_dict.get(hour24) or row_dict.get(hour48) or row_dict.get(hour96):
+        obj_args = ('Species', '24h', '48h', '96h')
+        row_fields = ['Tox_LC({0}){1}'.format(i, a) for a in obj_args]
+
+        if any([row_dict.get(k) for k in row_fields]):
             toxargs = {}
-            lbl_offset = len(str(i)) + 8
             toxargs['Toxicity Type'] = 'LC'
-            toxargs[species[lbl_offset:]] = row_dict.get(species)
-            toxargs[hour24[lbl_offset:]] = row_dict.get(hour24)
-            toxargs[hour48[lbl_offset:]] = row_dict.get(hour48)
-            toxargs[hour96[lbl_offset:]] = row_dict.get(hour96)
-            #print toxargs
+
+            for col, arg in zip(row_fields, obj_args):
+                toxargs[arg] = row_dict.get(col)
+
             oil.toxicities.append(Toxicity(**toxargs))
 
 
