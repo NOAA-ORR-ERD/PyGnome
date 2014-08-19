@@ -179,24 +179,17 @@ class GeoProjection(object):
         coords = np.asarray(coords).reshape((-1, 3))
 
         # shift to center:
-
         coords = coords[:, :2] - self.center
-
         # scale to pixels:
-
         coords *= self.scale
-
         # shift to pixel coords
-
         coords += self.offset
 
         if asint:
-
             # NOTE: using "floor" as it rounds negative numbers towards -inf
             # #      simple casting rounds toward zero
             # # we may need the negative coords to work right for locations off the grid.
             # #  (used for the raster map code)
-
             return np.floor(coords, coords).astype(np.int32)
         else:
             return coords
@@ -214,24 +207,17 @@ class GeoProjection(object):
         coords = np.asarray(coords).reshape((-1, 2))
 
         # shift to center:
-
         coords = coords - self.center
-
         # scale to pixels:
-
         coords *= self.scale
-
         # shift to pixel coords
-
         coords += self.offset
 
         if asint:
-
             # NOTE: using "floor" as it rounds negative numbers towards -inf
             # #      simple casting rounds toward zero
             # # we may need the negative coords to work right for locations off the grid.
             # #  (used for the raster map code)
-
             return np.floor(coords, coords).astype(np.int32)
         else:
             return coords
@@ -425,29 +411,17 @@ class FlatEarthProjection(GeoProjection):
 
         bounding_box = np.asarray(bounding_box, dtype=np.float64)
 
-        print "\nin set_scale"
-        print "bounding box:", bounding_box
-
         self.center = np.mean(bounding_box, axis=0)
         self.offset = np.array(image_size, dtype=np.float64) / 2.0
 
-        print "center, offset:", self.center, self.offset
         bb = bounding_box
-        print (bb[0,0] + bb[1,0])/2
-        print (bb[0,1] + bb[1,1])/2
-
         lon_scale = np.cos(np.deg2rad(self.center[1]))
-        print "lon_scale",lon_scale
 
         # compute BB to fit image
-
         h = bounding_box[1, 1] - bounding_box[0, 1]
 
         # width scaled to longitude
-
         w = (bounding_box[1, 0] - bounding_box[0, 0]) * lon_scale
-
-        print "width/height ratio", w, h, w/h
 
         if w / h > image_size[0] / image_size[1]:
             s = image_size[0] / w
@@ -457,7 +431,139 @@ class FlatEarthProjection(GeoProjection):
             self.scale = (s * lon_scale, -s)
 
         # doing this at the end, in case there is a problem with the input.
-
         self.image_size = image_size
+
+class RectangularGridProjection(NoProjection):
+    """
+    projection for lat-lon to pixel and back for a recatngular but not regular grid.
+
+    i.e a rectangular grid that can be defined by a single vector each of
+        latitude and longitude
+
+    This is a totally different type of projection -- it requires a linear
+    interpolation for the latitude and longitude.
+
+    Primarily used for making a raster land-water map from a non-regular rectangular grid.
+    """
+
+    def __init__(self, longitude, latitude):
+        """
+        Create a new Rectangular Grid projection
+
+        :param longitude: the vector of longitudes
+        :param latitude: the vector of latitudes
+
+        It is assumed that the largest and smallest
+        values define the bounds of the raster.
+        """
+        import scipy.interpolate
+
+        self.max_lat_index = len(latitude) - 1 # height of bitmap
+        latitude = np.array(latitude, dtype=np.float64)
+        longitude = np.array(longitude, dtype=np.float64)
+        pixels = np.arange(len(latitude)).reshape(-1,1) * np.arange(len(longitude))
+        #Create interpolators:
+        self._lon_to_pixel_interp = scipy.interpolate.interp1d(longitude,
+                                                               np.arange(len(longitude)),
+                                                               kind='linear',
+                                                               copy=True,
+                                                               bounds_error=False,
+                                                               fill_value=None) # None means use NaN
+        self._lat_to_pixel_interp = scipy.interpolate.interp1d(latitude,
+                                                               np.arange(len(latitude)),
+                                                               kind='linear',
+                                                               copy=True,
+                                                               bounds_error=False,
+                                                               fill_value=None) # None means use NaN
+
+        self._pixel_to_lon_interp = scipy.interpolate.interp1d(np.arange(len(longitude)),
+                                                               longitude,
+                                                               kind='linear',
+                                                               copy=True,
+                                                               bounds_error=False,
+                                                               fill_value=None) # None means use NaN
+        self._pixel_to_lat_interp = scipy.interpolate.interp1d(np.arange(len(latitude)),
+                                                               latitude,
+                                                               kind='linear',
+                                                               copy=True,
+                                                               bounds_error=False,
+                                                               fill_value=None) # None means use NaN
+
+
+    def set_scale(self, bounding_box, image_size=None):
+        """
+        Does nothing
+        """
+        raise NotImplimentedError("you can not reset the scale on a RectangularGridProjection object\n"
+                                  "create a new one if you need a new scale") 
+ 
+    def to_pixel(self, coords, asint=False):
+        """
+        returns the pixel coordintes in the gird for teh given lat-lon location.
+        
+        :param coords: -- the coords to project (Nx3 numpy array or compatible sequence)
+                          (lon, lat, depth)
+        :param asint: -- flag to set whether to convert to a integer or not default
+                         is to leave it as the same type it came in, so you can have fractional pixels
+        """
+
+        coords = np.asarray(coords).reshape(-1, 3)
+
+        pixel_coords = np.zeros( (coords.shape[0], 2), dtype=np.float64)
+        pixel_coords[:,0] = self._lon_to_pixel_interp(coords[:,0])
+        #print self._lat_to_pixel_interp(coords[:,1])
+        pixel_coords[:,1] = self.max_lat_index - self._lat_to_pixel_interp(coords[:,1])
+
+        if asint:
+            # NOTE: using "floor" as it rounds negative numbers towards -inf
+            # #      simple casting rounds toward zero
+            # # we may need the negative coords to work right for locations off the grid.
+            # #  (used for the raster map code)
+            return np.floor(pixel_coords, pixel_coords).astype(np.int32)
+        return pixel_coords
+
+    def to_pixel_2D(self, coords, asint=False):
+        """
+        same as to_pixel, but expects only (lon, lat) coords as input.
+
+        :param coords: -- the coords to project (Nx2 numpy array or compatible sequence)
+                          (lon, lat)
+        :param asint: -- flag to set whether to convert to a integer or not default
+                         is to leave it as the same type it came in, so you can have fractional pixels
+        """
+        raise NotImplimentedError
+
+    def to_lonlat(self, coords):
+        """
+        converts pixel coords to long-lat coords
+        
+        param: coords  - an array of pixel coordinates (usually integer type)
+           NX2: ( (long1, lat1),
+                  (long2, lat2),
+                  (long3, lat3),
+                 .....
+                )
+         (as produced by to_pixel)
+        
+        NOTE: there is not depth in input -- pixels are always 2-d!
+        
+        Note that  to_lonlat( to_pixel (coords) ) != coords, due to rounding.
+        If the input is integers, a 0.5 is added to "shift" the location to mid-pixel.
+        returns:  the pixel coords as a similar Nx2 array of floating point x,y coordinates
+        (using the y = 0 at the top, and y increasing down)
+         """
+
+        coords = np.asarray(coords).reshape( (-1, 2) )
+        if np.issubdtype(coords.dtype, int):
+            # convert to float64:
+            coords = coords.astype(np.float64)
+            # add 0.5 to shift to center of pixel
+            coords += 0.5
+
+        # interpolate to lon-lat_coords
+        lon = self._pixel_to_lon_interp(coords[:,0])
+        lat = self._pixel_to_lat_interp(self.max_lat_index - coords[:,1])
+
+        return np.c_[lon, lat]
 
 

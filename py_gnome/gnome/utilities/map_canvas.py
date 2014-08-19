@@ -258,7 +258,6 @@ class MapCanvas(object):
             raster_map = self.raster_map
             drawer = ImageDraw.Draw(self.back_image)
             w, h = raster_map.bitmap.shape
-            print "in draw_raster_map, raster shape:", w, h
             if self.raster_map_outline:
                 # vertical lines
                 for i in [float(i) for i in range(w)]: # float, so we don't get pixel-rounding
@@ -344,6 +343,8 @@ class MapCanvas(object):
 
     def save_background(self, filename, type_in='PNG'):
         print 'saving:', filename
+        if self.back_image is None:
+            raise ValueError("There is no background image to save. You may want to call .draw_background() first")
         self.back_image.save(filename, type_in)
 
     def save_foreground(self, filename, type_in='PNG'):

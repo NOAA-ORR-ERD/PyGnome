@@ -34,9 +34,13 @@ from colander import SchemaNode, String, Float, drop
 
 from gnome.persist import base_schema
 
+import gnome.map
+
 from gnome.utilities.map_canvas import BW_MapCanvas
 from gnome.utilities.serializable import Serializable, Field
 from gnome.utilities.file_tools import haz_files
+
+from gnome.utilities import projections
 
 from gnome.basic_types import oil_status, world_point_type
 from gnome.cy_gnome.cy_land_check import check_land
@@ -631,3 +635,123 @@ class MapFromBNA(RasterMap):
                            **kwargs)
 
         return None
+def map_from_rectangular_grid(mask, lon, lat, refine=1, **kwargs):
+
+    """
+    Suitable for a rectangular, but not fully regular, grid
+
+    Such that it can be described by single longitude and latitude vectors
+    
+    :param mask: the land-water mask as a numpy array
+
+    :param lon: longitude array
+
+    :param lon: latitude array
+
+    :param refine=1: amount to refine grid -- 4 will give 4 times the resolution
+    :type refine: integer
+
+    :param kwargs: Other keyword arguments are passed on to RasterMap
+
+    """
+
+    ## expand the grid mask
+    grid = np.repeat(mask, refine, axis = 0)
+    grid = np.repeat(grid, refine, axis = 1)
+
+    ## refine the axes:
+    lon = refine_axis(lon, refine)
+    lat = refine_axis(lat, refine)
+
+    nlon, nlat = grid.shape
+
+    # generating projection for raster map
+    proj = projections.RectangularGridProjection(lon, lat)
+    
+    return gnome.map.RasterMap( grid,
+                                proj,
+                                **kwargs
+                                )
+
+
+def grid_from_nc(filename):
+    """
+    generates a grid_mask and lat lon from a conforming netcdf file
+    """
+    import netCDF4
+
+    nc = netCDF4.Dataset(filename)
+
+    lat_var = nc.variables['lat']
+    lon_var = nc.variables['lon']
+
+    nx, ny = lat_var.shape
+
+    # check for regular grid:
+    ## all rows should be same:
+    for r in range(nx):
+        if not np.array_equal(lon_var[r,:], lon_var[0,:]):
+            raise ValueError("Row: %i isn't equal!"%r)
+
+    for c in range(ny):
+        if not np.array_equal(lat_var[:,c], lat_var[:,0]):
+            raise ValueError("column: %i isn't equal!"%c)
+
+    mask = nc.variables['mask'][:]
+
+    #Re-shuffle for gnome raster map orientation:
+    # create the raster
+#    bitmap_array = np.zeros( (nlon, nlat), dtype=np.uint8 )
+    mask = (mask == 0).astype(np.uint8) # swap water/land
+    mask = np.ascontiguousarray(np.fliplr(mask.T)) # to get oriented right.
+
+    # extra point to fill for last grid cell
+    # note: values can be variable, so not *quite* right
+    lon = lon_var[0,:]
+    lat = lat_var[:,0]
+    lon = np.r_[lon, [2*lon[-1] - lon[-2]] ]
+    lat = np.r_[lat, [2*lat[-1] - lat[-2]] ]
+
+    return mask, lon, lat
+
+def map_from_regular_grid_nc_file(filename, refine=1, **kwargs):
+    """
+    builds a raster map from a regular grid in a netcdf file
+
+    only tested with the HYCOM grid
+    
+    :param filename: the full path or opendap url for the netcdf file
+    :type filename: string
+
+    :param refine: how much to refine the grid. 1 means keep it as it is, otherwise is will scale
+    :type refine: integer
+
+    :param kwargs: other key word arguemnts -- passed on to RasterMap class constructor
+
+    """
+
+    grid, lon, lat = grid_from_nc(filename)
+    map = map_from_rectangular_grid(grid, lon, lat, refine, **kwargs)
+
+    return map
+
+def refine_axis(old_axis, refine):
+    """
+    refines the axis be interpolating points between each axis points
+
+    :param old_axis: the axis values
+    :type old_axis: 1-d numpy array of floats
+
+    :param refine: amount to refine grid -- 4 will give 4 times the resolution
+    :type refine: integer
+    """
+    refine = int(refine)
+    axis = old_axis.reshape((-1,1))
+    axis = ((axis[1:] - axis[:-1]) / refine) * np.arange(refine) + axis[:-1]
+    axis.shape = (-1,)
+    axis = np.r_[axis, old_axis[-1]]
+    return axis
+
+
+
+

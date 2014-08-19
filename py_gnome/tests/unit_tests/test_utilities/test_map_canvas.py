@@ -120,9 +120,6 @@ def test_draw_raster_map():
     gmap.draw_raster_map(raster_map, outline=True)
 
     gmap.save_background(os.path.join(basedir, 'raster.png'))
-    
-    assert False
-
 
 
 
