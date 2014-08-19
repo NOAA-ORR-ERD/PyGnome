@@ -150,6 +150,7 @@ class GeoJson(Outputter, Serializable):
         geojson = FeatureCollection(features)
         output_filename = self.output_filename(geojson, step_num)
 
+        self._update_next_output_time(step_num, sc.current_time_stamp)
         # decided geojson should only be output to file
         # read data from file and send it to web client
         output_info = {'step_num': step_num,
