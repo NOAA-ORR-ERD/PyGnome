@@ -21,7 +21,8 @@ from gnome.spill import (Spill,
                          Release,
                          point_line_release_spill,
                          PointLineRelease,
-                         SpatialRelease)
+                         SpatialRelease,
+                         GridRelease)
 from gnome.spill.elements import floating
 import gnome.array_types
 
@@ -1084,6 +1085,21 @@ def test_release_serialization_deserialization(rel_type):
             assert n_rel == rel_type
         else:
             assert n_rel != rel_type
+
+def test_grid_release():
+
+    bounds = ( (0, 10), (2, 12) )
+    release = GridRelease( datetime.now(), bounds, 3)
+
+    assert np.array_equal(release.start_position, [[  0.,  10.,   0.],
+                                                   [  1.,  10.,   0.],
+                                                   [  2.,  10.,   0.],
+                                                   [  0.,  11.,   0.],
+                                                   [  1.,  11.,   0.],
+                                                   [  2.,  11.,   0.],
+                                                   [  0.,  12.,   0.],
+                                                   [  1.,  12.,   0.],
+                                                   [  2.,  12.,   0.]])
 
 
 if __name__ == '__main__':

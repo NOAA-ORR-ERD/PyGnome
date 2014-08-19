@@ -566,4 +566,78 @@ class RectangularGridProjection(NoProjection):
 
         return np.c_[lon, lat]
 
+class RegularGridProjection(GeoProjection):
+    """
+    projection for lat-lon to pixel and back for a pre-defined regular grid.
+
+    This differs from the other projections in that it doesn't try to
+    match the bounding box aspect ratio -- it simply uses the one
+    already defined by the grid.
+
+    You  could use a RectangularGridProjection here as well, but this is
+    simpler and should be faster.    
+    """
+    def set_scale(self, bounding_box, image_size=None):
+        """
+        set the scaling, etc. of the projection
+        
+        This should be called whenever the bounding box of the map,
+        or the size of the image is changed
+
+        :param bounding_box: bounding box of the visual portion of the map
+                             in the form:  ( (min_long, min_lat),
+                                             (max_long, max_lat) )
+        :param image_size=None: the size of the image that will be drawn to.
+                                if not given, the previous size will be used.
+        """
+
+        if image_size is None:
+            image_size = self.image_size
+
+        bounding_box = np.asarray(bounding_box, dtype=np.float64)
+
+        self.center = np.mean(bounding_box, axis=0)
+        self.offset = np.array(image_size, dtype=np.float64) / 2
+
+        h = bounding_box[1, 1] - bounding_box[0, 1]
+        w = bounding_box[1, 0] - bounding_box[0, 0]
+
+        self.scale = (image_size[0] / w, - image_size[1] / h)
+
+        # doing this at the end, in case there is a problem with the input.
+
+        self.image_size = image_size
+
+    def set_scale(self, bounding_box, image_size=None):
+        """
+        set the scaling, etc. of the projection
+        
+        This should only be called for new array or boundign box.
+
+        :param bounding_box: bounding box of the visual portion of the map
+                             in the form:  ( (min_long, min_lat),
+                                             (max_long, max_lat) )
+        :param image_size=None: the size of the image that will be drawn to.
+                                if not given, the previous size will be used.
+        """
+
+
+        if image_size is None:
+            image_size = self.image_size
+
+        bounding_box = np.asarray(bounding_box, dtype=np.float64)
+
+        self.center = np.mean(bounding_box, axis=0)
+        self.offset = np.array(image_size, dtype=np.float64) / 2
+
+        h = bounding_box[1, 1] - bounding_box[0, 1]
+        w = bounding_box[1, 0] - bounding_box[0, 0]
+
+        self.scale = (image_size[0] / w, - image_size[1] / h)
+
+        # doing this at the end, in case there is a problem with the input.
+
+        self.image_size = image_size
+
+
 

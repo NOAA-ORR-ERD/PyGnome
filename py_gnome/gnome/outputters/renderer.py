@@ -252,7 +252,7 @@ class Renderer(Outputter, MapCanvas):
             return None
 
         image_filename = os.path.join(self.images_dir,
-                self.foreground_filename_format % step_num)
+                                      self.foreground_filename_format % step_num)
 
         self.create_foreground_image()
 

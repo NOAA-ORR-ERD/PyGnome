@@ -665,11 +665,19 @@ def map_from_rectangular_grid(mask, lon, lat, refine=1, **kwargs):
 
     nlon, nlat = grid.shape
 
+    map_bounds = np.array( ( (lon[0],   lat[0]),
+                             (lon[-1],  lat[0]),
+                             (lon[-1], lat[-1]),
+                             (lon[0],  lat[-1]),
+                           ), dtype=np.float )
+    
     # generating projection for raster map
     proj = projections.RectangularGridProjection(lon, lat)
     
+
     return gnome.map.RasterMap( grid,
                                 proj,
+                                map_bounds=map_bounds,
                                 **kwargs
                                 )
 
@@ -714,9 +722,9 @@ def grid_from_nc(filename):
 
     return mask, lon, lat
 
-def map_from_regular_grid_nc_file(filename, refine=1, **kwargs):
+def map_from_rectangular_grid_nc_file(filename, refine=1, **kwargs):
     """
-    builds a raster map from a regular grid in a netcdf file
+    builds a raster map from a rectangular grid in a netcdf file
 
     only tested with the HYCOM grid
     
@@ -752,6 +760,38 @@ def refine_axis(old_axis, refine):
     axis = np.r_[axis, old_axis[-1]]
     return axis
 
+def map_from_regular_grid(grid_mask, lon, lat, refine = 4, refloat_halflife=6, map_bounds=None):
+    """
+    note: poorly tested -- here to save it in case we need it in the future
+
+    makes a raster map from a regular grid: i.e delta_lon and delta-lat are constant.
+
+    """
+    nlon, nlat = grid_mask.shape
+    dlon = (lon[-1] - lon[0]) / (len(lon)-1)
+    dlat = (lat[-1] - lat[0]) / (len(lat)-1)
+
+    # create the raster
+    bitmap_array = np.zeros( (nlon*resolution, nlat*resolution), dtype=np.uint8 )
+    #add the land to the raster
+    for i in range(resolution):
+        for j in range(resolution):
+            bitmap_array[i::resolution, j::resolution] = grid_mask
+
+    # compute projection
+    bounding_box =  np.array( ( (lon[0],       lat[0]),
+                                (lon[-1]+dlon, lat[-1]+dlat),
+                                ),
+                              dtype=np.float64
+                            ) # adjust for last grid cell.
+    proj = RegularGridProjection(bounding_box,
+                                 image_size=bitmap_array.shape,
+                                 )
+
+    return gnome.map.RasterMap(bitmap_array,
+                                proj,
+                                refloat_halflife=refloat_halflife,
+                                )
 
 
 
