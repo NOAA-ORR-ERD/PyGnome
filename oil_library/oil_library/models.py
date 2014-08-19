@@ -10,12 +10,13 @@ from sqlalchemy import (Table,
                         ForeignKey)
 
 from sqlalchemy.ext.declarative import declarative_base as real_declarative_base
-
+from sqlalchemy.orm.collections import attribute_mapped_collection
 from sqlalchemy.orm.relationships import (RelationshipProperty,
                                           ONETOMANY, MANYTOONE, MANYTOMANY)
 from sqlalchemy.orm import (scoped_session,
                             sessionmaker,
-                            relationship)
+                            relationship,
+                            backref)
 
 from zope.sqlalchemy import ZopeTransactionExtension
 
@@ -403,3 +404,46 @@ class Toxicity(Base):
 
     def __repr__(self):
         return "<Toxicity('%s')>" % (self.id)
+
+
+class Category(Base):
+    '''
+        This is a self referential object suitable for building a
+        hierarchy of nodes.  The relationship will be one-to-many
+        child nodes.
+        So Categories will be a tree of terms that the user can use to
+        narrow down the list of oils he/she is interested in.
+        We will support the notion that an oil can have many categories,
+        and a category can contain many oils.
+        Thus, Oil objects will be linked to categories in a many-to-many
+        relationship.
+    '''
+    __tablename__ = 'categories'
+    id = Column(Integer, primary_key=True)
+    parent_id = Column(Integer, ForeignKey(id))
+    name = Column(String(50), nullable=False)
+
+    children = relationship('Category',
+                            # cascade deletions
+                            cascade="all, delete-orphan",
+
+                            # many to one + adjacency list
+                            # - remote_side is required to reference the
+                            #   'remote' column in the join condition.
+                            backref=backref("parent", remote_side=id),
+
+                            # children will be represented as a dictionary
+                            # on the "name" attribute.
+                            #collection_class=attribute_mapped_collection('name'),
+                            )
+
+    def __init__(self, name, parent=None):
+        self.name = name
+        self.parent = parent
+
+    def append(self, nodename):
+        self.children.append(Category(nodename, parent=self))
+
+    def __repr__(self):
+        return ('Category(name={0}, id={1}, parent_id={2})'
+                .format(self.name, self.id, self.parent_id))

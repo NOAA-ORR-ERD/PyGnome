@@ -39,7 +39,8 @@ def make_db():
             initialize_sql(settings)
             load_database(settings)
         except ImportError, ie:
-            print '\nWarning: Required modules for database unit-testing not found.'
+            print ('\nWarning: Required modules for database unit-testing '
+                   '         not found.')
             dependant_modules = ('sqlalchemy', 'zope.sqlalchemy',
                                  'transaction')
             print ie
@@ -451,5 +452,3 @@ class IntegrationTestCase(BaseTestCase):
         self.add_objs_and_assert_ids([oil_obj, toxicity_obj])
         assert oil_obj.toxicities == [toxicity_obj]
         assert toxicity_obj.oil == oil_obj
-
-
