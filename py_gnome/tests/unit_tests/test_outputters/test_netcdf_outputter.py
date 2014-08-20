@@ -353,7 +353,8 @@ def test_read_data_exception(model):
 @pytest.mark.slow
 @pytest.mark.parametrize(("output_ts_factor", "use_time"),
                          [(1, True), (1, False),
-                          (2.4, True), (2.4, False)])
+                          (2.4, True), (2.4, False),
+                          (3, True), (3, False)])
 def test_read_standard_arrays(model, output_ts_factor, use_time):
     """
     tests the data returned by read_data is correct when `which_data` flag is

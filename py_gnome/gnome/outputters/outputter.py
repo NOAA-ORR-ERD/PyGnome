@@ -143,7 +143,7 @@ class Outputter(Serializable):
         This method gets called by the model when after everything else is done
         in a time step. Put any code need for clean-up, etc.
         '''
-        self._next_output_time += self.output_timestep
+        pass
 
     def write_output(self, step_num, islast_step=False):
         """
@@ -157,6 +157,16 @@ class Outputter(Serializable):
             is last step. If 'output_last_step' is True then this is written
             out
         :type islast_step: bool
+
+        .. note:: When writing your own outputter, call this base class first
+        so it sets the self._write_step flag. Since this code is common to all
+        outputters, it is put in here - its a partial implementation.
+
+        Also NOTE, at the end of write_output, be sure to call
+          self._update_next_output_time(step_num, time_stamp)
+
+        This will increment the internal _next_output_time attribute. If
+        the output_timestep is not None, then this becomes important.
         """
         if (step_num == 0 and self.output_zero_step):
             self._write_step = True
@@ -251,7 +261,9 @@ class Outputter(Serializable):
 
         for step_num in range(num_time_steps):
             if (step_num > 0 and step_num < num_time_steps - 1):
-                next_ts = (self.cache.load_timestep(step_num + 1).items()[0].
+                #next_ts = (self.cache.load_timestep(step_num + 1).items()[0].
+                #           current_time_stamp)
+                next_ts = (self.cache.load_timestep(step_num).items()[0].
                            current_time_stamp)
                 ts = next_ts - model_time
                 self.prepare_for_model_step(ts.seconds, model_time)
@@ -261,4 +273,4 @@ class Outputter(Serializable):
 
             self.write_output(step_num, last_step)
             model_time = (self.cache.load_timestep(step_num).items()[0].
-                         current_time_stamp)
+                          current_time_stamp)
