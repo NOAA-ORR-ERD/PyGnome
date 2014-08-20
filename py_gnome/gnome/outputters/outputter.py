@@ -143,7 +143,7 @@ class Outputter(Serializable):
         This method gets called by the model when after everything else is done
         in a time step. Put any code need for clean-up, etc.
         '''
-        pass
+        self._next_output_time += self.output_timestep
 
     def write_output(self, step_num, islast_step=False):
         """
