@@ -458,9 +458,17 @@ class RectangularGridProjection(NoProjection):
         """
         import scipy.interpolate
 
-        self.max_lat_index = len(latitude) - 1 # height of bitmap
+
         latitude = np.array(latitude, dtype=np.float64)
         longitude = np.array(longitude, dtype=np.float64)
+        self.max_lat_index = len(latitude) - 1 # height of bitmap
+        self.max_lon_index = len(longitude) - 1 # width of bitmap
+
+        self.min_lon = longitude.min()
+        self.max_lon = longitude.max()
+        self.min_lat = latitude.min()
+        self.max_lat = latitude.max()
+
         pixels = np.arange(len(latitude)).reshape(-1,1) * np.arange(len(longitude))
         #Create interpolators:
         self._lon_to_pixel_interp = scipy.interpolate.interp1d(longitude,
@@ -506,12 +514,17 @@ class RectangularGridProjection(NoProjection):
         :param asint: -- flag to set whether to convert to a integer or not default
                          is to leave it as the same type it came in, so you can have fractional pixels
         """
-
         coords = np.asarray(coords).reshape(-1, 3)
 
         pixel_coords = np.zeros( (coords.shape[0], 2), dtype=np.float64)
+
+        np.putmask(coords[:,:2], coords[:,:2]<(self.min_lon, self.min_lat), (self.min_lon, self.min_lat) )
+        np.putmask(coords[:,:2], coords[:,:2]>(self.max_lon, self.max_lat), (self.max_lon, self.max_lat) )
+
+        np.clip(coords[:,:2], (self.min_lon, self.min_lat), (self.max_lon, self.max_lat), out=coords[:,:2]) 
+
+
         pixel_coords[:,0] = self._lon_to_pixel_interp(coords[:,0])
-        #print self._lat_to_pixel_interp(coords[:,1])
         pixel_coords[:,1] = self.max_lat_index - self._lat_to_pixel_interp(coords[:,1])
 
         if asint:
@@ -519,7 +532,9 @@ class RectangularGridProjection(NoProjection):
             # #      simple casting rounds toward zero
             # # we may need the negative coords to work right for locations off the grid.
             # #  (used for the raster map code)
-            return np.floor(pixel_coords, pixel_coords).astype(np.int32)
+            pixel_coords = np.floor(pixel_coords, pixel_coords).astype(np.int32)
+            return pixel_coords
+
         return pixel_coords
 
     def to_pixel_2D(self, coords, asint=False):
@@ -554,11 +569,15 @@ class RectangularGridProjection(NoProjection):
          """
 
         coords = np.asarray(coords).reshape( (-1, 2) )
+
         if np.issubdtype(coords.dtype, int):
             # convert to float64:
             coords = coords.astype(np.float64)
             # add 0.5 to shift to center of pixel
             coords += 0.5
+
+        # out of bounds gets clipped to boundary
+        np.clip(coords, (0,0), (self.max_lon_index, self.max_lat_index), out=coords) 
 
         # interpolate to lon-lat_coords
         lon = self._pixel_to_lon_interp(coords[:,0])

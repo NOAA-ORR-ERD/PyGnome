@@ -448,15 +448,16 @@ class Test_rectangular_grid_projection(object):
                                               (1, 3),
                                               (3, 2),
                                              ) )
-    def test_to_pixel_out_of_bounds(self):
+    # def test_to_pixel_out_of_bounds(self):
+    #    #NOTE: this no longer returns nans -- now returns outer edge
 
-        proj = self.proj
+    #     proj = self.proj
 
-        assert np.all(np.isnan(  proj.to_pixel( ( (10,  -1, 0),
-                                                  (34.00001, -.000000001, 0),
-                                                 )
-                                               )
-                    ))
+    #     assert np.all(np.isnan(  proj.to_pixel( ( (10,  -1, 0),
+    #                                               (34.00001, -.000000001, 0),
+    #                                              )
+    #                                            )
+    #                 ))
 
     def test_to_lonlat_int(self):
         proj = self.proj
@@ -507,5 +508,29 @@ class Test_rectangular_grid_projection(object):
                                                   (27., 1.),
                                                 ), rtol=1e-8
                               )
+
+    def test_to_lonlat_out_of_bounds(self):
+
+        proj = self.proj
+
+        assert np.array_equal( proj.to_lonlat( ( (-1, -1),
+                                                 ( 5, 6 ),
+                                               )),
+                                              ( (20, 14),
+                                                (34,  0),
+                                              )
+                                            ) 
+
+    def test_to_pixel_out_of_bounds(self):
+
+        proj = self.proj
+
+        assert np.array_equal( proj.to_pixel( (10, -1, 0) ),
+                                              ((0, 5),)
+                                            )
+
+        assert np.array_equal( proj.to_pixel( (35, 15, 0) ),
+                                              ((4, 0),)
+                                            )
 
 
