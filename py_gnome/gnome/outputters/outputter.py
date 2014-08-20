@@ -261,8 +261,6 @@ class Outputter(Serializable):
 
         for step_num in range(num_time_steps):
             if (step_num > 0 and step_num < num_time_steps - 1):
-                #next_ts = (self.cache.load_timestep(step_num + 1).items()[0].
-                #           current_time_stamp)
                 next_ts = (self.cache.load_timestep(step_num).items()[0].
                            current_time_stamp)
                 ts = next_ts - model_time

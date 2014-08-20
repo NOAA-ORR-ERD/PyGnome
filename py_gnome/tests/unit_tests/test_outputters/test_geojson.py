@@ -87,6 +87,7 @@ def test_model_dump_outputgeojson(model):
     assert len(files) == model.num_time_steps
 
 
+@pytest.mark.slow
 @pytest.mark.parametrize("output_ts_factor", [1, 2, 2.4])
 def test_write_output_post_run(model, output_ts_factor):
     model.rewind()
