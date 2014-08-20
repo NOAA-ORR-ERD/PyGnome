@@ -5,6 +5,7 @@ Tests for netcdf_outputter
 
 import os
 from datetime import datetime, timedelta
+from math import ceil
 
 import pytest
 from pytest import raises
@@ -384,7 +385,7 @@ def test_read_standard_arrays(model, output_ts_factor, use_time):
         _found_a_matching_time = False
 
         for idx, step in enumerate(range(0, model.num_time_steps,
-                                                    int(output_ts_factor))):
+                                   int(ceil(output_ts_factor)))):
             scp = model._cache.load_timestep(step)
             curr_time = scp.LE('current_time_stamp', uncertain)
             if use_time:
@@ -413,6 +414,10 @@ def test_read_standard_arrays(model, output_ts_factor, use_time):
                 if 'age' in scp.LE_data:
                     assert np.all(scp.LE('age', uncertain)[:]
                                   == nc_data['age'])
+
+            else:
+                raise Exception("Assertions not tested since no data found in"
+                    " NetCDF file for timestamp: {0}".format(curr_time))
 
         if _found_a_matching_time:
             """ at least one matching time found """
