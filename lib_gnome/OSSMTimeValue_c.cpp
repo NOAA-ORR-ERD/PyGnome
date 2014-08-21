@@ -56,7 +56,7 @@ OSSMTimeValue_c::OSSMTimeValue_c(TMover *theOwner) : TimeValue_c(theOwner)
 	fStationName[0] = 0;
 	fStationPosition.p.pLat = 0;
 	fStationPosition.p.pLong = 0;
-	fStationPosition.z = 0
+	fStationPosition.z = 0;
 	bOSSMStyle = true;
 	fTransport = 0;
 	fVelAtRefPt = 0;
