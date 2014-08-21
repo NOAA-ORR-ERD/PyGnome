@@ -120,12 +120,11 @@ def test_geojson(model):
         l_id = model.spills.LE('id')
         uncertain = False
         for elem in range(sum(model.spills.num_released)):
-            #g_elem = output['geojson']['features'][elem]
-            print 'output:', output
-            with open(output['GeoJson']['output_filename']) as file_:
-                geojson_out = geojson.load(file_)
-
-            g_elem = geojson_out['features'][elem]
+            g_elem = output['GeoJson']['feature_collection']['features'][elem]
+            #print 'output:', output
+            #with open(output['GeoJson']['output_filename']) as file_:
+            #    geojson_out = geojson.load(file_)
+            #g_elem = geojson_out['features'][elem]
 
             match = np.where(l_id == g_elem['id'])[0][0]
 
