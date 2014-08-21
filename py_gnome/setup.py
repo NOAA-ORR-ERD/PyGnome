@@ -24,6 +24,7 @@ import sys
 import sysconfig
 import glob
 import shutil
+from subprocess import call
 
 # to support "develop" mode:
 from setuptools import setup, find_packages
@@ -470,6 +471,18 @@ setup(name='pyGnome',
 
 # Change current working directory back to what user originally had
 os.chdir(CWD)
+
+# Install oil_library if it is not found on system
+try:
+    import oil_library
+except ImportError:
+    'install oil lib'
+    oil_lib_path = os.path.join(SETUP_PATH, '../oil_library')
+    os.chdir(oil_lib_path)
+    print "Installing oil_library since it isn't found"
+    call(['python', 'setup.py', 'install'])
+    print "Change back to user's current working directory"
+    os.chdir(CWD)
 
 # ## total kludge to get linking to work right with Anaconda:
 ## note: this doesn't work, as the env variable goes away with new process.
