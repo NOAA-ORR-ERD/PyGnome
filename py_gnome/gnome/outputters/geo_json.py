@@ -148,7 +148,7 @@ class GeoJson(Outputter, Serializable):
                 features.append(feature)
 
         geojson = FeatureCollection(features)
-        output_filename = self.output_filename(geojson, step_num)
+        self.output_filename(geojson, step_num)
 
         self._update_next_output_time(step_num, sc.current_time_stamp)
         # decided geojson should only be output to file
@@ -156,7 +156,8 @@ class GeoJson(Outputter, Serializable):
         output_info = {'step_num': step_num,
                        #'geojson': geojson,
                        'time_stamp': sc.current_time_stamp.isoformat(),
-                       'output_filename': output_filename}
+                       'feature_collection': geojson
+                       }
 
         return output_info
 
