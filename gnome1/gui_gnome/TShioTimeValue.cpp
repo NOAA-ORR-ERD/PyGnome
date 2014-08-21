@@ -94,8 +94,8 @@ OSErr TShioTimeValue::MakeClone(TShioTimeValue **clonePtrPtr)
 			{
 				strcpy(cloneP->fStationName,this->fStationName);
 				cloneP->fStationType = this->fStationType;
-				cloneP->fLatitude = this->fLatitude;
-				cloneP->fLongitude = this->fLongitude;
+				//cloneP->fLatitude = this->fLatitude;
+				//cloneP->fLongitude = this->fLongitude;
 				cloneP->fHighLowValuesOpen = this->fHighLowValuesOpen;
 				cloneP->fEbbFloodValuesOpen = this->fEbbFloodValuesOpen;
 			
@@ -228,8 +228,8 @@ OSErr TShioTimeValue::BecomeClone(TShioTimeValue *clone)
 
 			strcpy(this->fStationName,cloneP->fStationName);
 			this->fStationType = cloneP->fStationType;
-			this->fLatitude = cloneP->fLatitude;
-			this->fLongitude = cloneP->fLongitude;
+			//this->fLatitude = cloneP->fLatitude;
+			//this->fLongitude = cloneP->fLongitude;
 			this->fHighLowValuesOpen = cloneP->fHighLowValuesOpen;
 			this->fEbbFloodValuesOpen = cloneP->fEbbFloodValuesOpen;
 			
@@ -608,7 +608,8 @@ OSErr TShioTimeValue::CheckAndPassOnMessage(TModelMessage *message)
 
 /////////////////////////////////////////////////
 
-#define TShioMoverREADWRITEVERSION 1 //JLM
+//#define TShioMoverREADWRITEVERSION 1 //JLM
+#define TShioMoverREADWRITEVERSION 2 //JLM
 
 OSErr TShioTimeValue::Write(BFPB *bfpb)
 {
@@ -626,8 +627,8 @@ OSErr TShioTimeValue::Write(BFPB *bfpb)
 	
 	if (err = WriteMacValue(bfpb, fStationName, MAXSTATIONNAMELEN)) return err; // don't swap !! 
 	if (err = WriteMacValue(bfpb,fStationType)) return err;  
-	if (err = WriteMacValue(bfpb,fLatitude)) return err;
-	if (err = WriteMacValue(bfpb,fLongitude)) return err;
+	//if (err = WriteMacValue(bfpb,fLatitude)) return err;
+	//if (err = WriteMacValue(bfpb,fLongitude)) return err;
 
 	if (err = WriteMacValue(bfpb,fConstituent.DatumControls.datum)) return err;
 	if (err = WriteMacValue(bfpb,fConstituent.DatumControls.FDir)) return err;
@@ -752,15 +753,19 @@ OSErr TShioTimeValue::Read(BFPB *bfpb)
 	if (err = ReadMacValue(bfpb,&id)) return err;
 	if (id != GetClassID ()) { TechError("TShioTimeValue::Read()", "id != TYPE_SHIOMOVER", 0); return -1; }
 	if (err = ReadMacValue(bfpb,&version)) return err;
-	if (version != TShioMoverREADWRITEVERSION) { printSaveFileVersionError(); return -1; }
+	//if (version != TShioMoverREADWRITEVERSION) { printSaveFileVersionError(); return -1; }
+	if (version > TShioMoverREADWRITEVERSION) { printSaveFileVersionError(); return -1; }
 	
 	/////////////////////////////////
 	
 	if (err = ReadMacValue(bfpb, fStationName, MAXSTATIONNAMELEN)) return err; // don't swap !! 
 	if (err = ReadMacValue(bfpb,&fStationType)) return err; 
-	if (err = ReadMacValue(bfpb,&fLatitude)) return err;
-	if (err = ReadMacValue(bfpb,&fLongitude)) return err;
-
+	if (version == 1)
+	{
+		double fLatitude, fLongitude;	// now the station info is is TOSSMTimeValue...
+		if (err = ReadMacValue(bfpb,&fLatitude)) return err;
+		if (err = ReadMacValue(bfpb,&fLongitude)) return err;
+	}
 	if (err = ReadMacValue(bfpb,&fConstituent.DatumControls.datum)) return err;
 	if (err = ReadMacValue(bfpb,&fConstituent.DatumControls.FDir)) return err;
 	if (err = ReadMacValue(bfpb,&fConstituent.DatumControls.EDir)) return err;
@@ -906,7 +911,7 @@ OSErr TShioTimeValue::ReadTimeValues (char *path, short format, short unitsIfKno
 	long lineNum = 0;
 	char *p;
 	long numScanned;
-	double value;
+	double value, stationLat, stationLon;
 	CONTROLVAR  DatumControls;
 	
 	if (err = OSSMTimeValue_c::InitTimeFunc()) return err;
@@ -981,8 +986,12 @@ OSErr TShioTimeValue::ReadTimeValues (char *path, short format, short unitsIfKno
 	strncpy(this->fStationName,p,MAXSTATIONNAMELEN);
 	this->fStationName[MAXSTATIONNAMELEN-1] = 0;
 	// 
-	if(err = this->GetKeyedValue(f,"Latitude=",lineNum++,strLine,&this->fLatitude))  goto readError;
-	if(err = this->GetKeyedValue(f,"Longitude=",lineNum++,strLine,&this->fLongitude))  goto readError;
+	if(err = this->GetKeyedValue(f,"Latitude=",lineNum++,strLine,&stationLat))  goto readError;
+	if(err = this->GetKeyedValue(f,"Longitude=",lineNum++,strLine,&stationLon))  goto readError;
+
+	this->fStationPosition.p.pLat = stationLat * 1000000;
+	this->fStationPosition.p.pLong = stationLon * 1000000;
+	
 	//
 	if(!(p = GetKeyedLine(f, "[Constituents]",lineNum++,strLine)))  goto readError;
 	// code goes here in version 1.2.7 these lines won't be required for height files, but should still allow old format

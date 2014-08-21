@@ -55,8 +55,8 @@ CurrentCycleMover::CurrentCycleMover (TMap *owner, char *name) : GridCurrentMove
 
 	bApplyLogProfile = false;
 
-	refP = p;
-	refZ = 0;
+	refPt3D.p = p;
+	refPt3D.z = 0;
 	scaleType = SCALE_NONE;
 	scaleValue = 1.0;
 	scaleOtherFile[0] = 0;
@@ -1685,8 +1685,8 @@ CurrentCycleDialogNonPtrFields GetCurrentCycleDialogNonPtrFields(CurrentCycleMov
 	f.fUncertainStartTime  = cm->fUncertainStartTime; 	
 	f.fDuration  = cm->fDuration; 
 	//
-	f.refP  = cm->refP; 	
-	f.refZ  = cm->refZ; 	
+	f.refP  = cm->refPt3D.p; 	
+	f.refZ  = cm->refPt3D.z; 	
 	f.scaleType = cm->scaleType; 
 	f.scaleValue = cm->scaleValue;
 	strcpy(f.scaleOtherFile,cm->scaleOtherFile);
@@ -1709,8 +1709,8 @@ void SetCurrentCycleDialogNonPtrFields(CurrentCycleMover	* cm,CurrentCycleDialog
 	cm->fUncertainStartTime = f->fUncertainStartTime; 	
 	cm->fDuration  = f->fDuration; 
 	//
-	cm->refP = f->refP; 	
-	cm->refZ  = f->refZ; 	
+	cm->refPt3D.p = f->refP; 	
+	cm->refPt3D.z  = f->refZ; 	
 	cm->scaleType = f->scaleType; 
 	cm->scaleValue = f->scaleValue;
 	strcpy(cm->scaleOtherFile,f->scaleOtherFile);
@@ -1767,9 +1767,10 @@ OSErr CurrentCycleMover::InitMover(TimeGridVel *grid)
 	OSErr	err = noErr;
 	//timeGrid = grid;
 	timeDep = 0;
-	refP.pLat = 0;
-	refP.pLong = 0;
-	refZ = 0;
+	refPt3D.p.pLat = 0;
+	refPt3D.p.pLong = 0;
+	refPt3D.z = 0;
+	//refZ = 0;
 	scaleType = SCALE_NONE;
 	scaleValue = 1.0;
 	scaleOtherFile[0] = 0;
@@ -1949,7 +1950,7 @@ ListItem CurrentCycleMover::GetNthListItem(long n, short indent, short *style, c
 				item.indent++;
 				item.index = (n == 0) ? I_CATSLAT : I_CATSLONG;
 				//item.bullet = BULLET_DASH;
-				WorldPointToStrings(refP, latS, longS);
+				WorldPointToStrings(refPt3D.p, latS, longS);
 				strcpy(text, (n == 0) ? latS : longS);
 				
 				return item;
@@ -2285,7 +2286,7 @@ short HydrologyClick2(DialogPtr dialog, short itemNum, long lParam, VOIDPTR data
 			transportConversionFactor = ConvertTransportUnitsToCMS2(sTimeValue2->fUserUnits) / ConvertTransportUnitsToCMS2(transportUnits);
 			// get value at reference point and calculate scale factor
 			// need units conversion for transport and velocity
-			refPoint3D.p = sTimeValue2->fStationPosition;
+			refPoint3D.p = sTimeValue2->fStationPosition.p;
 			//refVel = ((TCATSMover*)(TTimeValue*)sTimeValue2->owner)->GetPatValue(sTimeValue2->fStationPosition);
 			refVel = ((TCATSMover*)(TTimeValue*)sTimeValue2->owner)->GetPatValue(refPoint3D);
 			//origScaleFactor = sTimeValue2->fScaleFactor;
@@ -2364,7 +2365,7 @@ OSErr HydrologyInit2(DialogPtr dialog, VOIDPTR data)
 	
 	mysetitext(dialog, M32FILENAME, sTimeValue2->fStationName);
 	settings.latLongFormat = DEGREES;
-	WorldPointToStrings2(sTimeValue2->fStationPosition, latStr, &roundLat, longStr, &roundLong);	
+	WorldPointToStrings2(sTimeValue2->fStationPosition.p, latStr, &roundLat, longStr, &roundLong);	
 	SimplifyLLString(longStr, 3, roundLong);
 	SimplifyLLString(latStr, 3, roundLat);
 	sprintf(posStr, "%s, %s", latStr,longStr);
@@ -2620,7 +2621,7 @@ short CurrentCycleClick(DialogPtr dialog, short itemNum, long lParam, VOIDPTR da
 			sharedCCMover->scaleValue = EditText2Float(dialog, M16SCALEVALUE);
 			mygetitext(dialog, M16SCALEGRIDNAME, sharedCCMover->scaleOtherFile, 31);
 			
-			err = EditTexts2LL(dialog, M16LATDEGREES, &sharedCCMover->refP,TRUE);
+			err = EditTexts2LL(dialog, M16LATDEGREES, &sharedCCMover->refPt3D.p,TRUE);
 			if(err) break;
 			
 			if(!(sharedCCMDialogTimeDep && (sharedCCMDialogTimeDep->GetFileType() == HYDROLOGYFILE) && sharedCCMDialogTimeDep->bOSSMStyle))
@@ -2838,12 +2839,12 @@ short CurrentCycleClick(DialogPtr dialog, short itemNum, long lParam, VOIDPTR da
 					{
 						WorldRect gridBounds;
 						char msg[256], latS[20], longS[20];
-						WorldPointToStrings(timeFile->fStationPosition, latS, longS);
+						WorldPointToStrings(timeFile->fStationPosition.p, latS, longS);
 						if(sharedCCMover -> timeGrid->fGrid == 0)
 						{ printError("Programmer error: sharedCCMover ->timeGrid-> fGrid is nil"); break;}
 						gridBounds = sharedCCMover -> timeGrid->fGrid -> GetBounds();
 						
-						if(!WPointInWRect(timeFile->fStationPosition.pLong,timeFile->fStationPosition.pLat,&gridBounds))
+						if(!WPointInWRect(timeFile->fStationPosition.p.pLong,timeFile->fStationPosition.p.pLat,&gridBounds))
 						{
 							sprintf(msg,"Check that this is the right file.%sThe reference point in this file is not within the grid bounds.%sLat: %s%sLng: %s",NEWLINESTRING,NEWLINESTRING,latS,NEWLINESTRING,longS);
 							printWarning(msg);
@@ -2859,7 +2860,7 @@ short CurrentCycleClick(DialogPtr dialog, short itemNum, long lParam, VOIDPTR da
 					}
 					else
 					{
-						sharedCCMover->refP = timeFile->fStationPosition;
+						sharedCCMover->refPt3D = timeFile->fStationPosition;
 						if (!timeFile->bOSSMStyle) 
 						{
 							sharedCCMover->refScale = timeFile->fScaleFactor;
@@ -2867,7 +2868,7 @@ short CurrentCycleClick(DialogPtr dialog, short itemNum, long lParam, VOIDPTR da
 							Float2EditText(dialog, M16SCALEVALUE, timeFile->fScaleFactor, 4);
 						}
 						SwitchLLFormat(dialog, M16LATDEGREES, M16DEGREES);
-						LL2EditTexts(dialog, M16LATDEGREES, &sharedCCMover->refP);
+						LL2EditTexts(dialog, M16LATDEGREES, &sharedCCMover->refPt3D.p);
 						(void)CurrentCycleClick(dialog,M16SCALETOCONSTANT,lParam,data);
 					}
 				}
@@ -2875,18 +2876,18 @@ short CurrentCycleClick(DialogPtr dialog, short itemNum, long lParam, VOIDPTR da
 				if(timeFile->GetClassID () == TYPE_SHIOTIMEVALUES)
 				{	// it is a SHIO mover
 					TShioTimeValue * shioTimeValue = (TShioTimeValue*)timeFile; // typecast
-					WorldPoint wp = shioTimeValue -> GetStationLocation();
+					WorldPoint3D wp = shioTimeValue -> GetStationLocation();
 					VelocityRec vel;
 					short btnHit;
 					char msg[256], latS[20], longS[20];
-					WorldPointToStrings(wp, latS, longS);
+					WorldPointToStrings(wp.p, latS, longS);
 					WorldRect gridBounds;
 					if(sharedCCMover -> timeGrid->fGrid == 0)
 					{ printError("Programmer error: sharedCCMover -> timeGrid->fGrid is nil"); break;}
 					gridBounds = sharedCCMover -> timeGrid->fGrid -> GetBounds();
 					
 					//if(WPointInWRect(wp.pLong,wp.pLat,&sharedCCMover -> bounds))
-					if(WPointInWRect(wp.pLong,wp.pLat,&gridBounds))
+					if(WPointInWRect(wp.p.pLong,wp.p.pLat,&gridBounds))
 					{
 						btnHit = MULTICHOICEALERT(1670, 0, FALSE);
 						switch(btnHit)
@@ -2894,7 +2895,7 @@ short CurrentCycleClick(DialogPtr dialog, short itemNum, long lParam, VOIDPTR da
 							case 1:  // Yes, default button
 								// user want to use the ref point info from the file
 								// set the lat,long 
-								LL2EditTexts(dialog, M16LATDEGREES, &wp);
+								LL2EditTexts(dialog, M16LATDEGREES, &wp.p);
 								// set the scale to either 1 or -1 
 								scaleValue = EditText2Float(dialog, M16SCALEVALUE);
 								if(scaleValue < 0.0) Float2EditText(dialog, M16SCALEVALUE,-1.0, 4);//preserve the sign, i.e. preserve the direction the user set
@@ -2999,7 +3000,7 @@ OSErr CurrentCycleInit(DialogPtr dialog, VOIDPTR data)
 	Float2EditText(dialog, M16SCALEVALUE, sharedCCMover->scaleValue, 4);
 	mysetitext(dialog, M16SCALEGRIDNAME, sharedCCMover->scaleOtherFile);
 	SwitchLLFormat(dialog, M16LATDEGREES, M16DEGREES);
-	LL2EditTexts(dialog, M16LATDEGREES, &sharedCCMover->refP);
+	LL2EditTexts(dialog, M16LATDEGREES, &sharedCCMover->refPt3D.p);
 	
 	ShowHideCurrentCycleDialogItems(dialog);
   	ShowHideScaleFactorItems2(dialog);

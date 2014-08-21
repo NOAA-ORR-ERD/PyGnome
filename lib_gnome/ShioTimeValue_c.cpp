@@ -1419,7 +1419,7 @@ OSErr ShioTimeValue_c::ReadTimeValues (char *path)
 	long lineNum = 0;
 	char *p;
 	long numScanned;
-	double value;
+	double value, stationLat, stationLon;
 	CONTROLVAR  DatumControls;
 	
 	if ((err = OSSMTimeValue_c::InitTimeFunc()) > 0)
@@ -1505,11 +1505,15 @@ OSErr ShioTimeValue_c::ReadTimeValues (char *path)
 	this->fStationName[MAXSTATIONNAMELEN-1] = 0;
 
 	// set fStationPosition correctly so base class GetStationLocation() works
-	if ((err = this->GetKeyedValue(f, "Latitude=", lineNum++, strLine, &this->fStationPosition.p.pLat)) > 0)  goto readError;
-	if ((err = this->GetKeyedValue(f, "Longitude=", lineNum++, strLine, &this->fStationPosition.p.pLong)) > 0)  goto readError;
+	if ((err = this->GetKeyedValue(f, "Latitude=", lineNum++, strLine, &stationLat)) > 0)  goto readError;
+	if ((err = this->GetKeyedValue(f, "Longitude=", lineNum++, strLine, &stationLon)) > 0)  goto readError;
 
+	this->fStationPosition.p.pLat = stationLat;
+	this->fStationPosition.p.pLong = stationLon;
+#ifndef pyGNOME
 	this->fStationPosition.p.pLat = this->fStationPosition.p.pLat * 1000000;
 	this->fStationPosition.p.pLong = this->fStationPosition.p.pLong * 1000000;
+#endif
 
 	if ((!(p = GetKeyedLine(f, "[Constituents]", lineNum++, strLine))) > 0)  goto readError;
 
