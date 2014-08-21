@@ -4,6 +4,7 @@ from release import (Release,
                      PointLineReleaseSchema,
                      PointLineRelease,
                      SpatialRelease,
+                     GridRelease,
                      VerticalPlumeRelease)
 
 __all__ = [Spill,
@@ -14,5 +15,6 @@ __all__ = [Spill,
            PointLineReleaseSchema,
            PointLineRelease,
            SpatialRelease,
+           GridRelease,
            VerticalPlumeRelease,
            ]

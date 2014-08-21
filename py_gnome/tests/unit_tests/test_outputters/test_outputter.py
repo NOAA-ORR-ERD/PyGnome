@@ -39,18 +39,27 @@ def test_rewind():
     o_put.rewind()
 
     assert o_put._model_start_time is None
-    assert o_put._next_output_time is None
-    assert not o_put._write_step
+    assert o_put._dt_since_lastoutput is None
+    assert o_put._write_step
 
 
-output_ts = timedelta(minutes=30)
-model_ts = [output_ts * 2, output_ts, output_ts // 2,
-            timedelta(seconds=(output_ts.seconds / 3.5))]
+model_ts = timedelta(minutes=15)
+# output_ts tuple defines
+#  (output_timestep, num_model_steps, num_outputs)
+# where last two integers specify the ratio of number of outputs produced for
+# number of model steps
+output_ts = [(model_ts, 1, 1),          # model_ts = output_ts
+             (model_ts / 2, 1, 1),      # unlikely case, but test it!
+             (model_ts * 3, 3, 1),      # model_ts thrice as fast as output
+             (timedelta(seconds=(model_ts.seconds * 1.8)), 9, 5),
+             (timedelta(seconds=(model_ts.seconds * 2.5)), 5, 2)
+             ]
 
 
-@pytest.mark.parametrize(("output_ts", "model_ts"),
-                         [(output_ts, item) for item in model_ts])
-def test_output_timestep(model, output_ts, model_ts):
+@pytest.mark.slow
+@pytest.mark.parametrize(("model_ts", "output_ts"),
+                         [(model_ts, item) for item in output_ts])
+def test_output_timestep(model, model_ts, output_ts):
     """
     test the partial functionality implemented in base class
     For different output_timestep values as compared to model_timestep,
@@ -59,72 +68,84 @@ def test_output_timestep(model, output_ts, model_ts):
     using super - testing that _write_step toggles correctly should be
     sufficient
     """
-    o_put = Outputter(model._cache, output_timestep=output_ts)
-    model.duration = timedelta(hours=3)
+    o_put = Outputter(model._cache, output_timestep=output_ts[0])
+    model.duration = timedelta(hours=6)
     model.time_step = model_ts
 
     model.outputters += o_put
-    factor = math.ceil(float(output_ts.seconds) / model_ts.seconds)
+    factor = float(output_ts[0].seconds) / model_ts.seconds
+
+    # output timestep aligns w/ model timestep after these many steps
+    match_after = output_ts[1]
 
     # rewind and make sure outputter resets values
     model.rewind()
     assert o_put._model_start_time is None
-    assert o_put._next_output_time is None
-    assert not o_put._write_step
+    assert o_put._dt_since_lastoutput is None
+    assert o_put._write_step
+    print ("\n\nmodel_ts: {0}, output_ts: {1}").format(model_ts.seconds,
+                                                       output_ts[0].seconds)
+    print ("num outputs: {0}, for model steps: {1}\n").format(output_ts[2],
+                                                              match_after)
+    while True:
+        try:
+            model.step()
 
-    # call each part of model.step separately so we can validate
-    # how the outputter is setting its values, especially _write_step
-    for step_num in range(-1, model.num_time_steps - 1):
-        if step_num == -1:
-            model.setup_model_run()
-
-            assert o_put._model_start_time == model.start_time
-            assert o_put._next_output_time == (model.model_time +
-                                               o_put.output_timestep)
-            assert not o_put._write_step
-        else:
-            model.setup_time_step()
-
-            if o_put.output_timestep <= timedelta(seconds=model.time_step):
-                assert o_put._write_step    # write every step
+            # write_output checks to see if it is zero or last time step and if
+            # flags to output these steps are set. It changes _write_step
+            # accordingly
+            if model.current_time_step == 0:
+                assert (o_put._write_step if o_put.output_zero_step
+                        else not o_put._write_step)
+            elif model.current_time_step == model.num_time_steps - 1:
+                assert (o_put._write_step if o_put.output_last_step
+                        else not o_put._write_step)
             else:
-                if (step_num + 1) % factor == 0:
+                # The check for writing output is as follows:
+                #     frac_step = current_time_step % factor < 1.0
+                #
+                # In words,
+                #  if frac_step == 0.0,
+                #    output is written and
+                #    dt_since_lastoutput == output_timestep
+                #    so no fractional time and dt_since_lastoutput is resets 0
+                #  if frac_step < 1.0,
+                #    output is written and there is a fraction time
+                #    dt_since_lastoutput > output_timestep at end of step
+                #    so reset dt_since_lastoutput to remainder
+                #  if frac_step >= 1.0,
+                #    no output is written in this time step since not enough
+                #    time has elapsed since last output was written, so
+                #    dt_since_lastoutput < output_timestep
+                #    keep accumulating dt_since_lastoutput - no reset
+                #
+                # NOTE: mod doesn't work correctly on floating points so
+                # multiply by ten, operate on integers, divide by 10.0 and
+                # round so check doesn't fail because of rounding issue
+                frac_step = round(
+                    (model.current_time_step * 10 % int(factor * 10)) / 10.0,
+                    6)
+                if frac_step < 1.0:
                     assert o_put._write_step
+                else:
+                    # it is greater than 1 so no output yet
+                    assert not o_put._write_step
 
-            # No need to call following since outputter doesn't use them, but
-            # leave for completeness.
-            model.move_elements()
-            model.step_is_done()
+                if factor < 1.0:
+                    # output every time step
+                    assert o_put._dt_since_lastoutput == 0.0
+                else:
+                    remainder = frac_step * model.time_step
+                    assert (o_put._dt_since_lastoutput == remainder)
 
-        model.current_time_step += 1
+                # check frac_step == 0 every match_after steps
+                if model.current_time_step % match_after == 0:
+                    assert frac_step == 0.0
 
-        # no need to release elements or save to cache since we're not
-        # interested in the actual data - just want to see if the step_num
-        # should be written out or not
-        #model._cache.save_timestep(model.current_time_step, model.spills)
-        model.write_output()
+                print ("step_num, _write_step, _dt_since_lastoutput:\t"
+                       "{0}, {1}, {2}").format(model.current_time_step,
+                                               o_put._write_step,
+                                               o_put._dt_since_lastoutput)
 
-        # each outputter, like the Renderer or NetCDFOutputter will update the
-        # output timestep after completing the write_output method. Base class
-        # not designed to be included as an outputter for the Model, as it only
-        # implements partial functionality; need to manually update the output
-        # timestep below.
-        if o_put._write_step:
-            # no update happens for last time step
-            o_put._update_next_output_time(model.current_time_step,
-                                           model.model_time)
-            if model.current_time_step < model.num_time_steps - 1:
-                assert o_put._next_output_time == (model.model_time +
-                                                   o_put.output_timestep)
-
-        # write_output checks to see if it is zero or last time step and if
-        # flags to output these steps are set. It changes _write_step
-        # accordingly
-        if model.current_time_step == 0:
-            assert (o_put._write_step if o_put.output_zero_step
-                    else not o_put._write_step)
-        elif model.current_time_step == model.num_time_steps - 1:
-            assert (o_put._write_step if o_put.output_last_step
-                    else not o_put._write_step)
-
-        print 'Completed step: {0}'.format(model.current_time_step)
+        except StopIteration:
+            break

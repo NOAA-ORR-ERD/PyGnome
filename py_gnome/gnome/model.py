@@ -512,7 +512,11 @@ class Model(Serializable):
 
     def step_is_done(self):
         '''
-        Loop through movers and call model_step_is_done
+        Loop through movers and weatherers and call model_step_is_done
+
+        Remove elements that marked for removal
+
+        Output data
         '''
         for mover in self.movers:
             for sc in self.spills.items():

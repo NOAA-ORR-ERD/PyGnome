@@ -4,6 +4,7 @@ tests for geojson outputter
 import os
 import shutil
 from glob import glob
+from datetime import timedelta
 
 import numpy as np
 import pytest
@@ -48,7 +49,7 @@ def model(sample_model, request):
                                              end_position=rel_end_pos)
 
     release = SpatialRelease(start_position=line_pos,
-                           release_time=model.start_time)
+                             release_time=model.start_time)
 
     model.spills += Spill(release)
     model.outputters += GeoJson(output_dir=output_dir)
@@ -86,10 +87,13 @@ def test_model_dump_outputgeojson(model):
     assert len(files) == model.num_time_steps
 
 
-@pytest.mark.parametrize("output_ts_factor", [1])
+@pytest.mark.slow
+@pytest.mark.parametrize("output_ts_factor", [1, 2, 2.4])
 def test_write_output_post_run(model, output_ts_factor):
     model.rewind()
     o_geojson = model.outputters[-1]
+    o_geojson.output_timestep = timedelta(seconds=model.time_step *
+                                          output_ts_factor)
     del model.outputters[-1]
 
     model.full_run()
@@ -101,7 +105,8 @@ def test_write_output_post_run(model, output_ts_factor):
                                     cache=model._cache,
                                     spills=model.spills)
     files = glob(os.path.join(output_dir, '*.geojson'))
-    assert len(files) == model.num_time_steps
+    assert len(files) == int((model.num_time_steps-2)/output_ts_factor) + 2
+    o_geojson.output_timestep = None
     model.outputters += o_geojson
 
 
@@ -115,12 +120,11 @@ def test_geojson(model):
         l_id = model.spills.LE('id')
         uncertain = False
         for elem in range(sum(model.spills.num_released)):
-            #g_elem = output['geojson']['features'][elem]
-            print 'output:', output
-            with open(output['GeoJson']['output_filename']) as file_:
-                geojson_out = geojson.load(file_)
-
-            g_elem = geojson_out['features'][elem]
+            g_elem = output['GeoJson']['feature_collection']['features'][elem]
+            #print 'output:', output
+            #with open(output['GeoJson']['output_filename']) as file_:
+            #    geojson_out = geojson.load(file_)
+            #g_elem = geojson_out['features'][elem]
 
             match = np.where(l_id == g_elem['id'])[0][0]
 

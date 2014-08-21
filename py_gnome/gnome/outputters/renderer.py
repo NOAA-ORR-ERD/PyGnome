@@ -173,7 +173,7 @@ class Renderer(Outputter, MapCanvas):
     def images_dir_to_dict(self):
         return os.path.abspath(self.images_dir)
 
-    def prepare_for_model_run(self, model_start_time, **kwargs):
+    def prepare_for_model_run(self, *args, **kwargs):
         """
         prepares the renderer for a model run.
 
@@ -188,7 +188,7 @@ class Renderer(Outputter, MapCanvas):
 
         """
 
-        super(Renderer, self).prepare_for_model_run(model_start_time, **kwargs)
+        super(Renderer, self).prepare_for_model_run(*args, **kwargs)
 
         self.clear_output_dir()
 
@@ -252,7 +252,7 @@ class Renderer(Outputter, MapCanvas):
             return None
 
         image_filename = os.path.join(self.images_dir,
-                self.foreground_filename_format % step_num)
+                                      self.foreground_filename_format % step_num)
 
         self.create_foreground_image()
 
@@ -265,9 +265,6 @@ class Renderer(Outputter, MapCanvas):
         self.save_foreground(image_filename)
 
         self.last_filename = image_filename
-
-        # update self._next_output_time if data is successfully written
-        self._update_next_output_time(step_num, current_time_stamp)
 
         return {'step_num': step_num, 'image_filename': image_filename,
                 'time_stamp': time_stamp}

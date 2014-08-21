@@ -65,6 +65,8 @@ class MapCanvas(object):
                   ('LE', (0, 0, 0)),
                   ('uncert_LE', (255, 0, 0)),
                   ('map_bounds', (175, 175, 175)),
+                  ('raster_map', (175, 175, 175)),
+                  ('raster_map_outline', (0, 0, 0)),
                   ]
 
     colors = dict([(i[1][0], i[0]) for i in enumerate(colors_rgb)])
@@ -127,6 +129,9 @@ class MapCanvas(object):
 
         self.draw_map_bounds = True
 
+        self.raster_map = None
+        self.raster_map_fill=True
+        self.raster_map_outline=False
         # self._viewport = kwargs.pop('viewport',None)
 
         # if self._viewport is None:
@@ -191,13 +196,18 @@ class MapCanvas(object):
         This should be called whenever the scale changes
         """
         self.draw_land()
+        if self.raster_map is not None:
+            self.draw_raster_map()
+
+
 
     def draw_land(self):
         """
         Draws the land map to the internal background image.
         """
-        back_image = Image.new(self.image_mode, self.image_size,
-                                   color=self.colors['background'])
+        back_image = Image.new(self.image_mode, 
+                               self.image_size,
+                               color=self.colors['background'])
         back_image.putpalette(self.palette)
 
         # TODO: do we need to keep this around?
@@ -235,6 +245,40 @@ class MapCanvas(object):
                     poly = np.round(p).astype(np.int32).reshape((-1,)).tolist()
                     drawer.polygon(poly, fill=self.colors['land'])
         return None
+
+    def draw_raster_map(self, fill=True, outline=False):
+        """
+        draws the raster map used for beaching to the image.
+
+        draws a grid for the pixels
+
+        this is pretty slow, but only used for diagnostics.
+        """
+        if self.raster_map is not None:
+            raster_map = self.raster_map
+            drawer = ImageDraw.Draw(self.back_image)
+            w, h = raster_map.bitmap.shape
+            if self.raster_map_outline:
+                # vertical lines
+                for i in [float(i) for i in range(w)]: # float, so we don't get pixel-rounding
+                    coords = raster_map.projection.to_lonlat( ( (i,0), (i,h) ) )
+                    coords = self.projection.to_pixel_2D(coords).reshape((-1,)).tolist()
+                    drawer.line(coords, fill=self.colors['raster_map_outline'])
+                # horizontal lines
+                for i in [float(i) for i in range(h)]: # float, so we don't get pixel-rounding
+                    coords = raster_map.projection.to_lonlat( ( (0,i), (w,i) ) )
+                    coords = self.projection.to_pixel_2D(coords).reshape((-1,)).tolist()
+                    drawer.line(coords, fill=self.colors['raster_map_outline'])
+            if self.raster_map_fill:
+                for i in range(w):
+                    for j in range(h):
+                        if raster_map.bitmap[i,j]:
+                            i,j = float(i), float(j) # float, so we don't get pixel-rounding
+                            rect = raster_map.projection.to_lonlat( ( (i, j), (i+1, j), (i+1, j+1), (i, j+1)) )
+                            rect =  self.projection.to_pixel_2D(rect).reshape((-1,)).tolist()
+                            drawer.polygon(rect, fill=self.colors['raster_map'])
+
+
 
     def create_foreground_image(self):
         self.fore_image_array = np.zeros((self.image_size[1],
@@ -299,6 +343,8 @@ class MapCanvas(object):
 
     def save_background(self, filename, type_in='PNG'):
         print 'saving:', filename
+        if self.back_image is None:
+            raise ValueError("There is no background image to save. You may want to call .draw_background() first")
         self.back_image.save(filename, type_in)
 
     def save_foreground(self, filename, type_in='PNG'):
@@ -337,7 +383,9 @@ class BW_MapCanvas(MapCanvas):
                  ]
     colors = dict(colors_BW)
 
-    def __init__(self, image_size, land_polygons=None,
+    def __init__(self,
+                 image_size,
+                 land_polygons=None,
                  projection_class=projections.FlatEarthProjection):
         """
         create a new B&W map image from scratch -- specifying the size:

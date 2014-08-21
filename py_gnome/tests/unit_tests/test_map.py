@@ -599,6 +599,38 @@ class Test_full_move:
         assert gmap.on_land((9, 3, 0)) == 0
         assert gmap.on_land((11, 3, 0)) == 0
 
+    def test_starts_on_land(self):
+        """
+        try a single LE that starts on land
+
+        it last water position should be the same point.
+        """
+
+        gmap = RasterMap(refloat_halflife=6,
+                         bitmap_array=self.raster,
+                         map_bounds=((-50, -30), (-50, 30), (50, 30),
+                         (50, -30)),
+                         projection=NoProjection())  # hours
+
+        spill = sample_sc_release(1)
+
+        spill['positions'] = np.array(((10.0, 5.0, 0.), ),
+                dtype=np.float64)
+        spill['last_water_positions'] = np.array(((0.0, 0.0, 0.), ),
+                dtype=np.float64)
+        spill['next_positions'] = np.array(((15.0, 5.0, 0.), ),
+                dtype=np.float64)
+        spill['status_codes'] = np.array((oil_status.in_water, ),
+                dtype=status_code_type)
+
+        gmap.beach_elements(spill)
+        
+        ## next position gets set to land location
+        assert np.array_equal(spill['next_positions'][0], (10.0, 5.0, 0.))
+        assert np.array_equal(spill['last_water_positions'][0], (10.0, 5.0, 0.))
+        assert spill['status_codes'][0] == oil_status.on_land
+
+
     def test_land_cross(self):
         """
         try a single LE that should be crossing land

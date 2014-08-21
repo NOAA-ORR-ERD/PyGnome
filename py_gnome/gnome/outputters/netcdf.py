@@ -395,7 +395,7 @@ class NetCDFOutput(Outputter, Serializable):
         remaining kwargs to base class method
         """
         super(NetCDFOutput, self).prepare_for_model_run(model_start_time,
-                                                        **kwargs)
+                                                        spills, **kwargs)
         self._uncertain = uncertain
 
         self._update_spill_names(spills)
@@ -439,7 +439,7 @@ class NetCDFOutput(Outputter, Serializable):
                                                chunksizes=(self._chunksize,))
                 time_.setncatts(var_attributes['time'])
                 time_.units = 'seconds since {0}'.format(
-                        self._model_start_time.isoformat())
+                    self._model_start_time.isoformat())
 
                 # create the particle count variable
                 pc_ = rootgrp.createVariable('particle_count',
@@ -560,9 +560,6 @@ class NetCDFOutput(Outputter, Serializable):
                                     sc[var_name]
 
         self._start_idx = _end_idx  # set _start_idx for the next timestep
-
-        # update self._next_output_time if data is successfully written
-        self._update_next_output_time(step_num, sc.current_time_stamp)
 
         return {'step_num': step_num,
                 'netcdf_filename': (self.netcdf_filename,
