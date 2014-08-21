@@ -64,9 +64,13 @@ class Outputter(Serializable):
         :type output_last_step: boolean
         """
         self.cache = cache
-        self.output_timestep = output_timestep
         self.output_zero_step = output_zero_step
         self.output_last_step = output_last_step
+        if output_timestep:
+            self._output_timestep = output_timestep.seconds
+        else:
+            self._output_timestep = None
+        self.sc_pair = None     # set in prepare_for_model_run
 
         if name:
             self.name = name
@@ -74,18 +78,38 @@ class Outputter(Serializable):
         # reset internally used variables
         self.rewind()
 
-    def prepare_for_model_run(self, model_start_time, spills=None,
+    @property
+    def output_timestep(self):
+        if self._output_timestep is not None:
+            return timedelta(seconds=self._output_timestep)
+        else:
+            return None
+
+    @output_timestep.setter
+    def output_timestep(self, value):
+        '''
+        make it a property so internally we keep it in seconds, easier to work
+        with but let user set it as a timedelta object since that's probably
+        easier for user
+        '''
+        if value is None:
+            self._output_timestep = None
+        else:
+            self._output_timestep = value.seconds
+
+    def prepare_for_model_run(self,
+                              model_start_time=None,
+                              spills=None,
                               **kwargs):
         """
         This method gets called by the model at the beginning of a new run.
         Do what you need to do to prepare.
 
-        Required arguments - if output_timestep is changed from None, these are
-        needed. Just make them required.
-
         :param model_start_time: (Required) start time of the model run. NetCDF
             time units calculated with respect to this time.
         :type model_start_time: datetime.datetime object
+        :param spills: (Required) model.spills object (SpillContainerPair)
+        :type spills: gnome.spill_container.SpillContainerPair object
 
         Optional argument - in case cache needs to be updated
 
@@ -96,19 +120,21 @@ class Outputter(Serializable):
 
         also added **kwargs since a derived class like NetCDFOutput could
         require additional variables.
+
+        .. note:: base class doesn't use model_start_time or spills, but
+        multiple outputters need spills and netcdf needs model_start_time,
+        so just set them here
         """
+        self._model_start_time = model_start_time
+        self.sc_pair = spills
         cache = kwargs.pop('cache', None)
         if cache is not None:
             self.cache = cache
 
-        if model_start_time is None:
-            raise TypeError('model_start_time cannot be NoneType if'
-                            ' output_timestep is not None')
+        if self._output_timestep is None:
+            self._write_step = True
 
-        self._model_start_time = model_start_time
-        if self.output_timestep is not None:
-            self._next_output_time = (self._model_start_time +
-                                      self.output_timestep)
+        self._dt_since_lastoutput = 0
 
     def prepare_for_model_step(self, time_step, model_time):
         """
@@ -117,31 +143,32 @@ class Outputter(Serializable):
 
         base class method checks to see if data for model_time should be output
         Set self._write_step flag to true if:
-            model_time < self._next_output_timestep <= model_time + time_step
+            model_time < self._dt_since_lastoutput <= model_time + time_step
+
+        It also updates the _dt_since_lastoutput internal variable if the data
+        from this step will be written to output
 
         :param time_step: time step in seconds
         :param model_time: current model time as datetime object
 
-        Note: If output_timestep is not set so every timestep is in fact
-            written out, then there is no need to call prepare_for_model_step.
-            This is primarily only useful if user wants to write data post run
-            and write out every step_num saved in the model's cache. In this
-            case, user can simply call prepare_for_model_run() followed by
-            write_output for every step_num in range(model.num_time_steps)
+        .. note:: The write_output() method will be called after the Model
+        calls model_step_is_done(). Let's set the _write_step flag here and
+        update the _dt_since_lastoutput variable
+
         """
-        self._write_step = False
-
-        if self._next_output_time is not None:
-            end_model_time = model_time + timedelta(seconds=time_step)
-
-            if (self._next_output_time > model_time and
-                self._next_output_time <= end_model_time):
+        if self._output_timestep is not None:
+            self._write_step = False
+            self._dt_since_lastoutput += time_step
+            if self._dt_since_lastoutput >= self._output_timestep:
                 self._write_step = True
+                self._dt_since_lastoutput = (self._dt_since_lastoutput %
+                                             self._output_timestep)
 
     def model_step_is_done(self):
         '''
         This method gets called by the model when after everything else is done
         in a time step. Put any code need for clean-up, etc.
+        The write_output method is called by Model after all processing. 
         '''
         pass
 
@@ -158,15 +185,6 @@ class Outputter(Serializable):
             out
         :type islast_step: bool
 
-        .. note:: When writing your own outputter, call this base class first
-        so it sets the self._write_step flag. Since this code is common to all
-        outputters, it is put in here - its a partial implementation.
-
-        Also NOTE, at the end of write_output, be sure to call
-          self._update_next_output_time(step_num, time_stamp)
-
-        This will increment the internal _next_output_time attribute. If
-        the output_timestep is not None, then this becomes important.
         """
         if (step_num == 0 and self.output_zero_step):
             self._write_step = True
@@ -178,14 +196,6 @@ class Outputter(Serializable):
             raise ValueError('cache object is not defined. It is required'
                              ' prior to calling write_output')
 
-        # if output_time_step is not set, then no need to call
-        # prepare_for_model_step. This is primarily useful when every timestep
-        # is written post model run. In this case, it is easier to call
-        # write_output() without messing with prepare_for_model_step which
-        # requires model_time as input
-        if self._next_output_time is None:
-            self._write_step = True
-
     def rewind(self):
         '''
         Called by model.rewind()
@@ -194,29 +204,8 @@ class Outputter(Serializable):
         Make sure all child classes call parent rewind() first!
         '''
         self._model_start_time = None
-        self._next_output_time = None
-        self._write_step = False
-
-    def _update_next_output_time(self, step_num, time_stamp):
-        """
-        Internal method to update self._next_output_time by:
-            self._next_output_time = self.time_stamp + self.output_timestep
-
-        Call only after data associated with time_stamp is written. This
-        function updates the _next_output_time
-
-        :param time_stamp: datetime associated with data written by
-            write_output
-        """
-        if (step_num == 0):
-            # update not required if 0th step or final step.
-            # Strictly speaking this logic is not required since setting the
-            # _next_output_time at time 0 doesn't change its value
-            # But why reset it if not required
-            return
-
-        if self.output_timestep is not None:
-            self._next_output_time = time_stamp + self.output_timestep
+        self._dt_since_lastoutput = None
+        self._write_step = True
 
     def write_output_post_run(self, model_start_time, num_time_steps,
                               **kwargs):

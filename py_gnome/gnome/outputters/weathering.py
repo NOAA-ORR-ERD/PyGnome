@@ -68,17 +68,6 @@ class WeatheringOutput(Outputter, Serializable):
 
         super(WeatheringOutput, self).__init__(**kwargs)
 
-    def prepare_for_model_run(self, model_start_time, spills, **kwargs):
-        '''
-        Weathering outputter also requires spills to be passed in.
-        This is because it needs to match the 'spill_num' from the data array
-        to the spill object's ID.
-        The keyword, spills is the SpillContainerPair object
-        '''
-        self.sc_pair = spills
-        super(WeatheringOutput, self).prepare_for_model_run(model_start_time,
-                                                            **kwargs)
-
     def write_output(self, step_num, islast_step=False):
         super(WeatheringOutput, self).write_output(step_num, islast_step)
 
