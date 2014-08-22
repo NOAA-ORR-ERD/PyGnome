@@ -25,8 +25,6 @@ from gnome.cy_gnome.cy_wind_mover import CyWindMover
 from gnome.cy_gnome.cy_gridwind_mover import CyGridWindMover
 
 from gnome.persist.base_schema import ObjType
-#from gnome.persist import movers_schema
-#from gnome.persist.environment_schema import Wind
 
 
 class WindMoversBaseSchema(ObjType, ProcessSchema):
@@ -234,8 +232,6 @@ class WindMover(WindMoversBase, serializable.Serializable):
     array_types.windage dict since WindMover requires a windage array
     """
     _state = copy.deepcopy(WindMoversBase._state)
-    #_state.add(read=['wind_id'], save=['wind_id'])
-    # todo: probably need to make update=True for 'wind' as well
     _state.add_field(serializable.Field('wind', save=True, update=True,
                                          save_reference=True))
     _schema = WindMoverSchema
@@ -339,13 +335,16 @@ def constant_wind_mover(speed, direction, units='m/s'):
                         options: 'm/s', 'knot', 'mph', others...
 
     :return: returns a gnome.movers.WindMover object all set up.
+
+    .. note:: The time for a constant wind timeseries is irrelevant. This
+    function simply sets it to datetime.now() accurate to hours.
     """
 
     series = np.zeros((1, ), dtype=datetime_value_2d)
 
     # note: if there is ony one entry, the time is arbitrary
-
-    series[0] = (datetime.now(), (speed, direction))
+    dt = datetime.now().replace(microsecond=0, second=0, minute=0)
+    series[0] = (dt, (speed, direction))
     wind = environment.Wind(timeseries=series, units=units)
     w_mover = WindMover(wind)
     return w_mover

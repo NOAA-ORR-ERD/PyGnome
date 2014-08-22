@@ -500,12 +500,16 @@ def constant_wind(speed, direction, units='m/s'):
                       (degrees True)
     :param unit='m/s': units for speed, as a string, i.e. "knots", "m/s",
                        "cm/s", etc.
+
+    .. note:: The time for a constant wind timeseries is irrelevant. This
+    function simply sets it to datetime.now() accurate to hours.
     """
     wind_vel = np.zeros((1, ), dtype=basic_types.datetime_value_2d)
 
     # just to have a time accurate to minutes
     wind_vel['time'][0] = datetime.datetime.now().replace(microsecond=0,
-                                                          second=0)
+                                                          second=0,
+                                                          minute=0)
     wind_vel['value'][0] = (speed, direction)
 
     return Wind(timeseries=wind_vel, format='r-theta', units=units)
