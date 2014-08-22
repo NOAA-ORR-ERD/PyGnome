@@ -20,7 +20,6 @@ pip>=1.5.6
 # these have binary wheels for Windows at least...
 pillow
 
-
 ## Python only packages: can be pip installed ##
 Cython>=0.20.1
 pytest
@@ -37,7 +36,14 @@ git+https://github.com/NOAA-ORR-ERD/hazpy.unit_conversion.git#egg=hazpy.unit_con
 git+https://github.com/Pylons/colander.git#egg=colander
 
 # Oil Library database
+# todo: need to move this to oil_library requirements,
+# need to test in clean environment before updating
 pyramid
 sqlalchemy
 transaction
 zope.sqlalchemy
+
+## Python package but included with PyGnome repo at present so run setup.py to install ##
+# Currently required to run setup.py from oil_library directory
+# for some reason I need to install in editable mode (-e) if pip installing from requirements file
+-e ../oil_library
