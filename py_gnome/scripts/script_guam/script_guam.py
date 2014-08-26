@@ -109,3 +109,12 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     model.environment += c_mover.tide
 
     return model
+
+if __name__ == "__main__":
+    scripting.make_images_dir()
+
+    model = make_model()
+    model.duration = timedelta(hours=2)
+    model.full_run(log=True)
+    for sc in model.spills.items():
+        print "sc:", sc

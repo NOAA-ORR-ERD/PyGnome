@@ -90,15 +90,6 @@ class GeoJson(Outputter, Serializable):
 
         super(GeoJson, self).__init__(**kwargs)
 
-    def prepare_for_model_run(self, model_start_time, spills, **kwargs):
-        '''
-        geo_json outputter also requires spills to be passed in - this is
-        because it needs to match the 'spill_num' from the data array to the
-        spill object's ID. The keyword, spills is the SpillContainerPair object
-        '''
-        self.sc_pair = spills
-        super(GeoJson, self).prepare_for_model_run(model_start_time, **kwargs)
-
     def write_output(self, step_num, islast_step=False):
         'dump data in geojson format'
         super(GeoJson, self).write_output(step_num, islast_step)
@@ -148,14 +139,15 @@ class GeoJson(Outputter, Serializable):
                 features.append(feature)
 
         geojson = FeatureCollection(features)
-        output_filename = self.output_filename(geojson, step_num)
+        self.output_filename(geojson, step_num)
 
         # decided geojson should only be output to file
         # read data from file and send it to web client
         output_info = {'step_num': step_num,
                        #'geojson': geojson,
                        'time_stamp': sc.current_time_stamp.isoformat(),
-                       'output_filename': output_filename}
+                       'feature_collection': geojson
+                       }
 
         return output_info
 

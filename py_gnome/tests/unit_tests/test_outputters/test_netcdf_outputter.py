@@ -5,6 +5,7 @@ Tests for netcdf_outputter
 
 import os
 from datetime import datetime, timedelta
+from math import ceil
 
 import pytest
 from pytest import raises
@@ -23,7 +24,6 @@ from gnome.model import Model
 from gnome.persist import load
 
 here = os.path.dirname(__file__)
-up_one = os.path.dirname(here)
 
 
 @pytest.fixture(scope='module')
@@ -44,7 +44,7 @@ def model(sample_model, request):
 
     model.movers += RandomMover(diffusion_coef=100000)
 
-    model.outputters += NetCDFOutput(os.path.join(up_one,
+    model.outputters += NetCDFOutput(os.path.join(here,
                                                   u'sample_model.nc'))
 
     model.rewind()
@@ -87,7 +87,7 @@ def test_init_exceptions():
 
 
 def test_exceptions(model):
-    t_file = os.path.join(up_one, 'temp.nc')
+    t_file = os.path.join(here, 'temp.nc')
     spill_pair = model.spills
 
     def _del_temp_file():
@@ -353,7 +353,8 @@ def test_read_data_exception(model):
 @pytest.mark.slow
 @pytest.mark.parametrize(("output_ts_factor", "use_time"),
                          [(1, True), (1, False),
-                          (2.4, True), (2.4, False)])
+                          (2.4, True), (2.4, False),
+                          (3, True), (3, False)])
 def test_read_standard_arrays(model, output_ts_factor, use_time):
     """
     tests the data returned by read_data is correct when `which_data` flag is
@@ -383,7 +384,7 @@ def test_read_standard_arrays(model, output_ts_factor, use_time):
         _found_a_matching_time = False
 
         for idx, step in enumerate(range(0, model.num_time_steps,
-                                                    int(output_ts_factor))):
+                                   int(ceil(output_ts_factor)))):
             scp = model._cache.load_timestep(step)
             curr_time = scp.LE('current_time_stamp', uncertain)
             if use_time:
@@ -412,6 +413,10 @@ def test_read_standard_arrays(model, output_ts_factor, use_time):
                 if 'age' in scp.LE_data:
                     assert np.all(scp.LE('age', uncertain)[:]
                                   == nc_data['age'])
+
+            else:
+                raise Exception("Assertions not tested since no data found in"
+                    " NetCDF file for timestamp: {0}".format(curr_time))
 
         if _found_a_matching_time:
             """ at least one matching time found """
@@ -483,7 +488,7 @@ def test_write_output_post_run(model, output_ts_factor):
     test_write_output_standard already checks data is correctly written.
 
     Instead, make sure if output_timestep is not same as model.time_step,
-    then data is output at correct time stamps
+    then data is output at correct time stamps 
     """
     model.rewind()
 
@@ -514,22 +519,40 @@ def test_write_output_post_run(model, output_ts_factor):
 
     uncertain = False
     for file_ in (o_put.netcdf_filename, o_put._u_netcdf_filename):
-        for step in range(model.num_time_steps, int(output_ts_factor)):
+        ix = 0  # index for grabbing record from NetCDF file
+        for step in range(0, model.num_time_steps, int(ceil(output_ts_factor))):
             print "step: {0}".format(step)
             scp = model._cache.load_timestep(step)
             curr_time = scp.LE('current_time_stamp', uncertain)
             nc_data = NetCDFOutput.read_data(file_, curr_time)
             assert curr_time == nc_data['current_time_stamp'].item()
 
-        if o_put.output_last_step:
+            # test to make sure data_by_index is consistent with _cached data
+            # This is just to double check that getting the data by curr_time
+            # does infact give the next consecutive index
+            data_by_index = NetCDFOutput.read_data(file_, index=ix)
+            assert curr_time == data_by_index['current_time_stamp'].item()
+            ix += 1
+
+        if o_put.output_last_step and step < model.num_time_steps - 1:
+            '''
+            Last timestep written to NetCDF wasn't tested - do that here
+            '''
             scp = model._cache.load_timestep(model.num_time_steps - 1)
             curr_time = scp.LE('current_time_stamp', uncertain)
             nc_data = NetCDFOutput.read_data(file_, curr_time)
             assert curr_time == nc_data['current_time_stamp'].item()
 
+            # again, check that last time step
+            data_by_index = NetCDFOutput.read_data(file_, index=ix)
+            assert curr_time == data_by_index['current_time_stamp'].item()
+            with pytest.raises(IndexError):
+                # check that no more data exists in NetCDF
+                NetCDFOutput.read_data(file_, index=ix+1)
+
         """ at least one matching time found """
-        print ('\nAll expected timestamps are written out for'
-                ' output_ts_factor: {1}'.format(file_, output_ts_factor))
+        print ('All expected timestamps in {0} for output_ts_factor: '
+               '{1}'.format(os.path.split(file_)[1], output_ts_factor))
 
         # 2nd time around, look at uncertain filename so toggle uncertain flag
         uncertain = True
@@ -551,7 +574,7 @@ def test_serialize_deserialize(json_):
         start_position=(0, 0, 0),
         release_time=model.start_time)
 
-    o_put = NetCDFOutput(os.path.join(up_one, u'xtemp.nc'))
+    o_put = NetCDFOutput(os.path.join(here, u'xtemp.nc'))
     model.outputters += o_put
     model.movers += RandomMover(diffusion_coef=100000)
 
@@ -609,7 +632,7 @@ def test_var_attr_spill_num():
     for ix in (0, 1):
         spills.append(Spill(Release(datetime.now()),
                                     name='m{0}_spill'.format(ix)))
-        nc_name.append(os.path.join(up_one, 'temp_m{0}.nc'.format(ix)))
+        nc_name.append(os.path.join(here, 'temp_m{0}.nc'.format(ix)))
         _del_nc_file(nc_name[ix])
         _make_run_model(spills[ix], nc_name[ix])
 

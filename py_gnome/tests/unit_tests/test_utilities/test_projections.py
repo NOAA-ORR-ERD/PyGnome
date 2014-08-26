@@ -18,12 +18,10 @@ def test_NoProjection():
     result = [[45, 32], [-18, -12]]
 
     proj_coords = proj.to_pixel(coords, asint=True)
-    print proj_coords
 
     assert np.array_equal(proj_coords, result)
 
     proj_coords = proj.to_pixel(coords, asint=False)
-    print proj_coords
 
     assert np.array_equal(proj_coords, coords[:, :2])
 
@@ -374,5 +372,165 @@ def test_north_NE():
     acc = 2  # almost good to 3 decimal place -- still not great!
     assert round(lon, acc) == round(1.43959, acc)
     assert round(lat, acc) == round(60.69799, acc)
+
+class Test_rectangular_grid_projection(object):
+
+    """
+    Test the RectangularGridProjection with a small irregularly spaced grid
+    """
+    # small irregular grid
+    lon = (20, 22, 25, 29, 34)
+    lat = (0, 2, 5, 9, 12, 14)
+    proj = projections.RectangularGridProjection(lon, lat)
+
+    def test_init(self):
+        """
+        can one be initialized ?
+        """
+        proj = projections.RectangularGridProjection(self.lon, self.lat)
+
+    def test_to_pixel_corners(self):
+
+        proj = self.proj
+
+        # check the corners:
+        assert np.array_equal( proj.to_pixel( ( (20, 0, 0),
+                                                (22, 2, 0),
+                                                (25, 5, 0),
+                                                (29, 9, 0),
+                                                (34, 12, 0),
+                                                (29, 12, 0),
+                                                (34, 14, 0),
+                                              ) ),
+                                            ( (0, 5),
+                                              (1, 4),
+                                              (2, 3),
+                                              (3, 2),
+                                              (4, 1),
+                                              (3, 1),
+                                              (4, 0),
+                                             ) )
+    def test_to_pixel_bounds(self):
+
+        proj = self.proj
+
+        # outer bounds:
+        assert np.array_equal( proj.to_pixel( ( (34,  0, 0),
+                                                (34, 14, 0),
+                                                (20, 14, 0)
+                                              ) ),
+                                            ( (4, 5),
+                                              (4, 0),
+                                              (0, 0)
+                                             ) )
+    def test_to_pixel_mid_float(self):
+
+        proj = self.proj
+
+        # mid_pixel as float:
+        assert np.allclose( proj.to_pixel( ( (21,  1, 0),
+                                             (24,  4, 0),
+                                             (33.9999999, 8.9999999, 0)
+                                              ), asint=False ),
+                                            ( (0.5, 4.5),
+                                              (1.66666666, 3.33333333),
+                                              (3.99999999, 2.000000001),
+                                             ), rtol=1e-8 )
+
+    def test_to_pixel_mid_int(self):
+        proj = self.proj
+        # mid_pixel as integer:
+        assert np.array_equal( proj.to_pixel( ( (21,  1, 0),
+                                                (24,  4, 0),
+                                                (33.9999999, 8.9999999, 0)
+                                              ), asint=True ),
+                                            ( (0, 4),
+                                              (1, 3),
+                                              (3, 2),
+                                             ) )
+    # def test_to_pixel_out_of_bounds(self):
+    #    #NOTE: this no longer returns nans -- now returns outer edge
+
+    #     proj = self.proj
+
+    #     assert np.all(np.isnan(  proj.to_pixel( ( (10,  -1, 0),
+    #                                               (34.00001, -.000000001, 0),
+    #                                              )
+    #                                            )
+    #                 ))
+
+    def test_to_lonlat_int(self):
+        proj = self.proj
+
+        assert np.array_equal( proj.to_lonlat ( ( (0, 0),
+                                                  (1, 1),
+                                                  (2, 4),
+                                                  (3, 4),
+                                                )
+                                              ),
+                                                ( (21, 13),
+                                                  (23.5, 10.5),
+                                                  (27, 1),
+                                                  (31.5, 1),
+                                                )
+                              )
+
+    def test_to_lonlat_float_corners(self):
+
+        proj = self.proj
+
+        assert np.array_equal( proj.to_lonlat ( ( (0., 0.),
+                                                  (1., 1.),
+                                                  (2., 4.),
+                                                  (3., 4.),
+                                                  (4., 5.)
+                                                )
+                                              ),
+                                                ( (20, 14),
+                                                  (22, 12),
+                                                  (25,  2),
+                                                  (29,  2),
+                                                  (34,  0),
+                                                )
+                              )
+
+    def test_to_lonlat_float_middle(self):
+
+        proj = self.proj
+
+        assert np.allclose( proj.to_lonlat ( ( (0.5, 0.5),
+                                                  (1.3333333333333, 2.5),
+                                                  (2.5, 4.5),
+                                                )
+                                              ),
+                                                ( (21., 13.),
+                                                  (23., 7.),
+                                                  (27., 1.),
+                                                ), rtol=1e-8
+                              )
+
+    def test_to_lonlat_out_of_bounds(self):
+
+        proj = self.proj
+
+        assert np.array_equal( proj.to_lonlat( ( (-1, -1),
+                                                 ( 5, 6 ),
+                                               )),
+                                              ( (20, 14),
+                                                (34,  0),
+                                              )
+                                            ) 
+
+    def test_to_pixel_out_of_bounds(self):
+
+        proj = self.proj
+
+        assert np.array_equal( proj.to_pixel( (10, -1, 0) ),
+                                              ((0, 5),)
+                                            )
+
+        assert np.array_equal( proj.to_pixel( (35, 15, 0) ),
+                                              ((4, 0),)
+                                            )
 
 
