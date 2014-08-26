@@ -13,6 +13,7 @@ np = numpy
 
 from gnome import GnomeId
 from gnome.persist import Savable
+from gnome.utilities.orderedcollection import OrderedCollection
 
 
 class Field(object):  # ,serializable.Serializable):
@@ -649,42 +650,123 @@ class Serializable(GnomeId, Savable):
 
     def update_from_dict(self, data):
         """
-        modifies state (attributes) of the object using dictionary 'data'.
-        Only the fields in self._state with update=True contains properties
-        that can be modified for existing object
-
         Update the attributes of this object using the dictionary ``data`` by
         looking up the value of each key in ``data``.
         The fields in self._state that have update=True are modified. The
         remaining keys in 'data' are ignored. The object's _state attribute
         defines what fields can be updated
 
-        For every field, the choice of how to set the field is as follows:
+        If an attribute has changed, then call 'update_attr' to update its
+        value.
 
-        If there is a method defined on the object such that the method name is
-        `{field_name}_from_dict`, call that method with the field's data.
+        .. note:: Does not do updates on nested objects. If the attribute
+        references another Serializable object, then the value is not a dict
+        but rather the updated object. For instance, WindMover will receive:
 
-        If the field on the object has a ``update_from_dict`` method,
-        then use that method instead since it is a nested object.
+          {..., 'wind': <Wind object>}
 
-        If neither method exists, then set the field with the value from
-        ``data`` directly on the object.
+        as opposed to a nested dict of the 'wind' object. It is expected that
+        the 'wind' object was updated by calling its own update_from_dict then
+        added to this dict as the updated object.
+
+        :param data: dict containing state of object per the client
+        :type data: dict
+        :returns: True if something changed, False otherwise
+        :rtype: bool
         """
         list_ = self._state.get_names('update')
+        updated = False
 
         for key in list_:
             if key not in data:
                 continue
 
-            from_dict_fn_name = '%s_update_from_dict' % key
-            value = data[key]
+            if self.update_attr(key, data[key]):
+                updated = True
 
-            if hasattr(self, from_dict_fn_name):
-                getattr(self, from_dict_fn_name)(value)
-            elif hasattr(getattr(self, key), 'update_from_dict'):
-                getattr(self, key).update_from_dict(value)
+        return updated
+
+    def _attr_changed(self, current_value, received_value):
+        '''
+        Checks if an attribute passed back in a dict_ from client has changed.
+        Returns True if changed, else False
+        '''
+        # For a nested object, check if it data contains a new object. If
+        # object in data 'is' current_value then 'self' state has not
+        # changed. Even if current_value == data[key], we still must update
+        # it because it now references a new object
+        if isinstance(current_value, Serializable):
+            if current_value is not received_value:
+                return True
+
+        elif isinstance(current_value, OrderedCollection):
+            if len(current_value) != len(received_value):
+                return True
+            for ix, item in enumerate(current_value):
+                if item is not received_value[ix]:
+                    return True
+        else:
+            try:
+                if current_value != received_value:
+                    return True
+            except ValueError:
+                # maybe an iterable - checking for
+                # isinstance(current_value, collections.Iterable) fails for
+                # string so just do a try/except
+                if all(current_value != received_value):
+                    return True
+
+        return False
+
+    def update_attr(self, name, value):
+        '''
+        update the attribute defined by 'name' with given 'value'
+
+        If there is a method defined on the object such that the method name is
+        `{name}_from_dict`, call that method with the field's data.
+
+        If neither method exists, then set the field with the value from
+        ``data`` directly on the object.
+
+        :param name: name of attribute to be updated
+        :type name: str
+        :param value: the new value of the attribute
+        :type value: depends on each attribute being updated
+        '''
+        current_value = self.attr_to_dict(name)
+        if self._attr_changed(current_value, value):
+            if isinstance(current_value, OrderedCollection):
+                self._update_orderedcoll_attr(current_value, value)
             else:
-                setattr(self, key, value)
+                from_dict_fn_name = '%s_update_from_dict' % name
+                if hasattr(self, from_dict_fn_name):
+                    getattr(self, from_dict_fn_name)(value)
+                # NO updated of NESTED Seriablizable objects
+                #elif hasattr(getattr(self, name), 'update_from_dict'):
+                #    getattr(self, name).update_from_dict(value)
+                else:
+                    setattr(self, name, value)
+
+            return True
+        else:
+            return False
+
+    def _update_orderedcoll_attr(self, curr_oc, l_new_oc):
+        '''
+        update attribute of type OrderedCollection with items in list l_new_oc
+        '''
+        for ix, item in enumerate(l_new_oc):
+            if ix >= len(curr_oc):
+                curr_oc.add(item)
+                continue
+
+            if item is not curr_oc[ix]:
+                curr_oc[ix] = item   # replace it
+
+        # delete remaining elements in curr_oc since they don't exist in
+        # l_new_oc
+        for ix in range(len(l_new_oc), len(curr_oc)):
+            del curr_oc[ix]
 
     def obj_type_to_dict(self):
         """
