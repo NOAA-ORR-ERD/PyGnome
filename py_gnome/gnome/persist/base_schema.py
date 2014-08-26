@@ -12,7 +12,7 @@ def now(node, kw):
                                     datetime.datetime.now to when it is called
                                     in Schema
     """
-    return datetime.datetime.now()
+    return datetime.datetime.now().replace(microsecond=0)
 
 
 class ObjType(MappingSchema):
