@@ -901,6 +901,8 @@ class Model(Serializable):
     @classmethod
     def load(cls, saveloc, json_data, references=None):
         '''
+        Load a model from json format - the saveloc is location of save files
+        for objects contained in the model
         '''
         references = (references, References())[references is None]
 

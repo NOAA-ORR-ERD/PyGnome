@@ -29,11 +29,9 @@ class ObjType(MappingSchema):
 
 class OrderedCollectionItemMap(MappingSchema):
     '''
-    This stores the obj_type and obj_index. An alternative schema for
-    orderedcollection just stores the IDs (UUIDs) of objects in list
+    This stores the obj_type and obj_index
     '''
     obj_type = SchemaNode(String())
-    json_file = SchemaNode(String(), missing=drop)
     id = SchemaNode(String(), missing=drop)
 
 
