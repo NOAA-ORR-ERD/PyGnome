@@ -207,6 +207,11 @@ class Wind(Environment, serializable.Serializable):
             time_value_pair = self._convert_to_time_value_pair(timeseries,
                 units, format)
 
+            if units is None:
+                raise TypeError("Setting from timeseries requires units")
+            else:
+                self._check_units(units)
+
             # this has same scope as CyWindMover object
             #
             # TODO: move this as a class attribute if we can.
@@ -489,6 +494,15 @@ class Wind(Environment, serializable.Serializable):
                                     round(val[i, 1], 4))
                             )
         file_.close()   # just incase we get issues on windows
+
+    def update_from_dict(self, data):
+        '''
+        '''
+        updated = self.update_attr('units', data.pop('units', self.units))
+        if super(Wind, self).update_from_dict(data):
+            return True
+        else:
+            return updated
 
 
 def constant_wind(speed, direction, units='m/s'):
