@@ -30,7 +30,7 @@ class SpillSchema(ObjType):
                     description='on/off status of spill')
     amount = SchemaNode(Float(), missing=drop)
     units = SchemaNode(String(), missing=drop)
-    
+
 
 class Spill(serializable.Serializable):
     """
