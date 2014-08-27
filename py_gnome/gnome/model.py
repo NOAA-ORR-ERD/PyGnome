@@ -58,13 +58,29 @@ class ModelSchema(ObjType):
     duration = SchemaNode(extend_colander.TimeDelta(), missing=drop)
     uncertain = SchemaNode(Bool(), missing=drop)
     cache_enabled = SchemaNode(Bool(), missing=drop)
-    spills = OrderedCollectionItemsList(missing=drop)
-    uncertain_spills = OrderedCollectionItemsList(missing=drop)
-    movers = OrderedCollectionItemsList(missing=drop)
-    weatherers = OrderedCollectionItemsList(missing=drop)
-    environment = OrderedCollectionItemsList(missing=drop)
-    outputters = OrderedCollectionItemsList(missing=drop)
     num_time_steps = SchemaNode(Int(), missing=drop)
+
+    def __init__(self, json_='webapi', *args, **kwargs):
+        '''
+        Add default schema for orderedcollections if oc_schema=True
+        The default schema works for 'save' files since it only keeps the same
+        info {'obj_type' and 'id'} for all elements in OC. For 'webapi', we
+        cannot do this and must deserialize each element of the collection
+        using the deserialize method of each object; so these are not added to
+        schema for 'webapi'
+        '''
+        if json_ == 'save':
+            self.add(OrderedCollectionItemsList(missing=drop, name='spills'))
+            self.add(OrderedCollectionItemsList(missing=drop,
+                     name='uncertain_spills'))
+            self.add(OrderedCollectionItemsList(missing=drop, name='movers'))
+            self.add(OrderedCollectionItemsList(missing=drop,
+                     name='weatherers'))
+            self.add(OrderedCollectionItemsList(missing=drop,
+                     name='environment'))
+            self.add(OrderedCollectionItemsList(missing=drop,
+                     name='outputters'))
+        super(ModelSchema, self).__init__(*args, **kwargs)
 
 
 class Model(Serializable):
@@ -837,7 +853,7 @@ class Model(Serializable):
         treat special-case attributes of Model.
         '''
         toserial = self.to_serialize(json_)
-        schema = self.__class__._schema()
+        schema = self.__class__._schema(json_)
         o_json_ = schema.serialize(toserial)
         o_json_['map'] = self.map.serialize(json_)
 
@@ -864,8 +880,8 @@ class Model(Serializable):
         '''
         treat special-case attributes of Model.
         '''
-        deserial = cls._schema().deserialize(json_)
-
+        schema = cls._schema(json_['json_'])
+        deserial = schema.deserialize(json_)
         if 'map' in json_ and json_['map']:
             deserial['map'] = json_['map']
 
