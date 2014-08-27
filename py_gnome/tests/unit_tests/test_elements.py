@@ -76,15 +76,10 @@ arrays_ = (windages,
            mass_array, mass_array,
            rise_vel_array, rise_vel_array, rise_vel_array, rise_vel_array,
            rise_vel_diameter_array)
-#==============================================================================
-# initializer_keys = ('windages',
-#                     'mass', 'mass',
-#                     'rise_vel', 'rise_vel', 'rise_vel', 'rise_vel',
-#                     'rise_vel')
-#==============================================================================
+
 spill_list = (None,
-              Spill(Release(datetime.now()), volume=10),
-              Spill(Release(datetime.now()), mass=10),
+              Spill(Release(datetime.now()), amount=10, units='l'),
+              Spill(Release(datetime.now()), amount=10, units='kg'),
               None, None, None, None,
               Spill(Release(datetime.now())))
 
@@ -120,10 +115,6 @@ def test_correct_particles_set_by_initializers(fcn, arr_types, spill):
         assert np.any(0 != data_arrays[key][-num_elems:])
 
 
-#==============================================================================
-# @pytest.mark.parametrize(("fcn", "init_key"),
-#                          zip(fcn_list, initializer_keys))
-#==============================================================================
 @pytest.mark.parametrize("fcn", fcn_list)
 def test_element_type_serialize_deserialize(fcn):
     '''
@@ -180,7 +171,8 @@ def test_initailize_InitMassFromSpillAmount():
 
     spill = Spill(Release(datetime.now()))
     spill.release.num_elements = 10
-    spill.set_mass(num_elems, units='g')
+    spill.amount = num_elems
+    spill.units = 'g'
 
     fcn = InitMassFromSpillAmount()
     fcn.initialize(num_elems, spill, data_arrays, substance)

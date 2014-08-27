@@ -90,8 +90,8 @@ def make_model(images_dir, uncertain=False):
                                         start_position=start_position,
                                         release_time=start_time,
                                         end_release_time=end_release_time,
-                                        mass=1000.0,
-                                        mass_units='kg')
+                                        amount=1000.0,
+                                        units='kg')
 
     # need a scenario for SimpleMover
     # model.movers += SimpleMover(velocity=(1.0, -1.0, 0.0))

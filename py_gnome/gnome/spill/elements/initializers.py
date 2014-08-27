@@ -174,11 +174,12 @@ class InitMassComponentsFromOilProps(InitBaseClass, Serializable):
 
     def __init__(self):
         """
-        update array_types
+        Sets 'mass_components' and 'mass' arrays - it needs the 'mass' array
+        so currently it sets it.
         """
         super(InitMassComponentsFromOilProps, self).__init__()
-        self.array_types.update({'mass_components': array_types.mass_components
-                                 })
+        self.array_types.update({'mass_components': array_types.mass_components,
+                                 'mass': array_types.mass})
         self.name = 'mass_components'
 
     def initialize(self, num_new_particles, spill, data_arrays, substance):
@@ -197,11 +198,13 @@ class InitMassComponentsFromOilProps(InitBaseClass, Serializable):
                                              in the Spill??
                                              Why the extra argument??)
         '''
-        if spill.mass is None:
+        if spill.amount is None:
             raise ValueError('mass attribute of spill is None - cannot '
                              'compute particle mass without total mass')
 
-        le_mass = data_arrays['mass'][-num_new_particles:]
+        # le_mass = data_arrays['mass'][-num_new_particles:]
+        le_mass = spill.get_mass('kg') / spill.release.num_elements
+        data_arrays['mass'][-num_new_particles:] = le_mass
 
         mass_fractions = np.asarray(zip(*substance.mass_components)[0],
                                     dtype=np.float64)
@@ -269,15 +272,10 @@ class InitMassFromSpillAmount(InitBaseClass, Serializable):
         self.total_mass = None  # always in SI units
 
     def _set_total_mass(self, spill, substance):
-        ''' set 'total_mass' property from spill '''
-        if spill.mass is None:
-            if spill.volume is None and substance is None:
-                raise ValueError("spill must either contain the 'mass' "
-                                 "spilled, or the 'volume' and the type of "
-                                 "substance spilled")
-        if spill.mass is None:
-            self.total_mass = (substance.get_density('kg/m^3') *
-                               spill.get_volume('m^3'))
+        ''' set 'total_mass' property from spill since we only need to do this
+        once '''
+        if spill.get_mass('kg') is None:
+            self.total_mass = 0     # do we want to raise an error?
         else:
             self.total_mass = spill.get_mass('kg')
 
