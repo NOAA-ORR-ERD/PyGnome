@@ -14,7 +14,7 @@ np = numpy
 
 from hazpy import unit_conversion
 uc = unit_conversion
-from colander import (SchemaNode, Bool, String)
+from colander import (SchemaNode, Bool, String, Float, drop)
 
 import gnome    # required by new_from_dict
 from gnome.utilities import serializable
@@ -27,20 +27,27 @@ from .release import PointLineRelease
 class SpillSchema(ObjType):
     'Spill class schema'
     on = SchemaNode(Bool(), default=True, missing=True,
-        description='on/off status of spill')
+                    description='on/off status of spill')
+    mass = SchemaNode(Float(), missing=drop)
+    mass_units = SchemaNode(String(), missing=drop)
+    volume = SchemaNode(Float(), missing=drop)
+    volume_units = SchemaNode(String(), missing=drop)
 
 
 class Spill(serializable.Serializable):
     """
     Models a spill
     """
-    _update = ['on', 'release', 'element_type']
+    _update = ['on', 'release', 'element_type', 'volume', 'volume_units']
 
     _create = []
     _create.extend(_update)
 
     _state = copy.deepcopy(serializable.Serializable._state)
     _state.add(save=_create, update=_update)
+    _state.add_field([serializable.Field('mass', save=True, update=True),
+                      serializable.Field('mass_units',
+                                         save=True, update=True)])
     _schema = SpillSchema
 
     valid_vol_units = list(chain.from_iterable([item[1] for item in
@@ -56,8 +63,7 @@ class Spill(serializable.Serializable):
                  on=True,
                  volume=None, volume_units='m^3',
                  # Is this total mass of the spill?
-                 mass=None,
-                 mass_units='kg',
+                 mass=None, mass_units='kg',
                  name='Spill'):
         """
         Spills used by the gnome model. It contains a release object, which
@@ -86,7 +92,11 @@ class Spill(serializable.Serializable):
         :param name='Spill': a name for the spill
         :type name: str
 
-        ::note: Define either 'volume' or 'mass', cannot set both.
+        ::note: Define either 'volume' or 'mass'; if both are given, then use
+        volume to set the mass and ignore the input mass. Defines
+        default element_type as floating elements (with windages) and
+        mass if the Spill's 'mass' property is not None. If 'mass' property is
+        None, then just floating elements (with 'windages')
         """
         self.release = release
         if element_type is None:
@@ -94,11 +104,6 @@ class Spill(serializable.Serializable):
         self.element_type = element_type
 
         self.on = on    # spill is active or not
-
-        # mass/volume, type of oil spilled
-        if mass is not None and volume is not None:
-            raise ValueError("'mass' and 'volume' cannot both be set")
-
         self._check_units(volume_units)
         self._volume_units = volume_units   # user defined for display
         self._check_units(mass_units, 'Mass')
@@ -106,15 +111,14 @@ class Spill(serializable.Serializable):
         self._volume = None
         self._mass = None
 
+        if mass is not None and volume is not None:
+            raise TypeError("Cannot set both mass and volume. Choose one.")
+
         if volume is not None:
-            self._volume = uc.convert('Volume', volume_units,
-                'm^3', volume)
-            self._mass = (self.element_type.substance.get_density('kg/m^3') *
-                self._volume)
+            self._volume = uc.convert('Volume', volume_units, 'm^3', volume)
+
         elif mass is not None:
             self._mass = uc.convert('Mass', mass_units, 'kg', mass)
-            self._volume = (self._mass /
-                    self.element_type.substance.get_density('kg/m^3'))
 
         self.name = name
 
@@ -412,10 +416,14 @@ class Spill(serializable.Serializable):
         set the volume released during the spill. The default units for
         volume are as defined in 'volume_units' property. User can also specify
         desired output units in the function.
+
+        Also sets self.mass to None - either the volume or mass can be
+        independently set
         """
         self._check_units(units)
         self._volume = unit_conversion.convert('Volume', units, 'm^3', volume)
         self.volume_units = units
+        self._mass = None
 
     def get_mass(self, units=None):
         '''
@@ -437,10 +445,14 @@ class Spill(serializable.Serializable):
         Set the mass released during the spill.
         The default units for mass are as defined in 'mass_units' property.
         User can also specify desired output units in the function.
+
+        Also sets self.volume to None - either the volume or mass can be
+        independently set
         '''
         self._check_units(units, 'Mass')
         self._mass = uc.convert('Mass', units, 'kg', mass)
         self.mass_units = units
+        self._volume = None
 
     def uncertain_copy(self):
         """
@@ -568,6 +580,8 @@ def point_line_release_spill(num_elements,
         on=True,
         volume=None,
         volume_units='m^3',
+        mass=None,
+        mass_units='kg',
         name='Point/Line Release'):
     release = PointLineRelease(release_time=release_time,
                                start_position=start_position,
@@ -575,4 +589,4 @@ def point_line_release_spill(num_elements,
                                end_position=end_position,
                                end_release_time=end_release_time)
     return Spill(release, element_type, on, volume, volume_units,
-                 name=name)
+                 mass, mass_units, name=name)

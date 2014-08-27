@@ -18,7 +18,7 @@ from gnome.utilities.inf_datetime import InfDateTime
 
 from gnome.array_types import mass, rise_vel, mass_components, half_lives
 from gnome.spill.elements import (ElementType,
-                                  InitMassFromTotalMass,
+                                  InitMassFromSpillAmount,
                                   InitRiseVelFromDist,
                                   InitMassComponentsFromOilProps,
                                   InitHalfLivesFromOilProps)
@@ -31,7 +31,7 @@ arr_types = {'mass': mass,
              'mass_components': mass_components,
              'half_lives': half_lives
              }
-initializers = [InitMassFromTotalMass(),
+initializers = [InitMassFromSpillAmount(),
                 InitRiseVelFromDist(),
                 InitMassComponentsFromOilProps(),
                 InitHalfLivesFromOilProps()

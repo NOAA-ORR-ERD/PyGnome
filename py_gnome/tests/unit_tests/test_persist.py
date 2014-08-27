@@ -89,7 +89,9 @@ def make_model(images_dir, uncertain=False):
     model.spills += point_line_release_spill(num_elements=1000,
                                         start_position=start_position,
                                         release_time=start_time,
-                                        end_release_time=end_release_time)
+                                        end_release_time=end_release_time,
+                                        mass=1000.0,
+                                        mass_units='kg')
 
     # need a scenario for SimpleMover
     # model.movers += SimpleMover(velocity=(1.0, -1.0, 0.0))

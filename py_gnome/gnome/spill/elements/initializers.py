@@ -251,11 +251,9 @@ class InitHalfLivesFromOilProps(InitBaseClass, Serializable):
 # do following two classes work for a time release spill?
 
 
-class InitMassFromTotalMass(InitBaseClass, Serializable):
+class InitMassFromSpillAmount(InitBaseClass, Serializable):
     """
-    Initialize the 'mass' array based on total mass spilled.
-    todo: are both InitMassFromTotalMass and InitMassFromTotalVolume required?
-    If one is known, isn't the other one known too?
+    Initialize the 'mass' array based on total mass or volume spilled
     """
 
     _state = copy.deepcopy(InitBaseClass._state)
@@ -265,18 +263,31 @@ class InitMassFromTotalMass(InitBaseClass, Serializable):
         """
         update array_types
         """
-        super(InitMassFromTotalMass, self).__init__()
+        super(InitMassFromSpillAmount, self).__init__()
         self.array_types.update({'mass': array_types.mass})
         self.name = 'mass'
+        self.total_mass = None  # always in SI units
+
+    def _set_total_mass(self, spill, substance):
+        ''' set 'total_mass' property from spill '''
+        if spill.mass is None:
+            if spill.volume is None and substance is None:
+                raise ValueError("spill must either contain the 'mass' "
+                                 "spilled, or the 'volume' and the type of "
+                                 "substance spilled")
+        if spill.mass is None:
+            self.total_mass = (substance.get_density('kg/m^3') *
+                               spill.get_volume('m^3'))
+        else:
+            self.total_mass = spill.get_mass('kg')
 
     def initialize(self, num_new_particles, spill, data_arrays, substance):
-        if spill.mass is None:
-            raise ValueError('mass attribute of spill is None - cannot '
-                             'compute particle mass without total mass')
+        if self.total_mass is None:
+            self._set_total_mass(spill, substance)
 
-        _total_mass = spill.get_mass('kg')
-        data_arrays['mass'][-num_new_particles:] = (_total_mass /
+        data_arrays['mass'][-num_new_particles:] = (self.total_mass /
                                                     spill.release.num_elements)
+
 
 class InitMassFromPlume(InitBaseClass, Serializable):
     """

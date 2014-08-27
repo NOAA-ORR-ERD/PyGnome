@@ -14,7 +14,7 @@ from gnome.utilities.serializable import Serializable
 from .initializers import (InitRiseVelFromDropletSizeFromDist,
                            InitRiseVelFromDist,
                            InitWindages,
-                           InitMassFromTotalMass,
+                           InitMassFromSpillAmount,
                            InitMassFromPlume)
 from oil_library import (get_oil, oil_from_density)
 
@@ -181,7 +181,7 @@ def floating_mass(windage_range=(.01, .04), windage_persist=900):
     initializer with user specified windage_range and windage_persist.
     """
     return ElementType([InitWindages(windage_range, windage_persist),
-                        InitMassFromTotalMass()])
+                        InitMassFromSpillAmount()])
 
 
 def plume(distribution_type='droplet_size',
@@ -225,13 +225,13 @@ def plume(distribution_type='droplet_size',
         return ElementType([InitRiseVelFromDropletSizeFromDist(
                                 distribution=distribution, **kwargs),
                             InitWindages(windage_range, windage_persist),
-                            InitMassFromTotalMass()],
+                            InitMassFromSpillAmount()],
                            substance)
     elif distribution_type == 'rise_velocity':
         return ElementType([InitRiseVelFromDist(distribution=distribution,
                                                 **kwargs),
                             InitWindages(windage_range, windage_persist),
-                            InitMassFromTotalMass()],
+                            InitMassFromSpillAmount()],
                            substance)
 
 
@@ -244,7 +244,7 @@ plume.__doc__ += ("\nDocumentation of InitRiseVelFromDropletSizeFromDist:\n" +
                    "\nDocumentation of InitWindages:\n" +
                    InitWindages.__init__.__doc__ +
                    "\nDocumentation of InitMassFromVolume:\n" +
-                   InitMassFromTotalMass.__init__.__doc__
+                   InitMassFromSpillAmount.__init__.__doc__
                    )
 
 

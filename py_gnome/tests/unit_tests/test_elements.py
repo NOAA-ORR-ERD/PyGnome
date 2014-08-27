@@ -16,7 +16,7 @@ np = numpy
 import gnome
 from gnome import array_types
 from gnome.spill.elements import (InitWindages,
-                            InitMassFromTotalMass,
+                            InitMassFromSpillAmount,
                             InitRiseVelFromDist,
                             InitRiseVelFromDropletSizeFromDist,
                             floating,
@@ -58,8 +58,8 @@ def assert_dataarray_shape_size(arr_types, data_arrays, num_released):
 
 """ Initializers - following are used for parameterizing tests """
 fcn_list = (InitWindages(),
-            InitMassFromTotalMass(),
-            InitMassFromTotalMass(),
+            InitMassFromSpillAmount(),
+            InitMassFromSpillAmount(),
             InitRiseVelFromDist(),
             InitRiseVelFromDist(distribution=NormalDistribution(mean=0,
                                                                 sigma=0.1)),
@@ -174,7 +174,7 @@ class TestInitConstantWindageRange:
             obj.windage_persist = bad_wp
 
 
-def test_initailize_InitMassFromTotalMass():
+def test_initailize_InitMassFromSpillAmount():
     data_arrays = mock_append_data_arrays(mass_array, num_elems)
     substance = get_oil('oil_conservative')
 
@@ -182,7 +182,7 @@ def test_initailize_InitMassFromTotalMass():
     spill.release.num_elements = 10
     spill.set_mass(num_elems, units='g')
 
-    fcn = InitMassFromTotalMass()
+    fcn = InitMassFromSpillAmount()
     fcn.initialize(num_elems, spill, data_arrays, substance)
 
     assert_dataarray_shape_size(mass_array, data_arrays, num_elems)
@@ -272,12 +272,12 @@ arr_types = {'windages': array_types.windages,
 
 inp_params = [((floating(),
                 ElementType([InitWindages(),
-                             InitMassFromTotalMass()])), arr_types),
+                             InitMassFromSpillAmount()])), arr_types),
               ((floating(),
                 ElementType([InitWindages(),
                              InitRiseVelFromDist()])), arr_types),
               ((floating(),
-                ElementType([InitMassFromTotalMass(),
+                ElementType([InitMassFromSpillAmount(),
                              InitRiseVelFromDist()])), arr_types),
               ]
 
@@ -357,7 +357,7 @@ def test_serialize_deserialize():
     This tests serialize/deserilize with 'webapi' option
     '''
     et = floating()
-    et.initializers.append(InitMassFromTotalMass())
+    et.initializers.append(InitMassFromSpillAmount())
     dict_ = ElementType.deserialize(et.serialize('webapi'))
 
     # for webapi, make new objects from nested objects before creating
