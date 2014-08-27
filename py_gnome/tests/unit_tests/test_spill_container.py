@@ -18,7 +18,7 @@ from gnome.basic_types import (oil_status,
                                id_type)
 from gnome import array_types
 from gnome.spill.elements import (ElementType,
-                            InitMassFromTotalMass,
+                            InitMassFromSpillAmount,
                             InitWindages,
                             InitRiseVelFromDist,
                             InitRiseVelFromDropletSizeFromDist,
@@ -477,13 +477,13 @@ def test_ordered_collection_api():
 
 """ tests w/ element types set for two spills """
 el0 = ElementType([InitWindages((0.02, 0.02), -1),
-                   InitMassFromTotalMass(),
+                   InitMassFromSpillAmount(),
                    InitRiseVelFromDist(
                        distribution=UniformDistribution(low=1, high=10))
                    ])
 
 el1 = ElementType([InitWindages(),
-                   InitMassFromTotalMass(),
+                   InitMassFromSpillAmount(),
                    InitRiseVelFromDist()])
 
 arr_types = {'windages': array_types.windages,

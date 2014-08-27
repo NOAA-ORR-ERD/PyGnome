@@ -90,8 +90,8 @@ def sample_sc_release(num_elements=10,
         spill = gnome.spill.point_line_release_spill(num_elements,
                                                      start_pos,
                                                      release_time)
-
-    spill.set_mass(num_elements, 'g')
+    spill.units = 'g'
+    spill.amount = num_elements
     if element_type is not None:
         spill.element_type = element_type
 
@@ -350,12 +350,13 @@ def sample_sc_no_uncertainty():
     end_release_time = datetime(2012, 1, 1, 12) + timedelta(hours=4)
 
     spills = [gnome.spill.point_line_release_spill(num_elements,
-                              start_position, release_time, volume=10),
+                              start_position, release_time,
+                              amount=10, units='l'),
               gnome.spill.point_line_release_spill(num_elements,
                               start_position,
                               release_time + timedelta(hours=1),
                               end_position, end_release_time,
-                              volume=10),
+                              amount=10, units='l'),
               ]
     sc.spills.add(spills)
     return sc
