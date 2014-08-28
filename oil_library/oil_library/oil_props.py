@@ -11,13 +11,13 @@ object used to initialize and OilProps object
 Not sure at present if this needs to be serializable?
 '''
 
-from itertools import chain
-from collections import namedtuple
 import math
+from collections import namedtuple
 
 from hazpy import unit_conversion
 uc = unit_conversion
 
+from .models import KVis
 
 MassComponent = namedtuple('MassComponent',
                            ''' fraction,
@@ -127,10 +127,11 @@ class OilProps(object):
 
     def __repr__(self):
         return ('{0.__class__.__module__}.{0.__class__.__name__}('
-                'oil_={0._r_oil!r}, water_temp={0.water_temp}'
+                'oil_={0._r_oil!r}, water_temp={0.temperature}'
                 ')'.format(self))
 
     density = property(lambda self: self.get_density())
+    viscosity = property(lambda self: self.get_viscosity())
     temperature = property(lambda self: self.get_temperature())
     name = property(lambda self: self._r_oil.name,
                     lambda self, val: setattr(self._r_oil, 'name', val))
@@ -186,22 +187,92 @@ class OilProps(object):
         # lets return API in correct units
         return uc.convert('Density', 'API degree', units, self.api)
 
+    @property
+    def viscosities(self):
+        '''
+            Get a list of all kinematic viscosities associated with this
+            oil object.  The list is compiled from the stored kinematic
+            and dynamic viscosities associated with the oil record.
+            The viscosity fields contain:
+              - kinematic viscosity in m^2/sec
+              - reference temperature in degrees kelvin
+              - weathering ???
+            Viscosity entries are ordered by (weathering, temperature)
+            If we are using dynamic viscosities, we calculate the
+            kinematic viscosity from the density that is closest
+            to the respective reference temperature
+        '''
+        # first we get the kinematic viscosities if they exist
+        ret = []
+        if self._r_oil.kvis:
+            ret = [(k.meters_squared_per_sec,
+                    k.ref_temp,
+                    (0.0 if k.weathering == None else k.weathering))
+                    for k in self._r_oil.kvis]
+
+        if self._r_oil.dvis:
+            # If we have any DVis records, we need to get the
+            # dynamic viscosities, convert to kinematic, and
+            # add them if possible.
+            # We have dvis at a certain (temperature, weathering).
+            # We need to get density at the same weathering and
+            # the closest temperature in order to calculate the kinematic.
+            # There are lots of oil entries where the dvis do not have
+            # matching densities for (temp, weathering)
+            densities = [(d.kg_per_m_cubed,
+                          d.ref_temp,
+                          (0.0 if d.weathering == None else d.weathering))
+                         for d in self._r_oil.densities]
+
+            for v, t, w in [(d.kg_per_msec, d.ref_temp, d.weathering)
+                            for d in self._r_oil.dvis]:
+                if w == None:
+                    w = 0.0
+
+                # if we already have a KVis at the same
+                # (temperature, weathering), we do not need
+                # another one
+                if len([vv for vv in ret
+                        if vv[1] == t and vv[2] == w]) > 0:
+                    continue
+
+                # grab the densities with matching weathering
+                dlist = [(d[0], abs(t - d[1]))
+                         for d in densities
+                         if d[2] == w]
+
+                if len(dlist) == 0:
+                    continue
+
+                # grab the density with the closest temperature
+                density = sorted(dlist, key=lambda x: x[1])[0][0]
+
+                # kvis = dvis/density
+                ret.append(((v / density), t, w))
+
+        ret.sort(key=lambda x: (x[2], x[1]))
+        kwargs = ['(m^2/s)', 'Ref Temp (K)', 'Weathering']
+
+        # caution: although we will have a list of real
+        #          KVis objects, they are not persisted
+        #          in the database.
+        ret = [(KVis(**dict(zip(kwargs, v)))) for v in ret]
+        return ret
+
     def get_viscosity(self, units='m^2/s'):
         '''
         :param units: optional input if output units should be something other
-                      than kg/m^3
-        :return: scalar Density.  Default units: (kg/m^3)
+                      than m^2/s
+        :return: Kinematic Viscosity at current temperature.
+                 Default units: (m^2/s)
 
-        - The kinematic viscosity (nu) is the ratio of the dynamic viscosity
-          (mu) to the density of the fluid (rho). (nu = mu / rho)  It is
-          measured in (m^2/s)
-        - 1 m^2/s = 1000000 centistokes (cSt)
+        The Oil object has a list of kinematic viscosities at empirically
+        measured temperatures.  We need to use the ones closest to our
+        current temperature and calculate our viscosity from it.
         '''
 
-        if self.api is None:
-            raise ValueError("Oil with name '{0}' does not contain 'api'"
-                             " property.".format(self._r_oil.name))
+        print 'OilProps.get_viscosity(): Oil Viscosities:', self.viscosities
 
         # since Oil object can have various densities depending on temperature,
         # lets return API in correct units
-        return uc.convert('Density', 'API degree', units, self.api)
+        return uc.convert('Kinematic Viscosity', 'm^2/s', units, self.api)
