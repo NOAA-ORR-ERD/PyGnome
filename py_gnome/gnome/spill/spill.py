@@ -90,7 +90,12 @@ class Spill(serializable.Serializable):
         """
         self.release = release
         if element_type is None:
-            element_type = elements.floating()
+            if amount is None:
+                # default element type sets substance='oil_conservative'
+                element_type = elements.floating()
+            else:
+                element_type = elements.floating_mass()
+
         self.element_type = element_type
 
         self.on = on    # spill is active or not

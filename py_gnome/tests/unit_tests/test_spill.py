@@ -23,7 +23,8 @@ from gnome.spill import (Spill,
                          PointLineRelease,
                          SpatialRelease,
                          GridRelease)
-from gnome.spill.elements import floating
+from gnome.spill.elements import (floating,
+                                  ElementType)
 import gnome.array_types
 
 from conftest import mock_append_data_arrays
@@ -35,11 +36,32 @@ from conftest import mock_append_data_arrays
 arr_types = {'positions': gnome.array_types.positions}
 
 
-def test_init():
-    spill = Spill(Release(release_time=datetime.now()))
+@pytest.mark.parametrize(("element_type", "amount"), [(None, None),
+                                                      (None, 10.0),
+                                                      (ElementType(), None),
+                                                      (ElementType(), 1.0)])
+def test_init(element_type, amount):
+    '''
+    Test various initializtions
+    '''
+    spill = Spill(Release(release_time=datetime.now()),
+                  element_type=element_type,
+                  amount=amount,
+                  units='kg'
+                  )
 
-    assert np.all(spill.get('windage_range') == (0.01, 0.04))
-    assert (spill.get('windage_persist') == 900)
+    if element_type is None:
+        assert np.all(spill.get('windage_range') == (0.01, 0.04))
+        assert (spill.get('windage_persist') == 900)
+
+        if amount is not None:
+            assert 'mass' in spill.get('array_types')
+            assert len(spill.get('initializers')) == 2
+        else:
+            assert len(spill.get('initializers')) == 1
+    else:
+        assert len(spill.get('initializers')) == 0
+
     assert spill.name == 'Spill'
 
 
