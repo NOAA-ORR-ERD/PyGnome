@@ -37,7 +37,7 @@ lis_dir = os.path.join(datadir, 'long_island_sound')
 testmap = os.path.join(basedir, '../sample_data', 'MapBounds_Island.bna')
 
 
-@pytest.fixture(scope='module')
+@pytest.fixture(scope='function')
 def model(sample_model):
     '''
     Utility to setup up a simple, but complete model for tests
@@ -66,7 +66,7 @@ def model(sample_model):
     # print start_points
 
     release = SpatialRelease(start_position=line_pos,
-                           release_time=model.start_time)
+                             release_time=model.start_time)
 
     model.spills += Spill(release)
 
@@ -755,7 +755,7 @@ def test_callback_add_mover():
     assert model.movers[custom_mover.id].active_stop == active_off
 
 
-def test_callback_add_mover_midrun(model):
+def test_callback_add_mover_midrun():
     'Test callback after add mover called midway through the run'
     model = Model()
     model.start_time = datetime(2012, 1, 1, 0, 0)
@@ -803,6 +803,26 @@ def test_all_weatherers_in_model(model):
 
     expected_keys = {'mass_components', 'half_lives'}
     assert expected_keys.issubset(model.spills.LE_data)
+
+
+def test_run_element_type_no_initializers(model):
+    '''
+    run model with only one spill, it contains an element_type.
+    However, element_type has no initializers
+    '''
+    model.uncertain = False
+    model.rewind()
+
+    for ix, spill in enumerate(model.spills):
+        if ix == 0:
+            spill.set('initializers', [])
+        else:
+            del model.spills[spill.id]
+    assert len(model.spills) == 1
+
+    model.full_run()
+
+    assert True
 
 
 if __name__ == '__main__':
