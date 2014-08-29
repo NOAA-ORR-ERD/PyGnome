@@ -24,7 +24,7 @@ from gnome.environment import Wind, Tide
 from gnome.model import Model
 from gnome.persist import load
 from gnome.spill import point_line_release_spill
-from gnome.movers import RandomMover, WindMover, CatsMover
+from gnome.movers import RandomMover, WindMover, CatsMover, ComponentMover
 from gnome.weatherers import Weatherer
 
 #from gnome.persist.scenario import Scenario
@@ -147,6 +147,25 @@ def make_model(images_dir, uncertain=False):
     # the scale factor is 0 if user inputs no sewage outfall effects
     c_mover.scale_value = .04
     model.movers += c_mover
+
+    print "adding a component mover:"
+    component_file1 = get_datafile(os.path.join(datafiles, r"./WAC10msNW.cur"))
+    component_file2 = get_datafile(os.path.join(datafiles, r"./WAC10msSW.cur"))
+    comp_mover = ComponentMover(component_file1, component_file2, w_mover.wind)
+    #todo: callback did not work correctly below - fix!
+    #comp_mover = ComponentMover(component_file1,component_file2,Wind(timeseries=series, units='m/s'))
+
+    comp_mover.ref_point = (-70.855, 42.275)
+    comp_mover.pat1_angle = 315
+    comp_mover.pat1_speed = 19.44
+    comp_mover.pat1_speed_units = 1
+    comp_mover.pat1ScaleToValue = .138855
+    comp_mover.pat2_angle = 225
+    comp_mover.pat2_speed = 19.44
+    comp_mover.pat2_speed_units = 1
+    comp_mover.pat2ScaleToValue = .05121
+    
+    model.movers += comp_mover
 
     print 'adding a Weatherer'
     weatherer = Weatherer()
