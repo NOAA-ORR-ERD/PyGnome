@@ -10,8 +10,8 @@ object used to initialize and OilProps object
 
 Not sure at present if this needs to be serializable?
 '''
+from math import exp, log
 
-import math
 from collections import namedtuple
 
 from hazpy import unit_conversion
@@ -37,7 +37,7 @@ def boiling_point(num_pc, api):
     boiling point units of Kelvin
     '''
     T_o = 457.16 - 3.3447 * api
-    dT_dF = 1356.7 - 247.36 * math.log(api)
+    dT_dF = 1356.7 - 247.36 * log(api)
 
     # bp = [T_o + dT_dF * ((ix + 0.5)/num_pc) for ix in range(num_pc)]
     bp = [float('nan')] * num_pc
@@ -56,12 +56,12 @@ def vapor_pressure_ratio(bp, water_temp, P_atmos=101325.0):
     D_Zb = 0.97
     R_cal = 1.987  # calories
 
-    D_S = 8.75 + 1.987 * math.log(bp)
+    D_S = 8.75 + 1.987 * log(bp)
     C_2i = 0.19 * bp - 18
 
     var = 1. / (bp - C_2i) - 1. / (water_temp - C_2i)
     ln_Pi_Po = D_S * (bp - C_2i) ** 2 / (D_Zb * R_cal * bp) * var
-    Pi_atmos = math.exp(ln_Pi_Po)
+    Pi_atmos = exp(ln_Pi_Po)
 
     return Pi_atmos
 
@@ -270,9 +270,22 @@ class OilProps(object):
         measured temperatures.  We need to use the ones closest to our
         current temperature and calculate our viscosity from it.
         '''
+        if self.viscosities:
+            # Get the one that most closely matches our current temperature
+            visc = sorted([(v, abs(v.ref_temp - self.temperature))
+                            for v in self.viscosities],
+                           key=lambda v: v[1])[0][0]
+            v_ref = visc.meters_squared_per_sec
+            t_ref = visc.ref_temp
+            k_v2 = 5000.0
 
-        print 'OilProps.get_viscosity(): Oil Viscosities:', self.viscosities
+            #print 'temperature =', self.temperature
+            #print '(v_ref, t_ref, k_v2) =', (v_ref, t_ref, k_v2)
+            if (self.temperature - t_ref) == 0:
+                v_0 = v_ref
+            else:
+                v_0 = v_ref * exp(k_v2 / self.temperature - k_v2 / t_ref)
 
-        # since Oil object can have various densities depending on temperature,
-        # lets return API in correct units
-        return uc.convert('Kinematic Viscosity', 'm^2/s', units, self.api)
+            return uc.convert('Kinematic Viscosity', 'm^2/s', units, v_0)
+        else:
+            return None
