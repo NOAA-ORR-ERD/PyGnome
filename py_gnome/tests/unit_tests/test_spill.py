@@ -23,7 +23,8 @@ from gnome.spill import (Spill,
                          PointLineRelease,
                          SpatialRelease,
                          GridRelease)
-from gnome.spill.elements import floating
+from gnome.spill.elements import (floating,
+                                  ElementType)
 import gnome.array_types
 
 from conftest import mock_append_data_arrays
@@ -35,30 +36,50 @@ from conftest import mock_append_data_arrays
 arr_types = {'positions': gnome.array_types.positions}
 
 
-def test_init():
-    spill = Spill(Release(release_time=datetime.now()))
+@pytest.mark.parametrize(("element_type", "amount"), [(None, None),
+                                                      (None, 10.0),
+                                                      (ElementType(), None),
+                                                      (ElementType(), 1.0)])
+def test_init(element_type, amount):
+    '''
+    Test various initializtions
+    '''
+    spill = Spill(Release(release_time=datetime.now()),
+                  element_type=element_type,
+                  amount=amount,
+                  units='kg'
+                  )
 
-    assert np.all(spill.get('windage_range') == (0.01, 0.04))
-    assert (spill.get('windage_persist') == 900)
+    if element_type is None:
+        assert np.all(spill.get('windage_range') == (0.01, 0.04))
+        assert (spill.get('windage_persist') == 900)
+
+        if amount is not None:
+            assert 'mass' in spill.get('array_types')
+            assert len(spill.get('initializers')) == 2
+        else:
+            assert len(spill.get('initializers')) == 1
+    else:
+        assert len(spill.get('initializers')) == 0
+
     assert spill.name == 'Spill'
 
 
-def test_init_mass_volume():
-    spill = Spill(Release(datetime.now()), volume=10.0)
-    assert spill.volume == 10.0
-    assert spill.volume_units == 'm^3'
-    assert spill.mass is None
+@pytest.mark.parametrize(("amount", "units"), [(10.0, 'm^3'),
+                                               (10.0, 'kg')])
+def test_amount_mass_vol(amount, units):
+    '''
+    ensure mass is being returned correctly when 'amount' is initialized wtih
+    'mass' or 'volume'
+    '''
+    spill = Spill(Release(datetime.now()), amount=10.0, units='m^3')
+    assert spill.amount == 10.0
+    assert spill.units == 'm^3'
 
-
-def test_mass_vol_props():
-    spill = Spill(Release(datetime.now()), volume=10.0)
-    spill.mass = 1.0
-    assert spill.volume is None
-    assert spill.mass == 1.0
-
-    spill.volume = 5.0
-    assert spill.mass is None
-    assert spill.volume == 5.0
+    exp_mass = spill.get('substance').get_density('kg/m^3') * spill.amount
+    assert spill.get_mass() == exp_mass
+    exp_mass_g = exp_mass * 1000
+    assert spill.get_mass('g') == exp_mass_g
 
 
 def test_init_exceptions():
@@ -66,7 +87,7 @@ def test_init_exceptions():
         Spill()
 
     with raises(TypeError):
-        Spill(Release(datetime.now()), mass=10, volume=100)
+        Spill(Release(datetime.now()), amount=10)
 
     with raises(ValueError):
         Spill(Release(release_time=datetime.now()),
@@ -666,19 +687,20 @@ class Test_point_line_release_spill:
         sp.release.end_release_time = None
         assert sp.release.release_time == sp.release.end_release_time
 
-    @pytest.mark.parametrize(("json_", "mass", "vol"), [('save', 1.0, None),
-                                                        ('webapi', 1.0, None),
-                                                        ('save', None, 1.0),
-                                                        ('webapi', None, 1.0)])
-    def test_serialization_deserialization(self, json_, mass, vol):
+    @pytest.mark.parametrize(("json_", "amount", "units"),
+                            [('save', 1.0, 'kg'),
+                             ('webapi', 1.0, 'g'),
+                             ('save', 5.0, 'l'),
+                             ('webapi', 5.0, 'barrels')])
+    def test_serialization_deserialization(self, json_, amount, units):
         """
         tests serializatin/deserialization of the Spill object
         """
         spill = point_line_release_spill(num_elements=self.num_elements,
                                          start_position=self.start_position,
                                          release_time=self.release_time,
-                                         mass=mass,
-                                         volume=vol)
+                                         amount=amount,
+                                         units=units)
         dict_ = Spill.deserialize(spill.serialize(json_))
         if json_ == 'save':
             new_spill = Spill.new_from_dict(dict_)

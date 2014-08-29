@@ -67,7 +67,7 @@ class Outputter(Serializable):
         self.output_zero_step = output_zero_step
         self.output_last_step = output_last_step
         if output_timestep:
-            self._output_timestep = output_timestep.seconds
+            self._output_timestep = int(output_timestep.total_seconds())
         else:
             self._output_timestep = None
         self.sc_pair = None     # set in prepare_for_model_run

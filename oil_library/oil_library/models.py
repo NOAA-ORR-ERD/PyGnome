@@ -225,82 +225,6 @@ class Oil(Base):
                                else False)
         self.koy = kwargs.get('K0Y')
 
-    @property
-    def viscosities(self):
-        '''
-            get a list of all kinematic viscosities associated with this
-            oil object.  The list is compiled from the registered
-            kinematic and dynamic viscosities.
-            the viscosity fields contain:
-              - kinematic viscosity in m^2/sec
-              - reference temperature in degrees kelvin
-              - weathering ???
-            Viscosity entries are ordered by (weathering, temperature)
-            If we are using dynamic viscosities, we calculate the
-            kinematic viscosity from the density that is closest
-            to the respective reference temperature
-            TODO: Chris would like calculated properties, at least the
-                  very complex ones, to be moved to a subclass
-                  - maybe we create a class like OilProperties(Oil) that is
-                    either derived from Oil or contains an oil object.
-        '''
-        # first we get the kinematic viscosities if they exist
-        ret = []
-        if self.kvis:
-            ret = [(k.meters_squared_per_sec,
-                    k.ref_temp,
-                    (0.0 if k.weathering == None else k.weathering))
-                    for k in self.kvis]
-
-        if self.dvis:
-            # If we have any DVis records, we need to get the
-            # dynamic viscosities, convert to kinematic, and
-            # add them if possible.
-            # We have dvis at a certain (temperature, weathering).
-            # We need to get density at the same weathering and
-            # the closest temperature in order to calculate the kinematic.
-            # There are lots of oil entries where the dvis do not have
-            # matching densities for (temp, weathering)
-            densities = [(d.kg_per_m_cubed,
-                          d.ref_temp,
-                          (0.0 if d.weathering == None else d.weathering))
-                         for d in self.densities]
-
-            for v, t, w in [(d.kg_per_msec, d.ref_temp, d.weathering)
-                            for d in self.dvis]:
-                if w == None:
-                    w = 0.0
-
-                # if we already have a KVis at the same
-                # (temperature, weathering), we do not need
-                # another one
-                if len([vv for vv in ret
-                        if vv[1] == t and vv[2] == w]) > 0:
-                    continue
-
-                # grab the densities with matching weathering
-                dlist = [(d[0], abs(t - d[1]))
-                         for d in densities
-                         if d[2] == w]
-
-                if len(dlist) == 0:
-                    continue
-
-                # grab the density with the closest temperature
-                density = sorted(dlist, key=lambda x: x[1])[0][0]
-
-                # kvis = dvis/density
-                ret.append(((v / density), t, w))
-
-        ret.sort(key=lambda x: (x[2], x[1]))
-        kwargs = ['(m^2/s)', 'Ref Temp (K)', 'Weathering']
-
-        # caution: although we will have a list of real
-        #          KVis objects, they are not persisted
-        #          in the database.
-        ret = [(KVis(**dict(zip(kwargs, v)))) for v in ret]
-        return ret
-
     def __repr__(self):
         return "<Oil('%s')>" % (self.name)
 
@@ -352,7 +276,11 @@ class KVis(Base):
         self.weathering = kwargs.get('Weathering')
 
     def __repr__(self):
-        return "<KVIs('%s')>" % (self.id)
+        return ('<KVis('
+                'meters_squared_per_sec={0.meters_squared_per_sec}, '
+                'ref_temp={0.ref_temp}, '
+                'weathering={0.weathering}'
+                ')>'.format(self))
 
 
 class DVis(Base):
@@ -371,7 +299,11 @@ class DVis(Base):
         self.weathering = kwargs.get('Weathering')
 
     def __repr__(self):
-        return "<DVIs('%s')>" % (self.id)
+        return ('<DVis('
+                'kg_per_msec={0.kg_per_msec}, '
+                'ref_temp={0.ref_temp}, '
+                'weathering={0.weathering}'
+                ')>'.format(self))
 
 
 class Cut(Base):

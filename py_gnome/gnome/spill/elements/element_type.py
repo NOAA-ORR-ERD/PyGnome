@@ -28,7 +28,7 @@ class ElementType(Serializable):
     _state.add(save=['initializers'], update=['initializers'])
     _schema = base_schema.ObjType
 
-    def __init__(self, initializers, substance='oil_conservative'):
+    def __init__(self, initializers=[], substance='oil_conservative'):
         '''
         Define initializers for the type of elements
 
