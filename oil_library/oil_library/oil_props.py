@@ -273,15 +273,21 @@ class OilProps(object):
         '''
         if self.viscosities:
             # first get our v_max
-            pour_point = self._r_oil.pour_point_max
-            visc = sorted([(v, abs(v.ref_temp - pour_point))
-                            for v in self.viscosities],
-                           key=lambda v: v[1])[0][0]
-            v_ref = visc.meters_squared_per_sec
-            t_ref = visc.ref_temp
             k_v2 = 5000.0
+            pour_point = (self._r_oil.pour_point_max
+                          if self._r_oil.pour_point_max != None
+                          else self._r_oil.pour_point_min)
+            if pour_point:
+                visc = sorted([(v, abs(v.ref_temp - pour_point))
+                                for v in self.viscosities
+                                if v != None],
+                               key=lambda v: v[1])[0][0]
+                v_ref = visc.meters_squared_per_sec
+                t_ref = visc.ref_temp
 
-            v_max = v_ref * exp(k_v2 / pour_point - k_v2 / t_ref)
+                v_max = v_ref * exp(k_v2 / pour_point - k_v2 / t_ref)
+            else:
+                v_max = None
 
             # now get our v_0
             visc = sorted([(v, abs(v.ref_temp - self.temperature))
@@ -295,7 +301,11 @@ class OilProps(object):
             else:
                 v_0 = v_ref * exp(k_v2 / self.temperature - k_v2 / t_ref)
 
-            return uc.convert('Kinematic Viscosity', 'm^2/s', units,
-                              v_0 if v_0 <= v_max else v_max)
+            if v_max:
+                return uc.convert('Kinematic Viscosity', 'm^2/s', units,
+                                  v_0 if v_0 <= v_max else v_max)
+            else:
+                return uc.convert('Kinematic Viscosity', 'm^2/s', units,
+                                  v_0)
         else:
             return None
