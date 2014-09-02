@@ -132,7 +132,8 @@ class OilProps(object):
 
     density = property(lambda self: self.get_density())
     viscosity = property(lambda self: self.get_viscosity())
-    temperature = property(lambda self: self.get_temperature())
+    temperature = property(lambda self: self.get_temperature(),
+                           lambda self, val: self.set_temperature(val))
     name = property(lambda self: self._r_oil.name,
                     lambda self, val: setattr(self._r_oil, 'name', val))
     api = property(lambda self: self.get('api'))
@@ -144,7 +145,7 @@ class OilProps(object):
     def get_temperature(self, units='K'):
         return uc.convert('Temperature', 'K', units, self._temperature)
 
-    def set_temperature(self, value, units):
+    def set_temperature(self, value, units='K'):
         temp = uc.convert('Temperature', units, 'K', value)
         self._temperature = temp
         # update dependencies
@@ -271,21 +272,30 @@ class OilProps(object):
         current temperature and calculate our viscosity from it.
         '''
         if self.viscosities:
-            # Get the one that most closely matches our current temperature
-            visc = sorted([(v, abs(v.ref_temp - self.temperature))
+            # first get our v_max
+            pour_point = self._r_oil.pour_point_max
+            visc = sorted([(v, abs(v.ref_temp - pour_point))
                             for v in self.viscosities],
                            key=lambda v: v[1])[0][0]
             v_ref = visc.meters_squared_per_sec
             t_ref = visc.ref_temp
             k_v2 = 5000.0
 
-            #print 'temperature =', self.temperature
-            #print '(v_ref, t_ref, k_v2) =', (v_ref, t_ref, k_v2)
+            v_max = v_ref * exp(k_v2 / pour_point - k_v2 / t_ref)
+
+            # now get our v_0
+            visc = sorted([(v, abs(v.ref_temp - self.temperature))
+                            for v in self.viscosities],
+                           key=lambda v: v[1])[0][0]
+            v_ref = visc.meters_squared_per_sec
+            t_ref = visc.ref_temp
+
             if (self.temperature - t_ref) == 0:
                 v_0 = v_ref
             else:
                 v_0 = v_ref * exp(k_v2 / self.temperature - k_v2 / t_ref)
 
-            return uc.convert('Kinematic Viscosity', 'm^2/s', units, v_0)
+            return uc.convert('Kinematic Viscosity', 'm^2/s', units,
+                              v_0 if v_0 <= v_max else v_max)
         else:
             return None
