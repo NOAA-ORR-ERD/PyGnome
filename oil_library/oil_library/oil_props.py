@@ -209,7 +209,8 @@ class OilProps(object):
             ret = [(k.meters_squared_per_sec,
                     k.ref_temp,
                     (0.0 if k.weathering == None else k.weathering))
-                    for k in self._r_oil.kvis]
+                    for k in self._r_oil.kvis
+                    if k.ref_temp != None]
 
         if self._r_oil.dvis:
             # If we have any DVis records, we need to get the
