@@ -11,6 +11,7 @@ import copy
 
 import gnome    # required by new_from_dict
 from gnome.utilities.serializable import Serializable
+from gnome.array_types import mass_components
 from .initializers import (InitRiseVelFromDropletSizeFromDist,
                            InitRiseVelFromDist,
                            InitWindages,
@@ -57,6 +58,16 @@ class ElementType(Serializable):
             self.substance = get_oil(substance)
         else:
             self.substance = substance
+
+        if self.substance.num_pc != mass_components.shape[0]:
+            self._update_mass_components_at()
+
+    def _update_mass_components_at(self):
+        'update mass_components ArrayType per the number of components'
+        mass_components.shape = (self.substance.num_pc,)
+        i_val = [0.] * self.substance.num_pc
+        i_val[0] = 1.
+        mass_components.initial_value = tuple(i_val)
 
     def __repr__(self):
         return ('{0.__class__.__module__}.{0.__class__.__name__}('

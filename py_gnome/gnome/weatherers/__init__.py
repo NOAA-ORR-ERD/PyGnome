@@ -1,4 +1,5 @@
 
-from core import Weatherer
+from core import Weatherer, HalfLifeWeatherer
 
-__all__ = [Weatherer]
+__all__ = [Weatherer,
+           HalfLifeWeatherer]

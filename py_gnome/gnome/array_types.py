@@ -74,7 +74,7 @@ class ArrayType(object):
         :param spill:
         """
         arr = np.zeros((num_elements,) + self.shape, dtype=self.dtype)
-        if self.initial_value != 0:
+        if len(arr) > 0 and self.initial_value != 0.:
             arr[:] = self.initial_value
         return arr
 
@@ -127,8 +127,6 @@ _default_values = {
      'droplet_diameter': ((), np.float64, 0.),
      'age': ((), np.int32, 0),
      'mass_components': ((5,), np.float64, (1., 0., 0., 0., 0.)),
-     'half_lives': ((5,), np.float64,
-                    (np.inf, np.inf, np.inf, np.inf, np.inf)),
       }
 
 
