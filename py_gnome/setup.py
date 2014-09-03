@@ -29,6 +29,7 @@ from subprocess import call
 # to support "develop" mode:
 from setuptools import setup, find_packages
 from distutils.command.clean import clean
+from distutils.command.install import install
 
 from distutils.extension import Extension
 from Cython.Distutils import build_ext
@@ -59,6 +60,16 @@ def target_dir(name):
 def target_path(name='temp'):
     '''returns the full build path'''
     return os.path.join('build', target_dir(name))
+
+
+def install_oil_lib():
+    'invoked at multiple places so made a function'
+    oil_lib_path = os.path.join(SETUP_PATH, '../oil_library')
+    os.chdir(oil_lib_path)
+    print "Installing oil_library since it isn't found"
+    call(['python', 'setup.py', 'install'])
+    print "Change back to user's current working directory"
+    os.chdir(CWD)
 
 
 class cleandev(clean):
@@ -93,6 +104,14 @@ class cleandev(clean):
                 print("Failed to remove {0}. Error: {1}".format(dir_, err)) 
                 #pass
 
+
+class reinstall_oil_lib(install):
+    def run(self):
+        '''
+        install oil lib - define custom command for setup.py to reinstall
+        oil_library from py_gnome's setup.py
+        '''
+        install_oil_lib()
 
 ## 64 bit Windows Notes:
 ##     The following batch commands will be needed to setup the
@@ -451,7 +470,8 @@ setup(name='pyGnome',
       package_data={'gnome': ['data/yeardata/*']},
       requires=['numpy'],   # want other packages here?
       cmdclass={'build_ext': build_ext,
-                'cleandev': cleandev},
+                'cleandev': cleandev,
+                'reinstall_oil_lib': reinstall_oil_lib},
 
       #scripts,
 
@@ -477,12 +497,7 @@ try:
     import oil_library
 except ImportError:
     'install oil lib'
-    oil_lib_path = os.path.join(SETUP_PATH, '../oil_library')
-    os.chdir(oil_lib_path)
-    print "Installing oil_library since it isn't found"
-    call(['python', 'setup.py', 'install'])
-    print "Change back to user's current working directory"
-    os.chdir(CWD)
+    install_oil_lib()
 
 # ## total kludge to get linking to work right with Anaconda:
 ## note: this doesn't work, as the env variable goes away with new process.
