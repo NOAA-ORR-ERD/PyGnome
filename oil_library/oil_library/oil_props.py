@@ -12,17 +12,10 @@ Not sure at present if this needs to be serializable?
 '''
 from math import exp, log
 
-from collections import namedtuple
-
 from hazpy import unit_conversion
 uc = unit_conversion
 
 from .models import KVis
-
-MassComponent = namedtuple('MassComponent',
-                           ''' fraction,
-                               halflife,
-                           ''')
 
 
 def boiling_point(num_pc, api):
@@ -48,32 +41,17 @@ def boiling_point(num_pc, api):
     return bp
 
 
-def vapor_pressure_ratio(bp, water_temp, P_atmos=101325.0):
-    '''
-    water_temp and boiling point units are Kelvin
-    returns the ratio: vapor_pressure/atmospheric_pressure
-    '''
-    D_Zb = 0.97
-    R_cal = 1.987  # calories
-
-    D_S = 8.75 + 1.987 * log(bp)
-    C_2i = 0.19 * bp - 18
-
-    var = 1. / (bp - C_2i) - 1. / (water_temp - C_2i)
-    ln_Pi_Po = D_S * (bp - C_2i) ** 2 / (D_Zb * R_cal * bp) * var
-    Pi_atmos = exp(ln_Pi_Po)
-
-    return Pi_atmos
-
-
-def mw_saturate(bp):
+def mw(bp, component):
     '''
     return the molecular weight of the pseudocomponents (mw_i) given the
     boiling points. It returns the mw_i for saturates and aromatic components
     '''
-    mw_s = (0.04132 - 1.985e-4 * bp + (9.494e-7 * bp ** 2))
+    if component == 'saturate':
+        mw = (0.04132 - 1.985e-4 * bp + (9.494e-7 * bp ** 2))
+    elif component == 'aromatic':
+        mw = (0.04132 - 1.985e-4 * bp + (9.494e-7 * bp ** 2))
 
-    return mw_s
+    return mw
 
 
 class OilProps(object):
@@ -98,9 +76,11 @@ class OilProps(object):
 
     def __init__(self, oil_, temperature=311.15):
         '''
-        If oil_ is amongst self._sample_oils dict, then use the properties
-        defined here. If not, then query the Oil database to check if oil_
-        exists and get the properties from DB.
+        Extends the raw Oil object to include properties required by
+        weathering processes. If oil_ is not pulled from database or user may
+        wish to use simple half life weatherer, in this case, there is no need
+        to carry around more than one psuedo-component. Let user set num_pc
+        if desired, but only during initialization.
 
         :param oil_: Oil object that maps to entity in OilLib database
         :type oil_: Oil object
@@ -108,22 +88,16 @@ class OilProps(object):
                            38 degrees Celcius (311.15 degrees Kelvin)
         '''
         self._r_oil = oil_
-        self.num_pc = 5     # probably determine this from data
-        #======================================================================
-        # self.mass_components = [0.] * self.num_pc
-        # self.mass_components[0] = 1.
-        # self.hl = [float('inf')] * self.num_pc
-        # self.hl[0] = 15.*60
-        #======================================================================
-        self._temperature = temperature
 
-        self.boiling_point = boiling_point(self.num_pc, self.get('api'))
-        self.vapor_pressure_ratio = []
-        self.mw_saturates = []
-        for bp in self.boiling_point:
-            self.vapor_pressure_ratio.append(
-                vapor_pressure_ratio(bp, self.temperature))
-            self.mw_saturates.append(mw_saturate(bp))
+        # probably determine this from data?
+        # Default mass components:
+        #    5 saturates, 5 aromatics, resins, asphaltenes
+        #
+        # mass_fraction =
+        # [m0_s, m0_a, m1_s, m1_a, ..., m_resins, m_asphaltenes]
+        self._num_pc = 12
+        self._update_component_props()
+        self._temperature = temperature
 
     def __repr__(self):
         return ('{0.__class__.__module__}.{0.__class__.__name__}('
@@ -148,30 +122,6 @@ class OilProps(object):
     def set_temperature(self, value, units='K'):
         temp = uc.convert('Temperature', units, 'K', value)
         self._temperature = temp
-        # update dependencies
-        self.vapor_pressure = []
-        for ix, bp in enumerate(self.boiling_point):
-            self.vapor_pressure_ratio.append(
-                vapor_pressure_ratio(bp, self._temperature))
-
-    @property
-    def mass_components(self):
-        '''
-           Gets the mass components of our _r_oil
-           - Set 'mass_components' array based on mass fractions
-             (distillation cuts?) that are found in the _r_oil library
-           - Set 'half-lives' array based on ???
-           TODO: Right now this is just a stub that returns a hardcoded value
-                 for testing purposes.
-                 - Try to query our distillation cuts and see if they are
-                   usable.
-                 - Figure out where we will get the half-lives data.
-        '''
-        mc = (1., 0., 0., 0., 0.)
-        hl = ((15. * 60), float('inf'),
-              float('inf'), float('inf'),
-              float('inf'))
-        return [MassComponent(*n) for n in zip(mc, hl)]
 
     def get_density(self, units='kg/m^3'):
         '''
@@ -299,3 +249,31 @@ class OilProps(object):
                               v_0 if v_0 <= v_max else v_max)
         else:
             return None
+
+    @property
+    def num_pc(self):
+        return self._num_pc
+
+    def _update_component_props(self):
+        '''
+        if number of psuedo components changes, update related properties
+        self.mass_fraction defined as:
+        [m0_s, m0_a, m1_s, m1_a, ..., m_resins, m_asphaltenes]
+        '''
+        # mass components are for [saturates, aromatics, resins, asphaltenes]
+        self.mass_fraction = [0.] * (self.num_pc)
+        self.mass_fraction[0] = 1.
+        self.boiling_point = boiling_point(self.num_pc-2, self.get('api'))
+
+        self.mw = []
+
+        for ix, bp in enumerate(self.boiling_point):
+            if ix % 2 == 0:
+                self.mw.append(mw(bp, 'saturate'))
+            else:
+                # will define a different function for mw_aromatics
+                self.mw.append(mw(bp, 'aromatic'))
+
+        # are the boiling points of resins and asphaltenes infinite?
+        # append these after we have the molecular weights for sat/aromatics
+        self.boiling_point.extend([float('inf'), float('inf')])
