@@ -257,7 +257,8 @@ class Density(Base):
         self.weathering = kwargs.get('Weathering')
 
     def __repr__(self):
-        return "<Density('%s')>" % (self.id)
+        return ("<Density({0.kg_per_m_cubed} kg/m^3 at {0.ref_temp}K)>"
+                .format(self))
 
 
 class KVis(Base):
@@ -276,11 +277,8 @@ class KVis(Base):
         self.weathering = kwargs.get('Weathering')
 
     def __repr__(self):
-        return ('<KVis('
-                'meters_squared_per_sec={0.meters_squared_per_sec}, '
-                'ref_temp={0.ref_temp}, '
-                'weathering={0.weathering}'
-                ')>'.format(self))
+        return ('<KVis({0.meters_squared_per_sec} m^2/s at {0.ref_temp}K)>'
+                .format(self))
 
 
 class DVis(Base):

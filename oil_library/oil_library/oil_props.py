@@ -175,18 +175,33 @@ class OilProps(object):
 
     def get_density(self, units='kg/m^3'):
         '''
-        :param units: optional input if output units should be something other
-                      than kg/m^3
-        :return: scalar Density.  Default units: (kg/m^3)
+            We will prefer to calculate density from the empirical densities
+            associated with the oil record.
+            If no density values exist, estimate it from API
+
+            :param units: optional input if output units should be something
+                          other than kg/m^3
+            :return: scalar Density.  Default units: (kg/m^3)
         '''
 
-        if self.api is None:
+        if self._r_oil.densities != None:
+            # calculate our density at temperature
+            density_rec = sorted([(d, abs(d.ref_temp - self.temperature))
+                                  for d in self._r_oil.densities],
+                                 key=lambda d: d[1])[0][0]
+            d_ref = density_rec.kg_per_m_cubed
+            t_ref = density_rec.ref_temp
+            k_p1 = 0.008
+
+            d_0 = d_ref / (1 - k_p1 * (t_ref - self.temperature))
+        elif self.api != None:
+            # calculate our density from api
+            d_0 = 141.5 / (131.5 + self.api) * 1000
+        else:
             raise ValueError("Oil with name '{0}' does not contain 'api'"
                              " property.".format(self._r_oil.name))
 
-        # since Oil object can have various densities depending on temperature,
-        # lets return API in correct units
-        return uc.convert('Density', 'API degree', units, self.api)
+        return uc.convert('Density', 'kg/m^3', units, d_0)
 
     @property
     def viscosities(self):
