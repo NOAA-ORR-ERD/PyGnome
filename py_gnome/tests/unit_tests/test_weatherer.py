@@ -20,7 +20,7 @@ from gnome.array_types import mass, rise_vel, mass_components
 from gnome.spill.elements import (ElementType,
                                   InitMassFromSpillAmount,
                                   InitRiseVelFromDist,
-                                  InitMassComponentsFromOilProps)
+                                  InitArraysFromOilProps)
 
 from gnome.weatherers import Weatherer, HalfLifeWeatherer
 
@@ -31,7 +31,7 @@ arr_types = {'mass': mass,
              }
 initializers = [InitMassFromSpillAmount(),
                 InitRiseVelFromDist(),
-                InitMassComponentsFromOilProps(),
+                InitArraysFromOilProps(),
                 ]
 sc = sample_sc_release(5, (3., 6., 0.),
                        rel_time,

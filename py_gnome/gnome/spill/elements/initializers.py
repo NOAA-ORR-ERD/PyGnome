@@ -165,9 +165,10 @@ class InitWindages(InitBaseClass, Serializable):
                     data_arrays['windages'][-num_new_particles:])
 
 
-class InitMassComponentsFromOilProps(InitBaseClass, Serializable):
+class InitArraysFromOilProps(InitBaseClass, Serializable):
     '''
-       Initialize the mass components based on given Oil properties
+       Initialize multiple data_arrays from OilProps:
+       'mass_components', 'mass', 'density'
     '''
     _state = copy.deepcopy(InitBaseClass._state)
     _schema = base_schema.ObjType
@@ -177,9 +178,10 @@ class InitMassComponentsFromOilProps(InitBaseClass, Serializable):
         Sets 'mass_components' and 'mass' arrays - it needs the 'mass' array
         so currently it sets it.
         """
-        super(InitMassComponentsFromOilProps, self).__init__()
+        super(InitArraysFromOilProps, self).__init__()
         self.array_types.update({'mass_components': array_types.mass_components,
-                                 'mass': array_types.mass})
+                                 'mass': array_types.mass,
+                                 'density': array_types.density})
         self.name = 'mass_components'
 
     def initialize(self, num_new_particles, spill, data_arrays, substance):
@@ -211,6 +213,7 @@ class InitMassComponentsFromOilProps(InitBaseClass, Serializable):
         masses = mass_fractions * le_mass
 
         data_arrays['mass_components'][-num_new_particles:] = masses
+        data_arrays['density'][-num_new_particles:] = substance.density
 
 
 # do following two classes work for a time release spill?
