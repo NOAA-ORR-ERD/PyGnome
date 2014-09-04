@@ -184,7 +184,7 @@ class OilProps(object):
             :return: scalar Density.  Default units: (kg/m^3)
         '''
 
-        if self._r_oil.densities != None:
+        if self._r_oil.densities:
             # calculate our density at temperature
             density_rec = sorted([(d, abs(d.ref_temp - self.temperature))
                                   for d in self._r_oil.densities],
