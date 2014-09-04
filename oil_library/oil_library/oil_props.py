@@ -125,18 +125,33 @@ class OilProps(object):
 
     def get_density(self, units='kg/m^3'):
         '''
-        :param units: optional input if output units should be something other
-                      than kg/m^3
-        :return: scalar Density.  Default units: (kg/m^3)
+            We will prefer to calculate density from the empirical densities
+            associated with the oil record.
+            If no density values exist, estimate it from API
+
+            :param units: optional input if output units should be something
+                          other than kg/m^3
+            :return: scalar Density.  Default units: (kg/m^3)
         '''
 
-        if self.api is None:
+        if self._r_oil.densities:
+            # calculate our density at temperature
+            density_rec = sorted([(d, abs(d.ref_temp - self.temperature))
+                                  for d in self._r_oil.densities],
+                                 key=lambda d: d[1])[0][0]
+            d_ref = density_rec.kg_per_m_cubed
+            t_ref = density_rec.ref_temp
+            k_p1 = 0.008
+
+            d_0 = d_ref / (1 - k_p1 * (t_ref - self.temperature))
+        elif self.api != None:
+            # calculate our density from api
+            d_0 = 141.5 / (131.5 + self.api) * 1000
+        else:
             raise ValueError("Oil with name '{0}' does not contain 'api'"
                              " property.".format(self._r_oil.name))
 
-        # since Oil object can have various densities depending on temperature,
-        # lets return API in correct units
-        return uc.convert('Density', 'API degree', units, self.api)
+        return uc.convert('Density', 'kg/m^3', units, d_0)
 
     @property
     def viscosities(self):
@@ -159,7 +174,8 @@ class OilProps(object):
             ret = [(k.meters_squared_per_sec,
                     k.ref_temp,
                     (0.0 if k.weathering == None else k.weathering))
-                    for k in self._r_oil.kvis]
+                    for k in self._r_oil.kvis
+                    if k.ref_temp != None]
 
         if self._r_oil.dvis:
             # If we have any DVis records, we need to get the
@@ -223,15 +239,21 @@ class OilProps(object):
         '''
         if self.viscosities:
             # first get our v_max
-            pour_point = self._r_oil.pour_point_max
-            visc = sorted([(v, abs(v.ref_temp - pour_point))
-                            for v in self.viscosities],
-                           key=lambda v: v[1])[0][0]
-            v_ref = visc.meters_squared_per_sec
-            t_ref = visc.ref_temp
             k_v2 = 5000.0
+            pour_point = (self._r_oil.pour_point_max
+                          if self._r_oil.pour_point_max != None
+                          else self._r_oil.pour_point_min)
+            if pour_point:
+                visc = sorted([(v, abs(v.ref_temp - pour_point))
+                                for v in self.viscosities
+                                if v != None],
+                               key=lambda v: v[1])[0][0]
+                v_ref = visc.meters_squared_per_sec
+                t_ref = visc.ref_temp
 
-            v_max = v_ref * exp(k_v2 / pour_point - k_v2 / t_ref)
+                v_max = v_ref * exp(k_v2 / pour_point - k_v2 / t_ref)
+            else:
+                v_max = None
 
             # now get our v_0
             visc = sorted([(v, abs(v.ref_temp - self.temperature))
@@ -245,8 +267,12 @@ class OilProps(object):
             else:
                 v_0 = v_ref * exp(k_v2 / self.temperature - k_v2 / t_ref)
 
-            return uc.convert('Kinematic Viscosity', 'm^2/s', units,
-                              v_0 if v_0 <= v_max else v_max)
+            if v_max:
+                return uc.convert('Kinematic Viscosity', 'm^2/s', units,
+                                  v_0 if v_0 <= v_max else v_max)
+            else:
+                return uc.convert('Kinematic Viscosity', 'm^2/s', units,
+                                  v_0)
         else:
             return None
 

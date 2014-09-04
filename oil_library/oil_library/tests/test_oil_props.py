@@ -37,7 +37,7 @@ def test_OilProps_sample_oil(oil, density, units):
     data entered correctly and unit conversion is correct """
 
     o = get_oil(oil)
-    assert o.get_density(units) == density
+    assert isclose(o.get_density(units), density, atol=1e-3)
     assert o.name == oil
 
 
@@ -47,7 +47,12 @@ def test_OilPropsFromDensity(oil, density, units):
     """ make sure data entered correctly and unit conversion is correct """
 
     o = oil_from_density(density, oil, units)
-    assert o.get_density(units) == density
+
+    # the temperature must be the same to get a computed density that
+    # is close to our input
+    o.temperature = 273.15 + 15
+
+    assert isclose(o.get_density(units), density)
     assert o.name == oil
 
 
