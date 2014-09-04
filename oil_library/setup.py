@@ -34,7 +34,7 @@ class cleandev(clean):
             print "Deleting {0} ..".format(f)
 
 requires = [
-    'SQLAlchemy',
+    'SQLAlchemy >= 0.9.1',
     'transaction',
     'zope.sqlalchemy',
     'hazpy.unit_conversion',
