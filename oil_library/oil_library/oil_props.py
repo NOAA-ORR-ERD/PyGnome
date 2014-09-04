@@ -96,8 +96,8 @@ class OilProps(object):
         # mass_fraction =
         # [m0_s, m0_a, m1_s, m1_a, ..., m_resins, m_asphaltenes]
         self._num_pc = 12
-        self._update_component_props()
         self._temperature = temperature
+        self._update_component_props()
 
     def __repr__(self):
         return ('{0.__class__.__module__}.{0.__class__.__name__}('
@@ -289,7 +289,17 @@ class OilProps(object):
         # mass components are for [saturates, aromatics, resins, asphaltenes]
         self.mass_fraction = [0.] * (self.num_pc)
         self.mass_fraction[0] = 1.
-        self.boiling_point = boiling_point(self.num_pc-2, self.get('api'))
+
+        api = self.get('api')
+        if not (api and api > 0.0):
+            orig_temp = self._temperature
+            self._temperature = 273.15 + 15
+
+            api = (141.5 * 1000 / self.density) - 131.5
+
+            self._temperature = orig_temp
+
+        self.boiling_point = boiling_point(self.num_pc - 2, api)
 
         self.mw = []
 

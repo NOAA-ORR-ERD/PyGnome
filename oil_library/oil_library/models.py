@@ -100,7 +100,6 @@ class Oil(Base):
     name = Column(String(100), unique=True, nullable=False)
     adios_oil_id = Column(String(16), unique=True, nullable=False)
 
-    # demographic fields
     custom = Column(Boolean, default=False)
     location = Column(String(64))
     field_name = Column(String(64))
@@ -246,7 +245,6 @@ class Density(Base):
     id = Column(Integer, primary_key=True)
     oil_id = Column(Integer, ForeignKey('oils.id'))
 
-    # demographics
     kg_per_m_cubed = Column(Float(53))
     ref_temp = Column(Float(53))
     weathering = Column(Float(53))
@@ -266,7 +264,6 @@ class KVis(Base):
     id = Column(Integer, primary_key=True)
     oil_id = Column(Integer, ForeignKey('oils.id'))
 
-    # demographics
     meters_squared_per_sec = Column(Float(53))
     ref_temp = Column(Float(53))
     weathering = Column(Float(53))
@@ -286,7 +283,6 @@ class DVis(Base):
     id = Column(Integer, primary_key=True)
     oil_id = Column(Integer, ForeignKey('oils.id'))
 
-    # demographics
     kg_per_msec = Column(Float(53))
     ref_temp = Column(Float(53))
     weathering = Column(Float(53))
@@ -297,11 +293,8 @@ class DVis(Base):
         self.weathering = kwargs.get('Weathering')
 
     def __repr__(self):
-        return ('<DVis('
-                'kg_per_msec={0.kg_per_msec}, '
-                'ref_temp={0.ref_temp}, '
-                'weathering={0.weathering}'
-                ')>'.format(self))
+        return ('<DVis({0.kg_per_msec} kg/ms at {0.ref_temp}K)>'
+                .format(self))
 
 
 class Cut(Base):
@@ -309,7 +302,6 @@ class Cut(Base):
     id = Column(Integer, primary_key=True)
     oil_id = Column(Integer, ForeignKey('oils.id'))
 
-    # demographics
     vapor_temp = Column(Float(53))
     liquid_temp = Column(Float(53))
     fraction = Column(Float(53))
@@ -320,7 +312,10 @@ class Cut(Base):
         self.fraction = kwargs.get('Fraction')
 
     def __repr__(self):
-        return "<Cut('%s')>" % (self.id)
+        lt = '{0}K'.format(self.liquid_temp) if self.liquid_temp else None
+        vt = '{0}K'.format(self.vapor_temp) if self.vapor_temp else None
+        return ('<Cut([{0}, {1}], {2})>'
+                .format(lt, vt, self.fraction))
 
 
 class Toxicity(Base):
@@ -328,7 +323,6 @@ class Toxicity(Base):
     id = Column(Integer, primary_key=True)
     oil_id = Column(Integer, ForeignKey('oils.id'))
 
-    # demographics
     tox_type = Column(Enum('EC', 'LC'), nullable=False)
     species = Column(String(16))
     after_24_hours = Column(Float(53))
