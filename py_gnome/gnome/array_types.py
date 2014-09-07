@@ -127,7 +127,8 @@ _default_values = {
      'droplet_diameter': ((), np.float64, 0.),
      'age': ((), np.int32, 0),
      'mass_components': ((5,), np.float64, (1., 0., 0., 0., 0.)),
-     'density': ((), np.float64, 0)     # default assumes mass=0
+     'density': ((), np.float64, 0),     # default assumes mass=0
+     'thickness': ((), np.float64, 1.)
      }
 
 
