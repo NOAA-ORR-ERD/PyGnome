@@ -128,7 +128,9 @@ _default_values = {
      'age': ((), np.int32, 0),
      'mass_components': ((5,), np.float64, (1., 0., 0., 0., 0.)),
      'density': ((), np.float64, 0),     # default assumes mass=0
-     'thickness': ((), np.float64, 1.)
+     'thickness': ((), np.float64, 1.),
+     'mol': ((), np.float64, 0.),     # total number of mols for each LE
+     'evap_decay_constant': ((5, ), np.float64, (1., 0., 0., 0., 0.)),
      }
 
 
