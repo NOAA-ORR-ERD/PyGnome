@@ -100,3 +100,9 @@ def test_boiling_point(max_cuts):
     assert ([bp[ix] - bp[ix + 1] for ix in range(0, max_cuts * 2, 2)] ==
             [0.0] * max_cuts)
     assert bp[:2] == [exp_bp_0] * 2
+
+
+def test_get_density():
+    'test get_density uses temp given as input'
+    o = get_oil('FUEL OIL NO.6')
+    assert o.get_density() != o.get_density(temp=273)

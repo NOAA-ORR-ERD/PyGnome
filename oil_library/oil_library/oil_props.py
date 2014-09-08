@@ -148,7 +148,7 @@ class OilProps(object):
         temp = uc.convert('Temperature', units, 'K', value)
         self._temperature = temp
 
-    def get_density(self, units='kg/m^3'):
+    def get_density(self, units='kg/m^3', temp=None):
         '''
             We will prefer to calculate density from the empirical densities
             associated with the oil record.
@@ -158,6 +158,8 @@ class OilProps(object):
                           other than kg/m^3
             :return: scalar Density.  Default units: (kg/m^3)
         '''
+        if temp is None:
+            temp = self.temperature
 
         if self._r_oil.densities:
             # calculate our density at temperature
@@ -168,7 +170,7 @@ class OilProps(object):
             t_ref = density_rec.ref_temp
             k_p1 = 0.008
 
-            d_0 = d_ref / (1 - k_p1 * (t_ref - self.temperature))
+            d_0 = d_ref / (1 - k_p1 * (t_ref - temp))
         elif self.api != None:
             # calculate our density from api
             d_0 = 141.5 / (131.5 + self.api) * 1000
