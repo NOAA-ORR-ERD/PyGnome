@@ -104,7 +104,7 @@ def get_oil(oil_name):
         DBSession.bind = engine
 
         try:
-            oil_ = DBSession.query(Oil).filter(Oil.name == oil_name).one()
+            oil_ = DBSession.query(Oil).filter(Oil.oil_name == oil_name).one()
             return OilProps(oil_)
         except NoResultFound, ex:
             # or sqlalchemy.orm.exc.MultipleResultsFound as ex:

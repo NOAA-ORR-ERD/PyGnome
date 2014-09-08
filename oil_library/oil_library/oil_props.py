@@ -108,8 +108,8 @@ class OilProps(object):
     viscosity = property(lambda self: self.get_viscosity())
     temperature = property(lambda self: self.get_temperature(),
                            lambda self, val: self.set_temperature(val))
-    name = property(lambda self: self._r_oil.name,
-                    lambda self, val: setattr(self._r_oil, 'name', val))
+    name = property(lambda self: self._r_oil.oil_name,
+                    lambda self, val: setattr(self._r_oil, 'oil_name', val))
     api = property(lambda self: self.get('api'))
 
     def get(self, prop):
@@ -136,11 +136,11 @@ class OilProps(object):
 
         if self._r_oil.densities:
             # calculate our density at temperature
-            density_rec = sorted([(d, abs(d.ref_temp - self.temperature))
+            density_rec = sorted([(d, abs(d.ref_temp_k - self.temperature))
                                   for d in self._r_oil.densities],
                                  key=lambda d: d[1])[0][0]
-            d_ref = density_rec.kg_per_m_cubed
-            t_ref = density_rec.ref_temp
+            d_ref = density_rec.kg_m_3
+            t_ref = density_rec.ref_temp_k
             k_p1 = 0.008
 
             d_0 = d_ref / (1 - k_p1 * (t_ref - self.temperature))
@@ -149,7 +149,7 @@ class OilProps(object):
             d_0 = 141.5 / (131.5 + self.api) * 1000
         else:
             raise ValueError("Oil with name '{0}' does not contain 'api'"
-                             " property.".format(self._r_oil.name))
+                             " property.".format(self._r_oil.oil_name))
 
         return uc.convert('Density', 'kg/m^3', units, d_0)
 
@@ -171,11 +171,11 @@ class OilProps(object):
         # first we get the kinematic viscosities if they exist
         ret = []
         if self._r_oil.kvis:
-            ret = [(k.meters_squared_per_sec,
-                    k.ref_temp,
+            ret = [(k.m_2_s,
+                    k.ref_temp_k,
                     (0.0 if k.weathering == None else k.weathering))
                     for k in self._r_oil.kvis
-                    if k.ref_temp != None]
+                    if k.ref_temp_k != None]
 
         if self._r_oil.dvis:
             # If we have any DVis records, we need to get the
@@ -186,12 +186,12 @@ class OilProps(object):
             # the closest temperature in order to calculate the kinematic.
             # There are lots of oil entries where the dvis do not have
             # matching densities for (temp, weathering)
-            densities = [(d.kg_per_m_cubed,
-                          d.ref_temp,
+            densities = [(d.kg_m_3,
+                          d.ref_temp_k,
                           (0.0 if d.weathering == None else d.weathering))
                          for d in self._r_oil.densities]
 
-            for v, t, w in [(d.kg_per_msec, d.ref_temp, d.weathering)
+            for v, t, w in [(d.kg_ms, d.ref_temp_k, d.weathering)
                             for d in self._r_oil.dvis]:
                 if w == None:
                     w = 0.0
@@ -240,27 +240,27 @@ class OilProps(object):
         if self.viscosities:
             # first get our v_max
             k_v2 = 5000.0
-            pour_point = (self._r_oil.pour_point_max
-                          if self._r_oil.pour_point_max != None
-                          else self._r_oil.pour_point_min)
+            pour_point = (self._r_oil.pour_point_max_k
+                          if self._r_oil.pour_point_max_k != None
+                          else self._r_oil.pour_point_min_k)
             if pour_point:
-                visc = sorted([(v, abs(v.ref_temp - pour_point))
+                visc = sorted([(v, abs(v.ref_temp_k - pour_point))
                                 for v in self.viscosities
                                 if v != None],
                                key=lambda v: v[1])[0][0]
-                v_ref = visc.meters_squared_per_sec
-                t_ref = visc.ref_temp
+                v_ref = visc.m_2_s
+                t_ref = visc.ref_temp_k
 
                 v_max = v_ref * exp(k_v2 / pour_point - k_v2 / t_ref)
             else:
                 v_max = None
 
             # now get our v_0
-            visc = sorted([(v, abs(v.ref_temp - self.temperature))
+            visc = sorted([(v, abs(v.ref_temp_k - self.temperature))
                             for v in self.viscosities],
                            key=lambda v: v[1])[0][0]
-            v_ref = visc.meters_squared_per_sec
-            t_ref = visc.ref_temp
+            v_ref = visc.m_2_s
+            t_ref = visc.ref_temp_k
 
             if (self.temperature - t_ref) == 0:
                 v_0 = v_ref
