@@ -60,15 +60,16 @@ class TestWeatherer:
     @pytest.mark.parametrize("test_sc", [sc, u_sc])
     def test_one_weather(self, test_sc):
         '''
-           calls one weathering step and checks that we decayed at the expected
-           rate.
+        calls one weathering step and checks that we decayed at the expected
+        rate. Needs more tests with varying half_lives
         '''
         print '\nsc["mass"]:\n', test_sc['mass']
 
         model_time = rel_time
         time_step = 15 * secs_in_minute
 
-        weatherer = HalfLifeWeatherer(half_lives=(time_step, ))
+        hl = tuple([time_step] * test_sc['mass_components'].shape[1])
+        weatherer = HalfLifeWeatherer(half_lives=hl)
         weatherer.prepare_for_model_run()
         weatherer.prepare_for_model_step(test_sc, time_step, model_time)
 
