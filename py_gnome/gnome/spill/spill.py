@@ -58,6 +58,8 @@ class Spill(serializable.Serializable):
                  on=True,
                  amount=None,   # could be volume or mass
                  units=None,
+                 frac_coverage=1.0,
+                 frac_water=0.0,
                  name='Spill'):
         """
         Spills used by the gnome model. It contains a release object, which
@@ -79,6 +81,10 @@ class Spill(serializable.Serializable):
         :type amount: float
         :param units=None: must provide units for amount spilled
         :type units: str
+        :param frac_water=0.0: fractional water content in the emulsion
+        :type frac_water: float
+        :param frac_coverage=1.0: fraction of area covered by oil
+        :type frac_coverage: float
         :param name='Spill': a name for the spill
         :type name: str
 
@@ -107,6 +113,8 @@ class Spill(serializable.Serializable):
             else:
                 self.units = units
 
+        self.frac_coverage = frac_coverage
+        self.frac_water = frac_water
         self.name = name
 
     def __repr__(self):

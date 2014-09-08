@@ -15,33 +15,36 @@ from gnome.environment import constants, water
 class Evaporation(Process, Serializable):
     def __init__(self,
                  wind,
-                 frac_water=0.0,
-                 frac_area=1.0,
                  **kwargs):
         '''
-        :param frac_water: fractional water content in the emulsion
-        :param frac_coverage: fraction of area covered by oil
+        :param wind: wind object for obtaining speed at specified time
+        :type wind: Wind API, specifically must have get_value(time) method
         '''
         self.wind = wind
-        self.frac_water = frac_water
-        self.frac_area = frac_area
         super(Evaporation, self).__init__(**kwargs)
         self.array_types.update({'mass_components': mass_components,
                                  'density': density,
                                  'thickness': thickness,
                                  'mol': mol,
-                                 'evap_decay_constant': eval_decay_constant})
+                                 'evap_decay_constant': evap_decay_constant})
         self.vapor_pressure = None
         self._decay = 0.0   # initialize to no decay
 
     def prepare_for_model_step(self, sc, time_step, model_time):
         '''
-        Set arrays used by evaporation module for this timestep:
+        Set/update arrays used by evaporation module for this timestep:
 
-            - set vapor_pressure attribute for saturates/aromatics
-              if it is None, so this only happens in first step
-            - total number of moles
-            - exponential decay factor for modeling evaporation
+            - 'mol': total number of moles
+            - 'evap_decay_rate': exponential decay factor for evaporation
+            - 'thickness': still need a way to compute LE thickness
+            - 'density': update this from the OilProps
+
+        .. note::
+        The restricting term due to liquid diffusion limitations on the more
+        volatile hydrocarbons, slowing their access to the air-oil interface is
+        modeled as (1.0 - water_fraction_of_emulsion), per Robert Jones
+        If this is used by any other process, then move it to Spill object. Or
+        if we want to model it differently, then refactor it out of here
         '''
 
         # for now temp is fixed so compute vapor_pressure once
@@ -49,22 +52,25 @@ class Evaporation(Process, Serializable):
                                                         time_step,
                                                         model_time)
         K = self._mass_transport_coeff(model_time)
-        f_diff = 1.0 - self.frac_water
+
         for spill in sc.spills:
+            f_diff = (1.0 - spill.frac_water)
             self._set_vapor_pressure(spill)
             mask = sc.get_spill_mask(spill)
             mw = spill.get('substance').molecular_weight
             sc['thickness'][mask] = self._compute_le_thickness()
-            sc['density'][mask] = spill.get('substance').density
+            sc['density'][mask] = \
+                spill.get('substance').get_density(temp=water['temperature'])
             sc['mol'][mask] = \
                 np.sum(sc['mass_components'][mask, :len(mw)]/mw, 1)
             le_area = \
                 (sc['mass'][mask]/sc['density'][mask]) / sc['thickness'][mask]
 
-            self._decay = (le_area * K * sc.get('vapor_pressure') *
-                sc['mass_components'][mask, :])/(constants['gas_constant'] *
-                water['temperature'] * sc['mol'][mask]) *
-                self.frac_area * (1 - self.frac_water)
+            d_numer = (le_area * K * sc.get('vapor_pressure') *
+                       spill.frac_coverage * f_diff)
+            d_denom = (constants['gas_constant'] * water['temperature'] *
+                       sc['mol'][mask])
+            sc['evap_decay_rate'][mask, :] = d_numer/d_denom
 
     def _compute_le_thickness(self):
         '''
