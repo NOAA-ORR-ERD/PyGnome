@@ -9,18 +9,22 @@ from gnome.array_types import (mass_components,
 from gnome.utilities.serializable import Serializable
 
 from gnome.movers.movers import Process
-from gnome.environment import constants, water
+from gnome.environment import constants, water, constant_wind
 
 
 class Evaporation(Process, Serializable):
     def __init__(self,
-                 wind,
+                 wind=None,
                  **kwargs):
         '''
         :param wind: wind object for obtaining speed at specified time
         :type wind: Wind API, specifically must have get_value(time) method
         '''
+        if wind is None:
+            wind = constant_wind(0, 0)
+
         self.wind = wind
+
         super(Evaporation, self).__init__(**kwargs)
         self.array_types.update({'mass_components': mass_components,
                                  'density': density,

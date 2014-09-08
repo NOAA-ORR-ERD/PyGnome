@@ -240,8 +240,6 @@ class SpillContainer(SpillContainerData):
                              'status_codes': array_types.status_codes,
                              'spill_num': array_types.spill_num,
                              'id': array_types.id,
-                             #'rise_vel': array_types.rise_vel,
-                             #'droplet_diameter': array_types.droplet_diameter,
                              'mass': array_types.mass,
                              'age': array_types.age}
         self._data_arrays = {}
