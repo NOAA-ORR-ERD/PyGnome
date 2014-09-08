@@ -62,7 +62,7 @@ def boiling_point(max_cuts, api):
     return bp
 
 
-def mw(bp, component):
+def molecular_weight(bp, component):
     '''
     return the molecular weight of the pseudocomponents (mw_i) given the
     boiling points. It returns the mw_i for saturates and aromatic components
@@ -377,13 +377,13 @@ class OilProps(object):
 
     def _component_mw(self):
         'estimate molecular weights of components'
-        self.mw = [float('nan')] * self.num_components  # initialize to 'nan'
+        self.molecular_weight = [float('nan')] * self.num_components  # initialize to 'nan'
         for ix, bp in enumerate(self.boiling_point):
             if bp is 'inf' or bp is 'nan':
                 continue
 
             if ix % 2 == 0:
-                self.mw[ix] = mw(bp, 'saturate')
+                self.molecular_weight[ix] = molecular_weight(bp, 'saturate')
             else:
                 # will define a different function for mw_aromatics
-                self.mw[ix] = mw(bp, 'aromatic')
+                self.molecular_weight[ix] = molecular_weight(bp, 'aromatic')
