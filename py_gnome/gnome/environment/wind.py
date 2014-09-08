@@ -489,6 +489,19 @@ class Wind(Environment, serializable.Serializable):
                             )
         file_.close()   # just incase we get issues on windows
 
+    def get_value(self, time):
+        '''
+        Return the value at specified time and location. Wind timeseries are
+        independent of location; however, a gridded datafile may require
+        location so this interface may get refactored if it needs to support
+        different types of wind data. It returns the data in SI units (m/s)
+        in 'r-theta' format (speed, direction)
+
+        .. note:: It invokes get_timeseries(..) function
+        '''
+        data = self.get_timeseries(time, 'm/s', 'r-theta')
+        return tuple(data[0]['value'])
+
 
 def constant_wind(speed, direction, units='m/s'):
     """

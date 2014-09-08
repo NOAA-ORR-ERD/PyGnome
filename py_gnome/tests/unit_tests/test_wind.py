@@ -156,7 +156,7 @@ def test_init_timeseries():
 
 def test_wind_circ_fixture(wind_circ):
     """
-    check 'uv' values for wind_circ fixture are correct
+    check timeseries of wind object created in 'wind_circ'
     """
     wm = wind_circ['wind']
 
@@ -175,6 +175,15 @@ def test_wind_circ_fixture(wind_circ):
 
     assert np.all(gtime_val.time == wind_circ['uv'].time)
     assert np.allclose(gtime_val.value, expected, atol, rtol)
+
+
+def test_get_value(wind_circ):
+    'test get_value(..) function'
+    wind = wind_circ['wind']
+    for rec in wind_circ['rq']:
+        time = rec['time']
+        val = wind.get_value(time)
+        assert all(np.isclose(rec['value'], val))
 
 
 @pytest.fixture(scope='module')
