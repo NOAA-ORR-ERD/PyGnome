@@ -79,6 +79,7 @@ class ElementType(Serializable):
         else:
             self.substance = substance
 
+        self.substance.temperature = water['temperature']
         if self.substance.num_components != mass_components.shape[0]:
             self._update_mass_components_at()
 
