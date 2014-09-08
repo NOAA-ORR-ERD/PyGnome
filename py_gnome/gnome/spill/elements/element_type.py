@@ -8,20 +8,40 @@ These are properties that are spill specific like:
   'weathering' element_types would use droplet_size, densities, mass?
 '''
 import copy
+from math import exp, log
 
 import gnome    # required by new_from_dict
 from gnome.utilities.serializable import Serializable
-from gnome.array_types import mass_components
+from gnome.array_types import mass_components, evap_decay_constant
 from .initializers import (InitRiseVelFromDropletSizeFromDist,
                            InitRiseVelFromDist,
                            InitWindages,
                            InitMassFromSpillAmount,
                            InitMassFromPlume)
+from gnome.environment import water, atmos
 from oil_library import (get_oil, oil_from_density)
 
 from gnome.persist import base_schema
 
 """ ElementType classes"""
+
+
+def vapor_pressure(bp):
+    '''
+    water_temp and boiling point units are Kelvin
+    returns the vapor_pressure in SI units (Pascals)
+    '''
+    D_Zb = 0.97
+    R_cal = 1.987  # calories
+
+    D_S = 8.75 + 1.987 * log(bp)
+    C_2i = 0.19 * bp - 18
+
+    var = 1. / (bp - C_2i) - 1. / (water['temperature'] - C_2i)
+    ln_Pi_Po = D_S * (bp - C_2i) ** 2 / (D_Zb * R_cal * bp) * var
+    Pi = exp(ln_Pi_Po) * atmos['pressure']
+
+    return Pi
 
 
 class ElementType(Serializable):
@@ -59,15 +79,22 @@ class ElementType(Serializable):
         else:
             self.substance = substance
 
-        if self.substance.num_pc != mass_components.shape[0]:
+        if self.substance.num_components != mass_components.shape[0]:
             self._update_mass_components_at()
+
+        # for now add vapor_pressure here
+        self.vapor_pressure = [vapor_pressure(bp)
+                               for bp in self.substance.boiling_point]
 
     def _update_mass_components_at(self):
         'update mass_components ArrayType per the number of components'
-        mass_components.shape = (self.substance.num_pc,)
-        i_val = [0.] * self.substance.num_pc
+        mass_components.shape = (self.substance.num_components,)
+        i_val = [0.] * (self.substance.num_components)
         i_val[0] = 1.
         mass_components.initial_value = tuple(i_val)
+        evap_decay_constant.shape = (self.substance.num_components,)
+        mass_components.initial_value = tuple([0.] *
+                                            (self.substance.num_components))
 
     def __repr__(self):
         return ('{0.__class__.__module__}.{0.__class__.__name__}('
