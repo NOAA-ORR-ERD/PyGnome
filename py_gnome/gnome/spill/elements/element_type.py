@@ -17,9 +17,10 @@ from .initializers import (InitRiseVelFromDropletSizeFromDist,
                            InitRiseVelFromDist,
                            InitWindages,
                            InitMassFromSpillAmount,
+                           InitArraysFromOilProps,
                            InitMassFromPlume)
 from gnome.environment import water, atmos
-from oil_library import (get_oil, oil_from_density)
+from oil_library import get_oil
 
 from gnome.persist import base_schema
 
@@ -206,21 +207,47 @@ class ElementType(Serializable):
         return dict_
 
 
-def floating(windage_range=(.01, .04), windage_persist=900):
+def floating(windage_range=(.01, .04),
+             windage_persist=900,
+             substance=None):
     """
     Helper function returns an ElementType object containing 'windages'
     initializer with user specified windage_range and windage_persist.
     """
-    return ElementType([InitWindages(windage_range, windage_persist)])
+    init = [InitWindages(windage_range, windage_persist)]
+    if substance:
+        ElementType(init, substance)
+    else:
+        return ElementType(init)
 
 
-def floating_mass(windage_range=(.01, .04), windage_persist=900):
+def floating_mass(windage_range=(.01, .04),
+                  windage_persist=900,
+                  substance=None):
     """
     Helper function returns an ElementType object containing 'windages'
     initializer with user specified windage_range and windage_persist.
     """
-    return ElementType([InitWindages(windage_range, windage_persist),
-                        InitMassFromSpillAmount()])
+    init = [InitWindages(windage_range, windage_persist),
+            InitMassFromSpillAmount()]
+    if substance:
+        return ElementType(init, substance)
+    else:
+        return ElementType(init)
+
+
+def floating_weathering(windage_range=(.01, .04),
+                        windage_persist=900,
+                        substance=None):
+    '''
+    Use InitArraysFromOilProps()
+    '''
+    init = [InitWindages(windage_range, windage_persist),
+            InitArraysFromOilProps()]
+    if substance:
+        return ElementType(init, substance)
+    else:
+        return ElementType(init)
 
 
 def plume(distribution_type='droplet_size',

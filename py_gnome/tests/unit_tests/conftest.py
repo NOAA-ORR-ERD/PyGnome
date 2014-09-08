@@ -327,7 +327,7 @@ def sample_vertical_plume_spill():
     return Spill(vps)
 
 
-@pytest.fixture(scope='module')
+@pytest.fixture(scope='function')
 def sample_sc_no_uncertainty():
     """
     Sample spill container with 2 point_line_release_spill spills:

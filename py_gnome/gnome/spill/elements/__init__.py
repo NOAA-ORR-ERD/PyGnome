@@ -1,4 +1,7 @@
-from element_type import ElementType, floating, plume, floating_mass
+from element_type import (ElementType,
+                          floating, plume,
+                          floating_mass,
+                          floating_weathering)
 from initializers import (InitWindages,
                           InitArraysFromOilProps,
                           InitMassFromSpillAmount,
@@ -7,6 +10,7 @@ from initializers import (InitWindages,
                           InitRiseVelFromDropletSizeFromDist,
                           )
 __all__ = [ElementType, floating, plume,
+           floating_weathering,
            InitWindages,
            InitArraysFromOilProps,
            InitMassFromSpillAmount,
