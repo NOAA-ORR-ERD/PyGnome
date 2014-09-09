@@ -165,9 +165,10 @@ class InitWindages(InitBaseClass, Serializable):
                     data_arrays['windages'][-num_new_particles:])
 
 
-class InitMassComponentsFromOilProps(InitBaseClass, Serializable):
+class InitArraysFromOilProps(InitBaseClass, Serializable):
     '''
-       Initialize the mass components based on given Oil properties
+       Initialize multiple data_arrays from OilProps:
+       'mass_components', 'mass', 'density'
     '''
     _state = copy.deepcopy(InitBaseClass._state)
     _schema = base_schema.ObjType
@@ -177,9 +178,10 @@ class InitMassComponentsFromOilProps(InitBaseClass, Serializable):
         Sets 'mass_components' and 'mass' arrays - it needs the 'mass' array
         so currently it sets it.
         """
-        super(InitMassComponentsFromOilProps, self).__init__()
+        super(InitArraysFromOilProps, self).__init__()
         self.array_types.update({'mass_components': array_types.mass_components,
-                                 'mass': array_types.mass})
+                                 'mass': array_types.mass,
+                                 'density': array_types.density})
         self.name = 'mass_components'
 
     def initialize(self, num_new_particles, spill, data_arrays, substance):
@@ -206,49 +208,12 @@ class InitMassComponentsFromOilProps(InitBaseClass, Serializable):
         le_mass = spill.get_mass('kg') / spill.release.num_elements
         data_arrays['mass'][-num_new_particles:] = le_mass
 
-        mass_fractions = np.asarray(zip(*substance.mass_components)[0],
+        mass_fractions = np.asarray(substance.mass_fraction,
                                     dtype=np.float64)
         masses = mass_fractions * le_mass
 
         data_arrays['mass_components'][-num_new_particles:] = masses
-
-
-class InitHalfLivesFromOilProps(InitBaseClass, Serializable):
-    '''
-       Initialize the half-lives of our mass components based on given Oil
-       properties.
-    '''
-    _state = copy.deepcopy(InitBaseClass._state)
-    _schema = base_schema.ObjType
-
-    def __init__(self):
-        """
-        update array_types
-        """
-        super(InitHalfLivesFromOilProps, self).__init__()
-        self.array_types.update({'half_lives': array_types.half_lives})
-        self.name = 'half_lives'
-
-    def initialize(self, num_new_particles, spill, data_arrays, substance):
-        '''
-           :param int num_new_particles: Number of new particles to initialize
-           :param Spill spill: The spill object from which the new particles
-                               are coming from.
-           :param data_arrays: The numpy arrays that make up the collective
-                               properties of our particles.
-           :type data_arrays: dict(<name>: <np.ndarray>,
-                                   ...
-                                   )
-           :param OilProps substance: The Oil Properties associated with the
-                                      spill.
-                                      (TODO: Why is this not simply contained
-                                             in the Spill??
-                                             Why the extra argument??)
-        '''
-        half_lives = np.asarray(zip(*substance.mass_components)[1],
-                                dtype=np.float64)
-
-        data_arrays['half_lives'][-num_new_particles:] = half_lives
+        data_arrays['density'][-num_new_particles:] = substance.density
 
 
 # do following two classes work for a time release spill?

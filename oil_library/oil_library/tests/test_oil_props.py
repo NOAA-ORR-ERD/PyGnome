@@ -4,6 +4,8 @@ Tests for oil_props module in gnome.db.oil_library
 
 import pytest
 
+from numpy import isclose
+
 from oil_library import get_oil, oil_from_density
 
 from hazpy import unit_conversion
@@ -35,7 +37,7 @@ def test_OilProps_sample_oil(oil, density, units):
     data entered correctly and unit conversion is correct """
 
     o = get_oil(oil)
-    assert o.get_density(units) == density
+    assert isclose(o.get_density(units), density, atol=1e-3)
     assert o.name == oil
 
 
@@ -45,7 +47,12 @@ def test_OilPropsFromDensity(oil, density, units):
     """ make sure data entered correctly and unit conversion is correct """
 
     o = oil_from_density(density, oil, units)
-    assert o.get_density(units) == density
+
+    # the temperature must be the same to get a computed density that
+    # is close to our input
+    o.temperature = 273.15 + 15
+
+    assert isclose(o.get_density(units), density)
     assert o.name == oil
 
 
@@ -54,3 +61,21 @@ def test_OilProps_DBquery(oil, api):
     """ test dbquery worked for an example like FUEL OIL NO.6 """
     o = get_oil(oil)
     assert o.api == api
+
+
+@pytest.mark.parametrize(('oil', 'temp', 'viscosity'),
+                         [('FUEL OIL NO.6', 311.15, 0.000383211),
+                          ('FUEL OIL NO.6', 288.15, 0.045808748),
+                          ('FUEL OIL NO.6', 280.0, 0.045808749)
+                          ])
+def test_OilProps_Viscosity(oil, temp, viscosity):
+    """
+        test dbquery worked for an example like FUEL OIL NO.6
+        Here are the measured viscosities:
+           [<KVis(meters_squared_per_sec=1.04315461221, ref_temp=273.15, weathering=0.0)>,
+            <KVis(meters_squared_per_sec=0.0458087487284, ref_temp=288.15, weathering=0.0)>,
+            <KVis(meters_squared_per_sec=0.000211, ref_temp=323.15, weathering=0.0)>]
+    """
+    o = get_oil(oil)
+    o.temperature = temp
+    assert isclose(o.viscosity, viscosity)

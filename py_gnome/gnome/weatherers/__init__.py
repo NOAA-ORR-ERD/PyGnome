@@ -1,4 +1,8 @@
 
-from core import Weatherer
+from core import Weatherer, HalfLifeWeatherer
+from evaporation import Evaporation, vapor_pressure
 
-__all__ = [Weatherer]
+__all__ = [Weatherer,
+           HalfLifeWeatherer,
+           Evaporation,
+           vapor_pressure]

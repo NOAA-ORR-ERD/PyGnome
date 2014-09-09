@@ -692,7 +692,15 @@ class ComponentMoverSchema(ObjType, ProcessSchema):
     #scale = SchemaNode(Bool())
     #ref_point = WorldPoint(missing=drop)
     ref_point = LongLat(missing=drop)
-    #scale_value = SchemaNode(Float())
+    #scale_value = SchemaNode(Float()) 
+    pat1_angle = SchemaNode(Float(), missing=drop)
+    pat1_speed = SchemaNode(Float(), missing=drop)
+    pat1_speed_units = SchemaNode(Float(), missing=drop)
+    pat1_scale_to_value = SchemaNode(Float(), missing=drop)
+    pat2_angle = SchemaNode(Float(), missing=drop)
+    pat2_speed = SchemaNode(Float(), missing=drop)
+    pat2_speed_units = SchemaNode(Float(), missing=drop)
+    pat2_scale_to_value = SchemaNode(Float(), missing=drop)
 
 
 class ComponentMover(CyMover, serializable.Serializable):

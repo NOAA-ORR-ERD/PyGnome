@@ -1,0 +1,7 @@
+*.pyc
+*.swp
+*~
+
+/OilLibrary.egg-info
+/build
+/*.egg

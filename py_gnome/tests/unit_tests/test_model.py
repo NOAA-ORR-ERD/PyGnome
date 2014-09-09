@@ -26,7 +26,7 @@ from gnome.spill.elements import floating
 
 from gnome.movers import SimpleMover, RandomMover, WindMover, CatsMover
 
-from gnome.weatherers import Weatherer
+from gnome.weatherers import HalfLifeWeatherer
 from gnome.outputters import Renderer, GeoJson
 
 basedir = os.path.dirname(__file__)
@@ -795,13 +795,13 @@ def test_all_weatherers_in_model(model):
     '''
     test model run with weatherer
     '''
-    weatherer = Weatherer()
+    weatherer = HalfLifeWeatherer()
     model.weatherers += weatherer
     print 'model.weatherers:', model.weatherers
 
     model.full_run()
 
-    expected_keys = {'mass_components', 'half_lives'}
+    expected_keys = {'mass_components'}
     assert expected_keys.issubset(model.spills.LE_data)
 
 

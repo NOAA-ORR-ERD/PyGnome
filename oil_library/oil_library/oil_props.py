@@ -10,19 +10,12 @@ object used to initialize and OilProps object
 
 Not sure at present if this needs to be serializable?
 '''
-
-import math
-from collections import namedtuple
+from math import exp, log
 
 from hazpy import unit_conversion
 uc = unit_conversion
 
 from .models import KVis
-
-MassComponent = namedtuple('MassComponent',
-                           ''' fraction,
-                               halflife,
-                           ''')
 
 
 def boiling_point(num_pc, api):
@@ -37,7 +30,7 @@ def boiling_point(num_pc, api):
     boiling point units of Kelvin
     '''
     T_o = 457.16 - 3.3447 * api
-    dT_dF = 1356.7 - 247.36 * math.log(api)
+    dT_dF = 1356.7 - 247.36 * log(api)
 
     # bp = [T_o + dT_dF * ((ix + 0.5)/num_pc) for ix in range(num_pc)]
     bp = [float('nan')] * num_pc
@@ -48,32 +41,17 @@ def boiling_point(num_pc, api):
     return bp
 
 
-def vapor_pressure_ratio(bp, water_temp, P_atmos=101325.0):
-    '''
-    water_temp and boiling point units are Kelvin
-    returns the ratio: vapor_pressure/atmospheric_pressure
-    '''
-    D_Zb = 0.97
-    R_cal = 1.987  # calories
-
-    D_S = 8.75 + 1.987 * math.log(bp)
-    C_2i = 0.19 * bp - 18
-
-    var = 1. / (bp - C_2i) - 1. / (water_temp - C_2i)
-    ln_Pi_Po = D_S * (bp - C_2i) ** 2 / (D_Zb * R_cal * bp) * var
-    Pi_atmos = math.exp(ln_Pi_Po)
-
-    return Pi_atmos
-
-
-def mw_saturate(bp):
+def mw(bp, component):
     '''
     return the molecular weight of the pseudocomponents (mw_i) given the
     boiling points. It returns the mw_i for saturates and aromatic components
     '''
-    mw_s = (0.04132 - 1.985e-4 * bp + (9.494e-7 * bp ** 2))
+    if component == 'saturate':
+        mw = (0.04132 - 1.985e-4 * bp + (9.494e-7 * bp ** 2))
+    elif component == 'aromatic':
+        mw = (0.04132 - 1.985e-4 * bp + (9.494e-7 * bp ** 2))
 
-    return mw_s
+    return mw
 
 
 class OilProps(object):
@@ -98,9 +76,11 @@ class OilProps(object):
 
     def __init__(self, oil_, temperature=311.15):
         '''
-        If oil_ is amongst self._sample_oils dict, then use the properties
-        defined here. If not, then query the Oil database to check if oil_
-        exists and get the properties from DB.
+        Extends the raw Oil object to include properties required by
+        weathering processes. If oil_ is not pulled from database or user may
+        wish to use simple half life weatherer, in this case, there is no need
+        to carry around more than one psuedo-component. Let user set num_pc
+        if desired, but only during initialization.
 
         :param oil_: Oil object that maps to entity in OilLib database
         :type oil_: Oil object
@@ -108,22 +88,16 @@ class OilProps(object):
                            38 degrees Celcius (311.15 degrees Kelvin)
         '''
         self._r_oil = oil_
-        self.num_pc = 5     # probably determine this from data
-        #======================================================================
-        # self.mass_components = [0.] * self.num_pc
-        # self.mass_components[0] = 1.
-        # self.hl = [float('inf')] * self.num_pc
-        # self.hl[0] = 15.*60
-        #======================================================================
-        self._temperature = temperature
 
-        self.boiling_point = boiling_point(self.num_pc, self.get('api'))
-        self.vapor_pressure_ratio = []
-        self.mw_saturates = []
-        for bp in self.boiling_point:
-            self.vapor_pressure_ratio.append(
-                vapor_pressure_ratio(bp, self.temperature))
-            self.mw_saturates.append(mw_saturate(bp))
+        # probably determine this from data?
+        # Default mass components:
+        #    5 saturates, 5 aromatics, resins, asphaltenes
+        #
+        # mass_fraction =
+        # [m0_s, m0_a, m1_s, m1_a, ..., m_resins, m_asphaltenes]
+        self._num_pc = 12
+        self._temperature = temperature
+        self._update_component_props()
 
     def __repr__(self):
         return ('{0.__class__.__module__}.{0.__class__.__name__}('
@@ -132,9 +106,10 @@ class OilProps(object):
 
     density = property(lambda self: self.get_density())
     viscosity = property(lambda self: self.get_viscosity())
-    temperature = property(lambda self: self.get_temperature())
-    name = property(lambda self: self._r_oil.name,
-                    lambda self, val: setattr(self._r_oil, 'name', val))
+    temperature = property(lambda self: self.get_temperature(),
+                           lambda self, val: self.set_temperature(val))
+    name = property(lambda self: self._r_oil.oil_name,
+                    lambda self, val: setattr(self._r_oil, 'oil_name', val))
     api = property(lambda self: self.get('api'))
 
     def get(self, prop):
@@ -144,48 +119,39 @@ class OilProps(object):
     def get_temperature(self, units='K'):
         return uc.convert('Temperature', 'K', units, self._temperature)
 
-    def set_temperature(self, value, units):
+    def set_temperature(self, value, units='K'):
         temp = uc.convert('Temperature', units, 'K', value)
         self._temperature = temp
-        # update dependencies
-        self.vapor_pressure = []
-        for ix, bp in enumerate(self.boiling_point):
-            self.vapor_pressure_ratio.append(
-                vapor_pressure_ratio(bp, self._temperature))
-
-    @property
-    def mass_components(self):
-        '''
-           Gets the mass components of our _r_oil
-           - Set 'mass_components' array based on mass fractions
-             (distillation cuts?) that are found in the _r_oil library
-           - Set 'half-lives' array based on ???
-           TODO: Right now this is just a stub that returns a hardcoded value
-                 for testing purposes.
-                 - Try to query our distillation cuts and see if they are
-                   usable.
-                 - Figure out where we will get the half-lives data.
-        '''
-        mc = (1., 0., 0., 0., 0.)
-        hl = ((15. * 60), float('inf'),
-              float('inf'), float('inf'),
-              float('inf'))
-        return [MassComponent(*n) for n in zip(mc, hl)]
 
     def get_density(self, units='kg/m^3'):
         '''
-        :param units: optional input if output units should be something other
-                      than kg/m^3
-        :return: scalar Density.  Default units: (kg/m^3)
+            We will prefer to calculate density from the empirical densities
+            associated with the oil record.
+            If no density values exist, estimate it from API
+
+            :param units: optional input if output units should be something
+                          other than kg/m^3
+            :return: scalar Density.  Default units: (kg/m^3)
         '''
 
-        if self.api is None:
-            raise ValueError("Oil with name '{0}' does not contain 'api'"
-                             " property.".format(self._r_oil.name))
+        if self._r_oil.densities:
+            # calculate our density at temperature
+            density_rec = sorted([(d, abs(d.ref_temp_k - self.temperature))
+                                  for d in self._r_oil.densities],
+                                 key=lambda d: d[1])[0][0]
+            d_ref = density_rec.kg_m_3
+            t_ref = density_rec.ref_temp_k
+            k_p1 = 0.008
 
-        # since Oil object can have various densities depending on temperature,
-        # lets return API in correct units
-        return uc.convert('Density', 'API degree', units, self.api)
+            d_0 = d_ref / (1 - k_p1 * (t_ref - self.temperature))
+        elif self.api != None:
+            # calculate our density from api
+            d_0 = 141.5 / (131.5 + self.api) * 1000
+        else:
+            raise ValueError("Oil with name '{0}' does not contain 'api'"
+                             " property.".format(self._r_oil.oil_name))
+
+        return uc.convert('Density', 'kg/m^3', units, d_0)
 
     @property
     def viscosities(self):
@@ -205,10 +171,11 @@ class OilProps(object):
         # first we get the kinematic viscosities if they exist
         ret = []
         if self._r_oil.kvis:
-            ret = [(k.meters_squared_per_sec,
-                    k.ref_temp,
+            ret = [(k.m_2_s,
+                    k.ref_temp_k,
                     (0.0 if k.weathering == None else k.weathering))
-                    for k in self._r_oil.kvis]
+                    for k in self._r_oil.kvis
+                    if k.ref_temp_k != None]
 
         if self._r_oil.dvis:
             # If we have any DVis records, we need to get the
@@ -219,12 +186,12 @@ class OilProps(object):
             # the closest temperature in order to calculate the kinematic.
             # There are lots of oil entries where the dvis do not have
             # matching densities for (temp, weathering)
-            densities = [(d.kg_per_m_cubed,
-                          d.ref_temp,
+            densities = [(d.kg_m_3,
+                          d.ref_temp_k,
                           (0.0 if d.weathering == None else d.weathering))
                          for d in self._r_oil.densities]
 
-            for v, t, w in [(d.kg_per_msec, d.ref_temp, d.weathering)
+            for v, t, w in [(d.kg_ms, d.ref_temp_k, d.weathering)
                             for d in self._r_oil.dvis]:
                 if w == None:
                     w = 0.0
@@ -270,9 +237,79 @@ class OilProps(object):
         measured temperatures.  We need to use the ones closest to our
         current temperature and calculate our viscosity from it.
         '''
+        if self.viscosities:
+            # first get our v_max
+            k_v2 = 5000.0
+            pour_point = (self._r_oil.pour_point_max_k
+                          if self._r_oil.pour_point_max_k != None
+                          else self._r_oil.pour_point_min_k)
+            if pour_point:
+                visc = sorted([(v, abs(v.ref_temp_k - pour_point))
+                                for v in self.viscosities
+                                if v != None],
+                               key=lambda v: v[1])[0][0]
+                v_ref = visc.m_2_s
+                t_ref = visc.ref_temp_k
 
-        print 'OilProps.get_viscosity(): Oil Viscosities:', self.viscosities
+                v_max = v_ref * exp(k_v2 / pour_point - k_v2 / t_ref)
+            else:
+                v_max = None
 
-        # since Oil object can have various densities depending on temperature,
-        # lets return API in correct units
-        return uc.convert('Kinematic Viscosity', 'm^2/s', units, self.api)
+            # now get our v_0
+            visc = sorted([(v, abs(v.ref_temp_k - self.temperature))
+                            for v in self.viscosities],
+                           key=lambda v: v[1])[0][0]
+            v_ref = visc.m_2_s
+            t_ref = visc.ref_temp_k
+
+            if (self.temperature - t_ref) == 0:
+                v_0 = v_ref
+            else:
+                v_0 = v_ref * exp(k_v2 / self.temperature - k_v2 / t_ref)
+
+            if v_max:
+                return uc.convert('Kinematic Viscosity', 'm^2/s', units,
+                                  v_0 if v_0 <= v_max else v_max)
+            else:
+                return uc.convert('Kinematic Viscosity', 'm^2/s', units,
+                                  v_0)
+        else:
+            return None
+
+    @property
+    def num_pc(self):
+        return self._num_pc
+
+    def _update_component_props(self):
+        '''
+        if number of psuedo components changes, update related properties
+        self.mass_fraction defined as:
+        [m0_s, m0_a, m1_s, m1_a, ..., m_resins, m_asphaltenes]
+        '''
+        # mass components are for [saturates, aromatics, resins, asphaltenes]
+        self.mass_fraction = [0.] * (self.num_pc)
+        self.mass_fraction[0] = 1.
+
+        api = self.get('api')
+        if not (api and api > 0.0):
+            orig_temp = self._temperature
+            self._temperature = 273.15 + 15
+
+            api = (141.5 * 1000 / self.density) - 131.5
+
+            self._temperature = orig_temp
+
+        self.boiling_point = boiling_point(self.num_pc - 2, api)
+
+        self.mw = []
+
+        for ix, bp in enumerate(self.boiling_point):
+            if ix % 2 == 0:
+                self.mw.append(mw(bp, 'saturate'))
+            else:
+                # will define a different function for mw_aromatics
+                self.mw.append(mw(bp, 'aromatic'))
+
+        # are the boiling points of resins and asphaltenes infinite?
+        # append these after we have the molecular weights for sat/aromatics
+        self.boiling_point.extend([float('inf'), float('inf')])

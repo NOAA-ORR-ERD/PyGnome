@@ -2,12 +2,13 @@ import os
 from itertools import chain
 from collections import namedtuple
 
-import sqlalchemy
+from sqlalchemy import create_engine
+from sqlalchemy.orm.exc import NoResultFound
 
 from hazpy import unit_conversion
 uc = unit_conversion
 
-from oil_library.models import Oil, DBSession
+from oil_library.models import Oil, Density, DBSession
 from oil_library.oil_props import OilProps
 
 
@@ -92,7 +93,7 @@ def get_oil(oil_name):
         '''
 
         # not sure we want to do it this way - but let's use for now
-        engine = sqlalchemy.create_engine('sqlite:///' + _db_file)
+        engine = create_engine('sqlite:///' + _db_file)
 
         # let's use global DBSession defined in oillibrary
         # alternatively, we could define a new scoped_session
@@ -103,9 +104,9 @@ def get_oil(oil_name):
         DBSession.bind = engine
 
         try:
-            oil_= DBSession.query(Oil).filter(Oil.name == oil_name).one()
+            oil_ = DBSession.query(Oil).filter(Oil.oil_name == oil_name).one()
             return OilProps(oil_)
-        except sqlalchemy.orm.exc.NoResultFound, ex:
+        except NoResultFound, ex:
             # or sqlalchemy.orm.exc.MultipleResultsFound as ex:
             ex.message = ("oil with name '{0}' not found in database. "
                           "{1}".format(oil_name, ex.message))
@@ -140,5 +141,13 @@ def oil_from_density(density, name='user_oil', units='kg/m^3'):
     else:
         api = density
 
+    d_ref = uc.convert('Density', units, 'kg/m^3', density)
+    t_ref = 273.15 + 15
+    density_obj = Density(**{'(kg/m^3)': d_ref,
+                             'Ref Temp (K)': t_ref,
+                             'Weathering': 0.0
+                             })
+
     oil_ = Oil(**{'Oil Name': name, 'API': api})
+    oil_.densities.append(density_obj)
     return OilProps(oil_)
