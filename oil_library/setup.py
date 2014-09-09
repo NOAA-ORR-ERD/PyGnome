@@ -37,6 +37,7 @@ requires = [
     'SQLAlchemy >= 0.9.1',
     'transaction',
     'zope.sqlalchemy',
+    'awesome-slugify',
     'hazpy.unit_conversion',
     'pytest'
     ]
