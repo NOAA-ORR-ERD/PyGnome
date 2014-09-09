@@ -200,24 +200,26 @@ def test_serialize_deserialize(tide):
 
     c_cats.update_from_dict(dict_)
 
-d_cats = {'scale': False,
-          'scale_refpoint': (90, 90, 10),
-          'scale_value': 5,
-          'uncertain_duration': 48,
-          'uncertain_time_delay': 0,
-          'up_cur_uncertain': 0,
-          'down_cur_uncertain': 0,
-          'right_cur_uncertain': 0,
-          'left_cur_uncertain': 0,
-          'uncertain_eddy_diffusion': 4,
-          'uncertain_eddy_v0': 0}
-
-#d_cats_td = dict(d_cats)
-#d_cats_td['tide'] = {}
-
-
-@pytest.mark.parametrize("tide", (None, td))
-def test_update_from_dict():
-    c_cats = CatsMover(curr_file, tide=td)
-    toserial = c_cats.serialize('webapi')
-    dict_ = c_cats.deserialize(toserial)
+#==============================================================================
+# d_cats = {'scale': False,
+#           'scale_refpoint': (90, 90, 10),
+#           'scale_value': 5,
+#           'uncertain_duration': 48,
+#           'uncertain_time_delay': 0,
+#           'up_cur_uncertain': 0,
+#           'down_cur_uncertain': 0,
+#           'right_cur_uncertain': 0,
+#           'left_cur_uncertain': 0,
+#           'uncertain_eddy_diffusion': 4,
+#           'uncertain_eddy_v0': 0}
+# 
+# #d_cats_td = dict(d_cats)
+# #d_cats_td['tide'] = {}
+# 
+# 
+# @pytest.mark.parametrize("tide", (None, td))
+# def test_update_from_dict():
+#     c_cats = CatsMover(curr_file, tide=td)
+#     toserial = c_cats.serialize('webapi')
+#     dict_ = c_cats.deserialize(toserial)
+#==============================================================================

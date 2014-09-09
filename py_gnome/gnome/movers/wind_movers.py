@@ -32,7 +32,6 @@ class WindMoversBaseSchema(ObjType, ProcessSchema):
     uncertain_time_delay = SchemaNode(Float(), missing=drop)
     uncertain_speed_scale = SchemaNode(Float(), missing=drop)
     uncertain_angle_scale = SchemaNode(Float(), missing=drop)
-    uncertain_angle_units = SchemaNode(String(), missing=drop)
 
 
 class WindMoverSchema(WindMoversBaseSchema):
