@@ -422,10 +422,6 @@ class SpillContainer(SpillContainerData):
 
     __repr__ = __str__
 
-    def spill_by_index(self, index):
-        'return the spill object from ordered collection at index'
-        return self.spills[index]
-
 
 class SpillContainerPairData(object):
     """
@@ -667,9 +663,9 @@ class SpillContainerPair(SpillContainerPairData):
         '''return either the forecast spill or the uncertain spill at
         specified index'''
         if uncertain:
-            return self._u_spill_container.spill_by_index(index)
+            return self._u_spill_container.spills[index]
         else:
-            return self._spill_container.spill_by_index(index)
+            return self._spill_container.spills[index]
 
     @property
     def num_released(self):
