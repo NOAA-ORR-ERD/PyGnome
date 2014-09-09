@@ -428,8 +428,7 @@ class NetCDFOutput(Outputter, Serializable):
                 rootgrp.createDimension('data')  # unlimited
                 rootgrp.createDimension('two', 2)
                 rootgrp.createDimension('three', 3)
-                rootgrp.createDimension('four', 4)
-                rootgrp.createDimension('five', 5)
+                rootgrp.createDimension('twelve', 12)  # weathering/mass_components
 
                 # create the time variable
                 time_ = rootgrp.createVariable('time',
@@ -473,9 +472,9 @@ class NetCDFOutput(Outputter, Serializable):
                         dt = at.dtype
 
                         # total kludge for the cases we happen to have...
-                        if at.shape == (5,):
-                            shape = ('data', 'five')
-                            chunksizes = (self._chunksize, 5)
+                        if at.shape == (12,):
+                            shape = ('data', 'twelve')
+                            chunksizes = (self._chunksize, 12)
                         elif at.shape == (4,):
                             shape = ('data', 'four')
                             chunksizes = (self._chunksize, 4)
