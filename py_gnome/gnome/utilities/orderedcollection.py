@@ -168,7 +168,10 @@ class OrderedCollection(object):
         except KeyError:
             # if its not a valid ID, then check if its the object
             ident = self._s_id(elem)
-            idx = self._index[ident]
+            try:
+                idx = self._index[ident]
+            except KeyError:
+                raise ValueError('{0} is not in OrderedCollection'.format(elem))
         return sorted(self._index.values()).index(idx)
 
     def __len__(self):
