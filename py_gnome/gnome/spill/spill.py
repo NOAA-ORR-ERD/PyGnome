@@ -380,12 +380,12 @@ class Spill(serializable.Serializable):
 
         # first convert amount to 'kg'
         if self.units in self.valid_mass_units:
-            mass = uc.convert('Mass', 'kg', self.units, self.amount)
+            mass = uc.convert('Mass', self.units, 'kg', self.amount)
         elif self.units in self.valid_vol_units:
-            vol = uc.convert('Volume', 'm^3', self.units, self.amount)
+            vol = uc.convert('Volume', self.units, 'm^3', self.amount)
             mass = self.element_type.substance.get_density('kg/m^3') * vol
 
-        if units is None:
+        if units is None or units == 'kg':
             return mass
         else:
             self._check_units(units)
@@ -526,4 +526,9 @@ def point_line_release_spill(num_elements,
                                num_elements=num_elements,
                                end_position=end_position,
                                end_release_time=end_release_time)
-    return Spill(release, element_type, on, amount, units, name)
+    return Spill(release,
+                 element_type,
+                 on,
+                 amount,
+                 units,
+                 name=name)
