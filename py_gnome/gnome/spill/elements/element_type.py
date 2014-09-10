@@ -94,9 +94,6 @@ class ElementType(Serializable):
         i_val = [0.] * (self.substance.num_components)
         i_val[0] = 1.
         mass_components.initial_value = tuple(i_val)
-        evap_decay_constant.shape = (self.substance.num_components,)
-        mass_components.initial_value = tuple([0.] *
-                                            (self.substance.num_components))
 
     def __repr__(self):
         return ('{0.__class__.__module__}.{0.__class__.__name__}('

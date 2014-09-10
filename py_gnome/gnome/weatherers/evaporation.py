@@ -1,6 +1,8 @@
 '''
 model evaporation process
 '''
+import numpy as np
+
 from gnome.array_types import (mass_components,
                                density,
                                thickness,
@@ -8,11 +10,11 @@ from gnome.array_types import (mass_components,
                                evap_decay_constant)
 from gnome.utilities.serializable import Serializable
 
-from gnome.movers.movers import Process
+from gnome.weatherers import Weatherer
 from gnome.environment import constants, water, constant_wind
 
 
-class Evaporation(Process, Serializable):
+class Evaporation(Weatherer):
     def __init__(self,
                  wind=None,
                  **kwargs):
@@ -59,7 +61,6 @@ class Evaporation(Process, Serializable):
 
         for spill in sc.spills:
             f_diff = (1.0 - spill.frac_water)
-            self._set_vapor_pressure(spill)
             mask = sc.get_spill_mask(spill)
             mw = spill.get('substance').molecular_weight
             sc['thickness'][mask] = self._compute_le_thickness()
@@ -69,18 +70,20 @@ class Evaporation(Process, Serializable):
                 np.sum(sc['mass_components'][mask, :len(mw)]/mw, 1)
             le_area = \
                 (sc['mass'][mask]/sc['density'][mask]) / sc['thickness'][mask]
+            le_area = le_area.reshape(-1, 1)
 
-            d_numer = (le_area * K * sc.get('vapor_pressure') *
+            d_numer = (le_area * K * spill.get('vapor_pressure') *
                        spill.frac_coverage * f_diff)
             d_denom = (constants['gas_constant'] * water['temperature'] *
-                       sc['mol'][mask])
-            sc['evap_decay_rate'][mask, :] = d_numer/d_denom
+                       sc['mol'][mask]).reshape(-1, 1)
+            d_denom = np.repeat( d_denom, d_numer.shape[1], axis=1)
+            sc['evap_decay_constant'][mask, :] = d_numer/d_denom
 
     def _compute_le_thickness(self):
         '''
         some function to compute LE thickness
         '''
-        return 1.
+        return 1e-3
 
     def _mass_transport_coeff(self, model_time):
         '''
@@ -93,7 +96,7 @@ class Evaporation(Process, Serializable):
         If K is expressed in m/sec, then Buchanan and Hurford set c = 0.0025
         U is wind_speed 10m above the surface
         '''
-        (wind_speed, ) = self.wind.get_value(model_time)
+        wind_speed = self.wind.get_value(model_time)[0]
         c_evap = 0.0025     # if wind_speed in m/s
         if wind_speed <= 10.0:
             return c_evap * wind_speed ** 0.78
@@ -109,6 +112,6 @@ class Evaporation(Process, Serializable):
 
         mass_remain = \
             self._exp_decay(sc['mass_components'],
-                            sc['evap_decay_rate'],
+                            sc['evap_decay_constant'],
                             time_step)
         return mass_remain
