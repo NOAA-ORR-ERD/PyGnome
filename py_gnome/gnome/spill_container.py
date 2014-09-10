@@ -601,9 +601,10 @@ class SpillContainerPair(SpillContainerPairData):
         uncertainty spill as well
         '''
         if self.uncertain:
-            idx = self._spill_container.spills.index(ident)
-            u_ident = [s for s in self._u_spill_container.spills][idx]
-            del self._u_spill_container.spills[u_ident.id]
+            'ident could be index or object so handle both'
+            idx = self._spill_container.spills.index(
+                self._spill_container.spills[ident])
+            del self._u_spill_container.spills[idx]
 
         del self._spill_container.spills[ident]
 
@@ -611,6 +612,12 @@ class SpillContainerPair(SpillContainerPairData):
         'only return the certain spill'
         spill = self._spill_container.spills[ident]
         return spill
+
+    def __setitem__(self, ident, new_spill):
+        self._spill_container.spills.replace(ident, new_spill)
+        if self.uncertain:
+            ix = self.index(new_spill)
+            self._u_spill_container.spills[ix] = new_spill.uncertain_copy()
 
     def __delitem__(self, ident):
         self.remove(ident)
@@ -659,6 +666,30 @@ class SpillContainerPair(SpillContainerPairData):
                           self._u_spill_container.spills.to_dict()})
         return dict_
 
+    def update_from_dict(self, dict_):
+        '''
+        takes a dict {'spills': [list of spill objects]}, checks them against
+        the forecast spills contained in _spill_container.spills and updates
+        if they are different
+
+        It also creates a copy of the different spill and replaces the
+        corresponding spill in _u_spill_container
+        '''
+        new_spills = dict_['spills']
+        for ix, item in enumerate(new_spills):
+            if ix >= len(self._spill_container.spills):
+                self.add(item)
+                continue
+
+            if item is not self._spill_container.spills[ix]:
+                self._spill_container.spills[ix] = item
+                if self.uncertain:
+                    self._u_spill_container.spills[ix] = item.uncertain_copy()
+
+        # delete remaining spills since they don't exist in new list
+        for ix in range(len(new_spills), len(self)):
+            del self[ix]
+
     def spill_by_index(self, index, uncertain=False):
         '''return either the forecast spill or the uncertain spill at
         specified index'''
@@ -666,6 +697,16 @@ class SpillContainerPair(SpillContainerPairData):
             return self._u_spill_container.spills[index]
         else:
             return self._spill_container.spills[index]
+
+    def index(self, spill):
+        '''
+        Look for spill in forecast SpillContainer or uncertain SpillContainer
+        and return the index of ordered collection where spill is found
+        '''
+        try:
+            return self._spill_container.spills.index(spill)
+        except:
+            return self._u_spill_container.spills.index(spill)
 
     @property
     def num_released(self):

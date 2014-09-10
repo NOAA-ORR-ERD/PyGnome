@@ -715,6 +715,13 @@ class Model(Serializable):
         '''
         return self.spills.to_dict()['spills']
 
+    def spills_update_from_dict(self, value):
+        'invoke SpillContainerPair().update_from_dict'
+        # containers don't need to be serializable; however, it was easiest to
+        # put an update_from_dict method in the SpillContainerPair. Keep the
+        # interface for this the same, so make it a dict
+        self.spills.update_from_dict({'spills': value})
+
     def uncertain_spills_to_dict(self):
         '''
         return the uncertain_spills ordered collection for serialization/save
@@ -896,7 +903,11 @@ class Model(Serializable):
         if json_['json_'] == 'webapi':
             for attr in ('environment', 'outputters', 'weatherers', 'movers',
                          'spills'):
-                if attr in json_ and json_[attr]:
+                if attr in json_:
+                    '''
+                    even if list is empty, deserialize it because we still need
+                    to sync up with client
+                    '''
                     deserial[attr] = cls.deserialize_oc(json_[attr])
 
         return deserial
