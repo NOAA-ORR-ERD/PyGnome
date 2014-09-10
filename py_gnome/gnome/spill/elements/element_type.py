@@ -76,7 +76,7 @@ class ElementType(Serializable):
 
         if isinstance(substance, basestring):
             # leave for now to preserve tests
-            self.substance = get_oil(substance)
+            self.substance = get_oil(substance, 2)
         else:
             self.substance = substance
 
