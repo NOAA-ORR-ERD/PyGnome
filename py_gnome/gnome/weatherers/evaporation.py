@@ -76,8 +76,10 @@ class Evaporation(Weatherer):
                        spill.frac_coverage * f_diff)
             d_denom = (constants['gas_constant'] * water['temperature'] *
                        sc['mol'][mask]).reshape(-1, 1)
-            d_denom = np.repeat( d_denom, d_numer.shape[1], axis=1)
-            sc['evap_decay_constant'][mask, :] = d_numer/d_denom
+            d_denom = np.repeat(d_denom, d_numer.shape[1], axis=1)
+            sc['evap_decay_constant'][mask, :] = -d_numer/d_denom
+
+    #def _round_decay_const(self, decay_const, time_step):
 
     def _compute_le_thickness(self):
         '''
