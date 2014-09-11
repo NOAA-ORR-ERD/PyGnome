@@ -139,7 +139,7 @@ class GeoJson(Outputter, Serializable):
                 features.append(feature)
 
         geojson = FeatureCollection(features)
-        self.output_filename(geojson, step_num)
+        #self.output_filename(geojson, step_num)
 
         # decided geojson should only be output to file
         # read data from file and send it to web client
