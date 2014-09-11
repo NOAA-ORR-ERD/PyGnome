@@ -2,7 +2,8 @@ import os
 from itertools import chain
 from collections import namedtuple
 
-import sqlalchemy
+from sqlalchemy import create_engine
+from sqlalchemy.orm.exc import NoResultFound
 
 from hazpy import unit_conversion
 uc = unit_conversion
@@ -92,7 +93,7 @@ def get_oil(oil_name, max_cuts=5):
         '''
 
         # not sure we want to do it this way - but let's use for now
-        engine = sqlalchemy.create_engine('sqlite:///' + _db_file)
+        engine = create_engine('sqlite:///' + _db_file)
 
         # let's use global DBSession defined in oillibrary
         # alternatively, we could define a new scoped_session
@@ -103,9 +104,9 @@ def get_oil(oil_name, max_cuts=5):
         DBSession.bind = engine
 
         try:
-            oil_= DBSession.query(Oil).filter(Oil.name == oil_name).one()
+            oil_ = DBSession.query(Oil).filter(Oil.oil_name == oil_name).one()
             return OilProps(oil_, max_cuts=max_cuts)
-        except sqlalchemy.orm.exc.NoResultFound, ex:
+        except NoResultFound, ex:
             # or sqlalchemy.orm.exc.MultipleResultsFound as ex:
             ex.message = ("oil with name '{0}' not found in database. "
                           "{1}".format(oil_name, ex.message))

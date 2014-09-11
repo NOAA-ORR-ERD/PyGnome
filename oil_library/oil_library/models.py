@@ -1,4 +1,6 @@
 
+from slugify import slugify_filename
+
 from sqlalchemy import (Table,
                         Column,
                         Integer,
@@ -97,18 +99,17 @@ oil_to_category = Table('oil_to_category', Base.metadata,
 class Oil(Base):
     __tablename__ = 'oils'
     id = Column(Integer, primary_key=True)
-    name = Column(String(100), unique=True, nullable=False)
+    oil_name = Column(String(100), unique=True, nullable=False)
     adios_oil_id = Column(String(16), unique=True, nullable=False)
 
-    # demographic fields
     custom = Column(Boolean, default=False)
     location = Column(String(64))
     field_name = Column(String(64))
     reference = Column(Text)
     api = Column(Float(53))
-    pour_point_min = Column(Float(53))
+    pour_point_min_k = Column(Float(53))
     pour_point_min_indicator = Column(String(2))
-    pour_point_max = Column(Float(53))
+    pour_point_max_k = Column(Float(53))
     product_type = Column(String(16))
     comments = Column(Text)
     asphaltene_content = Column(Float(53))
@@ -117,13 +118,13 @@ class Oil(Base):
     water_content_emulsion = Column(Float(53))
     emuls_constant_min = Column(Float(53))
     emuls_constant_max = Column(Float(53))
-    flash_point_min = Column(Float(53))
+    flash_point_min_k = Column(Float(53))
     flash_point_min_indicator = Column(String(2))
-    flash_point_max = Column(Float(53))
-    oil_water_interfacial_tension = Column(Float(53))
-    oil_water_interfacial_tension_ref_temp = Column(Float(53))
-    oil_seawater_interfacial_tension = Column(Float(53))
-    oil_seawater_interfacial_tension_ref_temp = Column(Float(53))
+    flash_point_max_k = Column(Float(53))
+    oil_water_interfacial_tension_n_m = Column(Float(53))
+    oil_water_interfacial_tension_ref_temp_k = Column(Float(53))
+    oil_seawater_interfacial_tension_n_m = Column(Float(53))
+    oil_seawater_interfacial_tension_ref_temp_k = Column(Float(53))
     cut_units = Column(String(16))
     oil_class = Column(String(16))
     adhesion = Column(Float(53))
@@ -140,9 +141,9 @@ class Oil(Base):
     vanadium = Column(Float(53))
     conrandson_residuum = Column(Float(53))
     conrandson_crude = Column(Float(53))
-    dispersability_temp = Column(Float(53))
+    dispersability_temp_k = Column(Float(53))
     preferred_oils = Column(Boolean, default=False)
-    koy = Column(Float(53))
+    k0y = Column(Float(53))
 
     # relationship fields
     synonyms = relationship('Synonym', secondary=oil_to_synonym,
@@ -161,13 +162,14 @@ class Oil(Base):
                               cascade="all, delete, delete-orphan")
 
     def __init__(self, **kwargs):
-        self.name = kwargs.get('Oil Name')
-        self.adios_oil_id = kwargs.get('ADIOS Oil ID')
-        self.location = kwargs.get('Location')
-        self.field_name = kwargs.get('Field Name')
-        # DONE - populate synonyms
-        self.reference = kwargs.get('Reference')
-        self.api = kwargs.get('API')
+        for a, v in kwargs.iteritems():
+            a = slugify_filename(a).lower()
+            if (a in self.columns
+                and a not in ('pour_point_min_k',
+                              'flash_point_min_k'
+                              'preferred_oils')
+                ):
+                setattr(self, a, v)
 
         # kind of weird behavior...
         # pour_point_min can have the following values
@@ -178,55 +180,22 @@ class Oil(Base):
         # So it is not possible for a column to be a float and a string too.
         if kwargs.get('Pour Point Min (K)') in ('<', '>'):
             self.pour_point_min_indicator = kwargs.get('Pour Point Min (K)')
-            self.pour_point_min = None
+            self.pour_point_min_k = None
         else:
-            self.pour_point_min = kwargs.get('Pour Point Min (K)')
-        self.pour_point_max = kwargs.get('Pour Point Max (K)')
-
-        self.product_type = kwargs.get('Product Type')
-        self.comments = kwargs.get('Comments')
-        self.asphaltene_content = kwargs.get('Asphaltene Content')
-        self.wax_content = kwargs.get('Wax Content')
-        self.aromatics = kwargs.get('Aromatics')
-        self.water_content_emulsion = kwargs.get('Water Content Emulsion')
-        self.emuls_constant_min = kwargs.get('Emuls Constant Min')
-        self.emuls_constant_max = kwargs.get('Emuls Constant Max')
+            self.pour_point_min_k = kwargs.get('Pour Point Min (K)')
 
         # same kind of weird behavior as pour point...
         if kwargs.get('Flash Point Min (K)') in ('<', '>'):
             self.flash_point_min_indicator = kwargs.get('Flash Point Min (K)')
-            self.flash_point_min = None
+            self.flash_point_min_k = None
         else:
-            self.flash_point_min = kwargs.get('Flash Point Min (K)')
-        self.flash_point_max = kwargs.get('Flash Point Max (K)')
+            self.flash_point_min_k = kwargs.get('Flash Point Min (K)')
 
-        self.oil_water_interfacial_tension = kwargs.get('Oil/Water Interfacial Tension (N/m)')
-        self.oil_water_interfacial_tension_ref_temp = kwargs.get('Oil/Water Interfacial Tension Ref Temp (K)')
-        self.oil_seawater_interfacial_tension = kwargs.get('Oil/Seawater Interfacial Tension (N/m)')
-        self.oil_seawater_interfacial_tension_ref_temp = kwargs.get('Oil/Seawater Interfacial Tension Ref Temp (K)')
-        self.cut_units = kwargs.get('Cut Units')
-        self.oil_class = kwargs.get('Oil Class')
-        self.adhesion = kwargs.get('Adhesion')
-        self.benezene = kwargs.get('Benezene')
-        self.naphthenes = kwargs.get('Naphthenes')
-        self.paraffins = kwargs.get('Paraffins')
-        self.polars = kwargs.get('Polars')
-        self.resins = kwargs.get('Resins')
-        self.saturates = kwargs.get('Saturates')
-        self.sulphur = kwargs.get('Sulphur')
-        self.reid_vapor_pressure = kwargs.get('Reid Vapor Pressure')
-        self.viscosity_multiplier = kwargs.get('Viscosity Multiplier')
-        self.nickel = kwargs.get('Nickel')
-        self.vanadium = kwargs.get('Vanadium')
-        self.conrandson_residuum = kwargs.get('Conrandson Residuum')
-        self.conrandson_crude = kwargs.get('Conrandson Crude')
-        self.dispersability_temp = kwargs.get('Dispersability Temp (K)')
         self.preferred_oils = (True if kwargs.get('Preferred Oils') == 'X'
                                else False)
-        self.koy = kwargs.get('K0Y')
 
     def __repr__(self):
-        return "<Oil('%s')>" % (self.name)
+        return "<Oil('%s')>" % (self.oil_name)
 
 
 class Synonym(Base):
@@ -246,18 +215,18 @@ class Density(Base):
     id = Column(Integer, primary_key=True)
     oil_id = Column(Integer, ForeignKey('oils.id'))
 
-    # demographics
-    kg_per_m_cubed = Column(Float(53))
-    ref_temp = Column(Float(53))
+    kg_m_3 = Column(Float(53))
+    ref_temp_k = Column(Float(53))
     weathering = Column(Float(53))
 
     def __init__(self, **kwargs):
-        self.kg_per_m_cubed = kwargs.get('(kg/m^3)')
-        self.ref_temp = kwargs.get('Ref Temp (K)')
-        self.weathering = kwargs.get('Weathering')
+        for a, v in kwargs.iteritems():
+            a = slugify_filename(a).lower()
+            if (a in self.columns):
+                setattr(self, a, v)
 
     def __repr__(self):
-        return ("<Density({0.kg_per_m_cubed} kg/m^3 at {0.ref_temp}K)>"
+        return ("<Density({0.kg_m_3} kg/m^3 at {0.ref_temp}K)>"
                 .format(self))
 
 
@@ -266,18 +235,18 @@ class KVis(Base):
     id = Column(Integer, primary_key=True)
     oil_id = Column(Integer, ForeignKey('oils.id'))
 
-    # demographics
-    meters_squared_per_sec = Column(Float(53))
-    ref_temp = Column(Float(53))
+    m_2_s = Column(Float(53))
+    ref_temp_k = Column(Float(53))
     weathering = Column(Float(53))
 
     def __init__(self, **kwargs):
-        self.meters_squared_per_sec = kwargs.get('(m^2/s)')
-        self.ref_temp = kwargs.get('Ref Temp (K)')
-        self.weathering = kwargs.get('Weathering')
+        for a, v in kwargs.iteritems():
+            a = slugify_filename(a).lower()
+            if (a in self.columns):
+                setattr(self, a, v)
 
     def __repr__(self):
-        return ('<KVis({0.meters_squared_per_sec} m^2/s at {0.ref_temp}K)>'
+        return ('<KVis({0.m_2_s} m^2/s at {0.ref_temp}K)>'
                 .format(self))
 
 
@@ -286,22 +255,19 @@ class DVis(Base):
     id = Column(Integer, primary_key=True)
     oil_id = Column(Integer, ForeignKey('oils.id'))
 
-    # demographics
-    kg_per_msec = Column(Float(53))
-    ref_temp = Column(Float(53))
+    kg_ms = Column(Float(53))
+    ref_temp_k = Column(Float(53))
     weathering = Column(Float(53))
 
     def __init__(self, **kwargs):
-        self.kg_per_msec = kwargs.get('(kg/ms)')
-        self.ref_temp = kwargs.get('Ref Temp (K)')
-        self.weathering = kwargs.get('Weathering')
+        for a, v in kwargs.iteritems():
+            a = slugify_filename(a).lower()
+            if (a in self.columns):
+                setattr(self, a, v)
 
     def __repr__(self):
-        return ('<DVis('
-                'kg_per_msec={0.kg_per_msec}, '
-                'ref_temp={0.ref_temp}, '
-                'weathering={0.weathering}'
-                ')>'.format(self))
+        return ('<DVis({0.kg_ms} kg/ms at {0.ref_temp}K)>'
+                .format(self))
 
 
 class Cut(Base):
@@ -309,18 +275,21 @@ class Cut(Base):
     id = Column(Integer, primary_key=True)
     oil_id = Column(Integer, ForeignKey('oils.id'))
 
-    # demographics
-    vapor_temp = Column(Float(53))
-    liquid_temp = Column(Float(53))
+    vapor_temp_k = Column(Float(53))
+    liquid_temp_k = Column(Float(53))
     fraction = Column(Float(53))
 
     def __init__(self, **kwargs):
-        self.vapor_temp = kwargs.get('Vapor Temp (K)')
-        self.liquid_temp = kwargs.get('Liquid Temp (K)')
-        self.fraction = kwargs.get('Fraction')
+        for a, v in kwargs.iteritems():
+            a = slugify_filename(a).lower()
+            if (a in self.columns):
+                setattr(self, a, v)
 
     def __repr__(self):
-        return "<Cut('%s')>" % (self.id)
+        lt = '{0}K'.format(self.liquid_temp_k) if self.liquid_temp_k else None
+        vt = '{0}K'.format(self.vapor_temp_k) if self.vapor_temp_k else None
+        return ('<Cut([{0}, {1}], {2})>'
+                .format(lt, vt, self.fraction))
 
 
 class Toxicity(Base):
@@ -328,7 +297,6 @@ class Toxicity(Base):
     id = Column(Integer, primary_key=True)
     oil_id = Column(Integer, ForeignKey('oils.id'))
 
-    # demographics
     tox_type = Column(Enum('EC', 'LC'), nullable=False)
     species = Column(String(16))
     after_24_hours = Column(Float(53))

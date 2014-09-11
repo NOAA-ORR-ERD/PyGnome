@@ -41,6 +41,7 @@ LHSTEXT Detroit River;
 
 
 [WMSG 10011] 
+-- note : should use new current meter to do the scaling (at least as an option) http://glakesonline.nos.noaa.gov/moncurrent.html
 ------------------------------------------- 
 if $V7<2 
     set StageHt1  $10 

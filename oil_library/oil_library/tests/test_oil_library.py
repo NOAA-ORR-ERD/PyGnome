@@ -16,40 +16,9 @@ from oil_library.models import DBSession, Base, Oil, Synonym, \
     Density, KVis, DVis, Cut, Toxicity
 
 here = os.path.dirname(__file__)
-data_dir = os.path.join(here, 'sample_data')
-db_file = os.path.join(data_dir, r'OilLibrary.db')
+db_file = os.path.join(here, r'OilLibrary.db')
 
 
-def make_db():
-    from py.test import config
-
-    # Only run database setup on master (in case of xdist/multiproc mode)
-
-    if not hasattr(config, 'slaveinput'):
-        try:
-            from gnome.db.oil_library.initializedb import initialize_sql, \
-                load_database
-
-            oillib_file = os.path.join(data_dir, 'OilLib.smaller')
-
-            sqlalchemy_url = 'sqlite:///{0}'.format(db_file)
-            settings = {'sqlalchemy.url': sqlalchemy_url,
-                        'oillib.file': oillib_file}
-
-            initialize_sql(settings)
-            load_database(settings)
-        except ImportError, ie:
-            print ('\nWarning: Required modules for database unit-testing '
-                   '         not found.')
-            dependant_modules = ('sqlalchemy', 'zope.sqlalchemy',
-                                 'transaction')
-            print ie
-            print 'Also may need:',
-            print '\t {0}\n'.format([m for m in dependant_modules
-                                    if not m in sys.modules])
-
-
-make_db()
 sqlalchemy_url = 'sqlite:///%s' % db_file
 
 
@@ -136,15 +105,15 @@ class OilTestCase(BaseTestCase):
             }
 
     def assert_mock_oil_object(self, oil):
-        assert oil.name == u'Test Oil'
+        assert oil.oil_name == u'Test Oil'
         assert oil.adios_oil_id == u'AD99999'
         assert oil.location == u'Sand Point'
         assert oil.field_name == u'Sand Point'
         assert oil.reference == u'Test Oil Reference'
         assert oil.api == u'2.68e1'
-        assert oil.pour_point_min == u'2.6715e2'
+        assert oil.pour_point_min_k == u'2.6715e2'
         assert oil.pour_point_min_indicator == None
-        assert oil.pour_point_max == u'2.6715e2'
+        assert oil.pour_point_max_k == u'2.6715e2'
         assert oil.product_type == u'Crude'
         assert oil.comments == u'Test Oil Comments'
         assert oil.asphaltene_content == u'2e-2'
@@ -153,12 +122,12 @@ class OilTestCase(BaseTestCase):
         assert oil.water_content_emulsion == u'9e-1'
         assert oil.emuls_constant_min == u'0e0'
         assert oil.emuls_constant_max == u'0e0'
-        assert oil.flash_point_min == u'2.8e2'
-        assert oil.flash_point_max == u'2.8e2'
-        assert oil.oil_water_interfacial_tension == u'2.61e-2'
-        assert oil.oil_water_interfacial_tension_ref_temp == u'2.7e2'
-        assert oil.oil_seawater_interfacial_tension == u'2.38e-2'
-        assert oil.oil_seawater_interfacial_tension_ref_temp == u'2.7e2'
+        assert oil.flash_point_min_k == u'2.8e2'
+        assert oil.flash_point_max_k == u'2.8e2'
+        assert oil.oil_water_interfacial_tension_n_m == u'2.61e-2'
+        assert oil.oil_water_interfacial_tension_ref_temp_k == u'2.7e2'
+        assert oil.oil_seawater_interfacial_tension_n_m == u'2.38e-2'
+        assert oil.oil_seawater_interfacial_tension_ref_temp_k == u'2.7e2'
         assert oil.cut_units == u'volume'
         assert oil.oil_class == u'Group 3'
         assert oil.adhesion == u'2.8e-1'
@@ -175,9 +144,9 @@ class OilTestCase(BaseTestCase):
         assert oil.vanadium == u'33.9'
         assert oil.conrandson_residuum == u'1.7e-1'
         assert oil.conrandson_crude == u'1.8e-1'
-        assert oil.dispersability_temp == u'2.8e2'
+        assert oil.dispersability_temp_k == u'2.8e2'
         assert oil.preferred_oils == True
-        assert oil.koy == u'2.024e-6'
+        assert oil.k0y == u'2.024e-6'
 
     def test_init_no_args(self):
         oil_obj = Oil()
@@ -196,7 +165,7 @@ class OilTestCase(BaseTestCase):
         oil_args = self.get_mock_oil_file_record()
         oil_args[u'Pour Point Min (K)'] = u'<'
         oil_obj = Oil(**oil_args)  # IGNORE:W0142
-        assert oil_obj.pour_point_min == None
+        assert oil_obj.pour_point_min_k == None
         assert oil_obj.pour_point_min_indicator == u'<'
         self.add_objs_and_assert_ids(oil_obj)
 
@@ -204,7 +173,7 @@ class OilTestCase(BaseTestCase):
         oil_args = self.get_mock_oil_file_record()
         oil_args[u'Pour Point Min (K)'] = u'>'
         oil_obj = Oil(**oil_args)  # IGNORE:W0142
-        assert oil_obj.pour_point_min == None
+        assert oil_obj.pour_point_min_k == None
         assert oil_obj.pour_point_min_indicator == u'>'
         self.add_objs_and_assert_ids(oil_obj)
 
@@ -212,7 +181,7 @@ class OilTestCase(BaseTestCase):
         oil_args = self.get_mock_oil_file_record()
         oil_args[u'Flash Point Min (K)'] = u'<'
         oil_obj = Oil(**oil_args)  # IGNORE:W0142
-        assert oil_obj.flash_point_min == None
+        assert oil_obj.flash_point_min_k == None
         assert oil_obj.flash_point_min_indicator == u'<'
         self.add_objs_and_assert_ids(oil_obj)
 
@@ -220,7 +189,7 @@ class OilTestCase(BaseTestCase):
         oil_args = self.get_mock_oil_file_record()
         oil_args[u'Flash Point Min (K)'] = u'>'
         oil_obj = Oil(**oil_args)  # IGNORE:W0142
-        assert oil_obj.flash_point_min == None
+        assert oil_obj.flash_point_min_k == None
         assert oil_obj.flash_point_min_indicator == u'>'
         self.add_objs_and_assert_ids(oil_obj)
 
@@ -253,8 +222,8 @@ class DensityTestCase(BaseTestCase):
                 u'Weathering': u'0e0'}
 
     def assert_mock_density_object(self, density):
-        assert density.kg_per_m_cubed == u'9.037e2'
-        assert density.ref_temp == u'2.7315e2'
+        assert density.kg_m_3 == u'9.037e2'
+        assert density.ref_temp_k == u'2.7315e2'
         assert density.weathering == u'0e0'
 
     def test_init_no_args(self):
@@ -275,8 +244,8 @@ class KVisTestCase(BaseTestCase):
                 u'Weathering': u'0e0'}
 
     def assert_mock_kvis_object(self, kvis):
-        assert kvis.meters_squared_per_sec == u'5.59e-5'
-        assert kvis.ref_temp == u'2.7315e2'
+        assert kvis.m_2_s == u'5.59e-5'
+        assert kvis.ref_temp_k == u'2.7315e2'
         assert kvis.weathering == u'0e0'
 
     def test_init_no_args(self):
@@ -297,8 +266,8 @@ class DVisTestCase(BaseTestCase):
                 u'Weathering': u'0e0'}
 
     def assert_mock_dvis_object(self, dvis):
-        assert dvis.kg_per_msec == u'4.73e-2'
-        assert dvis.ref_temp == u'2.7315e2'
+        assert dvis.kg_ms == u'4.73e-2'
+        assert dvis.ref_temp_k == u'2.7315e2'
         assert dvis.weathering == u'0e0'
 
     def test_init_no_args(self):
@@ -319,8 +288,8 @@ class CutTestCase(BaseTestCase):
                 u'Liquid Temp (K)': u'3.8815e2', u'Fraction': u'1e-2'}
 
     def assert_mock_cut_object(self, cut):
-        assert cut.vapor_temp == u'3.1015e2'
-        assert cut.liquid_temp == u'3.8815e2'
+        assert cut.vapor_temp_k == u'3.1015e2'
+        assert cut.liquid_temp_k == u'3.8815e2'
         assert cut.fraction == u'1e-2'
 
     def test_init_no_args(self):

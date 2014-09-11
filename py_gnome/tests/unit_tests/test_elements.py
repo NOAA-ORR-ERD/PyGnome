@@ -328,7 +328,8 @@ def test_element_types(elem_type, arr_types, sample_sc_no_uncertainty):
                     if key in s_arr_types:
                         assert np.all(sc[key][spill_mask] != 0)
                     else:
-                        assert np.all(sc[key][spill_mask] == 0)
+                        assert np.all(sc[key][spill_mask] ==
+                                      sc.array_types[key].initial_value)
 
 
 @pytest.mark.parametrize(("fcn"), fcn_list)
