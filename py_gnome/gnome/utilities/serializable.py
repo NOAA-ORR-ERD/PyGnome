@@ -691,6 +691,11 @@ class Serializable(GnomeId, Savable):
         Checks if an attribute passed back in a dict_ from client has changed.
         Returns True if changed, else False
         '''
+        # first, we normalize our left and right args
+        if (isinstance(current_value, np.ndarray) and
+            isinstance(received_value, (list, tuple))):
+            received_value = np.asarray(received_value)
+
         # For a nested object, check if it data contains a new object. If
         # object in data 'is' current_value then 'self' state has not
         # changed. Even if current_value == data[key], we still must update
@@ -713,7 +718,7 @@ class Serializable(GnomeId, Savable):
                 # maybe an iterable - checking for
                 # isinstance(current_value, collections.Iterable) fails for
                 # string so just do a try/except
-                if all(current_value != received_value):
+                if np.any(current_value != received_value):
                     return True
 
         return False
