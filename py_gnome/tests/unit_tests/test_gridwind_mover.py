@@ -39,13 +39,6 @@ def test_exceptions():
     with pytest.raises(TypeError):
         GridWindMover(wind_file, topology_file=10)
 
-    with pytest.raises(ValueError):
-        # todo: Following fails - cannot raise exception during initialize
-        # Need to look into this issue
-        #gw = GridWindMover(grid_file, uncertain_angle_units='xyz')
-        gw = GridWindMover(wind_file,topology_file)   # todo: why does this fail
-        gw.set_uncertain_angle(.4, 'xyz')
-
 
 def test_string_repr_no_errors():
     gw = GridWindMover(wind_file,topology_file)

@@ -84,7 +84,7 @@ def test_savloc_created():
 
 
 # For WindMover test_save_load in test_wind_mover
-l_movers = (environment.Tide(testdata['CatsMover']['tide']),
+g_objects = (environment.Tide(testdata['CatsMover']['tide']),
             environment.Wind(filename=testdata['ComponentMover']['wind']),
             environment.Wind(timeseries=(0, (1, 4)), units='mps'),
             movers.random_movers.RandomMover(),
@@ -125,7 +125,7 @@ l_movers = (environment.Tide(testdata['CatsMover']['tide']),
             )
 
 
-@pytest.mark.parametrize("obj", l_movers)
+@pytest.mark.parametrize("obj", g_objects)
 def test_save_load(clean_temp, obj):
     'test save/load functionality'
     refs = obj.save(clean_temp)

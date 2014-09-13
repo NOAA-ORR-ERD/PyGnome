@@ -204,11 +204,14 @@ class Test_GnomeMap:
 
     def test_GnomeMap_from_dict(self):
         gmap = gnome.map.GnomeMap()
-        dict_ = gmap.to_dict()
-        dict_['map_bounds'] = ((-10, 10), (10, 10), (10, -10), (-10,
-                               -10))
+        json_ = gmap.serialize('save')
+        json_['map_bounds'] = [(-10, 10), (10, 10), (10, -10), (-10,
+                               -10)]
+        dict_ = gnome.map.GnomeMap.deserialize(json_)
         gmap.update_from_dict(dict_)
-        assert gmap.map_bounds == dict_['map_bounds']
+        u_json_ = gmap.serialize('save')
+        for key in json_:
+            assert u_json_[key] == json_[key]
 
 
 class Test_RasterMap:
@@ -548,20 +551,25 @@ def test_serialize_deserialize(json_):
     """
     test create new object from to_dict
     """
-
     gmap = gnome.map.MapFromBNA(testmap, 6)
-    serial = gmap.serialize('webapi')
+    serial = gmap.serialize(json_)
     dict_ = gnome.map.MapFromBNA.deserialize(serial)
     map2 = gmap.new_from_dict(dict_)
     assert gmap == map2
 
-    dict_['map_bounds'] = ((-10, 10), (10, 10), (10, -10), (-10, -10))
-    dict_['spillable_area'] = ((-5, 5), (5, 5), (5, -5), (-5, -5))
+
+def test_update_from_dict_MapFromBNA():
+    'test update_from_dict for MapFromBNA'
+    gmap = gnome.map.MapFromBNA(testmap, 6)
+    serial = gmap.serialize('webapi')
+    dict_ = gnome.map.MapFromBNA.deserialize(serial)
+    dict_['map_bounds'] = [(-10, 10), (10, 10), (10, -10), (-10, -10)]
+    dict_['spillable_area'] = [(-5, 5), (5, 5), (5, -5), (-5, -5)]
     dict_['refloat_halflife'] = 2
     gmap.update_from_dict(dict_)
-    assert gmap.map_bounds == dict_['map_bounds']
-    assert gmap.spillable_area == dict_['spillable_area']
-    assert gmap.refloat_halflife == dict_['refloat_halflife']
+    u_json = gmap.serialize('webapi')
+    for key in dict_:
+        assert u_json[key] == dict_[key]
 
 
 class Test_full_move:
