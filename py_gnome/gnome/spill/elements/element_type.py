@@ -12,7 +12,7 @@ from math import exp, log
 
 import gnome    # required by new_from_dict
 from gnome.utilities.serializable import Serializable
-from gnome.array_types import mass_components, evap_decay_constant
+from gnome.array_types import num_oil_components, reset_to_defaults
 from .initializers import (InitRiseVelFromDropletSizeFromDist,
                            InitRiseVelFromDist,
                            InitWindages,
@@ -81,19 +81,12 @@ class ElementType(Serializable):
             self.substance = substance
 
         self.substance.temperature = water['temperature']
-        if self.substance.num_components != mass_components.shape[0]:
-            self._update_mass_components_at()
+        if self.substance.num_components != num_oil_components:
+            reset_to_defaults()
 
         # for now add vapor_pressure here
         self.vapor_pressure = [vapor_pressure(bp)
                                for bp in self.substance.boiling_point]
-
-    def _update_mass_components_at(self):
-        'update mass_components ArrayType per the number of components'
-        mass_components.shape = (self.substance.num_components,)
-        i_val = [0.] * (self.substance.num_components)
-        i_val[0] = 1.
-        mass_components.initial_value = tuple(i_val)
 
     def __repr__(self):
         return ('{0.__class__.__module__}.{0.__class__.__name__}('

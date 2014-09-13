@@ -108,6 +108,12 @@ class IdArrayType(ArrayType):
         return array
 
 
+# Following is a runtime property, initialize it to 5 but ElementType may
+# update if it is different. This is number of mass_components used to model
+# the oil for weathering processes
+num_oil_components = 10
+
+
 # SpillContainer manipulates initial_value property to initialize 'spill_num'
 # and 'element_id' properly. Referencing global ArrayType objects for this
 # means the initial values may not get reset. Need a function to reset
@@ -126,16 +132,21 @@ _default_values = {
      'rise_vel': ((), np.float64, 0.),
      'droplet_diameter': ((), np.float64, 0.),
      'age': ((), np.int32, 0),
-     'mass_components': ((5,), np.float64, (1., 0., 0., 0., 0.)),
      'density': ((), np.float64, 0),     # default assumes mass=0
      'thickness': ((), np.float64, 1.),
      'mol': ((), np.float64, 0.),     # total number of mols for each LE
-     'evap_decay_constant': ((5, ), np.float64, (1., 0., 0., 0., 0.)),
+     'mass_components': ((num_oil_components,),
+                         np.float64,
+                         tuple([1./num_oil_components] * num_oil_components)),
+     'evap_decay_constant': ((num_oil_components, ),
+                             np.float64,
+                             tuple([0.] * num_oil_components)),
      }
 
 
 # dynamically create the ArrayType objects in this module from _default_values
-# dict
+# dict. Reason for this logic and subsequent functions is so we only have to
+# update/modify the _default_values dict above
 for key, val in _default_values.iteritems():
     if len(val) > 3:
         vars()[key] = val[3](shape=_default_values[key][0],
@@ -148,13 +159,17 @@ for key, val in _default_values.iteritems():
 
 
 # use reflection to:
-#    define a function to reset all ArrayTypes to defaults
+#    - define all array_types once the above for loop defines the ArrayTypes
+#      in module scope
 _to_reset = inspect.getmembers(sys.modules[__name__],
                                predicate=lambda members:
                                (False, True)[isinstance(members, ArrayType)])
+
+# list of names of all ArrayTypes defined in this module
 _at_names = [item[0] for item in _to_reset]
 
 
+#    define a function to reset all ArrayTypes to defaults
 def reset_to_defaults(names=_at_names):
     for item in _to_reset:
         if item[0] in names:
