@@ -19,7 +19,6 @@ from .initializers import (InitRiseVelFromDropletSizeFromDist,
                            InitMassFromSpillAmount,
                            InitArraysFromOilProps,
                            InitMassFromPlume)
-from gnome.environment import water, atmos
 from oil_library import get_oil
 
 from gnome.persist import base_schema
@@ -80,13 +79,12 @@ class ElementType(Serializable):
         else:
             self.substance = substance
 
-        self.substance.temperature = water['temperature']
         if self.substance.num_components != num_oil_components:
             reset_to_defaults()
 
         # for now add vapor_pressure here
-        self.vapor_pressure = [vapor_pressure(bp)
-                               for bp in self.substance.boiling_point]
+        #self.vapor_pressure = [vapor_pressure(bp)
+        #                       for bp in self.substance.boiling_point]
 
     def __repr__(self):
         return ('{0.__class__.__module__}.{0.__class__.__name__}('

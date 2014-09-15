@@ -11,17 +11,22 @@ from gnome.array_types import (mass_components,
 from gnome.utilities.serializable import Serializable
 
 from gnome.weatherers import Weatherer
-from gnome.environment import constants, water, constant_wind
+from gnome.environment import constants, constant_wind
 
 
 class Evaporation(Weatherer):
     def __init__(self,
+                 conditions,
                  wind=None,
                  **kwargs):
         '''
+        :param conditions: gnome.environment.Conditions object which contains
+            things like water temperature
         :param wind: wind object for obtaining speed at specified time
         :type wind: Wind API, specifically must have get_value(time) method
         '''
+        self.conditions = conditions
+
         if wind is None:
             wind = constant_wind(0, 0)
 
@@ -58,6 +63,7 @@ class Evaporation(Weatherer):
                                                         time_step,
                                                         model_time)
         K = self._mass_transport_coeff(model_time)
+        water_temp = self.conditions.get('water', 'temperature', 'K')
 
         for spill in sc.spills:
             f_diff = (1.0 - spill.frac_water)
@@ -65,7 +71,7 @@ class Evaporation(Weatherer):
             mw = spill.get('substance').molecular_weight
             sc['thickness'][mask] = self._compute_le_thickness()
             sc['density'][mask] = \
-                spill.get('substance').get_density(temp=water['temperature'])
+                spill.get('substance').get_density(temp=water_temp)
             sc['mol'][mask] = \
                 np.sum(sc['mass_components'][mask, :len(mw)]/mw, 1)
             le_area = \
@@ -74,10 +80,13 @@ class Evaporation(Weatherer):
 
             d_numer = (le_area * K * spill.get('vapor_pressure') *
                        spill.frac_coverage * f_diff)
-            d_denom = (constants['gas_constant'] * water['temperature'] *
+            d_denom = (constants['gas_constant'] * water_temp *
                        sc['mol'][mask]).reshape(-1, 1)
             d_denom = np.repeat(d_denom, d_numer.shape[1], axis=1)
             sc['evap_decay_constant'][mask, :] = -d_numer/d_denom
+            if np.any(sc['evap_decay_constant'][mask, :] > 0.0):
+                raise ValueError("Error in Evaporation routine. One of the "
+                                 "exponential decay constant is positive")
 
     #def _round_decay_const(self, decay_const, time_step):
 

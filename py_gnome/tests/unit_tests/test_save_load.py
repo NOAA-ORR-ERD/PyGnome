@@ -87,6 +87,7 @@ def test_savloc_created():
 g_objects = (environment.Tide(testdata['CatsMover']['tide']),
             environment.Wind(filename=testdata['ComponentMover']['wind']),
             environment.Wind(timeseries=(0, (1, 4)), units='mps'),
+            environment.Conditions(water_temp=273),
             movers.random_movers.RandomMover(),
             movers.CatsMover(testdata['CatsMover']['curr']),
             movers.CatsMover(testdata['CatsMover']['curr'],
