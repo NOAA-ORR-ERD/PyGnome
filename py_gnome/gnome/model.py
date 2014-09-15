@@ -58,13 +58,29 @@ class ModelSchema(ObjType):
     duration = SchemaNode(extend_colander.TimeDelta(), missing=drop)
     uncertain = SchemaNode(Bool(), missing=drop)
     cache_enabled = SchemaNode(Bool(), missing=drop)
-    spills = OrderedCollectionItemsList(missing=drop)
-    uncertain_spills = OrderedCollectionItemsList(missing=drop)
-    movers = OrderedCollectionItemsList(missing=drop)
-    weatherers = OrderedCollectionItemsList(missing=drop)
-    environment = OrderedCollectionItemsList(missing=drop)
-    outputters = OrderedCollectionItemsList(missing=drop)
     num_time_steps = SchemaNode(Int(), missing=drop)
+
+    def __init__(self, json_='webapi', *args, **kwargs):
+        '''
+        Add default schema for orderedcollections if oc_schema=True
+        The default schema works for 'save' files since it only keeps the same
+        info {'obj_type' and 'id'} for all elements in OC. For 'webapi', we
+        cannot do this and must deserialize each element of the collection
+        using the deserialize method of each object; so these are not added to
+        schema for 'webapi'
+        '''
+        if json_ == 'save':
+            self.add(OrderedCollectionItemsList(missing=drop, name='spills'))
+            self.add(OrderedCollectionItemsList(missing=drop,
+                     name='uncertain_spills'))
+            self.add(OrderedCollectionItemsList(missing=drop, name='movers'))
+            self.add(OrderedCollectionItemsList(missing=drop,
+                     name='weatherers'))
+            self.add(OrderedCollectionItemsList(missing=drop,
+                     name='environment'))
+            self.add(OrderedCollectionItemsList(missing=drop,
+                     name='outputters'))
+        super(ModelSchema, self).__init__(*args, **kwargs)
 
 
 class Model(Serializable):
@@ -109,7 +125,7 @@ class Model(Serializable):
         json_ = dict_.pop('json_')
         l_env = dict_.pop('environment', [])
         l_out = dict_.pop('outputters', [])
-        l_movers = dict_.pop('movers', [])
+        g_objects = dict_.pop('movers', [])
         l_weatherers = dict_.pop('weatherers', [])
         c_spills = dict_.pop('spills', [])
 
@@ -142,7 +158,7 @@ class Model(Serializable):
         [model.environment.add(obj) for obj in l_env]
         [model.outputters.add(obj) for obj in l_out]
         [model.spills.add(obj) for obj in l_spills]
-        [model.movers.add(obj) for obj in l_movers]
+        [model.movers.add(obj) for obj in g_objects]
         [model.weatherers.add(obj) for obj in l_weatherers]
 
         # register callback with OrderedCollection
@@ -699,6 +715,13 @@ class Model(Serializable):
         '''
         return self.spills.to_dict()['spills']
 
+    def spills_update_from_dict(self, value):
+        'invoke SpillContainerPair().update_from_dict'
+        # containers don't need to be serializable; however, it was easiest to
+        # put an update_from_dict method in the SpillContainerPair. Keep the
+        # interface for this the same, so make it a dict
+        self.spills.update_from_dict({'spills': value})
+
     def uncertain_spills_to_dict(self):
         '''
         return the uncertain_spills ordered collection for serialization/save
@@ -845,7 +868,7 @@ class Model(Serializable):
         treat special-case attributes of Model.
         '''
         toserial = self.to_serialize(json_)
-        schema = self.__class__._schema()
+        schema = self.__class__._schema(json_)
         o_json_ = schema.serialize(toserial)
         o_json_['map'] = self.map.serialize(json_)
 
@@ -872,15 +895,19 @@ class Model(Serializable):
         '''
         treat special-case attributes of Model.
         '''
-        deserial = cls._schema().deserialize(json_)
-
+        schema = cls._schema(json_['json_'])
+        deserial = schema.deserialize(json_)
         if 'map' in json_ and json_['map']:
             deserial['map'] = json_['map']
 
         if json_['json_'] == 'webapi':
             for attr in ('environment', 'outputters', 'weatherers', 'movers',
                          'spills'):
-                if attr in json_ and json_[attr]:
+                if attr in json_:
+                    '''
+                    even if list is empty, deserialize it because we still need
+                    to sync up with client
+                    '''
                     deserial[attr] = cls.deserialize_oc(json_[attr])
 
         return deserial
@@ -909,6 +936,8 @@ class Model(Serializable):
     @classmethod
     def load(cls, saveloc, json_data, references=None):
         '''
+        Load a model from json format - the saveloc is location of save files
+        for objects contained in the model
         '''
         references = (references, References())[references is None]
 

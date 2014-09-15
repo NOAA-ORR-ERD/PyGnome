@@ -45,14 +45,6 @@ def test_exceptions():
     with raises(TypeError):
         WindMover()
 
-    with raises(ValueError):
-        WindMover(Wind(filename=file_),
-                  uncertain_angle_units='xyz')
-
-    with raises(ValueError):
-        wm = WindMover(Wind(filename=file_))
-        wm.set_uncertain_angle(.4, 'xyz')
-
     with raises(TypeError):
         """
         violates duck typing so may want to remove. Though current WindMover's
@@ -116,17 +108,12 @@ def test_properties(wind_circ):
     wm.uncertain_duration = 1
     wm.uncertain_time_delay = 2
     wm.uncertain_speed_scale = 3
-    wm.set_uncertain_angle(4, 'deg')
+    wm.uncertain_angle_scale = 4
 
     assert wm.uncertain_duration == 1
     assert wm.uncertain_time_delay == 2
     assert wm.uncertain_speed_scale == 3
     assert wm.uncertain_angle_scale == 4
-    assert wm.uncertain_angle_units == 'deg'
-
-    wm.set_uncertain_angle(.04, 'rad')
-    assert wm.uncertain_angle_scale == 0.04
-    assert wm.uncertain_angle_units == 'rad'
 
 
 def test_update_wind(wind_circ):
@@ -519,7 +506,6 @@ def _defaults(wm):
     assert wm.uncertain_time_delay == 0
     assert wm.uncertain_speed_scale == 2
     assert wm.uncertain_angle_scale == 0.4
-    assert wm.uncertain_angle_units == 'rad'
 
 
 def _get_timeseries_from_cpp(windmover):

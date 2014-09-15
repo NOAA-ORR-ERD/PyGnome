@@ -147,6 +147,7 @@ class Wind(Environment, serializable.Serializable):
     valid_vel_units = list(chain.from_iterable([item[1] for item in
                                     ConvertDataUnits['Velocity'].values()]))
     valid_vel_units.extend(GetUnitNames('Velocity'))
+    del item    # keep the namespace clean
 
     def __init__(self, timeseries=None, units=None,
                  filename=None, format='r-theta',
@@ -205,6 +206,11 @@ class Wind(Environment, serializable.Serializable):
         if not filename:
             time_value_pair = self._convert_to_time_value_pair(timeseries,
                 units, format)
+
+            if units is None:
+                raise TypeError("Setting from timeseries requires units")
+            else:
+                self._check_units(units)
 
             # this has same scope as CyWindMover object
             #
@@ -489,6 +495,15 @@ class Wind(Environment, serializable.Serializable):
                             )
         file_.close()   # just incase we get issues on windows
 
+    def update_from_dict(self, data):
+        '''
+        '''
+        updated = self.update_attr('units', data.pop('units', self.units))
+        if super(Wind, self).update_from_dict(data):
+            return True
+        else:
+            return updated
+
     def get_value(self, time):
         '''
         Return the value at specified time and location. Wind timeseries are
@@ -502,7 +517,6 @@ class Wind(Environment, serializable.Serializable):
         data = self.get_timeseries(time, 'm/s', 'r-theta')
         return tuple(data[0]['value'])
 
-
 def constant_wind(speed, direction, units='m/s'):
     """
     utility to create a constant wind "timeseries"
@@ -512,12 +526,16 @@ def constant_wind(speed, direction, units='m/s'):
                       (degrees True)
     :param unit='m/s': units for speed, as a string, i.e. "knots", "m/s",
                        "cm/s", etc.
+
+    .. note:: The time for a constant wind timeseries is irrelevant. This
+    function simply sets it to datetime.now() accurate to hours.
     """
     wind_vel = np.zeros((1, ), dtype=basic_types.datetime_value_2d)
 
     # just to have a time accurate to minutes
     wind_vel['time'][0] = datetime.datetime.now().replace(microsecond=0,
-                                                          second=0)
+                                                          second=0,
+                                                          minute=0)
     wind_vel['value'][0] = (speed, direction)
 
     return Wind(timeseries=wind_vel, format='r-theta', units=units)
