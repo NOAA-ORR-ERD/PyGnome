@@ -34,9 +34,13 @@ from colander import SchemaNode, String, Float, drop
 
 from gnome.persist import base_schema
 
+import gnome.map
+
 from gnome.utilities.map_canvas import BW_MapCanvas
 from gnome.utilities.serializable import Serializable, Field
 from gnome.utilities.file_tools import haz_files
+
+from gnome.utilities import projections
 
 from gnome.basic_types import oil_status, world_point_type
 from gnome.cy_gnome.cy_land_check import check_land
@@ -260,11 +264,6 @@ class RasterMap(GnomeMap):
         """
         create a new RasterMap
 
-        :param refloat_halflife: The halflife for refloating off land
-                                 -- assumed to be the same for all land.
-                                 0.0 means all refloat every time step
-                                 < 0.0 means never re-float.
-        :type refloat_halflife: float. Units are hours
 
         :param bitmap_array: A numpy array that stores the land-water map
         :type bitmap_array: a (W,H) numpy array of type uint8
@@ -274,6 +273,12 @@ class RasterMap(GnomeMap):
         :type projection: :class:`gnome.map_canvas.Projection`
 
         Optional arguments (kwargs)
+
+        :param refloat_halflife: The halflife for refloating off land
+                                 -- assumed to be the same for all land.
+                                 0.0 means all refloat every time step
+                                 < 0.0 means never re-float.
+        :type refloat_halflife: float. Units are hours
 
         :param map_bounds: The polygon bounding the map -- could be larger
                            or smaller than the land raster
@@ -322,6 +327,7 @@ class RasterMap(GnomeMap):
         im = im.transpose(Image.FLIP_TOP_BOTTOM)
 
         im.save(filename, format='PNG')
+
 
     def _on_land_pixel(self, coord):
         """
@@ -629,3 +635,163 @@ class MapFromBNA(RasterMap):
                            **kwargs)
 
         return None
+def map_from_rectangular_grid(mask, lon, lat, refine=1, **kwargs):
+
+    """
+    Suitable for a rectangular, but not fully regular, grid
+
+    Such that it can be described by single longitude and latitude vectors
+    
+    :param mask: the land-water mask as a numpy array
+
+    :param lon: longitude array
+
+    :param lon: latitude array
+
+    :param refine=1: amount to refine grid -- 4 will give 4 times the resolution
+    :type refine: integer
+
+    :param kwargs: Other keyword arguments are passed on to RasterMap
+
+    """
+
+    ## expand the grid mask
+    grid = np.repeat(mask, refine, axis = 0)
+    grid = np.repeat(grid, refine, axis = 1)
+
+    ## refine the axes:
+    lon = refine_axis(lon, refine)
+    lat = refine_axis(lat, refine)
+
+    nlon, nlat = grid.shape
+
+    map_bounds = np.array( ( (lon[0],   lat[0]),
+                             (lon[-1],  lat[0]),
+                             (lon[-1], lat[-1]),
+                             (lon[0],  lat[-1]),
+                           ), dtype=np.float )
+    
+    # generating projection for raster map
+    proj = projections.RectangularGridProjection(lon, lat)
+    
+
+    return gnome.map.RasterMap( grid,
+                                proj,
+                                map_bounds=map_bounds,
+                                **kwargs
+                                )
+
+
+def grid_from_nc(filename):
+    """
+    generates a grid_mask and lat lon from a conforming netcdf file
+    """
+    import netCDF4
+
+    nc = netCDF4.Dataset(filename)
+
+    lat_var = nc.variables['lat']
+    lon_var = nc.variables['lon']
+
+    nx, ny = lat_var.shape
+
+    # check for regular grid:
+    ## all rows should be same:
+    for r in range(nx):
+        if not np.array_equal(lon_var[r,:], lon_var[0,:]):
+            raise ValueError("Row: %i isn't equal!"%r)
+
+    for c in range(ny):
+        if not np.array_equal(lat_var[:,c], lat_var[:,0]):
+            raise ValueError("column: %i isn't equal!"%c)
+
+    mask = nc.variables['mask'][:]
+
+    #Re-shuffle for gnome raster map orientation:
+    # create the raster
+#    bitmap_array = np.zeros( (nlon, nlat), dtype=np.uint8 )
+    mask = (mask == 0).astype(np.uint8) # swap water/land
+    mask = np.ascontiguousarray(np.fliplr(mask.T)) # to get oriented right.
+
+    # extra point to fill for last grid cell
+    # note: values can be variable, so not *quite* right
+    lon = lon_var[0,:]
+    lat = lat_var[:,0]
+    lon = np.r_[lon, [2*lon[-1] - lon[-2]] ]
+    lat = np.r_[lat, [2*lat[-1] - lat[-2]] ]
+
+    return mask, lon, lat
+
+def map_from_rectangular_grid_nc_file(filename, refine=1, **kwargs):
+    """
+    builds a raster map from a rectangular grid in a netcdf file
+
+    only tested with the HYCOM grid
+    
+    :param filename: the full path or opendap url for the netcdf file
+    :type filename: string
+
+    :param refine: how much to refine the grid. 1 means keep it as it is, otherwise is will scale
+    :type refine: integer
+
+    :param kwargs: other key word arguemnts -- passed on to RasterMap class constructor
+
+    """
+
+    grid, lon, lat = grid_from_nc(filename)
+    map = map_from_rectangular_grid(grid, lon, lat, refine, **kwargs)
+
+    return map
+
+def refine_axis(old_axis, refine):
+    """
+    refines the axis be interpolating points between each axis points
+
+    :param old_axis: the axis values
+    :type old_axis: 1-d numpy array of floats
+
+    :param refine: amount to refine grid -- 4 will give 4 times the resolution
+    :type refine: integer
+    """
+    refine = int(refine)
+    axis = old_axis.reshape((-1,1))
+    axis = ((axis[1:] - axis[:-1]) / refine) * np.arange(refine) + axis[:-1]
+    axis.shape = (-1,)
+    axis = np.r_[axis, old_axis[-1]]
+    return axis
+
+def map_from_regular_grid(grid_mask, lon, lat, refine = 4, refloat_halflife=6, map_bounds=None):
+    """
+    note: poorly tested -- here to save it in case we need it in the future
+
+    makes a raster map from a regular grid: i.e delta_lon and delta-lat are constant.
+
+    """
+    nlon, nlat = grid_mask.shape
+    dlon = (lon[-1] - lon[0]) / (len(lon)-1)
+    dlat = (lat[-1] - lat[0]) / (len(lat)-1)
+
+    # create the raster
+    bitmap_array = np.zeros( (nlon*resolution, nlat*resolution), dtype=np.uint8 )
+    #add the land to the raster
+    for i in range(resolution):
+        for j in range(resolution):
+            bitmap_array[i::resolution, j::resolution] = grid_mask
+
+    # compute projection
+    bounding_box =  np.array( ( (lon[0],       lat[0]),
+                                (lon[-1]+dlon, lat[-1]+dlat),
+                                ),
+                              dtype=np.float64
+                            ) # adjust for last grid cell.
+    proj = RegularGridProjection(bounding_box,
+                                 image_size=bitmap_array.shape,
+                                 )
+
+    return gnome.map.RasterMap(bitmap_array,
+                                proj,
+                                refloat_halflife=refloat_halflife,
+                                )
+
+
+

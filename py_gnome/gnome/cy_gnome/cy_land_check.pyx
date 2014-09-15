@@ -187,6 +187,10 @@ def find_first_pixel(grid, pt1, pt2):
     cdef int32_t x2 = pt2[0]
     cdef int32_t y2 = pt2[1]
 
+    #initialize prev_x, prev y in case point starts on land.
+    prev_x = x1
+    prev_y = y1
+
     result = c_find_first_pixel(grid,
                                 m,
                                 n,

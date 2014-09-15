@@ -43,7 +43,7 @@ def boiling_point(num_pc, api):
     bp = [float('nan')] * num_pc
     for ix in range(num_pc):
         # since ix is 0 based indexing, we get ((ix + 1) - 0.5) = (ix + 0.5)
-        bp[ix] = T_o + dT_dF * ((ix + 0.5)/num_pc)
+        bp[ix] = T_o + dT_dF * ((ix + 0.5) / num_pc)
 
     return bp
 
@@ -56,11 +56,11 @@ def vapor_pressure_ratio(bp, water_temp, P_atmos=101325.0):
     D_Zb = 0.97
     R_cal = 1.987  # calories
 
-    D_S = 8.75 + 1.987*math.log(bp)
+    D_S = 8.75 + 1.987 * math.log(bp)
     C_2i = 0.19 * bp - 18
 
-    var = 1./(bp - C_2i) - 1./(water_temp - C_2i)
-    ln_Pi_Po = D_S * (bp - C_2i)**2/(D_Zb * R_cal * bp) * var
+    var = 1. / (bp - C_2i) - 1. / (water_temp - C_2i)
+    ln_Pi_Po = D_S * (bp - C_2i) ** 2 / (D_Zb * R_cal * bp) * var
     Pi_atmos = math.exp(ln_Pi_Po)
 
     return Pi_atmos
@@ -78,15 +78,25 @@ def mw_saturate(bp):
 
 class OilProps(object):
     '''
-    Class gets derived oil properties, specifically, it
-    has a property called density that returns a scalar as opposed to a
-    list of Densities. Default for the property is to return value in SI units
-    (kg/m^3)
+    Class which:
+    - Contains an oil object.
+    - Provides more sophisticated oil properties than the basic oil database
+      object.
+    - These properties are the result of calculations made upon the
+      basic oil database properties.
+    - Generally speaking, we will try to adhere to the ASTM standards and use
+      the SI measurement system when determining units for our values.
+      The SI base units are consistent with the MKS system.
 
-    It contains the raw database properties as well in _r_oil property
+    Specifically, OilProps has a few categories of properties:
+    Density:
+    - returns a scalar as opposed to a list of Densities.
+
+    Viscosity:
+
     '''
 
-    def __init__(self, oil_, water_temp=289):
+    def __init__(self, oil_, temperature=311.15):
         '''
         If oil_ is amongst self._sample_oils dict, then use the properties
         defined here. If not, then query the Oil database to check if oil_
@@ -94,7 +104,8 @@ class OilProps(object):
 
         :param oil_: Oil object that maps to entity in OilLib database
         :type oil_: Oil object
-        :param water_temp: water temperature in 'K'
+        :param water_temp: The temperature in 'K'.  Per ASTM, the default is
+                           38 degrees Celcius (311.15 degrees Kelvin)
         '''
         self._r_oil = oil_
         self.num_pc = 5     # probably determine this from data
@@ -104,14 +115,14 @@ class OilProps(object):
         # self.hl = [float('inf')] * self.num_pc
         # self.hl[0] = 15.*60
         #======================================================================
-        self._water_temp = water_temp
+        self._temperature = temperature
 
         self.boiling_point = boiling_point(self.num_pc, self.get('api'))
         self.vapor_pressure_ratio = []
         self.mw_saturates = []
         for bp in self.boiling_point:
             self.vapor_pressure_ratio.append(
-                vapor_pressure_ratio(bp, self.water_temp))
+                vapor_pressure_ratio(bp, self.temperature))
             self.mw_saturates.append(mw_saturate(bp))
 
     def __repr__(self):
@@ -120,7 +131,7 @@ class OilProps(object):
                 ')'.format(self))
 
     density = property(lambda self: self.get_density())
-    water_temp = property(lambda self: self.get_water_temp())
+    temperature = property(lambda self: self.get_temperature())
     name = property(lambda self: self._r_oil.name,
                     lambda self, val: setattr(self._r_oil, 'name', val))
     api = property(lambda self: self.get('api'))
@@ -129,17 +140,17 @@ class OilProps(object):
         'get raw oil props'
         return getattr(self._r_oil, prop)
 
-    def get_water_temp(self, units='K'):
-        return uc.convert('Temperature', 'K', units, self._water_temp)
+    def get_temperature(self, units='K'):
+        return uc.convert('Temperature', 'K', units, self._temperature)
 
-    def set_water_temp(self, value, units):
+    def set_temperature(self, value, units):
         temp = uc.convert('Temperature', units, 'K', value)
-        self._water_temp = temp
+        self._temperature = temp
         # update dependencies
         self.vapor_pressure = []
         for ix, bp in enumerate(self.boiling_point):
             self.vapor_pressure_ratio.append(
-                vapor_pressure_ratio(bp, self._water_temp))
+                vapor_pressure_ratio(bp, self._temperature))
 
     @property
     def mass_components(self):
@@ -150,17 +161,41 @@ class OilProps(object):
            - Set 'half-lives' array based on ???
            TODO: Right now this is just a stub that returns a hardcoded value
                  for testing purposes.
-                 - Try to query our distillation cuts and see if they are usable.
+                 - Try to query our distillation cuts and see if they are
+                   usable.
                  - Figure out where we will get the half-lives data.
         '''
         mc = (1., 0., 0., 0., 0.)
-        hl = ((15. * 60), float('inf'), float('inf'), float('inf'), float('inf'))
+        hl = ((15. * 60), float('inf'),
+              float('inf'), float('inf'),
+              float('inf'))
         return [MassComponent(*n) for n in zip(mc, hl)]
 
     def get_density(self, units='kg/m^3'):
         '''
         :param units: optional input if output units should be something other
                       than kg/m^3
+        :return: scalar Density.  Default units: (kg/m^3)
+        '''
+
+        if self.api is None:
+            raise ValueError("Oil with name '{0}' does not contain 'api'"
+                             " property.".format(self._r_oil.name))
+
+        # since Oil object can have various densities depending on temperature,
+        # lets return API in correct units
+        return uc.convert('Density', 'API degree', units, self.api)
+
+    def get_viscosity(self, units='m^2/s'):
+        '''
+        :param units: optional input if output units should be something other
+                      than kg/m^3
+        :return: scalar Density.  Default units: (kg/m^3)
+
+        - The kinematic viscosity (nu) is the ratio of the dynamic viscosity
+          (mu) to the density of the fluid (rho). (nu = mu / rho)  It is
+          measured in (m^2/s)
+        - 1 m^2/s = 1000000 centistokes (cSt)
         '''
 
         if self.api is None:
