@@ -608,8 +608,8 @@ OSErr TShioTimeValue::CheckAndPassOnMessage(TModelMessage *message)
 
 /////////////////////////////////////////////////
 
-//#define TShioMoverREADWRITEVERSION 1 //JLM
-#define TShioMoverREADWRITEVERSION 2 //JLM
+#define TShioMoverREADWRITEVERSION 1 //JLM
+//#define TShioMoverREADWRITEVERSION 2 //JLM
 
 OSErr TShioTimeValue::Write(BFPB *bfpb)
 {
@@ -617,6 +617,7 @@ OSErr TShioTimeValue::Write(BFPB *bfpb)
 	ClassID id = GetClassID ();
 	TimeValuePair pair;
 	OSErr err = 0;
+	double fLatitude, fLongitude;	// now the station info is is TOSSMTimeValue...
 	
 	if (err = TOSSMTimeValue::Write(bfpb)) return err;
 	
@@ -627,8 +628,11 @@ OSErr TShioTimeValue::Write(BFPB *bfpb)
 	
 	if (err = WriteMacValue(bfpb, fStationName, MAXSTATIONNAMELEN)) return err; // don't swap !! 
 	if (err = WriteMacValue(bfpb,fStationType)) return err;  
-	//if (err = WriteMacValue(bfpb,fLatitude)) return err;
-	//if (err = WriteMacValue(bfpb,fLongitude)) return err;
+	// just to keep save files matched up...
+	fLatitude = fStationPosition.pLat / 1.e6;
+	fLongitude = fStationPosition.pLong / 1.e.6;
+	if (err = WriteMacValue(bfpb,fLatitude)) return err;
+	if (err = WriteMacValue(bfpb,fLongitude)) return err;
 
 	if (err = WriteMacValue(bfpb,fConstituent.DatumControls.datum)) return err;
 	if (err = WriteMacValue(bfpb,fConstituent.DatumControls.FDir)) return err;
@@ -760,11 +764,14 @@ OSErr TShioTimeValue::Read(BFPB *bfpb)
 	
 	if (err = ReadMacValue(bfpb, fStationName, MAXSTATIONNAMELEN)) return err; // don't swap !! 
 	if (err = ReadMacValue(bfpb,&fStationType)) return err; 
-	if (version == 1)
+	//if (version == 1)
 	{
 		double fLatitude, fLongitude;	// now the station info is is TOSSMTimeValue...
 		if (err = ReadMacValue(bfpb,&fLatitude)) return err;
 		if (err = ReadMacValue(bfpb,&fLongitude)) return err;
+		// should set the station position
+		fStationPosition.pLat = fLatitude * 1.e6;
+		fStationPosition.pLong = fLongitude * 1.e6;
 	}
 	if (err = ReadMacValue(bfpb,&fConstituent.DatumControls.datum)) return err;
 	if (err = ReadMacValue(bfpb,&fConstituent.DatumControls.FDir)) return err;
