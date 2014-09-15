@@ -42,8 +42,8 @@ class Field(object):  # ,serializable.Serializable):
         :param bool isdatafile=False: Is the property a datafile that should be
             moved during persistence?
         :param bool update=False: Is the property update-able by the web app?
-        :param bool create=False: Is the property required to re-create the object
-            when loading from a save file?
+        :param bool create=False: Is the property required to re-create the
+            object when loading from a save file?
         :param bool read=False: If property is not updateable, perhaps make it
             read only so web app has information about the object
         :param bool save_reference=False: bool with default value of False.
@@ -87,6 +87,11 @@ class Field(object):  # ,serializable.Serializable):
             self.update == other.update and
             self.read == other.read):
             return True
+
+        return False
+
+    def __ne__(self, other):
+        return not self == other
 
     def __repr__(self):
         'unambiguous object representation'
