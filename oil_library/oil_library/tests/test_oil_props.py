@@ -4,9 +4,8 @@ Tests for oil_props module in gnome.db.oil_library
 
 import pytest
 
-from numpy import isclose
-
 from oil_library import get_oil, oil_from_density
+from oil_library.oil_props import boiling_point
 
 from hazpy import unit_conversion
 
@@ -37,7 +36,7 @@ def test_OilProps_sample_oil(oil, density, units):
     data entered correctly and unit conversion is correct """
 
     o = get_oil(oil)
-    assert isclose(o.get_density(units), density, atol=1e-3)
+    assert abs(o.get_density(units)-density) < 1e-3
     assert o.name == oil
 
 
@@ -52,7 +51,7 @@ def test_OilPropsFromDensity(oil, density, units):
     # is close to our input
     o.temperature = 273.15 + 15
 
-    assert isclose(o.get_density(units), density)
+    assert abs((o.get_density(units) - density)/density) < 1e-5  # < 0.001 %
     assert o.name == oil
 
 
@@ -78,4 +77,32 @@ def test_OilProps_Viscosity(oil, temp, viscosity):
     """
     o = get_oil(oil)
     o.temperature = temp
-    assert isclose(o.viscosity, viscosity)
+    assert abs((o.viscosity - viscosity)/viscosity) < 1e-5  # < 0.001 %
+
+
+@pytest.mark.parametrize("max_cuts", (1, 2, 3, 4, 5))
+def test_boiling_point(max_cuts):
+    '''
+    some basic testing of boiling_point function
+    - checks the expected BP for 0th component for api=1
+    - checks len(bp) == max_cuts * 2
+    - also checks the BP for saturates == BP for aromatics
+    '''
+    api = 1
+    slope = 1356.7
+    intercept = 457.16 - 3.3447
+
+    exp_bp_0 = 1./(max_cuts * 2) * slope + intercept
+    bp = boiling_point(max_cuts, api)
+    print '\nBoiling Points: '
+    print bp
+    assert len(bp) == max_cuts * 2
+    assert ([bp[ix] - bp[ix + 1] for ix in range(0, max_cuts * 2, 2)] ==
+            [0.0] * max_cuts)
+    assert bp[:2] == [exp_bp_0] * 2
+
+
+def test_get_density():
+    'test get_density uses temp given as input'
+    o = get_oil('FUEL OIL NO.6')
+    assert o.get_density() != o.get_density(temp=273)

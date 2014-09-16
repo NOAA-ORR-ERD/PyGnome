@@ -995,5 +995,44 @@ def get_eq_spills():
     return (spill, spill2)
 
 
+class TestSpillContainerPairGetSetDel:
+    s0 = [point_line_release_spill(1, (0, 0, 0), datetime.now()),
+          point_line_release_spill(2, (0, 0, 0), datetime.now())]
+
+    def init_scp(self):
+        scp = SpillContainerPair(uncertain=True)
+        for s in self.s0:
+            scp += s
+        return scp
+
+    def test_add(self):
+        'test add/del/replace magic functions __<func>__'
+        scp = self.init_scp()
+        assert len(scp) == len(self.s0)
+        for ix, s in enumerate(scp):
+            assert self.s0[ix] == s
+
+        for s in self.s0:
+            assert scp[s.id] == s
+
+        assert len(scp) == len(scp._u_spill_container.spills)
+
+        for ix, u_spill in enumerate(scp._u_spill_container.spills):
+            assert scp[ix] == u_spill
+            assert scp[ix] is not u_spill
+
+    def test_get_by_index(self):
+        'test forecast spill can be retrieved by index'
+        scp = self.init_scp()
+        for ix in range(len(scp)):
+            assert scp[ix] == self.s0[ix]
+
+    def test_replace_by_identity(self):
+        scp = self.init_scp()
+        sr = point_line_release_spill(3, (1, 1, 1), datetime.now())
+        scp[self.s0[0].id] = sr
+        assert scp[0] == sr
+        assert scp[1] == self.s0[1]
+
 if __name__ == '__main__':
     test_rewind()

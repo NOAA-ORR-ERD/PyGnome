@@ -10,7 +10,7 @@ object used to initialize and OilProps object
 
 Not sure at present if this needs to be serializable?
 '''
-from math import exp, log
+from math import exp, log   # for scalars, python is faster
 
 from hazpy import unit_conversion
 uc = unit_conversion
@@ -18,30 +18,51 @@ uc = unit_conversion
 from .models import KVis
 
 
-def boiling_point(num_pc, api):
+def boiling_point(max_cuts, api):
     '''
     return an array of boiling points for each psuedo-components
-    Assume 5 pseudo-components
+    Assume max_cuts * 2 components containing [saturate, aromatic]
+    Output boiling point in this form:
+
+      components: [s_0, a_0, s_1, a_1, ..., s_n, a_n]
+      index, i:   [0, 1, 2, .., max_cuts-1]
+
+    where s_i is boiling point corresponding with i-th saturate component
+    similarly a_i is boiling point corresponding with i-th aromatic component
+    Hence, max_cuts * 2 components. Boiling point is computed assuming a linear
+    relation as follows:
+
         T_o = 457.16 - 3.3447 * API
         dT/df = 1356.7 - 247.36*ln(API)
-        for i = range(num_pc):
-            boiling_point = T_o + dT_dF * (i + 0.5)/num_pc
+
+    The linear fit is done for evenly spaced intervals and BP is in ascending
+    order
+
+        if i % 2 == 0:    # for saturates, i is even
+            bp[i] = T_o + dT/df * (i + 1)/(max_cuts * 2)
+            so i = [0, 2, 4, .., max_cuts-2]
+
+    The boiling point for i-th component's saturate == aromatic bp:
+
+        if i % 2 == 1:    # aromatic, i is odd
+            bp[i] = T_o + dT/df * i/(max_cuts * 2)
 
     boiling point units of Kelvin
+    Boiling point of saturate and aromatic i-th mass component is equal.
     '''
     T_o = 457.16 - 3.3447 * api
     dT_dF = 1356.7 - 247.36 * log(api)
 
-    # bp = [T_o + dT_dF * ((ix + 0.5)/num_pc) for ix in range(num_pc)]
-    bp = [float('nan')] * num_pc
-    for ix in range(num_pc):
-        # since ix is 0 based indexing, we get ((ix + 1) - 0.5) = (ix + 0.5)
-        bp[ix] = T_o + dT_dF * ((ix + 0.5) / num_pc)
+    bp = [float('nan')] * (max_cuts * 2)
+    array_size = (max_cuts * 2)
+    for ix in range(0, max_cuts * 2, 2):
+        bp[ix] = dT_dF*(ix + 1)/array_size + T_o
+        bp[ix + 1] = bp[ix]
 
     return bp
 
 
-def mw(bp, component):
+def molecular_weight(bp, component):
     '''
     return the molecular weight of the pseudocomponents (mw_i) given the
     boiling points. It returns the mw_i for saturates and aromatic components
@@ -74,30 +95,34 @@ class OilProps(object):
 
     '''
 
-    def __init__(self, oil_, temperature=311.15):
+    def __init__(self, oil_, temperature=311.15, max_cuts=5):
         '''
         Extends the raw Oil object to include properties required by
         weathering processes. If oil_ is not pulled from database or user may
         wish to use simple half life weatherer, in this case, there is no need
-        to carry around more than one psuedo-component. Let user set num_pc
+        to carry around more than one psuedo-component. Let user set max_cuts
         if desired, but only during initialization.
 
         :param oil_: Oil object that maps to entity in OilLib database
         :type oil_: Oil object
-        :param water_temp: The temperature in 'K'.  Per ASTM, the default is
-                           38 degrees Celcius (311.15 degrees Kelvin)
+        :param temperature: The temperature in 'K'.  Per ASTM, the default is
+            38 degrees Celcius (311.15 degrees Kelvin)
+        :param max_cuts: max number of distillation cuts. Default is 5, so
+            each cut will have a 'saturate' and 'aromatic' component, making
+            it 10 components. In addition, there maybe some mass in 'resins'
+            and 'asphaltenes' making it 12 components
         '''
         self._r_oil = oil_
+        self._temperature = temperature
 
-        # probably determine this from data?
         # Default mass components:
         #    5 saturates, 5 aromatics, resins, asphaltenes
         #
         # mass_fraction =
         # [m0_s, m0_a, m1_s, m1_a, ..., m_resins, m_asphaltenes]
-        self._num_pc = 12
-        self._temperature = temperature
-        self._update_component_props()
+        self.max_cuts = 5
+        self._component_frac_bp()
+        self._component_mw()
 
     def __repr__(self):
         return ('{0.__class__.__module__}.{0.__class__.__name__}('
@@ -123,7 +148,7 @@ class OilProps(object):
         temp = uc.convert('Temperature', units, 'K', value)
         self._temperature = temp
 
-    def get_density(self, units='kg/m^3'):
+    def get_density(self, units='kg/m^3', temp=None):
         '''
             We will prefer to calculate density from the empirical densities
             associated with the oil record.
@@ -133,6 +158,8 @@ class OilProps(object):
                           other than kg/m^3
             :return: scalar Density.  Default units: (kg/m^3)
         '''
+        if temp is None:
+            temp = self.temperature
 
         if self._r_oil.densities:
             # calculate our density at temperature
@@ -143,7 +170,7 @@ class OilProps(object):
             t_ref = density_rec.ref_temp_k
             k_p1 = 0.008
 
-            d_0 = d_ref / (1 - k_p1 * (t_ref - self.temperature))
+            d_0 = d_ref / (1 - k_p1 * (t_ref - temp))
         elif self.api != None:
             # calculate our density from api
             d_0 = 141.5 / (131.5 + self.api) * 1000
@@ -277,39 +304,88 @@ class OilProps(object):
             return None
 
     @property
-    def num_pc(self):
-        return self._num_pc
+    def num_components(self):
+        return len(self.mass_fraction)
 
-    def _update_component_props(self):
+    def _add_resins_asphalt(self, heavy_comp):
+        'add heavier components if mass_fraction < 1.0'
+        if heavy_comp is None or heavy_comp == 0.0:
+            return
+
+        f_remain = sum(self.mass_fraction)
+        if f_remain < 1.0:
+            if heavy_comp + f_remain <= 1.0:
+                self.mass_fraction.append(heavy_comp)
+            else:
+                self.mass_fraction.append(1.0-f_remain)
+            self.boiling_point.append(float('inf'))
+
+    def _frac_bp_from_cuts(self):
+        '''
+        Need the mass_fraction to sum upto 1.0
+        Also need to understand how to identify saturates/aromatics
+        Should mass_fractions be determined by cuts (boiling_points) or
+        should they be given by largest to smallest mass fraction?
+        '''
+        # distillation cut data available
+        last_frac = 0.0
+        for ix, cut in enumerate(self._r_oil.cuts):
+            if ix < (self.max_cuts * 2):
+                self.boiling_point.append(cut.vapor_temp_k)
+                self.mass_fraction.append(cut.fraction - last_frac)
+                last_frac = cut.fraction
+        self._add_resins_asphalt(self.get('resins'))
+        self._add_resins_asphalt(self.get('asphaltene_content'))
+
+    def _frac_bp_estimated(self):
+        'no distillation cuts data available'
+        resins = 0.0
+        asphalt = 0.0
+        if self.get('resins') is not None:
+            resins = self.get('resins')
+        if self.get('asphaltene_content') is not None:
+            asphalt = self.get('asphaltene_content')
+
+        mass_left = 1.0 - resins - asphalt
+        mass_per_comp = mass_left / (self.max_cuts * 2)
+        self.mass_fraction = [mass_per_comp] * (self.max_cuts * 2)
+        if self.api is not None:
+            self.boiling_point = boiling_point(self.max_cuts,
+                                               self.get('api'))
+        else:
+            self.boiling_point = [float('nan')] * (self.max_cuts * 2)
+
+        if resins > 0.0:
+            self.mass_fraction.append(resins)
+            self.boiling_point.append(float('inf'))
+
+        if asphalt > 0.0:
+            self.mass_fraction.append(asphalt)
+            self.boiling_point.append(float('inf'))
+
+    def _component_frac_bp(self):
         '''
         if number of psuedo components changes, update related properties
         self.mass_fraction defined as:
         [m0_s, m0_a, m1_s, m1_a, ..., m_resins, m_asphaltenes]
         '''
-        # mass components are for [saturates, aromatics, resins, asphaltenes]
-        self.mass_fraction = [0.] * (self.num_pc)
-        self.mass_fraction[0] = 1.
+        self.mass_fraction = []
+        self.boiling_point = []
+        if len(self._r_oil.cuts) > 0:
+            self._frac_bp_from_cuts()
+        else:
+            # no distillation cut data
+            self._frac_bp_estimated()
 
-        api = self.get('api')
-        if not (api and api > 0.0):
-            orig_temp = self._temperature
-            self._temperature = 273.15 + 15
-
-            api = (141.5 * 1000 / self.density) - 131.5
-
-            self._temperature = orig_temp
-
-        self.boiling_point = boiling_point(self.num_pc - 2, api)
-
-        self.mw = []
-
+    def _component_mw(self):
+        'estimate molecular weights of components'
+        self.molecular_weight = [float('nan')] * self.num_components  # initialize to 'nan'
         for ix, bp in enumerate(self.boiling_point):
+            if bp is 'inf' or bp is 'nan':
+                continue
+
             if ix % 2 == 0:
-                self.mw.append(mw(bp, 'saturate'))
+                self.molecular_weight[ix] = molecular_weight(bp, 'saturate')
             else:
                 # will define a different function for mw_aromatics
-                self.mw.append(mw(bp, 'aromatic'))
-
-        # are the boiling points of resins and asphaltenes infinite?
-        # append these after we have the molecular weights for sat/aromatics
-        self.boiling_point.extend([float('inf'), float('inf')])
+                self.molecular_weight[ix] = molecular_weight(bp, 'aromatic')

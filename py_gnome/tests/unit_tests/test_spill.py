@@ -17,6 +17,8 @@ from pytest import raises
 import numpy
 np = numpy
 
+import hazpy.unit_conversion as uc
+
 from gnome.spill import (Spill,
                          Release,
                          point_line_release_spill,
@@ -72,11 +74,15 @@ def test_amount_mass_vol(amount, units):
     ensure mass is being returned correctly when 'amount' is initialized wtih
     'mass' or 'volume'
     '''
-    spill = Spill(Release(datetime.now()), amount=10.0, units='m^3')
-    assert spill.amount == 10.0
-    assert spill.units == 'm^3'
+    spill = Spill(Release(datetime.now()), amount=amount, units=units)
+    assert spill.amount == amount
+    assert spill.units == units
 
-    exp_mass = spill.get('substance').get_density('kg/m^3') * spill.amount
+    if units in Spill.valid_vol_units:
+        exp_mass = (spill.get('substance').get_density('kg/m^3') *
+                    uc.convert('Volume', units, 'm^3', spill.amount))
+    else:
+        exp_mass = uc.convert('Mass', units, 'kg', spill.amount)
     assert spill.get_mass() == exp_mass
     exp_mass_g = exp_mass * 1000
     assert spill.get_mass('g') == exp_mass_g

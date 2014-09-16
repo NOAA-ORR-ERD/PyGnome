@@ -8,20 +8,41 @@ These are properties that are spill specific like:
   'weathering' element_types would use droplet_size, densities, mass?
 '''
 import copy
+from math import exp, log
 
 import gnome    # required by new_from_dict
 from gnome.utilities.serializable import Serializable
-from gnome.array_types import mass_components
+from gnome.array_types import num_oil_components, reset_to_defaults
 from .initializers import (InitRiseVelFromDropletSizeFromDist,
                            InitRiseVelFromDist,
                            InitWindages,
                            InitMassFromSpillAmount,
+                           InitArraysFromOilProps,
                            InitMassFromPlume)
-from oil_library import (get_oil, oil_from_density)
+from gnome.environment import water, atmos
+from oil_library import get_oil
 
 from gnome.persist import base_schema
 
 """ ElementType classes"""
+
+
+def vapor_pressure(bp):
+    '''
+    water_temp and boiling point units are Kelvin
+    returns the vapor_pressure in SI units (Pascals)
+    '''
+    D_Zb = 0.97
+    R_cal = 1.987  # calories
+
+    D_S = 8.75 + 1.987 * log(bp)
+    C_2i = 0.19 * bp - 18
+
+    var = 1. / (bp - C_2i) - 1. / (water['temperature'] - C_2i)
+    ln_Pi_Po = D_S * (bp - C_2i) ** 2 / (D_Zb * R_cal * bp) * var
+    Pi = exp(ln_Pi_Po) * atmos['pressure']
+
+    return Pi
 
 
 class ElementType(Serializable):
@@ -55,19 +76,17 @@ class ElementType(Serializable):
 
         if isinstance(substance, basestring):
             # leave for now to preserve tests
-            self.substance = get_oil(substance)
+            self.substance = get_oil(substance, 2)
         else:
             self.substance = substance
 
-        if self.substance.num_pc != mass_components.shape[0]:
-            self._update_mass_components_at()
+        self.substance.temperature = water['temperature']
+        if self.substance.num_components != num_oil_components:
+            reset_to_defaults()
 
-    def _update_mass_components_at(self):
-        'update mass_components ArrayType per the number of components'
-        mass_components.shape = (self.substance.num_pc,)
-        i_val = [0.] * self.substance.num_pc
-        i_val[0] = 1.
-        mass_components.initial_value = tuple(i_val)
+        # for now add vapor_pressure here
+        self.vapor_pressure = [vapor_pressure(bp)
+                               for bp in self.substance.boiling_point]
 
     def __repr__(self):
         return ('{0.__class__.__module__}.{0.__class__.__name__}('
@@ -178,21 +197,47 @@ class ElementType(Serializable):
         return dict_
 
 
-def floating(windage_range=(.01, .04), windage_persist=900):
+def floating(windage_range=(.01, .04),
+             windage_persist=900,
+             substance=None):
     """
     Helper function returns an ElementType object containing 'windages'
     initializer with user specified windage_range and windage_persist.
     """
-    return ElementType([InitWindages(windage_range, windage_persist)])
+    init = [InitWindages(windage_range, windage_persist)]
+    if substance:
+        ElementType(init, substance)
+    else:
+        return ElementType(init)
 
 
-def floating_mass(windage_range=(.01, .04), windage_persist=900):
+def floating_mass(windage_range=(.01, .04),
+                  windage_persist=900,
+                  substance=None):
     """
     Helper function returns an ElementType object containing 'windages'
     initializer with user specified windage_range and windage_persist.
     """
-    return ElementType([InitWindages(windage_range, windage_persist),
-                        InitMassFromSpillAmount()])
+    init = [InitWindages(windage_range, windage_persist),
+            InitMassFromSpillAmount()]
+    if substance:
+        return ElementType(init, substance)
+    else:
+        return ElementType(init)
+
+
+def floating_weathering(windage_range=(.01, .04),
+                        windage_persist=900,
+                        substance=None):
+    '''
+    Use InitArraysFromOilProps()
+    '''
+    init = [InitWindages(windage_range, windage_persist),
+            InitArraysFromOilProps()]
+    if substance:
+        return ElementType(init, substance)
+    else:
+        return ElementType(init)
 
 
 def plume(distribution_type='droplet_size',

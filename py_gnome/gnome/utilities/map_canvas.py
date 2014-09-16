@@ -164,6 +164,14 @@ class MapCanvas(object):
 #        return mc
 # =============================================================================
 
+    def viewport_to_dict(self):
+        '''
+        convert numpy arrays to list of tuples
+        todo: this happens in multiple places so maybe worthwhile to define
+        custom serialize/deserialize -- but do this for now
+        '''
+        return map(tuple, self.viewport.tolist())
+
     @property
     def viewport(self):
         """
@@ -198,8 +206,6 @@ class MapCanvas(object):
         self.draw_land()
         if self.raster_map is not None:
             self.draw_raster_map()
-
-
 
     def draw_land(self):
         """
@@ -277,8 +283,6 @@ class MapCanvas(object):
                             rect = raster_map.projection.to_lonlat( ( (i, j), (i+1, j), (i+1, j+1), (i, j+1)) )
                             rect =  self.projection.to_pixel_2D(rect).reshape((-1,)).tolist()
                             drawer.polygon(rect, fill=self.colors['raster_map'])
-
-
 
     def create_foreground_image(self):
         self.fore_image_array = np.zeros((self.image_size[1],

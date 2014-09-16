@@ -49,7 +49,7 @@ _oillib_path = os.path.dirname(__file__)
 _db_file = os.path.join(_oillib_path, 'OilLib.db')
 
 
-def get_oil(oil_name):
+def get_oil(oil_name, max_cuts=5):
     """
     function returns the Oil object given the name of the oil as a string.
 
@@ -84,7 +84,7 @@ def get_oil(oil_name):
     """
 
     if oil_name in _sample_oils.keys():
-        return OilProps(Oil(**_sample_oils[oil_name]))
+        return OilProps(Oil(**_sample_oils[oil_name]), max_cuts=max_cuts)
 
     else:
         '''
@@ -105,7 +105,7 @@ def get_oil(oil_name):
 
         try:
             oil_ = DBSession.query(Oil).filter(Oil.oil_name == oil_name).one()
-            return OilProps(oil_)
+            return OilProps(oil_, max_cuts=max_cuts)
         except NoResultFound, ex:
             # or sqlalchemy.orm.exc.MultipleResultsFound as ex:
             ex.message = ("oil with name '{0}' not found in database. "

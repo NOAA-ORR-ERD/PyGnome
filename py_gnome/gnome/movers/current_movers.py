@@ -111,7 +111,7 @@ class CatsMover(CyMover, serializable.Serializable):
         self.scale_value = kwargs.get('scale_value',
                                       self.mover.scale_value)
 
-        self.uncertain_start_time = kwargs.pop('uncertain_duration', 48)
+        self.uncertain_duration = kwargs.pop('uncertain_duration', 48)
         self.uncertain_time_delay = kwargs.pop('uncertain_time_delay', 0)
         self.up_cur_uncertain = kwargs.pop('up_cur_uncertain', .3)
         self.down_cur_uncertain = kwargs.pop('down_cur_uncertain', -.3)

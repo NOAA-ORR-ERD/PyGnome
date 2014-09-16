@@ -20,6 +20,7 @@ from gnome.spill.elements import (InitWindages,
                             InitRiseVelFromDist,
                             InitRiseVelFromDropletSizeFromDist,
                             floating,
+                            floating_weathering,
                             ElementType)
 
 from gnome.utilities.distributions import (NormalDistribution,
@@ -257,20 +258,25 @@ def test_initialize_InitRiseVelFromDist_normal():
 """ Element Types"""
 # additional array_types corresponding with ElementTypes for following test
 arr_types = {'windages': array_types.windages,
-             'windage_range': array_types.windage_range,
-             'windage_persist': array_types.windage_persist,
-             'mass': array_types.mass,
-             'rise_vel': array_types.rise_vel}
+            'windage_range': array_types.windage_range,
+            'windage_persist': array_types.windage_persist}
+
+rise_vel = {'rise_vel': array_types.rise_vel}
+rise_vel.update(arr_types)
+
+mass_comp = {'mass_components': array_types.mass_components}
+mass_comp.update(arr_types)
 
 inp_params = [((floating(),
                 ElementType([InitWindages(),
                              InitMassFromSpillAmount()])), arr_types),
               ((floating(),
                 ElementType([InitWindages(),
-                             InitRiseVelFromDist()])), arr_types),
+                             InitRiseVelFromDist()])), rise_vel),
               ((floating(),
                 ElementType([InitMassFromSpillAmount(),
-                             InitRiseVelFromDist()])), arr_types),
+                             InitRiseVelFromDist()])), rise_vel),
+              ((floating(), floating_weathering()), mass_comp),
               ]
 
 
@@ -311,12 +317,19 @@ def test_element_types(elem_type, arr_types, sample_sc_no_uncertainty):
             # todo: need better API for access
             s_arr_types = spill.get('array_types').keys()
 
+            if 'mass_components' in s_arr_types:
+                # floating_weathering() uses InitArraysFromOilProps() which
+                # also sets the following arrays
+                assert 'density' in s_arr_types
+                assert 'mass' in s_arr_types
+
             if np.any(spill_mask):
                 for key in arr_types:
                     if key in s_arr_types:
                         assert np.all(sc[key][spill_mask] != 0)
                     else:
-                        assert np.all(sc[key][spill_mask] == 0)
+                        assert np.all(sc[key][spill_mask] ==
+                                      sc.array_types[key].initial_value)
 
 
 @pytest.mark.parametrize(("fcn"), fcn_list)

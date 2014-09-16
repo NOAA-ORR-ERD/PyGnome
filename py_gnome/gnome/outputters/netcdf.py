@@ -406,6 +406,8 @@ class NetCDFOutput(Outputter, Serializable):
         else:
             filenames = (self.netcdf_filename,)
 
+        # array sizes of weathering processes + mass_components will vary
+        weathering_size = array_types.mass_components.shape
         for file_ in filenames:
             self._nc_file_exists_error(file_)
             ## create the netcdf files and write the standard stuff:
@@ -428,7 +430,7 @@ class NetCDFOutput(Outputter, Serializable):
                 rootgrp.createDimension('data')  # unlimited
                 rootgrp.createDimension('two', 2)
                 rootgrp.createDimension('three', 3)
-                rootgrp.createDimension('twelve', 12)  # weathering/mass_components
+                rootgrp.createDimension('weathering', weathering_size[0])
 
                 # create the time variable
                 time_ = rootgrp.createVariable('time',
@@ -472,9 +474,9 @@ class NetCDFOutput(Outputter, Serializable):
                         dt = at.dtype
 
                         # total kludge for the cases we happen to have...
-                        if at.shape == (12,):
-                            shape = ('data', 'twelve')
-                            chunksizes = (self._chunksize, 12)
+                        if at.shape == weathering_size:
+                            shape = ('data', 'weathering')
+                            chunksizes = (self._chunksize, weathering_size[0])
                         elif at.shape == (4,):
                             shape = ('data', 'four')
                             chunksizes = (self._chunksize, 4)

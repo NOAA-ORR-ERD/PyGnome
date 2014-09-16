@@ -30,13 +30,16 @@ class SpillSchema(ObjType):
                     description='on/off status of spill')
     amount = SchemaNode(Float(), missing=drop)
     units = SchemaNode(String(), missing=drop)
+    frac_coverage = SchemaNode(Float(), missing=drop)
+    frac_water = SchemaNode(Float(), missing=drop)
 
 
 class Spill(serializable.Serializable):
     """
     Models a spill
     """
-    _update = ['on', 'release', 'element_type', 'amount', 'units']
+    _update = ['on', 'release', 'element_type', 'amount', 'units',
+               'frac_coverage', 'frac_water']
 
     _create = []
     _create.extend(_update)
@@ -58,6 +61,8 @@ class Spill(serializable.Serializable):
                  on=True,
                  amount=None,   # could be volume or mass
                  units=None,
+                 frac_coverage=1.0,
+                 frac_water=0.0,
                  name='Spill'):
         """
         Spills used by the gnome model. It contains a release object, which
@@ -79,6 +84,10 @@ class Spill(serializable.Serializable):
         :type amount: float
         :param units=None: must provide units for amount spilled
         :type units: str
+        :param frac_water=0.0: fractional water content in the emulsion
+        :type frac_water: float
+        :param frac_coverage=1.0: fraction of area covered by oil
+        :type frac_coverage: float
         :param name='Spill': a name for the spill
         :type name: str
 
@@ -107,6 +116,8 @@ class Spill(serializable.Serializable):
             else:
                 self.units = units
 
+        self.frac_coverage = frac_coverage
+        self.frac_water = frac_water
         self.name = name
 
     def __repr__(self):
@@ -372,12 +383,12 @@ class Spill(serializable.Serializable):
 
         # first convert amount to 'kg'
         if self.units in self.valid_mass_units:
-            mass = uc.convert('Mass', 'kg', self.units, self.amount)
+            mass = uc.convert('Mass', self.units, 'kg', self.amount)
         elif self.units in self.valid_vol_units:
-            vol = uc.convert('Volume', 'm^3', self.units, self.amount)
+            vol = uc.convert('Volume', self.units, 'm^3', self.amount)
             mass = self.element_type.substance.get_density('kg/m^3') * vol
 
-        if units is None:
+        if units is None or units == 'kg':
             return mass
         else:
             self._check_units(units)
@@ -509,6 +520,8 @@ def point_line_release_spill(num_elements,
                              on=True,
                              amount=None,
                              units=None,
+                             frac_coverage=1.0,
+                             frac_water=0.0,
                              name='Point/Line Release'):
     '''
     Helper function returns a Spill object containing a point or line release
@@ -518,4 +531,11 @@ def point_line_release_spill(num_elements,
                                num_elements=num_elements,
                                end_position=end_position,
                                end_release_time=end_release_time)
-    return Spill(release, element_type, on, amount, units, name)
+    return Spill(release,
+                 element_type,
+                 on,
+                 amount,
+                 units,
+                 frac_coverage,
+                 frac_water,
+                 name=name)
