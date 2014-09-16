@@ -4748,7 +4748,7 @@ OSErr TModel::Step ()
 							break;
 					}
 					//thisMove = thisMover -> GetMove (model->GetStartTime(),fDialogVariables.computeTimeStep,i,j,&thisLE,leType);
-					thisMove = thisMover -> GetMove (model->GetStartTime(),fDialogVariables.computeTimeStep,listIndex,j,&thisLE,leType);
+					thisMove = thisMover -> GetMove (model->GetModelTime(),fDialogVariables.computeTimeStep,listIndex,j,&thisLE,leType);
 					/*if(thisMover -> IAm(TYPE_CURRENTMOVER)) // maybe also for larvae (special LE type?)
 					{	// check if current beaches LE, and if so don't add into overall move
 						testPoint.p.pLat = currentMovedPoint.p.pLat + thisMove.p.pLat;
