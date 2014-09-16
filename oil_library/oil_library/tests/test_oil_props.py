@@ -88,18 +88,14 @@ def test_boiling_point(max_cuts):
     - checks len(bp) == max_cuts * 2
     - also checks the BP for saturates == BP for aromatics
     '''
-    api = 1
-    slope = 1356.7
-    intercept = 457.16 - 3.3447
+    api = 10
 
-    exp_bp_0 = 1./(max_cuts * 2) * slope + intercept
     bp = boiling_point(max_cuts, api)
     print '\nBoiling Points: '
-    print bp
+    print "{0}".format([round(x, 2) for x in bp])
     assert len(bp) == max_cuts * 2
     assert ([bp[ix] - bp[ix + 1] for ix in range(0, max_cuts * 2, 2)] ==
             [0.0] * max_cuts)
-    assert bp[:2] == [exp_bp_0] * 2
 
 
 def test_get_density():
