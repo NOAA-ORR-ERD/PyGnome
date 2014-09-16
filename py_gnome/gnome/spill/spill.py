@@ -30,8 +30,6 @@ class SpillSchema(ObjType):
                     description='on/off status of spill')
     amount = SchemaNode(Float(), missing=drop)
     units = SchemaNode(String(), missing=drop)
-    frac_coverage = SchemaNode(Float(), missing=drop)
-    frac_water = SchemaNode(Float(), missing=drop)
 
 
 class Spill(serializable.Serializable):
@@ -61,8 +59,6 @@ class Spill(serializable.Serializable):
                  on=True,
                  amount=None,   # could be volume or mass
                  units=None,
-                 frac_coverage=1.0,
-                 frac_water=0.0,
                  name='Spill'):
         """
         Spills used by the gnome model. It contains a release object, which
@@ -116,8 +112,8 @@ class Spill(serializable.Serializable):
             else:
                 self.units = units
 
-        self.frac_coverage = frac_coverage
-        self.frac_water = frac_water
+        self.frac_coverage = 1.0
+        self.frac_water = 0.0
         self.name = name
 
     def __repr__(self):
@@ -520,8 +516,6 @@ def point_line_release_spill(num_elements,
                              on=True,
                              amount=None,
                              units=None,
-                             frac_coverage=1.0,
-                             frac_water=0.0,
                              name='Point/Line Release'):
     '''
     Helper function returns a Spill object containing a point or line release
@@ -536,6 +530,4 @@ def point_line_release_spill(num_elements,
                  on,
                  amount,
                  units,
-                 frac_coverage,
-                 frac_water,
                  name=name)
