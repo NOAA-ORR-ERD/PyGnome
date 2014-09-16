@@ -920,9 +920,18 @@ class Serializable(GnomeId, Savable):
         """
         classmethod takes json structure as input, deserializes it using a
         colander schema then invokes the new_from_dict method to create an
-        instance of the object described by the json schema
+        instance of the object described by the json schema.
+
+        We also need to accept sparse json objects, in which case we will
+        not treat them, but just send them back.
+        Sparse means that we have a previously created object (Wind),
+        and we update the model using just the obj_type and the id.
         """
-        return cls._schema().deserialize(json_)
+        r_attr_list = cls._state.get_names('read')
+        r_attr_list.append('json_')
+        attr_list = [attr for attr in json_ if attr not in r_attr_list]
 
-
-
+        if attr_list:
+            return cls._schema().deserialize(json_)
+        else:
+            return json_
