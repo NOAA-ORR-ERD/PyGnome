@@ -522,14 +522,15 @@ def GridRelease(release_time, bounds, resolution):
 
     Only 2-d for now
 
-    :param bounds: bouding box of region you want the elements in: ((min_lon, min_lat),
-                                                                    (max_lon, max_lat))
-    :type bounds: 2x2 numpy array or equivelent
-    """    
+    :param bounds: bounding box of region you want the elements in:
+                   ((min_lon, min_lat),
+                    (max_lon, max_lat))
+    :type bounds: 2x2 numpy array or equivalent
+    """
     lon = np.linspace(bounds[0][0], bounds[1][0], resolution)
     lat = np.linspace(bounds[0][1], bounds[1][1], resolution)
     lon, lat = np.meshgrid(lon, lat)
-    positions = np.c_[lon.flat, lat.flat, np.zeros((resolution*resolution),)]
+    positions = np.c_[lon.flat, lat.flat, np.zeros((resolution * resolution),)]
 
     return SpatialRelease(release_time, positions)
 
