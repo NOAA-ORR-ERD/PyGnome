@@ -484,14 +484,8 @@ class Spill(serializable.Serializable):
 
         We also need to accept sparse json objects, in which case we will
         not treat them, but just send them back.
-        Sparse means that we have a previously created object (Wind),
-        and we update the model using just the obj_type and the id.
         """
-        r_attr_list = cls._state.get_names('read')
-        r_attr_list.append('json_')
-        attr_list = [attr for attr in json_ if attr not in r_attr_list]
-
-        if attr_list:
+        if not cls.is_sparse(json_):
             schema = cls._schema()
 
             dict_ = schema.deserialize(json_)

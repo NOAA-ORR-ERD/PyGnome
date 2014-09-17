@@ -174,17 +174,10 @@ class ElementType(Serializable):
 
         We also need to accept sparse json objects, in which case we will
         not treat them, but just send them back.
-        Sparse means that we have a previously created object (Wind),
-        and we update the model using just the obj_type and the id.
         """
-        r_attr_list = cls._state.get_names('read')
-        r_attr_list.append('json_')
-        attr_list = [attr for attr in json_ if attr not in r_attr_list]
-
-        if attr_list:
+        if not cls.is_sparse(json_):
             et_schema = cls._schema()
             dict_ = et_schema.deserialize(json_)
-            #d_init = {}
             d_init = []
 
             for i_val in json_['initializers']:
@@ -196,10 +189,8 @@ class ElementType(Serializable):
                     here itself
                     '''
                     obj = eval(deserial['obj_type']).new_from_dict(deserial)
-                    #d_init[i_key] = obj
                     d_init.append(obj)
                 else:
-                    #d_init[i_key] = deserial
                     d_init.append(deserial)
 
             dict_['initializers'] = d_init
