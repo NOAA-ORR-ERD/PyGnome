@@ -16,7 +16,7 @@ from gnome.environment import constants, constant_wind
 
 class Evaporation(Weatherer):
     def __init__(self,
-                 conditions,
+                 water_props,
                  wind=None,
                  **kwargs):
         '''
@@ -25,7 +25,7 @@ class Evaporation(Weatherer):
         :param wind: wind object for obtaining speed at specified time
         :type wind: Wind API, specifically must have get_value(time) method
         '''
-        self.conditions = conditions
+        self.water = water_props
 
         if wind is None:
             wind = constant_wind(0, 0)
@@ -63,7 +63,7 @@ class Evaporation(Weatherer):
                                                         time_step,
                                                         model_time)
         K = self._mass_transport_coeff(model_time)
-        water_temp = self.conditions.get('water', 'temperature', 'K')
+        water_temp = self.water.get('temperature', 'K')
 
         for spill in sc.spills:
             f_diff = (1.0 - spill.frac_water)

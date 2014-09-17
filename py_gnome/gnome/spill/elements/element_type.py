@@ -49,7 +49,10 @@ class ElementType(Serializable):
     _state.add(save=['initializers'], update=['initializers'])
     _schema = base_schema.ObjType
 
-    def __init__(self, initializers=[], substance='oil_conservative'):
+    def __init__(self,
+                 conditions,
+                 initializers=[],
+                 substance='oil_conservative'):
         '''
         Define initializers for the type of elements
 
@@ -81,10 +84,6 @@ class ElementType(Serializable):
 
         if self.substance.num_components != num_oil_components:
             reset_to_defaults()
-
-        # for now add vapor_pressure here
-        #self.vapor_pressure = [vapor_pressure(bp)
-        #                       for bp in self.substance.boiling_point]
 
     def __repr__(self):
         return ('{0.__class__.__module__}.{0.__class__.__name__}('

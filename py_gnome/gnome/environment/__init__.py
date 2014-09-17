@@ -1,12 +1,12 @@
 '''
 environment module
 '''
-from environment import Environment, Conditions
+from environment import Environment, WaterProperties
 from tide import Tide, TideSchema
 from wind import Wind, WindSchema, constant_wind
 
 __all__ = [Environment,
-           Conditions,
+           WaterProperties,
            Tide,
            TideSchema,
            Wind,
@@ -15,5 +15,5 @@ __all__ = [Environment,
 
 units = {'gas_constant': 'J/(K mol)',
          'pressure': 'Pa'}
-atmos = {'pressure': 101325.0}
-constants = {'gas_constant': 8.314}
+constants = {'gas_constant': 8.314,
+             'atmos_pressure': 101325.0}
