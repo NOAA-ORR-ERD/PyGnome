@@ -171,30 +171,42 @@ class ElementType(Serializable):
         """
         deserialize each object in the 'initializers' dict, then add it to
         deserialized ElementType dict
+
+        We also need to accept sparse json objects, in which case we will
+        not treat them, but just send them back.
+        Sparse means that we have a previously created object (Wind),
+        and we update the model using just the obj_type and the id.
         """
-        et_schema = cls._schema()
-        dict_ = et_schema.deserialize(json_)
-        #d_init = {}
-        d_init = []
+        r_attr_list = cls._state.get_names('read')
+        r_attr_list.append('json_')
+        attr_list = [attr for attr in json_ if attr not in r_attr_list]
 
-        for i_val in json_['initializers']:
-            deserial = eval(i_val['obj_type']).deserialize(i_val)
+        if attr_list:
+            et_schema = cls._schema()
+            dict_ = et_schema.deserialize(json_)
+            #d_init = {}
+            d_init = []
 
-            if json_['json_'] == 'save':
-                '''
-                If loading from save file, convert the dict_ to new object
-                here itself
-                '''
-                obj = eval(deserial['obj_type']).new_from_dict(deserial)
-                #d_init[i_key] = obj
-                d_init.append(obj)
-            else:
-                #d_init[i_key] = deserial
-                d_init.append(deserial)
+            for i_val in json_['initializers']:
+                deserial = eval(i_val['obj_type']).deserialize(i_val)
 
-        dict_['initializers'] = d_init
+                if json_['json_'] == 'save':
+                    '''
+                    If loading from save file, convert the dict_ to new object
+                    here itself
+                    '''
+                    obj = eval(deserial['obj_type']).new_from_dict(deserial)
+                    #d_init[i_key] = obj
+                    d_init.append(obj)
+                else:
+                    #d_init[i_key] = deserial
+                    d_init.append(deserial)
 
-        return dict_
+            dict_['initializers'] = d_init
+
+            return dict_
+        else:
+            return json_
 
 
 def floating(windage_range=(.01, .04),
