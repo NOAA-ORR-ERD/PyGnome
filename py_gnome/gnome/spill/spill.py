@@ -481,28 +481,41 @@ class Spill(serializable.Serializable):
         """
         Instead of creating schema dynamically for Spill() before
         deserialization, call nested object's serialize/deserialize methods
+
+        We also need to accept sparse json objects, in which case we will
+        not treat them, but just send them back.
+        Sparse means that we have a previously created object (Wind),
+        and we update the model using just the obj_type and the id.
         """
-        schema = cls._schema()
+        r_attr_list = cls._state.get_names('read')
+        r_attr_list.append('json_')
+        attr_list = [attr for attr in json_ if attr not in r_attr_list]
 
-        dict_ = schema.deserialize(json_)
-        element_type = json_['element_type']['obj_type']
-        dict_['element_type'] = eval(element_type).deserialize(
-                                                        json_['element_type'])
-        rel = json_['release']['obj_type']
-        dict_['release'] = eval(rel).deserialize(json_['release'])
+        if attr_list:
+            schema = cls._schema()
 
-        if json_['json_'] == 'save':
-            '''
-            convert nested dict back into objects. For the 'webapi', we're not
-            always creating a new object so do this only for 'save' files
-            '''
-            for name in ['release', 'element_type']:
-                obj_dict = dict_.pop(name)
-                obj_type = obj_dict.pop('obj_type')
-                obj = eval(obj_type).new_from_dict(obj_dict)
-                dict_[name] = obj
+            dict_ = schema.deserialize(json_)
+            element_type = json_['element_type']['obj_type']
+            dict_['element_type'] = (eval(element_type)
+                                     .deserialize(json_['element_type']))
+            rel = json_['release']['obj_type']
+            dict_['release'] = eval(rel).deserialize(json_['release'])
 
-        return dict_
+            if json_['json_'] == 'save':
+                '''
+                    Convert nested dict back into objects.
+                    For the 'webapi', we're not always creating a new object
+                    so do this only for 'save' files
+                '''
+                for name in ['release', 'element_type']:
+                    obj_dict = dict_.pop(name)
+                    obj_type = obj_dict.pop('obj_type')
+                    obj = eval(obj_type).new_from_dict(obj_dict)
+                    dict_[name] = obj
+
+            return dict_
+        else:
+            return json_
 
 """ Helper functions """
 
