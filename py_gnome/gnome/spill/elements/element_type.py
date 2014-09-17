@@ -22,11 +22,12 @@ from .initializers import (InitRiseVelFromDropletSizeFromDist,
 from oil_library import get_oil
 
 from gnome.persist import base_schema
+from gnome.environment import constants
 
 """ ElementType classes"""
 
 
-def vapor_pressure(bp):
+def vapor_pressure(bp, temp):
     '''
     water_temp and boiling point units are Kelvin
     returns the vapor_pressure in SI units (Pascals)
@@ -37,9 +38,9 @@ def vapor_pressure(bp):
     D_S = 8.75 + 1.987 * log(bp)
     C_2i = 0.19 * bp - 18
 
-    var = 1. / (bp - C_2i) - 1. / (water['temperature'] - C_2i)
+    var = 1. / (bp - C_2i) - 1. / (temp - C_2i)
     ln_Pi_Po = D_S * (bp - C_2i) ** 2 / (D_Zb * R_cal * bp) * var
-    Pi = exp(ln_Pi_Po) * atmos['pressure']
+    Pi = exp(ln_Pi_Po) * constants['atmos_pressure']
 
     return Pi
 
@@ -50,9 +51,9 @@ class ElementType(Serializable):
     _schema = base_schema.ObjType
 
     def __init__(self,
-                 conditions,
                  initializers=[],
-                 substance='oil_conservative'):
+                 substance='oil_conservative',
+                 water_props=None):
         '''
         Define initializers for the type of elements
 
@@ -84,6 +85,24 @@ class ElementType(Serializable):
 
         if self.substance.num_components != num_oil_components:
             reset_to_defaults()
+        # for now add vapor_pressure as a substance property
+        self._water = water_props
+        if self._water:
+            self._add_vapor_pressure()
+
+    @property
+    def water(self):
+        return self._water
+
+    @water.setter
+    def water(self, val):
+        self._water = val
+        self._add_vapor_pressure()
+
+    def _add_vapor_pressure(self):
+        temp = self.water.get('temperature', units='K')
+        vp = [vapor_pressure(bp, temp) for bp in self.substance.boiling_point]
+        self.substance.vapor_pressure = vp
 
     def __repr__(self):
         return ('{0.__class__.__module__}.{0.__class__.__name__}('

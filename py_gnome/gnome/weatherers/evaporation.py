@@ -78,7 +78,7 @@ class Evaporation(Weatherer):
                 (sc['mass'][mask]/sc['density'][mask]) / sc['thickness'][mask]
             le_area = le_area.reshape(-1, 1)
 
-            d_numer = (le_area * K * spill.get('vapor_pressure') *
+            d_numer = (le_area * K * spill.get('substance').vapor_pressure *
                        spill.frac_coverage * f_diff)
             d_denom = (constants['gas_constant'] * water_temp *
                        sc['mol'][mask]).reshape(-1, 1)
