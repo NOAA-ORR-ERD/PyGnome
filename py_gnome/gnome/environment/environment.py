@@ -46,14 +46,14 @@ class UnitsSchema(MappingSchema):
                           validator=OneOf(['psu']))
 
 
-class WaterPropertiesSchema(base_schema.ObjType):
+class WaterSchema(base_schema.ObjType):
     'Colander Schema for Conditions object'
     units = UnitsSchema()
     temperature = SchemaNode(Float())
     salinity = SchemaNode(Float())
 
 
-class WaterProperties(Environment, serializable.Serializable):
+class Water(Environment, serializable.Serializable):
     '''
     Define the environmental conditions for a spill, like water_temperature,
     atmos_pressure (most likely a constant)
@@ -66,7 +66,7 @@ class WaterProperties(Environment, serializable.Serializable):
                serializable.Field('temperature', update=True, save=True),
                serializable.Field('salinity', update=True, save=True)]
 
-    _schema = WaterPropertiesSchema
+    _schema = WaterSchema
 
     def __init__(self,
                  temperature=311.15,

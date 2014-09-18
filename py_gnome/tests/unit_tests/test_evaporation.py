@@ -6,7 +6,7 @@ from datetime import timedelta
 import pytest
 import numpy as np
 
-from gnome.environment import constant_wind, WaterProperties
+from gnome.environment import constant_wind, Water
 from gnome.weatherers import Evaporation
 from gnome.spill.elements import floating_weathering
 from gnome.array_types import (windages,
@@ -19,7 +19,7 @@ from gnome.array_types import (windages,
 from conftest import sample_sc_release
 
 
-water_props = WaterProperties()
+water_props = Water()
 
 
 @pytest.mark.parametrize(('oil', 'temp', 'num_elems'),
