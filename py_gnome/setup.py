@@ -511,12 +511,6 @@ setup(name='pyGnome',
 # Change current working directory back to what user originally had
 os.chdir(CWD)
 
-# Install oil_library if it is not found on system
-try:
-    import oil_library
-except ImportError:
-    'install oil lib'
-    build_oil_lib('install')
 
 # ## total kludge to get linking to work right with Anaconda:
 ## note: this doesn't work, as the env variable goes away with new process.
