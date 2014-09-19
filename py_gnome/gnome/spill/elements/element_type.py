@@ -171,30 +171,33 @@ class ElementType(Serializable):
         """
         deserialize each object in the 'initializers' dict, then add it to
         deserialized ElementType dict
+
+        We also need to accept sparse json objects, in which case we will
+        not treat them, but just send them back.
         """
-        et_schema = cls._schema()
-        dict_ = et_schema.deserialize(json_)
-        #d_init = {}
-        d_init = []
+        if not cls.is_sparse(json_):
+            et_schema = cls._schema()
+            dict_ = et_schema.deserialize(json_)
+            d_init = []
 
-        for i_val in json_['initializers']:
-            deserial = eval(i_val['obj_type']).deserialize(i_val)
+            for i_val in json_['initializers']:
+                deserial = eval(i_val['obj_type']).deserialize(i_val)
 
-            if json_['json_'] == 'save':
-                '''
-                If loading from save file, convert the dict_ to new object
-                here itself
-                '''
-                obj = eval(deserial['obj_type']).new_from_dict(deserial)
-                #d_init[i_key] = obj
-                d_init.append(obj)
-            else:
-                #d_init[i_key] = deserial
-                d_init.append(deserial)
+                if json_['json_'] == 'save':
+                    '''
+                    If loading from save file, convert the dict_ to new object
+                    here itself
+                    '''
+                    obj = eval(deserial['obj_type']).new_from_dict(deserial)
+                    d_init.append(obj)
+                else:
+                    d_init.append(deserial)
 
-        dict_['initializers'] = d_init
+            dict_['initializers'] = d_init
 
-        return dict_
+            return dict_
+        else:
+            return json_
 
 
 def floating(windage_range=(.01, .04),

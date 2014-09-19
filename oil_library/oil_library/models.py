@@ -226,7 +226,7 @@ class Density(Base):
                 setattr(self, a, v)
 
     def __repr__(self):
-        return ("<Density({0.kg_m_3} kg/m^3 at {0.ref_temp}K)>"
+        return ("<Density({0.kg_m_3} kg/m^3 at {0.ref_temp_k}K)>"
                 .format(self))
 
 
@@ -246,7 +246,7 @@ class KVis(Base):
                 setattr(self, a, v)
 
     def __repr__(self):
-        return ('<KVis({0.m_2_s} m^2/s at {0.ref_temp}K)>'
+        return ('<KVis({0.m_2_s} m^2/s at {0.ref_temp_k}K)>'
                 .format(self))
 
 
@@ -266,7 +266,7 @@ class DVis(Base):
                 setattr(self, a, v)
 
     def __repr__(self):
-        return ('<DVis({0.kg_ms} kg/ms at {0.ref_temp}K)>'
+        return ('<DVis({0.kg_ms} kg/ms at {0.ref_temp_k}K)>'
                 .format(self))
 
 

@@ -30,8 +30,6 @@ class SpillSchema(ObjType):
                     description='on/off status of spill')
     amount = SchemaNode(Float(), missing=drop)
     units = SchemaNode(String(), missing=drop)
-    frac_coverage = SchemaNode(Float(), missing=drop)
-    frac_water = SchemaNode(Float(), missing=drop)
 
 
 class Spill(serializable.Serializable):
@@ -61,8 +59,6 @@ class Spill(serializable.Serializable):
                  on=True,
                  amount=None,   # could be volume or mass
                  units=None,
-                 frac_coverage=1.0,
-                 frac_water=0.0,
                  name='Spill'):
         """
         Spills used by the gnome model. It contains a release object, which
@@ -116,8 +112,8 @@ class Spill(serializable.Serializable):
             else:
                 self.units = units
 
-        self.frac_coverage = frac_coverage
-        self.frac_water = frac_water
+        self.frac_coverage = 1.0
+        self.frac_water = 0.0
         self.name = name
 
     def __repr__(self):
@@ -485,28 +481,35 @@ class Spill(serializable.Serializable):
         """
         Instead of creating schema dynamically for Spill() before
         deserialization, call nested object's serialize/deserialize methods
+
+        We also need to accept sparse json objects, in which case we will
+        not treat them, but just send them back.
         """
-        schema = cls._schema()
+        if not cls.is_sparse(json_):
+            schema = cls._schema()
 
-        dict_ = schema.deserialize(json_)
-        element_type = json_['element_type']['obj_type']
-        dict_['element_type'] = eval(element_type).deserialize(
-                                                        json_['element_type'])
-        rel = json_['release']['obj_type']
-        dict_['release'] = eval(rel).deserialize(json_['release'])
+            dict_ = schema.deserialize(json_)
+            element_type = json_['element_type']['obj_type']
+            dict_['element_type'] = (eval(element_type)
+                                     .deserialize(json_['element_type']))
+            rel = json_['release']['obj_type']
+            dict_['release'] = eval(rel).deserialize(json_['release'])
 
-        if json_['json_'] == 'save':
-            '''
-            convert nested dict back into objects. For the 'webapi', we're not
-            always creating a new object so do this only for 'save' files
-            '''
-            for name in ['release', 'element_type']:
-                obj_dict = dict_.pop(name)
-                obj_type = obj_dict.pop('obj_type')
-                obj = eval(obj_type).new_from_dict(obj_dict)
-                dict_[name] = obj
+            if json_['json_'] == 'save':
+                '''
+                    Convert nested dict back into objects.
+                    For the 'webapi', we're not always creating a new object
+                    so do this only for 'save' files
+                '''
+                for name in ['release', 'element_type']:
+                    obj_dict = dict_.pop(name)
+                    obj_type = obj_dict.pop('obj_type')
+                    obj = eval(obj_type).new_from_dict(obj_dict)
+                    dict_[name] = obj
 
-        return dict_
+            return dict_
+        else:
+            return json_
 
 """ Helper functions """
 
@@ -520,8 +523,6 @@ def point_line_release_spill(num_elements,
                              on=True,
                              amount=None,
                              units=None,
-                             frac_coverage=1.0,
-                             frac_water=0.0,
                              name='Point/Line Release'):
     '''
     Helper function returns a Spill object containing a point or line release
@@ -536,6 +537,4 @@ def point_line_release_spill(num_elements,
                  on,
                  amount,
                  units,
-                 frac_coverage,
-                 frac_water,
                  name=name)
