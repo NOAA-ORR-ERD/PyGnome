@@ -39,7 +39,8 @@ requires = [
     'zope.sqlalchemy',
     'awesome-slugify',
     'hazpy.unit_conversion',
-    'pytest'
+    'pytest',
+    'numpy'
     ]
 
 s = setup(name=pkg_name,

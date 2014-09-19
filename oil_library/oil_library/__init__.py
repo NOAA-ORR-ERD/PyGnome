@@ -49,7 +49,7 @@ _oillib_path = os.path.dirname(__file__)
 _db_file = os.path.join(_oillib_path, 'OilLib.db')
 
 
-def get_oil(oil_name, max_cuts=5):
+def get_oil(oil_name):
     """
     function returns the Oil object given the name of the oil as a string.
 
@@ -73,8 +73,8 @@ def get_oil(oil_name, max_cuts=5):
     however, the following will not work:
         get_oil('Oil Name'='new oil', 'Field Name'='field name')
 
-    This is another reason, we need an interface (business logic) between the
-    SQL object and the end user.
+    This is another reason, we need an interface between the SQL object and the
+    end user.
 
     NOTE II:
     --------
@@ -82,9 +82,8 @@ def get_oil(oil_name, max_cuts=5):
     of the database. May want to add them to the final persistent database to
     make a consistent interface which always accesses DB for any 'oil_name'
     """
-
     if oil_name in _sample_oils.keys():
-        return OilProps(Oil(**_sample_oils[oil_name]), max_cuts=max_cuts)
+        return Oil(**_sample_oils[oil_name])
 
     else:
         '''
@@ -105,13 +104,21 @@ def get_oil(oil_name, max_cuts=5):
 
         try:
             oil_ = DBSession.query(Oil).filter(Oil.oil_name == oil_name).one()
-            return OilProps(oil_, max_cuts=max_cuts)
+            return oil_
         except NoResultFound, ex:
             # or sqlalchemy.orm.exc.MultipleResultsFound as ex:
             ex.message = ("oil with name '{0}' not found in database. "
                           "{1}".format(oil_name, ex.message))
             ex.args = (ex.message, )
             raise ex
+
+
+def get_oil_props(oil_name):
+    '''
+    returns the OilProps object
+    '''
+    oil_ = get_oil(oil_name)
+    return OilProps(oil_)
 
 
 def oil_from_density(density, name='user_oil', units='kg/m^3'):
