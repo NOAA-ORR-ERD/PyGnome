@@ -5312,6 +5312,7 @@ OSErr TModel::StepBackwards ()
 		else listIndex = 0;	// note this is not used for forecast LEs - maybe put in a flag to identify that
 		if(!thisLEList->IsActive()) continue;
 
+		SetChemicalHalfLife(((TOLEList *)thisLEList)->fSetSummary.halfLife);	// each spill can have a half life
 		UpdateWindage(thisLEList);
 		//DispersionRec dispInfo = ((TOLEList *)thisLEList) -> GetDispersionInfo();
 		//Seconds disperseTime = model->GetStartTime() + dispInfo.timeToDisperse;
