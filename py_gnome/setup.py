@@ -29,7 +29,7 @@ from subprocess import call
 # to support "develop" mode:
 from setuptools import setup, find_packages
 from distutils.command.clean import clean
-from distutils.command.install import install
+from setuptools.command.install import install
 from setuptools.command.develop import develop
 
 from distutils.extension import Extension
@@ -130,6 +130,22 @@ class developall(develop):
 
         # also build oil_library in develop mode
         build_oil_lib('develop')
+
+
+class install_self_and_oil_lib(install):
+    '''
+    installs both py_gnome and oil_library
+    '''
+    description = "install py_gnome and the oil_library if it isn't found"
+
+    def run(self):
+        install.run(self)
+        try:
+            import oil_library
+        except ImportError:
+            print "oil_library not found - installing it now \n"
+            build_oil_lib('install')
+
 
 ## 64 bit Windows Notes:
 ##     The following batch commands will be needed to setup the
@@ -490,7 +506,8 @@ setup(name='pyGnome',
       cmdclass={'build_ext': build_ext,
                 'cleandev': cleandev,
                 'developall': developall,
-                'remake_oil_db': remake_oil_db},
+                'remake_oil_db': remake_oil_db,
+                'install': install_self_and_oil_lib},
 
       #scripts,
 
@@ -511,12 +528,6 @@ setup(name='pyGnome',
 # Change current working directory back to what user originally had
 os.chdir(CWD)
 
-# Install oil_library if it is not found on system
-try:
-    import oil_library
-except ImportError:
-    'install oil lib'
-    build_oil_lib('install')
 
 # ## total kludge to get linking to work right with Anaconda:
 ## note: this doesn't work, as the env variable goes away with new process.
