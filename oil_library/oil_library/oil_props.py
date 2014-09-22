@@ -16,6 +16,7 @@ from hazpy import unit_conversion
 uc = unit_conversion
 
 from .models import KVis
+from .utilities import get_density
 
 
 def boiling_point(max_cuts, api):
@@ -105,18 +106,10 @@ class OilProps(object):
 
         :param oil_: Oil object that maps to entity in OilLib database
         :type oil_: Oil object
-        :param temperature: The temperature in 'K'.  Per ASTM, the default is
-            38 degrees Celcius (311.15 degrees Kelvin)
-        :param max_cuts: max number of distillation cuts. Default is 5, so
-            each cut will have a 'saturate' and 'aromatic' component, making
-            it 10 components. In addition, there maybe some mass in 'resins'
-            and 'asphaltenes' making it 12 components
         '''
         self._r_oil = oil_
 
-        # Default mass components:
-        #    5 saturates, 5 aromatics, resins, asphaltenes
-        #
+        # Default format for mass components:
         # mass_fraction =
         # [m0_s, m0_a, m1_s, m1_a, ..., m_resins, m_asphaltenes]
         #self._component_frac_bp()
@@ -137,214 +130,102 @@ class OilProps(object):
         'get raw oil props'
         return getattr(self._r_oil, prop)
 
-#==============================================================================
-#     @property
-#     def viscosities(self):
-#         '''
-#             Get a list of all kinematic viscosities associated with this
-#             oil object.  The list is compiled from the stored kinematic
-#             and dynamic viscosities associated with the oil record.
-#             The viscosity fields contain:
-#               - kinematic viscosity in m^2/sec
-#               - reference temperature in degrees kelvin
-#               - weathering ???
-#             Viscosity entries are ordered by (weathering, temperature)
-#             If we are using dynamic viscosities, we calculate the
-#             kinematic viscosity from the density that is closest
-#             to the respective reference temperature
-#         '''
-#         # first we get the kinematic viscosities if they exist
-#         ret = []
-#         if self._r_oil.kvis:
-#             ret = [(k.m_2_s,
-#                     k.ref_temp_k,
-#                     (0.0 if k.weathering == None else k.weathering))
-#                     for k in self._r_oil.kvis
-#                     if k.ref_temp_k != None]
-# 
-#         if self._r_oil.dvis:
-#             # If we have any DVis records, we need to get the
-#             # dynamic viscosities, convert to kinematic, and
-#             # add them if possible.
-#             # We have dvis at a certain (temperature, weathering).
-#             # We need to get density at the same weathering and
-#             # the closest temperature in order to calculate the kinematic.
-#             # There are lots of oil entries where the dvis do not have
-#             # matching densities for (temp, weathering)
-#             densities = [(d.kg_m_3,
-#                           d.ref_temp_k,
-#                           (0.0 if d.weathering == None else d.weathering))
-#                          for d in self._r_oil.densities]
-# 
-#             for v, t, w in [(d.kg_ms, d.ref_temp_k, d.weathering)
-#                             for d in self._r_oil.dvis]:
-#                 if w == None:
-#                     w = 0.0
-# 
-#                 # if we already have a KVis at the same
-#                 # (temperature, weathering), we do not need
-#                 # another one
-#                 if len([vv for vv in ret
-#                         if vv[1] == t and vv[2] == w]) > 0:
-#                     continue
-# 
-#                 # grab the densities with matching weathering
-#                 dlist = [(d[0], abs(t - d[1]))
-#                          for d in densities
-#                          if d[2] == w]
-# 
-#                 if len(dlist) == 0:
-#                     continue
-# 
-#                 # grab the density with the closest temperature
-#                 density = sorted(dlist, key=lambda x: x[1])[0][0]
-# 
-#                 # kvis = dvis/density
-#                 ret.append(((v / density), t, w))
-# 
-#         ret.sort(key=lambda x: (x[2], x[1]))
-#         kwargs = ['(m^2/s)', 'Ref Temp (K)', 'Weathering']
-# 
-#         # caution: although we will have a list of real
-#         #          KVis objects, they are not persisted
-#         #          in the database.
-#         ret = [(KVis(**dict(zip(kwargs, v)))) for v in ret]
-#         return ret
-# 
-#     def get_viscosity(self, units='m^2/s'):
-#         '''
-#         :param units: optional input if output units should be something other
-#                       than m^2/s
-#         :return: Kinematic Viscosity at current temperature.
-#                  Default units: (m^2/s)
-# 
-#         The Oil object has a list of kinematic viscosities at empirically
-#         measured temperatures.  We need to use the ones closest to our
-#         current temperature and calculate our viscosity from it.
-#         '''
-#         if self.viscosities:
-#             # first get our v_max
-#             k_v2 = 5000.0
-#             pour_point = (self._r_oil.pour_point_max_k
-#                           if self._r_oil.pour_point_max_k != None
-#                           else self._r_oil.pour_point_min_k)
-#             if pour_point:
-#                 visc = sorted([(v, abs(v.ref_temp_k - pour_point))
-#                                 for v in self.viscosities
-#                                 if v != None],
-#                                key=lambda v: v[1])[0][0]
-#                 v_ref = visc.m_2_s
-#                 t_ref = visc.ref_temp_k
-# 
-#                 v_max = v_ref * exp(k_v2 / pour_point - k_v2 / t_ref)
-#             else:
-#                 v_max = None
-# 
-#             # now get our v_0
-#             visc = sorted([(v, abs(v.ref_temp_k - self.temperature))
-#                             for v in self.viscosities],
-#                            key=lambda v: v[1])[0][0]
-#             v_ref = visc.m_2_s
-#             t_ref = visc.ref_temp_k
-# 
-#             if (self.temperature - t_ref) == 0:
-#                 v_0 = v_ref
-#             else:
-#                 v_0 = v_ref * exp(k_v2 / self.temperature - k_v2 / t_ref)
-# 
-#             if v_max:
-#                 return uc.convert('Kinematic Viscosity', 'm^2/s', units,
-#                                   v_0 if v_0 <= v_max else v_max)
-#             else:
-#                 return uc.convert('Kinematic Viscosity', 'm^2/s', units,
-#                                   v_0)
-#         else:
-#             return None
-# 
-#     @property
-#     def num_components(self):
-#         return len(self.mass_fraction)
-# 
-#     def _add_resins_asphalt(self, heavy_comp):
-#         'add heavier components if mass_fraction < 1.0'
-#         if heavy_comp is None or heavy_comp == 0.0:
-#             return
-# 
-#         f_remain = sum(self.mass_fraction)
-#         if f_remain < 1.0:
-#             if heavy_comp + f_remain <= 1.0:
-#                 self.mass_fraction.append(heavy_comp)
-#             else:
-#                 self.mass_fraction.append(1.0-f_remain)
-#             self.boiling_point.append(float('inf'))
-# 
-#     def _frac_bp_from_cuts(self):
-#         '''
-#         Need the mass_fraction to sum upto 1.0
-#         Also need to understand how to identify saturates/aromatics
-#         Should mass_fractions be determined by cuts (boiling_points) or
-#         should they be given by largest to smallest mass fraction?
-#         '''
-#         # distillation cut data available
-#         last_frac = 0.0
-#         for ix, cut in enumerate(self._r_oil.cuts):
-#             if ix < (self.max_cuts * 2):
-#                 self.boiling_point.append(cut.vapor_temp_k)
-#                 self.mass_fraction.append(cut.fraction - last_frac)
-#                 last_frac = cut.fraction
-#         self._add_resins_asphalt(self.get('resins'))
-#         self._add_resins_asphalt(self.get('asphaltene_content'))
-# 
-#     def _frac_bp_estimated(self):
-#         'no distillation cuts data available'
-#         resins = 0.0
-#         asphalt = 0.0
-#         if self.get('resins') is not None:
-#             resins = self.get('resins')
-#         if self.get('asphaltene_content') is not None:
-#             asphalt = self.get('asphaltene_content')
-# 
-#         mass_left = 1.0 - resins - asphalt
-#         mass_per_comp = mass_left / (self.max_cuts * 2)
-#         self.mass_fraction = [mass_per_comp] * (self.max_cuts * 2)
-#         if self.api is not None:
-#             self.boiling_point = boiling_point(self.max_cuts,
-#                                                self.get('api'))
-#         else:
-#             self.boiling_point = [float('nan')] * (self.max_cuts * 2)
-# 
-#         if resins > 0.0:
-#             self.mass_fraction.append(resins)
-#             self.boiling_point.append(float('inf'))
-# 
-#         if asphalt > 0.0:
-#             self.mass_fraction.append(asphalt)
-#             self.boiling_point.append(float('inf'))
-# 
-#     def _component_frac_bp(self):
-#         '''
-#         if number of psuedo components changes, update related properties
-#         self.mass_fraction defined as:
-#         [m0_s, m0_a, m1_s, m1_a, ..., m_resins, m_asphaltenes]
-#         '''
-#         self.mass_fraction = []
-#         self.boiling_point = []
-#         if len(self._r_oil.cuts) > 0:
-#             self._frac_bp_from_cuts()
-#         else:
-#             # no distillation cut data
-#             self._frac_bp_estimated()
-# 
-#     def _component_mw(self):
-#         'estimate molecular weights of components'
-#         self.molecular_weight = [float('nan')] * self.num_components  # initialize to 'nan'
-#         for ix, bp in enumerate(self.boiling_point):
-#             if bp is 'inf' or bp is 'nan':
-#                 continue
-# 
-#             if ix % 2 == 0:
-#                 self.molecular_weight[ix] = molecular_weight(bp, 'saturate')
-#             else:
-#                 # will define a different function for mw_aromatics
-#                 self.molecular_weight[ix] = molecular_weight(bp, 'aromatic')
-#==============================================================================
+    def get_density(self, temp, out=None):
+        '''
+        return density at a temperature
+        do we want to do any unit conversions here?
+
+        :param temp: temperature in Kelvin. Could be an ndarray, list or scalar
+        :type temp: scalar, list, tuple or ndarray - assumes it is in Kelvin
+        '''
+        return get_density(self._r_oil, temp, out)
+
+ #=============================================================================
+ # 
+ #    @property
+ #    def num_components(self):
+ #        return len(self.mass_fraction)
+ # 
+ #    def _add_resins_asphalt(self, heavy_comp):
+ #        'add heavier components if mass_fraction < 1.0'
+ #        if heavy_comp is None or heavy_comp == 0.0:
+ #            return
+ # 
+ #        f_remain = sum(self.mass_fraction)
+ #        if f_remain < 1.0:
+ #            if heavy_comp + f_remain <= 1.0:
+ #                self.mass_fraction.append(heavy_comp)
+ #            else:
+ #                self.mass_fraction.append(1.0-f_remain)
+ #            self.boiling_point.append(float('inf'))
+ # 
+ #    def _frac_bp_from_cuts(self):
+ #        '''
+ #        Need the mass_fraction to sum upto 1.0
+ #        Also need to understand how to identify saturates/aromatics
+ #        Should mass_fractions be determined by cuts (boiling_points) or
+ #        should they be given by largest to smallest mass fraction?
+ #        '''
+ #        # distillation cut data available
+ #        last_frac = 0.0
+ #        for ix, cut in enumerate(self._r_oil.cuts):
+ #            if ix < (self.max_cuts * 2):
+ #                self.boiling_point.append(cut.vapor_temp_k)
+ #                self.mass_fraction.append(cut.fraction - last_frac)
+ #                last_frac = cut.fraction
+ #        self._add_resins_asphalt(self.get('resins'))
+ #        self._add_resins_asphalt(self.get('asphaltene_content'))
+ # 
+ #    def _frac_bp_estimated(self):
+ #        'no distillation cuts data available'
+ #        resins = 0.0
+ #        asphalt = 0.0
+ #        if self.get('resins') is not None:
+ #            resins = self.get('resins')
+ #        if self.get('asphaltene_content') is not None:
+ #            asphalt = self.get('asphaltene_content')
+ # 
+ #        mass_left = 1.0 - resins - asphalt
+ #        mass_per_comp = mass_left / (self.max_cuts * 2)
+ #        self.mass_fraction = [mass_per_comp] * (self.max_cuts * 2)
+ #        if self.api is not None:
+ #            self.boiling_point = boiling_point(self.max_cuts,
+ #                                               self.get('api'))
+ #        else:
+ #            self.boiling_point = [float('nan')] * (self.max_cuts * 2)
+ # 
+ #        if resins > 0.0:
+ #            self.mass_fraction.append(resins)
+ #            self.boiling_point.append(float('inf'))
+ # 
+ #        if asphalt > 0.0:
+ #            self.mass_fraction.append(asphalt)
+ #            self.boiling_point.append(float('inf'))
+ # 
+ #    def _component_frac_bp(self):
+ #        '''
+ #        if number of psuedo components changes, update related properties
+ #        self.mass_fraction defined as:
+ #        [m0_s, m0_a, m1_s, m1_a, ..., m_resins, m_asphaltenes]
+ #        '''
+ #        self.mass_fraction = []
+ #        self.boiling_point = []
+ #        if len(self._r_oil.cuts) > 0:
+ #            self._frac_bp_from_cuts()
+ #        else:
+ #            # no distillation cut data
+ #            self._frac_bp_estimated()
+ # 
+ #    def _component_mw(self):
+ #        'estimate molecular weights of components'
+ #        self.molecular_weight = [float('nan')] * self.num_components  # initialize to 'nan'
+ #        for ix, bp in enumerate(self.boiling_point):
+ #            if bp is 'inf' or bp is 'nan':
+ #                continue
+ # 
+ #            if ix % 2 == 0:
+ #                self.molecular_weight[ix] = molecular_weight(bp, 'saturate')
+ #            else:
+ #                # will define a different function for mw_aromatics
+ #                self.molecular_weight[ix] = molecular_weight(bp, 'aromatic')
+ #=============================================================================
