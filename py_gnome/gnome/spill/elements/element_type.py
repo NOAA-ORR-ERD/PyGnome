@@ -19,10 +19,10 @@ from .initializers import (InitRiseVelFromDropletSizeFromDist,
                            InitMassFromSpillAmount,
                            InitArraysFromOilProps,
                            InitMassFromPlume)
-from gnome.environment import water, atmos
 from oil_library import get_oil
 
 from gnome.persist import base_schema
+from gnome.environment import constants
 
 """ ElementType classes"""
 
@@ -62,7 +62,6 @@ class ElementType(Serializable):
         else:
             self.substance = substance
 
-        self.substance.temperature = water['temperature']
         if self.substance.num_components != num_oil_components:
             reset_to_defaults()
 
