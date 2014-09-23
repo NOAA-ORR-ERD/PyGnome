@@ -8,7 +8,6 @@ These are properties that are spill specific like:
   'weathering' element_types would use droplet_size, densities, mass?
 '''
 import copy
-from math import exp, log
 
 import gnome    # required by new_from_dict
 from gnome.utilities.serializable import Serializable
@@ -19,7 +18,7 @@ from .initializers import (InitRiseVelFromDropletSizeFromDist,
                            InitMassFromSpillAmount,
                            InitArraysFromOilProps,
                            InitMassFromPlume)
-from oil_library import get_oil
+from oil_library import get_oil_props
 
 from gnome.persist import base_schema
 from gnome.environment import constants
@@ -58,16 +57,12 @@ class ElementType(Serializable):
 
         if isinstance(substance, basestring):
             # leave for now to preserve tests
-            self.substance = get_oil(substance, 2)
+            self.substance = get_oil_props(substance, 2)
         else:
             self.substance = substance
 
         if self.substance.num_components != num_oil_components:
             reset_to_defaults()
-
-        # for now add vapor_pressure here
-        self.vapor_pressure = [vapor_pressure(bp)
-                               for bp in self.substance.boiling_point]
 
     def __repr__(self):
         return ('{0.__class__.__module__}.{0.__class__.__name__}('
