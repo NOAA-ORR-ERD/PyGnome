@@ -56,7 +56,7 @@ def boiling_point(max_cuts, api):
     return bp
 
 
-def sample_oil_to_mock_oil(**kwargs):
+def sample_oil_to_mock_oil(max_cuts=None, **kwargs):
     '''
     make an Oil object from _sample_oils
     Currently, this has only been tested on sample oils, but should be made
@@ -67,7 +67,9 @@ def sample_oil_to_mock_oil(**kwargs):
     'cuts' list containing equal mass in saturates/aromatics for max cuts
     'resins' and 'asphaltene_content' to None
     '''
-    max_cuts = kwargs.pop('max_cuts', 5)    # each cut will have 2 components
+    if max_cuts is None:
+        max_cuts = 5
+
     oil = Oil(**kwargs)
 
     # need to add densities list
