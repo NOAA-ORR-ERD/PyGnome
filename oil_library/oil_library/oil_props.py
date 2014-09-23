@@ -10,6 +10,7 @@ object used to initialize and OilProps object
 
 Not sure at present if this needs to be serializable?
 '''
+from math import log, exp
 
 from .utilities import get_density
 
@@ -82,6 +83,7 @@ class OilProps(object):
         '''
         return density at a temperature
         do we want to do any unit conversions here?
+        todo: memoize function
 
         :param temp: temperature in Kelvin. Could be an ndarray, list or scalar
         :type temp: scalar, list, tuple or ndarray - assumes it is in Kelvin
@@ -143,3 +145,27 @@ class OilProps(object):
             else:
                 # will define a different function for mw_aromatics
                 self.molecular_weight[ix] = molecular_weight(bp, 'aromatic')
+
+    def vapor_pressure(self, temp, atmos_pressure=101325.0):
+        '''
+        water_temp and boiling point units are Kelvin
+        returns the vapor_pressure in SI units (Pascals)
+        todo: memoize function
+        '''
+        D_Zb = 0.97
+        R_cal = 1.987  # calories
+
+        Pi = []
+        for bp in self.boiling_point:
+            if bp == float('inf'):
+                # make the exponential decay constant 0 so mass is unchanged
+                Pi.append(0.0)
+            else:
+                D_S = 8.75 + 1.987 * log(bp)
+                C_2i = 0.19 * bp - 18
+
+                var = 1. / (bp - C_2i) - 1. / (temp - C_2i)
+                ln_Pi_Po = D_S * (bp - C_2i) ** 2 / (D_Zb * R_cal * bp) * var
+                Pi.append(exp(ln_Pi_Po) * atmos_pressure)
+
+        return Pi
