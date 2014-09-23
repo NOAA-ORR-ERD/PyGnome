@@ -34,6 +34,7 @@ def test_OilProps_sample_oil(oil, density, units):
     o = get_oil_props(oil)
     d = uc.convert('density', units, 'kg/m^3', density)
     assert abs(o.get_density(273.16 + 15) - d) < 1e-3
+    assert abs(o.get_density() - d) < 1e-3
     assert o.name == oil
 
 

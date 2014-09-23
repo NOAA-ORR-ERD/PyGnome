@@ -12,6 +12,7 @@ Not sure at present if this needs to be serializable?
 '''
 from math import log, exp
 
+from hazpy import unit_conversion as uc
 from .utilities import get_density
 
 
@@ -79,7 +80,7 @@ class OilProps(object):
         'get raw oil props'
         return getattr(self._r_oil, prop)
 
-    def get_density(self, temp, out=None):
+    def get_density(self, temp=None, out=None):
         '''
         return density at a temperature
         do we want to do any unit conversions here?
@@ -88,7 +89,10 @@ class OilProps(object):
         :param temp: temperature in Kelvin. Could be an ndarray, list or scalar
         :type temp: scalar, list, tuple or ndarray - assumes it is in Kelvin
         '''
-        return get_density(self._r_oil, temp, out)
+        if temp:
+            return get_density(self._r_oil, temp, out)
+        else:
+            return uc.convert('density', 'API', 'kg/m^3', self.api)
 
     @property
     def num_components(self):
