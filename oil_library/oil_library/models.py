@@ -97,6 +97,7 @@ oil_to_category = Table('oil_to_category', Base.metadata,
 class Oil(Base):
     __tablename__ = 'oils'
     id = Column(Integer, primary_key=True)
+    estimated_id = Column(Integer, ForeignKey('estimated.id'))
     oil_name = Column(String(100), unique=True, nullable=False)
     adios_oil_id = Column(String(16), unique=True, nullable=False)
 
@@ -156,6 +157,8 @@ class Oil(Base):
                         cascade="all, delete, delete-orphan")
     toxicities = relationship('Toxicity', backref='oil',
                               cascade="all, delete, delete-orphan")
+    estimated = relationship('Estimated', backref='oil', uselist=False,
+                             cascade="all, delete")
 
     def __init__(self, **kwargs):
         '''
@@ -204,6 +207,7 @@ class KVis(Base):
     __tablename__ = 'kvis'
     id = Column(Integer, primary_key=True)
     oil_id = Column(Integer, ForeignKey('oils.id'))
+    estimated_id = Column(Integer, ForeignKey('estimated.id'))
 
     m_2_s = Column(Float(53))
     ref_temp_k = Column(Float(53))
@@ -318,3 +322,17 @@ class Category(Base):
     def __repr__(self):
         return ('Category(name={0}, id={1}, parent_id={2})'
                 .format(self.name, self.id, self.parent_id))
+
+
+class Estimated(Base):
+    '''
+        This is where we will put our estimated oil properties.
+    '''
+    __tablename__ = 'estimated'
+    id = Column(Integer, primary_key=True)
+
+    kvis = relationship('KVis', backref='estimated',
+                        cascade="all, delete, delete-orphan")
+
+    def __repr__(self):
+        return 'Estimated(id={0.id})'.format(self)
