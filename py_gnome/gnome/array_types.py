@@ -20,6 +20,13 @@ movers needs
     element_type, look for numpy array in data_arrays with associated
     array_types, it will assume the 'key' is the name of the array_types.
 
+    todo: For array_types like mass_components and other array_types used by
+    weathering objects, the shape is set at runtime. Since this changes
+    depending on each type of spill that is modeled, need to rethink this
+    global definition for these array_types. Currently, these ArrayTypes are
+    defined with 'shape'=None. Add optional shape argument to
+    ArrayTypes().initialize() to handle the case where shape attribute is None
+
 '''
 
 import sys
@@ -55,25 +62,35 @@ class ArrayType(object):
         self.dtype = dtype
         self.initial_value = initial_value
 
-    def initialize_null(self):
+    def initialize_null(self, shape=None):
         """
         initialize array with 0 elements. Used so SpillContainer can
         initializes all arrays with 0 elements. Used when the model is rewound.
         The purpose is to show all data_arrays even if model is not yet running
         or no particles have been released
         """
-        return self.initialize(0)
+        return self.initialize(0, shape)
 
-    def initialize(self, num_elements):
+    def initialize(self, num_elements, shape=None):
         """
         Initialize a numpy array with the dtype and shape specified. The length
         of the array is given by num_elements and spill is given as input if
         the initialize function needs information about the spill to initialize
 
-        :param num_elements:
-        :param spill:
+        :param num_elements: number of elements so size of array to initialize
+
+        Optional parameter
+
+        :param shape=None: If this is None then use self.shape to determine
+            size of array to create, else use this parameter. This is primarily
+            used for ArrayTypes where either object's shape attribute is None
+            or we want to override the object's predefined 'shape' during
+            initialization
         """
-        arr = np.zeros((num_elements,) + self.shape, dtype=self.dtype)
+        if shape is None:
+            shape = self.shape
+
+        arr = np.zeros((num_elements,) + shape, dtype=self.dtype)
         if len(arr) > 0 and self.initial_value != 0.:
             arr[:] = self.initial_value
         return arr
@@ -103,15 +120,17 @@ class IdArrayType(ArrayType):
     The 'id' array assigns a unique int for every particle released.
     """
     def initialize(self, num_elements):
+        '''
+        overrides base initialize functionality to output a range of values
+
+            self.initial_value to num_elements + self.initial_value
+
+        This is only used for 'id' of particle and shape attribute is ignored
+        since you always get an array of shape (num_elements,)
+        '''
         array = np.arange(self.initial_value,
                           num_elements + self.initial_value, dtype=self.dtype)
         return array
-
-
-# Following is a runtime property, initialize it to 5 but ElementType may
-# update if it is different. This is number of mass_components used to model
-# the oil for weathering processes
-num_oil_components = 10
 
 
 # SpillContainer manipulates initial_value property to initialize 'spill_num'
@@ -135,12 +154,8 @@ _default_values = {
      'density': ((), np.float64, 0),     # default assumes mass=0
      'thickness': ((), np.float64, 1.),
      'mol': ((), np.float64, 0.),     # total number of mols for each LE
-     'mass_components': ((num_oil_components,),
-                         np.float64,
-                         tuple([1./num_oil_components] * num_oil_components)),
-     'evap_decay_constant': ((num_oil_components, ),
-                             np.float64,
-                             tuple([0.] * num_oil_components)),
+     'mass_components': (None, np.float64, None),
+     'evap_decay_constant': (None, np.float64, None),
      }
 
 
