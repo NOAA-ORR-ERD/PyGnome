@@ -202,8 +202,11 @@ class NetCDFOutput(Outputter, Serializable):
         """
         self._check_netcdf_filename(netcdf_filename)
         self._netcdf_filename = netcdf_filename
-        self._uncertain = False
-        self._u_netcdf_filename = None
+
+        # uncertain file is only written out if model is uncertain
+        name, ext = os.path.splitext(self.netcdf_filename)
+        self._u_netcdf_filename = '{0}_uncertain{1}'.format(name, ext)
+
         self.name = os.path.split(netcdf_filename)[1]
 
         # flag to keep track of _state of the object - is True after calling
@@ -272,6 +275,9 @@ class NetCDFOutput(Outputter, Serializable):
 
     @which_data.setter
     def which_data(self, value):
+        'change output data but cannot change in middle of run.'
+        if value == self._which_data:
+            return
         if self.middle_of_run:
             raise AttributeError('This attribute cannot be changed in the '
                                  'middle of a run')
@@ -347,7 +353,7 @@ class NetCDFOutput(Outputter, Serializable):
         self._var_attributes['spill_num']['spills_map'] = names
 
     def prepare_for_model_run(self, model_start_time,
-                              spills, uncertain=False,
+                              spills,
                               **kwargs):
         """
         .. function:: prepare_for_model_run(model_start_time,
@@ -366,15 +372,11 @@ class NetCDFOutput(Outputter, Serializable):
         positional argument for Renderer object, the required non-default
         arguments must be defined following 'cache'.
 
-        If uncertainty is on, then UncertainSpillPair object contains
+        If uncertainty is on, then SpillContainerPair object contains
         identical _data_arrays in both certain and uncertain SpillContainer's,
         the data itself is different, but they contain the same type of data
-        arrays.
-
-        :param bool uncertain: Default is False. Model automatically sets this
-                               based on whether uncertainty is on or off.
-                               If this is True then an uncertain data is
-                               written to netcdf_filename + '_uncertain.nc'
+        arrays. If uncertain, then datay arrays for uncertain spill container
+        are written to netcdf_filename + '_uncertain.nc'
 
         :param spills: If 'which_data' flag is set to 'all' or 'most', then
             model must provide the model.spills object
@@ -396,41 +398,42 @@ class NetCDFOutput(Outputter, Serializable):
         """
         super(NetCDFOutput, self).prepare_for_model_run(model_start_time,
                                                         spills, **kwargs)
-        self._uncertain = uncertain
 
         self._update_spill_names(spills)
-        if self._uncertain:
-            name, ext = os.path.splitext(self.netcdf_filename)
-            self._u_netcdf_filename = '{0}_uncertain{1}'.format(name, ext)
-            filenames = (self.netcdf_filename, self._u_netcdf_filename)
-        else:
-            filenames = (self.netcdf_filename,)
+        #======================================================================
+        # if self.sc_pair.uncertain:
+        #     name, ext = os.path.splitext(self.netcdf_filename)
+        #     self._u_netcdf_filename = '{0}_uncertain{1}'.format(name, ext)
+        #     filenames = (self.netcdf_filename, self._u_netcdf_filename)
+        # else:
+        #     filenames = (self.netcdf_filename,)
+        #======================================================================
 
         # array sizes of weathering processes + mass_components will vary
-        # set default in case there are no spills in the model. If there are
-        # no spills then we don't know what this is and there is no data to
-        # write so it should not matter
-        weathering_size = (10, )
-        sc = self.sc_pair.items()[0]
-        if len(sc) > 0:
+        # depending on spills. If there are no spills then no weathering data
+        # arrays to write - certainly no data to write
+        weathering_size = None
+
+        for sc in self.sc_pair.items():
             # only need to look at mass components for forecast spills since
             # uncertain spills are a copy of forecast spills
-            weathering_size = (sc.spills[0].get('substance').num_components, )
+            if len(sc) > 0:
+                weathering_size = (0,
+                    sc.spills[0].get('substance').num_components)
 
-        for file_ in filenames:
+            if sc.uncertain:
+                file_ = self._u_netcdf_filename
+            else:
+                file_ = self.netcdf_filename
+
             self._nc_file_exists_error(file_)
+
             ## create the netcdf files and write the standard stuff:
             with nc.Dataset(file_, 'w', format=self._format) as rootgrp:
                 ## fixme: why remove the "T" ??
                 self.cf_attributes['creation_date'] = \
                             round_time(datetime.now(), roundTo=1).isoformat()
                 rootgrp.setncatts(self.cf_attributes)
-                    #rootgrp.comment = self.cf_attributes['comment']
-                    #rootgrp.source = self.cf_attributes['source']
-                    #rootgrp.references = self.cf_attributes['references']
-                    #rootgrp.feature_type = self.cf_attributes['feature_type']
-                    #rootgrp.institution = self.cf_attributes['institution']
-                    #rootgrp.convention = self.cf_attributes['conventions']
 
                 # create the dimensions we need
                 # not sure if it's a convention or if dimensions
@@ -439,7 +442,10 @@ class NetCDFOutput(Outputter, Serializable):
                 rootgrp.createDimension('data')  # unlimited
                 rootgrp.createDimension('two', 2)
                 rootgrp.createDimension('three', 3)
-                rootgrp.createDimension('weathering', weathering_size[0])
+
+                if weathering_size:
+                    # if no spills, then no weathering data_arrays 
+                    rootgrp.createDimension('weathering', weathering_size[0])
 
                 # create the time variable
                 time_ = rootgrp.createVariable('time',
@@ -461,7 +467,9 @@ class NetCDFOutput(Outputter, Serializable):
 
                 ## create the list of variables that we want to put in the file
                 if self.which_data in ('all', 'most'):
-                    for var_name in spills.items()[0].array_types:
+                    # get shape and dtype from initailized numpy arrays instead
+                    # of array_types because some array type shapes are None
+                    for var_name in sc.data_arrays:
                         if var_name != 'positions':
                             # handled by latitude, longitude, depth
                             self.arrays_to_output.add(var_name)
@@ -479,20 +487,24 @@ class NetCDFOutput(Outputter, Serializable):
                         shape = ('data', )
                         chunksizes = (self._chunksize,)
                     else:
-                        at = getattr(array_types, var_name)
-                        dt = at.dtype
+                        # in prepare_for_model_run, nothing is released but
+                        # numpy arrays are initialized with 0 elements so use
+                        # the arrays to get shape and dtype instead of the
+                        # array_types since array_type could contain None for
+                        # shape
+                        dt = sc[var_name].dtype
 
                         # total kludge for the cases we happen to have...
-                        if at.shape == weathering_size:
+                        if sc[var_name].shape == weathering_size:
                             shape = ('data', 'weathering')
                             chunksizes = (self._chunksize, weathering_size[0])
-                        elif at.shape == (4,):
+                        elif sc[var_name].shape == (0, 4):
                             shape = ('data', 'four')
                             chunksizes = (self._chunksize, 4)
-                        elif at.shape == (3,):
+                        elif sc[var_name].shape == (0, 3):
                             shape = ('data', 'three')
                             chunksizes = (self._chunksize, 3)
-                        elif at.shape == (2,):
+                        elif sc[var_name].shape == (0, 2):
                             shape = ('data', 'two')
                             chunksizes = (self._chunksize, 2)
                         else:
@@ -588,8 +600,7 @@ class NetCDFOutput(Outputter, Serializable):
         if os.path.exists(self.netcdf_filename):
             os.remove(self.netcdf_filename)
 
-        if (self._u_netcdf_filename is not None
-            and os.path.exists(self._u_netcdf_filename)):
+        if (os.path.exists(self._u_netcdf_filename)):
             os.remove(self._u_netcdf_filename)
 
         self._middle_of_run = False
