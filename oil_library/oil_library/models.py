@@ -78,26 +78,35 @@ class Base(object):
         return self.columnitems(recurse)
 
 
-# UNMAPPED association table (Oil <--many-to-many--> Synonym)
-oil_to_synonym = Table('oil_to_synonym', Base.metadata,
-                       Column('oil_id', Integer, ForeignKey('oils.id')),
-                       Column('synonym_id', Integer,
-                              ForeignKey('synonyms.id')),
-                       )
+# UNMAPPED many-to-many association table
+imported_to_synonym = Table('imported_to_synonym', Base.metadata,
+                            Column('imported_record_id', Integer,
+                                   ForeignKey('imported_records.id')),
+                            Column('synonym_id', Integer,
+                                   ForeignKey('synonyms.id')),
+                            )
 
 
-# UNMAPPED association table (Oil <--many-to-many--> Category)
-oil_to_category = Table('oil_to_category', Base.metadata,
-                       Column('oil_id', Integer, ForeignKey('oils.id')),
-                       Column('category_id', Integer,
-                              ForeignKey('categories.id')),
-                       )
+# UNMAPPED many-to-many association table
+imported_to_category = Table('imported_to_category', Base.metadata,
+                             Column('imported_record_id', Integer,
+                                    ForeignKey('imported_records.id')),
+                             Column('category_id', Integer,
+                                    ForeignKey('categories.id')),
+                             )
 
 
-class Oil(Base):
-    __tablename__ = 'oils'
+class ImportedRecord(Base):
+    '''
+        This object, and its related objects, is created from a
+        single record inside the OilLib flat file.  The OilLib flat file
+        is itself created from a filemaker export process, and is in two
+        dimensional tabular format.
+    '''
+    __tablename__ = 'imported_records'
     id = Column(Integer, primary_key=True)
-    estimated_id = Column(Integer, ForeignKey('estimated.id'))
+    oil_id = Column(Integer, ForeignKey('oils.id'))
+
     oil_name = Column(String(100), unique=True, nullable=False)
     adios_oil_id = Column(String(16), unique=True, nullable=False)
 
@@ -143,33 +152,32 @@ class Oil(Base):
     k0y = Column(Float(53))
 
     # relationship fields
-    synonyms = relationship('Synonym', secondary=oil_to_synonym,
-                            backref='oils')
-    categories = relationship('Category', secondary=oil_to_category,
-                              backref='oils')
-    densities = relationship('Density', backref='oil',
+    synonyms = relationship('Synonym', secondary=imported_to_synonym,
+                            backref='imported_records')
+    categories = relationship('Category', secondary=imported_to_category,
+                              backref='imported_records')
+    densities = relationship('Density', backref='imported_record',
                              cascade="all, delete, delete-orphan")
-    kvis = relationship('KVis', backref='oil',
+    kvis = relationship('KVis', backref='imported_record',
                         cascade="all, delete, delete-orphan")
-    dvis = relationship('DVis', backref='oil',
+    dvis = relationship('DVis', backref='imported_record',
                         cascade="all, delete, delete-orphan")
-    cuts = relationship('Cut', backref='oil',
+    cuts = relationship('Cut', backref='imported_record',
                         cascade="all, delete, delete-orphan")
-    toxicities = relationship('Toxicity', backref='oil',
+    toxicities = relationship('Toxicity', backref='imported_record',
                               cascade="all, delete, delete-orphan")
-    estimated = relationship('Estimated', backref='oil', uselist=False,
-                             cascade="all, delete")
+    oil = relationship('Oil',
+                       primaryjoin='ImportedRecord.oil_id == Oil.id',
+                       backref='imported_record',
+                       uselist=False, cascade="all, delete")
 
     def __init__(self, **kwargs):
-        '''
-            initialize our oil object
-        '''
         for a, v in kwargs.iteritems():
             if (a in self.columns):
                 setattr(self, a, v)
 
     def __repr__(self):
-        return "<Oil('%s')>" % (self.oil_name)
+        return "<ImportedRecord('%s')>" % (self.oil_name)
 
 
 class Synonym(Base):
@@ -187,7 +195,7 @@ class Synonym(Base):
 class Density(Base):
     __tablename__ = 'densities'
     id = Column(Integer, primary_key=True)
-    oil_id = Column(Integer, ForeignKey('oils.id'))
+    imported_record_id = Column(Integer, ForeignKey('imported_records.id'))
 
     kg_m_3 = Column(Float(53))
     ref_temp_k = Column(Float(53))
@@ -206,8 +214,8 @@ class Density(Base):
 class KVis(Base):
     __tablename__ = 'kvis'
     id = Column(Integer, primary_key=True)
+    imported_record_id = Column(Integer, ForeignKey('imported_records.id'))
     oil_id = Column(Integer, ForeignKey('oils.id'))
-    estimated_id = Column(Integer, ForeignKey('estimated.id'))
 
     m_2_s = Column(Float(53))
     ref_temp_k = Column(Float(53))
@@ -226,7 +234,7 @@ class KVis(Base):
 class DVis(Base):
     __tablename__ = 'dvis'
     id = Column(Integer, primary_key=True)
-    oil_id = Column(Integer, ForeignKey('oils.id'))
+    imported_record_id = Column(Integer, ForeignKey('imported_records.id'))
 
     kg_ms = Column(Float(53))
     ref_temp_k = Column(Float(53))
@@ -245,7 +253,7 @@ class DVis(Base):
 class Cut(Base):
     __tablename__ = 'cuts'
     id = Column(Integer, primary_key=True)
-    oil_id = Column(Integer, ForeignKey('oils.id'))
+    imported_record_id = Column(Integer, ForeignKey('imported_records.id'))
 
     vapor_temp_k = Column(Float(53))
     liquid_temp_k = Column(Float(53))
@@ -266,7 +274,7 @@ class Cut(Base):
 class Toxicity(Base):
     __tablename__ = 'toxicities'
     id = Column(Integer, primary_key=True)
-    oil_id = Column(Integer, ForeignKey('oils.id'))
+    imported_record_id = Column(Integer, ForeignKey('imported_records.id'))
 
     tox_type = Column(Enum('EC', 'LC'), nullable=False)
     species = Column(String(16))
@@ -324,15 +332,16 @@ class Category(Base):
                 .format(self.name, self.id, self.parent_id))
 
 
-class Estimated(Base):
+class Oil(Base):
     '''
         This is where we will put our estimated oil properties.
     '''
-    __tablename__ = 'estimated'
+    __tablename__ = 'oils'
     id = Column(Integer, primary_key=True)
+    imported_record_id = Column(Integer, ForeignKey('imported_records.id'))
 
-    kvis = relationship('KVis', backref='estimated',
+    kvis = relationship('KVis', backref='oil',
                         cascade="all, delete, delete-orphan")
 
     def __repr__(self):
-        return 'Estimated(id={0.id})'.format(self)
+        return 'Oil(id={0.id})'.format(self)
