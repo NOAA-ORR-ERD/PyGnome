@@ -400,14 +400,6 @@ class NetCDFOutput(Outputter, Serializable):
                                                         spills, **kwargs)
 
         self._update_spill_names(spills)
-        #======================================================================
-        # if self.sc_pair.uncertain:
-        #     name, ext = os.path.splitext(self.netcdf_filename)
-        #     self._u_netcdf_filename = '{0}_uncertain{1}'.format(name, ext)
-        #     filenames = (self.netcdf_filename, self._u_netcdf_filename)
-        # else:
-        #     filenames = (self.netcdf_filename,)
-        #======================================================================
 
         # array sizes of weathering processes + mass_components will vary
         # depending on spills. If there are no spills then no weathering data
