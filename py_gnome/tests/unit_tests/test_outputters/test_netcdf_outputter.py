@@ -90,17 +90,9 @@ def test_exceptions(model):
     t_file = os.path.join(here, 'temp.nc')
     spill_pair = model.spills
 
-    def _del_temp_file():
-        # clean up temporary file from previous run
-        try:
-            print 'remove temporary file {0}'.format(t_file)
-            os.remove(t_file)
-        except:
-            pass
-
     # begin tests
-    _del_temp_file()
     netcdf = NetCDFOutput(t_file, which_data='all')
+    netcdf.rewind() # delete temporary files
 
     with raises(TypeError):
         # need to pass in model start time
@@ -128,9 +120,9 @@ def test_exceptions(model):
 
     with raises(AttributeError):
         'cannot change after prepare_for_model_run has been called'
-        netcdf.which_data = 'all'
+        netcdf.which_data = 'most'
 
-    _del_temp_file()
+    netcdf.rewind()     # delete datafiles
 
 
 def test_exceptions_middle_of_run(model):
