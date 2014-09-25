@@ -407,7 +407,16 @@ class NetCDFOutput(Outputter, Serializable):
             filenames = (self.netcdf_filename,)
 
         # array sizes of weathering processes + mass_components will vary
-        weathering_size = array_types.mass_components.shape
+        # set default in case there are no spills in the model. If there are
+        # no spills then we don't know what this is and there is no data to
+        # write so it should not matter
+        weathering_size = (10, )
+        sc = self.sc_pair.items()[0]
+        if len(sc) > 0:
+            # only need to look at mass components for forecast spills since
+            # uncertain spills are a copy of forecast spills
+            weathering_size = (sc.spills[0].get('substance').num_components, )
+
         for file_ in filenames:
             self._nc_file_exists_error(file_)
             ## create the netcdf files and write the standard stuff:
