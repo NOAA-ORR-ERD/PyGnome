@@ -147,7 +147,7 @@ class HalfLifeWeatherer(Weatherer):
         super(HalfLifeWeatherer, self).prepare_for_model_step(sc,
                                                               time_step,
                                                               model_time)
-        num_pc = mass_components.shape[0]
+        num_pc = sc.array_types['mass_components'].shape[0]
         hl = np.zeros(num_pc, dtype=np.float64)
         hl[:] = np.Inf
 

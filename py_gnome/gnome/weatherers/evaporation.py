@@ -38,7 +38,6 @@ class Evaporation(Weatherer):
                                  'thickness': thickness,
                                  'mol': mol,
                                  'evap_decay_constant': evap_decay_constant})
-        self.vapor_pressure = None
         self._decay = 0.0   # initialize to no decay
 
     def prepare_for_model_step(self, sc, time_step, model_time):
@@ -69,7 +68,7 @@ class Evaporation(Weatherer):
             f_diff = (1.0 - spill.frac_water)
             mask = sc.get_spill_mask(spill)
             mw = spill.get('substance').molecular_weight
-            vp = spill.get('substance').vapor_pressure(water['temperature'])
+            vp = spill.get('substance').vapor_pressure(water_temp)
             sc['thickness'][mask] = self._compute_le_thickness()
             sc['density'][mask] = \
                 spill.get('substance').get_density(temp=water_temp)
@@ -80,7 +79,7 @@ class Evaporation(Weatherer):
             le_area = le_area.reshape(-1, 1)
 
             d_numer = (le_area * K * vp * spill.frac_coverage * f_diff)
-            d_denom = (constants['gas_constant'] * water['temperature'] *
+            d_denom = (constants['gas_constant'] * water_temp *
                        sc['mol'][mask]).reshape(-1, 1)
             d_denom = np.repeat(d_denom, d_numer.shape[1], axis=1)
             sc['evap_decay_constant'][mask, :] = -d_numer/d_denom
