@@ -119,7 +119,7 @@ class IdArrayType(ArrayType):
     """
     The 'id' array assigns a unique int for every particle released.
     """
-    def initialize(self, num_elements):
+    def initialize(self, num_elements, shape=None):
         '''
         overrides base initialize functionality to output a range of values
 
@@ -127,6 +127,8 @@ class IdArrayType(ArrayType):
 
         This is only used for 'id' of particle and shape attribute is ignored
         since you always get an array of shape (num_elements,)
+        Keep it in method signature so we don't have to override
+        initialize_null as well
         '''
         array = np.arange(self.initial_value,
                           num_elements + self.initial_value, dtype=self.dtype)
