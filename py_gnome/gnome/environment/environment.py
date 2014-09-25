@@ -79,7 +79,7 @@ class Water(Environment, serializable.Serializable):
         self.units = {'temperature': 'K',
                       'salinity': 'psu'}
         self.temperature = temperature
-        self.salinity = 0.0
+        self.salinity = 35
         self.name = name
 
     def __repr__(self):
