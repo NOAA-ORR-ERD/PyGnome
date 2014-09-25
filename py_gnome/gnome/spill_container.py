@@ -292,6 +292,17 @@ class SpillContainer(SpillContainerData):
 
         return u_sc
 
+    def _oil_comp_array_len(self):
+        '''
+        look for first spill that is on and return number of oil components
+        for it. Currently, we only model a single type of oil
+        '''
+        if len(self.spills) > 0:
+            for spill in self.spills:
+                if spill.on:
+                    return spill.get('substance').num_components
+        return None
+
     def prepare_for_model_run(self, array_types={}):
         """
         called when setting up the model prior to 1st time step
@@ -340,9 +351,14 @@ class SpillContainer(SpillContainerData):
         """
         for name, atype in self._array_types.iteritems():
             # Initialize data_arrays with 0 elements
-            self._data_arrays[name] = atype.initialize_null()
+            if atype.shape is None:
+                num_comp = self._oil_comp_array_len()
+                self._data_arrays[name] = \
+                    atype.initialize_null(shape=(num_comp, ))
+            else:
+                self._data_arrays[name] = atype.initialize_null()
 
-    def _append_data_arrays(self, num_released):
+    def _append_data_arrays(self, num_released, num_oil_components):
         """
         initialize data arrays once spill has spawned particles
         Data arrays are set to their initial_values
@@ -353,8 +369,17 @@ class SpillContainer(SpillContainerData):
         """
         for name, atype in self._array_types.iteritems():
             # initialize all arrays even if 0 length
-            self._data_arrays[name] = np.r_[self._data_arrays[name],
-                                            atype.initialize(num_released)]
+            if atype.shape is None:
+                # assume array type is for weather data, provide it the shape
+                # per the number of components used to model the oil
+                # currently, we only have one type of oil, so all spills will
+                # model same number of oil_components
+                a_append = atype.initialize(num_released,
+                                            shape=(num_oil_components,),
+                                            initial_value=tuple([0] * num_oil_components))
+            else:
+                a_append = atype.initialize(num_released)
+            self._data_arrays[name] = np.r_[self._data_arrays[name], a_append]
 
     def release_elements(self, time_step, model_time):
         """
@@ -393,7 +418,9 @@ class SpillContainer(SpillContainerData):
                     self._array_types['id'].initial_value = 0
 
                 # append to data arrays
-                self._append_data_arrays(num_released)
+                # number of oil components is currently the same for all spills
+                num_oil_comp = sp.get('substance').num_components
+                self._append_data_arrays(num_released, num_oil_comp)
                 sp.set_newparticle_values(num_released, model_time, time_step,
                                           self._data_arrays)
 

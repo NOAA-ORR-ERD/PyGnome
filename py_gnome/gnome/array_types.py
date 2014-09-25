@@ -71,7 +71,7 @@ class ArrayType(object):
         """
         return self.initialize(0, shape)
 
-    def initialize(self, num_elements, shape=None):
+    def initialize(self, num_elements, shape=None, initial_value=None):
         """
         Initialize a numpy array with the dtype and shape specified. The length
         of the array is given by num_elements and spill is given as input if
@@ -90,9 +90,12 @@ class ArrayType(object):
         if shape is None:
             shape = self.shape
 
+        if initial_value is None:
+            initial_value = self.initial_value
+
         arr = np.zeros((num_elements,) + shape, dtype=self.dtype)
-        if len(arr) > 0 and self.initial_value != 0.:
-            arr[:] = self.initial_value
+        if len(arr) > 0 and initial_value != 0.:
+            arr[:] = initial_value
         return arr
 
     def __eq__(self, other):
