@@ -80,10 +80,6 @@ class Spill(serializable.Serializable):
         :type amount: float
         :param units=None: must provide units for amount spilled
         :type units: str
-        :param frac_water=0.0: fractional water content in the emulsion
-        :type frac_water: float
-        :param frac_coverage=1.0: fraction of area covered by oil
-        :type frac_coverage: float
         :param name='Spill': a name for the spill
         :type name: str
 
@@ -112,6 +108,10 @@ class Spill(serializable.Serializable):
             else:
                 self.units = units
 
+        '''
+        fractional water content in the emulsion
+        fraction of area covered by oil
+        '''
         self.frac_coverage = 1.0
         self.frac_water = 0.0
         self.name = name
@@ -373,6 +373,8 @@ class Spill(serializable.Serializable):
         Return the mass released during the spill.
         The default units for mass are as defined in 'mass_units' property.
         User can also specify desired output units in the function.
+        If volume is given, then use density to find mass. Density is always
+        at 15degC, consistent with API definition
         '''
         if self.amount is None:
             return self.amount
@@ -382,7 +384,7 @@ class Spill(serializable.Serializable):
             mass = uc.convert('Mass', self.units, 'kg', self.amount)
         elif self.units in self.valid_vol_units:
             vol = uc.convert('Volume', self.units, 'm^3', self.amount)
-            mass = self.element_type.substance.get_density('kg/m^3') * vol
+            mass = self.element_type.substance.get_density() * vol
 
         if units is None or units == 'kg':
             return mass

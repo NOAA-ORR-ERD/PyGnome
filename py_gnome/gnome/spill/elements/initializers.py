@@ -54,7 +54,7 @@ class InitBaseClass(object):
         # the mover sets the primary data_array (ie rise_vel for above example)
         self.array_types = OrderedDict()
 
-    def initialize(self):
+    def initialize(self, num_new_particles, spill, data_arrays, substance):
         """
         all classes that derive from Base class must implement initialize
         method
@@ -180,8 +180,7 @@ class InitArraysFromOilProps(InitBaseClass, Serializable):
         """
         super(InitArraysFromOilProps, self).__init__()
         self.array_types.update({'mass_components': array_types.mass_components,
-                                 'mass': array_types.mass,
-                                 'density': array_types.density})
+                                 'mass': array_types.mass})
         self.name = 'mass_components'
 
     def initialize(self, num_new_particles, spill, data_arrays, substance):
@@ -213,7 +212,6 @@ class InitArraysFromOilProps(InitBaseClass, Serializable):
         masses = mass_fractions * le_mass
 
         data_arrays['mass_components'][-num_new_particles:] = masses
-        data_arrays['density'][-num_new_particles:] = substance.density
 
 
 # do following two classes work for a time release spill?
@@ -424,7 +422,7 @@ class InitRiseVelFromDropletSizeFromDist(DistributionBase):
         self.distribution.set_values(drop_size)
 
         data_arrays['droplet_diameter'][-num_new_particles:] = drop_size
-        le_density[:] = substance.density
+        le_density[:] = substance.get_density()
 
         # now update rise_vel with droplet size - dummy for now
         rise_velocity_from_drop_size(

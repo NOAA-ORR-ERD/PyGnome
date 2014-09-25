@@ -11,7 +11,6 @@ import copy
 
 import gnome    # required by new_from_dict
 from gnome.utilities.serializable import Serializable
-from gnome.array_types import num_oil_components, reset_to_defaults
 from .initializers import (InitRiseVelFromDropletSizeFromDist,
                            InitRiseVelFromDist,
                            InitWindages,
@@ -41,12 +40,13 @@ class ElementType(Serializable):
             assuming it is just a single initializer object
 
         :param substance='oil_conservative': Type of oil spilled. If this is a
-            string, then use get_oil to get the OilProps object, else assume it
-            is an OilProps object
+            string, then use get_oil_props to get the OilProps object, else
+            assume it is an OilProps object
         :type substance: str or OilProps
         :param density=None: Allow user to set oil density directly.
         :param density_units='kg/m^3: Only used if a density is input.
         '''
+        self._substance = None
         self.initializers = []
         try:
             self.initializers.extend(initializers)
@@ -55,20 +55,25 @@ class ElementType(Serializable):
             # append it to list
             self.initializers.append(initializers)
 
-        if isinstance(substance, basestring):
-            # leave for now to preserve tests
-            self.substance = get_oil_props(substance, 2)
-        else:
-            self.substance = substance
-
-        if self.substance.num_components != num_oil_components:
-            reset_to_defaults()
+        self.substance = substance
 
     def __repr__(self):
         return ('{0.__class__.__module__}.{0.__class__.__name__}('
                 'initializers={0.initializers}, '
                 'substance={0.substance!r}'
                 ')'.format(self))
+
+    @property
+    def substance(self):
+        return self._substance
+
+    @substance.setter
+    def substance(self, val):
+        if isinstance(val, basestring):
+            # leave for now to preserve tests
+            self._substance = get_oil_props(val, 2)
+        else:
+            self._substance = val
 
     @property
     def array_types(self):
