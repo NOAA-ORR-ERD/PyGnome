@@ -22,7 +22,7 @@ from gnome.environment import Wind, Tide
 from gnome.model import Model
 
 from gnome.spill import Spill, SpatialRelease, point_line_release_spill
-from gnome.spill.elements import floating
+from gnome.spill.elements import floating, floating_weathering
 
 from gnome.movers import SimpleMover, RandomMover, WindMover, CatsMover
 
@@ -794,9 +794,11 @@ def test_simple_run_no_spills(model):
 def test_all_weatherers_in_model(model):
     '''
     test model run with weatherer
+    todo: This does not require floating_weathering() element_type, meaning
+    mass_components are not initialized correctly here - need to revisit this
+    concept
     '''
-    weatherer = HalfLifeWeatherer()
-    model.weatherers += weatherer
+    model.weatherers += HalfLifeWeatherer()
     print 'model.weatherers:', model.weatherers
 
     model.full_run()
@@ -805,10 +807,14 @@ def test_all_weatherers_in_model(model):
     assert expected_keys.issubset(model.spills.LE_data)
 
 
+@pytest.mark.xfail
 def test_run_element_type_no_initializers(model):
     '''
     run model with only one spill, it contains an element_type.
-    However, element_type has no initializers
+    However, element_type has no initializers - will not work if weatherers
+    are present that require runtime array_types defined. The initializers
+    currently define these runtime array_types -- need to rethink how this
+    should work
     '''
     model.uncertain = False
     model.rewind()

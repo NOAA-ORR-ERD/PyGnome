@@ -9,8 +9,8 @@ import numpy as np
 from gnome.environment import constant_wind, Water
 from gnome.weatherers import Evaporation
 from gnome.spill.elements import floating_weathering
-from gnome.array_types import (windages,
-                               mass_components,
+from gnome.array_types import (mass_components,
+                               windages,
                                density,
                                thickness,
                                mol,
@@ -31,7 +31,6 @@ def test_evaporation(oil, temp, num_elems):
     still working on tests ..
     '''
     et = floating_weathering(substance=oil)
-    et.water = water_props
     arrays = {'windages': windages,
               'mass_components': mass_components,
               'density': density,
@@ -52,6 +51,7 @@ def test_evaporation(oil, temp, num_elems):
     evap.prepare_for_model_step(sc, time_step, model_time)
     mass_remain = evap.weather_elements(sc, time_step, model_time)
     assert np.all(sc['evap_decay_constant'] <= 0.0)
+    assert np.all(mass_remain <= sc['mass_components'])
 
     #==========================================================================
     # print "\nDensity [kg/m^3]: "
