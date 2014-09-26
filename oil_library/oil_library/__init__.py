@@ -14,32 +14,32 @@ from oil_library.oil_props import OilProps
 
 # Some standard oils - scope is module level, non-public
 _sample_oils = {
-    'oil_gas': {'Oil Name': 'oil_gas',
-                'API': uc.convert('Density', 'gram per cubic centimeter',
-                                  'API degree', 0.75)},
-    'oil_jetfuels': {'Oil Name': 'oil_jetfuels',
-                     'API': uc.convert('Density', 'gram per cubic centimeter',
-                                       'API degree',
+    'oil_gas': {'oil_name': 'oil_gas',
+                'api': uc.convert('Density', 'gram per cubic centimeter',
+                                  'api degree', 0.75)},
+    'oil_jetfuels': {'oil_name': 'oil_jetfuels',
+                     'api': uc.convert('Density', 'gram per cubic centimeter',
+                                       'api degree',
                                        0.81)},
-    'oil_diesel': {'Oil Name': 'oil_diesel',
-                   'API': uc.convert('Density', 'gram per cubic centimeter',
-                                     'API degree', 0.87)},
-    'oil_4': {'Oil Name': 'oil_4',
-              'API': uc.convert('Density', 'gram per cubic centimeter',
-                                'API degree', 0.90)},
-    'oil_crude': {'Oil Name': 'oil_crude',
-                  'API': uc.convert('Density', 'gram per cubic centimeter',
-                                    'API degree', 0.90)},
-    'oil_6': {'Oil Name': 'oil_6',
-              'API': uc.convert('Density', 'gram per cubic centimeter',
-                                'API degree', 0.99)},
-    'oil_conservative': {'Oil Name': 'oil_conservative',
-                         'API': uc.convert('Density',
+    'oil_diesel': {'oil_name': 'oil_diesel',
+                   'api': uc.convert('Density', 'gram per cubic centimeter',
+                                     'api degree', 0.87)},
+    'oil_4': {'oil_name': 'oil_4',
+              'api': uc.convert('Density', 'gram per cubic centimeter',
+                                'api degree', 0.90)},
+    'oil_crude': {'oil_name': 'oil_crude',
+                  'api': uc.convert('Density', 'gram per cubic centimeter',
+                                    'api degree', 0.90)},
+    'oil_6': {'oil_name': 'oil_6',
+              'api': uc.convert('Density', 'gram per cubic centimeter',
+                                'api degree', 0.99)},
+    'oil_conservative': {'oil_name': 'oil_conservative',
+                         'api': uc.convert('Density',
                                            'gram per cubic centimeter',
-                                           'API degree', 1)},
-    'chemical': {'Oil Name': 'chemical',
-                 'API': uc.convert('Density', 'gram per cubic centimeter',
-                                   'API degree', 1)},
+                                           'api degree', 1)},
+    'chemical': {'oil_name': 'chemical',
+                 'api': uc.convert('Density', 'gram per cubic centimeter',
+                                   'api degree', 1)},
     }
 
 '''
@@ -55,7 +55,7 @@ def get_oil(oil_name, max_cuts=5):
 
     :param oil_: name of the oil that spilled. If it is one of the names
             stored in _sample_oil dict, then an Oil object with specified
-            API is returned.
+            api is returned.
             Otherwise, query the database for the oil_name and return the
             associated Oil object.
     :type oil_: str
@@ -66,12 +66,12 @@ def get_oil(oil_name, max_cuts=5):
 
     NOTE I:
     -------
-    One issue is that the kwargs in Oil contain spaces, like 'Oil Name'. This
+    One issue is that the kwargs in Oil contain spaces, like 'oil_name'. This
     can be handled if the user defines a dict as follows:
-        kw = {'Oil Name': 'new oil', 'Field Name': 'field name'}
+        kw = {'oil_name': 'new oil', 'Field Name': 'field name'}
         get_oil(**kw)
     however, the following will not work:
-        get_oil('Oil Name'='new oil', 'Field Name'='field name')
+        get_oil('oil_name'='new oil', 'Field Name'='field name')
 
     This is another reason, we need an interface (business logic) between the
     SQL object and the end user.
@@ -121,7 +121,7 @@ def oil_from_density(density, name='user_oil', units='kg/m^3'):
 
     :param name: name of oil
     :param density: density of oil
-    :param units='API': units of density
+    :param units='api': units of density
 
     """
     valid_density_units = list(chain.from_iterable([item[1] for item in
@@ -136,8 +136,8 @@ def oil_from_density(density, name='user_oil', units='kg/m^3'):
                                   'following list to be valid: '
                                   '{0}'.format(valid_density_units))
 
-    if units != 'API':
-        api = uc.convert('Density', units, 'API Degree', density)
+    if units != 'api':
+        api = uc.convert('Density', units, 'api Degree', density)
     else:
         api = density
 

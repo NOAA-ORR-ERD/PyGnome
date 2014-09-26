@@ -40,6 +40,7 @@ def test_OilProps_sample_oil(oil, density, units):
     assert o.name == oil
 
 
+@pytest.mark.xfail
 @pytest.mark.parametrize(('oil', 'density', 'units'),
                          [('my_oil', .98, 'g/cm^3')])
 def test_OilPropsFromDensity(oil, density, units):
