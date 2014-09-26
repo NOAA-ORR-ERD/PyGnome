@@ -105,7 +105,6 @@ class ImportedRecord(Base):
     '''
     __tablename__ = 'imported_records'
     id = Column(Integer, primary_key=True)
-    oil_id = Column(Integer, ForeignKey('oils.id'))
 
     oil_name = Column(String(100), unique=True, nullable=False)
     adios_oil_id = Column(String(16), unique=True, nullable=False)
@@ -153,23 +152,21 @@ class ImportedRecord(Base):
 
     # relationship fields
     synonyms = relationship('Synonym', secondary=imported_to_synonym,
-                            backref='imported_records')
+                            backref='imported')
     categories = relationship('Category', secondary=imported_to_category,
-                              backref='imported_records')
-    densities = relationship('Density', backref='imported_record',
+                              backref='imported')
+    densities = relationship('Density', backref='imported',
                              cascade="all, delete, delete-orphan")
-    kvis = relationship('KVis', backref='imported_record',
+    kvis = relationship('KVis', backref='imported',
                         cascade="all, delete, delete-orphan")
-    dvis = relationship('DVis', backref='imported_record',
+    dvis = relationship('DVis', backref='imported',
                         cascade="all, delete, delete-orphan")
-    cuts = relationship('Cut', backref='imported_record',
+    cuts = relationship('Cut', backref='imported',
                         cascade="all, delete, delete-orphan")
-    toxicities = relationship('Toxicity', backref='imported_record',
+    toxicities = relationship('Toxicity', backref='imported',
                               cascade="all, delete, delete-orphan")
-    oil = relationship('Oil',
-                       primaryjoin='ImportedRecord.oil_id == Oil.id',
-                       backref='imported_record',
-                       uselist=False, cascade="all, delete")
+    oil = relationship('Oil', backref='imported',
+                       uselist=False)
 
     def __init__(self, **kwargs):
         for a, v in kwargs.iteritems():
