@@ -111,7 +111,7 @@ class OilProps(object):
             if heavy_comp + f_remain <= 1.0:
                 self.mass_fraction.append(heavy_comp)
             else:
-                self.mass_fraction.append(1.0-f_remain)
+                self.mass_fraction.append(1.0 - f_remain)
             self.boiling_point.append(float('inf'))
 
     def _mass_frac_bp_from_cuts(self):
@@ -139,7 +139,8 @@ class OilProps(object):
 
     def _component_mw(self):
         'estimate molecular weights of components'
-        self.molecular_weight = [float('nan')] * self.num_components  # initialize to 'nan'
+        self.molecular_weight = [float('nan')] * self.num_components
+
         for ix, bp in enumerate(self.boiling_point):
             if bp is 'inf' or bp is 'nan':
                 continue

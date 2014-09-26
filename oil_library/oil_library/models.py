@@ -1,6 +1,4 @@
 
-from slugify import slugify_filename
-
 from sqlalchemy import (Table,
                         Column,
                         Integer,
@@ -108,7 +106,6 @@ class Oil(Base):
     reference = Column(Text)
     api = Column(Float(53))
     pour_point_min_k = Column(Float(53))
-    pour_point_min_indicator = Column(String(2))
     pour_point_max_k = Column(Float(53))
     product_type = Column(String(16))
     comments = Column(Text)
@@ -119,7 +116,6 @@ class Oil(Base):
     emuls_constant_min = Column(Float(53))
     emuls_constant_max = Column(Float(53))
     flash_point_min_k = Column(Float(53))
-    flash_point_min_indicator = Column(String(2))
     flash_point_max_k = Column(Float(53))
     oil_water_interfacial_tension_n_m = Column(Float(53))
     oil_water_interfacial_tension_ref_temp_k = Column(Float(53))
@@ -162,37 +158,12 @@ class Oil(Base):
                               cascade="all, delete, delete-orphan")
 
     def __init__(self, **kwargs):
+        '''
+            initialize our oil object
+        '''
         for a, v in kwargs.iteritems():
-            a = slugify_filename(a).lower()
-            if (a in self.columns
-                and a not in ('pour_point_min_k',
-                              'flash_point_min_k'
-                              'preferred_oils')
-                ):
+            if (a in self.columns):
                 setattr(self, a, v)
-
-        # kind of weird behavior...
-        # pour_point_min can have the following values
-        #     '<' which means "less than" the max value
-        #     '>' which means "greater than" the max value
-        #     ''  which means no value.  Max should also have no value
-        #         in this case
-        # So it is not possible for a column to be a float and a string too.
-        if kwargs.get('Pour Point Min (K)') in ('<', '>'):
-            self.pour_point_min_indicator = kwargs.get('Pour Point Min (K)')
-            self.pour_point_min_k = None
-        else:
-            self.pour_point_min_k = kwargs.get('Pour Point Min (K)')
-
-        # same kind of weird behavior as pour point...
-        if kwargs.get('Flash Point Min (K)') in ('<', '>'):
-            self.flash_point_min_indicator = kwargs.get('Flash Point Min (K)')
-            self.flash_point_min_k = None
-        else:
-            self.flash_point_min_k = kwargs.get('Flash Point Min (K)')
-
-        self.preferred_oils = (True if kwargs.get('Preferred Oils') == 'X'
-                               else False)
 
     def __repr__(self):
         return "<Oil('%s')>" % (self.oil_name)
@@ -221,7 +192,6 @@ class Density(Base):
 
     def __init__(self, **kwargs):
         for a, v in kwargs.iteritems():
-            a = slugify_filename(a).lower()
             if (a in self.columns):
                 setattr(self, a, v)
 
@@ -241,7 +211,6 @@ class KVis(Base):
 
     def __init__(self, **kwargs):
         for a, v in kwargs.iteritems():
-            a = slugify_filename(a).lower()
             if (a in self.columns):
                 setattr(self, a, v)
 
@@ -261,7 +230,6 @@ class DVis(Base):
 
     def __init__(self, **kwargs):
         for a, v in kwargs.iteritems():
-            a = slugify_filename(a).lower()
             if (a in self.columns):
                 setattr(self, a, v)
 
@@ -281,7 +249,6 @@ class Cut(Base):
 
     def __init__(self, **kwargs):
         for a, v in kwargs.iteritems():
-            a = slugify_filename(a).lower()
             if (a in self.columns):
                 setattr(self, a, v)
 
@@ -299,19 +266,19 @@ class Toxicity(Base):
 
     tox_type = Column(Enum('EC', 'LC'), nullable=False)
     species = Column(String(16))
-    after_24_hours = Column(Float(53))
-    after_48_hours = Column(Float(53))
-    after_96_hours = Column(Float(53))
+    after_24h = Column(Float(53))
+    after_48h = Column(Float(53))
+    after_96h = Column(Float(53))
 
     def __init__(self, **kwargs):
-        self.tox_type = kwargs.get('Toxicity Type')
-        self.species = kwargs.get('Species')
-        self.after_24_hours = kwargs.get('24h')
-        self.after_48_hours = kwargs.get('48h')
-        self.after_96_hours = kwargs.get('96h')
+        for a, v in kwargs.iteritems():
+            if (a in self.columns):
+                setattr(self, a, v)
 
     def __repr__(self):
-        return "<Toxicity('%s')>" % (self.id)
+        return ('<Toxicity({0.species}, {0.tox_type}, '
+                '[{0.after_24h}, {0.after_48h}, {0.after_96h}])>'
+                .format(self))
 
 
 class Category(Base):
