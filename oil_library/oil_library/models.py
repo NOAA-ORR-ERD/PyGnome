@@ -325,7 +325,7 @@ class Category(Base):
         self.children.append(Category(nodename, parent=self))
 
     def __repr__(self):
-        return ('Category(name={0}, id={1}, parent_id={2})'
+        return ('<Category(name={0}, id={1}, parent_id={2})>'
                 .format(self.name, self.id, self.parent_id))
 
 
@@ -341,4 +341,4 @@ class Oil(Base):
                         cascade="all, delete, delete-orphan")
 
     def __repr__(self):
-        return 'Oil(id={0.id})'.format(self)
+        return '<Oil(id={0.id})>'.format(self)
