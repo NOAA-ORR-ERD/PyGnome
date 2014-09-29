@@ -31,22 +31,26 @@ class Environment(object):
             self.name = name
 
 
+# define valid units at module scope because the Schema and Object both use it
+_valid_temp_units = uc.GetUnitNames('Temperature')
+_valid_temp_units.extend(
+    chain(*[val[1] for val in
+            uc.ConvertDataUnits['Temperature'].values()]))
+
+_valid_ciw_units = uc.GetUnitNames('Concentration In Water')
+_valid_ciw_units.extend(
+    chain(*[val[1] for val in
+            uc.ConvertDataUnits['Concentration In Water'].values()]))
+
+_valid_dist_units = uc.GetUnitNames('Length')
+_valid_dist_units.extend(
+    chain(*[val[1] for val in
+            uc.ConvertDataUnits['Length'].values()]))
+
+_valid_salinity_units = ['psu']
+
+
 class UnitsSchema(MappingSchema):
-    _valid_temp_units = uc.GetUnitNames('Temperature')
-    _valid_temp_units.extend(
-        chain(*[val[1] for val in
-                uc.ConvertDataUnits['Temperature'].values()]))
-
-    _valid_dist_units = uc.GetUnitNames('Length')
-    _valid_dist_units.extend(
-        chain(*[val[1] for val in
-                uc.ConvertDataUnits['Length'].values()]))
-
-    #_valid_density_units = uc.GetUnitNames('Density')
-    #_valid_density_units.extend(
-    #    chain(*[val[1] for val in
-    #            uc.ConvertDataUnits['Density'].values()]))
-
     temperature = SchemaNode(String(),
                              description='SI units for temp',
                              validator=OneOf(_valid_temp_units))
@@ -54,12 +58,12 @@ class UnitsSchema(MappingSchema):
     # for now salinity only has one units
     salinity = SchemaNode(String(),
                           description='SI units for salinity',
-                          validator=OneOf(['psu']))
-    # sediment load has density units
+                          validator=OneOf(_valid_salinity_units))
+
+    # sediment load units? Concentration In Water?
     sediment = SchemaNode(String(),
                           description='SI units for density',
-                          )
-    #                      validator=OneOf(_valid_density_units))
+                          validator=OneOf(_valid_ciw_units))
 
     # wave height and fetch have distance units
     wave_height = SchemaNode(String(),
@@ -99,10 +103,11 @@ class Water(Environment, serializable.Serializable):
 
     _schema = WaterSchema
 
-    _units_type = {'temperature': 'temperature',
-                   'sediment': 'density',
-                   'wave_height': 'length',
-                   'fetch': 'length'}
+    _units_type = {'temperature': ('temperature', _valid_temp_units),
+                   'salinity': ('salinity', _valid_salinity_units),
+                   'sediment': ('Concentration In Water', _valid_ciw_units),
+                   'wave_height': ('length', _valid_dist_units),
+                   'fetch': ('length', _valid_dist_units)}
 
     def __init__(self,
                  temperature=311.15,
@@ -133,19 +138,36 @@ class Water(Environment, serializable.Serializable):
 
     __str__ = __repr__
 
-    def get(self, attr, units=None):
+    def get(self, attr, unit=None):
         '''
-        return value in desired units. If None, then return the value without
-        any conversion. The units are given in 'units' attribute. Can also
+        return value in desired unit. If None, then return the value without
+        any conversion. The unit are given in 'unit' attribute. Can also
         get the values directly from 'water', 'atmos', 'constant' dicts - just
-        be sure the units are as desired
+        be sure the unit are as desired
 
         .. note:: unit_conversion does not contain a conversion for 'pressure'
         Need to add this at some point for completeness
         '''
         val = getattr(self, attr)
-        if units is None or units == self.units[attr]:
+        if unit is None or unit == self.units[attr]:
+            # Note: no conversion for salinity yet so just retrun the one value
             return val
+
+        if unit in self._units_type[attr][1]:
+            return uc.convert(self._units_type[attr][0], self.units[attr],
+                              unit, val)
         else:
-            return uc.convert(self._units_type[attr], self.units[attr],
-                              units, val)
+            # log to file if we have logger
+            raise uc.InvalidUnitError(unit, self._units_type[attr][0])
+
+    def set(self, attr, value, unit):
+        '''
+        provide a corresponding set method that requires value and units
+        The attributes can be directly set. This function just sets the
+        desired property and also updates the units dict
+        '''
+        if unit not in self._units_type[attr][1]:
+            raise uc.InvalidUnitError(unit, self._units_type[attr][0])
+
+        setattr(self, attr, value)
+        self.units[attr] = unit
