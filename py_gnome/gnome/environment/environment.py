@@ -37,10 +37,12 @@ _valid_temp_units.extend(
     chain(*[val[1] for val in
             uc.ConvertDataUnits['Temperature'].values()]))
 
-_valid_ciw_units = uc.GetUnitNames('Concentration In Water')
-_valid_ciw_units.extend(
-    chain(*[val[1] for val in
-            uc.ConvertDataUnits['Concentration In Water'].values()]))
+#_valid_ciw_units = uc.GetUnitNames('Concentration In Water')
+#_valid_ciw_units.extend(
+#    chain(*[val[1] for val in
+#            uc.ConvertDataUnits['Concentration In Water'].values()]))
+# these are also not in hazpy
+_valid_sediment_units = ['mg/l']
 
 _valid_dist_units = uc.GetUnitNames('Length')
 _valid_dist_units.extend(
@@ -63,7 +65,7 @@ class UnitsSchema(MappingSchema):
     # sediment load units? Concentration In Water?
     sediment = SchemaNode(String(),
                           description='SI units for density',
-                          validator=OneOf(_valid_ciw_units))
+                          validator=OneOf(_valid_sediment_units))
 
     # wave height and fetch have distance units
     wave_height = SchemaNode(String(),
@@ -105,7 +107,7 @@ class Water(Environment, serializable.Serializable):
 
     _units_type = {'temperature': ('temperature', _valid_temp_units),
                    'salinity': ('salinity', _valid_salinity_units),
-                   'sediment': ('Concentration In Water', _valid_ciw_units),
+                   'sediment': ('sediment', _valid_sediment_units),
                    'wave_height': ('length', _valid_dist_units),
                    'fetch': ('length', _valid_dist_units)}
 
@@ -120,7 +122,7 @@ class Water(Environment, serializable.Serializable):
         # ask if we want unit conversion implemented here?
         self.units = {'temperature': 'K',
                       'salinity': 'psu',
-                      'sediment': 'kg/m^3',  # double check these
+                      'sediment': 'mg/l',  # do we need SI here?
                       'wave_height': 'm',
                       'fetch': 'm'}
         self.temperature = temperature
@@ -150,7 +152,9 @@ class Water(Environment, serializable.Serializable):
         '''
         val = getattr(self, attr)
         if unit is None or unit == self.units[attr]:
-            # Note: no conversion for salinity yet so just retrun the one value
+            # Note: salinity and sediment only have one units since we don't
+            # have any conversions for them in hazpy yet - revisit this per
+            # requirements
             return val
 
         if unit in self._units_type[attr][1]:

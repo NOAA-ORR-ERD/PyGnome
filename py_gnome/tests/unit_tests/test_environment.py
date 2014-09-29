@@ -17,8 +17,10 @@ def test_Water_init():
 
 # currently salinity only have psu in there since there is no conversion from
 # psu to ppt, though ppt is a valid unit - needs to be fixed
+# similarly, sediment only has mg/l as units - decide if we want more units
+# here
 @pytest.mark.parametrize(("attr", "unit"), [('temperature', 'kg'),
-                                            ('sediment', 'kg'),
+                                            ('sediment', 'kg/m^3'),
                                             ('salinity', 'ppt'),
                                             ('wave_height', 'l'),
                                             ('fetch', 'ppt')])
