@@ -73,7 +73,7 @@ class Evaporation(Weatherer):
             sc['density'][mask] = \
                 spill.get('substance').get_density(temp=water_temp)
             sc['mol'][mask] = \
-                np.sum(sc['mass_components'][mask, :len(mw)]/mw, 1)
+                np.sum(sc['mass_components'][mask, :]/mw, 1)
             le_area = \
                 (sc['mass'][mask]/sc['density'][mask]) / sc['thickness'][mask]
             le_area = le_area.reshape(-1, 1)
