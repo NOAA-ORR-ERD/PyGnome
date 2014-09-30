@@ -193,6 +193,7 @@ class Density(Base):
     __tablename__ = 'densities'
     id = Column(Integer, primary_key=True)
     imported_record_id = Column(Integer, ForeignKey('imported_records.id'))
+    oil_id = Column(Integer, ForeignKey('oils.id'))
 
     kg_m_3 = Column(Float(53))
     ref_temp_k = Column(Float(53))
@@ -337,8 +338,12 @@ class Oil(Base):
     id = Column(Integer, primary_key=True)
     imported_record_id = Column(Integer, ForeignKey('imported_records.id'))
 
+    api = Column(Float(53))
+
     kvis = relationship('KVis', backref='oil',
                         cascade="all, delete, delete-orphan")
+    densities = relationship('Density', backref='oil',
+                             cascade="all, delete, delete-orphan")
 
     def __repr__(self):
         return '<Oil(id={0.id})>'.format(self)
