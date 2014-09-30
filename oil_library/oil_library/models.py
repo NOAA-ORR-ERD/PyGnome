@@ -339,6 +339,14 @@ class Oil(Base):
     imported_record_id = Column(Integer, ForeignKey('imported_records.id'))
 
     api = Column(Float(53))
+    oil_water_interfacial_tension_n_m = Column(Float(53))
+    oil_water_interfacial_tension_ref_temp_k = Column(Float(53))
+    oil_seawater_interfacial_tension_n_m = Column(Float(53))
+    oil_seawater_interfacial_tension_ref_temp_k = Column(Float(53))
+    pour_point_min_k = Column(Float(53))
+    pour_point_max_k = Column(Float(53))
+    flash_point_min_k = Column(Float(53))
+    flash_point_max_k = Column(Float(53))
 
     kvis = relationship('KVis', backref='oil',
                         cascade="all, delete, delete-orphan")
