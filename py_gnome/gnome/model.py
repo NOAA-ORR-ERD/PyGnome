@@ -22,18 +22,16 @@ from gnome.utilities.orderedcollection import OrderedCollection
 from gnome.utilities.serializable import Serializable, Field
 
 from gnome.spill_container import SpillContainerPair
-
 from gnome.movers import Mover
 from gnome.weatherers import Weatherer
-
 from gnome.outputters import Outputter, NetCDFOutput
-
 from gnome.persist import (extend_colander,
                            validators,
                            References,
                            load)
 from gnome.persist.base_schema import (ObjType,
                                        OrderedCollectionItemsList)
+from gnome import init_obj_log
 
 
 class SpillContainerPairSchema(MappingSchema):
@@ -210,6 +208,7 @@ class Model(Serializable):
 
         self.weatherers.register_callback(self._callback_add_weatherer,
                                           ('add', 'replace'))
+        self.log = init_obj_log(self)
 
     def __restore__(self, time_step, start_time, duration,
                     weathering_substeps, uncertain, cache_enabled, map, name):

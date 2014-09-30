@@ -2,6 +2,7 @@
 
 from uuid import uuid1, UUID
 import copy
+import logging
 
 
 class GnomeId(object):
@@ -79,3 +80,15 @@ class GnomeId(object):
     @name.setter
     def name(self, val):
         self._name = val
+
+
+def init_obj_log(obj, setLevel=logging.INFO):
+    '''
+    convenience function for initializing a logger with an object
+    '''
+    logger = logging.getLogger("{0.__class__.__module__}."
+                               "{0.__class__.__name__}".format(obj))
+    logger.propagate = True
+    logger.setLevel = setLevel
+    logger.info('{0.__class__.__name__} logger initialized'.format(obj))
+    return logger

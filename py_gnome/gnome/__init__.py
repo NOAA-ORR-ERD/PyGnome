@@ -2,12 +2,22 @@
 __init__.py for the gnome package
 
 """
+import logging.config
+import json
+
+
+def initialize_log(config, filename=None):
+    log_config = json.load(open(config, 'r'))
+    if filename is not None:
+        log_config['handlers']['file']['filename'] = filename
+
+    logging.config.dictConfig(log_config)
 
 
 __version__ = '0.1.1'
 # a few imports so that the basic stuff is there
 
-from gnomeobject import GnomeId
+from gnomeobject import GnomeId, init_obj_log
 from . import map
 from . import spill
 from . import spill_container
@@ -23,4 +33,5 @@ __all__ = [GnomeId,
            movers,
            environment,
            model,
-           outputters]
+           outputters,
+           initialize_log]
