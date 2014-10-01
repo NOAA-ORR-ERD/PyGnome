@@ -24,14 +24,14 @@ output_dir = os.path.join(here, 'geojson_output')
 
 
 @pytest.fixture(scope='function')
-def model(sample_model, request):
+def model(sample_model_fcn, request):
     if os.path.isdir(output_dir):
         shutil.rmtree(output_dir)
     os.mkdir(output_dir)
 
-    model = sample_model['model']
-    rel_start_pos = sample_model['release_start_pos']
-    rel_end_pos = sample_model['release_end_pos']
+    model = sample_model_fcn['model']
+    rel_start_pos = sample_model_fcn['release_start_pos']
+    rel_end_pos = sample_model_fcn['release_end_pos']
 
     model.cache_enabled = True
     model.uncertain = True
@@ -61,12 +61,11 @@ def model(sample_model, request):
 def test_init():
     'simple initialization passes'
     g = GeoJson()
-    assert g.output_dir == './'
+    assert g.output_dir == None
     assert g.round_to == 4
     assert g.round_data
 
 
-@pytest.mark.xfail
 def test_rewind(model):
     'test geojson outputter with a model since simplest to do that'
     model.rewind()
@@ -80,16 +79,17 @@ def test_rewind(model):
     assert len(files) == 0
 
 
-@pytest.mark.xfail
-def test_model_dump_outputgeojson(model):
-    'test geojson outputter with a model since simplest to do that'
-    model.rewind()
-    model.full_run()
-    files = glob(os.path.join(output_dir, '*.geojson'))
-    assert len(files) == model.num_time_steps
+# keep this incase we want to look at geo_json output in a file
+#==============================================================================
+# def test_model_dump_outputgeojson(model):
+#     'test geojson outputter with a model since simplest to do that'
+#     model.rewind()
+#     model.full_run()
+#     files = glob(os.path.join(output_dir, '*.geojson'))
+#     assert len(files) == model.num_time_steps
+#==============================================================================
 
 
-@pytest.mark.xfail
 @pytest.mark.slow
 @pytest.mark.parametrize("output_ts_factor", [1, 2, 2.4])
 def test_write_output_post_run(model, output_ts_factor):
@@ -113,62 +113,15 @@ def test_write_output_post_run(model, output_ts_factor):
     model.outputters += o_geojson
 
 
-# Keep old test for now, though we're now doing a different output
-@pytest.mark.xfail
-def test_geojson_featurecollection(model):
-    'test geojson outputter with a model since simplest to do that'
-    # default is to round data
-    model.rewind()
-    round_to = model.outputters[0].round_to
-    for ix in range(3):
-        output = model.step()
-        l_id = model.spills.LE('id')
-        uncertain = False
-        for elem in range(sum(model.spills.num_released)):
-            g_elem = output['GeoJson']['feature_collection']['features'][elem]
-            #print 'output:', output
-            #with open(output['GeoJson']['output_filename']) as file_:
-            #    geojson_out = geojson.load(file_)
-            #g_elem = geojson_out['features'][elem]
-
-            match = np.where(l_id == g_elem['id'])[0][0]
-
-            if g_elem['properties']['spill_type'] == 'uncertain':
-                uncertain = True
-
-            # time
-            assert (date_to_sec(model.spills.LE('current_time_stamp',
-                                                uncertain)) ==
-                g_elem['properties']['current_time'])
-
-            # check geojson properties match with model arrays
-            # (long, lat)
-            assert np.allclose(
-                model.spills.LE('positions', uncertain)[match, :2],
-                g_elem['geometry']['coordinates'], atol=10 ** -round_to)
-
-            # depth
-            assert (model.spills.LE('positions', uncertain)[match, 2] ==
-                g_elem['properties']['depth'])
-
-            # other properties
-            assert (model.spills.LE('status_codes', uncertain)[match] ==
-                getattr(oil_status, g_elem['properties']['status_code']))
-
-            assert ix == g_elem['properties']['step_num']
-
-            spill_num = model.spills.LE('spill_num', uncertain)[match]
-            assert (model.spills.spill_by_index(spill_num, uncertain).id ==
-                g_elem['properties']['spill_id'])
-
-
 def test_geojson_multipoint_output(model):
     'test geojson outputter with a model since simplest to do that'
     # default is to round data
+    model.outputters[-1].output_dir = None
     model.rewind()
     round_to = model.outputters[0].round_to
     for step in model:
         fc = step['GeoJson']['feature_collection']['features']
+        assert 'output_filename' not in step['GeoJson']
         for feature in fc:
             if feature['properties']['sc_type'] == 'uncertain':
                 uncertain = True
@@ -179,3 +132,55 @@ def test_geojson_multipoint_output(model):
             np.allclose(model.spills.LE('positions', uncertain)[:, :2],
                         feature['geometry']['coordinates'],
                         atol=10 ** -round_to)
+
+    model.outputters[-1].output_dir = output_dir
+
+
+# Keep old test for now, though we're now doing a different output
+#==============================================================================
+# def test_geojson_featurecollection(model):
+#     'test geojson outputter with a model since simplest to do that'
+#     # default is to round data
+#     model.rewind()
+#     round_to = model.outputters[0].round_to
+#     for ix in range(3):
+#         output = model.step()
+#         l_id = model.spills.LE('id')
+#         uncertain = False
+#         for elem in range(sum(model.spills.num_released)):
+#             g_elem = output['GeoJson']['feature_collection']['features'][elem]
+#             #print 'output:', output
+#             #with open(output['GeoJson']['output_filename']) as file_:
+#             #    geojson_out = geojson.load(file_)
+#             #g_elem = geojson_out['features'][elem]
+# 
+#             match = np.where(l_id == g_elem['id'])[0][0]
+# 
+#             if g_elem['properties']['spill_type'] == 'uncertain':
+#                 uncertain = True
+# 
+#             # time
+#             assert (date_to_sec(model.spills.LE('current_time_stamp',
+#                                                 uncertain)) ==
+#                 g_elem['properties']['current_time'])
+# 
+#             # check geojson properties match with model arrays
+#             # (long, lat)
+#             assert np.allclose(
+#                 model.spills.LE('positions', uncertain)[match, :2],
+#                 g_elem['geometry']['coordinates'], atol=10 ** -round_to)
+# 
+#             # depth
+#             assert (model.spills.LE('positions', uncertain)[match, 2] ==
+#                 g_elem['properties']['depth'])
+# 
+#             # other properties
+#             assert (model.spills.LE('status_codes', uncertain)[match] ==
+#                 getattr(oil_status, g_elem['properties']['status_code']))
+# 
+#             assert ix == g_elem['properties']['step_num']
+# 
+#             spill_num = model.spills.LE('spill_num', uncertain)[match]
+#             assert (model.spills.spill_by_index(spill_num, uncertain).id ==
+#                 g_elem['properties']['spill_id'])
+#==============================================================================
