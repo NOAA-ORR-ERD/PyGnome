@@ -72,7 +72,7 @@ class GeoJson(Outputter, Serializable):
                Field('output_dir', update=True, save=True)]
     _schema = GeoJsonSchema
 
-    def __init__(self, round_data=True, round_to=4, output_dir='./',
+    def __init__(self, round_data=True, round_to=4, output_dir=None,
                  **kwargs):
         '''
         :param bool round_data=True: if True, then round the numpy arrays
@@ -80,7 +80,9 @@ class GeoJson(Outputter, Serializable):
             Default is True
         :param int round_to=4: round float arrays to these number of digits.
             Default is 4.
-        :param str output_dir='./': output directory for geojson files
+        :param str output_dir=None: output directory for geojson files. Default
+            is None since data is returned in dict for webapi. For using
+            write_output_post_run(), this must be set
 
         use super to pass optional \*\*kwargs to base class __init__ method
         '''
@@ -116,7 +118,7 @@ class GeoJson(Outputter, Serializable):
         geojson = FeatureCollection(features)
         #self.output_to_file(geojson, step_num)
 
-        # decided geojson should only be output to file
+        # default geojson should not output data to file
         # read data from file and send it to web client
         output_info = {'step_num': step_num,
                        #'geojson': geojson,
