@@ -97,55 +97,20 @@ class GeoJson(Outputter, Serializable):
         if not self._write_step:
             return None
 
+        # one feature per element client; replaced with multipoint
+        # because client performance is much more stable with one
+        # feature per step rather than (n) features per step.
         features = []
         for sc in self.cache.load_timestep(step_num).items():
-            time = date_to_sec(sc.current_time_stamp)
-            position = self._dataarray_p_types(sc['positions'])
-            status = self._dataarray_p_types(sc['status_codes'])
-            p_id = self._dataarray_p_types(sc['id'])
-
-            all_nums = np.unique(sc['spill_num'])
-            id_len = len(self.sc_pair.spill_by_index(0).id)
-            spill_id = np.chararray(len(p_id,), itemsize=id_len)
-
-            # NOTE: spill_num are not renumbered if a spill is deleted;
-            # HOWEVER, if a spill is deleted, a callback in the model should
-            # shrink the OrderedCollection and everything should get renumbered
-            for num in all_nums:
-                if not sc.uncertain:
-                    spill_id[sc['spill_num'] == num] = \
-                        self.sc_pair.spill_by_index(num).id
-                else:
-                    spill_id[sc['spill_num'] == num] = \
-                        self.sc_pair.spill_by_index(num, True).id
-
             sc_type = 'forecast'
             if sc.uncertain:
                 sc_type = 'uncertain'
 
-            spill_id = self._dataarray_p_types(spill_id)
-            points = []
-            for ix, pos in enumerate(position):
-                points.append(pos[:2])
-
-                # one feature per element client; replaced with multipoint
-                # because client performance is much more stable with one feature
-                # per step rather than (n) features per step.
-                # 
-                # st_code = oil_status._attr[oil_status._int.index(status[ix])]
-                # feature = Feature(geometry=Point(pos[:2]),
-                #                   id=p_id[ix],
-                #                   properties={'depth': pos[2],
-                #                               'step_num': step_num,
-                #                               'spill_type': sc_type,
-                #                               'spill_id': spill_id[ix],
-                #                               'current_time': time,
-                #                               'status_code': st_code})
-            
-
-            feature = Feature(geometry=MultiPoint(points),
+            # only display lat/long for now
+            lat_long = self._dataarray_p_types(sc['positions'][:, :2])
+            feature = Feature(geometry=MultiPoint(lat_long),
                               id="1",
-                              properties={})
+                              properties={'sc_type': sc_type})
             features.append(feature)
 
         geojson = FeatureCollection(features)
