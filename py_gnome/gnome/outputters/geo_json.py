@@ -126,8 +126,13 @@ class GeoJson(Outputter, Serializable):
             spill_id = self._dataarray_p_types(spill_id)
             points = []
             for ix, pos in enumerate(position):
-                #st_code = oil_status._attr[oil_status._int.index(status[ix])]
                 points.append(pos[:2])
+
+                # one feature per element client; replaced with multipoint
+                # because client performance is much more stable with one feature
+                # per step rather than (n) features per step.
+                # 
+                # st_code = oil_status._attr[oil_status._int.index(status[ix])]
                 # feature = Feature(geometry=Point(pos[:2]),
                 #                   id=p_id[ix],
                 #                   properties={'depth': pos[2],
