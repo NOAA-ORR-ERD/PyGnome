@@ -116,15 +116,16 @@ class GeoJson(Outputter, Serializable):
             features.append(feature)
 
         geojson = FeatureCollection(features)
-        #self.output_to_file(geojson, step_num)
-
         # default geojson should not output data to file
         # read data from file and send it to web client
         output_info = {'step_num': step_num,
-                       #'geojson': geojson,
                        'time_stamp': sc.current_time_stamp.isoformat(),
                        'feature_collection': geojson
                        }
+
+        if self.output_dir:
+            output_filename = self.output_to_file(geojson, step_num)
+            output_info.update({'output_filename': output_filename})
 
         return output_info
 
@@ -162,6 +163,7 @@ class GeoJson(Outputter, Serializable):
         self.clean_output_files()
 
     def clean_output_files(self):
-        files = glob(os.path.join(self.output_dir, 'geojson_*.geojson'))
-        for f in files:
-            os.remove(f)
+        if self.output_dir:
+            files = glob(os.path.join(self.output_dir, 'geojson_*.geojson'))
+            for f in files:
+                os.remove(f)
