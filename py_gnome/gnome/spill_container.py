@@ -52,6 +52,7 @@ class SpillContainerData(object):
 
         self._data_arrays = data_arrays
         self.current_time_stamp = None
+        self.mass_balance = {}
 
         # following internal variable is used when comparing two SpillContainer
         # objects. When testing the data arrays are equal, use this tolerance
@@ -331,17 +332,19 @@ class SpillContainer(SpillContainerData):
         # No! If user made modifications to _array_types before running model,
         # let's keep those. A rewind will reset data_arrays.
         self._array_types.update(array_types)
+        self._append_initializer_array_types(array_types)
+        self.initialize_data_arrays()
 
+        # remake() spills ordered collection
+        self.spills.remake()
+
+    def _append_initializer_array_types(self, array_types):
         # for each array_types, use the key to get the associated initializer
         for key in array_types:
             for spill in self.spills:
                 if spill.is_initializer(key):
                     self._array_types.update(
                         spill.get_initializer(key).array_types)
-        self.initialize_data_arrays()
-
-        # remake() spills ordered collection
-        self.spills.remake()
 
     def initialize_data_arrays(self):
         """

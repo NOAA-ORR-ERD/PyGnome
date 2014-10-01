@@ -844,6 +844,7 @@ class Model(Serializable):
             sc.current_time_stamp = data.pop('current_time_stamp').item()
             sc._data_arrays = data
             sc._array_types.update(array_types)
+            sc._append_initializer_array_types(array_types)
 
     def _empty_save_dir(self, saveloc):
         '''

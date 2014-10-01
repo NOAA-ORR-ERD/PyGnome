@@ -24,11 +24,12 @@ class WeathererSchema(ObjType, ProcessSchema):
     pass
 
 
-class Weatherer(Process, Serializable):
+class Weatherer(Process):
     '''
        Base Weathering agent.  This is almost exactly like the base Mover
        in the way that it acts upon the model.  It contains the same API
-       as the mover as well.
+       as the mover as well. Not Serializable since it does is partial
+       implementation
     '''
     _state = copy.deepcopy(Process._state)
     _schema = WeathererSchema  # nothing new added so use this schema

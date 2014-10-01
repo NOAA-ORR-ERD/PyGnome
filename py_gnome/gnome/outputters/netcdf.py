@@ -410,7 +410,7 @@ class NetCDFOutput(Outputter, Serializable):
             # only need to look at mass components for forecast spills since
             # uncertain spills are a copy of forecast spills
             if len(sc) > 0:
-                weathering_size = (0,
+                weathering_size = (sc.num_released,
                     sc.spills[0].get('substance').num_components)
 
             if sc.uncertain:
@@ -436,8 +436,8 @@ class NetCDFOutput(Outputter, Serializable):
                 rootgrp.createDimension('three', 3)
 
                 if weathering_size:
-                    # if no spills, then no weathering data_arrays 
-                    rootgrp.createDimension('weathering', weathering_size[0])
+                    # if no spills, then no weathering data_arrays
+                    rootgrp.createDimension('weathering', weathering_size[1])
 
                 # create the time variable
                 time_ = rootgrp.createVariable('time',
@@ -471,6 +471,7 @@ class NetCDFOutput(Outputter, Serializable):
                         for var_name in self.usually_skipped_arrays:
                             self.arrays_to_output.discard(var_name)
 
+                len_ = sc.num_released
                 for var_name in self.arrays_to_output:
                     # the special cases:
                     if var_name in ('latitude', 'longitude', 'depth'):
@@ -489,14 +490,14 @@ class NetCDFOutput(Outputter, Serializable):
                         # total kludge for the cases we happen to have...
                         if sc[var_name].shape == weathering_size:
                             shape = ('data', 'weathering')
-                            chunksizes = (self._chunksize, weathering_size[0])
-                        elif sc[var_name].shape == (0, 4):
+                            chunksizes = (self._chunksize, weathering_size[1])
+                        elif sc[var_name].shape == (len_, 4):
                             shape = ('data', 'four')
                             chunksizes = (self._chunksize, 4)
-                        elif sc[var_name].shape == (0, 3):
+                        elif sc[var_name].shape == (len_, 3):
                             shape = ('data', 'three')
                             chunksizes = (self._chunksize, 3)
-                        elif sc[var_name].shape == (0, 2):
+                        elif sc[var_name].shape == (len_, 2):
                             shape = ('data', 'two')
                             chunksizes = (self._chunksize, 2)
                         else:

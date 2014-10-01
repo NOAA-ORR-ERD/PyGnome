@@ -114,9 +114,13 @@ class Water(Environment, serializable.Serializable):
     def __init__(self,
                  temperature=311.15,
                  salinity=35.0,
+                 sediment=None,
+                 wave_height=None,
+                 fetch=None,
                  name='WaterProperties'):
         '''
-        Assume units are SI
+        Assume units are SI for all properties. 'units' attribute assumes SI
+        by default. This can be changed, but initialization takes SI.
         '''
         # define properties in SI units
         # ask if we want unit conversion implemented here?
@@ -127,14 +131,14 @@ class Water(Environment, serializable.Serializable):
                       'fetch': 'm'}
         self.temperature = temperature
         self.salinity = salinity
-        self.sediment = None
-        self.wave_height = None
-        self.fetch = None
+        self.sediment = sediment
+        self.wave_height = wave_height
+        self.fetch = fetch
         self.name = name
 
     def __repr__(self):
         info = ("{0.__class__.__module__}.{0.__class__.__name__}"
-                "(temperature={0.temperature}",
+                "(temperature={0.temperature},"
                 " salinity={0.salinity})").format(self)
         return info
 

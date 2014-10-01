@@ -19,13 +19,13 @@ from gnome.basic_types import datetime_value_2d
 from gnome.utilities.remote_data import get_datafile
 
 from gnome.map import MapFromBNA
-from gnome.environment import Wind, Tide
+from gnome.environment import Wind, Tide, Water
 
 from gnome.model import Model
 from gnome.persist import load
 from gnome.spill import point_line_release_spill
 from gnome.movers import RandomMover, WindMover, CatsMover, ComponentMover
-from gnome.weatherers import Weatherer
+from gnome.weatherers import Evaporation
 
 #from gnome.persist.scenario import Scenario
 from gnome.outputters import Renderer
@@ -164,12 +164,13 @@ def make_model(images_dir, uncertain=False):
     comp_mover.pat2_speed = 19.44
     comp_mover.pat2_speed_units = 1
     comp_mover.pat2ScaleToValue = .05121
-    
+
     model.movers += comp_mover
 
     print 'adding a Weatherer'
-    weatherer = Weatherer()
-    model.weatherers += weatherer
+    model.environment += Water(311.15)
+    # figure out mid-run save for mass_balance attribute, then add this in
+    #model.weatherers += Evaporation(w_mover.wind, model.environment[-1])
 
     return model
 

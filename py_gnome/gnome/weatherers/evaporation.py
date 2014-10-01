@@ -1,22 +1,33 @@
 '''
 model evaporation process
 '''
+import copy
+
 import numpy as np
 
+from gnome.persist.base_schema import ObjType
 from gnome.array_types import (mass_components,
                                density,
                                thickness,
                                mol,
                                evap_decay_constant)
-from gnome.utilities.serializable import Serializable
+from gnome.utilities.serializable import Serializable, Field
 
 from gnome.weatherers import Weatherer
-from gnome.environment import constants, constant_wind
+from gnome.environment import (constants,
+                               constant_wind,
+                               WindSchema,
+                               WaterSchema)
 
 
-class Evaporation(Weatherer):
+class Evaporation(Weatherer, Serializable):
+    _state = copy.deepcopy(Weatherer._state)
+    _state += [Field('water', save=True, update=True, save_reference=True),
+               Field('wind', save=True, update=True, save_reference=True)]
+    _schema = ObjType
+
     def __init__(self,
-                 water_props,
+                 water,
                  wind=None,
                  **kwargs):
         '''
@@ -25,7 +36,7 @@ class Evaporation(Weatherer):
         :param wind: wind object for obtaining speed at specified time
         :type wind: Wind API, specifically must have get_value(time) method
         '''
-        self.water = water_props
+        self.water = water
 
         if wind is None:
             wind = constant_wind(0, 0)
@@ -38,7 +49,6 @@ class Evaporation(Weatherer):
                                  'thickness': thickness,
                                  'mol': mol,
                                  'evap_decay_constant': evap_decay_constant})
-        self._decay = 0.0   # initialize to no decay
 
     def prepare_for_model_step(self, sc, time_step, model_time):
         '''
@@ -124,4 +134,43 @@ class Evaporation(Weatherer):
             self._exp_decay(sc['mass_components'],
                             sc['evap_decay_constant'],
                             time_step)
+        # create 'evaporated' list if it doesn't exist
+        if 'evaporated' not in sc.mass_balance:
+            # let's only define this array the first time
+            # make it numpy array since cache will do this anyway and
+            # all data in spill container is stored in arrays (not lists)
+            sc.mass_balance['evaporated'] = 0.0
+
+        sc.mass_balance['evaporated'] = \
+            np.sum(sc['mass_components'][:, :] - mass_remain[:, :])
+
         return mass_remain
+
+    def serialize(self, json_='webapi'):
+        """
+        Since 'wind'/'water' property is saved as references in save file
+        need to add appropriate node to WindMover schema for 'webapi'
+        """
+        toserial = self.to_serialize(json_)
+        schema = self.__class__._schema()
+        if json_ == 'webapi':
+            # add wind schema
+            schema.add(WindSchema())
+            schema.add(WaterSchema())
+
+        serial = schema.serialize(toserial)
+
+        return serial
+
+    @classmethod
+    def deserialize(cls, json_):
+        """
+        append correct schema for wind object
+        """
+        schema = cls._schema()
+        if 'wind' in json_:
+            schema.add(WindSchema())
+            schema.add(WaterSchema())
+        _to_dict = schema.deserialize(json_)
+
+        return _to_dict

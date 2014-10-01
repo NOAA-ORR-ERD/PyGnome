@@ -117,7 +117,8 @@ g_objects = (environment.Tide(testdata['CatsMover']['tide']),
                                    num_elements=10,
                                    start_position=(0, 0, 0)),
             spill.point_line_release_spill(10, (0, 0, 0), datetime.now()),
-            weatherers.Weatherer(),
+            weatherers.Evaporation(environment.constant_wind(1., 0.),
+                environment.Water(333.0)),
             # todo: ask Caitlin how to fix
             #movers.RiseVelocityMover(),
             # todo: This is incomplete - no _schema for SpatialRelease, GeoJson

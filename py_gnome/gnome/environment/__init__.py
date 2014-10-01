@@ -1,12 +1,13 @@
 '''
 environment module
 '''
-from environment import Environment, Water
+from environment import Environment, Water, WaterSchema
 from tide import Tide, TideSchema
 from wind import Wind, WindSchema, constant_wind
 
 __all__ = [Environment,
            Water,
+           WaterSchema,
            Tide,
            TideSchema,
            Wind,

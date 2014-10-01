@@ -20,7 +20,7 @@ from gnome.array_types import (mass_components,
 from conftest import sample_sc_release
 
 
-water_props = Water()
+water = Water()
 
 
 def assert_helper(sc):
@@ -62,7 +62,7 @@ def test_evaporation(oil, temp, num_elems):
     model_time = (sc.spills[0].get('release_time') +
                   timedelta(seconds=time_step))
 
-    evap = Evaporation(water_props, wind=constant_wind(1., 0))
+    evap = Evaporation(water, wind=constant_wind(1., 0))
     evap.prepare_for_model_run()
     evap.prepare_for_model_step(sc, time_step, model_time)
     mass_remain = evap.weather_elements(sc, time_step, model_time)
