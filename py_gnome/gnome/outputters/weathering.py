@@ -7,6 +7,7 @@ pp = PrettyPrinter(indent=2)
 import copy
 import os
 from glob import glob
+import json
 
 import numpy as np
 from geojson import Point, Feature, FeatureCollection, dump
@@ -77,8 +78,9 @@ class WeatheringOutput(Outputter, Serializable):
 
         # return a dict - json of the mass_balance data
         for sc in self.cache.load_timestep(step_num).items():
-            dict_ = {#'uncertain': sc.uncertain, some other way to capture this
-                     'time': date_to_sec(sc.current_time_stamp)}
+            # Not capturing 'uncertain' info yet
+            #dict_ = {'uncertain': sc.uncertain}
+            dict_ = {'time': sc.current_time_stamp.isoformat()}
 
             if step_num == 0:
                 'for now put these here - but need a better place'
@@ -89,9 +91,10 @@ class WeatheringOutput(Outputter, Serializable):
 
             dict_['step_num'] = step_num
 
+            json_ = json.dumps(dict_)
             output_info = {'step_num': step_num,
                            'time_stamp': sc.current_time_stamp.isoformat(),
-                           'mass_balance': dict_}
+                           'mass_balance': json_}
             if self.output_dir:
                 output_filename = self.output_to_file(dict_, step_num)
                 output_info.update({'output_filename': output_filename})
