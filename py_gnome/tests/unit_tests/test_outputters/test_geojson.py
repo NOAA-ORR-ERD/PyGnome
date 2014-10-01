@@ -23,15 +23,15 @@ datadir = os.path.join(up_one, 'sample_data')
 output_dir = os.path.join(here, 'geojson_output')
 
 
-@pytest.fixture(scope='function')
-def model(sample_model_fcn, request):
+@pytest.fixture(scope='module')
+def model(sample_model):
     if os.path.isdir(output_dir):
         shutil.rmtree(output_dir)
     os.mkdir(output_dir)
 
-    model = sample_model_fcn['model']
-    rel_start_pos = sample_model_fcn['release_start_pos']
-    rel_end_pos = sample_model_fcn['release_end_pos']
+    model = sample_model['model']
+    rel_start_pos = sample_model['release_start_pos']
+    rel_end_pos = sample_model['release_end_pos']
 
     model.cache_enabled = True
     model.uncertain = True
