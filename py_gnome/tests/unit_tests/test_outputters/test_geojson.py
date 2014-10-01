@@ -20,7 +20,7 @@ here = os.path.dirname(__file__)
 up_one = os.path.dirname(here)
 
 datadir = os.path.join(up_one, 'sample_data')
-output_dir = os.path.join(up_one, 'geojson_output')
+output_dir = os.path.join(here, 'geojson_output')
 
 
 @pytest.fixture(scope='function')
@@ -113,7 +113,9 @@ def test_write_output_post_run(model, output_ts_factor):
     model.outputters += o_geojson
 
 
-def test_geojson(model):
+# Keep old test for now, though we're now doing a different output
+@pytest.mark.xfail
+def test_geojson_featurecollection(model):
     'test geojson outputter with a model since simplest to do that'
     # default is to round data
     model.rewind()
@@ -158,3 +160,22 @@ def test_geojson(model):
             spill_num = model.spills.LE('spill_num', uncertain)[match]
             assert (model.spills.spill_by_index(spill_num, uncertain).id ==
                 g_elem['properties']['spill_id'])
+
+
+def test_geojson_multipoint_output(model):
+    'test geojson outputter with a model since simplest to do that'
+    # default is to round data
+    model.rewind()
+    round_to = model.outputters[0].round_to
+    for step in model:
+        fc = step['GeoJson']['feature_collection']['features']
+        for feature in fc:
+            if feature['properties']['sc_type'] == 'uncertain':
+                uncertain = True
+            else:
+                uncertain = False
+
+            print feature['geometry']['coordinates']
+            np.allclose(model.spills.LE('positions', uncertain)[:, :2],
+                        feature['geometry']['coordinates'],
+                        atol=10 ** -round_to)
