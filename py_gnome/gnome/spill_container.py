@@ -443,6 +443,8 @@ class SpillContainer(SpillContainerData):
                 self._data_arrays[key] = np.delete(self[key], to_be_removed,
                                                    axis=0)
 
+        self.mass_balance['mass_remaining'] = np.sum(self['mass'])
+
     def __str__(self):
         return ('gnome.spill_container.SpillContainer\n'
                 'spill LE attributes: {0}'

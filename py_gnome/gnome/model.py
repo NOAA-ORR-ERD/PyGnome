@@ -422,7 +422,9 @@ class Model(Serializable):
             array_types.update(mover.array_types)
 
         for w in self.weatherers:
-            w.prepare_for_model_run()
+            for sc in self.spills.items():
+                # weatherers will initialize 'mass_balance' key/values to 0.0
+                w.prepare_for_model_run(sc)
             array_types.update(w.array_types)
 
         for sc in self.spills.items():

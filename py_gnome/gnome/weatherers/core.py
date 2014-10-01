@@ -51,6 +51,13 @@ class Weatherer(Process):
                 'active={0.active}'
                 ')'.format(self))
 
+    def prepare_for_model_run(self, sc):
+        """
+        Override for weatherers so they can initialize correct 'mass_balance'
+        key and set initial value to 0.0
+        """
+        pass
+
     def weather_elements(self, sc, time_step, model_time):
         '''
         run the equivalent of get_move for weathering processes. It weathers

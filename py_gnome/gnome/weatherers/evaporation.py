@@ -50,6 +50,12 @@ class Evaporation(Weatherer, Serializable):
                                  'mol': mol,
                                  'evap_decay_constant': evap_decay_constant})
 
+    def prepare_for_model_run(self, sc):
+        'add evaporated key to mass_balance'
+        # create 'evaporated' key if it doesn't exist
+        # let's only define this the first time
+        sc.mass_balance['evaporated'] = 0.0
+
     def prepare_for_model_step(self, sc, time_step, model_time):
         '''
         Set/update arrays used by evaporation module for this timestep:
@@ -97,8 +103,6 @@ class Evaporation(Weatherer, Serializable):
                 raise ValueError("Error in Evaporation routine. One of the "
                                  "exponential decay constant is positive")
 
-    #def _round_decay_const(self, decay_const, time_step):
-
     def _compute_le_thickness(self):
         '''
         some function to compute LE thickness
@@ -134,12 +138,6 @@ class Evaporation(Weatherer, Serializable):
             self._exp_decay(sc['mass_components'],
                             sc['evap_decay_constant'],
                             time_step)
-        # create 'evaporated' list if it doesn't exist
-        if 'evaporated' not in sc.mass_balance:
-            # let's only define this array the first time
-            # make it numpy array since cache will do this anyway and
-            # all data in spill container is stored in arrays (not lists)
-            sc.mass_balance['evaporated'] = 0.0
 
         sc.mass_balance['evaporated'] = \
             np.sum(sc['mass_components'][:, :] - mass_remain[:, :])
