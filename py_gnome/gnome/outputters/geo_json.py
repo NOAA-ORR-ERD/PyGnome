@@ -7,7 +7,7 @@ import os
 from glob import glob
 
 import numpy as np
-from geojson import Point, Feature, FeatureCollection, dump
+from geojson import Point, Feature, FeatureCollection, dump, MultiPoint
 from colander import SchemaNode, String, drop, Int, Bool
 
 from gnome.utilities.serializable import Serializable, Field
@@ -124,19 +124,29 @@ class GeoJson(Outputter, Serializable):
                 sc_type = 'uncertain'
 
             spill_id = self._dataarray_p_types(spill_id)
-
+            points = []
             for ix, pos in enumerate(position):
-                st_code = oil_status._attr[oil_status._int.index(status[ix])]
-                feature = Feature(geometry=Point(pos[:2]),
-                                  id=p_id[ix],
-                                  properties={'depth': pos[2],
-                                              'step_num': step_num,
-                                              'spill_type': sc_type,
-                                              'spill_id': spill_id[ix],
-                                              'current_time': time,
-                                              'status_code': st_code})
+                points.append(pos[:2])
 
-                features.append(feature)
+                # one feature per element client; replaced with multipoint
+                # because client performance is much more stable with one feature
+                # per step rather than (n) features per step.
+                # 
+                # st_code = oil_status._attr[oil_status._int.index(status[ix])]
+                # feature = Feature(geometry=Point(pos[:2]),
+                #                   id=p_id[ix],
+                #                   properties={'depth': pos[2],
+                #                               'step_num': step_num,
+                #                               'spill_type': sc_type,
+                #                               'spill_id': spill_id[ix],
+                #                               'current_time': time,
+                #                               'status_code': st_code})
+            
+
+            feature = Feature(geometry=MultiPoint(points),
+                              id="1",
+                              properties={})
+            features.append(feature)
 
         geojson = FeatureCollection(features)
         #self.output_to_file(geojson, step_num)
