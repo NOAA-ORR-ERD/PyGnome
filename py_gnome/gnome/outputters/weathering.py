@@ -92,10 +92,9 @@ class WeatheringOutput(Outputter, Serializable):
             output_info = {'step_num': step_num,
                            'time_stamp': sc.current_time_stamp.isoformat(),
                            'mass_balance': dict_}
-            output_filename = None
             if self.output_dir:
                 output_filename = self.output_to_file(dict_, step_num)
-                output_info.update({'output_to_file': output_filename})
+                output_info.update({'output_filename': output_filename})
 
         return output_info
 
