@@ -14,30 +14,30 @@ from oil_library.oil_props import OilProps
 
 # Some standard oils - scope is module level, non-public
 _sample_oils = {
-    'oil_gas': {'oil_name': 'oil_gas',
+    'oil_gas': {'name': 'oil_gas',
                 'api': uc.convert('Density', 'gram per cubic centimeter',
                                   'API degree', 0.75)},
-    'oil_jetfuels': {'oil_name': 'oil_jetfuels',
+    'oil_jetfuels': {'name': 'oil_jetfuels',
                      'api': uc.convert('Density', 'gram per cubic centimeter',
                                        'API degree',
                                        0.81)},
-    'oil_diesel': {'oil_name': 'oil_diesel',
+    'oil_diesel': {'name': 'oil_diesel',
                    'api': uc.convert('Density', 'gram per cubic centimeter',
                                      'API degree', 0.87)},
-    'oil_4': {'oil_name': 'oil_4',
+    'oil_4': {'name': 'oil_4',
               'api': uc.convert('Density', 'gram per cubic centimeter',
                                 'API degree', 0.90)},
-    'oil_crude': {'oil_name': 'oil_crude',
+    'oil_crude': {'name': 'oil_crude',
                   'api': uc.convert('Density', 'gram per cubic centimeter',
                                     'API degree', 0.90)},
-    'oil_6': {'oil_name': 'oil_6',
+    'oil_6': {'name': 'oil_6',
               'api': uc.convert('Density', 'gram per cubic centimeter',
                                 'API degree', 0.99)},
-    'oil_conservative': {'oil_name': 'oil_conservative',
+    'oil_conservative': {'name': 'oil_conservative',
                          'api': uc.convert('Density',
                                            'gram per cubic centimeter',
                                            'API degree', 1)},
-    'chemical': {'oil_name': 'chemical',
+    'chemical': {'name': 'chemical',
                  'api': uc.convert('Density', 'gram per cubic centimeter',
                                    'API degree', 1)},
     }
@@ -49,14 +49,14 @@ _oillib_path = os.path.dirname(__file__)
 _db_file = os.path.join(_oillib_path, 'OilLib.db')
 
 
-def get_oil(oil_name, max_cuts=5):
+def get_oil(name, max_cuts=5):
     """
     function returns the Oil object given the name of the oil as a string.
 
     :param oil_: name of the oil that spilled. If it is one of the names
             stored in _sample_oil dict, then an Oil object with specified
             API is returned.
-            Otherwise, query the database for the oil_name and return the
+            Otherwise, query the database for the oil name and return the
             associated Oil object.
     :type oil_: str
 
@@ -83,8 +83,8 @@ def get_oil(oil_name, max_cuts=5):
     make a consistent interface which always accesses DB for any 'oil_name'
     """
 
-    if oil_name in _sample_oils.keys():
-        return OilProps(Oil(**_sample_oils[oil_name]), max_cuts=max_cuts)
+    if name in _sample_oils.keys():
+        return OilProps(Oil(**_sample_oils[name]), max_cuts=max_cuts)
 
     else:
         '''
@@ -104,12 +104,12 @@ def get_oil(oil_name, max_cuts=5):
         DBSession.bind = engine
 
         try:
-            oil_ = DBSession.query(Oil).filter(Oil.oil_name == oil_name).one()
+            oil_ = DBSession.query(Oil).filter(Oil.name == name).one()
             return OilProps(oil_, max_cuts=max_cuts)
         except NoResultFound, ex:
             # or sqlalchemy.orm.exc.MultipleResultsFound as ex:
             ex.message = ("oil with name '{0}' not found in database. "
-                          "{1}".format(oil_name, ex.message))
+                          "{1}".format(name, ex.message))
             ex.args = (ex.message, )
             raise ex
 
@@ -148,6 +148,6 @@ def oil_from_density(density, name='user_oil', units='kg/m^3'):
                              'Weathering': 0.0
                              })
 
-    oil_ = Oil(**{'Oil Name': name, 'API': api})
+    oil_ = Oil(name=name, api=api)
     oil_.densities.append(density_obj)
     return OilProps(oil_)

@@ -22,9 +22,7 @@ from zope.sqlalchemy import ZopeTransactionExtension
 
 DBSession = scoped_session(sessionmaker(extension=ZopeTransactionExtension()))
 
-#Base = declarative_base()
-
-# Let's make this a class decorator
+# Let's make declarative_base a class decorator
 declarative_base = lambda cls: real_declarative_base(cls=cls)
 
 
@@ -338,6 +336,7 @@ class Oil(Base):
     id = Column(Integer, primary_key=True)
     imported_record_id = Column(Integer, ForeignKey('imported_records.id'))
 
+    name = Column(String(100), unique=True, nullable=False)
     api = Column(Float(53))
     oil_water_interfacial_tension_n_m = Column(Float(53))
     oil_water_interfacial_tension_ref_temp_k = Column(Float(53))
@@ -354,4 +353,4 @@ class Oil(Base):
                              cascade="all, delete, delete-orphan")
 
     def __repr__(self):
-        return '<Oil(id={0.id})>'.format(self)
+        return '<Oil("{0.name}")>'.format(self)
