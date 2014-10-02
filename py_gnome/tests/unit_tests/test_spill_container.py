@@ -964,6 +964,28 @@ def test_SpillContainer_add_array_types():
     assert 'droplet_diameter' not in sc.array_types
 
 
+def test_prepare_for_model_run():
+    sc = SpillContainer()
+    s = [Spill(Release(datetime.now(), 10)),
+         Spill(Release(datetime.now(), 10))]
+    sc.spills += s
+    sc.prepare_for_model_run()
+    assert 'mass_remaining' not in sc.mass_balance
+
+    s[0].amount = 10.0
+    s[0].units = 'kg'
+    sc.prepare_for_model_run()
+    assert sc.mass_balance['mass_remaining'] == 10.0
+
+    s[1].amount = 5.0
+    s[1].units = 'kg'
+    sc.prepare_for_model_run()
+    assert sc.mass_balance['mass_remaining'] == 15.0
+
+    sc.rewind()
+    assert sc.mass_balance == {}
+
+
 def get_eq_spills():
     """
     returns a tuple of identical point_line_release_spill objects

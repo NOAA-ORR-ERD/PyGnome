@@ -82,10 +82,6 @@ class WeatheringOutput(Outputter, Serializable):
             #dict_ = {'uncertain': sc.uncertain}
             dict_ = {'time': sc.current_time_stamp.isoformat()}
 
-            if step_num == 0:
-                'for now put these here - but need a better place'
-                sc.mass_balance['mass_remaining'] = sum(sc['mass'])
-
             for key, val in sc.mass_balance.iteritems():
                 dict_[key] = val
 

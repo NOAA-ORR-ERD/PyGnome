@@ -276,6 +276,7 @@ class SpillContainer(SpillContainerData):
         # must have changed so let's get back to default _array_types
         self._reset_arrays()
         self.initialize_data_arrays()
+        self.mass_balance = {}  # reset to empty array
 
     def get_spill_mask(self, spill):
         return self['spill_num'] == self.spills.index(spill)
@@ -327,6 +328,11 @@ class SpillContainer(SpillContainerData):
         array_types from initializer and appends them to its own list. For
         most initializers like 
         """
+        # define 'mass_remaining' key
+        mass_remain = [s.get_mass('kg') for s in self.spills if s.amount]
+        if mass_remain:
+            self.mass_balance['mass_remaining'] = sum(mass_remain)
+
         # Question - should we purge any new arrays that were added in previous
         # call to prepare_for_model_run()?
         # No! If user made modifications to _array_types before running model,
@@ -443,7 +449,13 @@ class SpillContainer(SpillContainerData):
                 self._data_arrays[key] = np.delete(self[key], to_be_removed,
                                                    axis=0)
 
-        self.mass_balance['mass_remaining'] = np.sum(self['mass'])
+        if 'mass_remaining' in self.mass_balance:
+            '''
+            let's not include mass_remaining if amount was None and this
+            property was never initialized. np.sum(self['mass']) will always
+            evaluate to 0.0 if spill amount is not given
+            '''
+            self.mass_balance['mass_remaining'] = np.sum(self['mass'])
 
     def __str__(self):
         return ('gnome.spill_container.SpillContainer\n'
