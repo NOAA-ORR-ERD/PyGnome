@@ -5,7 +5,7 @@ Movers using currents and tides as forcing functions
 import os
 import copy
 
-from colander import (SchemaNode, Bool, String, Float, drop)
+from colander import (SchemaNode, Bool, String, Float, Int, drop)
 
 from gnome.persist.base_schema import ObjType, WorldPoint, LongLat
 
@@ -697,6 +697,8 @@ class ComponentMoverSchema(ObjType, ProcessSchema):
     pat2_speed = SchemaNode(Float(), missing=drop)
     pat2_speed_units = SchemaNode(Float(), missing=drop)
     pat2_scale_to_value = SchemaNode(Float(), missing=drop)
+    
+    scale_by = SchemaNode(Int(), missing=drop)
 
 
 class ComponentMover(CyMover, serializable.Serializable):
@@ -707,7 +709,7 @@ class ComponentMover(CyMover, serializable.Serializable):
                'pat1_angle', 'pat1_speed', 'pat1_speed_units',
                'pat1_scale_to_value',
                'pat2_angle', 'pat2_speed', 'pat2_speed_units',
-               'pat2_scale_to_value']
+               'pat2_scale_to_value', 'scale_by']
     _create = []
     _create.extend(_update)
     _state.add(update=_update, save=_create)
@@ -839,6 +841,11 @@ class ComponentMover(CyMover, serializable.Serializable):
     pat2_scale_to_value = property(lambda self: self.mover.pat2_scale_to_value,
                                    lambda self, val: setattr(self.mover,
                                                              'pat2_scale_to_value',
+                                                             val))
+
+    scale_by = property(lambda self: self.mover.scale_by,
+                                   lambda self, val: setattr(self.mover,
+                                                             'scale_by',
                                                              val))
 
     @property
