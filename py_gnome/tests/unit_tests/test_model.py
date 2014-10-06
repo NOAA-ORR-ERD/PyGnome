@@ -38,7 +38,7 @@ testmap = os.path.join(basedir, '../sample_data', 'MapBounds_Island.bna')
 
 
 @pytest.fixture(scope='function')
-def model(sample_model):
+def model(sample_model_fcn):
     '''
     Utility to setup up a simple, but complete model for tests
     '''
@@ -48,9 +48,9 @@ def model(sample_model):
         shutil.rmtree(images_dir)
     os.mkdir(images_dir)
 
-    model = sample_model['model']
-    rel_start_pos = sample_model['release_start_pos']
-    rel_end_pos = sample_model['release_end_pos']
+    model = sample_model_fcn['model']
+    rel_start_pos = sample_model_fcn['release_start_pos']
+    rel_end_pos = sample_model_fcn['release_end_pos']
 
     model.cache_enabled = True
     model.uncertain = False
@@ -805,6 +805,28 @@ def test_all_weatherers_in_model(model):
 
     expected_keys = {'mass_components'}
     assert expected_keys.issubset(model.spills.LE_data)
+
+
+def test_setup_model_run(model):
+    'turn of movers/weatherers and ensure data_arrays change'
+    model.rewind()
+    model.step()
+    exp_keys = {'windages', 'windage_range', 'mass_components',
+                'windage_persist'}
+    # no exp_keys in model data_arrays
+    assert not exp_keys.intersection(model.spills.LE_data)
+
+    model.weatherers += HalfLifeWeatherer()
+    model.movers += gnome.movers.constant_wind_mover(1., 0.)
+    model.rewind()
+    model.step()
+    assert exp_keys.issubset(model.spills.LE_data)
+
+    model.movers[-1].on = False
+    model.weatherers[-1].on = False
+    model.rewind()
+    model.step()
+    assert not exp_keys.intersection(model.spills.LE_data)
 
 
 @pytest.mark.xfail

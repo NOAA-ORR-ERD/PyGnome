@@ -419,13 +419,16 @@ class Model(Serializable):
 
         for mover in self.movers:
             mover.prepare_for_model_run()
-            array_types.update(mover.array_types)
+            if mover.on:
+                array_types.update(mover.array_types)
 
         for w in self.weatherers:
             for sc in self.spills.items():
                 # weatherers will initialize 'mass_balance' key/values to 0.0
                 w.prepare_for_model_run(sc)
-            array_types.update(w.array_types)
+
+            if w.on:
+                array_types.update(w.array_types)
 
         for sc in self.spills.items():
             sc.prepare_for_model_run(array_types)
@@ -552,7 +555,11 @@ class Model(Serializable):
             w.model_step_is_done()
 
         for sc in self.spills.items():
-            'removes elements with oil_status.to_be_removed'
+            '''
+            removes elements with oil_status.to_be_removed
+            compute 'mass_remaining' by subtracting weathered (evaporated,
+            dispersed, ..) oil
+            '''
             sc.model_step_is_done()
 
             # age remaining particles
