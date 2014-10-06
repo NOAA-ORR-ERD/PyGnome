@@ -62,6 +62,7 @@ var_attributes = {
                      'flag_meanings': " ".join(["%i: %s," % pair for pair in sorted(zip(oil_status._int,
                                         oil_status._attr))])
                     },
+    'spill_num': {'long_name': 'spill to which the particle belongs'},
     'id': {'long_name': 'particle ID',
           },
     'droplet_diameter': {'long_name': 'diameter of oil droplet class',
@@ -243,13 +244,15 @@ class NetCDFOutput(Outputter, Serializable):
         # number of particles are released
         self._start_idx = 0
 
-        # spill_num's attributes are instance attributes.
+        # define NetCDF variable attributes that are instance attributes here
+        # It is set in prepare_for_model_run():
         # 'spill_names' is set based on the names of spill's as defined by user
+        # time 'units' are seconds since model_start_time
         self._var_attributes = {
-            'spill_num':
-                        {'long_name': 'spill to which the particle belongs',
-                         'spills_map': ''}
-                         }
+            'spill_num': {'spills_map': ''},
+            'time': {'units': ''}
+            }
+
         super(NetCDFOutput, self).__init__(**kwargs)
 
     @property
@@ -344,13 +347,60 @@ class NetCDFOutput(Outputter, Serializable):
                              'does not exist in which to save data.'
                              .format(file_))
 
-    def _update_spill_names(self, spills):
+    def _update_var_attributes(self, spills):
         '''
-        update spill_names list in NC attribute 'spill_num'
+        update instance specific self._var_attributes
         '''
         names = " ".join(["{0}: {1}, ".format(ix, spill.name)
-                                        for ix, spill in enumerate(spills)])
+                          for ix, spill in enumerate(spills)])
         self._var_attributes['spill_num']['spills_map'] = names
+        self._var_attributes['time']['units'] = \
+            ('seconds since {0}').format(self._model_start_time.isoformat())
+
+    def _initialize_rootgrp(self, rootgrp, sc):
+        'create dimensions for root group and set cf_attributes'
+        ## fixme: why remove the "T" ??
+        rootgrp.setncatts(self.cf_attributes)   # class level attributes
+        rootgrp.setncattr('creation_date',  # instance attribute
+                          datetime.now().replace(microsecond=0).isoformat())
+
+        # array sizes of weathering processes + mass_components will vary
+        # depending on spills. If there are no spills then no weathering
+        # data arrays to write - certainly no data to write
+        weathering_sz = None
+
+        # create the dimensions we need
+        # not sure if it's a convention or if dimensions
+        # need to be names...
+        dims = [('time', None),     # unlimited
+                ('data', None),     # unlimited
+                ('two', 2),
+                ('three', 3)]
+
+        if 'mass_components' in sc:
+            # get it from array shape
+            weathering_sz = (sc.num_released, sc['mass_components'].shape[1])
+            dims.append(('weathering', weathering_sz[1]))
+
+        for dim in dims:
+            rootgrp.createDimension(dim[0], dim[1])
+
+        return rootgrp
+
+    def _update_arrays_to_output(self, sc):
+        'create list of variables that we want to put in the file'
+        if self.which_data in ('all', 'most'):
+            # get shape and dtype from initailized numpy arrays instead
+            # of array_types because some array type shapes are None
+            for var_name in sc.data_arrays:
+                if var_name != 'positions':
+                    # handled by latitude, longitude, depth
+                    self.arrays_to_output.add(var_name)
+
+            if self.which_data == 'most':
+                # remove the ones we don't want
+                for var_name in self.usually_skipped_arrays:
+                    self.arrays_to_output.discard(var_name)
 
     def prepare_for_model_run(self, model_start_time,
                               spills,
@@ -399,20 +449,9 @@ class NetCDFOutput(Outputter, Serializable):
         super(NetCDFOutput, self).prepare_for_model_run(model_start_time,
                                                         spills, **kwargs)
 
-        self._update_spill_names(spills)
-
-        # array sizes of weathering processes + mass_components will vary
-        # depending on spills. If there are no spills then no weathering data
-        # arrays to write - certainly no data to write
-        weathering_size = None
+        self._update_var_attributes(spills)
 
         for sc in self.sc_pair.items():
-            # only need to look at mass components for forecast spills since
-            # uncertain spills are a copy of forecast spills
-            if len(sc) > 0:
-                weathering_size = (sc.num_released,
-                    sc.spills[0].get('substance').num_components)
-
             if sc.uncertain:
                 file_ = self._u_netcdf_filename
             else:
@@ -420,65 +459,31 @@ class NetCDFOutput(Outputter, Serializable):
 
             self._nc_file_exists_error(file_)
 
-            ## create the netcdf files and write the standard stuff:
+            # create the netcdf files and write the standard stuff:
             with nc.Dataset(file_, 'w', format=self._format) as rootgrp:
-                ## fixme: why remove the "T" ??
-                self.cf_attributes['creation_date'] = \
-                            round_time(datetime.now(), roundTo=1).isoformat()
-                rootgrp.setncatts(self.cf_attributes)
+                self._initialize_rootgrp(rootgrp, sc)
 
-                # create the dimensions we need
-                # not sure if it's a convention or if dimensions
-                # need to be names...
-                rootgrp.createDimension('time')  # unlimited
-                rootgrp.createDimension('data')  # unlimited
-                rootgrp.createDimension('two', 2)
-                rootgrp.createDimension('three', 3)
+                # create a dict with dims {2: 'two', 3: 'three' ...}
+                # use this to define the NC variable's shape in code below
+                d_dims = {len(dim): name
+                          for name, dim in rootgrp.dimensions.iteritems()
+                          if len(dim) > 0}
 
-                if weathering_size:
-                    # if no spills, then no weathering data_arrays
-                    rootgrp.createDimension('weathering', weathering_size[1])
+                # create the time/particle_count variables
+                self._create_nc_var(rootgrp, 'time', np.float64,
+                                    ('time', ), (self._chunksize,))
+                self._create_nc_var(rootgrp, 'particle_count', np.int32,
+                                    ('time', ), (self._chunksize,))
 
-                # create the time variable
-                time_ = rootgrp.createVariable('time',
-                                               np.float64,
-                                               ('time', ),
-                                               zlib=self._compress,
-                                               chunksizes=(self._chunksize,))
-                time_.setncatts(var_attributes['time'])
-                time_.units = 'seconds since {0}'.format(
-                    self._model_start_time.isoformat())
+                self._update_arrays_to_output(sc)
 
-                # create the particle count variable
-                pc_ = rootgrp.createVariable('particle_count',
-                                            np.int32,
-                                            ('time', ),
-                                            zlib=self._compress,
-                                            chunksizes=(self._chunksize,))
-                pc_.setncatts(var_attributes['particle_count'])
-
-                ## create the list of variables that we want to put in the file
-                if self.which_data in ('all', 'most'):
-                    # get shape and dtype from initailized numpy arrays instead
-                    # of array_types because some array type shapes are None
-                    for var_name in sc.data_arrays:
-                        if var_name != 'positions':
-                            # handled by latitude, longitude, depth
-                            self.arrays_to_output.add(var_name)
-
-                    if self.which_data == 'most':
-                        # remove the ones we don't want
-                        for var_name in self.usually_skipped_arrays:
-                            self.arrays_to_output.discard(var_name)
-
-                len_ = sc.num_released
                 for var_name in self.arrays_to_output:
                     # the special cases:
                     if var_name in ('latitude', 'longitude', 'depth'):
                         # these don't  map directly to an array_type
                         dt = world_point_type
                         shape = ('data', )
-                        chunksizes = (self._chunksize,)
+                        chunksz = (self._chunksize,)
                     else:
                         # in prepare_for_model_run, nothing is released but
                         # numpy arrays are initialized with 0 elements so use
@@ -487,40 +492,35 @@ class NetCDFOutput(Outputter, Serializable):
                         # shape
                         dt = sc[var_name].dtype
 
-                        # total kludge for the cases we happen to have...
-                        if sc[var_name].shape == weathering_size:
-                            shape = ('data', 'weathering')
-                            chunksizes = (self._chunksize, weathering_size[1])
-                        elif sc[var_name].shape == (len_, 4):
-                            shape = ('data', 'four')
-                            chunksizes = (self._chunksize, 4)
-                        elif sc[var_name].shape == (len_, 3):
-                            shape = ('data', 'three')
-                            chunksizes = (self._chunksize, 3)
-                        elif sc[var_name].shape == (len_, 2):
-                            shape = ('data', 'two')
-                            chunksizes = (self._chunksize, 2)
-                        else:
+                        if len(sc[var_name].shape) == 1:
                             shape = ('data',)
-                            chunksizes = (self._chunksize,)
+                            chunksz = (self._chunksize,)
+                        else:
+                            y_sz = d_dims[sc[var_name].shape[1]]
+                            shape = ('data', y_sz)
+                            chunksz = (self._chunksize, sc[var_name].shape[1])
 
-                    var = rootgrp.createVariable(var_name,
-                                                 dt,
-                                                 shape,
-                                                 zlib=self._compress,
-                                                 chunksizes=chunksizes,
-                                                 )
-
-                    # add attributes
-                    if var_name in var_attributes:
-                        var.setncatts(var_attributes[var_name])
-                    elif var_name in self._var_attributes:
-                        var.setncatts(self._var_attributes[var_name])
+                    self._create_nc_var(rootgrp, var_name, dt, shape, chunksz)
 
         # need to keep track of starting index for writing data since variable
         # number of particles are released
         self._start_idx = 0
         self._middle_of_run = True
+
+    def _create_nc_var(self, grp, var_name, dtype, shape, chunksz):
+        'chunksizes are optional'
+        var = grp.createVariable(var_name,
+                                 dtype,
+                                 shape,
+                                 zlib=self._compress,
+                                 chunksizes=chunksz)
+        if var_name in var_attributes:
+            var.setncatts(var_attributes[var_name])
+
+        if var_name in self._var_attributes:
+            var.setncatts(self._var_attributes[var_name])
+
+        return var
 
     def write_output(self, step_num, islast_step=False):
         """
