@@ -15,13 +15,14 @@ np = numpy
 
 import netCDF4 as nc
 
-from gnome.spill.elements import floating
 from gnome.spill import point_line_release_spill, Spill, Release
 
-from gnome.movers import RandomMover
+from gnome.spill.elements import floating_weathering
+from gnome.weatherers import Evaporation
+from gnome.environment import Water
+from gnome.movers import RandomMover, constant_wind_mover
 from gnome.outputters import NetCDFOutput
 from gnome.model import Model
-from gnome.persist import load
 
 here = os.path.dirname(__file__)
 
@@ -35,14 +36,19 @@ def model(sample_model, request):
     model = sample_model['model']
 
     model.cache_enabled = True
-
     model.spills += point_line_release_spill(num_elements=5,
                         start_position=sample_model['release_start_pos'],
                         release_time=model.start_time,
                         end_release_time=model.start_time + model.duration,
-                        element_type=floating(windage_persist=-1))
+                        element_type=floating_weathering(substance='oil_diesel'),
+                        amount=1000,
+                        units='kg')
 
+    water = Water()
+    model.environment += water
     model.movers += RandomMover(diffusion_coef=100000)
+    model.movers += constant_wind_mover(1.0, 0.0)
+    model.weatherers += Evaporation(water, model.movers[-1].wind)
 
     model.outputters += NetCDFOutput(os.path.join(here,
                                                   u'sample_model.nc'))

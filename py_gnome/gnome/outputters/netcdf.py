@@ -72,6 +72,17 @@ var_attributes = {
                               'units': 'm s-1'},
     'next_positions': {},
     'last_water_positions': {},
+
+    # weathering data
+    'mass_remaining': {
+        'long_name': 'total mass remaining after each time step',
+        'units': 'kilograms'},
+    'evaporated': {
+        'long_name': 'total mass evaporated since beginning of model run',
+        'units': 'kilograms'},
+    'dispersed': {
+        'long_name': 'total mass dispersed since beginning of model run',
+        'units': 'kilograms'},
     }
 
 
@@ -502,6 +513,16 @@ class NetCDFOutput(Outputter, Serializable):
 
                     self._create_nc_var(rootgrp, var_name, dt, shape, chunksz)
 
+                # Add subgroup for mass_balance - could do it w/o subgroup
+                if sc.mass_balance:
+                    grp = rootgrp.createGroup('mass_balance')
+                    for key in sc.mass_balance:
+                        self._create_nc_var(grp,
+                                            key,
+                                            'float',
+                                            ('time', ),
+                                            (self._chunksize,))
+
         # need to keep track of starting index for writing data since variable
         # number of particles are released
         self._start_idx = 0
@@ -573,6 +594,16 @@ class NetCDFOutput(Outputter, Serializable):
                     else:
                         rootgrp.variables[var_name][self._start_idx:_end_idx] = \
                                     sc[var_name]
+
+                # write mass_balance data
+                if sc.mass_balance:
+                    grp = rootgrp.groups['mass_balance']
+                    for key, val in sc.mass_balance.iteritems():
+                        if key not in grp.variables:
+                            self._create_nc_var(grp,
+                                                key, 'float', ('time', ),
+                                                (self._chunksize,))
+                        grp.variables[key][curr_idx] = val
 
         self._start_idx = _end_idx  # set _start_idx for the next timestep
 

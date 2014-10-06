@@ -298,12 +298,14 @@ class SpillContainer(SpillContainerData):
         '''
         look for first spill that is on and return number of oil components
         for it. Currently, we only model a single type of oil
+        If no spills, then return 1, this is so we can still run the model
+        with no spills
         '''
         if len(self.spills) > 0:
             for spill in self.spills:
                 if spill.on:
                     return spill.get('substance').num_components
-        return None
+        return 1
 
     def prepare_for_model_run(self, array_types={}):
         """
@@ -451,11 +453,11 @@ class SpillContainer(SpillContainerData):
 
         if 'mass_remaining' in self.mass_balance:
             '''
-            let's not include mass_remaining if amount was None and this
-            property was never initialized. np.sum(self['mass']) will always
-            evaluate to 0.0 if spill amount is not given
+            let's not include mass_remaining if 'amount' spilled was None
             '''
-            self.mass_balance['mass_remaining'] = np.sum(self['mass'])
+            for key in self.mass_balance:
+                if key != 'mass_remaining':
+                    self.mass_balance['mass_remaining'] -= self.mass_balance[key]
 
     def __str__(self):
         return ('gnome.spill_container.SpillContainer\n'
