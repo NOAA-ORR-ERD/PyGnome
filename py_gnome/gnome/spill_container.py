@@ -520,25 +520,28 @@ class SpillContainerPairData(object):
         else:
             return (self._spill_container,)
 
-    #LE_data = property(lambda self: self._spill_container._data_arrays.keys())
     @property
     def LE_data(self):
         data = self._spill_container._data_arrays.keys()
         data.append('current_time_stamp')
+        if self._spill_container.mass_balance:
+            'only add if it is not an empty dict'
+            data.append('mass_balance')
 
         return data
 
     def LE(self, prop_name, uncertain=False):
         if uncertain:
-            if prop_name == 'current_time_stamp':
-                return self._u_spill_container.current_time_stamp
-
-            return self._u_spill_container[prop_name]
+            sc = self._u_spill_container
         else:
-            if prop_name == 'current_time_stamp':
-                return self._spill_container.current_time_stamp
+            sc = self._spill_container
 
-            return self._spill_container[prop_name]
+        if prop_name == 'current_time_stamp':
+            return sc.current_time_stamp
+        elif prop_name == 'mass_balance':
+            return sc.mass_balance
+
+        return sc[prop_name]
 
     def __eq__(self, other):
         'Compare equality of two SpillContainerPairData objects'

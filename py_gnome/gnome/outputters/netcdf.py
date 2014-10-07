@@ -750,7 +750,15 @@ class NetCDFOutput(Outputter, Serializable):
                 else:
                     arrays_dict[array_name] = (data.variables[array_name][_start_ix:_stop_ix])
 
-        return arrays_dict
+            # get mass_balance
+            mass_balance = {}
+            if 'mass_balance' in data.groups:
+                mb = data.groups['mass_balance']
+                for key, val in mb.variables.iteritems():
+                    'assume SI units'
+                    mass_balance[key] = val[index]
+
+        return (arrays_dict, mass_balance)
 
     def save(self, saveloc, references=None, name=None):
         '''

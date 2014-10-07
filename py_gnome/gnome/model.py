@@ -844,14 +844,17 @@ class Model(Serializable):
 
         for sc in self.spills.items():
             if sc.uncertain:
-                data = NetCDFOutput.read_data(u_spill_data, time=None,
-                                              which_data='all')
+                (data, mass_balance) = NetCDFOutput.read_data(u_spill_data,
+                                                              time=None,
+                                                              which_data='all')
             else:
-                data = NetCDFOutput.read_data(spill_data, time=None,
-                                              which_data='all')
+                (data, mass_balance) = NetCDFOutput.read_data(spill_data,
+                                                              time=None,
+                                                              which_data='all')
 
             sc.current_time_stamp = data.pop('current_time_stamp').item()
             sc._data_arrays = data
+            sc.mass_balance = mass_balance
             sc._array_types.update(array_types)
             sc._append_initializer_array_types(array_types)
 
