@@ -5,7 +5,7 @@ gnome.db.oil_library.models.Oil class
 It also contains a dict containing a small number of sample_oils if user does
 not wish to query database to use an _r_oil.
 
-It contains a function that takes a string for 'oil_name' and returns and Oil
+It contains a function that takes a string for 'name' and returns and Oil
 object used to initialize and OilProps object
 
 Not sure at present if this needs to be serializable?
@@ -72,13 +72,22 @@ class OilProps(object):
         return ('{0.__class__.__module__}.{0.__class__.__name__}('
                 'oil_={0._r_oil!r})'.format(self))
 
-    name = property(lambda self: self._r_oil.oil_name,
-                    lambda self, val: setattr(self._r_oil, 'oil_name', val))
+    name = property(lambda self: self._r_oil.name,
+                    lambda self, val: setattr(self._r_oil, 'name', val))
     api = property(lambda self: self.get('api'))
 
     def get(self, prop):
         'get raw oil props'
-        return getattr(self._r_oil, prop)
+        val = None
+        try:
+            val = getattr(self._r_oil, prop)
+        except AttributeError:
+            try:
+                val = getattr(self._r_oil.imported, prop)
+            except:
+                pass
+
+        return val
 
     def get_density(self, temp=None, out=None):
         '''
@@ -129,8 +138,15 @@ class OilProps(object):
         self.mass_fraction = []
         self.boiling_point = []
 
+        # Note: not sure if we'll get psuedocomponents from raw cuts so
+        # do a temporary update for now
+        try:
+            cuts = self._r_oil.cuts
+        except AttributeError:
+            cuts = self._r_oil.imported.cuts
+
         last_frac = 0.0
-        for cut in self._r_oil.cuts:
+        for cut in cuts:
             self.boiling_point.append(cut.vapor_temp_k)
             self.mass_fraction.append(round(cut.fraction - last_frac, 4))
             last_frac = cut.fraction
