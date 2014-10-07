@@ -27,7 +27,7 @@ class Evaporation(Weatherer, Serializable):
     _schema = ObjType
 
     def __init__(self,
-                 water,
+                 water=None,
                  wind=None,
                  **kwargs):
         '''
@@ -37,10 +37,6 @@ class Evaporation(Weatherer, Serializable):
         :type wind: Wind API, specifically must have get_value(time) method
         '''
         self.water = water
-
-        if wind is None:
-            wind = constant_wind(0, 0)
-
         self.wind = wind
 
         super(Evaporation, self).__init__(**kwargs)
