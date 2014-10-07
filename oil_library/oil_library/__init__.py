@@ -50,14 +50,14 @@ _oillib_path = os.path.dirname(__file__)
 _db_file = os.path.join(_oillib_path, 'OilLib.db')
 
 
-def get_oil(oil_name, max_cuts=None):
+def get_oil(oil_, max_cuts=None):
     """
     function returns the Oil object given the name of the oil as a string.
 
     :param oil_: name of the oil that spilled. If it is one of the names
             stored in _sample_oil dict, then an Oil object with specified
             api is returned.
-            Otherwise, query the database for the oil_name and return the
+            Otherwise, query the database for the oil_ and return the
             associated Oil object.
     :type oil_: str
 
@@ -71,19 +71,23 @@ def get_oil(oil_name, max_cuts=None):
 
     NOTE I:
     -------
-    One issue is that the kwargs in Oil contain spaces, like 'oil_name'. This
+    One issue is that the kwargs in Oil contain spaces, like 'oil_'. This
     can be handled if the user defines a dict as follows:
-        kw = {'oil_name': 'new oil', 'Field Name': 'field name'}
+        kw = {'oil_': 'new oil', 'Field Name': 'field name'}
         get_oil(**kw)
     however, the following will not work:
-        get_oil('oil_name'='new oil', 'Field Name'='field name')
+        get_oil('oil_'='new oil', 'Field Name'='field name')
 
     This is another reason, we need an interface between the SQL object and the
     end user.
     """
-    if oil_name in _sample_oils.keys():
+    if isinstance(oil_, dict):
         return sample_oil_to_mock_oil(max_cuts=max_cuts,
-                                      **_sample_oils[oil_name])
+                                      **oil_)
+
+    if oil_ in _sample_oils.keys():
+        return sample_oil_to_mock_oil(max_cuts=max_cuts,
+                                      **_sample_oils[oil_])
 
     else:
         '''
@@ -103,21 +107,21 @@ def get_oil(oil_name, max_cuts=None):
         DBSession.bind = engine
 
         try:
-            oil_ = DBSession.query(Oil).filter(Oil.oil_name == oil_name).one()
+            oil_ = DBSession.query(Oil).filter(Oil.oil_name == oil_).one()
             return oil_
         except NoResultFound, ex:
             # or sqlalchemy.orm.exc.MultipleResultsFound as ex:
             ex.message = ("oil with name '{0}' not found in database. "
-                          "{1}".format(oil_name, ex.message))
+                          "{1}".format(oil_, ex.message))
             ex.args = (ex.message, )
             raise ex
 
 
-def get_oil_props(oil_name, max_cuts=None):
+def get_oil_props(oil_info, max_cuts=None):
     '''
     returns the OilProps object
     max_cuts is only used for 'fake' sample_oils. It's a way to allow testing.
     When pulling record from database, this is ignored.
     '''
-    oil_ = get_oil(oil_name, max_cuts)
+    oil_ = get_oil(oil_info, max_cuts)
     return OilProps(oil_)

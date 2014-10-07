@@ -13,6 +13,7 @@ from pytest import raises
 import numpy
 np = numpy
 
+from hazpy import unit_conversion as uc
 import gnome
 from gnome import array_types
 from gnome.spill.elements import (InitWindages,
@@ -21,7 +22,8 @@ from gnome.spill.elements import (InitWindages,
                             InitRiseVelFromDropletSizeFromDist,
                             floating,
                             floating_weathering,
-                            ElementType)
+                            ElementType,
+                            plume)
 
 from gnome.utilities.distributions import (NormalDistribution,
                                            LogNormalDistribution,
@@ -384,3 +386,20 @@ def test_save_load(clean_temp, test_obj):
     refs = test_obj.save(clean_temp)
     test_obj2 = load(os.path.join(clean_temp, refs.reference(test_obj)))
     assert test_obj == test_obj2
+
+
+@pytest.mark.parametrize(("substance_name", "density", "density_units"),
+                         [("oil_conservative", None, 'kg/m^3'),
+                          ("test_1", 1000.0, 'kg/m^3'),
+                          ("test_2", 10.0, 'api')])
+def test_plume_init(substance_name, density, density_units):
+    'test the plume() helper creates oil_props object correctly'
+    et = plume(substance_name=substance_name,
+               density=density,
+               density_units=density_units)
+    assert substance_name == et.substance.name
+    if density:
+        assert np.isclose(et.substance.get_density(),
+            uc.convert('density', density_units, 'kg/m^3', density))
+        assert np.isclose(et.substance.api,
+            uc.convert('density', density_units, 'api', density))

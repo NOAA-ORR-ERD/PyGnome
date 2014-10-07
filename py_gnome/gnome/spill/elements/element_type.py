@@ -20,7 +20,7 @@ from .initializers import (InitRiseVelFromDropletSizeFromDist,
 from oil_library import get_oil_props
 
 from gnome.persist import base_schema
-from gnome.environment import constants
+from hazpy import unit_conversion as uc
 
 """ ElementType classes"""
 
@@ -257,9 +257,13 @@ def plume(distribution_type='droplet_size',
     :param density_units = 'kg/m^3':
     """
     if density is not None:
-        substance = OilPropsFromDensity(density, substance_name, density_units)
+        # Assume density is at 15 K - convert density to api
+        api = uc.convert('density', density_units, 'API', density)
+        substance = get_oil_props({'oil_name': substance_name,
+                                   'api': api}, 2)
     else:
-        substance = OilProps(substance_name)
+        # model 2 cuts if fake oil
+        substance = get_oil_props(substance_name, 2)
 
     if distribution_type == 'droplet_size':
         return ElementType([InitRiseVelFromDropletSizeFromDist(
