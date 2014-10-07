@@ -24,9 +24,9 @@ from gnome.cy_gnome.cy_component_mover import CyComponentMover
 class CatsMoverSchema(ObjType, ProcessSchema):
     '''static schema for CatsMover'''
     filename = SchemaNode(String(), missing=drop)
-    scale = SchemaNode(Bool())
+    scale = SchemaNode(Bool(), missing=drop)
     scale_refpoint = WorldPoint(missing=drop)
-    scale_value = SchemaNode(Float())
+    scale_value = SchemaNode(Float(), missing=drop)
     # the following six could be shared with grid_current
     # in a currents base class
     uncertain_duration = SchemaNode(Float(), missing=drop)
