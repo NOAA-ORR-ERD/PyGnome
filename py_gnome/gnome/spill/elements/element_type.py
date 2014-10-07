@@ -259,7 +259,7 @@ def plume(distribution_type='droplet_size',
     if density is not None:
         # Assume density is at 15 K - convert density to api
         api = uc.convert('density', density_units, 'API', density)
-        substance = get_oil_props({'oil_name': substance_name,
+        substance = get_oil_props({'name': substance_name,
                                    'api': api}, 2)
     else:
         # model 2 cuts if fake oil
