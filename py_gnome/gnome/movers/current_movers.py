@@ -5,7 +5,7 @@ Movers using currents and tides as forcing functions
 import os
 import copy
 
-from colander import (SchemaNode, Bool, String, Float, drop)
+from colander import (SchemaNode, Bool, String, Float, Int, drop)
 
 from gnome.persist.base_schema import ObjType, WorldPoint, LongLat
 
@@ -24,9 +24,9 @@ from gnome.cy_gnome.cy_component_mover import CyComponentMover
 class CatsMoverSchema(ObjType, ProcessSchema):
     '''static schema for CatsMover'''
     filename = SchemaNode(String(), missing=drop)
-    scale = SchemaNode(Bool())
+    scale = SchemaNode(Bool(), missing=drop)
     scale_refpoint = WorldPoint(missing=drop)
-    scale_value = SchemaNode(Float())
+    scale_value = SchemaNode(Float(), missing=drop)
     # the following six could be shared with grid_current
     # in a currents base class
     uncertain_duration = SchemaNode(Float(), missing=drop)
@@ -697,6 +697,8 @@ class ComponentMoverSchema(ObjType, ProcessSchema):
     pat2_speed = SchemaNode(Float(), missing=drop)
     pat2_speed_units = SchemaNode(Float(), missing=drop)
     pat2_scale_to_value = SchemaNode(Float(), missing=drop)
+    
+    scale_by = SchemaNode(Int(), missing=drop)
 
 
 class ComponentMover(CyMover, serializable.Serializable):
@@ -707,7 +709,7 @@ class ComponentMover(CyMover, serializable.Serializable):
                'pat1_angle', 'pat1_speed', 'pat1_speed_units',
                'pat1_scale_to_value',
                'pat2_angle', 'pat2_speed', 'pat2_speed_units',
-               'pat2_scale_to_value']
+               'pat2_scale_to_value', 'scale_by']
     _create = []
     _create.extend(_update)
     _state.add(update=_update, save=_create)
@@ -839,6 +841,11 @@ class ComponentMover(CyMover, serializable.Serializable):
     pat2_scale_to_value = property(lambda self: self.mover.pat2_scale_to_value,
                                    lambda self, val: setattr(self.mover,
                                                              'pat2_scale_to_value',
+                                                             val))
+
+    scale_by = property(lambda self: self.mover.scale_by,
+                                   lambda self, val: setattr(self.mover,
+                                                             'scale_by',
                                                              val))
 
     @property

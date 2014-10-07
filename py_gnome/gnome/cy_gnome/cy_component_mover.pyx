@@ -75,6 +75,7 @@ cdef class CyComponentMover(cy_mover.CyMover):
         :param pat2_speed=10: 
         :param pat2_speed_units=m/s: Speed units
         :param pat2_scale_to_value=0.1: 
+        :param scaleBy=NONE: Use Wind speed or Wind stress for scaling
 
         """
         cdef WorldPoint p
@@ -140,6 +141,13 @@ cdef class CyComponentMover(cy_mover.CyMover):
         
         def __set__(self,value):
             self.component.pat2ScaleToValue = value    
+    
+    property scale_by:
+        def __get__(self):
+            return self.component.scaleBy
+        
+        def __set__(self,value):
+            self.component.scaleBy = value    
     
     property ref_point:
         def __get__(self):
