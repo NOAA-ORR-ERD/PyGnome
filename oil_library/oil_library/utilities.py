@@ -1,8 +1,11 @@
 '''
 Utility functions
 '''
+from math import exp
 
 import numpy as np
+
+from oil_library.models import KVis
 
 
 def get_density(oil, temp, out=None):
@@ -58,6 +61,130 @@ def get_density(oil, temp, out=None):
 
     return (out, out[0])[len(out) == 1]
 
+
+def viscosities(oil):
+    '''
+        Get a list of all kinematic viscosities associated with this
+        oil object.  The list is compiled from the stored kinematic
+        and dynamic viscosities associated with the oil record.
+        The viscosity fields contain:
+          - kinematic viscosity in m^2/sec
+          - reference temperature in degrees kelvin
+          - weathering ???
+        Viscosity entries are ordered by (weathering, temperature)
+        If we are using dynamic viscosities, we calculate the
+        kinematic viscosity from the density that is closest
+        to the respective reference temperature
+    '''
+    # first we get the kinematic viscosities if they exist
+    ret = []
+    if oil.kvis:
+        ret = [(k.m_2_s,
+                k.ref_temp_k,
+                (0.0 if k.weathering == None else k.weathering))
+                for k in oil.kvis
+                if k.ref_temp_k != None]
+
+    if oil.dvis:
+        # If we have any DVis records, we need to get the
+        # dynamic viscosities, convert to kinematic, and
+        # add them if possible.
+        # We have dvis at a certain (temperature, weathering).
+        # We need to get density at the same weathering and
+        # the closest temperature in order to calculate the kinematic.
+        # There are lots of oil entries where the dvis do not have
+        # matching densities for (temp, weathering)
+        densities = [(d.kg_m_3,
+                      d.ref_temp_k,
+                      (0.0 if d.weathering == None else d.weathering))
+                     for d in oil.densities]
+
+        for v, t, w in [(d.kg_ms, d.ref_temp_k, d.weathering)
+                        for d in oil.dvis]:
+            if w == None:
+                w = 0.0
+
+            # if we already have a KVis at the same
+            # (temperature, weathering), we do not need
+            # another one
+            if len([vv for vv in ret
+                    if vv[1] == t and vv[2] == w]) > 0:
+                continue
+
+            # grab the densities with matching weathering
+            dlist = [(d[0], abs(t - d[1]))
+                     for d in densities
+                     if d[2] == w]
+
+            if len(dlist) == 0:
+                continue
+
+            # grab the density with the closest temperature
+            density = sorted(dlist, key=lambda x: x[1])[0][0]
+
+            # kvis = dvis/density
+            ret.append(((v / density), t, w))
+
+    ret.sort(key=lambda x: (x[2], x[1]))
+    kwargs = ['m_2_s', 'ref_temp_k', 'weathering']
+
+    # caution: although we will have a list of real
+    #          KVis objects, they are not persisted
+    #          in the database.
+    ret = [(KVis(**dict(zip(kwargs, v)))) for v in ret]
+    return ret
+
+
+def get_viscosity(oil, temp):
+    '''
+    :param units: optional input if output units should be something other
+                  than m^2/s
+    :return: Kinematic Viscosity at current temperature.
+             Default units: (m^2/s)
+
+    The Oil object has a list of kinematic viscosities at empirically
+    measured temperatures.  We need to use the ones closest to our
+    current temperature and calculate our viscosity from it.
+    '''
+    vis = viscosities(oil)
+    if vis:
+        # first get our v_max
+        k_v2 = 5000.0
+        pour_point = (oil.pour_point_max_k
+                      if oil.pour_point_max_k != None
+                      else oil.pour_point_min_k)
+        if pour_point:
+            try:
+                visc = sorted([(v, abs(v.ref_temp_k - pour_point))
+                            for v in vis
+                            if v != None],
+                           key=lambda v: v[1])[0][0]
+            except:
+                print 'failed on {0.id}, adios_id {0.adios_oil_id}'.format(oil)
+            v_ref = visc.m_2_s
+            t_ref = visc.ref_temp_k
+
+            v_max = v_ref * exp(k_v2 / pour_point - k_v2 / t_ref)
+        else:
+            v_max = None
+
+        # now get our v_0
+        visc = sorted([(v, abs(v.ref_temp_k - temp)) for v in vis],
+                      key=lambda v: v[1])[0][0]
+        v_ref = visc.m_2_s
+        t_ref = visc.ref_temp_k
+
+        if (temp - t_ref) == 0:
+            v_0 = v_ref
+        else:
+            v_0 = v_ref * exp(k_v2 / temp - k_v2 / t_ref)
+
+        if v_max:
+            return (v_max, v_0)[v_0 <= v_max]
+        else:
+            return v_0
+    else:
+        return None
 
 # ORIG CODE MOVED FROM OilProps object
 #==============================================================================

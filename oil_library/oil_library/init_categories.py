@@ -19,8 +19,10 @@
 '''
 import transaction
 
+from hazpy import unit_conversion as uc
 from oil_library.models import ImportedRecord, Category
-from oil_library.oil_props import OilProps
+from oil_library.utilities import get_density, get_viscosity
+#from oil_library.oil_props import OilProps
 
 
 def process_categories(session):
@@ -199,8 +201,11 @@ def link_refined_fuel_oil_1(session):
     count = 0
     category_temp = 273.15 + 38
     for o in oils:
-        oil_props = OilProps(o, temperature=category_temp)
-        if oil_props.get_viscosity('cSt') <= 2.5:
+        #oil_props = OilProps(o, temperature=category_temp)
+        #if oil_props.get_viscosity('cSt') <= 2.5:
+        visc = uc.convert('Kinematic Viscosity', 'm^2/s', 'cSt',
+                          get_viscosity(o, category_temp))
+        if visc <= 2.5:
             for category in categories:
                 o.categories.append(category)
             count += 1
@@ -239,8 +244,10 @@ def link_refined_fuel_oil_2(session):
     count = 0
     category_temp = 273.15 + 38
     for o in oils:
-        oil_props = OilProps(o, temperature=category_temp)
-        visc = oil_props.get_viscosity('cSt')
+        #oil_props = OilProps(o, temperature=category_temp)
+        #visc = oil_props.get_viscosity('cSt')
+        visc = uc.convert('Kinematic Viscosity', 'm^2/s', 'cSt',
+                          get_viscosity(o, category_temp))
         if visc > 2.5 or visc <= 4.0:
             for category in categories:
                 o.categories.append(category)
@@ -278,8 +285,10 @@ def link_refined_ifo(session):
     count = 0
     category_temp = 273.15 + 38
     for o in oils:
-        oil_props = OilProps(o, temperature=category_temp)
-        visc = oil_props.get_viscosity('cSt')
+        #oil_props = OilProps(o, temperature=category_temp)
+        #visc = oil_props.get_viscosity('cSt')
+        visc = uc.convert('Kinematic Viscosity', 'm^2/s', 'cSt',
+                          get_viscosity(o, category_temp))
         if visc > 4.0 or visc < 200.0:
             for category in categories:
                 o.categories.append(category)
@@ -319,8 +328,10 @@ def link_refined_fuel_oil_6(session):
     count = 0
     category_temp = 273.15 + 50
     for o in oils:
-        oil_props = OilProps(o, temperature=category_temp)
-        visc = oil_props.get_viscosity('cSt')
+        #oil_props = OilProps(o, temperature=category_temp)
+        #visc = oil_props.get_viscosity('cSt')
+        visc = uc.convert('Kinematic Viscosity', 'm^2/s', 'cSt',
+                          get_viscosity(o, category_temp))
         if visc >= 200.0:
             for category in categories:
                 o.categories.append(category)
@@ -385,8 +396,10 @@ def show_uncategorized_oils(session):
                 category_temp = 273.15 + 50
             else:
                 category_temp = 273.15 + 38
-            oil_props = OilProps(o, temperature=category_temp)
-            visc = oil_props.get_viscosity('cSt')
+            #oil_props = OilProps(o, temperature=category_temp)
+            #visc = oil_props.get_viscosity('cSt')
+            visc = uc.convert('Kinematic Viscosity', 'm^2/s', 'cSt',
+                              get_viscosity(o, category_temp))
         else:
             visc = None
 
@@ -426,8 +439,7 @@ def get_oils_by_api(session, product_type,
                  )
     for o in oil_query:
         category_temp = 273.15 + 15
-        oil_props = OilProps(o, temperature=category_temp)
-        api = (141.5 * 1000 / oil_props.density) - 131.5
+        api = (141.5 * 1000 / get_density(o, category_temp)) - 131.5
         if ((api_max != None and api <= api_max) or
             (api_min != None and api > api_min)):
             oils.append(o)

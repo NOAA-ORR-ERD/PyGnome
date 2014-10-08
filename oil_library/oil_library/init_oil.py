@@ -22,7 +22,7 @@ def process_oils(session):
 
 
 def add_oil(record):
-    print 'Estimations for {0}'.format(record.adios_oil_id)
+    print 'Estimations for id {0.id}, adios_id {0.adios_oil_id}'.format(record)
     oil = Oil(name=record.oil_name)
 
     add_densities(record, oil)

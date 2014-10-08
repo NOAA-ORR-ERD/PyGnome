@@ -107,12 +107,16 @@ def get_oil(oil_, max_cuts=None):
         DBSession.bind = engine
 
         try:
-            oil_ = DBSession.query(Oil).filter(Oil.name == oil_).one()
-            return oil_
+            return DBSession.query(Oil).filter(Oil.name == oil_).one()
+        except:
+            pass    # try checking imported_record_id
+
+        try:
+            return DBSession.query(Oil).filter(Oil.imported_record_id == oil_).one()
         except NoResultFound, ex:
             # or sqlalchemy.orm.exc.MultipleResultsFound as ex:
-            ex.message = ("oil with name '{0}' not found in database. "
-                          "{1}".format(oil_, ex.message))
+            ex.message = ("oil with name or imported_record_id, '{0}', not "
+                          "found in database. {1}".format(oil_, ex.message))
             ex.args = (ex.message, )
             raise ex
 

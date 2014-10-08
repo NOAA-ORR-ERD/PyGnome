@@ -4,7 +4,7 @@ test dict_to_oil functions
 import pytest
 from hazpy import unit_conversion as uc
 
-from oil_library import _sample_oils, get_oil_props
+from oil_library import _sample_oils, get_oil_props, get_oil
 from oil_library.mock_oil import sample_oil_to_mock_oil, boiling_point
 
 sample_oil = 'oil_conservative'
@@ -15,6 +15,17 @@ def test_sample_oil_to_mock_oil():
     oil_ = sample_oil_to_mock_oil(max_cuts=2, **so)
     for key, val in so.iteritems():
         assert val == getattr(oil_, key)
+
+
+@pytest.mark.parametrize("search", ['FUEL OIL NO.6', 51])
+def test_get_oil(search):
+    o = get_oil(search)
+    if isinstance(search, basestring):
+        assert o.name == search
+    else:
+        # cannot search by adios ID yet
+        assert o.imported_record_id == search
+        assert o.imported.id == search
 
 
 def test_get_oil_props():
