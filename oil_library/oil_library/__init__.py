@@ -50,6 +50,20 @@ _oillib_path = os.path.dirname(__file__)
 _db_file = os.path.join(_oillib_path, 'OilLib.db')
 
 
+def _bind_db_session():
+    'we can call this from scripts to access valid DBSession'
+    # not sure we want to do it this way - but let's use for now
+    engine = create_engine('sqlite:///' + _db_file)
+
+    # let's use global DBSession defined in oillibrary
+    # alternatively, we could define a new scoped_session
+    # Not sure what's the proper way yet but this needs
+    # to be revisited at some point.
+    # session_factory = sessionmaker(bind=engine)
+    # DBSession = scoped_session(session_factory)
+    DBSession.bind = engine
+
+
 def get_oil(oil_, max_cuts=None):
     """
     function returns the Oil object given the name of the oil as a string.
@@ -95,16 +109,7 @@ def get_oil(oil_, max_cuts=None):
         should we raise error here?
         '''
 
-        # not sure we want to do it this way - but let's use for now
-        engine = create_engine('sqlite:///' + _db_file)
-
-        # let's use global DBSession defined in oillibrary
-        # alternatively, we could define a new scoped_session
-        # Not sure what's the proper way yet but this needs
-        # to be revisited at some point.
-        # session_factory = sessionmaker(bind=engine)
-        # DBSession = scoped_session(session_factory)
-        DBSession.bind = engine
+        _bind_db_session()
 
         try:
             return DBSession.query(Oil).filter(Oil.name == oil_).one()
