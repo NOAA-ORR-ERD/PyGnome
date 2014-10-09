@@ -797,11 +797,21 @@ class Model(Serializable):
             json_ = obj.serialize('save')
             for field in obj._state:
                 if field.save_reference:
-                    'attribute is stored as a reference to environment list'
+                    '''
+                    if attribute is stored as a reference to environment list,
+                    then update the json_ here
+                    '''
                     if getattr(obj, field.name) is not None:
                         ref_obj = getattr(obj, field.name)
-                        index = self.environment.index(ref_obj)
-                        json_[field.name] = index
+                        try:
+                            index = self.environment.index(ref_obj)
+                            json_[field.name] = index
+                        except ValueError:
+                            '''
+                            reference is not part of environment list, it must
+                            be handled elsewhere
+                            '''
+                            pass
             obj_ref = refs.get_reference(obj)
             if obj_ref is None:
                 # try following name - if 'fname' already exists in references,
