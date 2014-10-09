@@ -148,9 +148,11 @@ class Evaporation(Weatherer, Serializable):
         toserial = self.to_serialize(json_)
         schema = self.__class__._schema()
         if json_ == 'webapi':
-            # add wind schema
-            schema.add(WindSchema())
-            schema.add(WaterSchema())
+            if self.wind:
+                # add wind schema
+                schema.add(WindSchema())
+            if self.water:
+                schema.add(WaterSchema())
 
         serial = schema.serialize(toserial)
 
@@ -164,6 +166,8 @@ class Evaporation(Weatherer, Serializable):
         schema = cls._schema()
         if 'wind' in json_:
             schema.add(WindSchema())
+
+        if 'water' in json_:
             schema.add(WaterSchema())
         _to_dict = schema.deserialize(json_)
 
