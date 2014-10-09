@@ -244,6 +244,7 @@ def floating_weathering(windage_range=(.01, .04),
     Use InitArraysFromOilProps()
     '''
     init = [InitWindages(windage_range, windage_persist),
+            InitMassFromSpillAmount(),  # set 'mass' array
             InitArraysFromOilProps()]
     if substance:
         return ElementType(init, substance)
