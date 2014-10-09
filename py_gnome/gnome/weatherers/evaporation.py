@@ -165,10 +165,10 @@ class Evaporation(Weatherer, Serializable):
         """
         schema = cls._schema()
         if 'wind' in json_:
-            schema.add(WindSchema())
+            schema.add(WindSchema(name='wind'))
 
         if 'water' in json_:
-            schema.add(WaterSchema())
+            schema.add(WaterSchema(name='water'))
         _to_dict = schema.deserialize(json_)
 
         return _to_dict
