@@ -22,7 +22,8 @@ from gnome.spill.elements import (ElementType,
                             InitWindages,
                             InitRiseVelFromDist,
                             InitRiseVelFromDropletSizeFromDist,
-                            floating)
+                            floating,
+                            floating_mass)
 
 from gnome.utilities.distributions import UniformDistribution
 
@@ -964,24 +965,39 @@ def test_SpillContainer_add_array_types():
     assert 'droplet_diameter' not in sc.array_types
 
 
-def test_prepare_for_model_run():
+def test_mass_balance_attr():
     sc = SpillContainer()
-    s = [Spill(Release(datetime.now(), 10)),
-         Spill(Release(datetime.now(), 10))]
+    ts = 900
+    s1_rel = datetime.now().replace(microsecond=0)
+    s2_rel = s1_rel + timedelta(seconds=ts)
+    s = [point_line_release_spill(10, (0, 0, 0), s1_rel),
+         point_line_release_spill(10, (0, 0, 0), s2_rel)]
     sc.spills += s
     sc.prepare_for_model_run()
+    sc.release_elements(ts, s1_rel)
     assert 'mass_remaining' not in sc.mass_balance
 
+    # use different element_type and initializers for both spills
     s[0].amount = 10.0
     s[0].units = 'kg'
+    s[0].element_type = floating_mass()
+    sc.rewind()
     sc.prepare_for_model_run()
-    assert sc.mass_balance['mass_remaining'] == 10.0
+    sc.release_elements(ts, s1_rel)
+    assert sc.mass_balance['mass_remaining'] == sum(sc['mass'])
+    assert sc.mass_balance['mass_remaining'] == s[0].amount
 
     s[1].amount = 5.0
     s[1].units = 'kg'
+    s[1].element_type = floating_mass()
+    sc.rewind()
     sc.prepare_for_model_run()
-    assert sc.mass_balance['mass_remaining'] == 15.0
-
+    exp_rel = 0.0
+    for ix in range(2):
+        sc.release_elements(ts, s1_rel + timedelta(seconds=ts * ix))
+        exp_rel += s[ix].amount
+        assert sc.mass_balance['mass_remaining'] == sum(sc['mass'])
+        assert sc.mass_balance['mass_remaining'] == exp_rel
     sc.rewind()
     assert sc.mass_balance == {}
 

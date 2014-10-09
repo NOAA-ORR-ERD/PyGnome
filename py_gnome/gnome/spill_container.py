@@ -330,10 +330,14 @@ class SpillContainer(SpillContainerData):
         array_types from initializer and appends them to its own list. For
         most initializers like 
         """
-        # define 'mass_remaining' key
-        mass_remain = [s.get_mass('kg') for s in self.spills if s.amount]
-        if mass_remain:
-            self.mass_balance['mass_remaining'] = sum(mass_remain)
+        #======================================================================
+        # Mass remaining should only be defined for mass remaining in water,
+        # so for released elements
+        # # define 'mass_remaining' key
+        # mass_remain = [s.get_mass('kg') for s in self.spills if s.amount]
+        # if mass_remain:
+        #     self.mass_balance['mass_remaining'] = sum(mass_remain)
+        #======================================================================
 
         # Question - should we purge any new arrays that were added in previous
         # call to prepare_for_model_run()?
@@ -399,6 +403,7 @@ class SpillContainer(SpillContainerData):
         This calls release_elements on all of the contained spills, and adds
         the elements to the data arrays
         """
+        write_mass_balance = False  # toggle if at least one spill has amount
         for sp in self.spills:
             if not sp.on:
                 continue
@@ -435,6 +440,25 @@ class SpillContainer(SpillContainerData):
                 sp.set_newparticle_values(num_released, model_time, time_step,
                                           self._data_arrays)
 
+            if sp.amount is not None:
+                write_mass_balance = True
+        # update mass_remaining after release since we release particles
+        # at end of the step
+        # go back to summing up 'mass' array for mass_remaining.
+        # mass_remaining is the mass remaining of the released particles
+        if write_mass_balance:
+            'particles have mass'
+            self.mass_balance['mass_remaining'] = np.sum(self['mass'])
+        #======================================================================
+        # if 'mass_remaining' in self.mass_balance:
+        #     '''
+        #     let's not include mass_remaining if 'amount' spilled was None
+        #     '''
+        #     for key in self.mass_balance:
+        #         if key != 'mass_remaining':
+        #             self.mass_balance['mass_remaining'] -= self.mass_balance[key]
+        #======================================================================
+
     def model_step_is_done(self):
         '''
         Called at the end of a time step
@@ -450,14 +474,6 @@ class SpillContainer(SpillContainerData):
             for key in self._array_types.keys():
                 self._data_arrays[key] = np.delete(self[key], to_be_removed,
                                                    axis=0)
-
-        if 'mass_remaining' in self.mass_balance:
-            '''
-            let's not include mass_remaining if 'amount' spilled was None
-            '''
-            for key in self.mass_balance:
-                if key != 'mass_remaining':
-                    self.mass_balance['mass_remaining'] -= self.mass_balance[key]
 
     def __str__(self):
         return ('gnome.spill_container.SpillContainer\n'
