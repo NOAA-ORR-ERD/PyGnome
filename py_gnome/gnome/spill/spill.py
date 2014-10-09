@@ -36,7 +36,7 @@ class Spill(serializable.Serializable):
     """
     Models a spill
     """
-    _update = ['on', 'release', 'element_type', 'amount', 'units',
+    _update = ['on', 'release', 'amount', 'units',
                'frac_coverage', 'frac_water']
 
     _create = []
@@ -44,6 +44,10 @@ class Spill(serializable.Serializable):
 
     _state = copy.deepcopy(serializable.Serializable._state)
     _state.add(save=_create, update=_update)
+    _state += serializable.Field('element_type',
+                                 save=True,
+                                 save_reference=True,
+                                 update=True)
     _schema = SpillSchema
 
     valid_vol_units = list(chain.from_iterable([item[1] for item in
@@ -491,23 +495,30 @@ class Spill(serializable.Serializable):
             schema = cls._schema()
 
             dict_ = schema.deserialize(json_)
-            element_type = json_['element_type']['obj_type']
-            dict_['element_type'] = (eval(element_type)
-                                     .deserialize(json_['element_type']))
             rel = json_['release']['obj_type']
             dict_['release'] = eval(rel).deserialize(json_['release'])
 
-            if json_['json_'] == 'save':
+            if json_['json_'] == 'webapi':
                 '''
-                    Convert nested dict back into objects.
-                    For the 'webapi', we're not always creating a new object
-                    so do this only for 'save' files
+                save files store a reference to element_type so it will get
+                deserialized, created and added to this dict by load method
                 '''
-                for name in ['release', 'element_type']:
-                    obj_dict = dict_.pop(name)
-                    obj_type = obj_dict.pop('obj_type')
-                    obj = eval(obj_type).new_from_dict(obj_dict)
-                    dict_[name] = obj
+                element_type = json_['element_type']['obj_type']
+                dict_['element_type'] = (eval(element_type).deserialize(
+                                                        json_['element_type']))
+
+            else:
+                '''
+                Convert nested dict (release object) back into object. The
+                ElementType is now saved as a reference so it is taken care of
+                by load method
+                For the 'webapi', we're not always creating a new object
+                so do this only for 'save' files
+                '''
+                obj_dict = dict_.pop('release')
+                obj_type = obj_dict.pop('obj_type')
+                obj = eval(obj_type).new_from_dict(obj_dict)
+                dict_['release'] = obj
 
             return dict_
         else:

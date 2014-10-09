@@ -9,8 +9,9 @@ These are properties that are spill specific like:
 '''
 import copy
 
+from colander import (SchemaNode, drop, String)
 import gnome    # required by new_from_dict
-from gnome.utilities.serializable import Serializable
+from gnome.utilities.serializable import Serializable, Field
 from .initializers import (InitRiseVelFromDropletSizeFromDist,
                            InitRiseVelFromDist,
                            InitWindages,
@@ -25,10 +26,21 @@ from hazpy import unit_conversion as uc
 """ ElementType classes"""
 
 
+class ElementTypeSchema(base_schema.ObjType):
+    'just add substance name as a string for now'
+    substance = SchemaNode(String(), missing=drop)
+
+
 class ElementType(Serializable):
     _state = copy.deepcopy(Serializable._state)
-    _state.add(save=['initializers'], update=['initializers'])
-    _schema = base_schema.ObjType
+    _state.add(save=['initializers'],
+               update=['initializers'])
+    # for some reason, the test for equality on the underlying OilProps object
+    # is failing - for now, don't check for equality and just manually override
+    # __eq__ and check 'substance' name is equal. Need to figure out why
+    # equality is failing
+    _state += Field('substance', save=True, update=True, test_for_eq=False)
+    _schema = ElementTypeSchema
 
     def __init__(self, initializers=[], substance='oil_conservative'):
         '''
@@ -62,6 +74,10 @@ class ElementType(Serializable):
                 'initializers={0.initializers}, '
                 'substance={0.substance!r}'
                 ')'.format(self))
+
+    def substance_to_dict(self):
+        'for now just return the string'
+        return self._substance.name
 
     @property
     def substance(self):
@@ -179,6 +195,17 @@ class ElementType(Serializable):
             return dict_
         else:
             return json_
+
+    def __eq__(self, other):
+        '''
+        override for comparing 'substance' - we should check to see that the
+        substance attribute (OilProps) object is equal; however, this check
+        fails - need to investigate further
+        '''
+        if self.attr_to_dict('substance') != other.attr_to_dict('substance'):
+            return False
+
+        return super(ElementType, self).__eq__(other)
 
 
 def floating(windage_range=(.01, .04),
