@@ -70,7 +70,7 @@ class TestWeatherer:
 
         hl = tuple([time_step] * test_sc['mass_components'].shape[1])
         weatherer = HalfLifeWeatherer(half_lives=hl)
-        weatherer.prepare_for_model_run()
+        weatherer.prepare_for_model_run(test_sc)
         weatherer.prepare_for_model_step(test_sc, time_step, model_time)
 
         mc_final = weatherer.weather_elements(test_sc, time_step, model_time)

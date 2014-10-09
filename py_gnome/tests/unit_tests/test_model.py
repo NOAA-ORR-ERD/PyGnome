@@ -38,7 +38,7 @@ testmap = os.path.join(basedir, '../sample_data', 'MapBounds_Island.bna')
 
 
 @pytest.fixture(scope='function')
-def model(sample_model):
+def model(sample_model_fcn):
     '''
     Utility to setup up a simple, but complete model for tests
     '''
@@ -48,9 +48,9 @@ def model(sample_model):
         shutil.rmtree(images_dir)
     os.mkdir(images_dir)
 
-    model = sample_model['model']
-    rel_start_pos = sample_model['release_start_pos']
-    rel_end_pos = sample_model['release_end_pos']
+    model = sample_model_fcn['model']
+    rel_start_pos = sample_model_fcn['release_start_pos']
+    rel_end_pos = sample_model_fcn['release_end_pos']
 
     model.cache_enabled = True
     model.uncertain = False
@@ -794,9 +794,11 @@ def test_simple_run_no_spills(model):
 def test_all_weatherers_in_model(model):
     '''
     test model run with weatherer
+    todo: This does not require floating_weathering() element_type, meaning
+    mass_components are not initialized correctly here - need to revisit this
+    concept
     '''
-    weatherer = HalfLifeWeatherer()
-    model.weatherers += weatherer
+    model.weatherers += HalfLifeWeatherer()
     print 'model.weatherers:', model.weatherers
 
     model.full_run()
@@ -805,10 +807,36 @@ def test_all_weatherers_in_model(model):
     assert expected_keys.issubset(model.spills.LE_data)
 
 
+def test_setup_model_run(model):
+    'turn of movers/weatherers and ensure data_arrays change'
+    model.rewind()
+    model.step()
+    exp_keys = {'windages', 'windage_range', 'mass_components',
+                'windage_persist'}
+    # no exp_keys in model data_arrays
+    assert not exp_keys.intersection(model.spills.LE_data)
+
+    model.weatherers += HalfLifeWeatherer()
+    model.movers += gnome.movers.constant_wind_mover(1., 0.)
+    model.rewind()
+    model.step()
+    assert exp_keys.issubset(model.spills.LE_data)
+
+    model.movers[-1].on = False
+    model.weatherers[-1].on = False
+    model.rewind()
+    model.step()
+    assert not exp_keys.intersection(model.spills.LE_data)
+
+
+@pytest.mark.xfail
 def test_run_element_type_no_initializers(model):
     '''
     run model with only one spill, it contains an element_type.
-    However, element_type has no initializers
+    However, element_type has no initializers - will not work if weatherers
+    are present that require runtime array_types defined. The initializers
+    currently define these runtime array_types -- need to rethink how this
+    should work
     '''
     model.uncertain = False
     model.rewind()

@@ -24,11 +24,12 @@ class WeathererSchema(ObjType, ProcessSchema):
     pass
 
 
-class Weatherer(Process, Serializable):
+class Weatherer(Process):
     '''
        Base Weathering agent.  This is almost exactly like the base Mover
        in the way that it acts upon the model.  It contains the same API
-       as the mover as well.
+       as the mover as well. Not Serializable since it does is partial
+       implementation
     '''
     _state = copy.deepcopy(Process._state)
     _schema = WeathererSchema  # nothing new added so use this schema
@@ -49,6 +50,13 @@ class Weatherer(Process, Serializable):
                 'on={0.on}, '
                 'active={0.active}'
                 ')'.format(self))
+
+    def prepare_for_model_run(self, sc):
+        """
+        Override for weatherers so they can initialize correct 'mass_balance'
+        key and set initial value to 0.0
+        """
+        pass
 
     def weather_elements(self, sc, time_step, model_time):
         '''
@@ -147,7 +155,7 @@ class HalfLifeWeatherer(Weatherer):
         super(HalfLifeWeatherer, self).prepare_for_model_step(sc,
                                                               time_step,
                                                               model_time)
-        num_pc = mass_components.shape[0]
+        num_pc = sc['mass_components'].shape[1]
         hl = np.zeros(num_pc, dtype=np.float64)
         hl[:] = np.Inf
 

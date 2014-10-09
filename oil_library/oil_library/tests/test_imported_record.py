@@ -3,6 +3,7 @@ import os
 
 import unittest
 import pytest
+from pytest import raises
 
 sqlalchemy = pytest.importorskip('sqlalchemy')
 zope = pytest.importorskip('zope')
@@ -12,8 +13,14 @@ transaction = pytest.importorskip('transaction')
 from sqlalchemy import create_engine
 from sqlalchemy.exc import IntegrityError
 
-from oil_library.models import DBSession, Base, Oil, Synonym, \
-    Density, KVis, DVis, Cut, Toxicity
+from oil_library.models import (DBSession, Base,
+                                Oil, ImportedRecord,
+                                Synonym,
+                                Density,
+                                KVis,
+                                DVis,
+                                Cut,
+                                Toxicity)
 
 here = os.path.dirname(__file__)
 db_file = os.path.join(here, r'OilLibrary.db')
@@ -61,47 +68,47 @@ class OilTestCase(BaseTestCase):
     @classmethod
     def get_mock_oil_file_record(cls):
         return {
-            u'Oil Name': u'Test Oil',
-            u'ADIOS Oil ID': u'AD99999',
-            u'Location': u'Sand Point',
-            u'Field Name': u'Sand Point',
-            u'Reference': u'Test Oil Reference',
-            u'API': u'2.68e1',
-            u'Pour Point Min (K)': u'2.6715e2',
-            u'Pour Point Max (K)': u'2.6715e2',
-            u'Product Type': u'Crude',
-            u'Comments': u'Test Oil Comments',
-            u'Asphaltene Content': u'2e-2',
-            u'Wax Content': u'7e-2',
-            u'Aromatics': u'4e-2',
-            u'Water Content Emulsion': u'9e-1',
-            u'Emuls Constant Min': u'0e0',
-            u'Emuls Constant Max': u'0e0',
-            u'Flash Point Min (K)': u'2.8e2',
-            u'Flash Point Max (K)': u'2.8e2',
-            u'Oil/Water Interfacial Tension (N/m)': u'2.61e-2',
-            u'Oil/Water Interfacial Tension Ref Temp (K)': u'2.7e2',
-            u'Oil/Seawater Interfacial Tension (N/m)': u'2.38e-2',
-            u'Oil/Seawater Interfacial Tension Ref Temp (K)': u'2.7e2',
-            u'Cut Units': u'volume',
-            u'Oil Class': u'Group 3',
-            u'Adhesion': u'2.8e-1',
-            u'Benezene': u'6e-2',
-            u'Naphthenes': u'7e-2',
-            u'Paraffins': u'8e-2',
-            u'Polars': u'9e-2',
-            u'Resins': u'1.2e-1',
-            u'Saturates': u'1.1e-1',
-            u'Sulphur': u'1.3e-1',
-            u'Reid Vapor Pressure': u'1.5e-1',
-            u'Viscosity Multiplier': u'16',
-            u'Nickel': u'14.7',
-            u'Vanadium': u'33.9',
-            u'Conrandson Residuum': u'1.7e-1',
-            u'Conrandson Crude': u'1.8e-1',
-            u'Dispersability Temp (K)': u'2.8e2',
-            u'Preferred Oils': u'X',
-            u'K0Y': u'2.024e-6',
+            u'oil_name': u'Test Oil',
+            u'adios_oil_id': u'AD99999',
+            u'location': u'Sand Point',
+            u'field_name': u'Sand Point',
+            u'reference': u'Test Oil Reference',
+            u'api': u'2.68e1',
+            u'pour_point_min_k': u'2.6715e2',
+            u'pour_point_max_k': u'2.6715e2',
+            u'product_type': u'Crude',
+            u'comments': u'Test Oil Comments',
+            u'asphaltene_content': u'2e-2',
+            u'wax_content': u'7e-2',
+            u'aromatics': u'4e-2',
+            u'water_content_emulsion': u'9e-1',
+            u'emuls_constant_min': u'0e0',
+            u'emuls_constant_max': u'0e0',
+            u'flash_point_min_k': u'2.8e2',
+            u'flash_point_max_k': u'2.8e2',
+            u'oil_water_interfacial_tension_n_m': u'2.61e-2',
+            u'oil_water_interfacial_tension_ref_temp_k': u'2.7e2',
+            u'oil_seawater_interfacial_tension_n_m': u'2.38e-2',
+            u'oil_seawater_interfacial_tension_ref_temp_k': u'2.7e2',
+            u'cut_units': u'volume',
+            u'oil_class': u'Group 3',
+            u'adhesion': u'2.8e-1',
+            u'benezene': u'6e-2',
+            u'naphthenes': u'7e-2',
+            u'paraffins': u'8e-2',
+            u'polars': u'9e-2',
+            u'resins': u'1.2e-1',
+            u'saturates': u'1.1e-1',
+            u'sulphur': u'1.3e-1',
+            u'reid_vapor_pressure': u'1.5e-1',
+            u'viscosity_multiplier': u'16',
+            u'nickel': u'14.7',
+            u'vanadium': u'33.9',
+            u'conrandson_residuum': u'1.7e-1',
+            u'conrandson_crude': u'1.8e-1',
+            u'dispersability_temp_k': u'2.8e2',
+            u'preferred_oils': True,
+            u'k0y': u'2.024e-6',
             }
 
     def assert_mock_oil_object(self, oil):
@@ -112,7 +119,6 @@ class OilTestCase(BaseTestCase):
         assert oil.reference == u'Test Oil Reference'
         assert oil.api == u'2.68e1'
         assert oil.pour_point_min_k == u'2.6715e2'
-        assert oil.pour_point_min_indicator == None
         assert oil.pour_point_max_k == u'2.6715e2'
         assert oil.product_type == u'Crude'
         assert oil.comments == u'Test Oil Comments'
@@ -145,52 +151,20 @@ class OilTestCase(BaseTestCase):
         assert oil.conrandson_residuum == u'1.7e-1'
         assert oil.conrandson_crude == u'1.8e-1'
         assert oil.dispersability_temp_k == u'2.8e2'
-        assert oil.preferred_oils == True
+        assert oil.preferred_oils is True
         assert oil.k0y == u'2.024e-6'
 
     def test_init_no_args(self):
-        oil_obj = Oil()
+        oil_obj = ImportedRecord()
         assert oil_obj is not None
         assert oil_obj.id is None
-        with pytest.raises(IntegrityError):
+        with raises(IntegrityError):
             self.session.add(oil_obj)
             self.session.flush()
 
     def test_init_with_args(self):
-        oil_obj = Oil(**self.get_mock_oil_file_record())
+        oil_obj = ImportedRecord(**self.get_mock_oil_file_record())
         self.assert_mock_oil_object(oil_obj)
-        self.add_objs_and_assert_ids(oil_obj)
-
-    def test_init_with_less_than_pour_point_min(self):
-        oil_args = self.get_mock_oil_file_record()
-        oil_args[u'Pour Point Min (K)'] = u'<'
-        oil_obj = Oil(**oil_args)  # IGNORE:W0142
-        assert oil_obj.pour_point_min_k == None
-        assert oil_obj.pour_point_min_indicator == u'<'
-        self.add_objs_and_assert_ids(oil_obj)
-
-    def test_init_with_greater_than_pour_point_min(self):
-        oil_args = self.get_mock_oil_file_record()
-        oil_args[u'Pour Point Min (K)'] = u'>'
-        oil_obj = Oil(**oil_args)  # IGNORE:W0142
-        assert oil_obj.pour_point_min_k == None
-        assert oil_obj.pour_point_min_indicator == u'>'
-        self.add_objs_and_assert_ids(oil_obj)
-
-    def test_init_with_less_than_flash_point_min(self):
-        oil_args = self.get_mock_oil_file_record()
-        oil_args[u'Flash Point Min (K)'] = u'<'
-        oil_obj = Oil(**oil_args)  # IGNORE:W0142
-        assert oil_obj.flash_point_min_k == None
-        assert oil_obj.flash_point_min_indicator == u'<'
-        self.add_objs_and_assert_ids(oil_obj)
-
-    def test_init_with_greater_than_flash_point_min(self):
-        oil_args = self.get_mock_oil_file_record()
-        oil_args[u'Flash Point Min (K)'] = u'>'
-        oil_obj = Oil(**oil_args)  # IGNORE:W0142
-        assert oil_obj.flash_point_min_k == None
-        assert oil_obj.flash_point_min_indicator == u'>'
         self.add_objs_and_assert_ids(oil_obj)
 
 
@@ -203,7 +177,7 @@ class SynonymTestCase(BaseTestCase):
     '''
 
     def test_init_no_args(self):
-        with pytest.raises(TypeError):
+        with raises(TypeError):
             synonym_obj = Synonym()
             assert synonym_obj is not None
 
@@ -218,8 +192,8 @@ class DensityTestCase(BaseTestCase):
 
     @classmethod
     def get_mock_density_file_record(cls):
-        return {u'(kg/m^3)': u'9.037e2', u'Ref Temp (K)': u'2.7315e2',
-                u'Weathering': u'0e0'}
+        return {u'kg_m_3': u'9.037e2', u'ref_temp_k': u'2.7315e2',
+                u'weathering': u'0e0'}
 
     def assert_mock_density_object(self, density):
         assert density.kg_m_3 == u'9.037e2'
@@ -240,8 +214,8 @@ class KVisTestCase(BaseTestCase):
 
     @classmethod
     def get_mock_kvis_file_record(cls):
-        return {u'(m^2/s)': u'5.59e-5', u'Ref Temp (K)': u'2.7315e2',
-                u'Weathering': u'0e0'}
+        return {u'm_2_s': u'5.59e-5', u'ref_temp_k': u'2.7315e2',
+                u'weathering': u'0e0'}
 
     def assert_mock_kvis_object(self, kvis):
         assert kvis.m_2_s == u'5.59e-5'
@@ -262,8 +236,8 @@ class DVisTestCase(BaseTestCase):
 
     @classmethod
     def get_mock_dvis_file_record(cls):
-        return {u'(kg/ms)': u'4.73e-2', u'Ref Temp (K)': u'2.7315e2',
-                u'Weathering': u'0e0'}
+        return {u'kg_ms': u'4.73e-2', u'ref_temp_k': u'2.7315e2',
+                u'weathering': u'0e0'}
 
     def assert_mock_dvis_object(self, dvis):
         assert dvis.kg_ms == u'4.73e-2'
@@ -284,8 +258,8 @@ class CutTestCase(BaseTestCase):
 
     @classmethod
     def get_mock_cut_file_record(cls):
-        return {u'Vapor Temp (K)': u'3.1015e2',
-                u'Liquid Temp (K)': u'3.8815e2', u'Fraction': u'1e-2'}
+        return {u'vapor_temp_k': u'3.1015e2',
+                u'liquid_temp_k': u'3.8815e2', u'fraction': u'1e-2'}
 
     def assert_mock_cut_object(self, cut):
         assert cut.vapor_temp_k == u'3.1015e2'
@@ -307,24 +281,24 @@ class ToxicityTestCase(BaseTestCase):
     @classmethod
     def get_mock_toxicity_file_record(cls):
         return {
-            u'Species': u'Daphnia Magna',
-            u'Toxicity Type': u'EC',
-            u'24h': None,
-            u'48h': u'0.61',
-            u'96h': None,
+            u'species': u'Daphnia Magna',
+            u'tox_type': u'EC',
+            u'after_24h': None,
+            u'after_48h': u'0.61',
+            u'after_96h': None,
             }
 
     def assert_mock_toxicity_object(self, toxicity):
         assert toxicity.tox_type == u'EC'
         assert toxicity.species == u'Daphnia Magna'
-        assert toxicity.after_24_hours == None
-        assert toxicity.after_48_hours == u'0.61'
-        assert toxicity.after_96_hours == None
+        assert toxicity.after_24h is None
+        assert toxicity.after_48h == u'0.61'
+        assert toxicity.after_96h is None
 
     def test_init_no_args(self):
         toxicity_obj = Toxicity()
         assert toxicity_obj is not None
-        with pytest.raises(IntegrityError):
+        with raises(IntegrityError):
             self.session.add(toxicity_obj)
             self.session.flush()
 
@@ -335,9 +309,9 @@ class ToxicityTestCase(BaseTestCase):
 
     def test_init_with_invalid_type(self):
         toxicity_args = self.get_mock_toxicity_file_record()
-        toxicity_args[u'Toxicity Type'] = u'invalid'
+        toxicity_args[u'tox_type'] = u'invalid'
         toxicity_obj = Toxicity(**toxicity_args)  # IGNORE:W0142
-        with pytest.raises(IntegrityError):
+        with raises(IntegrityError):
             self.session.add(toxicity_obj)
             self.session.flush()
 
@@ -345,21 +319,21 @@ class ToxicityTestCase(BaseTestCase):
 class IntegrationTestCase(BaseTestCase):
 
     def test_add_synonym_to_oil(self):
-        oil_obj = Oil(**OilTestCase.get_mock_oil_file_record())
+        oil_obj = ImportedRecord(**OilTestCase.get_mock_oil_file_record())
         synonym_obj = Synonym('test oil')
 
         oil_obj.synonyms.append(synonym_obj)
 
         self.add_objs_and_assert_ids([oil_obj, synonym_obj])
         assert oil_obj.synonyms == [synonym_obj]
-        assert synonym_obj.oils == [oil_obj]
+        assert synonym_obj.imported == [oil_obj]
 
     def test_oils_that_share_a_synonym(self):
         oil_args = OilTestCase.get_mock_oil_file_record()
-        oil_obj1 = Oil(**oil_args)
-        oil_args.update({u'Oil Name': u'Test Oil 2',
-                        u'ADIOS Oil ID': u'AD99998'})
-        oil_obj2 = Oil(**oil_args)
+        oil_obj1 = ImportedRecord(**oil_args)
+        oil_args.update({u'oil_name': u'Test Oil 2',
+                        u'adios_oil_id': u'AD99998'})
+        oil_obj2 = ImportedRecord(**oil_args)
         synonym_obj = Synonym('test oil')
 
         oil_obj1.synonyms.append(synonym_obj)
@@ -368,10 +342,10 @@ class IntegrationTestCase(BaseTestCase):
         self.add_objs_and_assert_ids([oil_obj1, oil_obj2, synonym_obj])
         assert oil_obj1.synonyms == [synonym_obj]
         assert oil_obj2.synonyms == [synonym_obj]
-        assert synonym_obj.oils == [oil_obj1, oil_obj2]
+        assert synonym_obj.imported == [oil_obj1, oil_obj2]
 
     def test_add_density_to_oil(self):
-        oil_obj = Oil(**OilTestCase.get_mock_oil_file_record())
+        oil_obj = ImportedRecord(**OilTestCase.get_mock_oil_file_record())
         density_obj = \
             Density(**DensityTestCase.get_mock_density_file_record())
 
@@ -379,40 +353,40 @@ class IntegrationTestCase(BaseTestCase):
 
         self.add_objs_and_assert_ids([oil_obj, density_obj])
         assert oil_obj.densities == [density_obj]
-        assert density_obj.oil == oil_obj
+        assert density_obj.imported == oil_obj
 
     def test_add_kvis_to_oil(self):
-        oil_obj = Oil(**OilTestCase.get_mock_oil_file_record())
+        oil_obj = ImportedRecord(**OilTestCase.get_mock_oil_file_record())
         kvis_obj = KVis(**KVisTestCase.get_mock_kvis_file_record())
 
         oil_obj.kvis.append(kvis_obj)
 
         self.add_objs_and_assert_ids([oil_obj, kvis_obj])
         assert oil_obj.kvis == [kvis_obj]
-        assert kvis_obj.oil == oil_obj
+        assert kvis_obj.imported == oil_obj
 
     def test_add_dvis_to_oil(self):
-        oil_obj = Oil(**OilTestCase.get_mock_oil_file_record())
+        oil_obj = ImportedRecord(**OilTestCase.get_mock_oil_file_record())
         dvis_obj = DVis(**DVisTestCase.get_mock_dvis_file_record())
 
         oil_obj.dvis.append(dvis_obj)
 
         self.add_objs_and_assert_ids([oil_obj, dvis_obj])
         assert oil_obj.dvis == [dvis_obj]
-        assert dvis_obj.oil == oil_obj
+        assert dvis_obj.imported == oil_obj
 
     def test_add_cut_to_oil(self):
-        oil_obj = Oil(**OilTestCase.get_mock_oil_file_record())
+        oil_obj = ImportedRecord(**OilTestCase.get_mock_oil_file_record())
         cut_obj = Cut(**CutTestCase.get_mock_cut_file_record())
 
         oil_obj.cuts.append(cut_obj)
 
         self.add_objs_and_assert_ids([oil_obj, cut_obj])
         assert oil_obj.cuts == [cut_obj]
-        assert cut_obj.oil == oil_obj
+        assert cut_obj.imported == oil_obj
 
     def test_add_toxicity_to_oil(self):
-        oil_obj = Oil(**OilTestCase.get_mock_oil_file_record())
+        oil_obj = ImportedRecord(**OilTestCase.get_mock_oil_file_record())
         toxicity_obj = \
             Toxicity(**ToxicityTestCase.get_mock_toxicity_file_record())
 
@@ -420,4 +394,4 @@ class IntegrationTestCase(BaseTestCase):
 
         self.add_objs_and_assert_ids([oil_obj, toxicity_obj])
         assert oil_obj.toxicities == [toxicity_obj]
-        assert toxicity_obj.oil == oil_obj
+        assert toxicity_obj.imported == oil_obj

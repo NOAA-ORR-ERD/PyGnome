@@ -1,30 +1,42 @@
 '''
 model evaporation process
 '''
+import copy
+
 import numpy as np
 
+from gnome.persist.base_schema import ObjType
 from gnome.array_types import (mass_components,
                                density,
                                thickness,
                                mol,
                                evap_decay_constant)
-from gnome.utilities.serializable import Serializable
+from gnome.utilities.serializable import Serializable, Field
 
 from gnome.weatherers import Weatherer
-from gnome.environment import constants, water, constant_wind
+from gnome.environment import (constants,
+                               constant_wind,
+                               WindSchema,
+                               WaterSchema)
 
 
-class Evaporation(Weatherer):
+class Evaporation(Weatherer, Serializable):
+    _state = copy.deepcopy(Weatherer._state)
+    _state += [Field('water', save=True, update=True, save_reference=True),
+               Field('wind', save=True, update=True, save_reference=True)]
+    _schema = ObjType
+
     def __init__(self,
+                 water=None,
                  wind=None,
                  **kwargs):
         '''
+        :param conditions: gnome.environment.Conditions object which contains
+            things like water temperature
         :param wind: wind object for obtaining speed at specified time
         :type wind: Wind API, specifically must have get_value(time) method
         '''
-        if wind is None:
-            wind = constant_wind(0, 0)
-
+        self.water = water
         self.wind = wind
 
         super(Evaporation, self).__init__(**kwargs)
@@ -33,8 +45,12 @@ class Evaporation(Weatherer):
                                  'thickness': thickness,
                                  'mol': mol,
                                  'evap_decay_constant': evap_decay_constant})
-        self.vapor_pressure = None
-        self._decay = 0.0   # initialize to no decay
+
+    def prepare_for_model_run(self, sc):
+        'add evaporated key to mass_balance'
+        # create 'evaporated' key if it doesn't exist
+        # let's only define this the first time
+        sc.mass_balance['evaporated'] = 0.0
 
     def prepare_for_model_step(self, sc, time_step, model_time):
         '''
@@ -58,28 +74,30 @@ class Evaporation(Weatherer):
                                                         time_step,
                                                         model_time)
         K = self._mass_transport_coeff(model_time)
+        water_temp = self.water.get('temperature', 'K')
 
         for spill in sc.spills:
             f_diff = (1.0 - spill.frac_water)
             mask = sc.get_spill_mask(spill)
             mw = spill.get('substance').molecular_weight
+            vp = spill.get('substance').vapor_pressure(water_temp)
             sc['thickness'][mask] = self._compute_le_thickness()
             sc['density'][mask] = \
-                spill.get('substance').get_density(temp=water['temperature'])
+                spill.get('substance').get_density(temp=water_temp)
             sc['mol'][mask] = \
-                np.sum(sc['mass_components'][mask, :len(mw)]/mw, 1)
+                np.sum(sc['mass_components'][mask, :]/mw, 1)
             le_area = \
                 (sc['mass'][mask]/sc['density'][mask]) / sc['thickness'][mask]
             le_area = le_area.reshape(-1, 1)
 
-            d_numer = (le_area * K * spill.get('vapor_pressure') *
-                       spill.frac_coverage * f_diff)
-            d_denom = (constants['gas_constant'] * water['temperature'] *
+            d_numer = (le_area * K * vp * spill.frac_coverage * f_diff)
+            d_denom = (constants['gas_constant'] * water_temp *
                        sc['mol'][mask]).reshape(-1, 1)
             d_denom = np.repeat(d_denom, d_numer.shape[1], axis=1)
             sc['evap_decay_constant'][mask, :] = -d_numer/d_denom
-
-    #def _round_decay_const(self, decay_const, time_step):
+            if np.any(sc['evap_decay_constant'][mask, :] > 0.0):
+                raise ValueError("Error in Evaporation routine. One of the "
+                                 "exponential decay constant is positive")
 
     def _compute_le_thickness(self):
         '''
@@ -116,4 +134,37 @@ class Evaporation(Weatherer):
             self._exp_decay(sc['mass_components'],
                             sc['evap_decay_constant'],
                             time_step)
+
+        sc.mass_balance['evaporated'] = \
+            np.sum(sc['mass_components'][:, :] - mass_remain[:, :])
+
         return mass_remain
+
+    def serialize(self, json_='webapi'):
+        """
+        Since 'wind'/'water' property is saved as references in save file
+        need to add appropriate node to WindMover schema for 'webapi'
+        """
+        toserial = self.to_serialize(json_)
+        schema = self.__class__._schema()
+        if json_ == 'webapi':
+            # add wind schema
+            schema.add(WindSchema())
+            schema.add(WaterSchema())
+
+        serial = schema.serialize(toserial)
+
+        return serial
+
+    @classmethod
+    def deserialize(cls, json_):
+        """
+        append correct schema for wind object
+        """
+        schema = cls._schema()
+        if 'wind' in json_:
+            schema.add(WindSchema())
+            schema.add(WaterSchema())
+        _to_dict = schema.deserialize(json_)
+
+        return _to_dict

@@ -20,15 +20,15 @@ LOCATIONFILEVERSION 0
 
 [BEFORE]
 -------------------------------------------
---MESSAGE setfield;TO model;timeStep  .1;
-MESSAGE setfield;TO model;timeStep  .25;
+MESSAGE setfield;TO model;timeStep  .05;
+--MESSAGE setfield;TO model;timeStep  .25;
 -------------------------------------------
 
 
 [AFTER]
 -------------------------------------------
---MESSAGE setfield;TO Diffusion; coefficient 10000;uncertaintyFactor 2
-MESSAGE setfield;TO Diffusion; coefficient 100000;uncertaintyFactor 2
+MESSAGE setfield;TO Diffusion; coefficient 10000;uncertaintyFactor 2
+--MESSAGE setfield;TO Diffusion; coefficient 100000;uncertaintyFactor 2
 --
 --minkilometersperinch 100;
 --

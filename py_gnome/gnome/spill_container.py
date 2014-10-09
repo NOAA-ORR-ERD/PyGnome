@@ -52,6 +52,7 @@ class SpillContainerData(object):
 
         self._data_arrays = data_arrays
         self.current_time_stamp = None
+        self.mass_balance = {}
 
         # following internal variable is used when comparing two SpillContainer
         # objects. When testing the data arrays are equal, use this tolerance
@@ -275,6 +276,7 @@ class SpillContainer(SpillContainerData):
         # must have changed so let's get back to default _array_types
         self._reset_arrays()
         self.initialize_data_arrays()
+        self.mass_balance = {}  # reset to empty array
 
     def get_spill_mask(self, spill):
         return self['spill_num'] == self.spills.index(spill)
@@ -291,6 +293,19 @@ class SpillContainer(SpillContainerData):
             u_sc.spills += sp.uncertain_copy()
 
         return u_sc
+
+    def _oil_comp_array_len(self):
+        '''
+        look for first spill that is on and return number of oil components
+        for it. Currently, we only model a single type of oil
+        If no spills, then return 1, this is so we can still run the model
+        with no spills
+        '''
+        if len(self.spills) > 0:
+            for spill in self.spills:
+                if spill.on:
+                    return spill.get('substance').num_components
+        return 1
 
     def prepare_for_model_run(self, array_types={}):
         """
@@ -315,22 +330,29 @@ class SpillContainer(SpillContainerData):
         array_types from initializer and appends them to its own list. For
         most initializers like 
         """
+        # define 'mass_remaining' key
+        mass_remain = [s.get_mass('kg') for s in self.spills if s.amount]
+        if mass_remain:
+            self.mass_balance['mass_remaining'] = sum(mass_remain)
+
         # Question - should we purge any new arrays that were added in previous
         # call to prepare_for_model_run()?
         # No! If user made modifications to _array_types before running model,
         # let's keep those. A rewind will reset data_arrays.
         self._array_types.update(array_types)
+        self._append_initializer_array_types(array_types)
+        self.initialize_data_arrays()
 
+        # remake() spills ordered collection
+        self.spills.remake()
+
+    def _append_initializer_array_types(self, array_types):
         # for each array_types, use the key to get the associated initializer
         for key in array_types:
             for spill in self.spills:
                 if spill.is_initializer(key):
                     self._array_types.update(
                         spill.get_initializer(key).array_types)
-        self.initialize_data_arrays()
-
-        # remake() spills ordered collection
-        self.spills.remake()
 
     def initialize_data_arrays(self):
         """
@@ -340,9 +362,14 @@ class SpillContainer(SpillContainerData):
         """
         for name, atype in self._array_types.iteritems():
             # Initialize data_arrays with 0 elements
-            self._data_arrays[name] = atype.initialize_null()
+            if atype.shape is None:
+                num_comp = self._oil_comp_array_len()
+                self._data_arrays[name] = \
+                    atype.initialize_null(shape=(num_comp, ))
+            else:
+                self._data_arrays[name] = atype.initialize_null()
 
-    def _append_data_arrays(self, num_released):
+    def _append_data_arrays(self, num_released, num_oil_components):
         """
         initialize data arrays once spill has spawned particles
         Data arrays are set to their initial_values
@@ -353,8 +380,17 @@ class SpillContainer(SpillContainerData):
         """
         for name, atype in self._array_types.iteritems():
             # initialize all arrays even if 0 length
-            self._data_arrays[name] = np.r_[self._data_arrays[name],
-                                            atype.initialize(num_released)]
+            if atype.shape is None:
+                # assume array type is for weather data, provide it the shape
+                # per the number of components used to model the oil
+                # currently, we only have one type of oil, so all spills will
+                # model same number of oil_components
+                a_append = atype.initialize(num_released,
+                                            shape=(num_oil_components,),
+                                            initial_value=tuple([0] * num_oil_components))
+            else:
+                a_append = atype.initialize(num_released)
+            self._data_arrays[name] = np.r_[self._data_arrays[name], a_append]
 
     def release_elements(self, time_step, model_time):
         """
@@ -393,7 +429,9 @@ class SpillContainer(SpillContainerData):
                     self._array_types['id'].initial_value = 0
 
                 # append to data arrays
-                self._append_data_arrays(num_released)
+                # number of oil components is currently the same for all spills
+                num_oil_comp = sp.get('substance').num_components
+                self._append_data_arrays(num_released, num_oil_comp)
                 sp.set_newparticle_values(num_released, model_time, time_step,
                                           self._data_arrays)
 
@@ -412,6 +450,14 @@ class SpillContainer(SpillContainerData):
             for key in self._array_types.keys():
                 self._data_arrays[key] = np.delete(self[key], to_be_removed,
                                                    axis=0)
+
+        if 'mass_remaining' in self.mass_balance:
+            '''
+            let's not include mass_remaining if 'amount' spilled was None
+            '''
+            for key in self.mass_balance:
+                if key != 'mass_remaining':
+                    self.mass_balance['mass_remaining'] -= self.mass_balance[key]
 
     def __str__(self):
         return ('gnome.spill_container.SpillContainer\n'
@@ -474,25 +520,28 @@ class SpillContainerPairData(object):
         else:
             return (self._spill_container,)
 
-    #LE_data = property(lambda self: self._spill_container._data_arrays.keys())
     @property
     def LE_data(self):
         data = self._spill_container._data_arrays.keys()
         data.append('current_time_stamp')
+        if self._spill_container.mass_balance:
+            'only add if it is not an empty dict'
+            data.append('mass_balance')
 
         return data
 
     def LE(self, prop_name, uncertain=False):
         if uncertain:
-            if prop_name == 'current_time_stamp':
-                return self._u_spill_container.current_time_stamp
-
-            return self._u_spill_container[prop_name]
+            sc = self._u_spill_container
         else:
-            if prop_name == 'current_time_stamp':
-                return self._spill_container.current_time_stamp
+            sc = self._spill_container
 
-            return self._spill_container[prop_name]
+        if prop_name == 'current_time_stamp':
+            return sc.current_time_stamp
+        elif prop_name == 'mass_balance':
+            return sc.mass_balance
+
+        return sc[prop_name]
 
     def __eq__(self, other):
         'Compare equality of two SpillContainerPairData objects'
