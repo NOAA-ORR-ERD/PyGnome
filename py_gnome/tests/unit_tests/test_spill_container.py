@@ -965,7 +965,7 @@ def test_SpillContainer_add_array_types():
     assert 'droplet_diameter' not in sc.array_types
 
 
-def test_mass_balance_attr():
+def test_weathering_data_attr():
     sc = SpillContainer()
     ts = 900
     s1_rel = datetime.now().replace(microsecond=0)
@@ -975,7 +975,7 @@ def test_mass_balance_attr():
     sc.spills += s
     sc.prepare_for_model_run()
     sc.release_elements(ts, s1_rel)
-    assert 'mass_remaining' not in sc.mass_balance
+    assert 'mass_remaining' not in sc.weathering_data
 
     # use different element_type and initializers for both spills
     s[0].amount = 10.0
@@ -984,8 +984,8 @@ def test_mass_balance_attr():
     sc.rewind()
     sc.prepare_for_model_run()
     sc.release_elements(ts, s1_rel)
-    assert sc.mass_balance['mass_remaining'] == sum(sc['mass'])
-    assert sc.mass_balance['mass_remaining'] == s[0].amount
+    assert sc.weathering_data['mass_remaining'] == sum(sc['mass'])
+    assert sc.weathering_data['mass_remaining'] == s[0].amount
 
     s[1].amount = 5.0
     s[1].units = 'kg'
@@ -996,10 +996,10 @@ def test_mass_balance_attr():
     for ix in range(2):
         sc.release_elements(ts, s1_rel + timedelta(seconds=ts * ix))
         exp_rel += s[ix].amount
-        assert sc.mass_balance['mass_remaining'] == sum(sc['mass'])
-        assert sc.mass_balance['mass_remaining'] == exp_rel
+        assert sc.weathering_data['mass_remaining'] == sum(sc['mass'])
+        assert sc.weathering_data['mass_remaining'] == exp_rel
     sc.rewind()
-    assert sc.mass_balance == {}
+    assert sc.weathering_data == {}
 
 
 def get_eq_spills():

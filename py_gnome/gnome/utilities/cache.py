@@ -204,7 +204,7 @@ class ElementCache(object):
 
         mass_balance = self._get_mass_balance_data(data_arrays)
         sc = SpillContainerData(data_arrays)
-        sc.mass_balance = mass_balance
+        sc.weathering_data = mass_balance
         if current_time_stamp:
             sc.current_time_stamp = current_time_stamp
 
@@ -218,7 +218,7 @@ class ElementCache(object):
 
             u_mass_balance = self._get_mass_balance_data(u_data_arrays)
             u_sc = SpillContainerData(u_data_arrays, uncertain=True)
-            u_sc.mass_balance = u_mass_balance
+            u_sc.weathering_data = u_mass_balance
 
             if current_time_stamp:
                 u_sc.current_time_stamp = current_time_stamp
@@ -229,18 +229,18 @@ class ElementCache(object):
 
     def _set_mass_balance_data(self, sc, data):
         'add mass balance data to arrays'
-        if sc.mass_balance:
-            data['mass_balance'] = np.chararray((len(sc.mass_balance),),
+        if sc.weathering_data:
+            data['weathering_data'] = np.chararray((len(sc.weathering_data),),
                                                 itemsize=15)
-            for ix, key in enumerate(sc.mass_balance):
+            for ix, key in enumerate(sc.weathering_data):
                 # an array with a scalar for each spill
-                data[key] = np.asarray(sc.mass_balance[key])
-                data['mass_balance'][ix] = key
+                data[key] = np.asarray(sc.weathering_data[key])
+                data['weathering_data'][ix] = key
 
     def _get_mass_balance_data(self, data_arrays):
         mb_data = None
-        if 'mass_balance' in data_arrays:
-            mb_names = data_arrays.pop('mass_balance')
+        if 'weathering_data' in data_arrays:
+            mb_names = data_arrays.pop('weathering_data')
             mb_data = {}
             for name in mb_names:
                 mb_data[name] = data_arrays.pop(name).item()

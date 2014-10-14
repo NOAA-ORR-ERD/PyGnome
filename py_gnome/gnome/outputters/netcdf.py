@@ -513,10 +513,10 @@ class NetCDFOutput(Outputter, Serializable):
 
                     self._create_nc_var(rootgrp, var_name, dt, shape, chunksz)
 
-                # Add subgroup for mass_balance - could do it w/o subgroup
-                if sc.mass_balance:
-                    grp = rootgrp.createGroup('mass_balance')
-                    for key in sc.mass_balance:
+                # Add subgroup for weathering_data - could do it w/o subgroup
+                if sc.weathering_data:
+                    grp = rootgrp.createGroup('weathering_data')
+                    for key in sc.weathering_data:
                         self._create_nc_var(grp,
                                             key,
                                             'float',
@@ -595,10 +595,10 @@ class NetCDFOutput(Outputter, Serializable):
                         rootgrp.variables[var_name][self._start_idx:_end_idx] = \
                                     sc[var_name]
 
-                # write mass_balance data
-                if sc.mass_balance:
-                    grp = rootgrp.groups['mass_balance']
-                    for key, val in sc.mass_balance.iteritems():
+                # write weathering_data data
+                if sc.weathering_data:
+                    grp = rootgrp.groups['weathering_data']
+                    for key, val in sc.weathering_data.iteritems():
                         if key not in grp.variables:
                             self._create_nc_var(grp,
                                                 key, 'float', ('time', ),
@@ -750,15 +750,15 @@ class NetCDFOutput(Outputter, Serializable):
                 else:
                     arrays_dict[array_name] = (data.variables[array_name][_start_ix:_stop_ix])
 
-            # get mass_balance
-            mass_balance = {}
-            if 'mass_balance' in data.groups:
-                mb = data.groups['mass_balance']
+            # get weathering_data
+            weathering_data = {}
+            if 'weathering_data' in data.groups:
+                mb = data.groups['weathering_data']
                 for key, val in mb.variables.iteritems():
                     'assume SI units'
-                    mass_balance[key] = val[index]
+                    weathering_data[key] = val[index]
 
-        return (arrays_dict, mass_balance)
+        return (arrays_dict, weathering_data)
 
     def save(self, saveloc, references=None, name=None):
         '''

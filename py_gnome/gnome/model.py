@@ -424,7 +424,7 @@ class Model(Serializable):
 
         for w in self.weatherers:
             for sc in self.spills.items():
-                # weatherers will initialize 'mass_balance' key/values to 0.0
+                # weatherers will initialize 'weathering_data' key/values to 0.0
                 w.prepare_for_model_run(sc)
 
             if w.on:
@@ -864,7 +864,7 @@ class Model(Serializable):
 
             sc.current_time_stamp = data.pop('current_time_stamp').item()
             sc._data_arrays = data
-            sc.mass_balance = mass_balance
+            sc.weathering_data = mass_balance
             sc._array_types.update(array_types)
             sc._append_initializer_array_types(array_types)
 

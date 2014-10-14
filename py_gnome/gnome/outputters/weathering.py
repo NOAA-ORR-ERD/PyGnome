@@ -76,20 +76,20 @@ class WeatheringOutput(Outputter, Serializable):
         if not self._write_step:
             return None
 
-        # return a dict - json of the mass_balance data
+        # return a dict - json of the weathering_data data
         for sc in self.cache.load_timestep(step_num).items():
             # Not capturing 'uncertain' info yet
             #dict_ = {'uncertain': sc.uncertain}
             dict_ = {'time': sc.current_time_stamp.isoformat()}
 
-            for key, val in sc.mass_balance.iteritems():
+            for key, val in sc.weathering_data.iteritems():
                 dict_[key] = val
 
             dict_['step_num'] = step_num
 
             output_info = {'step_num': step_num,
                            'time_stamp': sc.current_time_stamp.isoformat(),
-                           'mass_balance': dict_}
+                           'weathering_data': dict_}
             if self.output_dir:
                 output_filename = self.output_to_file(dict_, step_num)
                 output_info.update({'output_filename': output_filename})

@@ -52,7 +52,7 @@ class SpillContainerData(object):
 
         self._data_arrays = data_arrays
         self.current_time_stamp = None
-        self.mass_balance = {}
+        self.weathering_data = {}
 
         # following internal variable is used when comparing two SpillContainer
         # objects. When testing the data arrays are equal, use this tolerance
@@ -276,7 +276,7 @@ class SpillContainer(SpillContainerData):
         # must have changed so let's get back to default _array_types
         self._reset_arrays()
         self.initialize_data_arrays()
-        self.mass_balance = {}  # reset to empty array
+        self.weathering_data = {}  # reset to empty array
 
     def get_spill_mask(self, spill):
         return self['spill_num'] == self.spills.index(spill)
@@ -336,7 +336,7 @@ class SpillContainer(SpillContainerData):
         # # define 'mass_remaining' key
         # mass_remain = [s.get_mass('kg') for s in self.spills if s.amount]
         # if mass_remain:
-        #     self.mass_balance['mass_remaining'] = sum(mass_remain)
+        #     self.weathering_data['mass_remaining'] = sum(mass_remain)
         #======================================================================
 
         # Question - should we purge any new arrays that were added in previous
@@ -448,15 +448,15 @@ class SpillContainer(SpillContainerData):
         # mass_remaining is the mass remaining of the released particles
         if write_mass_balance:
             'particles have mass'
-            self.mass_balance['mass_remaining'] = np.sum(self['mass'])
+            self.weathering_data['mass_remaining'] = np.sum(self['mass'])
         #======================================================================
-        # if 'mass_remaining' in self.mass_balance:
+        # if 'mass_remaining' in self.weathering_data:
         #     '''
         #     let's not include mass_remaining if 'amount' spilled was None
         #     '''
-        #     for key in self.mass_balance:
+        #     for key in self.weathering_data:
         #         if key != 'mass_remaining':
-        #             self.mass_balance['mass_remaining'] -= self.mass_balance[key]
+        #             self.weathering_data['mass_remaining'] -= self.weathering_data[key]
         #======================================================================
 
     def model_step_is_done(self):
@@ -540,9 +540,9 @@ class SpillContainerPairData(object):
     def LE_data(self):
         data = self._spill_container._data_arrays.keys()
         data.append('current_time_stamp')
-        if self._spill_container.mass_balance:
+        if self._spill_container.weathering_data:
             'only add if it is not an empty dict'
-            data.append('mass_balance')
+            data.append('weathering_data')
 
         return data
 
@@ -554,8 +554,8 @@ class SpillContainerPairData(object):
 
         if prop_name == 'current_time_stamp':
             return sc.current_time_stamp
-        elif prop_name == 'mass_balance':
-            return sc.mass_balance
+        elif prop_name == 'weathering_data':
+            return sc.weathering_data
 
         return sc[prop_name]
 

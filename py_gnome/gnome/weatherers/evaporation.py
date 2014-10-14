@@ -47,10 +47,10 @@ class Evaporation(Weatherer, Serializable):
                                  'evap_decay_constant': evap_decay_constant})
 
     def prepare_for_model_run(self, sc):
-        'add evaporated key to mass_balance'
+        'add evaporated key to weathering_data'
         # create 'evaporated' key if it doesn't exist
         # let's only define this the first time
-        sc.mass_balance['evaporated'] = 0.0
+        sc.weathering_data['evaporated'] = 0.0
 
     def prepare_for_model_step(self, sc, time_step, model_time):
         '''
@@ -135,7 +135,7 @@ class Evaporation(Weatherer, Serializable):
                             sc['evap_decay_constant'],
                             time_step)
 
-        sc.mass_balance['evaporated'] = \
+        sc.weathering_data['evaporated'] = \
             np.sum(sc['mass_components'][:, :] - mass_remain[:, :])
 
         return mass_remain
