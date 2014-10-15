@@ -346,6 +346,7 @@ class Oil(Base):
     pour_point_max_k = Column(Float(53))
     flash_point_min_k = Column(Float(53))
     flash_point_max_k = Column(Float(53))
+    emulsion_water_fraction_max = Column(Float(53))
 
     kvis = relationship('KVis', backref='oil',
                         cascade="all, delete, delete-orphan")
