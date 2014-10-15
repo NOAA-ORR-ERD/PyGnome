@@ -24,7 +24,7 @@ output_dir = os.path.join(here, 'geojson_output')
 
 
 @pytest.fixture(scope='module')
-def model(sample_model, request):
+def model(sample_model):
     if os.path.isdir(output_dir):
         shutil.rmtree(output_dir)
     os.mkdir(output_dir)

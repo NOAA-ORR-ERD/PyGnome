@@ -79,7 +79,7 @@ def test_amount_mass_vol(amount, units):
     assert spill.units == units
 
     if units in Spill.valid_vol_units:
-        exp_mass = (spill.get('substance').get_density('kg/m^3') *
+        exp_mass = (spill.get('substance').get_density() *
                     uc.convert('Volume', units, 'm^3', spill.amount))
     else:
         exp_mass = uc.convert('Mass', units, 'kg', spill.amount)

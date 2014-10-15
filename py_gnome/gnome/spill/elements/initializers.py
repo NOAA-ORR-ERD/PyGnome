@@ -54,7 +54,7 @@ class InitBaseClass(object):
         # the mover sets the primary data_array (ie rise_vel for above example)
         self.array_types = OrderedDict()
 
-    def initialize(self):
+    def initialize(self, num_new_particles, spill, data_arrays, substance):
         """
         all classes that derive from Base class must implement initialize
         method
@@ -167,8 +167,9 @@ class InitWindages(InitBaseClass, Serializable):
 
 class InitArraysFromOilProps(InitBaseClass, Serializable):
     '''
-       Initialize multiple data_arrays from OilProps:
-       'mass_components', 'mass', 'density'
+       Initialize 'mass_components', this requires 'mass' array be initialized.
+       If 'mass' is not initialized or all 0.0, then it computes the mass, and
+       updates the array
     '''
     _state = copy.deepcopy(InitBaseClass._state)
     _schema = base_schema.ObjType
@@ -179,9 +180,7 @@ class InitArraysFromOilProps(InitBaseClass, Serializable):
         so currently it sets it.
         """
         super(InitArraysFromOilProps, self).__init__()
-        self.array_types.update({'mass_components': array_types.mass_components,
-                                 'mass': array_types.mass,
-                                 'density': array_types.density})
+        self.array_types.update({'mass_components': array_types.mass_components})
         self.name = 'mass_components'
 
     def initialize(self, num_new_particles, spill, data_arrays, substance):
@@ -204,16 +203,18 @@ class InitArraysFromOilProps(InitBaseClass, Serializable):
             raise ValueError('mass attribute of spill is None - cannot '
                              'compute particle mass without total mass')
 
-        # le_mass = data_arrays['mass'][-num_new_particles:]
-        le_mass = spill.get_mass('kg') / spill.release.num_elements
-        data_arrays['mass'][-num_new_particles:] = le_mass
-
         mass_fractions = np.asarray(substance.mass_fraction,
                                     dtype=np.float64)
-        masses = mass_fractions * le_mass
+
+        # if 'mass' is defined, use it, otherwise, compute it and add
+        if np.all(data_arrays['mass'] == 0.0):
+            le_mass = spill.get_mass('kg') / spill.release.num_elements
+            data_arrays['mass'][-num_new_particles:] = le_mass
+
+        masses = mass_fractions * (data_arrays['mass'][-num_new_particles:]
+                                   .reshape(num_new_particles, -1))
 
         data_arrays['mass_components'][-num_new_particles:] = masses
-        data_arrays['density'][-num_new_particles:] = substance.density
 
 
 # do following two classes work for a time release spill?
@@ -424,7 +425,7 @@ class InitRiseVelFromDropletSizeFromDist(DistributionBase):
         self.distribution.set_values(drop_size)
 
         data_arrays['droplet_diameter'][-num_new_particles:] = drop_size
-        le_density[:] = substance.density
+        le_density[:] = substance.get_density()
 
         # now update rise_vel with droplet size - dummy for now
         rise_velocity_from_drop_size(

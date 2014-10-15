@@ -137,6 +137,8 @@ class ElementCache(object):
         for sc in spill_container_pair.items():
             data = copy.deepcopy(sc.data_arrays)
 
+            self._set_weathering_data(sc, data)
+
             if sc.current_time_stamp:
                 data['current_time_stamp'] = np.array(sc.current_time_stamp)
 
@@ -200,7 +202,9 @@ class ElementCache(object):
         if 'current_time_stamp' in data_arrays:
             current_time_stamp = data_arrays.pop('current_time_stamp').item()
 
+        weathering_data = self._get_weathering_data(data_arrays)
         sc = SpillContainerData(data_arrays)
+        sc.weathering_data = weathering_data
         if current_time_stamp:
             sc.current_time_stamp = current_time_stamp
 
@@ -212,7 +216,9 @@ class ElementCache(object):
                 current_time_stamp = \
                     u_data_arrays.pop('current_time_stamp').item()
 
+            u_weathering_data = self._get_weathering_data(u_data_arrays)
             u_sc = SpillContainerData(u_data_arrays, uncertain=True)
+            u_sc.weathering_data = u_weathering_data
 
             if current_time_stamp:
                 u_sc.current_time_stamp = current_time_stamp
@@ -220,6 +226,26 @@ class ElementCache(object):
         scp = SpillContainerPairData(sc, u_sc)
 
         return scp
+
+    def _set_weathering_data(self, sc, data):
+        'add mass balance data to arrays'
+        if sc.weathering_data:
+            data['weathering_data'] = np.chararray((len(sc.weathering_data),),
+                                                itemsize=15)
+            for ix, key in enumerate(sc.weathering_data):
+                # an array with a scalar for each spill
+                data[key] = np.asarray(sc.weathering_data[key])
+                data['weathering_data'][ix] = key
+
+    def _get_weathering_data(self, data_arrays):
+        mb_data = None
+        if 'weathering_data' in data_arrays:
+            mb_names = data_arrays.pop('weathering_data')
+            mb_data = {}
+            for name in mb_names:
+                mb_data[name] = data_arrays.pop(name).item()
+
+        return mb_data
 
     def rewind(self):
         'Rewinds the cache -- clearing out everything'

@@ -36,7 +36,7 @@ class Spill(serializable.Serializable):
     """
     Models a spill
     """
-    _update = ['on', 'release', 'element_type', 'amount', 'units',
+    _update = ['on', 'release', 'amount', 'units',
                'frac_coverage', 'frac_water']
 
     _create = []
@@ -44,6 +44,10 @@ class Spill(serializable.Serializable):
 
     _state = copy.deepcopy(serializable.Serializable._state)
     _state.add(save=_create, update=_update)
+    _state += serializable.Field('element_type',
+                                 save=True,
+                                 save_reference=True,
+                                 update=True)
     _schema = SpillSchema
 
     valid_vol_units = list(chain.from_iterable([item[1] for item in
@@ -80,10 +84,6 @@ class Spill(serializable.Serializable):
         :type amount: float
         :param units=None: must provide units for amount spilled
         :type units: str
-        :param frac_water=0.0: fractional water content in the emulsion
-        :type frac_water: float
-        :param frac_coverage=1.0: fraction of area covered by oil
-        :type frac_coverage: float
         :param name='Spill': a name for the spill
         :type name: str
 
@@ -100,6 +100,7 @@ class Spill(serializable.Serializable):
                 element_type = elements.floating()
             else:
                 element_type = elements.floating_mass()
+                #element_type = elements.floating_weathering()
 
         self.element_type = element_type
 
@@ -112,6 +113,10 @@ class Spill(serializable.Serializable):
             else:
                 self.units = units
 
+        '''
+        fractional water content in the emulsion
+        fraction of area covered by oil
+        '''
         self.frac_coverage = 1.0
         self.frac_water = 0.0
         self.name = name
@@ -373,6 +378,8 @@ class Spill(serializable.Serializable):
         Return the mass released during the spill.
         The default units for mass are as defined in 'mass_units' property.
         User can also specify desired output units in the function.
+        If volume is given, then use density to find mass. Density is always
+        at 15degC, consistent with API definition
         '''
         if self.amount is None:
             return self.amount
@@ -382,7 +389,7 @@ class Spill(serializable.Serializable):
             mass = uc.convert('Mass', self.units, 'kg', self.amount)
         elif self.units in self.valid_vol_units:
             vol = uc.convert('Volume', self.units, 'm^3', self.amount)
-            mass = self.element_type.substance.get_density('kg/m^3') * vol
+            mass = self.element_type.substance.get_density() * vol
 
         if units is None or units == 'kg':
             return mass
@@ -489,23 +496,30 @@ class Spill(serializable.Serializable):
             schema = cls._schema()
 
             dict_ = schema.deserialize(json_)
-            element_type = json_['element_type']['obj_type']
-            dict_['element_type'] = (eval(element_type)
-                                     .deserialize(json_['element_type']))
             rel = json_['release']['obj_type']
             dict_['release'] = eval(rel).deserialize(json_['release'])
 
-            if json_['json_'] == 'save':
+            if json_['json_'] == 'webapi':
                 '''
-                    Convert nested dict back into objects.
-                    For the 'webapi', we're not always creating a new object
-                    so do this only for 'save' files
+                save files store a reference to element_type so it will get
+                deserialized, created and added to this dict by load method
                 '''
-                for name in ['release', 'element_type']:
-                    obj_dict = dict_.pop(name)
-                    obj_type = obj_dict.pop('obj_type')
-                    obj = eval(obj_type).new_from_dict(obj_dict)
-                    dict_[name] = obj
+                element_type = json_['element_type']['obj_type']
+                dict_['element_type'] = (eval(element_type).deserialize(
+                                                        json_['element_type']))
+
+            else:
+                '''
+                Convert nested dict (release object) back into object. The
+                ElementType is now saved as a reference so it is taken care of
+                by load method
+                For the 'webapi', we're not always creating a new object
+                so do this only for 'save' files
+                '''
+                obj_dict = dict_.pop('release')
+                obj_type = obj_dict.pop('obj_type')
+                obj = eval(obj_type).new_from_dict(obj_dict)
+                dict_['release'] = obj
 
             return dict_
         else:

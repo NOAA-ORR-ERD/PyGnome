@@ -419,6 +419,12 @@ def sample_model():
             'release_end_pos': end_points}
 
 
+@pytest.fixture(scope='function')
+def sample_model_fcn():
+    'sample_model with function scope'
+    return sample_model()
+
+
 @pytest.fixture(scope='function', params=['relpath', 'abspath'])
 def clean_temp(request):
     temp = os.path.join(base_dir, 'temp')   # absolute path

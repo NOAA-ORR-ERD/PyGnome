@@ -419,11 +419,16 @@ class Model(Serializable):
 
         for mover in self.movers:
             mover.prepare_for_model_run()
-            array_types.update(mover.array_types)
+            if mover.on:
+                array_types.update(mover.array_types)
 
         for w in self.weatherers:
-            w.prepare_for_model_run()
-            array_types.update(w.array_types)
+            for sc in self.spills.items():
+                # weatherers will initialize 'weathering_data' key/values to 0.0
+                w.prepare_for_model_run(sc)
+
+            if w.on:
+                array_types.update(w.array_types)
 
         for sc in self.spills.items():
             sc.prepare_for_model_run(array_types)
@@ -550,7 +555,9 @@ class Model(Serializable):
             w.model_step_is_done()
 
         for sc in self.spills.items():
-            'removes elements with oil_status.to_be_removed'
+            '''
+            removes elements with oil_status.to_be_removed
+            '''
             sc.model_step_is_done()
 
             # age remaining particles
@@ -788,11 +795,21 @@ class Model(Serializable):
             json_ = obj.serialize('save')
             for field in obj._state:
                 if field.save_reference:
-                    'attribute is stored as a reference to environment list'
+                    '''
+                    if attribute is stored as a reference to environment list,
+                    then update the json_ here
+                    '''
                     if getattr(obj, field.name) is not None:
                         ref_obj = getattr(obj, field.name)
-                        index = self.environment.index(ref_obj)
-                        json_[field.name] = index
+                        try:
+                            index = self.environment.index(ref_obj)
+                            json_[field.name] = index
+                        except ValueError:
+                            '''
+                            reference is not part of environment list, it must
+                            be handled elsewhere
+                            '''
+                            pass
             obj_ref = refs.get_reference(obj)
             if obj_ref is None:
                 # try following name - if 'fname' already exists in references,
@@ -835,15 +852,19 @@ class Model(Serializable):
 
         for sc in self.spills.items():
             if sc.uncertain:
-                data = NetCDFOutput.read_data(u_spill_data, time=None,
-                                              which_data='all')
+                (data, mass_balance) = NetCDFOutput.read_data(u_spill_data,
+                                                              time=None,
+                                                              which_data='all')
             else:
-                data = NetCDFOutput.read_data(spill_data, time=None,
-                                              which_data='all')
+                (data, mass_balance) = NetCDFOutput.read_data(spill_data,
+                                                              time=None,
+                                                              which_data='all')
 
             sc.current_time_stamp = data.pop('current_time_stamp').item()
             sc._data_arrays = data
+            sc.weathering_data = mass_balance
             sc._array_types.update(array_types)
+            sc._append_initializer_array_types(array_types)
 
     def _empty_save_dir(self, saveloc):
         '''
