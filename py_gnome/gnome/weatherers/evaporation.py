@@ -55,9 +55,10 @@ class Evaporation(Weatherer, Serializable):
         # create 'evaporated' key if it doesn't exist
         # let's only define this the first time
         sc.weathering_data['evaporated'] = 0.0
-        sc.weathering_data['density'] = \
-            (sc.spills[0].get('substance').
-             get_density(temp=self.water.get('temperature', 'K')))
+        if sc.spills:
+            sc.weathering_data['avg_density'] = \
+                (sc.spills[0].get('substance').
+                 get_density(temp=self.water.get('temperature', 'K')))
 
     def prepare_for_model_step(self, sc, time_step, model_time):
         '''
@@ -147,7 +148,7 @@ class Evaporation(Weatherer, Serializable):
 
         sc.weathering_data['evaporated'] = \
             np.sum(sc['mass_components'][:, :] - mass_remain[:, :])
-        sc.weathering_data['density'] = sc['density'].mean()
+        sc.weathering_data['avg_density'] = sc['density'].mean()
 
         return mass_remain
 

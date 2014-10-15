@@ -137,7 +137,7 @@ class ElementCache(object):
         for sc in spill_container_pair.items():
             data = copy.deepcopy(sc.data_arrays)
 
-            self._set_mass_balance_data(sc, data)
+            self._set_weathering_data(sc, data)
 
             if sc.current_time_stamp:
                 data['current_time_stamp'] = np.array(sc.current_time_stamp)
@@ -202,9 +202,9 @@ class ElementCache(object):
         if 'current_time_stamp' in data_arrays:
             current_time_stamp = data_arrays.pop('current_time_stamp').item()
 
-        mass_balance = self._get_mass_balance_data(data_arrays)
+        weathering_data = self._get_weathering_data(data_arrays)
         sc = SpillContainerData(data_arrays)
-        sc.weathering_data = mass_balance
+        sc.weathering_data = weathering_data
         if current_time_stamp:
             sc.current_time_stamp = current_time_stamp
 
@@ -216,9 +216,9 @@ class ElementCache(object):
                 current_time_stamp = \
                     u_data_arrays.pop('current_time_stamp').item()
 
-            u_mass_balance = self._get_mass_balance_data(u_data_arrays)
+            u_weathering_data = self._get_weathering_data(u_data_arrays)
             u_sc = SpillContainerData(u_data_arrays, uncertain=True)
-            u_sc.weathering_data = u_mass_balance
+            u_sc.weathering_data = u_weathering_data
 
             if current_time_stamp:
                 u_sc.current_time_stamp = current_time_stamp
@@ -227,7 +227,7 @@ class ElementCache(object):
 
         return scp
 
-    def _set_mass_balance_data(self, sc, data):
+    def _set_weathering_data(self, sc, data):
         'add mass balance data to arrays'
         if sc.weathering_data:
             data['weathering_data'] = np.chararray((len(sc.weathering_data),),
@@ -237,7 +237,7 @@ class ElementCache(object):
                 data[key] = np.asarray(sc.weathering_data[key])
                 data['weathering_data'][ix] = key
 
-    def _get_mass_balance_data(self, data_arrays):
+    def _get_weathering_data(self, data_arrays):
         mb_data = None
         if 'weathering_data' in data_arrays:
             mb_names = data_arrays.pop('weathering_data')

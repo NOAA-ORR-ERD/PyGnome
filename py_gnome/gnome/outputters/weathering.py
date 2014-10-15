@@ -68,7 +68,7 @@ class WeatheringOutput(Outputter, Serializable):
         '''
         self.output_dir = output_dir
         self.units = {'default': 'kg',
-                      'density': 'kg/m^3'}
+                      'avg_density': 'kg/m^3'}
         super(WeatheringOutput, self).__init__(**kwargs)
 
     def write_output(self, step_num, islast_step=False):
