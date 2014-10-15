@@ -75,7 +75,7 @@ cdef class CyComponentMover(cy_mover.CyMover):
         :param pat2_speed=10: 
         :param pat2_speed_units=m/s: Speed units
         :param pat2_scale_to_value=0.1: 
-        :param scaleBy=NONE: Use Wind speed or Wind stress for scaling
+        :param scale_by=NONE: Use Wind speed or Wind stress for scaling
 
         """
         cdef WorldPoint p
