@@ -90,12 +90,10 @@ def get_oil(oil_, max_cuts=None):
     end user.
     """
     if isinstance(oil_, dict):
-        return (sample_oil_to_mock_oil(max_cuts=max_cuts,
-                                      **oil_), )
+        return sample_oil_to_mock_oil(max_cuts=max_cuts, **oil_)
 
     if oil_ in _sample_oils.keys():
-        return (sample_oil_to_mock_oil(max_cuts=max_cuts,
-                                      **_sample_oils[oil_]), )
+        return sample_oil_to_mock_oil(max_cuts=max_cuts, **_sample_oils[oil_])
 
     else:
         '''
@@ -106,13 +104,13 @@ def get_oil(oil_, max_cuts=None):
         session = _get_db_session()
 
         try:
-            return (session.query(Oil).filter(Oil.name == oil_).one(), session)
+            return session.query(Oil).filter(Oil.name == oil_).one()
         except:
             pass    # try checking imported_record_id
 
         try:
             return (session.query(Oil).filter(Oil.imported_record_id == oil_).
-                    one(), session)
+                    one())
         except NoResultFound, ex:
             # or sqlalchemy.orm.exc.MultipleResultsFound as ex:
             ex.message = ("oil with name or imported_record_id, '{0}', not "
@@ -127,5 +125,5 @@ def get_oil_props(oil_info, max_cuts=None):
     max_cuts is only used for 'fake' sample_oils. It's a way to allow testing.
     When pulling record from database, this is ignored.
     '''
-    (oil_, session) = get_oil(oil_info, max_cuts)
+    oil_ = get_oil(oil_info, max_cuts)
     return OilProps(oil_)
