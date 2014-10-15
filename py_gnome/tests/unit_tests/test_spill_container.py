@@ -975,7 +975,7 @@ def test_weathering_data_attr():
     sc.spills += s
     sc.prepare_for_model_run()
     sc.release_elements(ts, s1_rel)
-    assert 'mass_remaining' not in sc.weathering_data
+    assert 'floating' not in sc.weathering_data
 
     # use different element_type and initializers for both spills
     s[0].amount = 10.0
@@ -984,8 +984,8 @@ def test_weathering_data_attr():
     sc.rewind()
     sc.prepare_for_model_run()
     sc.release_elements(ts, s1_rel)
-    assert sc.weathering_data['mass_remaining'] == sum(sc['mass'])
-    assert sc.weathering_data['mass_remaining'] == s[0].amount
+    assert sc.weathering_data['floating'] == sum(sc['mass'])
+    assert sc.weathering_data['floating'] == s[0].amount
 
     s[1].amount = 5.0
     s[1].units = 'kg'
@@ -996,8 +996,8 @@ def test_weathering_data_attr():
     for ix in range(2):
         sc.release_elements(ts, s1_rel + timedelta(seconds=ts * ix))
         exp_rel += s[ix].amount
-        assert sc.weathering_data['mass_remaining'] == sum(sc['mass'])
-        assert sc.weathering_data['mass_remaining'] == exp_rel
+        assert sc.weathering_data['floating'] == sum(sc['mass'])
+        assert sc.weathering_data['floating'] == exp_rel
     sc.rewind()
     assert sc.weathering_data == {}
 

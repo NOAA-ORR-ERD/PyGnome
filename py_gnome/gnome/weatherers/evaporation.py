@@ -47,10 +47,17 @@ class Evaporation(Weatherer, Serializable):
                                  'evap_decay_constant': evap_decay_constant})
 
     def prepare_for_model_run(self, sc):
-        'add evaporated key to weathering_data'
+        '''
+        add evaporated key to weathering_data
+        for now also add 'density' key here
+        Assumes all spills have the same type of oil
+        '''
         # create 'evaporated' key if it doesn't exist
         # let's only define this the first time
         sc.weathering_data['evaporated'] = 0.0
+        sc.weathering_data['density'] = \
+            (sc.spills[0].get('substance').
+             get_density(temp=self.water.get('temperature', 'K')))
 
     def prepare_for_model_step(self, sc, time_step, model_time):
         '''
@@ -126,6 +133,9 @@ class Evaporation(Weatherer, Serializable):
     def weather_elements(self, sc, time_step, model_time):
         '''
         weather elements over time_step
+        - sets 'evaporation' in sc.weathering_data
+        - currently also sets 'density' in sc.weathering_data but may update
+          this as we add more weatherers and perhaps density gets set elsewhere
         '''
         if not self.active:
             return sc['mass_components']
@@ -137,6 +147,7 @@ class Evaporation(Weatherer, Serializable):
 
         sc.weathering_data['evaporated'] = \
             np.sum(sc['mass_components'][:, :] - mass_remain[:, :])
+        sc.weathering_data['density'] = sc['density'].mean()
 
         return mass_remain
 

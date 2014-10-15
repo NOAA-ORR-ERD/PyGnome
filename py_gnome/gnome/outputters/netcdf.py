@@ -41,11 +41,11 @@ var_attributes = {
     'longitude': {'long_name': 'longitude of the particle',
                   'standard_name': 'longitude',
                   'units': 'degrees_east',
-              },
+                  },
     'latitude': {'long_name': 'latitude of the particle',
                  'standard_name': 'latitude',
                  'units': 'degrees_north',
-                },
+                 },
     'depth': {'long_name': 'particle depth below sea surface',
               'standard_name': 'depth',
               'units': 'meters',
@@ -57,14 +57,16 @@ var_attributes = {
     'age': {'long_name': 'age of particle from time of release',
             'units': 'seconds',
             },
-    'status_codes': {'long_name': 'particle status code',
-                     'flag_values': " ".join(["%i" % i for i in oil_status._int]),
-                     'flag_meanings': " ".join(["%i: %s," % pair for pair in sorted(zip(oil_status._int,
-                                        oil_status._attr))])
-                    },
+    'status_codes': {
+        'long_name': 'particle status code',
+        'flag_values': " ".join(["%i" % i for i in oil_status._int]),
+        'flag_meanings': " ".join(["%i: %s," % pair for pair in
+                                   sorted(zip(oil_status._int,
+                                              oil_status._attr))])
+        },
     'spill_num': {'long_name': 'spill to which the particle belongs'},
     'id': {'long_name': 'particle ID',
-          },
+           },
     'droplet_diameter': {'long_name': 'diameter of oil droplet class',
                          'units': 'meters'
                         },
@@ -74,8 +76,8 @@ var_attributes = {
     'last_water_positions': {},
 
     # weathering data
-    'mass_remaining': {
-        'long_name': 'total mass remaining after each time step',
+    'floating': {
+        'long_name': 'total mass floating in water after each time step',
         'units': 'kilograms'},
     'evaporated': {
         'long_name': 'total mass evaporated since beginning of model run',
@@ -83,6 +85,12 @@ var_attributes = {
     'dispersed': {
         'long_name': 'total mass dispersed since beginning of model run',
         'units': 'kilograms'},
+    'density': {
+        'long_name': 'average density at end of timestep',
+        'units': 'kg/m^3'},
+    'amount_released': {
+        'long_name': 'total mass of oil released thus far',
+        'units': 'kg'},
     }
 
 

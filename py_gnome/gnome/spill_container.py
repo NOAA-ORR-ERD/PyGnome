@@ -330,15 +330,6 @@ class SpillContainer(SpillContainerData):
         array_types from initializer and appends them to its own list. For
         most initializers like 
         """
-        #======================================================================
-        # Mass remaining should only be defined for mass remaining in water,
-        # so for released elements
-        # # define 'mass_remaining' key
-        # mass_remain = [s.get_mass('kg') for s in self.spills if s.amount]
-        # if mass_remain:
-        #     self.weathering_data['mass_remaining'] = sum(mass_remain)
-        #======================================================================
-
         # Question - should we purge any new arrays that were added in previous
         # call to prepare_for_model_run()?
         # No! If user made modifications to _array_types before running model,
@@ -403,7 +394,7 @@ class SpillContainer(SpillContainerData):
         This calls release_elements on all of the contained spills, and adds
         the elements to the data arrays
         """
-        write_mass_balance = False  # toggle if at least one spill has amount
+        amount_released = 0.0
         for sp in self.spills:
             if not sp.on:
                 continue
@@ -440,24 +431,28 @@ class SpillContainer(SpillContainerData):
                 sp.set_newparticle_values(num_released, model_time, time_step,
                                           self._data_arrays)
 
-            if sp.amount is not None:
-                write_mass_balance = True
-        # update mass_remaining after release since we release particles
+                # use the initialized mass array to find total mass released
+                amount_released += np.sum(self['mass'][-num_released:])
+
+        # update intrinsic properties after release since we release particles
         # at end of the step
-        # go back to summing up 'mass' array for mass_remaining.
-        # mass_remaining is the mass remaining of the released particles
-        if write_mass_balance:
+        if amount_released > 0.0:
             'particles have mass'
-            self.weathering_data['mass_remaining'] = np.sum(self['mass'])
-        #======================================================================
-        # if 'mass_remaining' in self.weathering_data:
-        #     '''
-        #     let's not include mass_remaining if 'amount' spilled was None
-        #     '''
-        #     for key in self.weathering_data:
-        #         if key != 'mass_remaining':
-        #             self.weathering_data['mass_remaining'] -= self.weathering_data[key]
-        #======================================================================
+            self._write_weathering_data(amount_released)
+
+    def _write_weathering_data(self, amount_released):
+        '''
+        intrinsic LE properties not set by any weatherer so let SpillContainer
+        set these - will user be able to use select weatherers? Currently,
+        evaporation defines 'density' data array
+        '''
+        mask = self['status_codes'] == oil_status.in_water
+        self.weathering_data['floating'] = np.sum(self['mass'][mask])
+
+        if 'amount_released' in self.weathering_data:
+            self.weathering_data['amount_released'] += amount_released
+        else:
+            self.weathering_data['amount_released'] = amount_released
 
     def model_step_is_done(self):
         '''

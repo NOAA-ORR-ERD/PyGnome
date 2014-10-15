@@ -557,8 +557,6 @@ class Model(Serializable):
         for sc in self.spills.items():
             '''
             removes elements with oil_status.to_be_removed
-            compute 'mass_remaining' by subtracting weathered (evaporated,
-            dispersed, ..) oil
             '''
             sc.model_step_is_done()
 

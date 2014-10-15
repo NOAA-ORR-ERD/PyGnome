@@ -67,7 +67,8 @@ class WeatheringOutput(Outputter, Serializable):
         use super to pass optional \*\*kwargs to base class __init__ method
         '''
         self.output_dir = output_dir
-
+        self.units = {'default': 'kg',
+                      'density': 'kg/m^3'}
         super(WeatheringOutput, self).__init__(**kwargs)
 
     def write_output(self, step_num, islast_step=False):
@@ -97,7 +98,7 @@ class WeatheringOutput(Outputter, Serializable):
         return output_info
 
     def output_to_file(self, json_content, step_num):
-        file_format = 'mass_balance_{0:06d}.json'
+        file_format = 'weathering_data_{0:06d}.json'
         filename = os.path.join(self.output_dir,
                                 file_format.format(step_num))
 
@@ -108,7 +109,7 @@ class WeatheringOutput(Outputter, Serializable):
 
     def clean_output_files(self):
         if self.output_dir:
-            files = glob(os.path.join(self.output_dir, 'mass_balance_*.json'))
+            files = glob(os.path.join(self.output_dir, 'weathering_data_*.json'))
             for f in files:
                 os.remove(f)
 
