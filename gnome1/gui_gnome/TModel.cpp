@@ -1077,7 +1077,7 @@ OSErr TModel::SaveOSSMLEFile (Seconds fileTime, short fileNumber)
 	if (err = FSOpenBuf(0, 0, forecastLEFName, &forecastFile, 50000, FALSE))
 		{ TechError("SaveOSSMLEFile()", "FSOpenBuf()", err); return err; }
 	
-	hdelete(0, 0, uncertainLEFName);// JLM 3/3/99 always delete sop we don't get confused
+	hdelete(0, 0, uncertainLEFName);// JLM 3/3/99 always delete so we don't get confused
 	if (IsUncertain ())  // open uncertainty LE file only if model is in uncertain mode
 	{
 		if (err = hcreate(0, 0, uncertainLEFName, '\?\?\?\?', 'BINA'))
@@ -1461,7 +1461,7 @@ OSErr TModel::SaveKmlLEFile (Seconds fileTime, short fileNumber)
 	LERec theLE;
 	BFPB fileMS3,fileMS4,fileMS5,fileMS6,fileMS7;
 	char *p, path[256], fileName[256], nameStr[256], styleStr[256];
-	char fileNumStr[64] = "";
+	char fileNumStr[64] = "", outputFileName[256], shortFileName[64], copyPath[256];
 	char trajectoryTime[64], trajectoryDate[64], preparedTime[32], preparedDate[32];
 	Boolean bWriteUncertaintyLEs = this->IsUncertain();
 	float lat,lon;
@@ -1495,6 +1495,7 @@ OSErr TModel::SaveKmlLEFile (Seconds fileTime, short fileNumber)
 			}
 		}
 	}
+	// code goes here - if folder exists should we empty it or just delete individual files as we write the new ones?
 	strcat(userPath,"x.png");
 	err = MyCopyFile(0,0,source_file,0,0,userPath);
 
@@ -1517,7 +1518,13 @@ OSErr TModel::SaveKmlLEFile (Seconds fileTime, short fileNumber)
 		err=-1; return err;
 	}
 	
-	sprintf(target_file,"%s%c%s",outPath,NEWDIRDELIMITER,"moss.kml");
+	strcpy(copyPath,gKMLPath);
+	SplitPathFile(copyPath,shortFileName);
+	//sprintf(target_file,"%s%c%s",outPath,NEWDIRDELIMITER,"moss.kml");
+	sprintf(target_file,"%s%c%s%s",outPath,NEWDIRDELIMITER,shortFileName,".kml");
+	
+	sprintf(outputFileName,"%s%c%s%s",gKMLPath,DIRDELIMITER,shortFileName,".kml");
+	hdelete(0, 0, outputFileName);
 	
 	target = fopen(target_file, "w");
 	
