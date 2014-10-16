@@ -8,6 +8,7 @@ import copy
 import os
 from glob import glob
 import json
+import random
 
 import numpy as np
 from geojson import Point, Feature, FeatureCollection, dump
@@ -71,6 +72,15 @@ class WeatheringOutput(Outputter, Serializable):
                       'avg_density': 'kg/m^3'}
         super(WeatheringOutput, self).__init__(**kwargs)
 
+    def _add_fake_uncertainty(self, nom_dict):
+        high = {}
+        low = {}
+        for key, val in nom_dict.iteritems():
+            high[key] = val * random.uniform(1, 1.2)
+            low[key] = val * random.uniform(0.8, 1)
+
+        return (high, low)
+
     def write_output(self, step_num, islast_step=False):
         super(WeatheringOutput, self).write_output(step_num, islast_step)
 
@@ -80,12 +90,18 @@ class WeatheringOutput(Outputter, Serializable):
         # return a dict - json of the weathering_data data
         for sc in self.cache.load_timestep(step_num).items():
             # Not capturing 'uncertain' info yet
-            #dict_ = {'uncertain': sc.uncertain}
+            # dict_ = {'uncertain': sc.uncertain}
             dict_ = {'time': sc.current_time_stamp.isoformat()}
+            dict_['nominal'] = {}
 
             for key, val in sc.weathering_data.iteritems():
-                dict_[key] = val
+                dict_['nominal'][key] = val
 
+            # add fake uncertainty
+            (dict_['high'], dict_['low']) = \
+                self._add_fake_uncertainty(dict_['nominal'])
+
+            # add uncertainty
             dict_['step_num'] = step_num
 
             output_info = {'step_num': step_num,

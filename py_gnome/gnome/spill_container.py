@@ -393,6 +393,12 @@ class SpillContainer(SpillContainerData):
 
         This calls release_elements on all of the contained spills, and adds
         the elements to the data arrays
+
+        Always writes/updates weathering_data attribute. If no amount given
+        for spill, then 'mass' array is 0.0
+
+        todo: may need to update the 'mass' array to use a default of 1.0 but
+        will need to define it in particle units or something along those lines
         """
         amount_released = 0.0
         for sp in self.spills:
@@ -407,7 +413,7 @@ class SpillContainer(SpillContainerData):
                 # particles - just another way to set value of spill_num
                 # correctly
                 self._array_types['spill_num'].initial_value = \
-                                self.spills.index(sp)
+                    self.spills.index(sp)
 
                 if len(self['spill_num']) > 0:
                     # unique identifier for each new element released
@@ -436,9 +442,7 @@ class SpillContainer(SpillContainerData):
 
         # update intrinsic properties after release since we release particles
         # at end of the step
-        if amount_released > 0.0:
-            'particles have mass'
-            self._write_weathering_data(amount_released)
+        self._write_weathering_data(amount_released)
 
     def _write_weathering_data(self, amount_released):
         '''

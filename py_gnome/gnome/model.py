@@ -506,13 +506,15 @@ class Model(Serializable):
             return
 
         for sc in self.spills.items():
-            mass_rmain = np.zeros_like(sc['mass_components'])
+            #mass_rmain = np.zeros_like(sc['mass_components'])
             for w in self.weatherers:
                 for model_time, time_step in self._split_into_substeps():
-                    mass_rmain += w.weather_elements(sc, time_step, model_time)
+                    #mass_rmain += w.weather_elements(sc, time_step, model_time)
+                    w.weather_elements(sc, time_step, model_time)
 
-            sc['mass_components'][:] = mass_rmain
-            sc['mass'][:] = mass_rmain.sum(1)
+            #sc['mass_components'][:] = mass_rmain
+            #sc['mass'][:] = mass_rmain.sum(1)
+            sc['mass'][:] = sc['mass_components'].sum(1)
 
     def _split_into_substeps(self):
         '''

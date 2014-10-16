@@ -138,19 +138,18 @@ class Evaporation(Weatherer, Serializable):
         - currently also sets 'density' in sc.weathering_data but may update
           this as we add more weatherers and perhaps density gets set elsewhere
         '''
-        if not self.active:
-            return sc['mass_components']
-
-        mass_remain = \
-            self._exp_decay(sc['mass_components'],
-                            sc['evap_decay_constant'],
-                            time_step)
+        if self.active:
+            mass_remain = \
+                self._exp_decay(sc['mass_components'],
+                                sc['evap_decay_constant'],
+                                time_step)
+        else:
+            mass_remain = sc['mass_components'][:]
 
         sc.weathering_data['evaporated'] = \
             np.sum(sc['mass_components'][:, :] - mass_remain[:, :])
         sc.weathering_data['avg_density'] = sc['density'].mean()
-
-        return mass_remain
+        sc['mass_components'][:] = mass_remain
 
     def serialize(self, json_='webapi'):
         """
