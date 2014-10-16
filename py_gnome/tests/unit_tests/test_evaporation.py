@@ -156,3 +156,6 @@ def test_full_run_evap_not_active(sample_model_fcn):
             assert 'floating' in step['WeatheringOutput'][key]
             assert 'amount_released' in step['WeatheringOutput'][key]
             assert 'evaporated' not in step['WeatheringOutput'][key]
+
+        print ("Completed step: {0}"
+               .format(step['WeatheringOutput']['step_num']))
