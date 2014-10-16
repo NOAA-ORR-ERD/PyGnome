@@ -33,8 +33,8 @@ arrays = {'windages': windages,
 
 
 @pytest.mark.parametrize(('oil', 'temp', 'num_elems', 'on'),
-                         [#('oil_conservative', 311.15, 3, True),
-                          #('FUEL OIL NO.6', 311.15, 3, True),
+                         [('oil_conservative', 311.15, 3, True),
+                          ('FUEL OIL NO.6', 311.15, 3, True),
                           ('FUEL OIL NO.6', 311.15, 3, False)])
 def test_evaporation(oil, temp, num_elems, on):
     '''
