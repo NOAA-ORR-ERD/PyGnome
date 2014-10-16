@@ -86,12 +86,12 @@ imported_to_synonym = Table('imported_to_synonym', Base.metadata,
 
 
 # UNMAPPED many-to-many association table
-imported_to_category = Table('imported_to_category', Base.metadata,
-                             Column('imported_record_id', Integer,
-                                    ForeignKey('imported_records.id')),
-                             Column('category_id', Integer,
-                                    ForeignKey('categories.id')),
-                             )
+oil_to_category = Table('oil_to_category', Base.metadata,
+                        Column('oil_id', Integer,
+                               ForeignKey('oils.id')),
+                        Column('category_id', Integer,
+                               ForeignKey('categories.id')),
+                        )
 
 
 class ImportedRecord(Base):
@@ -151,8 +151,6 @@ class ImportedRecord(Base):
     # relationship fields
     synonyms = relationship('Synonym', secondary=imported_to_synonym,
                             backref='imported')
-    categories = relationship('Category', secondary=imported_to_category,
-                              backref='imported')
     densities = relationship('Density', backref='imported',
                              cascade="all, delete, delete-orphan")
     kvis = relationship('KVis', backref='imported',
@@ -348,10 +346,35 @@ class Oil(Base):
     flash_point_max_k = Column(Float(53))
     emulsion_water_fraction_max = Column(Float(53))
 
+    categories = relationship('Category', secondary=oil_to_category,
+                              backref='oils')
+
     kvis = relationship('KVis', backref='oil',
                         cascade="all, delete, delete-orphan")
     densities = relationship('Density', backref='oil',
                              cascade="all, delete, delete-orphan")
+    sara_fractions = relationship('SARAFraction', backref='oil',
+                                  cascade="all, delete, delete-orphan")
 
     def __repr__(self):
         return '<Oil("{0.name}")>'.format(self)
+
+
+class SARAFraction(Base):
+    __tablename__ = 'resin_fractions'
+    id = Column(Integer, primary_key=True)
+    oil_id = Column(Integer, ForeignKey('oils.id'))
+
+    sara_type = Column(Enum('Saturates', 'Aromatics', 'Resins', 'Asphaltenes'),
+                       nullable=False)
+    fraction = Column(Float(53))
+    ref_temp_k = Column(Float(53))
+
+    def __init__(self, **kwargs):
+        for a, v in kwargs.iteritems():
+            if (a in self.columns):
+                setattr(self, a, v)
+
+    def __repr__(self):
+        return ('<SARAFraction({0.sara_type}={0.fraction} at {0.ref_temp_k}K)>'
+                .format(self))
