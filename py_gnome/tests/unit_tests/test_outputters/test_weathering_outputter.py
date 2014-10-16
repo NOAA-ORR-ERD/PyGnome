@@ -80,7 +80,11 @@ def test_model_webapi_output(model):
     model.rewind()
     for step in model:
         assert 'WeatheringOutput' in step
-        assert 'evaporated' in step['WeatheringOutput']['weathering_data']
+        assert 'nominal' in step['WeatheringOutput']['weathering_data']
+        assert 'high' in step['WeatheringOutput']['weathering_data']
+        assert 'low' in step['WeatheringOutput']['weathering_data']
+        assert ('evaporated' in
+                step['WeatheringOutput']['weathering_data']['nominal'])
         print step['WeatheringOutput']['weathering_data']
         #if step['step_num'] == 0:
         #    assert 'weathering_data' not in step
