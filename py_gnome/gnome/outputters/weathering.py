@@ -91,7 +91,7 @@ class WeatheringOutput(Outputter, Serializable):
         for sc in self.cache.load_timestep(step_num).items():
             # Not capturing 'uncertain' info yet
             # dict_ = {'uncertain': sc.uncertain}
-            dict_ = {'time': sc.current_time_stamp.isoformat()}
+            dict_ = {}
             dict_['nominal'] = {}
 
             for key, val in sc.weathering_data.iteritems():
@@ -106,9 +106,11 @@ class WeatheringOutput(Outputter, Serializable):
 
             output_info = {'step_num': step_num,
                            'time_stamp': sc.current_time_stamp.isoformat(),
-                           'weathering_data': dict_}
+                           'nominal': dict_['nominal'],
+                           'low': dict_['low'],
+                           'high': dict_['high']}
             if self.output_dir:
-                output_filename = self.output_to_file(dict_, step_num)
+                output_filename = self.output_to_file(output_info, step_num)
                 output_info.update({'output_filename': output_filename})
 
         return output_info

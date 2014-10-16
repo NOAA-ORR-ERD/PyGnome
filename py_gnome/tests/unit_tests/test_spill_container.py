@@ -966,6 +966,10 @@ def test_SpillContainer_add_array_types():
 
 
 def test_weathering_data_attr():
+    '''
+    if Spill().amount = None for all spills, then no weathiner data is
+    written by SpillContainer
+    '''
     sc = SpillContainer()
     ts = 900
     s1_rel = datetime.now().replace(microsecond=0)

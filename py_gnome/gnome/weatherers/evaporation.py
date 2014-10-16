@@ -54,11 +54,16 @@ class Evaporation(Weatherer, Serializable):
         '''
         # create 'evaporated' key if it doesn't exist
         # let's only define this the first time
-        sc.weathering_data['evaporated'] = 0.0
         if sc.spills:
-            sc.weathering_data['avg_density'] = \
-                (sc.spills[0].get('substance').
-                 get_density(temp=self.water.get('temperature', 'K')))
+            try:
+                sc.weathering_data['avg_density'] = \
+                    (sc.spills[0].get('substance').
+                     get_density(temp=self.water.get('temperature', 'K')))
+            except AttributeError:
+                sc.weathering_data['avg_density'] = \
+                    (sc.spills[0].get('substance').get_density())
+        if self.active:
+            sc.weathering_data['evaporated'] = 0.0
 
     def prepare_for_model_step(self, sc, time_step, model_time):
         '''
@@ -81,6 +86,9 @@ class Evaporation(Weatherer, Serializable):
         super(Evaporation, self).prepare_for_model_step(sc,
                                                         time_step,
                                                         model_time)
+        if not self.active:
+            return
+
         K = self._mass_transport_coeff(model_time)
         water_temp = self.water.get('temperature', 'K')
 
@@ -143,13 +151,12 @@ class Evaporation(Weatherer, Serializable):
                 self._exp_decay(sc['mass_components'],
                                 sc['evap_decay_constant'],
                                 time_step)
-        else:
-            mass_remain = sc['mass_components'][:]
 
-        sc.weathering_data['evaporated'] = \
-            np.sum(sc['mass_components'][:, :] - mass_remain[:, :])
-        sc.weathering_data['avg_density'] = sc['density'].mean()
-        sc['mass_components'][:] = mass_remain
+            sc.weathering_data['evaporated'] = \
+                np.sum(sc['mass_components'][:, :] - mass_remain[:, :])
+            sc.weathering_data['avg_density'] = sc['density'].mean()
+            sc['mass_components'][:] = mass_remain
+            sc['mass'][:] = sc['mass_components'].sum(1)
 
     def serialize(self, json_='webapi'):
         """
