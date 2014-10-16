@@ -218,10 +218,6 @@ class SpillContainer(SpillContainerData):
         # run. Make self._array_types an an instance variable
         self._reset_arrays()
 
-        # if amount = None for all spills, then don't bother including
-        # weathering data as it will always be 0.0
-        self._include_weather_data = False
-
     def __setitem__(self, data_name, array):
         """
         Invoke base class __setitem__ method so the _data_array is set
@@ -281,7 +277,6 @@ class SpillContainer(SpillContainerData):
         self._reset_arrays()
         self.initialize_data_arrays()
         self.weathering_data = {}  # reset to empty array
-        self._include_weather_data = False
 
     def get_spill_mask(self, spill):
         return self['spill_num'] == self.spills.index(spill)
@@ -345,9 +340,6 @@ class SpillContainer(SpillContainerData):
 
         # remake() spills ordered collection
         self.spills.remake()
-        for s in self.spills:
-            if s.amount:
-                self._include_weather_data = True
 
     def _append_initializer_array_types(self, array_types):
         # for each array_types, use the key to get the associated initializer
@@ -450,7 +442,10 @@ class SpillContainer(SpillContainerData):
 
         # update intrinsic properties after release since we release particles
         # at end of the step
-        if self._include_weather_data:
+
+        if np.any(self['mass'] > 0.0):
+            # spill amount must be defined for at least one of the spills for
+            # this to be true
             self._write_weathering_data(amount_released)
 
     def _write_weathering_data(self, amount_released):
