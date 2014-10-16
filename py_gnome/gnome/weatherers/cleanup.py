@@ -7,12 +7,12 @@ import copy
 import numpy as np
 from gnome.weatherers import Weatherer
 from gnome.utilities.serializable import Serializable
-from gnome.persist.base_schema import ObjType
+from .core import WeathererSchema
 
 
 class Skimmer(Weatherer, Serializable):
     _state = copy.deepcopy(Weatherer._state)
-    _schema = ObjType
+    _schema = WeathererSchema
 
     def weather_elements(self, sc, time_step, model_time):
         'for now just take away 0.1% at every step'
@@ -27,6 +27,9 @@ class Skimmer(Weatherer, Serializable):
 
 
 class Burn(Weatherer, Serializable):
+    _state = copy.deepcopy(Weatherer._state)
+    _schema = WeathererSchema
+
     def weather_elements(self, sc, time_step, model_time):
         'for now just take away 0.1% at every step'
         if self.active:
@@ -40,6 +43,9 @@ class Burn(Weatherer, Serializable):
 
 
 class Disperse(Weatherer, Serializable):
+    _state = copy.deepcopy(Weatherer._state)
+    _schema = WeathererSchema
+
     def weather_elements(self, sc, time_step, model_time):
         'for now just take away 0.1% at every step'
         if self.active:

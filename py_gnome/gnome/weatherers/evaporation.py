@@ -5,7 +5,6 @@ import copy
 
 import numpy as np
 
-from gnome.persist.base_schema import ObjType
 from gnome.array_types import (mass_components,
                                density,
                                thickness,
@@ -13,6 +12,7 @@ from gnome.array_types import (mass_components,
                                evap_decay_constant)
 from gnome.utilities.serializable import Serializable, Field
 
+from .core import WeathererSchema
 from gnome.weatherers import Weatherer
 from gnome.environment import (constants,
                                constant_wind,
@@ -24,7 +24,7 @@ class Evaporation(Weatherer, Serializable):
     _state = copy.deepcopy(Weatherer._state)
     _state += [Field('water', save=True, update=True, save_reference=True),
                Field('wind', save=True, update=True, save_reference=True)]
-    _schema = ObjType
+    _schema = WeathererSchema
 
     def __init__(self,
                  water=None,
