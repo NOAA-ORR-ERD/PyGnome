@@ -8,9 +8,7 @@ from gnome.cy_gnome import cy_component_mover, cy_ossm_time
 from gnome.environment import Wind
 import cy_fixtures
 
-from gnome.utilities.remote_data import get_datafile
-
-datadir = os.path.join(os.path.dirname(__file__), r"sample_data")
+from ..conftest import testdata
 
 
 class ComponentMove(cy_fixtures.CyTestMove):
@@ -24,19 +22,16 @@ class ComponentMove(cy_fixtures.CyTestMove):
     """
 
     def __init__(self):
-        wind_file = get_datafile(os.path.join(datadir,
-                             r"delaware_bay/ConstantWind.WND"))
+        wind_file = testdata['ComponentMover']['wind']
         #self.ossm = cy_ossm_time.CyOSSMTime(wind_file,file_contains=basic_types.ts_format.magnitude_direction)
         wm = Wind(filename=wind_file)
 
-        cats1_file = get_datafile(os.path.join(datadir,
-                                r"delaware_bay/NW30ktwinds.cur"))
-        cats2_file = get_datafile(os.path.join(datadir,
-                                r"delaware_bay/SW30ktwinds.cur"))
+        cats1_file = testdata['ComponentMover']['curr']
+        cats2_file = testdata['ComponentMover']['curr2']
         self.component = cy_component_mover.CyComponentMover()
         self.component.set_ossm(wm.ossm)
         #self.component.set_ossm(self.ossm)
-        self.component.text_read(cats1_file,cats2_file)
+        self.component.text_read(cats1_file, cats2_file)
         self.component.ref_point = (-75.262319, 39.142987)
 
         super(ComponentMove, self).__init__()

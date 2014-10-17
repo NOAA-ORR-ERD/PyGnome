@@ -7,9 +7,7 @@ from gnome import basic_types
 from gnome.cy_gnome import cy_cats_mover, cy_ossm_time, cy_shio_time
 import cy_fixtures
 
-from gnome.utilities.remote_data import get_datafile
-
-datadir = os.path.join(os.path.dirname(__file__), r"sample_data")
+from ..conftest import testdata
 
 
 class CatsMove(cy_fixtures.CyTestMove):
@@ -23,23 +21,21 @@ class CatsMove(cy_fixtures.CyTestMove):
     """
 
     def __init__(self):
-        file_ = get_datafile(os.path.join(datadir,
-                             r"long_island_sound/CLISShio.txt"))
+        file_ = testdata['CatsMover']['tide']
         self.shio = cy_shio_time.CyShioTime(file_)
-        top_file = get_datafile(os.path.join(datadir,
-                                r"long_island_sound/tidesWAC.CUR"))
+        cur_file = testdata['CatsMover']['curr']
         yeardata_path = os.path.join(os.path.dirname(gnome.__file__),
-                'data/yeardata/')
+                                     'data/yeardata/')
         self.cats = cy_cats_mover.CyCatsMover()
         self.cats.set_shio(self.shio)
-        self.cats.text_read(top_file)
+        self.cats.text_read(cur_file)
         self.shio.set_shio_yeardata_path(yeardata_path)
 
         super(CatsMove, self).__init__()
         self.ref[:] = (-72.5, 41.17, 0)
         self.cats.prepare_for_model_run()
         self.cats.prepare_for_model_step(self.model_time,
-                self.time_step, 1, self.spill_size)
+                                         self.time_step, 1, self.spill_size)
 
     def certain_move(self):
         """

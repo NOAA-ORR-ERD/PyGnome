@@ -15,20 +15,9 @@ from gnome.basic_types import world_point, status_code_type, \
 
 from gnome.cy_gnome.cy_gridwind_mover import CyGridWindMover
 from gnome.utilities.time_utils import date_to_sec
-from gnome.utilities.remote_data import get_datafile
 
-here = os.path.dirname(__file__)
-winds_dir = os.path.join(here, 'sample_data', 'winds')
-cur_file = os.path.join(here, 'sample_data', 'currents')
+from ..conftest import testdata
 
-
-# def test_exceptions():
-#     """
-#     Test ValueError exception thrown if improper input arguments
-#     """
-#     with pytest.raises(ValueError):
-#         CyGridWindMover()
-#
 
 class Common:
 
@@ -155,8 +144,7 @@ class TestGridWindMover:
         time = datetime.datetime(1999, 11, 29, 21)
         self.cm.model_time = date_to_sec(time)
 
-        time_grid_file = get_datafile(os.path.join(winds_dir,
-                'test_wind.cdf'))
+        time_grid_file = testdata['GridWindMover']['wind_rect']
 
         self.gcm.text_read(time_grid_file)
         self.cm.ref[:]['long'] = 3.104588  # for simple example
@@ -195,8 +183,7 @@ class TestGridWindMover:
         time = datetime.datetime(1999, 11, 29, 20)	# before first time in file
         self.cm.model_time = date_to_sec(time)
 
-        time_grid_file = get_datafile(os.path.join(winds_dir,
-                'test_wind.cdf'))
+        time_grid_file = testdata['GridWindMover']['wind_rect']
 
         self.gcm.text_read(time_grid_file)
         self.gcm.extrapolate_in_time(True)
@@ -237,12 +224,8 @@ class TestGridWindMover:
         self.cm.model_time = date_to_sec(time)
         self.cm.uncertain = True
 
-        time_grid_file = get_datafile(os.path.join(winds_dir,
-                'WindSpeedDirSubset.nc'))
-        topology_file = get_datafile(os.path.join(winds_dir,
-                'WindSpeedDirSubsetTop.dat'))
-
-        self.gcm.text_read(time_grid_file, topology_file)
+        self.gcm.text_read(testdata['GridWindMover']['wind_curv'],
+                           testdata['GridWindMover']['top_curv'])
         self.cm.ref[:]['long'] = -122.934656  # for NWS off CA
         self.cm.ref[:]['lat'] = 38.27594
         #self.check_move()
@@ -289,12 +272,11 @@ class TestGridWindMover:
         time = datetime.datetime(2006, 3, 31, 21)
         self.cm.model_time = date_to_sec(time)
 
-        time_grid_file = get_datafile(os.path.join(winds_dir,
-                'WindSpeedDirSubset.nc'))
+        time_grid_file = testdata['GridWindMover']['wind_curv']
         self.gcm.text_read(time_grid_file)
 
-        topology_file2 = os.path.join(winds_dir,
-                'WindSpeedDirSubsetTopNew.dat')
+        topology_file2 = os.path.join(os.path.split(time_grid_file)[0],
+                                      'WindSpeedDirSubsetTopNew.dat')
         self.gcm.export_topology(topology_file2)
         self.cm.ref[:]['long'] = -122.934656  # for NWS off CA
         self.cm.ref[:]['lat'] = 38.27594
@@ -362,7 +344,7 @@ class TestGridWindMover:
 
     def test_move_gridwindtime(self):
         """
-        test move for a gridCurTime file (first time in file)
+        test move for a grid wind timeseries file (first time in file)
         """
 
         # time = datetime.datetime(2002, 11, 19, 1)
@@ -370,8 +352,7 @@ class TestGridWindMover:
         time = datetime.datetime(2002, 1, 30, 1)
         self.cm.model_time = date_to_sec(time)
 
-        time_grid_file = get_datafile(os.path.join(winds_dir,
-                'gridwind_ts.wnd'))
+        time_grid_file = testdata['GridWindMover']['grid_ts']
 
         self.gcm.text_read(time_grid_file)
         self.cm.ref[:]['long'] = -119.861328  # for gridWind test

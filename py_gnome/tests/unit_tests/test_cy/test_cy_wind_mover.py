@@ -21,6 +21,7 @@ from gnome.cy_gnome.cy_ossm_time import CyOSSMTime
 from gnome.cy_gnome.cy_wind_mover import CyWindMover
 
 import cy_fixtures
+from ..conftest import testdata
 
 datadir = os.path.join(os.path.dirname(__file__), r"sample_data")
 
@@ -320,7 +321,7 @@ class TestObjectSerialization:
         Test all the serialization and deserialization methods that are
         available to the CyOSSMTime object.
     '''
-    ossmT = CyOSSMTime(filename=os.path.join(datadir, 'WindDataFromGnome.WND'),
+    ossmT = CyOSSMTime(filename=testdata['timeseries']['wind_ts'],
                        file_contains=ts_format.magnitude_direction)
     wm = CyWindMover()
     wm.set_ossm(ossmT)

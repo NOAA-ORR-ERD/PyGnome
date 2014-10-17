@@ -5,7 +5,10 @@ designed to be run with py.test
 """
 
 import os
+import datetime
+
 import numpy as np
+import pytest
 
 from gnome.basic_types import world_point, status_code_type, \
     spill_type, oil_status
@@ -13,24 +16,8 @@ from gnome.basic_types import world_point, status_code_type, \
 from gnome.cy_gnome.cy_gridcurrent_mover import CyGridCurrentMover
 
 from gnome.utilities import time_utils
-from gnome.utilities.remote_data import get_datafile
+from ..conftest import testdata
 
-import datetime
-
-import pytest
-
-here = os.path.dirname(__file__)
-cur_dir = os.path.join(here, 'sample_data', 'currents')
-cur_series_dir = os.path.join(cur_dir, 'file_series')
-
-
-# def test_exceptions():
-#     """
-#     Test ValueError exception thrown if improper input arguments
-#     """
-#     with pytest.raises(ValueError):
-#         cy_gridcurrent_mover.CyGridCurrentMover()
-#
 
 class Common:
 
@@ -64,35 +51,6 @@ class Common:
         self.ref[:] = 1.
         self.ref[:]['z'] = 0  # on surface by default
         self.status[:] = oil_status.in_water
-
-
-def get_datafiles_in_flist(file_):
-    """
-    read flist1.txt, flist2.txt, gridcur_ts_hdr2.cur and download the netcdf datafiles from server if required
-    
-    helper function that reads each line of the file_ and gets an files that are defined by 
-    [FILE] or [File] from the server
-    
-    NOTE: reading the text file and getting the names of the datafiles on the fly works fine. 
-          It maybe simpler to define a dict containing all files required by these tests including
-          the files listed in flist1.txt, flist2.txt ..currently this is the only place where this 
-          needs to be done
-    """
-
-    flist = get_datafile(file_)
-    with open(flist, 'r') as fh:
-        while True:
-            line = fh.readline()
-            if len(line) == 0:
-                break
-            elif line[:6].lower() == '[file]':
-
-                # read filename and download it from server if it required
-
-                get_datafile(os.path.join(os.path.split(flist)[0],
-                             line[6:].strip()))
-
-    return flist
 
 
 @pytest.mark.slow
@@ -182,7 +140,7 @@ class TestGridCurrentMover:
         time = datetime.datetime(1999, 11, 29, 21)
         self.cm.model_time = time_utils.date_to_sec(time)
 
-        time_grid_file = get_datafile(os.path.join(cur_dir, 'test.cdf'))
+        time_grid_file = testdata['GridCurrentMover']['curr_reg']
 
         self.gcm.text_read(time_grid_file)
         self.cm.ref[:]['long'] = 3.104588  # for simple example
@@ -226,10 +184,9 @@ class TestGridCurrentMover:
         time = datetime.datetime(2008, 1, 29, 17)
         self.cm.model_time = time_utils.date_to_sec(time)
 
-        time_grid_file = get_datafile(os.path.join(cur_dir, 'ny_cg.nc'))
-        topology_file = get_datafile(os.path.join(cur_dir,
-                r'NYTopology.dat'))
-
+        time_grid_file = testdata['GridCurrentMover']['curr_curv']
+        topology_file = testdata['GridCurrentMover']['top_curv']
+        
         self.gcm.text_read(time_grid_file, topology_file)
 
         # self.gcm.export_topology(topology_file2)
@@ -269,10 +226,11 @@ class TestGridCurrentMover:
         time = datetime.datetime(2008, 1, 29, 17)
         self.cm.model_time = time_utils.date_to_sec(time)
 
-        time_grid_file = get_datafile(os.path.join(cur_dir, 'ny_cg.nc'))
+        time_grid_file = testdata['GridCurrentMover']['curr_curv']
         self.gcm.text_read(time_grid_file, topology_file=None)
 
-        topology_file2 = os.path.join(cur_dir, 'NYTopologyNew.dat')
+        topology_file2 = os.path.join(os.path.split(time_grid_file)[0],
+                                      'NYTopologyNew.dat')
         self.gcm.export_topology(topology_file2)
         self.cm.ref[:]['long'] = -74.03988  # for NY
         self.cm.ref[:]['lat'] = 40.536092
@@ -313,11 +271,8 @@ class TestGridCurrentMover:
         time = datetime.datetime(2009, 8, 9, 0)  # second file
         self.cm.model_time = time_utils.date_to_sec(time)
 
-        time_grid_file = \
-            get_datafiles_in_flist(os.path.join(cur_series_dir,
-                                   'flist2.txt'))
-        topology_file = get_datafile(os.path.join(cur_series_dir,
-                'HiROMSTopology.dat'))
+        time_grid_file = testdata['GridCurrentMover']['series_curv']
+        topology_file = testdata['GridCurrentMover']['series_top']
 
         self.gcm.text_read(time_grid_file, topology_file)
         self.cm.ref[:]['long'] = -157.795728  # for HiROMS
@@ -356,10 +311,8 @@ class TestGridCurrentMover:
         self.cm.model_time = time_utils.date_to_sec(time)
         self.cm.uncertain = True
 
-        time_grid_file = get_datafile(os.path.join(cur_dir, 'ChesBay.nc'
-                ))
-        topology_file = get_datafile(os.path.join(cur_dir, 'ChesBay.dat'
-                ))
+        time_grid_file = testdata['GridCurrentMover']['curr_tri']
+        topology_file = testdata['GridCurrentMover']['top_tri']
 
         self.gcm.text_read(time_grid_file, topology_file)
         self.cm.ref[:]['long'] = -76.149368  # for ChesBay
@@ -402,8 +355,7 @@ class TestGridCurrentMover:
         time = datetime.datetime(2000, 2, 14, 10)
         self.cm.model_time = time_utils.date_to_sec(time)
 
-        time_grid_file = get_datafile(os.path.join(cur_dir,
-                'ptCurNoMap.cur'))
+        time_grid_file = testdata['GridCurrentMover']['ptCur']
 
         self.gcm.text_read(time_grid_file)
         self.cm.ref[:]['long'] = -124.686928  # for ptCur test
@@ -441,8 +393,7 @@ class TestGridCurrentMover:
         time = datetime.datetime(2000, 2, 14, 8)	# time before first time in file
         self.cm.model_time = time_utils.date_to_sec(time)
 
-        time_grid_file = get_datafile(os.path.join(cur_dir,
-                'ptCurNoMap.cur'))
+        time_grid_file = testdata['GridCurrentMover']['ptCur']
 
         self.gcm.text_read(time_grid_file)
         self.gcm.extrapolate_in_time(True)	# result of move should be same as first step
@@ -475,14 +426,14 @@ class TestGridCurrentMover:
 
     def test_move_gridcurtime(self):
         """
-        test move for a gridCurTime file (first time in file)
+        test move for a gridCurTime, grid current time series, file (first time
+        in file)
         """
 
         time = datetime.datetime(2002, 1, 30, 1)
         self.cm.model_time = time_utils.date_to_sec(time)
 
-        time_grid_file = get_datafile(os.path.join(cur_dir,
-                'gridcur_ts.cur'))
+        time_grid_file = testdata['GridCurrentMover']['grid_ts']
 
         self.gcm.text_read(time_grid_file)
         self.cm.ref[:]['long'] = -119.933264  # for gridCur test
@@ -526,8 +477,7 @@ class TestGridCurrentMover:
         time = datetime.datetime(2002, 1, 30, 1)
         self.cm.model_time = time_utils.date_to_sec(time)
 
-        time_grid_file = get_datafiles_in_flist(os.path.join(cur_dir,
-                'gridcur_ts_hdr2.cur'))
+        time_grid_file = testdata['GridCurrentMover']['series_gridCur']
         topology_file = r""
 
         self.gcm.text_read(time_grid_file, topology_file)
