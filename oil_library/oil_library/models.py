@@ -10,7 +10,7 @@ from sqlalchemy import (Table,
                         ForeignKey)
 
 from sqlalchemy.ext.declarative import declarative_base as real_declarative_base
-from sqlalchemy.orm.collections import attribute_mapped_collection
+from sqlalchemy.orm.collections import InstrumentedList
 from sqlalchemy.orm.relationships import (RelationshipProperty,
                                           ONETOMANY, MANYTOONE, MANYTOMANY)
 from sqlalchemy.orm import (scoped_session,
@@ -53,26 +53,27 @@ class Base(object):
     def columns(self):
         return [c.name for c in self.__table__.columns]
 
-    def columnitems(self, recurse=True):
+    def columnitems(self, recurse=2):
         ret = dict((c, getattr(self, c)) for c in self.columns)
-        if recurse:
-            # Note: Right now our schema has a maximum of one level of
-            #       indirection between objects, so short-circuiting the
-            #       recursion in all cases is just fine.
-            #       If we were to design a deeper schema, this would need
-            #       to change.
+        if recurse > 0:
+            recurse = recurse - 1
             for r in self.one_to_many_relationships:
-                ret[r] = [a.tojson(recurse=False) for a in getattr(self, r)]
+                if isinstance(getattr(self, r), InstrumentedList):
+                    ret[r] = [a.tojson(recurse=recurse)
+                              for a in getattr(self, r)]
+                elif getattr(self, r) is not None:
+                    ret[r] = getattr(self, r).tojson(recurse=recurse)
             for r in self.many_to_many_relationships:
-                ret[r] = [a.tojson(recurse=False) for a in getattr(self, r)]
+                ret[r] = [a.tojson(recurse=recurse) for a in getattr(self, r)]
             for r in self.many_to_one_relationships:
-                ret[r] = getattr(self, r).tojson(recurse=False)
+                if getattr(self, r) is not None:
+                    ret[r] = getattr(self, r).tojson(recurse=recurse)
         return ret
 
     def __repr__(self):
         return '{}({})'.format(self.__class__.__name__, self.columnitems)
 
-    def tojson(self, recurse=True):
+    def tojson(self, recurse=2):
         return self.columnitems(recurse)
 
 
