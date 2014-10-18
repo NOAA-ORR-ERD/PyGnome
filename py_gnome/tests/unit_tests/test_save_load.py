@@ -152,8 +152,8 @@ l_movers2 = (movers.CurrentCycleMover(testdata['CurrentCycleMover']['curr'],
                topology_file=testdata['CurrentCycleMover']['top']),
              movers.GridCurrentMover(testdata['GridCurrentMover']['curr_tri'],
                                      testdata['GridCurrentMover']['top_tri']),
-             movers.GridWindMover(testdata['GridWindMover']['wind'],
-                                  testdata['GridWindMover']['top']),
+             movers.GridWindMover(testdata['GridWindMover']['wind_curv'],
+                                  testdata['GridWindMover']['top_curv']),
              )
 
 
