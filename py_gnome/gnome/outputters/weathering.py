@@ -8,6 +8,7 @@ import copy
 import os
 from glob import glob
 import json
+import random
 
 import numpy as np
 from geojson import Point, Feature, FeatureCollection, dump
@@ -67,8 +68,18 @@ class WeatheringOutput(Outputter, Serializable):
         use super to pass optional \*\*kwargs to base class __init__ method
         '''
         self.output_dir = output_dir
-
+        self.units = {'default': 'kg',
+                      'avg_density': 'kg/m^3'}
         super(WeatheringOutput, self).__init__(**kwargs)
+
+    def _add_fake_uncertainty(self, nom_dict):
+        high = {}
+        low = {}
+        for key, val in nom_dict.iteritems():
+            high[key] = val * random.uniform(1, 1.2)
+            low[key] = val * random.uniform(0.8, 1)
+
+        return (high, low)
 
     def write_output(self, step_num, islast_step=False):
         super(WeatheringOutput, self).write_output(step_num, islast_step)
@@ -76,28 +87,36 @@ class WeatheringOutput(Outputter, Serializable):
         if not self._write_step:
             return None
 
-        # return a dict - json of the mass_balance data
+        # return a dict - json of the weathering_data data
         for sc in self.cache.load_timestep(step_num).items():
             # Not capturing 'uncertain' info yet
-            #dict_ = {'uncertain': sc.uncertain}
-            dict_ = {'time': sc.current_time_stamp.isoformat()}
+            # dict_ = {'uncertain': sc.uncertain}
+            dict_ = {}
+            dict_['nominal'] = {}
 
-            for key, val in sc.mass_balance.iteritems():
-                dict_[key] = val
+            for key, val in sc.weathering_data.iteritems():
+                dict_['nominal'][key] = val
 
+            # add fake uncertainty
+            (dict_['high'], dict_['low']) = \
+                self._add_fake_uncertainty(dict_['nominal'])
+
+            # add uncertainty
             dict_['step_num'] = step_num
 
             output_info = {'step_num': step_num,
                            'time_stamp': sc.current_time_stamp.isoformat(),
-                           'mass_balance': dict_}
+                           'nominal': dict_['nominal'],
+                           'low': dict_['low'],
+                           'high': dict_['high']}
             if self.output_dir:
-                output_filename = self.output_to_file(dict_, step_num)
+                output_filename = self.output_to_file(output_info, step_num)
                 output_info.update({'output_filename': output_filename})
 
         return output_info
 
     def output_to_file(self, json_content, step_num):
-        file_format = 'mass_balance_{0:06d}.json'
+        file_format = 'weathering_data_{0:06d}.json'
         filename = os.path.join(self.output_dir,
                                 file_format.format(step_num))
 
@@ -108,7 +127,7 @@ class WeatheringOutput(Outputter, Serializable):
 
     def clean_output_files(self):
         if self.output_dir:
-            files = glob(os.path.join(self.output_dir, 'mass_balance_*.json'))
+            files = glob(os.path.join(self.output_dir, 'weathering_data_*.json'))
             for f in files:
                 os.remove(f)
 

@@ -11,18 +11,12 @@ import pytest
 from gnome.movers import CurrentCycleMover
 from gnome.environment import Tide
 from gnome.utilities import time_utils
-from gnome.utilities.remote_data import get_datafile
-from gnome.persist import load
 
-from conftest import sample_sc_release
+from ..conftest import sample_sc_release, testdata
 
-here = os.path.dirname(__file__)
-cur_dir = os.path.join(here, 'sample_data', 'currents')
-tide_dir = os.path.join(here, 'sample_data', 'tides')
-
-curr_file = get_datafile(os.path.join(cur_dir, 'PQBayCur.nc4'))
-topology_file = get_datafile(os.path.join(cur_dir, 'PassamaquoddyTOP.dat'))
-td = Tide(filename=get_datafile(os.path.join(tide_dir, 'EstesHead.txt')))
+curr_file = testdata['CurrentCycleMover']['curr']
+topology_file = testdata['CurrentCycleMover']['top']
+td = Tide(filename=testdata['CurrentCycleMover']['tide'])
 
 
 def test_exceptions():
@@ -30,13 +24,12 @@ def test_exceptions():
     Test correct exceptions are raised
     """
 
-    bad_file = os.path.join(cur_dir, 'ChesBay.CUR')
     with pytest.raises(ValueError):
-        CurrentCycleMover(bad_file)
+        'file does not exis'
+        CurrentCycleMover(os.path.join('./', 'ChesBay.CUR'))
 
-    bad_file = get_datafile(os.path.join(cur_dir, 'BigCombinedwMapBad.cur'))
     with pytest.raises(OSError):
-        CurrentCycleMover(bad_file)
+        CurrentCycleMover(testdata['CurrentCycleMover']['curr_bad_file'])
 
     with pytest.raises(TypeError):
         CurrentCycleMover(curr_file, topology_file=10)

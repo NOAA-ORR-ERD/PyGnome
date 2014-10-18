@@ -348,7 +348,7 @@ def test_read_data_exception(model):
         NetCDFOutput.read_data(o_put.netcdf_filename)
 
 
-#@pytest.mark.slow
+@pytest.mark.slow
 @pytest.mark.parametrize(("output_ts_factor", "use_time"),
                          [(1, True), (1, False),
                           (2.4, True), (2.4, False),
@@ -386,10 +386,10 @@ def test_read_standard_arrays(model, output_ts_factor, use_time):
             scp = model._cache.load_timestep(step)
             curr_time = scp.LE('current_time_stamp', uncertain)
             if use_time:
-                (nc_data, mass_balance) = NetCDFOutput.read_data(file_,
+                (nc_data, weathering_data) = NetCDFOutput.read_data(file_,
                                                                  curr_time)
             else:
-                (nc_data, mass_balance) = NetCDFOutput.read_data(file_,
+                (nc_data, weathering_data) = NetCDFOutput.read_data(file_,
                                                                  index=idx)
 
             # check time
@@ -419,7 +419,7 @@ def test_read_standard_arrays(model, output_ts_factor, use_time):
                 else:
                     sc = scp.items()[0]
 
-                assert sc.mass_balance == mass_balance
+                assert sc.weathering_data == weathering_data
             else:
                 raise Exception("Assertions not tested since no data found in"
                     " NetCDF file for timestamp: {0}".format(curr_time))
@@ -434,7 +434,7 @@ def test_read_standard_arrays(model, output_ts_factor, use_time):
         uncertain = True
 
 
-#@pytest.mark.slow
+@pytest.mark.slow
 def test_read_all_arrays(model):
     """
     tests the data returned by read_data is correct when `which_data` flag is
@@ -472,7 +472,7 @@ def test_read_all_arrays(model):
                     elif key == 'positions':
                         assert np.allclose(scp.LE('positions', uncertain),
                                            nc_data['positions'], rtol, atol)
-                    elif key == 'mass_balance':
+                    elif key == 'weathering_data':
                         assert scp.LE(key, uncertain) == mb
                     else:
                         #if key not in ['last_water_positions',
@@ -540,7 +540,7 @@ def test_write_output_post_run(model, output_ts_factor):
             # does infact give the next consecutive index
             (data_by_index, mb) = NetCDFOutput.read_data(file_, index=ix)
             assert curr_time == data_by_index['current_time_stamp'].item()
-            assert scp.LE('mass_balance', uncertain) == mb
+            assert scp.LE('weathering_data', uncertain) == mb
 
             ix += 1
 
@@ -552,12 +552,12 @@ def test_write_output_post_run(model, output_ts_factor):
             curr_time = scp.LE('current_time_stamp', uncertain)
             (nc_data, mb) = NetCDFOutput.read_data(file_, curr_time)
             assert curr_time == nc_data['current_time_stamp'].item()
-            assert scp.LE('mass_balance', uncertain) == mb
+            assert scp.LE('weathering_data', uncertain) == mb
 
             # again, check that last time step
             (data_by_index, mb) = NetCDFOutput.read_data(file_, index=ix)
             assert curr_time == data_by_index['current_time_stamp'].item()
-            assert scp.LE('mass_balance', uncertain) == mb
+            assert scp.LE('weathering_data', uncertain) == mb
             with pytest.raises(IndexError):
                 # check that no more data exists in NetCDF
                 NetCDFOutput.read_data(file_, index=ix+1)

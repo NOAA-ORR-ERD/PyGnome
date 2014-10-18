@@ -11,16 +11,12 @@ import pytest
 from gnome.movers import CatsMover
 from gnome.environment import Tide
 from gnome.utilities import time_utils
-from gnome.utilities.remote_data import get_datafile
-from gnome.persist import load
 
-from conftest import sample_sc_release
+from ..conftest import sample_sc_release, testdata
 
-here = os.path.dirname(__file__)
-lis_dir = os.path.join(here, 'sample_data', 'long_island_sound')
 
-curr_file = get_datafile(os.path.join(lis_dir, 'tidesWAC.CUR'))
-td = Tide(filename=get_datafile(os.path.join(lis_dir, 'CLISShio.txt')))
+curr_file = testdata['CatsMover']['curr']
+td = Tide(filename=testdata['CatsMover']['tide'])
 
 
 def test_exceptions():
@@ -28,7 +24,7 @@ def test_exceptions():
     Test correct exceptions are raised
     """
 
-    bad_file = os.path.join(lis_dir, 'tidesWAC.CURX')
+    bad_file = os.path.join('./', 'tidesWAC.CURX')
     with pytest.raises(ValueError):
         CatsMover(bad_file)
 

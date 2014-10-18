@@ -4,53 +4,45 @@ import numpy as np
 
 import gnome
 from gnome import basic_types
-from gnome.cy_gnome import cy_component_mover, cy_ossm_time
-from gnome.environment import Wind
+from gnome.cy_gnome import cy_cats_mover, cy_ossm_time, cy_shio_time
 import cy_fixtures
 
-from gnome.utilities.remote_data import get_datafile
-
-datadir = os.path.join(os.path.dirname(__file__), r"sample_data")
+from ..conftest import testdata
 
 
-class ComponentMove(cy_fixtures.CyTestMove):
+class CatsMove(cy_fixtures.CyTestMove):
 
     """
     Contains one test method to do one forecast move and one uncertainty move
     and verify that they are different
 
-    Primarily just checks that CyComponentMover can be initialized correctly
+    Primarily just checks that CyCatsMover can be initialized correctly
     and all methods are invoked
     """
 
     def __init__(self):
-        wind_file = get_datafile(os.path.join(datadir,
-                             r"delaware_bay/ConstantWind.WND"))
-        #self.ossm = cy_ossm_time.CyOSSMTime(wind_file,file_contains=basic_types.ts_format.magnitude_direction)
-        wm = Wind(filename=wind_file)
+        file_ = testdata['CatsMover']['tide']
+        self.shio = cy_shio_time.CyShioTime(file_)
+        cur_file = testdata['CatsMover']['curr']
+        yeardata_path = os.path.join(os.path.dirname(gnome.__file__),
+                                     'data/yeardata/')
+        self.cats = cy_cats_mover.CyCatsMover()
+        self.cats.set_shio(self.shio)
+        self.cats.text_read(cur_file)
+        self.shio.set_shio_yeardata_path(yeardata_path)
 
-        cats1_file = get_datafile(os.path.join(datadir,
-                                r"delaware_bay/NW30ktwinds.cur"))
-        cats2_file = get_datafile(os.path.join(datadir,
-                                r"delaware_bay/SW30ktwinds.cur"))
-        self.component = cy_component_mover.CyComponentMover()
-        self.component.set_ossm(wm.ossm)
-        #self.component.set_ossm(self.ossm)
-        self.component.text_read(cats1_file,cats2_file)
-        self.component.ref_point = (-75.262319, 39.142987)
-
-        super(ComponentMove, self).__init__()
-        self.ref[:] = (-75.262319, 39.142987, 0)
-        self.component.prepare_for_model_run()
-        self.component.prepare_for_model_step(self.model_time,
-                self.time_step, 1, self.spill_size)
+        super(CatsMove, self).__init__()
+        self.ref[:] = (-72.5, 41.17, 0)
+        self.cats.prepare_for_model_run()
+        self.cats.prepare_for_model_step(self.model_time,
+                                         self.time_step, 1, self.spill_size)
 
     def certain_move(self):
         """
         get_move for uncertain LEs
         """
 
-        self.component.get_move(
+        self.cats.get_move(
             self.model_time,
             self.time_step,
             self.ref,
@@ -66,7 +58,7 @@ class ComponentMove(cy_fixtures.CyTestMove):
         get_move for forecast LEs
         """
 
-        self.component.get_move(
+        self.cats.get_move(
             self.model_time,
             self.time_step,
             self.ref,
@@ -86,10 +78,10 @@ def test_move():
     print
     print '--------------'
     print 'test certain_move and uncertain_move are different'
-    tgt = ComponentMove()
+    tgt = CatsMove()
     tgt.certain_move()
     tgt.uncertain_move()
-    tgt.component.model_step_is_done()
+    tgt.cats.model_step_is_done()
 
     assert np.all(tgt.delta['lat'] != tgt.u_delta['lat'])
     assert np.all(tgt.delta['long'] != tgt.u_delta['long'])
@@ -98,13 +90,13 @@ def test_move():
 
 def test_certain_move():
     """
-    test get_move for forecast LEs
+    test get_move for forecase LEs
     """
 
     print
     print '--------------'
     print 'test_certain_move'
-    tgt = ComponentMove()
+    tgt = CatsMove()
     tgt.certain_move()
 
     assert np.all(tgt.delta['lat'] != 0)
@@ -123,7 +115,7 @@ def test_uncertain_move():
     print
     print '--------------'
     print 'test_uncertain_move'
-    tgt = ComponentMove()
+    tgt = CatsMove()
     tgt.uncertain_move()
 
     assert np.all(tgt.u_delta['lat'] != 0)
@@ -131,7 +123,7 @@ def test_uncertain_move():
     assert np.all(tgt.u_delta['z'] == 0)
 
 
-c_component = cy_component_mover.CyComponentMover()
+c_cats = cy_cats_mover.CyCatsMover()
 
 
 def test_default_props():
@@ -139,28 +131,28 @@ def test_default_props():
     test default properties
     """
 
-    assert c_component.pat1_speed == 10
-    assert c_component.pat1_angle == 0
+    assert c_cats.scale_type == 0
+    assert c_cats.scale_value == 1
 
 
-def test_pat1_angle():
+def test_scale_type():
     """
     test setting / getting properties
     """
 
-    c_component.pat1_angle = 10
-    print c_component.pat1_angle
-    assert c_component.pat1_angle == 10
+    c_cats.scale_type = 1
+    print c_cats.scale_type
+    assert c_cats.scale_type == 1
 
 
-def test_pat1_speed():
+def test_scale_value():
     """
     test setting / getting properties
     """
 
-    c_component.pat1_speed = 5
-    print c_component.pat1_speed
-    assert c_component.pat1_speed == 5
+    c_cats.scale_value = 0
+    print c_cats.scale_value
+    assert c_cats.scale_value == 0
 
 
 def test_ref_point():
@@ -168,11 +160,11 @@ def test_ref_point():
     test setting / getting properties
     """
 
-    tgt = (1, 2)
-    c_component.ref_point = tgt  # can be a list or a tuple
-    assert c_component.ref_point == tuple(tgt)
-    c_component.ref_point = list(tgt)  # can be a list or a tuple
-    assert c_component.ref_point == tuple(tgt)
+    tgt = (1, 2, 3)
+    c_cats.ref_point = tgt  # can be a list or a tuple
+    assert c_cats.ref_point == tuple(tgt)
+    c_cats.ref_point = list(tgt)  # can be a list or a tuple
+    assert c_cats.ref_point == tuple(tgt)
 
 
 if __name__ == '__main__':

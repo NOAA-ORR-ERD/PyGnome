@@ -6,14 +6,12 @@ designed to be run with py.test
 
 import datetime
 import numpy as np
-import os
 
 from gnome.movers import RandomMover
 
 from gnome.utilities.time_utils import sec_to_date, date_to_sec
 from gnome.utilities.projections import FlatEarthProjection
-from gnome.persist import load
-from conftest import sample_sc_release
+from ..conftest import sample_sc_release
 
 import pytest
 
@@ -22,10 +20,6 @@ def test_exceptions():
     """
     Test ValueError exception thrown if improper input arguments
     """
-
-    #with pytest.raises(ValueError):
-        #RandomMover(diffusion_coef=0)
-
     with pytest.raises(ValueError):
         RandomMover(diffusion_coef=-1000)
 
@@ -89,7 +83,7 @@ class TestRandomMover:
 
         pSpill = sample_sc_release(self.num_le, self.start_pos)
         self.mover.prepare_for_model_step(pSpill, self.time_step,
-                self.model_time)
+                                          self.model_time)
         assert True
 
 
@@ -133,8 +127,7 @@ def test_variance1(start_loc, time_step):
     # compute the variances:
     # convert to meters
 
-    pos = FlatEarthProjection.lonlat_to_meters(sc['positions'],
-            start_loc)
+    pos = FlatEarthProjection.lonlat_to_meters(sc['positions'], start_loc)
     var = np.var(pos, axis=0)
 
     # D converted to meters^s/s

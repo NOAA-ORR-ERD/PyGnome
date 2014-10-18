@@ -41,11 +41,11 @@ var_attributes = {
     'longitude': {'long_name': 'longitude of the particle',
                   'standard_name': 'longitude',
                   'units': 'degrees_east',
-              },
+                  },
     'latitude': {'long_name': 'latitude of the particle',
                  'standard_name': 'latitude',
                  'units': 'degrees_north',
-                },
+                 },
     'depth': {'long_name': 'particle depth below sea surface',
               'standard_name': 'depth',
               'units': 'meters',
@@ -57,14 +57,16 @@ var_attributes = {
     'age': {'long_name': 'age of particle from time of release',
             'units': 'seconds',
             },
-    'status_codes': {'long_name': 'particle status code',
-                     'flag_values': " ".join(["%i" % i for i in oil_status._int]),
-                     'flag_meanings': " ".join(["%i: %s," % pair for pair in sorted(zip(oil_status._int,
-                                        oil_status._attr))])
-                    },
+    'status_codes': {
+        'long_name': 'particle status code',
+        'flag_values': " ".join(["%i" % i for i in oil_status._int]),
+        'flag_meanings': " ".join(["%i: %s," % pair for pair in
+                                   sorted(zip(oil_status._int,
+                                              oil_status._attr))])
+        },
     'spill_num': {'long_name': 'spill to which the particle belongs'},
     'id': {'long_name': 'particle ID',
-          },
+           },
     'droplet_diameter': {'long_name': 'diameter of oil droplet class',
                          'units': 'meters'
                         },
@@ -74,8 +76,8 @@ var_attributes = {
     'last_water_positions': {},
 
     # weathering data
-    'mass_remaining': {
-        'long_name': 'total mass remaining after each time step',
+    'floating': {
+        'long_name': 'total mass floating in water after each time step',
         'units': 'kilograms'},
     'evaporated': {
         'long_name': 'total mass evaporated since beginning of model run',
@@ -83,6 +85,12 @@ var_attributes = {
     'dispersed': {
         'long_name': 'total mass dispersed since beginning of model run',
         'units': 'kilograms'},
+    'density': {
+        'long_name': 'average density at end of timestep',
+        'units': 'kg/m^3'},
+    'amount_released': {
+        'long_name': 'total mass of oil released thus far',
+        'units': 'kg'},
     }
 
 
@@ -513,10 +521,10 @@ class NetCDFOutput(Outputter, Serializable):
 
                     self._create_nc_var(rootgrp, var_name, dt, shape, chunksz)
 
-                # Add subgroup for mass_balance - could do it w/o subgroup
-                if sc.mass_balance:
-                    grp = rootgrp.createGroup('mass_balance')
-                    for key in sc.mass_balance:
+                # Add subgroup for weathering_data - could do it w/o subgroup
+                if sc.weathering_data:
+                    grp = rootgrp.createGroup('weathering_data')
+                    for key in sc.weathering_data:
                         self._create_nc_var(grp,
                                             key,
                                             'float',
@@ -595,10 +603,10 @@ class NetCDFOutput(Outputter, Serializable):
                         rootgrp.variables[var_name][self._start_idx:_end_idx] = \
                                     sc[var_name]
 
-                # write mass_balance data
-                if sc.mass_balance:
-                    grp = rootgrp.groups['mass_balance']
-                    for key, val in sc.mass_balance.iteritems():
+                # write weathering_data data
+                if sc.weathering_data:
+                    grp = rootgrp.groups['weathering_data']
+                    for key, val in sc.weathering_data.iteritems():
                         if key not in grp.variables:
                             self._create_nc_var(grp,
                                                 key, 'float', ('time', ),
@@ -750,15 +758,15 @@ class NetCDFOutput(Outputter, Serializable):
                 else:
                     arrays_dict[array_name] = (data.variables[array_name][_start_ix:_stop_ix])
 
-            # get mass_balance
-            mass_balance = {}
-            if 'mass_balance' in data.groups:
-                mb = data.groups['mass_balance']
+            # get weathering_data
+            weathering_data = {}
+            if 'weathering_data' in data.groups:
+                mb = data.groups['weathering_data']
                 for key, val in mb.variables.iteritems():
                     'assume SI units'
-                    mass_balance[key] = val[index]
+                    weathering_data[key] = val[index]
 
-        return (arrays_dict, mass_balance)
+        return (arrays_dict, weathering_data)
 
     def save(self, saveloc, references=None, name=None):
         '''

@@ -423,7 +423,7 @@ class Model(Serializable):
 
         for w in self.weatherers:
             for sc in self.spills.items():
-                # weatherers will initialize 'mass_balance' key/values to 0.0
+                # weatherers will initialize 'weathering_data' key/values to 0.0
                 w.prepare_for_model_run(sc)
 
             if w.on:
@@ -505,13 +505,14 @@ class Model(Serializable):
             return
 
         for sc in self.spills.items():
-            mass_rmain = np.zeros_like(sc['mass_components'])
             for w in self.weatherers:
                 for model_time, time_step in self._split_into_substeps():
-                    mass_rmain += w.weather_elements(sc, time_step, model_time)
+                    # change 'mass_components' in weatherer
+                    w.weather_elements(sc, time_step, model_time)
 
-            sc['mass_components'][:] = mass_rmain
-            sc['mass'][:] = mass_rmain.sum(1)
+            # moved this to each weatherer - not as efficient, but keeps all
+            # the arrays consistent
+            # sc['mass'][:] = sc['mass_components'].sum(1)
 
     def _split_into_substeps(self):
         '''
@@ -556,8 +557,6 @@ class Model(Serializable):
         for sc in self.spills.items():
             '''
             removes elements with oil_status.to_be_removed
-            compute 'mass_remaining' by subtracting weathered (evaporated,
-            dispersed, ..) oil
             '''
             sc.model_step_is_done()
 
@@ -853,17 +852,17 @@ class Model(Serializable):
 
         for sc in self.spills.items():
             if sc.uncertain:
-                (data, mass_balance) = NetCDFOutput.read_data(u_spill_data,
+                (data, weather_data) = NetCDFOutput.read_data(u_spill_data,
                                                               time=None,
                                                               which_data='all')
             else:
-                (data, mass_balance) = NetCDFOutput.read_data(spill_data,
+                (data, weather_data) = NetCDFOutput.read_data(spill_data,
                                                               time=None,
                                                               which_data='all')
 
             sc.current_time_stamp = data.pop('current_time_stamp').item()
             sc._data_arrays = data
-            sc.mass_balance = mass_balance
+            sc.weathering_data = weather_data
             sc._array_types.update(array_types)
             sc._append_initializer_array_types(array_types)
 

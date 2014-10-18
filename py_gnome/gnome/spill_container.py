@@ -52,7 +52,7 @@ class SpillContainerData(object):
 
         self._data_arrays = data_arrays
         self.current_time_stamp = None
-        self.mass_balance = {}
+        self.weathering_data = {}
 
         # following internal variable is used when comparing two SpillContainer
         # objects. When testing the data arrays are equal, use this tolerance
@@ -276,7 +276,7 @@ class SpillContainer(SpillContainerData):
         # must have changed so let's get back to default _array_types
         self._reset_arrays()
         self.initialize_data_arrays()
-        self.mass_balance = {}  # reset to empty array
+        self.weathering_data = {}  # reset to empty array
 
     def get_spill_mask(self, spill):
         return self['spill_num'] == self.spills.index(spill)
@@ -330,11 +330,6 @@ class SpillContainer(SpillContainerData):
         array_types from initializer and appends them to its own list. For
         most initializers like 
         """
-        # define 'mass_remaining' key
-        mass_remain = [s.get_mass('kg') for s in self.spills if s.amount]
-        if mass_remain:
-            self.mass_balance['mass_remaining'] = sum(mass_remain)
-
         # Question - should we purge any new arrays that were added in previous
         # call to prepare_for_model_run()?
         # No! If user made modifications to _array_types before running model,
@@ -398,7 +393,14 @@ class SpillContainer(SpillContainerData):
 
         This calls release_elements on all of the contained spills, and adds
         the elements to the data arrays
+
+        Always writes/updates weathering_data attribute. If no amount given
+        for spill, then 'mass' array is 0.0
+
+        todo: may need to update the 'mass' array to use a default of 1.0 but
+        will need to define it in particle units or something along those lines
         """
+        amount_released = 0.0
         for sp in self.spills:
             if not sp.on:
                 continue
@@ -411,7 +413,7 @@ class SpillContainer(SpillContainerData):
                 # particles - just another way to set value of spill_num
                 # correctly
                 self._array_types['spill_num'].initial_value = \
-                                self.spills.index(sp)
+                    self.spills.index(sp)
 
                 if len(self['spill_num']) > 0:
                     # unique identifier for each new element released
@@ -435,6 +437,31 @@ class SpillContainer(SpillContainerData):
                 sp.set_newparticle_values(num_released, model_time, time_step,
                                           self._data_arrays)
 
+                # use the initialized mass array to find total mass released
+                amount_released += np.sum(self['mass'][-num_released:])
+
+        # update intrinsic properties after release since we release particles
+        # at end of the step
+
+        if np.any(self['mass'] > 0.0):
+            # spill amount must be defined for at least one of the spills for
+            # this to be true
+            self._write_weathering_data(amount_released)
+
+    def _write_weathering_data(self, amount_released):
+        '''
+        intrinsic LE properties not set by any weatherer so let SpillContainer
+        set these - will user be able to use select weatherers? Currently,
+        evaporation defines 'density' data array
+        '''
+        mask = self['status_codes'] == oil_status.in_water
+        self.weathering_data['floating'] = np.sum(self['mass'][mask])
+
+        if 'amount_released' in self.weathering_data:
+            self.weathering_data['amount_released'] += amount_released
+        else:
+            self.weathering_data['amount_released'] = amount_released
+
     def model_step_is_done(self):
         '''
         Called at the end of a time step
@@ -450,14 +477,6 @@ class SpillContainer(SpillContainerData):
             for key in self._array_types.keys():
                 self._data_arrays[key] = np.delete(self[key], to_be_removed,
                                                    axis=0)
-
-        if 'mass_remaining' in self.mass_balance:
-            '''
-            let's not include mass_remaining if 'amount' spilled was None
-            '''
-            for key in self.mass_balance:
-                if key != 'mass_remaining':
-                    self.mass_balance['mass_remaining'] -= self.mass_balance[key]
 
     def __str__(self):
         return ('gnome.spill_container.SpillContainer\n'
@@ -524,9 +543,9 @@ class SpillContainerPairData(object):
     def LE_data(self):
         data = self._spill_container._data_arrays.keys()
         data.append('current_time_stamp')
-        if self._spill_container.mass_balance:
+        if self._spill_container.weathering_data:
             'only add if it is not an empty dict'
-            data.append('mass_balance')
+            data.append('weathering_data')
 
         return data
 
@@ -538,8 +557,8 @@ class SpillContainerPairData(object):
 
         if prop_name == 'current_time_stamp':
             return sc.current_time_stamp
-        elif prop_name == 'mass_balance':
-            return sc.mass_balance
+        elif prop_name == 'weathering_data':
+            return sc.weathering_data
 
         return sc[prop_name]
 

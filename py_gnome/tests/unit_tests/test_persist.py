@@ -169,8 +169,7 @@ def make_model(images_dir, uncertain=False):
 
     print 'adding a Weatherer'
     model.environment += Water(311.15)
-    # figure out mid-run save for mass_balance attribute, then add this in
-    #model.weatherers += Evaporation(w_mover.wind, model.environment[-1])
+    model.weatherers += Evaporation(w_mover.wind, model.environment[-1])
 
     return model
 

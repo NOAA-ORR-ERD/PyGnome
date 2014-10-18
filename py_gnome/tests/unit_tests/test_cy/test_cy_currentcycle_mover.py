@@ -3,9 +3,11 @@ unit tests cython wrapper
 
 designed to be run with py.test
 """
-
+import datetime
 import os
+
 import numpy as np
+import pytest
 
 import gnome
 from gnome.basic_types import world_point, status_code_type, \
@@ -15,15 +17,12 @@ from gnome.cy_gnome.cy_currentcycle_mover import CyCurrentCycleMover
 from gnome.cy_gnome import cy_shio_time
 
 from gnome.utilities import time_utils
-from gnome.utilities.remote_data import get_datafile
+from ..conftest import testdata
 
-import datetime
 
-import pytest
-
-here = os.path.dirname(__file__)
-cur_dir = os.path.join(here, 'sample_data', 'currents')
-tide_dir = os.path.join(here, 'sample_data', 'tides')
+time_grid_file = testdata['CurrentCycleMover']['curr']
+topology_file = testdata['CurrentCycleMover']['top']
+tide_file = testdata['CurrentCycleMover']['tide']
 
 
 # def test_exceptions():
@@ -156,10 +155,6 @@ class TestCurrentCycleMover:
         time = datetime.datetime(2014, 6, 9, 0)
         self.cm.model_time = time_utils.date_to_sec(time)
 
-        time_grid_file = get_datafile(os.path.join(cur_dir, 'PQBayCur.nc4'))
-        topology_file = get_datafile(os.path.join(cur_dir,
-                r'PassamaquoddyTOP.dat'))
-
         self.ccm.text_read(time_grid_file, topology_file)
 
         # self.ccm.export_topology(topology_file2)
@@ -200,16 +195,8 @@ class TestCurrentCycleMover:
         self.cm.model_time = time_utils.date_to_sec(time)
         self.cm.uncertain = True
 
-        time_grid_file = get_datafile(os.path.join(cur_dir, 'PQBayCur.nc4'
-                ))
-        topology_file = get_datafile(os.path.join(cur_dir, 'PassamaquoddyTOP.dat'
-                ))
-
-        tide_file = get_datafile(os.path.join(tide_dir, 'EstesHead.txt'
-                ))
-
         yeardata_path = os.path.join(os.path.dirname(gnome.__file__),
-                'data/yeardata/')
+                                     'data/yeardata/')
 
         self.shio = cy_shio_time.CyShioTime(tide_file)
         self.ccm.set_shio(self.shio)

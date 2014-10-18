@@ -252,7 +252,7 @@ class WindMover(WindMoversBase, serializable.Serializable):
         schema = self.__class__._schema()
         if json_ == 'webapi':
             # add wind schema
-            schema.add(environment.WindSchema())
+            schema.add(environment.WindSchema(name='wind'))
 
         serial = schema.serialize(toserial)
 

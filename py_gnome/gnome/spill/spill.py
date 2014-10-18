@@ -100,6 +100,7 @@ class Spill(serializable.Serializable):
                 element_type = elements.floating()
             else:
                 element_type = elements.floating_mass()
+                #element_type = elements.floating_weathering()
 
         self.element_type = element_type
 

@@ -10,19 +10,14 @@ import pytest
 
 from gnome.movers import GridWindMover
 from gnome.utilities import time_utils
-from gnome.utilities.remote_data import get_datafile
-from gnome.persist import load
 
-from conftest import sample_sc_release
+from ..conftest import sample_sc_release, testdata
 # default settings are the same for both objects
 from test_wind_mover import _defaults
 
-here = os.path.dirname(__file__)
-wind_dir = os.path.join(here, 'sample_data', 'winds')
 
-wind_file = get_datafile(os.path.join(wind_dir, 'WindSpeedDirSubset.nc'))
-topology_file = get_datafile(os.path.join(wind_dir,
-                                          'WindSpeedDirSubsetTop.dat'))
+wind_file = testdata['GridWindMover']['wind_curv']
+topology_file = testdata['GridWindMover']['top_curv']
 
 
 def test_exceptions():
@@ -32,16 +27,16 @@ def test_exceptions():
     with pytest.raises(TypeError):
         GridWindMover()
 
-    bad_file = os.path.join(wind_dir, 'WindSpeedDirSubset.CUR')
     with pytest.raises(ValueError):
-        GridWindMover(bad_file)
+        'file not found'
+        GridWindMover(os.path.join('./', 'WindSpeedDirSubset.CUR'))
 
     with pytest.raises(TypeError):
         GridWindMover(wind_file, topology_file=10)
 
 
 def test_string_repr_no_errors():
-    gw = GridWindMover(wind_file,topology_file)
+    gw = GridWindMover(wind_file, topology_file)
     print
     print '======================'
     print 'repr(WindMover): '

@@ -5,13 +5,15 @@ designed to be run with py.test
 """
 
 import os
-from gnome.cy_gnome.cy_grid_map import CyGridMap
-from gnome.utilities.remote_data import get_datafile
 
 import pytest
 
+from gnome.cy_gnome.cy_grid_map import CyGridMap
+
+from ..conftest import testdata
+
 here = os.path.dirname(__file__)
-cur_dir = os.path.join(here, 'sample_data', 'currents')
+#cur_dir = os.path.join(here, 'sample_data', 'currents')
 
 
 # def test_exceptions():
@@ -35,14 +37,14 @@ class TestGridMap:
         # curvilinear grid
 
         gcm1 = CyGridMap()
-        grid_map_file = get_datafile(os.path.join(cur_dir, 'ny_cg.nc'))
+        grid_map_file = testdata['GridMap']['curr']
         gcm1.text_read(grid_map_file)
 
         # topology_file = os.path.join(cur_dir, 'ny_cg_top.dat')
         # self.gcm.export_topology(topology_file)
         # self.gcm.save_netcdf(netcdf_file)
 
-        netcdf_file = os.path.join(cur_dir, 'ny_cg_top.nc')
+        netcdf_file = os.path.join(here, 'ny_cg_top.nc')
         gcm1.save_netcdf(netcdf_file)
 
     def test_grid_map_tri(self):
@@ -53,16 +55,14 @@ class TestGridMap:
         # triangle grid
 
         gcm2 = CyGridMap()
-        grid_map_file = get_datafile(os.path.join(cur_dir, 'ChesBay.nc'
-                ))
+        grid_map_file = testdata['GridCurrentMover']['curr_tri']
         gcm2.text_read(grid_map_file)
 
         # topology_file = os.path.join( cur_dir, 'chesbay_top.dat')
         # self.gcm2.export_topology(topology_file)
 
-        netcdf_file = os.path.join(cur_dir, 'ChesBayTop.nc')
+        netcdf_file = os.path.join(here, 'ChesBayTop.nc')
         gcm2.save_netcdf(netcdf_file)
-
 
     def test_grid_map_cats(self):
         """
@@ -72,11 +72,10 @@ class TestGridMap:
         # triangle grid
 
         gcm3 = CyGridMap()
-        grid_map_file = get_datafile(os.path.join(cur_dir, 'BigCombinedwMap.cur'
-                ))
+        grid_map_file = testdata['GridMap']['BigCombinedwMap']
         gcm3.text_read(grid_map_file)
 
-        topology_file = os.path.join( cur_dir, 'BigCombinedTop.dat')
+        topology_file = os.path.join( here, 'BigCombinedTop.dat')
         gcm3.export_topology(topology_file)
 
         #netcdf_file = os.path.join(cur_dir, 'BigCombinedTop.nc')

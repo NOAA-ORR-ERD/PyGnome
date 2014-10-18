@@ -5,7 +5,6 @@ import copy
 
 import numpy as np
 
-from gnome.persist.base_schema import ObjType
 from gnome.array_types import (mass_components,
                                density,
                                thickness,
@@ -13,6 +12,7 @@ from gnome.array_types import (mass_components,
                                evap_decay_constant)
 from gnome.utilities.serializable import Serializable, Field
 
+from .core import WeathererSchema
 from gnome.weatherers import Weatherer
 from gnome.environment import (constants,
                                constant_wind,
@@ -24,7 +24,7 @@ class Evaporation(Weatherer, Serializable):
     _state = copy.deepcopy(Weatherer._state)
     _state += [Field('water', save=True, update=True, save_reference=True),
                Field('wind', save=True, update=True, save_reference=True)]
-    _schema = ObjType
+    _schema = WeathererSchema
 
     def __init__(self,
                  water=None,
@@ -47,10 +47,23 @@ class Evaporation(Weatherer, Serializable):
                                  'evap_decay_constant': evap_decay_constant})
 
     def prepare_for_model_run(self, sc):
-        'add evaporated key to mass_balance'
+        '''
+        add evaporated key to weathering_data
+        for now also add 'density' key here
+        Assumes all spills have the same type of oil
+        '''
         # create 'evaporated' key if it doesn't exist
         # let's only define this the first time
-        sc.mass_balance['evaporated'] = 0.0
+        if sc.spills:
+            try:
+                sc.weathering_data['avg_density'] = \
+                    (sc.spills[0].get('substance').
+                     get_density(temp=self.water.get('temperature', 'K')))
+            except AttributeError:
+                sc.weathering_data['avg_density'] = \
+                    (sc.spills[0].get('substance').get_density())
+        if self.active:
+            sc.weathering_data['evaporated'] = 0.0
 
     def prepare_for_model_step(self, sc, time_step, model_time):
         '''
@@ -73,6 +86,9 @@ class Evaporation(Weatherer, Serializable):
         super(Evaporation, self).prepare_for_model_step(sc,
                                                         time_step,
                                                         model_time)
+        if not self.active:
+            return
+
         K = self._mass_transport_coeff(model_time)
         water_temp = self.water.get('temperature', 'K')
 
@@ -126,19 +142,21 @@ class Evaporation(Weatherer, Serializable):
     def weather_elements(self, sc, time_step, model_time):
         '''
         weather elements over time_step
+        - sets 'evaporation' in sc.weathering_data
+        - currently also sets 'density' in sc.weathering_data but may update
+          this as we add more weatherers and perhaps density gets set elsewhere
         '''
-        if not self.active:
-            return sc['mass_components']
+        if self.active:
+            mass_remain = \
+                self._exp_decay(sc['mass_components'],
+                                sc['evap_decay_constant'],
+                                time_step)
 
-        mass_remain = \
-            self._exp_decay(sc['mass_components'],
-                            sc['evap_decay_constant'],
-                            time_step)
-
-        sc.mass_balance['evaporated'] = \
-            np.sum(sc['mass_components'][:, :] - mass_remain[:, :])
-
-        return mass_remain
+            sc.weathering_data['evaporated'] = \
+                np.sum(sc['mass_components'][:, :] - mass_remain[:, :])
+            sc.weathering_data['avg_density'] = sc['density'].mean()
+            sc['mass_components'][:] = mass_remain
+            sc['mass'][:] = sc['mass_components'].sum(1)
 
     def serialize(self, json_='webapi'):
         """
@@ -148,9 +166,11 @@ class Evaporation(Weatherer, Serializable):
         toserial = self.to_serialize(json_)
         schema = self.__class__._schema()
         if json_ == 'webapi':
-            # add wind schema
-            schema.add(WindSchema())
-            schema.add(WaterSchema())
+            if self.wind:
+                # add wind schema
+                schema.add(WindSchema())
+            if self.water:
+                schema.add(WaterSchema())
 
         serial = schema.serialize(toserial)
 
@@ -163,8 +183,10 @@ class Evaporation(Weatherer, Serializable):
         """
         schema = cls._schema()
         if 'wind' in json_:
-            schema.add(WindSchema())
-            schema.add(WaterSchema())
+            schema.add(WindSchema(name='wind'))
+
+        if 'water' in json_:
+            schema.add(WaterSchema(name='water'))
         _to_dict = schema.deserialize(json_)
 
         return _to_dict

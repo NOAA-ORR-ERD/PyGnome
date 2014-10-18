@@ -15,31 +15,31 @@ from gnome import basic_types
 from gnome.basic_types import ts_format, seconds, velocity_rec
 
 from gnome.cy_gnome.cy_ossm_time import CyOSSMTime
-
-datadir = os.path.join(os.path.dirname(__file__), r"sample_data")
+from ..conftest import testdata
 
 
 def test_exceptions():
     with raises(IOError):
         # bad path
-        CyOSSMTime(filename=os.path.join(datadir, 'WindDataFromGnome.WNDX'),
+        CyOSSMTime(filename=os.path.join('./', 'WindDataFromGnome.WNDX'),
                    file_contains=ts_format.magnitude_direction)
 
     with raises(ValueError):
         # no inputs
         CyOSSMTime()
 
+    with raises(ValueError):
         # insufficient input info
-        CyOSSMTime(filename=os.path.join(datadir, 'WindDataFromGnome.WND'))
+        CyOSSMTime(filename=testdata['timeseries']['wind_ts'])
 
+    with raises(ValueError):
         # insufficient input info
-        CyOSSMTime(filename=os.path.join(datadir,
-                                         'WindDataFromGnome_BadUnits.WND'),
+        CyOSSMTime(filename=testdata['timeseries']['wind_bad_units'],
                    file_contains=ts_format.magnitude_direction)
 
     with raises(ValueError):
         # file_contains has wrong int type
-        CyOSSMTime(filename=os.path.join(datadir, 'WindDataFromGnome.WND'),
+        CyOSSMTime(filename=testdata['timeseries']['wind_ts'],
                    file_contains=0)
 
 
@@ -49,8 +49,7 @@ def test_init_units():
     - correct path
     Updated so the user units are read from filename
     """
-    ossmT2 = CyOSSMTime(filename=os.path.join(datadir,
-                                              'WindDataFromGnome.WND'),
+    ossmT2 = CyOSSMTime(filename=testdata['timeseries']['wind_ts'],
                         file_contains=ts_format.magnitude_direction)
     assert ossmT2.user_units == 'knots'
 
@@ -95,7 +94,7 @@ class TestGetTimeValues:
     Test get_time_value method for CyOSSMTime
     """
     # sample data generated and stored via Gnome GUI
-    ossmT = CyOSSMTime(filename=os.path.join(datadir, 'WindDataFromGnome.WND'),
+    ossmT = CyOSSMTime(filename=testdata['timeseries']['wind_ts'],
                        file_contains=ts_format.magnitude_direction)
 
     def test_get_time_value(self):
@@ -165,8 +164,7 @@ class TestReadFileWithConstantWind:
     Read contents for a filename that contains a constant wind.
     This will be just 1 line in the text filename.
     """
-    file_name = os.path.join(datadir, 'WindDataFromGnomeConstantWind.WND')
-    ossmT = CyOSSMTime(filename=file_name,
+    ossmT = CyOSSMTime(filename=testdata['timeseries']['wind_constant'],
                        file_contains=ts_format.magnitude_direction)
 
     def test_get_time_value(self):
@@ -200,7 +198,7 @@ class TestObjectSerialization:
         Test all the serialization and deserialization methods that are
         available to the CyOSSMTime object.
     '''
-    ossmT = CyOSSMTime(filename=os.path.join(datadir, 'WindDataFromGnome.WND'),
+    ossmT = CyOSSMTime(filename=testdata['timeseries']['wind_ts'],
                        file_contains=ts_format.magnitude_direction)
 
     def test_repr(self):

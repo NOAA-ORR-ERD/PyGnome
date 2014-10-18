@@ -8,6 +8,7 @@ import numpy as np
 
 from gnome.environment import constant_wind, Water
 from gnome.weatherers import Evaporation
+from gnome.outputters import WeatheringOutput
 from gnome.spill.elements import floating_weathering
 from gnome.spill import point_line_release_spill
 from gnome.array_types import (mass_components,
@@ -23,37 +24,23 @@ from conftest import sample_sc_release
 water = Water()
 
 
-def assert_helper(sc):
-    'common assertions for spills and data in SpillContainer'
-    for spill in sc.spills:
-        mask = sc.get_spill_mask(spill)
-        bp = spill.get('substance').boiling_point
-        if float('inf') in bp:
-            sa = bp.index(float('inf'))
-        else:
-            sa = len(bp)
-        assert np.all(sc['evap_decay_constant'][mask, :sa] < 0.0)
-        assert np.all(sc['evap_decay_constant'][mask, sa:] == 0.0)
-        assert np.all(np.sum(sc['mass_components'][mask, :], 1) ==
-                      sc['mass'][mask])
-        assert np.all(sc['mass'][mask] < spill.get_mass('kg'))
+arrays = {'windages': windages,
+          'mass_components': mass_components,
+          'density': density,
+          'thickness': thickness,
+          'mol': mol,
+          'evap_decay_constant': evap_decay_constant}
 
 
-@pytest.mark.parametrize(('oil', 'temp', 'num_elems'),
-                         [('oil_conservative', 311.15, 3),
-                          ('FUEL OIL NO.6', 311.15, 3)])
-def test_evaporation(oil, temp, num_elems):
+@pytest.mark.parametrize(('oil', 'temp', 'num_elems', 'on'),
+                         [('oil_conservative', 311.15, 3, True),
+                          ('FUEL OIL NO.6', 311.15, 3, True),
+                          ('FUEL OIL NO.6', 311.15, 3, False)])
+def test_evaporation(oil, temp, num_elems, on):
     '''
     still working on tests ..
     '''
     et = floating_weathering(substance=oil)
-    arrays = {'windages': windages,
-              'mass_components': mass_components,
-              'density': density,
-              'thickness': thickness,
-              'mol': mol,
-              'evap_decay_constant': evap_decay_constant}
-
     sc = sample_sc_release(num_elements=num_elems,
                            element_type=et,
                            arr_types=arrays)
@@ -63,9 +50,13 @@ def test_evaporation(oil, temp, num_elems):
                   timedelta(seconds=time_step))
 
     evap = Evaporation(water, wind=constant_wind(1., 0))
+    if not on:
+        evap.on = False
+
     evap.prepare_for_model_run(sc)
     evap.prepare_for_model_step(sc, time_step, model_time)
-    mass_remain = evap.weather_elements(sc, time_step, model_time)
+    init_mass = sc['mass_components'].copy()
+    evap.weather_elements(sc, time_step, model_time)
 
     for spill in sc.spills:
         mask = sc.get_spill_mask(spill)
@@ -74,15 +65,63 @@ def test_evaporation(oil, temp, num_elems):
             sa = bp.index(float('inf'))
         else:
             sa = len(bp)
-        assert np.all(sc['evap_decay_constant'][mask, :sa] < 0.0)
-        assert np.all(sc['evap_decay_constant'][mask, sa:] == 0.0)
-        assert np.all(mass_remain[mask, :sa] <=
+        if on:
+            assert np.all(sc['evap_decay_constant'][mask, :sa] < 0.0)
+            assert np.all(sc['evap_decay_constant'][mask, sa:] == 0.0)
+        else:
+            assert np.all(sc['evap_decay_constant'][mask, :] == 0.0)
+
+        assert np.all(init_mass[mask, :sa] >=
                       sc['mass_components'][mask, :sa])
-        assert np.all(mass_remain[mask, sa:] ==
+        assert np.all(init_mass[mask, sa:] ==
                       sc['mass_components'][mask, sa:])
 
+    if on:
+        assert sc.weathering_data['evaporated'] > 0.0
+    else:
+        assert sc.weathering_data['evaporated'] == 0.0
+        assert np.all(sc['mass_components'] == init_mass)
+
     print sc['evap_decay_constant']
-    print mass_remain
+    print sc.weathering_data['evaporated']
+
+
+def assert_helper(sc, new_p):
+    'common assertions for spills and data in SpillContainer'
+    for spill in sc.spills:
+        mask = sc.get_spill_mask(spill)
+        bp = spill.get('substance').boiling_point
+        if float('inf') in bp:
+            sa = bp.index(float('inf'))
+        else:
+            sa = len(bp)
+        assert np.all(sc['evap_decay_constant'][mask, :sa] <= 0.0)
+        assert np.all(sc['evap_decay_constant'][mask, sa:] == 0.0)
+        assert np.allclose(np.sum(sc['mass_components'][mask, :], 1),
+                           sc['mass'][mask])
+        # not an instantaneous release so following is true even at step 0
+        assert np.all(sc['mass'][mask] < spill.get_mass('kg'))
+
+    if len(sc) > new_p:
+        assert np.all(sc['evap_decay_constant'][:(len(sc)-new_p), :sa] < 0.0)
+    if new_p > 0:
+        assert np.all(sc['evap_decay_constant'][-new_p:, :sa] == 0.0)
+
+
+def update_model(model, oil, rel_pos, temp=311.16):
+    'update model the same way for multiple tests'
+    model.uncertain = False     # fixme: with uncertainty, copying spill fails!
+    et = floating_weathering(substance=oil)
+    end_time = model.start_time + timedelta(seconds=model.time_step*3)
+    spill = point_line_release_spill(10,
+                                     rel_pos,
+                                     model.start_time,
+                                     end_release_time=end_time,
+                                     element_type=et,
+                                     amount=100,
+                                     units='kg')
+    model.spills += spill
+    return model
 
 
 @pytest.mark.parametrize(('oil', 'temp'), [('oil_conservative', 333.0),
@@ -90,22 +129,33 @@ def test_evaporation(oil, temp, num_elems):
                                            ])
 def test_full_run(sample_model_fcn, oil, temp):
     model = sample_model_fcn['model']
-    model.uncertain = False     # fixme: with uncertainty, copying spill fails!
-    et = floating_weathering(substance=oil)
-    spill = point_line_release_spill(1,
-                                     sample_model_fcn['release_start_pos'],
-                                     model.start_time,
-                                     element_type=et,
-                                     amount=100,
-                                     units='kg')
-    model.spills += spill
+    update_model(model, oil, sample_model_fcn['release_start_pos'], temp)
     model.environment += [Water(temp), constant_wind(1., 0)]
     model.weatherers += Evaporation(model.environment[0], model.environment[1])
+    released = 0
     for step in model:
-        if step['step_num'] == 0:
-            continue
-
-        print "Completed step: {0}".format(step['step_num'])
         for sc in model.spills.items():
-            assert_helper(sc)
-            print "Mass remaining: {0}".format(np.sum(sc['mass'], 0))
+            assert_helper(sc, sc.num_released - released)
+            released = sc.num_released
+            assert sc.weathering_data['floating'] == np.sum(sc['mass'])
+            print "Amount released: {0}".format(sc.weathering_data['amount_released'])
+            print "Mass floating: {0}".format(sc.weathering_data['floating'])
+            print "Completed step: {0}\n".format(step['step_num'])
+
+
+def test_full_run_evap_not_active(sample_model_fcn):
+    'no water/wind object'
+    model = sample_model_fcn['model']
+    update_model(model,
+                 'oil_conservative',
+                 sample_model_fcn['release_start_pos'])
+    model.weatherers += Evaporation(on=False)
+    model.outputters += WeatheringOutput()
+    for step in model:
+        for key in ('nominal', 'low', 'high'):
+            assert 'floating' in step['WeatheringOutput'][key]
+            assert 'amount_released' in step['WeatheringOutput'][key]
+            assert 'evaporated' not in step['WeatheringOutput'][key]
+
+        print ("Completed step: {0}"
+               .format(step['WeatheringOutput']['step_num']))
