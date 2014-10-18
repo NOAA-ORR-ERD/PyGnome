@@ -13,7 +13,7 @@ import numpy as np
 from gnome.movers import simple_mover
 from gnome.utilities.projections import FlatEarthProjection as proj
 
-from conftest import sample_sc_release
+from ..conftest import sample_sc_release
 
 
 def test_basic_move():

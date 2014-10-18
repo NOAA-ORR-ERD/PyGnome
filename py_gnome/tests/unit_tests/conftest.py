@@ -140,7 +140,9 @@ def get_testdata():
     data['CurrentCycleMover'] = \
         {'curr': get_datafile(os.path.join(curr_dir, 'PQBayCur.nc4')),
          'top': get_datafile(os.path.join(curr_dir, 'PassamaquoddyTOP.dat')),
-         'tide': get_datafile(os.path.join(tide_dir, 'EstesHead.txt'))}
+         'tide': get_datafile(os.path.join(tide_dir, 'EstesHead.txt')),
+         'curr_bad_file': get_datafile(os.path.join(curr_dir,
+                                                    'BigCombinedwMapBad.cur'))}
     data['GridCurrentMover'] = \
         {'curr_tri': get_datafile(os.path.join(curr_dir, 'ChesBay.nc')),
          'top_tri': get_datafile(os.path.join(curr_dir, 'ChesBay.dat')),
@@ -181,10 +183,12 @@ def get_testdata():
     # path correctly
     data['timeseries'] = \
         {'wind_ts': os.path.join(s_data, 'WindDataFromGnome.WND'),
-         'wind_constant':
-            os.path.join(s_data, 'WindDataFromGnomeConstantWind.WND'),
-         'wind_bad_units':
-            os.path.join(s_data, 'WindDataFromGnome_BadUnits.WND'),
+         'wind_constant': os.path.join(s_data,
+                                       'WindDataFromGnomeConstantWind.WND'),
+         'wind_bad_units': os.path.join(s_data,
+                                        'WindDataFromGnome_BadUnits.WND'),
+         'wind_cardinal': os.path.join(s_data,
+                                       'WindDataFromGnomeCardinal.WND'),
          'shio': get_datafile(os.path.join(tide_dir, 'CLISShio.txt'))
          }
 

@@ -10,7 +10,8 @@ import numpy as np
 import pytest
 
 from gnome import movers
-from conftest import sample_sc_release
+from ..conftest import sample_sc_release
+
 
 def test_exceptions():
     with pytest.raises(ValueError):
@@ -25,10 +26,10 @@ def test_properties():
     """
 
     m = movers.Mover()
-    assert m.on == True
+    assert m.on
 
     m.on = False
-    assert m.on == False
+    assert not m.on
 
 
 def test_active():
@@ -42,32 +43,32 @@ def test_active():
 
     mv = movers.Mover()
     mv.prepare_for_model_step(sc, time_step, model_time)
-    assert mv.active == True  # model_time = active_start
+    assert mv.active  # model_time = active_start
 
     mv = movers.Mover(active_start=model_time)
     mv.prepare_for_model_step(sc, time_step, model_time)
-    assert mv.active == True  # model_time = active_start
+    assert mv.active  # model_time = active_start
 
     mv = movers.Mover(active_start=model_time
                       + timedelta(seconds=time_step))
     mv.prepare_for_model_step(sc, time_step, model_time)
-    assert mv.active == False  # model_time + time_step = active_start
+    assert not mv.active  # model_time + time_step = active_start
 
     mv.active_start = model_time - timedelta(seconds=time_step / 2)
     mv.prepare_for_model_step(sc, time_step, model_time)
-    assert mv.active == True  # model_time - time_step/2 = active_start
+    assert mv.active  # model_time - time_step/2 = active_start
 
     # No need to test get_move again, above tests it is working per active flag
     # Next test just some more borderline cases that active is set correctly
 
     mv.active_stop = model_time + timedelta(seconds=1.5 * time_step)
     mv.prepare_for_model_step(sc, time_step, model_time)
-    assert mv.active == True
+    assert mv.active
 
     mv.active_stop = model_time + timedelta(seconds=2 * time_step)
     mv.prepare_for_model_step(sc, time_step, model_time + 2
                               * timedelta(seconds=time_step))
-    assert mv.active == False
+    assert not mv.active
 
 
 def test_get_move():

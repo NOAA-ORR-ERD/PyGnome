@@ -11,27 +11,22 @@ import pytest
 from gnome.movers import ComponentMover
 from gnome.environment import Wind
 from gnome.utilities import time_utils
-from gnome.utilities.remote_data import get_datafile
-from gnome.persist import load
 
-from conftest import sample_sc_release
+from ..conftest import sample_sc_release, testdata
 
-here = os.path.dirname(__file__)
-lis_dir = os.path.join(here, 'sample_data', 'delaware_bay')
 
-curr1_file = get_datafile(os.path.join(lis_dir, 'NW30ktwinds.cur'))
-curr2_file = get_datafile(os.path.join(lis_dir, 'SW30ktwinds.cur'))
-wnd = Wind(filename=get_datafile(os.path.join(lis_dir, 'ConstantWind.WND')))
+curr1_file = testdata['ComponentMover']['curr']
+curr2_file = testdata['ComponentMover']['curr2']
+wnd = Wind(filename=testdata['ComponentMover']['wind'])
 
 
 def test_exceptions():
     """
     Test correct exceptions are raised
     """
-
-    bad_file = os.path.join(lis_dir, 'NW30ktwinds.CURX')
     with pytest.raises(ValueError):
-        ComponentMover(bad_file)
+        'bad file'
+        ComponentMover(os.path.join('./', 'NW30ktwinds.CURX'))
 
     with pytest.raises(TypeError):
         ComponentMover(curr1_file, wind=10)

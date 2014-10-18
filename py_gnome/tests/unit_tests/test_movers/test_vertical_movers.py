@@ -11,7 +11,7 @@ from gnome.movers import RiseVelocityMover
 from gnome.array_types import rise_vel
 from gnome.spill.elements import ElementType, InitRiseVelFromDist
 
-from conftest import sample_sc_release
+from ..conftest import sample_sc_release
 
 
 def test_init():

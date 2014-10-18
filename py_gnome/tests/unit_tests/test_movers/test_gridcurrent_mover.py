@@ -10,30 +10,23 @@ import pytest
 
 from gnome.movers import GridCurrentMover
 from gnome.utilities import time_utils
-from gnome.utilities.remote_data import get_datafile
-from gnome.persist import load
 
-from conftest import sample_sc_release
+from ..conftest import sample_sc_release, testdata
 
-here = os.path.dirname(__file__)
-cur_dir = os.path.join(here, 'sample_data', 'currents')
-
-curr_file = get_datafile(os.path.join(cur_dir, 'ChesBay.nc'))
-topology_file = get_datafile(os.path.join(cur_dir, 'ChesBay.dat'))
+curr_file = testdata['GridCurrentMover']['curr_tri']
+topology_file = testdata['GridCurrentMover']['top_tri']
 
 
 def test_exceptions():
     """
     Test correct exceptions are raised
     """
-
-    bad_file = os.path.join(cur_dir, 'ChesBay.CUR')
     with pytest.raises(ValueError):
-        GridCurrentMover(bad_file)
+        # file does not exist
+        GridCurrentMover(os.path.join('./', 'ChesBay.CUR'))
 
-    bad_file = get_datafile(os.path.join(cur_dir, 'BigCombinedwMapBad.cur'))
     with pytest.raises(OSError):
-        GridCurrentMover(bad_file)
+        GridCurrentMover(testdata['CurrentCycleMover']['curr_bad_file'])
 
     with pytest.raises(TypeError):
         GridCurrentMover(curr_file, topology_file=10)

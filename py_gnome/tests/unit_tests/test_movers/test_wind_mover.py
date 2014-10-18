@@ -29,13 +29,15 @@ from gnome.movers import (WindMover,
                           constant_wind_mover,
                           wind_mover_from_file)
 from gnome.persist import References, load
-from conftest import sample_sc_release
+from ..conftest import sample_sc_release, testdata
 
 """ WindMover tests """
 
-datadir = os.path.join(os.path.dirname(__file__), r'sample_data')
-file_ = os.path.join(datadir, r'WindDataFromGnome.WND')
-file2_ = os.path.join(datadir, r'WindDataFromGnomeCardinal.WND')
+#datadir = os.path.join(os.path.dirname(__file__), r'sample_data')
+#file_ = os.path.join(datadir, r'WindDataFromGnome.WND')
+#file2_ = os.path.join(datadir, r'WindDataFromGnomeCardinal.WND')
+file_ = testdata['timeseries']['wind_ts']
+file2_ = testdata['timeseries']['wind_cardinal']
 
 
 def test_exceptions():
