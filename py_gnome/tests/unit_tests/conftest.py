@@ -487,6 +487,11 @@ def clean_temp(request):
     else:
         return temp
 
+    def cleanup():
+        shutil.rmtree(temp)
+
+    request.addfinalizer(cleanup)
+
 
 '''
 json payloads for testing update_from_dict
