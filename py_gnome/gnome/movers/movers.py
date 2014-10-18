@@ -23,7 +23,7 @@ class ProcessSchema(MappingSchema):
     base Process schema - attributes common to all movers/weatherers
     defined at one place
     '''
-    on = SchemaNode(Bool(), default=True, missing=True)
+    on = SchemaNode(Bool(), missing=drop)
     active_start = SchemaNode(LocalDateTime(), missing=drop,
                               validator=convertible_to_seconds)
     active_stop = SchemaNode(LocalDateTime(), missing=drop,
