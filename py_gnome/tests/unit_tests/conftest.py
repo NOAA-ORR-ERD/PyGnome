@@ -478,19 +478,18 @@ def sample_model_fcn():
 @pytest.fixture(scope='function', params=['relpath', 'abspath'])
 def clean_temp(request):
     temp = os.path.join(base_dir, 'temp')   # absolute path
-    if os.path.exists(temp):
+
+    def cleanup():
+        print '\nCleaning up %s' % temp
         shutil.rmtree(temp)
+
+    request.addfinalizer(cleanup)
 
     os.mkdir(temp)    # let path get created by save_load
     if request.param == 'relpath':
         return os.path.relpath(temp)    # do save/load tests with relative path
     else:
         return temp
-
-    def cleanup():
-        shutil.rmtree(temp)
-
-    request.addfinalizer(cleanup)
 
 
 '''
