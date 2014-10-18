@@ -1,5 +1,6 @@
 import os
 from datetime import timedelta, datetime
+import shutil
 
 import pytest
 from pytest import raises
@@ -33,9 +34,6 @@ from ..conftest import sample_sc_release, testdata
 
 """ WindMover tests """
 
-#datadir = os.path.join(os.path.dirname(__file__), r'sample_data')
-#file_ = os.path.join(datadir, r'WindDataFromGnome.WND')
-#file2_ = os.path.join(datadir, r'WindDataFromGnomeCardinal.WND')
 file_ = testdata['timeseries']['wind_ts']
 file2_ = testdata['timeseries']['wind_cardinal']
 
@@ -446,6 +444,8 @@ def test_save_load(save_ref):
     #saveloc = clean_temp
     base_dir = os.path.dirname(__file__)
     saveloc = os.path.join(base_dir, 'temp')
+    if not os.path.exists(saveloc):
+        os.mkdir(saveloc)
     wind = Wind(filename=file_)
     wm = WindMover(wind)
     wm_fname = 'WindMover_save_test.json'
@@ -462,6 +462,7 @@ def test_save_load(save_ref):
     obj = load(os.path.join(saveloc, wm_fname), l_refs)
     assert (obj == wm and obj is not wm)
     assert (obj.wind == wind and obj.wind is not wind)
+    shutil.rmtree(saveloc)  # clean-up
 
 
 #==============================================================================
