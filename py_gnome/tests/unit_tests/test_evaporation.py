@@ -7,10 +7,9 @@ import pytest
 import numpy as np
 
 from gnome.environment import constant_wind, Water
-from gnome.weatherers import Evaporation
+from gnome.weatherers import Evaporation, Burn, Skimmer, Dispersion
 from gnome.outputters import WeatheringOutput
 from gnome.spill.elements import floating_weathering
-from gnome.spill import point_line_release_spill
 from gnome.array_types import (mass_components,
                                windages,
                                density,
@@ -18,7 +17,7 @@ from gnome.array_types import (mass_components,
                                mol,
                                evap_decay_constant)
 
-from conftest import sample_sc_release
+from conftest import sample_sc_release, sample_model_weathering
 
 
 water = Water()
@@ -108,48 +107,33 @@ def assert_helper(sc, new_p):
         assert np.all(sc['evap_decay_constant'][-new_p:, :sa] == 0.0)
 
 
-def update_model(model, oil, rel_pos, temp=311.16):
-    'update model the same way for multiple tests'
-    model.uncertain = False     # fixme: with uncertainty, copying spill fails!
-    et = floating_weathering(substance=oil)
-    end_time = model.start_time + timedelta(seconds=model.time_step*3)
-    spill = point_line_release_spill(10,
-                                     rel_pos,
-                                     model.start_time,
-                                     end_release_time=end_time,
-                                     element_type=et,
-                                     amount=100,
-                                     units='kg')
-    model.spills += spill
-    return model
-
-
 @pytest.mark.parametrize(('oil', 'temp'), [('oil_conservative', 333.0),
                                            ('FUEL OIL NO.6', 333.0),
                                            ('ALAMO', 311.15),
                                            ])
 def test_full_run(sample_model_fcn, oil, temp):
-    model = sample_model_fcn['model']
-    update_model(model, oil, sample_model_fcn['release_start_pos'], temp)
+    model = sample_model_weathering(sample_model_fcn, oil, temp)
     model.environment += [Water(temp), constant_wind(1., 0)]
-    model.weatherers += Evaporation(model.environment[0], model.environment[1])
+    model.weatherers += [Evaporation(model.environment[0],
+                                     model.environment[1]),
+                         Dispersion(),
+                         Burn(),
+                         Skimmer()]
     released = 0
     for step in model:
         for sc in model.spills.items():
             assert_helper(sc, sc.num_released - released)
             released = sc.num_released
             assert sc.weathering_data['floating'] == np.sum(sc['mass'])
-            print "Amount released: {0}".format(sc.weathering_data['amount_released'])
+            print ("Amount released: {0}".
+                   format(sc.weathering_data['amount_released']))
             print "Mass floating: {0}".format(sc.weathering_data['floating'])
             print "Completed step: {0}\n".format(step['step_num'])
 
 
 def test_full_run_evap_not_active(sample_model_fcn):
     'no water/wind object'
-    model = sample_model_fcn['model']
-    update_model(model,
-                 'oil_conservative',
-                 sample_model_fcn['release_start_pos'])
+    model = sample_model_weathering(sample_model_fcn, 'oil_conservative')
     model.weatherers += Evaporation(on=False)
     model.outputters += WeatheringOutput()
     for step in model:

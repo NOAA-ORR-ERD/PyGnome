@@ -14,6 +14,10 @@ class Skimmer(Weatherer, Serializable):
     _state = copy.deepcopy(Weatherer._state)
     _schema = WeathererSchema
 
+    def prepare_for_model_run(self, sc):
+        if sc.spills:
+            sc.weathering_data['skimmed'] = 0.0
+
     def weather_elements(self, sc, time_step, model_time):
         'for now just take away 0.1% at every step'
         if self.active:
@@ -30,6 +34,10 @@ class Burn(Weatherer, Serializable):
     _state = copy.deepcopy(Weatherer._state)
     _schema = WeathererSchema
 
+    def prepare_for_model_run(self, sc):
+        if sc.spills:
+            sc.weathering_data['burned'] = 0.0
+
     def weather_elements(self, sc, time_step, model_time):
         'for now just take away 0.1% at every step'
         if self.active:
@@ -42,15 +50,19 @@ class Burn(Weatherer, Serializable):
             sc['mass'][:] = sc['mass_components'].sum(1)
 
 
-class Disperse(Weatherer, Serializable):
+class Dispersion(Weatherer, Serializable):
     _state = copy.deepcopy(Weatherer._state)
     _schema = WeathererSchema
+
+    def prepare_for_model_run(self, sc):
+        if sc.spills:
+            sc.weathering_data['dispersed'] = 0.0
 
     def weather_elements(self, sc, time_step, model_time):
         'for now just take away 0.1% at every step'
         if self.active:
-            # take out 0.15% of the mass
-            pct_per_le = (1 - 0.15/sc['mass_components'].shape[1])
+            # take out 0.015% of the mass
+            pct_per_le = (1 - 0.015/sc['mass_components'].shape[1])
             mass_remain = pct_per_le * sc['mass_components']
             sc.weathering_data['dispersed'] = \
                 np.sum(sc['mass_components'][:, :] - mass_remain[:, :])

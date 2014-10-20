@@ -475,6 +475,24 @@ def sample_model_fcn():
     return sample_model()
 
 
+def sample_model_weathering(sample_model_fcn, oil, temp=311.16):
+    model = sample_model_fcn['model']
+    rel_pos = sample_model_fcn['release_start_pos']
+    'update model the same way for multiple tests'
+    model.uncertain = False     # fixme: with uncertainty, copying spill fails!
+    et = gnome.spill.elements.floating_weathering(substance=oil)
+    end_time = model.start_time + timedelta(seconds=model.time_step*3)
+    spill = gnome.spill.point_line_release_spill(10,
+                                                 rel_pos,
+                                                 model.start_time,
+                                                 end_release_time=end_time,
+                                                 element_type=et,
+                                                 amount=100,
+                                                 units='kg')
+    model.spills += spill
+    return model
+
+
 @pytest.fixture(scope='function', params=['relpath', 'abspath'])
 def clean_temp(request):
     temp = os.path.join(base_dir, 'temp')   # absolute path
