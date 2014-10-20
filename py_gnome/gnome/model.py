@@ -91,7 +91,6 @@ class Model(Serializable):
                'weathering_substeps',
                'start_time',
                'duration',
-               'time_step',
                'uncertain',
                'cache_enabled',
                'weathering_substeps',

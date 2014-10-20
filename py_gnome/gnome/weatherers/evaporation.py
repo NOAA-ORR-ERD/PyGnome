@@ -146,7 +146,7 @@ class Evaporation(Weatherer, Serializable):
         - currently also sets 'density' in sc.weathering_data but may update
           this as we add more weatherers and perhaps density gets set elsewhere
         '''
-        if self.active:
+        if self.active and sc.num_released > 0:
             mass_remain = \
                 self._exp_decay(sc['mass_components'],
                                 sc['evap_decay_constant'],

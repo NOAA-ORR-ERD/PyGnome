@@ -153,6 +153,10 @@ class OilProps(object):
         self._add_resins_asphalt(self.get('resins'))
         self._add_resins_asphalt(self.get('asphaltene_content'))
 
+        # add remaining mass to last cut - ask about this
+        if sum(self.mass_fraction) < 1.0:
+            self.mass_fraction[-1] += 1.0 - sum(self.mass_fraction)
+
     def _component_mw(self):
         'estimate molecular weights of components'
         self.molecular_weight = [float('nan')] * self.num_components
