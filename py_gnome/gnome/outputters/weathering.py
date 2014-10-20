@@ -73,12 +73,23 @@ class WeatheringOutput(Outputter, Serializable):
         super(WeatheringOutput, self).__init__(**kwargs)
 
     def _add_fake_uncertainty(self, nom_dict):
-        high = {}
-        low = {}
-        for key, val in nom_dict.iteritems():
-            high[key] = val * random.uniform(1, 1.2)
-            low[key] = val * random.uniform(0.8, 1)
+        '''
+        add uncertainty to 'amount_released', then compute fraction of total
+        of weathered quantities
+        '''
+        high = {'avg_density':
+                nom_dict['avg_density'] * random.uniform(1, 1.1)}
 
+        low = {'avg_density':
+               nom_dict['avg_density'] * random.uniform(0.95, 1)}
+
+        mass_high_unc = random.uniform(1, 1.2)
+        mass_low_unc = random.uniform(0.9, 1)
+        for key, val in nom_dict.iteritems():
+            if key == 'avg_density':
+                continue
+            high[key] = val * mass_high_unc
+            low[key] = val * mass_low_unc
         return (high, low)
 
     def write_output(self, step_num, islast_step=False):
