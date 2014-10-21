@@ -6,12 +6,18 @@ import logging.config
 import json
 
 
-def initialize_log(config, filename=None):
-    log_config = json.load(open(config, 'r'))
-    if filename is not None:
-        log_config['handlers']['file']['filename'] = filename
+def initialize_log(config, logfile=None):
+    '''
+    helper function to initialize a log - done by the application using PyGnome
+    config can be a file containing json or it can be a Python dict
+    '''
+    if isinstance(config, basestring):
+        config = json.load(open(config, 'r'))
 
-    logging.config.dictConfig(log_config)
+    if logfile is not None:
+        config['handlers']['file']['filename'] = logfile
+
+    logging.config.dictConfig(config)
 
 
 __version__ = '0.1.1'

@@ -19,6 +19,7 @@ from colander import (SchemaNode, Bool, String, Float, drop)
 import gnome    # required by new_from_dict
 from gnome.utilities import serializable
 from gnome.persist.base_schema import ObjType
+from gnome import init_obj_log
 
 from . import elements
 from .release import PointLineRelease
@@ -172,7 +173,11 @@ class Spill(serializable.Serializable):
             msg = ('Units for amount spilled must be in volume or mass units. '
                    'Valid units for volume: {0}, for mass: {1} ').format(
                        self.valid_vol_units, self.valid_mass_units)
-            raise uc.InvalidUnitError(msg)
+            #raise uc.InvalidUnitError(msg)
+            #self.log.exception(msg)
+            ex = uc.InvalidUnitError(msg)
+            self.log.exception(ex, exc_info=True)
+            raise ex    # this should be raised since run will fail otherwise
 
     def set(self, prop, val):
         """
@@ -192,7 +197,7 @@ class Spill(serializable.Serializable):
         it does not know which one to return
         """
         if prop == 'num_released':
-            raise AttributeError("cannot set attribute")
+            self.log.warning("cannot set 'num_released' attribute")
 
         # we don't want to add an attribute that doesn't already exist
         # first check to see that the attribute exists, then change it else
@@ -207,9 +212,9 @@ class Spill(serializable.Serializable):
                     setattr(init, prop, val)
                     break
                 else:
-                    raise AttributeError('{0} attribute does not exist '
-                                         'in element_type '
-                                         'or release object'.format(prop))
+                    self.log.warning('{0} attribute does not exist '
+                                     'in element_type '
+                                     'or release object'.format(prop))
 
     def get(self, prop=None):
         """
@@ -267,8 +272,9 @@ class Spill(serializable.Serializable):
 
         # nothing returned, then property was not found - raise exception or
         # return None?
-        raise AttributeError("{0} attribute does not exist in element_type"
-            " or release object".format(prop))
+        self.log.warning("{0} attribute does not exist in element_type"
+                         " or release object".format(prop))
+        return None
 
     def get_initializer_by_name(self, name):
         ''' get first initializer in list whose name matches 'name' '''
