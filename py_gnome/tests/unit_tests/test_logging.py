@@ -10,7 +10,10 @@ import pytest
 
 from gnome import initialize_log
 from gnome.model import Model
+from gnome.environment import constant_wind, Water
+from gnome.weatherers import Evaporation
 from gnome.spill import point_line_release_spill
+from gnome.spill.elements import floating_weathering
 
 
 here = os.path.dirname(__file__)
@@ -98,11 +101,13 @@ def test_console_only_logging():
     c_dict = copy.deepcopy(config_dict)
     #c_dict['root']['handlers'].remove('file')
     #del c_dict['handlers']['file']
+    et = floating_weathering(substance=u'ALAMO')
     initialize_log(c_dict, logfile)
     model = Model()
     model.spills += point_line_release_spill(10,
                                              (0, 0, 0),
                                              model.start_time,
+                                             element_type=et,
                                              amount=1000,
                                              units='kg')
 
@@ -110,8 +115,14 @@ def test_console_only_logging():
                                   (0, 0, 0),
                                   model.start_time,
                                   amount=1000,
+                                  element_type=et,
                                   units='kg',
                                   name='s2')
+    model.environment += Water()
+    model.environment += constant_wind(1., 0.)
+    model.weatherers += Evaporation(model.environment[-2],
+                                    model.environment[-1])
     for spill in model.spills:
         spill.set('num_released', 10)
-    #model.full_run()
+
+    model.full_run()

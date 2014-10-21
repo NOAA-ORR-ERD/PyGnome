@@ -166,6 +166,7 @@ class Model(Serializable):
 
         # restore the spill data outside this method - let's not try to find
         # the saveloc here
+        model.logger.info("'new_from_dict' created new model")
         return model
 
     def __init__(self,
