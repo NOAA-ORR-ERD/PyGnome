@@ -111,12 +111,13 @@ class Evaporation(Weatherer, Serializable):
                        sc['mol'][mask]).reshape(-1, 1)
             d_denom = np.repeat(d_denom, d_numer.shape[1], axis=1)
             sc['evap_decay_constant'][mask, :] = -d_numer/d_denom
+            self.logger.info('spill min evap_decay_constant: {0}'.
+                             format(np.min(sc['evap_decay_constant'][mask, :])))
+            self.logger.info('spill max evap_decay_constant: {0}'.
+                             format(np.max(sc['evap_decay_constant'][mask, :])))
             if np.any(sc['evap_decay_constant'][mask, :] > 0.0):
                 raise ValueError("Error in Evaporation routine. One of the "
                                  "exponential decay constant is positive")
-
-        self.logger.info('Evaporation Decay Constant: {0}'.
-                         format(sc['evap_decay_constant']))    
 
     def _compute_le_thickness(self):
         '''
@@ -157,9 +158,6 @@ class Evaporation(Weatherer, Serializable):
 
             sc.weathering_data['evaporated'] += \
                 np.sum(sc['mass_components'][:, :] - mass_remain[:, :])
-
-            self.logger.info('Mass Components: {0}'.
-                             format(sc['mass_components']))
 
             sc.weathering_data['avg_density'] = sc['density'].mean()
             sc['mass_components'][:] = mass_remain

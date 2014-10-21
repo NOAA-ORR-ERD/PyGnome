@@ -625,8 +625,9 @@ class Model(Serializable):
             # release particles for next step - these particles will be aged
             # in the next step
             sc.release_elements(self.time_step, self.model_time)
-            self.logger.info("Released elements: {0.current_time_step} for "
-                          "{0.name}".format(self))
+            self.logger.info("Released {0} elements for step: "
+                             " {1.current_time_step} for {1.name}".
+                             format(sc.num_released, self))
 
         # cache the results - current_time_step is incremented but the
         # current_time_stamp in spill_containers (self.spills) is not updated
