@@ -22,12 +22,9 @@ from gnome.utilities.orderedcollection import OrderedCollection
 from gnome.utilities.serializable import Serializable, Field
 
 from gnome.spill_container import SpillContainerPair
-
 from gnome.movers import Mover
 from gnome.weatherers import Weatherer
-
 from gnome.outputters import Outputter, NetCDFOutput
-
 from gnome.persist import (extend_colander,
                            validators,
                            References,
@@ -198,7 +195,6 @@ class Model(Serializable):
         :param cache_enabled=False: Flag for setting whether the model should
             cache results to disk.
         '''
-
         self.__restore__(time_step, start_time, duration,
                          weathering_substeps,
                          uncertain, cache_enabled, map, name)
@@ -209,6 +205,7 @@ class Model(Serializable):
 
         self.weatherers.register_callback(self._callback_add_weatherer,
                                           ('add', 'replace'))
+        self.logger.info('New model initialized')
 
     def __restore__(self, time_step, start_time, duration,
                     weathering_substeps, uncertain, cache_enabled, map, name):
@@ -439,6 +436,7 @@ class Model(Serializable):
                                             cache=self._cache,
                                             uncertain=self.uncertain,
                                             spills=self.spills)
+        self.logger.info("{0} setup_model_run complete".format(self.name))
 
     def setup_time_step(self):
         '''
@@ -601,11 +599,14 @@ class Model(Serializable):
         if self.current_time_step == -1:
             # that's all we need to do for the zeroth time step
             self.setup_model_run()
+            self.logger.info("Setup run for: {0}".format(self.name))
         else:
             self.setup_time_step()
             self.move_elements()
             self.weather_elements()
             self.step_is_done()
+            self.logger.info("Completed step: {0.current_time_step} for "
+                          "{0.name}".format(self))
 
         self.current_time_step += 1
 
@@ -623,6 +624,8 @@ class Model(Serializable):
             # release particles for next step - these particles will be aged
             # in the next step
             sc.release_elements(self.time_step, self.model_time)
+            self.logger.info("Released elements: {0.current_time_step} for "
+                          "{0.name}".format(self))
 
         # cache the results - current_time_step is incremented but the
         # current_time_stamp in spill_containers (self.spills) is not updated
@@ -647,7 +650,7 @@ class Model(Serializable):
         '''
         return self.step()
 
-    def full_run(self, rewind=True, log=False):
+    def full_run(self, rewind=True, logger=False):
         '''
         Do a full run of the model.
 
@@ -663,13 +666,11 @@ class Model(Serializable):
         while True:
             try:
                 results = self.step()
-
-                if log:
-                    print results
+                self.logger.info(results)
 
                 output_data.append(results)
             except StopIteration:
-                print 'Done with the model run'
+                self.logger.info('Run Complete: Stop Iteration')
                 break
 
         return output_data
@@ -776,11 +777,6 @@ class Model(Serializable):
 
         # there should be no more references
         self._json_to_saveloc(json_, saveloc, references, name)
-        if name and references.reference(self) != name:
-            # todo: want a warning here instead of an exception
-            raise Exception("{0} already exists, cannot name "
-                "the model's json file: {0}".format(name))
-            pass
         return references
 
     def _save_collection(self, saveloc, coll_, refs, coll_json):
