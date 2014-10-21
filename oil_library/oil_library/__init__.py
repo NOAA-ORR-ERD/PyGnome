@@ -3,6 +3,7 @@ from itertools import chain
 from collections import namedtuple
 
 from sqlalchemy import create_engine
+from sqlalchemy.exc import UnboundExecutionError
 from sqlalchemy.orm.exc import NoResultFound
 
 from hazpy import unit_conversion
@@ -54,7 +55,12 @@ def _get_db_session():
     'we can call this from scripts to access valid DBSession'
     # not sure we want to do it this way - but let's use for now
     session = DBSession()
-    session.bind = create_engine('sqlite:///' + _db_file)
+
+    try:
+        session.get_bind()
+    except UnboundExecutionError:
+        session.bind = create_engine('sqlite:///' + _db_file)
+
     return session
 
 
@@ -104,7 +110,9 @@ def get_oil(oil_, max_cuts=None):
         session = _get_db_session()
 
         try:
-            return session.query(Oil).filter(Oil.name == oil_).one()
+            oil = session.query(Oil).filter(Oil.name == oil_).one()
+            oil.densities
+            return oil
         except:
             pass    # try checking imported_record_id
 
