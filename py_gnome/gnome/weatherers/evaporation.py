@@ -115,6 +115,9 @@ class Evaporation(Weatherer, Serializable):
                 raise ValueError("Error in Evaporation routine. One of the "
                                  "exponential decay constant is positive")
 
+        self.logger.info('Evaporation Decay Constant: {0}'.
+                         format(sc['evap_decay_constant']))    
+
     def _compute_le_thickness(self):
         '''
         some function to compute LE thickness
@@ -154,6 +157,10 @@ class Evaporation(Weatherer, Serializable):
 
             sc.weathering_data['evaporated'] += \
                 np.sum(sc['mass_components'][:, :] - mass_remain[:, :])
+
+            self.logger.info('Mass Components: {0}'.
+                             format(sc['mass_components']))
+
             sc.weathering_data['avg_density'] = sc['density'].mean()
             sc['mass_components'][:] = mass_remain
             sc['mass'][:] = sc['mass_components'].sum(1)
