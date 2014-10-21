@@ -5,6 +5,7 @@ import json
 import os
 import logging
 import copy
+from datetime import timedelta
 
 import pytest
 
@@ -96,7 +97,7 @@ def test_conf_from_file(config_file):
     logging.info('Logfile initialized from file')
 
 
-def test_console_only_logging():
+def test_full_run_logging():
     rm_logfile()
     c_dict = copy.deepcopy(config_dict)
     #c_dict['root']['handlers'].remove('file')
@@ -104,20 +105,24 @@ def test_console_only_logging():
     et = floating_weathering(substance=u'ALAMO')
     initialize_log(c_dict, logfile)
     model = Model()
-    model.spills += point_line_release_spill(10,
+    model.spills += point_line_release_spill(1000,
                                              (0, 0, 0),
                                              model.start_time,
+                                             end_release_time=model.start_time + timedelta(days=1),
                                              element_type=et,
-                                             amount=1000,
-                                             units='kg')
+                                             amount=200,
+                                             units='m^3')
 
-    s2 = point_line_release_spill(10,
-                                  (0, 0, 0),
-                                  model.start_time,
-                                  amount=1000,
-                                  element_type=et,
-                                  units='kg',
-                                  name='s2')
+    #==========================================================================
+    # s2 = point_line_release_spill(10,
+    #                               (0, 0, 0),
+    #                               model.start_time,
+    #                               end_release_time=model.start_time + timedelta(days=1),
+    #                               amount=1000,
+    #                               element_type=et,
+    #                               units='kg',
+    #                               name='s2')
+    #==========================================================================
     model.environment += Water()
     model.environment += constant_wind(1., 0.)
     model.weatherers += Evaporation(model.environment[-2],
