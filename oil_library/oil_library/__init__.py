@@ -110,7 +110,9 @@ def get_oil(oil_, max_cuts=None):
         session = _get_db_session()
 
         try:
-            return session.query(Oil).filter(Oil.name == oil_).one()
+            oil = session.query(Oil).filter(Oil.name == oil_).one()
+            oil.densities
+            return oil
         except:
             pass    # try checking imported_record_id
 
