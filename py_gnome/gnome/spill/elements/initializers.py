@@ -207,15 +207,13 @@ class InitArraysFromOilProps(InitBaseClass, Serializable):
                                     dtype=np.float64)
 
         # if 'mass' is defined, use it, otherwise, compute it and add
-        if np.all(data_arrays['mass'] == 0.0):
+        if np.all(data_arrays['mass'][-num_new_particles:] == 0.0):
             le_mass = spill.get_mass('kg') / spill.release.num_elements
             data_arrays['mass'][-num_new_particles:] = le_mass
 
         masses = mass_fractions * (data_arrays['mass'][-num_new_particles:]
                                    .reshape(num_new_particles, -1))
-
         data_arrays['mass_components'][-num_new_particles:] = masses
-
 
 # do following two classes work for a time release spill?
 
