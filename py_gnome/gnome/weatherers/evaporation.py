@@ -152,7 +152,7 @@ class Evaporation(Weatherer, Serializable):
                                 sc['evap_decay_constant'],
                                 time_step)
 
-            sc.weathering_data['evaporated'] = \
+            sc.weathering_data['evaporated'] += \
                 np.sum(sc['mass_components'][:, :] - mass_remain[:, :])
             sc.weathering_data['avg_density'] = sc['density'].mean()
             sc['mass_components'][:] = mass_remain

@@ -24,7 +24,7 @@ class Skimmer(Weatherer, Serializable):
             # take out 0.1% of the mass
             pct_per_le = (1 - 0.1/sc['mass_components'].shape[1])
             mass_remain = pct_per_le * sc['mass_components']
-            sc.weathering_data['skimmed'] = \
+            sc.weathering_data['skimmed'] += \
                 np.sum(sc['mass_components'][:, :] - mass_remain[:, :])
             sc['mass_components'] = mass_remain
             sc['mass'][:] = sc['mass_components'].sum(1)
@@ -44,7 +44,7 @@ class Burn(Weatherer, Serializable):
             # take out 0.25% of the mass
             pct_per_le = (1 - 0.25/sc['mass_components'].shape[1])
             mass_remain = pct_per_le * sc['mass_components']
-            sc.weathering_data['burned'] = \
+            sc.weathering_data['burned'] += \
                 np.sum(sc['mass_components'][:, :] - mass_remain[:, :])
             sc['mass_components'] = mass_remain
             sc['mass'][:] = sc['mass_components'].sum(1)
@@ -64,7 +64,7 @@ class Dispersion(Weatherer, Serializable):
             # take out 0.015% of the mass
             pct_per_le = (1 - 0.015/sc['mass_components'].shape[1])
             mass_remain = pct_per_le * sc['mass_components']
-            sc.weathering_data['dispersed'] = \
+            sc.weathering_data['dispersed'] += \
                 np.sum(sc['mass_components'][:, :] - mass_remain[:, :])
             sc['mass_components'] = mass_remain
             sc['mass'][:] = sc['mass_components'].sum(1)
