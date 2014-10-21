@@ -206,7 +206,7 @@ class Model(Serializable):
 
         self.weatherers.register_callback(self._callback_add_weatherer,
                                           ('add', 'replace'))
-        self.log.info('New model initialized')
+        self.logger.info('New model initialized')
 
     def __restore__(self, time_step, start_time, duration,
                     weathering_substeps, uncertain, cache_enabled, map, name):
@@ -437,7 +437,7 @@ class Model(Serializable):
                                             cache=self._cache,
                                             uncertain=self.uncertain,
                                             spills=self.spills)
-        self.log.info("{0} setup_model_run complete".format(self.name))
+        self.logger.info("{0} setup_model_run complete".format(self.name))
 
     def setup_time_step(self):
         '''
@@ -600,13 +600,13 @@ class Model(Serializable):
         if self.current_time_step == -1:
             # that's all we need to do for the zeroth time step
             self.setup_model_run()
-            self.log.info("Setup run for: {0}".format(self.name))
+            self.logger.info("Setup run for: {0}".format(self.name))
         else:
             self.setup_time_step()
             self.move_elements()
             self.weather_elements()
             self.step_is_done()
-            self.log.info("Completed step: {0.current_time_step} for "
+            self.logger.info("Completed step: {0.current_time_step} for "
                           "{0.name}".format(self))
 
         self.current_time_step += 1
@@ -625,7 +625,7 @@ class Model(Serializable):
             # release particles for next step - these particles will be aged
             # in the next step
             sc.release_elements(self.time_step, self.model_time)
-            self.log.info("Released elements: {0.current_time_step} for "
+            self.logger.info("Released elements: {0.current_time_step} for "
                           "{0.name}".format(self))
 
         # cache the results - current_time_step is incremented but the
@@ -651,7 +651,7 @@ class Model(Serializable):
         '''
         return self.step()
 
-    def full_run(self, rewind=True, log=False):
+    def full_run(self, rewind=True, logger=False):
         '''
         Do a full run of the model.
 
@@ -667,11 +667,11 @@ class Model(Serializable):
         while True:
             try:
                 results = self.step()
-                self.log.info(results)
+                self.logger.info(results)
 
                 output_data.append(results)
             except StopIteration:
-                self.log.info('Run Complete: Stop Iteration')
+                self.logger.info('Run Complete: Stop Iteration')
                 break
 
         return output_data

@@ -174,9 +174,9 @@ class Spill(serializable.Serializable):
                    'Valid units for volume: {0}, for mass: {1} ').format(
                        self.valid_vol_units, self.valid_mass_units)
             #raise uc.InvalidUnitError(msg)
-            #self.log.exception(msg)
+            #self.logger.exception(msg)
             ex = uc.InvalidUnitError(msg)
-            self.log.exception(ex, exc_info=True)
+            self.logger.exception(ex, exc_info=True)
             raise ex    # this should be raised since run will fail otherwise
 
     def set(self, prop, val):
@@ -197,7 +197,7 @@ class Spill(serializable.Serializable):
         it does not know which one to return
         """
         if prop == 'num_released':
-            self.log.warning("cannot set 'num_released' attribute")
+            self.logger.warning("cannot set 'num_released' attribute")
 
         # we don't want to add an attribute that doesn't already exist
         # first check to see that the attribute exists, then change it else
@@ -212,7 +212,7 @@ class Spill(serializable.Serializable):
                     setattr(init, prop, val)
                     break
                 else:
-                    self.log.warning('{0} attribute does not exist '
+                    self.logger.warning('{0} attribute does not exist '
                                      'in element_type '
                                      'or release object'.format(prop))
 
@@ -272,7 +272,7 @@ class Spill(serializable.Serializable):
 
         # nothing returned, then property was not found - raise exception or
         # return None?
-        self.log.warning("{0} attribute does not exist in element_type"
+        self.logger.warning("{0} attribute does not exist in element_type"
                          " or release object".format(prop))
         return None
 

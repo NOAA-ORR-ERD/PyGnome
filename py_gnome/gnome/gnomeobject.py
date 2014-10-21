@@ -24,7 +24,7 @@ class GnomeId(object):
     _log = None
 
     @property
-    def log(self):
+    def logger(self):
         '''
         define attribute '_log'. If it doesn't exist, define it here.
         This is so we don't have to add it to all PyGnome classes - this
