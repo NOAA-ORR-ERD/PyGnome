@@ -155,3 +155,7 @@ class OilProps(object):
                 Pi.append(exp(ln_Pi_Po) * atmos_pressure)
 
         return Pi
+
+    def tojson(self):
+        'for now, just convert underlying oil object to json'
+        return self._r_oil.tojson()

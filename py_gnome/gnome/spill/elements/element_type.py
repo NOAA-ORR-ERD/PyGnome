@@ -26,11 +26,6 @@ from hazpy import unit_conversion as uc
 """ ElementType classes"""
 
 
-class ElementTypeSchema(base_schema.ObjType):
-    'just add substance name as a string for now'
-    substance = SchemaNode(String(), missing=drop)
-
-
 class ElementType(Serializable):
     _state = copy.deepcopy(Serializable._state)
     _state.add(save=['initializers'],
@@ -40,7 +35,7 @@ class ElementType(Serializable):
     # __eq__ and check 'substance' name is equal. Need to figure out why
     # equality is failing
     _state += Field('substance', save=True, update=True, test_for_eq=False)
-    _schema = ElementTypeSchema
+    _schema = base_schema.ObjType
 
     def __init__(self, initializers=[], substance='oil_conservative'):
         '''
@@ -76,8 +71,9 @@ class ElementType(Serializable):
                 ')'.format(self))
 
     def substance_to_dict(self):
-        'for now just return the string'
-        return self._substance.name
+        ''' call the tojson() method on substance -
+        no colander schema for it yet '''
+        return self._substance.tojson()
 
     @property
     def substance(self):
@@ -85,10 +81,16 @@ class ElementType(Serializable):
 
     @substance.setter
     def substance(self, val):
-        if isinstance(val, basestring):
+        '''
+        first try to use get_oil_props using 'val'. If this fails, then assume
+        user has provided a valid OilProps object and use it as is
+        '''
+        try:
             # leave for now to preserve tests
             self._substance = get_oil_props(val, 2)
-        else:
+        except:
+            self.logger.info('Failed to get_oil_props for {0}. Use as is '
+                             'assuming has OilProps interface'.format(val))
             self._substance = val
 
     @property
@@ -153,14 +155,14 @@ class ElementType(Serializable):
         dict_ = self.to_serialize(json_)
         et_schema = self.__class__._schema()
         et_json_ = et_schema.serialize(dict_)
-        #s_init = {}
         s_init = []
 
         for i_val in self.initializers:
             s_init.append(i_val.serialize(json_))
-            #s_init[i_key] = i_val.serialize(json_)
 
         et_json_['initializers'] = s_init
+        et_json_['substance'] = dict_['substance']
+
         return et_json_
 
     @classmethod
@@ -174,7 +176,17 @@ class ElementType(Serializable):
         """
         if not cls.is_sparse(json_):
             et_schema = cls._schema()
+
+            # replace substance with just the oil record ID for now since
+            # we don't have a way to construct to object fromjson()
+            substance = json_.pop('substance')
             dict_ = et_schema.deserialize(json_)
+            if 'id' in substance:
+                dict_['substance'] = substance['id']
+            elif 'name' in substance:
+                dict_['substance'] = substance['name']
+                # do not add 'substance' attribute! - raise error
+
             d_init = []
 
             for i_val in json_['initializers']:
@@ -202,8 +214,9 @@ class ElementType(Serializable):
         substance attribute (OilProps) object is equal; however, this check
         fails - need to investigate further
         '''
-        if self.attr_to_dict('substance') != other.attr_to_dict('substance'):
-            return False
+        # todo: fix/add equality check for 'substance'
+        #if self.attr_to_dict('substance') != other.attr_to_dict('substance'):
+        #    return False
 
         return super(ElementType, self).__eq__(other)
 

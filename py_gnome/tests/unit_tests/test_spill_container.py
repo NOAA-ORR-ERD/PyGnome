@@ -967,8 +967,7 @@ def test_SpillContainer_add_array_types():
 
 def test_weathering_data_attr():
     '''
-    if Spill().amount = None for all spills, then no weathiner data is
-    written by SpillContainer
+    weathering_data is always written by SpillContainer
     '''
     sc = SpillContainer()
     ts = 900
@@ -979,7 +978,7 @@ def test_weathering_data_attr():
     sc.spills += s
     sc.prepare_for_model_run()
     sc.release_elements(ts, s1_rel)
-    assert 'floating' not in sc.weathering_data
+    assert 'floating' in sc.weathering_data
 
     # use different element_type and initializers for both spills
     s[0].amount = 10.0
