@@ -95,29 +95,32 @@ class Evaporation(Weatherer, Serializable):
         for spill in sc.spills:
             f_diff = (1.0 - spill.frac_water)
             mask = sc.get_spill_mask(spill)
-            mw = spill.get('substance').molecular_weight
-            vp = spill.get('substance').vapor_pressure(water_temp)
-            sc['thickness'][mask] = self._compute_le_thickness()
-            sc['density'][mask] = \
-                spill.get('substance').get_density(temp=water_temp)
-            sc['mol'][mask] = \
-                np.sum(sc['mass_components'][mask, :]/mw, 1)
-            le_area = \
-                (sc['mass'][mask]/sc['density'][mask]) / sc['thickness'][mask]
-            le_area = le_area.reshape(-1, 1)
+            if len(mask) > 0:
+                mw = spill.get('substance').molecular_weight
+                vp = spill.get('substance').vapor_pressure(water_temp)
+                sc['thickness'][mask] = self._compute_le_thickness()
+                sc['density'][mask] = \
+                    spill.get('substance').get_density(temp=water_temp)
+                sc['mol'][mask] = \
+                    np.sum(sc['mass_components'][mask, :]/mw, 1)
+                le_area = ((sc['mass'][mask]/sc['density'][mask]) /
+                           sc['thickness'][mask])
+                le_area = le_area.reshape(-1, 1)
 
-            d_numer = (le_area * K * vp * spill.frac_coverage * f_diff)
-            d_denom = (constants['gas_constant'] * water_temp *
-                       sc['mol'][mask]).reshape(-1, 1)
-            d_denom = np.repeat(d_denom, d_numer.shape[1], axis=1)
-            sc['evap_decay_constant'][mask, :] = -d_numer/d_denom
-            self.logger.info('spill min evap_decay_constant: {0}'.
-                             format(np.min(sc['evap_decay_constant'][mask, :])))
-            self.logger.info('spill max evap_decay_constant: {0}'.
-                             format(np.max(sc['evap_decay_constant'][mask, :])))
-            if np.any(sc['evap_decay_constant'][mask, :] > 0.0):
-                raise ValueError("Error in Evaporation routine. One of the "
-                                 "exponential decay constant is positive")
+                d_numer = (le_area * K * vp * spill.frac_coverage * f_diff)
+                d_denom = (constants['gas_constant'] * water_temp *
+                           sc['mol'][mask]).reshape(-1, 1)
+                d_denom = np.repeat(d_denom, d_numer.shape[1], axis=1)
+                sc['evap_decay_constant'][mask, :] = -d_numer/d_denom
+                self.logger.info('spill min evap_decay_constant: {0}'.
+                                 format(np.min(sc['evap_decay_constant']
+                                               [mask, :])))
+                self.logger.info('spill max evap_decay_constant: {0}'.
+                                 format(np.max(sc['evap_decay_constant']
+                                               [mask, :])))
+                if np.any(sc['evap_decay_constant'][mask, :] > 0.0):
+                    raise ValueError("Error in Evaporation routine. One of the"
+                                     " exponential decay constant is positive")
 
     def _compute_le_thickness(self):
         '''
