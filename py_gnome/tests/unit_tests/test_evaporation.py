@@ -18,6 +18,7 @@ from gnome.array_types import (mass_components,
                                thickness,
                                mol,
                                evap_decay_constant)
+from gnome.basic_types import oil_status
 
 from conftest import sample_sc_release, sample_model_weathering
 
@@ -126,7 +127,8 @@ def test_full_run(sample_model_fcn, oil, temp):
         for sc in model.spills.items():
             assert_helper(sc, sc.num_released - released)
             released = sc.num_released
-            assert sc.weathering_data['floating'] == np.sum(sc['mass'])
+            mask = sc['status_codes'] == oil_status.in_water
+            assert sc.weathering_data['floating'] == np.sum(sc['mass'][mask])
             print ("Amount released: {0}".
                    format(sc.weathering_data['amount_released']))
             print "Mass floating: {0}".format(sc.weathering_data['floating'])

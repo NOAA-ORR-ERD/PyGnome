@@ -340,6 +340,8 @@ class SpillContainer(SpillContainerData):
 
         # remake() spills ordered collection
         self.spills.remake()
+        self.weathering_data['floating'] = 0.0
+        self.weathering_data['amount_released'] = 0.0
 
     def _append_initializer_array_types(self, array_types):
         # for each array_types, use the key to get the associated initializer
@@ -442,11 +444,7 @@ class SpillContainer(SpillContainerData):
 
         # update intrinsic properties after release since we release particles
         # at end of the step
-
-        if np.any(self['mass'] > 0.0):
-            # spill amount must be defined for at least one of the spills for
-            # this to be true
-            self._write_weathering_data(amount_released)
+        self._write_weathering_data(amount_released)
 
     def _write_weathering_data(self, amount_released):
         '''
