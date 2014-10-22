@@ -214,8 +214,9 @@ class ElementType(Serializable):
         substance attribute (OilProps) object is equal; however, this check
         fails - need to investigate further
         '''
-        if self.attr_to_dict('substance') != other.attr_to_dict('substance'):
-            return False
+        # todo: fix/add equality check for 'substance'
+        #if self.attr_to_dict('substance') != other.attr_to_dict('substance'):
+        #    return False
 
         return super(ElementType, self).__eq__(other)
 
