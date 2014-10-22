@@ -5,8 +5,6 @@ from math import exp
 
 import numpy as np
 
-from oil_library.models import KVis
-
 
 def get_density(oil, temp, out=None):
     '''
@@ -109,20 +107,87 @@ def get_viscosity(oil, temp):
     else:
         return None
 
+
+def get_boiling_points_from_cuts(oil):
+    '''
+    Need the mass_fraction to sum up to 1.0
+    self.mass_fraction defined as:
+
+        [m0_s, m0_a, m1_s, m1_a, ..., m_resins, m_asphaltenes]
+
+    Also need to understand how to identify saturates/aromatics
+    Currently, assumes cuts are added as alternating saturate, then
+    aromatic in the list of cuts
+    '''
+    # distillation cut data available
+    mass_fractions = []
+    boiling_points = []
+
+    # Note: not sure if we'll get pseudo components from raw cuts so
+    # do a temporary update for now
+    last_frac = 0.0
+    for cut in oil.cuts:
+        boiling_points.append(cut.vapor_temp_k)
+        mass_fractions.append(round(cut.fraction - last_frac, 4))
+        last_frac = cut.fraction
+
+    _add_heavy_component(mass_fractions, boiling_points,
+                         get_sara_fraction(oil, 'Resins'))
+
+    _add_heavy_component(mass_fractions, boiling_points,
+                         get_sara_fraction(oil, 'Asphaltenes'))
+
+    # add remaining mass to last cut
+    # - ask about this, but I think we can assume it is heavy
+    _add_heavy_component(mass_fractions, boiling_points, 1.0)
+
+    return zip(mass_fractions, boiling_points)
+
+
+def get_sara_fraction(oil, sara_type):
+    fraction = [f for f in oil.sara_fractions if f.sara_type == sara_type]
+    if fraction:
+        return fraction[0].fraction
+    else:
+        return None
+
+
+def _add_heavy_component(mass_fractions,
+                         boiling_points,
+                         heavy_comp):
+    '''
+    Add heavier components to our set of mass fractions.
+    - By definition, we need to ensure that the sum of our mass fractions
+      is not greater than 1.0
+    - Heavier components are assumed to not have a practical
+      boiling point
+    '''
+    if heavy_comp is None or heavy_comp == 0.0:
+        return
+
+    f_remain = sum(mass_fractions)
+    if f_remain < 1.0:
+        if heavy_comp + f_remain <= 1.0:
+            mass_fractions.append(heavy_comp)
+        else:
+            mass_fractions.append(1.0 - f_remain)
+        boiling_points.append(float('inf'))
+
+
 # ORIG CODE MOVED FROM OilProps object
 #==============================================================================
 # def get_density_orig(oil, temp):
 #     '''
 #     Given an oil object - it will contain a list of density objects with
-#     density at a reference temperature. This function computes and returns the
-#     density at 'temp'.
+#     density at a reference temperature. This function computes and returns
+#     the density at 'temp'.
 #
 #     Function works on list of temps/numpy arrays or a scalar
 #
 #     If oil only contains one density value, return that for all temps
 #
-#     Function does not do any unit conversion - it expects the data in SI units
-#     (kg/m^3) and (K) and returns the output in SI units.
+#     Function does not do any unit conversion - it expects the data in
+#     SI units (kg/m^3) and (K) and returns the output in SI units.
 #
 #     Optional 'out' parameter in keeping with numpy convention, fill the out
 #     array if provided
@@ -214,8 +279,8 @@ def get_viscosity(oil, temp):
 #
 #     def get_viscosity(self, units='m^2/s'):
 #         '''
-#         :param units: optional input if output units should be something other
-#                       than m^2/s
+#         :param units: optional input if output units should be something
+#                       other than m^2/s
 #         :return: Kinematic Viscosity at current temperature.
 #                  Default units: (m^2/s)
 #

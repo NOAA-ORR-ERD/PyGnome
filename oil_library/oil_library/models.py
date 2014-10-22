@@ -249,6 +249,7 @@ class Cut(Base):
     __tablename__ = 'cuts'
     id = Column(Integer, primary_key=True)
     imported_record_id = Column(Integer, ForeignKey('imported_records.id'))
+    oil_id = Column(Integer, ForeignKey('oils.id'))
 
     vapor_temp_k = Column(Float(53))
     liquid_temp_k = Column(Float(53))
@@ -262,7 +263,7 @@ class Cut(Base):
     def __repr__(self):
         lt = '{0}K'.format(self.liquid_temp_k) if self.liquid_temp_k else None
         vt = '{0}K'.format(self.vapor_temp_k) if self.vapor_temp_k else None
-        return ('<Cut([{0}, {1}], {2})>'
+        return ('<Cut(liquid_temp={0}, vapor_temp={1}, fraction={2})>'
                 .format(lt, vt, self.fraction))
 
 
@@ -346,14 +347,19 @@ class Oil(Base):
     flash_point_min_k = Column(Float(53))
     flash_point_max_k = Column(Float(53))
     emulsion_water_fraction_max = Column(Float(53))
+    bullwinkle_fraction = Column(Float(53))
+    adhesion_kg_m_2 = Column(Float(53))
+    sulphur_fraction = Column(Float(53))
 
     categories = relationship('Category', secondary=oil_to_category,
                               backref='oils')
 
-    kvis = relationship('KVis', backref='oil',
-                        cascade="all, delete, delete-orphan")
     densities = relationship('Density', backref='oil',
                              cascade="all, delete, delete-orphan")
+    kvis = relationship('KVis', backref='oil',
+                        cascade="all, delete, delete-orphan")
+    cuts = relationship('Cut', backref='oil',
+                        cascade="all, delete, delete-orphan")
     sara_fractions = relationship('SARAFraction', backref='oil',
                                   cascade="all, delete, delete-orphan")
 

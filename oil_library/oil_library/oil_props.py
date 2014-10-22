@@ -13,7 +13,7 @@ Not sure at present if this needs to be serializable?
 from math import log, exp
 
 from hazpy import unit_conversion as uc
-from .utilities import get_density
+from .utilities import get_density, get_boiling_points_from_cuts
 
 
 def molecular_weight(bp, component):
@@ -65,7 +65,12 @@ class OilProps(object):
         # Default format for mass components:
         # mass_fraction =
         # [m0_s, m0_a, m1_s, m1_a, ..., m_resins, m_asphaltenes]
-        self._mass_frac_bp_from_cuts()
+        self.mass_fraction = []
+        self.boiling_point = []
+        for mf, bp in get_boiling_points_from_cuts(oil_):
+            self.mass_fraction.append(mf)
+            self.boiling_point.append(bp)
+
         self._component_mw()
 
     def __repr__(self):
@@ -107,56 +112,6 @@ class OilProps(object):
     def num_components(self):
         return len(self.mass_fraction)
 
-    def _add_resins_asphalt(self, heavy_comp):
-        '''
-        add heavier components if mass_fraction < 1.0
-        This just ensures mass_fraction sums to 1.0
-        '''
-        if heavy_comp is None or heavy_comp == 0.0:
-            return
-
-        f_remain = sum(self.mass_fraction)
-        if f_remain < 1.0:
-            if heavy_comp + f_remain <= 1.0:
-                self.mass_fraction.append(heavy_comp)
-            else:
-                self.mass_fraction.append(1.0 - f_remain)
-            self.boiling_point.append(float('inf'))
-
-    def _mass_frac_bp_from_cuts(self):
-        '''
-        Need the mass_fraction to sum upto 1.0
-        self.mass_fraction defined as:
-
-            [m0_s, m0_a, m1_s, m1_a, ..., m_resins, m_asphaltenes]
-
-        Also need to understand how to identify saturates/aromatics
-        Currently, assumes cuts are added as alternating saturate, then
-        aromatic in the list of cuts
-        '''
-        # distillation cut data available
-        self.mass_fraction = []
-        self.boiling_point = []
-
-        # Note: not sure if we'll get psuedocomponents from raw cuts so
-        # do a temporary update for now
-        try:
-            cuts = self._r_oil.cuts
-        except AttributeError:
-            cuts = self._r_oil.imported.cuts
-
-        last_frac = 0.0
-        for cut in cuts:
-            self.boiling_point.append(cut.vapor_temp_k)
-            self.mass_fraction.append(round(cut.fraction - last_frac, 4))
-            last_frac = cut.fraction
-        self._add_resins_asphalt(self.get('resins'))
-        self._add_resins_asphalt(self.get('asphaltene_content'))
-
-        # add remaining mass to last cut - ask about this
-        if sum(self.mass_fraction) < 1.0:
-            self.mass_fraction[-1] += 1.0 - sum(self.mass_fraction)
-
     def _component_mw(self):
         'estimate molecular weights of components'
         self.molecular_weight = [float('nan')] * self.num_components
@@ -166,7 +121,7 @@ class OilProps(object):
             if bp == float('inf'):
                 # this should be the case for resins + asphaltenes so just
                 # make the mw equal to the components with highest BP
-                self.molecular_weight[ix] = self.molecular_weight[ix-1]
+                self.molecular_weight[ix] = self.molecular_weight[ix - 1]
                 continue
 
             if ix % 2 == 0:
