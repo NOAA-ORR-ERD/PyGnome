@@ -1,6 +1,8 @@
 '''
 Test evaporation module
 '''
+import os
+import json
 from datetime import timedelta
 
 import pytest
@@ -129,6 +131,14 @@ def test_full_run(sample_model_fcn, oil, temp):
                    format(sc.weathering_data['amount_released']))
             print "Mass floating: {0}".format(sc.weathering_data['floating'])
             print "Completed step: {0}\n".format(step['step_num'])
+
+    try:
+        os.remove('weathering_model.json')
+    except:
+        pass
+    m_json_ = model.serialize('webapi')
+    with open('weathering_model.json', 'w') as f:
+        json.dump(m_json_, f, indent=True)
 
 
 def test_full_run_evap_not_active(sample_model_fcn):
