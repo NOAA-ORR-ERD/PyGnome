@@ -81,10 +81,16 @@ class ElementType(Serializable):
 
     @substance.setter
     def substance(self, val):
-        if isinstance(val, basestring):
+        '''
+        first try to use get_oil_props using 'val'. If this fails, then assume
+        user has provided a valid OilProps object and use it as is
+        '''
+        try:
             # leave for now to preserve tests
             self._substance = get_oil_props(val, 2)
-        else:
+        except:
+            self.logger.info('Failed to get_oil_props for {0}. Use as is '
+                             'assuming has OilProps interface'.format(val))
             self._substance = val
 
     @property
