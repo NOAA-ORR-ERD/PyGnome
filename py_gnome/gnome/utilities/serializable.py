@@ -744,19 +744,20 @@ class Serializable(GnomeId, Savable):
         :type value: depends on each attribute being updated
         '''
         current_value = getattr(self, name)
-        if self._attr_changed(current_value, value):
-            if isinstance(current_value, OrderedCollection):
-                return self._update_orderedcoll_attr(current_value, value)
-            else:
-                from_dict_fn_name = '%s_update_from_dict' % name
-                if hasattr(self, from_dict_fn_name):
-                    return getattr(self, from_dict_fn_name)(value)
-                # NO updated of NESTED Seriablizable objects
-                #elif hasattr(getattr(self, name), 'update_from_dict'):
-                #    getattr(self, name).update_from_dict(value)
-                else:
-                    setattr(self, name, value)
+        if isinstance(current_value, OrderedCollection):
+            return self._update_orderedcoll_attr(current_value, value)
 
+        from_dict_fn_name = '%s_update_from_dict' % name
+        if hasattr(self, from_dict_fn_name):
+            return getattr(self, from_dict_fn_name)(value)
+        # NO updated of NESTED Seriablizable objects
+        #elif hasattr(getattr(self, name), 'update_from_dict'):
+        #    getattr(self, name).update_from_dict(value)
+
+        # not and OrderedCollection and doesn't define custom _update_from_dict
+        # function. update using setattr if attr has changed
+        if self._attr_changed(current_value, value):
+            setattr(self, name, value)
             return True
         else:
             return False
@@ -765,13 +766,18 @@ class Serializable(GnomeId, Savable):
         '''
         update attribute of type OrderedCollection with items in list l_new_oc
         '''
-        updated_oc = OrderedCollection(l_new_oc)
         updated = False
-        if updated_oc != curr_oc:
-            updated = True
-            curr_oc.clear()
-            curr_oc += updated_oc
 
+        if len(l_new_oc) != len(curr_oc):
+            updated = True
+
+        if l_new_oc and (curr_oc != OrderedCollection(l_new_oc)):
+            updated = True
+
+        if updated:
+            curr_oc.clear()
+            if l_new_oc:
+                curr_oc += l_new_oc
         return updated
 
     def obj_type_to_dict(self):

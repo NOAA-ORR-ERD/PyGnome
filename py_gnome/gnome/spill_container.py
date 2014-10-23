@@ -768,13 +768,19 @@ class SpillContainerPair(SpillContainerPairData):
         This is primarily intended for the webapp so the dict_ will only
         contain a list of forecast spills
         '''
-        new_spills_oc = OrderedCollection(dict_['spills'])
+        l_spills = dict_['spills']
         updated = False
-        if new_spills_oc != self._spill_container.spills:
+        if len(l_spills) != len(self):
             updated = True
-            self.clear()
-            self += new_spills_oc
 
+        if l_spills and (self._spill_container.spills !=
+                         OrderedCollection(l_spills)):
+            updated = True
+
+        if updated:
+            self.clear()
+            if l_spills:
+                self += l_spills
         return updated
 
     def spill_by_index(self, index, uncertain=False):
@@ -806,7 +812,7 @@ class SpillContainerPair(SpillContainerPairData):
             return (self._spill_container.num_released,)
 
     def clear(self):
-        'clear all spills from container'
-        self._spill_container.clear()
+        'clear all spills from container pairs'
+        self._spill_container.spills.clear()
         if self.uncertain:
-            self._u_spill_container.clear()
+            self._u_spill_container.spills.clear()
