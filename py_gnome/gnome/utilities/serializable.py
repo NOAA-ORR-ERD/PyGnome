@@ -743,14 +743,14 @@ class Serializable(GnomeId, Savable):
         :param value: the new value of the attribute
         :type value: depends on each attribute being updated
         '''
-        current_value = self.attr_to_dict(name)
+        current_value = getattr(self, name)
         if self._attr_changed(current_value, value):
             if isinstance(current_value, OrderedCollection):
-                self._update_orderedcoll_attr(current_value, value)
+                return self._update_orderedcoll_attr(current_value, value)
             else:
                 from_dict_fn_name = '%s_update_from_dict' % name
                 if hasattr(self, from_dict_fn_name):
-                    getattr(self, from_dict_fn_name)(value)
+                    return getattr(self, from_dict_fn_name)(value)
                 # NO updated of NESTED Seriablizable objects
                 #elif hasattr(getattr(self, name), 'update_from_dict'):
                 #    getattr(self, name).update_from_dict(value)
@@ -765,18 +765,14 @@ class Serializable(GnomeId, Savable):
         '''
         update attribute of type OrderedCollection with items in list l_new_oc
         '''
-        for ix, item in enumerate(l_new_oc):
-            if ix >= len(curr_oc):
-                curr_oc.add(item)
-                continue
+        updated_oc = OrderedCollection(l_new_oc)
+        updated = False
+        if updated_oc != curr_oc:
+            updated = True
+            curr_oc.clear()
+            curr_oc += updated_oc
 
-            if item is not curr_oc[ix]:
-                curr_oc[ix] = item   # replace it
-
-        # delete remaining elements in curr_oc since they don't exist in
-        # l_new_oc
-        for ix in range(len(l_new_oc), len(curr_oc)):
-            del curr_oc[ix]
+        return updated
 
     def obj_type_to_dict(self):
         """
