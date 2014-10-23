@@ -630,31 +630,57 @@ class SpillContainerPair(SpillContainerPairData):
             self._u_spill_container = self._spill_container.uncertain_copy()
             self.rewind()
 
-    def add(self, spill):
+    def _add_spill_pair(self, pair_tuple):
+        'add both certain and uncertain spills given as a pair'
+        if self.uncertain and len(pair_tuple) != 2:
+            raise ValueError('You can only add a tuple containing a '
+                             'certain/uncertain spill pair '
+                             '(spill, uncertain_spill)')
+        if not self.uncertain and len(pair_tuple) != 1:
+            raise ValueError('Uncertainty is off. Tuple must only '
+                             'contain (certain_spill,)')
+
+        self._spill_container.spills += pair_tuple[0]
+        if self.uncertain:
+            self._u_spill_container.spills += pair_tuple[1]
+
+    def _add_item(self, item):
+        'could be a spill pair or a forecast spill - add appropriately'
+        if isinstance(item, tuple):
+            # add both certain and uncertain pair
+            self._add_spill_pair(item)
+        else:
+            self._spill_container.spills += item
+            if self.uncertain:
+                self._u_spill_container.spills += item.uncertain_copy()
+
+    def add(self, spills):
         """
         Add spill to spill_container and make copy in u_spill_container
         if uncertainty is on
 
-        Overload add method so it can take a tuple (spill, uncertain_spill)
+        Note: Method can take either a list, tuple, or list of tuples with following
+        assumptions:
+
+        1. spills = Spill()    # A spill object, if uncertainty is on, make a
+        copy for uncertain_spill_container.
+
+        2. spills = [s0, s1, ..,]    # List of forecast spills. if uncertain,
+        make a copy of each and add to uncertain_spill_container
+
+        3. spills = (s0, uncertain_s0)    # tuple of length two. Assume first
+        one is forecast spill and second one is the uncertain copy. Used
+        when restoring from save file
+
+        4. spills = [(s0, uncertain_s0), ..]    # list of tuples of length two.
+        Added for completeness.
         """
-        if isinstance(spill, tuple):
-            if self.uncertain:
-                if len(spill) != 2:
-                    raise ValueError('You can only add a tuple containing a '
-                                     'certain/uncertain spill pair '
-                                     '(spill, uncertain_spill)')
-                self._u_spill_container.spills += spill[1]
-            else:
-                if len(spill) != 1:
-                    raise ValueError('Uncertainty is off. Tuple must only '
-                                     'contain (certain_spill,)')
-
-            self._spill_container.spills += spill[0]
+        if isinstance(spills, list):
+            for item in spills:
+                self._add_item(item)
         else:
-            self._spill_container.spills += spill
-
-            if self.uncertain:
-                self._u_spill_container.spills += spill.uncertain_copy()
+            # only adding one item, either a spill_pair or a forecast spill
+            self._add_item(spills)
 
     def append(self, spill):
         self.add(spill)
@@ -738,21 +764,18 @@ class SpillContainerPair(SpillContainerPairData):
 
         It also creates a copy of the different spill and replaces the
         corresponding spill in _u_spill_container
+
+        This is primarily intended for the webapp so the dict_ will only
+        contain a list of forecast spills
         '''
-        new_spills = dict_['spills']
-        for ix, item in enumerate(new_spills):
-            if ix >= len(self._spill_container.spills):
-                self.add(item)
-                continue
+        new_spills_oc = OrderedCollection(dict_['spills'])
+        updated = False
+        if new_spills_oc != self._spill_container.spills:
+            updated = True
+            self.clear()
+            self += new_spills_oc
 
-            if item is not self._spill_container.spills[ix]:
-                self._spill_container.spills[ix] = item
-                if self.uncertain:
-                    self._u_spill_container.spills[ix] = item.uncertain_copy()
-
-        # delete remaining spills since they don't exist in new list
-        for ix in range(len(new_spills), len(self)):
-            del self[ix]
+        return updated
 
     def spill_by_index(self, index, uncertain=False):
         '''return either the forecast spill or the uncertain spill at
@@ -760,7 +783,8 @@ class SpillContainerPair(SpillContainerPairData):
         if uncertain:
             return self._u_spill_container.spills[index]
         else:
-            return self._spill_container.spills[index]
+            # __getitem__ should give correct result
+            return self[index]
 
     def index(self, spill):
         '''
@@ -780,3 +804,9 @@ class SpillContainerPair(SpillContainerPairData):
                     self._u_spill_container.num_released)
         else:
             return (self._spill_container.num_released,)
+
+    def clear(self):
+        'clear all spills from container'
+        self._spill_container.clear()
+        if self.uncertain:
+            self._u_spill_container.clear()
