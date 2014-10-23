@@ -40,7 +40,7 @@ class OrderedCollection(object):
         # is hard to reference as a key
 
         self._elems = elems[:]
-        self._index = \
+        self._d_index = \
             {self._s_id(elem): idx for idx, elem in enumerate(self._elems)}
 
         self.callbacks = {}
@@ -55,12 +55,12 @@ class OrderedCollection(object):
     def remake(self):
         '''
         remove None elements from self._elems and renumber the indices in
-        self._index
+        self._d_index
         '''
         if None in self._elems:
             self._elems = [elem for elem in self._elems if elem is not None]
             for ix, elem in enumerate(self._elems):
-                self._index[self._s_id(elem)] = ix
+                self._d_index[self._s_id(elem)] = ix
 
     def get(self, ident):
         '''
@@ -69,11 +69,11 @@ class OrderedCollection(object):
         '''
         try:
             # ident is an index into list
-            idx = sorted(self._index.values())[ident]
+            idx = sorted(self._d_index.values())[ident]
             return self._elems[idx]
         except TypeError:
             # ident is the 'id' string
-            return self._elems[self._index[ident]]
+            return self._elems[self._d_index[ident]]
 
     def add(self, elem):
         'Add an object to the collection '
@@ -81,8 +81,8 @@ class OrderedCollection(object):
         if isinstance(elem, self.dtype):
             l__id = self._s_id(elem)
 
-            if l__id not in self._index.keys():
-                self._index[l__id] = len(self._elems)
+            if l__id not in self._d_index.keys():
+                self._d_index[l__id] = len(self._elems)
                 self._elems.append(elem)
 
                 # fire add event only if elem is not already in the list
@@ -96,9 +96,9 @@ class OrderedCollection(object):
                     self.add(e)
             except:
                 raise TypeError('{0}: expected {1}, '
-                            'got {2}'.format(self.__class__.__name__,
-                                             self.dtype,
-                                             type(elem)))
+                                'got {2}'.format(self.__class__.__name__,
+                                                 self.dtype,
+                                                 type(elem)))
 
     def append(self, elem):
         self.add(elem)
@@ -113,12 +113,14 @@ class OrderedCollection(object):
         # fire remove event before removing from collection
         self.fire_event('remove', self[ident])
 
-        if ident in self._index:
-            self._elems[self._index[ident]] = None
-            del self._index[ident]
+        if ident in self._d_index:
+            # ident is object id
+            self._elems[self._d_index[ident]] = None
+            del self._d_index[ident]
         else:
-            id_ = self._s_id(self._elems[ident])
-            del self._index[id_]
+            # ident is index into _elems list
+            id_ = self._s_id(self[ident])
+            del self._d_index[id_]
             self._elems[ident] = None
 
     def replace(self, ident, new_elem):
@@ -139,7 +141,7 @@ class OrderedCollection(object):
             l__key = self._s_id(self._elems[ident])
             idx = ident
         else:
-            if ident in self._index:
+            if ident in self._d_index:
                 l__key = ident
             else:
                 # user is trying to add new element like a dict
@@ -147,12 +149,12 @@ class OrderedCollection(object):
                 raise KeyError('Cannot find object by this "id" in '
                     'OrderedCollection')
 
-            idx = self._index[l__key]
+            idx = self._d_index[l__key]
 
         # found existing object
-        del self._index[l__key]
+        del self._d_index[l__key]
         self._elems[idx] = new_elem
-        self._index[self._s_id(new_elem)] = idx
+        self._d_index[self._s_id(new_elem)] = idx
         self.fire_event('replace', new_elem)  # returns the newly added object
 
     def index(self, elem):
@@ -164,21 +166,21 @@ class OrderedCollection(object):
         '''
         try:
             # first check if elem is the 'id'
-            idx = self._index[elem]
+            idx = self._d_index[elem]
         except KeyError:
             # if its not a valid ID, then check if its the object
             ident = self._s_id(elem)
             try:
-                idx = self._index[ident]
+                idx = self._d_index[ident]
             except KeyError:
                 raise ValueError('{0} is not in OrderedCollection'.format(elem))
-        return sorted(self._index.values()).index(idx)
+        return sorted(self._d_index.values()).index(idx)
 
     def __len__(self):
-        return len(self._index.keys())
+        return len(self._d_index.keys())
 
     def __iter__(self):
-        for i in sorted(self._index.values()):
+        for i in sorted(self._d_index.values()):
             yield self._elems[i]
 
     def __contains__(self, elem):
@@ -189,8 +191,8 @@ class OrderedCollection(object):
         # there is some element in the list self._elems == elem.
         # We want to know if there is some index for which
         # self._elems[ix] is elem
-        # Check to see if there is an 'id' for this object in self._index dict
-        return id_ in self._index
+        # Check to see if there is an 'id' for this object in self._d_index dict
+        return id_ in self._d_index
 
     def _slice_attr(self, ident):
         'support for slice operations like a list'
@@ -227,7 +229,7 @@ class OrderedCollection(object):
 
     def __str__(self):
         # order by position in list
-        itemlist = sorted(self._index.items(), key=lambda x: x[1])
+        itemlist = sorted(self._d_index.items(), key=lambda x: x[1])
 
         # reference the value in list
         itemlist = [(k, self._elems[v]) for (k, v) in itemlist]
@@ -336,3 +338,10 @@ class OrderedCollection(object):
         for (callback, reg_event) in self.callbacks.items():
             if event in reg_event:
                 callback(obj_)  # this should be all that is required
+
+    def clear(self):
+        '''
+        clear all elements from collection
+        '''
+        del self._elems[:]
+        self._d_index.clear()

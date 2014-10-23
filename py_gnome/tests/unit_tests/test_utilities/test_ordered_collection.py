@@ -36,13 +36,26 @@ def test_remake():
     oc.remake()
     for ix, elem in enumerate(oc._elems):
         assert elem is not None
-        assert oc._index[s_id(elem)] == ix
+        assert oc._d_index[s_id(elem)] == ix
 
 
 def test_remake_emptyoc():
     'empty OC'
     oc = OrderedCollection(dtype=int)
     oc.remake()
+
+
+def test_clear():
+    'test clear()'
+    oc = OrderedCollection(range(4))
+    oc.clear()
+
+    assert len(oc) == 0
+    assert oc._elems == []   # there should be no None's
+    assert oc._d_index == {}
+    assert oc.dtype is int
+    with raises(TypeError):
+        oc += 1.0
 
 
 class TestOrderedCollection(object):
