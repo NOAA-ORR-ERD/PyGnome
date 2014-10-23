@@ -57,18 +57,17 @@ class Base(object):
         ret = dict((c, getattr(self, c)) for c in self.columns)
         if recurse > 0:
             recurse = recurse - 1
+
             for r in self.one_to_many_relationships:
-                # todo: fails on sara_fractions
-                if r == 'sara_fractions':
-                    continue
                 if isinstance(getattr(self, r), InstrumentedList):
                     ret[r] = [a.tojson(recurse=recurse)
                               for a in getattr(self, r)]
                 elif getattr(self, r) is not None:
                     ret[r] = getattr(self, r).tojson(recurse=recurse)
-            # todo: failing in categories
-            #for r in self.many_to_many_relationships:
-            #    ret[r] = [a.tojson(recurse=recurse) for a in getattr(self, r)]
+
+            for r in self.many_to_many_relationships:
+                ret[r] = [a.tojson(recurse=recurse) for a in getattr(self, r)]
+
             for r in self.many_to_one_relationships:
                 if getattr(self, r) is not None:
                     ret[r] = getattr(self, r).tojson(recurse=recurse)
