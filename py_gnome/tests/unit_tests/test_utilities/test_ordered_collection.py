@@ -58,6 +58,16 @@ def test_clear():
         oc += 1.0
 
 
+def test_values():
+    'OrderedCollection().values() works like a dict.values()'
+    x = range(5)
+    oc = OrderedCollection(x)
+    del x[-2]
+    del oc[-2]
+    for ix, v in enumerate(oc.values()):
+        assert x[ix] == v
+
+
 class TestOrderedCollection(object):
 
     def test_init(self):

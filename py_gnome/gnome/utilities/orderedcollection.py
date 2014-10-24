@@ -345,3 +345,7 @@ class OrderedCollection(object):
         '''
         del self._elems[:]
         self._d_index.clear()
+
+    def values(self):
+        'return list of items contained in collection'
+        return [item for item in self._elems if item is not None]
