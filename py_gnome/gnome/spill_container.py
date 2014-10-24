@@ -773,8 +773,7 @@ class SpillContainerPair(SpillContainerPairData):
         if len(l_spills) != len(self):
             updated = True
 
-        if l_spills and (self._spill_container.spills !=
-                         OrderedCollection(l_spills)):
+        if self._spill_container.spills.values() != l_spills:
             updated = True
 
         if updated:

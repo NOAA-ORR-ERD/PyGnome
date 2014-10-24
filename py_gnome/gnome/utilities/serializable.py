@@ -771,7 +771,7 @@ class Serializable(GnomeId, Savable):
         if len(l_new_oc) != len(curr_oc):
             updated = True
 
-        if l_new_oc and (curr_oc != OrderedCollection(l_new_oc)):
+        if curr_oc.values() != l_new_oc:
             updated = True
 
         if updated:
