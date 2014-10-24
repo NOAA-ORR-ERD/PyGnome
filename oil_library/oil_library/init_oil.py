@@ -10,7 +10,7 @@ import math
 
 import transaction
 
-from oil_library.models import ImportedRecord, Oil, KVis, Density
+from oil_library.models import ImportedRecord, Oil, KVis, Density, SARAFraction
 
 
 def process_oils(session):
@@ -22,16 +22,30 @@ def process_oils(session):
 
 
 def add_oil(record):
-    print 'Estimations for id {0.id}, adios_id {0.adios_oil_id}'.format(record)
-    oil = Oil(name=record.oil_name)
+    print 'Estimations for {0}'.format(record.adios_oil_id)
+    oil = Oil()
 
+    add_demographics(record, oil)
     add_densities(record, oil)
     add_viscosities(record, oil)
     add_oil_water_interfacial_tension(record, oil)
     # TODO: should we add oil/seawater tension as well???
     add_pour_point(record, oil)
     add_flash_point(record, oil)
+    add_emulsion_water_fraction_max(record, oil)
+    add_resin_fractions(oil)
+    add_asphaltene_fractions(oil)
+    add_bullwinkle_fractions(oil)
+    add_adhesion(record, oil)
+    add_sulphur_mass_fraction(record, oil)
+    add_soluability(record, oil)
+    add_distillation_cut_boiling_point(record, oil)
+
     record.oil = oil
+
+
+def add_demographics(imported_rec, oil):
+    oil.name = imported_rec.oil_name
 
 
 def add_densities(imported_rec, oil):
@@ -47,32 +61,30 @@ def add_densities(imported_rec, oil):
           and ensured that they are consistent.  But if a record contains both
           an API and a number of densities, these values may conflict.
           In this case, we will reject the creation of the oil record.
-        - TODO: This is not in the document, but Bill & Chris have verbally
+        - This is not in the document, but Bill & Chris have verbally
           stated they would like there to always be a 15C density value.
     '''
-    if len(imported_rec.densities) == 0 and imported_rec.api is not None:
-        # estimate our density from api
-        kg_m_3, ref_temp_k = estimate_density_from_api(imported_rec.api)
+    for d in imported_rec.densities:
+        oil.densities.append(d)
+
+    if imported_rec.api is not None:
+        oil.api = imported_rec.api
+    elif oil.densities:
+        # estimate our api from density
+        d_0 = density_at_temperature(oil, 273.15 + 15)
+
+        oil.api = (141.5 * 1000 / d_0) - 131.5
+    else:
+        print ('Warning: no densities and no api for record {0}'
+               .format(imported_rec.adios_oil_id))
+
+    if not [d for d in oil.densities if d.ref_temp_k == 273.15 + 15]:
+        # add a 15C density from api
+        kg_m_3, ref_temp_k = estimate_density_from_api(oil.api)
 
         oil.densities.append(Density(kg_m_3=kg_m_3,
                                      ref_temp_k=ref_temp_k,
                                      weathering=0.0))
-        oil.api = imported_rec.api
-    elif imported_rec.api is None:
-        # estimate our api from density
-        d_0 = density_at_temperature(imported_rec, 273.15 + 15)
-
-        oil.api = (141.5 * 1000 / d_0) - 131.5
-        for d in imported_rec.densities:
-            oil.densities.append(d)
-    else:
-        # For now we will just accept both the api and densities
-        # TODO: check if these values conflict
-        oil.api = imported_rec.api
-
-        for d in imported_rec.densities:
-            oil.densities.append(d)
-        pass
 
 
 def estimate_density_from_api(api):
@@ -98,9 +110,13 @@ def density_at_temperature(oil_rec, temperature, weathering=0.0):
             return None
         else:
             d_ref, t_ref = estimate_density_from_api(oil_rec.api)
-    k_pt = 0.008
 
-    # then interpolate our density based on temperature
+    k_pt = 0.008
+    if density_list and math.fabs(t_ref - temperature) > (1 / k_pt):
+        # even if we got some measured densities, they could be at
+        # temperatures that is out of range for our algorithm.
+        return None
+
     return d_ref / (1 - k_pt * (t_ref - temperature))
 
 
@@ -160,7 +176,8 @@ def get_kvis_from_dvis(oil_rec):
         for dv, t, w in [(d.kg_ms,
                          d.ref_temp_k,
                          (0.0 if d.weathering is None else d.weathering))
-                         for d in oil_rec.dvis]:
+                         for d in oil_rec.dvis
+                         if d.kg_ms > 0.0]:
             density = density_at_temperature(oil_rec, t, w)
 
             # kvis = dvis/density
@@ -274,18 +291,203 @@ def add_flash_point(imported_rec, oil):
         oil.flash_point_min_k = imported_rec.flash_point_min_k
         oil.flash_point_max_k = imported_rec.flash_point_max_k
     else:
-        if 0:
+        oil.flash_point_min_k = None
+        if len(imported_rec.cuts) > 0:
             # if we have measured distillation cuts, then we use method 'A'
-            oil.flash_point_min_k = estimate_fp_by_cut(imported_rec)
             oil.flash_point_max_k = estimate_fp_by_cut(imported_rec)
         else:
             # we use method 'B'
-            oil.flash_point_max_k = estimate_fp_by_api(imported_rec)
+            oil.flash_point_max_k = estimate_fp_by_api(oil)
 
 
 def estimate_fp_by_cut(imported_rec):
-    pass
+    '''
+        If we have measured distillation cut data:
+            (A) T_cut1 = the boiling point of the first pseudo-component cut.
+                T_flsh = 117 + 0.69 * T_cut1
+    '''
+    temp_cut_1 = sorted(imported_rec.cuts,
+                        key=lambda x: x.vapor_temp_k)[0].vapor_temp_k
+
+    return 117.0 + 0.69 * temp_cut_1
 
 
 def estimate_fp_by_api(imported_rec):
-    pass
+    '''
+        If we do *not* have measured distillation cut data, then use api:
+            (B) T_flsh = 457 - 3.34 * api
+    '''
+    return 457.0 - 3.34 * imported_rec.api
+
+
+def add_emulsion_water_fraction_max(imported_rec, oil):
+    '''
+        This quantity will be set after the emulsification approach in ADIOS3
+        is finalized.  It will vary depending upon the emulsion stability.
+        For now set f_w_max = 0.9 for crude oils and f_w_max = 0.0 for
+        refined products.
+    '''
+    if imported_rec.product_type == 'Crude':
+        oil.emulsion_water_fraction_max = 0.9
+    elif imported_rec.product_type == 'Refined':
+        oil.emulsion_water_fraction_max = 0.0
+
+
+def add_resin_fractions(oil):
+    for a, b, t in get_resin_coeffs(oil):
+        f_res = (0.033 * a +
+                 0.00087 * b -
+                 0.74)
+        f_res = 0.0 if f_res < 0.0 else f_res
+
+        oil.sara_fractions.append(SARAFraction(sara_type='Resins',
+                                               fraction=f_res,
+                                               ref_temp_k=t))
+
+
+def add_asphaltene_fractions(oil):
+    for a, b, t in get_asphaltene_coeffs(oil):
+        f_asph = (0.000014 * a +
+                  0.000004 * b -
+                  0.18)
+        f_asph = 0.0 if f_asph < 0.0 else f_asph
+
+        oil.sara_fractions.append(SARAFraction(sara_type='Asphaltenes',
+                                               fraction=f_asph,
+                                               ref_temp_k=t))
+
+
+def get_resin_coeffs(oil):
+    '''
+        Get coefficients for calculating resin (and asphaltene) fractions
+        based on Merv Fingas' empirical analysis of ESTC oil properties
+        database.
+        Bill has clarified that we want to get the coefficients for just
+        the 15C Density
+        For now, we will assume we need to gather an array of coefficients
+        based on the existing measured viscosities and densities.
+        So we assume we are dealing with an oil object that has both.
+        We return ((a0, b0),
+                   (a1, b1),
+                   ...
+                   )
+    '''
+    try:
+        a = [(10 * math.exp(0.001 *
+                            density_at_temperature(oil, k.ref_temp_k)))
+             for k in oil.kvis
+             if k.weathering == 0.0 and
+             k.ref_temp_k == 273.15 + 15 and
+             density_at_temperature(oil, k.ref_temp_k) is not None]
+        b = [(10 * math.log(1000.0 *
+                            density_at_temperature(oil, k.ref_temp_k) *
+                            k.m_2_s))
+             for k in oil.kvis
+             if k.weathering == 0.0 and
+             k.ref_temp_k == 273.15 + 15 and
+             density_at_temperature(oil, k.ref_temp_k) is not None]
+    except:
+        print 'generated exception for oil = ', oil
+        print 'oil.kvis = ', oil.kvis
+        print [(density_at_temperature(oil, k.ref_temp_k), k.m_2_s)
+               for k in oil.kvis
+               if k.weathering == 0.0]
+        raise
+
+    t = [k.ref_temp_k
+         for k in oil.kvis
+         if k.weathering == 0.0]
+    return zip(a, b, t)
+
+
+def get_asphaltene_coeffs(oil):
+    return get_resin_coeffs(oil)
+
+
+def add_bullwinkle_fractions(oil):
+    '''
+        This is the mass fraction that must evaporate of dissolve before
+        stable emulsification can begin.
+        For this estimation, we depend on an oil object with a valid
+        asphaltene fraction or a valid api
+        This is a scalar value calculated with a reference temperature of 15C
+    '''
+    f_bulls = [0.32 - 3.59 * af.fraction
+               for af in oil.sara_fractions
+               if af.fraction > 0 and af.sara_type == 'Asphaltenes' and
+               af.ref_temp_k == 273.15 + 15]
+
+    if not f_bulls and oil.api >= 0.0:
+        f_bulls = [0.5762 * math.log10(oil.api)]
+
+    if not f_bulls:
+        # this can happen if we do not have an asphaltene fraction
+        # (thus, viscosity or density) at 15C, and the api is 0.0 or less
+        print 'Warning: could not estimate bullwinkle fractions'
+        print ('\tOil(name={0.name}, sara={0.sara_fractions}, api={0.api}'
+               .format(oil))
+    else:
+        oil.bullwinkle_fraction = f_bulls[0]
+
+
+def add_adhesion(imported_rec, oil):
+    '''
+        This is currently not used by the model, but we will get it
+        if it exists.
+        Otherwise, we will assign a constant.
+    '''
+    if imported_rec.adhesion is not None:
+        oil.adhesion_kg_m_2 = imported_rec.adhesion
+    else:
+        oil.adhesion_kg_m_2 = 0.035
+
+
+def add_sulphur_mass_fraction(imported_rec, oil):
+    '''
+        This is currently not used by the model, but we will get it
+        if it exists.
+        Otherwise, we will assign a constant per the documentation.
+    '''
+    if imported_rec.sulphur is not None:
+        oil.sulphur_fraction = imported_rec.sulphur
+    else:
+        oil.sulphur_fraction = 0.0
+
+
+def add_soluability(imported_rec, oil):
+    '''
+        There is no direct soluability attribute in the imported record,
+        so we will just assign a constant per the documentation.
+    '''
+    oil.sulphur_fraction = 0.0
+
+
+def add_distillation_cut_boiling_point(imported_rec, oil):
+    '''
+        if cuts exist:
+            copy them over
+        else:
+            get a single cut from the API
+    '''
+    if imported_rec.oil_name == 'ALAMO':
+        print 'imported cuts:', imported_rec.cuts
+    for c in imported_rec.cuts:
+        oil.cuts.append(c)
+
+    if not oil.cuts:
+        # get boiling point from api
+        pass
+
+
+def get_distillation_cut_from_api(oil):
+    '''
+        Note: we cannot use this estimation method if the oil API value is
+        not a positive value.
+    '''
+    if oil.api > 0.0:
+        t_0 = 457 - 3.34 * oil.api
+        t_g = 1357 - 247.7 * math.log(oil.api)
+
+        return t_0 + t_g * ()
+    else:
+        return None

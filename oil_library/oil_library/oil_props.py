@@ -115,7 +115,7 @@ class OilProps(object):
     def _component_mw(self):
         'estimate molecular weights of components'
         self.molecular_weight = [float('nan')] * self.num_components
-        #self.molecular_weight = []
+        # self.molecular_weight = []
 
         for ix, bp in enumerate(self.boiling_point):
             if bp == float('inf'):
@@ -126,11 +126,11 @@ class OilProps(object):
 
             if ix % 2 == 0:
                 self.molecular_weight[ix] = molecular_weight(bp, 'saturate')
-                #self.molecular_weight.append(molecular_weight(bp, 'saturate'))
+                # self.molecular_weight.append(molecular_weight(bp, 'saturate'))
             else:
                 # will define a different function for mw_aromatics
                 self.molecular_weight[ix] = molecular_weight(bp, 'aromatic')
-                #self.molecular_weight.append(molecular_weight(bp, 'aromatic'))
+                # self.molecular_weight.append(molecular_weight(bp, 'aromatic'))
 
     def vapor_pressure(self, temp, atmos_pressure=101325.0):
         '''
