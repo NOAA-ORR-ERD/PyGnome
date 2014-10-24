@@ -33,18 +33,6 @@ from gnome.persist.base_schema import (ObjType,
                                        OrderedCollectionItemsList)
 
 
-class SpillContainerPairSchema(MappingSchema):
-    '''
-    Schema for SpillContainerPair object.
-    Since this is currently only used by the model, define the schema
-    in this module. The SpillContainerPair object is not serializable since
-    there isn't a need
-    '''
-    certain_spills = OrderedCollectionItemsList(name='certain_spills')
-    uncertain_spills = OrderedCollectionItemsList(name='uncertain_spills',
-                                                  missing=drop)
-
-
 class ModelSchema(ObjType):
     'Colander schema for Model object'
     time_step = SchemaNode(Float(), missing=drop)
@@ -730,7 +718,7 @@ class Model(Serializable):
         # containers don't need to be serializable; however, it was easiest to
         # put an update_from_dict method in the SpillContainerPair. Keep the
         # interface for this the same, so make it a dict
-        self.spills.update_from_dict({'spills': value})
+        return self.spills.update_from_dict({'spills': value})
 
     def uncertain_spills_to_dict(self):
         '''

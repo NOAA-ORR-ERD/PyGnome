@@ -461,7 +461,24 @@ def test_timeseries_res_sec():
         assert ts['time'][ix].astype(datetime).replace(second=0) == dt
 
 
-def test_update_from_dict(wind_json):
+def test_update_from_dict():
+    'wind_json only used here so take it out of conftest'
+    wind_json = {'obj_type': 'gnome.environment.Wind',
+                 'description': 'update_description',
+                 'latitude': 90,
+                 'longitude': 90,
+                 'updated_at': '2014-03-26T14:52:45.385126',
+                 'source_type': u'manual',
+                 'source_id': u'unknown',
+                 'timeseries': [('2012-11-06T20:10:00', (1.0, 0.0)),
+                                ('2012-11-06T20:11:00', (1.0, 45.0)),
+                                ('2012-11-06T20:12:00', (1.0, 90.0)),
+                                ('2012-11-06T20:13:00', (1.0, 120.0)),
+                                ('2012-11-06T20:14:00', (1.0, 180.0)),
+                                ('2012-11-06T20:15:00', (1.0, 270.0))],
+                 'units': 'knots',
+                 'json_': u'webapi'
+                 }
     wind = constant_wind(1.0, 45.0, 'meter per second')
 
     # following tests fails because unit conversion causes some

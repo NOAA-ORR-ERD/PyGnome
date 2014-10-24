@@ -127,7 +127,12 @@ class GnomeMap(Serializable):
 
     def map_bounds_update_from_dict(self, val):
         'convert list of tuples back to numpy array'
-        self.map_bounds = self._attr_from_list_to_array(val)
+        new_arr = self._attr_from_list_to_array(val)
+        if np.any(self.map_bounds != new_arr):
+            self.map_bounds = new_arr
+            return True
+
+        return False
 
     def spillable_area_to_dict(self):
         'convert numpy array to a list for serializing'
@@ -135,7 +140,12 @@ class GnomeMap(Serializable):
 
     def spillable_area_update_from_dict(self, val):
         'convert list of tuples back to numpy array'
-        self.spillable_area = self._attr_from_list_to_array(val)
+        new_arr = self._attr_from_list_to_array(val)
+        if np.any(self.spillable_area != new_arr):
+            self.spillable_area = new_arr
+            return True
+
+        return False
 
     def on_map(self, coords):
         """
