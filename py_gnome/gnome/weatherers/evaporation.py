@@ -95,7 +95,7 @@ class Evaporation(Weatherer, Serializable):
         for spill in sc.spills:
             f_diff = (1.0 - spill.frac_water)
             mask = sc.get_spill_mask(spill)
-            if len(mask) > 0:
+            if np.any(mask):
                 mw = spill.get('substance').molecular_weight
                 vp = spill.get('substance').vapor_pressure(water_temp)
                 sc['thickness'][mask] = self._compute_le_thickness()
