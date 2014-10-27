@@ -169,7 +169,7 @@ def make_model(images_dir, uncertain=False):
 
     print 'adding a Weatherer'
     model.environment += Water(311.15)
-    model.weatherers += Evaporation(w_mover.wind, model.environment[-1])
+    model.weatherers += Evaporation(model.environment[-1], w_mover.wind)
 
     return model
 
