@@ -266,8 +266,10 @@ class Wind(Environment, serializable.Serializable):
         Checks the user provided units are in list Wind.valid_vel_units
         '''
         if units not in Wind.valid_vel_units:
-            raise InvalidUnitError('A valid velocity unit must be one of: '
-                                   '{0}'.format(Wind.valid_vel_units))
+            #raise uc.InvalidUnitError((unit, self._units_type[attr][0]))
+            raise InvalidUnitError((units,
+                                   'A valid velocity unit must be one of: '
+                                   '{0}'.format(Wind.valid_vel_units)))
 
     def _check_timeseries(self, timeseries, units):
         '''

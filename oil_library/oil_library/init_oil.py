@@ -40,6 +40,8 @@ def add_oil(record):
     add_sulphur_mass_fraction(record, oil)
     add_soluability(record, oil)
     add_distillation_cut_boiling_point(record, oil)
+    add_saturate_fractions(oil)
+    add_aromatic_fractions(oil)
 
     record.oil = oil
 
@@ -475,7 +477,8 @@ def add_distillation_cut_boiling_point(imported_rec, oil):
         oil.cuts.append(c)
 
     if not oil.cuts:
-        # get boiling point from api
+        # TODO: get boiling point from api inside utilities module
+        get_distillation_cut_from_api(oil)
         pass
 
 
@@ -485,9 +488,24 @@ def get_distillation_cut_from_api(oil):
         not a positive value.
     '''
     if oil.api > 0.0:
+        num_components = 5
         t_0 = 457 - 3.34 * oil.api
         t_g = 1357 - 247.7 * math.log(oil.api)
 
         return t_0 + t_g * ()
     else:
         return None
+
+
+def add_saturate_fractions(oil):
+    '''
+        Reference: CPPF, eq.s 3.77 and 3.78
+    '''
+    pass
+
+
+def add_aromatic_fractions(oil):
+    '''
+        Reference: CPPF, eq.s 3.77 and 3.78
+    '''
+    pass
