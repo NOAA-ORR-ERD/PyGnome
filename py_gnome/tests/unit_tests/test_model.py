@@ -18,7 +18,7 @@ from gnome.utilities import inf_datetime
 from gnome.utilities.remote_data import get_datafile
 
 import gnome.map
-from gnome.environment import Wind, Tide
+from gnome.environment import Wind, Tide, constant_wind, Water
 from gnome.model import Model
 
 from gnome.spill import Spill, SpatialRelease, point_line_release_spill
@@ -26,8 +26,14 @@ from gnome.spill.elements import floating
 
 from gnome.movers import SimpleMover, RandomMover, WindMover, CatsMover
 
-from gnome.weatherers import HalfLifeWeatherer
+from gnome.weatherers import (HalfLifeWeatherer,
+                              Evaporation,
+                              Dispersion,
+                              Burn,
+                              Skimmer)
 from gnome.outputters import Renderer, GeoJson
+
+from conftest import sample_model_weathering
 
 basedir = os.path.dirname(__file__)
 datadir = os.path.join(basedir, 'sample_data')
@@ -827,6 +833,33 @@ def test_setup_model_run(model):
     model.rewind()
     model.step()
     assert not exp_keys.intersection(model.spills.LE_data)
+
+
+def test_staggered_spills_weathering(sample_model_fcn):
+    '''
+    Just test that a model with weathering and spills staggered in time runs
+    without errors.
+
+    test exposed a bug, which is now fixed
+    '''
+    model = sample_model_weathering(sample_model_fcn, 'ALAMO')
+    rel_time = model.spills[0].get('release_time')
+    model.start_time = rel_time - timedelta(hours=1)
+    model.duration = timedelta(days=1)
+    cs = point_line_release_spill(500, (0, 0, 0),
+                                  rel_time + timedelta(hours=1),
+                                  element_type=model.spills[0].element_type,
+                                  amount=100,
+                                  units='tons')
+    model.spills += cs
+    model.environment += [Water(), constant_wind(1., 0)]
+    model.weatherers += [Evaporation(model.environment[0],
+                                     model.environment[1]),
+                         Dispersion(),
+                         Burn(),
+                         Skimmer()]
+    #model.outputters += WeatheringOutput('./temp')
+    model.full_run()
 
 
 @pytest.mark.xfail
