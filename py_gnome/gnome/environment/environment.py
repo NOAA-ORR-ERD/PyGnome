@@ -128,12 +128,16 @@ class Water(Environment, serializable.Serializable):
                       'salinity': 'psu',
                       'sediment': 'mg/l',  # do we need SI here?
                       'wave_height': 'm',
-                      'fetch': 'm'}
+                      'fetch': 'm',
+                      'density': 'kg/m^3',
+                      'viscosity': 'm^2/s'}
         self.temperature = temperature
         self.salinity = salinity
         self.sediment = sediment
         self.wave_height = wave_height
         self.fetch = fetch
+        self.density = 997
+        self.viscosity = 0.000001
         self.name = name
 
     def __repr__(self):

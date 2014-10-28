@@ -15,6 +15,8 @@ __all__ = [Environment,
            constant_wind]
 
 units = {'gas_constant': 'J/(K mol)',
-         'pressure': 'Pa'}
+         'pressure': 'Pa',
+         'acceleration': 'm/s^2'}
 constants = {'gas_constant': 8.314,
-             'atmos_pressure': 101325.0}
+             'atmos_pressure': 101325.0,
+             'g': 9.81}
