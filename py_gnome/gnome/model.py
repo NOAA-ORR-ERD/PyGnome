@@ -409,7 +409,8 @@ class Model(Serializable):
 
         for w in self.weatherers:
             for sc in self.spills.items():
-                # weatherers will initialize 'weathering_data' key/values to 0.0
+                # weatherers will initialize 'weathering_data' key/values
+                # to 0.0
                 w.prepare_for_model_run(sc)
 
             if w.on:
@@ -595,7 +596,7 @@ class Model(Serializable):
             self.weather_elements()
             self.step_is_done()
             self.logger.info("Completed step: {0.current_time_step} for "
-                          "{0.name}".format(self))
+                             "{0.name}".format(self))
 
         self.current_time_step += 1
 
@@ -763,7 +764,7 @@ class Model(Serializable):
             to change it - but not sure if that will ever be needed?
             '''
             self._save_spill_data(os.path.join(saveloc,
-                                        'spills_data_arrays.nc'))
+                                               'spills_data_arrays.nc'))
 
         # there should be no more references
         self._json_to_saveloc(json_, saveloc, references, name)
@@ -826,7 +827,8 @@ class Model(Serializable):
             saveloc, spill_data_fname = os.path.split(spill_data)
             spill_data_fname, ext = os.path.splitext(spill_data_fname)
             u_spill_data = os.path.join(saveloc,
-                '{0}_uncertain{1}'.format(spill_data_fname, ext))
+                                        '{0}_uncertain{1}'
+                                        .format(spill_data_fname, ext))
 
         array_types = {}
 
@@ -954,8 +956,10 @@ class Model(Serializable):
         ref_fields = cls._state.get_field_by_attribute('save_reference')
         if (datafiles or ref_fields):
             raise Exception("Model.load() assumes none of the attributes "
-                "defining the state 'isdatafile' or is 'save_reference'. "
-                "If this changes, then we need to make this more robust.")
+                            "defining the state 'isdatafile' or is "
+                            "'save_reference'. "
+                            "If this changes, then we need to make this "
+                            "more robust.")
 
         # deserialize after removing references
         _to_dict = cls.deserialize(json_data)
@@ -965,14 +969,16 @@ class Model(Serializable):
         # json_data['json_'] == 'save'
         if ('map' in json_data):
             map_obj = eval(json_data['map']['obj_type']).load(saveloc,
-                json_data['map'], references)
+                                                              json_data['map'],
+                                                              references)
             _to_dict['map'] = map_obj
 
         # load collections
         for oc in cls._oc_list:
             if oc in _to_dict:
-                _to_dict[oc] = cls._load_collection(saveloc, _to_dict[oc],
-                    references)
+                _to_dict[oc] = cls._load_collection(saveloc,
+                                                    _to_dict[oc],
+                                                    references)
         for spill in ['spills', 'uncertain_spills']:
             if spill in _to_dict:
                 _to_dict[spill] = cls._load_collection(saveloc,

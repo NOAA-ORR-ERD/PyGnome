@@ -2,10 +2,12 @@
 """
 Script to test GNOME with long island sound data
 """
-
+import sys
 import os
-import shutil
+import traceback
+
 from datetime import datetime, timedelta
+import shutil
 import multiprocessing
 
 import numpy
@@ -121,20 +123,28 @@ def post_run(model):
 
 
 # here is the multiprocessing stuff
-class Consumer(multiprocessing.Process):
+class ModelConsumer(multiprocessing.Process):
     '''
-        This is a consumer process that reads a queue
-        and acts on the data received.
-        Mainly, we want to know if the model is copied into the
-        child process.
+        This is a consumer process that reads a queue and acts on
+        the data received in the format:
+            ('registeredcommand', {arg1: val1,
+                                   arg2: val2,
+                                   ...
+                                   },
+             )
+
+        The model is passed into the child process,
+        and all registered commands presumably act upon the model
     '''
-    def __init__(self, task_queue, result_queue):
-        self.commands = {'get_model': self.get_model,
-                         'full_run': self.full_run,
-                         }
+    def __init__(self, task_queue, result_queue, model):
         multiprocessing.Process.__init__(self)
+
+        self.commands = {'full_run': self.full_run,
+                         }
+
         self.task_queue = task_queue
         self.result_queue = result_queue
+        self.model = model
 
     def run(self):
         proc_name = self.name
@@ -146,16 +156,15 @@ class Consumer(multiprocessing.Process):
                 break
 
             try:
-                result = self.commands[data[0]](data[1])
+                result = self.commands[data[0]](**data[1])
             except:
-                result = 'failed!!!'
+                exc_type, exc_value, exc_traceback = sys.exc_info()
+                fmt = traceback.format_exception(exc_type, exc_value,
+                                                 exc_traceback)
+                result = fmt
 
             self.result_queue.put(result)
         return
-
-    def get_model(self, model):
-        self.model = model
-        return 'got the model'
 
     def full_run(self, logger):
         self.model.full_run(logger=logger)
@@ -170,16 +179,13 @@ if __name__ == '__main__':
     tasks = multiprocessing.Queue()
     results = multiprocessing.Queue()
 
-    model_consumer = Consumer(tasks, results)
+    model_consumer = ModelConsumer(tasks, results, model)
     model_consumer.start()
 
-    tasks.put(('get_model', model))
+    tasks.put(('full_run', dict(logger=True)))
     print 'results:', results.get()
 
-    tasks.put(('full_run', True))
-    print 'results:', results.get()
-
-    # tasks.put(None)
+    tasks.put(None)
 
     # model.full_run(logger=True)
     # post_run(model)
