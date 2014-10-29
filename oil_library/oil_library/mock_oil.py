@@ -41,7 +41,7 @@ def sample_oil_to_mock_oil(max_cuts=None, **kwargs):
         mass_left -= oil.resins
 
     if oil.asphaltene_content:
-        mass_left -= oil.resins
+        mass_left -= oil.asphaltene_content
 
     oil.cuts = []
     prev_mass_frac = 0.0

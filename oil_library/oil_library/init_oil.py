@@ -10,7 +10,9 @@ import math
 
 import transaction
 
-from oil_library.models import ImportedRecord, Oil, KVis, Density, SARAFraction
+from oil_library.models import (ImportedRecord, Oil,
+                                Density, KVis, Cut, SARAFraction)
+from oil_library.utilities import get_boiling_points_from_api
 
 
 def process_oils(session):
@@ -478,23 +480,22 @@ def add_distillation_cut_boiling_point(imported_rec, oil):
 
     if not oil.cuts:
         # TODO: get boiling point from api inside utilities module
-        get_distillation_cut_from_api(oil)
+        mass_left = 1.0
+
+        if imported_rec.resins:
+            mass_left -= imported_rec.resins
+
+        if imported_rec.asphaltene_content:
+            mass_left -= imported_rec.asphaltene_content
+
+        prev_mass_frac = 0.0
+        for t_i, fraction in get_boiling_points_from_api(5, mass_left,
+                                                         oil.api):
+            oil.cuts.append(Cut(fraction=prev_mass_frac + fraction,
+                                vapor_temp_k=t_i))
+            prev_mass_frac += fraction
+
         pass
-
-
-def get_distillation_cut_from_api(oil):
-    '''
-        Note: we cannot use this estimation method if the oil API value is
-        not a positive value.
-    '''
-    if oil.api > 0.0:
-        num_components = 5
-        t_0 = 457 - 3.34 * oil.api
-        t_g = 1357 - 247.7 * math.log(oil.api)
-
-        return t_0 + t_g * ()
-    else:
-        return None
 
 
 def add_saturate_fractions(oil):
