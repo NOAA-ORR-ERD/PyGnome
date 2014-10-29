@@ -47,12 +47,11 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
                   duration=timedelta(hours=48), time_step=3600,
                   map=gnome_map, uncertain=True, cache_enabled=True)
 
-    print 'adding outputters'
-    model.outputters += Renderer(mapfile, images_dir, size=(800, 600))
-
     netcdf_file = os.path.join(base_dir, 'script_long_island.nc')
     scripting.remove_netcdf(netcdf_file)
 
+    print 'adding outputters'
+    model.outputters += Renderer(mapfile, images_dir, size=(800, 600))
     model.outputters += NetCDFOutput(netcdf_file, which_data='all')
 
     print 'adding a spill'
@@ -167,8 +166,7 @@ class ModelConsumer(multiprocessing.Process):
         return
 
     def full_run(self, logger):
-        self.model.full_run(logger=logger)
-        return 'completed the model full run'
+        return self.model.full_run(logger=logger)
 
 
 if __name__ == '__main__':
