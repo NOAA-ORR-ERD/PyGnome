@@ -115,7 +115,7 @@ class Water(Environment, serializable.Serializable):
                  sediment=None,
                  wave_height=None,
                  fetch=None,
-                 name='WaterProperties'):
+                 name='Water'):
         '''
         Assume units are SI for all properties. 'units' attribute assumes SI
         by default. This can be changed, but initialization takes SI.
