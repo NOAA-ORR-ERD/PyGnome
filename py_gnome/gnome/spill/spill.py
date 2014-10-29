@@ -19,10 +19,10 @@ from colander import (SchemaNode, Bool, String, Float, drop)
 import gnome    # required by new_from_dict
 from gnome.utilities import serializable
 from gnome.persist.base_schema import ObjType
-from gnome import init_obj_log
 
 from . import elements
 from .release import PointLineRelease
+from .. import _valid_units
 
 
 class SpillSchema(ObjType):
@@ -51,13 +51,8 @@ class Spill(serializable.Serializable):
                                  update=True)
     _schema = SpillSchema
 
-    valid_vol_units = list(chain.from_iterable([item[1] for item in
-                           uc.ConvertDataUnits['Volume'].values()]))
-    valid_vol_units.extend(unit_conversion.GetUnitNames('Volume'))
-
-    valid_mass_units = list(chain.from_iterable([item[1] for item in
-                            uc.ConvertDataUnits['Mass'].values()]))
-    valid_mass_units.extend(uc.GetUnitNames('Mass'))
+    valid_vol_units = _valid_units('Volume')
+    valid_mass_units = _valid_units('Mass')
 
     def __init__(self, release,
                  element_type=None,

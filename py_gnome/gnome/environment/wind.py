@@ -6,40 +6,32 @@ the Wind object defines the Wind conditions for the spill
 import datetime
 import os
 import copy
-from itertools import chain
-import tempfile
 
 import numpy
 np = numpy
 
 from colander import (SchemaNode, drop, OneOf,
                       Float, String, Range)
+from hazpy import unit_conversion as uc
 
-from .environment import Environment
+from gnome.cy_gnome.cy_ossm_time import CyOSSMTime
+from gnome import basic_types
+# TODO: The name 'convert' is doubly defined as
+#       hazpy.unit_conversion.convert and...
+#       gnome.utilities.convert
+#       This will inevitably cause namespace collisions.
+from gnome.utilities.time_utils import date_to_sec
+from gnome.utilities import serializable
+from gnome.utilities.convert import (to_time_value_pair,
+                                     tsformat,
+                                     to_datetime_value_2d)
 from gnome.persist.extend_colander import (DefaultTupleSchema,
                                            LocalDateTime,
                                            DatetimeValue2dArraySchema)
 from gnome.persist import validators, base_schema
 
-#import gnome
-from gnome import basic_types
-
-# TODO: The name 'convert' is doubly defined as
-#       hazpy.unit_conversion.convert and...
-#       gnome.utilities.convert
-#       This will inevitably cause namespace collisions.
-from hazpy import unit_conversion
-from gnome.utilities.time_utils import sec_to_date, date_to_sec
-from hazpy.unit_conversion import (ConvertDataUnits,
-                                   GetUnitNames,
-                                   InvalidUnitError)
-
-from gnome.utilities import serializable
-from gnome.utilities.convert import (to_time_value_pair,
-                                     tsformat,
-                                     to_datetime_value_2d)
-
-from gnome.cy_gnome.cy_ossm_time import CyOSSMTime
+from .environment import Environment
+from .. import _valid_units
 
 
 class MagnitudeDirectionTuple(DefaultTupleSchema):
@@ -144,10 +136,7 @@ class Wind(Environment, serializable.Serializable):
     _state['name'].test_for_eq = False
 
     # list of valid velocity units for timeseries
-    valid_vel_units = list(chain.from_iterable([item[1] for item in
-                                    ConvertDataUnits['Velocity'].values()]))
-    valid_vel_units.extend(GetUnitNames('Velocity'))
-    del item    # keep the namespace clean
+    valid_vel_units = _valid_units('Velocity')
 
     def __init__(self, timeseries=None, units=None,
                  filename=None, format='r-theta',
@@ -174,8 +163,7 @@ class Wind(Environment, serializable.Serializable):
             get_timeseries() will use these as default units to
             output data, unless user specifies otherwise.
             These units must be valid as defined in the hazpy
-            unit_conversion module:
-            unit_conversion.GetUnitNames('Velocity')
+            unit_conversion module
         :type units:  string, for example: 'knot', 'meter per second',
             'mile per hour' etc.
             Default units for input/output timeseries data
@@ -249,13 +237,11 @@ class Wind(Environment, serializable.Serializable):
         date/time value pair
         '''
         if from_unit != to_unit:
-            data[:, 0] = unit_conversion.convert('Velocity',
-                                                 from_unit, to_unit,
-                                                 data[:, 0])
+            data[:, 0] = uc.convert('Velocity', from_unit, to_unit, data[:, 0])
 
             if ts_format == basic_types.ts_format.uv:
                 # TODO: avoid clobbering the 'ts_format' namespace
-                data[:, 1] = unit_conversion.convert('Velocity',
+                data[:, 1] = uc.convert('Velocity',
                                                      from_unit, to_unit,
                                                      data[:, 1])
 
@@ -266,8 +252,8 @@ class Wind(Environment, serializable.Serializable):
         Checks the user provided units are in list Wind.valid_vel_units
         '''
         if units not in Wind.valid_vel_units:
-            raise InvalidUnitError('A valid velocity unit must be one of: '
-                                   '{0}'.format(Wind.valid_vel_units))
+            raise uc.InvalidUnitError('A valid velocity unit must be one of: '
+                                      '{0}'.format(Wind.valid_vel_units))
 
     def _check_timeseries(self, timeseries, units):
         '''
@@ -357,9 +343,7 @@ class Wind(Environment, serializable.Serializable):
         User can set default units for input/output data
 
         These are given as string and must be one of the units defined in
-        unit_conversion.GetUnitNames('Velocity')
-        or one of the associated abbreviations
-        unit_conversion.GetUnitAbbreviation()
+        unit_conversion module. Also given in 'valid_vel_units' class attribute
         """
         self._check_units(value)
         self._user_units = value

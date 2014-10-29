@@ -3,13 +3,14 @@ module contains objects that contain weather related data. For example,
 the Wind object defines the Wind conditions for the spill
 """
 import copy
-from itertools import chain
 
 from colander import SchemaNode, Float, MappingSchema, drop, String, OneOf
 from hazpy import unit_conversion as uc
 
 from gnome.utilities import serializable
 from gnome.persist import base_schema
+
+from .. import _valid_units
 
 
 class Environment(object):
@@ -32,24 +33,12 @@ class Environment(object):
 
 
 # define valid units at module scope because the Schema and Object both use it
-_valid_temp_units = uc.GetUnitNames('Temperature')
-_valid_temp_units.extend(
-    chain(*[val[1] for val in
-            uc.ConvertDataUnits['Temperature'].values()]))
-
-#_valid_ciw_units = uc.GetUnitNames('Concentration In Water')
-#_valid_ciw_units.extend(
-#    chain(*[val[1] for val in
-#            uc.ConvertDataUnits['Concentration In Water'].values()]))
-# these are also not in hazpy
-_valid_sediment_units = ['mg/l']
-
-_valid_dist_units = uc.GetUnitNames('Length')
-_valid_dist_units.extend(
-    chain(*[val[1] for val in
-            uc.ConvertDataUnits['Length'].values()]))
-
-_valid_salinity_units = ['psu']
+_valid_temp_units = _valid_units('Temperature')
+_valid_dist_units = _valid_units('Length')
+_valid_kvis_units = _valid_units('Kinematic Viscosity')
+_valid_density_units = _valid_units('Density')
+_valid_salinity_units = ('psu',)
+_valid_sediment_units = ('mg/l',)
 
 
 class UnitsSchema(MappingSchema):
@@ -75,6 +64,12 @@ class UnitsSchema(MappingSchema):
     fetch = SchemaNode(String(),
                        description='SI units for distance',
                        validator=OneOf(_valid_dist_units))
+    kinematic_viscosity = SchemaNode(String(),
+                                     description='SI units for viscosity',
+                                     validator=OneOf(_valid_kvis_units))
+    density = SchemaNode(String(),
+                         description='SI units for density',
+                         validator=OneOf(_valid_density_units))
 
 
 class WaterSchema(base_schema.ObjType):
@@ -101,7 +96,10 @@ class Water(Environment, serializable.Serializable):
                serializable.Field('salinity', update=True, save=True),
                serializable.Field('sediment', update=True, save=True),
                serializable.Field('fetch', update=True, save=True),
-               serializable.Field('wave_height', update=True, save=True)]
+               serializable.Field('wave_height', update=True, save=True),
+               serializable.Field('density', update=True, save=True),
+               serializable.Field('kinematic_viscosity', update=True,
+                                  save=True)]
 
     _schema = WaterSchema
 
@@ -130,14 +128,14 @@ class Water(Environment, serializable.Serializable):
                       'wave_height': 'm',
                       'fetch': 'm',
                       'density': 'kg/m^3',
-                      'viscosity': 'm^2/s'}
+                      'kinematic_viscosity': 'St'}
         self.temperature = temperature
         self.salinity = salinity
         self.sediment = sediment
         self.wave_height = wave_height
         self.fetch = fetch
         self.density = 997
-        self.viscosity = 0.000001
+        self.kinematic_viscosity = 0.000001
         self.name = name
 
     def __repr__(self):

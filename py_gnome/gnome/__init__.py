@@ -2,8 +2,12 @@
 __init__.py for the gnome package
 
 """
+from itertools import chain
+
 import logging.config
 import json
+
+from hazpy import unit_conversion as uc
 
 
 def initialize_log(config, logfile=None):
@@ -18,6 +22,14 @@ def initialize_log(config, logfile=None):
         config['handlers']['file']['filename'] = logfile
 
     logging.config.dictConfig(config)
+
+
+def _valid_units(unit_name):
+    'convenience function to get all valid units accepted by hazpy'
+    _valid_units = uc.GetUnitNames(unit_name)
+    _valid_units.extend(chain(*[val[1] for val in
+                                uc.ConvertDataUnits[unit_name].values()]))
+    return tuple(_valid_units)
 
 
 __version__ = '0.1.1'
