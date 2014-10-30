@@ -444,11 +444,11 @@ class SpillContainer(SpillContainerData):
                 self._append_data_arrays(num_released, num_oil_comp)
                 sp.set_newparticle_values(num_released, model_time, time_step,
                                           self._data_arrays)
-                sp.update_intrinsic_properties(num_released, self._data_arrays)
 
                 # use the initialized mass array to find total mass released
                 amount_released += np.sum(self['mass'][-num_released:])
 
+            sp.update_intrinsic_properties(num_released, self._data_arrays)
         # update intrinsic properties after release since we release particles
         # at end of the step
         self._write_weathering_data(amount_released)

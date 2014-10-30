@@ -476,6 +476,10 @@ class Spill(serializable.Serializable):
         '''
         Uses 'substance' properties together with 'water' properties to update
         'density', 'init_volume', etc
+        The 'init_volume' is not updated at each step; however, it depends on
+        the 'density' which must be set/updated first and this depends on
+        water object. So it was easiest to initialize the 'init_volume' for
+        newly released particles here.
         '''
         if not self.water:
             msg = "No Water object found - intrinsic properties unchanged"
@@ -484,15 +488,14 @@ class Spill(serializable.Serializable):
 
         water_temp = self.water.get('temperature', 'K')
         if 'density' in data_arrays:
-            data_arrays['density'][-num_new_particles:] = \
+            data_arrays['density'] = \
                 self.get('substance').get_density(water_temp)
-            rho = data_arrays['density'][-num_new_particles:]
-        else:
-            rho = self.get('substance').get_density(water_temp)
 
-        if 'init_volume' in data_arrays:
-            data_arrays['init_volume'][-num_new_particles:] = \
-                np.sum(data_arrays['mass'][-num_new_particles:] / rho, 0)
+        if num_new_particles > 0:
+            if 'init_volume' in data_arrays:
+                rho = self.get('substance').get_density(water_temp)
+                data_arrays['init_volume'][-num_new_particles:] = \
+                    np.sum(data_arrays['mass'][-num_new_particles:] / rho, 0)
 
     def serialize(self, json_='webapi'):
         """
