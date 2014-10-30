@@ -77,20 +77,19 @@ class WeatheringOutput(Outputter, Serializable):
         add uncertainty to 'amount_released', then compute fraction of total
         of weathered quantities
         '''
-        high = {'avg_density':
-                nom_dict['avg_density'] * random.uniform(1, 1.1)}
+        runs = {}
+        for ix in range(27):
+            runs[str(ix)] = {}
+            sum_mass = 0.0
+            for key, val in nom_dict.iteritems():
+                runs[str(ix)][key] = val * random.uniform(0.9, 1.2)
+                if key not in ('avg_density', 'amount_released', 'floating'):
+                    sum_mass += runs[str(ix)][key]
 
-        low = {'avg_density':
-               nom_dict['avg_density'] * random.uniform(0.95, 1)}
+            runs[str(ix)]['floating'] = (runs[str(ix)]['amount_released'] -
+                                         sum_mass)
 
-        mass_high_unc = random.uniform(1, 1.2)
-        mass_low_unc = random.uniform(0.9, 1)
-        for key, val in nom_dict.iteritems():
-            if key == 'avg_density':
-                continue
-            high[key] = val * mass_high_unc
-            low[key] = val * mass_low_unc
-        return (high, low)
+        return runs
 
     def write_output(self, step_num, islast_step=False):
         super(WeatheringOutput, self).write_output(step_num, islast_step)
@@ -109,17 +108,12 @@ class WeatheringOutput(Outputter, Serializable):
                 dict_['nominal'][key] = val
 
             # add fake uncertainty
-            (dict_['high'], dict_['low']) = \
-                self._add_fake_uncertainty(dict_['nominal'])
-
-            # add uncertainty
-            dict_['step_num'] = step_num
+            dict_.update(self._add_fake_uncertainty(dict_['nominal']))
 
             output_info = {'step_num': step_num,
-                           'time_stamp': sc.current_time_stamp.isoformat(),
-                           'nominal': dict_['nominal'],
-                           'low': dict_['low'],
-                           'high': dict_['high']}
+                           'time_stamp': sc.current_time_stamp.isoformat()}
+            output_info.update(dict_)
+
             if self.output_dir:
                 output_filename = self.output_to_file(output_info, step_num)
                 output_info.update({'output_filename': output_filename})

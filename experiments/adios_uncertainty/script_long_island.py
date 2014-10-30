@@ -2,10 +2,13 @@
 """
 Script to test GNOME with long island sound data
 """
-
+import sys
 import os
-import shutil
+import traceback
+
 from datetime import datetime, timedelta
+import shutil
+import multiprocessing
 
 import numpy
 np = numpy
@@ -119,10 +122,70 @@ def post_run(model):
         print 'No Renderers available!!!'
 
 
+# here is the multiprocessing stuff
+class ModelConsumer(multiprocessing.Process):
+    '''
+        This is a consumer process that reads a queue and acts on
+        the data received in the format:
+            ('registeredcommand', {arg1: val1,
+                                   arg2: val2,
+                                   ...
+                                   },
+             )
+
+        The model is passed into the child process,
+        and all registered commands presumably act upon the model
+    '''
+    def __init__(self, task_queue, result_queue, model):
+        multiprocessing.Process.__init__(self)
+
+        self.commands = {'full_run': self.full_run,
+                         }
+
+        self.task_queue = task_queue
+        self.result_queue = result_queue
+        self.model = model
+
+    def run(self):
+        proc_name = self.name
+        while True:
+            data = self.task_queue.get()
+            if data is None:
+                # Poison pill means shutdown
+                print '%s: Exiting' % proc_name
+                break
+
+            try:
+                result = self.commands[data[0]](**data[1])
+            except:
+                exc_type, exc_value, exc_traceback = sys.exc_info()
+                fmt = traceback.format_exception(exc_type, exc_value,
+                                                 exc_traceback)
+                result = fmt
+
+            self.result_queue.put(result)
+        return
+
+    def full_run(self, logger):
+        self.model.full_run(logger=logger)
+        return 'completed the model full run'
+
+
 if __name__ == '__main__':
     scripting.make_images_dir()
 
     model = make_model()
 
-    model.full_run(logger=True)
-    post_run(model)
+    tasks = multiprocessing.Queue()
+    results = multiprocessing.Queue()
+
+    model_consumer = ModelConsumer(tasks, results, model)
+    model_consumer.start()
+
+    tasks.put(('full_run', dict(logger=True)))
+    print 'results:', results.get()
+
+    tasks.put(None)
+
+    # model.full_run(logger=True)
+    # post_run(model)

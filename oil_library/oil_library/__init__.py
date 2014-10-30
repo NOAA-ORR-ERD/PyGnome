@@ -99,6 +99,7 @@ def get_oil(oil_, max_cuts=None):
         return sample_oil_to_mock_oil(max_cuts=max_cuts, **oil_)
 
     if oil_ in _sample_oils.keys():
+        print 'returning mock oil by name'
         return sample_oil_to_mock_oil(max_cuts=max_cuts, **_sample_oils[oil_])
 
     else:
@@ -111,7 +112,10 @@ def get_oil(oil_, max_cuts=None):
 
         try:
             oil = session.query(Oil).filter(Oil.name == oil_).one()
+            oil.cuts
             oil.densities
+            oil.kvis
+            oil.sara_fractions
             return oil
         except:
             pass    # try checking imported_record_id

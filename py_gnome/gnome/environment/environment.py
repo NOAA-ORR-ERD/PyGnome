@@ -163,12 +163,13 @@ class Water(Environment, serializable.Serializable):
             # requirements
             return val
 
+        print unit, self._units_type[attr][1]
         if unit in self._units_type[attr][1]:
             return uc.convert(self._units_type[attr][0], self.units[attr],
                               unit, val)
         else:
             # log to file if we have logger
-            raise uc.InvalidUnitError(unit, self._units_type[attr][0])
+            raise uc.InvalidUnitError((unit, self._units_type[attr][0]))
 
     def set(self, attr, value, unit):
         '''
@@ -177,7 +178,7 @@ class Water(Environment, serializable.Serializable):
         desired property and also updates the units dict
         '''
         if unit not in self._units_type[attr][1]:
-            raise uc.InvalidUnitError(unit, self._units_type[attr][0])
+            raise uc.InvalidUnitError((unit, self._units_type[attr][0]))
 
         setattr(self, attr, value)
         self.units[attr] = unit

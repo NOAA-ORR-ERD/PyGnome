@@ -4,6 +4,7 @@ tests for geojson outputter
 import os
 import shutil
 from glob import glob
+from datetime import timedelta
 
 import numpy as np
 import pytest
@@ -43,7 +44,7 @@ def model(sample_model):
                           constant_wind(1.0, 0.0)]
     # figure out mid-run save for weathering_data attribute, then add this in
     model.weatherers += [Evaporation(model.environment[-2],
-                                    model.environment[-1]),
+                                     model.environment[-1]),
                          Dispersion(),
                          Burn(),
                          Skimmer()]
@@ -54,10 +55,13 @@ def model(sample_model):
     line_pos[:, 1] = np.linspace(rel_start_pos[1], rel_end_pos[1], N)
 
     # print start_points
+    model.duration = timedelta(hours=2)
+    end_time = model.start_time + timedelta(hours=1)
     et = floating_weathering(substance='FUEL OIL NO.6')
-    model.spills += point_line_release_spill(1,
+    model.spills += point_line_release_spill(1000,
                                              start_position=rel_start_pos,
                                              release_time=model.start_time,
+                                             end_release_time=end_time,
                                              end_position=rel_end_pos,
                                              amount=1000,
                                              units='kg',
@@ -85,11 +89,13 @@ def test_model_webapi_output(model):
 
     # floating mass at beginning of step - though tests will only pass for
     # nominal values
-    step_init_float = {'nominal': 0.0, 'high': 0.0, 'low': 0.0}
     for step in model:
         assert 'WeatheringOutput' in step
-        for key in ('nominal', 'low', 'high'):
-            sum_mass = 0.0
+        sum_mass = 0.0
+        for key in step['WeatheringOutput']:
+            if not isinstance(step['WeatheringOutput'][key], dict):
+                continue
+
             for process in ('evaporated', 'burned', 'skimmed', 'dispersed'):
                 assert (process in step['WeatheringOutput'][key])
                 sum_mass += step['WeatheringOutput'][key][process]
@@ -99,19 +105,7 @@ def test_model_webapi_output(model):
             # For nominal, sum up all mass and ensure it equals the mass at
             # step initialization - ignore step 0
             sum_mass += step['WeatheringOutput'][key]['floating']
-            if key == 'nominal' and step_init_float[key] > 0.0:
-                'assert after 1st timestep'
-                np.isclose(sum_mass, step_init_float[key])
-
-                print '\n{0} values: '.format(key)
-                #print 'released: {0}'.format(step['WeatheringOutput'][key]['amount_released'])
-                print ('amount before weathering at step beginning: {0}'.
-                       format(step_init_float[key]))
-                print 'weathered + floating at step end: {0}'.format(sum_mass)
-
-            # update initial mass at beginning of next step - used for
-            # assertion
-            step_init_float[key] = step['WeatheringOutput'][key]['floating']
+            np.isclose(sum_mass, step['WeatheringOutput'][key]['amount_released'])
 
 
 def test_model_dump_output(model):

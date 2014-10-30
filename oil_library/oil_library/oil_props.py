@@ -67,7 +67,7 @@ class OilProps(object):
         # [m0_s, m0_a, m1_s, m1_a, ..., m_resins, m_asphaltenes]
         self.mass_fraction = []
         self.boiling_point = []
-        for mf, bp in get_boiling_points_from_cuts(oil_):
+        for bp, mf in get_boiling_points_from_cuts(oil_):
             self.mass_fraction.append(mf)
             self.boiling_point.append(bp)
 
