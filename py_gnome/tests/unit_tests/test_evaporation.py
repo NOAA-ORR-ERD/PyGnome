@@ -8,7 +8,7 @@ from datetime import timedelta
 import pytest
 import numpy as np
 
-from gnome.environment import constant_wind, Water
+from gnome.environment import constant_wind, Water, Wind
 from gnome.weatherers import Evaporation, Burn, Skimmer, Dispersion
 from gnome.outputters import WeatheringOutput
 from gnome.spill.elements import floating_weathering
@@ -157,3 +157,23 @@ def test_full_run_evap_not_active(sample_model_fcn):
 
         print ("Completed step: {0}"
                .format(step['WeatheringOutput']['step_num']))
+
+
+def test_serialize_deseriailize():
+    'test serialize/deserialize for webapi'
+    e = Evaporation()
+    wind = constant_wind(1., 0)
+    water = Water()
+    json_ = e.serialize()
+    json_['wind'] = wind.serialize()
+    json_['water'] = water.serialize()
+
+    # deserialize and ensure the dict's are correct
+    d_ = Evaporation.deserialize(json_)
+    assert d_['wind'] == Wind.deserialize(json_['wind'])
+    assert d_['water'] == Water.deserialize(json_['water'])
+    d_['wind'] = wind
+    d_['water'] = water
+    e.update_from_dict(d_)
+    assert e.wind is wind
+    assert e.water is water
