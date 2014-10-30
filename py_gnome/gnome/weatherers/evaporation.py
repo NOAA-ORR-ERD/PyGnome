@@ -6,7 +6,6 @@ import copy
 import numpy as np
 
 from gnome.array_types import (mass_components,
-                               density,
                                thickness,
                                mol,
                                evap_decay_constant,
@@ -41,7 +40,6 @@ class Evaporation(Weatherer, Serializable):
 
         super(Evaporation, self).__init__(**kwargs)
         self.array_types.update({'mass_components': mass_components,
-                                 'density': density,
                                  'thickness': thickness,
                                  'mol': mol,
                                  'evap_decay_constant': evap_decay_constant})

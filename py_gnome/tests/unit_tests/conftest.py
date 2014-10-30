@@ -75,7 +75,8 @@ def sample_sc_release(num_elements=10,
                       element_type=None,
                       current_time=None,
                       arr_types=None,
-                      water=None):
+                      water=None,
+                      weather=False):
     """
     Initialize a Spill of type 'spill', add it to a SpillContainer.
     Invoke release_elements on SpillContainer, then return the spill container
@@ -109,7 +110,7 @@ def sample_sc_release(num_elements=10,
     sc.spills.add(spill)
 
     # used for testing so just assume there is a Windage array
-    sc.prepare_for_model_run(arr_types, water)
+    sc.prepare_for_model_run(arr_types, water, weather)
     sc.release_elements(time_step, current_time)
     return sc
 

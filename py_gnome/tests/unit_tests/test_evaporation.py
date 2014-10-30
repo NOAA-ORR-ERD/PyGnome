@@ -14,7 +14,6 @@ from gnome.outputters import WeatheringOutput
 from gnome.spill.elements import floating_weathering
 from gnome.array_types import (mass_components,
                                windages,
-                               density,
                                thickness,
                                mol,
                                evap_decay_constant)
@@ -28,7 +27,6 @@ water = Water()
 
 arrays = {'windages': windages,
           'mass_components': mass_components,
-          'density': density,
           'thickness': thickness,
           'mol': mol,
           'evap_decay_constant': evap_decay_constant}
@@ -46,7 +44,8 @@ def test_evaporation(oil, temp, num_elems, on):
     sc = sample_sc_release(num_elements=num_elems,
                            element_type=et,
                            arr_types=arrays,
-                           water=water)
+                           water=water,
+                           weather=True)
 
     time_step = 15. * 60
     model_time = (sc.spills[0].get('release_time') +

@@ -419,7 +419,9 @@ class Model(Serializable):
                 array_types.update(w.array_types)
 
         for sc in self.spills.items():
-            sc.prepare_for_model_run(array_types, self.water)
+            sc.prepare_for_model_run(array_types,
+                                     self.water,
+                                     len(self.weatherers) > 0)
 
         # outputters need array_types, so this needs to come after those
         # have been updated.

@@ -11,7 +11,15 @@ import numpy
 np = numpy
 
 from gnome.basic_types import oil_status
-from gnome import array_types
+from gnome.array_types import (positions,
+                               next_positions,
+                               last_water_positions,
+                               status_codes,
+                               spill_num,
+                               id,
+                               mass,
+                               age,
+                               density)
 
 from gnome.utilities.orderedcollection import OrderedCollection
 import gnome.spill
@@ -235,14 +243,14 @@ class SpillContainer(SpillContainerData):
         'reset _array_types dict so it contains default keys/values'
         gnome.array_types.reset_to_defaults(['spill_num', 'id'])
 
-        self._array_types = {'positions': array_types.positions,
-                             'next_positions': array_types.next_positions,
-                             'last_water_positions': array_types.last_water_positions,
-                             'status_codes': array_types.status_codes,
-                             'spill_num': array_types.spill_num,
-                             'id': array_types.id,
-                             'mass': array_types.mass,
-                             'age': array_types.age}
+        self._array_types = {'positions': positions,
+                             'next_positions': next_positions,
+                             'last_water_positions': last_water_positions,
+                             'status_codes': status_codes,
+                             'spill_num': spill_num,
+                             'id': id,
+                             'mass': mass,
+                             'age': age}
         self._data_arrays = {}
 
     @property
@@ -307,7 +315,7 @@ class SpillContainer(SpillContainerData):
                     return spill.get('substance').num_components
         return 1
 
-    def prepare_for_model_run(self, array_types={}, water=None):
+    def prepare_for_model_run(self, array_types={}, water=None, weather=False):
         """
         called when setting up the model prior to 1st time step
         This is considered 0th timestep by model
@@ -337,6 +345,11 @@ class SpillContainer(SpillContainerData):
         # No! If user made modifications to _array_types before running model,
         # let's keep those. A rewind will reset data_arrays.
         self._array_types.update(array_types)
+
+        if weather:
+            # for now append density array here itself
+            self._array_types.update({'density': density})
+
         self._append_initializer_array_types(array_types)
         self.initialize_data_arrays()
 
