@@ -488,7 +488,7 @@ class Spill(serializable.Serializable):
 
         water_temp = self.water.get('temperature', 'K')
         if 'density' in data_arrays:
-            data_arrays['density'] = \
+            data_arrays['density'][:] = \
                 self.get('substance').get_density(water_temp)
 
         if num_new_particles > 0:
