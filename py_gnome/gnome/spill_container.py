@@ -19,7 +19,8 @@ from gnome.array_types import (positions,
                                id,
                                mass,
                                age,
-                               density)
+                               density,
+                               ArrayType)
 
 from gnome.utilities.orderedcollection import OrderedCollection
 import gnome.spill
@@ -237,7 +238,7 @@ class SpillContainer(SpillContainerData):
             shape = self._data_arrays[data_name].shape[1:]
             dtype = self._data_arrays[data_name].dtype.type
 
-            self._array_types[data_name] = array_types.ArrayType(shape, dtype)
+            self._array_types[data_name] = ArrayType(shape, dtype)
 
     def _reset_arrays(self):
         'reset _array_types dict so it contains default keys/values'
