@@ -1,7 +1,12 @@
+from pprint import PrettyPrinter
+pp = PrettyPrinter(indent=2)
+
 import sys
 import traceback
 import multiprocessing
 mp = multiprocessing
+
+from gnome.environment import Wind
 
 
 class ModelConsumer(mp.Process):
@@ -68,6 +73,15 @@ class ModelBroadcaster(object):
     def __init__(self, model, num_instances):
         self.tasks = []
         self.results = []
+
+        # just some model diag before we spawn
+        time_objs = [e for e in model.environment
+                     if isinstance(e, Wind)]
+        for obj in time_objs:
+            ts = obj.get_timeseries()
+            for tse in ts:
+                value = tse['value']
+                print value
 
         for i in range(num_instances):
             self.tasks.append(mp.Queue())
