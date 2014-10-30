@@ -307,7 +307,7 @@ class SpillContainer(SpillContainerData):
                     return spill.get('substance').num_components
         return 1
 
-    def prepare_for_model_run(self, array_types={}):
+    def prepare_for_model_run(self, array_types={}, water=None):
         """
         called when setting up the model prior to 1st time step
         This is considered 0th timestep by model
@@ -327,8 +327,10 @@ class SpillContainer(SpillContainerData):
         .. note:: The SpillContainer cycles through each of the keys in
         array_types and checks to see if there is an associated initializer
         in each Spill. If a corresponding initializer is found, it gets the
-        array_types from initializer and appends them to its own list. For
-        most initializers like 
+        array_types from initializer and appends them to its own list. This was
+        added for the case where 'droplet_diameter' array is defined/used by
+        initializer (InitRiseVelFromDropletSizeFromDist) and we would like to
+        see it in output, but no Mover/Weatherer needs it.
         """
         # Question - should we purge any new arrays that were added in previous
         # call to prepare_for_model_run()?
@@ -342,6 +344,10 @@ class SpillContainer(SpillContainerData):
         self.spills.remake()
         self.weathering_data['floating'] = 0.0
         self.weathering_data['amount_released'] = 0.0
+
+        for spill in self.spills:
+            if spill.water is not water:
+                spill.water = water
 
     def _append_initializer_array_types(self, array_types):
         # for each array_types, use the key to get the associated initializer
@@ -438,6 +444,7 @@ class SpillContainer(SpillContainerData):
                 self._append_data_arrays(num_released, num_oil_comp)
                 sp.set_newparticle_values(num_released, model_time, time_step,
                                           self._data_arrays)
+                sp.update_intrinsic_properties(num_released, self._data_arrays)
 
                 # use the initialized mass array to find total mass released
                 amount_released += np.sum(self['mass'][-num_released:])

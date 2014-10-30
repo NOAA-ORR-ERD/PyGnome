@@ -161,6 +161,9 @@ _default_values = {
      'mol': ((), np.float64, 0.),     # total number of mols for each LE
      'mass_components': (None, np.float64, None),
      'evap_decay_constant': (None, np.float64, None),
+
+     # initial volume - used to compute spreading (LE area)
+     'init_volume': ((), np.float64, 0)
      }
 
 

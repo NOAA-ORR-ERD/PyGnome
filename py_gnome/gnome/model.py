@@ -14,7 +14,7 @@ np = numpy
 from colander import (MappingSchema, SchemaNode,
                       Float, Int, Bool, drop)
 
-from gnome.environment import Environment
+from gnome.environment import Environment, Water
 
 import gnome.utilities.cache
 from gnome.utilities.time_utils import round_time
@@ -197,7 +197,8 @@ class Model(Serializable):
         self.logger.info('New model initialized')
 
     def __restore__(self, time_step, start_time, duration,
-                    weathering_substeps, uncertain, cache_enabled, map, name):
+                    weathering_substeps, uncertain, cache_enabled, map, name,
+                    water=None):
         '''
         Take out initialization that does not register the callback here.
         This is because new_from_dict will use this to restore the model _state
@@ -228,6 +229,7 @@ class Model(Serializable):
             self.name = name
 
         self._map = map
+        self.water = water
         self.time_step = time_step  # this calls rewind() !
 
     def reset(self, **kwargs):
@@ -416,7 +418,7 @@ class Model(Serializable):
                 array_types.update(w.array_types)
 
         for sc in self.spills.items():
-            sc.prepare_for_model_run(array_types)
+            sc.prepare_for_model_run(array_types, self.water)
 
         # outputters need array_types, so this needs to come after those
         # have been updated.
@@ -595,7 +597,7 @@ class Model(Serializable):
             self.weather_elements()
             self.step_is_done()
             self.logger.info("Completed step: {0.current_time_step} for "
-                          "{0.name}".format(self))
+                             "{0.name}".format(self))
 
         self.current_time_step += 1
 
@@ -665,9 +667,11 @@ class Model(Serializable):
 
         return output_data
 
-    def _callback_add_mover(self, obj_added):
-        'Callback after mover has been added'
-        if hasattr(obj_added, 'wind'):
+    def _add_to_environ_collec(self, obj_added):
+        '''
+        if an environment object exists
+        '''
+        if hasattr(obj_added, 'wind') and obj_added.wind is not None:
             if obj_added.wind.id not in self.environment:
                 self.environment += obj_added.wind
 
@@ -675,13 +679,25 @@ class Model(Serializable):
             if obj_added.tide.id not in self.environment:
                 self.environment += obj_added.tide
 
+    def _callback_add_mover(self, obj_added):
+        'Callback after mover has been added'
+        self._add_to_environ_collec(obj_added)
         self.rewind()  # rewind model if a new mover is added
 
     def _callback_add_weatherer(self, obj_added):
         'Callback after weatherer has been added'
-        if isinstance(obj_added, Weatherer):
-            # not sure what kind of dependencies we have just yet.
-            pass
+        self._add_to_environ_collec(obj_added)
+        if hasattr(obj_added, 'water') and obj_added.water is not None:
+            if self.water is None:
+                self.water = obj_added.water
+
+            else:
+                if self.water is not obj_added.water:
+                    msg = ("Model's water attribute is different from newly "
+                           "added weatherer named: {0.name}. "
+                           "Model's Water object is used to update intrinsic "
+                           "properties").format(obj_added)
+                    self.log.warning(msg)
 
         self.rewind()  # rewind model if a new weatherer is added
 

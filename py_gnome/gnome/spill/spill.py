@@ -115,6 +115,10 @@ class Spill(serializable.Serializable):
         '''
         self.frac_coverage = 1.0
         self.frac_water = 0.0
+
+        # Include water object as part of Spill but this is automatically
+        # hooked up by the Model in prepare_for_model_run
+        self.water = None
         self.name = name
 
     def __repr__(self):
@@ -463,10 +467,32 @@ class Spill(serializable.Serializable):
         """
         if self.element_type is not None:
             self.element_type.set_newparticle_values(num_new_particles, self,
-                                                 data_arrays)
+                                                     data_arrays)
 
         self.release.set_newparticle_positions(num_new_particles, current_time,
                                                time_step, data_arrays)
+
+    def update_intrinsic_properties(self, num_new_particles, data_arrays):
+        '''
+        Uses 'substance' properties together with 'water' properties to update
+        'density', 'init_volume', etc
+        '''
+        if not self.water:
+            msg = "No Water object found - intrinsic properties unchanged"
+            self.logger.info(msg)
+            return
+
+        water_temp = self.water.get('temperature', 'K')
+        if 'density' in data_arrays:
+            data_arrays['density'][-num_new_particles:] = \
+                self.get('substance').get_density(water_temp)
+            rho = data_arrays['density'][-num_new_particles:]
+        else:
+            rho = self.get('substance').get_density(water_temp)
+
+        if 'init_volume' in data_arrays:
+            data_arrays['init_volume'][-num_new_particles:] = \
+                np.sum(data_arrays['mass'][-num_new_particles:] / rho, 0)
 
     def serialize(self, json_='webapi'):
         """
