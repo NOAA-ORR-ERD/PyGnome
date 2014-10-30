@@ -7,7 +7,7 @@ import datetime
 import os
 import copy
 from itertools import chain
-import tempfile
+from_iterable = chain.from_iterable
 
 import numpy
 np = numpy
@@ -21,7 +21,6 @@ from gnome.persist.extend_colander import (DefaultTupleSchema,
                                            DatetimeValue2dArraySchema)
 from gnome.persist import validators, base_schema
 
-#import gnome
 from gnome import basic_types
 
 # TODO: The name 'convert' is doubly defined as
@@ -131,7 +130,6 @@ class Wind(Environment, serializable.Serializable):
     _schema = WindSchema
 
     # add 'filename' as a Field object
-    #'name',    is this for webgnome?
     _state.add_field([serializable.Field('filename', isdatafile=True,
                                          save=True, read=True,
                                          test_for_eq=False),
@@ -144,8 +142,9 @@ class Wind(Environment, serializable.Serializable):
     _state['name'].test_for_eq = False
 
     # list of valid velocity units for timeseries
-    valid_vel_units = list(chain.from_iterable([item[1] for item in
-                                    ConvertDataUnits['Velocity'].values()]))
+    valid_vel_units = list(from_iterable([item[1] for item in
+                                          ConvertDataUnits['Velocity'].values()
+                                          ]))
     valid_vel_units.extend(GetUnitNames('Velocity'))
     del item    # keep the namespace clean
 
@@ -205,7 +204,7 @@ class Wind(Environment, serializable.Serializable):
 
         if not filename:
             time_value_pair = self._convert_to_time_value_pair(timeseries,
-                units, format)
+                                                               units, format)
 
             if units is None:
                 raise TypeError("Setting from timeseries requires units")
@@ -266,10 +265,9 @@ class Wind(Environment, serializable.Serializable):
         Checks the user provided units are in list Wind.valid_vel_units
         '''
         if units not in Wind.valid_vel_units:
-            #raise uc.InvalidUnitError((unit, self._units_type[attr][0]))
             raise InvalidUnitError((units,
-                                   'A valid velocity unit must be one of: '
-                                   '{0}'.format(Wind.valid_vel_units)))
+                                    'A valid velocity unit must be one of: '
+                                    '{0}'.format(Wind.valid_vel_units)))
 
     def _check_timeseries(self, timeseries, units):
         '''
@@ -380,10 +378,10 @@ class Wind(Environment, serializable.Serializable):
         # following fails for 0-d objects so make sure we have a 1-D array
         # to work with
         datetime_value_2d = np.asarray(datetime_value_2d,
-            dtype=basic_types.datetime_value_2d)
+                                       dtype=basic_types.datetime_value_2d)
         if datetime_value_2d.shape == ():
             datetime_value_2d = np.asarray([datetime_value_2d],
-                dtype=basic_types.datetime_value_2d)
+                                           dtype=basic_types.datetime_value_2d)
 
         self._check_units(units)
         self._check_timeseries(datetime_value_2d, units)
@@ -456,7 +454,8 @@ class Wind(Environment, serializable.Serializable):
         :type format: either string or integer value defined by
                       basic_types.format.* (see cy_basic_types.pyx)
         """
-        timeval = self._convert_to_time_value_pair(datetime_value_2d, units, format)
+        timeval = self._convert_to_time_value_pair(datetime_value_2d,
+                                                   units, format)
         self.ossm.timeseries = timeval
 
     def save(self, saveloc, references=None, name=None):
@@ -479,7 +478,8 @@ class Wind(Environment, serializable.Serializable):
                   'LTime\n'
                   '0,0,0,0,0,0,0,0\n')
         val = self.get_timeseries(units='knots')['value']
-        dt = self.get_timeseries(units='knots')['time'].astype(datetime.datetime)
+        dt = (self.get_timeseries(units='knots')['time']
+              .astype(datetime.datetime))
 
         with open(datafile, 'w') as file_:
             file_.write(header)
@@ -518,6 +518,7 @@ class Wind(Environment, serializable.Serializable):
         '''
         data = self.get_timeseries(time, 'm/s', 'r-theta')
         return tuple(data[0]['value'])
+
 
 def constant_wind(speed, direction, units='m/s'):
     """
