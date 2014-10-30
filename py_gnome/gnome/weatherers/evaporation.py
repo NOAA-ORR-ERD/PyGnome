@@ -54,14 +54,6 @@ class Evaporation(Weatherer, Serializable):
         '''
         # create 'evaporated' key if it doesn't exist
         # let's only define this the first time
-        if sc.spills:
-            try:
-                sc.weathering_data['avg_density'] = \
-                    (sc.spills[0].get('substance').
-                     get_density(temp=self.water.get('temperature', 'K')))
-            except AttributeError:
-                sc.weathering_data['avg_density'] = \
-                    (sc.spills[0].get('substance').get_density())
         if self.active:
             sc.weathering_data['evaporated'] = 0.0
 

@@ -467,6 +467,12 @@ class SpillContainer(SpillContainerData):
         else:
             self.weathering_data['amount_released'] = amount_released
 
+        if 'density' in self:
+            # update avg_density only if density array exists
+            # wasted cycles at present since all values in density for given
+            # timestep should be the same, but that will likely change
+            self.weathering_data['avg_density'] = np.average(self['density'])
+
     def model_step_is_done(self):
         '''
         Called at the end of a time step
