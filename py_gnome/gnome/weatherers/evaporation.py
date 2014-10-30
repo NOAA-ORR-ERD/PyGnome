@@ -9,13 +9,13 @@ from gnome.array_types import (mass_components,
                                density,
                                thickness,
                                mol,
-                               evap_decay_constant)
+                               evap_decay_constant,
+                               init_volume)
 from gnome.utilities.serializable import Serializable, Field
 
 from .core import WeathererSchema
 from gnome.weatherers import Weatherer
 from gnome.environment import (constants,
-                               constant_wind,
                                WindSchema,
                                WaterSchema)
 
@@ -98,11 +98,10 @@ class Evaporation(Weatherer, Serializable):
             if np.any(mask):
                 mw = spill.get('substance').molecular_weight
                 vp = spill.get('substance').vapor_pressure(water_temp)
-                sc['thickness'][mask] = self._compute_le_thickness()
-                sc['density'][mask] = \
-                    spill.get('substance').get_density(temp=water_temp)
                 sc['mol'][mask] = \
                     np.sum(sc['mass_components'][mask, :]/mw, 1)
+
+                sc['thickness'][mask] = self._compute_le_thickness()
                 le_area = ((sc['mass'][mask]/sc['density'][mask]) /
                            sc['thickness'][mask])
                 le_area = le_area.reshape(-1, 1)
@@ -124,7 +123,7 @@ class Evaporation(Weatherer, Serializable):
 
     def _compute_le_thickness(self):
         '''
-        some function to compute LE thickness
+        some function to compute LE area
         '''
         return 1e-3
 

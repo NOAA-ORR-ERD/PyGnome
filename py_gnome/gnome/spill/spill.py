@@ -178,6 +178,36 @@ class Spill(serializable.Serializable):
             self.logger.exception(ex, exc_info=True)
             raise ex    # this should be raised since run will fail otherwise
 
+    def _get_all_props(self):
+        'return all properties accessible through get'
+        all_props = []
+
+        # release properties
+        rel_props = getmembers(self.release,
+                               predicate=lambda p: (not ismethod(p)))
+        rel_props = [a[0] for a in rel_props if not a[0].startswith('_')]
+
+        all_props.extend(rel_props)
+
+        # element_type properties
+        et_props = getmembers(self.element_type,
+                              predicate=lambda p: (not ismethod(p)))
+        'remove _state - update this after we change _state to _state'
+        et_props = [a[0] for a in et_props
+                    if not a[0].startswith('_') and a[0] != '_state']
+
+        all_props.extend(et_props)
+
+        # properties for each of the initializer objects
+        i_props = []
+        for val in self.element_type.initializers:
+            toadd = getmembers(val, lambda p: (not ismethod(p)))
+            i_props.extend([a[0] for a in toadd
+                            if not a[0].startswith('_') and a[0] != '_state'])
+
+            all_props.extend(i_props)
+        return all_props
+
     def set(self, prop, val):
         """
         sets an existing property. The property could be of one of the
@@ -231,48 +261,28 @@ class Spill(serializable.Serializable):
         """
         'Return all properties'
         if prop is None:
-            all_props = []
+            return self._get_all_props()
 
-            # release properties
-            rel_props = getmembers(self.release,
-                                   predicate=lambda p: (not ismethod(p)))
-            rel_props = [a[0] for a in rel_props if not a[0].startswith('_')]
-
-            all_props.extend(rel_props)
-
-            # element_type properties
-            et_props = getmembers(self.element_type,
-                                  predicate=lambda p: (not ismethod(p)))
-            'remove _state - update this after we change _state to _state'
-            et_props = [a[0] for a in et_props
-                            if not a[0].startswith('_') and a[0] != '_state']
-
-            all_props.extend(et_props)
-
-            # properties for each of the initializer objects
-            i_props = []
-            for val in self.element_type.initializers:
-                toadd = getmembers(val, lambda p: (not ismethod(p)))
-                i_props.extend([a[0] for a in toadd
-                            if not a[0].startswith('_') and a[0] != '_state'])
-
-            all_props.extend(i_props)
-            return all_props
-
-        if hasattr(self.release, prop):
+        try:
             return getattr(self.release, prop)
+        except AttributeError:
+            pass
 
-        if hasattr(self.element_type, prop):
+        try:
             return getattr(self.element_type, prop)
+        except AttributeError:
+            pass
 
         for init in self.element_type.initializers:
-            if hasattr(init, prop):
+            try:
                 return getattr(init, prop)
+            except AttributeError:
+                pass
 
         # nothing returned, then property was not found - raise exception or
         # return None?
         self.logger.warning("{0} attribute does not exist in element_type"
-                         " or release object".format(prop))
+                            " or release object or initializers".format(prop))
         return None
 
     def get_initializer_by_name(self, name):
@@ -481,19 +491,19 @@ class Spill(serializable.Serializable):
         water object. So it was easiest to initialize the 'init_volume' for
         newly released particles here.
         '''
-        if not self.water:
-            msg = "No Water object found - intrinsic properties unchanged"
+        if self.water:
+            water_temp = self.water.get('temperature', 'K')
+            rho = self.get('substance').get_density(water_temp)
+        else:
+            rho = self.get('substance').get_density()
+            msg = "No Water object found - use density at 15degC (API)"
             self.logger.info(msg)
-            return
 
-        water_temp = self.water.get('temperature', 'K')
         if 'density' in data_arrays:
-            data_arrays['density'][:] = \
-                self.get('substance').get_density(water_temp)
+            data_arrays['density'][:] = rho
 
         if num_new_particles > 0:
             if 'init_volume' in data_arrays:
-                rho = self.get('substance').get_density(water_temp)
                 data_arrays['init_volume'][-num_new_particles:] = \
                     np.sum(data_arrays['mass'][-num_new_particles:] / rho, 0)
 

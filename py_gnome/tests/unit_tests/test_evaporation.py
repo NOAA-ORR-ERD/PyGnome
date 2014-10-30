@@ -45,7 +45,8 @@ def test_evaporation(oil, temp, num_elems, on):
     et = floating_weathering(substance=oil)
     sc = sample_sc_release(num_elements=num_elems,
                            element_type=et,
-                           arr_types=arrays)
+                           arr_types=arrays,
+                           water=water)
 
     time_step = 15. * 60
     model_time = (sc.spills[0].get('release_time') +
