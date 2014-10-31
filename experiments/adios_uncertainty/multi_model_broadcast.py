@@ -27,9 +27,10 @@ class ModelConsumer(mp.Process):
     def __init__(self, task_queue, result_queue, model):
         mp.Process.__init__(self)
 
-        self.commands = {'full_run': self.full_run,
-                         'step': self.step,
-                         'get_wind_timeseries': self.get_wind_timeseries
+        self.commands = {'full_run': self._full_run,
+                         'step': self._step,
+                         'get_wind_timeseries': self._get_wind_timeseries,
+                         'set_wind_speed_uncertainty': self._set_wind_speed_uncertainty
                          }
 
         self.task_queue = task_queue
@@ -56,24 +57,33 @@ class ModelConsumer(mp.Process):
             self.result_queue.put(result)
         return
 
-    def get_wind_timeseries(self):
+    def _full_run(self, rewind=True, logger=False):
+        return self.model.full_run(rewind=rewind, logger=logger)
+
+    def _step(self):
+        return self.model.step()
+
+    def _get_wind_timeseries(self):
         '''
             just some model diag
         '''
         res = []
         time_objs = [e for e in self.model.environment
                      if isinstance(e, Wind)]
+
         for obj in time_objs:
             ts = obj.get_timeseries()
             for tse in ts:
                 res.append(tse['value'])
+
         return res
 
-    def full_run(self, rewind=True, logger=False):
-        return self.model.full_run(rewind=rewind, logger=logger)
+    def _set_wind_speed_uncertainty(self, up_or_down):
+        winds = [e for e in self.model.environment
+                 if isinstance(e, Wind)]
+        res = [w.set_speed_uncertainty(up_or_down) for w in winds]
 
-    def step(self):
-        return self.model.step()
+        return all(res)
 
 
 class ModelBroadcaster(object):
@@ -89,14 +99,18 @@ class ModelBroadcaster(object):
         self.tasks = []
         self.results = []
 
-        for i in range(num_instances):
+        for wsu in wind_speed_uncertainty:
             self.tasks.append(mp.Queue())
             self.results.append(mp.Queue())
 
-            model_consumer = ModelConsumer(self.tasks[i],
-                                           self.results[i],
+            model_consumer = ModelConsumer(self.tasks[-1],
+                                           self.results[-1],
                                            model)
             model_consumer.start()
+
+            self.tasks[-1].put(('set_wind_speed_uncertainty',
+                                dict(up_or_down=wsu)))
+            self.results[-1].get()
 
     def cmd(self, command, args):
         [t.put((command, args)) for t in self.tasks]

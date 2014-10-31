@@ -70,6 +70,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     series[4] = (start_time + timedelta(hours=54), (10, 225))
 
     wind = Wind(timeseries=series, units='m/s')
+    wind.uncertainty_scale = 0.5
     model.movers += WindMover(wind)
 
     print 'adding a cats mover:'
@@ -100,9 +101,13 @@ if __name__ == '__main__':
 
     model = make_model()
 
-    model_broadcaster = ModelBroadcaster(model, 2)
-    print 'step results:'
+    model_broadcaster = ModelBroadcaster(model,
+                                         ('down', 'normal', 'up'))
+
+    print '\nStep results:'
     pp.pprint(model_broadcaster.cmd('step', {}))
+
+    print '\nGetting wind timeseries for all models:'
     pp.pprint(model_broadcaster.cmd('get_wind_timeseries', {}))
 
     model_broadcaster.stop()

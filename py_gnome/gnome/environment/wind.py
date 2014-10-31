@@ -530,30 +530,41 @@ class Wind(Environment, serializable.Serializable):
         data = self.get_timeseries(time, 'm/s', 'r-theta')
         return tuple(data[0]['value'])
 
-    def set_wind_speed_uncertainty(self, direction=None):
+    def set_speed_uncertainty(self, up_or_down=None):
         '''
             This function shifts the wind speed values in our time series
-            based on a single parameter Rayleigh distribution method and
-            scaled by a value in the range [0.0 ... 1.0]
+            based on a single parameter Rayleigh distribution method,
+            and scaled by a value in the range [0.0 ... 1.0].
+            From this scaled distribution method, we determine either an
+            upper uncertainty or a lower uncertainty multiplier.  Then we
+            shift our wind speed values based on it.
 
             delta = 0.5  # medium uncertainty
             u(t_k) = (1 + delta * sqrt(2/pi)) * U_10(t_k)
+            l(t_k) = (1 - delta * sqrt(2/pi)) * U_10(t_k)
 
-            We should probably be able to do this only once, so we set the
-            uncertainty_scale to 0.0 when we are finished.
+            Since we are irreversibly changing the wind speed values,
+            we should probably be able to do this only once, so we set the
+            uncertainty_scale to 0.0 (completely certain) when we are finished.
         '''
         if self.uncertainty_scale <= 0.0 or self.uncertainty_scale > 1.0:
-            return
+            return False
 
-        if direction == 'upper':
+        if up_or_down == 'up':
             scale = (1 + self.uncertainty_scale * np.sqrt(2 / np.pi))
-        elif direction == 'lower':
+        elif up_or_down == 'down':
             scale = (1 - self.uncertainty_scale * np.sqrt(2 / np.pi))
+        else:
+            return False
 
-        for tse in self.get_timeseries():
+        time_series = self.get_timeseries()
+        for tse in time_series:
             tse['value'][0] *= scale
 
+        self.set_timeseries(time_series, self.units)
         self.uncertainty_scale = 0.0
+
+        return True
 
 
 def constant_wind(speed, direction, units='m/s'):
