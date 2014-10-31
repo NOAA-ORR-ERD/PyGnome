@@ -4,7 +4,6 @@ from pprint import PrettyPrinter
 pp = PrettyPrinter(indent=2)
 
 from datetime import datetime, timedelta
-import multiprocessing
 
 import numpy
 np = numpy
@@ -50,7 +49,6 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
 
     print 'adding a spill'
     et = floating_weathering(substance='FUEL OIL NO.6')
-    print 'et =', et._substance._r_oil.sara_fractions
     spill = point_line_release_spill(num_elements=1000,
                                      start_position=(-72.419992,
                                                      41.202120, 0.0),
@@ -105,6 +103,7 @@ if __name__ == '__main__':
     model_broadcaster = ModelBroadcaster(model, 2)
     print 'step results:'
     pp.pprint(model_broadcaster.cmd('step', {}))
+    pp.pprint(model_broadcaster.cmd('get_wind_timeseries', {}))
 
     model_broadcaster.stop()
 

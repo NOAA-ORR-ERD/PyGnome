@@ -28,7 +28,8 @@ class ModelConsumer(mp.Process):
         mp.Process.__init__(self)
 
         self.commands = {'full_run': self.full_run,
-                         'step': self.step
+                         'step': self.step,
+                         'get_wind_timeseries': self.get_wind_timeseries
                          }
 
         self.task_queue = task_queue
@@ -55,6 +56,19 @@ class ModelConsumer(mp.Process):
             self.result_queue.put(result)
         return
 
+    def get_wind_timeseries(self):
+        '''
+            just some model diag
+        '''
+        res = []
+        time_objs = [e for e in self.model.environment
+                     if isinstance(e, Wind)]
+        for obj in time_objs:
+            ts = obj.get_timeseries()
+            for tse in ts:
+                res.append(tse['value'])
+        return res
+
     def full_run(self, rewind=True, logger=False):
         return self.model.full_run(rewind=rewind, logger=logger)
 
@@ -70,18 +84,10 @@ class ModelBroadcaster(object):
         Specifically, the variations we would like to use are uncertainty
         variations.
     '''
-    def __init__(self, model, num_instances):
+    def __init__(self, model,
+                 wind_speed_uncertainty):
         self.tasks = []
         self.results = []
-
-        # just some model diag before we spawn
-        time_objs = [e for e in model.environment
-                     if isinstance(e, Wind)]
-        for obj in time_objs:
-            ts = obj.get_timeseries()
-            for tse in ts:
-                value = tse['value']
-                print value
 
         for i in range(num_instances):
             self.tasks.append(mp.Queue())

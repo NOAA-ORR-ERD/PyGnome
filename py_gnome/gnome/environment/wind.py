@@ -101,6 +101,7 @@ class WindSchema(base_schema.ObjType):
                              validator=OneOf(basic_types.wind_datasource._attr),
                              default='undefined', missing='undefined')
     units = SchemaNode(String(), default='m/s')
+    uncertainty_scale = SchemaNode(Float(), missing=drop)
 
     timeseries = WindTimeSeriesSchema(missing=drop)
     name = 'wind'
@@ -119,7 +120,8 @@ class Wind(Environment, serializable.Serializable):
                'longitude',
                'source_type',
                'source_id',  # what is source ID? Buoy ID?
-               'updated_at']
+               'updated_at',
+               'uncertainty_scale']
 
     # used to create new obj or as readonly parameter
     _create = []
@@ -151,6 +153,7 @@ class Wind(Environment, serializable.Serializable):
     def __init__(self, timeseries=None, units=None,
                  filename=None, format='r-theta',
                  latitude=None, longitude=None,
+                 uncertainty_scale=0.0,
                  **kwargs):
         """
         Initializes a wind object from timeseries or datafile
@@ -240,6 +243,8 @@ class Wind(Environment, serializable.Serializable):
         self.longitude = longitude
         self.latitude = latitude
         self.description = kwargs.pop('description', 'Wind Object')
+        self.uncertainty_scale = uncertainty_scale
+
         super(Wind, self).__init__(**kwargs)
 
     def _convert_units(self, data, ts_format, from_unit, to_unit):
@@ -364,11 +369,17 @@ class Wind(Environment, serializable.Serializable):
         self._check_units(value)
         self._user_units = value
 
-    filename = property(lambda self: self._filename)
-    timeseries = property(lambda self: self.get_timeseries(),
-                          lambda self, val: self.set_timeseries(val,
-                                                            units=self.units)
-                          )
+    @property
+    def filename(self):
+        return self._filename
+
+    @property
+    def timeseries(self):
+        return self.get_timeseries()
+
+    @timeseries.setter
+    def timeseries(self, value):
+        self.set_timeseries(value, units=self.units)
 
     def _convert_to_time_value_pair(self, datetime_value_2d, units, format):
         '''
@@ -518,6 +529,31 @@ class Wind(Environment, serializable.Serializable):
         '''
         data = self.get_timeseries(time, 'm/s', 'r-theta')
         return tuple(data[0]['value'])
+
+    def set_wind_speed_uncertainty(self, direction=None):
+        '''
+            This function shifts the wind speed values in our time series
+            based on a single parameter Rayleigh distribution method and
+            scaled by a value in the range [0.0 ... 1.0]
+
+            delta = 0.5  # medium uncertainty
+            u(t_k) = (1 + delta * sqrt(2/pi)) * U_10(t_k)
+
+            We should probably be able to do this only once, so we set the
+            uncertainty_scale to 0.0 when we are finished.
+        '''
+        if self.uncertainty_scale <= 0.0 or self.uncertainty_scale > 1.0:
+            return
+
+        if direction == 'upper':
+            scale = (1 + self.uncertainty_scale * np.sqrt(2 / np.pi))
+        elif direction == 'lower':
+            scale = (1 - self.uncertainty_scale * np.sqrt(2 / np.pi))
+
+        for tse in self.get_timeseries():
+            tse['value'][0] *= scale
+
+        self.uncertainty_scale = 0.0
 
 
 def constant_wind(speed, direction, units='m/s'):
