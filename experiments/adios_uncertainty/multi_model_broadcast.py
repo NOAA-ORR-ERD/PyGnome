@@ -30,7 +30,9 @@ class ModelConsumer(mp.Process):
         self.commands = {'full_run': self._full_run,
                          'step': self._step,
                          'get_wind_timeseries': self._get_wind_timeseries,
-                         'set_wind_speed_uncertainty': self._set_wind_speed_uncertainty
+                         'get_spill_amounts': self._get_spill_amounts,
+                         'set_wind_speed_uncertainty': self._set_wind_speed_uncertainty,
+                         'set_spill_amount_uncertainty': self._set_spill_amount_uncertainty
                          }
 
         self.task_queue = task_queue
@@ -78,10 +80,18 @@ class ModelConsumer(mp.Process):
 
         return res
 
+    def _get_spill_amounts(self):
+        return [s.amount for s in self.model.spills]
+
     def _set_wind_speed_uncertainty(self, up_or_down):
         winds = [e for e in self.model.environment
                  if isinstance(e, Wind)]
         res = [w.set_speed_uncertainty(up_or_down) for w in winds]
+
+        return all(res)
+
+    def _set_spill_amount_uncertainty(self, up_or_down):
+        res = [s.set_amount_uncertainty(up_or_down) for s in self.model.spills]
 
         return all(res)
 
@@ -95,26 +105,49 @@ class ModelBroadcaster(object):
         variations.
     '''
     def __init__(self, model,
-                 wind_speed_uncertainty):
+                 wind_speed_uncertainties,
+                 spill_amount_uncertainties):
         self.tasks = []
         self.results = []
+        self.lookup = {}
 
-        for wsu in wind_speed_uncertainty:
-            self.tasks.append(mp.Queue())
-            self.results.append(mp.Queue())
+        idx = 0
+        for wsu in wind_speed_uncertainties:
+            for sau in spill_amount_uncertainties:
+                self.tasks.append(mp.Queue())
+                self.results.append(mp.Queue())
 
-            model_consumer = ModelConsumer(self.tasks[-1],
-                                           self.results[-1],
-                                           model)
-            model_consumer.start()
+                model_consumer = ModelConsumer(self.tasks[idx],
+                                               self.results[idx],
+                                               model)
+                model_consumer.start()
 
-            self.tasks[-1].put(('set_wind_speed_uncertainty',
-                                dict(up_or_down=wsu)))
-            self.results[-1].get()
+                self._set_uncertainty(idx, wsu, sau)
+                self.lookup[(wsu, sau)] = idx
 
-    def cmd(self, command, args):
-        [t.put((command, args)) for t in self.tasks]
-        return [r.get() for r in self.results]
+                idx += 1
+
+    def cmd(self, command, args, key=None):
+        if key is None:
+            [t.put((command, args)) for t in self.tasks]
+            return [r.get() for r in self.results]
+        else:
+            idx = self.lookup[key]
+            self.tasks[idx].put((command, args))
+            return self.results[idx].get()
 
     def stop(self):
         [t.put(None) for t in self.tasks]
+
+    def _set_uncertainty(self, index,
+                         wind_speed_uncertainty,
+                         spill_amount_uncertainty):
+        self.tasks[index].put(('set_wind_speed_uncertainty',
+                               dict(up_or_down=wind_speed_uncertainty)))
+        self.results[index].get()
+
+        self.tasks[index].put(('set_spill_amount_uncertainty',
+                               dict(up_or_down=spill_amount_uncertainty)))
+        self.results[index].get()
+
+        pass

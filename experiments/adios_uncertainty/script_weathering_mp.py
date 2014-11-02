@@ -56,6 +56,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
                                      amount=1000,
                                      units='kg',
                                      element_type=et)
+    spill.amount_uncertainty_scale = 1.0
     model.spills += spill
 
     print 'adding a RandomMover:'
@@ -69,8 +70,8 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     series[3] = (start_time + timedelta(hours=42), (10, 180))
     series[4] = (start_time + timedelta(hours=54), (10, 225))
 
-    wind = Wind(timeseries=series, units='m/s')
-    wind.uncertainty_scale = 0.5
+    wind = Wind(timeseries=series, units='m/s',
+                speed_uncertainty_scale=0.5)
     model.movers += WindMover(wind)
 
     print 'adding a cats mover:'
@@ -102,6 +103,7 @@ if __name__ == '__main__':
     model = make_model()
 
     model_broadcaster = ModelBroadcaster(model,
+                                         ('down', 'normal', 'up'),
                                          ('down', 'normal', 'up'))
 
     print '\nStep results:'
@@ -109,6 +111,30 @@ if __name__ == '__main__':
 
     print '\nGetting wind timeseries for all models:'
     pp.pprint(model_broadcaster.cmd('get_wind_timeseries', {}))
+
+    print '\nGetting spill amounts for all models:'
+    pp.pprint(model_broadcaster.cmd('get_spill_amounts', {}))
+
+    print '\nGetting time & spill values for just the (down, down) model:'
+    pp.pprint((model_broadcaster.cmd('get_wind_timeseries', {},
+                                    ('down', 'down')),
+              model_broadcaster.cmd('get_spill_amounts', {},
+                                    ('down', 'down')),
+              ))
+
+    print '\nGetting time & spill values for just the (normal, normal) model:'
+    pp.pprint((model_broadcaster.cmd('get_wind_timeseries', {},
+                                    ('normal', 'normal')),
+              model_broadcaster.cmd('get_spill_amounts', {},
+                                    ('normal', 'normal')),
+              ))
+
+    print '\nGetting time & spill values for just the (up, up) model:'
+    pp.pprint((model_broadcaster.cmd('get_wind_timeseries', {},
+                                    ('up', 'up')),
+              model_broadcaster.cmd('get_spill_amounts', {},
+                                    ('up', 'up')),
+              ))
 
     model_broadcaster.stop()
 

@@ -101,7 +101,7 @@ class WindSchema(base_schema.ObjType):
                              validator=OneOf(basic_types.wind_datasource._attr),
                              default='undefined', missing='undefined')
     units = SchemaNode(String(), default='m/s')
-    uncertainty_scale = SchemaNode(Float(), missing=drop)
+    speed_uncertainty_scale = SchemaNode(Float(), missing=drop)
 
     timeseries = WindTimeSeriesSchema(missing=drop)
     name = 'wind'
@@ -153,7 +153,7 @@ class Wind(Environment, serializable.Serializable):
     def __init__(self, timeseries=None, units=None,
                  filename=None, format='r-theta',
                  latitude=None, longitude=None,
-                 uncertainty_scale=0.0,
+                 speed_uncertainty_scale=0.0,
                  **kwargs):
         """
         Initializes a wind object from timeseries or datafile
@@ -243,7 +243,7 @@ class Wind(Environment, serializable.Serializable):
         self.longitude = longitude
         self.latitude = latitude
         self.description = kwargs.pop('description', 'Wind Object')
-        self.uncertainty_scale = uncertainty_scale
+        self.speed_uncertainty_scale = speed_uncertainty_scale
 
         super(Wind, self).__init__(**kwargs)
 
@@ -547,13 +547,14 @@ class Wind(Environment, serializable.Serializable):
             we should probably be able to do this only once, so we set the
             uncertainty_scale to 0.0 (completely certain) when we are finished.
         '''
-        if self.uncertainty_scale <= 0.0 or self.uncertainty_scale > 1.0:
+        if (self.speed_uncertainty_scale <= 0.0 or
+            self.speed_uncertainty_scale > 1.0):
             return False
 
         if up_or_down == 'up':
-            scale = (1 + self.uncertainty_scale * np.sqrt(2 / np.pi))
+            scale = (1 + self.speed_uncertainty_scale * np.sqrt(2 / np.pi))
         elif up_or_down == 'down':
-            scale = (1 - self.uncertainty_scale * np.sqrt(2 / np.pi))
+            scale = (1 - self.speed_uncertainty_scale * np.sqrt(2 / np.pi))
         else:
             return False
 
@@ -562,7 +563,7 @@ class Wind(Environment, serializable.Serializable):
             tse['value'][0] *= scale
 
         self.set_timeseries(time_series, self.units)
-        self.uncertainty_scale = 0.0
+        self.speed_uncertainty_scale = 0.0
 
         return True
 
