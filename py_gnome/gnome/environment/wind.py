@@ -121,7 +121,7 @@ class Wind(Environment, serializable.Serializable):
                'source_type',
                'source_id',  # what is source ID? Buoy ID?
                'updated_at',
-               'uncertainty_scale']
+               'speed_uncertainty_scale']
 
     # used to create new obj or as readonly parameter
     _create = []
@@ -544,11 +544,10 @@ class Wind(Environment, serializable.Serializable):
             l(t_k) = (1 - delta * sqrt(2/pi)) * U_10(t_k)
 
             Since we are irreversibly changing the wind speed values,
-            we should probably be able to do this only once, so we set the
-            uncertainty_scale to 0.0 (completely certain) when we are finished.
+            we should probably do this only once.
         '''
         if (self.speed_uncertainty_scale <= 0.0 or
-            self.speed_uncertainty_scale > 1.0):
+                self.speed_uncertainty_scale > 1.0):
             return False
 
         if up_or_down == 'up':
@@ -563,7 +562,6 @@ class Wind(Environment, serializable.Serializable):
             tse['value'][0] *= scale
 
         self.set_timeseries(time_series, self.units)
-        self.speed_uncertainty_scale = 0.0
 
         return True
 

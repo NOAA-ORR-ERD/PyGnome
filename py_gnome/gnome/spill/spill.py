@@ -104,7 +104,6 @@ class Spill(serializable.Serializable):
                 element_type = elements.floating()
             else:
                 element_type = elements.floating_mass()
-                #element_type = elements.floating_weathering()
 
         self.element_type = element_type
 
@@ -432,11 +431,10 @@ class Spill(serializable.Serializable):
             multiplier.  Then we shift our spill amount value based on it.
 
             Since we are irreversibly changing the spill amount value,
-            we should probably be able to do this only once, so we set the
-            uncertainty_scale to 0.0 (completely certain) when we are finished.
+            we should probably do this only once.
         '''
         if (self.amount_uncertainty_scale <= 0.0 or
-            self.amount_uncertainty_scale > 1.0):
+                self.amount_uncertainty_scale > 1.0):
             return False
 
         if up_or_down == 'up':
@@ -447,7 +445,6 @@ class Spill(serializable.Serializable):
             return False
 
         self.amount *= scale
-        self.speed_uncertainty_scale = 0.0
 
         return True
 

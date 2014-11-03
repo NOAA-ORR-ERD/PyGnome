@@ -25,7 +25,7 @@ from gnome.weatherers import Evaporation, Dispersion, Skimmer, Burn
 
 from gnome.outputters import WeatheringOutput
 
-from multi_model_broadcast import ModelBroadcaster
+from gnome.multi_model_broadcast import ModelBroadcaster
 
 # define base directory
 base_dir = os.path.dirname(__file__)
@@ -117,24 +117,24 @@ if __name__ == '__main__':
 
     print '\nGetting time & spill values for just the (down, down) model:'
     pp.pprint((model_broadcaster.cmd('get_wind_timeseries', {},
-                                    ('down', 'down')),
-              model_broadcaster.cmd('get_spill_amounts', {},
-                                    ('down', 'down')),
-              ))
+                                     ('down', 'down')),
+               model_broadcaster.cmd('get_spill_amounts', {},
+                                     ('down', 'down')),
+               ))
 
     print '\nGetting time & spill values for just the (normal, normal) model:'
     pp.pprint((model_broadcaster.cmd('get_wind_timeseries', {},
-                                    ('normal', 'normal')),
-              model_broadcaster.cmd('get_spill_amounts', {},
-                                    ('normal', 'normal')),
-              ))
+                                     ('normal', 'normal')),
+               model_broadcaster.cmd('get_spill_amounts', {},
+                                     ('normal', 'normal')),
+               ))
 
     print '\nGetting time & spill values for just the (up, up) model:'
     pp.pprint((model_broadcaster.cmd('get_wind_timeseries', {},
-                                    ('up', 'up')),
-              model_broadcaster.cmd('get_spill_amounts', {},
-                                    ('up', 'up')),
-              ))
+                                     ('up', 'up')),
+               model_broadcaster.cmd('get_spill_amounts', {},
+                                     ('up', 'up')),
+               ))
 
     model_broadcaster.stop()
 
