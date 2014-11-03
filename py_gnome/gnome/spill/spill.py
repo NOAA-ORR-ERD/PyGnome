@@ -115,10 +115,6 @@ class Spill(serializable.Serializable):
         '''
         self.frac_coverage = 1.0
         self.frac_water = 0.0
-
-        # Include water object as part of Spill but this is automatically
-        # hooked up by the Model in prepare_for_model_run
-        self.water = None
         self.name = name
 
     def __repr__(self):
@@ -481,31 +477,6 @@ class Spill(serializable.Serializable):
 
         self.release.set_newparticle_positions(num_new_particles, current_time,
                                                time_step, data_arrays)
-
-    def update_intrinsic_properties(self, num_new_particles, data_arrays):
-        '''
-        Uses 'substance' properties together with 'water' properties to update
-        'density', 'init_volume', etc
-        The 'init_volume' is not updated at each step; however, it depends on
-        the 'density' which must be set/updated first and this depends on
-        water object. So it was easiest to initialize the 'init_volume' for
-        newly released particles here.
-        '''
-        if self.water:
-            water_temp = self.water.get('temperature', 'K')
-            rho = self.get('substance').get_density(water_temp)
-        else:
-            rho = self.get('substance').get_density()
-            msg = "No Water object found - use density at 15degC (API)"
-            self.logger.info(msg)
-
-        if 'density' in data_arrays:
-            data_arrays['density'][:] = rho
-
-        if num_new_particles > 0:
-            if 'init_volume' in data_arrays:
-                data_arrays['init_volume'][-num_new_particles:] = \
-                    np.sum(data_arrays['mass'][-num_new_particles:] / rho, 0)
 
     def serialize(self, json_='webapi'):
         """

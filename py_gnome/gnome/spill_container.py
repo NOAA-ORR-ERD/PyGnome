@@ -316,7 +316,7 @@ class SpillContainer(SpillContainerData):
                     return spill.get('substance').num_components
         return 1
 
-    def prepare_for_model_run(self, array_types={}, water=None, weather=False):
+    def prepare_for_model_run(self, array_types={}):
         """
         called when setting up the model prior to 1st time step
         This is considered 0th timestep by model
@@ -347,21 +347,16 @@ class SpillContainer(SpillContainerData):
         # let's keep those. A rewind will reset data_arrays.
         self._array_types.update(array_types)
 
-        if weather:
-            # for now append density array here itself
-            self._array_types.update({'density': density})
-
         self._append_initializer_array_types(array_types)
         self.initialize_data_arrays()
 
         # remake() spills ordered collection
         self.spills.remake()
-        self.weathering_data['floating'] = 0.0
-        self.weathering_data['amount_released'] = 0.0
 
-        for spill in self.spills:
-            if spill.water is not water:
-                spill.water = water
+        # initialize following keys, but they are updated by IntrinsicProps
+        # they are only updated if weathering_data is present
+        #self.weathering_data['floating'] = 0.0
+        #self.weathering_data['amount_released'] = 0.0
 
     def _append_initializer_array_types(self, array_types):
         # for each array_types, use the key to get the associated initializer
@@ -416,13 +411,12 @@ class SpillContainer(SpillContainerData):
         This calls release_elements on all of the contained spills, and adds
         the elements to the data arrays
 
-        Always writes/updates weathering_data attribute. If no amount given
-        for spill, then 'mass' array is 0.0
+        :returns: total number of particles released
 
         todo: may need to update the 'mass' array to use a default of 1.0 but
         will need to define it in particle units or something along those lines
         """
-        amount_released = 0.0
+        total_released = 0
         for sp in self.spills:
             if not sp.on:
                 continue
@@ -459,33 +453,9 @@ class SpillContainer(SpillContainerData):
                 sp.set_newparticle_values(num_released, model_time, time_step,
                                           self._data_arrays)
 
-                # use the initialized mass array to find total mass released
-                amount_released += np.sum(self['mass'][-num_released:])
+                total_released += num_released
 
-            sp.update_intrinsic_properties(num_released, self._data_arrays)
-        # update intrinsic properties after release since we release particles
-        # at end of the step
-        self._write_weathering_data(amount_released)
-
-    def _write_weathering_data(self, amount_released):
-        '''
-        intrinsic LE properties not set by any weatherer so let SpillContainer
-        set these - will user be able to use select weatherers? Currently,
-        evaporation defines 'density' data array
-        '''
-        mask = self['status_codes'] == oil_status.in_water
-        self.weathering_data['floating'] = np.sum(self['mass'][mask])
-
-        if 'amount_released' in self.weathering_data:
-            self.weathering_data['amount_released'] += amount_released
-        else:
-            self.weathering_data['amount_released'] = amount_released
-
-        if 'density' in self:
-            # update avg_density only if density array exists
-            # wasted cycles at present since all values in density for given
-            # timestep should be the same, but that will likely change
-            self.weathering_data['avg_density'] = np.average(self['density'])
+        return total_released
 
     def model_step_is_done(self):
         '''
