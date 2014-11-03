@@ -22,7 +22,7 @@ from gnome.environment import Wind, Tide, constant_wind, Water
 from gnome.model import Model
 
 from gnome.spill import Spill, SpatialRelease, point_line_release_spill
-from gnome.spill.elements import floating
+from gnome.spill.elements import floating, floating_weathering
 
 from gnome.movers import SimpleMover, RandomMover, WindMover, CatsMover
 
@@ -860,6 +860,57 @@ def test_staggered_spills_weathering(sample_model_fcn):
                          Skimmer()]
     #model.outputters += WeatheringOutput('./temp')
     model.full_run()
+
+
+def test_weathering_data_attr():
+    '''
+    weathering_data is always written by SpillContainer
+    '''
+    ts = 900
+    s1_rel = datetime.now().replace(microsecond=0)
+    s2_rel = s1_rel + timedelta(seconds=ts)
+    model = Model(time_step=ts, start_time=s1_rel)
+    s = [point_line_release_spill(10, (0, 0, 0), s1_rel),
+         point_line_release_spill(10, (0, 0, 0), s2_rel)]
+    model.spills += s
+    model.step()
+
+    for sc in model.spills.items():
+        assert 'floating' not in sc.weathering_data
+
+    model.environment += [Water(), constant_wind(0., 0)]
+    model.weatherers += [Evaporation(model.environment[0],
+                                     model.environment[1])]
+
+    # use different element_type and initializers for both spills
+    s[0].amount = 10.0
+    s[0].units = 'kg'
+    s[0].element_type = floating_weathering()
+    model.rewind()
+    model.step()
+    for sc in model.spills.items():
+        assert sc.weathering_data['floating'] == sum(sc['mass'])
+        assert sc.weathering_data['floating'] == s[0].amount
+
+    s[1].amount = 5.0
+    s[1].units = 'kg'
+    s[1].element_type = floating_weathering()
+    model.rewind()
+    exp_rel = 0.0
+    for ix in range(2):
+        model.step()
+        exp_rel += s[ix].amount
+        for sc in model.spills.items():
+            assert sc.weathering_data['floating'] == sum(sc['mass'])
+            assert sc.weathering_data['floating'] == exp_rel
+    model.rewind()
+    assert sc.weathering_data == {}
+
+    # weathering data is now empty for all steps
+    del model.weatherers[0]
+    for ix in range(2):
+        for sc in model.spills.items():
+            assert not sc.weathering_data
 
 
 @pytest.mark.xfail

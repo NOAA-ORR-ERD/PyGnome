@@ -17,17 +17,13 @@ np = numpy
 
 from gnome.basic_types import datetime_value_2d
 from gnome.utilities.remote_data import get_datafile
-
 from gnome.map import MapFromBNA
 from gnome.environment import Wind, Tide, Water
-
 from gnome.model import Model
 from gnome.persist import load
 from gnome.spill import point_line_release_spill
 from gnome.movers import RandomMover, WindMover, CatsMover, ComponentMover
 from gnome.weatherers import Evaporation
-
-#from gnome.persist.scenario import Scenario
 from gnome.outputters import Renderer
 
 curr_dir = os.path.dirname(__file__)
@@ -168,8 +164,8 @@ def make_model(images_dir, uncertain=False):
     model.movers += comp_mover
 
     print 'adding a Weatherer'
-    model.environment += Water(311.15)
-    model.weatherers += Evaporation(model.environment[-1], w_mover.wind)
+    model.water = Water(311.15)
+    model.weatherers += Evaporation(model.water, w_mover.wind)
 
     return model
 
@@ -330,6 +326,7 @@ class TestWebApi:
 
         # update the dict so it gives a valid model to load
         deserial['map'] = model.map
+        deserial['water'] = model.water
         for coll in ['movers', 'weatherers', 'environment', 'outputters',
                      'spills']:
             for ix, item in enumerate(deserial[coll]):

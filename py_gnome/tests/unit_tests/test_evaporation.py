@@ -9,7 +9,11 @@ import pytest
 import numpy as np
 
 from gnome.environment import constant_wind, Water, Wind
-from gnome.weatherers import Evaporation, Burn, Skimmer, Dispersion
+from gnome.weatherers import (Evaporation,
+                              Burn,
+                              Skimmer,
+                              Dispersion,
+                              IntrinsicProps)
 from gnome.outputters import WeatheringOutput
 from gnome.spill.elements import floating_weathering
 from gnome.array_types import (mass_components,
@@ -23,13 +27,10 @@ from conftest import sample_sc_release, sample_model_weathering
 
 
 water = Water()
+intrinsic = IntrinsicProps(water)
 
-
-arrays = {'windages': windages,
-          'mass_components': mass_components,
-          'thickness': thickness,
-          'mol': mol,
-          'evap_decay_constant': evap_decay_constant}
+arrays = intrinsic.array_types
+arrays.update(Evaporation().array_types)
 
 
 @pytest.mark.parametrize(('oil', 'temp', 'num_elems', 'on'),
@@ -43,10 +44,8 @@ def test_evaporation(oil, temp, num_elems, on):
     et = floating_weathering(substance=oil)
     sc = sample_sc_release(num_elements=num_elems,
                            element_type=et,
-                           arr_types=arrays,
-                           water=water,
-                           weather=True)
-
+                           arr_types=arrays)
+    intrinsic.update(sc.num_released, sc)
     time_step = 15. * 60
     model_time = (sc.spills[0].get('release_time') +
                   timedelta(seconds=time_step))
