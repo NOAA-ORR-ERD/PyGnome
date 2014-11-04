@@ -115,8 +115,8 @@ class IntrinsicProps(object):
             in_spill = mask[-new_LEs:]  # new LEs in this spill
             if np.any(in_spill):
                 sc['init_volume'][-new_LEs:][in_spill] = \
-                    np.sum(sc['mass'][-new_LEs:][in_spill] / sc['density'][mask],
-                           0)
+                    np.sum(sc['mass'][-new_LEs:][in_spill] /
+                           sc['density'][-new_LEs:][in_spill], 0)
 
                 init_volume = sc['init_volume'][-new_LEs:][in_spill][0]
                 sc['init_area'][-new_LEs:][in_spill] = \
@@ -132,16 +132,16 @@ class IntrinsicProps(object):
 
     def _update_area(self, sc):
         'update area area'
-        dFay = 0.
-        dEddy = 0.
+        sc['area'][:] = sc['init_area']
         nu_h2o = self.water.get('kinematic_viscosity', 'St')
-        if np.any(sc['age'][:] > 0):
+        mask = sc['age'] > 0
+        if np.any(mask):
             dFay = (self.spreading_const[1]**2./16. *
-                    (constants['g']*sc['relative_bouyancy'] *
-                     sc['init_volume']**2 / np.sqrt(nu_h2o*sc['age'])))
-            dEddy = 0.033*sc['age']**(4/25)
-
-        sc['area'][:] = sc['init_area'] + (dFay + dEddy) * sc['age']
+                    (constants['g']*sc['relative_bouyancy'][mask] *
+                     sc['init_volume'][mask]**2 /
+                     np.sqrt(nu_h2o*sc['age'][mask])))
+            dEddy = 0.033*sc['age'][mask]**(4/25)
+            sc['area'][mask] += (dFay + dEddy) * sc['age'][mask]
 
     def _set_relative_bouyancy(self, rho_oil):
         '''

@@ -9,7 +9,7 @@ from gnome.array_types import (mass_components,
                                thickness,
                                mol,
                                evap_decay_constant,
-                               init_volume)
+                               area)
 from gnome.utilities.serializable import Serializable, Field
 
 from .core import WeathererSchema
@@ -40,7 +40,7 @@ class Evaporation(Weatherer, Serializable):
 
         super(Evaporation, self).__init__(**kwargs)
         self.array_types.update({'mass_components': mass_components,
-                                 'thickness': thickness,
+                                 'area': area,
                                  'mol': mol,
                                  'evap_decay_constant': evap_decay_constant})
 
@@ -91,12 +91,8 @@ class Evaporation(Weatherer, Serializable):
                 sc['mol'][mask] = \
                     np.sum(sc['mass_components'][mask, :]/mw, 1)
 
-                sc['thickness'][mask] = self._compute_le_thickness()
-                le_area = ((sc['mass'][mask]/sc['density'][mask]) /
-                           sc['thickness'][mask])
-                le_area = le_area.reshape(-1, 1)
-
-                d_numer = (le_area * K * vp * spill.frac_coverage * f_diff)
+                d_numer = (sc['area'][mask].reshape(-1, 1) * K * vp *
+                           spill.frac_coverage * f_diff)
                 d_denom = (constants['gas_constant'] * water_temp *
                            sc['mol'][mask]).reshape(-1, 1)
                 d_denom = np.repeat(d_denom, d_numer.shape[1], axis=1)
@@ -110,12 +106,6 @@ class Evaporation(Weatherer, Serializable):
                 if np.any(sc['evap_decay_constant'][mask, :] > 0.0):
                     raise ValueError("Error in Evaporation routine. One of the"
                                      " exponential decay constant is positive")
-
-    def _compute_le_thickness(self):
-        '''
-        some function to compute LE area
-        '''
-        return 1e-3
 
     def _mass_transport_coeff(self, model_time):
         '''
