@@ -61,8 +61,7 @@ class Evaporation(Weatherer, Serializable):
 
             - 'mol': total number of moles
             - 'evap_decay_rate': exponential decay factor for evaporation
-            - 'thickness': still need a way to compute LE thickness
-            - 'density': update this from the OilProps
+            - 'area': LE area
 
         .. note::
         The restricting term due to liquid diffusion limitations on the more

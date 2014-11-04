@@ -11,7 +11,8 @@ from gnome.array_types import (density,
                                init_volume,
                                init_area,
                                relative_bouyancy,
-                               area)
+                               area,
+                               mol)
 from gnome.environment import constants
 
 
@@ -33,17 +34,38 @@ class IntrinsicProps(object):
     Doesn't have an id like other gnome objects. It isn't exposed to
     application since Model will automatically instantiate if there
     are any Weathering objects defined
+
+    Use this to manage data_arrays associated with weathering that are not
+    defined in Weatherers. This is inplace of defining initializers for every
+    single array, let IntrinsicProps set/initialize/update these arrays.
     '''
+    # group array_types by a key that if present will require all these arrays
+    # For instance, Evaporation sets 'evap_decay_constant', this requires and
+    # expects the following arrays:
+    #
+    #    'evap_decay_constant': ('init_volume', 'relative_bouyancy',
+    #                            'init_area', 'mol')
+    #
+    # Similarly, IntrinsicProps sets 'area' but it does not define it as an
+    # array_type. The 'area' array_type is set/required by a Weatherer like
+    # Evaporation. This object just sets the 'area' array and to do so it
+    # requires these additional arrays
+    array_types_group = \
+        {'area': {'init_volume': init_volume,
+                  'relative_bouyancy': relative_bouyancy,
+                  'init_area': init_area},
+         'evap_decay_constant': {'init_volume': init_volume,
+                                 'relative_bouyancy': relative_bouyancy,
+                                 'init_area': init_area,
+                                 'mol': mol}
+         }
+
     def __init__(self,
                  water,
                  array_types=None):
-        ''
         self.water = water
         self.spreading_const = (1.53, 1.21)
-        self.array_types = {'density': density,
-                            'init_volume': init_volume,
-                            'init_area': init_area,
-                            'relative_bouyancy': relative_bouyancy}
+        self.array_types = {'density': density}
         if array_types:
             self.update_array_types(array_types)
 
@@ -54,10 +76,13 @@ class IntrinsicProps(object):
         model's array_types, and we can remove init_volume, init_area,
         relative_bouyancy
         '''
-        if 'area' not in m_array_types:
-            for key in ('init_volume', 'relative_bouyancy', 'init_area'):
-                if key in self.array_types:
-                    del self.array_types[key]
+        for key, val in self.array_types_group.iteritems():
+            if key in m_array_types:
+                self.array_types.update(val)
+            else:
+                for atype in val:   # otherwise remove associated array_types
+                    if atype in self.array_types:
+                        del self.array_types[atype]
 
     def update(self, num_new_released, sc):
         '''
