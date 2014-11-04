@@ -8,17 +8,14 @@ from datetime import timedelta
 
 import numpy as np
 import pytest
-import geojson
 
 from gnome.environment import constant_wind, Water
 from gnome.weatherers import Evaporation, Dispersion, Skimmer, Burn
 from gnome.spill.elements import floating_weathering
-
-#from gnome.spill import SpatialRelease, Spill, point_line_release_spill
 from gnome.spill import point_line_release_spill
 
 from gnome.outputters import WeatheringOutput
-#from gnome.persist import load
+
 
 here = os.path.dirname(__file__)
 
@@ -67,10 +64,6 @@ def model(sample_model):
                                              units='kg',
                                              element_type=et)
 
-    #release = SpatialRelease(start_position=line_pos,
-    #                         release_time=model.start_time,
-    #                         element_type=et)
-    #model.spills += Spill(release)
     model.outputters += WeatheringOutput(output_dir=output_dir)
     model.rewind()
 
