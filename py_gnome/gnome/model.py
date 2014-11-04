@@ -431,6 +431,8 @@ class Model(Serializable):
 
             if self._intrinsic_props is None:
                 self._intrinsic_props = IntrinsicProps(self.water, array_types)
+            else:
+                self._intrinsic_props.update_array_types(array_types)
 
             # this adds 'density' array. It also adds data_arrays used to
             # compute area if Evaporation is included since it requires 'area'
