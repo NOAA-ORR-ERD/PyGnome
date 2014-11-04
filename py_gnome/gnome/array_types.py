@@ -165,6 +165,7 @@ _default_values = {
      # initial volume - used to compute spreading (LE area)
      'init_volume': ((), np.float64, 0),
      'init_area': ((), np.float64, 0),
+     'relative_bouyancy': ((), np.float64, 0),
      'area': ((), np.float64, 0)
      }
 

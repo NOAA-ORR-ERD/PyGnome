@@ -353,11 +353,6 @@ class SpillContainer(SpillContainerData):
         # remake() spills ordered collection
         self.spills.remake()
 
-        # initialize following keys, but they are updated by IntrinsicProps
-        # they are only updated if weathering_data is present
-        #self.weathering_data['floating'] = 0.0
-        #self.weathering_data['amount_released'] = 0.0
-
     def _append_initializer_array_types(self, array_types):
         # for each array_types, use the key to get the associated initializer
         for key in array_types:

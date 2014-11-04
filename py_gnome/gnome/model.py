@@ -405,21 +405,6 @@ class Model(Serializable):
         '''
         self.spills.rewind()  # why is rewind for spills here?
         array_types = {}
-        if len(self.weatherers) > 0:
-            if self.water is None:
-                self.water = Water()
-
-            if self._intrinsic_props is None:
-                self._intrinsic_props = IntrinsicProps(self.water)
-
-            # this adds some basic array types used to compute area even if
-            # Evaporation is not included - need to find a better way, but
-            # Unlikely to turn weathering on w/o Evaporation - in this case,
-            # lets just carry the extra arrays to keep code simple
-            array_types.update(self._intrinsic_props.array_types)
-        else:
-            # reset to None if no weatherers found
-            self._intrinsic_props = None
 
         # remake orderedcollections defined by model
         for oc in [self.movers, self.weatherers,
@@ -439,6 +424,20 @@ class Model(Serializable):
 
             if w.on:
                 array_types.update(w.array_types)
+
+        if len(self.weatherers) > 0:
+            if self.water is None:
+                self.water = Water()
+
+            if self._intrinsic_props is None:
+                self._intrinsic_props = IntrinsicProps(self.water, array_types)
+
+            # this adds 'density' array. It also adds data_arrays used to
+            # compute area if Evaporation is included since it requires 'area'
+            array_types.update(self._intrinsic_props.array_types)
+        else:
+            # reset to None if no weatherers found
+            self._intrinsic_props = None
 
         for sc in self.spills.items():
             sc.prepare_for_model_run(array_types)
@@ -895,6 +894,7 @@ class Model(Serializable):
             sc._array_types.update(array_types)
             sc._append_initializer_array_types(array_types)
             if self._intrinsic_props:
+                self._intrinsic_props.update_array_types(array_types)
                 sc._array_types.update(self._intrinsic_props.array_types)
 
     def _empty_save_dir(self, saveloc):
