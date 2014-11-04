@@ -31,13 +31,15 @@ class SpillSchema(ObjType):
                     description='on/off status of spill')
     amount = SchemaNode(Float(), missing=drop)
     units = SchemaNode(String(), missing=drop)
+    amount_uncertainty_scale = SchemaNode(Float(), missing=drop)
 
 
 class Spill(serializable.Serializable):
     """
     Models a spill
     """
-    _update = ['on', 'release', 'amount', 'units',
+    _update = ['on', 'release',
+               'amount', 'units', 'amount_uncertainty_scale',
                'frac_coverage', 'frac_water']
 
     _create = []
@@ -59,6 +61,7 @@ class Spill(serializable.Serializable):
                  on=True,
                  amount=None,   # could be volume or mass
                  units=None,
+                 amount_uncertainty_scale=0.0,
                  name='Spill'):
         """
         Spills used by the gnome model. It contains a release object, which
@@ -96,18 +99,20 @@ class Spill(serializable.Serializable):
                 element_type = elements.floating()
             else:
                 element_type = elements.floating_mass()
-                #element_type = elements.floating_weathering()
 
         self.element_type = element_type
 
         self.on = on    # spill is active or not
         self._units = None
         self.amount = amount
+
         if amount is not None:
             if units is None:
                 raise TypeError("Units must be provided with amount spilled")
             else:
                 self.units = units
+
+        self.amount_uncertainty_scale = amount_uncertainty_scale
 
         '''
         fractional water content in the emulsion
@@ -421,6 +426,32 @@ class Spill(serializable.Serializable):
 
         u_copy = copy.deepcopy(self)
         return u_copy
+
+    def set_amount_uncertainty(self, up_or_down=None):
+        '''
+            This function shifts the spill amount based on a scale value
+            in the range [0.0 ... 1.0].  The maximum uncertainty scale value
+            is (2/3) * spill_amount.
+            We determine either an upper uncertainty or a lower uncertainty
+            multiplier.  Then we shift our spill amount value based on it.
+
+            Since we are irreversibly changing the spill amount value,
+            we should probably do this only once.
+        '''
+        if (self.amount_uncertainty_scale <= 0.0 or
+                self.amount_uncertainty_scale > 1.0):
+            return False
+
+        if up_or_down == 'up':
+            scale = (1.0 + (2.0 / 3.0) * self.amount_uncertainty_scale)
+        elif up_or_down == 'down':
+            scale = (1.0 - (2.0 / 3.0) * self.amount_uncertainty_scale)
+        else:
+            return False
+
+        self.amount *= scale
+
+        return True
 
     def rewind(self):
         """

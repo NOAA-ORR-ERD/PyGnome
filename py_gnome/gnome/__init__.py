@@ -43,6 +43,7 @@ from . import movers
 from . import environment
 from . import model
 from . import outputters
+from . import multi_model_broadcast
 
 __all__ = [GnomeId,
            map,
@@ -52,4 +53,5 @@ __all__ = [GnomeId,
            environment,
            model,
            outputters,
-           initialize_log]
+           initialize_log,
+           multi_model_broadcast]
