@@ -521,10 +521,6 @@ class Model(Serializable):
                     # change 'mass_components' in weatherer
                     w.weather_elements(sc, time_step, model_time)
 
-            # moved this to each weatherer - not as efficient, but keeps all
-            # the arrays consistent
-            # sc['mass'][:] = sc['mass_components'].sum(1)
-
     def _split_into_substeps(self):
         '''
         :return: sequence of (datetime, timestep)
