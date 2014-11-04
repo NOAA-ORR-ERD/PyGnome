@@ -27,10 +27,10 @@ from conftest import sample_sc_release, sample_model_weathering
 
 
 water = Water()
-intrinsic = IntrinsicProps(water)
 
-arrays = intrinsic.array_types
-arrays.update(Evaporation().array_types)
+arrays = Evaporation().array_types
+intrinsic = IntrinsicProps(water, arrays)
+arrays.update(intrinsic.array_types)
 
 
 @pytest.mark.parametrize(('oil', 'temp', 'num_elems', 'on'),
