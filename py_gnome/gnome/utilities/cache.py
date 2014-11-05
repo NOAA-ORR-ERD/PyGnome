@@ -15,6 +15,7 @@ import warnings
 import tempfile
 import shutil
 import copy
+from multiprocessing import Lock
 
 import numpy
 np = numpy
@@ -100,17 +101,20 @@ class ElementCache(object):
         # flag for whether to enable disk cache
         self.enabled = enabled
 
+        self.lock = Lock()
+
     def __del__(self):
         'Clear out the cache when this object is deleted'
-        if os.path.isdir(_cache_dir):
-            subdirs = os.listdir(_cache_dir)
-            allocated_dirs = set([os.path.basename(o._cache_dir)
-                                  for o in gc.get_objects()
-                                  if (isinstance(o, ElementCache))])
+        with self.lock:
+            if os.path.isdir(_cache_dir):
+                subdirs = os.listdir(_cache_dir)
+                allocated_dirs = set([os.path.basename(o._cache_dir)
+                                      for o in gc.get_objects()
+                                      if (isinstance(o, ElementCache))])
 
-            for d in subdirs:
-                if d not in allocated_dirs:
-                    shutil.rmtree(os.path.join(_cache_dir, d))
+                for d in subdirs:
+                    if d not in allocated_dirs:
+                        shutil.rmtree(os.path.join(_cache_dir, d))
 
     def _make_filename(self, step_num, uncertain=False):
         """
