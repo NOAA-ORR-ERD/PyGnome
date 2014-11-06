@@ -8,38 +8,55 @@ from oil_library import get_oil
 from oil_library.utilities import get_density
 
 
-name = 'FUEL OIL NO.6'
+oil_ = get_oil('FUEL OIL NO.6')
+
+# Test case - get ref temps from densities then append ref_temp for
+# density at 0th index for a few more values:
+#    density_test = [d.ref_temp_k for d in oil_.densities]
+#    density_test.append(oil_.densities[0].ref_temp_k)
+density_tests = [oil_.densities[ix].ref_temp_k if ix < len(oil_.densities)
+                 else oil_.densities[0].ref_temp_k
+                 for ix in range(0, len(oil_.densities) + 3)]
+density_exp = [d.kg_m_3 for temp in density_tests for d in oil_.densities
+               if abs(d.ref_temp_k - temp) == 0]
+
+'''
+test get_density for
+- scalar
+- list, tuple
+- numpy arrays as row/column and with/without output arrays
+'''
 
 
-class TestGetDensity:
-    oil_ = get_oil(name)
-    temps = [d.ref_temp_k for d in oil_.densities]
-    temps.extend([oil_.densities[0].ref_temp_k] * 3)
-    temps_array = np.asarray(temps).reshape(len(temps), -1)
-
-    def assert_arrays(self, output):
-        for ix, d in enumerate(self.oil_.densities):
-            assert d.kg_m_3 == output[ix]
-
-        assert all(output[len(self.oil_.densities):] ==
-                   self.oil_.densities[0].kg_m_3)
-
-    def test_temp_scalar(self):
-        density = get_density(self.oil_, self.temps[0])
-        assert self.oil_.densities[0].kg_m_3 == density
-
-    def test_temp_list(self):
-        d_array = get_density(self.oil_, self.temps)
-        assert len(d_array) == len(self.temps)
-        self.assert_arrays(d_array)
-
-    def test_temp_array(self):
-        out = np.zeros_like(self.temps_array)
-        d_array = get_density(self.oil_, self.temps_array, out)
-        self.assert_arrays(out)
-        assert d_array is out
+@pytest.mark.parametrize(("temps", "exp_value", "use_out"),
+                         [(density_tests[0], density_exp[0], False),
+                          (density_tests, density_exp, False),
+                          (tuple(density_tests), density_exp, False),
+                          (np.asarray(density_tests).reshape(len(density_tests), -1),
+                           np.asarray(density_exp).reshape(len(density_tests), -1),
+                           False),
+                          (np.asarray(density_tests).reshape(len(density_tests), -1),
+                           np.asarray(density_exp).reshape(len(density_tests), -1),
+                           True),
+                          (np.asarray(density_tests),
+                           np.asarray(density_exp), False),
+                          (np.asarray(density_tests),
+                           np.asarray(density_exp), True)])
+def test_get_density(temps, exp_value, use_out):
+    if use_out:
+        out = np.zeros_like(temps)
+        get_density(oil_, temps, out)
+    else:
+        out = get_density(oil_, temps)
+    assert np.all(out == exp_value)   # so it works for scalar + arrays
 
 
+# The viscosity expected value isn't so straight forward
+#==============================================================================
+# viscosity_tests = [oil_.kvis[ix].ref_temp_k if ix < len(oil_.kvis)
+#                    else oil_.kvis[0].ref_temp_k
+#                    for ix in range(0, len(oil_.kvis) + 3)]
+#==============================================================================
 #==============================================================================
 # # moved test here though it needs to be updated after implementing
 # # get_viscosity function in utilities module
