@@ -19,25 +19,15 @@ def get_density(oil, temp, out=None):
 
     # convert to numpy array if it isn't already one
     temp = np.asarray(temp, dtype=float)
-
-    if temp.shape == ():
-        # make 0-d array into 1-D array
-        temp = temp.reshape(-1)
+    # make 0-d array into 1-D array
+    temp = (temp, temp.reshape(-1))[temp.shape == ()]
 
     # convert ref_temp and ref_densities to numpy array
-    ref_temp = [0.] * len(oil.densities)
-    d_ref = [0.] * len(oil.densities)
-    for ix, d in enumerate(oil.densities):
-        ref_temp[ix] = d.ref_temp_k
-        d_ref[ix] = d.kg_m_3
-
-    ref_temp = np.asarray(ref_temp, dtype=float)
-    d_ref = np.asarray(d_ref, dtype=float)
+    ref_temp = np.asarray([d.ref_temp_k for d in oil.densities], dtype=float)
+    d_ref = np.asarray([d.kg_m_3 for d in oil.densities], dtype=float)
 
     # Change shape to row or column vector for reference temps and densities
     # and also define the axis over which we'll look for argmin()
-    # For each temp, near_idx is the closest index into ref_temp array where
-    # ref_temp is closest to temp
     if len(temp.shape) == 1 or temp.shape[0] == 1:
         inv_shape = (len(ref_temp), -1)
         axis = 0
@@ -47,7 +37,11 @@ def get_density(oil, temp, out=None):
         d_ref = d_ref.reshape(len(d_ref), -1)
         axis = 1
 
-    # first find closest matching ref temps to temp
+    # Now, use following to create a matrix:
+    #    np.abs(temp - ref_temp.reshape(inv_shape))
+    #
+    # look for argmin in each row (or column) depending on shape of 'temp'
+    # This is index where abs(ref_temp[near_idx[ix]] - temp[ix]) is minimum
     near_idx = np.abs(temp - ref_temp.reshape(inv_shape)).argmin(axis)
 
     k_p1 = 0.008
@@ -66,8 +60,7 @@ def get_viscosity(oil, temp):
         measured temperatures.  We need to use the ones closest to our
         current temperature and calculate our viscosity from it.
     '''
-    vis = oil.kvis
-    if vis:
+    if oil.kvis:
         # first get our v_max
         k_v2 = 5000.0
         pour_point = (oil.pour_point_max_k
@@ -76,7 +69,7 @@ def get_viscosity(oil, temp):
         if pour_point:
             try:
                 visc = sorted([(v, abs(v.ref_temp_k - pour_point))
-                               for v in vis
+                               for v in oil.kvis
                                if v is not None],
                               key=lambda v: v[1])[0][0]
             except:
@@ -90,7 +83,7 @@ def get_viscosity(oil, temp):
             v_max = None
 
         # now get our v_0
-        visc = sorted([(v, abs(v.ref_temp_k - temp)) for v in vis],
+        visc = sorted([(v, abs(v.ref_temp_k - temp)) for v in oil.kvis],
                       key=lambda v: v[1])[0][0]
         v_ref = visc.m_2_s
         t_ref = visc.ref_temp_k
