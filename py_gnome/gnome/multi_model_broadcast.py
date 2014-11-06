@@ -3,7 +3,6 @@ pp = PrettyPrinter(indent=2)
 
 import sys
 import traceback
-import atexit
 
 import multiprocessing
 mp = multiprocessing
@@ -58,11 +57,14 @@ class ModelConsumer(mp.Process):
             self.result_queue.put(result)
         return
 
-    def _full_run(self, rewind=True, logger=False):
-        return self.model.full_run(rewind=rewind, logger=logger)
+    def _rewind(self):
+        return self.model.rewind()
 
     def _step(self):
         return self.model.step()
+
+    def _full_run(self, rewind=True, logger=False):
+        return self.model.full_run(rewind=rewind, logger=logger)
 
     def _get_wind_timeseries(self):
         '''

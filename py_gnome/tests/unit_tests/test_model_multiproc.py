@@ -167,6 +167,21 @@ def test_uncertainty_array_indexing():
     model_broadcaster.stop()
 
 
+def test_rewind():
+    model = make_model()
+
+    model_broadcaster = ModelBroadcaster(model,
+                                         ('down', 'normal', 'up'),
+                                         ('down', 'normal', 'up'))
+    print '\nRewind results:'
+    res = model_broadcaster.cmd('rewind', {})
+
+    assert len(res) == 9
+    assert all([r == None for r in res])
+
+    model_broadcaster.stop()
+
+
 def test_step():
     model = make_model()
 
