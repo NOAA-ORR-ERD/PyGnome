@@ -102,6 +102,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     return model
 
 
+@pytest.mark.slow
 def test_init():
     model = make_model()
 
@@ -118,6 +119,7 @@ def test_init():
     model_broadcaster.stop()
 
 
+@pytest.mark.slow
 def test_uncertainty_array_size():
     model = make_model()
 
@@ -143,6 +145,7 @@ def test_uncertainty_array_size():
     model_broadcaster.stop()
 
 
+@pytest.mark.slow
 def test_uncertainty_array_indexing():
     model = make_model()
 
@@ -167,6 +170,7 @@ def test_uncertainty_array_indexing():
     model_broadcaster.stop()
 
 
+@pytest.mark.slow
 def test_step():
     model = make_model()
 
@@ -180,6 +184,7 @@ def test_step():
     model_broadcaster.stop()
 
 
+@pytest.mark.slow
 def test_full_run():
     model = make_model()
 
@@ -195,6 +200,7 @@ def test_full_run():
     model_broadcaster.stop()
 
 
+@pytest.mark.slow
 def test_cache_dirs():
     model = make_model()
 
