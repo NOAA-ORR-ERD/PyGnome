@@ -3,7 +3,6 @@ For now just define a FayGravityInertial class here
 State is not persisted yet - we just have a default object that gets
 attached to Evaporation
 '''
-from collections import OrderedDict
 
 import numpy as np
 
