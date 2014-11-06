@@ -54,7 +54,87 @@ def get_density(oil, temp, out=None):
     return (out, out[0])[len(out) == 1]
 
 
-def get_viscosity(oil, temp):
+def get_v_max(oil, k_v2=5000.0):
+    '''
+    return oil.pour_point_max_k or oil.pour_point_min_k if pour_point_max_k is
+    None.
+
+    todo: ask what is k_v2? It was hard coded in previous implementation
+    '''
+    # first get our v_max
+    pour_point = (oil.pour_point_max_k
+                  if oil.pour_point_max_k is not None
+                  else oil.pour_point_min_k)
+    v_max = None
+    if pour_point:
+        # Note: All oils seem to have either a pour_point_max_k or
+        # pour_point_min_k but leave check in here for now
+        visc = sorted([(v, abs(v.ref_temp_k - pour_point))
+                       for v in oil.kvis
+                       if v is not None],
+                      key=lambda v: v[1])[0][0]
+        v_ref = visc.m_2_s
+        t_ref = visc.ref_temp_k
+        v_max = v_ref * exp(k_v2 / pour_point - k_v2 / t_ref)
+
+    return v_max
+
+
+def get_viscosity(oil, temp, out=None):
+    '''
+        The Oil object has a list of kinematic viscosities at empirically
+        measured temperatures.  We need to use the ones closest to our
+        current temperature and calculate our viscosity from it.
+        - oil always contains at least one element in the oil.kvis list
+    '''
+    if not oil.kvis:
+        # looks like we have one record - 1255, that does not have kvis
+        return None
+
+    k_v2 = 5000.0
+    v_max = get_v_max(oil, k_v2)
+
+    # convert to numpy array if it isn't already one
+    temp = np.asarray(temp, dtype=float)
+    # make 0-d array into 1-D array
+    temp = (temp, temp.reshape(-1))[temp.shape == ()]
+
+    # convert ref_temp and ref_densities to numpy array
+    ref_temp = np.asarray([v.ref_temp_k for v in oil.kvis], dtype=float)
+    v_ref = np.asarray([v.m_2_s for v in oil.kvis], dtype=float)
+
+    # Change shape to row or column vector for reference temps and densities
+    # and also define the axis over which we'll look for argmin()
+    if len(temp.shape) == 1 or temp.shape[0] == 1:
+        inv_shape = (len(ref_temp), -1)
+        axis = 0
+    else:
+        inv_shape = (-1,)
+        ref_temp = ref_temp.reshape(len(ref_temp), -1)
+        v_ref = v_ref.reshape(len(v_ref), -1)
+        axis = 1
+
+    # Now, use following to create a matrix:
+    #    np.abs(temp - ref_temp.reshape(inv_shape))
+    #
+    # look for argmin in each row (or column) depending on shape of 'temp'
+    # This is index where abs(ref_temp[near_idx[ix]] - temp[ix]) is minimum
+    near_idx = np.abs(temp - ref_temp.reshape(inv_shape)).argmin(axis)
+
+    if out is None:
+        out = np.zeros_like(temp)
+
+    # now the actual computation
+    out[:] = v_ref[near_idx] * np.exp(k_v2 / temp - k_v2 / ref_temp[near_idx])
+
+    if v_max:
+        mask = v_max > out
+        if np.any(mask):
+            out[mask] = v_max
+    return out
+
+
+def get_viscosity_orig(oil, temp):
     '''
         The Oil object has a list of kinematic viscosities at empirically
         measured temperatures.  We need to use the ones closest to our

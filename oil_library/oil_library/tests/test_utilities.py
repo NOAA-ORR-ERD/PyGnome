@@ -5,7 +5,10 @@ import numpy as np
 import pytest
 
 from oil_library import get_oil
-from oil_library.utilities import get_density
+from oil_library.utilities import (get_density,
+                                   get_viscosity,
+                                   get_viscosity_orig,
+                                   get_v_max)
 
 
 oil_ = get_oil('FUEL OIL NO.6')
@@ -51,29 +54,36 @@ def test_get_density(temps, exp_value, use_out):
     assert np.all(out == exp_value)   # so it works for scalar + arrays
 
 
-# The viscosity expected value isn't so straight forward
-#==============================================================================
-# viscosity_tests = [oil_.kvis[ix].ref_temp_k if ix < len(oil_.kvis)
-#                    else oil_.kvis[0].ref_temp_k
-#                    for ix in range(0, len(oil_.kvis) + 3)]
-#==============================================================================
-#==============================================================================
-# # moved test here though it needs to be updated after implementing
-# # get_viscosity function in utilities module
-# @pytest.mark.xfail
-# @pytest.mark.parametrize(('oil', 'temp', 'viscosity'),
-#                          [('FUEL OIL NO.6', 311.15, 0.000383211),
-#                           ('FUEL OIL NO.6', 288.15, 0.045808748),
-#                           ('FUEL OIL NO.6', 280.0, 0.045808749)
-#                           ])
-# def test_OilProps_Viscosity(oil, temp, viscosity):
-#     """
-#         test dbquery worked for an example like FUEL OIL NO.6
-#         Here are the measured viscosities:
-#            [<KVis(meters_squared_per_sec=1.04315461221, ref_temp=273.15, weathering=0.0)>,
-#             <KVis(meters_squared_per_sec=0.0458087487284, ref_temp=288.15, weathering=0.0)>,
-#             <KVis(meters_squared_per_sec=0.000211, ref_temp=323.15, weathering=0.0)>]
-#     """
-#     o = get_oil_props(oil)
-#     assert abs((o.viscosity - viscosity)/viscosity) < 1e-5  # < 0.001 %
-#==============================================================================
+# Test case - get ref temps from kvis then append ref_temp for
+# kvis at 0th index for a few more values:
+#    viscosity_tests = [d.ref_temp_k for d in oil_.densities]
+#    viscosity_tests.append(oil_.densities[0].ref_temp_k)
+v_max = get_v_max(oil_)
+viscosity_tests = [oil_.kvis[ix].ref_temp_k if ix < len(oil_.kvis)
+                   else oil_.kvis[0].ref_temp_k
+                   for ix in range(0, len(oil_.kvis) + 3)]
+viscosity_exp = [(d.m_2_s, v_max)[v_max > d.m_2_s] for temp in viscosity_tests
+                 for d in oil_.kvis if abs(d.ref_temp_k - temp) == 0]
+
+
+@pytest.mark.parametrize(("temps", "exp_value", "use_out"),
+                         [(viscosity_tests[0], viscosity_exp[0], False),
+                          (viscosity_tests, viscosity_exp, False),
+                          (tuple(viscosity_tests), viscosity_exp, False),
+                          (np.asarray(viscosity_tests).reshape(len(viscosity_tests), -1),
+                           np.asarray(viscosity_exp).reshape(len(viscosity_tests), -1),
+                           False),
+                          (np.asarray(viscosity_tests).reshape(len(viscosity_tests), -1),
+                           np.asarray(viscosity_exp).reshape(len(viscosity_tests), -1),
+                           True),
+                          (np.asarray(viscosity_tests),
+                           np.asarray(viscosity_exp), False),
+                          (np.asarray(viscosity_tests),
+                           np.asarray(viscosity_exp), True)])
+def test_get_viscosity(temps, exp_value, use_out):
+    if use_out:
+        out = np.zeros_like(temps)
+        get_viscosity(oil_, temps, out)
+    else:
+        out = get_viscosity(oil_, temps)
+    assert np.all(out == exp_value)   # so it works for scalar + arrays
