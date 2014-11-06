@@ -39,8 +39,7 @@ class Evaporation(Weatherer, Serializable):
         self.wind = wind
 
         super(Evaporation, self).__init__(**kwargs)
-        self.array_types.update({'mass_components': mass_components,
-                                 'area': area,
+        self.array_types.update({'area': area,
                                  'mol': mol,
                                  'evap_decay_constant': evap_decay_constant})
 
@@ -59,14 +58,16 @@ class Evaporation(Weatherer, Serializable):
         '''
         Set/update arrays used by evaporation module for this timestep:
 
-            - 'mol': total number of moles
             - 'evap_decay_rate': exponential decay factor for evaporation
-            - 'area': LE area
+
+        'mol', 'area' data_arrays are updated/set by IntrinsicProps object.
+        The model manages it - Evaporation just expects these arrays to be
+        correctly populated.
 
         .. note::
         The restricting term due to liquid diffusion limitations on the more
         volatile hydrocarbons, slowing their access to the air-oil interface is
-        modeled as (1.0 - water_fraction_of_emulsion), per Robert Jones
+        modeled as (1.0 - water_fraction_of_emulsion)
         If this is used by any other process, then move it to Spill object. Or
         if we want to model it differently, then refactor it out of here
         '''
@@ -85,11 +86,7 @@ class Evaporation(Weatherer, Serializable):
             f_diff = (1.0 - spill.frac_water)
             mask = sc.get_spill_mask(spill)
             if np.any(mask):
-                mw = spill.get('substance').molecular_weight
                 vp = spill.get('substance').vapor_pressure(water_temp)
-                sc['mol'][mask] = \
-                    np.sum(sc['mass_components'][mask, :]/mw, 1)
-
                 d_numer = (sc['area'][mask].reshape(-1, 1) * K * vp *
                            spill.frac_coverage * f_diff)
                 d_denom = (constants['gas_constant'] * water_temp *
