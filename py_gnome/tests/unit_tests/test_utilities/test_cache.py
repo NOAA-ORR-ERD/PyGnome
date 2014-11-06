@@ -32,9 +32,7 @@ def test_init():
     """
     can we even create one?
     """
-
     c = cache.ElementCache()
-
     assert True
 
 
@@ -53,30 +51,17 @@ def test_cache_clear_on_delete():
     assert os.path.isdir(d3)
     assert os.path.isdir(d4)
 
-    # the ElementCache's directory will not immediately
-    # be removed when it is deallocated, but will be removed upon
-    # the deallocation of the next ElementCache.  This is by
-    # design.
     del c1
-    assert os.path.isdir(d1)
-    assert os.path.isdir(d2)
-    assert os.path.isdir(d3)
-    assert os.path.isdir(d4)
+    assert not os.path.isdir(d1)
 
     del c2
-    assert not os.path.isdir(d1)
-    assert os.path.isdir(d2)
-    assert os.path.isdir(d3)
-    assert os.path.isdir(d4)
+    assert not os.path.isdir(d2)
 
     del c3
-    assert not os.path.isdir(d2)
-    assert os.path.isdir(d3)
-    assert os.path.isdir(d4)
+    assert not os.path.isdir(d3)
 
     del c4
-    assert not os.path.isdir(d3)
-    assert os.path.isdir(d4)
+    assert not os.path.isdir(d4)
 
 
 def test_write():
