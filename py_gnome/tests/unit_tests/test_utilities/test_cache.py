@@ -7,7 +7,6 @@ designed to be run with py.test
 """
 
 import os
-import pickle
 
 import numpy as np
 

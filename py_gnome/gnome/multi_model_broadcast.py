@@ -8,6 +8,7 @@ import multiprocessing
 mp = multiprocessing
 
 from gnome.environment import Wind
+from gnome.outputters import WeatheringOutput
 
 
 class ModelConsumer(mp.Process):
@@ -63,6 +64,9 @@ class ModelConsumer(mp.Process):
     def _step(self):
         return self.model.step()
 
+    def _num_time_steps(self):
+        return self.model.num_time_steps
+
     def _full_run(self, rewind=True, logger=False):
         return self.model.full_run(rewind=rewind, logger=logger)
 
@@ -81,6 +85,9 @@ class ModelConsumer(mp.Process):
 
         return res
 
+    def _get_spills(self):
+        return self.model.spills
+
     def _get_spill_amounts(self):
         return [s.amount for s in self.model.spills]
 
@@ -90,6 +97,10 @@ class ModelConsumer(mp.Process):
         res = [w.set_speed_uncertainty(up_or_down) for w in winds]
 
         return all(res)
+
+    def _set_spill_container_uncertainty(self, uncertain):
+        self.model.spills.uncertain = uncertain
+        return self.model.spills.uncertain
 
     def _set_spill_amount_uncertainty(self, up_or_down):
         res = [s.set_amount_uncertainty(up_or_down) for s in self.model.spills]
@@ -101,6 +112,15 @@ class ModelConsumer(mp.Process):
 
     def _set_cache_dir(self):
         return self.model._cache.create_new_dir()
+
+    def _get_outputters(self):
+        return self.model.outputters
+
+    def _set_weathering_output_only(self):
+        del_list = [o for o in self.model.outputters
+                    if not isinstance(o, WeatheringOutput)]
+        for dl in del_list:
+            del self.model.outputters[dl.id]
 
 
 class ModelBroadcaster(object):
@@ -131,8 +151,9 @@ class ModelBroadcaster(object):
 
                 self._set_uncertainty(idx, wsu, sau)
                 self._set_new_cache_dir(idx)
-                self.lookup[(wsu, sau)] = idx
+                self._set_weathering_output_only(idx)
 
+                self.lookup[(wsu, sau)] = idx
                 idx += 1
 
     def __del__(self):
@@ -156,6 +177,12 @@ class ModelBroadcaster(object):
     def _set_uncertainty(self, index,
                          wind_speed_uncertainty,
                          spill_amount_uncertainty):
+        # py_gnome spill container uncertainty is not used here
+        # so we turn it off always
+        self.tasks[index].put(('set_spill_container_uncertainty',
+                               dict(uncertain=False)))
+        self.results[index].get()
+
         self.tasks[index].put(('set_wind_speed_uncertainty',
                                dict(up_or_down=wind_speed_uncertainty)))
         self.results[index].get()
@@ -166,4 +193,8 @@ class ModelBroadcaster(object):
 
     def _set_new_cache_dir(self, index):
         self.tasks[index].put(('set_cache_dir', {}))
+        self.results[index].get()
+
+    def _set_weathering_output_only(self, index):
+        self.tasks[index].put(('set_weathering_output_only', {}))
         self.results[index].get()

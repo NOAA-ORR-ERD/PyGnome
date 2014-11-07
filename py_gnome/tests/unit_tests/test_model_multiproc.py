@@ -26,7 +26,7 @@ from gnome.spill.elements import floating_weathering
 from gnome.movers import RandomMover, WindMover, CatsMover
 from gnome.weatherers import Evaporation, Dispersion, Skimmer, Burn
 
-from gnome.outputters import WeatheringOutput
+from gnome.outputters import WeatheringOutput, GeoJson
 
 from gnome.multi_model_broadcast import ModelBroadcaster
 
@@ -36,7 +36,9 @@ base_dir = os.path.join(os.path.dirname(__file__),
                         'long_island_sound')
 
 
-def make_model(images_dir=os.path.join(base_dir, 'images')):
+def make_model(images_dir=os.path.join(base_dir, 'images'),
+               uncertain=False,
+               geojson_output=False):
     print 'initializing the model'
 
     start_time = datetime(2012, 9, 15, 12, 0)
@@ -50,10 +52,10 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     # one hour timestep
     model = Model(start_time=start_time,
                   duration=timedelta(hours=48), time_step=3600,
-                  map=gnome_map, uncertain=False, cache_enabled=False)
+                  map=gnome_map, uncertain=uncertain, cache_enabled=False)
 
     print 'adding a spill'
-    et = floating_weathering(substance='FUEL OIL NO.6')
+    et = floating_weathering(substance='oil_conservative')
     spill = point_line_release_spill(num_elements=1000,
                                      start_position=(-72.419992,
                                                      41.202120, 0.0),
@@ -98,6 +100,9 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
 
     print 'adding outputters'
     model.outputters += WeatheringOutput()
+
+    if geojson_output:
+        model.outputters += GeoJson()
 
     return model
 
@@ -177,7 +182,7 @@ def test_rewind():
     res = model_broadcaster.cmd('rewind', {})
 
     assert len(res) == 9
-    assert all([r == None for r in res])
+    assert all([r is None for r in res])
 
     model_broadcaster.stop()
 
@@ -201,12 +206,18 @@ def test_full_run():
     model_broadcaster = ModelBroadcaster(model,
                                          ('down', 'normal', 'up'),
                                          ('down', 'normal', 'up'))
+    print '\nNumber of time steps:'
+    num_steps = model_broadcaster.cmd('num_time_steps', {})
+    assert len(num_steps) == 9
+    assert len(set(num_steps)) == 1  # all models have the same number of steps
+
     print '\nStep results:'
     res = model_broadcaster.cmd('full_run', {})
-    #pp.pprint(res[0])
     assert len(res) == 9
 
-    print 'pid = ', os.getpid()
+    for n, r in zip(num_steps, res):
+        assert len(r) == n
+
     model_broadcaster.stop()
 
 
@@ -218,8 +229,46 @@ def test_cache_dirs():
                                          ('down', 'normal', 'up'))
     print '\nCache directory results:'
     res = model_broadcaster.cmd('get_cache_dir', {})
-    #pp.pprint(res)
+
+    assert all([os.path.isdir(d) for d in res])
     assert len(set(res)) == 9  # all dirs should be unique
+
+    model_broadcaster.stop()
+
+
+def test_spills():
+    model = make_model(uncertain=True)
+
+    model_broadcaster = ModelBroadcaster(model,
+                                         ('down', 'normal', 'up'),
+                                         ('down', 'normal', 'up'))
+    print '\nSpill results:'
+    res = model_broadcaster.cmd('get_spills', {})
+    assert not any([r.uncertain for r in res])
+
+    model_broadcaster.stop()
+
+
+def test_weathering_output_only():
+    model = make_model(geojson_output=True)
+
+    model_broadcaster = ModelBroadcaster(model,
+                                         ('down', 'normal', 'up'),
+                                         ('down', 'normal', 'up'))
+
+    print '\nOutputter results:'
+    res = model_broadcaster.cmd('get_outputters', {})
+
+    assert not [o for r in res for o in r
+                if not isinstance(o, WeatheringOutput)]
+
+    print '\nStep results:'
+    res = model_broadcaster.cmd('step', {})
+
+    assert len(res) == 9
+    assert [r.keys() for r in res
+            if len(r.keys()) == 1
+            and 'WeatheringOutput' in r]
 
     model_broadcaster.stop()
 
