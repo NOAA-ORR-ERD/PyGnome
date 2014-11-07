@@ -7,6 +7,7 @@ import traceback
 import multiprocessing
 mp = multiprocessing
 
+from gnome import GnomeId
 from gnome.environment import Wind
 from gnome.outputters import WeatheringOutput
 
@@ -123,7 +124,7 @@ class ModelConsumer(mp.Process):
             del self.model.outputters[dl.id]
 
 
-class ModelBroadcaster(object):
+class ModelBroadcaster(GnomeId):
     '''
         Here is where we spawn an array of model consumer processes
         based on the variations in the model configurations we would like.

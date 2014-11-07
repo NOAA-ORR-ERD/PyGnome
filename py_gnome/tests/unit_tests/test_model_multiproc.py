@@ -120,6 +120,8 @@ def test_init():
     model_broadcaster = ModelBroadcaster(model,
                                          ('down', 'normal', 'up'),
                                          ('down', 'normal', 'up'))
+    assert hasattr(model_broadcaster, 'id')
+
     model_broadcaster.stop()
 
 
