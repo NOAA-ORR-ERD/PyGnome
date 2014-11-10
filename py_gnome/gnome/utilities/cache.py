@@ -5,16 +5,12 @@ cache system for caching element data on disk for
 accessing again for output, etc.
 
 """
-import gc
-import sys
-from pprint import PrettyPrinter
-pp = PrettyPrinter(indent=2)
-
 import os
 import warnings
 import tempfile
 import shutil
 import copy
+from multiprocessing import Lock
 
 import numpy
 np = numpy
@@ -44,8 +40,6 @@ def clean_up_cache(dir_name=_cache_dir):
 
     raises a warning if there is problem deleting a particular directory
     """
-    # delete it:
-
     try:
         shutil.rmtree(dir_name)
     except OSError:
@@ -88,10 +82,7 @@ class ElementCache(object):
                                If not provided, a temp dir will be created by
                                the python tempfile module
         """
-        if cache_dir is None:
-            self._cache_dir = os.path.join(tempfile.mkdtemp(dir=_cache_dir))
-        else:
-            self._cache_dir = cache_dir
+        self.create_new_dir(cache_dir)
 
         # dict to hold recent data so we don't need to pull from the
         # file system
@@ -100,17 +91,13 @@ class ElementCache(object):
         # flag for whether to enable disk cache
         self.enabled = enabled
 
+        self.lock = Lock()
+
     def __del__(self):
         'Clear out the cache when this object is deleted'
-        if os.path.isdir(_cache_dir):
-            subdirs = os.listdir(_cache_dir)
-            allocated_dirs = set([os.path.basename(o._cache_dir)
-                                  for o in gc.get_objects()
-                                  if (isinstance(o, ElementCache))])
-
-            for d in subdirs:
-                if d not in allocated_dirs:
-                    shutil.rmtree(os.path.join(_cache_dir, d))
+        with self.lock:
+            if os.path.isdir(self._cache_dir):
+                shutil.rmtree(self._cache_dir)
 
     def _make_filename(self, step_num, uncertain=False):
         """
@@ -126,6 +113,13 @@ class ElementCache(object):
         else:
             return os.path.join(self._cache_dir,
                                 'step_%06i.npz' % step_num)
+
+    def create_new_dir(self, cache_dir=None):
+        if cache_dir is None:
+            self._cache_dir = tempfile.mkdtemp(dir=_cache_dir)
+        else:
+            self._cache_dir = cache_dir
+        return True
 
     def save_timestep(self, step_num, spill_container_pair):
         """
@@ -231,7 +225,7 @@ class ElementCache(object):
         'add mass balance data to arrays'
         if sc.weathering_data:
             data['weathering_data'] = np.chararray((len(sc.weathering_data),),
-                                                itemsize=15)
+                                                   itemsize=15)
             for ix, key in enumerate(sc.weathering_data):
                 # an array with a scalar for each spill
                 data[key] = np.asarray(sc.weathering_data[key])

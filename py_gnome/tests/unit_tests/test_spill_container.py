@@ -194,7 +194,7 @@ def test_rewind():
     assert_dataarray_shape_size(sc)
     for spill in spills:
         assert spill.get('num_released') == 0
-        assert spill.release.start_time_invalid
+        assert spill.release.start_time_invalid is None
 
 
 def test_data_access():

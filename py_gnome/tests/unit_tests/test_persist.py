@@ -5,7 +5,6 @@ and the ability of Model to be recreated in midrun
 
 import os
 import shutil
-from glob import glob
 from datetime import datetime, timedelta
 import json
 
