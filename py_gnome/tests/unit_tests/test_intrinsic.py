@@ -80,17 +80,17 @@ class TestFayGravityViscous:
 class TestIntrinsicProps:
     def test_init(self):
         intrinsic = IntrinsicProps(water)
-        assert len(intrinsic.array_types) == 1
+        assert len(intrinsic.array_types) == 2
 
         intrinsic = IntrinsicProps(water,
                                    {'area': area})
         for key in ('init_area', 'init_volume', 'relative_bouyancy'):
             assert key in intrinsic.array_types
-        assert len(intrinsic.array_types) == 4
+        assert len(intrinsic.array_types) == 5
 
         intrinsic.update_array_types({})
         assert 'density' in intrinsic.array_types
-        assert len(intrinsic.array_types) == 1
+        assert len(intrinsic.array_types) == 2
 
     def test_update_intrinsic_props(self):
         arrays = {'area': area,

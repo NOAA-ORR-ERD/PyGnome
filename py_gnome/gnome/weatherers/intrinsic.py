@@ -115,6 +115,7 @@ class IntrinsicProps(object):
     # requires these additional arrays
     _array_types_group = \
         {'area': {'init_area': init_area,
+                  'init_volume': init_volume,
                   'relative_bouyancy': relative_bouyancy},
          'mol': {'mass_components': mass_components}}
 
@@ -125,7 +126,6 @@ class IntrinsicProps(object):
         self.water = water
         self.spreading = spreading
         self.array_types = {'density': density,
-                            'init_volume': init_volume,
                             'viscosity': viscosity}
         if array_types:
             self.update_array_types(array_types)
