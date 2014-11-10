@@ -192,8 +192,11 @@ class IntrinsicProps(object):
             # todo: shouldn't this be time dependent?
             rho = spill.get('substance').get_density(water_temp)
             sc['density'][mask] = rho
-            sc['viscosity'][mask] = \
-                spill.get('substance').get_viscosity(water_temp)
+            # for 'fake' oils, we don't yet have a way to estimate viscosity
+            # add check here so we don't end up with Nan values
+            if spill.get('substance').get_viscosity(water_temp):
+                sc['viscosity'][mask] = \
+                    spill.get('substance').get_viscosity(water_temp)
 
             if 'area' in sc:
                 self._update_area_arrays(sc, mask, new_LEs)
