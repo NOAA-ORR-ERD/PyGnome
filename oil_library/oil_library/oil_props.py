@@ -13,7 +13,7 @@ Not sure at present if this needs to be serializable?
 from math import log, exp
 
 from hazpy import unit_conversion as uc
-from .utilities import get_density, get_boiling_points_from_cuts
+from .utilities import get_density, get_boiling_points_from_cuts, get_viscosity
 
 
 def molecular_weight(bp, component):
@@ -107,6 +107,16 @@ class OilProps(object):
             return get_density(self._r_oil, temp, out)
         else:
             return uc.convert('density', 'API', 'kg/m^3', self.api)
+
+    def get_viscosity(self, temp=288.15, out=None):
+        '''
+        return viscosity at a temperature, default is viscosity at 15degC
+        todo: memoize function
+
+        :param temp: temperature in Kelvin. Could be an ndarray, list or scalar
+        :type temp: scalar, list, tuple or ndarray - assumes it is in Kelvin
+        '''
+        return get_viscosity(self._r_oil, temp, out)
 
     @property
     def num_components(self):

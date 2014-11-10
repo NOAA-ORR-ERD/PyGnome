@@ -8,6 +8,7 @@ import numpy as np
 
 from gnome.basic_types import oil_status
 from gnome.array_types import (density,
+                               viscosity,
                                mass_components,
                                init_volume,
                                init_area,
@@ -103,22 +104,18 @@ class IntrinsicProps(object):
     defined in Weatherers. This is inplace of defining initializers for every
     single array, let IntrinsicProps set/initialize/update these arrays.
     '''
-    # group array_types by a key that if present will require all these arrays
-    # For instance, Evaporation requires 'area' which needs:
+    # group array_types by a key that if present will require these optional
+    # arrays. For instance, Evaporation requires 'area' which needs:
     #
-    #    'area': ('init_volume', 'relative_bouyancy', 'init_area')
+    #    'area': ('relative_bouyancy', 'init_area')
     #
     # IntrinsicProps sets 'area' but it does not define it as an array_type.
     # The 'area' array_type is set/required by a Weatherer like
     # Evaporation. This object just sets the 'area' array and to do so it
     # requires these additional arrays
-    #
-    # NOTE: Ordered is important. Since 'evap_decay_constant' requires 'area',
-    #    it must be defined before the arrays that 'area' requires.
     _array_types_group = \
-        {'area': {'init_volume': init_volume,
-                  'relative_bouyancy': relative_bouyancy,
-                  'init_area': init_area},
+        {'area': {'init_area': init_area,
+                  'relative_bouyancy': relative_bouyancy},
          'mol': {'mass_components': mass_components}}
 
     def __init__(self,
@@ -127,7 +124,9 @@ class IntrinsicProps(object):
                  spreading=FayGravityViscous()):
         self.water = water
         self.spreading = spreading
-        self.array_types = {'density': density}
+        self.array_types = {'density': density,
+                            'init_volume': init_volume,
+                            'viscosity': viscosity}
         if array_types:
             self.update_array_types(array_types)
 
@@ -165,16 +164,17 @@ class IntrinsicProps(object):
         evaporation defines 'density' data array
         '''
         if len(sc) == 0:
-            # nothing released yet
-            sc.weathering_data['avg_density'] = 0.0
-            sc.weathering_data['floating'] = 0.0
-            sc.weathering_data['amount_released'] = 0.0
+            # nothing released yet - set everything to 0.0
+            for key in ('avg_density', 'floating', 'amount_released',
+                        'avg_viscosity'):
+                sc.weathering_data[key] = 0.0
         else:
             mask = sc['status_codes'] == oil_status.in_water
             # update avg_density from density array
             # wasted cycles at present since all values in density for given
             # timestep should be the same, but that will likely change
             sc.weathering_data['avg_density'] = np.average(sc['density'])
+            sc.weathering_data['avg_viscosity'] = np.average(sc['viscosity'])
             sc.weathering_data['floating'] = np.sum(sc['mass'][mask])
 
             amount_released = np.sum(sc['mass'][-new_LEs:])
@@ -192,6 +192,9 @@ class IntrinsicProps(object):
             # todo: shouldn't this be time dependent?
             rho = spill.get('substance').get_density(water_temp)
             sc['density'][mask] = rho
+            sc['viscosity'][mask] = \
+                spill.get('substance').get_viscosity(water_temp)
+
             if 'area' in sc:
                 self._update_area_arrays(sc, mask, new_LEs)
 
