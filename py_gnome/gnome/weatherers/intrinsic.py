@@ -184,28 +184,42 @@ class IntrinsicProps(object):
                 sc.weathering_data['amount_released'] = amount_released
 
     def _update_intrinsic_props(self, new_LEs, sc):
+        '''
+        - initialize 'density', 'viscosity', and other optional arrays for
+        newly released particles.
+        - update intrinsic properties like 'density', 'viscosity' and optional
+        arrays for previously released particles
+        '''
         water_temp = self.water.get('temperature', 'K')
+
         for spill in sc.spills:
             mask = sc.get_spill_mask(spill)
 
-            # update properties associated with spill
-            # todo: shouldn't this be time dependent?
-            rho = spill.get('substance').get_density(water_temp)
-            sc['density'][mask] = rho
-            # for 'fake' oils, we don't yet have a way to estimate viscosity
-            # add check here so we don't end up with Nan values
-            if spill.get('substance').get_viscosity(water_temp):
-                sc['viscosity'][mask] = \
-                    spill.get('substance').get_viscosity(water_temp)
+            # initialize only for new elements in spill
+            if new_LEs > 0:
+                new_in_spill = mask[-new_LEs:]
+                if np.any(new_in_spill):
+                    sc['density'][-new_LEs:][new_in_spill] = \
+                        spill.get('substance').get_density(water_temp)
+                    # for 'fake' oils, we don't yet have a way to estimate
+                    # viscosity add check here so we don't end up with NaNs
+                    if spill.get('substance').get_viscosity(water_temp):
+                        sc['viscosity'][-new_LEs:][new_in_spill] = \
+                            spill.get('substance').get_viscosity(water_temp)
 
-            if 'area' in sc:
-                self._update_area_arrays(sc, mask, new_LEs)
-
+            # set/update mols
+            # - 'mass_components' are already set
             if 'mol' in sc:
                 mw = spill.get('substance').molecular_weight
                 sc['mol'][mask] = np.sum(sc['mass_components'][mask, :]/mw, 1)
 
-        if 'area' in sc:
+        # init_volume, init_area, relative_bouyancy can be set for all new
+        # elements at once - no need to do it per spill
+        if new_LEs > 0 and 'area' in sc:
+            self._init_area_arrays(sc, new_LEs)
+
+        # update 'area' for all elements if it exists
+        if 'area' in sc and sc.num_released > 0:
             self.spreading.update_area(self.water.get('kinematic_viscosity',
                                                       'St'),
                                        sc['init_area'],
@@ -213,31 +227,33 @@ class IntrinsicProps(object):
                                        sc['relative_bouyancy'],
                                        sc['age'],
                                        sc['area'])
+        # update density/viscosity/area for previously released elements
+        # todo: Need formulas to update these
+        # prev_rel = sc.num_released-new_LEs
+        # if prev_rel > 0:
+        #    update density, viscosity .. etc
 
-    def _update_area_arrays(self, sc, mask, new_LEs):
-        ''' update areas required for computing 'area' arrays'''
-        sc['relative_bouyancy'][mask] = \
-            self._set_relative_bouyancy(sc['density'][mask])
-        # initialize only new elements released by spill
-        if new_LEs > 0:
-            in_spill = mask[-new_LEs:]  # new LEs in this spill
-            if np.any(in_spill):
-                sc['init_volume'][-new_LEs:][in_spill] = \
-                    np.sum(sc['mass'][-new_LEs:][in_spill] /
-                           sc['density'][-new_LEs:][in_spill], 0)
+    def _init_area_arrays(self, sc, new_LEs):
+        '''
+        Sets relative_bouyancy, init_volume, init_area, all of which are
+        required when computing the 'area' of each LE
+        '''
+        sc['relative_bouyancy'][-new_LEs:] = \
+            self._set_relative_bouyancy(sc['density'][-new_LEs:])
+        sc['init_volume'][-new_LEs:] = \
+            np.sum(sc['mass'][-new_LEs:] / sc['density'][-new_LEs:], 0)
 
-                # init volume is same for all these new LEs so just provide
-                # a scalar value
-                init_volume = sc['init_volume'][-new_LEs:][in_spill][0]
-
-                # Cannot change the init_area in place since the following:
-                #    sc['init_area'][-new_LEs:][in_spill]
-                # is an advanced indexing operation that makes a copy anyway
-                sc['init_area'][-new_LEs:][in_spill] = \
-                    self.spreading.set_init_area(init_volume,
-                        self.water.get('kinematic_viscosity', 'St'),
-                        sc['relative_bouyancy'][-new_LEs:][in_spill],
-                        sc['init_area'][-new_LEs:][in_spill])
+        # Cannot change the init_area in place since the following:
+        #    sc['init_area'][-new_LEs:][in_spill]
+        # is an advanced indexing operation that makes a copy anyway
+        # Also, init_volume is same for all these new LEs so just provide
+        # a scalar value
+        sc['init_area'][-new_LEs:] = \
+            self.spreading.set_init_area(sc['init_volume'][-new_LEs:],
+                                         self.water.get('kinematic_viscosity',
+                                                        'St'),
+                                         sc['relative_bouyancy'][-new_LEs:],
+                                         sc['init_area'][-new_LEs:])
 
     def _set_relative_bouyancy(self, rho_oil):
         '''
