@@ -179,13 +179,16 @@ class ElementType(Serializable):
 
             # replace substance with just the oil record ID for now since
             # we don't have a way to construct to object fromjson()
-            substance = json_.pop('substance')
             dict_ = et_schema.deserialize(json_)
-            if 'id' in substance:
+
+            substance = json_.pop('substance')
+            if 'id' in substance and substance['id'] is not None:
                 dict_['substance'] = substance['id']
             elif 'name' in substance:
                 dict_['substance'] = substance['name']
                 # do not add 'substance' attribute! - raise error
+            elif isinstance(substance, str):
+                dict_['substance'] = substance
 
             d_init = []
 

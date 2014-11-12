@@ -688,12 +688,9 @@ class Model(Serializable):
 
     def __eq__(self, other):
         check = super(Model, self).__eq__(other)
-        print 'Model.__eq__(): super check =', check
         if check:
             # also check the data in ordered collections
             if type(self.spills) != type(other.spills):
-                print 'Model.__eq__(): spill types:', (type(self.spills),
-                                                       type(other.spills))
                 return False
 
             if self.spills != other.spills:
