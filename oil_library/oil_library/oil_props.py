@@ -10,6 +10,7 @@ object used to initialize and OilProps object
 
 Not sure at present if this needs to be serializable?
 '''
+import copy
 from math import log, exp
 
 from hazpy import unit_conversion as uc
@@ -71,6 +72,8 @@ class OilProps(object):
             self.mass_fraction.append(mf)
             self.boiling_point.append(bp)
 
+        # set molecular weights
+        self.molecular_weight = None
         self._component_mw()
 
     def __repr__(self):
@@ -124,6 +127,12 @@ class OilProps(object):
 
     def _component_mw(self):
         'estimate molecular weights of components'
+        if self.boiling_point == [float('inf')] * len(self.boiling_point):
+            # if there are only resins + asphaltenes, unclear how to set
+            # molecular weight - we don't want an array of 'nan' values so
+            # leave it as None
+            return
+
         self.molecular_weight = [float('nan')] * self.num_components
         # self.molecular_weight = []
 
@@ -169,3 +178,30 @@ class OilProps(object):
     def tojson(self):
         'for now, just convert underlying oil object to json'
         return self._r_oil.tojson()
+
+    def __eq__(self, other):
+        '''need to explicitly compare __dict__'''
+        return self.__dict__ == other.__dict__
+
+    def __ne__(self, other):
+        return not self == other
+
+    def __deepcopy__(self, memo):
+        '''
+        The _r_oil object should not be copied - it should just be referenced
+        to create the OilProps copy. The database record itself does not need
+        to be a deepcopy - both OilProps objects can reference the same
+        database record
+        '''
+        c_op = self.__class__(self._r_oil)
+        if c_op != self:
+            '''
+            Attributes are currently derived from _r_oil object. Unless the
+            user changes 'mass_fractions', 'boiling_point', 'molecular_weight'
+            after initialization, the two objects should be equal
+            '''
+            for attr in c_op.__dict__:
+                if getattr(self, attr) != getattr(c_op, attr):
+                    setattr(c_op, attr, copy.deepcopy(getattr(self, attr),
+                                                      memo))
+        return c_op
