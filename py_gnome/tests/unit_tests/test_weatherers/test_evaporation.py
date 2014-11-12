@@ -24,8 +24,9 @@ from gnome.array_types import (mass_components,
 from gnome.basic_types import oil_status
 
 from ..conftest import sample_sc_release, sample_model_weathering
+from . import dump
 
-
+dump_json = os.path.join(dump, 'weathering_model.json')
 water = Water()
 
 arrays = Evaporation().array_types
@@ -133,12 +134,8 @@ def test_full_run(sample_model_fcn, oil, temp):
             print "Mass floating: {0}".format(sc.weathering_data['floating'])
             print "Completed step: {0}\n".format(step['step_num'])
 
-    try:
-        os.remove('weathering_model.json')
-    except:
-        pass
     m_json_ = model.serialize('webapi')
-    with open('weathering_model.json', 'w') as f:
+    with open(dump_json, 'w') as f:
         json.dump(m_json_, f, indent=True)
 
 
