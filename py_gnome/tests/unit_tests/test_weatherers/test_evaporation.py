@@ -23,7 +23,7 @@ from gnome.array_types import (mass_components,
                                evap_decay_constant)
 from gnome.basic_types import oil_status
 
-from conftest import sample_sc_release, sample_model_weathering
+from ..conftest import sample_sc_release, sample_model_weathering
 
 
 water = Water()

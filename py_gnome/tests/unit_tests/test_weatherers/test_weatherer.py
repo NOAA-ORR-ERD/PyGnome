@@ -7,9 +7,8 @@ Unit tests for the Weatherer classes
 from datetime import datetime, timedelta
 
 import pytest
-from pytest import raises
 
-from conftest import sample_sc_release
+from ..conftest import sample_sc_release
 
 import numpy
 np = numpy
