@@ -152,21 +152,21 @@ class State(object):
         test_obj = Field('test')
         self._valid_field_attr = test_obj.__dict__.keys()
 
-    def __copy__(self):
-        '''
-        shallow copy of _state object so references original fields list
-        '''
-        new_ = type(self)()
-        new_.__dict__.update(copy.copy(self.__dict__))
-        return new_
-
     def __deepcopy__(self, memo):
         '''
         deep copy of _state object so makes a copy of the fields list
         '''
-        new_ = type(self)()
-        new_.__dict__.update(copy.deepcopy(self.__dict__))
+        new_ = self.__class__()
+        if new_ != self:
+            new_.__dict__.update(copy.deepcopy(self.__dict__, memo))
         return new_
+
+    def __eq__(self, other):
+        'check for equality'
+        return self.__dict__ == other.__dict__
+
+    def __ne__(self, other):
+        return not self.__dict__ == other.__dict__
 
     def __contains__(self, name):
         """

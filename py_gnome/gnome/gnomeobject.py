@@ -56,7 +56,7 @@ class GnomeId(object):
         """
         self._id = str(uuid1())
 
-    def __deepcopy__(self, memo=None):
+    def __deepcopy__(self, memo):
         """
         the deepcopy implementation
 
