@@ -46,7 +46,7 @@ def dump(dump_loc=None):
     if dump_loc is None:
         dump_loc = os.path.join(base_dir, 'dump')
     try:
-        os.removedirs(dump_loc)
+        shutil.rmtree(dump_loc)
     except:
         pass
     try:
@@ -149,7 +149,7 @@ def get_testdata():
     tide_dir = os.path.join(s_data, 'tides')
     wind_dir = os.path.join(s_data, 'winds')
     testmap = os.path.join(base_dir, '../sample_data', 'MapBounds_Island.bna')
-    bna_sample = os.path.join(s_data, r"MapBounds_2Spillable2Islands2Lakes.bna")
+    bna_sample = os.path.join(s_data, 'MapBounds_2Spillable2Islands2Lakes.bna')
 
     data = dict()
 
@@ -195,7 +195,7 @@ def get_testdata():
          'grid_ts': get_datafile(os.path.join(wind_dir, 'gridwind_ts.wnd'))}
     data['MapFromBNA'] = {'testmap': testmap}
     data['Renderer'] = {'bna_sample': bna_sample,
-                        'output_dir': os.path.join(base_dir, 'renderer_output')}
+                        'bna_star': os.path.join(s_data, 'Star.bna')}
     data['GridMap'] = \
         {'curr': get_datafile(os.path.join(curr_dir, 'ny_cg.nc')),
          'BigCombinedwMap':
