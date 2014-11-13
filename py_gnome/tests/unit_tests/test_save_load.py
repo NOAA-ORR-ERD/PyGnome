@@ -12,7 +12,6 @@ from conftest import testdata
 
 import pytest
 
-testdata = testdata()
 base_dir = os.path.dirname(__file__)
 
 
@@ -147,15 +146,15 @@ following tests.
 '''
 
 l_movers2 = (movers.CurrentCycleMover(testdata['CurrentCycleMover']['curr'],
-                topology_file=testdata['CurrentCycleMover']['topology'],
+                topology_file=testdata['CurrentCycleMover']['top'],
                 tide=environment.Tide(testdata['CurrentCycleMover']['tide'])),
              movers.CurrentCycleMover(testdata['CurrentCycleMover']['curr'],
-               topology_file=testdata['CurrentCycleMover']['topology']),
-             movers.GridCurrentMover(testdata['GridCurrentMover']['curr'],
-               testdata['GridCurrentMover']['topology']),
-             movers.GridWindMover(testdata['GridWindMover']['wind'],
-               testdata['GridWindMover']['topology']),
-            )
+               topology_file=testdata['CurrentCycleMover']['top']),
+             movers.GridCurrentMover(testdata['GridCurrentMover']['curr_tri'],
+                                     testdata['GridCurrentMover']['top_tri']),
+             movers.GridWindMover(testdata['GridWindMover']['wind_curv'],
+                                  testdata['GridWindMover']['top_curv']),
+             )
 
 
 @pytest.mark.parametrize("obj", l_movers2)

@@ -10,10 +10,11 @@ object used to initialize and OilProps object
 
 Not sure at present if this needs to be serializable?
 '''
+import copy
 from math import log, exp
 
 from hazpy import unit_conversion as uc
-from .utilities import get_density
+from .utilities import get_density, get_boiling_points_from_cuts, get_viscosity
 
 
 def molecular_weight(bp, component):
@@ -65,7 +66,14 @@ class OilProps(object):
         # Default format for mass components:
         # mass_fraction =
         # [m0_s, m0_a, m1_s, m1_a, ..., m_resins, m_asphaltenes]
-        self._mass_frac_bp_from_cuts()
+        self.mass_fraction = []
+        self.boiling_point = []
+        for bp, mf in get_boiling_points_from_cuts(oil_):
+            self.mass_fraction.append(mf)
+            self.boiling_point.append(bp)
+
+        # set molecular weights
+        self.molecular_weight = None
         self._component_mw()
 
     def __repr__(self):
@@ -103,75 +111,45 @@ class OilProps(object):
         else:
             return uc.convert('density', 'API', 'kg/m^3', self.api)
 
+    def get_viscosity(self, temp=288.15, out=None):
+        '''
+        return viscosity at a temperature, default is viscosity at 15degC
+        todo: memoize function
+
+        :param temp: temperature in Kelvin. Could be an ndarray, list or scalar
+        :type temp: scalar, list, tuple or ndarray - assumes it is in Kelvin
+        '''
+        return get_viscosity(self._r_oil, temp, out)
+
     @property
     def num_components(self):
         return len(self.mass_fraction)
 
-    def _add_resins_asphalt(self, heavy_comp):
-        '''
-        add heavier components if mass_fraction < 1.0
-        This just ensures mass_fraction sums to 1.0
-        '''
-        if heavy_comp is None or heavy_comp == 0.0:
-            return
-
-        f_remain = sum(self.mass_fraction)
-        if f_remain < 1.0:
-            if heavy_comp + f_remain <= 1.0:
-                self.mass_fraction.append(heavy_comp)
-            else:
-                self.mass_fraction.append(1.0 - f_remain)
-            self.boiling_point.append(float('inf'))
-
-    def _mass_frac_bp_from_cuts(self):
-        '''
-        Need the mass_fraction to sum upto 1.0
-        self.mass_fraction defined as:
-
-            [m0_s, m0_a, m1_s, m1_a, ..., m_resins, m_asphaltenes]
-
-        Also need to understand how to identify saturates/aromatics
-        Currently, assumes cuts are added as alternating saturate, then
-        aromatic in the list of cuts
-        '''
-        # distillation cut data available
-        self.mass_fraction = []
-        self.boiling_point = []
-
-        # Note: not sure if we'll get psuedocomponents from raw cuts so
-        # do a temporary update for now
-        try:
-            cuts = self._r_oil.cuts
-        except AttributeError:
-            cuts = self._r_oil.imported.cuts
-
-        last_frac = 0.0
-        for cut in cuts:
-            self.boiling_point.append(cut.vapor_temp_k)
-            self.mass_fraction.append(round(cut.fraction - last_frac, 4))
-            last_frac = cut.fraction
-        self._add_resins_asphalt(self.get('resins'))
-        self._add_resins_asphalt(self.get('asphaltene_content'))
-
     def _component_mw(self):
         'estimate molecular weights of components'
+        if self.boiling_point == [float('inf')] * len(self.boiling_point):
+            # if there are only resins + asphaltenes, unclear how to set
+            # molecular weight - we don't want an array of 'nan' values so
+            # leave it as None
+            return
+
         self.molecular_weight = [float('nan')] * self.num_components
-        #self.molecular_weight = []
+        # self.molecular_weight = []
 
         for ix, bp in enumerate(self.boiling_point):
             if bp == float('inf'):
                 # this should be the case for resins + asphaltenes so just
                 # make the mw equal to the components with highest BP
-                self.molecular_weight[ix] = self.molecular_weight[ix-1]
+                self.molecular_weight[ix] = self.molecular_weight[ix - 1]
                 continue
 
             if ix % 2 == 0:
                 self.molecular_weight[ix] = molecular_weight(bp, 'saturate')
-                #self.molecular_weight.append(molecular_weight(bp, 'saturate'))
+                # self.molecular_weight.append(molecular_weight(bp, 'saturate'))
             else:
                 # will define a different function for mw_aromatics
                 self.molecular_weight[ix] = molecular_weight(bp, 'aromatic')
-                #self.molecular_weight.append(molecular_weight(bp, 'aromatic'))
+                # self.molecular_weight.append(molecular_weight(bp, 'aromatic'))
 
     def vapor_pressure(self, temp, atmos_pressure=101325.0):
         '''
@@ -196,3 +174,34 @@ class OilProps(object):
                 Pi.append(exp(ln_Pi_Po) * atmos_pressure)
 
         return Pi
+
+    def tojson(self):
+        'for now, just convert underlying oil object to json'
+        return self._r_oil.tojson()
+
+    def __eq__(self, other):
+        '''need to explicitly compare __dict__'''
+        return self.__dict__ == other.__dict__
+
+    def __ne__(self, other):
+        return not self == other
+
+    def __deepcopy__(self, memo):
+        '''
+        The _r_oil object should not be copied - it should just be referenced
+        to create the OilProps copy. The database record itself does not need
+        to be a deepcopy - both OilProps objects can reference the same
+        database record
+        '''
+        c_op = self.__class__(self._r_oil)
+        if c_op != self:
+            '''
+            Attributes are currently derived from _r_oil object. Unless the
+            user changes 'mass_fractions', 'boiling_point', 'molecular_weight'
+            after initialization, the two objects should be equal
+            '''
+            for attr in c_op.__dict__:
+                if getattr(self, attr) != getattr(c_op, attr):
+                    setattr(c_op, attr, copy.deepcopy(getattr(self, attr),
+                                                      memo))
+        return c_op

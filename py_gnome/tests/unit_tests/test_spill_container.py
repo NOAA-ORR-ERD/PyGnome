@@ -194,7 +194,7 @@ def test_rewind():
     assert_dataarray_shape_size(sc)
     for spill in spills:
         assert spill.get('num_released') == 0
-        assert spill.release.start_time_invalid
+        assert spill.release.start_time_invalid is None
 
 
 def test_data_access():
@@ -963,43 +963,6 @@ def test_SpillContainer_add_array_types():
     sc.prepare_for_model_run()
     assert 'rise_vel' not in sc.array_types
     assert 'droplet_diameter' not in sc.array_types
-
-
-def test_weathering_data_attr():
-    sc = SpillContainer()
-    ts = 900
-    s1_rel = datetime.now().replace(microsecond=0)
-    s2_rel = s1_rel + timedelta(seconds=ts)
-    s = [point_line_release_spill(10, (0, 0, 0), s1_rel),
-         point_line_release_spill(10, (0, 0, 0), s2_rel)]
-    sc.spills += s
-    sc.prepare_for_model_run()
-    sc.release_elements(ts, s1_rel)
-    assert 'floating' not in sc.weathering_data
-
-    # use different element_type and initializers for both spills
-    s[0].amount = 10.0
-    s[0].units = 'kg'
-    s[0].element_type = floating_mass()
-    sc.rewind()
-    sc.prepare_for_model_run()
-    sc.release_elements(ts, s1_rel)
-    assert sc.weathering_data['floating'] == sum(sc['mass'])
-    assert sc.weathering_data['floating'] == s[0].amount
-
-    s[1].amount = 5.0
-    s[1].units = 'kg'
-    s[1].element_type = floating_mass()
-    sc.rewind()
-    sc.prepare_for_model_run()
-    exp_rel = 0.0
-    for ix in range(2):
-        sc.release_elements(ts, s1_rel + timedelta(seconds=ts * ix))
-        exp_rel += s[ix].amount
-        assert sc.weathering_data['floating'] == sum(sc['mass'])
-        assert sc.weathering_data['floating'] == exp_rel
-    sc.rewind()
-    assert sc.weathering_data == {}
 
 
 def get_eq_spills():

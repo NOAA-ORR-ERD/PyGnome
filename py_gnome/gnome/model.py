@@ -14,7 +14,7 @@ np = numpy
 from colander import (MappingSchema, SchemaNode,
                       Float, Int, Bool, drop)
 
-from gnome.environment import Environment
+from gnome.environment import Environment, Water
 
 import gnome.utilities.cache
 from gnome.utilities.time_utils import round_time
@@ -22,30 +22,15 @@ from gnome.utilities.orderedcollection import OrderedCollection
 from gnome.utilities.serializable import Serializable, Field
 
 from gnome.spill_container import SpillContainerPair
-
 from gnome.movers import Mover
-from gnome.weatherers import Weatherer
-
+from gnome.weatherers import Weatherer, IntrinsicProps
 from gnome.outputters import Outputter, NetCDFOutput
-
 from gnome.persist import (extend_colander,
                            validators,
                            References,
                            load)
 from gnome.persist.base_schema import (ObjType,
                                        OrderedCollectionItemsList)
-
-
-class SpillContainerPairSchema(MappingSchema):
-    '''
-    Schema for SpillContainerPair object.
-    Since this is currently only used by the model, define the schema
-    in this module. The SpillContainerPair object is not serializable since
-    there isn't a need
-    '''
-    certain_spills = OrderedCollectionItemsList(name='certain_spills')
-    uncertain_spills = OrderedCollectionItemsList(name='uncertain_spills',
-                                                  missing=drop)
 
 
 class ModelSchema(ObjType):
@@ -91,7 +76,6 @@ class Model(Serializable):
                'weathering_substeps',
                'start_time',
                'duration',
-               'time_step',
                'uncertain',
                'cache_enabled',
                'weathering_substeps',
@@ -114,7 +98,8 @@ class Model(Serializable):
     # collections and that would not be the correct way to check equality
     _state += [Field('spills', save=True, update=True, test_for_eq=False),
                Field('uncertain_spills', save=True, test_for_eq=False),
-               Field('num_time_steps', read=True)]
+               Field('num_time_steps', read=True),
+               Field('water', update=True, save=True, save_reference=True)]
 
     # list of OrderedCollections
     _oc_list = ['movers', 'weatherers', 'environment', 'outputters']
@@ -161,6 +146,10 @@ class Model(Serializable):
         [model.movers.add(obj) for obj in g_objects]
         [model.weatherers.add(obj) for obj in l_weatherers]
 
+        # todo: set Water / intrinsic properties
+        if model.water is not None and len(model.weatherers) > 0:
+            model._intrinsic_props = IntrinsicProps(model.water)
+
         # register callback with OrderedCollection
         model.movers.register_callback(model._callback_add_mover,
                                        ('add', 'replace'))
@@ -170,6 +159,7 @@ class Model(Serializable):
 
         # restore the spill data outside this method - let's not try to find
         # the saveloc here
+        model.logger.info("'new_from_dict' created new model")
         return model
 
     def __init__(self,
@@ -199,10 +189,12 @@ class Model(Serializable):
         :param cache_enabled=False: Flag for setting whether the model should
             cache results to disk.
         '''
-
         self.__restore__(time_step, start_time, duration,
                          weathering_substeps,
                          uncertain, cache_enabled, map, name)
+
+        # set in setup_model_run if weatherers are added
+        self._intrinsic_props = None
 
         # register callback with OrderedCollection
         self.movers.register_callback(self._callback_add_mover,
@@ -210,9 +202,11 @@ class Model(Serializable):
 
         self.weatherers.register_callback(self._callback_add_weatherer,
                                           ('add', 'replace'))
+        self.logger.info('New model initialized')
 
     def __restore__(self, time_step, start_time, duration,
-                    weathering_substeps, uncertain, cache_enabled, map, name):
+                    weathering_substeps, uncertain, cache_enabled, map, name,
+                    water=None):
         '''
         Take out initialization that does not register the callback here.
         This is because new_from_dict will use this to restore the model _state
@@ -243,6 +237,7 @@ class Model(Serializable):
             self.name = name
 
         self._map = map
+        self.water = water
         self.time_step = time_step  # this calls rewind() !
 
     def reset(self, **kwargs):
@@ -409,13 +404,12 @@ class Model(Serializable):
         Sets up each mover for the model run
         '''
         self.spills.rewind()  # why is rewind for spills here?
+        array_types = {}
 
         # remake orderedcollections defined by model
         for oc in [self.movers, self.weatherers,
                    self.outputters, self.environment]:
             oc.remake()
-
-        array_types = {}
 
         for mover in self.movers:
             mover.prepare_for_model_run()
@@ -424,11 +418,28 @@ class Model(Serializable):
 
         for w in self.weatherers:
             for sc in self.spills.items():
-                # weatherers will initialize 'weathering_data' key/values to 0.0
+                # weatherers will initialize 'weathering_data' key/values
+                # to 0.0
                 w.prepare_for_model_run(sc)
 
             if w.on:
                 array_types.update(w.array_types)
+
+        if len(self.weatherers) > 0:
+            if self.water is None:
+                self.water = Water()
+
+            if self._intrinsic_props is None:
+                self._intrinsic_props = IntrinsicProps(self.water, array_types)
+            else:
+                self._intrinsic_props.update_array_types(array_types)
+
+            # this adds 'density' array. It also adds data_arrays used to
+            # compute area if Evaporation is included since it requires 'area'
+            array_types.update(self._intrinsic_props.array_types)
+        else:
+            # reset to None if no weatherers found
+            self._intrinsic_props = None
 
         for sc in self.spills.items():
             sc.prepare_for_model_run(array_types)
@@ -440,6 +451,7 @@ class Model(Serializable):
                                             cache=self._cache,
                                             uncertain=self.uncertain,
                                             spills=self.spills)
+        self.logger.info("{0} setup_model_run complete".format(self.name))
 
     def setup_time_step(self):
         '''
@@ -506,13 +518,10 @@ class Model(Serializable):
             return
 
         for sc in self.spills.items():
-            mass_rmain = np.zeros_like(sc['mass_components'])
             for w in self.weatherers:
                 for model_time, time_step in self._split_into_substeps():
-                    mass_rmain += w.weather_elements(sc, time_step, model_time)
-
-            sc['mass_components'][:] = mass_rmain
-            sc['mass'][:] = mass_rmain.sum(1)
+                    # change 'mass_components' in weatherer
+                    w.weather_elements(sc, time_step, model_time)
 
     def _split_into_substeps(self):
         '''
@@ -601,11 +610,14 @@ class Model(Serializable):
         if self.current_time_step == -1:
             # that's all we need to do for the zeroth time step
             self.setup_model_run()
+            self.logger.info("Setup run for: {0}".format(self.name))
         else:
             self.setup_time_step()
             self.move_elements()
             self.weather_elements()
             self.step_is_done()
+            self.logger.info("Completed step: {0.current_time_step} for "
+                             "{0.name}".format(self))
 
         self.current_time_step += 1
 
@@ -622,7 +634,13 @@ class Model(Serializable):
 
             # release particles for next step - these particles will be aged
             # in the next step
-            sc.release_elements(self.time_step, self.model_time)
+            num_released = sc.release_elements(self.time_step, self.model_time)
+            if self._intrinsic_props:
+                self._intrinsic_props.update(num_released, sc)
+
+            self.logger.info("Released {0} elements for step: "
+                             " {1.current_time_step} for {1.name}".
+                             format(sc.num_released, self))
 
         # cache the results - current_time_step is incremented but the
         # current_time_stamp in spill_containers (self.spills) is not updated
@@ -647,7 +665,7 @@ class Model(Serializable):
         '''
         return self.step()
 
-    def full_run(self, rewind=True, log=False):
+    def full_run(self, rewind=True, logger=False):
         '''
         Do a full run of the model.
 
@@ -663,20 +681,20 @@ class Model(Serializable):
         while True:
             try:
                 results = self.step()
-
-                if log:
-                    print results
+                self.logger.info(results)
 
                 output_data.append(results)
             except StopIteration:
-                print 'Done with the model run'
+                self.logger.info('Run Complete: Stop Iteration')
                 break
 
         return output_data
 
-    def _callback_add_mover(self, obj_added):
-        'Callback after mover has been added'
-        if hasattr(obj_added, 'wind'):
+    def _add_to_environ_collec(self, obj_added):
+        '''
+        if an environment object exists
+        '''
+        if hasattr(obj_added, 'wind') and obj_added.wind is not None:
             if obj_added.wind.id not in self.environment:
                 self.environment += obj_added.wind
 
@@ -684,24 +702,33 @@ class Model(Serializable):
             if obj_added.tide.id not in self.environment:
                 self.environment += obj_added.tide
 
+    def _callback_add_mover(self, obj_added):
+        'Callback after mover has been added'
+        self._add_to_environ_collec(obj_added)
         self.rewind()  # rewind model if a new mover is added
 
     def _callback_add_weatherer(self, obj_added):
         'Callback after weatherer has been added'
-        if isinstance(obj_added, Weatherer):
-            # not sure what kind of dependencies we have just yet.
-            pass
+        self._add_to_environ_collec(obj_added)
+        if hasattr(obj_added, 'water') and obj_added.water is not None:
+            if self.water is None:
+                self.water = obj_added.water
+
+            else:
+                if self.water is not obj_added.water:
+                    msg = ("Model's water attribute is different from newly "
+                           "added weatherer named: {0.name}. "
+                           "Model's Water object is used to update intrinsic "
+                           "properties").format(obj_added)
+                    self.log.warning(msg)
 
         self.rewind()  # rewind model if a new weatherer is added
 
     def __eq__(self, other):
         check = super(Model, self).__eq__(other)
-        print 'Model.__eq__(): super check =', check
         if check:
             # also check the data in ordered collections
             if type(self.spills) != type(other.spills):
-                print 'Model.__eq__(): spill types:', (type(self.spills),
-                                                       type(other.spills))
                 return False
 
             if self.spills != other.spills:
@@ -727,7 +754,7 @@ class Model(Serializable):
         # containers don't need to be serializable; however, it was easiest to
         # put an update_from_dict method in the SpillContainerPair. Keep the
         # interface for this the same, so make it a dict
-        self.spills.update_from_dict({'spills': value})
+        return self.spills.update_from_dict({'spills': value})
 
     def uncertain_spills_to_dict(self):
         '''
@@ -772,15 +799,10 @@ class Model(Serializable):
             to change it - but not sure if that will ever be needed?
             '''
             self._save_spill_data(os.path.join(saveloc,
-                                        'spills_data_arrays.nc'))
+                                               'spills_data_arrays.nc'))
 
         # there should be no more references
         self._json_to_saveloc(json_, saveloc, references, name)
-        if name and references.reference(self) != name:
-            # todo: want a warning here instead of an exception
-            raise Exception("{0} already exists, cannot name "
-                "the model's json file: {0}".format(name))
-            pass
         return references
 
     def _save_collection(self, saveloc, coll_, refs, coll_json):
@@ -840,7 +862,8 @@ class Model(Serializable):
             saveloc, spill_data_fname = os.path.split(spill_data)
             spill_data_fname, ext = os.path.splitext(spill_data_fname)
             u_spill_data = os.path.join(saveloc,
-                '{0}_uncertain{1}'.format(spill_data_fname, ext))
+                                        '{0}_uncertain{1}'
+                                        .format(spill_data_fname, ext))
 
         array_types = {}
 
@@ -852,19 +875,22 @@ class Model(Serializable):
 
         for sc in self.spills.items():
             if sc.uncertain:
-                (data, mass_balance) = NetCDFOutput.read_data(u_spill_data,
+                (data, weather_data) = NetCDFOutput.read_data(u_spill_data,
                                                               time=None,
                                                               which_data='all')
             else:
-                (data, mass_balance) = NetCDFOutput.read_data(spill_data,
+                (data, weather_data) = NetCDFOutput.read_data(spill_data,
                                                               time=None,
                                                               which_data='all')
 
             sc.current_time_stamp = data.pop('current_time_stamp').item()
             sc._data_arrays = data
-            sc.weathering_data = mass_balance
+            sc.weathering_data = weather_data
             sc._array_types.update(array_types)
             sc._append_initializer_array_types(array_types)
+            if self._intrinsic_props:
+                self._intrinsic_props.update_array_types(array_types)
+                sc._array_types.update(self._intrinsic_props.array_types)
 
     def _empty_save_dir(self, saveloc):
         '''
@@ -892,6 +918,8 @@ class Model(Serializable):
         schema = self.__class__._schema(json_)
         o_json_ = schema.serialize(toserial)
         o_json_['map'] = self.map.serialize(json_)
+        if self.water:
+            o_json_['water'] = self.water.serialize(json_)
 
         if json_ == 'webapi':
             for attr in ('environment', 'outputters', 'weatherers', 'movers',
@@ -918,8 +946,10 @@ class Model(Serializable):
         '''
         schema = cls._schema(json_['json_'])
         deserial = schema.deserialize(json_)
-        if 'map' in json_ and json_['map']:
-            deserial['map'] = json_['map']
+        for obj in ('map', 'water'):
+            if obj in json_:
+                d_item = cls._deserialize_nested_obj(json_[obj])
+                deserial[obj] = d_item
 
         if json_['json_'] == 'webapi':
             for attr in ('environment', 'outputters', 'weatherers', 'movers',
@@ -943,16 +973,20 @@ class Model(Serializable):
         '''
         deserial = []
         for item in json_:
-            fqn = item['obj_type']
-            name, scope = (list(reversed(fqn.rsplit('.', 1)))
-                           if fqn.find('.') >= 0
-                           else [fqn, ''])
-            my_module = __import__(scope, globals(), locals(), [str(name)], -1)
-            py_class = getattr(my_module, name)
-
-            deserial.append(py_class.deserialize(item))
+            d_item = cls._deserialize_nested_obj(item)
+            deserial.append(d_item)
 
         return deserial
+
+    @classmethod
+    def _deserialize_nested_obj(cls, json_):
+        fqn = json_['obj_type']
+        name, scope = (list(reversed(fqn.rsplit('.', 1)))
+                       if fqn.find('.') >= 0
+                       else [fqn, ''])
+        my_module = __import__(scope, globals(), locals(), [str(name)], -1)
+        py_class = getattr(my_module, name)
+        return py_class.deserialize(json_)
 
     @classmethod
     def load(cls, saveloc, json_data, references=None):
@@ -961,32 +995,30 @@ class Model(Serializable):
         for objects contained in the model
         '''
         references = (references, References())[references is None]
-
-        # model has no datafiles or 'save_reference' attributes so no need to
-        # do anything special for it. But let's add this as a check anyway
-        datafiles = cls._state.get_field_by_attribute('isdatafile')
-        ref_fields = cls._state.get_field_by_attribute('save_reference')
-        if (datafiles or ref_fields):
-            raise Exception("Model.load() assumes none of the attributes "
-                "defining the state 'isdatafile' or is 'save_reference'. "
-                "If this changes, then we need to make this more robust.")
+        ref_dict = cls._load_refs(saveloc, json_data, references)
+        cls._update_datafile_path(saveloc, json_data)
 
         # deserialize after removing references
         _to_dict = cls.deserialize(json_data)
+
+        if ref_dict:
+            _to_dict.update(ref_dict)
 
         # load nested map object and add it - currently, 'load' is only used
         # for laoding save files/location files, so it assumes:
         # json_data['json_'] == 'save'
         if ('map' in json_data):
             map_obj = eval(json_data['map']['obj_type']).load(saveloc,
-                json_data['map'], references)
+                                                              json_data['map'],
+                                                              references)
             _to_dict['map'] = map_obj
 
         # load collections
         for oc in cls._oc_list:
             if oc in _to_dict:
-                _to_dict[oc] = cls._load_collection(saveloc, _to_dict[oc],
-                    references)
+                _to_dict[oc] = cls._load_collection(saveloc,
+                                                    _to_dict[oc],
+                                                    references)
         for spill in ['spills', 'uncertain_spills']:
             if spill in _to_dict:
                 _to_dict[spill] = cls._load_collection(saveloc,

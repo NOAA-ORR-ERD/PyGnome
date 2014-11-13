@@ -45,7 +45,7 @@ def model(sample_model_fcn, request):
                         units='kg')
 
     water = Water()
-    model.environment += water
+    model.water = water
     model.movers += RandomMover(diffusion_coef=100000)
     model.movers += constant_wind_mover(1.0, 0.0)
     model.weatherers += Evaporation(water, model.movers[-1].wind)

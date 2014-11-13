@@ -22,6 +22,7 @@ from gnome.persist.base_schema import ObjType
 
 from . import elements
 from .release import PointLineRelease
+from .. import _valid_units
 
 
 class SpillSchema(ObjType):
@@ -30,13 +31,15 @@ class SpillSchema(ObjType):
                     description='on/off status of spill')
     amount = SchemaNode(Float(), missing=drop)
     units = SchemaNode(String(), missing=drop)
+    amount_uncertainty_scale = SchemaNode(Float(), missing=drop)
 
 
 class Spill(serializable.Serializable):
     """
     Models a spill
     """
-    _update = ['on', 'release', 'amount', 'units',
+    _update = ['on', 'release',
+               'amount', 'units', 'amount_uncertainty_scale',
                'frac_coverage', 'frac_water']
 
     _create = []
@@ -50,19 +53,15 @@ class Spill(serializable.Serializable):
                                  update=True)
     _schema = SpillSchema
 
-    valid_vol_units = list(chain.from_iterable([item[1] for item in
-                           uc.ConvertDataUnits['Volume'].values()]))
-    valid_vol_units.extend(unit_conversion.GetUnitNames('Volume'))
-
-    valid_mass_units = list(chain.from_iterable([item[1] for item in
-                            uc.ConvertDataUnits['Mass'].values()]))
-    valid_mass_units.extend(uc.GetUnitNames('Mass'))
+    valid_vol_units = _valid_units('Volume')
+    valid_mass_units = _valid_units('Mass')
 
     def __init__(self, release,
                  element_type=None,
                  on=True,
                  amount=None,   # could be volume or mass
                  units=None,
+                 amount_uncertainty_scale=0.0,
                  name='Spill'):
         """
         Spills used by the gnome model. It contains a release object, which
@@ -100,18 +99,20 @@ class Spill(serializable.Serializable):
                 element_type = elements.floating()
             else:
                 element_type = elements.floating_mass()
-                #element_type = elements.floating_weathering()
 
         self.element_type = element_type
 
         self.on = on    # spill is active or not
         self._units = None
         self.amount = amount
+
         if amount is not None:
             if units is None:
                 raise TypeError("Units must be provided with amount spilled")
             else:
                 self.units = units
+
+        self.amount_uncertainty_scale = amount_uncertainty_scale
 
         '''
         fractional water content in the emulsion
@@ -172,7 +173,41 @@ class Spill(serializable.Serializable):
             msg = ('Units for amount spilled must be in volume or mass units. '
                    'Valid units for volume: {0}, for mass: {1} ').format(
                        self.valid_vol_units, self.valid_mass_units)
-            raise uc.InvalidUnitError(msg)
+            #raise uc.InvalidUnitError(msg)
+            #self.logger.exception(msg)
+            ex = uc.InvalidUnitError(msg)
+            self.logger.exception(ex, exc_info=True)
+            raise ex    # this should be raised since run will fail otherwise
+
+    def _get_all_props(self):
+        'return all properties accessible through get'
+        all_props = []
+
+        # release properties
+        rel_props = getmembers(self.release,
+                               predicate=lambda p: (not ismethod(p)))
+        rel_props = [a[0] for a in rel_props if not a[0].startswith('_')]
+
+        all_props.extend(rel_props)
+
+        # element_type properties
+        et_props = getmembers(self.element_type,
+                              predicate=lambda p: (not ismethod(p)))
+        'remove _state - update this after we change _state to _state'
+        et_props = [a[0] for a in et_props
+                    if not a[0].startswith('_') and a[0] != '_state']
+
+        all_props.extend(et_props)
+
+        # properties for each of the initializer objects
+        i_props = []
+        for val in self.element_type.initializers:
+            toadd = getmembers(val, lambda p: (not ismethod(p)))
+            i_props.extend([a[0] for a in toadd
+                            if not a[0].startswith('_') and a[0] != '_state'])
+
+            all_props.extend(i_props)
+        return all_props
 
     def set(self, prop, val):
         """
@@ -192,7 +227,7 @@ class Spill(serializable.Serializable):
         it does not know which one to return
         """
         if prop == 'num_released':
-            raise AttributeError("cannot set attribute")
+            self.logger.warning("cannot set 'num_released' attribute")
 
         # we don't want to add an attribute that doesn't already exist
         # first check to see that the attribute exists, then change it else
@@ -207,9 +242,9 @@ class Spill(serializable.Serializable):
                     setattr(init, prop, val)
                     break
                 else:
-                    raise AttributeError('{0} attribute does not exist '
-                                         'in element_type '
-                                         'or release object'.format(prop))
+                    self.logger.warning('{0} attribute does not exist '
+                                     'in element_type '
+                                     'or release object'.format(prop))
 
     def get(self, prop=None):
         """
@@ -227,48 +262,29 @@ class Spill(serializable.Serializable):
         """
         'Return all properties'
         if prop is None:
-            all_props = []
+            return self._get_all_props()
 
-            # release properties
-            rel_props = getmembers(self.release,
-                                   predicate=lambda p: (not ismethod(p)))
-            rel_props = [a[0] for a in rel_props if not a[0].startswith('_')]
-
-            all_props.extend(rel_props)
-
-            # element_type properties
-            et_props = getmembers(self.element_type,
-                                  predicate=lambda p: (not ismethod(p)))
-            'remove _state - update this after we change _state to _state'
-            et_props = [a[0] for a in et_props
-                            if not a[0].startswith('_') and a[0] != '_state']
-
-            all_props.extend(et_props)
-
-            # properties for each of the initializer objects
-            i_props = []
-            for val in self.element_type.initializers:
-                toadd = getmembers(val, lambda p: (not ismethod(p)))
-                i_props.extend([a[0] for a in toadd
-                            if not a[0].startswith('_') and a[0] != '_state'])
-
-            all_props.extend(i_props)
-            return all_props
-
-        if hasattr(self.release, prop):
+        try:
             return getattr(self.release, prop)
+        except AttributeError:
+            pass
 
-        if hasattr(self.element_type, prop):
+        try:
             return getattr(self.element_type, prop)
+        except AttributeError:
+            pass
 
         for init in self.element_type.initializers:
-            if hasattr(init, prop):
+            try:
                 return getattr(init, prop)
+            except AttributeError:
+                pass
 
         # nothing returned, then property was not found - raise exception or
         # return None?
-        raise AttributeError("{0} attribute does not exist in element_type"
-            " or release object".format(prop))
+        self.logger.warning("{0} attribute does not exist in element_type"
+                            " or release object or initializers".format(prop))
+        return None
 
     def get_initializer_by_name(self, name):
         ''' get first initializer in list whose name matches 'name' '''
@@ -411,6 +427,32 @@ class Spill(serializable.Serializable):
         u_copy = copy.deepcopy(self)
         return u_copy
 
+    def set_amount_uncertainty(self, up_or_down=None):
+        '''
+            This function shifts the spill amount based on a scale value
+            in the range [0.0 ... 1.0].  The maximum uncertainty scale value
+            is (2/3) * spill_amount.
+            We determine either an upper uncertainty or a lower uncertainty
+            multiplier.  Then we shift our spill amount value based on it.
+
+            Since we are irreversibly changing the spill amount value,
+            we should probably do this only once.
+        '''
+        if (self.amount_uncertainty_scale <= 0.0 or
+                self.amount_uncertainty_scale > 1.0):
+            return False
+
+        if up_or_down == 'up':
+            scale = (1.0 + (2.0 / 3.0) * self.amount_uncertainty_scale)
+        elif up_or_down == 'down':
+            scale = (1.0 - (2.0 / 3.0) * self.amount_uncertainty_scale)
+        else:
+            return False
+
+        self.amount *= scale
+
+        return True
+
     def rewind(self):
         """
         rewinds the release to original status (before anything has been
@@ -462,7 +504,7 @@ class Spill(serializable.Serializable):
         """
         if self.element_type is not None:
             self.element_type.set_newparticle_values(num_new_particles, self,
-                                                 data_arrays)
+                                                     data_arrays)
 
         self.release.set_newparticle_positions(num_new_particles, current_time,
                                                time_step, data_arrays)

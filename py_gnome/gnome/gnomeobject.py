@@ -2,6 +2,18 @@
 
 from uuid import uuid1, UUID
 import copy
+import logging
+
+
+def init_obj_log(obj, setLevel=logging.INFO):
+    '''
+    convenience function for initializing a logger with an object
+    '''
+    logger = logging.getLogger("{0.__class__.__module__}."
+                               "{0.__class__.__name__}".format(obj))
+    logger.propagate = True
+    logger.setLevel = setLevel
+    return logger
 
 
 class GnomeId(object):
@@ -9,6 +21,20 @@ class GnomeId(object):
     A class for assigning a unique ID for an object
     '''
     _id = None
+    _log = None
+
+    @property
+    def logger(self):
+        '''
+        define attribute '_log'. If it doesn't exist, define it here.
+        This is so we don't have to add it to all PyGnome classes - this
+        property makes the logger available to each object.
+        - 
+        - default log_level is INFO
+        '''
+        if not self._log:
+            self._log = init_obj_log(self)
+        return self._log
 
     @property
     def id(self):
@@ -30,7 +56,7 @@ class GnomeId(object):
         """
         self._id = str(uuid1())
 
-    def __deepcopy__(self, memo=None):
+    def __deepcopy__(self, memo):
         """
         the deepcopy implementation
 

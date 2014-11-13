@@ -21,7 +21,8 @@ class WeathererSchema(ObjType, ProcessSchema):
     used to serialize object so need ObjType schema and it only contains
     attributes defined in base class (ProcessSchema)
     '''
-    pass
+    name = 'Weatherer'
+    description = 'weatherer schema base class'
 
 
 class Weatherer(Process):

@@ -403,3 +403,16 @@ def test_plume_init(substance_name, density, density_units):
             uc.convert('density', density_units, 'kg/m^3', density))
         assert np.isclose(et.substance.api,
             uc.convert('density', density_units, 'api', density))
+
+
+@pytest.mark.parametrize("substance", [u'ALAMO',
+                                       51,  # oil record in DB
+                                       get_oil_props(u'ALAMO')])
+def test_element_type_init(substance):
+    et = ElementType(substance=substance)
+    if isinstance(substance, basestring):
+        assert et.substance.get('name') == substance
+    elif isinstance(substance, int):
+        assert et.substance.get('id') == substance
+    else:
+        assert et.substance.get('name') == substance.get('name')

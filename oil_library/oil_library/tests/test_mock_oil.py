@@ -1,11 +1,15 @@
 '''
 test dict_to_oil functions
 '''
+from pprint import PrettyPrinter
+pp = PrettyPrinter(indent=2)
+
 import pytest
 from hazpy import unit_conversion as uc
 
 from oil_library import _sample_oils, get_oil_props, get_oil
-from oil_library.mock_oil import sample_oil_to_mock_oil, boiling_point
+from oil_library.mock_oil import sample_oil_to_mock_oil
+from oil_library.utilities import get_boiling_points_from_api
 
 sample_oil = 'oil_conservative'
 so = _sample_oils[sample_oil]
@@ -49,10 +53,10 @@ def test_boiling_point(max_cuts):
     intercept = 457.16 - 3.3447
 
     exp_bp_0 = 1./(max_cuts * 2) * slope + intercept
-    bp = boiling_point(max_cuts, api)
+    bp = get_boiling_points_from_api(max_cuts, 1.0, api)
     print '\nBoiling Points: '
     print bp
     assert len(bp) == max_cuts * 2
-    assert ([bp[ix] - bp[ix + 1] for ix in range(0, max_cuts * 2, 2)] ==
+    assert ([bp[ix][0] - bp[ix + 1][0] for ix in range(0, max_cuts * 2, 2)] ==
             [0.0] * max_cuts)
-    assert bp[:2] == [exp_bp_0] * 2
+    assert [n[0] for n in bp[:2]] == [exp_bp_0] * 2

@@ -3,6 +3,7 @@ from itertools import chain
 from collections import namedtuple
 
 from sqlalchemy import create_engine
+from sqlalchemy.exc import UnboundExecutionError
 from sqlalchemy.orm.exc import NoResultFound
 
 from hazpy import unit_conversion
@@ -50,18 +51,17 @@ _oillib_path = os.path.dirname(__file__)
 _db_file = os.path.join(_oillib_path, 'OilLib.db')
 
 
-def _bind_db_session():
+def _get_db_session():
     'we can call this from scripts to access valid DBSession'
     # not sure we want to do it this way - but let's use for now
-    engine = create_engine('sqlite:///' + _db_file)
+    session = DBSession()
 
-    # let's use global DBSession defined in oillibrary
-    # alternatively, we could define a new scoped_session
-    # Not sure what's the proper way yet but this needs
-    # to be revisited at some point.
-    # session_factory = sessionmaker(bind=engine)
-    # DBSession = scoped_session(session_factory)
-    DBSession.bind = engine
+    try:
+        session.get_bind()
+    except UnboundExecutionError:
+        session.bind = create_engine('sqlite:///' + _db_file)
+
+    return session
 
 
 def get_oil(oil_, max_cuts=None):
@@ -96,12 +96,11 @@ def get_oil(oil_, max_cuts=None):
     end user.
     """
     if isinstance(oil_, dict):
-        return sample_oil_to_mock_oil(max_cuts=max_cuts,
-                                      **oil_)
+        return sample_oil_to_mock_oil(max_cuts=max_cuts, **oil_)
 
     if oil_ in _sample_oils.keys():
-        return sample_oil_to_mock_oil(max_cuts=max_cuts,
-                                      **_sample_oils[oil_])
+        print 'returning mock oil by name'
+        return sample_oil_to_mock_oil(max_cuts=max_cuts, **_sample_oils[oil_])
 
     else:
         '''
@@ -109,15 +108,21 @@ def get_oil(oil_, max_cuts=None):
         should we raise error here?
         '''
 
-        _bind_db_session()
+        session = _get_db_session()
 
         try:
-            return DBSession.query(Oil).filter(Oil.name == oil_).one()
+            oil = session.query(Oil).filter(Oil.name == oil_).one()
+            oil.cuts
+            oil.densities
+            oil.kvis
+            oil.sara_fractions
+            return oil
         except:
             pass    # try checking imported_record_id
 
         try:
-            return DBSession.query(Oil).filter(Oil.imported_record_id == oil_).one()
+            return (session.query(Oil).filter(Oil.imported_record_id == oil_).
+                    one())
         except NoResultFound, ex:
             # or sqlalchemy.orm.exc.MultipleResultsFound as ex:
             ex.message = ("oil with name or imported_record_id, '{0}', not "

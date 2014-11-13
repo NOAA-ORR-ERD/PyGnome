@@ -6,6 +6,7 @@ from release import (Release,
                      SpatialRelease,
                      GridRelease,
                      VerticalPlumeRelease)
+import elements
 
 __all__ = [Spill,
            SpillSchema,
@@ -17,4 +18,5 @@ __all__ = [Spill,
            SpatialRelease,
            GridRelease,
            VerticalPlumeRelease,
+           elements,
            ]

@@ -1,0 +1,44 @@
+{
+    "version": 1, 
+    "disbale_existing_loggers": true,
+    "root":
+    {
+        "level": "INFO",
+        "handlers": ["console", "file"]
+    },
+    "formatters":
+    {
+      "simple":
+      {
+          "format": "format=%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+          "datefmt": "%Y-%m-%d %H:%M:%S"
+      },
+      "brief":
+      {
+          "format": "%(levelname)-8s: %(name)-28s: %(message)s",
+          "datefmt": "%Y-%m-%d %H:%M:%S"
+      },
+      "precise":
+      {
+          "format": "%(asctime)s %(name)-28s %(levelname)-8s %(message)s",
+          "datefmt": "%Y-%m-%d %H:%M:%S"
+      }
+    },
+    "handlers":
+    {
+      "console":
+      {
+          "class": "logging.StreamHandler",
+          "level": "DEBUG",
+          "formatter": "brief"
+      },
+      "file":
+      {
+          "class": "logging.handlers.RotatingFileHandler",
+          "formatter": "precise",
+          "filename": "logfile.log",
+          "maxBytes": 1000000,
+          "backupCount": 3
+      }
+    }
+}

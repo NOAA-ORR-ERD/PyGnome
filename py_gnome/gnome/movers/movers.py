@@ -23,7 +23,7 @@ class ProcessSchema(MappingSchema):
     base Process schema - attributes common to all movers/weatherers
     defined at one place
     '''
-    on = SchemaNode(Bool(), default=True, missing=True)
+    on = SchemaNode(Bool(), missing=drop)
     active_start = SchemaNode(LocalDateTime(), missing=drop,
                               validator=convertible_to_seconds)
     active_stop = SchemaNode(LocalDateTime(), missing=drop,
@@ -54,8 +54,8 @@ class Process(object):
         :param active_start: datetime when the mover should be active
         :param active_stop: datetime after which the mover should be inactive
         """
-        self._active = True
         self.on = kwargs.pop('on', True)  # turn the mover on / off for the run
+        self._active = self.on  # initial value
 
         active_start = kwargs.pop('active_start',
                                   inf_datetime.InfDateTime('-inf'))

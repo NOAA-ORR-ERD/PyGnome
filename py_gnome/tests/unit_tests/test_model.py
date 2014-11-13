@@ -18,16 +18,22 @@ from gnome.utilities import inf_datetime
 from gnome.utilities.remote_data import get_datafile
 
 import gnome.map
-from gnome.environment import Wind, Tide
+from gnome.environment import Wind, Tide, constant_wind, Water
 from gnome.model import Model
 
 from gnome.spill import Spill, SpatialRelease, point_line_release_spill
-from gnome.spill.elements import floating
+from gnome.spill.elements import floating, floating_weathering
 
 from gnome.movers import SimpleMover, RandomMover, WindMover, CatsMover
 
-from gnome.weatherers import HalfLifeWeatherer
+from gnome.weatherers import (HalfLifeWeatherer,
+                              Evaporation,
+                              Dispersion,
+                              Burn,
+                              Skimmer)
 from gnome.outputters import Renderer, GeoJson
+
+from conftest import sample_model_weathering
 
 basedir = os.path.dirname(__file__)
 datadir = os.path.join(basedir, 'sample_data')
@@ -38,11 +44,11 @@ testmap = os.path.join(basedir, '../sample_data', 'MapBounds_Island.bna')
 
 
 @pytest.fixture(scope='function')
-def model(sample_model_fcn):
+def model(sample_model_fcn, dump):
     '''
     Utility to setup up a simple, but complete model for tests
     '''
-    images_dir = os.path.join(basedir, 'Test_images')
+    images_dir = os.path.join(dump, 'Test_images')
 
     if os.path.isdir(images_dir):
         shutil.rmtree(images_dir)
@@ -257,11 +263,11 @@ def test_simple_run_with_map():
         assert step['step_num'] == model.current_time_step
 
 
-def test_simple_run_with_image_output():
+def test_simple_run_with_image_output(dump):
     '''
     Pretty much all this tests is that the model will run and output images
     '''
-    images_dir = os.path.join(basedir, 'Test_images')
+    images_dir = os.path.join(dump, 'Test_images')
 
     if os.path.isdir(images_dir):
         shutil.rmtree(images_dir)
@@ -316,11 +322,11 @@ def test_simple_run_with_image_output():
     assert num_steps_output == calculated_steps
 
 
-def test_simple_run_with_image_output_uncertainty():
+def test_simple_run_with_image_output_uncertainty(dump):
     '''
     Pretty much all this tests is that the model will run and output images
     '''
-    images_dir = os.path.join(basedir, 'Test_images2')
+    images_dir = os.path.join(dump, 'Test_images2')
 
     if os.path.isdir(images_dir):
         shutil.rmtree(images_dir)
@@ -681,7 +687,7 @@ def test_release_at_right_time():
     assert model.spills.items()[0].num_released == 12
 
 
-def test_full_run(model):
+def test_full_run(model, dump):
     'Test doing a full run'
     # model = setup_simple_model()
 
@@ -695,7 +701,7 @@ def test_full_run(model):
 
     # check if the images are there:
     # (1 extra for background image)
-    num_images = len(os.listdir(os.path.join(basedir, 'Test_images')))
+    num_images = len(os.listdir(os.path.join(dump, 'Test_images')))
     assert num_images == model.num_time_steps + 1
 
 
@@ -827,6 +833,84 @@ def test_setup_model_run(model):
     model.rewind()
     model.step()
     assert not exp_keys.intersection(model.spills.LE_data)
+
+
+def test_staggered_spills_weathering(sample_model_fcn):
+    '''
+    Just test that a model with weathering and spills staggered in time runs
+    without errors.
+
+    test exposed a bug, which is now fixed
+    '''
+    model = sample_model_weathering(sample_model_fcn, 'ALAMO')
+    rel_time = model.spills[0].get('release_time')
+    model.start_time = rel_time - timedelta(hours=1)
+    model.duration = timedelta(days=1)
+    cs = point_line_release_spill(500, (0, 0, 0),
+                                  rel_time + timedelta(hours=1),
+                                  element_type=model.spills[0].element_type,
+                                  amount=100,
+                                  units='tons')
+    model.spills += cs
+    model.environment += [Water(), constant_wind(1., 0)]
+    model.weatherers += [Evaporation(model.environment[0],
+                                     model.environment[1]),
+                         Dispersion(),
+                         Burn(),
+                         Skimmer()]
+    #model.outputters += WeatheringOutput('./temp')
+    model.full_run()
+
+
+def test_weathering_data_attr():
+    '''
+    weathering_data is always written by SpillContainer
+    '''
+    ts = 900
+    s1_rel = datetime.now().replace(microsecond=0)
+    s2_rel = s1_rel + timedelta(seconds=ts)
+    model = Model(time_step=ts, start_time=s1_rel)
+    s = [point_line_release_spill(10, (0, 0, 0), s1_rel),
+         point_line_release_spill(10, (0, 0, 0), s2_rel)]
+    model.spills += s
+    model.step()
+
+    for sc in model.spills.items():
+        assert 'floating' not in sc.weathering_data
+
+    model.environment += [Water(), constant_wind(0., 0)]
+    model.weatherers += [Evaporation(model.environment[0],
+                                     model.environment[1])]
+
+    # use different element_type and initializers for both spills
+    s[0].amount = 10.0
+    s[0].units = 'kg'
+    s[0].element_type = floating_weathering()
+    model.rewind()
+    model.step()
+    for sc in model.spills.items():
+        assert sc.weathering_data['floating'] == sum(sc['mass'])
+        assert sc.weathering_data['floating'] == s[0].amount
+
+    s[1].amount = 5.0
+    s[1].units = 'kg'
+    s[1].element_type = floating_weathering()
+    model.rewind()
+    exp_rel = 0.0
+    for ix in range(2):
+        model.step()
+        exp_rel += s[ix].amount
+        for sc in model.spills.items():
+            assert sc.weathering_data['floating'] == sum(sc['mass'])
+            assert sc.weathering_data['floating'] == exp_rel
+    model.rewind()
+    assert sc.weathering_data == {}
+
+    # weathering data is now empty for all steps
+    del model.weatherers[0]
+    for ix in range(2):
+        for sc in model.spills.items():
+            assert not sc.weathering_data
 
 
 @pytest.mark.xfail

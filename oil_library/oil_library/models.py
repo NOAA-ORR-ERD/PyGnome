@@ -10,7 +10,7 @@ from sqlalchemy import (Table,
                         ForeignKey)
 
 from sqlalchemy.ext.declarative import declarative_base as real_declarative_base
-from sqlalchemy.orm.collections import attribute_mapped_collection
+from sqlalchemy.orm.collections import InstrumentedList
 from sqlalchemy.orm.relationships import (RelationshipProperty,
                                           ONETOMANY, MANYTOONE, MANYTOMANY)
 from sqlalchemy.orm import (scoped_session,
@@ -53,26 +53,30 @@ class Base(object):
     def columns(self):
         return [c.name for c in self.__table__.columns]
 
-    def columnitems(self, recurse=True):
+    def columnitems(self, recurse=2):
         ret = dict((c, getattr(self, c)) for c in self.columns)
-        if recurse:
-            # Note: Right now our schema has a maximum of one level of
-            #       indirection between objects, so short-circuiting the
-            #       recursion in all cases is just fine.
-            #       If we were to design a deeper schema, this would need
-            #       to change.
+        if recurse > 0:
+            recurse = recurse - 1
+
             for r in self.one_to_many_relationships:
-                ret[r] = [a.tojson(recurse=False) for a in getattr(self, r)]
+                if isinstance(getattr(self, r), InstrumentedList):
+                    ret[r] = [a.tojson(recurse=recurse)
+                              for a in getattr(self, r)]
+                elif getattr(self, r) is not None:
+                    ret[r] = getattr(self, r).tojson(recurse=recurse)
+
             for r in self.many_to_many_relationships:
-                ret[r] = [a.tojson(recurse=False) for a in getattr(self, r)]
+                ret[r] = [a.tojson(recurse=recurse) for a in getattr(self, r)]
+
             for r in self.many_to_one_relationships:
-                ret[r] = getattr(self, r).tojson(recurse=False)
+                if getattr(self, r) is not None:
+                    ret[r] = getattr(self, r).tojson(recurse=recurse)
         return ret
 
     def __repr__(self):
         return '{}({})'.format(self.__class__.__name__, self.columnitems)
 
-    def tojson(self, recurse=True):
+    def tojson(self, recurse=2):
         return self.columnitems(recurse)
 
 
@@ -86,12 +90,12 @@ imported_to_synonym = Table('imported_to_synonym', Base.metadata,
 
 
 # UNMAPPED many-to-many association table
-imported_to_category = Table('imported_to_category', Base.metadata,
-                             Column('imported_record_id', Integer,
-                                    ForeignKey('imported_records.id')),
-                             Column('category_id', Integer,
-                                    ForeignKey('categories.id')),
-                             )
+oil_to_category = Table('oil_to_category', Base.metadata,
+                        Column('oil_id', Integer,
+                               ForeignKey('oils.id')),
+                        Column('category_id', Integer,
+                               ForeignKey('categories.id')),
+                        )
 
 
 class ImportedRecord(Base):
@@ -151,8 +155,6 @@ class ImportedRecord(Base):
     # relationship fields
     synonyms = relationship('Synonym', secondary=imported_to_synonym,
                             backref='imported')
-    categories = relationship('Category', secondary=imported_to_category,
-                              backref='imported')
     densities = relationship('Density', backref='imported',
                              cascade="all, delete, delete-orphan")
     kvis = relationship('KVis', backref='imported',
@@ -250,6 +252,7 @@ class Cut(Base):
     __tablename__ = 'cuts'
     id = Column(Integer, primary_key=True)
     imported_record_id = Column(Integer, ForeignKey('imported_records.id'))
+    oil_id = Column(Integer, ForeignKey('oils.id'))
 
     vapor_temp_k = Column(Float(53))
     liquid_temp_k = Column(Float(53))
@@ -263,7 +266,7 @@ class Cut(Base):
     def __repr__(self):
         lt = '{0}K'.format(self.liquid_temp_k) if self.liquid_temp_k else None
         vt = '{0}K'.format(self.vapor_temp_k) if self.vapor_temp_k else None
-        return ('<Cut([{0}, {1}], {2})>'
+        return ('<Cut(liquid_temp={0}, vapor_temp={1}, fraction={2})>'
                 .format(lt, vt, self.fraction))
 
 
@@ -347,11 +350,41 @@ class Oil(Base):
     flash_point_min_k = Column(Float(53))
     flash_point_max_k = Column(Float(53))
     emulsion_water_fraction_max = Column(Float(53))
+    bullwinkle_fraction = Column(Float(53))
+    adhesion_kg_m_2 = Column(Float(53))
+    sulphur_fraction = Column(Float(53))
 
-    kvis = relationship('KVis', backref='oil',
-                        cascade="all, delete, delete-orphan")
+    categories = relationship('Category', secondary=oil_to_category,
+                              backref='oils')
+
     densities = relationship('Density', backref='oil',
                              cascade="all, delete, delete-orphan")
+    kvis = relationship('KVis', backref='oil',
+                        cascade="all, delete, delete-orphan")
+    cuts = relationship('Cut', backref='oil',
+                        cascade="all, delete, delete-orphan")
+    sara_fractions = relationship('SARAFraction', backref='oil',
+                                  cascade="all, delete, delete-orphan")
 
     def __repr__(self):
         return '<Oil("{0.name}")>'.format(self)
+
+
+class SARAFraction(Base):
+    __tablename__ = 'resin_fractions'
+    id = Column(Integer, primary_key=True)
+    oil_id = Column(Integer, ForeignKey('oils.id'))
+
+    sara_type = Column(Enum('Saturates', 'Aromatics', 'Resins', 'Asphaltenes'),
+                       nullable=False)
+    fraction = Column(Float(53))
+    ref_temp_k = Column(Float(53))
+
+    def __init__(self, **kwargs):
+        for a, v in kwargs.iteritems():
+            if (a in self.columns):
+                setattr(self, a, v)
+
+    def __repr__(self):
+        return ('<SARAFraction({0.sara_type}={0.fraction} at {0.ref_temp_k}K)>'
+                .format(self))

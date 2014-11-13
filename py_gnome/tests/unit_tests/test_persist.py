@@ -5,7 +5,6 @@ and the ability of Model to be recreated in midrun
 
 import os
 import shutil
-from glob import glob
 from datetime import datetime, timedelta
 import json
 
@@ -17,17 +16,13 @@ np = numpy
 
 from gnome.basic_types import datetime_value_2d
 from gnome.utilities.remote_data import get_datafile
-
 from gnome.map import MapFromBNA
 from gnome.environment import Wind, Tide, Water
-
 from gnome.model import Model
 from gnome.persist import load
 from gnome.spill import point_line_release_spill
 from gnome.movers import RandomMover, WindMover, CatsMover, ComponentMover
 from gnome.weatherers import Evaporation
-
-#from gnome.persist.scenario import Scenario
 from gnome.outputters import Renderer
 
 curr_dir = os.path.dirname(__file__)
@@ -86,12 +81,13 @@ def make_model(images_dir, uncertain=False):
     print 'adding a spill'
     start_position = (144.664166, 13.441944, 0.0)
     end_release_time = start_time + timedelta(hours=6)
-    model.spills += point_line_release_spill(num_elements=1000,
-                                        start_position=start_position,
-                                        release_time=start_time,
-                                        end_release_time=end_release_time,
-                                        amount=1000.0,
-                                        units='kg')
+    model.spills += \
+        point_line_release_spill(num_elements=1000,
+                                 start_position=start_position,
+                                 release_time=start_time,
+                                 end_release_time=end_release_time,
+                                 amount=1000.0,
+                                 units='kg')
 
     # need a scenario for SimpleMover
     # model.movers += SimpleMover(velocity=(1.0, -1.0, 0.0))
@@ -134,8 +130,6 @@ def make_model(images_dir, uncertain=False):
     c_mover.scale = True  # but do need to scale (based on river stage)
     c_mover.scale_refpoint = (-70.65, 42.58333)
     c_mover.scale_value = 1.
-    #model.movers += c_mover
-    #model.environment += c_mover.tide
 
     print 'adding a cats mover:'
 
@@ -168,9 +162,8 @@ def make_model(images_dir, uncertain=False):
     model.movers += comp_mover
 
     print 'adding a Weatherer'
-    model.environment += Water(311.15)
-    # figure out mid-run save for mass_balance attribute, then add this in
-    #model.weatherers += Evaporation(w_mover.wind, model.environment[-1])
+    model.water = Water(311.15)
+    model.weatherers += Evaporation(model.water, w_mover.wind)
 
     return model
 
@@ -198,11 +191,9 @@ def test_save_load_model(images_dir, uncertain):
     model = make_model(images_dir, uncertain)
 
     print 'saving scenario ..'
-    #model.save(saveloc_, name='Model.json')
     model.save(saveloc_)
 
     print 'loading scenario ..'
-    #model2 = load(os.path.join(saveloc_, 'Model.json'))
     model2 = load(saveloc_)
 
     assert model == model2
@@ -298,7 +289,8 @@ class TestWebApi:
         for count, obj in enumerate(coll_):
             serial = obj.serialize('webapi')
             fname = os.path.join(webapi_files,
-                '{0}_{1}.json'.format(obj.__class__.__name__, count))
+                                 '{0}_{1}.json'.format(obj.__class__.__name__,
+                                                       count))
             self._write_to_file(fname, serial)
 
     @pytest.mark.parametrize('uncertain', [False, True])
@@ -321,7 +313,8 @@ class TestWebApi:
                     for obj in ['release', 'element_type']:
                         serial = getattr(spill, obj).serialize('webapi')
                         fname = os.path.join(webapi_files,
-                            'Spill{0}_{1}.json'.format(idx, obj))
+                                             'Spill{0}_{1}.json'.format(idx,
+                                                                        obj))
                         self._write_to_file(fname, serial)
 
     @pytest.mark.parametrize('uncertain', [False, True])
@@ -331,6 +324,7 @@ class TestWebApi:
 
         # update the dict so it gives a valid model to load
         deserial['map'] = model.map
+        deserial['water'] = model.water
         for coll in ['movers', 'weatherers', 'environment', 'outputters',
                      'spills']:
             for ix, item in enumerate(deserial[coll]):

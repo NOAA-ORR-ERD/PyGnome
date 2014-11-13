@@ -8,6 +8,7 @@ import copy
 import os
 from glob import glob
 import json
+import random
 
 import numpy as np
 from geojson import Point, Feature, FeatureCollection, dump
@@ -71,6 +72,25 @@ class WeatheringOutput(Outputter, Serializable):
                       'avg_density': 'kg/m^3'}
         super(WeatheringOutput, self).__init__(**kwargs)
 
+    def _add_fake_uncertainty(self, nom_dict):
+        '''
+        add uncertainty to 'amount_released', then compute fraction of total
+        of weathered quantities
+        '''
+        runs = {}
+        for ix in range(27):
+            runs[str(ix)] = {}
+            sum_mass = 0.0
+            for key, val in nom_dict.iteritems():
+                runs[str(ix)][key] = val * random.uniform(0.9, 1.2)
+                if key not in ('avg_density', 'amount_released', 'floating'):
+                    sum_mass += runs[str(ix)][key]
+
+            runs[str(ix)]['floating'] = (runs[str(ix)]['amount_released'] -
+                                         sum_mass)
+
+        return runs
+
     def write_output(self, step_num, islast_step=False):
         super(WeatheringOutput, self).write_output(step_num, islast_step)
 
@@ -80,19 +100,22 @@ class WeatheringOutput(Outputter, Serializable):
         # return a dict - json of the weathering_data data
         for sc in self.cache.load_timestep(step_num).items():
             # Not capturing 'uncertain' info yet
-            #dict_ = {'uncertain': sc.uncertain}
-            dict_ = {'time': sc.current_time_stamp.isoformat()}
+            # dict_ = {'uncertain': sc.uncertain}
+            dict_ = {}
+            dict_['nominal'] = {}
 
             for key, val in sc.weathering_data.iteritems():
-                dict_[key] = val
+                dict_['nominal'][key] = val
 
-            dict_['step_num'] = step_num
+            # add fake uncertainty
+            dict_.update(self._add_fake_uncertainty(dict_['nominal']))
 
             output_info = {'step_num': step_num,
-                           'time_stamp': sc.current_time_stamp.isoformat(),
-                           'weathering_data': dict_}
+                           'time_stamp': sc.current_time_stamp.isoformat()}
+            output_info.update(dict_)
+
             if self.output_dir:
-                output_filename = self.output_to_file(dict_, step_num)
+                output_filename = self.output_to_file(output_info, step_num)
                 output_info.update({'output_filename': output_filename})
 
         return output_info

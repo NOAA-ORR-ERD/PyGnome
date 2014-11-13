@@ -164,7 +164,7 @@ class TestRelease:
         rel = Release(self.rel_time, 0)
         assert rel.num_elements == 0
         assert rel.release_time == self.rel_time
-        assert rel.start_time_invalid
+        assert rel.start_time_invalid is None
 
     @pytest.mark.parametrize("curr_time", [rel_time,
                                            rel_time - timedelta(seconds=1),
@@ -187,7 +187,7 @@ class TestRelease:
         rel.num_released = rel.num_elements
 
         rel.rewind()
-        assert rel.start_time_invalid
+        assert rel.start_time_invalid is None
         assert rel.num_released == 0
 
 
@@ -873,7 +873,7 @@ class TestSpatialRelease:
     def test_SpatialRelease_rewind(self):
         """ test rewind sets _state to original """
         assert self.sp.get('num_released') == 0
-        assert self.sp.release.start_time_invalid == True
+        assert self.sp.release.start_time_invalid is None
 
     def test_SpatialRelease_0_elements(self):
         """

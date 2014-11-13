@@ -11,7 +11,16 @@ import numpy
 np = numpy
 
 from gnome.basic_types import oil_status
-from gnome import array_types
+from gnome.array_types import (positions,
+                               next_positions,
+                               last_water_positions,
+                               status_codes,
+                               spill_num,
+                               id,
+                               mass,
+                               age,
+                               density,
+                               ArrayType)
 
 from gnome.utilities.orderedcollection import OrderedCollection
 import gnome.spill
@@ -229,20 +238,20 @@ class SpillContainer(SpillContainerData):
             shape = self._data_arrays[data_name].shape[1:]
             dtype = self._data_arrays[data_name].dtype.type
 
-            self._array_types[data_name] = array_types.ArrayType(shape, dtype)
+            self._array_types[data_name] = ArrayType(shape, dtype)
 
     def _reset_arrays(self):
         'reset _array_types dict so it contains default keys/values'
         gnome.array_types.reset_to_defaults(['spill_num', 'id'])
 
-        self._array_types = {'positions': array_types.positions,
-                             'next_positions': array_types.next_positions,
-                             'last_water_positions': array_types.last_water_positions,
-                             'status_codes': array_types.status_codes,
-                             'spill_num': array_types.spill_num,
-                             'id': array_types.id,
-                             'mass': array_types.mass,
-                             'age': array_types.age}
+        self._array_types = {'positions': positions,
+                             'next_positions': next_positions,
+                             'last_water_positions': last_water_positions,
+                             'status_codes': status_codes,
+                             'spill_num': spill_num,
+                             'id': id,
+                             'mass': mass,
+                             'age': age}
         self._data_arrays = {}
 
     @property
@@ -327,14 +336,17 @@ class SpillContainer(SpillContainerData):
         .. note:: The SpillContainer cycles through each of the keys in
         array_types and checks to see if there is an associated initializer
         in each Spill. If a corresponding initializer is found, it gets the
-        array_types from initializer and appends them to its own list. For
-        most initializers like 
+        array_types from initializer and appends them to its own list. This was
+        added for the case where 'droplet_diameter' array is defined/used by
+        initializer (InitRiseVelFromDropletSizeFromDist) and we would like to
+        see it in output, but no Mover/Weatherer needs it.
         """
         # Question - should we purge any new arrays that were added in previous
         # call to prepare_for_model_run()?
         # No! If user made modifications to _array_types before running model,
         # let's keep those. A rewind will reset data_arrays.
         self._array_types.update(array_types)
+
         self._append_initializer_array_types(array_types)
         self.initialize_data_arrays()
 
@@ -393,8 +405,13 @@ class SpillContainer(SpillContainerData):
 
         This calls release_elements on all of the contained spills, and adds
         the elements to the data arrays
+
+        :returns: total number of particles released
+
+        todo: may need to update the 'mass' array to use a default of 1.0 but
+        will need to define it in particle units or something along those lines
         """
-        amount_released = 0.0
+        total_released = 0
         for sp in self.spills:
             if not sp.on:
                 continue
@@ -407,7 +424,7 @@ class SpillContainer(SpillContainerData):
                 # particles - just another way to set value of spill_num
                 # correctly
                 self._array_types['spill_num'].initial_value = \
-                                self.spills.index(sp)
+                    self.spills.index(sp)
 
                 if len(self['spill_num']) > 0:
                     # unique identifier for each new element released
@@ -431,28 +448,9 @@ class SpillContainer(SpillContainerData):
                 sp.set_newparticle_values(num_released, model_time, time_step,
                                           self._data_arrays)
 
-                # use the initialized mass array to find total mass released
-                amount_released += np.sum(self['mass'][-num_released:])
+                total_released += num_released
 
-        # update intrinsic properties after release since we release particles
-        # at end of the step
-        if amount_released > 0.0:
-            'particles have mass'
-            self._write_weathering_data(amount_released)
-
-    def _write_weathering_data(self, amount_released):
-        '''
-        intrinsic LE properties not set by any weatherer so let SpillContainer
-        set these - will user be able to use select weatherers? Currently,
-        evaporation defines 'density' data array
-        '''
-        mask = self['status_codes'] == oil_status.in_water
-        self.weathering_data['floating'] = np.sum(self['mass'][mask])
-
-        if 'amount_released' in self.weathering_data:
-            self.weathering_data['amount_released'] += amount_released
-        else:
-            self.weathering_data['amount_released'] = amount_released
+        return total_released
 
     def model_step_is_done(self):
         '''
@@ -615,40 +613,66 @@ class SpillContainerPair(SpillContainerPairData):
         if type(value) is not bool:
             raise TypeError("uncertain property must be a bool (True/False)")
 
-        if self._uncertain == True and value == False:
+        if self._uncertain is True and value is False:
             self._uncertain = value
             del self._u_spill_container  # delete if it exists
             self.rewind()  # Not sure if we want to do this?
-        elif self._uncertain == False and value == True:
+        elif self._uncertain is False and value is True:
             self._uncertain = value
             self._u_spill_container = self._spill_container.uncertain_copy()
             self.rewind()
 
-    def add(self, spill):
+    def _add_spill_pair(self, pair_tuple):
+        'add both certain and uncertain spills given as a pair'
+        if self.uncertain and len(pair_tuple) != 2:
+            raise ValueError('You can only add a tuple containing a '
+                             'certain/uncertain spill pair '
+                             '(spill, uncertain_spill)')
+        if not self.uncertain and len(pair_tuple) != 1:
+            raise ValueError('Uncertainty is off. Tuple must only '
+                             'contain (certain_spill,)')
+
+        self._spill_container.spills += pair_tuple[0]
+        if self.uncertain:
+            self._u_spill_container.spills += pair_tuple[1]
+
+    def _add_item(self, item):
+        'could be a spill pair or a forecast spill - add appropriately'
+        if isinstance(item, tuple):
+            # add both certain and uncertain pair
+            self._add_spill_pair(item)
+        else:
+            self._spill_container.spills += item
+            if self.uncertain:
+                self._u_spill_container.spills += item.uncertain_copy()
+
+    def add(self, spills):
         """
         Add spill to spill_container and make copy in u_spill_container
         if uncertainty is on
 
-        Overload add method so it can take a tuple (spill, uncertain_spill)
+        Note: Method can take either a list, tuple, or list of tuples with following
+        assumptions:
+
+        1. spills = Spill()    # A spill object, if uncertainty is on, make a
+        copy for uncertain_spill_container.
+
+        2. spills = [s0, s1, ..,]    # List of forecast spills. if uncertain,
+        make a copy of each and add to uncertain_spill_container
+
+        3. spills = (s0, uncertain_s0)    # tuple of length two. Assume first
+        one is forecast spill and second one is the uncertain copy. Used
+        when restoring from save file
+
+        4. spills = [(s0, uncertain_s0), ..]    # list of tuples of length two.
+        Added for completeness.
         """
-        if isinstance(spill, tuple):
-            if self.uncertain:
-                if len(spill) != 2:
-                    raise ValueError('You can only add a tuple containing a '
-                                     'certain/uncertain spill pair '
-                                     '(spill, uncertain_spill)')
-                self._u_spill_container.spills += spill[1]
-            else:
-                if len(spill) != 1:
-                    raise ValueError('Uncertainty is off. Tuple must only '
-                                     'contain (certain_spill,)')
-
-            self._spill_container.spills += spill[0]
+        if isinstance(spills, list):
+            for item in spills:
+                self._add_item(item)
         else:
-            self._spill_container.spills += spill
-
-            if self.uncertain:
-                self._u_spill_container.spills += spill.uncertain_copy()
+            # only adding one item, either a spill_pair or a forecast spill
+            self._add_item(spills)
 
     def append(self, spill):
         self.add(spill)
@@ -732,21 +756,23 @@ class SpillContainerPair(SpillContainerPairData):
 
         It also creates a copy of the different spill and replaces the
         corresponding spill in _u_spill_container
+
+        This is primarily intended for the webapp so the dict_ will only
+        contain a list of forecast spills
         '''
-        new_spills = dict_['spills']
-        for ix, item in enumerate(new_spills):
-            if ix >= len(self._spill_container.spills):
-                self.add(item)
-                continue
+        l_spills = dict_['spills']
+        updated = False
+        if len(l_spills) != len(self):
+            updated = True
 
-            if item is not self._spill_container.spills[ix]:
-                self._spill_container.spills[ix] = item
-                if self.uncertain:
-                    self._u_spill_container.spills[ix] = item.uncertain_copy()
+        if self._spill_container.spills.values() != l_spills:
+            updated = True
 
-        # delete remaining spills since they don't exist in new list
-        for ix in range(len(new_spills), len(self)):
-            del self[ix]
+        if updated:
+            self.clear()
+            if l_spills:
+                self += l_spills
+        return updated
 
     def spill_by_index(self, index, uncertain=False):
         '''return either the forecast spill or the uncertain spill at
@@ -754,7 +780,8 @@ class SpillContainerPair(SpillContainerPairData):
         if uncertain:
             return self._u_spill_container.spills[index]
         else:
-            return self._spill_container.spills[index]
+            # __getitem__ should give correct result
+            return self[index]
 
     def index(self, spill):
         '''
@@ -774,3 +801,9 @@ class SpillContainerPair(SpillContainerPairData):
                     self._u_spill_container.num_released)
         else:
             return (self._spill_container.num_released,)
+
+    def clear(self):
+        'clear all spills from container pairs'
+        self._spill_container.spills.clear()
+        if self.uncertain:
+            self._u_spill_container.spills.clear()

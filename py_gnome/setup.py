@@ -96,7 +96,8 @@ class cleandev(clean):
                         else:
                             os.remove(f)
                     except OSError as err:
-                        print("Failed to remove {0}. Error: {1}".format(f, err)) 
+                        print("Failed to remove {0}. Error: {1}"
+                              .format(f, err))
                         #raise
 
         rm_dir = ['pyGnome.egg-info', 'build']
@@ -105,12 +106,12 @@ class cleandev(clean):
             try:
                 shutil.rmtree(dir_)
             except OSError as err:
-                print("Failed to remove {0}. Error: {1}".format(dir_, err)) 
+                print("Failed to remove {0}. Error: {1}".format(dir_, err))
                 #pass
 
 
 class remake_oil_db(develop):
-    description = "remakes the oil_library database (SQL lite) from flat file"
+    description = "remakes the oil_library database (SQLite) from flat file"
 
     def run(self):
         '''
@@ -240,8 +241,8 @@ if sys.platform is "darwin" or "win32":
                     os.remove(rm_dll)
                     print "deleted: " + rm_dll
             else:
-                # Note: wierd permissions/file locking thing on Windows -- 
-                #       couldn't delte or overwrite the dll...
+                # Note: weird permissions/file locking thing on Windows --
+                #       couldn't delete or overwrite the dll...
                 #       so only copy if it's not there already
                 if not os.path.isfile(os.path.join(dlls_dst, dll_name)):
                     print "copy: " + dll + " to: " + dlls_dst
@@ -483,8 +484,8 @@ for mod_name in extension_names:
                                 )
                        )
 
-# and platfrom-independent cython extensions:
-# well...not entirely platform-independant.  We need to pass the link_args
+# and platform-independent cython extensions:
+# well...not entirely platform-independent.  We need to pass the link_args
 poly_cypath = os.path.join('gnome', 'utilities', 'geometry')
 sources = [os.path.join(poly_cypath, 'cy_point_in_polygon.pyx'),
            os.path.join(poly_cypath, 'c_point_in_polygon.c')]
@@ -531,7 +532,8 @@ os.chdir(CWD)
 
 # ## total kludge to get linking to work right with Anaconda:
 ## note: this doesn't work, as the env variable goes away with new process.
-## but I kept the code here, as we might want to use something similar some day.
+## but I kept the code here, as we might want to use something similar
+## some day.
 # # is this an Anaconda environment:
 # if sys.platform == 'darwin':
 #     import sys, os
@@ -550,4 +552,3 @@ os.chdir(CWD)
 #         print lib_path
 #         os.system("export DYLD_LIBRARY_PATH=%s"%lib_path)
 #         #os.environ['DYLD_LIBRARY_PATH'] = lib_path
-

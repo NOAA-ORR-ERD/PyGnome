@@ -152,21 +152,21 @@ class State(object):
         test_obj = Field('test')
         self._valid_field_attr = test_obj.__dict__.keys()
 
-    def __copy__(self):
-        '''
-        shallow copy of _state object so references original fields list
-        '''
-        new_ = type(self)()
-        new_.__dict__.update(copy.copy(self.__dict__))
-        return new_
-
     def __deepcopy__(self, memo):
         '''
         deep copy of _state object so makes a copy of the fields list
         '''
-        new_ = type(self)()
-        new_.__dict__.update(copy.deepcopy(self.__dict__))
+        new_ = self.__class__()
+        if new_ != self:
+            new_.__dict__.update(copy.deepcopy(self.__dict__, memo))
         return new_
+
+    def __eq__(self, other):
+        'check for equality'
+        return self.__dict__ == other.__dict__
+
+    def __ne__(self, other):
+        return not self.__dict__ == other.__dict__
 
     def __contains__(self, name):
         """
@@ -743,20 +743,21 @@ class Serializable(GnomeId, Savable):
         :param value: the new value of the attribute
         :type value: depends on each attribute being updated
         '''
-        current_value = self.attr_to_dict(name)
-        if self._attr_changed(current_value, value):
-            if isinstance(current_value, OrderedCollection):
-                self._update_orderedcoll_attr(current_value, value)
-            else:
-                from_dict_fn_name = '%s_update_from_dict' % name
-                if hasattr(self, from_dict_fn_name):
-                    getattr(self, from_dict_fn_name)(value)
-                # NO updated of NESTED Seriablizable objects
-                #elif hasattr(getattr(self, name), 'update_from_dict'):
-                #    getattr(self, name).update_from_dict(value)
-                else:
-                    setattr(self, name, value)
+        current_value = getattr(self, name)
+        if isinstance(current_value, OrderedCollection):
+            return self._update_orderedcoll_attr(current_value, value)
 
+        from_dict_fn_name = '%s_update_from_dict' % name
+        if hasattr(self, from_dict_fn_name):
+            return getattr(self, from_dict_fn_name)(value)
+        # NO updated of NESTED Seriablizable objects
+        #elif hasattr(getattr(self, name), 'update_from_dict'):
+        #    getattr(self, name).update_from_dict(value)
+
+        # not and OrderedCollection and doesn't define custom _update_from_dict
+        # function. update using setattr if attr has changed
+        if self._attr_changed(current_value, value):
+            setattr(self, name, value)
             return True
         else:
             return False
@@ -765,18 +766,19 @@ class Serializable(GnomeId, Savable):
         '''
         update attribute of type OrderedCollection with items in list l_new_oc
         '''
-        for ix, item in enumerate(l_new_oc):
-            if ix >= len(curr_oc):
-                curr_oc.add(item)
-                continue
+        updated = False
 
-            if item is not curr_oc[ix]:
-                curr_oc[ix] = item   # replace it
+        if len(l_new_oc) != len(curr_oc):
+            updated = True
 
-        # delete remaining elements in curr_oc since they don't exist in
-        # l_new_oc
-        for ix in range(len(l_new_oc), len(curr_oc)):
-            del curr_oc[ix]
+        if curr_oc.values() != l_new_oc:
+            updated = True
+
+        if updated:
+            curr_oc.clear()
+            if l_new_oc:
+                curr_oc += l_new_oc
+        return updated
 
     def obj_type_to_dict(self):
         """

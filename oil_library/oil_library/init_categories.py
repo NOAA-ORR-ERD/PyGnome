@@ -20,9 +20,9 @@
 import transaction
 
 from hazpy import unit_conversion as uc
-from oil_library.models import ImportedRecord, Category
-from oil_library.utilities import get_density, get_viscosity
-#from oil_library.oil_props import OilProps
+
+from oil_library.models import Oil, ImportedRecord, Category
+from oil_library.utilities import get_viscosity
 
 
 def process_categories(session):
@@ -201,11 +201,10 @@ def link_refined_fuel_oil_1(session):
     count = 0
     category_temp = 273.15 + 38
     for o in oils:
-        #oil_props = OilProps(o, temperature=category_temp)
-        #if oil_props.get_viscosity('cSt') <= 2.5:
-        visc = uc.convert('Kinematic Viscosity', 'm^2/s', 'cSt',
-                          get_viscosity(o, category_temp))
-        if visc <= 2.5:
+        viscosity = uc.convert('Kinematic Viscosity', 'm^2/s', 'cSt',
+                               get_viscosity(o, category_temp))
+
+        if viscosity <= 2.5:
             for category in categories:
                 o.categories.append(category)
             count += 1
@@ -244,11 +243,10 @@ def link_refined_fuel_oil_2(session):
     count = 0
     category_temp = 273.15 + 38
     for o in oils:
-        #oil_props = OilProps(o, temperature=category_temp)
-        #visc = oil_props.get_viscosity('cSt')
-        visc = uc.convert('Kinematic Viscosity', 'm^2/s', 'cSt',
-                          get_viscosity(o, category_temp))
-        if visc > 2.5 or visc <= 4.0:
+        viscosity = uc.convert('Kinematic Viscosity', 'm^2/s', 'cSt',
+                               get_viscosity(o, category_temp))
+
+        if viscosity > 2.5 or viscosity <= 4.0:
             for category in categories:
                 o.categories.append(category)
             count += 1
@@ -285,11 +283,10 @@ def link_refined_ifo(session):
     count = 0
     category_temp = 273.15 + 38
     for o in oils:
-        #oil_props = OilProps(o, temperature=category_temp)
-        #visc = oil_props.get_viscosity('cSt')
-        visc = uc.convert('Kinematic Viscosity', 'm^2/s', 'cSt',
-                          get_viscosity(o, category_temp))
-        if visc > 4.0 or visc < 200.0:
+        viscosity = uc.convert('Kinematic Viscosity', 'm^2/s', 'cSt',
+                               get_viscosity(o, category_temp))
+
+        if viscosity > 4.0 or viscosity < 200.0:
             for category in categories:
                 o.categories.append(category)
             count += 1
@@ -328,11 +325,10 @@ def link_refined_fuel_oil_6(session):
     count = 0
     category_temp = 273.15 + 50
     for o in oils:
-        #oil_props = OilProps(o, temperature=category_temp)
-        #visc = oil_props.get_viscosity('cSt')
-        visc = uc.convert('Kinematic Viscosity', 'm^2/s', 'cSt',
-                          get_viscosity(o, category_temp))
-        if visc >= 200.0:
+        viscosity = uc.convert('Kinematic Viscosity', 'm^2/s', 'cSt',
+                               get_viscosity(o, category_temp))
+
+        if viscosity >= 200.0:
             for category in categories:
                 o.categories.append(category)
             count += 1
@@ -361,8 +357,8 @@ def link_all_other_oils(session):
                   if c.name in ('Other',)
                   ]
 
-    oils = (session.query(ImportedRecord)
-            .filter(ImportedRecord.categories == None)
+    oils = (session.query(Oil)
+            .filter(Oil.categories == None)
             .all())
 
     count = 0
@@ -377,8 +373,8 @@ def link_all_other_oils(session):
 
 
 def show_uncategorized_oils(session):
-    oils = (session.query(ImportedRecord)
-            .filter(ImportedRecord.categories == None)
+    oils = (session.query(Oil)
+            .filter(Oil.categories == None)
             .all())
 
     fd = open('temp.txt', 'w')
@@ -396,52 +392,33 @@ def show_uncategorized_oils(session):
                 category_temp = 273.15 + 50
             else:
                 category_temp = 273.15 + 38
-            #oil_props = OilProps(o, temperature=category_temp)
-            #visc = oil_props.get_viscosity('cSt')
-            visc = uc.convert('Kinematic Viscosity', 'm^2/s', 'cSt',
-                              get_viscosity(o, category_temp))
+            viscosity = uc.convert('Kinematic Viscosity', 'm^2/s', 'cSt',
+                                   get_viscosity(o, category_temp))
         else:
-            visc = None
+            viscosity = None
 
-        fd.write('{0.adios_oil_id}\t'
-                 '{0.product_type}\t'
+        fd.write('{0.imported.adios_oil_id}\t'
+                 '{0.imported.product_type}\t'
                  '{0.api}\t'
                  '{1}\t'
-                 '({0.pour_point_min}, {0.pour_point_max})\t'
+                 '({0.pour_point_min_k}, {0.pour_point_max_k})\t'
                  '{0.name}\n'
-                 .format(o, visc))
+                 .format(o, viscosity))
 
 
 def get_oils_by_api(session, product_type,
                     api_min=None, api_max=None):
     '''
-        Our oils may or may not have a valid api.
-        If the oil has a valid api:
-            Use the associated api value
-        Else:
-            Compute the api from the reference densities at 15 degrees Celcius
-            (per API)
+        After we have performed our Oil estimations, all oils should have a
+        valid API value.
     '''
-    oil_query = (session.query(ImportedRecord)
+    oil_query = (session.query(Oil).join(ImportedRecord)
                  .filter(ImportedRecord.product_type == product_type))
 
     if api_max != None:
-        oil_query = oil_query.filter(ImportedRecord.api <= api_max)
+        oil_query = oil_query.filter(Oil.api <= api_max)
 
     if api_min != None:
-        oil_query = oil_query.filter(ImportedRecord.api > api_min)
+        oil_query = oil_query.filter(Oil.api > api_min)
 
-    oils = oil_query.all()
-
-    oil_query = (session.query(ImportedRecord)
-                 .filter(ImportedRecord.product_type == product_type)
-                 .filter(ImportedRecord.api == None)
-                 )
-    for o in oil_query:
-        category_temp = 273.15 + 15
-        api = (141.5 * 1000 / get_density(o, category_temp)) - 131.5
-        if ((api_max != None and api <= api_max) or
-            (api_min != None and api > api_min)):
-            oils.append(o)
-
-    return oils
+    return oil_query.all()

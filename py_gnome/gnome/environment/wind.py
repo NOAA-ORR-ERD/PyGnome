@@ -6,40 +6,32 @@ the Wind object defines the Wind conditions for the spill
 import datetime
 import os
 import copy
-from itertools import chain
-import tempfile
 
 import numpy
 np = numpy
 
 from colander import (SchemaNode, drop, OneOf,
                       Float, String, Range)
+from hazpy import unit_conversion as uc
 
-from .environment import Environment
+from gnome.cy_gnome.cy_ossm_time import CyOSSMTime
+from gnome import basic_types
+# TODO: The name 'convert' is doubly defined as
+#       hazpy.unit_conversion.convert and...
+#       gnome.utilities.convert
+#       This will inevitably cause namespace collisions.
+from gnome.utilities.time_utils import date_to_sec
+from gnome.utilities import serializable
+from gnome.utilities.convert import (to_time_value_pair,
+                                     tsformat,
+                                     to_datetime_value_2d)
 from gnome.persist.extend_colander import (DefaultTupleSchema,
                                            LocalDateTime,
                                            DatetimeValue2dArraySchema)
 from gnome.persist import validators, base_schema
 
-#import gnome
-from gnome import basic_types
-
-# TODO: The name 'convert' is doubly defined as
-#       hazpy.unit_conversion.convert and...
-#       gnome.utilities.convert
-#       This will inevitably cause namespace collisions.
-from hazpy import unit_conversion
-from gnome.utilities.time_utils import sec_to_date, date_to_sec
-from hazpy.unit_conversion import (ConvertDataUnits,
-                                   GetUnitNames,
-                                   InvalidUnitError)
-
-from gnome.utilities import serializable
-from gnome.utilities.convert import (to_time_value_pair,
-                                     tsformat,
-                                     to_datetime_value_2d)
-
-from gnome.cy_gnome.cy_ossm_time import CyOSSMTime
+from .environment import Environment
+from .. import _valid_units
 
 
 class MagnitudeDirectionTuple(DefaultTupleSchema):
@@ -102,6 +94,7 @@ class WindSchema(base_schema.ObjType):
                              validator=OneOf(basic_types.wind_datasource._attr),
                              default='undefined', missing='undefined')
     units = SchemaNode(String(), default='m/s')
+    speed_uncertainty_scale = SchemaNode(Float(), missing=drop)
 
     timeseries = WindTimeSeriesSchema(missing=drop)
     name = 'wind'
@@ -120,7 +113,8 @@ class Wind(Environment, serializable.Serializable):
                'longitude',
                'source_type',
                'source_id',  # what is source ID? Buoy ID?
-               'updated_at']
+               'updated_at',
+               'speed_uncertainty_scale']
 
     # used to create new obj or as readonly parameter
     _create = []
@@ -131,7 +125,6 @@ class Wind(Environment, serializable.Serializable):
     _schema = WindSchema
 
     # add 'filename' as a Field object
-    #'name',    is this for webgnome?
     _state.add_field([serializable.Field('filename', isdatafile=True,
                                          save=True, read=True,
                                          test_for_eq=False),
@@ -144,14 +137,12 @@ class Wind(Environment, serializable.Serializable):
     _state['name'].test_for_eq = False
 
     # list of valid velocity units for timeseries
-    valid_vel_units = list(chain.from_iterable([item[1] for item in
-                                    ConvertDataUnits['Velocity'].values()]))
-    valid_vel_units.extend(GetUnitNames('Velocity'))
-    del item    # keep the namespace clean
+    valid_vel_units = _valid_units('Velocity')
 
     def __init__(self, timeseries=None, units=None,
                  filename=None, format='r-theta',
                  latitude=None, longitude=None,
+                 speed_uncertainty_scale=0.0,
                  **kwargs):
         """
         Initializes a wind object from timeseries or datafile
@@ -174,8 +165,7 @@ class Wind(Environment, serializable.Serializable):
             get_timeseries() will use these as default units to
             output data, unless user specifies otherwise.
             These units must be valid as defined in the hazpy
-            unit_conversion module:
-            unit_conversion.GetUnitNames('Velocity')
+            unit_conversion module
         :type units:  string, for example: 'knot', 'meter per second',
             'mile per hour' etc.
             Default units for input/output timeseries data
@@ -205,7 +195,7 @@ class Wind(Environment, serializable.Serializable):
 
         if not filename:
             time_value_pair = self._convert_to_time_value_pair(timeseries,
-                units, format)
+                                                               units, format)
 
             if units is None:
                 raise TypeError("Setting from timeseries requires units")
@@ -241,6 +231,8 @@ class Wind(Environment, serializable.Serializable):
         self.longitude = longitude
         self.latitude = latitude
         self.description = kwargs.pop('description', 'Wind Object')
+        self.speed_uncertainty_scale = speed_uncertainty_scale
+
         super(Wind, self).__init__(**kwargs)
 
     def _convert_units(self, data, ts_format, from_unit, to_unit):
@@ -249,13 +241,11 @@ class Wind(Environment, serializable.Serializable):
         date/time value pair
         '''
         if from_unit != to_unit:
-            data[:, 0] = unit_conversion.convert('Velocity',
-                                                 from_unit, to_unit,
-                                                 data[:, 0])
+            data[:, 0] = uc.convert('Velocity', from_unit, to_unit, data[:, 0])
 
             if ts_format == basic_types.ts_format.uv:
                 # TODO: avoid clobbering the 'ts_format' namespace
-                data[:, 1] = unit_conversion.convert('Velocity',
+                data[:, 1] = uc.convert('Velocity',
                                                      from_unit, to_unit,
                                                      data[:, 1])
 
@@ -266,7 +256,7 @@ class Wind(Environment, serializable.Serializable):
         Checks the user provided units are in list Wind.valid_vel_units
         '''
         if units not in Wind.valid_vel_units:
-            raise InvalidUnitError('A valid velocity unit must be one of: '
+            raise uc.InvalidUnitError('A valid velocity unit must be one of: '
                                    '{0}'.format(Wind.valid_vel_units))
 
     def _check_timeseries(self, timeseries, units):
@@ -357,18 +347,22 @@ class Wind(Environment, serializable.Serializable):
         User can set default units for input/output data
 
         These are given as string and must be one of the units defined in
-        unit_conversion.GetUnitNames('Velocity')
-        or one of the associated abbreviations
-        unit_conversion.GetUnitAbbreviation()
+        unit_conversion module. Also given in 'valid_vel_units' class attribute
         """
         self._check_units(value)
         self._user_units = value
 
-    filename = property(lambda self: self._filename)
-    timeseries = property(lambda self: self.get_timeseries(),
-                          lambda self, val: self.set_timeseries(val,
-                                                            units=self.units)
-                          )
+    @property
+    def filename(self):
+        return self._filename
+
+    @property
+    def timeseries(self):
+        return self.get_timeseries()
+
+    @timeseries.setter
+    def timeseries(self, value):
+        self.set_timeseries(value, units=self.units)
 
     def _convert_to_time_value_pair(self, datetime_value_2d, units, format):
         '''
@@ -378,10 +372,10 @@ class Wind(Environment, serializable.Serializable):
         # following fails for 0-d objects so make sure we have a 1-D array
         # to work with
         datetime_value_2d = np.asarray(datetime_value_2d,
-            dtype=basic_types.datetime_value_2d)
+                                       dtype=basic_types.datetime_value_2d)
         if datetime_value_2d.shape == ():
             datetime_value_2d = np.asarray([datetime_value_2d],
-                dtype=basic_types.datetime_value_2d)
+                                           dtype=basic_types.datetime_value_2d)
 
         self._check_units(units)
         self._check_timeseries(datetime_value_2d, units)
@@ -454,7 +448,8 @@ class Wind(Environment, serializable.Serializable):
         :type format: either string or integer value defined by
                       basic_types.format.* (see cy_basic_types.pyx)
         """
-        timeval = self._convert_to_time_value_pair(datetime_value_2d, units, format)
+        timeval = self._convert_to_time_value_pair(datetime_value_2d,
+                                                   units, format)
         self.ossm.timeseries = timeval
 
     def save(self, saveloc, references=None, name=None):
@@ -477,7 +472,8 @@ class Wind(Environment, serializable.Serializable):
                   'LTime\n'
                   '0,0,0,0,0,0,0,0\n')
         val = self.get_timeseries(units='knots')['value']
-        dt = self.get_timeseries(units='knots')['time'].astype(datetime.datetime)
+        dt = (self.get_timeseries(units='knots')['time']
+              .astype(datetime.datetime))
 
         with open(datafile, 'w') as file_:
             file_.write(header)
@@ -516,6 +512,42 @@ class Wind(Environment, serializable.Serializable):
         '''
         data = self.get_timeseries(time, 'm/s', 'r-theta')
         return tuple(data[0]['value'])
+
+    def set_speed_uncertainty(self, up_or_down=None):
+        '''
+            This function shifts the wind speed values in our time series
+            based on a single parameter Rayleigh distribution method,
+            and scaled by a value in the range [0.0 ... 1.0].
+            From this scaled distribution method, we determine either an
+            upper uncertainty or a lower uncertainty multiplier.  Then we
+            shift our wind speed values based on it.
+
+            delta = 0.5  # medium uncertainty
+            u(t_k) = (1 + delta * sqrt(2/pi)) * U_10(t_k)
+            l(t_k) = (1 - delta * sqrt(2/pi)) * U_10(t_k)
+
+            Since we are irreversibly changing the wind speed values,
+            we should probably do this only once.
+        '''
+        if (self.speed_uncertainty_scale <= 0.0 or
+                self.speed_uncertainty_scale > 1.0):
+            return False
+
+        if up_or_down == 'up':
+            scale = (1 + self.speed_uncertainty_scale * np.sqrt(2 / np.pi))
+        elif up_or_down == 'down':
+            scale = (1 - self.speed_uncertainty_scale * np.sqrt(2 / np.pi))
+        else:
+            return False
+
+        time_series = self.get_timeseries()
+        for tse in time_series:
+            tse['value'][0] *= scale
+
+        self.set_timeseries(time_series, self.units)
+
+        return True
+
 
 def constant_wind(speed, direction, units='m/s'):
     """

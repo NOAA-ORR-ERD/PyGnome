@@ -36,13 +36,36 @@ def test_remake():
     oc.remake()
     for ix, elem in enumerate(oc._elems):
         assert elem is not None
-        assert oc._index[s_id(elem)] == ix
+        assert oc._d_index[s_id(elem)] == ix
 
 
 def test_remake_emptyoc():
     'empty OC'
     oc = OrderedCollection(dtype=int)
     oc.remake()
+
+
+def test_clear():
+    'test clear()'
+    oc = OrderedCollection(range(4))
+    oc.clear()
+
+    assert len(oc) == 0
+    assert oc._elems == []   # there should be no None's
+    assert oc._d_index == {}
+    assert oc.dtype is int
+    with raises(TypeError):
+        oc += 1.0
+
+
+def test_values():
+    'OrderedCollection().values() works like a dict.values()'
+    x = range(5)
+    oc = OrderedCollection(x)
+    del x[-2]
+    del oc[-2]
+    for ix, v in enumerate(oc.values()):
+        assert x[ix] == v
 
 
 class TestOrderedCollection(object):
@@ -117,13 +140,7 @@ class TestOrderedCollection(object):
         oc = OrderedCollection([1, 2, 3, 4, 5])
         oc[s_id(4)] = 7
         oc[0] = 0
-        assert [i for i in oc] == [
-            0,
-            2,
-            3,
-            7,
-            5,
-            ]
+        assert [i for i in oc] == [0, 2, 3, 7, 5]
 
     def test_delitem(self):
         oc = OrderedCollection([1, 2, 3, 4, 5])
@@ -142,38 +159,16 @@ class TestOrderedCollection(object):
     def test_iadd(self):
         oc = OrderedCollection([1, 2, 3, 4, 5])
         oc += 6
-        assert [i for i in oc] == [
-            1,
-            2,
-            3,
-            4,
-            5,
-            6,
-            ]
+        assert [i for i in oc] == [1, 2, 3, 4, 5, 6]
+
         oc += [7, 8, 9]
-        assert [i for i in oc] == [
-            1,
-            2,
-            3,
-            4,
-            5,
-            6,
-            7,
-            8,
-            9,
-            ]
+        assert [i for i in oc] == [1, 2, 3, 4, 5, 6, 7, 8, 9]
 
     def test_add(self):
         oc = OrderedCollection([1, 2, 3, 4, 5])
         oc.add(6)
-        assert [i for i in oc] == [
-            1,
-            2,
-            3,
-            4,
-            5,
-            6,
-            ]
+        assert [i for i in oc] == [1, 2, 3, 4, 5, 6]
+
         with raises(TypeError):
             oc.add('not an int')
 
@@ -191,17 +186,13 @@ class TestOrderedCollection(object):
         oc = OrderedCollection([1, 2, 3, 4, 5])
         oc.replace(s_id(4), 7)  # replace by object ID
         oc.replace(0, 0)    # replace by index
-        assert [i for i in oc] == [
-            0,
-            2,
-            3,
-            7,
-            5,
-            ]
+        assert [i for i in oc] == [0, 2, 3, 7, 5]
         assert oc[s_id(7)] == 7
+
         with raises(KeyError):
             # our key should also be gone after the delete
             oc[s_id(4)]
+
         with raises(TypeError):
             oc.replace(s_id(7), 'not an int')
 
@@ -210,9 +201,11 @@ class TestOrderedCollection(object):
         oc = OrderedCollection([1, 2, 3, 4, 5])
         assert oc.index(3) == 2
         assert oc.index(s_id(3)) == 2
+
         oc[s_id(3)] = 6
         assert oc.index(6) == 2
         assert oc.index(s_id(6)) == 2
+
         del oc[s_id(6)]
         assert oc.index(4) == 2
         assert oc.index(s_id(4)) == 2
@@ -224,14 +217,12 @@ class TestOrderedCollection(object):
         mover_4 = SimpleMover(velocity=(1.0, -1.0, 0.0))
 
         # test our init, iter, get, and len methods
-
         mymovers = OrderedCollection([mover_1, mover_2], dtype=Mover)
         assert [m for m in mymovers] == [mover_1, mover_2]
         assert mymovers[mover_1.id] == mover_1
         assert len(mymovers) == 2
 
         # test our add methods
-
         mymovers = OrderedCollection(dtype=Mover)
         mymovers += mover_1
         mymovers += mover_2
@@ -242,16 +233,14 @@ class TestOrderedCollection(object):
         assert [m for m in mymovers] == [mover_1, mover_2]
 
         # test our del method
-
         mymovers = OrderedCollection([mover_1, mover_2, mover_3],
-                dtype=Mover)
+                                     dtype=Mover)
         del mymovers[mover_2.id]
         assert [m for m in mymovers] == [mover_1, mover_3]
 
         # test our replace method
-
         mymovers = OrderedCollection([mover_1, mover_2, mover_3],
-                dtype=Mover)
+                                     dtype=Mover)
         mymovers[mover_2.id] = mover_4
         assert [m for m in mymovers] == [mover_1, mover_4, mover_3]
         assert mymovers[mover_4.id] == mover_4
@@ -259,25 +248,28 @@ class TestOrderedCollection(object):
     def test_eq(self):
         'Test comparison operator __eq__'
 
-        assert OrderedCollection([1, 2, 3, 4, 5]) \
-            == OrderedCollection([1, 2, 3, 4, 5])
+        assert (OrderedCollection([1, 2, 3, 4, 5])
+                == OrderedCollection([1, 2, 3, 4, 5]))
 
     def test_ne(self):
         'Test comparison operator (not equal)'
 
-        assert OrderedCollection([1, 2, 3, 4, 5]) \
-            != OrderedCollection([2, 1, 3, 4, 5])
-        assert OrderedCollection([1, 2, 3, 4, 5]) \
-            != OrderedCollection([1, 2, 3, 4])
+        assert (OrderedCollection([1, 2, 3, 4, 5])
+                != OrderedCollection([2, 1, 3, 4, 5]))
+
+        assert (OrderedCollection([1, 2, 3, 4, 5])
+                != OrderedCollection([1, 2, 3, 4]))
+
         assert OrderedCollection([1, 2, 3, 4, 5]) != [1, 2, 3, 4, 5]
 
     @mark.parametrize('json_', ['save', 'webapi'])
     def test_to_dict(self, json_):
         'added a to_dict() method - test this method'
 
-        items = [SimpleMover(velocity=(i * 0.5, -1.0, 0.0)) for i in
-                 range(2)]
+        items = [SimpleMover(velocity=(i * 0.5, -1.0, 0.0))
+                 for i in range(2)]
         items.extend([RandomMover() for i in range(2)])
+
         mymovers = OrderedCollection(items, dtype=Mover)
         self._to_dict_assert(mymovers, items, json_)
 
@@ -292,6 +284,7 @@ class TestOrderedCollection(object):
     def _to_dict_assert(self, oc, items, json_):
         toserial = oc.to_dict()
         print toserial
+
         for (i, mv) in enumerate(items):
             try:
                 assert toserial[i]['obj_type'] == \
