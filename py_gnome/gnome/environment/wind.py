@@ -245,9 +245,8 @@ class Wind(Environment, serializable.Serializable):
 
             if ts_format == basic_types.ts_format.uv:
                 # TODO: avoid clobbering the 'ts_format' namespace
-                data[:, 1] = uc.convert('Velocity',
-                                                     from_unit, to_unit,
-                                                     data[:, 1])
+                data[:, 1] = uc.convert('Velocity', from_unit, to_unit,
+                                        data[:, 1])
 
         return data
 
@@ -256,8 +255,7 @@ class Wind(Environment, serializable.Serializable):
         Checks the user provided units are in list Wind.valid_vel_units
         '''
         if units not in Wind.valid_vel_units:
-            raise uc.InvalidUnitError('A valid velocity unit must be one of: '
-                                   '{0}'.format(Wind.valid_vel_units))
+            raise uc.InvalidUnitError((units, 'Velocity'))
 
     def _check_timeseries(self, timeseries, units):
         '''
@@ -364,9 +362,10 @@ class Wind(Environment, serializable.Serializable):
     def timeseries(self, value):
         self.set_timeseries(value, units=self.units)
 
-    def _convert_to_time_value_pair(self, datetime_value_2d, units, format):
+    def _convert_to_time_value_pair(self, datetime_value_2d, units,
+                                    fmt):
         '''
-        format datetime_value_2d so it is a numpy array with
+        fmt datetime_value_2d so it is a numpy array with
         dtype=basic_types.time_value_pair as the C++ code expects
         '''
         # following fails for 0-d objects so make sure we have a 1-D array
@@ -381,9 +380,9 @@ class Wind(Environment, serializable.Serializable):
         self._check_timeseries(datetime_value_2d, units)
         datetime_value_2d['value'] = \
             self._convert_units(datetime_value_2d['value'],
-                                format, units, 'meter per second')
+                                fmt, units, 'meter per second')
 
-        timeval = to_time_value_pair(datetime_value_2d, format)
+        timeval = to_time_value_pair(datetime_value_2d, fmt)
         return timeval
 
     def get_timeseries(self, datetime=None, units=None, format='r-theta'):
