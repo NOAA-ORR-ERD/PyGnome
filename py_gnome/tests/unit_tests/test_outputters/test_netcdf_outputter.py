@@ -185,6 +185,7 @@ def test_prepare_for_model_run(model):
         assert not os.path.exists(o_put._u_netcdf_filename)
 
 
+@pytest.mark.slow
 def test_write_output_standard(model):
     """
     rewind model defined by model fixture.
@@ -260,6 +261,7 @@ def test_write_output_standard(model):
         uncertain = True
 
 
+@pytest.mark.slow
 def test_write_output_all_data(model):
     """
     rewind model defined by model fixture.
@@ -330,6 +332,7 @@ def test_run_without_spills(model):
     _run_model(model)
 
 
+@pytest.mark.slow
 def test_read_data_exception(model):
     """
     tests the exception is raised by read_data when file contains more than one
@@ -617,6 +620,7 @@ def test_serialize_deserialize(json_):
         print '\n{0} exists'.format(o_put.netcdf_filename)
 
 
+@pytest.mark.slow
 def test_var_attr_spill_num():
     '''
     call prepare_for_model_run and ensure the spill_num attributes are written
