@@ -14,7 +14,7 @@ import gnome
 from gnome.cy_gnome.cy_shio_time import CyShioTime
 from ..conftest import testdata
 
-shio_file = testdata['timeseries']['shio']
+shio_file = testdata['timeseries']['tide_shio']
 
 
 def test_exceptions():

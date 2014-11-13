@@ -11,12 +11,13 @@ np = numpy
 
 from hazpy import unit_conversion
 
-from gnome.basic_types import datetime_value_2d, velocity_rec
+from gnome.basic_types import datetime_value_2d
 from gnome.environment import Wind, constant_wind
-from gnome.persist import load
+
+from ..conftest import testdata
 
 data_dir = os.path.join(os.path.dirname(__file__), 'sample_data')
-wind_file = os.path.join(data_dir, 'WindDataFromGnome.WND')
+wind_file = testdata['timeseries']['wind_ts']
 
 
 def test_set_timeseries():

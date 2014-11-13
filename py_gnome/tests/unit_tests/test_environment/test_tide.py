@@ -10,13 +10,11 @@ from pytest import raises
 from gnome.environment import Tide
 from gnome.utilities.remote_data import get_datafile
 
-here = os.path.dirname(__file__)
-data_dir = os.path.join(here, 'sample_data')
-tides_dir = os.path.join(data_dir, 'tides')
-lis_dir = os.path.join(data_dir, 'long_island_sound')
+from ..conftest import testdata
 
-shio_file = get_datafile(os.path.join(tides_dir, 'CLISShio.txt'))
-ossm_file = get_datafile(os.path.join(tides_dir, 'TideHdr.FINAL'))
+
+shio_file = testdata['timeseries']['tide_shio']
+ossm_file = testdata['timeseries']['tide_ossm']
 
 
 def test_exceptions():
@@ -24,8 +22,8 @@ def test_exceptions():
     Test correct exceptions are raised
     """
 
-    bad_file = os.path.join(lis_dir, 'CLISShio.txtX')
-    bad_yeardata_path = os.path.join(data_dir, 'Data', 'yeardata')
+    bad_file = 'CLISShio.txtX'
+    bad_yeardata_path = os.path.join('Data', 'yeardata')
     with raises(IOError):
         Tide(bad_file)
 
@@ -44,7 +42,7 @@ def test_file(filename):
 
 
 @pytest.mark.parametrize(('filename', 'json_'),
-                        [(shio_file, 'save'), (ossm_file, 'webapi')])
+                         [(shio_file, 'save'), (ossm_file, 'webapi')])
 def test_serialize_deserialize(filename, json_):
     '''
     create - it creates new object after serializing original object
