@@ -7953,7 +7953,7 @@ done:
 
 
 
-OSErr ScanFileForTimes(vector<string> &linesInFile,
+/*OSErr ScanFileForTimes(vector<string> &linesInFile,
 					   PtCurTimeDataHdl *timeDataH, Seconds ***timeH)
 {
 	// scan through the file looking for times "[TIME "
@@ -8044,7 +8044,7 @@ done:
 	}
 
 	return err;
-}
+}*/
 
 
 OSErr ScanFileForTimes(char *path,
@@ -8053,9 +8053,170 @@ OSErr ScanFileForTimes(char *path,
 	vector<string> linesInFile;
 
 	ReadLinesInFile(path, linesInFile);
-	return ScanFileForTimes(linesInFile, timeDataH, timeH);
+	//return ScanFileForTimes(linesInFile, timeDataH, timeH);
+	return ScanFileForTimes(path, linesInFile, timeDataH, timeH);
 }
 
+// for large ascii files need to be able to seek to the file position rather
+// than read in the whole file every time or the run gets really slow
+// if there is a way to seek for a line number then the newer code can be used
+// changes also in ReadTimeData for TimeGridCurRect and TimeGridCurTri
+// 
+OSErr ScanFileForTimes(char * path, vector<string> &linesInFile,
+					   PtCurTimeDataHdl *timeDataH, Seconds ***timeH)
+//OSErr ScanFileForTimes(char *path, PtCurTimeDataHdl *timeDataH, Seconds ***timeH)
+{
+	// scan through the file looking for times "[TIME "  (close file if necessary...)
+	
+	OSErr err = 0;
+	CHARH h = 0;
+	char *sectionOfFile = 0;
+	
+	long fileLength,lengthRemainingToScan,offset;
+	long lengthToRead,lengthOfPartToScan,numTimeBlocks=0;
+	long i, numScanned;
+	DateTimeRec time;
+	Seconds timeSeconds;	
+	
+	// allocate an empty handle
+	PtCurTimeDataHdl timeDataHdl;
+	timeDataHdl = (PtCurTimeDataHdl)_NewHandle(0);
+	if(!timeDataHdl) {TechError("ScanFileForTimes()", "_NewHandle()", 0); err = memFullErr; goto done;}
+
+	// allocate an empty handle
+	Seconds **timeHdl;
+	timeHdl = (Seconds**)_NewHandle(0);
+	if(!timeHdl) {TechError("ScanFileForTimes()", "_NewHandle()", 0); err = memFullErr; goto done;}
+	
+	// think in terms of 100K blocks, allocate 101K, read 101K, scan 100K
+	
+#define kGridCurFileBufferSize  100000 // code goes here, increase to 100K or more
+#define kGridCurFileBufferExtraCharSize  256
+	
+	err = MyGetFileSize(0,0,path,&fileLength);
+	if(err) goto done;
+	
+	offset = 0;
+	lengthRemainingToScan = fileLength - 5;
+	// loop until whole file is read 
+	
+	h = (CHARH)_NewHandle(2* kGridCurFileBufferSize+1);
+	if(!h){TechError("ScanFileForTimes()", "_NewHandle()", 0); err = memFullErr; goto done;}
+	
+	_HLock((Handle)h);
+	sectionOfFile = *h;
+	
+	while (lengthRemainingToScan>0)
+	{
+		if(lengthRemainingToScan > 2* kGridCurFileBufferSize)
+		{
+			lengthToRead = kGridCurFileBufferSize + kGridCurFileBufferExtraCharSize; 
+			lengthOfPartToScan = kGridCurFileBufferSize; 		
+		}
+		else
+		{
+			// deal with it in one piece
+			// just read the rest of the file
+			lengthToRead = fileLength - offset;
+			lengthOfPartToScan = lengthToRead - 5; 
+		}
+		
+		err = ReadSectionOfFile(0,0,path,offset,lengthToRead,sectionOfFile,0);
+		if(err || !h) goto done;
+		sectionOfFile[lengthToRead] = 0; // make it a C string
+		
+		lengthRemainingToScan -= lengthOfPartToScan;
+		
+		
+		// scan 100K chars of the buffer for '['
+		for(i = 0; i < lengthOfPartToScan; i++)
+		{
+			if(	sectionOfFile[i] == '[' 
+			   && sectionOfFile[i+1] == 'T'
+			   && sectionOfFile[i+2] == 'I'
+			   && sectionOfFile[i+3] == 'M'
+			   && sectionOfFile[i+4] == 'E')
+			{
+				// read and record the time and filePosition
+				PtCurTimeData timeData;
+				memset(&timeData,0,sizeof(timeData));
+				timeData.fileOffsetToStartOfData = i + offset;
+				
+				if (numTimeBlocks > 0) 
+				{
+					(*timeDataHdl)[numTimeBlocks-1].lengthOfData = i+offset - (*timeDataHdl)[numTimeBlocks-1].fileOffsetToStartOfData;					
+				}
+				// some sort of a scan
+				numScanned=sscanf(sectionOfFile+i+6, "%hd %hd %hd %hd %hd",
+								  &time.day, &time.month, &time.year,
+								  &time.hour, &time.minute) ;
+				if (numScanned != 5)
+				{ err = -1; TechError("GridCurMover::TextRead()", "sscanf() == 5", 0); goto done; }
+				// check for constant current
+				if (time.day == -1 && time.month == -1 && time.year == -1 && time.hour == -1 && time.minute == -1)
+					//if (time.day == time.month == time.year == time.hour == time.minute == -1)
+				{
+					timeSeconds = CONSTANTCURRENT;
+					//setStartTime = false;
+				}
+				else // time varying current
+				{
+					if (time.year < 1900)					// two digit date, so fix it
+					{
+						if (time.year >= 40 && time.year <= 99)	
+							time.year += 1900;
+						else
+							time.year += 2000;					// correct for year 2000 (00 to 40)
+					}
+					
+					time.second = 0;
+					DateToSeconds (&time, &timeSeconds);
+				}
+				
+				timeData.time = timeSeconds;
+				
+				// if we don't know the number of times ahead of time
+				_SetHandleSize((Handle) timeDataHdl, (numTimeBlocks+1)*sizeof(timeData));
+				if (_MemError()) { TechError("ScanFileForTimes()", "_SetHandleSize()", 0); goto done; }
+				_SetHandleSize((Handle) timeHdl, (numTimeBlocks+1)*sizeof(Seconds));
+				if (_MemError()) { TechError("ScanFileForTimes()", "_SetHandleSize()", 0); goto done; }
+				/*if (numTimeBlocks==0 && setStartTime) 
+				{	// set the default times to match the file
+					model->SetModelTime(timeSeconds);
+					model->SetStartTime(timeSeconds);
+					model->NewDirtNotification(DIRTY_RUNBAR); // must reset the runbar
+				}*/
+				//(*timeDataHdl)[numTimeBlocks++] = timeData;				
+				(*timeDataHdl)[numTimeBlocks] = timeData;				
+				(*timeHdl)[numTimeBlocks] = timeData.time;		
+				numTimeBlocks++;
+			}
+		}
+		offset += lengthOfPartToScan;
+	}
+	if (numTimeBlocks > 0)  // last block goes to end of file
+	{
+		(*timeDataHdl)[numTimeBlocks-1].lengthOfData = fileLength - (*timeDataHdl)[numTimeBlocks-1].fileOffsetToStartOfData;				
+	}
+	*timeDataH = timeDataHdl;
+	*timeH = timeHdl;
+	
+	
+	
+done:
+	
+	if(h) {
+		_HUnlock((Handle)h); 
+		DisposeHandle((Handle)h); 
+		h = 0;
+	}
+	if (err)
+	{
+		if(timeDataHdl) {DisposeHandle((Handle)timeDataHdl); timeDataHdl=0;}
+		if(timeHdl) {DisposeHandle((Handle)timeHdl); timeHdl=0;}
+	}
+	return err;
+}
 
 OSErr TimeGridCurRect_c::CheckAndScanFile(char *errmsg, const Seconds &model_time)
 {
@@ -8296,7 +8457,8 @@ OSErr TimeGridCurRect_c::ReadHeaderLines(vector<string> &linesInFile,
 	}
 	else {
 		// single file
-		err = ScanFileForTimes(linesInFile, &fTimeDataHdl, &fTimeHdl);
+		//err = ScanFileForTimes(linesInFile, &fTimeDataHdl, &fTimeHdl);
+		err = ScanFileForTimes(fVar.pathName, linesInFile, &fTimeDataHdl, &fTimeHdl);
 		if (err)
 			goto done;
 	}
@@ -8388,11 +8550,14 @@ OSErr TimeGridCurRect_c::ReadTimeData(long index,
 	string path = fVar.pathName;
 	vector<string> linesInFile;
 	istringstream lineStream;
-	long line;
+	long line = 0;
 	string key;
 
+	long offset,lengthToRead;
 	long totalNumberOfVels = fNumRows * fNumCols;
+	char *sectionOfFile = 0;
 
+	CHARH h = 0;
 	VelocityFH velH = 0;
 	DateTimeRec time;
 	Seconds timeSeconds;
@@ -8402,10 +8567,35 @@ OSErr TimeGridCurRect_c::ReadTimeData(long index,
 	if (path.size() == 0)
 		return -1;
 
-	if (!ReadLinesInFile(path, linesInFile)) {
+	lengthToRead = (*fTimeDataHdl)[index].lengthOfData;
+	offset = (*fTimeDataHdl)[index].fileOffsetToStartOfData;
+	
+	h = (CHARH)_NewHandle(lengthToRead+1);
+	if(!h){TechError("TimeGridCurRect_c::ReadTimeData()", "_NewHandle()", 0); err = memFullErr; goto done;}
+	
+	_HLock((Handle)h);
+	sectionOfFile = *h;			
+	
+	// don't read in entire file every time...
+	err = ReadSectionOfFile(0,0,fVar.pathName,offset,lengthToRead,sectionOfFile,0);
+	if(err || !h) 
+	{
+		char firstPartOfLine[128];
+		sprintf(errmsg,"Unable to open data file:%s",NEWLINESTRING);
+		strncpy(firstPartOfLine,fVar.pathName,120);
+		strcpy(firstPartOfLine+120,"...");
+		strcat(errmsg,firstPartOfLine);
+		goto done;
+	}
+	sectionOfFile[lengthToRead] = 0; // make it a C string
+
+	if (!ReadLinesInBuffer(&sectionOfFile, linesInFile)) {
 		return -1;
 	}
-	line = (*fTimeDataHdl)[index].fileOffsetToStartOfData;
+	//if (!ReadLinesInFile(path, linesInFile)) {
+		//return -1;
+	//}
+	//line = (*fTimeDataHdl)[index].fileOffsetToStartOfData;
 
 	// some other way to calculate
 	velH = (VelocityFH)_NewHandleClear(sizeof(**velH) * totalNumberOfVels);
@@ -8493,6 +8683,12 @@ OSErr TimeGridCurRect_c::ReadTimeData(long index,
 	*velocityH = velH;
 	
 done:
+
+	if (h) {
+		_HUnlock((Handle)h); 
+		DisposeHandle((Handle)h); 
+		h = 0;
+	}
 
 	if (err) {
 		if (!errmsg[0])
@@ -9159,6 +9355,7 @@ OSErr TimeGridCurTri_c::ReadTimeData(long index,
 
 	long line = 0;
 	long len;
+	long offset,lengthToRead;
 	long totalNumberOfVels = 0;
 	long numDepths = 1;
 	long numPoints;
@@ -9178,11 +9375,35 @@ OSErr TimeGridCurTri_c::ReadTimeData(long index,
 	if (path.size() == 0)
 		return -1;
 
-	if (!ReadLinesInFile(path, linesInFile)) {
+	//lengthOfData = (*fTimeDataHdl)[index].lengthOfData;
+	lengthToRead = (*fTimeDataHdl)[index].lengthOfData;
+	offset = (*fTimeDataHdl)[index].fileOffsetToStartOfData;
+
+	h = (CHARH)_NewHandle(lengthToRead+1);
+	if(!h){TechError("PtCurMover::ReadTimeData()", "_NewHandle()", 0); err = memFullErr; goto done;}
+	
+	_HLock((Handle)h);
+	sectionOfFile = *h;			
+	
+	err = ReadSectionOfFile(0,0,fVar.pathName,offset,lengthToRead,sectionOfFile,0);
+	if(err || !h) 
+	{
+		char firstPartOfLine[128];
+		sprintf(errmsg,"Unable to open data file:%s",NEWLINESTRING);
+		strncpy(firstPartOfLine,fVar.pathName,120);
+		strcpy(firstPartOfLine+120,"...");
+		strcat(errmsg,firstPartOfLine);
+		goto done;
+	}
+	sectionOfFile[lengthToRead] = 0; // make it a C string
+
+	if (!ReadLinesInBuffer(&sectionOfFile, linesInFile)) {
 		return -1;
 	}
-	line = (*fTimeDataHdl)[index].fileOffsetToStartOfData;
-	
+	//if (!ReadLinesInFile(path, linesInFile)) {
+		//return -1;
+	//}
+	//line = (*fTimeDataHdl)[index].fileOffsetToStartOfData;
 	
 	ptsHdl = triGrid->GetPointsHdl();
 	if (ptsHdl)
@@ -9202,14 +9423,14 @@ OSErr TimeGridCurTri_c::ReadTimeData(long index,
 
 	velH = (VelocityFH)_NewHandle(sizeof(**velH) * totalNumberOfVels);
 	if (!velH) {
-		TechError("PtCurMover::ReadTimeData()", "_NewHandle()", 0);
+		TechError("TimeGridCurTri_c::ReadTimeData()", "_NewHandle()", 0);
 		err = memFullErr;
 		goto done;
 	}
 
 	if (!ParseKeyedLine(linesInFile[line++], "[TIME]", time)) {
 		err = -1;
-		TechError("TimeGridCurRect_c::ReadTimeData()", "failed to scan [TIME] row", 0);
+		TechError("TimeGridCurTri_c::ReadTimeData()", "failed to scan [TIME] row", 0);
 		goto done;
 	}
 
@@ -9518,7 +9739,8 @@ OSErr TimeGridCurTri_c::TextRead(vector<string> &linesInFile,
 	currentLine = linesInFile[(line)++];
 
 	if (currentLine.find("[FILE]", 0, 6) == string::npos) {
-		err = ScanFileForTimes(linesInFile, &fTimeDataHdl, &fTimeHdl);
+		//err = ScanFileForTimes(linesInFile, &fTimeDataHdl, &fTimeHdl);
+		err = ScanFileForTimes(fVar.pathName, linesInFile, &fTimeDataHdl, &fTimeHdl);
 		if (err)
 			goto done;
 	}

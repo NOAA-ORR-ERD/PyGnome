@@ -52,7 +52,7 @@ OSErr ReadSectionOfFile(short vRefNum, long dirID, CHARPTR name,
 {
 	// TODO: right now this is a hack.
 	//       we really need to change the API for this function,
-	//       but a lot of stuff is dependant on it being as it is.
+	//       but a lot of stuff is dependent on it being as it is.
 	ios::pos_type localOffset = (ios::pos_type)offset;
 	ios::pos_type localLength = (ios::pos_type)length;
 
@@ -99,7 +99,7 @@ OSErr ReadFileContents(short terminationFlag, short vRefNum, long dirID,
 {
 	// TODO: right now this is a hack.
 	//       we really need to change the API for this function,
-	//       but a lot of stuff is dependant on it being as it is.
+	//       but a lot of stuff is dependent on it being as it is.
 	ios::pos_type localLength = (ios::pos_type)length;
 
 	bool terminate;

@@ -5,6 +5,7 @@
 
 using std::fstream;
 using std::ios;
+using std::ifstream;
 
 // #define NOTEMPMEM
 
@@ -1326,6 +1327,31 @@ OSErr ReadSectionOfFile(short vRefNum, long dirID, CHARPTR name,
 		strcpy(filePath,tempFilePath);
 #endif
 	try {
+		 ifstream *_ifstream = new ifstream(filePath, ios::in);
+		 // get length of file:
+		_ifstream->seekg (0, ios::end);
+		 int filelength = _ifstream->tellg();
+		//_ifstream = new fstream(filePath, ios::in);
+		 if(!(filelength > 0))
+			throw("empty file.\n");
+		_ifstream->seekg (offset, ios::beg);
+		if(filelength > length+offset && length != 0)
+		{
+			if(handle) {
+				*handle = _NewHandle(length);
+				for(; i < length && _ifstream->get(c); i++)
+					DEREFH(*handle)[i] = c;
+			} 
+			else {
+				for(; i < length && _ifstream->get(c); i++)
+					((char *)ptr)[i] = c;
+			}
+		}
+		else {
+			throw("Unable to open file");
+		delete _ifstream;
+	}
+	/*try {
 		fstream *_ifstream = new fstream(filePath, ios::in);
 		for(; _ifstream->get(c); x++);
 		delete _ifstream;
@@ -1345,7 +1371,7 @@ OSErr ReadSectionOfFile(short vRefNum, long dirID, CHARPTR name,
 				((char *)ptr)[i] = c;
 		}
 		delete _ifstream;
-	}
+	}*/
 	catch(...) {
 		//printError("We are unable to open or read from the file. \nBreaking from ReadSectionOfFile().\n");
 		return true;
