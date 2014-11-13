@@ -679,6 +679,7 @@ class Serializable(GnomeId, Savable):
         :returns: True if something changed, False otherwise
         :rtype: bool
         """
+        print '\nSerializable.update_from_dict(): data = ', data
         list_ = self._state.get_names('update')
         updated = False
 
@@ -698,7 +699,7 @@ class Serializable(GnomeId, Savable):
         '''
         # first, we normalize our left and right args
         if (isinstance(current_value, np.ndarray) and
-            isinstance(received_value, (list, tuple))):
+                isinstance(received_value, (list, tuple))):
             received_value = np.asarray(received_value)
 
         # For a nested object, check if it data contains a new object. If
