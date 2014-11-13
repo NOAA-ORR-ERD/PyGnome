@@ -44,11 +44,11 @@ testmap = os.path.join(basedir, '../sample_data', 'MapBounds_Island.bna')
 
 
 @pytest.fixture(scope='function')
-def model(sample_model_fcn):
+def model(sample_model_fcn, dump):
     '''
     Utility to setup up a simple, but complete model for tests
     '''
-    images_dir = os.path.join(basedir, 'Test_images')
+    images_dir = os.path.join(dump, 'Test_images')
 
     if os.path.isdir(images_dir):
         shutil.rmtree(images_dir)
@@ -263,11 +263,11 @@ def test_simple_run_with_map():
         assert step['step_num'] == model.current_time_step
 
 
-def test_simple_run_with_image_output():
+def test_simple_run_with_image_output(dump):
     '''
     Pretty much all this tests is that the model will run and output images
     '''
-    images_dir = os.path.join(basedir, 'Test_images')
+    images_dir = os.path.join(dump, 'Test_images')
 
     if os.path.isdir(images_dir):
         shutil.rmtree(images_dir)
@@ -322,11 +322,11 @@ def test_simple_run_with_image_output():
     assert num_steps_output == calculated_steps
 
 
-def test_simple_run_with_image_output_uncertainty():
+def test_simple_run_with_image_output_uncertainty(dump):
     '''
     Pretty much all this tests is that the model will run and output images
     '''
-    images_dir = os.path.join(basedir, 'Test_images2')
+    images_dir = os.path.join(dump, 'Test_images2')
 
     if os.path.isdir(images_dir):
         shutil.rmtree(images_dir)
@@ -687,7 +687,7 @@ def test_release_at_right_time():
     assert model.spills.items()[0].num_released == 12
 
 
-def test_full_run(model):
+def test_full_run(model, dump):
     'Test doing a full run'
     # model = setup_simple_model()
 
@@ -701,7 +701,7 @@ def test_full_run(model):
 
     # check if the images are there:
     # (1 extra for background image)
-    num_images = len(os.listdir(os.path.join(basedir, 'Test_images')))
+    num_images = len(os.listdir(os.path.join(dump, 'Test_images')))
     assert num_images == model.num_time_steps + 1
 
 

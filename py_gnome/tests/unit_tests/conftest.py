@@ -33,6 +33,25 @@ from gnome.utilities.remote_data import get_datafile
 base_dir = os.path.dirname(__file__)
 
 
+@pytest.fixture(scope="session")
+def dump(request):
+    '''
+    create dump folder for output data/files
+    session scope so it is only executed the first time it is used
+    We only want to create a new 'dump' folder once for each session
+    '''
+    dump_loc = os.path.join(request.session.fspath.strpath, 'dump')
+    try:
+        os.removedirs(dump_loc)
+    except:
+        pass
+    try:
+        os.makedirs(dump_loc)
+    except:
+        pass
+    return dump_loc
+
+
 def mock_append_data_arrays(array_types, num_elements, data_arrays={}):
     """
     takes array_types desired by test function and number of elements

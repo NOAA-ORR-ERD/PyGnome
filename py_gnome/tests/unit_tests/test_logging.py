@@ -19,7 +19,6 @@ from gnome.spill.elements import floating_weathering
 
 here = os.path.dirname(__file__)
 sample_conf = os.path.join(here, 'sample_conf.json')
-logfile = os.path.join(here, 'logfile.log')
 
 
 config_dict = {
@@ -76,58 +75,46 @@ def config_file():
     return sample_conf
 
 
-def rm_logfile():
-    try:
-        os.remove(logfile)
-    except:
-        pass
-    assert not os.path.exists(logfile)
+@pytest.fixture(scope="module")
+def logfile(dump):
+    return os.path.join(dump, 'logfile.log')
 
 
-def test_conf_from_dict():
-    rm_logfile()
-    initialize_log(config_dict, logfile=logfile)
-    logging.info('Logfile initialized from dict')
-    assert os.path.exists(logfile)
+class TestLog():
+    @pytest.fixture(autouse=True)
+    def rm_logfile(self, logfile):
+        try:
+            os.remove(logfile)
+        except:
+            pass
+        assert not os.path.exists(logfile)
 
+    def test_conf_from_dict(self, logfile):
+        initialize_log(config_dict, logfile=logfile)
+        logging.info('Logfile initialized from dict')
+        assert os.path.exists(logfile)
 
-def test_conf_from_file(config_file):
-    rm_logfile()
-    l = initialize_log(config_file, logfile=logfile)
-    logging.info('Logfile initialized from file')
+    def test_conf_from_file(self, config_file, logfile):
+        initialize_log(config_file, logfile=logfile)
+        logging.info('Logfile initialized from file')
 
+    def test_full_run_logging(self, logfile):
+        c_dict = copy.deepcopy(config_dict)
+        et = floating_weathering(substance=u'ALAMO')
+        initialize_log(c_dict, logfile)
+        model = Model()
+        model.spills += point_line_release_spill(100,
+                                                 (0, 0, 0),
+                                                 model.start_time,
+                                                 end_release_time=model.start_time + timedelta(days=1),
+                                                 element_type=et,
+                                                 amount=200,
+                                                 units='m^3')
+        model.environment += Water()
+        model.environment += constant_wind(1., 0.)
+        model.weatherers += Evaporation(model.environment[-2],
+                                        model.environment[-1])
+        for spill in model.spills:
+            spill.set('num_released', 10)
 
-def test_full_run_logging():
-    rm_logfile()
-    c_dict = copy.deepcopy(config_dict)
-    #c_dict['root']['handlers'].remove('file')
-    #del c_dict['handlers']['file']
-    et = floating_weathering(substance=u'ALAMO')
-    initialize_log(c_dict, logfile)
-    model = Model()
-    model.spills += point_line_release_spill(1000,
-                                             (0, 0, 0),
-                                             model.start_time,
-                                             end_release_time=model.start_time + timedelta(days=1),
-                                             element_type=et,
-                                             amount=200,
-                                             units='m^3')
-
-    #==========================================================================
-    # s2 = point_line_release_spill(10,
-    #                               (0, 0, 0),
-    #                               model.start_time,
-    #                               end_release_time=model.start_time + timedelta(days=1),
-    #                               amount=1000,
-    #                               element_type=et,
-    #                               units='kg',
-    #                               name='s2')
-    #==========================================================================
-    model.environment += Water()
-    model.environment += constant_wind(1., 0.)
-    model.weatherers += Evaporation(model.environment[-2],
-                                    model.environment[-1])
-    for spill in model.spills:
-        spill.set('num_released', 10)
-
-    model.full_run()
+        model.full_run()

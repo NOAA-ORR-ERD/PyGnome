@@ -20,7 +20,6 @@ from gnome.basic_types import oil_status, status_code_type
 from gnome.utilities.projections import NoProjection
 
 from gnome.map import MapFromBNA, RasterMap
-from gnome.persist import load
 
 from conftest import sample_sc_release
 
@@ -229,7 +228,7 @@ class Test_RasterMap:
 
     raster[6:13, 4:8] = 1
 
-    def test_save_as_image(self):
+    def test_save_as_image(self, dump):
         """
         only tests that it doesn't crash -- you need to look at the
         image to see if it's right
@@ -237,9 +236,9 @@ class Test_RasterMap:
         rmap = RasterMap(refloat_halflife=6,
                          bitmap_array=self.raster,
                          map_bounds=((-50, -30), (-50, 30), (50, 30),(50, -30)),
-                         projection=NoProjection())  
+                         projection=NoProjection())
 
-        rmap.save_as_image('raster_map_image.png')
+        rmap.save_as_image(os.path.join(dump, 'raster_map_image.png'))
 
         assert True
 
