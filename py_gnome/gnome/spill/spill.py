@@ -39,10 +39,9 @@ class Spill(serializable.Serializable):
     Models a spill
     """
     _update = ['on', 'release',
-               'amount', 'units', 'amount_uncertainty_scale',
-               'frac_coverage', 'frac_water']
+               'amount', 'units', 'amount_uncertainty_scale']
 
-    _create = []
+    _create = ['frac_coverage', 'frac_water']
     _create.extend(_update)
 
     _state = copy.deepcopy(serializable.Serializable._state)
