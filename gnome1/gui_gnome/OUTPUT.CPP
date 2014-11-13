@@ -3420,8 +3420,8 @@ OSErr SaveAsHelper(Boolean bOnlyAdvancedSaveFile)
 			if (item != M53OK) {err = -1;goto done;} // note: might be user cancel
 			*/
 			//
-			if(!gKMLPath[0]) strcpy(gKMLPath,"moss");
-			err = AskUserForSaveFilename(gKMLPath,path,".MOS",false);
+			if(!gKMLPath[0]) strcpy(gKMLPath,"splots");
+			err = AskUserForSaveFilename(gKMLPath,path,".kml",false);
 			if(err) goto done; // note: might be user cancel
 			//
 			// update the window before running, since we just invalidated part of the window 
