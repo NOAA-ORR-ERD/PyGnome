@@ -17,10 +17,6 @@ from gnome.spill import point_line_release_spill
 from gnome.spill.elements import floating_weathering
 
 
-here = os.path.dirname(__file__)
-sample_conf = os.path.join(here, 'sample_conf.json')
-
-
 config_dict = {
         "version": 1,   # way to track schema versions
         "disbale_existing_loggers": True,
@@ -68,7 +64,9 @@ config_dict = {
 
 
 @pytest.fixture(scope='function')
-def config_file():
+def config_file(dump):
+    'create a file from which to load configuration'
+    sample_conf = os.path.join(dump, 'sample_conf.json')
     with open(sample_conf, 'w') as outfile:
         json.dump(config_dict, outfile, indent=True)
 
