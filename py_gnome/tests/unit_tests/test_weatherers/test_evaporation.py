@@ -24,14 +24,29 @@ from gnome.array_types import (mass_components,
 from gnome.basic_types import oil_status
 
 from ..conftest import sample_sc_release, sample_model_weathering
-from . import dump
 
-dump_json = os.path.join(dump, 'weathering_model.json')
+
 water = Water()
 
 arrays = Evaporation().array_types
 intrinsic = IntrinsicProps(water, arrays)
 arrays.update(intrinsic.array_types)
+
+
+'''
+create dump folder for output data/files
+Move this to conftest if any other weatherers need to dump data/files out.
+For now, just this module uses it so keep it here
+'''
+dump = os.path.join(os.path.dirname(__file__), 'dump')
+try:
+    os.removedirs(dump)
+except:
+    pass
+try:
+    os.makedirs(dump)
+except:
+    pass
 
 
 @pytest.mark.parametrize(('oil', 'temp', 'num_elems', 'on'),
@@ -135,6 +150,7 @@ def test_full_run(sample_model_fcn, oil, temp):
             print "Completed step: {0}\n".format(step['step_num'])
 
     m_json_ = model.serialize('webapi')
+    dump_json = os.path.join(dump, 'weathering_model.json')
     with open(dump_json, 'w') as f:
         json.dump(m_json_, f, indent=True)
 
