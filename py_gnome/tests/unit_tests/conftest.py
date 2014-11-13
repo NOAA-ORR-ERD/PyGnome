@@ -26,7 +26,6 @@ from gnome.model import Model
 from gnome.spill_container import SpillContainer
 
 from gnome.movers import SimpleMover
-from gnome.persist import load
 from gnome.utilities.remote_data import get_datafile
 
 
@@ -34,13 +33,15 @@ base_dir = os.path.dirname(__file__)
 
 
 @pytest.fixture(scope="session")
-def dump(request):
+def dump(dump_loc=None):
     '''
     create dump folder for output data/files
     session scope so it is only executed the first time it is used
     We only want to create a new 'dump' folder once for each session
     '''
-    dump_loc = os.path.join(request.session.fspath.strpath, 'dump')
+    # dump_loc = os.path.join(request.session.fspath.strpath, 'dump')
+    if dump_loc is None:
+        dump_loc = os.path.join(base_dir, 'dump')
     try:
         os.removedirs(dump_loc)
     except:
