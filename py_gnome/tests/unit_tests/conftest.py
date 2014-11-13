@@ -38,6 +38,9 @@ def dump(dump_loc=None):
     create dump folder for output data/files
     session scope so it is only executed the first time it is used
     We only want to create a new 'dump' folder once for each session
+
+    Note: Takes optional dump_loc input so other test packages can import
+    this as a function and use it to define their own dump directory if desired
     '''
     # dump_loc = os.path.join(request.session.fspath.strpath, 'dump')
     if dump_loc is None:

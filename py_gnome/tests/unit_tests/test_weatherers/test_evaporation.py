@@ -33,22 +33,6 @@ intrinsic = IntrinsicProps(water, arrays)
 arrays.update(intrinsic.array_types)
 
 
-'''
-create dump folder for output data/files
-Move this to conftest if any other weatherers need to dump data/files out.
-For now, just this module uses it so keep it here
-'''
-dump = os.path.join(os.path.dirname(__file__), 'dump')
-try:
-    os.removedirs(dump)
-except:
-    pass
-try:
-    os.makedirs(dump)
-except:
-    pass
-
-
 @pytest.mark.parametrize(('oil', 'temp', 'num_elems', 'on'),
                          [('oil_conservative', 311.15, 3, True),
                           ('ALAMO', 311.15, 3, True),
@@ -129,7 +113,11 @@ def assert_helper(sc, new_p):
                                            ('FUEL OIL NO.6', 333.0),
                                            ('ALAMO', 311.15),
                                            ])
-def test_full_run(sample_model_fcn, oil, temp):
+def test_full_run(sample_model_fcn, oil, temp, dump):
+    '''
+    test evapoartion outputs post step for a full run of model. Dump json
+    for 'weathering_model.json' in dump directory
+    '''
     model = sample_model_weathering(sample_model_fcn, oil, temp)
     model.environment += [Water(temp), constant_wind(1., 0)]
     model.weatherers += [Evaporation(model.environment[0],
