@@ -15,7 +15,6 @@ import numpy
 np = numpy
 
 from gnome.basic_types import datetime_value_2d
-from gnome.utilities.remote_data import get_datafile
 from gnome.map import MapFromBNA
 from gnome.environment import Wind, Tide, Water
 from gnome.model import Model
@@ -24,11 +23,13 @@ from gnome.spill import point_line_release_spill
 from gnome.movers import RandomMover, WindMover, CatsMover, ComponentMover
 from gnome.weatherers import Evaporation
 from gnome.outputters import Renderer
+# from gnome.utilities.remote_data import get_datafile
 
-curr_dir = os.path.dirname(__file__)
-datafiles = os.path.join(curr_dir, 'sample_data', 'boston_data')
-saveloc_ = os.path.join(curr_dir, 'save_model')
-webapi_files = os.path.join(curr_dir, './webapi_json')
+from conftest import dump, testdata
+
+
+saveloc_ = os.path.join(dump(), 'save_model')
+webapi_files = os.path.join(dump(), 'webapi_json')
 
 
 # clean up saveloc_ if it exists
@@ -41,11 +42,11 @@ del_saveloc(saveloc_)
 
 
 @pytest.fixture(scope='module')
-def images_dir(request):
+def images_dir(dump):
     '''
     create images dir
     '''
-    images_dir = os.path.join(datafiles, 'images')
+    images_dir = os.path.join(dump, 'test_images')
     if os.path.exists(images_dir):
         shutil.rmtree(images_dir)
 
@@ -65,18 +66,19 @@ def make_model(images_dir, uncertain=False):
       - cats ossm mover
       - plain cats mover
     '''
-    mapfile = get_datafile(os.path.join(datafiles, './MassBayMap.bna'))
 
     start_time = datetime(2013, 2, 13, 9, 0)
     model = Model(start_time=start_time,
                   duration=timedelta(days=2),
                   time_step=timedelta(minutes=30).total_seconds(),
                   uncertain=uncertain,
-                  map=MapFromBNA(mapfile, refloat_halflife=1))
+                  map=MapFromBNA(testdata['boston_data']['map'],
+                                 refloat_halflife=1))
 
     print 'adding a renderer'
 
-    model.outputters += Renderer(mapfile, images_dir, size=(800, 600))
+    model.outputters += Renderer(testdata['boston_data']['map'],
+                                 images_dir, size=(800, 600))
 
     print 'adding a spill'
     start_position = (144.664166, 13.441944, 0.0)
@@ -108,9 +110,8 @@ def make_model(images_dir, uncertain=False):
 
     print 'adding a cats shio mover:'
 
-    d_file1 = get_datafile(os.path.join(datafiles, './EbbTides.cur'))
-    d_file2 = get_datafile(os.path.join(datafiles, './EbbTidesShio.txt'))
-    c_mover = CatsMover(d_file1, tide=Tide(d_file2))
+    c_mover = CatsMover(testdata['boston_data']['cats_curr2'],
+                        tide=Tide(testdata['boston_data']['cats_shio']))
 
     # c_mover.scale_refpoint should automatically get set from tide object
     c_mover.scale = True  # default value
@@ -121,11 +122,8 @@ def make_model(images_dir, uncertain=False):
 
     print 'adding a cats ossm mover:'
 
-    d_file1 = get_datafile(os.path.join(datafiles,
-                           './MerrimackMassCoast.cur'))
-    d_file2 = get_datafile(os.path.join(datafiles,
-                           './MerrimackMassCoastOSSM.txt'))
-    c_mover = CatsMover(d_file1, tide=Tide(d_file2))
+    c_mover = CatsMover(testdata['boston_data']['cats_curr2'],
+                        tide=Tide(testdata['boston_data']['cats_ossm']))
 
     c_mover.scale = True  # but do need to scale (based on river stage)
     c_mover.scale_refpoint = (-70.65, 42.58333)
@@ -133,8 +131,7 @@ def make_model(images_dir, uncertain=False):
 
     print 'adding a cats mover:'
 
-    d_file1 = get_datafile(os.path.join(datafiles, 'MassBaySewage.cur'))
-    c_mover = CatsMover(d_file1)
+    c_mover = CatsMover(testdata['boston_data']['cats_curr3'])
     c_mover.scale = True  # but do need to scale (based on river stage)
     c_mover.scale_refpoint = (-70.78333, 42.39333)
 
@@ -143,9 +140,9 @@ def make_model(images_dir, uncertain=False):
     model.movers += c_mover
 
     print "adding a component mover:"
-    component_file1 = get_datafile(os.path.join(datafiles, r"./WAC10msNW.cur"))
-    component_file2 = get_datafile(os.path.join(datafiles, r"./WAC10msSW.cur"))
-    comp_mover = ComponentMover(component_file1, component_file2, w_mover.wind)
+    comp_mover = ComponentMover(testdata['boston_data']['component_curr1'],
+                                testdata['boston_data']['component_curr2'],
+                                w_mover.wind)
     #todo: callback did not work correctly below - fix!
     #comp_mover = ComponentMover(component_file1,component_file2,Wind(timeseries=series, units='m/s'))
 

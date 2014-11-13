@@ -144,6 +144,7 @@ def get_testdata():
     '''
     s_data = os.path.join(base_dir, 'sample_data')
     lis = os.path.join(s_data, 'long_island_sound')
+    bos = os.path.join(s_data, 'boston_data')
     dbay = os.path.join(s_data, 'delaware_bay')
     curr_dir = os.path.join(s_data, 'currents')
     tide_dir = os.path.join(s_data, 'tides')
@@ -214,6 +215,20 @@ def get_testdata():
                                        'WindDataFromGnomeCardinal.WND'),
          'tide_shio': get_datafile(os.path.join(tide_dir, 'CLISShio.txt')),
          'tide_ossm': get_datafile(os.path.join(tide_dir, 'TideHdr.FINAL'))
+         }
+
+    # data for boston model - used for testing save files/webapi
+    data['boston_data'] = \
+        {'map': get_datafile(os.path.join(bos, 'MassBayMap.bna')),
+         'cats_curr1': get_datafile(os.path.join(bos, 'EbbTides.cur')),
+         'cats_shio': get_datafile(os.path.join(bos, 'EbbTidesShio.txt')),
+         'cats_curr2': get_datafile(os.path.join(bos,
+                                                 'MerrimackMassCoast.cur')),
+         'cats_ossm': get_datafile(os.path.join(bos,
+                                                'MerrimackMassCoastOSSM.txt')),
+         'cats_curr3': get_datafile(os.path.join(bos, 'MassBaySewage.cur')),
+         'component_curr1': get_datafile(os.path.join(bos, "WAC10msNW.cur")),
+         'component_curr2': get_datafile(os.path.join(bos, "WAC10msSW.cur"))
          }
 
     return data
