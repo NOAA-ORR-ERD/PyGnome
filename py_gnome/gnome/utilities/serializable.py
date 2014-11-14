@@ -1,12 +1,12 @@
 '''
 Created on Feb 15, 2013
 '''
-
 import copy
 import inspect
 import os
 import json
 import shutil
+from itertools import izip_longest
 
 import numpy
 np = numpy
@@ -679,7 +679,6 @@ class Serializable(GnomeId, Savable):
         :returns: True if something changed, False otherwise
         :rtype: bool
         """
-        print '\nSerializable.update_from_dict(): data = ', data
         list_ = self._state.get_names('update')
         updated = False
 
@@ -751,12 +750,7 @@ class Serializable(GnomeId, Savable):
         from_dict_fn_name = '%s_update_from_dict' % name
         if hasattr(self, from_dict_fn_name):
             return getattr(self, from_dict_fn_name)(value)
-        # NO updated of NESTED Seriablizable objects
-        #elif hasattr(getattr(self, name), 'update_from_dict'):
-        #    getattr(self, name).update_from_dict(value)
 
-        # not and OrderedCollection and doesn't define custom _update_from_dict
-        # function. update using setattr if attr has changed
         if self._attr_changed(current_value, value):
             setattr(self, name, value)
             return True
@@ -765,20 +759,61 @@ class Serializable(GnomeId, Savable):
 
     def _update_orderedcoll_attr(self, curr_oc, l_new_oc):
         '''
-        update attribute of type OrderedCollection with items in list l_new_oc
+            Update attribute of type OrderedCollection with items in
+            the sequence l_new_oc.
+            Any in-place items in the current collection that differ from
+            the respective items in the new collection (or sequence) will
+            be replaced.  For example:
+                curr_oc = [a, b, c, d]
+                new_oc  = [a, e, c, f]
+                               ||
+                               \/
+                upd_oc  = [a, e, c, f]
+
+            If the new sequence is bigger than the current collection, then
+            the new items will be appended.  For example:
+                curr_oc = [a, b, c, d]
+                new_oc  = [a, b, c, d, e, f]
+                               ||
+                               \/
+                upd_oc  = [a, b, c, d, e, f]
+
+            If the new sequence is smaller than the current collection, then
+            the extra items in the current collection will be removed.
+            For example:
+                curr_oc = [a, b, c, d, e, f]
+                new_oc  = [a, b, c, d]
+                               ||
+                               \/
+                upd_oc  = [a, b, c, d]
+            TODO: Some things to worry about:
+            - any repeated items in l_new_oc?
+            - should we accept only gnome objects in l_new_oc?
         '''
         updated = False
 
-        if len(l_new_oc) != len(curr_oc):
-            updated = True
+        if [i for i in l_new_oc if i is None]:
+            raise ValueError("Cannot update if our new list contains "
+                             "null items.")
 
-        if curr_oc.values() != l_new_oc:
-            updated = True
+        list_items = [i for i in izip_longest(curr_oc, l_new_oc)]
+        if len(l_new_oc) >= len(curr_oc):
+            for curr, new in list_items:
+                if curr is None:
+                    curr_oc += new
+                    updated = True
+                elif curr.id != new.id:
+                    curr_oc[curr.id] = new
+                    updated = True
+        else:
+            for curr, new in reversed(list_items):
+                if new is None:
+                    del curr_oc[curr.id]
+                    updated = True
+                elif curr.id != new.id:
+                    curr_oc[curr.id] = new
+                    updated = True
 
-        if updated:
-            curr_oc.clear()
-            if l_new_oc:
-                curr_oc += l_new_oc
         return updated
 
     def obj_type_to_dict(self):
