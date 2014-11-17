@@ -1,0 +1,1078 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>gnome.utilities.serializable &mdash; pyGNOME 0.1.1 documentation</title>
+    
+    <link rel="stylesheet" href="../../../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../',
+        VERSION:     '0.1.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../_static/doctools.js"></script>
+    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="pyGNOME 0.1.1 documentation" href="../../../index.html" />
+    <link rel="up" title="Module code" href="../../index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../../index.html">pyGNOME 0.1.1 documentation</a> &raquo;</li>
+          <li><a href="../../index.html" accesskey="U">Module code</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <h1>Source code for gnome.utilities.serializable</h1><div class="highlight"><pre>
+<span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">Created on Feb 15, 2013</span>
+<span class="sd">&#39;&#39;&#39;</span>
+<span class="kn">import</span> <span class="nn">copy</span>
+<span class="kn">import</span> <span class="nn">inspect</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">json</span>
+<span class="kn">import</span> <span class="nn">shutil</span>
+<span class="kn">from</span> <span class="nn">itertools</span> <span class="kn">import</span> <span class="n">izip_longest</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span>
+<span class="n">np</span> <span class="o">=</span> <span class="n">numpy</span>
+
+<span class="kn">from</span> <span class="nn">gnome</span> <span class="kn">import</span> <span class="n">GnomeId</span>
+<span class="kn">from</span> <span class="nn">gnome.persist</span> <span class="kn">import</span> <span class="n">Savable</span>
+<span class="kn">from</span> <span class="nn">gnome.utilities.orderedcollection</span> <span class="kn">import</span> <span class="n">OrderedCollection</span>
+
+
+<div class="viewcode-block" id="Field"><a class="viewcode-back" href="../../../reference.html#gnome.utilities.serializable.Field">[docs]</a><span class="k">class</span> <span class="nc">Field</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>  <span class="c"># ,serializable.Serializable):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Class containing information about the property to be serialized</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span>
+                 <span class="n">isdatafile</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span>
+                 <span class="n">update</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">save</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">read</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span>
+                 <span class="n">save_reference</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span>
+                 <span class="n">test_for_eq</span><span class="o">=</span><span class="bp">True</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Constructor for the Field object.</span>
+<span class="sd">        The Field object is used to describe the property of an object.</span>
+<span class="sd">        For instance, if a property is required to re-create the object from</span>
+<span class="sd">        a persisted _state, its &#39;save&#39; attribute is True.</span>
+<span class="sd">        If the property describes a data file that will need to be moved</span>
+<span class="sd">        when persisting the model, isdatafile should be True.</span>
+<span class="sd">        The gnome.persist.scenario module contains a Scenario class that loads</span>
+<span class="sd">        and saves a model. It looks for these attributes to correctly save/load</span>
+<span class="sd">        it.</span>
+
+<span class="sd">        It sets all attributes to False by default.</span>
+
+<span class="sd">        :param str name: Name of the property being described by this Field</span>
+<span class="sd">            object</span>
+<span class="sd">        :param bool isdatafile=False: Is the property a datafile that should be</span>
+<span class="sd">            moved during persistence?</span>
+<span class="sd">        :param bool update=False: Is the property update-able by the web app?</span>
+<span class="sd">        :param bool create=False: Is the property required to re-create the</span>
+<span class="sd">            object when loading from a save file?</span>
+<span class="sd">        :param bool read=False: If property is not updateable, perhaps make it</span>
+<span class="sd">            read only so web app has information about the object</span>
+<span class="sd">        :param bool save_reference=False: bool with default value of False.</span>
+<span class="sd">            if the property is object, you can either</span>
+<span class="sd">            serialize the object and store it as a nested structure or just</span>
+<span class="sd">            store a reference to the object. For instance, the WindMover</span>
+<span class="sd">            contains a Wind object and a Weatherer could also contain the</span>
+<span class="sd">            same wind object, in this case, the &#39;wind&#39; property should be</span>
+<span class="sd">            stored as a reference. The Model.load function is responsible for</span>
+<span class="sd">            hooking up the correct Wind object to the WindMover, Weatherer etc</span>
+
+<span class="sd">            .. note:: save_reference currently is only used when the field is</span>
+<span class="sd">                stored with &#39;save&#39; flag.</span>
+
+<span class="sd">        :param bool test_for_eq=True: bool with default value of True</span>
+<span class="sd">            when checking equality (__eq__()) of two gnome</span>
+<span class="sd">            objects that are serializable, look for equality of attributes</span>
+<span class="sd">            corresponding with fields with &#39;save&#39;=True and &#39;test_for_eq&#39;=True</span>
+<span class="sd">            For instance, if a gnome.model.Model() object is saved, then loaded</span>
+<span class="sd">            back from save file location, the filename attributes of objects</span>
+<span class="sd">            that read data from file will point to different location. The</span>
+<span class="sd">            objects are still equal. To avoid this problem, we can customize</span>
+<span class="sd">            whether to use a field when testing for equality or not.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">name</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">isdatafile</span> <span class="o">=</span> <span class="n">isdatafile</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">save</span> <span class="o">=</span> <span class="n">save</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">update</span> <span class="o">=</span> <span class="n">update</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">read</span> <span class="o">=</span> <span class="n">read</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">save_reference</span> <span class="o">=</span> <span class="n">save_reference</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">test_for_eq</span> <span class="o">=</span> <span class="n">test_for_eq</span>
+
+    <span class="k">def</span> <span class="nf">__eq__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="n">Field</span><span class="p">):</span>
+            <span class="k">return</span> <span class="bp">False</span>
+
+        <span class="k">if</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">name</span> <span class="ow">and</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">isdatafile</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">isdatafile</span> <span class="ow">and</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">save</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">save</span> <span class="ow">and</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">update</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">update</span> <span class="ow">and</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">read</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">read</span><span class="p">):</span>
+            <span class="k">return</span> <span class="bp">True</span>
+
+        <span class="k">return</span> <span class="bp">False</span>
+
+    <span class="k">def</span> <span class="nf">__ne__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="k">return</span> <span class="ow">not</span> <span class="bp">self</span> <span class="o">==</span> <span class="n">other</span>
+
+    <span class="k">def</span> <span class="nf">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="s">&#39;unambiguous object representation&#39;</span>
+        <span class="n">attr_vals</span> <span class="o">=</span> <span class="s">&#39;, &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="s">&#39;{0}={1}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">attr</span><span class="p">,</span> <span class="n">val</span><span class="p">)</span>
+                               <span class="k">for</span> <span class="n">attr</span><span class="p">,</span> <span class="n">val</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">__dict__</span><span class="o">.</span><span class="n">iteritems</span><span class="p">()])</span>
+        <span class="k">return</span> <span class="p">(</span><span class="s">&#39;{0.__class__.__module__}.{0.__class__.__name__}&#39;</span>
+                <span class="s">&#39;({1})&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">attr_vals</span><span class="p">))</span>
+
+    <span class="k">def</span> <span class="nf">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">attr_vals</span> <span class="o">=</span> <span class="s">&#39;, &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="s">&#39;{0}={1}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">attr</span><span class="p">,</span> <span class="n">val</span><span class="p">)</span>
+                               <span class="k">for</span> <span class="n">attr</span><span class="p">,</span> <span class="n">val</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">__dict__</span><span class="o">.</span><span class="n">iteritems</span><span class="p">()])</span>
+        <span class="k">return</span> <span class="p">(</span><span class="s">&#39;Field Object: &#39;</span>
+                <span class="s">&#39;{1}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">attr_vals</span><span class="p">))</span>
+
+</div>
+<span class="k">class</span> <span class="nc">State</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">save</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">update</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">read</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">field</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Object keeps the list of properties that are output by</span>
+<span class="sd">        Serializable.to_dict() method.</span>
+<span class="sd">        Each list is accompanied by a keyword as defined below</span>
+
+<span class="sd">        Object can be initialized as follows:</span>
+<span class="sd">        &gt;&gt;&gt; s = State(update=[&#39;update_field&#39;], field=[Field(&#39;field_name&#39;)]</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">        :param update: A list of strings which are properties that can be</span>
+<span class="sd">                       updated, so read/write capable</span>
+<span class="sd">        :type update:  list containing str</span>
+<span class="sd">        :param read:   A list of strings which are properties that are for</span>
+<span class="sd">                       info, so readonly. It is not required for creating</span>
+<span class="sd">                       new object.</span>
+<span class="sd">        :type read:    list containing str</span>
+<span class="sd">        :param save: A list of strings which are properties that are</span>
+<span class="sd">                       required to create new object when JSON is read from</span>
+<span class="sd">                       save file.</span>
+<span class="sd">                       Only the create properties are saved to save file.</span>
+<span class="sd">        :type save:  A list of str</span>
+<span class="sd">        :param field:  A field object or a list of field objects that should</span>
+<span class="sd">                       be added to the State for persistence.</span>
+<span class="sd">        :type field:   Field object or list of Field objects.</span>
+
+<span class="sd">        For &#39;update&#39;, &#39;read&#39;, &#39;save&#39;, a Field object is created for each</span>
+<span class="sd">        property in the list</span>
+
+<span class="sd">        .. note:: Copy will create a new State object but reference original</span>
+<span class="sd">                  lists.  Deepcopy will create new State object and new lists</span>
+<span class="sd">                  for the attributes.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fields</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">add_field</span><span class="p">(</span><span class="n">field</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">save</span><span class="o">=</span><span class="n">save</span><span class="p">,</span> <span class="n">update</span><span class="o">=</span><span class="n">update</span><span class="p">,</span> <span class="n">read</span><span class="o">=</span><span class="n">read</span><span class="p">)</span>
+
+        <span class="c"># define valid attributes for Field object</span>
+        <span class="c"># Field object is in flux - more properties were added so make</span>
+        <span class="c"># _valid_field_attr dynamic</span>
+        <span class="n">test_obj</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="s">&#39;test&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_valid_field_attr</span> <span class="o">=</span> <span class="n">test_obj</span><span class="o">.</span><span class="n">__dict__</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">__deepcopy__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">memo</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        deep copy of _state object so makes a copy of the fields list</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="n">new_</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__class__</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">new_</span> <span class="o">!=</span> <span class="bp">self</span><span class="p">:</span>
+            <span class="n">new_</span><span class="o">.</span><span class="n">__dict__</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">__dict__</span><span class="p">,</span> <span class="n">memo</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">new_</span>
+
+    <span class="k">def</span> <span class="nf">__eq__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="s">&#39;check for equality&#39;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">__dict__</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">__dict__</span>
+
+    <span class="k">def</span> <span class="nf">__ne__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="k">return</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">__dict__</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">__dict__</span>
+
+    <span class="k">def</span> <span class="nf">__contains__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        given the name as a string, it tests whether the &#39;fields&#39; attribute</span>
+<span class="sd">        contains a &#39;field&#39; with user specified name. The &#39;fields&#39; attribute is</span>
+<span class="sd">        a list of &#39;Field&#39; objects corresponding with properties that are</span>
+<span class="sd">        serialized</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="p">[</span><span class="n">f</span><span class="o">.</span><span class="n">name</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">fields</span><span class="p">]:</span>
+            <span class="k">return</span> <span class="bp">True</span>
+
+        <span class="k">return</span> <span class="bp">False</span>
+
+    <span class="k">def</span> <span class="nf">__len__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fields</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__iadd__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">field</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">add_field</span><span class="p">(</span><span class="n">field</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span>
+
+    <span class="k">def</span> <span class="nf">__isub__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">l_names</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">l_names</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span>
+
+    <span class="k">def</span> <span class="nf">__delitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">l_names</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">l_names</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">names</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_field_by_name</span><span class="p">(</span><span class="n">names</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__iter__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">field</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">fields</span><span class="p">:</span>
+            <span class="k">yield</span> <span class="n">field</span>
+
+    <span class="k">def</span> <span class="nf">add_field</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">l_field</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Adds a Field object or a list of Field objects to fields attribute</span>
+
+<span class="sd">        Either use this to add a property to the _state object or use the</span>
+<span class="sd">        &#39;add&#39; method to add a property.  add_field gives more control since</span>
+<span class="sd">        the attributes other than &#39;save&#39;,&#39;update&#39;,&#39;read&#39; can be set directly</span>
+<span class="sd">        when defining the Field object.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">l_field</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="k">return</span>
+
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">l_field</span><span class="p">,</span> <span class="n">Field</span><span class="p">):</span>
+            <span class="n">l_field</span> <span class="o">=</span> <span class="p">[</span><span class="n">l_field</span><span class="p">]</span>
+
+        <span class="n">names</span> <span class="o">=</span> <span class="p">[</span><span class="n">field_</span><span class="o">.</span><span class="n">name</span> <span class="k">for</span> <span class="n">field_</span> <span class="ow">in</span> <span class="n">l_field</span><span class="p">]</span>
+        <span class="n">state_fieldnames</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_names</span><span class="p">()</span>
+
+        <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">names</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">names</span><span class="o">.</span><span class="n">count</span><span class="p">(</span><span class="n">name</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&#39;List of field objects contains multiple &#39;</span>
+                                 <span class="s">&#39;fields with same name: &#39;</span>
+                                 <span class="s">&#39;{0}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">names</span><span class="o">.</span><span class="n">count</span><span class="p">(</span><span class="n">name</span><span class="p">),</span> <span class="n">name</span><span class="p">))</span>
+
+            <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">state_fieldnames</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&#39;A Field object with the name {0} already &#39;</span>
+                                 <span class="s">&#39;exists - cannot add another with the &#39;</span>
+                                 <span class="s">&#39;same name&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">name</span><span class="p">))</span>
+
+        <span class="c"># everything looks good, add the field</span>
+
+        <span class="k">for</span> <span class="n">field_</span> <span class="ow">in</span> <span class="n">l_field</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">fields</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">field_</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">add</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">save</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">update</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">read</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Only checks to make sure &#39;read&#39; and &#39;update&#39; properties are disjoint.</span>
+<span class="sd">        Also makes sure everything is a list.</span>
+
+<span class="sd">        Arguments:</span>
+<span class="sd">        :param update: A tuple of strings which are properties that can be</span>
+<span class="sd">                       updated, so read/write capable</span>
+<span class="sd">        :type update: Tuple containing str</span>
+
+<span class="sd">        :param read: A tuple of strings which are properties that are for info,</span>
+<span class="sd">                     so readonly. It is not required for creating new object.</span>
+<span class="sd">        :type read: Tuple containing str</span>
+
+<span class="sd">        :param save: A tuple of strings which are properties that are required</span>
+<span class="sd">                     to create new object when JSON is read from save file.</span>
+<span class="sd">                     Only the save properties are saved to save file</span>
+<span class="sd">        :type save: A tuple of str</span>
+
+<span class="sd">        :param field: A field object or a tuple of field objects that should be</span>
+<span class="sd">                      added to the State for persistence</span>
+<span class="sd">        :type field: Field object or tuple of Field objects</span>
+
+<span class="sd">        For &#39;update&#39;, &#39;read&#39;, &#39;save&#39;, a Field object is created for each</span>
+<span class="sd">        property in the tuple</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">save</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_check_inputs</span><span class="p">(</span><span class="n">save</span><span class="p">)</span>
+        <span class="n">update</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_check_inputs</span><span class="p">(</span><span class="n">update</span><span class="p">)</span>
+        <span class="n">read</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_check_inputs</span><span class="p">(</span><span class="n">read</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">update</span><span class="p">)</span><span class="o">.</span><span class="n">intersection</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">read</span><span class="p">)))</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">AttributeError</span><span class="p">(</span><span class="s">&#39;update (read/write properties) and &#39;</span>
+                                 <span class="s">&#39;read (readonly props) lists lists &#39;</span>
+                                 <span class="s">&#39;must be disjoint&#39;</span><span class="p">)</span>
+
+        <span class="n">fields</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">update</span><span class="p">:</span>
+            <span class="n">f</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="n">update</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">save</span><span class="p">:</span>
+                <span class="n">f</span><span class="o">.</span><span class="n">save</span> <span class="o">=</span> <span class="bp">True</span>
+                <span class="n">save</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">item</span><span class="p">)</span>
+            <span class="n">fields</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">save</span><span class="p">:</span>
+            <span class="n">f</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="n">save</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">read</span><span class="p">:</span>
+                <span class="n">f</span><span class="o">.</span><span class="n">read</span> <span class="o">=</span> <span class="bp">True</span>
+                <span class="n">read</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">item</span><span class="p">)</span>
+            <span class="n">fields</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
+
+        <span class="p">[</span><span class="n">fields</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">Field</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="n">read</span><span class="o">=</span><span class="bp">True</span><span class="p">))</span> <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">read</span><span class="p">]</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">add_field</span><span class="p">(</span><span class="n">fields</span><span class="p">)</span>  <span class="c"># now add these to self.fields</span>
+
+    <span class="k">def</span> <span class="nf">_check_inputs</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">vals</span><span class="p">):</span>
+        <span class="s">&#39;check inputs and convert to a list&#39;</span>
+        <span class="k">if</span> <span class="n">vals</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">vals</span><span class="p">,</span> <span class="nb">basestring</span><span class="p">):</span>
+                <span class="n">vals</span> <span class="o">=</span> <span class="p">[</span><span class="n">vals</span><span class="p">]</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">vals</span><span class="p">,</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">)):</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&#39;inputs must be a list of strings&#39;</span><span class="p">)</span>
+            <span class="n">vals</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">vals</span><span class="p">))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">vals</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">return</span> <span class="n">vals</span>
+
+    <span class="k">def</span> <span class="nf">remove</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">l_names</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Analogous to add method, this removes Field objects associated with</span>
+<span class="sd">        l_names from the list.</span>
+<span class="sd">        l_names is a list containing the names (string) of properties.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">l_names</span><span class="p">,</span> <span class="nb">basestring</span><span class="p">):</span>
+            <span class="n">l_names</span> <span class="o">=</span> <span class="n">l_names</span><span class="p">,</span>
+
+        <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">l_names</span><span class="p">:</span>
+            <span class="n">field</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_field_by_name</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">field</span> <span class="o">==</span> <span class="p">[]:</span>
+                <span class="k">return</span>
+            <span class="c"># do not raise error - if field doesn&#39;t exist, do nothing</span>
+            <span class="c">#    raise ValueError(&#39;Cannot remove {0} since self.fields &#39;</span>
+            <span class="c">#                     &#39;does not contain a field &#39;</span>
+            <span class="c">#                     &#39;with this name&#39;.format(name))</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">fields</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">field</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">update</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">l_names</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        update the attributes of an existing field</span>
+<span class="sd">        Kwargs are key,value pairs defining the _state of attributes.</span>
+<span class="sd">        It must be one of the valid attributes of Field object</span>
+<span class="sd">        (see Field object __dict__ for valid attributes)</span>
+<span class="sd">        :param update:     True or False</span>
+<span class="sd">        :param save:     True or False</span>
+<span class="sd">        :param read:       True or False</span>
+<span class="sd">        :param isdatafield:True or False</span>
+
+<span class="sd">        Usage:</span>
+<span class="sd">        &gt;&gt;&gt; _state = State(read=[&#39;test&#39;])</span>
+<span class="sd">        &gt;&gt;&gt; _state.update(&#39;test&#39;, read=False, update=True, save=True,</span>
+<span class="sd">        ...               isdatafile=True)</span>
+
+<span class="sd">        .. note:: An exception will be raised if both &#39;read&#39; and &#39;update&#39; are</span>
+<span class="sd">                  True for a given field</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">key</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_valid_field_attr</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">AttributeError</span><span class="p">(</span><span class="s">&#39;{0} is not a valid attribute &#39;</span>
+                                     <span class="s">&#39;of Field object. &#39;</span>
+                                     <span class="s">&#39;It cannot be updated.&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">key</span><span class="p">))</span>
+
+        <span class="k">if</span> <span class="s">&#39;read&#39;</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span> <span class="ow">and</span> <span class="s">&#39;update&#39;</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;read&#39;</span><span class="p">)</span> <span class="ow">and</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;update&#39;</span><span class="p">):</span>
+                <span class="k">raise</span> <span class="ne">AttributeError</span><span class="p">(</span><span class="s">&quot;The &#39;read&#39; and &#39;update&#39; attribute &quot;</span>
+                                     <span class="s">&quot;cannot both be True&quot;</span><span class="p">)</span>
+
+        <span class="n">l_field</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_field_by_name</span><span class="p">(</span><span class="n">l_names</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">l_field</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="n">l_field</span> <span class="o">=</span> <span class="p">[</span><span class="n">l_field</span><span class="p">]</span>
+
+        <span class="c"># need to make sure both read and update are not True for a field</span>
+
+        <span class="n">read_</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s">&#39;read&#39;</span><span class="p">,</span> <span class="bp">None</span><span class="p">)</span>
+        <span class="n">update_</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s">&#39;update&#39;</span><span class="p">,</span> <span class="bp">None</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">field</span> <span class="ow">in</span> <span class="n">l_field</span><span class="p">:</span>
+            <span class="k">for</span> <span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">val</span><span class="p">)</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">iteritems</span><span class="p">():</span>
+                <span class="nb">setattr</span><span class="p">(</span><span class="n">field</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">val</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">read_</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span> <span class="ow">and</span> <span class="n">update_</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>  <span class="c"># change them both</span>
+                <span class="nb">setattr</span><span class="p">(</span><span class="n">field</span><span class="p">,</span> <span class="s">&#39;read&#39;</span><span class="p">,</span> <span class="n">read_</span><span class="p">)</span>
+                <span class="nb">setattr</span><span class="p">(</span><span class="n">field</span><span class="p">,</span> <span class="s">&#39;update&#39;</span><span class="p">,</span> <span class="n">update_</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="n">read_</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">field</span><span class="o">.</span><span class="n">update</span> <span class="ow">and</span> <span class="n">read_</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="ne">AttributeError</span><span class="p">(</span><span class="s">&quot;The &#39;read&#39; and &#39;update&#39; attribute &quot;</span>
+                                         <span class="s">&quot;cannot both be True&quot;</span><span class="p">)</span>
+                <span class="nb">setattr</span><span class="p">(</span><span class="n">field</span><span class="p">,</span> <span class="s">&#39;read&#39;</span><span class="p">,</span> <span class="n">read_</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="n">update_</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">field</span><span class="o">.</span><span class="n">read</span> <span class="ow">and</span> <span class="n">update_</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="ne">AttributeError</span><span class="p">(</span><span class="s">&quot;The &#39;read&#39; and &#39;update&#39; attribute &quot;</span>
+                                         <span class="s">&quot;cannot both be True&quot;</span><span class="p">)</span>
+                <span class="nb">setattr</span><span class="p">(</span><span class="n">field</span><span class="p">,</span> <span class="s">&#39;update&#39;</span><span class="p">,</span> <span class="n">update_</span><span class="p">)</span>
+
+        <span class="n">read_</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="k">if</span> <span class="s">&#39;read&#39;</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+            <span class="n">read_</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s">&#39;read&#39;</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">field</span> <span class="ow">in</span> <span class="n">l_field</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">read_</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+                <span class="nb">setattr</span><span class="p">(</span><span class="n">field</span><span class="p">,</span> <span class="s">&#39;read&#39;</span><span class="p">,</span> <span class="n">read_</span><span class="p">)</span>
+
+            <span class="k">for</span> <span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">val</span><span class="p">)</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">iteritems</span><span class="p">():</span>
+                <span class="k">if</span> <span class="n">key</span> <span class="o">==</span> <span class="s">&#39;update&#39;</span> <span class="ow">and</span> <span class="n">val</span> <span class="o">==</span> <span class="bp">True</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">field</span><span class="p">,</span> <span class="s">&#39;read&#39;</span><span class="p">):</span>
+                        <span class="k">raise</span> <span class="ne">AttributeError</span><span class="p">(</span><span class="s">&quot;The &#39;read&#39; and &#39;update&#39; &quot;</span>
+                                             <span class="s">&quot;attribute cannot both be True&quot;</span><span class="p">)</span>
+
+                <span class="nb">setattr</span><span class="p">(</span><span class="n">field</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">val</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">get_field_by_name</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">names</span><span class="p">):</span>
+        <span class="s">&#39;get field object from list given a name or list of names&#39;</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">names</span><span class="p">,</span> <span class="nb">basestring</span><span class="p">):</span>
+            <span class="n">names</span> <span class="o">=</span> <span class="p">[</span><span class="n">names</span><span class="p">]</span>
+
+        <span class="n">out</span> <span class="o">=</span> <span class="p">[</span><span class="n">field</span> <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">names</span>
+               <span class="k">for</span> <span class="n">field</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">fields</span>
+               <span class="k">if</span> <span class="n">name</span> <span class="o">==</span> <span class="n">field</span><span class="o">.</span><span class="n">name</span><span class="p">]</span>
+
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">out</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">out</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">out</span>
+
+    <span class="k">def</span> <span class="nf">get_field_by_attribute</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">attr</span><span class="p">):</span>
+        <span class="s">&#39;returns a list of fields where attr is true&#39;</span>
+        <span class="k">if</span> <span class="n">attr</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_valid_field_attr</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">AttributeError</span><span class="p">(</span><span class="s">&#39;{0} is not valid attribute. &#39;</span>
+                                 <span class="s">&#39;Field.__dict__ contains: &#39;</span>
+                                 <span class="s">&#39;{1}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">attr</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_valid_field_attr</span><span class="p">))</span>
+
+        <span class="n">out</span> <span class="o">=</span> <span class="p">[</span><span class="n">field</span> <span class="k">for</span> <span class="n">field</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">fields</span> <span class="k">if</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">field</span><span class="p">,</span> <span class="n">attr</span><span class="p">)]</span>
+        <span class="k">return</span> <span class="n">out</span>
+
+    <span class="k">def</span> <span class="nf">get_names</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">attr</span><span class="o">=</span><span class="s">&#39;all&#39;</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns the property names in self.fields. Can return all field names,</span>
+<span class="sd">        or fieldnames with an attribute equal to True.</span>
+<span class="sd">        attr can also be a list:</span>
+
+<span class="sd">        &gt;&gt;&gt; _state = State(read=[&#39;t0&#39;],save=[&#39;t0&#39;,&#39;t1&#39;])</span>
+<span class="sd">        &gt;&gt;&gt; _state.get_names([&#39;read&#39;,&#39;save&#39;])    # returns &#39;t0&#39;</span>
+<span class="sd">        &gt;&gt;&gt; _state.get_names(&#39;save&#39;)     # returns [&#39;t0&#39;, &#39;t1&#39;]</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">attr</span> <span class="o">==</span> <span class="s">&#39;all&#39;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">[</span><span class="n">field_</span><span class="o">.</span><span class="n">name</span> <span class="k">for</span> <span class="n">field_</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">fields</span><span class="p">]</span>
+
+        <span class="n">names</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">attr</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">at</span> <span class="ow">in</span> <span class="n">attr</span><span class="p">:</span>
+                <span class="n">names</span><span class="o">.</span><span class="n">extend</span><span class="p">([</span><span class="n">field_</span><span class="o">.</span><span class="n">name</span> <span class="k">for</span> <span class="n">field_</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">fields</span>
+                              <span class="k">if</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">field_</span><span class="p">,</span> <span class="n">at</span><span class="p">)])</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">attr</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_valid_field_attr</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">AttributeError</span><span class="p">(</span><span class="s">&#39;{0} is not valid attribute. &#39;</span>
+                                     <span class="s">&#39;Field.__dict__ contains: {1}&#39;</span>
+                                     <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">attr</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_valid_field_attr</span><span class="p">))</span>
+
+            <span class="n">names</span><span class="o">.</span><span class="n">extend</span><span class="p">([</span><span class="n">field_</span><span class="o">.</span><span class="n">name</span> <span class="k">for</span> <span class="n">field_</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">fields</span>
+                          <span class="k">if</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">field_</span><span class="p">,</span> <span class="n">attr</span><span class="p">)])</span>
+
+        <span class="k">return</span> <span class="n">names</span>
+
+
+<div class="viewcode-block" id="Serializable"><a class="viewcode-back" href="../../../reference.html#gnome.utilities.serializable.Serializable">[docs]</a><span class="k">class</span> <span class="nc">Serializable</span><span class="p">(</span><span class="n">GnomeId</span><span class="p">,</span> <span class="n">Savable</span><span class="p">):</span>
+
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    contains the to_dict and update_from_dict method to output properties of</span>
+<span class="sd">    object in a list.</span>
+
+<span class="sd">    This class is intended as a mixin so to_dict and update_from_dict become</span>
+<span class="sd">    part of the object and the object must define a _state attribute of type</span>
+<span class="sd">    State().</span>
+
+<span class="sd">    It mixes in the GnomeId class since all Serializable gnome objects will</span>
+<span class="sd">    have an Id as well</span>
+
+<span class="sd">    The default _state=State(save=[&#39;id&#39;]) is a static variable for this class</span>
+<span class="sd">    It uses the same convention as State to obtain the lists, &#39;update&#39; for</span>
+<span class="sd">    updating  properties, &#39;read&#39; for read-only properties and &#39;save&#39; for a</span>
+<span class="sd">    list of properties required to create new object.</span>
+
+<span class="sd">    The default _state contains &#39;id&#39; in the save list. This is because all</span>
+<span class="sd">    objects in a Model need &#39;id&#39; to create a new one.</span>
+
+<span class="sd">    Similarly, &#39;obj_type&#39; is required for all objects, this is so the scenario</span>
+<span class="sd">    module knows which object to create when loading from file.</span>
+<span class="sd">    A default implementation of obj_type_to_dict exists here.</span>
+
+<span class="sd">    Used obj_type instead of type because type is a builtin in python and</span>
+<span class="sd">    didn&#39;t want to use the same name. The obj_type contains the type of the</span>
+<span class="sd">    object as a string.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">_state</span> <span class="o">=</span> <span class="n">State</span><span class="p">(</span><span class="n">save</span><span class="o">=</span><span class="p">(</span><span class="s">&#39;obj_type&#39;</span><span class="p">,</span> <span class="s">&#39;name&#39;</span><span class="p">),</span> <span class="n">read</span><span class="o">=</span><span class="p">(</span><span class="s">&#39;obj_type&#39;</span><span class="p">,</span> <span class="s">&#39;id&#39;</span><span class="p">),</span>
+        <span class="n">update</span><span class="o">=</span><span class="p">(</span><span class="s">&#39;name&#39;</span><span class="p">,))</span>
+
+    <span class="c"># =========================================================================</span>
+    <span class="c"># @classmethod</span>
+    <span class="c"># def add_state(cls, **kwargs):</span>
+    <span class="c">#    &quot;&quot;&quot;</span>
+    <span class="c">#    Each class that mixes-in Serializable will contain a _state attribute</span>
+    <span class="c">#    of type State.</span>
+    <span class="c">#    The _state should be a static member for each subclass. It is static</span>
+    <span class="c">#    because instances of the class will all have the same field names for</span>
+    <span class="c">#    the _state.</span>
+    <span class="c">#</span>
+    <span class="c">#    In addition, the _state of the child class extends the _state of the</span>
+    <span class="c">#    parent class.</span>
+    <span class="c">#</span>
+    <span class="c">#    As such, this classmethod is available and used by each subclass in</span>
+    <span class="c">#    __init__ to extend the definition of the parent class _state attribute</span>
+    <span class="c">#</span>
+    <span class="c">#    It recursively looks for &#39;_state&#39; attribute in base classes</span>
+    <span class="c">#    (cls.__bases__); gets the (&#39;read&#39;,&#39;update&#39;,&#39;save&#39;) lists from each</span>
+    <span class="c">#    base class and adds;</span>
+    <span class="c">#    and creates a new State() object with its own lists and the lists of</span>
+    <span class="c">#    the parents</span>
+    <span class="c">#</span>
+    <span class="c">#    NOTE: removes duplicates (repeated fields) from list. The lists in</span>
+    <span class="c">#    State refer to attributes of the object. By default [&#39;id&#39;] in create</span>
+    <span class="c">#    list will end up duplicated if one of the base classes of cls already</span>
+    <span class="c">#    contained &#39;_state&#39; attribute</span>
+    <span class="c">#    &quot;&quot;&quot;</span>
+    <span class="c">#    print &quot;add_state&quot;</span>
+    <span class="c">#    update = kwargs.pop(&#39;update&#39;,[])</span>
+    <span class="c">#    create = kwargs.pop(&#39;save&#39;,[])</span>
+    <span class="c">#    read   = kwargs.pop(&#39;read&#39;,[])</span>
+    <span class="c">#    for obj in cls.__bases__:</span>
+    <span class="c">#        if &#39;_state&#39; in obj.__dict__:</span>
+    <span class="c">#            update.extend( obj._state.get()[&#39;update&#39;] )</span>
+    <span class="c">#            create.extend( obj._state.get()[&#39;save&#39;] )</span>
+    <span class="c">#            read.extend( obj._state.get()[&#39;read&#39;] )</span>
+    <span class="c">#</span>
+    <span class="c">#    update = list( set(update) )</span>
+    <span class="c">#    create = list( set(create) )</span>
+    <span class="c">#    read = list( set(read) )</span>
+    <span class="c">#    cls._state = State(update=update, save=create, read=read)</span>
+    <span class="c"># =========================================================================</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">_restore_attr_from_save</span><span class="p">(</span><span class="n">cls</span><span class="p">,</span> <span class="n">new_obj</span><span class="p">,</span> <span class="n">dict_</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        restore attributes from save files that are not set during init - broke</span>
+<span class="sd">        out some functionality of new_from_dict so when child classes override</span>
+<span class="sd">        it, they can make use of this as well</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="c"># remove following since they are not attributes of object</span>
+        <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="p">[</span><span class="s">&#39;obj_type&#39;</span><span class="p">,</span> <span class="s">&#39;id&#39;</span><span class="p">]:</span>
+            <span class="k">if</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">dict_</span><span class="p">:</span>
+                <span class="k">del</span> <span class="n">dict_</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
+
+        <span class="c"># set remaining attributes to restore state of object when it was</span>
+        <span class="c"># persisted to save files (ie could be mid-run)</span>
+        <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">dict_</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">new_obj</span><span class="p">,</span> <span class="n">key</span><span class="p">):</span>
+                <span class="k">raise</span> <span class="ne">AttributeError</span><span class="p">(</span><span class="s">&#39;{0} is not an attribute &#39;</span>
+                    <span class="s">&#39;of {1}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">cls</span><span class="o">.</span><span class="n">__name__</span><span class="p">))</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="nb">setattr</span><span class="p">(</span><span class="n">new_obj</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">dict_</span><span class="p">[</span><span class="n">key</span><span class="p">])</span>
+            <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
+                <span class="k">print</span> <span class="s">&#39;failed to set attribute {0}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+                <span class="k">raise</span>
+
+    <span class="nd">@classmethod</span>
+<div class="viewcode-block" id="Serializable.new_from_dict"><a class="viewcode-back" href="../../../reference.html#gnome.utilities.serializable.Serializable.new_from_dict">[docs]</a>    <span class="k">def</span> <span class="nf">new_from_dict</span><span class="p">(</span><span class="n">cls</span><span class="p">,</span> <span class="n">dict_</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        creates a new object from dictionary</span>
+
+<span class="sd">        This is base implementation and can be over-ridden by classes using</span>
+<span class="sd">        this mixin</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">rqd</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">parent</span> <span class="ow">in</span> <span class="n">cls</span><span class="o">.</span><span class="n">mro</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">inspect</span><span class="o">.</span><span class="n">ismethod</span><span class="p">(</span><span class="n">parent</span><span class="o">.</span><span class="n">__init__</span><span class="p">):</span>
+                <span class="n">kwargs</span> <span class="o">=</span> <span class="n">inspect</span><span class="o">.</span><span class="n">getargspec</span><span class="p">(</span><span class="n">parent</span><span class="o">.</span><span class="n">__init__</span><span class="p">)[</span><span class="mi">0</span><span class="p">][</span><span class="mi">1</span><span class="p">:]</span>
+
+                <span class="c"># pop kwargs for object creation into rqd dict</span>
+                <span class="n">rqd</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="n">key</span><span class="p">:</span> <span class="n">dict_</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">key</span><span class="p">)</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">kwargs</span>
+                            <span class="k">if</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">dict_</span><span class="p">})</span>
+
+        <span class="c"># create object with required input arguments</span>
+        <span class="n">new_obj</span> <span class="o">=</span> <span class="n">cls</span><span class="p">(</span><span class="o">**</span><span class="n">rqd</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">dict_</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s">&#39;json_&#39;</span><span class="p">)</span> <span class="o">==</span> <span class="s">&#39;save&#39;</span><span class="p">:</span>
+            <span class="n">cls</span><span class="o">.</span><span class="n">_restore_attr_from_save</span><span class="p">(</span><span class="n">new_obj</span><span class="p">,</span> <span class="n">dict_</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c"># for webapi, ignore the readonly attributes and set only</span>
+            <span class="c"># attributes that are updatable. At present, the &#39;webapi&#39; uses</span>
+            <span class="c"># new_from_dict to create a new object only. It does not restore</span>
+            <span class="c"># the state of a previously persisted object</span>
+            <span class="k">if</span> <span class="n">dict_</span><span class="p">:</span>
+                <span class="n">new_obj</span><span class="o">.</span><span class="n">update_from_dict</span><span class="p">(</span><span class="n">dict_</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">new_obj</span>
+</div>
+    <span class="k">def</span> <span class="nf">_attrlist</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">do</span><span class="o">=</span><span class="p">(</span><span class="s">&#39;update&#39;</span><span class="p">,</span> <span class="s">&#39;read&#39;</span><span class="p">)):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        returns list of object attributes that need to be serialized. By</span>
+<span class="sd">        default all fields that have &#39;update&#39; == True are returned.</span>
+<span class="sd">        By default it converts the &#39;update&#39; list of the _state object to dict;</span>
+<span class="sd">        however, do=(&#39;save&#39;,) or do=(&#39;update&#39;,&#39;read&#39;) will return the dict</span>
+<span class="sd">        with the union of the corresponding lists.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="n">actions</span> <span class="o">=</span> <span class="p">{</span><span class="s">&#39;update&#39;</span><span class="p">,</span> <span class="s">&#39;save&#39;</span><span class="p">,</span> <span class="s">&#39;read&#39;</span><span class="p">}</span>
+        <span class="n">list_</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="k">for</span> <span class="n">action</span> <span class="ow">in</span> <span class="n">do</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">action</span> <span class="ow">in</span> <span class="n">actions</span><span class="p">:</span>
+                <span class="n">list_</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_state</span><span class="o">.</span><span class="n">get_names</span><span class="p">(</span><span class="n">action</span><span class="p">))</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&quot;input not understood. String must be one of &quot;</span>
+                                 <span class="s">&quot;following: &#39;update&#39;, &#39;save&#39; or &#39;readonly&#39;.&quot;</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">list_</span>
+
+<div class="viewcode-block" id="Serializable.to_dict"><a class="viewcode-back" href="../../../reference.html#gnome.utilities.serializable.Serializable.to_dict">[docs]</a>    <span class="k">def</span> <span class="nf">to_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        returns a dictionary containing the serialized representation of this</span>
+<span class="sd">        object.</span>
+
+<span class="sd">        For every field, if there is a method defined on the object such that</span>
+<span class="sd">        the method name is `{field_name}_to_dict`, use the return value of that</span>
+<span class="sd">        method as the field value.</span>
+
+<span class="sd">        Note: any field in `list` that does not exist on the</span>
+<span class="sd">        object and does not have a to_dict method will raise an AttributeError.</span>
+
+<span class="sd">        :param json_=&#39;webapi&#39;: return the attributes for json payload for</span>
+<span class="sd">                               webapi.</span>
+<span class="sd">                               The other option is &#39;save&#39; corresponding with</span>
+<span class="sd">                               json for save files.</span>
+
+<span class="sd">        NOTE: add the json_=&#39;webapi&#39; key to be serialized so we know what the</span>
+<span class="sd">        serialization is for</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">list_</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_state</span><span class="o">.</span><span class="n">get_names</span><span class="p">(</span><span class="s">&#39;all&#39;</span><span class="p">)</span>
+
+        <span class="n">data</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">list_</span><span class="p">:</span>
+            <span class="n">value</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">attr_to_dict</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+            <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="s">&#39;to_dict&#39;</span><span class="p">):</span>
+                <span class="n">value</span> <span class="o">=</span> <span class="n">value</span><span class="o">.</span><span class="n">to_dict</span><span class="p">()</span>  <span class="c"># recursive call</span>
+
+            <span class="k">if</span> <span class="n">value</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+                <span class="c"># some issue in colander monkey patch and the Wind schema</span>
+                <span class="c"># if None values are not pruned - take them out for now</span>
+                <span class="c"># this also means the default values will not be applied</span>
+                <span class="c"># on serialized -- that&#39;s ok though since we don&#39;t define</span>
+                <span class="c"># defaults in colander</span>
+                <span class="n">data</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span>
+
+        <span class="k">return</span> <span class="n">data</span>
+</div>
+<div class="viewcode-block" id="Serializable.attr_to_dict"><a class="viewcode-back" href="../../../reference.html#gnome.utilities.serializable.Serializable.attr_to_dict">[docs]</a>    <span class="k">def</span> <span class="nf">attr_to_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        refactor to_dict&#39;s functionality so child classes can convert a</span>
+<span class="sd">        single attribute to_dict instead of doing a whole list of fields</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">to_dict_fn_name</span> <span class="o">=</span> <span class="s">&#39;</span><span class="si">%s</span><span class="s">_to_dict&#39;</span> <span class="o">%</span> <span class="n">name</span>
+
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">to_dict_fn_name</span><span class="p">):</span>
+            <span class="n">value</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">to_dict_fn_name</span><span class="p">)()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">value</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">value</span>
+</div>
+<div class="viewcode-block" id="Serializable.update_from_dict"><a class="viewcode-back" href="../../../reference.html#gnome.utilities.serializable.Serializable.update_from_dict">[docs]</a>    <span class="k">def</span> <span class="nf">update_from_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Update the attributes of this object using the dictionary ``data`` by</span>
+<span class="sd">        looking up the value of each key in ``data``.</span>
+<span class="sd">        The fields in self._state that have update=True are modified. The</span>
+<span class="sd">        remaining keys in &#39;data&#39; are ignored. The object&#39;s _state attribute</span>
+<span class="sd">        defines what fields can be updated</span>
+
+<span class="sd">        If an attribute has changed, then call &#39;update_attr&#39; to update its</span>
+<span class="sd">        value.</span>
+
+<span class="sd">        :param data: dict containing state of object per the client</span>
+<span class="sd">        :type data: dict</span>
+<span class="sd">        :returns: True if something changed, False otherwise</span>
+<span class="sd">        :rtype: bool</span>
+
+<span class="sd">        .. note::</span>
+
+<span class="sd">            Does not do updates on nested objects. If the attribute references</span>
+<span class="sd">            another Serializable object, then the value is not a dict but</span>
+<span class="sd">            rather the updated object. For instance, WindMover will receive:</span>
+
+<span class="sd">              {..., &#39;wind&#39;: &lt;Wind object&gt;}</span>
+
+<span class="sd">            as opposed to a nested dict of the &#39;wind&#39; object. It is expected</span>
+<span class="sd">            that the &#39;wind&#39; object was updated by calling its own</span>
+<span class="sd">            update_from_dict then added to this dict as the updated object.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">list_</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_state</span><span class="o">.</span><span class="n">get_names</span><span class="p">(</span><span class="s">&#39;update&#39;</span><span class="p">)</span>
+        <span class="n">updated</span> <span class="o">=</span> <span class="bp">False</span>
+
+        <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">list_</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">key</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">data</span><span class="p">:</span>
+                <span class="k">continue</span>
+
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">update_attr</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">data</span><span class="p">[</span><span class="n">key</span><span class="p">]):</span>
+                <span class="n">updated</span> <span class="o">=</span> <span class="bp">True</span>
+
+        <span class="k">return</span> <span class="n">updated</span>
+</div>
+    <span class="k">def</span> <span class="nf">_attr_changed</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">current_value</span><span class="p">,</span> <span class="n">received_value</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Checks if an attribute passed back in a dict_ from client has changed.</span>
+<span class="sd">        Returns True if changed, else False</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="c"># first, we normalize our left and right args</span>
+        <span class="k">if</span> <span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">current_value</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="ow">and</span>
+                <span class="nb">isinstance</span><span class="p">(</span><span class="n">received_value</span><span class="p">,</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">))):</span>
+            <span class="n">received_value</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">received_value</span><span class="p">)</span>
+
+        <span class="c"># For a nested object, check if it data contains a new object. If</span>
+        <span class="c"># object in data &#39;is&#39; current_value then &#39;self&#39; state has not</span>
+        <span class="c"># changed. Even if current_value == data[key], we still must update</span>
+        <span class="c"># it because it now references a new object</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">current_value</span><span class="p">,</span> <span class="n">Serializable</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">current_value</span> <span class="ow">is</span> <span class="ow">not</span> <span class="n">received_value</span><span class="p">:</span>
+                <span class="k">return</span> <span class="bp">True</span>
+
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">current_value</span><span class="p">,</span> <span class="n">OrderedCollection</span><span class="p">):</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">current_value</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="n">received_value</span><span class="p">):</span>
+                <span class="k">return</span> <span class="bp">True</span>
+            <span class="k">for</span> <span class="n">ix</span><span class="p">,</span> <span class="n">item</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">current_value</span><span class="p">):</span>
+                <span class="k">if</span> <span class="n">item</span> <span class="ow">is</span> <span class="ow">not</span> <span class="n">received_value</span><span class="p">[</span><span class="n">ix</span><span class="p">]:</span>
+                    <span class="k">return</span> <span class="bp">True</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">current_value</span> <span class="o">!=</span> <span class="n">received_value</span><span class="p">:</span>
+                    <span class="k">return</span> <span class="bp">True</span>
+            <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+                <span class="c"># maybe an iterable - checking for</span>
+                <span class="c"># isinstance(current_value, collections.Iterable) fails for</span>
+                <span class="c"># string so just do a try/except</span>
+                <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">current_value</span> <span class="o">!=</span> <span class="n">received_value</span><span class="p">):</span>
+                    <span class="k">return</span> <span class="bp">True</span>
+
+        <span class="k">return</span> <span class="bp">False</span>
+
+<div class="viewcode-block" id="Serializable.update_attr"><a class="viewcode-back" href="../../../reference.html#gnome.utilities.serializable.Serializable.update_attr">[docs]</a>    <span class="k">def</span> <span class="nf">update_attr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        update the attribute defined by &#39;name&#39; with given &#39;value&#39;</span>
+
+<span class="sd">        If there is a method defined on the object such that the method name is</span>
+<span class="sd">        `{name}_from_dict`, call that method with the field&#39;s data.</span>
+
+<span class="sd">        If neither method exists, then set the field with the value from</span>
+<span class="sd">        ``data`` directly on the object.</span>
+
+<span class="sd">        :param name: name of attribute to be updated</span>
+<span class="sd">        :type name: str</span>
+<span class="sd">        :param value: the new value of the attribute</span>
+<span class="sd">        :type value: depends on each attribute being updated</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="n">current_value</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">current_value</span><span class="p">,</span> <span class="n">OrderedCollection</span><span class="p">):</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_update_orderedcoll_attr</span><span class="p">(</span><span class="n">current_value</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
+
+        <span class="n">from_dict_fn_name</span> <span class="o">=</span> <span class="s">&#39;</span><span class="si">%s</span><span class="s">_update_from_dict&#39;</span> <span class="o">%</span> <span class="n">name</span>
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">from_dict_fn_name</span><span class="p">):</span>
+            <span class="k">return</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">from_dict_fn_name</span><span class="p">)(</span><span class="n">value</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_attr_changed</span><span class="p">(</span><span class="n">current_value</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+            <span class="nb">setattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
+            <span class="k">return</span> <span class="bp">True</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">False</span>
+</div>
+    <span class="k">def</span> <span class="nf">_update_orderedcoll_attr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">curr_oc</span><span class="p">,</span> <span class="n">l_new_oc</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">            Update attribute of type OrderedCollection with items in</span>
+<span class="sd">            the sequence l_new_oc.</span>
+<span class="sd">            Any in-place items in the current collection that differ from</span>
+<span class="sd">            the respective items in the new collection (or sequence) will</span>
+<span class="sd">            be replaced.  For example:</span>
+<span class="sd">                curr_oc = [a, b, c, d]</span>
+<span class="sd">                new_oc  = [a, e, c, f]</span>
+<span class="sd">                               ||</span>
+<span class="sd">                               \/</span>
+<span class="sd">                upd_oc  = [a, e, c, f]</span>
+
+<span class="sd">            If the new sequence is bigger than the current collection, then</span>
+<span class="sd">            the new items will be appended.  For example:</span>
+<span class="sd">                curr_oc = [a, b, c, d]</span>
+<span class="sd">                new_oc  = [a, b, c, d, e, f]</span>
+<span class="sd">                               ||</span>
+<span class="sd">                               \/</span>
+<span class="sd">                upd_oc  = [a, b, c, d, e, f]</span>
+
+<span class="sd">            If the new sequence is smaller than the current collection, then</span>
+<span class="sd">            the extra items in the current collection will be removed.</span>
+<span class="sd">            For example:</span>
+<span class="sd">                curr_oc = [a, b, c, d, e, f]</span>
+<span class="sd">                new_oc  = [a, b, c, d]</span>
+<span class="sd">                               ||</span>
+<span class="sd">                               \/</span>
+<span class="sd">                upd_oc  = [a, b, c, d]</span>
+<span class="sd">            TODO: Some things to worry about:</span>
+<span class="sd">            - any repeated items in l_new_oc?</span>
+<span class="sd">            - should we accept only gnome objects in l_new_oc?</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="n">updated</span> <span class="o">=</span> <span class="bp">False</span>
+
+        <span class="k">if</span> <span class="p">[</span><span class="n">i</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">l_new_oc</span> <span class="k">if</span> <span class="n">i</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">]:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&quot;Cannot update if our new list contains &quot;</span>
+                             <span class="s">&quot;null items.&quot;</span><span class="p">)</span>
+
+        <span class="n">list_items</span> <span class="o">=</span> <span class="p">[</span><span class="n">i</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">izip_longest</span><span class="p">(</span><span class="n">curr_oc</span><span class="p">,</span> <span class="n">l_new_oc</span><span class="p">)]</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">l_new_oc</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="nb">len</span><span class="p">(</span><span class="n">curr_oc</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">curr</span><span class="p">,</span> <span class="n">new</span> <span class="ow">in</span> <span class="n">list_items</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">curr</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+                    <span class="n">curr_oc</span> <span class="o">+=</span> <span class="n">new</span>
+                    <span class="n">updated</span> <span class="o">=</span> <span class="bp">True</span>
+                <span class="k">elif</span> <span class="n">curr</span><span class="o">.</span><span class="n">id</span> <span class="o">!=</span> <span class="n">new</span><span class="o">.</span><span class="n">id</span><span class="p">:</span>
+                    <span class="n">curr_oc</span><span class="p">[</span><span class="n">curr</span><span class="o">.</span><span class="n">id</span><span class="p">]</span> <span class="o">=</span> <span class="n">new</span>
+                    <span class="n">updated</span> <span class="o">=</span> <span class="bp">True</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">curr</span><span class="p">,</span> <span class="n">new</span> <span class="ow">in</span> <span class="nb">reversed</span><span class="p">(</span><span class="n">list_items</span><span class="p">):</span>
+                <span class="k">if</span> <span class="n">new</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+                    <span class="k">del</span> <span class="n">curr_oc</span><span class="p">[</span><span class="n">curr</span><span class="o">.</span><span class="n">id</span><span class="p">]</span>
+                    <span class="n">updated</span> <span class="o">=</span> <span class="bp">True</span>
+                <span class="k">elif</span> <span class="n">curr</span><span class="o">.</span><span class="n">id</span> <span class="o">!=</span> <span class="n">new</span><span class="o">.</span><span class="n">id</span><span class="p">:</span>
+                    <span class="n">curr_oc</span><span class="p">[</span><span class="n">curr</span><span class="o">.</span><span class="n">id</span><span class="p">]</span> <span class="o">=</span> <span class="n">new</span>
+                    <span class="n">updated</span> <span class="o">=</span> <span class="bp">True</span>
+
+        <span class="k">return</span> <span class="n">updated</span>
+
+<div class="viewcode-block" id="Serializable.obj_type_to_dict"><a class="viewcode-back" href="../../../reference.html#gnome.utilities.serializable.Serializable.obj_type_to_dict">[docs]</a>    <span class="k">def</span> <span class="nf">obj_type_to_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        returns object type to save in dict.</span>
+<span class="sd">        This is base implementation and can be over-ridden</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="s">&#39;{0.__module__}.{0.__class__.__name__}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+</div>
+    <span class="k">def</span> <span class="nf">_check_type</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="s">&#39;check basic type equality&#39;</span>
+        <span class="k">if</span> <span class="bp">self</span> <span class="ow">is</span> <span class="n">other</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">True</span>
+
+        <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">==</span> <span class="nb">type</span><span class="p">(</span><span class="n">other</span><span class="p">):</span>
+            <span class="k">return</span> <span class="bp">True</span>
+
+        <span class="k">return</span> <span class="bp">False</span>
+
+    <span class="k">def</span> <span class="nf">__eq__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        .. function:: __eq__(other)</span>
+
+<span class="sd">        Since this class is designed as a mixin with one objective being to</span>
+<span class="sd">        save _state of the object, then recreate a new object with the same</span>
+<span class="sd">        _state.</span>
+
+<span class="sd">        Define a base implementation of __eq__ so an object before persistence</span>
+<span class="sd">        can be compared with a new object created after it is persisted.</span>
+<span class="sd">        It can be overridden by the class with which it is mixed.</span>
+
+<span class="sd">        It looks at attributes defined in self._state and checks the plain</span>
+<span class="sd">        python types match.</span>
+
+<span class="sd">        It does not compare numpy arrays - only the plain python types. If an</span>
+<span class="sd">        object&#39;s state contains numpy arrays like Wind object, it must override</span>
+<span class="sd">        this method and do the comparison in its own class. This is especially</span>
+<span class="sd">        useful when a Model object is recreated from mid-run save and the</span>
+<span class="sd">        SpillContainer&#39;s data_arrays are repopulated. The arrays may not be</span>
+<span class="sd">        exact so SpillContainer does the equality check for numpy arrays but</span>
+<span class="sd">        can still use this base class for testing equality for all other</span>
+<span class="sd">        attributes. Helps in following the DRY principle.</span>
+
+<span class="sd">        :param other: object of the same type as self that is used for</span>
+<span class="sd">                      comparison in obj1 == other</span>
+
+<span class="sd">        NOTE: This class does not have __init__ method and super is not used.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_check_type</span><span class="p">(</span><span class="n">other</span><span class="p">):</span>
+            <span class="k">return</span> <span class="bp">False</span>
+
+        <span class="k">if</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_state</span><span class="o">.</span><span class="n">get_field_by_attribute</span><span class="p">(</span><span class="s">&#39;save&#39;</span><span class="p">)</span> <span class="o">!=</span>
+            <span class="n">other</span><span class="o">.</span><span class="n">_state</span><span class="o">.</span><span class="n">get_field_by_attribute</span><span class="p">(</span><span class="s">&#39;save&#39;</span><span class="p">)):</span>
+            <span class="k">return</span> <span class="bp">False</span>
+
+        <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_state</span><span class="o">.</span><span class="n">get_names</span><span class="p">(</span><span class="s">&#39;save&#39;</span><span class="p">):</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_state</span><span class="p">[</span><span class="n">name</span><span class="p">]</span><span class="o">.</span><span class="n">test_for_eq</span><span class="p">:</span>
+                <span class="k">continue</span>
+
+            <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span>
+                <span class="n">self_attr</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
+                <span class="n">other_attr</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="c"># not an attribute, let attr_to_dict call appropriate function</span>
+                <span class="c"># and check the dicts are equal</span>
+                <span class="n">self_attr</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">attr_to_dict</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+                <span class="n">other_attr</span> <span class="o">=</span> <span class="n">other</span><span class="o">.</span><span class="n">attr_to_dict</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">self_attr</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span>
+                <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">self_attr</span><span class="p">,</span> <span class="nb">float</span><span class="p">):</span>
+                    <span class="k">if</span> <span class="nb">abs</span><span class="p">(</span><span class="n">self_attr</span> <span class="o">-</span> <span class="n">other_attr</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mf">1e-10</span><span class="p">:</span>
+                        <span class="k">return</span> <span class="bp">False</span>
+                <span class="k">elif</span> <span class="n">self_attr</span> <span class="o">!=</span> <span class="n">other_attr</span><span class="p">:</span>
+                    <span class="k">return</span> <span class="bp">False</span>
+
+        <span class="k">return</span> <span class="bp">True</span>
+
+    <span class="k">def</span> <span class="nf">__ne__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="k">return</span> <span class="ow">not</span> <span class="bp">self</span> <span class="o">==</span> <span class="n">other</span>
+
+<div class="viewcode-block" id="Serializable.to_serialize"><a class="viewcode-back" href="../../../reference.html#gnome.utilities.serializable.Serializable.to_serialize">[docs]</a>    <span class="k">def</span> <span class="nf">to_serialize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">json_</span><span class="o">=</span><span class="s">&#39;webapi&#39;</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        invoke to_dict() which converts all attributes defined in _state to</span>
+<span class="sd">        dict. If json_=&#39;save&#39;, it subselects the Fields with save=True. If</span>
+<span class="sd">        json_=&#39;webapi&#39;, it subselects Fields with (update=True, read=True)</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="n">dict_</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">to_dict</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">json_</span> <span class="o">==</span> <span class="s">&#39;webapi&#39;</span><span class="p">:</span>
+            <span class="n">attrlist</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_attrlist</span><span class="p">()</span>
+        <span class="k">elif</span> <span class="n">json_</span> <span class="o">==</span> <span class="s">&#39;save&#39;</span><span class="p">:</span>
+            <span class="n">attrlist</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_attrlist</span><span class="p">(</span><span class="n">do</span><span class="o">=</span><span class="p">(</span><span class="s">&#39;save&#39;</span><span class="p">,))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&quot;desired json_ payload must be either for webapi &quot;</span>
+                <span class="s">&quot;or for save files: (&#39;webapi&#39;, &#39;save&#39;)&quot;</span><span class="p">)</span>
+
+        <span class="n">toserial</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">attrlist</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">dict_</span><span class="p">:</span>
+                <span class="c"># if attribute is None, then dict_ does not contain it</span>
+                <span class="k">if</span> <span class="p">(</span><span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">)</span> <span class="ow">and</span>
+                    <span class="nb">hasattr</span><span class="p">(</span><span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">),</span> <span class="s">&#39;to_serialize&#39;</span><span class="p">)):</span>
+                    <span class="n">attr</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">)</span>
+                    <span class="c"># recursively call for nested objects</span>
+                    <span class="n">toserial</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">attr</span><span class="o">.</span><span class="n">to_serialize</span><span class="p">(</span><span class="n">json_</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="c"># not a nested object</span>
+                    <span class="n">toserial</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">dict_</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
+
+        <span class="n">toserial</span><span class="p">[</span><span class="s">&#39;json_&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">json_</span>
+        <span class="k">return</span> <span class="n">toserial</span>
+</div>
+<div class="viewcode-block" id="Serializable.serialize"><a class="viewcode-back" href="../../../reference.html#gnome.utilities.serializable.Serializable.serialize">[docs]</a>    <span class="k">def</span> <span class="nf">serialize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">json_</span><span class="o">=</span><span class="s">&#39;webapi&#39;</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Convert the dict returned by object&#39;s to_dict method to valid json</span>
+<span class="sd">        format via colander schema</span>
+
+<span class="sd">        It uses the modules_dict defined in gnome.persist to find the correct</span>
+<span class="sd">        schema module.</span>
+
+<span class="sd">        1. adds &#39;obj_type&#39; field to _state for &#39;save&#39; attribute so it is</span>
+<span class="sd">                contained in serialized data. todo: check if this is needed</span>
+<span class="sd">        2. do serialization and return json</span>
+
+<span class="sd">        :param do: tells object where serialization is for update or for</span>
+<span class="sd">            creating a new object</span>
+<span class="sd">        :returns: json format of serialized data</span>
+
+<span class="sd">        Note: creating a new object versus &#39;update&#39; or &#39;read&#39; has a different</span>
+<span class="sd">            set of fields for serialization so &#39;do&#39; is required.</span>
+<span class="sd">            todo: revisit this to see if it still makes sense to have different</span>
+<span class="sd">            attributes for different operations like &#39;update&#39;, &#39;save&#39;, &#39;read&#39;</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">toserial</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">to_serialize</span><span class="p">(</span><span class="n">json_</span><span class="p">)</span>
+        <span class="n">schema</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__class__</span><span class="o">.</span><span class="n">_schema</span><span class="p">()</span>
+        <span class="n">serial</span> <span class="o">=</span> <span class="n">schema</span><span class="o">.</span><span class="n">serialize</span><span class="p">(</span><span class="n">toserial</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">serial</span>
+</div>
+    <span class="nd">@classmethod</span>
+<div class="viewcode-block" id="Serializable.is_sparse"><a class="viewcode-back" href="../../../reference.html#gnome.utilities.serializable.Serializable.is_sparse">[docs]</a>    <span class="k">def</span> <span class="nf">is_sparse</span><span class="p">(</span><span class="n">cls</span><span class="p">,</span> <span class="n">json_</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">            Sparse means that we have a previously created object,</span>
+<span class="sd">            and we are receiving a reference to the object using just</span>
+<span class="sd">            an obj_type and an id.  This is a valid payload that the</span>
+<span class="sd">            Web Client will send.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="n">r_attr_list</span> <span class="o">=</span> <span class="n">cls</span><span class="o">.</span><span class="n">_state</span><span class="o">.</span><span class="n">get_names</span><span class="p">(</span><span class="s">&#39;read&#39;</span><span class="p">)</span>
+        <span class="n">r_attr_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s">&#39;json_&#39;</span><span class="p">)</span>
+        <span class="n">attr_list</span> <span class="o">=</span> <span class="p">[</span><span class="n">attr</span> <span class="k">for</span> <span class="n">attr</span> <span class="ow">in</span> <span class="n">json_</span> <span class="k">if</span> <span class="n">attr</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">r_attr_list</span><span class="p">]</span>
+
+        <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="n">attr_list</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span>
+</div>
+    <span class="nd">@classmethod</span>
+<div class="viewcode-block" id="Serializable.deserialize"><a class="viewcode-back" href="../../../reference.html#gnome.utilities.serializable.Serializable.deserialize">[docs]</a>    <span class="k">def</span> <span class="nf">deserialize</span><span class="p">(</span><span class="n">cls</span><span class="p">,</span> <span class="n">json_</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">            classmethod takes json structure as input, deserializes it using a</span>
+<span class="sd">            colander schema then invokes the new_from_dict method to create an</span>
+<span class="sd">            instance of the object described by the json schema.</span>
+
+<span class="sd">            We also need to accept sparse json objects, in which case we will</span>
+<span class="sd">            not treat them, but just send them back.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">cls</span><span class="o">.</span><span class="n">is_sparse</span><span class="p">(</span><span class="n">json_</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">cls</span><span class="o">.</span><span class="n">_schema</span><span class="p">()</span><span class="o">.</span><span class="n">deserialize</span><span class="p">(</span><span class="n">json_</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">json_</span></div></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../../index.html">pyGNOME 0.1.1 documentation</a> &raquo;</li>
+          <li><a href="../../index.html" >Module code</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2012, NOAA Emergecny Response Division.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.
+    </div>
+  </body>
+</html>

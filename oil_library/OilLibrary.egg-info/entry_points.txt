@@ -1,0 +1,3 @@
+[console_scripts]
+initialize_OilLibrary_db = oil_library.initializedb:make_db
+

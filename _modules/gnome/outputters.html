@@ -6,7 +6,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>gnome.environment &mdash; pyGNOME 0.1.1 documentation</title>
+    <title>gnome.outputters &mdash; pyGNOME 0.1.1 documentation</title>
     
     <link rel="stylesheet" href="../../_static/default.css" type="text/css" />
     <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
@@ -47,35 +47,21 @@
         <div class="bodywrapper">
           <div class="body">
             
-  <h1>Source code for gnome.environment</h1><div class="highlight"><pre>
-<span class="sd">&#39;&#39;&#39;</span>
-<span class="sd">environment module</span>
-<span class="sd">&#39;&#39;&#39;</span>
-<span class="kn">from</span> <span class="nn">environment</span> <span class="kn">import</span> <span class="n">Environment</span><span class="p">,</span> <span class="n">Water</span><span class="p">,</span> <span class="n">WaterSchema</span>
-<span class="kn">from</span> <span class="nn">tide</span> <span class="kn">import</span> <span class="n">Tide</span><span class="p">,</span> <span class="n">TideSchema</span>
-<span class="kn">from</span> <span class="nn">wind</span> <span class="kn">import</span> <span class="n">Wind</span><span class="p">,</span> <span class="n">WindSchema</span><span class="p">,</span> <span class="n">constant_wind</span>
+  <h1>Source code for gnome.outputters</h1><div class="highlight"><pre>
+<span class="kn">from</span> <span class="nn">outputter</span> <span class="kn">import</span> <span class="n">Outputter</span><span class="p">,</span> <span class="n">BaseSchema</span>
+<span class="kn">from</span> <span class="nn">netcdf</span> <span class="kn">import</span> <span class="n">NetCDFOutput</span><span class="p">,</span> <span class="n">NetCDFOutputSchema</span>
+<span class="kn">from</span> <span class="nn">renderer</span> <span class="kn">import</span> <span class="n">Renderer</span><span class="p">,</span> <span class="n">RendererSchema</span>
+<span class="kn">from</span> <span class="nn">geo_json</span> <span class="kn">import</span> <span class="n">GeoJson</span>
+<span class="kn">from</span> <span class="nn">weathering</span> <span class="kn">import</span> <span class="n">WeatheringOutput</span>
 
-<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="n">Environment</span><span class="p">,</span>
-           <span class="n">Water</span><span class="p">,</span>
-           <span class="n">WaterSchema</span><span class="p">,</span>
-           <span class="n">Tide</span><span class="p">,</span>
-           <span class="n">TideSchema</span><span class="p">,</span>
-           <span class="n">Wind</span><span class="p">,</span>
-           <span class="n">WindSchema</span><span class="p">,</span>
-           <span class="n">constant_wind</span><span class="p">]</span>
-
-<span class="sd">&#39;&#39;&#39;</span>
-<span class="sd">Constants are mostly used internally. They are all documented here to keep them</span>
-<span class="sd">in one place. The &#39;units&#39; serve as documentation ** do not mess with them **.</span>
-<span class="sd">There is no unit conversion when using these constants - they are used as is</span>
-<span class="sd">in the code, implicitly assuming the units are SI and untouched.</span>
-<span class="sd">&#39;&#39;&#39;</span>
-<span class="n">units</span> <span class="o">=</span> <span class="p">{</span><span class="s">&#39;gas_constant&#39;</span><span class="p">:</span> <span class="s">&#39;J/(K mol)&#39;</span><span class="p">,</span>
-         <span class="s">&#39;pressure&#39;</span><span class="p">:</span> <span class="s">&#39;Pa&#39;</span><span class="p">,</span>
-         <span class="s">&#39;acceleration&#39;</span><span class="p">:</span> <span class="s">&#39;m/s^2&#39;</span><span class="p">}</span>
-<span class="n">constants</span> <span class="o">=</span> <span class="p">{</span><span class="s">&#39;gas_constant&#39;</span><span class="p">:</span> <span class="mf">8.314</span><span class="p">,</span>
-             <span class="s">&#39;atmos_pressure&#39;</span><span class="p">:</span> <span class="mf">101325.0</span><span class="p">,</span>
-             <span class="s">&#39;g&#39;</span><span class="p">:</span> <span class="mf">9.81</span><span class="p">}</span>
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="n">BaseSchema</span><span class="p">,</span>
+           <span class="n">Outputter</span><span class="p">,</span>
+           <span class="n">NetCDFOutput</span><span class="p">,</span>
+           <span class="n">NetCDFOutputSchema</span><span class="p">,</span>
+           <span class="n">Renderer</span><span class="p">,</span>
+           <span class="n">RendererSchema</span><span class="p">,</span>
+           <span class="n">GeoJson</span><span class="p">,</span>
+           <span class="n">WeatheringOutput</span><span class="p">]</span>
 </pre></div>
 
           </div>

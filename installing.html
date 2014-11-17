@@ -55,7 +55,7 @@
             
   <div class="section" id="installing">
 <h1>Installing<a class="headerlink" href="#installing" title="Permalink to this headline">¶</a></h1>
-<p>pyGNOME consists of compiled C++ code (<cite>libgnome</cite>), compiled Cython code (<cite>*.pyx</cite> files), and compiled python extensions.
+<p>PyGnome consists of compiled C++ code (<cite>libgnome</cite>), compiled Cython code (<cite>*.pyx</cite> files), and compiled python extensions.
 It can be installed either from source, in which case you&#8217;ll need an appropriate compiler, or from binaries provided by NOAA</p>
 <div class="section" id="dependencies">
 <h2>Dependencies<a class="headerlink" href="#dependencies" title="Permalink to this headline">¶</a></h2>
@@ -72,9 +72,10 @@ This file can also be processed by the <cite>pip</cite> package installer, which
 <div class="highlight-python"><pre>$ python setup.py build
 $ python setup.py install</pre>
 </div>
+<p>or:</p>
+<div class="highlight-python"><pre>$ python setup.py develop</pre>
+</div>
 <dl class="docutils">
-<dt>or::</dt>
-<dd>$ python setup.py develop</dd>
 <dt>(develop mode installs links to the code, rather than copying the code into python&#8217;s site-packages.</dt>
 <dd>It is helpful if you want to update the code, and have the new version run right away.)</dd>
 </dl>

@@ -1,0 +1,239 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>gnome.persist.extend_colander &mdash; pyGNOME 0.1.1 documentation</title>
+    
+    <link rel="stylesheet" href="../../../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../',
+        VERSION:     '0.1.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../_static/doctools.js"></script>
+    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="pyGNOME 0.1.1 documentation" href="../../../index.html" />
+    <link rel="up" title="Module code" href="../../index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../../index.html">pyGNOME 0.1.1 documentation</a> &raquo;</li>
+          <li><a href="../../index.html" accesskey="U">Module code</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <h1>Source code for gnome.persist.extend_colander</h1><div class="highlight"><pre>
+<span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">Extend colander&#39;s basic types for serialization/deserialization</span>
+<span class="sd">of gnome specific types</span>
+<span class="sd">&#39;&#39;&#39;</span>
+<span class="kn">import</span> <span class="nn">datetime</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span>
+<span class="n">np</span> <span class="o">=</span> <span class="n">numpy</span>
+
+<span class="kn">from</span> <span class="nn">colander</span> <span class="kn">import</span> <span class="n">Float</span><span class="p">,</span> <span class="n">DateTime</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">,</span> <span class="n">null</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">,</span> \
+    <span class="n">TupleSchema</span><span class="p">,</span> <span class="n">SequenceSchema</span><span class="p">,</span> <span class="n">null</span>
+
+<span class="kn">import</span> <span class="nn">gnome.basic_types</span>
+<span class="kn">from</span> <span class="nn">gnome.utilities</span> <span class="kn">import</span> <span class="n">inf_datetime</span>
+
+
+<span class="k">class</span> <span class="nc">LocalDateTime</span><span class="p">(</span><span class="n">DateTime</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="n">kwargs</span><span class="p">[</span><span class="s">&#39;default_tzinfo&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;default_tzinfo&#39;</span><span class="p">,</span> <span class="bp">None</span><span class="p">)</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">LocalDateTime</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">strip_timezone</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">_datetime</span><span class="p">):</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">_datetime</span> <span class="ow">and</span>
+            <span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">_datetime</span><span class="p">,</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="p">)</span> <span class="ow">or</span>
+             <span class="nb">isinstance</span><span class="p">(</span><span class="n">_datetime</span><span class="p">,</span> <span class="n">datetime</span><span class="o">.</span><span class="n">date</span><span class="p">))</span>
+            <span class="p">):</span>
+            <span class="n">_datetime</span> <span class="o">=</span> <span class="n">_datetime</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">tzinfo</span><span class="o">=</span><span class="bp">None</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">_datetime</span>
+
+    <span class="k">def</span> <span class="nf">serialize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">node</span><span class="p">,</span> <span class="n">appstruct</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">appstruct</span><span class="p">,</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="p">):</span>
+            <span class="n">appstruct</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">strip_timezone</span><span class="p">(</span><span class="n">appstruct</span><span class="p">)</span>
+            <span class="k">return</span> <span class="nb">super</span><span class="p">(</span><span class="n">LocalDateTime</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">serialize</span><span class="p">(</span><span class="n">node</span><span class="p">,</span> <span class="n">appstruct</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">appstruct</span><span class="p">,</span> <span class="n">inf_datetime</span><span class="o">.</span><span class="n">MinusInfTime</span><span class="p">)</span> <span class="ow">or</span>
+              <span class="nb">isinstance</span><span class="p">(</span><span class="n">appstruct</span><span class="p">,</span> <span class="n">inf_datetime</span><span class="o">.</span><span class="n">InfTime</span><span class="p">)):</span>
+            <span class="k">return</span> <span class="n">appstruct</span><span class="o">.</span><span class="n">isoformat</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">deserialize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">node</span><span class="p">,</span> <span class="n">cstruct</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">cstruct</span> <span class="ow">in</span> <span class="p">(</span><span class="s">&#39;inf&#39;</span><span class="p">,</span> <span class="s">&#39;-inf&#39;</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">inf_datetime</span><span class="o">.</span><span class="n">InfDateTime</span><span class="p">(</span><span class="n">cstruct</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">dt</span> <span class="o">=</span> <span class="nb">super</span><span class="p">(</span><span class="n">LocalDateTime</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">deserialize</span><span class="p">(</span><span class="n">node</span><span class="p">,</span> <span class="n">cstruct</span><span class="p">)</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">strip_timezone</span><span class="p">(</span><span class="n">dt</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="DefaultTuple"><a class="viewcode-back" href="../../../reference.html#gnome.persist.extend_colander.DefaultTuple">[docs]</a><span class="k">class</span> <span class="nc">DefaultTuple</span><span class="p">(</span><span class="n">Tuple</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    A Tuple subclass that provides defaults from child nodes.</span>
+
+<span class="sd">    Required because Tuple returns `colander.null` by default</span>
+<span class="sd">    when ``appstruct`` is not provided, instead of creating a Tuple of</span>
+<span class="sd">    default values.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">serialize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">node</span><span class="p">,</span> <span class="n">appstruct</span><span class="p">):</span>
+        <span class="n">items</span> <span class="o">=</span> <span class="nb">super</span><span class="p">(</span><span class="n">DefaultTuple</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">serialize</span><span class="p">(</span><span class="n">node</span><span class="p">,</span> <span class="n">appstruct</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">items</span> <span class="ow">is</span> <span class="n">null</span> <span class="ow">and</span> <span class="n">node</span><span class="o">.</span><span class="n">children</span><span class="p">:</span>
+            <span class="n">items</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">([</span><span class="n">field</span><span class="o">.</span><span class="n">default</span> <span class="k">for</span> <span class="n">field</span> <span class="ow">in</span> <span class="n">node</span><span class="o">.</span><span class="n">children</span><span class="p">])</span>
+
+        <span class="k">return</span> <span class="n">items</span>
+
+</div>
+<div class="viewcode-block" id="VelocityArray"><a class="viewcode-back" href="../../../reference.html#gnome.persist.extend_colander.VelocityArray">[docs]</a><span class="k">class</span> <span class="nc">VelocityArray</span><span class="p">(</span><span class="n">Tuple</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    A subclass of :class:`colander.Sequence` that converts itself to a numpy</span>
+<span class="sd">    array representing a [velX, velY, velZ] value.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">serialize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">node</span><span class="p">,</span> <span class="n">appstruct</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">appstruct</span> <span class="ow">is</span> <span class="n">null</span><span class="p">:</span>  <span class="c"># colander.null</span>
+            <span class="k">return</span> <span class="n">null</span>
+
+        <span class="k">return</span> <span class="nb">super</span><span class="p">(</span><span class="n">VelocityArray</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">serialize</span><span class="p">(</span><span class="n">node</span><span class="p">,</span> <span class="nb">list</span><span class="p">(</span><span class="n">appstruct</span><span class="p">))</span>
+
+    <span class="k">def</span> <span class="nf">deserialize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">node</span><span class="p">,</span> <span class="n">cstruct</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">cstruct</span> <span class="ow">is</span> <span class="n">null</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">null</span>
+
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">cstruct</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+
+</div>
+<span class="k">class</span> <span class="nc">VelocityArraySchema</span><span class="p">(</span><span class="n">TupleSchema</span><span class="p">):</span>
+    <span class="n">schema_type</span> <span class="o">=</span> <span class="n">VelocityArray</span>
+
+
+<div class="viewcode-block" id="DatetimeValue2dArray"><a class="viewcode-back" href="../../../reference.html#gnome.persist.extend_colander.DatetimeValue2dArray">[docs]</a><span class="k">class</span> <span class="nc">DatetimeValue2dArray</span><span class="p">(</span><span class="n">Sequence</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    A subclass of :class:`colander.Sequence` that converts itself to a numpy</span>
+<span class="sd">    array using :class:`gnome.basic_types.datetime_value_2d` as the data type.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">serialize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">node</span><span class="p">,</span> <span class="n">appstruct</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">appstruct</span> <span class="ow">is</span> <span class="n">null</span><span class="p">:</span>  <span class="c"># colander.null</span>
+            <span class="k">return</span> <span class="n">null</span>
+
+        <span class="n">series</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="k">for</span> <span class="n">wind_value</span> <span class="ow">in</span> <span class="n">appstruct</span><span class="p">:</span>
+            <span class="n">dt</span> <span class="o">=</span> <span class="n">wind_value</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">object</span><span class="p">)</span>
+            <span class="n">series</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">dt</span><span class="p">,</span> <span class="p">(</span><span class="n">wind_value</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="mi">0</span><span class="p">],</span> <span class="n">wind_value</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="mi">1</span><span class="p">])))</span>
+        <span class="n">appstruct</span> <span class="o">=</span> <span class="n">series</span>
+
+        <span class="k">return</span> <span class="nb">super</span><span class="p">(</span><span class="n">DatetimeValue2dArray</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">serialize</span><span class="p">(</span><span class="n">node</span><span class="p">,</span> <span class="n">appstruct</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">deserialize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">node</span><span class="p">,</span> <span class="n">cstruct</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">cstruct</span> <span class="ow">is</span> <span class="n">null</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">null</span>
+
+        <span class="n">items</span> <span class="o">=</span> <span class="nb">super</span><span class="p">(</span><span class="n">DatetimeValue2dArray</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">deserialize</span><span class="p">(</span><span class="n">node</span><span class="p">,</span>
+                <span class="n">cstruct</span><span class="p">,</span> <span class="n">accept_scalar</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>
+
+        <span class="n">timeseries</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">items</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">gnome</span><span class="o">.</span><span class="n">basic_types</span><span class="o">.</span><span class="n">datetime_value_2d</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">timeseries</span>  <span class="c"># validator requires numpy array</span>
+
+</div>
+<div class="viewcode-block" id="TimeDelta"><a class="viewcode-back" href="../../../reference.html#gnome.persist.extend_colander.TimeDelta">[docs]</a><span class="k">class</span> <span class="nc">TimeDelta</span><span class="p">(</span><span class="n">Float</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Add a type to serialize/deserialize timedelta objects</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">serialize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">node</span><span class="p">,</span> <span class="n">appstruct</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">appstruct</span> <span class="ow">is</span> <span class="ow">not</span> <span class="n">null</span><span class="p">:</span>
+            <span class="k">return</span> <span class="nb">super</span><span class="p">(</span><span class="n">TimeDelta</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">serialize</span><span class="p">(</span><span class="n">node</span><span class="p">,</span>
+                                                    <span class="n">appstruct</span><span class="o">.</span><span class="n">total_seconds</span><span class="p">())</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="nb">super</span><span class="p">(</span><span class="n">TimeDelta</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">serialize</span><span class="p">(</span><span class="n">node</span><span class="p">,</span> <span class="n">null</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">deserialize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="n">sec</span> <span class="o">=</span> <span class="nb">super</span><span class="p">(</span><span class="n">TimeDelta</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">deserialize</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">sec</span> <span class="ow">is</span> <span class="ow">not</span> <span class="n">null</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">datetime</span><span class="o">.</span><span class="n">timedelta</span><span class="p">(</span><span class="n">seconds</span><span class="o">=</span><span class="n">sec</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">sec</span>
+</div>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Following define new schemas for above custom types. This is so</span>
+<span class="sd">serialize/deserialize is called correctly.</span>
+
+<span class="sd">Specifically a new DefaultTypeSchema and a DatetimeValue2dArraySchema</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+
+<span class="k">class</span> <span class="nc">DefaultTupleSchema</span><span class="p">(</span><span class="n">TupleSchema</span><span class="p">):</span>
+    <span class="n">schema_type</span> <span class="o">=</span> <span class="n">DefaultTuple</span>
+
+
+<span class="k">class</span> <span class="nc">DatetimeValue2dArraySchema</span><span class="p">(</span><span class="n">SequenceSchema</span><span class="p">):</span>
+    <span class="n">schema_type</span> <span class="o">=</span> <span class="n">DatetimeValue2dArray</span>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../../index.html">pyGNOME 0.1.1 documentation</a> &raquo;</li>
+          <li><a href="../../index.html" >Module code</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2012, NOAA Emergecny Response Division.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.
+    </div>
+  </body>
+</html>

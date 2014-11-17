@@ -1,0 +1,188 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>gnome.persist.validators &mdash; pyGNOME 0.1.1 documentation</title>
+    
+    <link rel="stylesheet" href="../../../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../',
+        VERSION:     '0.1.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../_static/doctools.js"></script>
+    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="pyGNOME 0.1.1 documentation" href="../../../index.html" />
+    <link rel="up" title="Module code" href="../../index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../../index.html">pyGNOME 0.1.1 documentation</a> &raquo;</li>
+          <li><a href="../../index.html" accesskey="U">Module code</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <h1>Source code for gnome.persist.validators</h1><div class="highlight"><pre>
+<span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">Created on Feb 26, 2013</span>
+
+<span class="sd">Define general purpose functions that can used as validators</span>
+<span class="sd">&#39;&#39;&#39;</span>
+<span class="kn">import</span> <span class="nn">time</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span>
+<span class="n">np</span> <span class="o">=</span> <span class="n">numpy</span>
+
+<span class="kn">from</span> <span class="nn">colander</span> <span class="kn">import</span> <span class="n">Invalid</span>
+
+<span class="kn">from</span> <span class="nn">gnome.utilities.inf_datetime</span> <span class="kn">import</span> <span class="n">InfTime</span><span class="p">,</span> <span class="n">MinusInfTime</span>
+
+
+<span class="k">def</span> <span class="nf">positive</span><span class="p">(</span><span class="n">node</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">value</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">Invalid</span><span class="p">(</span><span class="n">node</span><span class="p">,</span> <span class="s">&#39;Value must be greater than zero.&#39;</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="convertible_to_seconds"><a class="viewcode-back" href="../../../reference.html#gnome.persist.validators.convertible_to_seconds">[docs]</a><span class="k">def</span> <span class="nf">convertible_to_seconds</span><span class="p">(</span><span class="n">node</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; validate only datetime objects &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">MinusInfTime</span><span class="p">)</span> <span class="ow">or</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">InfTime</span><span class="p">):</span>
+        <span class="k">return</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">time</span><span class="o">.</span><span class="n">mktime</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">value</span><span class="o">.</span><span class="n">timetuple</span><span class="p">()))</span>
+    <span class="k">except</span> <span class="p">(</span><span class="ne">OverflowError</span><span class="p">,</span> <span class="ne">ValueError</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="n">Invalid</span><span class="p">(</span><span class="n">node</span><span class="p">,</span> <span class="s">&#39;Invalid date.&#39;</span><span class="p">)</span>
+
+</div>
+<div class="viewcode-block" id="no_duplicate_datetime"><a class="viewcode-back" href="../../../reference.html#gnome.persist.validators.no_duplicate_datetime">[docs]</a><span class="k">def</span> <span class="nf">no_duplicate_datetime</span><span class="p">(</span><span class="n">node</span><span class="p">,</span> <span class="n">values</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Check for duplicate datetime values in numpy structured array like</span>
+<span class="sd">    datetime_value_2d</span>
+<span class="sd">    Reject ``values`` if it contains duplicates.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">unique</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="n">values</span><span class="p">[</span><span class="s">&#39;time&#39;</span><span class="p">])</span>
+    <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
+        <span class="k">return</span>
+
+    <span class="n">num_dups</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">values</span><span class="p">)</span> <span class="o">-</span> <span class="nb">len</span><span class="p">(</span><span class="n">unique</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">num_dups</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">Invalid</span><span class="p">(</span><span class="n">node</span><span class="p">,</span>
+                      <span class="s">&#39;Duplicate time entries are not allowed. &#39;</span>
+                      <span class="s">&#39;Found {0} duplicates.&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">num_dups</span><span class="p">))</span>
+
+</div>
+<div class="viewcode-block" id="ascending_datetime"><a class="viewcode-back" href="../../../reference.html#gnome.persist.validators.ascending_datetime">[docs]</a><span class="k">def</span> <span class="nf">ascending_datetime</span><span class="p">(</span><span class="n">node</span><span class="p">,</span> <span class="n">values</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Check the datetime values in numpy structured array</span>
+<span class="sd">    (like datetime_value_2d)</span>
+<span class="sd">    are in ascending order</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c"># check to make sure the time values are in ascending order</span>
+    <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">values</span><span class="p">[</span><span class="s">&#39;time&#39;</span><span class="p">][</span><span class="n">np</span><span class="o">.</span><span class="n">argsort</span><span class="p">(</span><span class="n">values</span><span class="p">[</span><span class="s">&#39;time&#39;</span><span class="p">])]</span>
+              <span class="o">!=</span> <span class="n">values</span><span class="p">[</span><span class="s">&#39;time&#39;</span><span class="p">]):</span>
+        <span class="k">raise</span> <span class="n">Invalid</span><span class="p">(</span><span class="n">node</span><span class="p">,</span>
+                      <span class="s">&#39;The datetime values in the timeseries must be in &#39;</span>
+                      <span class="s">&#39;ascending order&#39;</span><span class="p">)</span>
+
+
+<span class="c">#==============================================================================</span>
+<span class="c"># def degrees_true(node, direction):</span>
+<span class="c">#    if 0 &gt; direction &gt; 360:</span>
+<span class="c">#        raise Invalid(</span>
+<span class="c">#            node, &#39;Direction in degrees true must be between 0 and 360.&#39;)</span>
+<span class="c">#</span>
+<span class="c">#</span>
+<span class="c"># def get_direction_degree(direction):</span>
+<span class="c">#   &quot;&quot;&quot;</span>
+<span class="c">#   Convert user input for direction into degrees.</span>
+<span class="c">#   &quot;&quot;&quot;</span>
+<span class="c">#   if direction.isalpha():</span>
+<span class="c">#       return util.DirectionConverter.get_degree(direction)</span>
+<span class="c">#   else:</span>
+<span class="c">#       return direction</span>
+<span class="c">#</span>
+<span class="c"># def cardinal_direction(node, direction):</span>
+<span class="c">#   if not util.DirectionConverter.is_cardinal_direction(direction):</span>
+<span class="c">#       raise Invalid(</span>
+<span class="c">#           node, &#39;A cardinal directions must be one of: %s&#39; % &#39;, &#39;.join(</span>
+<span class="c">#               util.DirectionConverter.DIRECTIONS))</span>
+<span class="c">#</span>
+<span class="c"># def valid_direction(node, value):</span>
+<span class="c">#    &quot;&quot;&quot;</span>
+<span class="c">#    Unused.</span>
+<span class="c">#    &quot;&quot;&quot;</span>
+<span class="c">#    try:</span>
+<span class="c">#        degrees_true(node, float(value))</span>
+<span class="c">#    except ValueError:</span>
+<span class="c">#        cardinal_direction(node, value.upper())</span>
+<span class="c">#==============================================================================</span></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../../index.html">pyGNOME 0.1.1 documentation</a> &raquo;</li>
+          <li><a href="../../index.html" >Module code</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2012, NOAA Emergecny Response Division.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.
+    </div>
+  </body>
+</html>

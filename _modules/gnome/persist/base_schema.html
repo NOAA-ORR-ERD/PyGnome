@@ -1,0 +1,154 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>gnome.persist.base_schema &mdash; pyGNOME 0.1.1 documentation</title>
+    
+    <link rel="stylesheet" href="../../../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../',
+        VERSION:     '0.1.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../_static/doctools.js"></script>
+    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="pyGNOME 0.1.1 documentation" href="../../../index.html" />
+    <link rel="up" title="Module code" href="../../index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../../index.html">pyGNOME 0.1.1 documentation</a> &raquo;</li>
+          <li><a href="../../index.html" accesskey="U">Module code</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <h1>Source code for gnome.persist.base_schema</h1><div class="highlight"><pre>
+<span class="kn">import</span> <span class="nn">datetime</span>
+
+<span class="kn">from</span> <span class="nn">colander</span> <span class="kn">import</span> <span class="p">(</span><span class="n">SchemaNode</span><span class="p">,</span> <span class="n">deferred</span><span class="p">,</span> <span class="n">drop</span><span class="p">,</span>
+                      <span class="n">SequenceSchema</span><span class="p">,</span> <span class="n">TupleSchema</span><span class="p">,</span> <span class="n">MappingSchema</span><span class="p">,</span>
+                      <span class="n">String</span><span class="p">,</span> <span class="n">Float</span><span class="p">,</span> <span class="n">Int</span><span class="p">)</span>
+
+
+<span class="nd">@deferred</span>
+<span class="k">def</span> <span class="nf">now</span><span class="p">(</span><span class="n">node</span><span class="p">,</span> <span class="n">kw</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Used by TimeseriesValueSchema - assume it defers the calculation of</span>
+<span class="sd">                                    datetime.datetime.now to when it is called</span>
+<span class="sd">                                    in Schema</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">microsecond</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="ObjType"><a class="viewcode-back" href="../../../reference.html#gnome.persist.base_schema.ObjType">[docs]</a><span class="k">class</span> <span class="nc">ObjType</span><span class="p">(</span><span class="n">MappingSchema</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    defines the obj_type which is stored by all gnome objects when persisting</span>
+<span class="sd">    to save files</span>
+<span class="sd">    It also optionally stores the &#39;id&#39; if present</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="nb">id</span> <span class="o">=</span> <span class="n">SchemaNode</span><span class="p">(</span><span class="n">String</span><span class="p">(),</span> <span class="n">missing</span><span class="o">=</span><span class="n">drop</span><span class="p">)</span>
+    <span class="n">obj_type</span> <span class="o">=</span> <span class="n">SchemaNode</span><span class="p">(</span><span class="n">String</span><span class="p">(),</span> <span class="n">missing</span><span class="o">=</span><span class="n">drop</span><span class="p">)</span>
+    <span class="n">name</span> <span class="o">=</span> <span class="n">SchemaNode</span><span class="p">(</span><span class="n">String</span><span class="p">(),</span> <span class="n">missing</span><span class="o">=</span><span class="n">drop</span><span class="p">)</span>
+    <span class="n">json_</span> <span class="o">=</span> <span class="n">SchemaNode</span><span class="p">(</span><span class="n">String</span><span class="p">())</span>    <span class="c"># either &#39;webapi&#39; or &#39;save&#39;</span>
+
+</div>
+<div class="viewcode-block" id="OrderedCollectionItemMap"><a class="viewcode-back" href="../../../reference.html#gnome.persist.base_schema.OrderedCollectionItemMap">[docs]</a><span class="k">class</span> <span class="nc">OrderedCollectionItemMap</span><span class="p">(</span><span class="n">MappingSchema</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    This stores the obj_type and obj_index</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="n">obj_type</span> <span class="o">=</span> <span class="n">SchemaNode</span><span class="p">(</span><span class="n">String</span><span class="p">())</span>
+    <span class="nb">id</span> <span class="o">=</span> <span class="n">SchemaNode</span><span class="p">(</span><span class="n">String</span><span class="p">(),</span> <span class="n">missing</span><span class="o">=</span><span class="n">drop</span><span class="p">)</span>
+
+</div>
+<span class="k">class</span> <span class="nc">OrderedCollectionItemsList</span><span class="p">(</span><span class="n">SequenceSchema</span><span class="p">):</span>
+    <span class="n">item</span> <span class="o">=</span> <span class="n">OrderedCollectionItemMap</span><span class="p">()</span>
+
+
+<div class="viewcode-block" id="LongLat"><a class="viewcode-back" href="../../../reference.html#gnome.persist.base_schema.LongLat">[docs]</a><span class="k">class</span> <span class="nc">LongLat</span><span class="p">(</span><span class="n">TupleSchema</span><span class="p">):</span>
+    <span class="s">&#39;Only contains 2D (long, lat) positions&#39;</span>
+    <span class="nb">long</span> <span class="o">=</span> <span class="n">SchemaNode</span><span class="p">(</span><span class="n">Float</span><span class="p">())</span>
+    <span class="n">lat</span> <span class="o">=</span> <span class="n">SchemaNode</span><span class="p">(</span><span class="n">Float</span><span class="p">())</span>
+
+</div>
+<div class="viewcode-block" id="LongLatBounds"><a class="viewcode-back" href="../../../reference.html#gnome.persist.base_schema.LongLatBounds">[docs]</a><span class="k">class</span> <span class="nc">LongLatBounds</span><span class="p">(</span><span class="n">SequenceSchema</span><span class="p">):</span>
+    <span class="s">&#39;Used to define bounds on a map&#39;</span>
+    <span class="n">bounds</span> <span class="o">=</span> <span class="n">LongLat</span><span class="p">()</span>
+
+</div>
+<div class="viewcode-block" id="WorldPoint"><a class="viewcode-back" href="../../../reference.html#gnome.persist.base_schema.WorldPoint">[docs]</a><span class="k">class</span> <span class="nc">WorldPoint</span><span class="p">(</span><span class="n">LongLat</span><span class="p">):</span>
+    <span class="s">&#39;Used to define reference points. 3D positions (long,lat,z)&#39;</span>
+    <span class="n">z</span> <span class="o">=</span> <span class="n">SchemaNode</span><span class="p">(</span><span class="n">Float</span><span class="p">(),</span> <span class="n">default</span><span class="o">=</span><span class="mf">0.0</span><span class="p">)</span>
+
+</div>
+<div class="viewcode-block" id="ImageSize"><a class="viewcode-back" href="../../../reference.html#gnome.persist.base_schema.ImageSize">[docs]</a><span class="k">class</span> <span class="nc">ImageSize</span><span class="p">(</span><span class="n">TupleSchema</span><span class="p">):</span>
+    <span class="s">&#39;Only contains 2D (long, lat) positions&#39;</span>
+    <span class="n">width</span> <span class="o">=</span> <span class="n">SchemaNode</span><span class="p">(</span><span class="n">Int</span><span class="p">())</span>
+    <span class="n">height</span> <span class="o">=</span> <span class="n">SchemaNode</span><span class="p">(</span><span class="n">Int</span><span class="p">())</span></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../../index.html">pyGNOME 0.1.1 documentation</a> &raquo;</li>
+          <li><a href="../../index.html" >Module code</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2012, NOAA Emergecny Response Division.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.
+    </div>
+  </body>
+</html>

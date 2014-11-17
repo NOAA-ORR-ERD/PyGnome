@@ -289,37 +289,37 @@
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">spills</span><span class="o">.</span><span class="n">uncertain</span>
 
     <span class="nd">@uncertain.setter</span>
-    <span class="k">def</span> <span class="nf">uncertain</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">uncertain_value</span><span class="p">):</span>
+<div class="viewcode-block" id="Model.uncertain"><a class="viewcode-back" href="../../reference.html#gnome.model.Model.uncertain">[docs]</a>    <span class="k">def</span> <span class="nf">uncertain</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">uncertain_value</span><span class="p">):</span>
         <span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        only if uncertainty switch is toggled, then restart model</span>
 <span class="sd">        &#39;&#39;&#39;</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">spills</span><span class="o">.</span><span class="n">uncertain</span> <span class="o">!=</span> <span class="n">uncertain_value</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">spills</span><span class="o">.</span><span class="n">uncertain</span> <span class="o">=</span> <span class="n">uncertain_value</span>  <span class="c"># update uncertainty</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">rewind</span><span class="p">()</span>
-
+</div>
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">cache_enabled</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cache</span><span class="o">.</span><span class="n">enabled</span>
 
     <span class="nd">@cache_enabled.setter</span>
-    <span class="k">def</span> <span class="nf">cache_enabled</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">enabled</span><span class="p">):</span>
+<div class="viewcode-block" id="Model.cache_enabled"><a class="viewcode-back" href="../../reference.html#gnome.model.Model.cache_enabled">[docs]</a>    <span class="k">def</span> <span class="nf">cache_enabled</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">enabled</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_cache</span><span class="o">.</span><span class="n">enabled</span> <span class="o">=</span> <span class="n">enabled</span>
-
+</div>
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">start_time</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_start_time</span>
 
     <span class="nd">@start_time.setter</span>
-    <span class="k">def</span> <span class="nf">start_time</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">start_time</span><span class="p">):</span>
+<div class="viewcode-block" id="Model.start_time"><a class="viewcode-back" href="../../reference.html#gnome.model.Model.start_time">[docs]</a>    <span class="k">def</span> <span class="nf">start_time</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">start_time</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_start_time</span> <span class="o">=</span> <span class="n">start_time</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">rewind</span><span class="p">()</span>
-
+</div>
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">time_step</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_time_step</span>
 
     <span class="nd">@time_step.setter</span>
-    <span class="k">def</span> <span class="nf">time_step</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">time_step</span><span class="p">):</span>
+<div class="viewcode-block" id="Model.time_step"><a class="viewcode-back" href="../../reference.html#gnome.model.Model.time_step">[docs]</a>    <span class="k">def</span> <span class="nf">time_step</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">time_step</span><span class="p">):</span>
         <span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        Sets the time step, and rewinds the model</span>
 
@@ -335,23 +335,23 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">_num_time_steps</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_duration</span><span class="o">.</span><span class="n">total_seconds</span><span class="p">()</span>
                                    <span class="o">//</span> <span class="bp">self</span><span class="o">.</span><span class="n">_time_step</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">rewind</span><span class="p">()</span>
-
+</div>
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">current_time_step</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_current_time_step</span>
 
     <span class="nd">@current_time_step.setter</span>
-    <span class="k">def</span> <span class="nf">current_time_step</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">step</span><span class="p">):</span>
+<div class="viewcode-block" id="Model.current_time_step"><a class="viewcode-back" href="../../reference.html#gnome.model.Model.current_time_step">[docs]</a>    <span class="k">def</span> <span class="nf">current_time_step</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">step</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">model_time</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_start_time</span> <span class="o">+</span> <span class="n">timedelta</span><span class="p">(</span><span class="n">seconds</span><span class="o">=</span><span class="n">step</span> <span class="o">*</span>
                                                        <span class="bp">self</span><span class="o">.</span><span class="n">time_step</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_current_time_step</span> <span class="o">=</span> <span class="n">step</span>
-
+</div>
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">duration</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_duration</span>
 
     <span class="nd">@duration.setter</span>
-    <span class="k">def</span> <span class="nf">duration</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">duration</span><span class="p">):</span>
+<div class="viewcode-block" id="Model.duration"><a class="viewcode-back" href="../../reference.html#gnome.model.Model.duration">[docs]</a>    <span class="k">def</span> <span class="nf">duration</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">duration</span><span class="p">):</span>
         <span class="k">if</span> <span class="n">duration</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">_duration</span><span class="p">:</span>
             <span class="c"># only need to rewind if shorter than it was...</span>
             <span class="c"># fixme: actually, only need to rewind if current model time</span>
@@ -362,20 +362,20 @@
         <span class="c"># there is a zeroth time step</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_num_time_steps</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_duration</span><span class="o">.</span><span class="n">total_seconds</span><span class="p">()</span>
                                    <span class="o">//</span> <span class="bp">self</span><span class="o">.</span><span class="n">time_step</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span>
-
+</div>
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">map</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_map</span>
 
     <span class="nd">@map.setter</span>
-    <span class="k">def</span> <span class="nf">map</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">map_in</span><span class="p">):</span>
+<div class="viewcode-block" id="Model.map"><a class="viewcode-back" href="../../reference.html#gnome.model.Model.map">[docs]</a>    <span class="k">def</span> <span class="nf">map</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">map_in</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_map</span> <span class="o">=</span> <span class="n">map_in</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">rewind</span><span class="p">()</span>
-
+</div>
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">num_time_steps</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="Model.num_time_steps"><a class="viewcode-back" href="../../reference.html#gnome.model.Model.num_time_steps">[docs]</a>    <span class="k">def</span> <span class="nf">num_time_steps</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_num_time_steps</span>
-
+</div>
 <div class="viewcode-block" id="Model.setup_model_run"><a class="viewcode-back" href="../../reference.html#gnome.model.Model.setup_model_run">[docs]</a>    <span class="k">def</span> <span class="nf">setup_model_run</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        Sets up each mover for the model run</span>
@@ -517,7 +517,7 @@
         <span class="k">for</span> <span class="n">outputter</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">outputters</span><span class="p">:</span>
             <span class="n">outputter</span><span class="o">.</span><span class="n">model_step_is_done</span><span class="p">()</span>
 </div>
-    <span class="k">def</span> <span class="nf">write_output</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="Model.write_output"><a class="viewcode-back" href="../../reference.html#gnome.model.Model.write_output">[docs]</a>    <span class="k">def</span> <span class="nf">write_output</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="n">output_info</span> <span class="o">=</span> <span class="p">{}</span>
 
         <span class="k">for</span> <span class="n">outputter</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">outputters</span><span class="p">:</span>
@@ -533,7 +533,7 @@
             <span class="k">return</span> <span class="p">{</span><span class="s">&#39;step_num&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">current_time_step</span><span class="p">}</span>
 
         <span class="k">return</span> <span class="n">output_info</span>
-
+</div>
 <div class="viewcode-block" id="Model.step"><a class="viewcode-back" href="../../reference.html#gnome.model.Model.step">[docs]</a>    <span class="k">def</span> <span class="nf">step</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        Steps the model forward (or backward) in time. Needs testing for</span>

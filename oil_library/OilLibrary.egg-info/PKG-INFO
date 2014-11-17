@@ -1,0 +1,20 @@
+Metadata-Version: 1.0
+Name: OilLibrary
+Version: 0.0
+Summary: OilLibrary
+Home-page: UNKNOWN
+Author: ADIOS/GNOME team at NOAA ORR
+Author-email: orr.gnome@noaa.gov
+License: UNKNOWN
+Description: OilLibrary README
+        ==================
+        
+        Getting Started
+        ---------------
+        
+        - cd <directory containing this file>
+        
+        - $venv/bin/python setup.py develop
+        
+Keywords: adios weathering oilspill modeling
+Platform: UNKNOWN
