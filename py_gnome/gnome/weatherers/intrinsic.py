@@ -145,6 +145,16 @@ class IntrinsicProps(object):
                     if atype in self.array_types:
                         del self.array_types[atype]
 
+    def initialize_weathering_data(self, sc):
+        '''
+        initialize standard keys:
+        avg_density, floating, amount_released, avg_viscosity to 0.0
+        '''
+        # nothing released yet - set everything to 0.0
+        for key in ('avg_density', 'floating', 'amount_released',
+                    'avg_viscosity'):
+            sc.weathering_data[key] = 0.0
+
     def update(self, num_new_released, sc):
         '''
         Uses 'substance' properties together with 'water' properties to update
@@ -154,8 +164,9 @@ class IntrinsicProps(object):
         water object. So it was easiest to initialize the 'init_volume' for
         newly released particles here.
         '''
-        self._update_intrinsic_props(num_new_released, sc)
-        self._update_weathering_data(num_new_released, sc)
+        if len(sc) > 0:
+            self._update_intrinsic_props(num_new_released, sc)
+            self._update_weathering_data(num_new_released, sc)
 
     def _update_weathering_data(self, new_LEs, sc):
         '''
@@ -163,20 +174,15 @@ class IntrinsicProps(object):
         set these - will user be able to use select weatherers? Currently,
         evaporation defines 'density' data array
         '''
-        if len(sc) == 0:
-            # nothing released yet - set everything to 0.0
-            for key in ('avg_density', 'floating', 'amount_released',
-                        'avg_viscosity'):
-                sc.weathering_data[key] = 0.0
-        else:
-            mask = sc['status_codes'] == oil_status.in_water
-            # update avg_density from density array
-            # wasted cycles at present since all values in density for given
-            # timestep should be the same, but that will likely change
-            sc.weathering_data['avg_density'] = np.average(sc['density'])
-            sc.weathering_data['avg_viscosity'] = np.average(sc['viscosity'])
-            sc.weathering_data['floating'] = np.sum(sc['mass'][mask])
+        mask = sc['status_codes'] == oil_status.in_water
+        # update avg_density from density array
+        # wasted cycles at present since all values in density for given
+        # timestep should be the same, but that will likely change
+        sc.weathering_data['avg_density'] = np.average(sc['density'])
+        sc.weathering_data['avg_viscosity'] = np.average(sc['viscosity'])
+        sc.weathering_data['floating'] = np.sum(sc['mass'][mask])
 
+        if new_LEs > 0:
             amount_released = np.sum(sc['mass'][-new_LEs:])
             if 'amount_released' in sc.weathering_data:
                 sc.weathering_data['amount_released'] += amount_released
