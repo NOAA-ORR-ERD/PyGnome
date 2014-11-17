@@ -46,9 +46,9 @@ spills:
    There may be multiple spills in a model set-up, but for efficiency's sake,
    each spill usually is a set of 1000 or so particles that share various
    properties.
-
-  Each spill is a composition of the type of substance spilled (ElementType)
-  and how elements are released (instantaneous, continuous, etc).
+   
+   Each spill is a composition of the type of substance spilled (ElementType)
+   and how elements are released (instantaneous, continuous, etc).
 
 a map:
    A map keeps track of where land and water are.  The simplest map is all the
