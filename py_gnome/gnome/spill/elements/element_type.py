@@ -243,7 +243,7 @@ def floating(windage_range=(.01, .04),
     :type substance: str or OilProps
     """
     init = [InitWindages(windage_range, windage_persist)]
-    ElementType(init, substance)
+    return ElementType(init, substance)
 
 
 def floating_mass(windage_range=(.01, .04),
