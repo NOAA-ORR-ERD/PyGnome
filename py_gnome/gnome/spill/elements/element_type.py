@@ -50,8 +50,13 @@ class ElementType(Serializable):
             string, then use get_oil_props to get the OilProps object, else
             assume it is an OilProps object
         :type substance: str or OilProps
-        :param density=None: Allow user to set oil density directly.
-        :param density_units='kg/m^3: Only used if a density is input.
+
+        The default element_type has a substance with density of water
+        (1000 kg/m^3). This is labeled as 'oil_conservaitve', same as in
+        original gnome. This is currently one of the mock ("fake") oil objects,
+        used primarily to help integrate weathering processes. It doesn't mean
+        weathering is off - if there are no weatherers, then oil doesn't
+        weather.
         '''
         self._substance = None
         self.initializers = []
@@ -226,46 +231,73 @@ class ElementType(Serializable):
 
 def floating(windage_range=(.01, .04),
              windage_persist=900,
-             substance=None):
+             substance='oil_conservative'):
     """
-    Helper function returns an ElementType object containing 'windages'
-    initializer with user specified windage_range and windage_persist.
+    Helper function returns an ElementType object containing following
+    initializers:
+
+    1. InitWindages(): for initializing 'windages' with user specified
+    windage_range and windage_persist.
+
+    :param substance='oil_conservative': Type of oil spilled. Passed onto
+        ElementType constructor
+    :type substance: str or OilProps
     """
     init = [InitWindages(windage_range, windage_persist)]
-    if substance:
-        ElementType(init, substance)
-    else:
-        return ElementType(init)
+    ElementType(init, substance)
 
 
 def floating_mass(windage_range=(.01, .04),
                   windage_persist=900,
-                  substance=None):
+                  substance='oil_conservative'):
     """
-    Helper function returns an ElementType object containing 'windages'
-    initializer with user specified windage_range and windage_persist.
+    Helper function returns an ElementType object containing following
+    initializers:
+
+    1. InitWindages(): for initializing 'windages' with user specified
+    windage_range and windage_persist.
+
+    2. InitMassFromSpillAmount(): Initializes mass of each element by equally
+    dividing the amount spilled by the total number of elements used to model
+    it. Requires the Spill has a valid 'amount', 'units' and 'substance' with
+    density if we need to convert from volume to mass.
+
+    :param substance='oil_conservative': Type of oil spilled. Passed onto
+        ElementType constructor
+    :type substance: str or OilProps
     """
     init = [InitWindages(windage_range, windage_persist),
             InitMassFromSpillAmount()]
-    if substance:
-        return ElementType(init, substance)
-    else:
-        return ElementType(init)
+    return ElementType(init, substance)
 
 
 def floating_weathering(windage_range=(.01, .04),
                         windage_persist=900,
-                        substance=None):
+                        substance='oil_conservative'):
     '''
-    Use InitArraysFromOilProps()
+    Helper function returns an ElementType object containing following
+    initializers:
+
+    1. InitWindages(): for initializing 'windages' with user specified
+    windage_range and windage_persist.
+
+    2. InitMassFromSpillAmount(): Initializes mass of each element by equally
+    dividing the amount spilled by the total number of elements used to model
+    it. Requires the Spill has a valid 'amount', 'units' and 'substance' with
+    density if we need to convert from volume to mass.
+
+    3. InitArraysFromOilProps(): Initializes the 'mass_components' dataarray
+    for substance. It requires mass_fraction attribute attribute on substance
+    to return a list of mass fractions used to model the substance.
+
+    :param substance='oil_conservative': Type of oil spilled. Passed onto
+        ElementType constructor
+    :type substance: str or OilProps
     '''
     init = [InitWindages(windage_range, windage_persist),
             InitMassFromSpillAmount(),  # set 'mass' array
             InitArraysFromOilProps()]
-    if substance:
-        return ElementType(init, substance)
-    else:
-        return ElementType(init)
+    return ElementType(init, substance)
 
 
 def plume(distribution_type='droplet_size',

@@ -85,11 +85,11 @@ class Spill(serializable.Serializable):
         :param name='Spill': a name for the spill
         :type name: str
 
-        ::note: Define either 'volume' or 'mass'; if both are given, then use
-        volume to set the mass and ignore the input mass. Defines
-        default element_type as floating elements (with windages) and
-        mass if the Spill's 'mass' property is not None. If 'mass' property is
-        None, then just floating elements (with 'windages')
+        ::note: Define either volume or mass in 'amount' attribute and
+        provide appropriate 'units'. Defines default element_type as floating
+        elements with mass if the Spill's 'amount' property is
+        not None. If amount property is None, then just floating elements
+        (with 'windages')
         """
         self.release = release
         if element_type is None:
