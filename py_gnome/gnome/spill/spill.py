@@ -7,7 +7,6 @@ the logic about where an when the elements are released
 """
 import copy
 from inspect import getmembers, ismethod
-from itertools import chain
 
 import numpy
 np = numpy
@@ -69,27 +68,26 @@ class Spill(serializable.Serializable):
         to non-default values (non-zero).
 
         :param release: an object defining how elements are to be released
-        :type release: derived from a gnome.spill.Release object
+        :type release: derived from :class:`~gnome.spill.Release`
 
         **Optional parameters (kwargs):**
 
-        :param element_type=None: list of various element_type that are
-            released. These are spill specific properties of the elements.
-        :type element_type: list of gnome.element_type.* objects
-        :param on=True: Toggles the spill on/off (bool).
-        :type on: bool
-        :param amount=None: mass or volume of oil spilled
-        :type amount: float
-        :param units=None: must provide units for amount spilled
-        :type units: str
-        :param name='Spill': a name for the spill
-        :type name: str
+        :param element_type: ElementType object defining the type
+            of elements that are released. These are spill specific properties
+            of the elements.
+        :type element_type:
+            :class:`~gnome.spill.elements.element_type.ElementType`
+        :param bool on=True: Toggles the spill on/off.
+        :param float amount=None: mass or volume of oil spilled.
+        :param str units=None: must provide units for amount spilled.
+        :param str name='Spill': a name for the spill.
 
-        ::note: Define either volume or mass in 'amount' attribute and
-        provide appropriate 'units'. Defines default element_type as floating
-        elements with mass if the Spill's 'amount' property is
-        not None. If amount property is None, then just floating elements
-        (with 'windages')
+        .. note::
+            Define either volume or mass in 'amount' attribute and provide
+            appropriate 'units'. Defines default element_type as floating
+            elements with mass if the Spill's 'amount' property is not None.
+            If amount property is None, then just floating elements
+            (ie. 'windages')
         """
         self.release = release
         if element_type is None:
@@ -221,9 +219,10 @@ class Spill(serializable.Serializable):
         For example: set('windage_range', (0.4, 0.4)) sets the windage_range
         assuming the element_type is floating
 
-        .. fixme: There is an issue in that if two initializers have the same
-        property - could be the case if they both define a 'distribution', then
-        it does not know which one to return
+        .. todo::
+            There is an issue in that if two initializers have the same
+            property - could be the case if they both define a 'distribution',
+            then it does not know which one to return
         """
         if prop == 'num_released':
             self.logger.warning("cannot set 'num_released' attribute")
@@ -254,10 +253,10 @@ class Spill(serializable.Serializable):
         For example: get('windage_range') returns the 'windage_range' assuming
         the element_type = floating()
 
-        .. fixme: There is an issue in that if two initializers have the same
-        property - could be the case if they both define a 'distribution', then
-        it does not know which one to return
-
+        .. todo::
+            There is an issue in that if two initializers have the same
+            property - could be the case if they both define a 'distribution',
+            then it does not know which one to return
         """
         'Return all properties'
         if prop is None:
@@ -325,6 +324,7 @@ class Spill(serializable.Serializable):
 
         is an initializer that sets the 'rise_vel' if a RiseVelocityMover is
         included in the Model. User can change the name of the initializer
+
         '''
         if key is None:
             return self.element_type.initializers
@@ -342,8 +342,10 @@ class Spill(serializable.Serializable):
         with same array_types and replaces it if found else it appends this to
         list of initializers.
 
-        .. note:: nothing prevents user from defining two initializers that
-        set the same data_arrays; however, there isn't a use case for it
+        .. note::
+            nothing prevents user from defining two initializers that
+            set the same data_arrays; however, there isn't a use case for it
+
         '''
         ix = [ix for ix, i in enumerate(self.element_type.initializers)
               if sorted(i.array_types.keys()) ==
@@ -469,9 +471,8 @@ class Spill(serializable.Serializable):
 
         :param current_time: current time
         :type current_time: datetime.datetime
-        :param time_step: the time step, sometimes used to decide how many
+        :param int time_step: the time step, sometimes used to decide how many
             should get released.
-        :type time_step: integer seconds
 
         :returns: the number of elements that will be released. This is taken
             by SpillContainer to initialize all data_arrays.
@@ -486,8 +487,7 @@ class Spill(serializable.Serializable):
         the data_arrays for 'position' get initialized correctly by the release
         object: self.release.set_newparticle_positions()
 
-        :param num_new_particles: number of new particles that were added
-        :type num_new_particles: int
+        :param int num_new_particles: number of new particles that were added 
         :param current_time: current time
         :type current_time: datetime.datetime
         :param time_step: the time step, sometimes used to decide how many

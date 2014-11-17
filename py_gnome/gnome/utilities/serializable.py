@@ -664,20 +664,22 @@ class Serializable(GnomeId, Savable):
         If an attribute has changed, then call 'update_attr' to update its
         value.
 
-        .. note:: Does not do updates on nested objects. If the attribute
-        references another Serializable object, then the value is not a dict
-        but rather the updated object. For instance, WindMover will receive:
-
-          {..., 'wind': <Wind object>}
-
-        as opposed to a nested dict of the 'wind' object. It is expected that
-        the 'wind' object was updated by calling its own update_from_dict then
-        added to this dict as the updated object.
-
         :param data: dict containing state of object per the client
         :type data: dict
         :returns: True if something changed, False otherwise
         :rtype: bool
+
+        .. note::
+
+            Does not do updates on nested objects. If the attribute references
+            another Serializable object, then the value is not a dict but
+            rather the updated object. For instance, WindMover will receive:
+
+              {..., 'wind': <Wind object>}
+
+            as opposed to a nested dict of the 'wind' object. It is expected
+            that the 'wind' object was updated by calling its own
+            update_from_dict then added to this dict as the updated object.
         """
         list_ = self._state.get_names('update')
         updated = False

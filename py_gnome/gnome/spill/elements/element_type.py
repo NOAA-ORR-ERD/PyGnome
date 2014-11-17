@@ -2,10 +2,12 @@
 '''
 Types of elements that a spill can expect
 These are properties that are spill specific like:
+
   'floating' element_types would contain windage_range, windage_persist
   'subsurface_dist' element_types would contain rise velocity distribution info
   'nonweathering' element_types would set use_droplet_size flag to False
   'weathering' element_types would use droplet_size, densities, mass?
+
 '''
 import copy
 
@@ -23,8 +25,6 @@ from oil_library import get_oil_props
 from gnome.persist import base_schema
 from hazpy import unit_conversion as uc
 
-""" ElementType classes"""
-
 
 class ElementType(Serializable):
     _state = copy.deepcopy(Serializable._state)
@@ -39,24 +39,23 @@ class ElementType(Serializable):
 
     def __init__(self, initializers=[], substance='oil_conservative'):
         '''
-        Define initializers for the type of elements
-
-        :param iterbale initializers: a list/tuple of initializer classes used
-            to initialize these data arrays upon release. If this is not an
-            iterable, then just append 'initializer' to list of initializers
-            assuming it is just a single initializer object
-
-        :param substance='oil_conservative': Type of oil spilled. If this is a
-            string, then use get_oil_props to get the OilProps object, else
-            assume it is an OilProps object
-        :type substance: str or OilProps
-
+        Define initializers for the type of elements.
         The default element_type has a substance with density of water
         (1000 kg/m^3). This is labeled as 'oil_conservaitve', same as in
         original gnome. This is currently one of the mock ("fake") oil objects,
         used primarily to help integrate weathering processes. It doesn't mean
         weathering is off - if there are no weatherers, then oil doesn't
         weather.
+
+        :param iterbale initializers: a list/tuple of initializer classes used
+            to initialize these data arrays upon release. If this is not an
+            iterable, then just append 'initializer' to list of initializers
+            assuming it is just a single initializer object
+        :param substance='oil_conservative': Type of oil spilled. If this is a
+            string, then use get_oil_props to get the OilProps object, else
+            assume it is an OilProps object
+        :type substance: str or OilProps
+
         '''
         self._substance = None
         self.initializers = []
@@ -315,22 +314,20 @@ def plume(distribution_type='droplet_size',
 
     See below docs for details on the parameters.
 
-    :param str distribution_type: default ='droplet_size'
-                                  available options:
-                                  - 'droplet_size': Droplet size is samples
-                                                    from the specified
-                                                    distribution. Rise velocity
-                                                    is calculated.
-                                  - 'rise_velocity': rise velocity is directly
-                                                     sampled from the specified
-                                                     distribution. No droplet
-                                                     size is computed.
+    :param str distribution_type: default 'droplet_size' available options:
+
+        1. 'droplet_size': Droplet size is samples from the specified
+        distribution. Rise velocity is calculated.
+
+        2.'rise_velocity': rise velocity is directly sampled from the specified
+        distribution. No droplet size is computed.
+
     :param distribution='weibull':
     :param windage_range=(.01, .04):
     :param windage_persist=900:
     :param substance_name='oil_conservative':
-    :param density = None:
-    :param density_units = 'kg/m^3':
+    :param float density = None:
+    :param str density_units='kg/m^3':
     """
     if density is not None:
         # Assume density is at 15 K - convert density to api
@@ -355,7 +352,8 @@ def plume(distribution_type='droplet_size',
                            substance)
 
 
-## Add docstring from called classes
+# Add docstring from called classes
+# Note: following gives sphinx warnings on build, ignore for now.
 
 plume.__doc__ += ("\nDocumentation of InitRiseVelFromDropletSizeFromDist:\n" +
                    InitRiseVelFromDropletSizeFromDist.__init__.__doc__ +
