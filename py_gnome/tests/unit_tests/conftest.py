@@ -26,7 +26,6 @@ from gnome.model import Model
 from gnome.spill_container import SpillContainer
 
 from gnome.movers import SimpleMover
-from gnome.persist import load
 from gnome.utilities.remote_data import get_datafile
 
 
@@ -34,15 +33,20 @@ base_dir = os.path.dirname(__file__)
 
 
 @pytest.fixture(scope="session")
-def dump(request):
+def dump(dump_loc=None):
     '''
     create dump folder for output data/files
     session scope so it is only executed the first time it is used
     We only want to create a new 'dump' folder once for each session
+
+    Note: Takes optional dump_loc input so other test packages can import
+    this as a function and use it to define their own dump directory if desired
     '''
-    dump_loc = os.path.join(request.session.fspath.strpath, 'dump')
+    # dump_loc = os.path.join(request.session.fspath.strpath, 'dump')
+    if dump_loc is None:
+        dump_loc = os.path.join(base_dir, 'dump')
     try:
-        os.removedirs(dump_loc)
+        shutil.rmtree(dump_loc)
     except:
         pass
     try:
@@ -140,12 +144,13 @@ def get_testdata():
     '''
     s_data = os.path.join(base_dir, 'sample_data')
     lis = os.path.join(s_data, 'long_island_sound')
+    bos = os.path.join(s_data, 'boston_data')
     dbay = os.path.join(s_data, 'delaware_bay')
     curr_dir = os.path.join(s_data, 'currents')
     tide_dir = os.path.join(s_data, 'tides')
     wind_dir = os.path.join(s_data, 'winds')
     testmap = os.path.join(base_dir, '../sample_data', 'MapBounds_Island.bna')
-    bna_sample = os.path.join(s_data, r"MapBounds_2Spillable2Islands2Lakes.bna")
+    bna_sample = os.path.join(s_data, 'MapBounds_2Spillable2Islands2Lakes.bna')
 
     data = dict()
 
@@ -191,7 +196,7 @@ def get_testdata():
          'grid_ts': get_datafile(os.path.join(wind_dir, 'gridwind_ts.wnd'))}
     data['MapFromBNA'] = {'testmap': testmap}
     data['Renderer'] = {'bna_sample': bna_sample,
-                        'output_dir': os.path.join(base_dir, 'renderer_output')}
+                        'bna_star': os.path.join(s_data, 'Star.bna')}
     data['GridMap'] = \
         {'curr': get_datafile(os.path.join(curr_dir, 'ny_cg.nc')),
          'BigCombinedwMap':
@@ -210,6 +215,20 @@ def get_testdata():
                                        'WindDataFromGnomeCardinal.WND'),
          'tide_shio': get_datafile(os.path.join(tide_dir, 'CLISShio.txt')),
          'tide_ossm': get_datafile(os.path.join(tide_dir, 'TideHdr.FINAL'))
+         }
+
+    # data for boston model - used for testing save files/webapi
+    data['boston_data'] = \
+        {'map': get_datafile(os.path.join(bos, 'MassBayMap.bna')),
+         'cats_curr1': get_datafile(os.path.join(bos, 'EbbTides.cur')),
+         'cats_shio': get_datafile(os.path.join(bos, 'EbbTidesShio.txt')),
+         'cats_curr2': get_datafile(os.path.join(bos,
+                                                 'MerrimackMassCoast.cur')),
+         'cats_ossm': get_datafile(os.path.join(bos,
+                                                'MerrimackMassCoastOSSM.txt')),
+         'cats_curr3': get_datafile(os.path.join(bos, 'MassBaySewage.cur')),
+         'component_curr1': get_datafile(os.path.join(bos, "WAC10msNW.cur")),
+         'component_curr2': get_datafile(os.path.join(bos, "WAC10msSW.cur"))
          }
 
     return data

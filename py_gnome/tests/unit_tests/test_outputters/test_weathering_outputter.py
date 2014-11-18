@@ -2,7 +2,6 @@
 tests for geojson outputter
 '''
 import os
-import shutil
 from glob import glob
 from datetime import timedelta
 
@@ -17,18 +16,8 @@ from gnome.spill import point_line_release_spill
 from gnome.outputters import WeatheringOutput
 
 
-here = os.path.dirname(__file__)
-
-datadir = os.path.join(here, 'sample_data')
-output_dir = os.path.join(here, 'weathering_output')
-
-
 @pytest.fixture(scope='module')
-def model(sample_model):
-    if os.path.isdir(output_dir):
-        shutil.rmtree(output_dir)
-    os.mkdir(output_dir)
-
+def model(sample_model, output_dir):
     model = sample_model['model']
     rel_start_pos = sample_model['release_start_pos']
     rel_end_pos = sample_model['release_end_pos']
@@ -103,7 +92,7 @@ def test_model_webapi_output(model):
 
 def test_model_dump_output(model):
     'Test weathering outputter with a model since simplest to do that'
-    model.outputters[0].output_dir = output_dir
+    output_dir = model.outputters[0].output_dir
     model.rewind()
     model.full_run()
     files = glob(os.path.join(output_dir, '*.json'))

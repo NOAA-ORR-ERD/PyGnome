@@ -233,21 +233,13 @@ class InitMassFromSpillAmount(InitBaseClass, Serializable):
         super(InitMassFromSpillAmount, self).__init__()
         self.array_types.update({'mass': array_types.mass})
         self.name = 'mass'
-        self.total_mass = None  # always in SI units
-
-    def _set_total_mass(self, spill, substance):
-        ''' set 'total_mass' property from spill since we only need to do this
-        once '''
-        if spill.get_mass('kg') is None:
-            self.total_mass = 0     # do we want to raise an error?
-        else:
-            self.total_mass = spill.get_mass('kg')
 
     def initialize(self, num_new_particles, spill, data_arrays, substance):
-        if self.total_mass is None:
-            self._set_total_mass(spill, substance)
-
-        data_arrays['mass'][-num_new_particles:] = (self.total_mass /
+        # not very efficient to get mass each time, but better to do this since
+        # multiple spills could share the ElementType and the list of
+        # initializers
+        total_mass = spill.get_mass('kg')
+        data_arrays['mass'][-num_new_particles:] = (total_mass /
                                                     spill.release.num_elements)
 
 

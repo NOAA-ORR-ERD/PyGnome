@@ -1,17 +1,13 @@
 #!/usr/bin/env python
-import sys
 import os
 import shutil
-import types
 from datetime import datetime, timedelta
-import glob
 import copy
-import json
 import inspect
 
 import numpy
 np = numpy
-from colander import (MappingSchema, SchemaNode,
+from colander import (SchemaNode,
                       Float, Int, Bool, drop)
 
 from gnome.environment import Environment, Water
@@ -149,6 +145,8 @@ class Model(Serializable):
         # todo: set Water / intrinsic properties
         if model.water is not None and len(model.weatherers) > 0:
             model._intrinsic_props = IntrinsicProps(model.water)
+        else:
+            model._intrinsic_props = None
 
         # register callback with OrderedCollection
         model.movers.register_callback(model._callback_add_mover,
@@ -443,6 +441,8 @@ class Model(Serializable):
 
         for sc in self.spills.items():
             sc.prepare_for_model_run(array_types)
+            if self._intrinsic_props:
+                self._intrinsic_props.initialize_weathering_data(sc)
 
         # outputters need array_types, so this needs to come after those
         # have been updated.
@@ -980,13 +980,16 @@ class Model(Serializable):
 
     @classmethod
     def _deserialize_nested_obj(cls, json_):
-        fqn = json_['obj_type']
-        name, scope = (list(reversed(fqn.rsplit('.', 1)))
-                       if fqn.find('.') >= 0
-                       else [fqn, ''])
-        my_module = __import__(scope, globals(), locals(), [str(name)], -1)
-        py_class = getattr(my_module, name)
-        return py_class.deserialize(json_)
+        if json_ is not None:
+            fqn = json_['obj_type']
+            name, scope = (list(reversed(fqn.rsplit('.', 1)))
+                           if fqn.find('.') >= 0
+                           else [fqn, ''])
+            my_module = __import__(scope, globals(), locals(), [str(name)], -1)
+            py_class = getattr(my_module, name)
+            return py_class.deserialize(json_)
+        else:
+            return None
 
     @classmethod
     def load(cls, saveloc, json_data, references=None):
