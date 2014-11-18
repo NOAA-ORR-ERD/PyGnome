@@ -164,8 +164,8 @@ class IntrinsicProps(object):
                     'avg_viscosity'):
             sc.weathering_data[key] = 0.0
 
-        for spill in sc:
-            water_temp = self.water.get('temperature', 'K')
+        water_temp = self.water.get('temperature', 'K')
+        for spill in sc.spills:
             spill.set('init_density',
                       spill.get('substance').get_density(water_temp))
 

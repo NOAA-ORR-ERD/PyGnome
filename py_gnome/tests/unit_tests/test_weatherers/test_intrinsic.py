@@ -167,6 +167,16 @@ class TestIntrinsicProps:
         sc = SpillContainer()
         sc.spills += spills
         sc.prepare_for_model_run(arrays)
+
+        # test initialization as well
+        intrinsic.initialize(sc)
+        for val in sc.weathering_data.values():
+            assert val == 0.0
+
+        for spill in sc.spills:
+            assert spill.get('init_density') is not None
+        # test initialization as well
+
         ts = 900
         for i in range(-1, 5):
             curr_time = rel_time + timedelta(seconds=i * ts)
