@@ -3421,7 +3421,8 @@ OSErr SaveAsHelper(Boolean bOnlyAdvancedSaveFile)
 			*/
 			//
 			if(!gKMLPath[0]) strcpy(gKMLPath,"splots");
-			err = AskUserForSaveFilename(gKMLPath,path,".kml",false);
+			//err = AskUserForSaveFilename(gKMLPath,path,".kml",false);
+			err = AskUserForSaveFilename(gKMLPath,path,"",false);
 			if(err) goto done; // note: might be user cancel
 			//
 			// update the window before running, since we just invalidated part of the window 
