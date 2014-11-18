@@ -22,11 +22,11 @@ class FayGravityViscous(object):
     def __init__(self):
         self.spreading_const = (1.53, 1.21)
 
-    def set_init_area(self,
-                      water_viscosity,
-                      init_volume,
-                      relative_bouyancy,
-                      out=None):
+    def init_area(self,
+                  water_viscosity,
+                  init_volume,
+                  relative_bouyancy,
+                  out=None):
         '''
         Initial area is computed for each LE only once. This can take scalars
         or numpy arrays for input since the initial_area for a bunch of LEs
@@ -44,6 +44,9 @@ class FayGravityViscous(object):
 
         :param out:
         :type out: numpy.ndarray with out.shape == init_volume.shape
+
+        Equation:
+        A0 = np.pi*(k2**4/k1**2)*(((n_LE*V0)**5*g*dbuoy)/(nu_h2o**2))**(1./6.)
         '''
         if out is None:
             out = np.zeros_like(init_volume)
@@ -66,16 +69,21 @@ class FayGravityViscous(object):
                     age,
                     out=None):
         '''
-        Update area and stuff it in out array. This takes numpy arrays as
-        input for init_volume, relative_bouyancy and age. Each element of the
-        array is the property for an LE - array should be the same shape.
+        Update area and stuff it in out array. This takes numpy arrays or
+        scalars as input for init_volume, relative_bouyancy and age. Each
+        element of the array is the property for an LE - array should be the
+        same shape.
         '''
-        if out is None:
-            out = np.zeros_like(init_area, dtype=np.float64)
-            out = (out, out.reshape(-1))[out.shape == ()]
-
-        if np.isscalar(age):
+        out_scalar = False
+        if np.isscalar(init_volume):
+            init_volume = np.asarray(init_volume).reshape(-1)
             age = np.asarray(age).reshape(-1)
+            relative_bouyancy = np.asarray(relative_bouyancy).reshape(-1)
+            out_scalar = True
+
+        if out is None:
+            out = np.zeros_like(init_volume, dtype=np.float64)
+            out = (out, out.reshape(-1))[out.shape == ()]
 
         out[:] = init_area
         mask = age > 0
@@ -84,11 +92,11 @@ class FayGravityViscous(object):
                     (constants['g']*relative_bouyancy[mask] *
                      init_volume[mask]**2 /
                      np.sqrt(water_viscosity*age[mask])))
-            dEddy = 0.033*age[mask]**(4/25)
+            dEddy = 0.033*age[mask]**(4./25)
             out[mask] += (dFay + dEddy) * age[mask]
 
-        if np.isscalar(init_volume):
-            out = out[0]
+        if out_scalar:
+            return out[0]
 
         return out
 
@@ -255,7 +263,7 @@ class IntrinsicProps(object):
         # Also, init_volume is same for all these new LEs so just provide
         # a scalar value
         sc['init_area'][-new_LEs:] = \
-            self.spreading.set_init_area(sc['init_volume'][-new_LEs:],
+            self.spreading.init_area(sc['init_volume'][-new_LEs:],
                                          self.water.get('kinematic_viscosity',
                                                         'St'),
                                          sc['relative_bouyancy'][-new_LEs:],
