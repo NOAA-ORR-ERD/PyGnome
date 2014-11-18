@@ -111,7 +111,7 @@ class TestIntrinsicProps:
                   point_line_release_spill(5,
                                            (0, 0, 0),
                                            rel_time + timedelta(hours=.25),
-                                           element_type=et,
+                                           element_type=floating_weathering(substance=et.substance),
                                            amount=100,
                                            units='kg')
                   ]

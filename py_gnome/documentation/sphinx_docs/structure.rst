@@ -41,7 +41,7 @@ track -- chemicals, floating debris, fish larvae, etc.
 The ElementType itself contains 'substance' which defines the properties of
 the substance spilled and a list of initializers. These are used to define
 data arrays associated with the type of spill, ie floating, floating with
-mass give, floating weathering particles etc. There are helper functions
+mass, floating weathering particles etc. There are helper functions
 to define the element_type without delving into initializers; however,
 user can optionally manipulate list of initializers. The helper functions are:
 
@@ -68,6 +68,17 @@ basically, if there are any weatherers defined, then a 'mass_components' data
 array will automatically be added. If you are not doing any
 weathering, the Spill object uses a default helper function based on
 whether a spill amount is defined or not. This should suffice for most cases.
+
+Multiple spills can share the same substance; which can be accessed by Spill's
+:meth:`~gnome.spill.Spill.get` method. Multiple spill's can also share the
+same :class:`~~gnome.spill.elements.element_type.ElementType` with the
+caveat that they share the same list of initializers. For example, if
+two spills have different 'windages' then the two spills cannot share the
+ElementType; however, they can still share the 'substance'. Currently, the
+code doesn't account for spills with different substances in the same model so
+it is preferred to either share the same substance or the two substances are
+equal.
+
  
 Movers
 -------------

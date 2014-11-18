@@ -849,9 +849,10 @@ def test_staggered_spills_weathering(sample_model_fcn, uncertain):
     rel_time = model.spills[0].get('release_time')
     model.start_time = rel_time - timedelta(hours=1)
     model.duration = timedelta(days=1)
+    et = floating_weathering(substance=model.spills[0].get('substance'))
     cs = point_line_release_spill(500, (0, 0, 0),
                                   rel_time + timedelta(hours=1),
-                                  element_type=model.spills[0].element_type,
+                                  element_type=et,
                                   amount=100,
                                   units='tons')
     model.spills += cs
