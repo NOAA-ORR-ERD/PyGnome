@@ -145,15 +145,21 @@ class IntrinsicProps(object):
                     if atype in self.array_types:
                         del self.array_types[atype]
 
-    def initialize_weathering_data(self, sc):
+    def initialize(self, sc):
         '''
-        initialize standard keys:
+        1. initialize standard keys:
         avg_density, floating, amount_released, avg_viscosity to 0.0
+        2. set init_density for all ElementType objects in each Spill
         '''
         # nothing released yet - set everything to 0.0
         for key in ('avg_density', 'floating', 'amount_released',
                     'avg_viscosity'):
             sc.weathering_data[key] = 0.0
+
+        for spill in sc:
+            water_temp = self.water.get('temperature', 'K')
+            spill.set('init_density',
+                      spill.get('substance').get_density(water_temp))
 
     def update(self, num_new_released, sc):
         '''

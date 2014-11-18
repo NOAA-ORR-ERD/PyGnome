@@ -442,7 +442,7 @@ class Model(Serializable):
         for sc in self.spills.items():
             sc.prepare_for_model_run(array_types)
             if self._intrinsic_props:
-                self._intrinsic_props.initialize_weathering_data(sc)
+                self._intrinsic_props.initialize(sc)
 
         # outputters need array_types, so this needs to come after those
         # have been updated.
