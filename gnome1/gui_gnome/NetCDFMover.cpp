@@ -179,9 +179,13 @@ short NetCDFMoverSettingsClick(DialogPtr dialog, short itemNum, long lParam, VOI
 			
 			if (showBottomVel) arrowDepth = -2;	//check maxDepth>0
 			if (map)
-			{
+			{	// there will always be a map, but may be universal map...
 				maxDepth = map -> GetMaxDepth2();	// 2D vs 3D ?
 				//arrowDepth = EditText2Float(dialog, M33ARROWDEPTH);
+				if (maxDepth == 0)
+				{	// check if 3D grid is on universal map (or changed to view a depth on loading in, before mover was put on map)
+					maxDepth = sNetCDFDialogMover -> GetMaxDepth();
+				}
 				if (arrowDepth > maxDepth)
 				{
 					char errStr[64];
@@ -190,7 +194,7 @@ short NetCDFMoverSettingsClick(DialogPtr dialog, short itemNum, long lParam, VOI
 					break;
 				}
 			}
-			else
+			/*else
 			{	// only need this if doing something 3D
 				maxDepth = sNetCDFDialogMover -> GetMaxDepth();
 				if (arrowDepth > maxDepth)
@@ -200,7 +204,7 @@ short NetCDFMoverSettingsClick(DialogPtr dialog, short itemNum, long lParam, VOI
 					printError(errStr);
 					break;
 				}
-			}
+			}*/
 			
 			strcpy(errmsg,"");
 			tempAlong = EditText2Float(dialog, M33ALONG);
