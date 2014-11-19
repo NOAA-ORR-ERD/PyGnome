@@ -107,7 +107,11 @@ class Water(Environment, serializable.Serializable):
                    'salinity': ('salinity', _valid_salinity_units),
                    'sediment': ('sediment', _valid_sediment_units),
                    'wave_height': ('length', _valid_dist_units),
-                   'fetch': ('length', _valid_dist_units)}
+                   'fetch': ('length', _valid_dist_units),
+                   'kinematic_viscosity': ('kinematic viscosity',
+                                           _valid_kvis_units),
+                   'density': ('density', _valid_density_units),
+                   }
 
     def __init__(self,
                  temperature=311.15,
@@ -128,7 +132,7 @@ class Water(Environment, serializable.Serializable):
                       'wave_height': 'm',
                       'fetch': 'm',
                       'density': 'kg/m^3',
-                      'kinematic_viscosity': 'St'}
+                      'kinematic_viscosity': 'm^2/s'}
         self.temperature = temperature
         self.salinity = salinity
         self.sediment = sediment
@@ -163,7 +167,6 @@ class Water(Environment, serializable.Serializable):
             # requirements
             return val
 
-        print unit, self._units_type[attr][1]
         if unit in self._units_type[attr][1]:
             return uc.convert(self._units_type[attr][0], self.units[attr],
                               unit, val)

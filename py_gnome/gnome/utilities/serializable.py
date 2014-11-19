@@ -1,12 +1,12 @@
 '''
 Created on Feb 15, 2013
 '''
-
 import copy
 import inspect
 import os
 import json
 import shutil
+from itertools import izip_longest
 
 import numpy
 np = numpy
@@ -664,20 +664,22 @@ class Serializable(GnomeId, Savable):
         If an attribute has changed, then call 'update_attr' to update its
         value.
 
-        .. note:: Does not do updates on nested objects. If the attribute
-        references another Serializable object, then the value is not a dict
-        but rather the updated object. For instance, WindMover will receive:
-
-          {..., 'wind': <Wind object>}
-
-        as opposed to a nested dict of the 'wind' object. It is expected that
-        the 'wind' object was updated by calling its own update_from_dict then
-        added to this dict as the updated object.
-
         :param data: dict containing state of object per the client
         :type data: dict
         :returns: True if something changed, False otherwise
         :rtype: bool
+
+        .. note::
+
+            Does not do updates on nested objects. If the attribute references
+            another Serializable object, then the value is not a dict but
+            rather the updated object. For instance, WindMover will receive:
+
+              {..., 'wind': <Wind object>}
+
+            as opposed to a nested dict of the 'wind' object. It is expected
+            that the 'wind' object was updated by calling its own
+            update_from_dict then added to this dict as the updated object.
         """
         list_ = self._state.get_names('update')
         updated = False
@@ -698,7 +700,7 @@ class Serializable(GnomeId, Savable):
         '''
         # first, we normalize our left and right args
         if (isinstance(current_value, np.ndarray) and
-            isinstance(received_value, (list, tuple))):
+                isinstance(received_value, (list, tuple))):
             received_value = np.asarray(received_value)
 
         # For a nested object, check if it data contains a new object. If
@@ -750,12 +752,7 @@ class Serializable(GnomeId, Savable):
         from_dict_fn_name = '%s_update_from_dict' % name
         if hasattr(self, from_dict_fn_name):
             return getattr(self, from_dict_fn_name)(value)
-        # NO updated of NESTED Seriablizable objects
-        #elif hasattr(getattr(self, name), 'update_from_dict'):
-        #    getattr(self, name).update_from_dict(value)
 
-        # not and OrderedCollection and doesn't define custom _update_from_dict
-        # function. update using setattr if attr has changed
         if self._attr_changed(current_value, value):
             setattr(self, name, value)
             return True
@@ -770,8 +767,7 @@ class Serializable(GnomeId, Savable):
 
         if len(l_new_oc) != len(curr_oc):
             updated = True
-
-        if curr_oc.values() != l_new_oc:
+        elif any([x is not y for x, y in zip(curr_oc.values(), l_new_oc)]):
             updated = True
 
         if updated:

@@ -244,6 +244,8 @@ class InitMassFromSpillAmount(InitBaseClass, Serializable):
             self.total_mass = spill.get_mass('kg')
 
     def initialize(self, num_new_particles, spill, data_arrays, substance):
+        # store total_mass - it doesn't change so store it locally. The
+        # windages are also tied to the spill
         if self.total_mass is None:
             self._set_total_mass(spill, substance)
 

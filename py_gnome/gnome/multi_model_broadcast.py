@@ -45,8 +45,9 @@ class ModelConsumer(mp.Process):
             if data is None:
                 # Poison pill means shutdown
                 print '%s: Exiting' % proc_name
-                break
+                self.result_queue.put(None)
 
+                break
             try:
                 cmd, kwargs = data
                 result = getattr(self, '_' + cmd)(**kwargs)
@@ -171,6 +172,9 @@ class ModelBroadcaster(GnomeId):
 
     def stop(self):
         [t.put(None) for t in self.tasks]
+        [r.get() for r in self.results]
+        [t.close() for t in self.tasks]
+        [r.close() for r in self.results]
         self.tasks = []
         self.results = []
         self.lookup = {}

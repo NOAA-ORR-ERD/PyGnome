@@ -1349,6 +1349,7 @@ OSErr ReadSectionOfFile(short vRefNum, long dirID, CHARPTR name,
 		}
 		else {
 			throw("Unable to open file");
+		}
 		delete _ifstream;
 	}
 	/*try {

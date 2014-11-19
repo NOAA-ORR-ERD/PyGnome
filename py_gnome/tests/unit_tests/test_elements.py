@@ -268,17 +268,19 @@ rise_vel.update(arr_types)
 
 mass_comp = {'mass_components': array_types.mass_components}
 mass_comp.update(arr_types)
+oil = 'ALAMO'
 
-inp_params = [((floating(),
-                ElementType([InitWindages(),
-                             InitMassFromSpillAmount()])), arr_types),
-              ((floating(),
-                ElementType([InitWindages(),
-                             InitRiseVelFromDist()])), rise_vel),
-              ((floating(),
-                ElementType([InitMassFromSpillAmount(),
-                             InitRiseVelFromDist()])), rise_vel),
-              ((floating(), floating_weathering()), mass_comp),
+inp_params = [((floating(substance=oil),
+                ElementType([InitWindages(), InitMassFromSpillAmount()],
+                            substance=oil)), arr_types),
+              ((floating(substance=oil),
+                ElementType([InitWindages(), InitRiseVelFromDist()],
+                            substance=oil)), rise_vel),
+              ((floating(substance=oil),
+                ElementType([InitMassFromSpillAmount(), InitRiseVelFromDist()],
+                            substance=oil)), rise_vel),
+              ((floating(substance=oil), floating_weathering(substance=oil)),
+               mass_comp),
               ]
 
 

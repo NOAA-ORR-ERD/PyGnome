@@ -28,7 +28,7 @@ here = os.path.dirname(__file__)
 
 
 @pytest.fixture(scope='function')
-def model(sample_model_fcn, request):
+def model(sample_model_fcn, dump):
     """
     Use fixture model_surface_release_spill and add a few things to it for the
     test
@@ -36,13 +36,14 @@ def model(sample_model_fcn, request):
     model = sample_model_fcn['model']
 
     model.cache_enabled = True
-    model.spills += point_line_release_spill(num_elements=5,
-                        start_position=sample_model_fcn['release_start_pos'],
-                        release_time=model.start_time,
-                        end_release_time=model.start_time + model.duration,
-                        element_type=floating_weathering(substance='oil_diesel'),
-                        amount=1000,
-                        units='kg')
+    model.spills += \
+        point_line_release_spill(num_elements=5,
+                                 start_position=sample_model_fcn['release_start_pos'],
+                                 release_time=model.start_time,
+                                 end_release_time=model.start_time + model.duration,
+                                 element_type=floating_weathering(substance='oil_diesel'),
+                                 amount=1000,
+                                 units='kg')
 
     water = Water()
     model.water = water
@@ -50,33 +51,11 @@ def model(sample_model_fcn, request):
     model.movers += constant_wind_mover(1.0, 0.0)
     model.weatherers += Evaporation(water, model.movers[-1].wind)
 
-    model.outputters += NetCDFOutput(os.path.join(here,
+    model.outputters += NetCDFOutput(os.path.join(dump,
                                                   u'sample_model.nc'))
 
     model.rewind()
 
-    def cleanup():
-        'cleanup outputters was added to sample_model and delete files'
-
-        print '\nCleaning up %s' % model
-        o_put = None
-
-        for outputter in model.outputters:
-            # there should only be 1!
-            #if isinstance(outputter, NetCDFOutput):
-            o_put = model.outputters[outputter.id]
-
-            if hasattr(o_put, 'netcdf_filename'):
-                if os.path.exists(o_put.netcdf_filename):
-                    os.remove(o_put.netcdf_filename)
-                    print "deleted: {0}".format(o_put.netcdf_filename)
-
-                if (o_put._u_netcdf_filename is not None
-                    and os.path.exists(o_put._u_netcdf_filename)):
-                    os.remove(o_put._u_netcdf_filename)
-                    print "deleted: {0}".format(o_put._u_netcdf_filename)
-
-    request.addfinalizer(cleanup)
     return model
 
 

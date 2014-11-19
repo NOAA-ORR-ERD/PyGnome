@@ -22,11 +22,11 @@ class FayGravityViscous(object):
     def __init__(self):
         self.spreading_const = (1.53, 1.21)
 
-    def set_init_area(self,
-                      water_viscosity,
-                      init_volume,
-                      relative_bouyancy,
-                      out=None):
+    def init_area(self,
+                  water_viscosity,
+                  init_volume,
+                  relative_bouyancy,
+                  out=None):
         '''
         Initial area is computed for each LE only once. This can take scalars
         or numpy arrays for input since the initial_area for a bunch of LEs
@@ -44,6 +44,9 @@ class FayGravityViscous(object):
 
         :param out:
         :type out: numpy.ndarray with out.shape == init_volume.shape
+
+        Equation:
+        A0 = np.pi*(k2**4/k1**2)*(((n_LE*V0)**5*g*dbuoy)/(nu_h2o**2))**(1./6.)
         '''
         if out is None:
             out = np.zeros_like(init_volume)
@@ -66,16 +69,21 @@ class FayGravityViscous(object):
                     age,
                     out=None):
         '''
-        Update area and stuff it in out array. This takes numpy arrays as
-        input for init_volume, relative_bouyancy and age. Each element of the
-        array is the property for an LE - array should be the same shape.
+        Update area and stuff it in out array. This takes numpy arrays or
+        scalars as input for init_volume, relative_bouyancy and age. Each
+        element of the array is the property for an LE - array should be the
+        same shape.
         '''
-        if out is None:
-            out = np.zeros_like(init_area, dtype=np.float64)
-            out = (out, out.reshape(-1))[out.shape == ()]
-
-        if np.isscalar(age):
+        out_scalar = False
+        if np.isscalar(init_volume):
+            init_volume = np.asarray(init_volume).reshape(-1)
             age = np.asarray(age).reshape(-1)
+            relative_bouyancy = np.asarray(relative_bouyancy).reshape(-1)
+            out_scalar = True
+
+        if out is None:
+            out = np.zeros_like(init_volume, dtype=np.float64)
+            out = (out, out.reshape(-1))[out.shape == ()]
 
         out[:] = init_area
         mask = age > 0
@@ -84,11 +92,11 @@ class FayGravityViscous(object):
                     (constants['g']*relative_bouyancy[mask] *
                      init_volume[mask]**2 /
                      np.sqrt(water_viscosity*age[mask])))
-            dEddy = 0.033*age[mask]**(4/25)
+            dEddy = 0.033*age[mask]**(4./25)
             out[mask] += (dFay + dEddy) * age[mask]
 
-        if np.isscalar(init_volume):
-            out = out[0]
+        if out_scalar:
+            return out[0]
 
         return out
 
@@ -145,6 +153,22 @@ class IntrinsicProps(object):
                     if atype in self.array_types:
                         del self.array_types[atype]
 
+    def initialize(self, sc):
+        '''
+        1. initialize standard keys:
+        avg_density, floating, amount_released, avg_viscosity to 0.0
+        2. set init_density for all ElementType objects in each Spill
+        '''
+        # nothing released yet - set everything to 0.0
+        for key in ('avg_density', 'floating', 'amount_released',
+                    'avg_viscosity'):
+            sc.weathering_data[key] = 0.0
+
+        water_temp = self.water.get('temperature', 'K')
+        for spill in sc.spills:
+            spill.set('init_density',
+                      spill.get('substance').get_density(water_temp))
+
     def update(self, num_new_released, sc):
         '''
         Uses 'substance' properties together with 'water' properties to update
@@ -154,8 +178,9 @@ class IntrinsicProps(object):
         water object. So it was easiest to initialize the 'init_volume' for
         newly released particles here.
         '''
-        self._update_intrinsic_props(num_new_released, sc)
-        self._update_weathering_data(num_new_released, sc)
+        if len(sc) > 0:
+            self._update_intrinsic_props(num_new_released, sc)
+            self._update_weathering_data(num_new_released, sc)
 
     def _update_weathering_data(self, new_LEs, sc):
         '''
@@ -163,20 +188,15 @@ class IntrinsicProps(object):
         set these - will user be able to use select weatherers? Currently,
         evaporation defines 'density' data array
         '''
-        if len(sc) == 0:
-            # nothing released yet - set everything to 0.0
-            for key in ('avg_density', 'floating', 'amount_released',
-                        'avg_viscosity'):
-                sc.weathering_data[key] = 0.0
-        else:
-            mask = sc['status_codes'] == oil_status.in_water
-            # update avg_density from density array
-            # wasted cycles at present since all values in density for given
-            # timestep should be the same, but that will likely change
-            sc.weathering_data['avg_density'] = np.average(sc['density'])
-            sc.weathering_data['avg_viscosity'] = np.average(sc['viscosity'])
-            sc.weathering_data['floating'] = np.sum(sc['mass'][mask])
+        mask = sc['status_codes'] == oil_status.in_water
+        # update avg_density from density array
+        # wasted cycles at present since all values in density for given
+        # timestep should be the same, but that will likely change
+        sc.weathering_data['avg_density'] = np.average(sc['density'])
+        sc.weathering_data['avg_viscosity'] = np.average(sc['viscosity'])
+        sc.weathering_data['floating'] = np.sum(sc['mass'][mask])
 
+        if new_LEs > 0:
             amount_released = np.sum(sc['mass'][-new_LEs:])
             if 'amount_released' in sc.weathering_data:
                 sc.weathering_data['amount_released'] += amount_released
@@ -249,7 +269,7 @@ class IntrinsicProps(object):
         # Also, init_volume is same for all these new LEs so just provide
         # a scalar value
         sc['init_area'][-new_LEs:] = \
-            self.spreading.set_init_area(sc['init_volume'][-new_LEs:],
+            self.spreading.init_area(sc['init_volume'][-new_LEs:],
                                          self.water.get('kinematic_viscosity',
                                                         'St'),
                                          sc['relative_bouyancy'][-new_LEs:],

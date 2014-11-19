@@ -835,7 +835,8 @@ def test_setup_model_run(model):
     assert not exp_keys.intersection(model.spills.LE_data)
 
 
-def test_staggered_spills_weathering(sample_model_fcn):
+@pytest.mark.parametrize("uncertain", [False, True])
+def test_staggered_spills_weathering(sample_model_fcn, uncertain):
     '''
     Just test that a model with weathering and spills staggered in time runs
     without errors.
@@ -843,12 +844,17 @@ def test_staggered_spills_weathering(sample_model_fcn):
     test exposed a bug, which is now fixed
     '''
     model = sample_model_weathering(sample_model_fcn, 'ALAMO')
+    model.map = gnome.map.GnomeMap()    # make it all water
+    model.uncertain = uncertain
     rel_time = model.spills[0].get('release_time')
     model.start_time = rel_time - timedelta(hours=1)
     model.duration = timedelta(days=1)
+    # todo: figure out why we're not able to reuse 'substance' object
+    # et = floating_weathering(substance=model.spills[0].get('substance'))
+    et = floating_weathering(substance=model.spills[0].get('substance').name)
     cs = point_line_release_spill(500, (0, 0, 0),
                                   rel_time + timedelta(hours=1),
-                                  element_type=model.spills[0].element_type,
+                                  element_type=et,
                                   amount=100,
                                   units='tons')
     model.spills += cs
@@ -858,8 +864,23 @@ def test_staggered_spills_weathering(sample_model_fcn):
                          Dispersion(),
                          Burn(),
                          Skimmer()]
-    #model.outputters += WeatheringOutput('./temp')
-    model.full_run()
+    # model.full_run()
+    for step in model:
+        for sc in model.spills.items():
+            sum_ = 0.0
+            for key in sc.weathering_data:
+                if 'avg_' != key[:4] and 'amount_released' != key:
+                    sum_ += sc.weathering_data[key]
+            assert abs(sum_ - sc.weathering_data['amount_released']) < 1.e-6
+
+        if uncertain:
+            # no uncertainty - using mock data for cleanup options
+            sc, sc_u = model.spills.items()
+            for key in sc.weathering_data:
+                assert (abs(sc.weathering_data[key] -
+                            sc_u.weathering_data[key]) < 1.e-6)
+
+        print "completed step {0}".format(step)
 
 
 def test_weathering_data_attr():

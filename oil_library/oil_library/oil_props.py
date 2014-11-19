@@ -181,6 +181,9 @@ class OilProps(object):
 
     def __eq__(self, other):
         '''need to explicitly compare __dict__'''
+        if type(self) != type(other):
+            return False
+
         return self.__dict__ == other.__dict__
 
     def __ne__(self, other):
