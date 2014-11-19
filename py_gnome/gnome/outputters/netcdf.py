@@ -85,8 +85,11 @@ var_attributes = {
     'dispersed': {
         'long_name': 'total mass dispersed since beginning of model run',
         'units': 'kilograms'},
-    'density': {
+    'avg_density': {
         'long_name': 'average density at end of timestep',
+        'units': 'kg/m^3'},
+    'avg_viscosity': {
+        'long_name': 'average viscosity at end of timestep',
         'units': 'kg/m^3'},
     'amount_released': {
         'long_name': 'total mass of oil released thus far',

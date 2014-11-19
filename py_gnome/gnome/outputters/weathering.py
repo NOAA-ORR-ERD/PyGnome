@@ -69,7 +69,8 @@ class WeatheringOutput(Outputter, Serializable):
         '''
         self.output_dir = output_dir
         self.units = {'default': 'kg',
-                      'avg_density': 'kg/m^3'}
+                      'avg_density': 'kg/m^3',
+                      'avg_viscosity': 'm^2/s'}
         super(WeatheringOutput, self).__init__(**kwargs)
 
     def _add_fake_uncertainty(self, nom_dict):
@@ -83,7 +84,10 @@ class WeatheringOutput(Outputter, Serializable):
             sum_mass = 0.0
             for key, val in nom_dict.iteritems():
                 runs[str(ix)][key] = val * random.uniform(0.9, 1.2)
-                if key not in ('avg_density', 'amount_released', 'floating'):
+                if key not in ('avg_density',
+                               'avg_viscosity',
+                               'amount_released',
+                               'floating'):
                     sum_mass += runs[str(ix)][key]
 
             runs[str(ix)]['floating'] = (runs[str(ix)]['amount_released'] -
