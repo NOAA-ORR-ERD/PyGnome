@@ -10,6 +10,7 @@ from inspect import getmembers, ismethod
 
 import numpy
 np = numpy
+from repoze.lru import lru_cache
 
 from hazpy import unit_conversion
 uc = unit_conversion
@@ -390,6 +391,7 @@ class Spill(serializable.Serializable):
         self._check_units(units)  # check validity before setting
         self._units = units
 
+    @lru_cache(2)
     def get_mass(self, units=None):
         '''
         Return the mass released during the spill.
