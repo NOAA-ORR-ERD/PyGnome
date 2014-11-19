@@ -136,8 +136,6 @@ class Evaporation(Weatherer, Serializable):
 
             sc.weathering_data['evaporated'] += \
                 np.sum(sc['mass_components'][:, :] - mass_remain[:, :])
-
-            sc.weathering_data['avg_density'] = sc['density'].mean()
             sc['mass_components'][:] = mass_remain
             sc['mass'][:] = sc['mass_components'].sum(1)
             self.logger.info('Amount Evaporated: {0}'.
