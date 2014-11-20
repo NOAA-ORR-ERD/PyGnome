@@ -996,6 +996,25 @@ def get_eq_spills():
     return (spill, spill2)
 
 
+@pytest.mark.xfail
+def test_reuse_substance():
+    '''
+    reuse substance
+    marked as xfail due to a testing issue
+    - this works fine if pytest is run on this file; however, when pytest is
+    run on all files, this fails when trying to make copy of spills
+    '''
+    scp = SpillContainerPair(uncertain=True)
+    s0 = Spill(Release(datetime.now(), 10),
+               element_type=floating(substance='ALAMO'))
+    s1 = Spill(Release(datetime.now(), 10),
+               element_type=floating(substance=s0.get('substance')))
+    assert s1.element_type is not s0.element_type
+    assert s1.element_type == s0.element_type
+    assert s1.get('substance') is s0.get('substance')
+    scp += [s0, s1]
+
+
 class TestSpillContainerPairGetSetDel:
     s0 = [point_line_release_spill(1, (0, 0, 0), datetime.now()),
           point_line_release_spill(2, (0, 0, 0), datetime.now())]
