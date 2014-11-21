@@ -303,6 +303,10 @@ class Model(Serializable):
         self._cache.enabled = enabled
 
     @property
+    def has_weathering(self):
+        return len(self.weatherers) > 0
+
+    @property
     def start_time(self):
         '''
         Start time of the simulation
