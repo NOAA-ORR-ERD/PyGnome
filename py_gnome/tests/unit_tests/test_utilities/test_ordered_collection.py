@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-
 from pytest import raises, mark
 
 from gnome.movers.simple_mover import SimpleMover
@@ -26,23 +25,14 @@ def test_getslice():
     assert l_[::2] == oc[::2]
 
 
-def test_remake():
-    'remakes internal lists without None enteries'
+def test__remake():
+    'delete automatically remakes internal lists without None'
     oc = OrderedCollection(['p', 'q', 'ab', 'adsf', 'ss'])
     del oc[0]
-    del oc[3]
-    assert oc._elems[0] is None
-    assert oc._elems[3] is None
-    oc.remake()
+    del oc[2]
     for ix, elem in enumerate(oc._elems):
         assert elem is not None
         assert oc._d_index[s_id(elem)] == ix
-
-
-def test_remake_emptyoc():
-    'empty OC'
-    oc = OrderedCollection(dtype=int)
-    oc.remake()
 
 
 def test_clear():
@@ -168,7 +158,6 @@ class TestOrderedCollection(object):
         oc = OrderedCollection([1, 2, 3, 4, 5])
         oc.add(6)
         assert [i for i in oc] == [1, 2, 3, 4, 5, 6]
-
         with raises(TypeError):
             oc.add('not an int')
 
@@ -283,7 +272,6 @@ class TestOrderedCollection(object):
 
     def _to_dict_assert(self, oc, items, json_):
         toserial = oc.to_dict()
-        print toserial
 
         for (i, mv) in enumerate(items):
             try:
@@ -317,7 +305,6 @@ class TestCallbacks:
         '''
 
         # lets work with a mutable type
-
         oc = OrderedCollection(dtype=ObjToAdd)
         oc.register_callback(self._add_callback, events='add')
 
@@ -341,7 +328,6 @@ class TestCallbacks:
         oc.register_callback(self._add_callback, events='add')
 
         # check everything if False initially
-
         self._reset_ObjToAdd_init_state()
 
         oc += self.to_add
@@ -394,7 +380,6 @@ class TestCallbacks:
                              'replace'))
 
         # check everything if False initially
-
         self._reset_ObjToAdd_init_state()
 
         oc += self.to_add
