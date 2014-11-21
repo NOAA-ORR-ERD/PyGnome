@@ -401,6 +401,19 @@ class Model(Serializable):
         '''
         return self._num_time_steps
 
+    def contains_object(self, obj_id):
+        for collection in (self.environment,
+                           self.weatherers):
+            for o in collection:
+                if obj_id == o.id:
+                    return True
+
+                if (hasattr(o, 'contains_object') and
+                        o.contains_object(obj_id)):
+                    return True
+
+        return False
+
     def setup_model_run(self):
         '''
         Sets up each mover for the model run
