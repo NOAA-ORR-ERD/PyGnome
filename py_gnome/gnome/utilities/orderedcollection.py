@@ -52,7 +52,7 @@ class OrderedCollection(object):
         else:
             return str(id(elem))
 
-    def _remake(self):
+    def remake(self):
         '''
         remove None elements from self._elems and renumber the indices in
         self._d_index
@@ -119,8 +119,6 @@ class OrderedCollection(object):
         item = self[obj_id]
         self._elems[self._d_index[obj_id]] = None
         del self._d_index[obj_id]
-
-        self._remake()
 
         # fire remove event before removing from collection
         # let gc delete item if it is no longer referenced
@@ -330,7 +328,7 @@ class OrderedCollection(object):
         callbacks registered for following events:
         - add: item is added
         - replace:
-        - remove: callback invoked before removing the item
+        - remove: callback invoked after removing the item
         '''
         if not isinstance(events, (list, tuple)):
             events = (events, )
