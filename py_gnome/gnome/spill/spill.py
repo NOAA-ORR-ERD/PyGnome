@@ -207,6 +207,17 @@ class Spill(serializable.Serializable):
             all_props.extend(i_props)
         return all_props
 
+    def contains_object(self, obj_id):
+        for o in (self.element_type, self.release):
+            if o.id == obj_id:
+                return True
+
+            if (hasattr(o, 'contains_object') and
+                    o.contains_object(obj_id)):
+                return True
+
+        return False
+
     def set(self, prop, val):
         """
         sets an existing property. The property could be of one of the

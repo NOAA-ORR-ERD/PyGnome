@@ -402,8 +402,14 @@ class Model(Serializable):
         return self._num_time_steps
 
     def contains_object(self, obj_id):
+        if self.map.id == obj_id:
+            return True
+
         for collection in (self.environment,
-                           self.weatherers):
+                           self.spills,
+                           self.movers,
+                           self.weatherers,
+                           self.outputters):
             for o in collection:
                 if obj_id == o.id:
                     return True
