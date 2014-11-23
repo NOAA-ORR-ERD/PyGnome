@@ -1054,5 +1054,109 @@ class TestSpillContainerPairGetSetDel:
         assert scp[0] == sr
         assert scp[1] == self.s0[1]
 
+
+class TestSubstanceSpillsDataStructureInit():
+    '''
+    tests the following:
+    1. substances attribute correctly set after adding/deleting spills
+       itersubstancespills() works correctly
+    2. adding no spills, spills with None substance, spills with different
+       substances all produce correct substances list and itersubstancespills()
+    '''
+    def test_no_spills(self):
+        'test iterators work without any spills'
+        sc = SpillContainer()
+        assert len(sc.substances) == 0
+        assert len(sc.itersubstancespills()) == 0
+        assert len(sc.iterss()) == 0
+
+    def test_no_substance(self):
+        'no substance means datastructure is empty'
+        sc = SpillContainer()
+        sc.spills += [Spill(Release(datetime.now(), 10),
+                            element_type=floating(substance=None),
+                            name='spill0'),
+                      Spill(Release(datetime.now(), 10),
+                            element_type=floating(substance=None),
+                            name='spill1')]
+        assert len(sc.substances) == 0
+        assert len(sc.itersubstancespills()) == 0
+        assert len(sc.iterss()) == 0
+
+    def test_spills_with_and_notwith_substance(self):
+        '''
+        datastructure only adds substance/spills if substance is not None
+        deleting spill resets datastructure
+        '''
+        sc = SpillContainer()
+        sc.spills += [Spill(Release(datetime.now(), 10),
+                            element_type=floating(substance=None),
+                            name='spill0'),
+                      Spill(Release(datetime.now(), 10),
+                            element_type=floating(),
+                            name='spill1')]
+        assert len(sc.substances) == 1
+        for substance, spills in sc.itersubstancespills():
+            assert substance is sc.spills[1].get('substance')
+            assert len(spills) == 1
+            for spill in spills:
+                assert spill is sc.spills[1]
+
+        del sc.spills[-1]
+        assert len(sc.substances) == 0
+        assert len(sc.itersubstancespills()) == 0
+        assert len(sc.iterss()) == 0
+
+    def test_spills_with_same_substance(self):
+        sc = SpillContainer()
+        et = floating(substance='ALAMO')
+        sp_add = [point_line_release_spill(3, (1, 1, 1), datetime.now(),
+                                           element_type=et),
+                  Spill(Release(datetime.now(), 10),
+                        amount=100, units='kg',
+                        element_type=floating_mass(substance='ALAMO')),
+                  Spill(Release(datetime.now(), 10),
+                        element_type=floating(substance=et.substance))
+                  ]
+        sc.spills += sp_add
+        assert len(sc.substances) == 1
+        for substance, spills, numrel, uninit in sc.iterss():
+            assert substance == et.substance
+            assert sp_add == spills
+            assert numrel == 0
+            assert uninit == 0
+
+    def test_spills_with_different_substance(self):
+        sc = SpillContainer()
+        splls0 = [point_line_release_spill(3, (1, 1, 1),
+                                           datetime.now(),
+                                           element_type=floating(substance='ALAMO')),
+                  Spill(Release(datetime.now(), 10),
+                        element_type=floating(substance='ALAMO')),
+                  ]
+        sc.spills += splls0
+        splls1 = [Spill(Release(datetime.now(), 10),
+                        element_type=floating(substance='oil_conservative'))
+                  ]
+        sc.spills += splls1
+
+        assert len(sc.substances) == 2
+        for substance, spills, numrel, uninit in sc.iterss():
+            assert numrel == 0
+            assert uninit == 0
+            if substance == splls0[0].get('substance'):
+                assert spills == splls0
+            elif substance == splls1[0].get('substance'):
+                assert spills == splls1
+
+
+class TestSubstanceSpillsDataStructureOnRelease():
+    '''
+    Test data structure gets correctly set/updated after release_elements is
+    invoked
+    '''
+    pass
+
+
 if __name__ == '__main__':
     test_rewind()
