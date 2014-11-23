@@ -958,6 +958,18 @@ def test_run_element_type_no_initializers(model):
     assert True
 
 
+class TestMergeModels:
+    def test_merge_from_empty_model(self, model):
+        '''
+        merge empty model - nothing to merge
+        deepcopy fails on model due to cache - we don't anticipate needing
+        to deepcopy models so do a hack for testing for now.
+        '''
+        # old_dict = copy.deepcopy(model.__dict__)
+        m = Model()
+        model.merge(m)
+
+
 if __name__ == '__main__':
 
     # test_all_movers()
