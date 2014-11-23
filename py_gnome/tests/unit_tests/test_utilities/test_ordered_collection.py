@@ -25,11 +25,12 @@ def test_getslice():
     assert l_[::2] == oc[::2]
 
 
-def test__remake():
+def test_remake():
     'delete automatically remakes internal lists without None'
     oc = OrderedCollection(['p', 'q', 'ab', 'adsf', 'ss'])
     del oc[0]
     del oc[2]
+    oc.remake()
     for ix, elem in enumerate(oc._elems):
         assert elem is not None
         assert oc._d_index[s_id(elem)] == ix
