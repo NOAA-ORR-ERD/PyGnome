@@ -835,6 +835,54 @@ def test_setup_model_run(model):
     assert not exp_keys.intersection(model.spills.LE_data)
 
 
+def test_contains_object(sample_model_fcn):
+    '''
+    Test that we can find all contained object types with a model.
+    '''
+    model = sample_model_weathering(sample_model_fcn, 'ALAMO')
+
+    gnome_map = model.map = gnome.map.GnomeMap()    # make it all water
+
+    rel_time = model.spills[0].get('release_time')
+    model.start_time = rel_time - timedelta(hours=1)
+    model.duration = timedelta(days=1)
+
+    water, wind = Water(), constant_wind(1., 0)
+    model.environment += [water, wind]
+
+    et = floating_weathering(substance=model.spills[0].get('substance').name)
+    sp = point_line_release_spill(500, (0, 0, 0),
+                                  rel_time + timedelta(hours=1),
+                                  element_type=et,
+                                  amount=100,
+                                  units='tons')
+    rel = sp.release
+    initializers = et.initializers
+    model.spills += sp
+
+    movers = [m for m in model.movers]
+
+    evaporation = Evaporation(model.environment[0], model.environment[1])
+    dispersion, burn, skimmer = Dispersion(), Burn(), Skimmer()
+    model.weatherers += [evaporation, dispersion, burn, skimmer]
+
+    renderer = Renderer(images_dir='Test_images',
+                        size=(400, 300))
+    model.outputters += renderer
+
+    for o in (gnome_map, sp, rel, et,
+              water, wind,
+              evaporation, dispersion, burn, skimmer,
+              renderer):
+        assert model.contains_object(o.id)
+
+    for o in initializers:
+        assert model.contains_object(o.id)
+
+    for o in movers:
+        assert model.contains_object(o.id)
+
+
 @pytest.mark.parametrize("uncertain", [False, True])
 def test_staggered_spills_weathering(sample_model_fcn, uncertain):
     '''
