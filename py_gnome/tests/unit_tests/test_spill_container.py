@@ -1059,15 +1059,14 @@ class TestSubstanceSpillsDataStructureInit():
     '''
     tests the following:
     1. substances attribute correctly set after adding/deleting spills
-       itersubstancespills() works correctly
+       iterss() works correctly
     2. adding no spills, spills with None substance, spills with different
-       substances all produce correct substances list and itersubstancespills()
+       substances all produce correct substances list and iterss()
     '''
     def test_no_spills(self):
         'test iterators work without any spills'
         sc = SpillContainer()
         assert len(sc.substances) == 0
-        assert len(sc.itersubstancespills()) == 0
         assert len(sc.iterss()) == 0
 
     def test_no_substance(self):
@@ -1080,7 +1079,6 @@ class TestSubstanceSpillsDataStructureInit():
                             element_type=floating(substance=None),
                             name='spill1')]
         assert len(sc.substances) == 0
-        assert len(sc.itersubstancespills()) == 0
         assert len(sc.iterss()) == 0
 
     def test_spills_with_and_notwith_substance(self):
@@ -1096,15 +1094,15 @@ class TestSubstanceSpillsDataStructureInit():
                             element_type=floating(),
                             name='spill1')]
         assert len(sc.substances) == 1
-        for substance, spills in sc.itersubstancespills():
+        for substance, spills, numrel, uninit in sc.iterss():
             assert substance is sc.spills[1].get('substance')
             assert len(spills) == 1
+            assert (numrel == 0 and uninit == 0)
             for spill in spills:
                 assert spill is sc.spills[1]
 
         del sc.spills[-1]
         assert len(sc.substances) == 0
-        assert len(sc.itersubstancespills()) == 0
         assert len(sc.iterss()) == 0
 
     def test_spills_with_same_substance(self):

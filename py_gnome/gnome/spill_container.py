@@ -332,20 +332,20 @@ class SpillContainer(SpillContainerData):
                    self._substances_spills.num_released,
                    self._substances_spills.uninitialized)
 
-    def itersubstancespills(self):
-        '''
-        iterate through the list of substances/spills
-        used internally to populate substance_data
-        '''
-        if self._substances_spills is None:
-            self._set_substancespills()
-        return zip(self._substances_spills.substances,
-                   self._substances_spills.spills)
-
     def itersubstancedata(self):
         '''
+        iterates through and returns the following for each iteration:
+        (substance, substance_data, uninitialized)
+
+        substance: substance object
+        substance_data: dict of numpy arrays associated with substance
+        uninitialized: these are the newly released elements. Some of the
+            'weathering' data_arrays are not yet initialized. IntrinsicProps
+            initializes these uninitialized elements.
         '''
-        return zip(self.substances, self._substance_data)
+        return zip(self.substances,
+                   self.substance_data,
+                   self._substances_spills.uninitialized)
 
     def setup_substancedata_arrays(self, arrays):
         '''
