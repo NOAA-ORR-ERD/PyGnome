@@ -7,16 +7,12 @@ import os
 from glob import glob
 
 import numpy as np
-from geojson import Point, Feature, FeatureCollection, dump, MultiPoint
+from geojson import Feature, FeatureCollection, dump, MultiPoint
 from colander import SchemaNode, String, drop, Int, Bool
 
 from gnome.utilities.serializable import Serializable, Field
 
 from .outputter import Outputter, BaseSchema
-
-from gnome.basic_types import oil_status
-from gnome import array_types
-from gnome.utilities.time_utils import date_to_sec
 
 
 class GeoJsonSchema(BaseSchema):
