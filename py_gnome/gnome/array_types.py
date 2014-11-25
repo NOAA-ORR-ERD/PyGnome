@@ -167,7 +167,11 @@ _default_values = {
      'init_area': ((), np.float64, 0),
      'relative_bouyancy': ((), np.float64, 0),
      'area': ((), np.float64, 0),
-     'viscosity': ((), np.float64, 0)
+     'viscosity': ((), np.float64, 0),
+
+     # substance index - used label elements from same substance
+     # used internally only by SpillContainer *if* more than one substance
+     'substance': ((), np.uint8, 0)
      }
 
 
