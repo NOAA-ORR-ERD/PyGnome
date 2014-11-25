@@ -53,7 +53,7 @@ def test_file_delete(output_dir):
     open(os.path.join(output_dir, bg_name), 'w').write('some junk')
 
     for i in range(5):
-        open(os.path.join(output_dir, fg_format % i), 'w'
+        open(os.path.join(output_dir, fg_format.format(i)), 'w'
              ).write('some junk')
 
     r.prepare_for_model_run(model_start_time=datetime.now())
@@ -75,7 +75,7 @@ def test_rewind(output_dir):
     open(os.path.join(output_dir, bg_name), 'w').write('some junk')
 
     for i in range(5):
-        open(os.path.join(output_dir, fg_format % i), 'w'
+        open(os.path.join(output_dir, fg_format.format(i)), 'w'
              ).write('some junk')
 
     now = datetime.now()
