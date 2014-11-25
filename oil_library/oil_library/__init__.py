@@ -15,33 +15,57 @@ from oil_library.oil_props import OilProps
 
 
 # Some standard oils - scope is module level, non-public
+# create mock_oil objects instead of dict - we always want the same instance
+# of mock_oil object for say 'oil_conservative' otherwise equality fails
 _sample_oils = {
-    'oil_gas': {'name': 'oil_gas',
-                'api': uc.convert('Density', 'gram per cubic centimeter',
-                                  'API degree', 0.75)},
-    'oil_jetfuels': {'name': 'oil_jetfuels',
-                     'api': uc.convert('Density', 'gram per cubic centimeter',
-                                       'API degree',
-                                       0.81)},
-    'oil_diesel': {'name': 'oil_diesel',
-                   'api': uc.convert('Density', 'gram per cubic centimeter',
-                                     'API degree', 0.87)},
-    'oil_4': {'name': 'oil_4',
-              'api': uc.convert('Density', 'gram per cubic centimeter',
-                                'API degree', 0.90)},
-    'oil_crude': {'name': 'oil_crude',
-                  'api': uc.convert('Density', 'gram per cubic centimeter',
-                                    'API degree', 0.90)},
-    'oil_6': {'name': 'oil_6',
-              'api': uc.convert('Density', 'gram per cubic centimeter',
-                                'API degree', 0.99)},
-    'oil_conservative': {'name': 'oil_conservative',
-                         'api': uc.convert('Density',
-                                           'gram per cubic centimeter',
-                                           'API degree', 1)},
-    'chemical': {'name': 'chemical',
-                 'api': uc.convert('Density', 'gram per cubic centimeter',
-                                   'API degree', 1)},
+    'oil_gas':
+        sample_oil_to_mock_oil(max_cuts=2,
+                               **{'name': 'oil_gas',
+                                  'api': uc.convert('Density',
+                                                    'gram per cubic centimeter',
+                                                    'API degree', 0.75)}),
+    'oil_jetfuels':
+        sample_oil_to_mock_oil(max_cuts=2,
+                               **{'name': 'oil_jetfuels',
+                                  'api': uc.convert('Density',
+                                                    'gram per cubic centimeter',
+                                                    'API degree', 0.81)}),
+    'oil_diesel':
+        sample_oil_to_mock_oil(max_cuts=2,
+                               **{'name': 'oil_diesel',
+                                  'api': uc.convert('Density',
+                                                    'gram per cubic centimeter',
+                                                    'API degree', 0.87)}),
+    'oil_4':
+        sample_oil_to_mock_oil(max_cuts=2,
+                               **{'name': 'oil_4',
+                                  'api': uc.convert('Density',
+                                                    'gram per cubic centimeter',
+                                                    'API degree', 0.90)}),
+    'oil_crude':
+        sample_oil_to_mock_oil(max_cuts=2,
+                               **{'name': 'oil_crude',
+                                  'api': uc.convert('Density',
+                                                    'gram per cubic centimeter',
+                                                    'API degree', 0.90)}),
+    'oil_6': 
+        sample_oil_to_mock_oil(max_cuts=2,
+                               **{'name': 'oil_6',
+                                  'api': uc.convert('Density',
+                                                    'gram per cubic centimeter',
+                                                    'API degree', 0.99)}),
+    'oil_conservative':
+        sample_oil_to_mock_oil(max_cuts=2,
+                               **{'name': 'oil_conservative',
+                                  'api': uc.convert('Density',
+                                                    'gram per cubic centimeter',
+                                                    'API degree', 1)}),
+    'chemical':
+        sample_oil_to_mock_oil(max_cuts=2,
+                               **{'name': 'chemical',
+                                  'api': uc.convert('Density',
+                                                    'gram per cubic centimeter',
+                                                    'API degree', 1)}),
     }
 
 '''
@@ -99,8 +123,7 @@ def get_oil(oil_, max_cuts=None):
         return sample_oil_to_mock_oil(max_cuts=max_cuts, **oil_)
 
     if oil_ in _sample_oils.keys():
-        print 'returning mock oil by name'
-        return sample_oil_to_mock_oil(max_cuts=max_cuts, **_sample_oils[oil_])
+        return _sample_oils[oil_]
 
     else:
         '''
