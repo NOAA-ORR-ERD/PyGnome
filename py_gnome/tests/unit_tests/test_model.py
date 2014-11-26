@@ -858,9 +858,10 @@ def test_staggered_spills_weathering(sample_model_fcn, uncertain):
                                   amount=100,
                                   units='tons')
     model.spills += cs
-    model.environment += [Water(), constant_wind(1., 0)]
-    model.weatherers += [Evaporation(model.environment[0],
-                                     model.environment[1]),
+    model.water = Water()
+    model.environment += constant_wind(1., 0)
+    model.weatherers += [Evaporation(model.water,
+                                     model.environment[0]),
                          Dispersion(),
                          Burn(),
                          Skimmer()]
@@ -885,7 +886,7 @@ def test_staggered_spills_weathering(sample_model_fcn, uncertain):
 
 def test_weathering_data_attr():
     '''
-    weathering_data is always written by SpillContainer
+    weathering_data is initialized/written if we have weatherers
     '''
     ts = 900
     s1_rel = datetime.now().replace(microsecond=0)
@@ -897,11 +898,12 @@ def test_weathering_data_attr():
     model.step()
 
     for sc in model.spills.items():
-        assert 'floating' not in sc.weathering_data
+        assert sc.weathering_data == {}
 
-    model.environment += [Water(), constant_wind(0., 0)]
-    model.weatherers += [Evaporation(model.environment[0],
-                                     model.environment[1])]
+    model.water = Water()
+    model.environment += constant_wind(0., 0)
+    model.weatherers += [Evaporation(model.water,
+                                     model.environment[0])]
 
     # use different element_type and initializers for both spills
     s[0].amount = 10.0
