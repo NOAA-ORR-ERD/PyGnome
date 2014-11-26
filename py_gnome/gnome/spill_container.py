@@ -21,6 +21,7 @@ from gnome.array_types import (positions,
                                mass,
                                age,
                                density,
+                               substance,
                                ArrayType)
 
 from gnome.utilities.orderedcollection import OrderedCollection
@@ -31,13 +32,14 @@ import gnome.spill
 # 1. substances: list of substances
 # 2. spills: list of lists spills. Each element are list of spills
 #    corresponding w/ substance
-# 3. num_released: list containing number of elements released for substance.
-# 4. uninitialized: list containing number of elements just released and not
-#    yet initialized per substance
+# 3. data: A list of dict's where each dict is the data_array corresponding
+#    with the substance for elements released thus far. This is a copy of the
+#    internally stored data_arrays.
+
 substances_spills = namedtuple('substances_spills',
-                               ['substances', 'spills',
-                                'num_released',
-                                'uninitialized'])
+                               ['substances',
+                                'spills',
+                                'data'])
 
 
 class SpillContainerData(object):
@@ -154,6 +156,12 @@ class SpillContainerData(object):
             'compare dict not including _data_arrays'
             if isinstance(val, dict):
                 val_is_dict.append(key)
+            elif key == '_substances_spills':
+                '''
+                this is just another view of the data - no need to write extra
+                code to check equality for this
+                '''
+                pass
             elif val != other.__dict__[key]:
                 return False
 
@@ -191,7 +199,7 @@ class SpillContainerData(object):
         SpillContainer.
         """
         try:
-            #find the length of an arbitrary first array
+            # find the length of an arbitrary first array
             return len(self._data_arrays.itervalues().next())
         except StopIteration:
             return 0
@@ -261,7 +269,9 @@ class SpillContainer(SpillContainerData):
             self._array_types[data_name] = ArrayType(shape, dtype)
 
     def _reset_arrays(self):
-        'reset _array_types dict so it contains default keys/values'
+        '''
+        reset _array_types dict so it contains default keys/values
+        '''
         gnome.array_types.reset_to_defaults(['spill_num', 'id'])
 
         self._array_types = {'positions': positions,
@@ -273,44 +283,66 @@ class SpillContainer(SpillContainerData):
                              'mass': mass,
                              'age': age}
         self._data_arrays = {}
-
-        # another view of data_arrays organized per spill
-        # we'll only have a handful of spills so just use a python list as
-        # container of numpy arrays associated with each spill
-        self._substance_data = []
+        self._substances_spills = None
 
     def _set_substancespills(self):
         '''
         _substances could change when spills are added/deleted
         using _spills_changed callback to reset self._substance_spills to None
+        If 'substance' is None, we still include it in this data structure -
+        all spills that are 'on' are included. A spill that is off isn't really
+        being modeled so ignore it.
 
         .. note::
             Should not be called in middle of run. prepare_for_model_run()
-            will invoke this if self._substance_spills is None.
+            will invoke this if self._substance_spills is None. This is another
+            view of the data - it doesn't contain any state that needs to be
+            persisted.
         '''
         subs = []
         spills = []
         num_rel = []
         for spill in self.spills:
+            if not spill.on:
+                continue
             new_subs = spill.get('substance')
-            if new_subs is not None:
-                if new_subs in subs:
-                    # substance already defined for another spill
-                    ix = subs.index(new_subs)
-                    spills[ix].append(spill)
-                    num_rel[ix] += spill.get('num_released')
-                else:
-                    # new substance not yet defined
-                    num_rel.append(spill.get('num_released'))
-                    subs.append(spill.get('substance'))
-                    spills.append([spill])
+            if new_subs in subs:
+                # substance already defined for another spill
+                ix = subs.index(new_subs)
+                spills[ix].append(spill)
+                num_rel[ix] += spill.get('num_released')
+            else:
+                # new substance not yet defined
+                num_rel.append(spill.get('num_released'))
+                subs.append(spill.get('substance'))
+                spills.append([spill])
 
-        # uninitialized will be updated when elements are released
-        uninit = [0] * len(subs)
+        # data will be updated when weatherers ask for arrays they need
         self._substances_spills = substances_spills(substances=subs,
                                                     spills=spills,
-                                                    num_released=num_rel,
-                                                    uninitialized=uninit)
+                                                    data=[{}] * len(subs))
+
+        # add substance array - if only one susbtance, then use strided array
+        if len(self.substances) > 1:
+            # add an arraytype for substance
+            self._array_types.update({'substance': substance})
+        elif len(self.substances) == 1:
+            # only one substance so reference the _data_arrays dict directly
+            self._substances_spills.data[0] = self._data_arrays
+
+    def _update_substance_array_reset_data(self,
+                                           subs_idx,
+                                           num_rel_by_substance):
+        '''
+        Update substance array; this is used for updating the data in another
+        view of the data in SpillContainer. Internal to SpillContainer so just
+        update/manage it here.
+        Also reset 'data' dict for this substance if the 'data' is a copy of
+        the data_arrays - true if more than one substance modeled.
+        '''
+        if len(self.substances) > 1:
+            self['substance'][-num_rel_by_substance:] = subs_idx
+            self._substances_spills.data[subs_idx] = {}
 
     def _spills_changed(self, *args):
         '''
@@ -320,45 +352,67 @@ class SpillContainer(SpillContainerData):
         '''
         self._substances_spills = None
 
+    def iterspillsbysubstance(self):
+        '''
+        iterate through the substances spills datastructure and return the
+        spills associated with each substance. This is used by release_elements
+        to release by each substance
+        '''
+        return self._substances_spills.spills
+
     def iterss(self):
         '''
-        iterate through the substances spills datastructure:
-        (substance, spills, num_released, uninitialized)
+        xxx
         '''
-        if self._substances_spills is None:
-            self._set_substancespills()
         return zip(self._substances_spills.substances,
                    self._substances_spills.spills,
-                   self._substances_spills.num_released,
-                   self._substances_spills.uninitialized)
+                   self._substances_spills.data)
 
-    def itersubstancedata(self):
+    def itersubstancedata(self, arrays):
         '''
         iterates through and returns the following for each iteration:
-        (substance, substance_data, uninitialized)
+        (substance, substance_data)
 
-        substance: substance object
-        substance_data: dict of numpy arrays associated with substance
-        uninitialized: these are the newly released elements. Some of the
-            'weathering' data_arrays are not yet initialized. IntrinsicProps
-            initializes these uninitialized elements.
-        '''
-        return zip(self.substances,
-                   self.substance_data,
-                   self._substances_spills.uninitialized)
+        This is used by weatherers - if a substance is None, omit it from
+        the iteration.
 
-    def setup_substancedata_arrays(self, arrays):
+        :param arrays: list of array names that should be in the data. If an
+            array has not been previously requested, it will be added
+        :returns: (substance, substance_data) for each iteration
+            substance: substance object
+            substance_data: dict of numpy arrays associated with substance
         '''
-        '''
-        for ix, spills in self._substances_spills.spills:
-            substance_arrays = {}
-            # would be good to preallocate space, but do this for now
-            for spill in spills:
-                for array in arrays:
-                    if array not in arrays:
-                        self[array][self.get_spill_mask(spill)]
+        if len(self.substances) > 1:
+            self._set_substancedata(arrays)
+        return filter(lambda x: x[0] is not None,
+                      zip(self._substances_spills.substances,
+                          self._substances_spills.data))
 
-            self._substance_data[ix] = substance_arrays
+    def update_from_substancedata(self, arrays):
+        '''
+        let's only update the arrays that were changed
+        only update if a copy of 'data' exists. This is the case if there are
+        more then one substances
+        '''
+        if len(self.substances) == 1:
+            return
+
+        for ix, data in enumerate(self._substances_spills.data):
+            mask = self['substance'] == ix
+            for array in arrays:
+                self[array][mask] = data[array][:]
+
+    def _set_substancedata(self, arrays):
+        '''
+        - update substance data, create a list of strided arrays
+        for now only weathering data cares about this view so if 'substance' is
+        None, then don't bother updating 'data'
+        '''
+        for ix, data in enumerate(self._substances_spills.data):
+            mask = self['substance'] == ix
+            for array in arrays:
+                if array not in data:
+                    data[array] = self[array][mask]
 
     @property
     def substances(self):
@@ -433,19 +487,6 @@ class SpillContainer(SpillContainerData):
         #for array in arrays:
             #for substance in self.substances:
 
-    def substance_data(self, arrays=None, substance=None):
-        ''
-        if arrays is None:
-            arrays = self.data_arrays.keys()
-
-        # set _substance_data array if required
-        #
-        if substance is None:
-            return self._substance_data
-        else:
-            ix = self._substances.index(substance)
-            return self._substance_data[ix]
-
     def prepare_for_model_run(self, array_types={}):
         """
         called when setting up the model prior to 1st time step
@@ -478,10 +519,13 @@ class SpillContainer(SpillContainerData):
         self._array_types.update(array_types)
 
         self._append_initializer_array_types(array_types)
-        self.initialize_data_arrays()
 
         if self._substances_spills is None:
             self._set_substancespills()
+
+        # 'substance' data_array may have been added so initialize after
+        # _set_substancespills() is invoked
+        self.initialize_data_arrays()
 
     def _append_initializer_array_types(self, array_types):
         # for each array_types, use the key to get the associated initializer
@@ -506,13 +550,12 @@ class SpillContainer(SpillContainerData):
             else:
                 self._data_arrays[name] = atype.initialize_null()
 
-    def _append_data_arrays(self, num_released, num_oil_components):
+    def _append_data_arrays(self, num_released):
         """
         initialize data arrays once spill has spawned particles
         Data arrays are set to their initial_values
 
-        :param num_released: number of particles released
-        :type num_released: int
+        :param int num_released: number of particles released
 
         """
         for name, atype in self._array_types.iteritems():
@@ -523,8 +566,8 @@ class SpillContainer(SpillContainerData):
                 # currently, we only have one type of oil, so all spills will
                 # model same number of oil_components
                 a_append = atype.initialize(num_released,
-                                            shape=(num_oil_components,),
-                                            initial_value=tuple([0] * num_oil_components))
+                                            shape=(self._oil_comp_array_len(),),
+                                            initial_value=tuple([0] * self._oil_comp_array_len()))
             else:
                 a_append = atype.initialize(num_released)
             self._data_arrays[name] = np.r_[self._data_arrays[name], a_append]
@@ -542,10 +585,12 @@ class SpillContainer(SpillContainerData):
         will need to define it in particle units or something along those lines
         """
         total_released = 0
-        for subs, spills, numrel, uninit in self.iterss():
-            # reset/update following two for each step
-            uninit = 0  # number of newly released particles for substance
-            numrel = 0  # total particles released for this substance
+        # substance index - used label elements from same substance
+        # used internally only by SpillContainer - could be a strided array.
+        # Simpler to define it only in SpillContainer as opposed to ArrayTypes
+        # 'substance': ((), np.uint8, 0)
+        for ix, spills in enumerate(self.iterspillsbysubstance()):
+            num_rel_by_substance = 0
             for spill in spills:
                 if not spill.on:
                     continue
@@ -576,20 +621,28 @@ class SpillContainer(SpillContainerData):
 
                     # append to data arrays - number of oil components is
                     # currently the same for all spills
-                    self._append_data_arrays(num_rel, subs.num_components)
+                    self._append_data_arrays(num_rel)
                     spill.set_newparticle_values(num_rel,
                                                  model_time,
                                                  time_step,
                                                  self._data_arrays)
+                    num_rel_by_substance += num_rel
 
-                    # update newly released elements for substance
-                    uninit += num_rel
+            if num_rel_by_substance > 0:
+                self._update_substance_array_reset_data(ix,
+                                                        num_rel_by_substance)
 
-                # update total elements released for substance
-                numrel += spill.get('num_released')
-                total_released += num_rel
+            # update total elements released for substance
+            total_released += num_rel_by_substance
 
         return total_released
+
+    def _reset_substances_spills_data(self, to_be_removed):
+        'reset copies of data if elements are removed'
+        if len(self.substances) > 1:
+            subs_idx = np.unique(self['substances'][to_be_removed])
+            for ix in subs_idx:
+                self._substances_spills.data[ix] = {}
 
     def model_step_is_done(self):
         '''
@@ -604,6 +657,8 @@ class SpillContainer(SpillContainerData):
 
         if len(to_be_removed) > 0:
             for key in self._array_types.keys():
+                # todo: reset the self._substances_spills data here
+                self._reset_substances_spills_data(to_be_removed)
                 self._data_arrays[key] = np.delete(self[key], to_be_removed,
                                                    axis=0)
 
