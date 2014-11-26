@@ -9,7 +9,8 @@ from gnome.array_types import (mass_components,
                                thickness,
                                mol,
                                evap_decay_constant,
-                               area)
+                               area,
+                               frac_water)
 from gnome.utilities.serializable import Serializable, Field
 
 from .core import WeathererSchema
@@ -41,7 +42,13 @@ class Evaporation(Weatherer, Serializable):
         super(Evaporation, self).__init__(**kwargs)
         self.array_types.update({'area': area,
                                  'mol': mol,
-                                 'evap_decay_constant': evap_decay_constant})
+                                 'evap_decay_constant': evap_decay_constant,
+                                 # frac_water_in_emulsion is currently not
+                                 # being set so don't carry around array of
+                                 # zeros. Once it is being set correctly,
+                                 # following can be uncommented
+                                 # 'frac_water': frac_water})
+                                 })
 
     def prepare_for_model_run(self, sc):
         '''
@@ -82,26 +89,35 @@ class Evaporation(Weatherer, Serializable):
         K = self._mass_transport_coeff(model_time)
         water_temp = self.water.get('temperature', 'K')
 
-        for spill in sc.spills:
-            f_diff = (1.0 - spill.frac_water)
-            mask = sc.get_spill_mask(spill)
-            if np.any(mask):
-                vp = spill.get('substance').vapor_pressure(water_temp)
-                d_numer = (sc['area'][mask].reshape(-1, 1) * K * vp *
-                           spill.frac_coverage * f_diff)
-                d_denom = (constants['gas_constant'] * water_temp *
-                           sc['mol'][mask]).reshape(-1, 1)
-                d_denom = np.repeat(d_denom, d_numer.shape[1], axis=1)
-                sc['evap_decay_constant'][mask, :] = -d_numer/d_denom
-                self.logger.info('spill min evap_decay_constant: {0}'.
-                                 format(np.min(sc['evap_decay_constant']
-                                               [mask, :])))
-                self.logger.info('spill max evap_decay_constant: {0}'.
-                                 format(np.max(sc['evap_decay_constant']
-                                               [mask, :])))
-                if np.any(sc['evap_decay_constant'][mask, :] > 0.0):
-                    raise ValueError("Error in Evaporation routine. One of the"
-                                     " exponential decay constant is positive")
+        arrays = self.array_types.keys()
+        for substance, data in sc.itersubstancedata(arrays):
+            f_diff = 1.0
+            if 'frac_water' in arrays:
+                # frac_water content in emulsion will be a per element but is
+                # currently not being set by anything. Fix once we initialize
+                # and properly set frac_water
+                f_diff = (1.0 - data['frac_water'])
+
+            vp = substance.vapor_pressure(water_temp)
+
+            # A more verbose description of the equation:
+            # -------------------------------------------
+            # d_numer = (data['area'] * f_diff).reshape(-1, 1) * K * vp
+            # d_denom = (constants['gas_constant'] * water_temp *
+            #            data['mol']).reshape(-1, 1)
+            # d_denom = np.repeat(d_denom, d_numer.shape[1], axis=1)
+            # data['evap_decay_constant'][:] = -d_numer/d_denom
+
+            data['evap_decay_constant'][:] = \
+                -(((data['area'] * f_diff).reshape(-1, 1) * K * vp) /
+                  np.repeat((constants['gas_constant'] * water_temp *
+                             data['mol']).reshape(-1, 1), len(vp), axis=1))
+
+            sc.update_from_substancedata(arrays)
+
+            if np.any(data['evap_decay_constant'] > 0.0):
+                raise ValueError("Error in Evaporation routine. One of the"
+                                 " exponential decay constant is positive")
 
     def _mass_transport_coeff(self, model_time):
         '''

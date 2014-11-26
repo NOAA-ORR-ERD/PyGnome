@@ -41,7 +41,7 @@ class Spill(serializable.Serializable):
     _update = ['on', 'release',
                'amount', 'units', 'amount_uncertainty_scale']
 
-    _create = ['frac_coverage', 'frac_water']
+    _create = ['frac_coverage']
     _create.extend(_update)
 
     _state = copy.deepcopy(serializable.Serializable._state)
@@ -113,11 +113,9 @@ class Spill(serializable.Serializable):
         self.amount_uncertainty_scale = amount_uncertainty_scale
 
         '''
-        fractional water content in the emulsion
         fraction of area covered by oil
         '''
         self.frac_coverage = 1.0
-        self.frac_water = 0.0
         self.name = name
 
     def __repr__(self):

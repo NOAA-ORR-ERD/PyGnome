@@ -168,6 +168,7 @@ _default_values = {
      'relative_bouyancy': ((), np.float64, 0),
      'area': ((), np.float64, 0),
      'viscosity': ((), np.float64, 0),
+     'frac_water': ((), np.float64, 0),  # fractional water content in emulsion
 
      # substance index - used label elements from same substance
      # used internally only by SpillContainer *if* more than one substance

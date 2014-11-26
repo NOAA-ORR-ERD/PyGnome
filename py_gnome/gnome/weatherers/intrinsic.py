@@ -67,6 +67,7 @@ class FayGravityViscous(object):
                     init_volume,
                     relative_bouyancy,
                     age,
+                    frac_coverage=1.0,
                     out=None):
         '''
         Update area and stuff it in out array. This takes numpy arrays or
@@ -94,6 +95,8 @@ class FayGravityViscous(object):
                      np.sqrt(water_viscosity*age[mask])))
             dEddy = 0.033*age[mask]**(4./25)
             out[mask] += (dFay + dEddy) * age[mask]
+
+        out *= frac_coverage
 
         if out_scalar:
             return out[0]
@@ -240,13 +243,14 @@ class IntrinsicProps(object):
 
         # update 'area' for all elements if it exists
         if 'area' in sc and sc.num_released > 0:
+            # create 'frac_coverage' array and pass it in to scale area by it
             self.spreading.update_area(self.water.get('kinematic_viscosity',
                                                       'St'),
                                        sc['init_area'],
                                        sc['init_volume'],
                                        sc['relative_bouyancy'],
                                        sc['age'],
-                                       sc['area'])
+                                       out=sc['area'])
         # update density/viscosity/area for previously released elements
         # todo: Need formulas to update these
         # prev_rel = sc.num_released-new_LEs
