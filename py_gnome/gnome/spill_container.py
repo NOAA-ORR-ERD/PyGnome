@@ -356,17 +356,10 @@ class SpillContainer(SpillContainerData):
         '''
         iterate through the substances spills datastructure and return the
         spills associated with each substance. This is used by release_elements
-        to release by each substance
+        DataStructure contains all spills. If some spills contain None for
+        substance, these will be returned
         '''
         return self._substances_spills.spills
-
-    def iterss(self):
-        '''
-        xxx
-        '''
-        return zip(self._substances_spills.substances,
-                   self._substances_spills.spills,
-                   self._substances_spills.data)
 
     def itersubstancedata(self, arrays):
         '''
@@ -419,7 +412,7 @@ class SpillContainer(SpillContainerData):
         'list of substances'
         if self._substances_spills is None:
             self._set_substancespills()
-        return self._substances_spills.substances
+        return filter(None, self._substances_spills.substances)
 
     @property
     def array_types(self):

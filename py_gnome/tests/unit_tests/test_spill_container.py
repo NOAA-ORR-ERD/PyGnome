@@ -5,6 +5,7 @@ Tests the SpillContainer class
 
 from datetime import datetime, timedelta
 import copy
+from itertools import chain
 
 import pytest
 from pytest import raises
@@ -1059,15 +1060,15 @@ class TestSubstanceSpillsDataStructureInit():
     '''
     tests the following:
     1. substances attribute correctly set after adding/deleting spills
-       iterss() works correctly
+       iterspillsbysubstance() works correctly
     2. adding no spills, spills with None substance, spills with different
-       substances all produce correct substances list and iterss()
+       substances all produce correct substances list and iterspillsbysubstance()
     '''
     def test_no_spills(self):
         'test iterators work without any spills'
         sc = SpillContainer()
         assert len(sc.substances) == 0
-        assert len(sc.iterss()) == 0
+        assert len(sc.iterspillsbysubstance()) == 0
 
     def test_no_substance(self):
         'no substance means datastructure is empty'
@@ -1079,7 +1080,12 @@ class TestSubstanceSpillsDataStructureInit():
                             element_type=floating(substance=None),
                             name='spill1')]
         assert len(sc.substances) == 0
-        assert len(sc.iterss()) == 0
+        assert len(sc.itersubstancedata(None)) == 0
+
+        # iterspillsbysubstance() iterates through all the spills associated
+        # with each substance including the spills where substance is None
+        assert len(sc.iterspillsbysubstance()) == 1
+        assert len(sc.iterspillsbysubstance()) == 1
 
     def test_spills_with_and_notwith_substance(self):
         '''
@@ -1094,16 +1100,16 @@ class TestSubstanceSpillsDataStructureInit():
                             element_type=floating(),
                             name='spill1')]
         assert len(sc.substances) == 1
-        for substance, spills, numrel, uninit in sc.iterss():
-            assert substance is sc.spills[1].get('substance')
-            assert len(spills) == 1
-            assert (numrel == 0 and uninit == 0)
-            for spill in spills:
-                assert spill is sc.spills[1]
+
+        all_spills = list(chain.from_iterable(sc._substances_spills.spills))
+        for ix, spill in enumerate(all_spills):
+            # spills are added to data structure in same order as present in
+            # sc.spills
+            assert spill is sc.spills[ix]
 
         del sc.spills[-1]
         assert len(sc.substances) == 0
-        assert len(sc.iterss()) == 0
+        assert len(sc.iterspillsbysubstance()) == 1
 
     def test_spills_with_same_substance(self):
         sc = SpillContainer()
@@ -1118,11 +1124,8 @@ class TestSubstanceSpillsDataStructureInit():
                   ]
         sc.spills += sp_add
         assert len(sc.substances) == 1
-        for substance, spills, numrel, uninit in sc.iterss():
-            assert substance == et.substance
-            assert sp_add == spills
-            assert numrel == 0
-            assert uninit == 0
+        assert sc._substances_spills.data[0] is sc._data_arrays
+        assert all([sp_add == spills for spills in sc.iterspillsbysubstance()])
 
     def test_spills_with_different_substance(self):
         sc = SpillContainer()
@@ -1138,14 +1141,8 @@ class TestSubstanceSpillsDataStructureInit():
                   ]
         sc.spills += splls1
 
-        assert len(sc.substances) == 2
-        for substance, spills, numrel, uninit in sc.iterss():
-            assert numrel == 0
-            assert uninit == 0
-            if substance == splls0[0].get('substance'):
-                assert spills == splls0
-            elif substance == splls1[0].get('substance'):
-                assert spills == splls1
+        assert (len(sc.substances) == 2 and
+                len(sc.iterspillsbysubstance()) == 2)
 
 
 class TestSubstanceSpillsDataStructureOnRelease():
