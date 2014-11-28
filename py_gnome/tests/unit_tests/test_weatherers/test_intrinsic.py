@@ -35,9 +35,7 @@ class TestFayGravityViscous:
     def expected(self, init_vol, p_age):
         '''
         Use this to ensure equations entered correctly in FayGravityViscous
-        Equations are a little easier to examine here - but if constants change,
-        then this will fail, since this hard codes them. It's just another check
-        to help find issues/errors
+        Equations are easier to examine here
         '''
         k1 = self.spread.spreading_const[0]
         k2 = self.spread.spreading_const[1]
@@ -133,15 +131,20 @@ class TestIntrinsicProps:
 
         intrinsic = IntrinsicProps(water,
                                    {'area': area})
-        for key in ('init_area', 'init_volume', 'relative_bouyancy'):
+        for key in ('init_area',
+                    'init_volume',
+                    'relative_bouyancy',
+                    'frac_coverage'):
             assert key in intrinsic.array_types
-        assert len(intrinsic.array_types) == 5
+        assert len(intrinsic.array_types) == 7
 
         intrinsic.update_array_types({})
         assert 'density' in intrinsic.array_types
         assert len(intrinsic.array_types) == 2
 
-    def test_update_intrinsic_props(self):
+    @pytest.mark.parametrize(("s0", "s1"), [("ALAMO", "ALAMO"),
+                                            ("ALAMO", "AGUA DULCE")])
+    def test_update_intrinsic_props(self, s0, s1):
         arrays = {'area': area,
                   'mol': mol}
         intrinsic = IntrinsicProps(water, arrays)
@@ -149,18 +152,19 @@ class TestIntrinsicProps:
 
         rel_time = datetime.now().replace(microsecond=0)
         end_time = rel_time + timedelta(hours=1)
-        et = floating_weathering(substance='ALAMO')
+        et0 = floating_weathering(substance=s0)
+        et1 = floating_weathering(substance=s1)
         spills = [point_line_release_spill(10,
                                            (0, 0, 0),
                                            rel_time,
                                            end_release_time=end_time,
-                                           element_type=et,
+                                           element_type=et0,
                                            amount=100,
                                            units='kg'),
                   point_line_release_spill(5,
                                            (0, 0, 0),
                                            rel_time + timedelta(hours=.25),
-                                           element_type=floating_weathering(substance=et.substance),
+                                           element_type=et1,
                                            amount=100,
                                            units='kg')
                   ]
@@ -192,7 +196,8 @@ class TestIntrinsicProps:
                     assert val == 0.0
 
             for at in intrinsic.array_types:
-                assert np.all(sc[at] != 0)
+                if s0 != s1 and at != 'mass_components':
+                    assert np.all(sc[at] != 0)
                 assert all(sc['init_area'][mask] == sc['area'][mask])
                 assert all(sc['init_area'][~mask] < sc['area'][~mask])
             sc['age'] += ts     # model would do this operation
