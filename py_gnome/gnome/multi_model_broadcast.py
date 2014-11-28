@@ -2,10 +2,16 @@ from pprint import PrettyPrinter
 pp = PrettyPrinter(indent=2)
 
 import sys
+import time
 import traceback
+
+from cPickle import loads, dumps
 
 import multiprocessing
 mp = multiprocessing
+
+
+import zmq
 
 from gnome import GnomeId
 from gnome.environment import Wind
@@ -31,21 +37,27 @@ class ModelConsumer(mp.Process):
         - Returns the results in a results queue
 
     '''
-    def __init__(self, task_queue, result_queue, model):
+    def __init__(self, task_port, model):
         mp.Process.__init__(self)
 
-        self.task_queue = task_queue
-        self.result_queue = result_queue
+        self.context = zmq.Context()
+
+        print 'getting task queue on port', task_port,
+        self.task = self.context.socket(zmq.REP)
+        self.task.bind('tcp://127.0.0.1:{0}'.format(task_port))
+        print 'cool!'
+
         self.model = model
 
     def run(self):
         proc_name = self.name
         while True:
-            data = self.task_queue.get()
+            data = self.task.recv()
+            print 'ModelConsumer: data =', data
             if data is None:
                 # Poison pill means shutdown
                 print '%s: Exiting' % proc_name
-                self.result_queue.put(None)
+                self.task.send(None)
 
                 break
             try:
@@ -55,9 +67,10 @@ class ModelConsumer(mp.Process):
                 exc_type, exc_value, exc_traceback = sys.exc_info()
                 fmt = traceback.format_exception(exc_type, exc_value,
                                                  exc_traceback)
+                print 'ModelConsumer: exc =', fmt
                 result = fmt
 
-            self.result_queue.put(result)
+            self.task.send(result)
         return
 
     def _rewind(self):
@@ -139,21 +152,33 @@ class ModelBroadcaster(GnomeId):
     def __init__(self, model,
                  wind_speed_uncertainties,
                  spill_amount_uncertainties):
+        self.context = zmq.Context()
         self.tasks = []
-        self.results = []
         self.lookup = {}
 
         idx = 0
         for wsu in wind_speed_uncertainties:
             for sau in spill_amount_uncertainties:
-                self.tasks.append(mp.Queue())
-                self.results.append(mp.Queue())
+                # open our socket just to get the available port
+                # and immediately close it down so the consumer can use it.
+                task = self.context.socket(zmq.REP)
+                task_port = task.bind_to_random_port('tcp://127.0.0.1')
 
-                model_consumer = ModelConsumer(self.tasks[idx],
-                                               self.results[idx],
-                                               model)
+                task.close(linger=0)
+                print 'task socket closed? ', task.closed
+
+                model_consumer = ModelConsumer(task_port, model)
                 model_consumer.start()
 
+                print 'ModelBroadcaster(): creating REQ socket...',
+                task = self.context.socket(zmq.REQ)
+                task.connect('tcp://127.0.0.1:{0}'.format(task_port))
+                print 'cool!'
+
+                self.tasks.append(task)
+
+                print 'Waiting a couple before setting uncertainty...'
+                time.sleep(4)
                 self._set_uncertainty(idx, wsu, sau)
                 self._set_new_cache_dir(idx)
                 self._set_weathering_output_only(idx)
@@ -166,43 +191,47 @@ class ModelBroadcaster(GnomeId):
 
     def cmd(self, command, args, key=None):
         if key is None:
-            [t.put((command, args)) for t in self.tasks]
-            return [r.get() for r in self.results]
+            [t.send((command, args)) for t in self.tasks]
+            return [t.recv() for t in self.tasks]
         else:
             idx = self.lookup[key]
-            self.tasks[idx].put((command, args))
-            return self.results[idx].get()
+            self.tasks[idx].send((command, args))
+            return self.tasks[idx].recv()
 
     def stop(self):
-        [t.put(None) for t in self.tasks]
-        [r.get() for r in self.results]
+        [t.send(None) for t in self.tasks]
+        [t.recv() for t in self.tasks]
         [t.close() for t in self.tasks]
-        [r.close() for r in self.results]
         self.tasks = []
-        self.results = []
         self.lookup = {}
+
+    def _to_buff(self, cmd, args):
+        return dumps((cmd, args))
 
     def _set_uncertainty(self, index,
                          wind_speed_uncertainty,
                          spill_amount_uncertainty):
         # py_gnome spill container uncertainty is not used here
         # so we turn it off always
-        self.tasks[index].put(('set_spill_container_uncertainty',
-                               dict(uncertain=False)))
-        self.results[index].get()
+        cmd = self._to_buff('set_spill_container_uncertainty',
+                            dict(uncertain=False))
+        self.tasks[index].send(cmd)
+        self.tasks[index].recv()
 
-        self.tasks[index].put(('set_wind_speed_uncertainty',
-                               dict(up_or_down=wind_speed_uncertainty)))
-        self.results[index].get()
+        cmd = self._to_buff('set_wind_speed_uncertainty',
+                            dict(up_or_down=wind_speed_uncertainty))
+        self.tasks[index].send(cmd)
+        self.tasks[index].recv()
 
-        self.tasks[index].put(('set_spill_amount_uncertainty',
-                               dict(up_or_down=spill_amount_uncertainty)))
-        self.results[index].get()
+        cmd = self._to_buff('set_spill_amount_uncertainty',
+                            dict(up_or_down=spill_amount_uncertainty))
+        self.tasks[index].send(cmd)
+        self.tasks[index].recv()
 
     def _set_new_cache_dir(self, index):
-        self.tasks[index].put(('set_cache_dir', {}))
-        self.results[index].get()
+        self.tasks[index].send(self._to_buff('set_cache_dir', {}))
+        self.tasks[index].recv()
 
     def _set_weathering_output_only(self, index):
-        self.tasks[index].put(('set_weathering_output_only', {}))
-        self.results[index].get()
+        self.tasks[index].send(self._to_buff('set_weathering_output_only', {}))
+        self.tasks[index].recv()

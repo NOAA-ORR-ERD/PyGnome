@@ -8,6 +8,8 @@ from datetime import datetime, timedelta
 import numpy
 np = numpy
 
+import zmq
+
 from gnome import scripting
 from gnome.basic_types import datetime_value_2d
 from gnome.utilities.remote_data import get_datafile
@@ -140,3 +142,15 @@ if __name__ == '__main__':
 
     # model.full_run(logger=True)
     # post_run(model)
+
+    context = zmq.Context()
+
+    command = context.socket(zmq.PUSH)
+    port_chosen = command.bind_to_random_port('tcp://127.0.0.1')
+    print 'we chose port ', port_chosen
+
+    result = context.socket(zmq.PULL)
+    port_chosen = result.bind('tcp://127.0.0.1:{0}'.format(port_chosen + 1))
+    print 'we chose port ', port_chosen
+    print 'our socket: ', result
+
