@@ -168,7 +168,16 @@ _default_values = {
      'relative_bouyancy': ((), np.float64, 0),
      'area': ((), np.float64, 0),
      'viscosity': ((), np.float64, 0),
-     'frac_water': ((), np.float64, 0),  # fractional water content in emulsion
+     # fractional water content in emulsion, not being set currently
+     'frac_water': ((), np.float64, 0),
+
+     # same for all elements in a spill - since weatherer's iterate through
+     # the data per substance as opposed to per spill, it is easier to define
+     # fractional coverage as a data_array even though it is not changing with
+     # time and same for all LEs in a spill. Alternatively, we could define
+     # frac_coverage in IntrinsicProps and manage it there - but since we have
+     # to make an array anyway, let's just keep it with SpillContainer
+     'frac_coverage': ((), np.float32, 1),
 
      # substance index - used label elements from same substance
      # used internally only by SpillContainer *if* more than one substance

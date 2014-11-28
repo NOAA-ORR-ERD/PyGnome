@@ -254,6 +254,7 @@ class SpillContainer(SpillContainerData):
         # Initialize following either the first time it is used or in
         # prepare_for_model_run() -- it could change with each new spill
         self._substances_spills = None
+        self._oil_comp_array_len = 1
 
     def __setitem__(self, data_name, array):
         """
@@ -314,8 +315,14 @@ class SpillContainer(SpillContainerData):
             else:
                 # new substance not yet defined
                 num_rel.append(spill.get('num_released'))
-                subs.append(spill.get('substance'))
+                subs.append(new_subs)
                 spills.append([spill])
+
+                # also set _oil_comp_array_len to substance with most
+                # components? -- *not* being used right now, but make it so
+                # it works correctly for testing multiple substances
+                if new_subs.num_components > self._oil_comp_array_len:
+                    self._oil_comp_array_len = new_subs.num_components
 
         # data will be updated when weatherers ask for arrays they need
         self._substances_spills = substances_spills(substances=subs,
@@ -463,23 +470,6 @@ class SpillContainer(SpillContainerData):
 
         return u_sc
 
-    def _oil_comp_array_len(self):
-        '''
-        look for first spill that is on and return number of oil components
-        for it. Currently, we only model a single type of oil
-        If no spills, then return 1, this is so we can still run the model
-        with no spills
-        '''
-        if len(self.spills) > 0:
-            for spill in self.spills:
-                if spill.on:
-                    return spill.get('substance').num_components
-        return 1
-
-    #def _set_substance_data(self, arrays):
-        #for array in arrays:
-            #for substance in self.substances:
-
     def prepare_for_model_run(self, array_types={}):
         """
         called when setting up the model prior to 1st time step
@@ -537,7 +527,7 @@ class SpillContainer(SpillContainerData):
         for name, atype in self._array_types.iteritems():
             # Initialize data_arrays with 0 elements
             if atype.shape is None:
-                num_comp = self._oil_comp_array_len()
+                num_comp = self._oil_comp_array_len
                 self._data_arrays[name] = \
                     atype.initialize_null(shape=(num_comp, ))
             else:
@@ -559,8 +549,8 @@ class SpillContainer(SpillContainerData):
                 # currently, we only have one type of oil, so all spills will
                 # model same number of oil_components
                 a_append = atype.initialize(num_released,
-                                            shape=(self._oil_comp_array_len(),),
-                                            initial_value=tuple([0] * self._oil_comp_array_len()))
+                                            shape=(self._oil_comp_array_len,),
+                                            initial_value=tuple([0] * self._oil_comp_array_len))
             else:
                 a_append = atype.initialize(num_released)
             self._data_arrays[name] = np.r_[self._data_arrays[name], a_append]
