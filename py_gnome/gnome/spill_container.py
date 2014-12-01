@@ -321,7 +321,8 @@ class SpillContainer(SpillContainerData):
                 # also set _oil_comp_array_len to substance with most
                 # components? -- *not* being used right now, but make it so
                 # it works correctly for testing multiple substances
-                if new_subs.num_components > self._oil_comp_array_len:
+                if (hasattr(new_subs, 'num_components') and
+                    new_subs.num_components > self._oil_comp_array_len):
                     self._oil_comp_array_len = new_subs.num_components
 
         # data will be updated when weatherers ask for arrays they need

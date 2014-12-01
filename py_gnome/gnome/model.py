@@ -873,7 +873,12 @@ class Model(Serializable):
         for w in self.weatherers:
             array_types.update(w.array_types)
 
+        if self._intrinsic_props:
+                self._intrinsic_props.update_array_types(array_types)
+                array_types.update(self._intrinsic_props.array_types)
+
         for sc in self.spills.items():
+            sc.prepare_for_model_run(array_types)
             if sc.uncertain:
                 (data, weather_data) = NetCDFOutput.read_data(u_spill_data,
                                                               time=None,
@@ -886,11 +891,6 @@ class Model(Serializable):
             sc.current_time_stamp = data.pop('current_time_stamp').item()
             sc._data_arrays = data
             sc.weathering_data = weather_data
-            sc._array_types.update(array_types)
-            sc._append_initializer_array_types(array_types)
-            if self._intrinsic_props:
-                self._intrinsic_props.update_array_types(array_types)
-                sc._array_types.update(self._intrinsic_props.array_types)
 
     def _empty_save_dir(self, saveloc):
         '''
