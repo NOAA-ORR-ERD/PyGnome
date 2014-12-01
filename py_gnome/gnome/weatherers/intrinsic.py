@@ -236,8 +236,11 @@ class IntrinsicProps(object):
                         self.array_types['density'].initial_value)
                 data['density'][mask] = \
                     substance.get_density(water_temp)
-                data['viscosity'][mask] = \
-                    substance.get_viscosity(water_temp)
+
+                if substance.get_viscosity(water_temp) is not None:
+                    'make sure we do not add NaN values'
+                    data['viscosity'][mask] = \
+                        substance.get_viscosity(water_temp)
 
                 if 'area' in sc:
                     self._init_area_arrays(data, mask)
