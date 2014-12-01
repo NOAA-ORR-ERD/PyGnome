@@ -487,7 +487,8 @@ class Spill(serializable.Serializable):
         the data_arrays for 'position' get initialized correctly by the release
         object: self.release.set_newparticle_positions()
 
-        :param int num_new_particles: number of new particles that were added 
+        :param int num_new_particles: number of new particles that were added.
+            Always greater than 0
         :param current_time: current time
         :type current_time: datetime.datetime
         :param time_step: the time step, sometimes used to decide how many
@@ -507,6 +508,11 @@ class Spill(serializable.Serializable):
 
         self.release.set_newparticle_positions(num_new_particles, current_time,
                                                time_step, data_arrays)
+
+        # set arrays that are spill specific - 'frac_coverage'
+        if 'frac_coverage' in data_arrays:
+            data_arrays['frac_coverage'][-num_new_particles:] = \
+                self.frac_coverage
 
     def serialize(self, json_='webapi'):
         """
