@@ -37,7 +37,7 @@ class ElementType(Serializable):
     _state += Field('substance', save=True, update=True, test_for_eq=False)
     _schema = base_schema.ObjType
 
-    def __init__(self, initializers=[], substance='oil_conservative'):
+    def __init__(self, initializers=[], substance=None):
         '''
         Define initializers for the type of elements.
         The default element_type has a substance with density of water
@@ -51,9 +51,10 @@ class ElementType(Serializable):
             to initialize these data arrays upon release. If this is not an
             iterable, then just append 'initializer' to list of initializers
             assuming it is just a single initializer object
-        :param substance='oil_conservative': Type of oil spilled. If this is a
+        :param substance=None: Type of oil spilled. If this is a
             string, then use get_oil_props to get the OilProps object, else
-            assume it is an OilProps object
+            assume it is an OilProps object. If it is None, then assume there
+            is no weathering.
         :type substance: str or OilProps
 
         '''
@@ -93,7 +94,8 @@ class ElementType(Serializable):
     def substance_to_dict(self):
         ''' call the tojson() method on substance -
         no colander schema for it yet '''
-        return self._substance.tojson()
+        if self._substance is not None:
+            return self._substance.tojson()
 
     @property
     def substance(self):
@@ -181,7 +183,8 @@ class ElementType(Serializable):
             s_init.append(i_val.serialize(json_))
 
         et_json_['initializers'] = s_init
-        et_json_['substance'] = dict_['substance']
+        if 'substance' in dict_:
+            et_json_['substance'] = dict_['substance']
 
         return et_json_
 

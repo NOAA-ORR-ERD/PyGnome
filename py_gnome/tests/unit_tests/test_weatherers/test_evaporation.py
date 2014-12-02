@@ -51,8 +51,7 @@ def test_evaporation(oil, temp, num_elems, on):
                   timedelta(seconds=time_step))
 
     evap = Evaporation(water, wind=constant_wind(1., 0))
-    if not on:
-        evap.on = False
+    evap.on = on
 
     evap.prepare_for_model_run(sc)
     evap.prepare_for_model_step(sc, time_step, model_time)

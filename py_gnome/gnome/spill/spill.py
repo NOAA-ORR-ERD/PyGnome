@@ -41,7 +41,7 @@ class Spill(serializable.Serializable):
     _update = ['on', 'release',
                'amount', 'units', 'amount_uncertainty_scale']
 
-    _create = ['frac_coverage', 'frac_water']
+    _create = ['frac_coverage']
     _create.extend(_update)
 
     _state = copy.deepcopy(serializable.Serializable._state)
@@ -113,11 +113,9 @@ class Spill(serializable.Serializable):
         self.amount_uncertainty_scale = amount_uncertainty_scale
 
         '''
-        fractional water content in the emulsion
         fraction of area covered by oil
         '''
         self.frac_coverage = 1.0
-        self.frac_water = 0.0
         self.name = name
 
     def __repr__(self):
@@ -500,7 +498,8 @@ class Spill(serializable.Serializable):
         the data_arrays for 'position' get initialized correctly by the release
         object: self.release.set_newparticle_positions()
 
-        :param int num_new_particles: number of new particles that were added 
+        :param int num_new_particles: number of new particles that were added.
+            Always greater than 0
         :param current_time: current time
         :type current_time: datetime.datetime
         :param time_step: the time step, sometimes used to decide how many
@@ -520,6 +519,11 @@ class Spill(serializable.Serializable):
 
         self.release.set_newparticle_positions(num_new_particles, current_time,
                                                time_step, data_arrays)
+
+        # set arrays that are spill specific - 'frac_coverage'
+        if 'frac_coverage' in data_arrays:
+            data_arrays['frac_coverage'][-num_new_particles:] = \
+                self.frac_coverage
 
     def serialize(self, json_='webapi'):
         """

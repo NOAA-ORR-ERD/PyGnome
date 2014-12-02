@@ -213,7 +213,12 @@ class InitArraysFromOilProps(InitBaseClass, Serializable):
 
         masses = mass_fractions * (data_arrays['mass'][-num_new_particles:]
                                    .reshape(num_new_particles, -1))
-        data_arrays['mass_components'][-num_new_particles:] = masses
+        # currently only modeling one substance so:
+        #     masses.shape[1] == data_arrays['mass_components'].shape[1]
+        # however, code is there to model multiple substances and some basic
+        # tests are there so make this consistent so tests pass and things work
+        data_arrays['mass_components'][-num_new_particles:,
+                                       :masses.shape[1]] = masses
 
 # do following two classes work for a time release spill?
 

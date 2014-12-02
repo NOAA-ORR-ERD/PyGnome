@@ -32,16 +32,17 @@ initializers = [InitMassFromSpillAmount(),
                 InitRiseVelFromDist(),
                 InitArraysFromOilProps(),
                 ]
+oil = 'ALAMO'
 sc = sample_sc_release(5, (3., 6., 0.),
                        rel_time,
                        uncertain=False,
                        arr_types=arr_types,
-                       element_type=ElementType(initializers))
+                       element_type=ElementType(initializers, substance=oil))
 u_sc = sample_sc_release(5, (3., 6., 0.),
                          rel_time,
                          uncertain=True,
                          arr_types=arr_types,
-                         element_type=ElementType(initializers))
+                         element_type=ElementType(initializers, substance=oil))
 secs_in_minute = 60
 
 
@@ -50,8 +51,8 @@ class TestWeatherer:
         weatherer = Weatherer()
 
         print weatherer
-        assert weatherer.on == True
-        assert weatherer.active == True
+        assert weatherer.on
+        assert weatherer.active
         assert weatherer.active_start == InfDateTime('-inf')
         assert weatherer.active_stop == InfDateTime('inf')
         assert weatherer.array_types == {'mass_components': mass_components}
