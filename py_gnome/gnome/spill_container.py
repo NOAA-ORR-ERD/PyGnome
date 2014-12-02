@@ -35,7 +35,9 @@ import gnome.spill
 # 3. data: A list of dict's where each dict is the data_array corresponding
 #    with the substance for elements released thus far. This is a copy of the
 #    internally stored data_arrays.
-
+#
+# if more than one type of substance in multiple spills, then label the
+# substances as index into 'substances' list.
 substances_spills = namedtuple('substances_spills',
                                ['substances',
                                 'spills',
@@ -176,7 +178,7 @@ class SpillContainerData(object):
                 if isinstance(val, np.ndarray):
                     try:
                         if not np.allclose(val, other_val, 0,
-                                       self._array_allclose_atol):
+                                           self._array_allclose_atol):
                             return False
                     except TypeError:
                         # not implemented for this dtype, so just check equality
@@ -325,16 +327,16 @@ class SpillContainer(SpillContainerData):
                     new_subs.num_components > self._oil_comp_array_len):
                     self._oil_comp_array_len = new_subs.num_components
 
-        # data will be updated when weatherers ask for arrays they need
+        # 'data' will be updated when weatherers ask for arrays they need
+        # define the substances list and the list of spills for each substance
         self._substances_spills = substances_spills(substances=subs,
                                                     spills=spills,
                                                     data=[{}] * len(subs))
 
-        # add substance array - if only one susbtance, then use strided array
-        if len(self.substances) > 1:
-            # add an arraytype for substance
+        if len(self.get_substances()) > 1:
+            # add an arraytype for substance if more than one substance
             self._array_types.update({'substance': substance})
-        elif len(self.substances) == 1:
+        elif len(self.get_substances()) == 1:
             # only one substance so reference the _data_arrays dict directly
             self._substances_spills.data[0] = self._data_arrays
 
@@ -342,13 +344,19 @@ class SpillContainer(SpillContainerData):
                                            subs_idx,
                                            num_rel_by_substance):
         '''
-        Update substance array; this is used for updating the data in another
-        view of the data in SpillContainer. Internal to SpillContainer so just
-        update/manage it here.
-        Also reset 'data' dict for this substance if the 'data' is a copy of
-        the data_arrays - true if more than one substance modeled.
+        -. update 'substance' array if more than one substance present. The
+        value of array is the index of 'substance' in _substances_spills
+        data structure
+
+        -. reset 'data' dict for this substance if the 'data' is a copy of
+        the data_arrays since the copy is out of sync with _data_arrays and
+        must be remade.
+
+        .. note::
+            If there is only one substance in _substances_spills
+            structure, then do nothing.
         '''
-        if len(self.substances) > 1:
+        if len(self.get_substances()) > 1:
             self['substance'][-num_rel_by_substance:] = subs_idx
             self._substances_spills.data[subs_idx] = {}
 
@@ -367,6 +375,8 @@ class SpillContainer(SpillContainerData):
         DataStructure contains all spills. If some spills contain None for
         substance, these will be returned
         '''
+        if self._substances_spills is None:
+            self._set_substancespills()
         return self._substances_spills.spills
 
     def itersubstancedata(self, arrays):
@@ -377,13 +387,15 @@ class SpillContainer(SpillContainerData):
         This is used by weatherers - if a substance is None, omit it from
         the iteration.
 
-        :param arrays: list of array names that should be in the data. If an
-            array has not been previously requested, it will be added
+        :param arrays: list of array names that should be in the data.
         :returns: (substance, substance_data) for each iteration
             substance: substance object
             substance_data: dict of numpy arrays associated with substance
         '''
-        if len(self.substances) > 1:
+        if self._substances_spills is None:
+            self._set_substancespills()
+
+        if len(self.get_substances()) > 1:
             self._set_substancedata(arrays)
         return filter(lambda x: x[0] is not None,
                       zip(self._substances_spills.substances,
@@ -395,7 +407,7 @@ class SpillContainer(SpillContainerData):
         only update if a copy of 'data' exists. This is the case if there are
         more then one substances
         '''
-        if len(self.substances) == 1:
+        if len(self.get_substances()) == 1:
             return
 
         for ix, data in enumerate(self._substances_spills.data):
@@ -410,17 +422,26 @@ class SpillContainer(SpillContainerData):
         None, then don't bother updating 'data'
         '''
         for ix, data in enumerate(self._substances_spills.data):
+            if self._substances_spills.substances[ix] is None:
+                continue
+
             mask = self['substance'] == ix
             for array in arrays:
                 if array not in data:
                     data[array] = self[array][mask]
 
-    @property
-    def substances(self):
-        'list of substances'
+    def get_substances(self, complete=True):
+        '''
+        return substances stored in _substances_spills structure.
+        Include None if complete is True. Default is complete=True.
+        '''
         if self._substances_spills is None:
             self._set_substancespills()
-        return filter(None, self._substances_spills.substances)
+
+        if complete:
+            return self._substances_spills.substances
+        else:
+            return filter(None, self._substances_spills.substances)
 
     @property
     def array_types(self):
@@ -623,7 +644,7 @@ class SpillContainer(SpillContainerData):
 
     def _reset_substances_spills_data(self, to_be_removed):
         'reset copies of data if elements are removed'
-        if len(self.substances) > 1:
+        if len(self.get_substances()) > 1:
             subs_idx = np.unique(self['substances'][to_be_removed])
             for ix in subs_idx:
                 self._substances_spills.data[ix] = {}
@@ -641,7 +662,6 @@ class SpillContainer(SpillContainerData):
 
         if len(to_be_removed) > 0:
             for key in self._array_types.keys():
-                # todo: reset the self._substances_spills data here
                 self._reset_substances_spills_data(to_be_removed)
                 self._data_arrays[key] = np.delete(self[key], to_be_removed,
                                                    axis=0)

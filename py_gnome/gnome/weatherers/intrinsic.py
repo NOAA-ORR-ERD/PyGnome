@@ -186,7 +186,7 @@ class IntrinsicProps(object):
         newly released particles here.
         '''
         if len(sc) > 0:
-            self._update_intrinsic_props(num_new_released, sc)
+            self._update_intrinsic_props(sc)
             self._update_weathering_data(num_new_released, sc)
 
     def _update_weathering_data(self, new_LEs, sc):
@@ -213,7 +213,7 @@ class IntrinsicProps(object):
             else:
                 sc.weathering_data['amount_released'] = amount_released
 
-    def _update_intrinsic_props(self, new_LEs, sc):
+    def _update_intrinsic_props(self, sc):
         '''
         - initialize 'density', 'viscosity', and other optional arrays for
         newly released particles.
@@ -252,6 +252,11 @@ class IntrinsicProps(object):
                 data['mol'][:] = np.sum(data['mass_components'][:,
                                                                 :len(mw)]/mw, 1)
 
+            # update density/viscosity/area for previously released elements
+            # todo: Need formulas to update these
+            # prev_rel = sc.num_released-new_LEs
+            # if prev_rel > 0:
+            #    update density, viscosity .. etc
             sc.update_from_substancedata(arrays)
 
         # update 'area' for all elements if it exists
@@ -266,12 +271,6 @@ class IntrinsicProps(object):
                                        out=sc['area'])
             # apply fraction coverage here
             sc['area'] *= sc['frac_coverage']
-
-        # update density/viscosity/area for previously released elements
-        # todo: Need formulas to update these
-        # prev_rel = sc.num_released-new_LEs
-        # if prev_rel > 0:
-        #    update density, viscosity .. etc
 
     def _init_area_arrays(self, data, mask):
         '''

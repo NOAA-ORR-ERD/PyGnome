@@ -24,7 +24,8 @@ from gnome.spill.elements import (ElementType,
                             InitRiseVelFromDist,
                             InitRiseVelFromDropletSizeFromDist,
                             floating,
-                            floating_mass)
+                            floating_mass,
+                            floating_weathering)
 
 from gnome.utilities.distributions import UniformDistribution
 
@@ -1056,22 +1057,28 @@ class TestSpillContainerPairGetSetDel:
         assert scp[1] == self.s0[1]
 
 
-class TestSubstanceSpillsDataStructureInit():
+class TestSubstanceSpillsDataStructure():
     '''
     tests the following:
     1. substances attribute correctly set after adding/deleting spills
        iterspillsbysubstance() works correctly
     2. adding no spills, spills with None substance, spills with different
-       substances all produce correct substances list and iterspillsbysubstance()
+       substances all produce correct substances list and
+       iterspillsbysubstance()
+    3. test release_elements(), then run itersubstancedata() to check
+       data_arrays are correctly copied
     '''
     def test_no_spills(self):
         'test iterators work without any spills'
         sc = SpillContainer()
-        assert len(sc.substances) == 0
         assert len(sc.iterspillsbysubstance()) == 0
+        assert len(sc.get_substances()) == 0
 
     def test_no_substance(self):
-        'no substance means datastructure is empty'
+        '''
+        no substance means run trajectory without an OilProps object/without
+        weathering is one reason to do this
+        '''
         sc = SpillContainer()
         sc.spills += [Spill(Release(datetime.now(), 10),
                             element_type=floating(substance=None),
@@ -1079,8 +1086,8 @@ class TestSubstanceSpillsDataStructureInit():
                       Spill(Release(datetime.now(), 10),
                             element_type=floating(substance=None),
                             name='spill1')]
-        assert len(sc.substances) == 0
-        assert len(sc.itersubstancedata(None)) == 0
+        assert len(sc.itersubstancedata('mass')) == 0
+        assert len(sc.get_substances()) == 1
 
         # iterspillsbysubstance() iterates through all the spills associated
         # with each substance including the spills where substance is None
@@ -1099,8 +1106,9 @@ class TestSubstanceSpillsDataStructureInit():
                       Spill(Release(datetime.now(), 10),
                             element_type=floating(),
                             name='spill1')]
-        assert len(sc.substances) == 1
 
+        assert len(sc.get_substances()) == 2
+        sc.prepare_for_model_run()
         all_spills = list(chain.from_iterable(sc._substances_spills.spills))
         for ix, spill in enumerate(all_spills):
             # spills are added to data structure in same order as present in
@@ -1108,10 +1116,10 @@ class TestSubstanceSpillsDataStructureInit():
             assert spill is sc.spills[ix]
 
         del sc.spills[-1]
-        assert len(sc.substances) == 0
+        assert len(sc.get_substances()) == 1
         assert len(sc.iterspillsbysubstance()) == 1
 
-    def test_spills_with_same_substance(self):
+    def test_spills_same_substance_init(self):
         sc = SpillContainer()
         et = floating(substance='ALAMO')
         sp_add = [point_line_release_spill(3, (1, 1, 1), datetime.now(),
@@ -1123,11 +1131,12 @@ class TestSubstanceSpillsDataStructureInit():
                         element_type=floating(substance=et.substance))
                   ]
         sc.spills += sp_add
-        assert len(sc.substances) == 1
+        assert len(sc.get_substances()) == 1
+        sc.prepare_for_model_run()
         assert sc._substances_spills.data[0] is sc._data_arrays
         assert all([sp_add == spills for spills in sc.iterspillsbysubstance()])
 
-    def test_spills_with_different_substance(self):
+    def test_spills_different_substance_init(self):
         sc = SpillContainer()
         splls0 = [point_line_release_spill(3, (1, 1, 1),
                                            datetime.now(),
@@ -1141,16 +1150,51 @@ class TestSubstanceSpillsDataStructureInit():
                   ]
         sc.spills += splls1
 
-        assert (len(sc.substances) == 2 and
+        assert (len(sc.get_substances()) == 2 and
                 len(sc.iterspillsbysubstance()) == 2)
 
+    def test_spills_different_substance_release(self):
+        '''
+        Test data structure gets correctly set/updated after release_elements
+        is invoked
+        '''
+        sc = SpillContainer()
+        rel_time = datetime(2014, 1, 1, 12, 0, 0)
+        end_time = rel_time + timedelta(hours=1)
+        time_step = 900
+        splls0 = [point_line_release_spill(100, (1, 1, 1),
+                                           rel_time,
+                                           end_release_time=end_time,
+                                           element_type=floating_weathering(substance='ALAMO'),
+                                           amount=100,
+                                           units='kg'),
+                  point_line_release_spill(50, (2, 2, 2),
+                                           rel_time + timedelta(seconds=900),
+                                           element_type=floating_weathering(substance='ALAMO'),
+                                           amount=150,
+                                           units='kg'),
+                  ]
+        sc.spills += splls0
+        splls1 = point_line_release_spill(10, (0, 0, 0),
+                                          rel_time,
+                                          element_type=floating(substance=None))
+        sc.spills += splls1
+        at = {'density': array_types.density,
+              'mass_components': array_types.mass_components}
 
-class TestSubstanceSpillsDataStructureOnRelease():
-    '''
-    Test data structure gets correctly set/updated after release_elements is
-    invoked
-    '''
-    pass
+        sc.prepare_for_model_run(at)
+        print '\nElements released:'
+        for ix in range(-1, 8):
+            time = rel_time + timedelta(seconds=time_step) * ix
+            num_rel = sc.release_elements(time_step, time)
+            print num_rel
+            for substance, data in sc.itersubstancedata(at.keys()):
+                assert substance.name == 'ALAMO'
+                idx = sc._substances_spills.substances.index(substance)
+                mask = sc['substance'] == idx
+                for array in at:
+                    assert array in data
+                    assert np.all(data[array] == sc[array][mask])
 
 
 if __name__ == '__main__':
