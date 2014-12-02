@@ -15,6 +15,7 @@ from pytest import raises
 
 from gnome.basic_types import datetime_value_2d
 from gnome.utilities import inf_datetime
+from gnome.persist import load
 
 import gnome.map
 from gnome.environment import Wind, Tide, constant_wind, Water
@@ -1011,9 +1012,31 @@ class TestMergeModels:
         deepcopy fails on model due to cache - we don't anticipate needing
         to deepcopy models so do a hack for testing for now.
         '''
-        # old_dict = copy.deepcopy(model.__dict__)
         m = Model()
         model.merge(m)
+        for oc in m._oc_list:
+            for item in getattr(m, oc):
+                assert item in getattr(model, oc)
+
+    def test_load_location_file(self):
+        'create a model and merge a location file into it'
+        m = Model()
+        m.water = Water()
+        m.environment += constant_wind(1., 0.)
+        m.weatherers += Evaporation(m.water, m.environment[-1])
+
+        here = os.path.dirname(__file__)
+        sample_save_file = \
+            os.path.join(here,
+                         '../../scripts/script_boston/save_model/Model.json')
+        model = load(sample_save_file)
+        model.merge(m)
+        assert m.water is model.water
+        for oc in m._oc_list:
+            for item in getattr(m, oc):
+                assert item in getattr(model, oc)
+
+        # add spills and test those
 
 
 if __name__ == '__main__':
