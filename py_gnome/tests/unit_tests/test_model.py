@@ -843,7 +843,8 @@ def test_contains_object(sample_model_fcn):
     model.duration = timedelta(days=1)
 
     water, wind = Water(), constant_wind(1., 0)
-    model.environment += [water, wind]
+    model.water = water
+    model.environment += wind
 
     et = floating_weathering(substance=model.spills[0].get('substance').name)
     sp = point_line_release_spill(500, (0, 0, 0),
@@ -857,7 +858,7 @@ def test_contains_object(sample_model_fcn):
 
     movers = [m for m in model.movers]
 
-    evaporation = Evaporation(model.environment[0], model.environment[1])
+    evaporation = Evaporation(model.water, model.environment[0])
     dispersion, burn, skimmer = Dispersion(), Burn(), Skimmer()
     model.weatherers += [evaporation, dispersion, burn, skimmer]
 
@@ -901,9 +902,10 @@ def test_staggered_spills_weathering(sample_model_fcn, uncertain):
                                   amount=100,
                                   units='tons')
     model.spills += cs
-    model.environment += [Water(), constant_wind(1., 0)]
-    model.weatherers += [Evaporation(model.environment[0],
-                                     model.environment[1]),
+    model.water = Water()
+    model.environment += constant_wind(1., 0)
+    model.weatherers += [Evaporation(model.water,
+                                     model.environment[0]),
                          Dispersion(),
                          Burn(),
                          Skimmer()]
@@ -942,9 +944,10 @@ def test_weathering_data_attr():
     for sc in model.spills.items():
         assert 'floating' not in sc.weathering_data
 
-    model.environment += [Water(), constant_wind(0., 0)]
-    model.weatherers += [Evaporation(model.environment[0],
-                                     model.environment[1])]
+    model.environment += constant_wind(0., 0)
+    model.water = Water()
+    model.weatherers += [Evaporation(model.water,
+                                     model.environment[0])]
 
     # use different element_type and initializers for both spills
     s[0].amount = 10.0
