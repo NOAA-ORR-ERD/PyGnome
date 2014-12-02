@@ -49,7 +49,7 @@ rise_vel_array = {'rise_vel': array_types.rise_vel}
 
 rise_vel_diameter_array = {'rise_vel': array_types.rise_vel,
                            'droplet_diameter': array_types.droplet_diameter}
-
+oil = 'ALAMO'
 num_elems = 10
 
 
@@ -123,7 +123,7 @@ def test_element_type_serialize_deserialize(fcn):
     '''
     test serialization/deserialization of ElementType for various initiailzers
     '''
-    element_type = ElementType(initializers=[fcn])
+    element_type = ElementType(initializers=[fcn], substance=oil)
 
     json_ = element_type.serialize('save')
     dict_ = element_type.deserialize(json_)

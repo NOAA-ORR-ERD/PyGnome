@@ -479,15 +479,16 @@ def test_ordered_collection_api():
 
 
 """ tests w/ element types set for two spills """
+oil = 'ALAMO'
 el0 = ElementType([InitWindages((0.02, 0.02), -1),
                    InitMassFromSpillAmount(),
                    InitRiseVelFromDist(
                        distribution=UniformDistribution(low=1, high=10))
-                   ])
+                   ], substance=oil)
 
 el1 = ElementType([InitWindages(),
                    InitMassFromSpillAmount(),
-                   InitRiseVelFromDist()])
+                   InitRiseVelFromDist()], substance=oil)
 
 arr_types = {'windages': array_types.windages,
              'windage_range': array_types.windage_range,
