@@ -15,7 +15,6 @@ from pytest import raises
 
 from gnome.basic_types import datetime_value_2d
 from gnome.utilities import inf_datetime
-from gnome.utilities.remote_data import get_datafile
 
 import gnome.map
 from gnome.environment import Wind, Tide, constant_wind, Water
@@ -33,14 +32,7 @@ from gnome.weatherers import (HalfLifeWeatherer,
                               Skimmer)
 from gnome.outputters import Renderer, GeoJson
 
-from conftest import sample_model_weathering
-
-basedir = os.path.dirname(__file__)
-datadir = os.path.join(basedir, 'sample_data')
-tides_dir = os.path.join(datadir, 'tides')
-lis_dir = os.path.join(datadir, 'long_island_sound')
-
-testmap = os.path.join(basedir, '../sample_data', 'MapBounds_Island.bna')
+from conftest import sample_model_weathering, testdata
 
 
 @pytest.fixture(scope='function')
@@ -235,7 +227,8 @@ def test_simple_run_with_map():
 
     model = Model()
 
-    model.map = gnome.map.MapFromBNA(testmap, refloat_halflife=6)  # hours
+    model.map = gnome.map.MapFromBNA(testdata['MapFromBNA']['testmap'],
+                                     refloat_halflife=6)  # hours
     a_mover = SimpleMover(velocity=(1., 2., 0.))
 
     model.movers += a_mover
@@ -276,8 +269,10 @@ def test_simple_run_with_image_output(dump):
     start_time = datetime(2012, 9, 15, 12, 0)
 
     # the land-water map
-    gnome_map = gnome.map.MapFromBNA(testmap, refloat_halflife=6)  # hours
-    renderer = gnome.outputters.Renderer(testmap, images_dir, size=(400, 300))
+    gnome_map = gnome.map.MapFromBNA(testdata['MapFromBNA']['testmap'],
+                                     refloat_halflife=6)  # hours
+    renderer = gnome.outputters.Renderer(testdata['MapFromBNA']['testmap'],
+                                         images_dir, size=(400, 300))
     geo_json = GeoJson(output_dir=images_dir)
 
     model = Model(time_step=timedelta(minutes=15),
@@ -335,8 +330,10 @@ def test_simple_run_with_image_output_uncertainty(dump):
     start_time = datetime(2012, 9, 15, 12, 0)
 
     # the land-water map
-    gmap = gnome.map.MapFromBNA(testmap, refloat_halflife=6)  # hours
-    renderer = gnome.outputters.Renderer(testmap, images_dir, size=(400, 300))
+    gmap = gnome.map.MapFromBNA(testdata['MapFromBNA']['testmap'],
+                                refloat_halflife=6)  # hours
+    renderer = gnome.outputters.Renderer(testdata['MapFromBNA']['testmap'],
+                                         images_dir, size=(400, 300))
 
     model = Model(start_time=start_time,
                   time_step=timedelta(minutes=15), duration=timedelta(hours=1),
@@ -492,8 +489,7 @@ def test_all_movers(start_time, release_delay, duration):
     assert len(model.movers) == 3
 
     # CATS mover
-    c_data = get_datafile(os.path.join(lis_dir, 'tidesWAC.CUR'))
-    model.movers += CatsMover(c_data)
+    model.movers += CatsMover(testdata['CatsMover']['curr'])
     assert len(model.movers) == 4
 
     # run the model all the way...
@@ -728,10 +724,9 @@ def test_callback_add_mover():
     assert new_wind in model.environment
     assert len(model.environment) == 2
 
-    tide_file = get_datafile(os.path.join(tides_dir, 'CLISShio.txt'))
-    tide_ = Tide(filename=tide_file)
+    tide_ = Tide(filename=testdata['CatsMover']['tide'])
 
-    d_file = get_datafile(os.path.join(lis_dir, 'tidesWAC.CUR'))
+    d_file = testdata['CatsMover']['curr']
     model.movers += CatsMover(d_file, tide=tide_)
 
     model.movers += CatsMover(d_file)
@@ -833,6 +828,54 @@ def test_setup_model_run(model):
     model.rewind()
     model.step()
     assert not exp_keys.intersection(model.spills.LE_data)
+
+
+def test_contains_object(sample_model_fcn):
+    '''
+    Test that we can find all contained object types with a model.
+    '''
+    model = sample_model_weathering(sample_model_fcn, 'ALAMO')
+
+    gnome_map = model.map = gnome.map.GnomeMap()    # make it all water
+
+    rel_time = model.spills[0].get('release_time')
+    model.start_time = rel_time - timedelta(hours=1)
+    model.duration = timedelta(days=1)
+
+    water, wind = Water(), constant_wind(1., 0)
+    model.environment += [water, wind]
+
+    et = floating_weathering(substance=model.spills[0].get('substance').name)
+    sp = point_line_release_spill(500, (0, 0, 0),
+                                  rel_time + timedelta(hours=1),
+                                  element_type=et,
+                                  amount=100,
+                                  units='tons')
+    rel = sp.release
+    initializers = et.initializers
+    model.spills += sp
+
+    movers = [m for m in model.movers]
+
+    evaporation = Evaporation(model.environment[0], model.environment[1])
+    dispersion, burn, skimmer = Dispersion(), Burn(), Skimmer()
+    model.weatherers += [evaporation, dispersion, burn, skimmer]
+
+    renderer = Renderer(images_dir='Test_images',
+                        size=(400, 300))
+    model.outputters += renderer
+
+    for o in (gnome_map, sp, rel, et,
+              water, wind,
+              evaporation, dispersion, burn, skimmer,
+              renderer):
+        assert model.contains_object(o.id)
+
+    for o in initializers:
+        assert model.contains_object(o.id)
+
+    for o in movers:
+        assert model.contains_object(o.id)
 
 
 @pytest.mark.parametrize("uncertain", [False, True])

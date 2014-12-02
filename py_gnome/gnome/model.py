@@ -303,6 +303,10 @@ class Model(Serializable):
         self._cache.enabled = enabled
 
     @property
+    def has_weathering(self):
+        return len(self.weatherers) > 0
+
+    @property
     def start_time(self):
         '''
         Start time of the simulation
@@ -396,6 +400,25 @@ class Model(Serializable):
         py:attribute:`time_step`
         '''
         return self._num_time_steps
+
+    def contains_object(self, obj_id):
+        if self.map.id == obj_id:
+            return True
+
+        for collection in (self.environment,
+                           self.spills,
+                           self.movers,
+                           self.weatherers,
+                           self.outputters):
+            for o in collection:
+                if obj_id == o.id:
+                    return True
+
+                if (hasattr(o, 'contains_object') and
+                        o.contains_object(obj_id)):
+                    return True
+
+        return False
 
     def setup_model_run(self):
         '''

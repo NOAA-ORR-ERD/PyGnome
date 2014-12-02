@@ -27,7 +27,7 @@ sphinx
 progressbar
 six
 geojson
-repoze
+repoze.lru
 
 git+https://github.com/NOAA-ORR-ERD/hazpy.unit_conversion.git#egg=hazpy.unit_conversion
 
