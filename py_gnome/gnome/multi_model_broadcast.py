@@ -167,6 +167,7 @@ class ModelBroadcaster(GnomeId):
                  spill_amount_uncertainties):
         self.model = model
         self.context = None
+        self.consumers = []
         self.tasks = []
         self.lookup = {}
 
@@ -204,6 +205,7 @@ class ModelBroadcaster(GnomeId):
         for p in self.task_ports:
             model_consumer = ModelConsumer(p, self.model)
             model_consumer.start()
+            self.consumers.append(model_consumer)
 
     def _spawn_tasks(self):
         self.context = zmq.Context()
@@ -226,6 +228,10 @@ class ModelBroadcaster(GnomeId):
     def stop(self):
         [t.send(dumps(None)) for t in self.tasks]
         [t.close() for t in self.tasks]
+
+        for c in self.consumers:
+            c.join()
+
         self.context.destroy()
 
         self.tasks = []
