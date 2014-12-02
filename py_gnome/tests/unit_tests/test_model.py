@@ -1019,25 +1019,38 @@ class TestMergeModels:
                 assert item in getattr(model, oc)
 
     def test_load_location_file(self):
-        'create a model and merge a location file into it'
+        '''
+        create a model
+        load save file from script_boston which contains a spill. Then merge
+        the created model into the model loaded from save file
+        '''
         m = Model()
         m.water = Water()
         m.environment += constant_wind(1., 0.)
         m.weatherers += Evaporation(m.water, m.environment[-1])
+        m.spills += point_line_release_spill(10, (0, 0, 0),
+                                             datetime(2014, 1, 1, 12, 0))
 
         here = os.path.dirname(__file__)
         sample_save_file = \
             os.path.join(here,
                          '../../scripts/script_boston/save_model/Model.json')
         model = load(sample_save_file)
+        assert model.water is None
+
         model.merge(m)
         assert m.water is model.water
         for oc in m._oc_list:
             for item in getattr(m, oc):
-                assert item in getattr(model, oc)
+                model_oc = getattr(model, oc)
+                assert item is model_oc[item.id]
 
-        # add spills and test those
+        for spill in m.spills:
+            assert spill is model.spills[spill.id]
 
+        # merge the other way and ensure model != m
+        m.merge(model)
+        assert model != m
 
 if __name__ == '__main__':
 
