@@ -1074,3 +1074,28 @@ class Model(Serializable):
                 obj = load(f_name, refs)    # will add obj to refs
                 l_coll.append(obj)
         return (l_coll)
+
+    def merge(self, model):
+        '''
+        merge 'model' into self
+        '''
+        for attr in self.__dict__:
+            if (getattr(self, attr) is None and
+                getattr(model, attr) is not None):
+                setattr(self, attr, getattr(model, attr))
+        # update orderedcollections
+        for oc in self._oc_list:
+            my_oc = getattr(self, oc)
+            new_oc = getattr(model, oc)
+            for item in new_oc:
+                if item not in my_oc:
+                    my_oc += item
+
+        # update forecast spills in SpillContainerPair
+        # Uncertain spills automatically be created if uncertainty is on
+        for spill in model.spills:
+            if spill not in self.spills:
+                self.spills += spill
+
+        # force rewind after merge?
+        self.rewind()
