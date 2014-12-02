@@ -79,6 +79,17 @@ class ElementType(Serializable):
                 'substance={0.substance!r}'
                 ')'.format(self))
 
+    def contains_object(self, obj_id):
+        for o in self.initializers:
+            if obj_id == o.id:
+                return True
+
+            if (hasattr(o, 'contains_object') and
+                    o.contains_object(obj_id)):
+                return True
+
+        return False
+
     def substance_to_dict(self):
         ''' call the tojson() method on substance -
         no colander schema for it yet '''

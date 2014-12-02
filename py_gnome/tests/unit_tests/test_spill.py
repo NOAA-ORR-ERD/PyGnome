@@ -1157,19 +1157,6 @@ def test_grid_release():
                                                    [  2.,  12.,   0.]])
 
 
-@pytest.mark.xfail
-def test_reuse_substance():
-    s0 = Spill(Release(datetime.now(), 10),
-               element_type=floating(substance='ALAMO'))
-    s1 = Spill(Release(datetime.now(), 10),
-               element_type=floating(substance=s0.get('substance')))
-    assert s1.element_type is not s0.element_type
-    assert s1.element_type == s0.element_type
-    assert s1.get('substance') == s0.get('substance')
-    c_s0 = copy.deepcopy(s0)
-    c_s1 = copy.deepcopy(s1)
-
-
 if __name__ == '__main__':
 
     # TC = Test_PointSourceSurfaceRelease()

@@ -1,17 +1,11 @@
 '''
 Weathering Outputter
 '''
-from pprint import PrettyPrinter
-pp = PrettyPrinter(indent=2)
-
 import copy
 import os
 from glob import glob
-import json
-import random
 
-import numpy as np
-from geojson import Point, Feature, FeatureCollection, dump
+from geojson import dump
 from colander import SchemaNode, String, drop
 
 from gnome.utilities.serializable import Serializable, Field
@@ -19,7 +13,6 @@ from gnome.utilities.serializable import Serializable, Field
 from .outputter import Outputter, BaseSchema
 
 from gnome.basic_types import oil_status
-from gnome.utilities.time_utils import date_to_sec
 
 
 class WeatheringOutputSchema(BaseSchema):
@@ -73,28 +66,6 @@ class WeatheringOutput(Outputter, Serializable):
                       'avg_viscosity': 'm^2/s'}
         super(WeatheringOutput, self).__init__(**kwargs)
 
-    def _add_fake_uncertainty(self, nom_dict):
-        '''
-        add uncertainty to 'amount_released', then compute fraction of total
-        of weathered quantities
-        '''
-        runs = {}
-        for ix in range(27):
-            runs[str(ix)] = {}
-            sum_mass = 0.0
-            for key, val in nom_dict.iteritems():
-                runs[str(ix)][key] = val * random.uniform(0.9, 1.2)
-                if key not in ('avg_density',
-                               'avg_viscosity',
-                               'amount_released',
-                               'floating'):
-                    sum_mass += runs[str(ix)][key]
-
-            runs[str(ix)]['floating'] = (runs[str(ix)]['amount_released'] -
-                                         sum_mass)
-
-        return runs
-
     def write_output(self, step_num, islast_step=False):
         super(WeatheringOutput, self).write_output(step_num, islast_step)
 
@@ -106,13 +77,9 @@ class WeatheringOutput(Outputter, Serializable):
             # Not capturing 'uncertain' info yet
             # dict_ = {'uncertain': sc.uncertain}
             dict_ = {}
-            dict_['nominal'] = {}
 
             for key, val in sc.weathering_data.iteritems():
-                dict_['nominal'][key] = val
-
-            # add fake uncertainty
-            dict_.update(self._add_fake_uncertainty(dict_['nominal']))
+                dict_[key] = val
 
             output_info = {'step_num': step_num,
                            'time_stamp': sc.current_time_stamp.isoformat()}
@@ -136,7 +103,8 @@ class WeatheringOutput(Outputter, Serializable):
 
     def clean_output_files(self):
         if self.output_dir:
-            files = glob(os.path.join(self.output_dir, 'weathering_data_*.json'))
+            files = glob(os.path.join(self.output_dir,
+                                      'weathering_data_*.json'))
             for f in files:
                 os.remove(f)
 
@@ -144,4 +112,3 @@ class WeatheringOutput(Outputter, Serializable):
         'remove previously written files'
         super(WeatheringOutput, self).rewind()
         self.clean_output_files()
-
