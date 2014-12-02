@@ -2,9 +2,9 @@ from pprint import PrettyPrinter
 pp = PrettyPrinter(indent=2)
 
 import sys
-import time
 import traceback
 
+from timeit import Timer
 from cPickle import loads, dumps
 
 import multiprocessing
@@ -38,11 +38,10 @@ class ModelConsumer(mp.Process):
         - Returns the results in a results queue
 
     '''
-    def __init__(self, task_port, model):
+    def __init__(self, task_port):
         mp.Process.__init__(self)
 
         self.task_port = task_port
-        self.model = model
 
     def run(self):
         context = zmq.Context()
@@ -74,84 +73,12 @@ class ModelConsumer(mp.Process):
             self.loop.stop()
         else:
             try:
-                res = getattr(self, '_' + cmd[0])(**cmd[1])
-                self.stream.send_unicode(dumps(res))
+                self.stream.send_unicode(dumps('world' * 20))
             except:
                 exc_type, exc_value, exc_traceback = sys.exc_info()
                 fmt = traceback.format_exception(exc_type, exc_value,
                                                  exc_traceback)
                 self.stream.send_unicode(dumps(fmt))
-
-    def _rewind(self):
-        return self.model.rewind()
-
-    def _step(self):
-        begin = time.clock()
-        ret = self.model.step()
-        end = time.clock()
-        ret['response_time'] = end - begin
-        return ret
-
-    def _num_time_steps(self):
-        return self.model.num_time_steps
-
-    def _full_run(self, rewind=True, logger=False):
-        return self.model.full_run(rewind=rewind, logger=logger)
-
-    def _get_wind_timeseries(self):
-        '''
-            just some model diag
-        '''
-        res = []
-        wind_objs = [e for e in self.model.environment
-                     if isinstance(e, Wind)]
-
-        for obj in wind_objs:
-            ts = obj.get_timeseries()
-            for tse in ts:
-                res.append(tse['value'])
-
-        return res
-
-    def _get_spills(self):
-        return self.model.spills
-
-    def _get_spill_amounts(self):
-        return [s.amount for s in self.model.spills]
-
-    def _set_wind_speed_uncertainty(self, up_or_down):
-        winds = [e for e in self.model.environment
-                 if isinstance(e, Wind)]
-        res = [w.set_speed_uncertainty(up_or_down) for w in winds]
-
-        return all(res)
-
-    def _set_spill_container_uncertainty(self, uncertain):
-        self.model.spills.uncertain = uncertain
-        return self.model.spills.uncertain
-
-    def _set_spill_amount_uncertainty(self, up_or_down):
-        res = [s.set_amount_uncertainty(up_or_down) for s in self.model.spills]
-
-        return all(res)
-
-    def _get_cache_dir(self):
-        return self.model._cache._cache_dir
-
-    def _set_cache_dir(self):
-        return self.model._cache.create_new_dir()
-
-    def _get_outputters(self):
-        return self.model.outputters
-
-    def _get_weatherer_attribute(self, idx, attr):
-        return getattr(self.model.weatherers[idx], attr)
-
-    def _set_weathering_output_only(self):
-        del_list = [o for o in self.model.outputters
-                    if not isinstance(o, WeatheringOutput)]
-        for dl in del_list:
-            del self.model.outputters[dl.id]
 
 
 class ModelBroadcaster(GnomeId):
@@ -162,10 +89,9 @@ class ModelBroadcaster(GnomeId):
         More specifically, the model variations we are interested in are
         uncertainty variations.
     '''
-    def __init__(self, model,
+    def __init__(self,
                  wind_speed_uncertainties,
                  spill_amount_uncertainties):
-        self.model = model
         self.context = None
         self.tasks = []
         self.lookup = {}
@@ -176,14 +102,6 @@ class ModelBroadcaster(GnomeId):
         self._spawn_consumers()
 
         self._spawn_tasks()
-
-        for wsu in wind_speed_uncertainties:
-            for sau in spill_amount_uncertainties:
-                self._set_uncertainty(wsu, sau)
-
-        for t in self.tasks:
-            self._set_new_cache_dir(t)
-            self._set_weathering_output_only(t)
 
     def __del__(self):
         self.stop()
@@ -202,7 +120,7 @@ class ModelBroadcaster(GnomeId):
 
     def _spawn_consumers(self):
         for p in self.task_ports:
-            model_consumer = ModelConsumer(p, self.model)
+            model_consumer = ModelConsumer(p)
             model_consumer.start()
 
     def _spawn_tasks(self):
@@ -234,31 +152,12 @@ class ModelBroadcaster(GnomeId):
     def _to_buff(self, cmd, args):
         return dumps((cmd, args))
 
-    def _set_uncertainty(self,
-                         wind_speed_uncertainty,
-                         spill_amount_uncertainty):
-        # py_gnome spill container uncertainty is not used here
-        # so we turn it off always
-        index = self.lookup[(wind_speed_uncertainty, spill_amount_uncertainty)]
-        cmd = self._to_buff('set_spill_container_uncertainty',
-                            dict(uncertain=False))
-        self.tasks[index].send(cmd)
-        self.tasks[index].recv()
 
-        cmd = self._to_buff('set_wind_speed_uncertainty',
-                            dict(up_or_down=wind_speed_uncertainty))
-        self.tasks[index].send(cmd)
-        self.tasks[index].recv()
+if __name__ == '__main__':
+    model_broadcaster = ModelBroadcaster(('down', 'normal', 'up'),
+                                         ('down', 'normal', 'up'))
 
-        cmd = self._to_buff('set_spill_amount_uncertainty',
-                            dict(up_or_down=spill_amount_uncertainty))
-        self.tasks[index].send(cmd)
-        self.tasks[index].recv()
+    for step in range(1000):
+        pp.pprint(model_broadcaster.cmd('step', {}))
 
-    def _set_new_cache_dir(self, task):
-        task.send(self._to_buff('set_cache_dir', {}))
-        task.recv()
-
-    def _set_weathering_output_only(self, task):
-        task.send(self._to_buff('set_weathering_output_only', {}))
-        task.recv()
+    model_broadcaster.stop()
