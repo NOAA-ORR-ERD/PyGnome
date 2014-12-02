@@ -402,7 +402,7 @@ class Model(Serializable):
         return self._num_time_steps
 
     def contains_object(self, obj_id):
-        if self.map.id == obj_id:
+        if self.map.id == obj_id or self.water.id == obj_id:
             return True
 
         for collection in (self.environment,
