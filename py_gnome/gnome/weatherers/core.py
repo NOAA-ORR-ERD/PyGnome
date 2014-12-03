@@ -69,42 +69,6 @@ class Weatherer(Process):
             "method. It returns mass remaining for each component at end of "
             "time_step in 'kg' (SI units)")
 
-    def _xform_inputs(self, sc, time_step, model_time):
-        'make sure our inputs are a good fit for our calculations'
-        if 'mass_components' not in sc:
-            raise ValueError('No mass attribute available to calculate '
-                             'weathering')
-
-        if 'half_lives' not in sc:
-            raise ValueError('No half-lives attribute available to calculate '
-                             'weathering')
-
-        time_step = self._get_active_time(time_step, model_time)
-        return sc['mass_components'], sc['half_lives'], time_step
-
-    def _get_active_time(self, time_step, model_time):
-        '''
-        calculate the weathering time duration in seconds
-        todo: if we want to resize time_step according to active_stop time,
-        then we should perhaps be doing this for all processes - double check?
-        Or open a ticket since it can wait
-        And this can probably happen in prepare_for_model_step to set a local
-        variable?
-        '''
-        if hasattr(time_step, 'total_seconds'):
-            time_step = time_step.total_seconds()
-        model_end_time = model_time + timedelta(seconds=time_step)
-
-        if self.active_stop < model_end_time:
-            model_end_time = self.active_stop
-        if self.active_start > model_time:
-            model_time = self.active_start
-
-        if model_end_time > model_time:
-            return (model_end_time - model_time).total_seconds()
-        else:
-            return 0
-
     def _halflife(self, M_0, factors, time):
         'Assumes our factors are half-life values'
         half = np.float64(0.5)
@@ -143,31 +107,15 @@ class HalfLifeWeatherer(Weatherer):
         data_arrays since they are neither time-varying nor varying per LE.
         '''
         super(HalfLifeWeatherer, self).__init__(**kwargs)
-        self._hl = half_lives    # half lives input by the user
+        self.half_lives = half_lives
 
-        # half_lives for mass_components, can only set this in
-        # prepare_for_model_step
-        self.half_lives = None
+    @property
+    def half_lives(self):
+        return self._half_lives
 
-    def prepare_for_model_step(self, sc, time_step, model_time):
-        '''
-        update half_lives based on number of mass_components
-        '''
-        super(HalfLifeWeatherer, self).prepare_for_model_step(sc,
-                                                              time_step,
-                                                              model_time)
-        num_pc = sc['mass_components'].shape[1]
-        hl = np.zeros(num_pc, dtype=np.float64)
-        hl[:] = np.Inf
-
-        if self.half_lives is None:
-            if num_pc < len(self._hl):
-                hl = np.asarray(self.half_lives[:num_pc])
-            elif num_pc > len(self._hl):
-                hl[:len(self._hl)] = self._hl
-            else:
-                hl[:] = self._hl
-            self.half_lives = hl
+    @half_lives.setter
+    def half_lives(self, half_lives):
+        self._half_lives = np.asarray(half_lives, dtype=np.float64)
 
     def weather_elements(self, sc, time_step, model_time):
         '''
@@ -177,4 +125,5 @@ class HalfLifeWeatherer(Weatherer):
             return sc['mass_components']
 
         hl = self._halflife(sc['mass_components'], self.half_lives, time_step)
-        return hl
+        sc['mass_components'][:] = hl
+        sc['mass'][:] = sc['mass_components'].sum(1)

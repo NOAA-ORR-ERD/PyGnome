@@ -32,43 +32,57 @@ def test_properties():
     assert not m.on
 
 
-def test_active():
-    """
-    tests that is active is toggled correctly based on timespan
-    """
-
+class TestActive:
     time_step = 15 * 60  # seconds
     model_time = datetime(2012, 8, 20, 13)
     sc = sample_sc_release(1, (0, 0, 0))  # no used for anything
-
     mv = movers.Mover()
-    mv.prepare_for_model_step(sc, time_step, model_time)
-    assert mv.active  # model_time = active_start
 
-    mv = movers.Mover(active_start=model_time)
-    mv.prepare_for_model_step(sc, time_step, model_time)
-    assert mv.active  # model_time = active_start
+    def test_active_default(self):
+        mv = movers.Mover()
+        mv.prepare_for_model_step(self.sc, self.time_step, self.model_time)
+        assert mv.active  # model_time = active_start
 
-    mv = movers.Mover(active_start=model_time
-                      + timedelta(seconds=time_step))
-    mv.prepare_for_model_step(sc, time_step, model_time)
-    assert not mv.active  # model_time + time_step = active_start
+    def test_active_start_modeltime(self):
+        mv = movers.Mover(active_start=self.model_time)
+        mv.prepare_for_model_step(self.sc, self.time_step, self.model_time)
+        assert mv.active  # model_time = active_start
 
-    mv.active_start = model_time - timedelta(seconds=time_step / 2)
-    mv.prepare_for_model_step(sc, time_step, model_time)
-    assert mv.active  # model_time - time_step/2 = active_start
+    def test_active_start_after_one_timestep(self):
+        mv = movers.Mover(active_start=self.model_time
+                          + timedelta(seconds=self.time_step))
+        mv.prepare_for_model_step(self.sc, self.time_step, self.model_time)
+        assert not mv.active  # model_time + time_step = active_start
 
-    # No need to test get_move again, above tests it is working per active flag
+    def test_active_start_after_half_timestep(self):
+        self.mv.active_start = \
+            self.model_time + timedelta(seconds=self.time_step / 2)
+        self.mv.prepare_for_model_step(self.sc, self.time_step,
+                                       self.model_time)
+        assert self.mv.active  # model_time + time_step/2 = active_start
+
     # Next test just some more borderline cases that active is set correctly
 
-    mv.active_stop = model_time + timedelta(seconds=1.5 * time_step)
-    mv.prepare_for_model_step(sc, time_step, model_time)
-    assert mv.active
+    def test_active_stop_greater_than_timestep(self):
+        self.mv.active_stop = \
+            self.model_time + timedelta(seconds=1.5 * self.time_step)
+        self.mv.prepare_for_model_step(self.sc, self.time_step,
+                                       self.model_time)
+        assert self.mv.active    # model_time + 1.5 * time_step = active_stop
 
-    mv.active_stop = model_time + timedelta(seconds=2 * time_step)
-    mv.prepare_for_model_step(sc, time_step, model_time + 2
-                              * timedelta(seconds=time_step))
-    assert not mv.active
+    def test_active_stop_after_half_timestep(self):
+        self.mv.active_stop = \
+            self.model_time + timedelta(seconds=0.5 * self.time_step)
+        self.mv.prepare_for_model_step(self.sc, self.time_step,
+                                       self.model_time)
+        assert self.mv.active    # model_time + 1.5 * time_step = active_stop
+
+    def test_active_stop_less_than_half_timestep(self):
+        self.mv.active_stop = \
+            self.model_time + timedelta(seconds=0.25 * self.time_step)
+        self.mv.prepare_for_model_step(self.sc, self.time_step,
+                                       self.model_time)
+        assert not self.mv.active    # current_model_time = active_stop
 
 
 def test_get_move():
@@ -82,4 +96,3 @@ def test_get_move():
     mv = movers.Mover()
     delta = mv.get_move(sc, time_step, model_time)
     assert np.all(np.isnan(delta))
-
