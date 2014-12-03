@@ -687,7 +687,7 @@ class ComponentMoverSchema(ObjType, ProcessSchema):
     filename2 = SchemaNode(String(), missing=drop)
     #scale = SchemaNode(Bool())
     #ref_point = WorldPoint(missing=drop)
-    ref_point = LongLat(missing=drop)
+    scale_refpoint = LongLat(missing=drop)
     #scale_value = SchemaNode(Float())
 
 
