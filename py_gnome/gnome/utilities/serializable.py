@@ -1,18 +1,19 @@
 '''
 Created on Feb 15, 2013
 '''
-
 import copy
 import inspect
 import os
 import json
 import shutil
+from itertools import izip_longest
 
 import numpy
 np = numpy
 
 from gnome import GnomeId
 from gnome.persist import Savable
+from gnome.utilities.orderedcollection import OrderedCollection
 
 
 class Field(object):  # ,serializable.Serializable):
@@ -42,8 +43,8 @@ class Field(object):  # ,serializable.Serializable):
         :param bool isdatafile=False: Is the property a datafile that should be
             moved during persistence?
         :param bool update=False: Is the property update-able by the web app?
-        :param bool create=False: Is the property required to re-create the object
-            when loading from a save file?
+        :param bool create=False: Is the property required to re-create the
+            object when loading from a save file?
         :param bool read=False: If property is not updateable, perhaps make it
             read only so web app has information about the object
         :param bool save_reference=False: bool with default value of False.
@@ -87,6 +88,11 @@ class Field(object):  # ,serializable.Serializable):
             self.update == other.update and
             self.read == other.read):
             return True
+
+        return False
+
+    def __ne__(self, other):
+        return not self == other
 
     def __repr__(self):
         'unambiguous object representation'
@@ -146,21 +152,21 @@ class State(object):
         test_obj = Field('test')
         self._valid_field_attr = test_obj.__dict__.keys()
 
-    def __copy__(self):
-        '''
-        shallow copy of _state object so references original fields list
-        '''
-        new_ = type(self)()
-        new_.__dict__.update(copy.copy(self.__dict__))
-        return new_
-
     def __deepcopy__(self, memo):
         '''
         deep copy of _state object so makes a copy of the fields list
         '''
-        new_ = type(self)()
-        new_.__dict__.update(copy.deepcopy(self.__dict__))
+        new_ = self.__class__()
+        if new_ != self:
+            new_.__dict__.update(copy.deepcopy(self.__dict__, memo))
         return new_
+
+    def __eq__(self, other):
+        'check for equality'
+        return self.__dict__ == other.__dict__
+
+    def __ne__(self, other):
+        return not self.__dict__ == other.__dict__
 
     def __contains__(self, name):
         """
@@ -649,43 +655,126 @@ class Serializable(GnomeId, Savable):
 
     def update_from_dict(self, data):
         """
-        modifies attributes of the object using dictionary 'data'.
-        Only the fields in self._state with update=True contains properties
-        that can be modified for existing object
-
         Update the attributes of this object using the dictionary ``data`` by
         looking up the value of each key in ``data``.
         The fields in self._state that have update=True are modified. The
         remaining keys in 'data' are ignored. The object's _state attribute
         defines what fields can be updated
 
-        For every field, the choice of how to set the field is as follows:
+        If an attribute has changed, then call 'update_attr' to update its
+        value.
+
+        :param data: dict containing state of object per the client
+        :type data: dict
+        :returns: True if something changed, False otherwise
+        :rtype: bool
+
+        .. note::
+
+            Does not do updates on nested objects. If the attribute references
+            another Serializable object, then the value is not a dict but
+            rather the updated object. For instance, WindMover will receive:
+
+              {..., 'wind': <Wind object>}
+
+            as opposed to a nested dict of the 'wind' object. It is expected
+            that the 'wind' object was updated by calling its own
+            update_from_dict then added to this dict as the updated object.
+        """
+        list_ = self._state.get_names('update')
+        updated = False
+
+        for key in list_:
+            if key not in data:
+                continue
+
+            if self.update_attr(key, data[key]):
+                updated = True
+
+        return updated
+
+    def _attr_changed(self, current_value, received_value):
+        '''
+        Checks if an attribute passed back in a dict_ from client has changed.
+        Returns True if changed, else False
+        '''
+        # first, we normalize our left and right args
+        if (isinstance(current_value, np.ndarray) and
+                isinstance(received_value, (list, tuple))):
+            received_value = np.asarray(received_value)
+
+        # For a nested object, check if it data contains a new object. If
+        # object in data 'is' current_value then 'self' state has not
+        # changed. Even if current_value == data[key], we still must update
+        # it because it now references a new object
+        if isinstance(current_value, Serializable):
+            if current_value is not received_value:
+                return True
+
+        elif isinstance(current_value, OrderedCollection):
+            if len(current_value) != len(received_value):
+                return True
+            for ix, item in enumerate(current_value):
+                if item is not received_value[ix]:
+                    return True
+        else:
+            try:
+                if current_value != received_value:
+                    return True
+            except ValueError:
+                # maybe an iterable - checking for
+                # isinstance(current_value, collections.Iterable) fails for
+                # string so just do a try/except
+                if np.any(current_value != received_value):
+                    return True
+
+        return False
+
+    def update_attr(self, name, value):
+        '''
+        update the attribute defined by 'name' with given 'value'
 
         If there is a method defined on the object such that the method name is
-        `{field_name}_from_dict`, call that method with the field's data.
-
-        If the field on the object has a ``update_from_dict`` method,
-        then use that method instead.
+        `{name}_from_dict`, call that method with the field's data.
 
         If neither method exists, then set the field with the value from
         ``data`` directly on the object.
-        """
-        list_ = self._state.get_names('update')
 
-        for key in list_:
-            if not key in data:
-                continue
+        :param name: name of attribute to be updated
+        :type name: str
+        :param value: the new value of the attribute
+        :type value: depends on each attribute being updated
+        '''
+        current_value = getattr(self, name)
+        if isinstance(current_value, OrderedCollection):
+            return self._update_orderedcoll_attr(current_value, value)
 
-            from_dict_fn_name = '%s_update_from_dict' % key
-            value = data[key]
+        from_dict_fn_name = '%s_update_from_dict' % name
+        if hasattr(self, from_dict_fn_name):
+            return getattr(self, from_dict_fn_name)(value)
 
-            if hasattr(self, from_dict_fn_name):
-                getattr(self, from_dict_fn_name)(value)
-            # Note: Do not update properties of nested objects
-            #elif hasattr(getattr(self, key), 'update_from_dict'):
-            #    getattr(self, key).update_from_dict(value)
-            else:
-                setattr(self, key, value)
+        if self._attr_changed(current_value, value):
+            setattr(self, name, value)
+            return True
+        else:
+            return False
+
+    def _update_orderedcoll_attr(self, curr_oc, l_new_oc):
+        '''
+        update attribute of type OrderedCollection with items in list l_new_oc
+        '''
+        updated = False
+
+        if len(l_new_oc) != len(curr_oc):
+            updated = True
+        elif any([x is not y for x, y in zip(curr_oc.values(), l_new_oc)]):
+            updated = True
+
+        if updated:
+            curr_oc.clear()
+            if l_new_oc:
+                curr_oc += l_new_oc
+        return updated
 
     def obj_type_to_dict(self):
         """
@@ -825,13 +914,30 @@ class Serializable(GnomeId, Savable):
         return serial
 
     @classmethod
+    def is_sparse(cls, json_):
+        '''
+            Sparse means that we have a previously created object,
+            and we are receiving a reference to the object using just
+            an obj_type and an id.  This is a valid payload that the
+            Web Client will send.
+        '''
+        r_attr_list = cls._state.get_names('read')
+        r_attr_list.append('json_')
+        attr_list = [attr for attr in json_ if attr not in r_attr_list]
+
+        return len(attr_list) == 0
+
+    @classmethod
     def deserialize(cls, json_):
         """
-        classmethod takes json structure as input, deserializes it using a
-        colander schema then invokes the new_from_dict method to create an
-        instance of the object described by the json schema
+            classmethod takes json structure as input, deserializes it using a
+            colander schema then invokes the new_from_dict method to create an
+            instance of the object described by the json schema.
+
+            We also need to accept sparse json objects, in which case we will
+            not treat them, but just send them back.
         """
-        return cls._schema().deserialize(json_)
-
-
-
+        if not cls.is_sparse(json_):
+            return cls._schema().deserialize(json_)
+        else:
+            return json_

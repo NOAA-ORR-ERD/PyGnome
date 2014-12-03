@@ -5,16 +5,12 @@ cache system for caching element data on disk for
 accessing again for output, etc.
 
 """
-import gc
-import sys
-from pprint import PrettyPrinter
-pp = PrettyPrinter(indent=2)
-
 import os
 import warnings
 import tempfile
 import shutil
 import copy
+from multiprocessing import Lock
 
 import numpy
 np = numpy
@@ -44,8 +40,6 @@ def clean_up_cache(dir_name=_cache_dir):
 
     raises a warning if there is problem deleting a particular directory
     """
-    # delete it:
-
     try:
         shutil.rmtree(dir_name)
     except OSError:
@@ -88,10 +82,7 @@ class ElementCache(object):
                                If not provided, a temp dir will be created by
                                the python tempfile module
         """
-        if cache_dir is None:
-            self._cache_dir = os.path.join(tempfile.mkdtemp(dir=_cache_dir))
-        else:
-            self._cache_dir = cache_dir
+        self.create_new_dir(cache_dir)
 
         # dict to hold recent data so we don't need to pull from the
         # file system
@@ -100,17 +91,13 @@ class ElementCache(object):
         # flag for whether to enable disk cache
         self.enabled = enabled
 
+        self.lock = Lock()
+
     def __del__(self):
         'Clear out the cache when this object is deleted'
-        if os.path.isdir(_cache_dir):
-            subdirs = os.listdir(_cache_dir)
-            allocated_dirs = set([os.path.basename(o._cache_dir)
-                                  for o in gc.get_objects()
-                                  if (isinstance(o, ElementCache))])
-
-            for d in subdirs:
-                if d not in allocated_dirs:
-                    shutil.rmtree(os.path.join(_cache_dir, d))
+        with self.lock:
+            if os.path.isdir(self._cache_dir):
+                shutil.rmtree(self._cache_dir)
 
     def _make_filename(self, step_num, uncertain=False):
         """
@@ -127,6 +114,13 @@ class ElementCache(object):
             return os.path.join(self._cache_dir,
                                 'step_%06i.npz' % step_num)
 
+    def create_new_dir(self, cache_dir=None):
+        if cache_dir is None:
+            self._cache_dir = tempfile.mkdtemp(dir=_cache_dir)
+        else:
+            self._cache_dir = cache_dir
+        return True
+
     def save_timestep(self, step_num, spill_container_pair):
         """
         add a time step of data to the cache
@@ -136,6 +130,8 @@ class ElementCache(object):
         """
         for sc in spill_container_pair.items():
             data = copy.deepcopy(sc.data_arrays)
+
+            self._set_weathering_data(sc, data)
 
             if sc.current_time_stamp:
                 data['current_time_stamp'] = np.array(sc.current_time_stamp)
@@ -200,7 +196,9 @@ class ElementCache(object):
         if 'current_time_stamp' in data_arrays:
             current_time_stamp = data_arrays.pop('current_time_stamp').item()
 
+        weathering_data = self._get_weathering_data(data_arrays)
         sc = SpillContainerData(data_arrays)
+        sc.weathering_data = weathering_data
         if current_time_stamp:
             sc.current_time_stamp = current_time_stamp
 
@@ -212,7 +210,9 @@ class ElementCache(object):
                 current_time_stamp = \
                     u_data_arrays.pop('current_time_stamp').item()
 
+            u_weathering_data = self._get_weathering_data(u_data_arrays)
             u_sc = SpillContainerData(u_data_arrays, uncertain=True)
+            u_sc.weathering_data = u_weathering_data
 
             if current_time_stamp:
                 u_sc.current_time_stamp = current_time_stamp
@@ -220,6 +220,26 @@ class ElementCache(object):
         scp = SpillContainerPairData(sc, u_sc)
 
         return scp
+
+    def _set_weathering_data(self, sc, data):
+        'add mass balance data to arrays'
+        if sc.weathering_data:
+            data['weathering_data'] = np.chararray((len(sc.weathering_data),),
+                                                   itemsize=15)
+            for ix, key in enumerate(sc.weathering_data):
+                # an array with a scalar for each spill
+                data[key] = np.asarray(sc.weathering_data[key])
+                data['weathering_data'][ix] = key
+
+    def _get_weathering_data(self, data_arrays):
+        mb_data = None
+        if 'weathering_data' in data_arrays:
+            mb_names = data_arrays.pop('weathering_data')
+            mb_data = {}
+            for name in mb_names:
+                mb_data[name] = data_arrays.pop(name).item()
+
+        return mb_data
 
     def rewind(self):
         'Rewinds the cache -- clearing out everything'

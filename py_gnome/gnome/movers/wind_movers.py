@@ -25,8 +25,6 @@ from gnome.cy_gnome.cy_wind_mover import CyWindMover
 from gnome.cy_gnome.cy_gridwind_mover import CyGridWindMover
 
 from gnome.persist.base_schema import ObjType
-#from gnome.persist import movers_schema
-#from gnome.persist.environment_schema import Wind
 
 
 class WindMoversBaseSchema(ObjType, ProcessSchema):
@@ -34,7 +32,6 @@ class WindMoversBaseSchema(ObjType, ProcessSchema):
     uncertain_time_delay = SchemaNode(Float(), missing=drop)
     uncertain_speed_scale = SchemaNode(Float(), missing=drop)
     uncertain_angle_scale = SchemaNode(Float(), missing=drop)
-    uncertain_angle_units = SchemaNode(String(), missing=drop)
 
 
 class WindMoverSchema(WindMoversBaseSchema):
@@ -49,18 +46,15 @@ class WindMoverSchema(WindMoversBaseSchema):
 class WindMoversBase(CyMover):
     _state = copy.deepcopy(CyMover._state)
     _state.add(update=['uncertain_duration', 'uncertain_time_delay',
-                      'uncertain_speed_scale'],
-              save=['uncertain_duration', 'uncertain_time_delay',
-                      'uncertain_speed_scale', 'uncertain_angle_scale',
-                      'uncertain_angle_units'],
-              read=['uncertain_angle_scale'])
+                       'uncertain_speed_scale', 'uncertain_angle_scale'],
+               save=['uncertain_duration', 'uncertain_time_delay',
+                     'uncertain_speed_scale', 'uncertain_angle_scale'])
 
     def __init__(self,
                  uncertain_duration=3,
                  uncertain_time_delay=0,
                  uncertain_speed_scale=2.,
                  uncertain_angle_scale=0.4,
-                 uncertain_angle_units='rad',
                  **kwargs):
         """
         This is simply a base class for WindMover and GridWindMover for the
@@ -76,10 +70,8 @@ class WindMoversBase(CyMover):
         :param uncertain_time_delay: when does the uncertainly kick in.
         :param uncertain_speed_scale: Scale for uncertainty in wind speed
             non-dimensional number
-        :param uncertain_angle_scale: Scale for uncertainty in wind direction
-            'deg' or 'rad'
-        :param uncertain_angle_units: 'rad' or 'deg'. These are the units for
-            the uncertain_angle_scale.
+        :param uncertain_angle_scale: Scale for uncertainty in wind direction.
+            Assumes this is in radians
 
         It calls super in the __init__ method and passes in the optional
         parameters (kwargs)
@@ -91,7 +83,7 @@ class WindMoversBase(CyMover):
         self.uncertain_speed_scale = uncertain_speed_scale
 
         # also sets self._uncertain_angle_units
-        self.set_uncertain_angle(uncertain_angle_scale, uncertain_angle_units)
+        self.uncertain_angle_scale = uncertain_angle_scale
 
         self.array_types.update({'windages': array_types.windages,
                                  'windage_range': array_types.windage_range,
@@ -103,6 +95,11 @@ class WindMoversBase(CyMover):
         property(lambda self: self.mover.uncertain_speed_scale,
                  lambda self, val: setattr(self.mover,
                                            'uncertain_speed_scale',
+                                           val))
+    uncertain_angle_scale = \
+        property(lambda self: self.mover.uncertain_angle_scale,
+                 lambda self, val: setattr(self.mover,
+                                           'uncertain_angle_scale',
                                            val))
 
     def _seconds_to_hours(self, seconds):
@@ -126,41 +123,6 @@ class WindMoversBase(CyMover):
     @uncertain_time_delay.setter
     def uncertain_time_delay(self, val):
         self.mover.uncertain_time_delay = self._hours_to_seconds(val)
-
-    @property
-    def uncertain_angle_units(self):
-        """
-        units specified by the user when setting the uncertain_angle:
-        set_uncertain_angle()
-        """
-        return self._uncertain_angle_units
-
-    @property
-    def uncertain_angle_scale(self):
-        '''
-        Read only - this is set when set_uncertain_angle() is called
-        It returns the angle in 'uncertain_angle_units'
-        '''
-        if self.uncertain_angle_units == 'deg':
-            return self.mover.uncertain_angle_scale * 180.0 / math.pi
-        else:
-            return self.mover.uncertain_angle_scale
-
-    def set_uncertain_angle(self, val, units):
-        '''
-        this must be a function because user must provide units with value
-        '''
-        if units not in ['deg', 'rad']:
-            raise ValueError("units for uncertain angle can be either"
-                             " 'deg' or 'rad'")
-
-        if units == 'deg':
-            # convert to radians
-            self.mover.uncertain_angle_scale = val * math.pi / 180.0
-        else:
-            self.mover.uncertain_angle_scale = val
-
-        self._uncertain_angle_units = units
 
     def prepare_for_model_step(self, sc, time_step, model_time_datetime):
         """
@@ -215,7 +177,6 @@ class WindMoversBase(CyMover):
                 '  uncertain_time_delay={0.uncertain_time_delay}\n'
                 '  uncertain_speed_scale={0.uncertain_speed_scale}\n'
                 '  uncertain_angle_scale={0.uncertain_angle_scale}\n'
-                '  uncertain_angle_units="{0.uncertain_angle_units}"\n'
                 '  active_start time={0.active_start}\n'
                 '  active_stop time={0.active_stop}\n'
                 '  current on/off status={0.on}\n')
@@ -234,8 +195,6 @@ class WindMover(WindMoversBase, serializable.Serializable):
     array_types.windage dict since WindMover requires a windage array
     """
     _state = copy.deepcopy(WindMoversBase._state)
-    #_state.add(read=['wind_id'], save=['wind_id'])
-    # todo: probably need to make update=True for 'wind' as well
     _state.add_field(serializable.Field('wind', save=True, update=True,
                                          save_reference=True))
     _schema = WindMoverSchema
@@ -293,7 +252,7 @@ class WindMover(WindMoversBase, serializable.Serializable):
         schema = self.__class__._schema()
         if json_ == 'webapi':
             # add wind schema
-            schema.add(environment.WindSchema())
+            schema.add(environment.WindSchema(name='wind'))
 
         serial = schema.serialize(toserial)
 
@@ -339,13 +298,16 @@ def constant_wind_mover(speed, direction, units='m/s'):
                         options: 'm/s', 'knot', 'mph', others...
 
     :return: returns a gnome.movers.WindMover object all set up.
+
+    .. note:: The time for a constant wind timeseries is irrelevant. This
+    function simply sets it to datetime.now() accurate to hours.
     """
 
     series = np.zeros((1, ), dtype=datetime_value_2d)
 
     # note: if there is ony one entry, the time is arbitrary
-
-    series[0] = (datetime.now(), (speed, direction))
+    dt = datetime.now().replace(microsecond=0, second=0, minute=0)
+    series[0] = (dt, (speed, direction))
     wind = environment.Wind(timeseries=series, units=units)
     w_mover = WindMover(wind)
     return w_mover

@@ -9,6 +9,7 @@ cy_*.c
 *.ropeproject
 *._.DS_Store
 empty_BW_image.png
+.DS_Store
 
 # ignore binaries generated during build
 *.egg-info

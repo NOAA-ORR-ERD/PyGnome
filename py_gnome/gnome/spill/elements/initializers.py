@@ -54,7 +54,7 @@ class InitBaseClass(object):
         # the mover sets the primary data_array (ie rise_vel for above example)
         self.array_types = OrderedDict()
 
-    def initialize(self):
+    def initialize(self, num_new_particles, spill, data_arrays, substance):
         """
         all classes that derive from Base class must implement initialize
         method
@@ -165,20 +165,22 @@ class InitWindages(InitBaseClass, Serializable):
                     data_arrays['windages'][-num_new_particles:])
 
 
-class InitMassComponentsFromOilProps(InitBaseClass, Serializable):
+class InitArraysFromOilProps(InitBaseClass, Serializable):
     '''
-       Initialize the mass components based on given Oil properties
+       Initialize 'mass_components', this requires 'mass' array be initialized.
+       If 'mass' is not initialized or all 0.0, then it computes the mass, and
+       updates the array
     '''
     _state = copy.deepcopy(InitBaseClass._state)
     _schema = base_schema.ObjType
 
     def __init__(self):
         """
-        update array_types
+        Sets 'mass_components' and 'mass' arrays - it needs the 'mass' array
+        so currently it sets it.
         """
-        super(InitMassComponentsFromOilProps, self).__init__()
-        self.array_types.update({'mass_components': array_types.mass_components
-                                 })
+        super(InitArraysFromOilProps, self).__init__()
+        self.array_types.update({'mass_components': array_types.mass_components})
         self.name = 'mass_components'
 
     def initialize(self, num_new_particles, spill, data_arrays, substance):
@@ -197,65 +199,33 @@ class InitMassComponentsFromOilProps(InitBaseClass, Serializable):
                                              in the Spill??
                                              Why the extra argument??)
         '''
-        if spill.mass is None:
+        if spill.amount is None:
             raise ValueError('mass attribute of spill is None - cannot '
                              'compute particle mass without total mass')
 
-        le_mass = data_arrays['mass'][-num_new_particles:]
-
-        mass_fractions = np.asarray(zip(*substance.mass_components)[0],
+        mass_fractions = np.asarray(substance.mass_fraction,
                                     dtype=np.float64)
-        masses = mass_fractions * le_mass
 
-        data_arrays['mass_components'][-num_new_particles:] = masses
+        # if 'mass' is defined, use it, otherwise, compute it and add
+        if np.all(data_arrays['mass'][-num_new_particles:] == 0.0):
+            le_mass = spill.get_mass('kg') / spill.release.num_elements
+            data_arrays['mass'][-num_new_particles:] = le_mass
 
-
-class InitHalfLivesFromOilProps(InitBaseClass, Serializable):
-    '''
-       Initialize the half-lives of our mass components based on given Oil
-       properties.
-    '''
-    _state = copy.deepcopy(InitBaseClass._state)
-    _schema = base_schema.ObjType
-
-    def __init__(self):
-        """
-        update array_types
-        """
-        super(InitHalfLivesFromOilProps, self).__init__()
-        self.array_types.update({'half_lives': array_types.half_lives})
-        self.name = 'half_lives'
-
-    def initialize(self, num_new_particles, spill, data_arrays, substance):
-        '''
-           :param int num_new_particles: Number of new particles to initialize
-           :param Spill spill: The spill object from which the new particles
-                               are coming from.
-           :param data_arrays: The numpy arrays that make up the collective
-                               properties of our particles.
-           :type data_arrays: dict(<name>: <np.ndarray>,
-                                   ...
-                                   )
-           :param OilProps substance: The Oil Properties associated with the
-                                      spill.
-                                      (TODO: Why is this not simply contained
-                                             in the Spill??
-                                             Why the extra argument??)
-        '''
-        half_lives = np.asarray(zip(*substance.mass_components)[1],
-                                dtype=np.float64)
-
-        data_arrays['half_lives'][-num_new_particles:] = half_lives
-
+        masses = mass_fractions * (data_arrays['mass'][-num_new_particles:]
+                                   .reshape(num_new_particles, -1))
+        # currently only modeling one substance so:
+        #     masses.shape[1] == data_arrays['mass_components'].shape[1]
+        # however, code is there to model multiple substances and some basic
+        # tests are there so make this consistent so tests pass and things work
+        data_arrays['mass_components'][-num_new_particles:,
+                                       :masses.shape[1]] = masses
 
 # do following two classes work for a time release spill?
 
 
-class InitMassFromTotalMass(InitBaseClass, Serializable):
+class InitMassFromSpillAmount(InitBaseClass, Serializable):
     """
-    Initialize the 'mass' array based on total mass spilled.
-    todo: are both InitMassFromTotalMass and InitMassFromTotalVolume required?
-    If one is known, isn't the other one known too?
+    Initialize the 'mass' array based on total mass or volume spilled
     """
 
     _state = copy.deepcopy(InitBaseClass._state)
@@ -265,18 +235,28 @@ class InitMassFromTotalMass(InitBaseClass, Serializable):
         """
         update array_types
         """
-        super(InitMassFromTotalMass, self).__init__()
+        super(InitMassFromSpillAmount, self).__init__()
         self.array_types.update({'mass': array_types.mass})
         self.name = 'mass'
+        self.total_mass = None  # always in SI units
+
+    def _set_total_mass(self, spill, substance):
+        ''' set 'total_mass' property from spill since we only need to do this
+        once '''
+        if spill.get_mass('kg') is None:
+            self.total_mass = 0     # do we want to raise an error?
+        else:
+            self.total_mass = spill.get_mass('kg')
 
     def initialize(self, num_new_particles, spill, data_arrays, substance):
-        if spill.mass is None:
-            raise ValueError('mass attribute of spill is None - cannot '
-                             'compute particle mass without total mass')
+        # store total_mass - it doesn't change so store it locally. The
+        # windages are also tied to the spill
+        if self.total_mass is None:
+            self._set_total_mass(spill, substance)
 
-        _total_mass = spill.get_mass('kg')
-        data_arrays['mass'][-num_new_particles:] = (_total_mass /
+        data_arrays['mass'][-num_new_particles:] = (self.total_mass /
                                                     spill.release.num_elements)
+
 
 class InitMassFromPlume(InitBaseClass, Serializable):
     """
@@ -450,7 +430,7 @@ class InitRiseVelFromDropletSizeFromDist(DistributionBase):
         self.distribution.set_values(drop_size)
 
         data_arrays['droplet_diameter'][-num_new_particles:] = drop_size
-        le_density[:] = substance.density
+        le_density[:] = substance.get_density()
 
         # now update rise_vel with droplet size - dummy for now
         rise_velocity_from_drop_size(

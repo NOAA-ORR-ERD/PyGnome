@@ -7,16 +7,12 @@ import os
 from glob import glob
 
 import numpy as np
-from geojson import Point, Feature, FeatureCollection, dump
+from geojson import Feature, FeatureCollection, dump, MultiPoint
 from colander import SchemaNode, String, drop, Int, Bool
 
 from gnome.utilities.serializable import Serializable, Field
 
 from .outputter import Outputter, BaseSchema
-
-from gnome.basic_types import oil_status
-from gnome import array_types
-from gnome.utilities.time_utils import date_to_sec
 
 
 class GeoJsonSchema(BaseSchema):
@@ -72,7 +68,7 @@ class GeoJson(Outputter, Serializable):
                Field('output_dir', update=True, save=True)]
     _schema = GeoJsonSchema
 
-    def __init__(self, round_data=True, round_to=4, output_dir='./',
+    def __init__(self, round_data=True, round_to=4, output_dir=None,
                  **kwargs):
         '''
         :param bool round_data=True: if True, then round the numpy arrays
@@ -80,7 +76,9 @@ class GeoJson(Outputter, Serializable):
             Default is True
         :param int round_to=4: round float arrays to these number of digits.
             Default is 4.
-        :param str output_dir='./': output directory for geojson files
+        :param str output_dir=None: output directory for geojson files. Default
+            is None since data is returned in dict for webapi. For using
+            write_output_post_run(), this must be set
 
         use super to pass optional \*\*kwargs to base class __init__ method
         '''
@@ -97,61 +95,37 @@ class GeoJson(Outputter, Serializable):
         if not self._write_step:
             return None
 
+        # one feature per element client; replaced with multipoint
+        # because client performance is much more stable with one
+        # feature per step rather than (n) features per step.
         features = []
         for sc in self.cache.load_timestep(step_num).items():
-            time = date_to_sec(sc.current_time_stamp)
-            position = self._dataarray_p_types(sc['positions'])
-            status = self._dataarray_p_types(sc['status_codes'])
-            p_id = self._dataarray_p_types(sc['id'])
-
-            all_nums = np.unique(sc['spill_num'])
-            id_len = len(self.sc_pair.spill_by_index(0).id)
-            spill_id = np.chararray(len(p_id,), itemsize=id_len)
-
-            # NOTE: spill_num are not renumbered if a spill is deleted;
-            # HOWEVER, if a spill is deleted, a callback in the model should
-            # shrink the OrderedCollection and everything should get renumbered
-            for num in all_nums:
-                if not sc.uncertain:
-                    spill_id[sc['spill_num'] == num] = \
-                        self.sc_pair.spill_by_index(num).id
-                else:
-                    spill_id[sc['spill_num'] == num] = \
-                        self.sc_pair.spill_by_index(num, True).id
-
             sc_type = 'forecast'
             if sc.uncertain:
                 sc_type = 'uncertain'
 
-            spill_id = self._dataarray_p_types(spill_id)
-
-            for ix, pos in enumerate(position):
-                st_code = oil_status._attr[oil_status._int.index(status[ix])]
-                feature = Feature(geometry=Point(pos[:2]),
-                                  id=p_id[ix],
-                                  properties={'depth': pos[2],
-                                              'step_num': step_num,
-                                              'spill_type': sc_type,
-                                              'spill_id': spill_id[ix],
-                                              'current_time': time,
-                                              'status_code': st_code})
-
-                features.append(feature)
+            # only display lat/long for now
+            lat_long = self._dataarray_p_types(sc['positions'][:, :2])
+            feature = Feature(geometry=MultiPoint(lat_long),
+                              id="1",
+                              properties={'sc_type': sc_type})
+            features.append(feature)
 
         geojson = FeatureCollection(features)
-        self.output_filename(geojson, step_num)
-
-        # decided geojson should only be output to file
+        # default geojson should not output data to file
         # read data from file and send it to web client
         output_info = {'step_num': step_num,
-                       #'geojson': geojson,
                        'time_stamp': sc.current_time_stamp.isoformat(),
                        'feature_collection': geojson
                        }
 
+        if self.output_dir:
+            output_filename = self.output_to_file(geojson, step_num)
+            output_info.update({'output_filename': output_filename})
+
         return output_info
 
-    def output_filename(self, json_content, step_num):
+    def output_to_file(self, json_content, step_num):
         file_format = 'geojson_{0:06d}.geojson'
         filename = os.path.join(self.output_dir,
                                 file_format.format(step_num))
@@ -185,6 +159,7 @@ class GeoJson(Outputter, Serializable):
         self.clean_output_files()
 
     def clean_output_files(self):
-        files = glob(os.path.join(self.output_dir, 'geojson_*.geojson'))
-        for f in files:
-            os.remove(f)
+        if self.output_dir:
+            files = glob(os.path.join(self.output_dir, 'geojson_*.geojson'))
+            for f in files:
+                os.remove(f)

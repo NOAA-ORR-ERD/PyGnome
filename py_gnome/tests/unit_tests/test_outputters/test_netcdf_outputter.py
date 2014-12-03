@@ -15,62 +15,47 @@ np = numpy
 
 import netCDF4 as nc
 
-from gnome.spill.elements import floating
 from gnome.spill import point_line_release_spill, Spill, Release
 
-from gnome.movers import RandomMover
+from gnome.spill.elements import floating_weathering
+from gnome.weatherers import Evaporation
+from gnome.environment import Water
+from gnome.movers import RandomMover, constant_wind_mover
 from gnome.outputters import NetCDFOutput
 from gnome.model import Model
-from gnome.persist import load
 
 here = os.path.dirname(__file__)
 
 
-@pytest.fixture(scope='module')
-def model(sample_model, request):
+@pytest.fixture(scope='function')
+def model(sample_model_fcn, dump):
     """
     Use fixture model_surface_release_spill and add a few things to it for the
     test
     """
-    model = sample_model['model']
+    model = sample_model_fcn['model']
 
     model.cache_enabled = True
+    model.spills += \
+        point_line_release_spill(num_elements=5,
+                                 start_position=sample_model_fcn['release_start_pos'],
+                                 release_time=model.start_time,
+                                 end_release_time=model.start_time + model.duration,
+                                 element_type=floating_weathering(substance='oil_diesel'),
+                                 amount=1000,
+                                 units='kg')
 
-    model.spills += point_line_release_spill(num_elements=5,
-                        start_position=sample_model['release_start_pos'],
-                        release_time=model.start_time,
-                        end_release_time=model.start_time + model.duration,
-                        element_type=floating(windage_persist=-1))
-
+    water = Water()
+    model.water = water
     model.movers += RandomMover(diffusion_coef=100000)
+    model.movers += constant_wind_mover(1.0, 0.0)
+    model.weatherers += Evaporation(water, model.movers[-1].wind)
 
-    model.outputters += NetCDFOutput(os.path.join(here,
+    model.outputters += NetCDFOutput(os.path.join(dump,
                                                   u'sample_model.nc'))
 
     model.rewind()
 
-    def cleanup():
-        'cleanup outputters was added to sample_model and delete files'
-
-        print '\nCleaning up %s' % model
-        o_put = None
-
-        for outputter in model.outputters:
-            # there should only be 1!
-            #if isinstance(outputter, NetCDFOutput):
-            o_put = model.outputters[outputter.id]
-
-            if hasattr(o_put, 'netcdf_filename'):
-                if os.path.exists(o_put.netcdf_filename):
-                    os.remove(o_put.netcdf_filename)
-                    print "deleted: {0}".format(o_put.netcdf_filename)
-
-                if (o_put._u_netcdf_filename is not None
-                    and os.path.exists(o_put._u_netcdf_filename)):
-                    os.remove(o_put._u_netcdf_filename)
-                    print "deleted: {0}".format(o_put._u_netcdf_filename)
-
-    request.addfinalizer(cleanup)
     return model
 
 
@@ -90,17 +75,9 @@ def test_exceptions(model):
     t_file = os.path.join(here, 'temp.nc')
     spill_pair = model.spills
 
-    def _del_temp_file():
-        # clean up temporary file from previous run
-        try:
-            print 'remove temporary file {0}'.format(t_file)
-            os.remove(t_file)
-        except:
-            pass
-
     # begin tests
-    _del_temp_file()
     netcdf = NetCDFOutput(t_file, which_data='all')
+    netcdf.rewind() # delete temporary files
 
     with raises(TypeError):
         # need to pass in model start time
@@ -128,9 +105,9 @@ def test_exceptions(model):
 
     with raises(AttributeError):
         'cannot change after prepare_for_model_run has been called'
-        netcdf.which_data = 'all'
+        netcdf.which_data = 'most'
 
-    _del_temp_file()
+    netcdf.rewind()     # delete datafiles
 
 
 def test_exceptions_middle_of_run(model):
@@ -187,6 +164,7 @@ def test_prepare_for_model_run(model):
         assert not os.path.exists(o_put._u_netcdf_filename)
 
 
+@pytest.mark.slow
 def test_write_output_standard(model):
     """
     rewind model defined by model fixture.
@@ -262,6 +240,7 @@ def test_write_output_standard(model):
         uncertain = True
 
 
+@pytest.mark.slow
 def test_write_output_all_data(model):
     """
     rewind model defined by model fixture.
@@ -332,6 +311,7 @@ def test_run_without_spills(model):
     _run_model(model)
 
 
+@pytest.mark.slow
 def test_read_data_exception(model):
     """
     tests the exception is raised by read_data when file contains more than one
@@ -388,9 +368,11 @@ def test_read_standard_arrays(model, output_ts_factor, use_time):
             scp = model._cache.load_timestep(step)
             curr_time = scp.LE('current_time_stamp', uncertain)
             if use_time:
-                nc_data = NetCDFOutput.read_data(file_, curr_time)
+                (nc_data, weathering_data) = NetCDFOutput.read_data(file_,
+                                                                 curr_time)
             else:
-                nc_data = NetCDFOutput.read_data(file_, index=idx)
+                (nc_data, weathering_data) = NetCDFOutput.read_data(file_,
+                                                                 index=idx)
 
             # check time
             if curr_time == nc_data['current_time_stamp'].item():
@@ -414,6 +396,12 @@ def test_read_standard_arrays(model, output_ts_factor, use_time):
                     assert np.all(scp.LE('age', uncertain)[:]
                                   == nc_data['age'])
 
+                if uncertain:
+                    sc = scp.items()[1]
+                else:
+                    sc = scp.items()[0]
+
+                assert sc.weathering_data == weathering_data
             else:
                 raise Exception("Assertions not tested since no data found in"
                     " NetCDF file for timestamp: {0}".format(curr_time))
@@ -454,8 +442,8 @@ def test_read_all_arrays(model):
             scp = model._cache.load_timestep(step)
             curr_time = scp.LE('current_time_stamp', uncertain)
 
-            nc_data = NetCDFOutput.read_data(file_, curr_time,
-                                             which_data='all')
+            (nc_data, mb) = NetCDFOutput.read_data(file_, curr_time,
+                                                   which_data='all')
 
             if curr_time == nc_data['current_time_stamp'].item():
                 _found_a_matching_time = True
@@ -466,11 +454,13 @@ def test_read_all_arrays(model):
                     elif key == 'positions':
                         assert np.allclose(scp.LE('positions', uncertain),
                                            nc_data['positions'], rtol, atol)
+                    elif key == 'weathering_data':
+                        assert scp.LE(key, uncertain) == mb
                     else:
-                        if key not in ['last_water_positions',
-                                       'next_positions']:
-                            assert np.all(scp.LE(key, uncertain)[:]
-                                          == nc_data[key])
+                        #if key not in ['last_water_positions',
+                        #               'next_positions']:
+                        assert np.all(scp.LE(key, uncertain)[:] ==
+                                      nc_data[key])
 
         if _found_a_matching_time:
             print ('\ndata in model matches for output in \n{0}'.format(file_))
@@ -524,14 +514,16 @@ def test_write_output_post_run(model, output_ts_factor):
             print "step: {0}".format(step)
             scp = model._cache.load_timestep(step)
             curr_time = scp.LE('current_time_stamp', uncertain)
-            nc_data = NetCDFOutput.read_data(file_, curr_time)
+            (nc_data, mb) = NetCDFOutput.read_data(file_, curr_time)
             assert curr_time == nc_data['current_time_stamp'].item()
 
             # test to make sure data_by_index is consistent with _cached data
             # This is just to double check that getting the data by curr_time
             # does infact give the next consecutive index
-            data_by_index = NetCDFOutput.read_data(file_, index=ix)
+            (data_by_index, mb) = NetCDFOutput.read_data(file_, index=ix)
             assert curr_time == data_by_index['current_time_stamp'].item()
+            assert scp.LE('weathering_data', uncertain) == mb
+
             ix += 1
 
         if o_put.output_last_step and step < model.num_time_steps - 1:
@@ -540,12 +532,14 @@ def test_write_output_post_run(model, output_ts_factor):
             '''
             scp = model._cache.load_timestep(model.num_time_steps - 1)
             curr_time = scp.LE('current_time_stamp', uncertain)
-            nc_data = NetCDFOutput.read_data(file_, curr_time)
+            (nc_data, mb) = NetCDFOutput.read_data(file_, curr_time)
             assert curr_time == nc_data['current_time_stamp'].item()
+            assert scp.LE('weathering_data', uncertain) == mb
 
             # again, check that last time step
-            data_by_index = NetCDFOutput.read_data(file_, index=ix)
+            (data_by_index, mb) = NetCDFOutput.read_data(file_, index=ix)
             assert curr_time == data_by_index['current_time_stamp'].item()
+            assert scp.LE('weathering_data', uncertain) == mb
             with pytest.raises(IndexError):
                 # check that no more data exists in NetCDF
                 NetCDFOutput.read_data(file_, index=ix+1)
@@ -605,6 +599,7 @@ def test_serialize_deserialize(json_):
         print '\n{0} exists'.format(o_put.netcdf_filename)
 
 
+@pytest.mark.slow
 def test_var_attr_spill_num():
     '''
     call prepare_for_model_run and ensure the spill_num attributes are written

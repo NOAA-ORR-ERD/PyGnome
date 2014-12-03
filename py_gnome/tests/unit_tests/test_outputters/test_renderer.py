@@ -10,7 +10,6 @@ NOTE: some of these only really test if the code crashes
 """
 
 import os
-import shutil
 from datetime import datetime
 
 import pytest
@@ -21,22 +20,14 @@ from gnome.basic_types import oil_status
 from gnome.outputters import Renderer
 from gnome.utilities.projections import GeoProjection
 
-from ..conftest import sample_sc_release
-
-here = os.path.dirname(__file__)
-up_one = os.path.dirname(here)
-
-output_dir = os.path.join(up_one, r"renderer_output_dir")
-data_dir = os.path.join(up_one, r"sample_data")
-bna_sample = os.path.join(data_dir,
-                          r"MapBounds_2Spillable2Islands2Lakes.bna")
-
-if os.path.isdir(output_dir):
-    shutil.rmtree(output_dir)
-os.mkdir(output_dir)
+from ..conftest import sample_sc_release, testdata
 
 
-def test_exception():
+bna_sample = testdata['Renderer']['bna_sample']
+bna_star = testdata['Renderer']['bna_star']
+
+
+def test_exception(output_dir):
     with pytest.raises(ValueError):
         Renderer(bna_sample, output_dir, draw_ontop='forecasting')
 
@@ -45,14 +36,14 @@ def test_exception():
         r.draw_ontop = 'forecasting'
 
 
-def test_init():
+def test_init(output_dir):
     r = Renderer(bna_sample, output_dir)
     print r
 
     assert True
 
 
-def test_file_delete():
+def test_file_delete(output_dir):
     r = Renderer(bna_sample, output_dir)
     bg_name = r.background_map_name
     fg_format = r.foreground_filename_format
@@ -62,7 +53,7 @@ def test_file_delete():
     open(os.path.join(output_dir, bg_name), 'w').write('some junk')
 
     for i in range(5):
-        open(os.path.join(output_dir, fg_format % i), 'w'
+        open(os.path.join(output_dir, fg_format.format(i)), 'w'
              ).write('some junk')
 
     r.prepare_for_model_run(model_start_time=datetime.now())
@@ -73,7 +64,7 @@ def test_file_delete():
     assert files == [r.background_map_name]
 
 
-def test_rewind():
+def test_rewind(output_dir):
     'test rewind calls base function and clear_output_dir'
     r = Renderer(bna_sample, output_dir)
     bg_name = r.background_map_name
@@ -84,7 +75,7 @@ def test_rewind():
     open(os.path.join(output_dir, bg_name), 'w').write('some junk')
 
     for i in range(5):
-        open(os.path.join(output_dir, fg_format % i), 'w'
+        open(os.path.join(output_dir, fg_format.format(i)), 'w'
              ).write('some junk')
 
     now = datetime.now()
@@ -100,14 +91,12 @@ def test_rewind():
     assert files == []
 
 
-def test_render_elements():
+def test_render_elements(output_dir):
     """
     Should this test be in map_cnavas?
     """
 
-    input_file = os.path.join(data_dir,
-                              r"MapBounds_2Spillable2Islands2Lakes.bna")
-    r = Renderer(input_file, output_dir, image_size=(800, 600))
+    r = Renderer(bna_sample, output_dir, image_size=(800, 600))
 
     BB = r.map_BB
     (min_lon, min_lat) = BB[0]
@@ -146,14 +135,12 @@ def test_render_elements():
     assert True
 
 
-def test_render_beached_elements():
+def test_render_beached_elements(output_dir):
     """
     Should this test be in map_canvas?
     """
 
-    input_file = os.path.join(data_dir,
-                              r"MapBounds_2Spillable2Islands2Lakes.bna")
-    r = Renderer(input_file, output_dir, image_size=(800, 600))
+    r = Renderer(bna_sample, output_dir, image_size=(800, 600))
 
     BB = r.map_BB
     (min_lon, min_lat) = BB[0]
@@ -200,9 +187,8 @@ def test_render_beached_elements():
     assert True
 
 
-def test_show_hide_map_bounds():
-    input_file = os.path.join(data_dir, 'Star.bna')
-    r = Renderer(input_file, output_dir, image_size=(600, 600))
+def test_show_hide_map_bounds(output_dir):
+    r = Renderer(bna_star, output_dir, image_size=(600, 600))
 
     r.draw_background()
     r.save_background(os.path.join(output_dir, 'star_background.png'))
@@ -215,7 +201,7 @@ def test_show_hide_map_bounds():
                       'star_background_no_bound.png'))
 
 
-def test_set_viewport():
+def test_set_viewport(output_dir):
     """
     tests various rendering, re-zooming, etc
 
@@ -223,8 +209,7 @@ def test_set_viewport():
           at the rendered images to see if it does the right thing
     """
 
-    input_file = os.path.join(data_dir, 'Star.bna')
-    r = Renderer(input_file, output_dir, image_size=(600, 600),
+    r = Renderer(bna_star, output_dir, image_size=(600, 600),
                  projection_class=GeoProjection)
 
     # re-scale:
@@ -257,7 +242,7 @@ def test_set_viewport():
 
 
 @pytest.mark.parametrize(("json_"), ['save', 'webapi'])
-def test_serialize_deserialize(json_):
+def test_serialize_deserialize(json_, output_dir):
     r = Renderer(bna_sample, output_dir)
     r2 = Renderer.new_from_dict(r.deserialize(r.serialize(json_)))
     if json_ == 'save':

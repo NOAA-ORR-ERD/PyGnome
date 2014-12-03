@@ -1,4 +1,5 @@
 import copy
+from datetime import timedelta
 
 import numpy
 np = numpy
@@ -23,7 +24,7 @@ class ProcessSchema(MappingSchema):
     base Process schema - attributes common to all movers/weatherers
     defined at one place
     '''
-    on = SchemaNode(Bool(), default=True, missing=True)
+    on = SchemaNode(Bool(), missing=drop)
     active_start = SchemaNode(LocalDateTime(), missing=drop,
                               validator=convertible_to_seconds)
     active_stop = SchemaNode(LocalDateTime(), missing=drop,
@@ -54,8 +55,8 @@ class Process(object):
         :param active_start: datetime when the mover should be active
         :param active_stop: datetime after which the mover should be inactive
         """
-        self._active = True
         self.on = kwargs.pop('on', True)  # turn the mover on / off for the run
+        self._active = self.on  # initial value
 
         active_start = kwargs.pop('active_start',
                                   inf_datetime.InfDateTime('-inf'))
@@ -94,8 +95,12 @@ class Process(object):
 
     def prepare_for_model_step(self, sc, time_step, model_time_datetime):
         """
-        sets active flag based on time_span and on flag. If
-            model_time > active_start and model_time < active_stop then set
+        sets active flag based on time_span and on flag.
+        Object is active if following hold and 'on' is True:
+           1. active_start <= (model_time + time_step/2) so object is on for
+              more than half the timestep
+           2. (model_time + time_step/2) <= active_stop so again the object is
+              on for at least half the time step
             flag to true.
 
         :param sc: an instance of gnome.spill_container.SpillContainer class
@@ -103,9 +108,11 @@ class Process(object):
         :param model_time_datetime: current model time as datetime object
 
         """
-        if (self.active_start <= model_time_datetime and
-            self.active_stop > model_time_datetime and
-            self.on):
+        if (self.active_start <=
+            (model_time_datetime + timedelta(seconds=time_step/2)) and
+            self.active_stop >=
+            (model_time_datetime + timedelta(seconds=time_step/2)) and
+             self.on):
             self._active = True
         else:
             self._active = False

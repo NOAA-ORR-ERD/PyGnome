@@ -133,7 +133,8 @@ public:
 
 OSErr ScanFileForTimes(char *path,
 					   Seconds ***timeH);
-OSErr ScanFileForTimes(std::vector<std::string> &linesInFile,
+//OSErr ScanFileForTimes(std::vector<std::string> &linesInFile,
+OSErr ScanFileForTimes(char *path, std::vector<std::string> &linesInFile,
 					   PtCurTimeDataHdl *timeDataH, Seconds ***timeH);
 OSErr ScanFileForTimes(char *path,
 					   PtCurTimeDataHdl *timeDataH, Seconds ***timeH);

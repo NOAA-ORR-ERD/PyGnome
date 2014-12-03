@@ -618,7 +618,7 @@ OSErr OpenSaveFileFromPath(char * path, Boolean openingSavFileFromLocFile) /// J
 		strcpy(fileName,path);
 		SplitPathFile(fileName, shortName);
 		model->fWizard->GetLocationFileName(locationFileNameStr,true);
-		if (strstr(shortName,locationFileNameStr))
+		//if (strstr(shortName,locationFileNameStr))
 			bCloseSaveFile = false;
 	}
 

@@ -139,6 +139,7 @@ class Tide(Environment, Serializable):
         self.scale_factor = kwargs.get('scale_factor',
                 self.cy_obj.scale_factor)
 
+        kwargs.pop('scale_factor', None)
         super(Tide, self).__init__(**kwargs)
 
     @property

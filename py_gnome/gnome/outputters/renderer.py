@@ -46,7 +46,7 @@ class Renderer(Outputter, MapCanvas):
     """
 
     background_map_name = 'background_map.png'
-    foreground_filename_format = 'foreground_%05i.png'
+    foreground_filename_format = 'foreground_{0:05d}.png'
     foreground_filename_glob = 'foreground_?????.png'
 
     # todo: how should images_dir be saved? Absolute? Currently, it is relative
@@ -252,7 +252,8 @@ class Renderer(Outputter, MapCanvas):
             return None
 
         image_filename = os.path.join(self.images_dir,
-                                      self.foreground_filename_format % step_num)
+                                      self.foreground_filename_format
+                                      .format(step_num))
 
         self.create_foreground_image()
 
@@ -320,5 +321,6 @@ class Renderer(Outputter, MapCanvas):
         '''
         append saveloc path to 'images_dir' then call super to load object
         '''
-        json_data['images_dir'] = os.path.join(saveloc, json_data['images_dir'])
+        json_data['images_dir'] = os.path.join(saveloc,
+                                               json_data['images_dir'])
         return super(Renderer, cls).load(saveloc, json_data, references)

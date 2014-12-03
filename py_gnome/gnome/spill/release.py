@@ -28,12 +28,12 @@ class BaseReleaseSchema(ObjType):
     release_time = SchemaNode(LocalDateTime(),
                               validator=convertible_to_seconds)
     name = 'release'
+    start_time_invalid = SchemaNode(Bool(), missing=drop)
 
     def __init__(self, json_='webapi', **kwargs):
         if json_ == 'save':
             # used to create a new Release object if model is persisted mid-run
             self.add(SchemaNode(Int(), name='num_released'))
-            self.add(SchemaNode(Bool(), name='start_time_invalid'))
 
         super(BaseReleaseSchema, self).__init__(**kwargs)
 
@@ -99,7 +99,7 @@ class Release(object):
         # current_time > self.release_time, then no particles are ever released
         # if current_time <= self.release_time, then toggle this flag since
         # model start time is valid
-        self.start_time_invalid = True
+        self.start_time_invalid = None
 
         if name:
             self.name = name
@@ -141,11 +141,11 @@ class Release(object):
         if self.release_time is None:
             raise ValueError("release_time attribute cannot be None")
 
-        if (current_time <= self.release_time and
-            self.start_time_invalid):
-            # start time is valid
-            # It's fine to release elements in subsequent steps
-            self.start_time_invalid = False
+        if self.start_time_invalid is None:
+            if (current_time > self.release_time):
+                self.start_time_invalid = True
+            else:
+                self.start_time_invalid = False
 
         return 0    # base class does not release any particles
 
@@ -169,7 +169,7 @@ class Release(object):
         _state.
         """
         self.num_released = 0
-        self.start_time_invalid = True
+        self.start_time_invalid = None
 
     def serialize(self, json_='webapi'):
         'define schema based on type of desired output'
@@ -522,14 +522,15 @@ def GridRelease(release_time, bounds, resolution):
 
     Only 2-d for now
 
-    :param bounds: bouding box of region you want the elements in: ((min_lon, min_lat),
-                                                                    (max_lon, max_lat))
-    :type bounds: 2x2 numpy array or equivelent
-    """    
+    :param bounds: bounding box of region you want the elements in:
+                   ((min_lon, min_lat),
+                    (max_lon, max_lat))
+    :type bounds: 2x2 numpy array or equivalent
+    """
     lon = np.linspace(bounds[0][0], bounds[1][0], resolution)
     lat = np.linspace(bounds[0][1], bounds[1][1], resolution)
     lon, lat = np.meshgrid(lon, lat)
-    positions = np.c_[lon.flat, lat.flat, np.zeros((resolution*resolution),)]
+    positions = np.c_[lon.flat, lat.flat, np.zeros((resolution * resolution),)]
 
     return SpatialRelease(release_time, positions)
 

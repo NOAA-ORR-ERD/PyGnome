@@ -17,13 +17,16 @@ from pytest import raises
 import numpy
 np = numpy
 
+import hazpy.unit_conversion as uc
+
 from gnome.spill import (Spill,
                          Release,
                          point_line_release_spill,
                          PointLineRelease,
                          SpatialRelease,
                          GridRelease)
-from gnome.spill.elements import floating
+from gnome.spill.elements import (floating,
+                                  ElementType)
 import gnome.array_types
 
 from conftest import mock_append_data_arrays
@@ -35,17 +38,62 @@ from conftest import mock_append_data_arrays
 arr_types = {'positions': gnome.array_types.positions}
 
 
-def test_init():
-    spill = Spill(Release(release_time=datetime.now()))
+@pytest.mark.parametrize(("element_type", "amount"), [(None, None),
+                                                      (None, 10.0),
+                                                      (ElementType(), None),
+                                                      (ElementType(), 1.0)])
+def test_init(element_type, amount):
+    '''
+    Test various initializtions
+    '''
+    spill = Spill(Release(release_time=datetime.now()),
+                  element_type=element_type,
+                  amount=amount,
+                  units='kg'
+                  )
 
-    assert np.all(spill.get('windage_range') == (0.01, 0.04))
-    assert (spill.get('windage_persist') == 900)
+    if element_type is None:
+        assert np.all(spill.get('windage_range') == (0.01, 0.04))
+        assert (spill.get('windage_persist') == 900)
+
+        if amount is not None:
+            assert 'mass' in spill.get('array_types')
+            assert len(spill.get('initializers')) == 2
+        else:
+            assert len(spill.get('initializers')) == 1
+    else:
+        assert len(spill.get('initializers')) == 0
+
     assert spill.name == 'Spill'
+
+
+@pytest.mark.parametrize(("amount", "units"), [(10.0, 'm^3'),
+                                               (10.0, 'kg')])
+def test_amount_mass_vol(amount, units):
+    '''
+    ensure mass is being returned correctly when 'amount' is initialized wtih
+    'mass' or 'volume'
+    '''
+    spill = Spill(Release(datetime.now()), amount=amount, units=units)
+    assert spill.amount == amount
+    assert spill.units == units
+
+    if units in Spill.valid_vol_units:
+        exp_mass = (spill.get('substance').get_density() *
+                    uc.convert('Volume', units, 'm^3', spill.amount))
+    else:
+        exp_mass = uc.convert('Mass', units, 'kg', spill.amount)
+    assert spill.get_mass() == exp_mass
+    exp_mass_g = exp_mass * 1000
+    assert spill.get_mass('g') == exp_mass_g
 
 
 def test_init_exceptions():
     with raises(TypeError):
         Spill()
+
+    with raises(TypeError):
+        Spill(Release(datetime.now()), amount=10)
 
     with raises(ValueError):
         Spill(Release(release_time=datetime.now()),
@@ -61,7 +109,7 @@ def test_deepcopy():
     tests that a deepcopy results in a copy so objects are not the same
     todo: how should this work?
     """
-    sp1 = Spill(Release(release_time=datetime.now()))
+    sp1 = Spill(Release(release_time=datetime.now().replace(microsecond=0)))
     sp2 = copy.deepcopy(sp1)
     assert sp1 is not sp2
     assert sp1.id != sp2.id
@@ -75,7 +123,7 @@ def test_copy():
     """
     TODO: how should this work
     """
-    sp1 = Spill(Release(release_time=datetime.now()))
+    sp1 = Spill(Release(release_time=datetime.now().replace(microsecond=0)))
     sp2 = copy.copy(sp1)
     assert sp1 is not sp2
     assert sp1.id != sp2.id
@@ -116,7 +164,7 @@ class TestRelease:
         rel = Release(self.rel_time, 0)
         assert rel.num_elements == 0
         assert rel.release_time == self.rel_time
-        assert rel.start_time_invalid
+        assert rel.start_time_invalid is None
 
     @pytest.mark.parametrize("curr_time", [rel_time,
                                            rel_time - timedelta(seconds=1),
@@ -139,7 +187,7 @@ class TestRelease:
         rel.num_released = rel.num_elements
 
         rel.rewind()
-        assert rel.start_time_invalid
+        assert rel.start_time_invalid is None
         assert rel.num_released == 0
 
 
@@ -645,14 +693,20 @@ class Test_point_line_release_spill:
         sp.release.end_release_time = None
         assert sp.release.release_time == sp.release.end_release_time
 
-    @pytest.mark.parametrize(("json_"), ['save', 'webapi'])
-    def test_serialization_deserialization(self, json_):
+    @pytest.mark.parametrize(("json_", "amount", "units"),
+                            [('save', 1.0, 'kg'),
+                             ('webapi', 1.0, 'g'),
+                             ('save', 5.0, 'l'),
+                             ('webapi', 5.0, 'barrels')])
+    def test_serialization_deserialization(self, json_, amount, units):
         """
         tests serializatin/deserialization of the Spill object
         """
         spill = point_line_release_spill(num_elements=self.num_elements,
                                          start_position=self.start_position,
-                                         release_time=self.release_time)
+                                         release_time=self.release_time,
+                                         amount=amount,
+                                         units=units)
         dict_ = Spill.deserialize(spill.serialize(json_))
         if json_ == 'save':
             new_spill = Spill.new_from_dict(dict_)
@@ -819,7 +873,7 @@ class TestSpatialRelease:
     def test_SpatialRelease_rewind(self):
         """ test rewind sets _state to original """
         assert self.sp.get('num_released') == 0
-        assert self.sp.release.start_time_invalid == True
+        assert self.sp.release.start_time_invalid is None
 
     def test_SpatialRelease_0_elements(self):
         """
@@ -879,7 +933,7 @@ class TestSpatialRelease:
     def test_set_newparticle_positions(self):
         'define two spatial releases and check positions are set correctly'
         sp2 = Spill(SpatialRelease(self.sp.release.release_time,
-                                  ((0, 0, 0), (0, 0, 0))))
+                                   ((0, 0, 0), (0, 0, 0))))
         (data_arrays, num) = release_elements(self.sp,
                                             self.sp.release.release_time, 600)
         assert (self.sp.get('num_released') == self.sp.release.num_elements and
@@ -1085,6 +1139,7 @@ def test_release_serialization_deserialization(rel_type):
             assert n_rel == rel_type
         else:
             assert n_rel != rel_type
+
 
 def test_grid_release():
 

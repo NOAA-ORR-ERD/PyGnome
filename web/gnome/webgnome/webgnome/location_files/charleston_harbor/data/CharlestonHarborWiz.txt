@@ -1,0 +1,124 @@
+[ORDER]
+-------------------------------------------
+10002
+MODEL
+--10010
+10011
+WIND
+ALMOSTDONE
+-------------------------------------------
+
+
+[VERSION]
+-------------------------------------------
+LOCATIONFILEIDSTR Charleston Harbor
+LOCATIONFILEFORMAT 0
+LOCATIONFILEVERSION 0
+-- starting with zero makes it backwardly compatible
+-------------------------------------------
+
+
+[BEFORE]
+-------------------------------------------
+MESSAGE setfield;TO model;timeStep  .05;
+--MESSAGE setfield;TO model;timeStep  .25;
+-------------------------------------------
+
+
+[AFTER]
+-------------------------------------------
+MESSAGE setfield;TO Diffusion; coefficient 10000;uncertaintyFactor 2
+--MESSAGE setfield;TO Diffusion; coefficient 100000;uncertaintyFactor 2
+--
+--minkilometersperinch 100;
+--
+
+MESSAGE createMap;TO model;TYPE vector; NAME Charleston Harbor Map;PATH resnum 10005;
+--MESSAGE setfield;TO Charleston Harbor Map;RefloatHalfLifeInHrs 6;
+MESSAGE setfield;TO Charleston Harbor Map;RefloatHalfLifeInHrs 1;
+--------------
+MESSAGE createMover;TO Charleston Harbor Map;TYPE Cats; NAME AshleyRiver_Upper.cur;PATH resnum 10007;
+
+MESSAGE setfield;TO AshleyRiver_Upper.cur; scaleType constant;refP 80.05 W 32.846666 N; scaleValue 1; timeFile resNum 10006;
+--MESSAGE setfield;TO Brooklyn.CUR; DownCurUncertainty .50;
+--MESSAGE setfield;TO Brooklyn.CUR; CrossCurUncertainty .20;
+--------------
+MESSAGE createMover;TO Charleston Harbor Map;TYPE Cats; NAME AshleyRiver_Middle.cur;PATH resnum 10009;
+
+MESSAGE setfield;TO AshleyRiver_Middle.CUR; scaleType constant;refP 79.965 W 32.82 N; scaleValue 1; timeFile resNum 10008;
+--MESSAGE setfield;TO Ambrose3.CUR; DownCurUncertainty .50;
+--MESSAGE setfield;TO Ambrose3.CUR; CrossCurUncertainty .20;
+--------------
+
+MESSAGE createMover;TO Charleston Harbor Map;TYPE Cats; NAME AshleyRiver_Lower.cur;PATH resnum 10011;
+
+MESSAGE setfield;TO AshleyRiver_Lower.cur; scaleType constant;refP 79.96 W 32.781999 N; scaleValue 1; timeFile resNum 10010;
+--MESSAGE setfield;TO HellsGate.CUR; DownCurUncertainty .50;
+--MESSAGE setfield;TO HellsGate.CUR; CrossCurUncertainty .20;
+--------------
+
+
+MESSAGE createMover;TO Charleston Harbor Map;TYPE Cats; NAME CooperRiver_Upper.cur;PATH resnum 10015;
+
+MESSAGE setfield;TO CooperRiver_Upper.cur; scaleType constant;refP 79.922668 W 33.06526 N; scaleValue 1; timeFile resNum 10014;
+--MESSAGE setfield;TO BergenPoint.CUR; DownCurUncertainty .50;
+--MESSAGE setfield;TO BergenPoint.CUR; CrossCurUncertainty .20;
+--------------
+
+MESSAGE createMover;TO Charleston Harbor Map;TYPE Cats; NAME CooperRiver_Middle.cur;PATH resnum 10017;
+
+MESSAGE setfield;TO CooperRiver_Middle.cur; scaleType constant;refP 79.918 W 32.959167 N; scaleValue 1; timeFile resNum 10016;
+--MESSAGE setfield;TO NewarkBay.CUR; DownCurUncertainty .50;
+--MESSAGE setfield;TO NewarkBay.CUR; CrossCurUncertainty .20;
+--------------
+
+MESSAGE createMover;TO Charleston Harbor Map;TYPE Cats; NAME CooperRiver_Lower.cur;PATH resnum 10019;
+
+MESSAGE setfield;TO CooperRiver_Lower.cur; scaleType constant;refP 79.928833 W 32.827167 N; scaleValue 1; timeFile resNum 10018;
+--MESSAGE setfield;TO ElizabethPort.CUR; DownCurUncertainty .50;
+--MESSAGE setfield;TO ElizabethPort.CUR; CrossCurUncertainty .20;
+--------------
+
+MESSAGE createMover;TO Charleston Harbor Map;TYPE Cats; NAME WandoRiver_Upper.cur;PATH resnum 10021;
+
+MESSAGE setfield;TO WandoRiver_Upper.cur; scaleType constant;refP 79.838333 W 32.918332 N; scaleValue 1; timeFile resNum 10020;
+--MESSAGE setfield;TO TremelyPtReach.CUR; DownCurUncertainty .50;
+--MESSAGE setfield;TO TremelyPtReach.CUR; CrossCurUncertainty .20;
+--------------
+
+MESSAGE createMover;TO Charleston Harbor Map;TYPE Cats; NAME WandoRiver_Middle.cur;PATH resnum 10023;
+
+MESSAGE setfield;TO WandoRiver_Middle.cur; scaleType constant;refP 79.8655 W 32.872 N; scaleValue 1; timeFile resNum 10022;
+--MESSAGE setfield;TO TuftsPtSmokingPt.CUR; DownCurUncertainty .50;
+--MESSAGE setfield;TO TuftsPtSmokingPt.CUR; CrossCurUncertainty .20;
+--------------
+
+MESSAGE createMover;TO Charleston Harbor Map;TYPE Cats; NAME WandoRiver_Lower.cur;PATH resnum 10025;
+
+MESSAGE setfield;TO WandoRiver_Lower.cur; scaleType constant;refP 79.896667 W 32.833333 N; scaleValue 1; timeFile resNum 10024;
+--MESSAGE setfield;TO WardPt3.CUR; DownCurUncertainty .50;
+--MESSAGE setfield;TO WardPt3.CUR; CrossCurUncertainty .20;
+--------------
+
+MESSAGE createMover;TO Charleston Harbor Map;TYPE Cats; NAME HarborMouth.cur;PATH resnum 10027;
+
+MESSAGE setfield;TO HarborMouth.cur; scaleType constant;refP 79.870333 W 32.756 N; scaleValue 1; timeFile resNum 10026;
+--MESSAGE setfield;TO Narrows4.CUR; DownCurUncertainty .50;
+--MESSAGE setfield;TO Narrows4.CUR; CrossCurUncertainty .20;
+--------------
+
+MESSAGE createMover;TO Charleston Harbor Map;TYPE Cats; NAME Offshore.cur;PATH resnum 10029;
+
+--MESSAGE setfield;TO Offshore.cur; scaleType constant;refP 73.972666 W 40.808000 N; scaleValue 1; timeFile resNum 10028;
+--MESSAGE setfield;TO GeorgeWashingtonBridge.CUR; DownCurUncertainty .50;
+--MESSAGE setfield;TO GeorgeWashingtonBridge.CUR; CrossCurUncertainty .20;
+--------------
+--------------
+
+--------------
+[WMSG 10002]
+-------------------------------------------
+LHSTEXT Charleston Harbor;
+-------------------------------------------
+
+

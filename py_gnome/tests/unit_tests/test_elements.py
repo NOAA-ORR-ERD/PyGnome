@@ -13,21 +13,24 @@ from pytest import raises
 import numpy
 np = numpy
 
+from hazpy import unit_conversion as uc
 import gnome
 from gnome import array_types
 from gnome.spill.elements import (InitWindages,
-                            InitMassFromTotalMass,
+                            InitMassFromSpillAmount,
                             InitRiseVelFromDist,
                             InitRiseVelFromDropletSizeFromDist,
                             floating,
-                            ElementType)
+                            floating_weathering,
+                            ElementType,
+                            plume)
 
 from gnome.utilities.distributions import (NormalDistribution,
                                            LogNormalDistribution,
                                            WeibullDistribution)
 
 from gnome.spill import Spill, Release
-from oil_library import get_oil
+from oil_library import get_oil_props
 from gnome.persist import load
 
 from conftest import mock_append_data_arrays
@@ -46,7 +49,7 @@ rise_vel_array = {'rise_vel': array_types.rise_vel}
 
 rise_vel_diameter_array = {'rise_vel': array_types.rise_vel,
                            'droplet_diameter': array_types.droplet_diameter}
-
+oil = 'ALAMO'
 num_elems = 10
 
 
@@ -58,8 +61,8 @@ def assert_dataarray_shape_size(arr_types, data_arrays, num_released):
 
 """ Initializers - following are used for parameterizing tests """
 fcn_list = (InitWindages(),
-            InitMassFromTotalMass(),
-            InitMassFromTotalMass(),
+            InitMassFromSpillAmount(),
+            InitMassFromSpillAmount(),
             InitRiseVelFromDist(),
             InitRiseVelFromDist(distribution=NormalDistribution(mean=0,
                                                                 sigma=0.1)),
@@ -76,15 +79,10 @@ arrays_ = (windages,
            mass_array, mass_array,
            rise_vel_array, rise_vel_array, rise_vel_array, rise_vel_array,
            rise_vel_diameter_array)
-#==============================================================================
-# initializer_keys = ('windages',
-#                     'mass', 'mass',
-#                     'rise_vel', 'rise_vel', 'rise_vel', 'rise_vel',
-#                     'rise_vel')
-#==============================================================================
+
 spill_list = (None,
-              Spill(Release(datetime.now()), volume=10),
-              Spill(Release(datetime.now()), mass=10),
+              Spill(Release(datetime.now()), amount=10, units='l'),
+              Spill(Release(datetime.now()), amount=10, units='kg'),
               None, None, None, None,
               Spill(Release(datetime.now())))
 
@@ -101,7 +99,7 @@ def test_correct_particles_set_by_initializers(fcn, arr_types, spill):
     # the values for the correct elements are set
     data_arrays = mock_append_data_arrays(arr_types, num_elems)
     data_arrays = mock_append_data_arrays(arr_types, num_elems, data_arrays)
-    substance = get_oil('oil_conservative')
+    substance = get_oil_props('oil_conservative')
 
     if spill is not None:
         spill.release.num_elements = 10
@@ -120,16 +118,12 @@ def test_correct_particles_set_by_initializers(fcn, arr_types, spill):
         assert np.any(0 != data_arrays[key][-num_elems:])
 
 
-#==============================================================================
-# @pytest.mark.parametrize(("fcn", "init_key"),
-#                          zip(fcn_list, initializer_keys))
-#==============================================================================
 @pytest.mark.parametrize("fcn", fcn_list)
 def test_element_type_serialize_deserialize(fcn):
     '''
     test serialization/deserialization of ElementType for various initiailzers
     '''
-    element_type = ElementType(initializers=[fcn])
+    element_type = ElementType(initializers=[fcn], substance=oil)
 
     json_ = element_type.serialize('save')
     dict_ = element_type.deserialize(json_)
@@ -174,15 +168,16 @@ class TestInitConstantWindageRange:
             obj.windage_persist = bad_wp
 
 
-def test_initailize_InitMassFromTotalMass():
+def test_initailize_InitMassFromSpillAmount():
     data_arrays = mock_append_data_arrays(mass_array, num_elems)
-    substance = get_oil('oil_conservative')
+    substance = get_oil_props('oil_conservative')
 
     spill = Spill(Release(datetime.now()))
     spill.release.num_elements = 10
-    spill.set_mass(num_elems, units='g')
+    spill.amount = num_elems
+    spill.units = 'g'
 
-    fcn = InitMassFromTotalMass()
+    fcn = InitMassFromSpillAmount()
     fcn.initialize(num_elems, spill, data_arrays, substance)
 
     assert_dataarray_shape_size(mass_array, data_arrays, num_elems)
@@ -208,7 +203,7 @@ def test_initialize_InitRiseVelFromDropletDist_weibull():
     'Test initialize data_arrays with Weibull dist'
     num_elems = 10
     data_arrays = mock_append_data_arrays(rise_vel_diameter_array, num_elems)
-    substance = get_oil('oil_conservative')
+    substance = get_oil_props('oil_conservative')
     spill = Spill(Release(datetime.now()))
 
     # (.001*.2) / (.693 ** (1 / 1.8)) - smaller droplet test case, in mm
@@ -227,7 +222,7 @@ def test_initialize_InitRiseVelFromDropletDist_weibull_with_min_max():
     'Test initialize data_arrays with Weibull dist'
     num_elems = 1000
     data_arrays = mock_append_data_arrays(rise_vel_diameter_array, num_elems)
-    substance = get_oil('oil_conservative')
+    substance = get_oil_props('oil_conservative')
     spill = Spill(Release(datetime.now()))
 
     # (.001*3.8) / (.693 ** (1 / 1.8)) - larger droplet test case, in mm
@@ -265,20 +260,27 @@ def test_initialize_InitRiseVelFromDist_normal():
 """ Element Types"""
 # additional array_types corresponding with ElementTypes for following test
 arr_types = {'windages': array_types.windages,
-             'windage_range': array_types.windage_range,
-             'windage_persist': array_types.windage_persist,
-             'mass': array_types.mass,
-             'rise_vel': array_types.rise_vel}
+            'windage_range': array_types.windage_range,
+            'windage_persist': array_types.windage_persist}
 
-inp_params = [((floating(),
-                ElementType([InitWindages(),
-                             InitMassFromTotalMass()])), arr_types),
-              ((floating(),
-                ElementType([InitWindages(),
-                             InitRiseVelFromDist()])), arr_types),
-              ((floating(),
-                ElementType([InitMassFromTotalMass(),
-                             InitRiseVelFromDist()])), arr_types),
+rise_vel = {'rise_vel': array_types.rise_vel}
+rise_vel.update(arr_types)
+
+mass_comp = {'mass_components': array_types.mass_components}
+mass_comp.update(arr_types)
+oil = 'ALAMO'
+
+inp_params = [((floating(substance=oil),
+                ElementType([InitWindages(), InitMassFromSpillAmount()],
+                            substance=oil)), arr_types),
+              ((floating(substance=oil),
+                ElementType([InitWindages(), InitRiseVelFromDist()],
+                            substance=oil)), rise_vel),
+              ((floating(substance=oil),
+                ElementType([InitMassFromSpillAmount(), InitRiseVelFromDist()],
+                            substance=oil)), rise_vel),
+              ((floating(substance=oil), floating_weathering(substance=oil)),
+               mass_comp),
               ]
 
 
@@ -319,12 +321,19 @@ def test_element_types(elem_type, arr_types, sample_sc_no_uncertainty):
             # todo: need better API for access
             s_arr_types = spill.get('array_types').keys()
 
+            if 'mass_components' in s_arr_types:
+                # floating_weathering() uses InitArraysFromOilProps() which
+                # also sets the following arrays
+                assert 'mass' in s_arr_types
+
             if np.any(spill_mask):
                 for key in arr_types:
                     if key in s_arr_types:
                         assert np.all(sc[key][spill_mask] != 0)
                     else:
-                        assert np.all(sc[key][spill_mask] == 0)
+                        if sc.array_types[key].initial_value is not None:
+                            assert np.all(sc[key][spill_mask] ==
+                                          sc.array_types[key].initial_value)
 
 
 @pytest.mark.parametrize(("fcn"), fcn_list)
@@ -357,7 +366,7 @@ def test_serialize_deserialize():
     This tests serialize/deserilize with 'webapi' option
     '''
     et = floating()
-    et.initializers.append(InitMassFromTotalMass())
+    et.initializers.append(InitMassFromSpillAmount())
     dict_ = ElementType.deserialize(et.serialize('webapi'))
 
     # for webapi, make new objects from nested objects before creating
@@ -379,3 +388,33 @@ def test_save_load(clean_temp, test_obj):
     refs = test_obj.save(clean_temp)
     test_obj2 = load(os.path.join(clean_temp, refs.reference(test_obj)))
     assert test_obj == test_obj2
+
+
+@pytest.mark.parametrize(("substance_name", "density", "density_units"),
+                         [("oil_conservative", None, 'kg/m^3'),
+                          ("test_1", 1000.0, 'kg/m^3'),
+                          ("test_2", 10.0, 'api')])
+def test_plume_init(substance_name, density, density_units):
+    'test the plume() helper creates oil_props object correctly'
+    et = plume(substance_name=substance_name,
+               density=density,
+               density_units=density_units)
+    assert substance_name == et.substance.name
+    if density:
+        assert np.isclose(et.substance.get_density(),
+            uc.convert('density', density_units, 'kg/m^3', density))
+        assert np.isclose(et.substance.api,
+            uc.convert('density', density_units, 'api', density))
+
+
+@pytest.mark.parametrize("substance", [u'ALAMO',
+                                       51,  # oil record in DB
+                                       get_oil_props(u'ALAMO')])
+def test_element_type_init(substance):
+    et = ElementType(substance=substance)
+    if isinstance(substance, basestring):
+        assert et.substance.get('name') == substance
+    elif isinstance(substance, int):
+        assert et.substance.get('id') == substance
+    else:
+        assert et.substance.get('name') == substance.get('name')

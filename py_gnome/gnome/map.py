@@ -51,11 +51,11 @@ from gnome.utilities.geometry.polygons import PolygonSet
 
 
 class GnomeMapSchema(base_schema.ObjType):
-    map_bounds = base_schema.LongLatBounds()
+    map_bounds = base_schema.LongLatBounds(missing=drop)
     spillable_area = base_schema.LongLatBounds(missing=drop)
 
 
-class MapFromBNASchema(base_schema.ObjType):
+class MapFromBNASchema(GnomeMapSchema):
     filename = SchemaNode(String())
     refloat_halflife = SchemaNode(Float(), missing=drop)
 
@@ -108,6 +108,44 @@ class GnomeMap(Serializable):
         else:
             self.spillable_area = np.asarray(spillable_area,
                                              dtype=np.float64).reshape(-1, 2)
+
+    def _attr_array_to_dict(self, np_array):
+        '''convert np_array to list of tuples, used for map_bounds,
+        spillable_area'''
+        return map(tuple, np_array.tolist())
+
+    def _attr_from_list_to_array(self, l_):
+        '''
+        dict returned as list of tuples to be converted to numpy array
+        Again used to update_from_dict map_bounds and spillable_area
+        '''
+        return np.asarray(l_, dtype=np.float64).reshape(-1, 2)
+
+    def map_bounds_to_dict(self):
+        'convert numpy array to a list for serializing'
+        return self._attr_array_to_dict(self.map_bounds)
+
+    def map_bounds_update_from_dict(self, val):
+        'convert list of tuples back to numpy array'
+        new_arr = self._attr_from_list_to_array(val)
+        if np.any(self.map_bounds != new_arr):
+            self.map_bounds = new_arr
+            return True
+
+        return False
+
+    def spillable_area_to_dict(self):
+        'convert numpy array to a list for serializing'
+        return self._attr_array_to_dict(self.spillable_area)
+
+    def spillable_area_update_from_dict(self, val):
+        'convert list of tuples back to numpy array'
+        new_arr = self._attr_from_list_to_array(val)
+        if np.any(self.spillable_area != new_arr):
+            self.spillable_area = new_arr
+            return True
+
+        return False
 
     def on_map(self, coords):
         """

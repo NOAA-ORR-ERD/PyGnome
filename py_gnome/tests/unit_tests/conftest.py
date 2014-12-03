@@ -26,11 +26,34 @@ from gnome.model import Model
 from gnome.spill_container import SpillContainer
 
 from gnome.movers import SimpleMover
-from gnome.persist import load
 from gnome.utilities.remote_data import get_datafile
 
 
 base_dir = os.path.dirname(__file__)
+
+
+@pytest.fixture(scope="session")
+def dump(dump_loc=None):
+    '''
+    create dump folder for output data/files
+    session scope so it is only executed the first time it is used
+    We only want to create a new 'dump' folder once for each session
+
+    Note: Takes optional dump_loc input so other test packages can import
+    this as a function and use it to define their own dump directory if desired
+    '''
+    # dump_loc = os.path.join(request.session.fspath.strpath, 'dump')
+    if dump_loc is None:
+        dump_loc = os.path.join(base_dir, 'dump')
+    try:
+        shutil.rmtree(dump_loc)
+    except:
+        pass
+    try:
+        os.makedirs(dump_loc)
+    except:
+        pass
+    return dump_loc
 
 
 def mock_append_data_arrays(array_types, num_elements, data_arrays={}):
@@ -90,8 +113,8 @@ def sample_sc_release(num_elements=10,
         spill = gnome.spill.point_line_release_spill(num_elements,
                                                      start_pos,
                                                      release_time)
-
-    spill.set_mass(num_elements, 'g')
+    spill.units = 'g'
+    spill.amount = num_elements
     if element_type is not None:
         spill.element_type = element_type
 
@@ -113,16 +136,21 @@ def sample_sc_release(num_elements=10,
     return sc
 
 
-def testdata():
-    'define all the testdata files here'
+def get_testdata():
+    '''
+    define all the testdata files here
+    most of these are used in multiple modules. Some are not, but let's just
+    define them all in one place, ie here.
+    '''
     s_data = os.path.join(base_dir, 'sample_data')
     lis = os.path.join(s_data, 'long_island_sound')
+    bos = os.path.join(s_data, 'boston_data')
     dbay = os.path.join(s_data, 'delaware_bay')
     curr_dir = os.path.join(s_data, 'currents')
     tide_dir = os.path.join(s_data, 'tides')
     wind_dir = os.path.join(s_data, 'winds')
     testmap = os.path.join(base_dir, '../sample_data', 'MapBounds_Island.bna')
-    bna_sample = os.path.join(s_data, r"MapBounds_2Spillable2Islands2Lakes.bna")
+    bna_sample = os.path.join(s_data, 'MapBounds_2Spillable2Islands2Lakes.bna')
 
     data = dict()
 
@@ -131,22 +159,83 @@ def testdata():
          'tide': get_datafile(os.path.join(lis, 'CLISShio.txt'))}
     data['ComponentMover'] = \
         {'curr': get_datafile(os.path.join(dbay, 'NW30ktwinds.cur')),
+         'curr2': get_datafile(os.path.join(dbay, 'SW30ktwinds.cur')),
          'wind': get_datafile(os.path.join(dbay, 'ConstantWind.WND'))}
     data['CurrentCycleMover'] = \
         {'curr': get_datafile(os.path.join(curr_dir, 'PQBayCur.nc4')),
-         'topology': get_datafile(os.path.join(curr_dir, 'PassamaquoddyTOP.dat')),
-         'tide': get_datafile(os.path.join(tide_dir, 'EstesHead.txt'))}
+         'top': get_datafile(os.path.join(curr_dir, 'PassamaquoddyTOP.dat')),
+         'tide': get_datafile(os.path.join(tide_dir, 'EstesHead.txt')),
+         'curr_bad_file': get_datafile(os.path.join(curr_dir,
+                                                    'BigCombinedwMapBad.cur'))}
     data['GridCurrentMover'] = \
-        {'curr': get_datafile(os.path.join(curr_dir, 'ChesBay.nc')),
-         'topology': get_datafile(os.path.join(curr_dir, 'ChesBay.dat'))}
+        {'curr_tri': get_datafile(os.path.join(curr_dir, 'ChesBay.nc')),
+         'top_tri': get_datafile(os.path.join(curr_dir, 'ChesBay.dat')),
+         'curr_reg': get_datafile(os.path.join(curr_dir, 'test.cdf')),
+         'curr_curv': get_datafile(os.path.join(curr_dir, 'ny_cg.nc')),
+         'top_curv': get_datafile(os.path.join(curr_dir, 'NYTopology.dat')),
+         'ptCur': get_datafile(os.path.join(curr_dir, 'ptCurNoMap.cur')),
+         'grid_ts': get_datafile(os.path.join(curr_dir, 'gridcur_ts.cur')),
+         'series_gridCur': get_datafile(os.path.join(curr_dir,
+                                                     'gridcur_ts_hdr2.cur')),
+         'series_curv': get_datafile(os.path.join(curr_dir, 'file_series',
+                                                  'flist2.txt')),
+         'series_top': get_datafile(os.path.join(curr_dir, 'file_series',
+                                                 'HiROMSTopology.dat'))}
+
+    # get netcdf stored in fileseries flist2.txt, gridcur_ts_hdr2
+    get_datafile(os.path.join(curr_dir, 'file_series', 'hiog_file1.nc'))
+    get_datafile(os.path.join(curr_dir, 'file_series', 'hiog_file2.nc'))
+    get_datafile(os.path.join(curr_dir, 'gridcur_tsA.cur'))
+
     data['GridWindMover'] = \
-        {'wind': get_datafile(os.path.join(wind_dir, 'WindSpeedDirSubset.nc')),
-         'topology': get_datafile(os.path.join(wind_dir, 'WindSpeedDirSubsetTop.dat'))}
+        {'wind_curv': get_datafile(os.path.join(wind_dir,
+                                                'WindSpeedDirSubset.nc')),
+         'top_curv': get_datafile(os.path.join(wind_dir,
+                                               'WindSpeedDirSubsetTop.dat')),
+         'wind_rect': get_datafile(os.path.join(wind_dir, 'test_wind.cdf')),
+         'grid_ts': get_datafile(os.path.join(wind_dir, 'gridwind_ts.wnd'))}
     data['MapFromBNA'] = {'testmap': testmap}
     data['Renderer'] = {'bna_sample': bna_sample,
-                        'output_dir': os.path.join(base_dir, 'renderer_output')}
+                        'bna_star': os.path.join(s_data, 'Star.bna')}
+    data['GridMap'] = \
+        {'curr': get_datafile(os.path.join(curr_dir, 'ny_cg.nc')),
+         'BigCombinedwMap':
+            get_datafile(os.path.join(curr_dir, 'BigCombinedwMap.cur')),
+         }
+
+    # following are not on server, they are part of git repo so just set the 
+    # path correctly
+    data['timeseries'] = \
+        {'wind_ts': os.path.join(s_data, 'WindDataFromGnome.WND'),
+         'wind_constant': os.path.join(s_data,
+                                       'WindDataFromGnomeConstantWind.WND'),
+         'wind_bad_units': os.path.join(s_data,
+                                        'WindDataFromGnome_BadUnits.WND'),
+         'wind_cardinal': os.path.join(s_data,
+                                       'WindDataFromGnomeCardinal.WND'),
+         'tide_shio': get_datafile(os.path.join(tide_dir, 'CLISShio.txt')),
+         'tide_ossm': get_datafile(os.path.join(tide_dir, 'TideHdr.FINAL'))
+         }
+
+    # data for boston model - used for testing save files/webapi
+    data['boston_data'] = \
+        {'map': get_datafile(os.path.join(bos, 'MassBayMap.bna')),
+         'cats_curr1': get_datafile(os.path.join(bos, 'EbbTides.cur')),
+         'cats_shio': get_datafile(os.path.join(bos, 'EbbTidesShio.txt')),
+         'cats_curr2': get_datafile(os.path.join(bos,
+                                                 'MerrimackMassCoast.cur')),
+         'cats_ossm': get_datafile(os.path.join(bos,
+                                                'MerrimackMassCoastOSSM.txt')),
+         'cats_curr3': get_datafile(os.path.join(bos, 'MassBaySewage.cur')),
+         'component_curr1': get_datafile(os.path.join(bos, "WAC10msNW.cur")),
+         'component_curr2': get_datafile(os.path.join(bos, "WAC10msSW.cur"))
+         }
 
     return data
+
+
+# create the dict here
+testdata = get_testdata()
 
 
 @pytest.fixture(scope='module')
@@ -327,7 +416,7 @@ def sample_vertical_plume_spill():
     return Spill(vps)
 
 
-@pytest.fixture(scope='module')
+@pytest.fixture(scope='function')
 def sample_sc_no_uncertainty():
     """
     Sample spill container with 2 point_line_release_spill spills:
@@ -350,12 +439,13 @@ def sample_sc_no_uncertainty():
     end_release_time = datetime(2012, 1, 1, 12) + timedelta(hours=4)
 
     spills = [gnome.spill.point_line_release_spill(num_elements,
-                              start_position, release_time, volume=10),
+                              start_position, release_time,
+                              amount=10, units='l'),
               gnome.spill.point_line_release_spill(num_elements,
                               start_position,
                               release_time + timedelta(hours=1),
                               end_position, end_release_time,
-                              volume=10),
+                              amount=10, units='l'),
               ]
     sc.spills.add(spills)
     return sc
@@ -418,11 +508,41 @@ def sample_model():
             'release_end_pos': end_points}
 
 
+@pytest.fixture(scope='function')
+def sample_model_fcn():
+    'sample_model with function scope'
+    return sample_model()
+
+
+def sample_model_weathering(sample_model_fcn, oil, temp=311.16):
+    model = sample_model_fcn['model']
+    rel_pos = sample_model_fcn['release_start_pos']
+    'update model the same way for multiple tests'
+    model.uncertain = False     # fixme: with uncertainty, copying spill fails!
+    model.duration = timedelta(hours=4)
+    et = gnome.spill.elements.floating_weathering(substance=oil)
+    start_time = model.start_time + timedelta(hours=1)
+    end_time = start_time + timedelta(seconds=model.time_step*3)
+    spill = gnome.spill.point_line_release_spill(10,
+                                                 rel_pos,
+                                                 start_time,
+                                                 end_release_time=end_time,
+                                                 element_type=et,
+                                                 amount=100,
+                                                 units='kg')
+    model.spills += spill
+    return model
+
+
 @pytest.fixture(scope='function', params=['relpath', 'abspath'])
 def clean_temp(request):
     temp = os.path.join(base_dir, 'temp')   # absolute path
-    if os.path.exists(temp):
+
+    def cleanup():
+        print '\nCleaning up %s' % temp
         shutil.rmtree(temp)
+
+    request.addfinalizer(cleanup)
 
     os.mkdir(temp)    # let path get created by save_load
     if request.param == 'relpath':

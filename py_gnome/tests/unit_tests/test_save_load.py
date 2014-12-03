@@ -12,7 +12,6 @@ from conftest import testdata
 
 import pytest
 
-testdata = testdata()
 base_dir = os.path.dirname(__file__)
 
 
@@ -84,18 +83,19 @@ def test_savloc_created():
 
 
 # For WindMover test_save_load in test_wind_mover
-l_movers = (environment.Tide(testdata['CatsMover']['tide']),
-            environment.Wind(filename=testdata['ComponentMover']['wind']),
-            environment.Wind(timeseries=(0, (1, 4)), units='mps'),
-            movers.random_movers.RandomMover(),
-            movers.CatsMover(testdata['CatsMover']['curr']),
-            movers.CatsMover(testdata['CatsMover']['curr'],
-                tide=environment.Tide(testdata['CatsMover']['tide'])),
-            movers.ComponentMover(testdata['ComponentMover']['curr']),
-            movers.ComponentMover(testdata['ComponentMover']['curr'],
-                wind=environment.Wind(
-                    filename=testdata['ComponentMover']['wind'])),
-            #===================================================================
+g_objects = (environment.Tide(testdata['CatsMover']['tide']),
+             environment.Wind(filename=testdata['ComponentMover']['wind']),
+             environment.Wind(timeseries=(0, (1, 4)), units='mps'),
+             environment.Water(temperature=273),
+             movers.random_movers.RandomMover(),
+             movers.CatsMover(testdata['CatsMover']['curr']),
+             movers.CatsMover(testdata['CatsMover']['curr'],
+                 tide=environment.Tide(testdata['CatsMover']['tide'])),
+             movers.ComponentMover(testdata['ComponentMover']['curr']),
+             movers.ComponentMover(testdata['ComponentMover']['curr'],
+                 wind=environment.Wind(
+                     filename=testdata['ComponentMover']['wind'])),
+            #==================================================================
             # movers.CurrentCycleMover(testdata['CurrentCycleMover']['curr'],
             #   topology_file=testdata['CurrentCycleMover']['topology'],
             #   tide=environment.Tide(testdata['CurrentCycleMover']['tide'])),
@@ -106,17 +106,20 @@ l_movers = (environment.Tide(testdata['CatsMover']['tide']),
             # movers.GridWindMover(testdata['GridWindMover']['wind'],
             #   testdata['GridWindMover']['topology']),
             #===================================================================
-            movers.RandomVerticalMover(),
-            movers.SimpleMover(velocity=(10.0, 10.0, 0.0)),
-            map.MapFromBNA(testdata['MapFromBNA']['testmap'], 6),
-            outputters.NetCDFOutput(os.path.join(base_dir, u'xtemp.nc')),
-            outputters.Renderer(testdata['Renderer']['bna_sample'],
-               testdata['Renderer']['output_dir']),
-            spill.PointLineRelease(release_time=datetime.now(),
-                                   num_elements=10,
-                                   start_position=(0, 0, 0)),
-            spill.point_line_release_spill(10, (0, 0, 0), datetime.now()),
-            weatherers.Weatherer(),
+             movers.RandomVerticalMover(),
+             movers.SimpleMover(velocity=(10.0, 10.0, 0.0)),
+             map.MapFromBNA(testdata['MapFromBNA']['testmap'], 6),
+             outputters.NetCDFOutput(os.path.join(base_dir, u'xtemp.nc')),
+             outputters.Renderer(testdata['Renderer']['bna_sample'],
+                                 os.path.join(base_dir, 'output_dir')),
+             outputters.WeatheringOutput(),
+             spill.PointLineRelease(release_time=datetime.now(),
+                                    num_elements=10,
+                                    start_position=(0, 0, 0)),
+             spill.point_line_release_spill(10, (0, 0, 0), datetime.now()),
+             spill.elements.ElementType(substance='oil_jetfuels'),
+             weatherers.Evaporation(environment.constant_wind(1., 0.),
+                 environment.Water(333.0)),
             # todo: ask Caitlin how to fix
             #movers.RiseVelocityMover(),
             # todo: This is incomplete - no _schema for SpatialRelease, GeoJson
@@ -125,7 +128,7 @@ l_movers = (environment.Tide(testdata['CatsMover']['tide']),
             )
 
 
-@pytest.mark.parametrize("obj", l_movers)
+@pytest.mark.parametrize("obj", g_objects)
 def test_save_load(clean_temp, obj):
     'test save/load functionality'
     refs = obj.save(clean_temp)
@@ -143,15 +146,15 @@ following tests.
 '''
 
 l_movers2 = (movers.CurrentCycleMover(testdata['CurrentCycleMover']['curr'],
-                topology_file=testdata['CurrentCycleMover']['topology'],
+                topology_file=testdata['CurrentCycleMover']['top'],
                 tide=environment.Tide(testdata['CurrentCycleMover']['tide'])),
              movers.CurrentCycleMover(testdata['CurrentCycleMover']['curr'],
-               topology_file=testdata['CurrentCycleMover']['topology']),
-             movers.GridCurrentMover(testdata['GridCurrentMover']['curr'],
-               testdata['GridCurrentMover']['topology']),
-             movers.GridWindMover(testdata['GridWindMover']['wind'],
-               testdata['GridWindMover']['topology']),
-            )
+               topology_file=testdata['CurrentCycleMover']['top']),
+             movers.GridCurrentMover(testdata['GridCurrentMover']['curr_tri'],
+                                     testdata['GridCurrentMover']['top_tri']),
+             movers.GridWindMover(testdata['GridWindMover']['wind_curv'],
+                                  testdata['GridWindMover']['top_curv']),
+             )
 
 
 @pytest.mark.parametrize("obj", l_movers2)

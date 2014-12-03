@@ -52,13 +52,15 @@ output_ts = [(model_ts, 1, 1),          # model_ts = output_ts
              (model_ts / 2, 1, 1),      # unlikely case, but test it!
              (model_ts * 3, 3, 1),      # model_ts thrice as fast as output
              (timedelta(seconds=(model_ts.seconds * 1.8)), 9, 5),
-             (timedelta(seconds=(model_ts.seconds * 2.5)), 5, 2)
+             (timedelta(seconds=(model_ts.seconds * 2.5)), 5, 2),
              ]
+
+params = [(model_ts, item) for item in output_ts]
+params.extend([(timedelta(hours=6), (timedelta(days=1), 4, 1))])
 
 
 @pytest.mark.slow
-@pytest.mark.parametrize(("model_ts", "output_ts"),
-                         [(model_ts, item) for item in output_ts])
+@pytest.mark.parametrize(("model_ts", "output_ts"), params)
 def test_output_timestep(model, model_ts, output_ts):
     """
     test the partial functionality implemented in base class
@@ -69,11 +71,11 @@ def test_output_timestep(model, model_ts, output_ts):
     sufficient
     """
     o_put = Outputter(model._cache, output_timestep=output_ts[0])
-    model.duration = timedelta(hours=6)
+    model.duration = model_ts * output_ts[1]
     model.time_step = model_ts
 
     model.outputters += o_put
-    factor = float(output_ts[0].seconds) / model_ts.seconds
+    factor = output_ts[0].total_seconds() / model_ts.total_seconds()
 
     # output timestep aligns w/ model timestep after these many steps
     match_after = output_ts[1]

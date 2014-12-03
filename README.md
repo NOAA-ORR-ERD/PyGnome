@@ -161,9 +161,9 @@ If you are not on a 64 bit Windows system, you may skip forward to the section
 	    $ pip install -r requirements.txt
 	```
 
-3. build the py_gnome module in develop mode first as install mode may still need some testing/work.
+3. build the py_gnome module in develop mode first as install mode may still need some testing/work. Note: using 'developall' argument will automatically build the oil_library in develop mode. This is required for PyGnome and is currently part of this repo so easiest to automatically built it. Other options are to clean the development environment (cleandev) and to rebuild the oil library database (remake_oil_db)
 	```
-	    $ python setup.py develop  
+	    $ python setup.py developall  
 	```
 
 4. If this successfully completes, then run unit_tests

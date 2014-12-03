@@ -198,7 +198,7 @@ class Savable(object):
         self._make_saveloc(saveloc)
         json_ = self.serialize('save')
         return self._json_to_saveloc(json_, saveloc, references=references,
-            name=name)
+                                     name=name)
 
     def _move_data_file(self, saveloc, json_):
         """
@@ -226,21 +226,13 @@ class Savable(object):
         return json_
 
     @classmethod
-    def load(cls, saveloc, json_data, references=None):
+    def _load_refs(cls, saveloc, json_data, references):
         '''
-        load json file, deserialize, and create object with new_from_dict()
-
-        :param saveloc: location of data files
+        loads up references. First looks for object in references, if not found
+        then it creates object from json and adds a reference to it. If found
+        in references, it just uses/returns the object
         '''
-        references = (references, References())[references is None]
-        datafiles = cls._state.get_field_by_attribute('isdatafile')
         ref_fields = cls._state.get_field_by_attribute('save_reference')
-
-        # fix datafiles path from relative to absolute so we can load datafiles
-        for field in datafiles:
-            if field.name in json_data:
-                json_data[field.name] = os.path.join(saveloc,
-                                                     json_data[field.name])
 
         # pop references from json_data, create objects for them
         ref_dict = {}
@@ -254,6 +246,29 @@ class Savable(object):
                         ref_obj = load(ref_filename, references)
 
                     ref_dict[field.name] = ref_obj
+
+        return ref_dict
+
+    @classmethod
+    def _update_datafile_path(cls, saveloc, json_data):
+        'update path to attributes that use a datafile'
+        datafiles = cls._state.get_field_by_attribute('isdatafile')
+        # fix datafiles path from relative to absolute so we can load datafiles
+        for field in datafiles:
+            if field.name in json_data:
+                json_data[field.name] = os.path.join(saveloc,
+                                                     json_data[field.name])
+
+    @classmethod
+    def load(cls, saveloc, json_data, references=None):
+        '''
+        load json file, deserialize, and create object with new_from_dict()
+
+        :param saveloc: location of data files
+        '''
+        references = (references, References())[references is None]
+        ref_dict = cls._load_refs(saveloc, json_data, references)
+        cls._update_datafile_path(saveloc, json_data)
 
         # deserialize after removing references
         _to_dict = cls.deserialize(json_data)

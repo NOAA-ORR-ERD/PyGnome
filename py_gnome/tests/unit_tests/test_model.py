@@ -15,42 +15,41 @@ from pytest import raises
 
 from gnome.basic_types import datetime_value_2d
 from gnome.utilities import inf_datetime
-from gnome.utilities.remote_data import get_datafile
+from gnome.persist import load
 
 import gnome.map
-from gnome.environment import Wind, Tide
+from gnome.environment import Wind, Tide, constant_wind, Water
 from gnome.model import Model
 
 from gnome.spill import Spill, SpatialRelease, point_line_release_spill
-from gnome.spill.elements import floating
+from gnome.spill.elements import floating, floating_weathering
 
 from gnome.movers import SimpleMover, RandomMover, WindMover, CatsMover
 
-from gnome.weatherers import Weatherer
+from gnome.weatherers import (HalfLifeWeatherer,
+                              Evaporation,
+                              Dispersion,
+                              Burn,
+                              Skimmer)
 from gnome.outputters import Renderer, GeoJson
 
-basedir = os.path.dirname(__file__)
-datadir = os.path.join(basedir, 'sample_data')
-tides_dir = os.path.join(datadir, 'tides')
-lis_dir = os.path.join(datadir, 'long_island_sound')
-
-testmap = os.path.join(basedir, '../sample_data', 'MapBounds_Island.bna')
+from conftest import sample_model_weathering, testdata
 
 
-@pytest.fixture(scope='module')
-def model(sample_model):
+@pytest.fixture(scope='function')
+def model(sample_model_fcn, dump):
     '''
     Utility to setup up a simple, but complete model for tests
     '''
-    images_dir = os.path.join(basedir, 'Test_images')
+    images_dir = os.path.join(dump, 'Test_images')
 
     if os.path.isdir(images_dir):
         shutil.rmtree(images_dir)
     os.mkdir(images_dir)
 
-    model = sample_model['model']
-    rel_start_pos = sample_model['release_start_pos']
-    rel_end_pos = sample_model['release_end_pos']
+    model = sample_model_fcn['model']
+    rel_start_pos = sample_model_fcn['release_start_pos']
+    rel_end_pos = sample_model_fcn['release_end_pos']
 
     model.cache_enabled = True
     model.uncertain = False
@@ -66,7 +65,7 @@ def model(sample_model):
     # print start_points
 
     release = SpatialRelease(start_position=line_pos,
-                           release_time=model.start_time)
+                             release_time=model.start_time)
 
     model.spills += Spill(release)
 
@@ -229,7 +228,8 @@ def test_simple_run_with_map():
 
     model = Model()
 
-    model.map = gnome.map.MapFromBNA(testmap, refloat_halflife=6)  # hours
+    model.map = gnome.map.MapFromBNA(testdata['MapFromBNA']['testmap'],
+                                     refloat_halflife=6)  # hours
     a_mover = SimpleMover(velocity=(1., 2., 0.))
 
     model.movers += a_mover
@@ -257,11 +257,11 @@ def test_simple_run_with_map():
         assert step['step_num'] == model.current_time_step
 
 
-def test_simple_run_with_image_output():
+def test_simple_run_with_image_output(dump):
     '''
     Pretty much all this tests is that the model will run and output images
     '''
-    images_dir = os.path.join(basedir, 'Test_images')
+    images_dir = os.path.join(dump, 'Test_images')
 
     if os.path.isdir(images_dir):
         shutil.rmtree(images_dir)
@@ -270,8 +270,10 @@ def test_simple_run_with_image_output():
     start_time = datetime(2012, 9, 15, 12, 0)
 
     # the land-water map
-    gnome_map = gnome.map.MapFromBNA(testmap, refloat_halflife=6)  # hours
-    renderer = gnome.outputters.Renderer(testmap, images_dir, size=(400, 300))
+    gnome_map = gnome.map.MapFromBNA(testdata['MapFromBNA']['testmap'],
+                                     refloat_halflife=6)  # hours
+    renderer = gnome.outputters.Renderer(testdata['MapFromBNA']['testmap'],
+                                         images_dir, size=(400, 300))
     geo_json = GeoJson(output_dir=images_dir)
 
     model = Model(time_step=timedelta(minutes=15),
@@ -316,11 +318,11 @@ def test_simple_run_with_image_output():
     assert num_steps_output == calculated_steps
 
 
-def test_simple_run_with_image_output_uncertainty():
+def test_simple_run_with_image_output_uncertainty(dump):
     '''
     Pretty much all this tests is that the model will run and output images
     '''
-    images_dir = os.path.join(basedir, 'Test_images2')
+    images_dir = os.path.join(dump, 'Test_images2')
 
     if os.path.isdir(images_dir):
         shutil.rmtree(images_dir)
@@ -329,8 +331,10 @@ def test_simple_run_with_image_output_uncertainty():
     start_time = datetime(2012, 9, 15, 12, 0)
 
     # the land-water map
-    gmap = gnome.map.MapFromBNA(testmap, refloat_halflife=6)  # hours
-    renderer = gnome.outputters.Renderer(testmap, images_dir, size=(400, 300))
+    gmap = gnome.map.MapFromBNA(testdata['MapFromBNA']['testmap'],
+                                refloat_halflife=6)  # hours
+    renderer = gnome.outputters.Renderer(testdata['MapFromBNA']['testmap'],
+                                         images_dir, size=(400, 300))
 
     model = Model(start_time=start_time,
                   time_step=timedelta(minutes=15), duration=timedelta(hours=1),
@@ -486,8 +490,7 @@ def test_all_movers(start_time, release_delay, duration):
     assert len(model.movers) == 3
 
     # CATS mover
-    c_data = get_datafile(os.path.join(lis_dir, 'tidesWAC.CUR'))
-    model.movers += CatsMover(c_data)
+    model.movers += CatsMover(testdata['CatsMover']['curr'])
     assert len(model.movers) == 4
 
     # run the model all the way...
@@ -681,7 +684,7 @@ def test_release_at_right_time():
     assert model.spills.items()[0].num_released == 12
 
 
-def test_full_run(model):
+def test_full_run(model, dump):
     'Test doing a full run'
     # model = setup_simple_model()
 
@@ -695,7 +698,7 @@ def test_full_run(model):
 
     # check if the images are there:
     # (1 extra for background image)
-    num_images = len(os.listdir(os.path.join(basedir, 'Test_images')))
+    num_images = len(os.listdir(os.path.join(dump, 'Test_images')))
     assert num_images == model.num_time_steps + 1
 
 
@@ -722,10 +725,9 @@ def test_callback_add_mover():
     assert new_wind in model.environment
     assert len(model.environment) == 2
 
-    tide_file = get_datafile(os.path.join(tides_dir, 'CLISShio.txt'))
-    tide_ = Tide(filename=tide_file)
+    tide_ = Tide(filename=testdata['CatsMover']['tide'])
 
-    d_file = get_datafile(os.path.join(lis_dir, 'tidesWAC.CUR'))
+    d_file = testdata['CatsMover']['curr']
     model.movers += CatsMover(d_file, tide=tide_)
 
     model.movers += CatsMover(d_file)
@@ -755,7 +757,7 @@ def test_callback_add_mover():
     assert model.movers[custom_mover.id].active_stop == active_off
 
 
-def test_callback_add_mover_midrun(model):
+def test_callback_add_mover_midrun():
     'Test callback after add mover called midway through the run'
     model = Model()
     model.start_time = datetime(2012, 1, 1, 0, 0)
@@ -794,16 +796,261 @@ def test_simple_run_no_spills(model):
 def test_all_weatherers_in_model(model):
     '''
     test model run with weatherer
+    todo: This does not require floating_weathering() element_type, meaning
+    mass_components are not initialized correctly here - need to revisit this
+    concept
     '''
-    weatherer = Weatherer()
-    model.weatherers += weatherer
+    model.weatherers += HalfLifeWeatherer()
     print 'model.weatherers:', model.weatherers
 
     model.full_run()
 
-    expected_keys = {'mass_components', 'half_lives'}
+    expected_keys = {'mass_components'}
     assert expected_keys.issubset(model.spills.LE_data)
 
+
+def test_setup_model_run(model):
+    'turn of movers/weatherers and ensure data_arrays change'
+    model.rewind()
+    model.step()
+    exp_keys = {'windages', 'windage_range', 'mass_components',
+                'windage_persist'}
+    # no exp_keys in model data_arrays
+    assert not exp_keys.intersection(model.spills.LE_data)
+
+    model.weatherers += HalfLifeWeatherer()
+    model.movers += gnome.movers.constant_wind_mover(1., 0.)
+    model.rewind()
+    model.step()
+    assert exp_keys.issubset(model.spills.LE_data)
+
+    model.movers[-1].on = False
+    model.weatherers[-1].on = False
+    model.rewind()
+    model.step()
+    assert not exp_keys.intersection(model.spills.LE_data)
+
+
+def test_contains_object(sample_model_fcn):
+    '''
+    Test that we can find all contained object types with a model.
+    '''
+    model = sample_model_weathering(sample_model_fcn, 'ALAMO')
+
+    gnome_map = model.map = gnome.map.GnomeMap()    # make it all water
+
+    rel_time = model.spills[0].get('release_time')
+    model.start_time = rel_time - timedelta(hours=1)
+    model.duration = timedelta(days=1)
+
+    water, wind = Water(), constant_wind(1., 0)
+    model.water = water
+    model.environment += wind
+
+    et = floating_weathering(substance=model.spills[0].get('substance').name)
+    sp = point_line_release_spill(500, (0, 0, 0),
+                                  rel_time + timedelta(hours=1),
+                                  element_type=et,
+                                  amount=100,
+                                  units='tons')
+    rel = sp.release
+    initializers = et.initializers
+    model.spills += sp
+
+    movers = [m for m in model.movers]
+
+    evaporation = Evaporation(model.water, model.environment[0])
+    dispersion, burn, skimmer = Dispersion(), Burn(), Skimmer()
+    model.weatherers += [evaporation, dispersion, burn, skimmer]
+
+    renderer = Renderer(images_dir='Test_images',
+                        size=(400, 300))
+    model.outputters += renderer
+
+    for o in (gnome_map, sp, rel, et,
+              water, wind,
+              evaporation, dispersion, burn, skimmer,
+              renderer):
+        assert model.contains_object(o.id)
+
+    for o in initializers:
+        assert model.contains_object(o.id)
+
+    for o in movers:
+        assert model.contains_object(o.id)
+
+
+@pytest.mark.parametrize("uncertain", [False, True])
+def test_staggered_spills_weathering(sample_model_fcn, uncertain):
+    '''
+    Just test that a model with weathering and spills staggered in time runs
+    without errors.
+
+    test exposed a bug, which is now fixed
+    '''
+    model = sample_model_weathering(sample_model_fcn, 'ALAMO')
+    model.map = gnome.map.GnomeMap()    # make it all water
+    model.uncertain = uncertain
+    rel_time = model.spills[0].get('release_time')
+    model.start_time = rel_time - timedelta(hours=1)
+    model.duration = timedelta(days=1)
+    # todo: figure out why we're not able to reuse 'substance' object
+    # et = floating_weathering(substance=model.spills[0].get('substance'))
+    et = floating_weathering(substance=model.spills[0].get('substance').name)
+    cs = point_line_release_spill(500, (0, 0, 0),
+                                  rel_time + timedelta(hours=1),
+                                  element_type=et,
+                                  amount=100,
+                                  units='tons')
+    model.spills += cs
+    model.water = Water()
+    model.environment += constant_wind(1., 0)
+    model.weatherers += [Evaporation(model.water,
+                                     model.environment[0]),
+                         Dispersion(),
+                         Burn(),
+                         Skimmer()]
+    # model.full_run()
+    for step in model:
+        for sc in model.spills.items():
+            sum_ = 0.0
+            for key in sc.weathering_data:
+                if 'avg_' != key[:4] and 'amount_released' != key:
+                    sum_ += sc.weathering_data[key]
+            assert abs(sum_ - sc.weathering_data['amount_released']) < 1.e-6
+
+        if uncertain:
+            # no uncertainty - using mock data for cleanup options
+            sc, sc_u = model.spills.items()
+            for key in sc.weathering_data:
+                assert (abs(sc.weathering_data[key] -
+                            sc_u.weathering_data[key]) < 1.e-6)
+
+        print "completed step {0}".format(step)
+
+
+def test_weathering_data_attr():
+    '''
+    weathering_data is initialized/written if we have weatherers
+    '''
+    ts = 900
+    s1_rel = datetime.now().replace(microsecond=0)
+    s2_rel = s1_rel + timedelta(seconds=ts)
+    model = Model(time_step=ts, start_time=s1_rel)
+    s = [point_line_release_spill(10, (0, 0, 0), s1_rel),
+         point_line_release_spill(10, (0, 0, 0), s2_rel)]
+    model.spills += s
+    model.step()
+
+    for sc in model.spills.items():
+        assert sc.weathering_data == {}
+
+    model.water = Water()
+    model.environment += constant_wind(0., 0)
+    model.weatherers += [Evaporation(model.water,
+                                     model.environment[0])]
+
+    # use different element_type and initializers for both spills
+    s[0].amount = 10.0
+    s[0].units = 'kg'
+    s[0].element_type = floating_weathering()
+    model.rewind()
+    model.step()
+    for sc in model.spills.items():
+        assert sc.weathering_data['floating'] == sum(sc['mass'])
+        assert sc.weathering_data['floating'] == s[0].amount
+
+    s[1].amount = 5.0
+    s[1].units = 'kg'
+    s[1].element_type = floating_weathering()
+    model.rewind()
+    exp_rel = 0.0
+    for ix in range(2):
+        model.step()
+        exp_rel += s[ix].amount
+        for sc in model.spills.items():
+            assert sc.weathering_data['floating'] == sum(sc['mass'])
+            assert sc.weathering_data['floating'] == exp_rel
+    model.rewind()
+    assert sc.weathering_data == {}
+
+    # weathering data is now empty for all steps
+    del model.weatherers[0]
+    for ix in range(2):
+        for sc in model.spills.items():
+            assert not sc.weathering_data
+
+
+@pytest.mark.xfail
+def test_run_element_type_no_initializers(model):
+    '''
+    run model with only one spill, it contains an element_type.
+    However, element_type has no initializers - will not work if weatherers
+    are present that require runtime array_types defined. The initializers
+    currently define these runtime array_types -- need to rethink how this
+    should work
+    '''
+    model.uncertain = False
+    model.rewind()
+
+    for ix, spill in enumerate(model.spills):
+        if ix == 0:
+            spill.set('initializers', [])
+        else:
+            del model.spills[spill.id]
+    assert len(model.spills) == 1
+
+    model.full_run()
+
+    assert True
+
+
+class TestMergeModels:
+    def test_merge_from_empty_model(self, model):
+        '''
+        merge empty model - nothing to merge
+        deepcopy fails on model due to cache - we don't anticipate needing
+        to deepcopy models so do a hack for testing for now.
+        '''
+        m = Model()
+        model.merge(m)
+        for oc in m._oc_list:
+            for item in getattr(m, oc):
+                assert item in getattr(model, oc)
+
+    def test_load_location_file(self):
+        '''
+        create a model
+        load save file from script_boston which contains a spill. Then merge
+        the created model into the model loaded from save file
+        '''
+        m = Model()
+        m.water = Water()
+        m.environment += constant_wind(1., 0.)
+        m.weatherers += Evaporation(m.water, m.environment[-1])
+        m.spills += point_line_release_spill(10, (0, 0, 0),
+                                             datetime(2014, 1, 1, 12, 0))
+
+        here = os.path.dirname(__file__)
+        sample_save_file = \
+            os.path.join(here,
+                         '../../scripts/script_boston/save_model/Model.json')
+        model = load(sample_save_file)
+        assert model.water is None
+
+        model.merge(m)
+        assert m.water is model.water
+        for oc in m._oc_list:
+            for item in getattr(m, oc):
+                model_oc = getattr(model, oc)
+                assert item is model_oc[item.id]
+
+        for spill in m.spills:
+            assert spill is model.spills[spill.id]
+
+        # merge the other way and ensure model != m
+        m.merge(model)
+        assert model != m
 
 if __name__ == '__main__':
 

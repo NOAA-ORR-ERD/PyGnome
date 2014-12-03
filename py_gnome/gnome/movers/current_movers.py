@@ -24,9 +24,9 @@ from gnome.cy_gnome.cy_component_mover import CyComponentMover
 class CatsMoverSchema(ObjType, ProcessSchema):
     '''static schema for CatsMover'''
     filename = SchemaNode(String(), missing=drop)
-    scale = SchemaNode(Bool())
+    scale = SchemaNode(Bool(), missing=drop)
     scale_refpoint = WorldPoint(missing=drop)
-    scale_value = SchemaNode(Float())
+    scale_value = SchemaNode(Float(), missing=drop)
     # the following six could be shared with grid_current
     # in a currents base class
     uncertain_duration = SchemaNode(Float(), missing=drop)
@@ -59,9 +59,7 @@ class CatsMover(CyMover, serializable.Serializable):
                                          save_reference=True)])
     _schema = CatsMoverSchema
 
-    def __init__(self,
-                 filename,
-                 tide=None,
+    def __init__(self, filename, tide=None,
                  **kwargs):
         """
         Uses super to invoke base class __init__ method.
@@ -111,7 +109,7 @@ class CatsMover(CyMover, serializable.Serializable):
         self.scale_value = kwargs.get('scale_value',
                                       self.mover.scale_value)
 
-        self.uncertain_start_time = kwargs.pop('uncertain_duration', 48)
+        self.uncertain_duration = kwargs.pop('uncertain_duration', 48)
         self.uncertain_time_delay = kwargs.pop('uncertain_time_delay', 0)
         self.up_cur_uncertain = kwargs.pop('up_cur_uncertain', .3)
         self.down_cur_uncertain = kwargs.pop('down_cur_uncertain', -.3)
@@ -251,11 +249,14 @@ class CatsMover(CyMover, serializable.Serializable):
         """
         append correct schema for wind object
         """
-        schema = cls._schema()
-        if 'tide' in json_:
-            schema.add(environment.TideSchema())
+        if not cls.is_sparse(json_):
+            schema = cls._schema()
+            if 'tide' in json_:
+                schema.add(environment.TideSchema())
 
-        return schema.deserialize(json_)
+            return schema.deserialize(json_)
+        else:
+            return json_
 
 
 class GridCurrentMoverSchema(ObjType, ProcessSchema):
@@ -285,16 +286,10 @@ class GridCurrentMover(CyMover, serializable.Serializable):
                                          test_for_eq=False)])
     _schema = GridCurrentMoverSchema
 
-    def __init__(self,
-                 filename,
+    def __init__(self, filename,
                  topology_file=None,
                  extrapolate=False,
                  time_offset=0,
-                 # current_scale=1,
-                 # uncertain_duration=timedelta(hours=24),
-                 # uncertain_time_delay=timedelta(hours=0),
-                 # uncertain_along=0.5,
-                 # uncertain_cross=.25,
                  **kwargs):
         """
         Initialize a GridCurrentMover
@@ -331,8 +326,12 @@ class GridCurrentMover(CyMover, serializable.Serializable):
                 raise ValueError('Path for Topology file does not exist: {0}'
                                  .format(topology_file))
 
-        self.filename = filename  # check if this is stored with cy_gridcurrent_mover?
-        self.topology_file = topology_file  # check if this is stored with cy_gridcurrent_mover?
+        # check if this is stored with cy_gridcurrent_mover?
+        self.filename = filename
+
+        # check if this is stored with cy_gridcurrent_mover?
+        self.topology_file = topology_file
+
         #self.mover = cy_gridcurrent_mover.CyGridCurrentMover()
         self.mover = CyGridCurrentMover(current_scale=kwargs.pop('current_scale', 1),
                                         uncertain_duration=3600. * kwargs.pop('uncertain_duration', 24),
@@ -481,11 +480,6 @@ class CurrentCycleMover(CyMover, serializable.Serializable):
                  extrapolate=False,
                  time_offset=0,
                  tide=None,
-                 # current_scale=1,
-                 # uncertain_duration=timedelta(hours=24),
-                 # uncertain_time_delay=timedelta(hours=0),
-                 # uncertain_along=0.5,
-                 # uncertain_cross=.25,
                  **kwargs):
         """
         Initialize a CurrentCycleMover
@@ -525,10 +519,12 @@ class CurrentCycleMover(CyMover, serializable.Serializable):
                 raise ValueError('Path for Topology file does not exist: {0}'
                                  .format(topology_file))
 
-        self.filename = filename  # check if this is stored with cy_currentcycle_mover?
-        self.topology_file = topology_file  # check if this is stored with cy_currentcycle_mover?
+        # check if this is stored with cy_currentcycle_mover?
+        self.filename = filename
 
-        #self.mover = cy_currentcycle_mover.CyCurrentCycleMover()
+        # check if this is stored with cy_currentcycle_mover?
+        self.topology_file = topology_file
+
         self.mover = CyCurrentCycleMover(current_scale=kwargs.pop('current_scale', 1),
                                          uncertain_duration=3600. * kwargs.pop('uncertain_duration', 24),
                                          uncertain_time_delay=3600. * kwargs.pop('uncertain_time_delay', 0),
@@ -690,7 +686,8 @@ class ComponentMoverSchema(ObjType, ProcessSchema):
     filename1 = SchemaNode(String(), missing=drop)
     filename2 = SchemaNode(String(), missing=drop)
     #scale = SchemaNode(Bool())
-    scale_refpoint = WorldPoint(missing=drop)
+    #ref_point = WorldPoint(missing=drop)
+    ref_point = LongLat(missing=drop)
     #scale_value = SchemaNode(Float())
 
 
@@ -702,7 +699,7 @@ class ComponentMover(CyMover, serializable.Serializable):
                'pat1_angle', 'pat1_speed', 'pat1_speed_units',
                'pat1_scale_to_value',
                'pat2_angle', 'pat2_speed', 'pat2_speed_units',
-               'pat2_scale_to_value']
+               'pat2_scale_to_value', 'scale_by']
     _create = []
     _create.extend(_update)
     _state.add(update=_update, save=_create)
@@ -717,10 +714,7 @@ class ComponentMover(CyMover, serializable.Serializable):
                                          save_reference=True)])
     _schema = ComponentMoverSchema
 
-    def __init__(self,
-                 filename1,
-                 filename2=None,
-                 wind=None,
+    def __init__(self, filename1, filename2=None, wind=None,
                  **kwargs):
         """
         Uses super to invoke base class __init__ method.
@@ -837,6 +831,11 @@ class ComponentMover(CyMover, serializable.Serializable):
     pat2_scale_to_value = property(lambda self: self.mover.pat2_scale_to_value,
                                    lambda self, val: setattr(self.mover,
                                                              'pat2_scale_to_value',
+                                                             val))
+
+    scale_by = property(lambda self: self.mover.scale_by,
+                                   lambda self, val: setattr(self.mover,
+                                                             'scale_by',
                                                              val))
 
     @property

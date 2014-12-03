@@ -1077,7 +1077,7 @@ OSErr TModel::SaveOSSMLEFile (Seconds fileTime, short fileNumber)
 	if (err = FSOpenBuf(0, 0, forecastLEFName, &forecastFile, 50000, FALSE))
 		{ TechError("SaveOSSMLEFile()", "FSOpenBuf()", err); return err; }
 	
-	hdelete(0, 0, uncertainLEFName);// JLM 3/3/99 always delete sop we don't get confused
+	hdelete(0, 0, uncertainLEFName);// JLM 3/3/99 always delete so we don't get confused
 	if (IsUncertain ())  // open uncertainty LE file only if model is in uncertain mode
 	{
 		if (err = hcreate(0, 0, uncertainLEFName, '\?\?\?\?', 'BINA'))
@@ -1449,7 +1449,9 @@ void GetKmlTemplateDirectory(char* directoryPath)
 }
 
 //static char *dotStr='\'\\x89PNG\\r\\n\\x1a\\n\\x00\\x00\\x00\\rIHDR\\x00\\x00\\x00 \\x00\\x00\\x00 \\x08\\x06\\x00\\x00\\x00szz\\xf4\\x00\\x00\\x00\\x04sBIT\\x08\\x08\\x08\\x08|\\x08d\\x88\\x00\\x00\\x00\\tpHYs\\x00\\x00\\t:\\x00\\x00\\t:\\x01\\xf0d\\x92J\\x00\\x00\\x00\\x19tEXtSoftware\\x00www.inkscape.org\\x9b\\xee<\\x1a\\x00\\x00\\x01\\x00IDATX\\x85\\xed\\x96;\\x0e\\xc20\\x10D\\x1f\\x11==\\x12=u\\x94[p+N\\x91{p\\r\\x94*\\x05=\\ng\\xa0bh\\x1c)B^\\x93\\x8f\\x83]0R\\x1a\\\'\\x9eyr\\xbc^o$\\x91RE\\xd2\\xf4?@\\x0e\\x00\\xdb\\x19s\\n\\xa0\\x02J\\xe0\\xe8\\xc6n@\\x03\\\\\\x81\\xd7$7Ic\\x9f\\x9d\\xa4ZR\\\'[\\x9d\\xfbf7\\xd6wl\\xf8IR\\x1b\\x08\\xfeT\\xeb\\xe6D\\x018KzN\\x08\\xef\\xf5ts\\x17\\x01\\x9cf\\x86\\x0f!\\x82+\\xf1\\xed\\x9fOYvK\\xad\\x02{"\\x04PG\\x08\\xefU[9\\x1b\\xf9{A\\x01\\xdc\\x81\\xfd\\x8c2\\xf5\\xe9\\x01\\x1c\\xf0\\x94\\xa8u\\x10U\\x11\\xc3q^\\x95\\xef\\x85\\x05PF\\x0c\\x0fzZ\\x00Gc|\\x89\\xbc\\x9e\\xc9{\\x81\\x05p[!\\xcb\\xebi\\x014+\\x00x=\\xb3-\\xc3\\x17p\\x89\\x14\\x8e\\xf3\\xf2\\xb7\\xe9\\xc0I\\x98\\xfc(N\\xde\\x8c\\xb2h\\xc7Y\\\\H\\x86{"\\xfa\\x95\\xcc*\\xc3\\x90\\xa2^J\\xe7\\x00DU\\xb6\\xbd\\xe0\\x0f\\xf03\\xbd\\x01u{\\xe1\\t\\x9b\\xff\\x8b\\xe0\\x00\\x00\\x00\\x00IEND\\xaeB`\\x82\'';
-OSErr TModel::SaveKmlLEFile (Seconds fileTime, short fileNumber)
+
+
+/*OSErr TModel::SaveKmlLEFile (Seconds fileTime, short fileNumber)
 {
 	// use gKMLPath
 	// what about file series option
@@ -1461,7 +1463,7 @@ OSErr TModel::SaveKmlLEFile (Seconds fileTime, short fileNumber)
 	LERec theLE;
 	BFPB fileMS3,fileMS4,fileMS5,fileMS6,fileMS7;
 	char *p, path[256], fileName[256], nameStr[256], styleStr[256];
-	char fileNumStr[64] = "";
+	char fileNumStr[64] = "", outputFileName[256], shortFileName[64], copyPath[256];
 	char trajectoryTime[64], trajectoryDate[64], preparedTime[32], preparedDate[32];
 	Boolean bWriteUncertaintyLEs = this->IsUncertain();
 	float lat,lon;
@@ -1495,6 +1497,7 @@ OSErr TModel::SaveKmlLEFile (Seconds fileTime, short fileNumber)
 			}
 		}
 	}
+	// code goes here - if folder exists should we empty it or just delete individual files as we write the new ones?
 	strcat(userPath,"x.png");
 	err = MyCopyFile(0,0,source_file,0,0,userPath);
 
@@ -1517,7 +1520,13 @@ OSErr TModel::SaveKmlLEFile (Seconds fileTime, short fileNumber)
 		err=-1; return err;
 	}
 	
-	sprintf(target_file,"%s%c%s",outPath,NEWDIRDELIMITER,"moss.kml");
+	strcpy(copyPath,gKMLPath);
+	SplitPathFile(copyPath,shortFileName);
+	//sprintf(target_file,"%s%c%s",outPath,NEWDIRDELIMITER,"moss.kml");
+	sprintf(target_file,"%s%c%s%s",outPath,NEWDIRDELIMITER,shortFileName,".kml");
+	
+	sprintf(outputFileName,"%s%c%s%s",gKMLPath,DIRDELIMITER,shortFileName,".kml");
+	hdelete(0, 0, outputFileName);
 	
 	target = fopen(target_file, "w");
 	
@@ -1527,10 +1536,10 @@ OSErr TModel::SaveKmlLEFile (Seconds fileTime, short fileNumber)
 		err = -1; return err;
 	}
 	
-	/*while( ( ch = fgetc(source) ) != EOF )
-		fputc(ch, target);
+	//while( ( ch = fgetc(source) ) != EOF )
+		//fputc(ch, target);
 	
-	fclose(source);*/
+	//fclose(source);
 	
 	// get total number of LEs and set up arrays for in water, beached, certain and uncertain
 	for (i = 0, n = LESetsList->GetItemCount() ; i < n ; i++) 
@@ -1865,10 +1874,10 @@ OSErr TModel::SaveKmlLEFileSeries (Seconds fileTime, short fileNumber)
 		err = -1; return err;
 	}
 	
-	/*while( ( ch = fgetc(source) ) != EOF )
-	 fputc(ch, target);
+	//while( ( ch = fgetc(source) ) != EOF )
+	 //fputc(ch, target);
 	 
-	 fclose(source);*/
+	 //fclose(source);
 	
 	// get total number of LEs and set up arrays for in water, beached, certain and uncertain
 	for (i = 0, n = LESetsList->GetItemCount() ; i < n ; i++) 
@@ -1931,12 +1940,12 @@ OSErr TModel::SaveKmlLEFileSeries (Seconds fileTime, short fileNumber)
 					else  {waterPts[numInWater]=theLE.p; numInWater++;}
 					break;
 				}
-				/*case OILSTAT_OFFMAPS: 
-				{
-					if (isUncertainLE) {uncertainBeachedPts[numUncertainBeached]=theLE.p; numUncertainBeached++;}
-					else  {beachedPts[numBeached]=theLE.p; numBeached++;}
-					break; // what are we doing with these?
-				}*/
+				//case OILSTAT_OFFMAPS: 
+				//{
+					//if (isUncertainLE) {uncertainBeachedPts[numUncertainBeached]=theLE.p; numUncertainBeached++;}
+					//else  {beachedPts[numBeached]=theLE.p; numBeached++;}
+					//break; // what are we doing with these?
+				//}
 				case OILSTAT_ONLAND: 
 					if (isUncertainLE) {uncertainBeachedPts[numUncertainBeached]=theLE.p; numUncertainBeached++;}
 					else  {beachedPts[numBeached]=theLE.p; numBeached++;}
@@ -2186,6 +2195,781 @@ OSErr TModel::SaveKmlLEFileSeries (Seconds fileTime, short fileNumber)
 	
 	return err;
 	
+}*/
+
+OSErr TModel::SaveKmlLEFile (Seconds fileTime, short fileNumber)
+{
+	// use gKMLPath
+	// what about file series option
+	OSErr err = 0;
+	long n, i, j, totalNumLEs = 0, numPlacemarks=0;
+	long numBeached=0, numInWater=0, numUncertainBeached=0, numUncertainInWater=0;
+	TLEList *list;
+	LEHeaderRec header;
+	LERec theLE;
+	BFPB fileMS3,fileMS4,fileMS5,fileMS6,fileMS7;
+	char *p, path[256], fileName[256], nameStr[256], styleStr[256];
+	char fileNumStr[64] = "", outputFileName[256], shortFileName[64], copyPath[256];
+	char trajectoryTime[64], trajectoryDate[64], preparedTime[32], preparedDate[32];
+	Boolean bWriteUncertaintyLEs = this->IsUncertain();
+	float lat,lon;
+	WorldPoint *waterPts=0, *beachedPts=0, *uncertainWaterPts=0, *uncertainBeachedPts=0;
+	short *placemarks=0;
+	
+	char hdrStr[256], ptHdrStr[256], ptHdrStr2[256], ptStr[256], mgHdrStr[256], mgHdrStr2[256], pmHdrStr[256], pmHdrStr2[256];
+	
+	char ch, source_file[256], target_file[256], template_folder[256], outPath[256], userPath[256], template_path[256];
+	FILE *source, *target;
+	
+	GetKmlTemplateDirectory(template_folder);
+#if TARGET_API_MAC_CARBON
+	ConvertUnixPathToTraditionalPath((const char *) template_folder,template_path, kMaxNameLen);
+#else
+	strcpy(template_path,template_folder);
+#endif
+	sprintf(source_file,"%s%c%s",template_path,DIRDELIMITER,"x.png");
+	
+	//sprintf(userPath,"%s%c",gKMLPath,DIRDELIMITER);
+	strcpy(copyPath,gKMLPath);
+	SplitPathFile(copyPath,shortFileName);
+	/*if (!FolderExists(0, 0, userPath)) 
+	{
+		long dirID;
+		err = dircreate(0, 0, userPath, &dirID);
+		if(err) 
+		{	// try to create folders 
+			err = CreateFoldersInDirectoryPath(userPath);
+			if (err)	
+			{
+				printError("Unable to create the directory for the output file.");
+			}
+		}
+	}*/
+	// code goes here - if folder exists should we empty it or just delete individual files as we write the new ones?
+	strcpy(userPath,copyPath);
+	strcat(userPath,"x.png");
+	err = MyCopyFile(0,0,source_file,0,0,userPath);
+
+	sprintf(source_file,"%s%c%s",template_path,DIRDELIMITER,"dot.png");
+	//sprintf(userPath,"%s%c%s",gKMLPath,DIRDELIMITER,"dot.png");
+	//sprintf(userPath,"%s%c%s",copyPath,DIRDELIMITER,"dot.png");
+
+	strcpy(userPath,copyPath);
+	strcat(userPath,"dot.png");
+	err = MyCopyFile(0,0,source_file,0,0,userPath);
+
+#if TARGET_API_MAC_CARBON
+	err = ConvertTraditionalPathToUnixPath((const char *) gKMLPath, outPath, kMaxNameLen) ;
+#else
+	strcpy(outPath,gKMLPath);
+#endif
+	strcpy(source_file,template_folder);
+	strcat(source_file,"moss.kml");
+	
+	source = fopen(source_file, "r");
+	
+	if( source == NULL )
+	{
+		err=-1; return err;
+	}
+	
+	//strcpy(copyPath,gKMLPath);
+	//SplitPathFile(copyPath,shortFileName);
+	//sprintf(target_file,"%s%c%s",outPath,NEWDIRDELIMITER,"moss.kml");
+	//sprintf(target_file,"%s%c%s%s",outPath,NEWDIRDELIMITER,shortFileName,".kml");
+	sprintf(target_file,"%s%s",outPath,".kml");
+	
+	sprintf(outputFileName,"%s%s",gKMLPath,".kml");
+	//sprintf(outputFileName,"%s%c%s%s",gKMLPath,DIRDELIMITER,shortFileName,".kml");
+	hdelete(0, 0, outputFileName);
+	
+	target = fopen(target_file, "w");
+	
+	if( target == NULL )
+	{
+		fclose(source);
+		err = -1; return err;
+	}
+	
+	/*while( ( ch = fgetc(source) ) != EOF )
+		fputc(ch, target);
+	
+	fclose(source);*/
+	
+	// get total number of LEs and set up arrays for in water, beached, certain and uncertain
+	for (i = 0, n = LESetsList->GetItemCount() ; i < n ; i++) 
+	{
+		Boolean isUncertainLE;
+		LESetsList->GetListItem((Ptr)&list, i);
+		if (!list->bActive) continue;
+		
+		isUncertainLE = (list -> GetLEType () == UNCERTAINTY_LE);
+		if (isUncertainLE) continue;
+		totalNumLEs += list->numOfLEs;
+
+	}
+	if (totalNumLEs==0)
+	{
+		printNote("There are no LEs to output");
+		err=-1;
+		return err;
+	}
+	try
+	{
+		waterPts = new WorldPoint[totalNumLEs];	
+		beachedPts = new WorldPoint[totalNumLEs];
+	}
+	catch (...)
+	{
+		TechError("TModel::SaveKmlLEFile()", "new WorldPoint()", 0); return -1;
+	}
+	if (bWriteUncertaintyLEs)
+	{
+		try
+		{
+			uncertainWaterPts = new WorldPoint[totalNumLEs];
+			uncertainBeachedPts = new WorldPoint[totalNumLEs];
+		}
+		catch (...)
+		{
+			TechError("TModel::SaveKmlLEFile()", "new WorldPoint()", 0); return -1;
+		}
+	}
+	
+	for (i = 0, n = LESetsList->GetItemCount() ; i < n ; i++) 
+	{
+		Boolean isUncertainLE;
+		LESetsList->GetListItem((Ptr)&list, i);
+		if (!list->bActive) continue;
+		
+		isUncertainLE = (list -> GetLEType () == UNCERTAINTY_LE);
+		if(isUncertainLE && !bWriteUncertaintyLEs) continue; //don't write out uncertainty LEs unless uncertainty is on
+		
+		for (j = 0 ; j < list->numOfLEs ; j++) 
+		{
+			list -> GetLE (j, &theLE);
+			
+			// JLM, 3/1/99 it was decided to skip EVAPORATED and NOTRELEASED LE's
+			switch (theLE.statusCode) {
+				case OILSTAT_INWATER: 
+				{
+					if (isUncertainLE) {uncertainWaterPts[numUncertainInWater]=theLE.p; numUncertainInWater++;}
+					else  {waterPts[numInWater]=theLE.p; numInWater++;}
+					break;
+				}
+				case OILSTAT_OFFMAPS: 
+				{
+					if (isUncertainLE) {uncertainBeachedPts[numUncertainBeached]=theLE.p; numUncertainBeached++;}
+					else  {beachedPts[numBeached]=theLE.p; numBeached++;}
+					break; // what are we doing with these?
+				}
+				case OILSTAT_ONLAND: 
+				{
+					if (isUncertainLE) {uncertainBeachedPts[numUncertainBeached]=theLE.p; numUncertainBeached++;}
+					else  {beachedPts[numBeached]=theLE.p; numBeached++;}
+					break; 
+				}
+				default: continue; // skip other LE's	
+			}
+			////////////////////////////////////////////////
+		}
+	}
+	try
+	{
+		placemarks = new short[4];	
+	}
+	catch (...)
+	{
+		TechError("TModel::SaveKmlLEFile()", "new short()", 0); return -1;
+	}
+	if (numInWater>0) {placemarks[numPlacemarks]= 0; numPlacemarks++;}
+	if (numBeached>0) {placemarks[numPlacemarks]=1; numPlacemarks++;}
+	if (numUncertainInWater>0) {placemarks[numPlacemarks]=2; numPlacemarks++;}
+	if (numUncertainBeached>0) {placemarks[numPlacemarks]=3; numPlacemarks++;}
+	
+	GetDateTimeStrings(trajectoryTime, trajectoryDate, preparedTime, preparedDate);
+	
+	strcpy(hdrStr,"<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
+	fwrite(hdrStr,sizeof(char),strlen(hdrStr),target);
+	strcpy(hdrStr,"<kml xmlns=\"http://www.opengis.net/kml/2.2\">\n");
+	fwrite(hdrStr,sizeof(char),strlen(hdrStr),target);
+	strcpy(hdrStr,"  <Document>\n");
+	fwrite(hdrStr,sizeof(char),strlen(hdrStr),target);
+	//strcpy(hdrStr,"    <name>moss</name>\n");
+	sprintf(hdrStr,"    <name>%s</name>\n",shortFileName);
+	fwrite(hdrStr,sizeof(char),strlen(hdrStr),target);
+	strcpy(hdrStr,"    <open>1</open>\n");
+	fwrite(hdrStr,sizeof(char),strlen(hdrStr),target);
+	sprintf(hdrStr,"    <description><![CDATA[<b>Valid for:</b> %s, %s<br>\n",trajectoryTime,trajectoryDate);
+	fwrite(hdrStr,sizeof(char),strlen(hdrStr),target);
+	sprintf(hdrStr,"<b>Issued:</b> %s, %s\n",preparedTime,preparedDate);
+	fwrite(hdrStr,sizeof(char),strlen(hdrStr),target);
+	
+	while( ( ch = fgetc(source) ) != EOF )
+		fputc(ch, target);
+	
+	fclose(source);
+	
+	strcpy(ptHdrStr,"                 <Point>\n");
+	strcpy(ptHdrStr2,"                 </Point>\n");
+	strcpy(mgHdrStr,"      <MultiGeometry>\n");
+	strcpy(mgHdrStr2,"      </MultiGeometry>\n");
+	strcpy(pmHdrStr,"     <Placemark>\n");
+	strcpy(pmHdrStr2,"     </Placemark>\n");
+	for (i=0;i<numPlacemarks;i++)
+	{
+		//strcpy(hdrStr,"     <Placemark>\n");
+		fwrite(pmHdrStr,sizeof(char),strlen(pmHdrStr),target);
+		if (placemarks[i]== 0)
+		{
+			strcpy(nameStr,"      <name>Floating Splots (Best Guess)</name>\n");
+			fwrite(nameStr,sizeof(char),strlen(nameStr),target);
+			strcpy(styleStr,"      <styleUrl>#YellowDotIcon</styleUrl>\n");
+			fwrite(styleStr,sizeof(char),strlen(styleStr),target);
+			//strcpy(hdrStr,"      <MultiGeometry>\n");
+			fwrite(mgHdrStr,sizeof(char),strlen(mgHdrStr),target);
+			for (j=0;j<numInWater;j++)
+			{
+				lat = (double)waterPts[j].pLat / 1000000.0;
+				lon = (double)waterPts[j].pLong / 1000000.0;
+				//strcpy(ptHdrStr,"                 <Point>\n");
+				//strcpy(ptHdrStr2,"                 </Point>\n");
+				fwrite(ptHdrStr,sizeof(char),strlen(ptHdrStr),target);
+				sprintf(ptStr,"                   <coordinates>%lf,%lf</coordinates>\n",lon,lat);	// total vertices
+				fwrite(ptStr,sizeof(char),strlen(ptStr),target);
+				fwrite(ptHdrStr2,sizeof(char),strlen(ptHdrStr2),target);
+			}
+
+		}
+		else if (placemarks[i]==1)
+		{
+			strcpy(nameStr,"      <name>Beached Splots (Best Guess)</name>\n");
+			fwrite(nameStr,sizeof(char),strlen(nameStr),target);
+			strcpy(styleStr,"      <styleUrl>#YellowXIcon</styleUrl>\n");
+			fwrite(styleStr,sizeof(char),strlen(styleStr),target);
+			//strcpy(hdrStr,"      <MultiGeometry>\n");
+			fwrite(mgHdrStr,sizeof(char),strlen(mgHdrStr),target);
+			for (j=0;j<numBeached;j++)
+			{
+				lat = (double)beachedPts[j].pLat / 1000000.0;
+				lon = (double)beachedPts[j].pLong / 1000000.0;
+				//strcpy(ptHdrStr,"                 <Point>\n");
+				//strcpy(ptHdrStr2,"                 </Point>\n");
+				fwrite(ptHdrStr,sizeof(char),strlen(ptHdrStr),target);
+				sprintf(ptStr,"                   <coordinates>%lf,%lf</coordinates>\n",lon,lat);	// total vertices
+				fwrite(ptStr,sizeof(char),strlen(ptStr),target);
+				fwrite(ptHdrStr2,sizeof(char),strlen(ptHdrStr2),target);
+			}
+		}
+		else if (placemarks[i]==2)
+		{
+			strcpy(nameStr,"      <name>Uncertainty Floating Splots</name>\n");
+			fwrite(nameStr,sizeof(char),strlen(nameStr),target);
+			strcpy(styleStr,"      <styleUrl>#RedDotIcon</styleUrl>\n");
+			fwrite(styleStr,sizeof(char),strlen(styleStr),target);
+			//strcpy(hdrStr,"      <MultiGeometry>\n");
+			fwrite(mgHdrStr,sizeof(char),strlen(mgHdrStr),target);
+			for (j=0;j<numUncertainInWater;j++)
+			{
+				lat = (double)uncertainWaterPts[j].pLat / 1000000.0;
+				lon = (double)uncertainWaterPts[j].pLong / 1000000.0;
+				//strcpy(ptHdrStr,"                 <Point>\n");
+				//strcpy(ptHdrStr2,"                 </Point>\n");
+				fwrite(ptHdrStr,sizeof(char),strlen(ptHdrStr),target);
+				sprintf(ptStr,"                   <coordinates>%lf,%lf</coordinates>\n",lon,lat);	// total vertices
+				fwrite(ptStr,sizeof(char),strlen(ptStr),target);
+				fwrite(ptHdrStr2,sizeof(char),strlen(ptHdrStr2),target);
+			}
+		}
+		else if (placemarks[i]==3)
+		{
+			strcpy(nameStr,"      <name>Uncertainty Beached Splots</name>\n");
+			fwrite(nameStr,sizeof(char),strlen(nameStr),target);
+			strcpy(styleStr,"      <styleUrl>#RedXIcon</styleUrl>\n");
+			fwrite(styleStr,sizeof(char),strlen(styleStr),target);
+			//strcpy(hdrStr,"      <MultiGeometry>\n");
+			fwrite(mgHdrStr,sizeof(char),strlen(mgHdrStr),target);
+			for (j=0;j<numUncertainBeached;j++)
+			{
+				lat = (double)uncertainBeachedPts[j].pLat / 1000000.0;
+				lon = (double)uncertainBeachedPts[j].pLong / 1000000.0;
+				//strcpy(ptHdrStr,"                 <Point>\n");
+				//strcpy(ptHdrStr2,"                 </Point>\n");
+				fwrite(ptHdrStr,sizeof(char),strlen(ptHdrStr),target);
+				sprintf(ptStr,"                   <coordinates>%lf,%lf</coordinates>\n",lon,lat);	// total vertices
+				fwrite(ptStr,sizeof(char),strlen(ptStr),target);
+				fwrite(ptHdrStr2,sizeof(char),strlen(ptHdrStr2),target);
+			}
+		}
+		
+		
+		//strcpy(hdrStr,"      </MultiGeometry>\n");
+		fwrite(mgHdrStr2,sizeof(char),strlen(mgHdrStr2),target);
+		//strcpy(hdrStr,"     </Placemark>\n");
+		fwrite(pmHdrStr2,sizeof(char),strlen(pmHdrStr2),target);
+	}
+	strcpy(hdrStr,"  </Document>\n");
+	fwrite(hdrStr,sizeof(char),strlen(hdrStr),target);
+	strcpy(hdrStr,"</kml>\n");
+	fwrite(hdrStr,sizeof(char),strlen(hdrStr),target);
+	
+
+	fclose(target);
+	
+	if (waterPts)  {delete [] waterPts; waterPts = 0;}
+	if (beachedPts)  {delete [] beachedPts; beachedPts = 0;}
+	if (uncertainWaterPts)  {delete [] uncertainWaterPts; uncertainWaterPts = 0;}
+	if (uncertainBeachedPts)  {delete [] uncertainBeachedPts; uncertainBeachedPts = 0;}
+	
+	if (placemarks)  {delete [] placemarks; placemarks = 0;}
+
+	return err;
+	
+}
+
+OSErr TModel::SaveKmlLEFileSeries (Seconds fileTime, short fileNumber)
+{
+	// use gKMLPath
+	// what about file series option
+	OSErr err = 0;
+	long n, i, j, totalNumLEs = 0, numPlacemarks=0;
+	long numBeached=0, numInWater=0, numUncertainBeached=0, numUncertainInWater=0;
+	TLEList *list;
+	LEHeaderRec header;
+	LERec theLE;
+	//BFPB fileMS3,fileMS4,fileMS5,fileMS6,fileMS7;
+	DateTimeRec time;
+	char *p, path[256], fileName[256], nameStr[256], styleStr[256], startTimeStr[256], endTimeStr[256], kmlTimeStr[32];
+	char fileNumStr[64] = "",  outputFileName[256], shortFileName[64], copyPath[256];
+	char trajectoryTime[64], trajectoryDate[64], preparedTime[32], preparedDate[32];
+	Boolean bWriteUncertaintyLEs = this->IsUncertain();
+	float lat,lon,z=1.;
+	WorldPoint *waterPts=0, *beachedPts=0, *uncertainWaterPts=0, *uncertainBeachedPts=0;
+	short *placemarks=0;
+	
+	char hdrStr[256], ptHdrStr[256], ptHdrStr2[256], ptStr[256], mgHdrStr[64], mgHdrStr2[64], pmHdrStr[64], pmHdrStr2[64];
+	char timeSpanHdrStr[256], timeSpanHdrStr2[256];
+	
+	char ch, source_file[256], target_file[256], uncertain_file[256], template_folder[256], outPath[256], userPath[256], template_path[256];
+	FILE *source, *target, *uncertainFile;
+	
+	GetKmlTemplateDirectory(template_folder);
+	
+	if(fileNumber==0)
+	{
+#if TARGET_API_MAC_CARBON
+		ConvertUnixPathToTraditionalPath((const char *) template_folder,template_path, kMaxNameLen);
+#else
+		strcpy(template_path,template_folder);
+#endif
+		sprintf(source_file,"%s%c%s",template_path,DIRDELIMITER,"x.png");
+		
+		sprintf(userPath,"%s%c",gKMLPath,DIRDELIMITER);
+		strcpy(copyPath,gKMLPath);
+		SplitPathFile(copyPath,shortFileName);
+		//sprintf(userPath,"%s%c",gKMLPath,DIRDELIMITER);
+		/*if (!FolderExists(0, 0, userPath)) 
+		{
+			long dirID;
+			err = dircreate(0, 0, userPath, &dirID);
+			if(err) 
+			{	// try to create folders 
+				err = CreateFoldersInDirectoryPath(userPath);
+				if (err)	
+				{
+					printError("Unable to create the directory for the output file.");
+				}
+			}
+		}*/
+		strcpy(userPath,copyPath);
+		strcat(userPath,"x.png");
+		err = MyCopyFile(0,0,source_file,0,0,userPath);
+		
+		sprintf(source_file,"%s%c%s",template_path,DIRDELIMITER,"dot.png");
+		//sprintf(userPath,"%s%c%s",gKMLPath,DIRDELIMITER,"dot.png");
+		//sprintf(userPath,"%s%c%s",copyPath,DIRDELIMITER,"dot.png");
+		strcpy(userPath,copyPath);
+		strcat(userPath,"dot.png");
+		err = MyCopyFile(0,0,source_file,0,0,userPath);
+	}
+#if TARGET_API_MAC_CARBON
+	err = ConvertTraditionalPathToUnixPath((const char *) gKMLPath, outPath, kMaxNameLen) ;
+#else
+	strcpy(outPath,gKMLPath);
+#endif
+	
+	if (fileNumber==0)
+	{
+		strcpy(source_file,template_folder);
+		strcat(source_file,"moss.kml");
+		
+		source = fopen(source_file, "r");
+		
+		if( source == NULL )
+		{
+			err=-1; return err;
+		}
+	}
+	//sprintf(target_file,"%s%c%s",outPath,NEWDIRDELIMITER,"moss.kml");
+	//sprintf(uncertain_file,"%s%c%s",outPath,NEWDIRDELIMITER,"moss_uncertain.kml");
+	
+	// code goes here - check isUncertain before setting up uncertainty file
+	sprintf(target_file,"%s%s",outPath,".kml");
+	sprintf(uncertain_file,"%s%s",outPath,"_uncertain.kml");
+
+	//target = fopen(target_file, "w");
+	if (fileNumber==0)
+	{
+		sprintf(outputFileName,"%s%s",gKMLPath,".kml");
+		hdelete(0, 0, outputFileName);
+		sprintf(outputFileName,"%s%s",gKMLPath,"_uncertain.kml");
+		hdelete(0, 0, outputFileName);
+		
+		target = fopen(target_file, "w+");
+		if (bWriteUncertaintyLEs) uncertainFile = fopen(uncertain_file, "w+");
+	}
+	else 
+	{
+		target = fopen(target_file, "a");
+		if (bWriteUncertaintyLEs) uncertainFile = fopen(uncertain_file, "a");
+	}
+
+	
+	if( target == NULL )
+	{
+		if (fileNumber==0) fclose(source);
+		err = -1; return err;
+	}
+	
+	if( bWriteUncertaintyLEs && uncertainFile == NULL )
+	{
+		fclose(target);
+		if (fileNumber==0) fclose(source);
+		err = -1; return err;
+	}
+	
+	/*while( ( ch = fgetc(source) ) != EOF )
+	 fputc(ch, target);
+	 
+	 fclose(source);*/
+	
+	// get total number of LEs and set up arrays for in water, beached, certain and uncertain
+	for (i = 0, n = LESetsList->GetItemCount() ; i < n ; i++) 
+	{
+		Boolean isUncertainLE;
+		LESetsList->GetListItem((Ptr)&list, i);
+		if (!list->bActive) continue;
+		
+		isUncertainLE = (list -> GetLEType () == UNCERTAINTY_LE);
+		if (isUncertainLE) continue;
+		totalNumLEs += list->numOfLEs;
+		
+	}
+	if (totalNumLEs==0)
+	{
+		printNote("There are no LEs to output");
+		err=-1;
+		return err;
+	}
+	try
+	{
+		waterPts = new WorldPoint[totalNumLEs];	
+		beachedPts = new WorldPoint[totalNumLEs];
+	}
+	catch (...)
+	{
+		TechError("TModel::SaveKmlLEFile()", "new WorldPoint()", 0); return -1;
+	}
+	if (bWriteUncertaintyLEs)
+	{
+		try
+		{
+			uncertainWaterPts = new WorldPoint[totalNumLEs];
+			uncertainBeachedPts = new WorldPoint[totalNumLEs];
+		}
+		catch (...)
+		{
+			TechError("TModel::SaveKmlLEFile()", "new WorldPoint()", 0); return -1;
+		}
+	}
+	
+	for (i = 0, n = LESetsList->GetItemCount() ; i < n ; i++) 
+	{
+		Boolean isUncertainLE;
+		LESetsList->GetListItem((Ptr)&list, i);
+		if (!list->bActive) continue;
+		
+		isUncertainLE = (list -> GetLEType () == UNCERTAINTY_LE);
+		if(isUncertainLE && !bWriteUncertaintyLEs) continue; //don't write out uncertainty LEs unless uncertainty is on
+		
+		for (j = 0 ; j < list->numOfLEs ; j++) 
+		{
+			list -> GetLE (j, &theLE);
+			
+			// JLM, 3/1/99 it was decided to skip EVAPORATED and NOTRELEASED LE's
+			switch (theLE.statusCode) {
+				case OILSTAT_INWATER: 
+				{
+					if (isUncertainLE) {uncertainWaterPts[numUncertainInWater]=theLE.p; numUncertainInWater++;}
+					else  {waterPts[numInWater]=theLE.p; numInWater++;}
+					break;
+				}
+				/*case OILSTAT_OFFMAPS: 
+				{
+					if (isUncertainLE) {uncertainBeachedPts[numUncertainBeached]=theLE.p; numUncertainBeached++;}
+					else  {beachedPts[numBeached]=theLE.p; numBeached++;}
+					break; // what are we doing with these?
+				}*/
+				case OILSTAT_ONLAND: 
+					if (isUncertainLE) {uncertainBeachedPts[numUncertainBeached]=theLE.p; numUncertainBeached++;}
+					else  {beachedPts[numBeached]=theLE.p; numBeached++;}
+					break; 
+					
+				default: continue; // skip other LE's	
+			}
+			////////////////////////////////////////////////
+		}
+	}
+	try
+	{
+		placemarks = new short[4];	
+	}
+	catch (...)
+	{
+		TechError("TModel::SaveKmlLEFile()", "new short()", 0); return -1;
+	}
+	if (numInWater>0) {placemarks[numPlacemarks]= 0; numPlacemarks++;}
+	if (numBeached>0) {placemarks[numPlacemarks]=1; numPlacemarks++;}
+	if (numUncertainInWater>0) {placemarks[numPlacemarks]=2; numPlacemarks++;}
+	if (numUncertainBeached>0) {placemarks[numPlacemarks]=3; numPlacemarks++;}
+	if (numPlacemarks==0) return err;
+	
+	GetDateTimeStrings(trajectoryTime, trajectoryDate, preparedTime, preparedDate);	// will need to translate to kmz time
+	SecondsToDate (model->GetModelTime(), &time);
+	Date2KmlString(&time, kmlTimeStr);
+	sprintf(startTimeStr,"          <begin>%s</begin>     <!-- kml:dateTime -->\n",kmlTimeStr);
+	SecondsToDate (model->GetModelTime()+fOutputTimeStep, &time);
+	Date2KmlString(&time, kmlTimeStr);
+	sprintf(endTimeStr,"          <end>%s</end>         <!-- kml:dateTime -->\n",kmlTimeStr);	
+	
+	if(fileNumber==0)
+	{	// need to write everything to uncertainty file too...
+		strcpy(hdrStr,"<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
+		fwrite(hdrStr,sizeof(char),strlen(hdrStr),target);
+		strcpy(hdrStr,"<kml xmlns=\"http://www.opengis.net/kml/2.2\">\n");
+		fwrite(hdrStr,sizeof(char),strlen(hdrStr),target);
+		strcpy(hdrStr,"  <Document>\n");
+		fwrite(hdrStr,sizeof(char),strlen(hdrStr),target);
+		//strcpy(hdrStr,"    <name>moss</name>\n");
+		sprintf(hdrStr,"    <name>%s</name>\n",shortFileName);
+		fwrite(hdrStr,sizeof(char),strlen(hdrStr),target);
+		strcpy(hdrStr,"    <open>1</open>\n");
+		fwrite(hdrStr,sizeof(char),strlen(hdrStr),target);
+		sprintf(hdrStr,"    <description><![CDATA[<b>Valid for:</b> %s, %s<br>\n",trajectoryTime,trajectoryDate);
+		fwrite(hdrStr,sizeof(char),strlen(hdrStr),target);
+		sprintf(hdrStr,"<b>Issued:</b> %s, %s\n",preparedTime,preparedDate);
+		fwrite(hdrStr,sizeof(char),strlen(hdrStr),target);
+	
+		while( ( ch = fgetc(source) ) != EOF )
+			fputc(ch, target);
+		
+		fclose(source);
+	}
+	
+	//strcpy(ptHdrStr,"                 <Point>\n");
+	//strcpy(ptHdrStr2,"                 </Point>\n");
+	strcpy(ptHdrStr,"             <Point>\n");
+	strcpy(ptHdrStr2,"             </Point>\n");
+	strcpy(mgHdrStr,"      <MultiGeometry>\n");
+	strcpy(mgHdrStr2,"      </MultiGeometry>\n");
+	strcpy(pmHdrStr,"     <Placemark>\n");
+	strcpy(pmHdrStr2,"     </Placemark>\n");
+
+	strcpy(timeSpanHdrStr,"      <TimeSpan id=\"ID\">\n");
+	strcpy(timeSpanHdrStr2,"     </TimeSpan>\n");
+	
+	if (fileNumber==0)
+	{
+		strcpy(hdrStr," <Folder>\n");
+		fwrite(hdrStr,sizeof(char),strlen(hdrStr),target);
+		if (bWriteUncertaintyLEs) fwrite(hdrStr,sizeof(char),strlen(hdrStr),uncertainFile);
+		strcpy(nameStr," <name>Best Guess</name>\n");
+		fwrite(nameStr,sizeof(char),strlen(nameStr),target);
+		strcpy(nameStr," <name>Uncertainty</name>\n");
+		if (bWriteUncertaintyLEs) fwrite(nameStr,sizeof(char),strlen(nameStr),uncertainFile);
+	}
+	
+	for (i=0;i<numPlacemarks;i++)
+	{
+		//strcpy(hdrStr,"     <Placemark>\n");
+		//fwrite(pmHdrStr,sizeof(char),strlen(pmHdrStr),target);
+		//fwrite(pmHdrStr,sizeof(char),strlen(pmHdrStr),uncertainFile);
+		if (placemarks[i]==0)
+		{
+			fwrite(pmHdrStr,sizeof(char),strlen(pmHdrStr),target);
+			sprintf(nameStr,"      <name>%s, %s - Floating Splots (Best Guess)</name>\n",trajectoryTime,trajectoryDate);
+			//strcpy(nameStr,"      <name>Floating Splots (Best Guess)</name>\n");	// add time here
+			fwrite(nameStr,sizeof(char),strlen(nameStr),target);
+			strcpy(styleStr,"      <styleUrl>#YellowDotIcon</styleUrl>\n");
+			fwrite(styleStr,sizeof(char),strlen(styleStr),target);
+			//strcpy(hdrStr,"      <MultiGeometry>\n");
+			//<begin>2013-11-11T20:00:00Z</begin>     <!-- kml:dateTime -->
+			//<end>2013-11-11T21:00:00Z</end>         <!-- kml:dateTime -->
+			fwrite(timeSpanHdrStr,sizeof(char),strlen(timeSpanHdrStr),target);
+			fwrite(startTimeStr,sizeof(char),strlen(startTimeStr),target);
+			fwrite(endTimeStr,sizeof(char),strlen(endTimeStr),target);
+			fwrite(timeSpanHdrStr2,sizeof(char),strlen(timeSpanHdrStr2),target);
+			fwrite(mgHdrStr,sizeof(char),strlen(mgHdrStr),target);
+			for (j=0;j<numInWater;j++)
+			{
+				lat = (double)waterPts[j].pLat / 1000000.0;
+				lon = (double)waterPts[j].pLong / 1000000.0;
+				//strcpy(ptHdrStr,"                 <Point>\n");
+				//strcpy(ptHdrStr2,"                 </Point>\n");
+				fwrite(ptHdrStr,sizeof(char),strlen(ptHdrStr),target);
+				if (bWriteUncertaintyLEs) 
+				{
+					strcpy(hdrStr,"                     <altitudeMode>relativeToGround</altitudeMode>\n");
+					fwrite(hdrStr,sizeof(char),strlen(hdrStr),target);
+					sprintf(ptStr,"                     <coordinates>%lf,%lf,%lf</coordinates>\n",lon,lat,z);
+					fwrite(ptStr,sizeof(char),strlen(ptStr),target);
+				}
+				else
+				{
+					sprintf(ptStr,"                   <coordinates>%lf,%lf</coordinates>\n",lon,lat);	// total vertices
+					fwrite(ptStr,sizeof(char),strlen(ptStr),target);
+				}
+
+				//sprintf(ptStr,"                   <coordinates>%lf,%lf</coordinates>\n",lon,lat);	// total vertices
+				//fwrite(ptStr,sizeof(char),strlen(ptStr),target);
+				fwrite(ptHdrStr2,sizeof(char),strlen(ptHdrStr2),target);
+			}
+			fwrite(mgHdrStr2,sizeof(char),strlen(mgHdrStr2),target);
+			fwrite(pmHdrStr2,sizeof(char),strlen(pmHdrStr2),target);
+		}
+		else if (placemarks[i]==1)
+		{
+			fwrite(pmHdrStr,sizeof(char),strlen(pmHdrStr),target);
+			sprintf(nameStr,"      <name>%s, %s - Beached Splots (Best Guess)</name>\n",trajectoryTime,trajectoryDate);
+			//strcpy(nameStr,"      <name>Beached Splots (Best Guess)</name>\n");
+			fwrite(nameStr,sizeof(char),strlen(nameStr),target);
+			strcpy(styleStr,"      <styleUrl>#YellowXIcon</styleUrl>\n");
+			fwrite(styleStr,sizeof(char),strlen(styleStr),target);
+			//strcpy(hdrStr,"      <MultiGeometry>\n");
+			fwrite(timeSpanHdrStr,sizeof(char),strlen(timeSpanHdrStr),target);
+			fwrite(startTimeStr,sizeof(char),strlen(startTimeStr),target);
+			fwrite(endTimeStr,sizeof(char),strlen(endTimeStr),target);
+			fwrite(timeSpanHdrStr2,sizeof(char),strlen(timeSpanHdrStr2),target);
+			fwrite(mgHdrStr,sizeof(char),strlen(mgHdrStr),target);
+			for (j=0;j<numBeached;j++)
+			{
+				lat = (double)beachedPts[j].pLat / 1000000.0;
+				lon = (double)beachedPts[j].pLong / 1000000.0;
+				//strcpy(ptHdrStr,"                 <Point>\n");
+				//strcpy(ptHdrStr2,"                 </Point>\n");
+				fwrite(ptHdrStr,sizeof(char),strlen(ptHdrStr),target);
+				if (bWriteUncertaintyLEs) 
+				{
+					strcpy(hdrStr,"                     <altitudeMode>relativeToGround</altitudeMode>\n");
+					fwrite(hdrStr,sizeof(char),strlen(hdrStr),target);
+					sprintf(ptStr,"                     <coordinates>%lf,%lf,%lf</coordinates>\n",lon,lat,z);
+					fwrite(ptStr,sizeof(char),strlen(ptStr),target);
+				}
+				else {
+					sprintf(ptStr,"                   <coordinates>%lf,%lf</coordinates>\n",lon,lat);	// total vertices
+					fwrite(ptStr,sizeof(char),strlen(ptStr),target);
+				}
+
+				//sprintf(ptStr,"                   <coordinates>%lf,%lf</coordinates>\n",lon,lat);	// total vertices
+				//fwrite(ptStr,sizeof(char),strlen(ptStr),target);
+				fwrite(ptHdrStr2,sizeof(char),strlen(ptHdrStr2),target);
+			}
+			fwrite(mgHdrStr2,sizeof(char),strlen(mgHdrStr2),target);
+			fwrite(pmHdrStr2,sizeof(char),strlen(pmHdrStr2),target);
+		}
+		else if (placemarks[i]==2)
+		{
+			fwrite(pmHdrStr,sizeof(char),strlen(pmHdrStr),uncertainFile);
+			sprintf(nameStr,"      <name>%s, %s - Uncertainty Floating Splots</name>\n",trajectoryTime,trajectoryDate);
+			//strcpy(nameStr,"      <name>Uncertainty Floating Splots</name>\n");
+			fwrite(nameStr,sizeof(char),strlen(nameStr),uncertainFile);
+			strcpy(styleStr,"      <styleUrl>#RedDotIcon</styleUrl>\n");
+			fwrite(styleStr,sizeof(char),strlen(styleStr),uncertainFile);
+			//strcpy(hdrStr,"      <MultiGeometry>\n");
+			fwrite(timeSpanHdrStr,sizeof(char),strlen(timeSpanHdrStr),uncertainFile);
+			fwrite(startTimeStr,sizeof(char),strlen(startTimeStr),uncertainFile);
+			fwrite(endTimeStr,sizeof(char),strlen(endTimeStr),uncertainFile);
+			fwrite(timeSpanHdrStr2,sizeof(char),strlen(timeSpanHdrStr2),uncertainFile);
+			fwrite(mgHdrStr,sizeof(char),strlen(mgHdrStr),uncertainFile);
+			for (j=0;j<numUncertainInWater;j++)
+			{
+				lat = (double)uncertainWaterPts[j].pLat / 1000000.0;
+				lon = (double)uncertainWaterPts[j].pLong / 1000000.0;
+				//strcpy(ptHdrStr,"                 <Point>\n");
+				//strcpy(ptHdrStr2,"                 </Point>\n");
+				fwrite(ptHdrStr,sizeof(char),strlen(ptHdrStr),uncertainFile);
+				sprintf(ptStr,"                   <coordinates>%lf,%lf</coordinates>\n",lon,lat);	// total vertices
+				fwrite(ptStr,sizeof(char),strlen(ptStr),uncertainFile);
+				fwrite(ptHdrStr2,sizeof(char),strlen(ptHdrStr2),uncertainFile);
+			}
+			fwrite(mgHdrStr2,sizeof(char),strlen(mgHdrStr2),uncertainFile);
+			fwrite(pmHdrStr2,sizeof(char),strlen(pmHdrStr2),uncertainFile);
+		}
+		else if (placemarks[i]==3)
+		{
+			fwrite(pmHdrStr,sizeof(char),strlen(pmHdrStr),uncertainFile);
+			sprintf(nameStr,"      <name>%s, %s - Uncertainty Beached Splots</name>\n",trajectoryTime,trajectoryDate);
+			//strcpy(nameStr,"      <name>Uncertainty Beached Splots</name>\n");
+			fwrite(nameStr,sizeof(char),strlen(nameStr),uncertainFile);
+			strcpy(styleStr,"      <styleUrl>#RedXIcon</styleUrl>\n");
+			fwrite(styleStr,sizeof(char),strlen(styleStr),uncertainFile);
+			//strcpy(hdrStr,"      <MultiGeometry>\n");
+			fwrite(timeSpanHdrStr,sizeof(char),strlen(timeSpanHdrStr),uncertainFile);
+			fwrite(startTimeStr,sizeof(char),strlen(startTimeStr),uncertainFile);
+			fwrite(endTimeStr,sizeof(char),strlen(endTimeStr),uncertainFile);
+			fwrite(timeSpanHdrStr2,sizeof(char),strlen(timeSpanHdrStr2),uncertainFile);
+			fwrite(mgHdrStr,sizeof(char),strlen(mgHdrStr),uncertainFile);
+			for (j=0;j<numUncertainBeached;j++)
+			{
+				lat = (double)uncertainBeachedPts[j].pLat / 1000000.0;
+				lon = (double)uncertainBeachedPts[j].pLong / 1000000.0;
+				//strcpy(ptHdrStr,"                 <Point>\n");
+				//strcpy(ptHdrStr2,"                 </Point>\n");
+				fwrite(ptHdrStr,sizeof(char),strlen(ptHdrStr),uncertainFile);
+				sprintf(ptStr,"                   <coordinates>%lf,%lf</coordinates>\n",lon,lat);	// total vertices
+				fwrite(ptStr,sizeof(char),strlen(ptStr),uncertainFile);
+				fwrite(ptHdrStr2,sizeof(char),strlen(ptHdrStr2),uncertainFile);
+			}
+			fwrite(mgHdrStr2,sizeof(char),strlen(mgHdrStr2),uncertainFile);
+			fwrite(pmHdrStr2,sizeof(char),strlen(pmHdrStr2),uncertainFile);
+		}
+		else{
+			printNote("err in placemarks");
+		}
+				
+		//fwrite(mgHdrStr2,sizeof(char),strlen(mgHdrStr2),target);
+		//fwrite(pmHdrStr2,sizeof(char),strlen(pmHdrStr2),target);
+		//fwrite(mgHdrStr2,sizeof(char),strlen(mgHdrStr2),uncertainFile);
+		//fwrite(pmHdrStr2,sizeof(char),strlen(pmHdrStr2),uncertainFile);
+	}
+	//strcpy(hdrStr,"  </Document>\n");
+	//fwrite(hdrStr,sizeof(char),strlen(hdrStr),target);
+	//strcpy(hdrStr,"</kml>\n");
+	//fwrite(hdrStr,sizeof(char),strlen(hdrStr),target);
+	
+	
+	fclose(target);
+	if (bWriteUncertaintyLEs) fclose(uncertainFile);
+	
+	if (waterPts)  {delete [] waterPts; waterPts = 0;}
+	if (beachedPts)  {delete [] beachedPts; beachedPts = 0;}
+	if (uncertainWaterPts)  {delete [] uncertainWaterPts; uncertainWaterPts = 0;}
+	if (uncertainBeachedPts)  {delete [] uncertainBeachedPts; uncertainBeachedPts = 0;}
+	
+	if (placemarks)  {delete [] placemarks; placemarks = 0;}
+	
+	return err;
+	
 }
 
 OSErr TModel::FinishKmlFile ()
@@ -2203,9 +2987,11 @@ OSErr TModel::FinishKmlFile ()
 	strcpy(outPath,gKMLPath);
 #endif
 	
-	sprintf(target_file,"%s%c%s",outPath,NEWDIRDELIMITER,"moss.kml");
-	sprintf(uncertain_file,"%s%c%s",outPath,NEWDIRDELIMITER,"moss_uncertain.kml");
+	//sprintf(target_file,"%s%c%s",outPath,NEWDIRDELIMITER,"moss.kml");
+	//sprintf(uncertain_file,"%s%c%s",outPath,NEWDIRDELIMITER,"moss_uncertain.kml");
 	
+	sprintf(target_file,"%s%s",outPath,".kml");
+	sprintf(uncertain_file,"%s%s",outPath,"_uncertain.kml");
 	//target = fopen(target_file, "w");
 	target = fopen(target_file, "a");
 	if( target == NULL )
@@ -4748,7 +5534,7 @@ OSErr TModel::Step ()
 							break;
 					}
 					//thisMove = thisMover -> GetMove (model->GetStartTime(),fDialogVariables.computeTimeStep,i,j,&thisLE,leType);
-					thisMove = thisMover -> GetMove (model->GetStartTime(),fDialogVariables.computeTimeStep,listIndex,j,&thisLE,leType);
+					thisMove = thisMover -> GetMove (model->GetModelTime(),fDialogVariables.computeTimeStep,listIndex,j,&thisLE,leType);
 					/*if(thisMover -> IAm(TYPE_CURRENTMOVER)) // maybe also for larvae (special LE type?)
 					{	// check if current beaches LE, and if so don't add into overall move
 						testPoint.p.pLat = currentMovedPoint.p.pLat + thisMove.p.pLat;
@@ -5312,6 +6098,7 @@ OSErr TModel::StepBackwards ()
 		else listIndex = 0;	// note this is not used for forecast LEs - maybe put in a flag to identify that
 		if(!thisLEList->IsActive()) continue;
 
+		SetChemicalHalfLife(((TOLEList *)thisLEList)->fSetSummary.halfLife);	// each spill can have a half life
 		UpdateWindage(thisLEList);
 		//DispersionRec dispInfo = ((TOLEList *)thisLEList) -> GetDispersionInfo();
 		//Seconds disperseTime = model->GetStartTime() + dispInfo.timeToDisperse;

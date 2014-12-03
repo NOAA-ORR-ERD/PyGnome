@@ -78,7 +78,8 @@ cdef class CyComponentMover(CyCurrentMover):
         :param pat2_angle=0: The angle for pattern 2
         :param pat2_speed=10:
         :param pat2_speed_units=m/s: Speed units
-        :param pat2_scale_to_value=0.1:
+        :param pat2_scale_to_value=0.1: 
+        :param scale_by=NONE: Use Wind speed or Wind stress for scaling
 
         .. note:: See base class for remaining properties which can be given
         as *args, or **kwargs. The *args is for pickling to work since it
@@ -151,10 +152,17 @@ cdef class CyComponentMover(CyCurrentMover):
     property pat2_scale_to_value:
         def __get__(self):
             return self.component.pat2ScaleToValue
-
-        def __set__(self, value):
-            self.component.pat2ScaleToValue = value
-
+        
+        def __set__(self,value):
+            self.component.pat2ScaleToValue = value    
+    
+    property scale_by:
+        def __get__(self):
+            return self.component.scaleBy
+        
+        def __set__(self,value):
+            self.component.scaleBy = value    
+    
     property ref_point:
         def __get__(self):
             """

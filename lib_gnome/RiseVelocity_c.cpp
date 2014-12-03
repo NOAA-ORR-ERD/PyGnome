@@ -158,14 +158,14 @@ OSErr RiseVelocity_c::get_move(int n, unsigned long model_time, unsigned long st
 {
 	// JS Ques: Is this required? Could cy/python invoke this method without well defined numpy arrays?
 	if (!delta || !ref || !rise_velocity) {
-		cerr << "(delta, ref, rise_velocity) = ("
-			 << delta << "," << ref << "," << rise_velocity << ")" << endl;
+		//cerr << "(delta, ref, rise_velocity) = ("
+			 //<< delta << "," << ref << "," << rise_velocity << ")" << endl;
 		return 1;
 	}
 
 	// For LEType spillType, check to make sure it is within the valid values
 	if (spillType < FORECAST_LE || spillType > UNCERTAINTY_LE) {
-		cerr << "Invalid spillType." << endl;
+		//cerr << "Invalid spillType." << endl;
 		return 2;
 	}
 

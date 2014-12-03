@@ -10,7 +10,7 @@ from sqlalchemy import (Table,
                         ForeignKey)
 
 from sqlalchemy.ext.declarative import declarative_base as real_declarative_base
-from sqlalchemy.orm.collections import attribute_mapped_collection
+from sqlalchemy.orm.collections import InstrumentedList
 from sqlalchemy.orm.relationships import (RelationshipProperty,
                                           ONETOMANY, MANYTOONE, MANYTOMANY)
 from sqlalchemy.orm import (scoped_session,
@@ -22,9 +22,7 @@ from zope.sqlalchemy import ZopeTransactionExtension
 
 DBSession = scoped_session(sessionmaker(extension=ZopeTransactionExtension()))
 
-#Base = declarative_base()
-
-# Let's make this a class decorator
+# Let's make declarative_base a class decorator
 declarative_base = lambda cls: real_declarative_base(cls=cls)
 
 
@@ -55,60 +53,71 @@ class Base(object):
     def columns(self):
         return [c.name for c in self.__table__.columns]
 
-    def columnitems(self, recurse=True):
+    def columnitems(self, recurse=2):
         ret = dict((c, getattr(self, c)) for c in self.columns)
-        if recurse:
-            # Note: Right now our schema has a maximum of one level of
-            #       indirection between objects, so short-circuiting the
-            #       recursion in all cases is just fine.
-            #       If we were to design a deeper schema, this would need
-            #       to change.
+        if recurse > 0:
+            recurse = recurse - 1
+
             for r in self.one_to_many_relationships:
-                ret[r] = [a.tojson(recurse=False) for a in getattr(self, r)]
+                if isinstance(getattr(self, r), InstrumentedList):
+                    ret[r] = [a.tojson(recurse=recurse)
+                              for a in getattr(self, r)]
+                elif getattr(self, r) is not None:
+                    ret[r] = getattr(self, r).tojson(recurse=recurse)
+
             for r in self.many_to_many_relationships:
-                ret[r] = [a.tojson(recurse=False) for a in getattr(self, r)]
+                ret[r] = [a.tojson(recurse=recurse) for a in getattr(self, r)]
+
             for r in self.many_to_one_relationships:
-                ret[r] = getattr(self, r).tojson(recurse=False)
+                if getattr(self, r) is not None:
+                    ret[r] = getattr(self, r).tojson(recurse=recurse)
         return ret
 
     def __repr__(self):
         return '{}({})'.format(self.__class__.__name__, self.columnitems)
 
-    def tojson(self, recurse=True):
+    def tojson(self, recurse=2):
         return self.columnitems(recurse)
 
 
-# UNMAPPED association table (Oil <--many-to-many--> Synonym)
-oil_to_synonym = Table('oil_to_synonym', Base.metadata,
-                       Column('oil_id', Integer, ForeignKey('oils.id')),
-                       Column('synonym_id', Integer,
-                              ForeignKey('synonyms.id')),
-                       )
+# UNMAPPED many-to-many association table
+imported_to_synonym = Table('imported_to_synonym', Base.metadata,
+                            Column('imported_record_id', Integer,
+                                   ForeignKey('imported_records.id')),
+                            Column('synonym_id', Integer,
+                                   ForeignKey('synonyms.id')),
+                            )
 
 
-# UNMAPPED association table (Oil <--many-to-many--> Category)
+# UNMAPPED many-to-many association table
 oil_to_category = Table('oil_to_category', Base.metadata,
-                       Column('oil_id', Integer, ForeignKey('oils.id')),
-                       Column('category_id', Integer,
-                              ForeignKey('categories.id')),
-                       )
+                        Column('oil_id', Integer,
+                               ForeignKey('oils.id')),
+                        Column('category_id', Integer,
+                               ForeignKey('categories.id')),
+                        )
 
 
-class Oil(Base):
-    __tablename__ = 'oils'
+class ImportedRecord(Base):
+    '''
+        This object, and its related objects, is created from a
+        single record inside the OilLib flat file.  The OilLib flat file
+        is itself created from a filemaker export process, and is in two
+        dimensional tabular format.
+    '''
+    __tablename__ = 'imported_records'
     id = Column(Integer, primary_key=True)
-    name = Column(String(100), unique=True, nullable=False)
+
+    oil_name = Column(String(100), unique=True, nullable=False)
     adios_oil_id = Column(String(16), unique=True, nullable=False)
 
-    # demographic fields
     custom = Column(Boolean, default=False)
     location = Column(String(64))
     field_name = Column(String(64))
     reference = Column(Text)
     api = Column(Float(53))
-    pour_point_min = Column(Float(53))
-    pour_point_min_indicator = Column(String(2))
-    pour_point_max = Column(Float(53))
+    pour_point_min_k = Column(Float(53))
+    pour_point_max_k = Column(Float(53))
     product_type = Column(String(16))
     comments = Column(Text)
     asphaltene_content = Column(Float(53))
@@ -117,13 +126,12 @@ class Oil(Base):
     water_content_emulsion = Column(Float(53))
     emuls_constant_min = Column(Float(53))
     emuls_constant_max = Column(Float(53))
-    flash_point_min = Column(Float(53))
-    flash_point_min_indicator = Column(String(2))
-    flash_point_max = Column(Float(53))
-    oil_water_interfacial_tension = Column(Float(53))
-    oil_water_interfacial_tension_ref_temp = Column(Float(53))
-    oil_seawater_interfacial_tension = Column(Float(53))
-    oil_seawater_interfacial_tension_ref_temp = Column(Float(53))
+    flash_point_min_k = Column(Float(53))
+    flash_point_max_k = Column(Float(53))
+    oil_water_interfacial_tension_n_m = Column(Float(53))
+    oil_water_interfacial_tension_ref_temp_k = Column(Float(53))
+    oil_seawater_interfacial_tension_n_m = Column(Float(53))
+    oil_seawater_interfacial_tension_ref_temp_k = Column(Float(53))
     cut_units = Column(String(16))
     oil_class = Column(String(16))
     adhesion = Column(Float(53))
@@ -140,169 +148,33 @@ class Oil(Base):
     vanadium = Column(Float(53))
     conrandson_residuum = Column(Float(53))
     conrandson_crude = Column(Float(53))
-    dispersability_temp = Column(Float(53))
+    dispersability_temp_k = Column(Float(53))
     preferred_oils = Column(Boolean, default=False)
-    koy = Column(Float(53))
+    k0y = Column(Float(53))
 
     # relationship fields
-    synonyms = relationship('Synonym', secondary=oil_to_synonym,
-                            backref='oils')
-    categories = relationship('Category', secondary=oil_to_category,
-                              backref='oils')
-    densities = relationship('Density', backref='oil',
+    synonyms = relationship('Synonym', secondary=imported_to_synonym,
+                            backref='imported')
+    densities = relationship('Density', backref='imported',
                              cascade="all, delete, delete-orphan")
-    kvis = relationship('KVis', backref='oil',
+    kvis = relationship('KVis', backref='imported',
                         cascade="all, delete, delete-orphan")
-    dvis = relationship('DVis', backref='oil',
+    dvis = relationship('DVis', backref='imported',
                         cascade="all, delete, delete-orphan")
-    cuts = relationship('Cut', backref='oil',
+    cuts = relationship('Cut', backref='imported',
                         cascade="all, delete, delete-orphan")
-    toxicities = relationship('Toxicity', backref='oil',
+    toxicities = relationship('Toxicity', backref='imported',
                               cascade="all, delete, delete-orphan")
+    oil = relationship('Oil', backref='imported',
+                       uselist=False)
 
     def __init__(self, **kwargs):
-        self.name = kwargs.get('Oil Name')
-        self.adios_oil_id = kwargs.get('ADIOS Oil ID')
-        self.location = kwargs.get('Location')
-        self.field_name = kwargs.get('Field Name')
-        # DONE - populate synonyms
-        self.reference = kwargs.get('Reference')
-        self.api = kwargs.get('API')
-
-        # kind of weird behavior...
-        # pour_point_min can have the following values
-        #     '<' which means "less than" the max value
-        #     '>' which means "greater than" the max value
-        #     ''  which means no value.  Max should also have no value
-        #         in this case
-        # So it is not possible for a column to be a float and a string too.
-        if kwargs.get('Pour Point Min (K)') in ('<', '>'):
-            self.pour_point_min_indicator = kwargs.get('Pour Point Min (K)')
-            self.pour_point_min = None
-        else:
-            self.pour_point_min = kwargs.get('Pour Point Min (K)')
-        self.pour_point_max = kwargs.get('Pour Point Max (K)')
-
-        self.product_type = kwargs.get('Product Type')
-        self.comments = kwargs.get('Comments')
-        self.asphaltene_content = kwargs.get('Asphaltene Content')
-        self.wax_content = kwargs.get('Wax Content')
-        self.aromatics = kwargs.get('Aromatics')
-        self.water_content_emulsion = kwargs.get('Water Content Emulsion')
-        self.emuls_constant_min = kwargs.get('Emuls Constant Min')
-        self.emuls_constant_max = kwargs.get('Emuls Constant Max')
-
-        # same kind of weird behavior as pour point...
-        if kwargs.get('Flash Point Min (K)') in ('<', '>'):
-            self.flash_point_min_indicator = kwargs.get('Flash Point Min (K)')
-            self.flash_point_min = None
-        else:
-            self.flash_point_min = kwargs.get('Flash Point Min (K)')
-        self.flash_point_max = kwargs.get('Flash Point Max (K)')
-
-        self.oil_water_interfacial_tension = kwargs.get('Oil/Water Interfacial Tension (N/m)')
-        self.oil_water_interfacial_tension_ref_temp = kwargs.get('Oil/Water Interfacial Tension Ref Temp (K)')
-        self.oil_seawater_interfacial_tension = kwargs.get('Oil/Seawater Interfacial Tension (N/m)')
-        self.oil_seawater_interfacial_tension_ref_temp = kwargs.get('Oil/Seawater Interfacial Tension Ref Temp (K)')
-        self.cut_units = kwargs.get('Cut Units')
-        self.oil_class = kwargs.get('Oil Class')
-        self.adhesion = kwargs.get('Adhesion')
-        self.benezene = kwargs.get('Benezene')
-        self.naphthenes = kwargs.get('Naphthenes')
-        self.paraffins = kwargs.get('Paraffins')
-        self.polars = kwargs.get('Polars')
-        self.resins = kwargs.get('Resins')
-        self.saturates = kwargs.get('Saturates')
-        self.sulphur = kwargs.get('Sulphur')
-        self.reid_vapor_pressure = kwargs.get('Reid Vapor Pressure')
-        self.viscosity_multiplier = kwargs.get('Viscosity Multiplier')
-        self.nickel = kwargs.get('Nickel')
-        self.vanadium = kwargs.get('Vanadium')
-        self.conrandson_residuum = kwargs.get('Conrandson Residuum')
-        self.conrandson_crude = kwargs.get('Conrandson Crude')
-        self.dispersability_temp = kwargs.get('Dispersability Temp (K)')
-        self.preferred_oils = (True if kwargs.get('Preferred Oils') == 'X'
-                               else False)
-        self.koy = kwargs.get('K0Y')
-
-    @property
-    def viscosities(self):
-        '''
-            get a list of all kinematic viscosities associated with this
-            oil object.  The list is compiled from the registered
-            kinematic and dynamic viscosities.
-            the viscosity fields contain:
-              - kinematic viscosity in m^2/sec
-              - reference temperature in degrees kelvin
-              - weathering ???
-            Viscosity entries are ordered by (weathering, temperature)
-            If we are using dynamic viscosities, we calculate the
-            kinematic viscosity from the density that is closest
-            to the respective reference temperature
-            TODO: Chris would like calculated properties, at least the
-                  very complex ones, to be moved to a subclass
-                  - maybe we create a class like OilProperties(Oil) that is
-                    either derived from Oil or contains an oil object.
-        '''
-        # first we get the kinematic viscosities if they exist
-        ret = []
-        if self.kvis:
-            ret = [(k.meters_squared_per_sec,
-                    k.ref_temp,
-                    (0.0 if k.weathering == None else k.weathering))
-                    for k in self.kvis]
-
-        if self.dvis:
-            # If we have any DVis records, we need to get the
-            # dynamic viscosities, convert to kinematic, and
-            # add them if possible.
-            # We have dvis at a certain (temperature, weathering).
-            # We need to get density at the same weathering and
-            # the closest temperature in order to calculate the kinematic.
-            # There are lots of oil entries where the dvis do not have
-            # matching densities for (temp, weathering)
-            densities = [(d.kg_per_m_cubed,
-                          d.ref_temp,
-                          (0.0 if d.weathering == None else d.weathering))
-                         for d in self.densities]
-
-            for v, t, w in [(d.kg_per_msec, d.ref_temp, d.weathering)
-                            for d in self.dvis]:
-                if w == None:
-                    w = 0.0
-
-                # if we already have a KVis at the same
-                # (temperature, weathering), we do not need
-                # another one
-                if len([vv for vv in ret
-                        if vv[1] == t and vv[2] == w]) > 0:
-                    continue
-
-                # grab the densities with matching weathering
-                dlist = [(d[0], abs(t - d[1]))
-                         for d in densities
-                         if d[2] == w]
-
-                if len(dlist) == 0:
-                    continue
-
-                # grab the density with the closest temperature
-                density = sorted(dlist, key=lambda x: x[1])[0][0]
-
-                # kvis = dvis/density
-                ret.append(((v / density), t, w))
-
-        ret.sort(key=lambda x: (x[2], x[1]))
-        kwargs = ['(m^2/s)', 'Ref Temp (K)', 'Weathering']
-
-        # caution: although we will have a list of real
-        #          KVis objects, they are not persisted
-        #          in the database.
-        ret = [(KVis(**dict(zip(kwargs, v)))) for v in ret]
-        return ret
+        for a, v in kwargs.iteritems():
+            if (a in self.columns):
+                setattr(self, a, v)
 
     def __repr__(self):
-        return "<Oil('%s')>" % (self.name)
+        return "<ImportedRecord('%s')>" % (self.oil_name)
 
 
 class Synonym(Base):
@@ -320,100 +192,104 @@ class Synonym(Base):
 class Density(Base):
     __tablename__ = 'densities'
     id = Column(Integer, primary_key=True)
+    imported_record_id = Column(Integer, ForeignKey('imported_records.id'))
     oil_id = Column(Integer, ForeignKey('oils.id'))
 
-    # demographics
-    kg_per_m_cubed = Column(Float(53))
-    ref_temp = Column(Float(53))
+    kg_m_3 = Column(Float(53))
+    ref_temp_k = Column(Float(53))
     weathering = Column(Float(53))
 
     def __init__(self, **kwargs):
-        self.kg_per_m_cubed = kwargs.get('(kg/m^3)')
-        self.ref_temp = kwargs.get('Ref Temp (K)')
-        self.weathering = kwargs.get('Weathering')
+        for a, v in kwargs.iteritems():
+            if (a in self.columns):
+                setattr(self, a, v)
 
     def __repr__(self):
-        return "<Density('%s')>" % (self.id)
+        return ("<Density({0.kg_m_3} kg/m^3 at {0.ref_temp_k}K)>"
+                .format(self))
 
 
 class KVis(Base):
     __tablename__ = 'kvis'
     id = Column(Integer, primary_key=True)
+    imported_record_id = Column(Integer, ForeignKey('imported_records.id'))
     oil_id = Column(Integer, ForeignKey('oils.id'))
 
-    # demographics
-    meters_squared_per_sec = Column(Float(53))
-    ref_temp = Column(Float(53))
+    m_2_s = Column(Float(53))
+    ref_temp_k = Column(Float(53))
     weathering = Column(Float(53))
 
     def __init__(self, **kwargs):
-        self.meters_squared_per_sec = kwargs.get('(m^2/s)')
-        self.ref_temp = kwargs.get('Ref Temp (K)')
-        self.weathering = kwargs.get('Weathering')
+        for a, v in kwargs.iteritems():
+            if (a in self.columns):
+                setattr(self, a, v)
 
     def __repr__(self):
-        return "<KVIs('%s')>" % (self.id)
+        return ('<KVis({0.m_2_s} m^2/s at {0.ref_temp_k}K)>'
+                .format(self))
 
 
 class DVis(Base):
     __tablename__ = 'dvis'
     id = Column(Integer, primary_key=True)
-    oil_id = Column(Integer, ForeignKey('oils.id'))
+    imported_record_id = Column(Integer, ForeignKey('imported_records.id'))
 
-    # demographics
-    kg_per_msec = Column(Float(53))
-    ref_temp = Column(Float(53))
+    kg_ms = Column(Float(53))
+    ref_temp_k = Column(Float(53))
     weathering = Column(Float(53))
 
     def __init__(self, **kwargs):
-        self.kg_per_msec = kwargs.get('(kg/ms)')
-        self.ref_temp = kwargs.get('Ref Temp (K)')
-        self.weathering = kwargs.get('Weathering')
+        for a, v in kwargs.iteritems():
+            if (a in self.columns):
+                setattr(self, a, v)
 
     def __repr__(self):
-        return "<DVIs('%s')>" % (self.id)
+        return ('<DVis({0.kg_ms} kg/ms at {0.ref_temp_k}K)>'
+                .format(self))
 
 
 class Cut(Base):
     __tablename__ = 'cuts'
     id = Column(Integer, primary_key=True)
+    imported_record_id = Column(Integer, ForeignKey('imported_records.id'))
     oil_id = Column(Integer, ForeignKey('oils.id'))
 
-    # demographics
-    vapor_temp = Column(Float(53))
-    liquid_temp = Column(Float(53))
+    vapor_temp_k = Column(Float(53))
+    liquid_temp_k = Column(Float(53))
     fraction = Column(Float(53))
 
     def __init__(self, **kwargs):
-        self.vapor_temp = kwargs.get('Vapor Temp (K)')
-        self.liquid_temp = kwargs.get('Liquid Temp (K)')
-        self.fraction = kwargs.get('Fraction')
+        for a, v in kwargs.iteritems():
+            if (a in self.columns):
+                setattr(self, a, v)
 
     def __repr__(self):
-        return "<Cut('%s')>" % (self.id)
+        lt = '{0}K'.format(self.liquid_temp_k) if self.liquid_temp_k else None
+        vt = '{0}K'.format(self.vapor_temp_k) if self.vapor_temp_k else None
+        return ('<Cut(liquid_temp={0}, vapor_temp={1}, fraction={2})>'
+                .format(lt, vt, self.fraction))
 
 
 class Toxicity(Base):
     __tablename__ = 'toxicities'
     id = Column(Integer, primary_key=True)
-    oil_id = Column(Integer, ForeignKey('oils.id'))
+    imported_record_id = Column(Integer, ForeignKey('imported_records.id'))
 
-    # demographics
     tox_type = Column(Enum('EC', 'LC'), nullable=False)
     species = Column(String(16))
-    after_24_hours = Column(Float(53))
-    after_48_hours = Column(Float(53))
-    after_96_hours = Column(Float(53))
+    after_24h = Column(Float(53))
+    after_48h = Column(Float(53))
+    after_96h = Column(Float(53))
 
     def __init__(self, **kwargs):
-        self.tox_type = kwargs.get('Toxicity Type')
-        self.species = kwargs.get('Species')
-        self.after_24_hours = kwargs.get('24h')
-        self.after_48_hours = kwargs.get('48h')
-        self.after_96_hours = kwargs.get('96h')
+        for a, v in kwargs.iteritems():
+            if (a in self.columns):
+                setattr(self, a, v)
 
     def __repr__(self):
-        return "<Toxicity('%s')>" % (self.id)
+        return ('<Toxicity({0.species}, {0.tox_type}, '
+                '[{0.after_24h}, {0.after_48h}, {0.after_96h}])>'
+                .format(self))
 
 
 class Category(Base):
@@ -451,5 +327,64 @@ class Category(Base):
         self.children.append(Category(nodename, parent=self))
 
     def __repr__(self):
-        return ('Category(name={0}, id={1}, parent_id={2})'
+        return ('<Category(name={0}, id={1}, parent_id={2})>'
                 .format(self.name, self.id, self.parent_id))
+
+
+class Oil(Base):
+    '''
+        This is where we will put our estimated oil properties.
+    '''
+    __tablename__ = 'oils'
+    id = Column(Integer, primary_key=True)
+    imported_record_id = Column(Integer, ForeignKey('imported_records.id'))
+
+    name = Column(String(100), unique=True, nullable=False)
+    api = Column(Float(53))
+    oil_water_interfacial_tension_n_m = Column(Float(53))
+    oil_water_interfacial_tension_ref_temp_k = Column(Float(53))
+    oil_seawater_interfacial_tension_n_m = Column(Float(53))
+    oil_seawater_interfacial_tension_ref_temp_k = Column(Float(53))
+    pour_point_min_k = Column(Float(53))
+    pour_point_max_k = Column(Float(53))
+    flash_point_min_k = Column(Float(53))
+    flash_point_max_k = Column(Float(53))
+    emulsion_water_fraction_max = Column(Float(53))
+    bullwinkle_fraction = Column(Float(53))
+    adhesion_kg_m_2 = Column(Float(53))
+    sulphur_fraction = Column(Float(53))
+
+    categories = relationship('Category', secondary=oil_to_category,
+                              backref='oils')
+
+    densities = relationship('Density', backref='oil',
+                             cascade="all, delete, delete-orphan")
+    kvis = relationship('KVis', backref='oil',
+                        cascade="all, delete, delete-orphan")
+    cuts = relationship('Cut', backref='oil',
+                        cascade="all, delete, delete-orphan")
+    sara_fractions = relationship('SARAFraction', backref='oil',
+                                  cascade="all, delete, delete-orphan")
+
+    def __repr__(self):
+        return '<Oil("{0.name}")>'.format(self)
+
+
+class SARAFraction(Base):
+    __tablename__ = 'resin_fractions'
+    id = Column(Integer, primary_key=True)
+    oil_id = Column(Integer, ForeignKey('oils.id'))
+
+    sara_type = Column(Enum('Saturates', 'Aromatics', 'Resins', 'Asphaltenes'),
+                       nullable=False)
+    fraction = Column(Float(53))
+    ref_temp_k = Column(Float(53))
+
+    def __init__(self, **kwargs):
+        for a, v in kwargs.iteritems():
+            if (a in self.columns):
+                setattr(self, a, v)
+
+    def __repr__(self):
+        return ('<SARAFraction({0.sara_type}={0.fraction} at {0.ref_temp_k}K)>'
+                .format(self))

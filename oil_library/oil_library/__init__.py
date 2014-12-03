@@ -2,43 +2,70 @@ import os
 from itertools import chain
 from collections import namedtuple
 
-import sqlalchemy
+from sqlalchemy import create_engine
+from sqlalchemy.exc import UnboundExecutionError
+from sqlalchemy.orm.exc import NoResultFound
 
 from hazpy import unit_conversion
 uc = unit_conversion
 
-from oil_library.models import Oil, DBSession
+from oil_library.models import Oil, Density, DBSession
+from oil_library.mock_oil import sample_oil_to_mock_oil
 from oil_library.oil_props import OilProps
 
 
 # Some standard oils - scope is module level, non-public
+# create mock_oil objects instead of dict - we always want the same instance
+# of mock_oil object for say 'oil_conservative' otherwise equality fails
 _sample_oils = {
-    'oil_gas': {'Oil Name': 'oil_gas',
-                'API': uc.convert('Density', 'gram per cubic centimeter',
-                                  'API degree', 0.75)},
-    'oil_jetfuels': {'Oil Name': 'oil_jetfuels',
-                     'API': uc.convert('Density', 'gram per cubic centimeter',
-                                       'API degree',
-                                       0.81)},
-    'oil_diesel': {'Oil Name': 'oil_diesel',
-                   'API': uc.convert('Density', 'gram per cubic centimeter',
-                                     'API degree', 0.87)},
-    'oil_4': {'Oil Name': 'oil_4',
-              'API': uc.convert('Density', 'gram per cubic centimeter',
-                                'API degree', 0.90)},
-    'oil_crude': {'Oil Name': 'oil_crude',
-                  'API': uc.convert('Density', 'gram per cubic centimeter',
-                                    'API degree', 0.90)},
-    'oil_6': {'Oil Name': 'oil_6',
-              'API': uc.convert('Density', 'gram per cubic centimeter',
-                                'API degree', 0.99)},
-    'oil_conservative': {'Oil Name': 'oil_conservative',
-                         'API': uc.convert('Density',
-                                           'gram per cubic centimeter',
-                                           'API degree', 1)},
-    'chemical': {'Oil Name': 'chemical',
-                 'API': uc.convert('Density', 'gram per cubic centimeter',
-                                   'API degree', 1)},
+    'oil_gas':
+        sample_oil_to_mock_oil(max_cuts=2,
+                               **{'name': 'oil_gas',
+                                  'api': uc.convert('Density',
+                                                    'gram per cubic centimeter',
+                                                    'API degree', 0.75)}),
+    'oil_jetfuels':
+        sample_oil_to_mock_oil(max_cuts=2,
+                               **{'name': 'oil_jetfuels',
+                                  'api': uc.convert('Density',
+                                                    'gram per cubic centimeter',
+                                                    'API degree', 0.81)}),
+    'oil_diesel':
+        sample_oil_to_mock_oil(max_cuts=2,
+                               **{'name': 'oil_diesel',
+                                  'api': uc.convert('Density',
+                                                    'gram per cubic centimeter',
+                                                    'API degree', 0.87)}),
+    'oil_4':
+        sample_oil_to_mock_oil(max_cuts=2,
+                               **{'name': 'oil_4',
+                                  'api': uc.convert('Density',
+                                                    'gram per cubic centimeter',
+                                                    'API degree', 0.90)}),
+    'oil_crude':
+        sample_oil_to_mock_oil(max_cuts=2,
+                               **{'name': 'oil_crude',
+                                  'api': uc.convert('Density',
+                                                    'gram per cubic centimeter',
+                                                    'API degree', 0.90)}),
+    'oil_6': 
+        sample_oil_to_mock_oil(max_cuts=2,
+                               **{'name': 'oil_6',
+                                  'api': uc.convert('Density',
+                                                    'gram per cubic centimeter',
+                                                    'API degree', 0.99)}),
+    'oil_conservative':
+        sample_oil_to_mock_oil(max_cuts=2,
+                               **{'name': 'oil_conservative',
+                                  'api': uc.convert('Density',
+                                                    'gram per cubic centimeter',
+                                                    'API degree', 1)}),
+    'chemical':
+        sample_oil_to_mock_oil(max_cuts=2,
+                               **{'name': 'chemical',
+                                  'api': uc.convert('Density',
+                                                    'gram per cubic centimeter',
+                                                    'API degree', 1)}),
     }
 
 '''
@@ -48,7 +75,20 @@ _oillib_path = os.path.dirname(__file__)
 _db_file = os.path.join(_oillib_path, 'OilLib.db')
 
 
-def get_oil(oil_name):
+def _get_db_session():
+    'we can call this from scripts to access valid DBSession'
+    # not sure we want to do it this way - but let's use for now
+    session = DBSession()
+
+    try:
+        session.get_bind()
+    except UnboundExecutionError:
+        session.bind = create_engine('sqlite:///' + _db_file)
+
+    return session
+
+
+def get_oil(oil_, max_cuts=None):
     """
     function returns the Oil object given the name of the oil as a string.
 
@@ -59,31 +99,31 @@ def get_oil(oil_name):
             associated Oil object.
     :type oil_: str
 
-    It should be updated to take **kwargs so if user wants to define a new
-    oil with specific properties, they can do so by defining properties
-    in kwargs.
+    Optional arg:
+
+    :param max_cuts: This is ** only ** used for _sample_oils which dont have
+        distillation cut information. For testing, this allows us to model the
+        oil with variable number of cuts, with equally divided mass. For a
+        real oil pulled from the database, this is ignored.
+    :type max_cuts: int
 
     NOTE I:
     -------
-    One issue is that the kwargs in Oil contain spaces, like 'Oil Name'. This
+    One issue is that the kwargs in Oil contain spaces, like 'oil_'. This
     can be handled if the user defines a dict as follows:
-        kw = {'Oil Name': 'new oil', 'Field Name': 'field name'}
+        kw = {'oil_': 'new oil', 'Field Name': 'field name'}
         get_oil(**kw)
     however, the following will not work:
-        get_oil('Oil Name'='new oil', 'Field Name'='field name')
+        get_oil('oil_'='new oil', 'Field Name'='field name')
 
-    This is another reason, we need an interface (business logic) between the
-    SQL object and the end user.
-
-    NOTE II:
-    --------
-    currently, the _sample_oils contained in dict in this module are not part
-    of the database. May want to add them to the final persistent database to
-    make a consistent interface which always accesses DB for any 'oil_name'
+    This is another reason, we need an interface between the SQL object and the
+    end user.
     """
+    if isinstance(oil_, dict):
+        return sample_oil_to_mock_oil(max_cuts=max_cuts, **oil_)
 
-    if oil_name in _sample_oils.keys():
-        return OilProps(Oil(**_sample_oils[oil_name]))
+    if oil_ in _sample_oils.keys():
+        return _sample_oils[oil_]
 
     else:
         '''
@@ -91,54 +131,34 @@ def get_oil(oil_name):
         should we raise error here?
         '''
 
-        # not sure we want to do it this way - but let's use for now
-        engine = sqlalchemy.create_engine('sqlite:///' + _db_file)
-
-        # let's use global DBSession defined in oillibrary
-        # alternatively, we could define a new scoped_session
-        # Not sure what's the proper way yet but this needs
-        # to be revisited at some point.
-        # session_factory = sessionmaker(bind=engine)
-        # DBSession = scoped_session(session_factory)
-        DBSession.bind = engine
+        session = _get_db_session()
 
         try:
-            oil_= DBSession.query(Oil).filter(Oil.name == oil_name).one()
-            return OilProps(oil_)
-        except sqlalchemy.orm.exc.NoResultFound, ex:
+            oil = session.query(Oil).filter(Oil.name == oil_).one()
+            oil.cuts
+            oil.densities
+            oil.kvis
+            oil.sara_fractions
+            return oil
+        except:
+            pass    # try checking imported_record_id
+
+        try:
+            return (session.query(Oil).filter(Oil.imported_record_id == oil_).
+                    one())
+        except NoResultFound, ex:
             # or sqlalchemy.orm.exc.MultipleResultsFound as ex:
-            ex.message = ("oil with name '{0}' not found in database. "
-                          "{1}".format(oil_name, ex.message))
+            ex.message = ("oil with name or imported_record_id, '{0}', not "
+                          "found in database. {1}".format(oil_, ex.message))
             ex.args = (ex.message, )
             raise ex
 
 
-def oil_from_density(density, name='user_oil', units='kg/m^3'):
-    """
-    This should be a more general oil_from_props so we can define an OilProps
-    object from any properties defined for the raw Oil object
-
-    :param name: name of oil
-    :param density: density of oil
-    :param units='API': units of density
-
-    """
-    valid_density_units = list(chain.from_iterable([item[1] for item in
-                               uc.ConvertDataUnits['Density'].values()]))
-    valid_density_units.extend(uc.GetUnitNames('Density'))
-
-    if density is None:
-        raise ValueError("Density value required")
-
-    if units not in valid_density_units:
-        raise uc.InvalidUnitError('Desired density units must be from '
-                                  'following list to be valid: '
-                                  '{0}'.format(valid_density_units))
-
-    if units != 'API':
-        api = uc.convert('Density', units, 'API Degree', density)
-    else:
-        api = density
-
-    oil_ = Oil(**{'Oil Name': name, 'API': api})
+def get_oil_props(oil_info, max_cuts=None):
+    '''
+    returns the OilProps object
+    max_cuts is only used for 'fake' sample_oils. It's a way to allow testing.
+    When pulling record from database, this is ignored.
+    '''
+    oil_ = get_oil(oil_info, max_cuts)
     return OilProps(oil_)
