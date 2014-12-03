@@ -4,7 +4,7 @@
 Unit tests for the Weatherer classes
 '''
 
-from datetime import datetime, timedelta
+from datetime import datetime
 
 import pytest
 
