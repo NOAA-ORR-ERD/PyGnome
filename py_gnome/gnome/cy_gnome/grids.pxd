@@ -8,7 +8,9 @@ from type_defs cimport (OSErr,
                         VelocityFH,
                         VelocityRec,
                         WorldPoint3D,
-                        Seconds)
+                        Seconds,
+                        WorldRect,
+                        LONGH)
 
 
 '''
@@ -38,3 +40,20 @@ cdef extern from "TimeGridVel_c.h":
 
     cdef cppclass TimeGridWindCurv_c(TimeGridWindRect_c):
         pass
+
+
+cdef extern from "GridMap_c.h":
+    cdef cppclass GridMap_c:
+        GridVel_c   *fGrid
+        WorldRect   fMapBounds
+        LONGH       fBoundarySegmentsH
+        LONGH       fBoundaryTypeH
+        LONGH       fBoundaryPointsH
+
+        GridMap_c ()
+        LONGH       GetBoundarySegs()
+        LONGH       GetWaterBoundaries()
+        LONGH       GetBoundaryPoints()
+        OSErr       ExportTopology(char *path)
+        OSErr       SaveAsNetCDF(char *path)
+        OSErr       TextRead(char *path)

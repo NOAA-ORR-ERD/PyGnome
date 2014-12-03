@@ -56,6 +56,7 @@ cdef extern from "ComponentMover_c.h":
         double          fScaleFactorAveragedWinds
         double          fPowerFactorAveragedWinds
         long            fPastHoursToAverage
+        long            scaleBy
 
         int             TextRead(char* catsPath1, char* catsPath2)
         void            SetRefPosition(WorldPoint3D p)

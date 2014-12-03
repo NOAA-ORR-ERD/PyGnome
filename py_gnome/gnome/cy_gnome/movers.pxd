@@ -6,7 +6,7 @@ from libcpp cimport bool
 from libc.stdint cimport int32_t
 
 from type_defs cimport *
-from utils cimport OSSMTimeValue_c  
+from utils cimport OSSMTimeValue_c
 
 from grids cimport GridVel_c, TimeGridVel_c
 """
@@ -88,20 +88,4 @@ cdef extern from "GridWindMover_c.h":
         bool 		    GetExtrapolationInTime()
         void 		    SetTimeShift(long timeShift)
         long 		    GetTimeShift()
-
-cdef extern from "GridMap_c.h":
-    cdef cppclass GridMap_c:
-        GridVel_c    *fGrid
-        WorldRect fMapBounds
-        LONGH    fBoundarySegmentsH
-        LONGH    fBoundaryTypeH
-        LONGH    fBoundaryPointsH
-
-        GridMap_c ()
-        LONGH    GetBoundarySegs()
-        LONGH    GetWaterBoundaries()
-        LONGH    GetBoundaryPoints()
-        OSErr 		    ExportTopology(char *path)
-        OSErr 		    SaveAsNetCDF(char *path)
-        OSErr           TextRead(char *path)
 
