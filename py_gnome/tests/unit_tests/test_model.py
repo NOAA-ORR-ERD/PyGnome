@@ -1035,22 +1035,23 @@ class TestMergeModels:
         sample_save_file = \
             os.path.join(here,
                          '../../scripts/script_boston/save_model/Model.json')
-        model = load(sample_save_file)
-        assert model.water is None
+        if os.path.exists(sample_save_file):
+            model = load(sample_save_file)
+            assert model.water is None
 
-        model.merge(m)
-        assert m.water is model.water
-        for oc in m._oc_list:
-            for item in getattr(m, oc):
-                model_oc = getattr(model, oc)
-                assert item is model_oc[item.id]
+            model.merge(m)
+            assert m.water is model.water
+            for oc in m._oc_list:
+                for item in getattr(m, oc):
+                    model_oc = getattr(model, oc)
+                    assert item is model_oc[item.id]
 
-        for spill in m.spills:
-            assert spill is model.spills[spill.id]
+            for spill in m.spills:
+                assert spill is model.spills[spill.id]
 
-        # merge the other way and ensure model != m
-        m.merge(model)
-        assert model != m
+            # merge the other way and ensure model != m
+            m.merge(model)
+            assert model != m
 
 if __name__ == '__main__':
 
