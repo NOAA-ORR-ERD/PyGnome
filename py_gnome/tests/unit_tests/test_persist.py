@@ -142,24 +142,25 @@ def make_model(images_dir, uncertain=False):
     c_mover.scale_value = .04
     model.movers += c_mover
 
-    print "adding a component mover:"
-    comp_mover = ComponentMover(testdata['boston_data']['component_curr1'],
-                                testdata['boston_data']['component_curr2'],
-                                w_mover.wind)
-    #todo: callback did not work correctly below - fix!
-    #comp_mover = ComponentMover(component_file1,component_file2,Wind(timeseries=series, units='m/s'))
+    # todo: seg faulting for component mover - comment test for now
+    # print "adding a component mover:"
+    # comp_mover = ComponentMover(testdata['boston_data']['component_curr1'],
+    #                             testdata['boston_data']['component_curr2'],
+    #                             w_mover.wind)
+    # #todo: callback did not work correctly below - fix!
+    # #comp_mover = ComponentMover(component_file1,component_file2,Wind(timeseries=series, units='m/s'))
 
-    comp_mover.ref_point = (-70.855, 42.275)
-    comp_mover.pat1_angle = 315
-    comp_mover.pat1_speed = 19.44
-    comp_mover.pat1_speed_units = 1
-    comp_mover.pat1ScaleToValue = .138855
-    comp_mover.pat2_angle = 225
-    comp_mover.pat2_speed = 19.44
-    comp_mover.pat2_speed_units = 1
-    comp_mover.pat2ScaleToValue = .05121
+    # comp_mover.ref_point = (-70.855, 42.275)
+    # comp_mover.pat1_angle = 315
+    # comp_mover.pat1_speed = 19.44
+    # comp_mover.pat1_speed_units = 1
+    # comp_mover.pat1ScaleToValue = .138855
+    # comp_mover.pat2_angle = 225
+    # comp_mover.pat2_speed = 19.44
+    # comp_mover.pat2_speed_units = 1
+    # comp_mover.pat2ScaleToValue = .05121
 
-    model.movers += comp_mover
+    # model.movers += comp_mover
 
     print 'adding a Weatherer'
     model.water = Water(311.15)

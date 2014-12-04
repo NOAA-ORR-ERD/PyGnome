@@ -259,6 +259,7 @@ class TestGridCurrentMover:
             0,
             )
 
+    @pytest.mark.xfail
     def test_move_curv_series(self):
         """
         Test a curvilinear file series
@@ -469,6 +470,7 @@ class TestGridCurrentMover:
 
         np.all(self.cm.delta['z'] == 0)
 
+    @pytest.mark.xfail
     def test_move_gridcur_series(self):
         """
         test move for a gridCur file series (first time in first file)
