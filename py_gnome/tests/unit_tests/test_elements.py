@@ -49,7 +49,7 @@ rise_vel_array = {'rise_vel': array_types.rise_vel}
 
 rise_vel_diameter_array = {'rise_vel': array_types.rise_vel,
                            'droplet_diameter': array_types.droplet_diameter}
-
+oil = 'ALAMO'
 num_elems = 10
 
 
@@ -123,7 +123,7 @@ def test_element_type_serialize_deserialize(fcn):
     '''
     test serialization/deserialization of ElementType for various initiailzers
     '''
-    element_type = ElementType(initializers=[fcn])
+    element_type = ElementType(initializers=[fcn], substance=oil)
 
     json_ = element_type.serialize('save')
     dict_ = element_type.deserialize(json_)
@@ -268,17 +268,19 @@ rise_vel.update(arr_types)
 
 mass_comp = {'mass_components': array_types.mass_components}
 mass_comp.update(arr_types)
+oil = 'ALAMO'
 
-inp_params = [((floating(),
-                ElementType([InitWindages(),
-                             InitMassFromSpillAmount()])), arr_types),
-              ((floating(),
-                ElementType([InitWindages(),
-                             InitRiseVelFromDist()])), rise_vel),
-              ((floating(),
-                ElementType([InitMassFromSpillAmount(),
-                             InitRiseVelFromDist()])), rise_vel),
-              ((floating(), floating_weathering()), mass_comp),
+inp_params = [((floating(substance=oil),
+                ElementType([InitWindages(), InitMassFromSpillAmount()],
+                            substance=oil)), arr_types),
+              ((floating(substance=oil),
+                ElementType([InitWindages(), InitRiseVelFromDist()],
+                            substance=oil)), rise_vel),
+              ((floating(substance=oil),
+                ElementType([InitMassFromSpillAmount(), InitRiseVelFromDist()],
+                            substance=oil)), rise_vel),
+              ((floating(substance=oil), floating_weathering(substance=oil)),
+               mass_comp),
               ]
 
 

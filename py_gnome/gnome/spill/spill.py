@@ -10,6 +10,7 @@ from inspect import getmembers, ismethod
 
 import numpy
 np = numpy
+from repoze.lru import lru_cache
 
 from hazpy import unit_conversion
 uc = unit_conversion
@@ -40,7 +41,7 @@ class Spill(serializable.Serializable):
     _update = ['on', 'release',
                'amount', 'units', 'amount_uncertainty_scale']
 
-    _create = ['frac_coverage', 'frac_water']
+    _create = ['frac_coverage']
     _create.extend(_update)
 
     _state = copy.deepcopy(serializable.Serializable._state)
@@ -112,11 +113,9 @@ class Spill(serializable.Serializable):
         self.amount_uncertainty_scale = amount_uncertainty_scale
 
         '''
-        fractional water content in the emulsion
         fraction of area covered by oil
         '''
         self.frac_coverage = 1.0
-        self.frac_water = 0.0
         self.name = name
 
     def __repr__(self):
@@ -205,6 +204,17 @@ class Spill(serializable.Serializable):
 
             all_props.extend(i_props)
         return all_props
+
+    def contains_object(self, obj_id):
+        for o in (self.element_type, self.release):
+            if o.id == obj_id:
+                return True
+
+            if (hasattr(o, 'contains_object') and
+                    o.contains_object(obj_id)):
+                return True
+
+        return False
 
     def set(self, prop, val):
         """
@@ -390,6 +400,7 @@ class Spill(serializable.Serializable):
         self._check_units(units)  # check validity before setting
         self._units = units
 
+    @lru_cache(2)
     def get_mass(self, units=None):
         '''
         Return the mass released during the spill.
@@ -487,7 +498,8 @@ class Spill(serializable.Serializable):
         the data_arrays for 'position' get initialized correctly by the release
         object: self.release.set_newparticle_positions()
 
-        :param int num_new_particles: number of new particles that were added 
+        :param int num_new_particles: number of new particles that were added.
+            Always greater than 0
         :param current_time: current time
         :type current_time: datetime.datetime
         :param time_step: the time step, sometimes used to decide how many
@@ -507,6 +519,11 @@ class Spill(serializable.Serializable):
 
         self.release.set_newparticle_positions(num_new_particles, current_time,
                                                time_step, data_arrays)
+
+        # set arrays that are spill specific - 'frac_coverage'
+        if 'frac_coverage' in data_arrays:
+            data_arrays['frac_coverage'][-num_new_particles:] = \
+                self.frac_coverage
 
     def serialize(self, json_='webapi'):
         """

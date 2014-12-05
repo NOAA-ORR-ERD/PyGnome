@@ -91,8 +91,8 @@ class OrderedCollection(object):
             # assume its an iterable list/tuple of items to be added
             try:
                 for e in elem:
-                    # this will call self.fire_event when the object is added
-                    # to OC
+                    if not isinstance(e, self.dtype):
+                        raise
                     self.add(e)
             except:
                 raise TypeError('{0}: expected {1}, '
@@ -109,19 +109,20 @@ class OrderedCollection(object):
         1) can remove by index (similar to a list)
         2) can remove by id of object (similar to a dict)
         '''
-
-        # fire remove event before removing from collection
-        self.fire_event('remove', self[ident])
-
         if ident in self._d_index:
             # ident is object id
-            self._elems[self._d_index[ident]] = None
-            del self._d_index[ident]
+            obj_id = ident
         else:
             # ident is index into _elems list
-            id_ = self._s_id(self[ident])
-            del self._d_index[id_]
-            self._elems[ident] = None
+            obj_id = self._s_id(self[ident])
+
+        item = self[obj_id]
+        self._elems[self._d_index[obj_id]] = None
+        del self._d_index[obj_id]
+
+        # fire remove event before removing from collection
+        # let gc delete item if it is no longer referenced
+        self.fire_event('remove', item)
 
     def replace(self, ident, new_elem):
         '''
@@ -322,7 +323,13 @@ class OrderedCollection(object):
         return items
 
     def register_callback(self, callback,
-                          events=('add', 'remove', 'replace')):
+                          events=('add', 'replace', 'remove')):
+        '''
+        callbacks registered for following events:
+        - add: item is added
+        - replace:
+        - remove: callback invoked after removing the item
+        '''
         if not isinstance(events, (list, tuple)):
             events = (events, )
 

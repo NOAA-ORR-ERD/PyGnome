@@ -213,7 +213,12 @@ class InitArraysFromOilProps(InitBaseClass, Serializable):
 
         masses = mass_fractions * (data_arrays['mass'][-num_new_particles:]
                                    .reshape(num_new_particles, -1))
-        data_arrays['mass_components'][-num_new_particles:] = masses
+        # currently only modeling one substance so:
+        #     masses.shape[1] == data_arrays['mass_components'].shape[1]
+        # however, code is there to model multiple substances and some basic
+        # tests are there so make this consistent so tests pass and things work
+        data_arrays['mass_components'][-num_new_particles:,
+                                       :masses.shape[1]] = masses
 
 # do following two classes work for a time release spill?
 
@@ -233,13 +238,23 @@ class InitMassFromSpillAmount(InitBaseClass, Serializable):
         super(InitMassFromSpillAmount, self).__init__()
         self.array_types.update({'mass': array_types.mass})
         self.name = 'mass'
+        self.total_mass = None  # always in SI units
+
+    def _set_total_mass(self, spill, substance):
+        ''' set 'total_mass' property from spill since we only need to do this
+        once '''
+        if spill.get_mass('kg') is None:
+            self.total_mass = 0     # do we want to raise an error?
+        else:
+            self.total_mass = spill.get_mass('kg')
 
     def initialize(self, num_new_particles, spill, data_arrays, substance):
-        # not very efficient to get mass each time, but better to do this since
-        # multiple spills could share the ElementType and the list of
-        # initializers
-        total_mass = spill.get_mass('kg')
-        data_arrays['mass'][-num_new_particles:] = (total_mass /
+        # store total_mass - it doesn't change so store it locally. The
+        # windages are also tied to the spill
+        if self.total_mass is None:
+            self._set_total_mass(spill, substance)
+
+        data_arrays['mass'][-num_new_particles:] = (self.total_mass /
                                                     spill.release.num_elements)
 
 

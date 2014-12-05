@@ -132,7 +132,7 @@ class Water(Environment, serializable.Serializable):
                       'wave_height': 'm',
                       'fetch': 'm',
                       'density': 'kg/m^3',
-                      'kinematic_viscosity': 'St'}
+                      'kinematic_viscosity': 'm^2/s'}
         self.temperature = temperature
         self.salinity = salinity
         self.sediment = sediment

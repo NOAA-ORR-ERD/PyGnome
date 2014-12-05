@@ -51,8 +51,7 @@ def test_evaporation(oil, temp, num_elems, on):
                   timedelta(seconds=time_step))
 
     evap = Evaporation(water, wind=constant_wind(1., 0))
-    if not on:
-        evap.on = False
+    evap.on = on
 
     evap.prepare_for_model_run(sc)
     evap.prepare_for_model_step(sc, time_step, model_time)
@@ -149,11 +148,9 @@ def test_full_run_evap_not_active(sample_model_fcn):
     model.weatherers += Evaporation(on=False)
     model.outputters += WeatheringOutput()
     for step in model:
-        for key in step['WeatheringOutput']:
-            if key not in ('step_num', 'time_stamp'):
-                assert 'floating' in step['WeatheringOutput'][key]
-                assert 'amount_released' in step['WeatheringOutput'][key]
-                assert 'evaporated' not in step['WeatheringOutput'][key]
+        assert 'floating' in step['WeatheringOutput']
+        assert 'amount_released' in step['WeatheringOutput']
+        assert 'evaporated' not in step['WeatheringOutput']
 
         print ("Completed step: {0}"
                .format(step['WeatheringOutput']['step_num']))

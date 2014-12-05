@@ -303,6 +303,10 @@ class Model(Serializable):
         self._cache.enabled = enabled
 
     @property
+    def has_weathering(self):
+        return len(self.weatherers) > 0
+
+    @property
     def start_time(self):
         '''
         Start time of the simulation
@@ -397,6 +401,29 @@ class Model(Serializable):
         '''
         return self._num_time_steps
 
+    def contains_object(self, obj_id):
+        if self.map.id == obj_id:
+            return True
+
+        if self.water is not None:
+            if self.water.id == obj_id:
+                return True
+
+        for collection in (self.environment,
+                           self.spills,
+                           self.movers,
+                           self.weatherers,
+                           self.outputters):
+            for o in collection:
+                if obj_id == o.id:
+                    return True
+
+                if (hasattr(o, 'contains_object') and
+                        o.contains_object(obj_id)):
+                    return True
+
+        return False
+
     def setup_model_run(self):
         '''
         Sets up each mover for the model run
@@ -442,7 +469,7 @@ class Model(Serializable):
         for sc in self.spills.items():
             sc.prepare_for_model_run(array_types)
             if self._intrinsic_props:
-                self._intrinsic_props.initialize_weathering_data(sc)
+                self._intrinsic_props.initialize(sc)
 
         # outputters need array_types, so this needs to come after those
         # have been updated.
@@ -873,7 +900,12 @@ class Model(Serializable):
         for w in self.weatherers:
             array_types.update(w.array_types)
 
+        if self._intrinsic_props:
+                self._intrinsic_props.update_array_types(array_types)
+                array_types.update(self._intrinsic_props.array_types)
+
         for sc in self.spills.items():
+            sc.prepare_for_model_run(array_types)
             if sc.uncertain:
                 (data, weather_data) = NetCDFOutput.read_data(u_spill_data,
                                                               time=None,
@@ -886,11 +918,6 @@ class Model(Serializable):
             sc.current_time_stamp = data.pop('current_time_stamp').item()
             sc._data_arrays = data
             sc.weathering_data = weather_data
-            sc._array_types.update(array_types)
-            sc._append_initializer_array_types(array_types)
-            if self._intrinsic_props:
-                self._intrinsic_props.update_array_types(array_types)
-                sc._array_types.update(self._intrinsic_props.array_types)
 
     def _empty_save_dir(self, saveloc):
         '''
@@ -1051,3 +1078,28 @@ class Model(Serializable):
                 obj = load(f_name, refs)    # will add obj to refs
                 l_coll.append(obj)
         return (l_coll)
+
+    def merge(self, model):
+        '''
+        merge 'model' into self
+        '''
+        for attr in self.__dict__:
+            if (getattr(self, attr) is None and
+                getattr(model, attr) is not None):
+                setattr(self, attr, getattr(model, attr))
+        # update orderedcollections
+        for oc in self._oc_list:
+            my_oc = getattr(self, oc)
+            new_oc = getattr(model, oc)
+            for item in new_oc:
+                if item not in my_oc:
+                    my_oc += item
+
+        # update forecast spills in SpillContainerPair
+        # Uncertain spills automatically be created if uncertainty is on
+        for spill in model.spills:
+            if spill not in self.spills:
+                self.spills += spill
+
+        # force rewind after merge?
+        self.rewind()

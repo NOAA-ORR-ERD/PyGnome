@@ -118,6 +118,9 @@ class ModelConsumer(mp.Process):
     def _get_outputters(self):
         return self.model.outputters
 
+    def _get_weatherer_attribute(self, idx, attr):
+        return getattr(self.model.weatherers[idx], attr)
+
     def _set_weathering_output_only(self):
         del_list = [o for o in self.model.outputters
                     if not isinstance(o, WeatheringOutput)]

@@ -15,7 +15,7 @@ from pytest import raises
 
 from gnome.basic_types import datetime_value_2d
 from gnome.utilities import inf_datetime
-from gnome.utilities.remote_data import get_datafile
+from gnome.persist import load
 
 import gnome.map
 from gnome.environment import Wind, Tide, constant_wind, Water
@@ -33,14 +33,7 @@ from gnome.weatherers import (HalfLifeWeatherer,
                               Skimmer)
 from gnome.outputters import Renderer, GeoJson
 
-from conftest import sample_model_weathering
-
-basedir = os.path.dirname(__file__)
-datadir = os.path.join(basedir, 'sample_data')
-tides_dir = os.path.join(datadir, 'tides')
-lis_dir = os.path.join(datadir, 'long_island_sound')
-
-testmap = os.path.join(basedir, '../sample_data', 'MapBounds_Island.bna')
+from conftest import sample_model_weathering, testdata
 
 
 @pytest.fixture(scope='function')
@@ -235,7 +228,8 @@ def test_simple_run_with_map():
 
     model = Model()
 
-    model.map = gnome.map.MapFromBNA(testmap, refloat_halflife=6)  # hours
+    model.map = gnome.map.MapFromBNA(testdata['MapFromBNA']['testmap'],
+                                     refloat_halflife=6)  # hours
     a_mover = SimpleMover(velocity=(1., 2., 0.))
 
     model.movers += a_mover
@@ -276,8 +270,10 @@ def test_simple_run_with_image_output(dump):
     start_time = datetime(2012, 9, 15, 12, 0)
 
     # the land-water map
-    gnome_map = gnome.map.MapFromBNA(testmap, refloat_halflife=6)  # hours
-    renderer = gnome.outputters.Renderer(testmap, images_dir, size=(400, 300))
+    gnome_map = gnome.map.MapFromBNA(testdata['MapFromBNA']['testmap'],
+                                     refloat_halflife=6)  # hours
+    renderer = gnome.outputters.Renderer(testdata['MapFromBNA']['testmap'],
+                                         images_dir, size=(400, 300))
     geo_json = GeoJson(output_dir=images_dir)
 
     model = Model(time_step=timedelta(minutes=15),
@@ -335,8 +331,10 @@ def test_simple_run_with_image_output_uncertainty(dump):
     start_time = datetime(2012, 9, 15, 12, 0)
 
     # the land-water map
-    gmap = gnome.map.MapFromBNA(testmap, refloat_halflife=6)  # hours
-    renderer = gnome.outputters.Renderer(testmap, images_dir, size=(400, 300))
+    gmap = gnome.map.MapFromBNA(testdata['MapFromBNA']['testmap'],
+                                refloat_halflife=6)  # hours
+    renderer = gnome.outputters.Renderer(testdata['MapFromBNA']['testmap'],
+                                         images_dir, size=(400, 300))
 
     model = Model(start_time=start_time,
                   time_step=timedelta(minutes=15), duration=timedelta(hours=1),
@@ -492,8 +490,7 @@ def test_all_movers(start_time, release_delay, duration):
     assert len(model.movers) == 3
 
     # CATS mover
-    c_data = get_datafile(os.path.join(lis_dir, 'tidesWAC.CUR'))
-    model.movers += CatsMover(c_data)
+    model.movers += CatsMover(testdata['CatsMover']['curr'])
     assert len(model.movers) == 4
 
     # run the model all the way...
@@ -728,10 +725,9 @@ def test_callback_add_mover():
     assert new_wind in model.environment
     assert len(model.environment) == 2
 
-    tide_file = get_datafile(os.path.join(tides_dir, 'CLISShio.txt'))
-    tide_ = Tide(filename=tide_file)
+    tide_ = Tide(filename=testdata['CatsMover']['tide'])
 
-    d_file = get_datafile(os.path.join(lis_dir, 'tidesWAC.CUR'))
+    d_file = testdata['CatsMover']['curr']
     model.movers += CatsMover(d_file, tide=tide_)
 
     model.movers += CatsMover(d_file)
@@ -835,6 +831,55 @@ def test_setup_model_run(model):
     assert not exp_keys.intersection(model.spills.LE_data)
 
 
+def test_contains_object(sample_model_fcn):
+    '''
+    Test that we can find all contained object types with a model.
+    '''
+    model = sample_model_weathering(sample_model_fcn, 'ALAMO')
+
+    gnome_map = model.map = gnome.map.GnomeMap()    # make it all water
+
+    rel_time = model.spills[0].get('release_time')
+    model.start_time = rel_time - timedelta(hours=1)
+    model.duration = timedelta(days=1)
+
+    water, wind = Water(), constant_wind(1., 0)
+    model.water = water
+    model.environment += wind
+
+    et = floating_weathering(substance=model.spills[0].get('substance').name)
+    sp = point_line_release_spill(500, (0, 0, 0),
+                                  rel_time + timedelta(hours=1),
+                                  element_type=et,
+                                  amount=100,
+                                  units='tons')
+    rel = sp.release
+    initializers = et.initializers
+    model.spills += sp
+
+    movers = [m for m in model.movers]
+
+    evaporation = Evaporation(model.water, model.environment[0])
+    dispersion, burn, skimmer = Dispersion(), Burn(), Skimmer()
+    model.weatherers += [evaporation, dispersion, burn, skimmer]
+
+    renderer = Renderer(images_dir='Test_images',
+                        size=(400, 300))
+    model.outputters += renderer
+
+    for o in (gnome_map, sp, rel, et,
+              water, wind,
+              evaporation, dispersion, burn, skimmer,
+              renderer):
+        assert model.contains_object(o.id)
+
+    for o in initializers:
+        assert model.contains_object(o.id)
+
+    for o in movers:
+        assert model.contains_object(o.id)
+
+
 @pytest.mark.parametrize("uncertain", [False, True])
 def test_staggered_spills_weathering(sample_model_fcn, uncertain):
     '''
@@ -849,15 +894,19 @@ def test_staggered_spills_weathering(sample_model_fcn, uncertain):
     rel_time = model.spills[0].get('release_time')
     model.start_time = rel_time - timedelta(hours=1)
     model.duration = timedelta(days=1)
+    # todo: figure out why we're not able to reuse 'substance' object
+    # et = floating_weathering(substance=model.spills[0].get('substance'))
+    et = floating_weathering(substance=model.spills[0].get('substance').name)
     cs = point_line_release_spill(500, (0, 0, 0),
                                   rel_time + timedelta(hours=1),
-                                  element_type=model.spills[0].element_type,
+                                  element_type=et,
                                   amount=100,
                                   units='tons')
     model.spills += cs
-    model.environment += [Water(), constant_wind(1., 0)]
-    model.weatherers += [Evaporation(model.environment[0],
-                                     model.environment[1]),
+    model.water = Water()
+    model.environment += constant_wind(1., 0)
+    model.weatherers += [Evaporation(model.water,
+                                     model.environment[0]),
                          Dispersion(),
                          Burn(),
                          Skimmer()]
@@ -882,7 +931,7 @@ def test_staggered_spills_weathering(sample_model_fcn, uncertain):
 
 def test_weathering_data_attr():
     '''
-    weathering_data is always written by SpillContainer
+    weathering_data is initialized/written if we have weatherers
     '''
     ts = 900
     s1_rel = datetime.now().replace(microsecond=0)
@@ -894,11 +943,12 @@ def test_weathering_data_attr():
     model.step()
 
     for sc in model.spills.items():
-        assert 'floating' not in sc.weathering_data
+        assert sc.weathering_data == {}
 
-    model.environment += [Water(), constant_wind(0., 0)]
-    model.weatherers += [Evaporation(model.environment[0],
-                                     model.environment[1])]
+    model.water = Water()
+    model.environment += constant_wind(0., 0)
+    model.weatherers += [Evaporation(model.water,
+                                     model.environment[0])]
 
     # use different element_type and initializers for both spills
     s[0].amount = 10.0
@@ -954,6 +1004,54 @@ def test_run_element_type_no_initializers(model):
 
     assert True
 
+
+class TestMergeModels:
+    def test_merge_from_empty_model(self, model):
+        '''
+        merge empty model - nothing to merge
+        deepcopy fails on model due to cache - we don't anticipate needing
+        to deepcopy models so do a hack for testing for now.
+        '''
+        m = Model()
+        model.merge(m)
+        for oc in m._oc_list:
+            for item in getattr(m, oc):
+                assert item in getattr(model, oc)
+
+    def test_load_location_file(self):
+        '''
+        create a model
+        load save file from script_boston which contains a spill. Then merge
+        the created model into the model loaded from save file
+        '''
+        m = Model()
+        m.water = Water()
+        m.environment += constant_wind(1., 0.)
+        m.weatherers += Evaporation(m.water, m.environment[-1])
+        m.spills += point_line_release_spill(10, (0, 0, 0),
+                                             datetime(2014, 1, 1, 12, 0))
+
+        here = os.path.dirname(__file__)
+        sample_save_file = \
+            os.path.join(here,
+                         '../../scripts/script_boston/save_model/Model.json')
+        if os.path.exists(sample_save_file):
+            model = load(sample_save_file)
+            assert model.water is None
+
+            model.merge(m)
+            assert m.water is model.water
+            for oc in m._oc_list:
+                for item in getattr(m, oc):
+                    model_oc = getattr(model, oc)
+                    assert item is model_oc[item.id]
+
+            for spill in m.spills:
+                assert spill is model.spills[spill.id]
+
+            # merge the other way and ensure model != m
+            m.merge(model)
+            assert model != m
 
 if __name__ == '__main__':
 

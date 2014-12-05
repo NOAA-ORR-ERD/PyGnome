@@ -4,7 +4,7 @@
 Unit tests for the Weatherer classes
 '''
 
-from datetime import datetime, timedelta
+from datetime import datetime
 
 import pytest
 
@@ -32,16 +32,17 @@ initializers = [InitMassFromSpillAmount(),
                 InitRiseVelFromDist(),
                 InitArraysFromOilProps(),
                 ]
+oil = 'ALAMO'
 sc = sample_sc_release(5, (3., 6., 0.),
                        rel_time,
                        uncertain=False,
                        arr_types=arr_types,
-                       element_type=ElementType(initializers))
+                       element_type=ElementType(initializers, substance=oil))
 u_sc = sample_sc_release(5, (3., 6., 0.),
                          rel_time,
                          uncertain=True,
                          arr_types=arr_types,
-                         element_type=ElementType(initializers))
+                         element_type=ElementType(initializers, substance=oil))
 secs_in_minute = 60
 
 
@@ -50,8 +51,8 @@ class TestWeatherer:
         weatherer = Weatherer()
 
         print weatherer
-        assert weatherer.on == True
-        assert weatherer.active == True
+        assert weatherer.on
+        assert weatherer.active
         assert weatherer.active_start == InfDateTime('-inf')
         assert weatherer.active_stop == InfDateTime('inf')
         assert weatherer.array_types == {'mass_components': mass_components}
@@ -64,6 +65,8 @@ class TestWeatherer:
         '''
         print '\nsc["mass"]:\n', test_sc['mass']
 
+        orig_mc = np.copy(test_sc['mass_components'])
+
         model_time = rel_time
         time_step = 15 * secs_in_minute
 
@@ -72,133 +75,9 @@ class TestWeatherer:
         weatherer.prepare_for_model_run(test_sc)
         weatherer.prepare_for_model_step(test_sc, time_step, model_time)
 
-        mc_final = weatherer.weather_elements(test_sc, time_step, model_time)
-        weatherer.model_step_is_done()
-        mc_final
-
-        print '\nsc["mass"]:\n', test_sc['mass']
-        assert np.allclose(0.5 * test_sc['mass'], mc_final.sum(1))
-        assert np.allclose(0.5 * test_sc['mass_components'], mc_final)
-
-    @pytest.mark.xfail
-    @pytest.mark.parametrize("test_sc", [sc, u_sc])
-    def test_out_of_bounds_model_time(self, test_sc):
-        '''
-           Here we test the conditions where the model_time
-           is outside the range of the weatherer's active
-           start and stop times.
-           1: (model_time >= active_stop)
-              So basically the time duration for our calculation is zero
-              since the time_step will always be greater than model_time.
-              And there should be no decay.
-           2: (model_time < active_start) and (time_step <= active_start)
-              So basically the time duration for our calculation is zero
-              and there should be no decay.
-           3: (model_time < active_start) and (time_step > active_start)
-              So basically the time duration for our calculation will be
-              (active_start --> time_step)
-              The decay will be calculated for this partial time duration.
-        '''
-        # rel_time = datetime(2012, 8, 20, 13)
-        orig_mass = np.copy(test_sc['mass'])
-        stop_time = rel_time + timedelta(hours=1)
-
-        print '\nsc["mass"]:\n', test_sc['mass']
-
-        # setup test case 1
-        model_time = stop_time
-        time_step = 15 * secs_in_minute
-
-        weatherer = Weatherer(active_start=rel_time, active_stop=stop_time)
-
-        weatherer.prepare_for_model_run()
-
-        weatherer.prepare_for_model_step(test_sc, time_step, model_time)
         weatherer.weather_elements(test_sc, time_step, model_time)
         weatherer.model_step_is_done()
 
-        assert np.allclose(test_sc['mass'], 1. * orig_mass)
-
-        # setup test case 2
-        model_time = rel_time - timedelta(minutes=15)
-        time_step = 15 * secs_in_minute
-
-        weatherer.prepare_for_model_step(test_sc, time_step, model_time)
-        weatherer.weather_elements(test_sc, time_step, model_time)
-        weatherer.model_step_is_done()
-
-        assert np.allclose(test_sc['mass'], 1. * orig_mass)
-
-        # setup test case 3
-        model_time = rel_time - timedelta(minutes=15)
-        time_step = 30 * secs_in_minute
-
-        weatherer.prepare_for_model_step(test_sc, time_step, model_time)
-        weatherer.weather_elements(test_sc, time_step, model_time)
-        weatherer.model_step_is_done()
-
-        assert np.allclose(test_sc['mass'], 0.5 * orig_mass)
-
-    @pytest.mark.xfail
-    @pytest.mark.parametrize("test_sc", [sc, u_sc])
-    def test_out_of_bounds_time_step(self, test_sc):
-        '''
-           Here we test the conditions where the time_step
-           is outside the range of the weatherer's active
-           start and stop times.
-           4: (model_time < active_stop) and (time_step > active_stop)
-              So basically the time duration for our calculation will be
-              (model_time --> active_stop)
-              The decay will be calculated for this partial time duration.
-        '''
-        # rel_time = datetime(2012, 8, 20, 13)
-        orig_mass = np.copy(test_sc['mass'])
-        stop_time = rel_time + timedelta(hours=1)
-
         print '\nsc["mass"]:\n', test_sc['mass']
-
-        # setup test case 4
-        model_time = stop_time - timedelta(minutes=15)
-        time_step = 30 * secs_in_minute
-
-        weatherer = Weatherer(active_start=rel_time, active_stop=stop_time)
-
-        weatherer.prepare_for_model_run()
-
-        weatherer.prepare_for_model_step(test_sc, time_step, model_time)
-        weatherer.weather_elements(test_sc, time_step, model_time)
-        weatherer.model_step_is_done()
-
-        assert np.allclose(test_sc['mass'], 0.5 * orig_mass)
-
-    @pytest.mark.xfail
-    @pytest.mark.parametrize("test_sc", [sc, u_sc])
-    def test_model_time_range_surrounds_active_range(self, test_sc):
-        '''
-           Here we test the condition where the model_time and time_step
-           specify a time range that completely surrounds the range of the
-           weatherer's active start and stop times.
-           5: (model_time < active_start) and (time_step > active_stop)
-              So basically the time duration for our calculation will be
-              (active_start --> active_stop)
-              The decay will be calculated for this partial time duration.
-        '''
-        stop_time = rel_time + timedelta(minutes=15)
-
-        print '\nsc["mass"]:\n', test_sc['mass']
-
-        # setup test case 5
-        model_time = rel_time - timedelta(minutes=15)
-        time_step = 45 * secs_in_minute
-
-        weatherer = HalfLifeWeatherer(half_lives=(15.*60,),
-                                      active_start=rel_time,
-                                      active_stop=stop_time)
-
-        weatherer.prepare_for_model_run()
-
-        weatherer.prepare_for_model_step(test_sc, time_step, model_time)
-        mc_final = weatherer.weather_elements(test_sc, time_step, model_time)
-        weatherer.model_step_is_done()
-
-        assert np.allclose(0.5 * test_sc['mass'], mc_final.sum(1))
+        assert np.allclose(0.5 * orig_mc.sum(1), test_sc['mass'])
+        assert np.allclose(0.5 * orig_mc, test_sc['mass_components'])

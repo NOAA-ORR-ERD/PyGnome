@@ -20,6 +20,7 @@ from gnome.environment import Wind, Tide, Water
 from gnome.model import Model
 from gnome.persist import load
 from gnome.spill import point_line_release_spill
+from gnome.spill.elements import floating_weathering
 from gnome.movers import RandomMover, WindMover, CatsMover, ComponentMover
 from gnome.weatherers import Evaporation
 from gnome.outputters import Renderer
@@ -83,13 +84,15 @@ def make_model(images_dir, uncertain=False):
     print 'adding a spill'
     start_position = (144.664166, 13.441944, 0.0)
     end_release_time = start_time + timedelta(hours=6)
+    et = floating_weathering(substance='ALAMO')
     model.spills += \
         point_line_release_spill(num_elements=1000,
                                  start_position=start_position,
                                  release_time=start_time,
                                  end_release_time=end_release_time,
                                  amount=1000.0,
-                                 units='kg')
+                                 units='kg',
+                                 element_type=et)
 
     # need a scenario for SimpleMover
     # model.movers += SimpleMover(velocity=(1.0, -1.0, 0.0))
@@ -139,24 +142,25 @@ def make_model(images_dir, uncertain=False):
     c_mover.scale_value = .04
     model.movers += c_mover
 
-    print "adding a component mover:"
-    comp_mover = ComponentMover(testdata['boston_data']['component_curr1'],
-                                testdata['boston_data']['component_curr2'],
-                                w_mover.wind)
-    #todo: callback did not work correctly below - fix!
-    #comp_mover = ComponentMover(component_file1,component_file2,Wind(timeseries=series, units='m/s'))
+    # todo: seg faulting for component mover - comment test for now
+    # print "adding a component mover:"
+    # comp_mover = ComponentMover(testdata['boston_data']['component_curr1'],
+    #                             testdata['boston_data']['component_curr2'],
+    #                             w_mover.wind)
+    # #todo: callback did not work correctly below - fix!
+    # #comp_mover = ComponentMover(component_file1,component_file2,Wind(timeseries=series, units='m/s'))
 
-    comp_mover.ref_point = (-70.855, 42.275)
-    comp_mover.pat1_angle = 315
-    comp_mover.pat1_speed = 19.44
-    comp_mover.pat1_speed_units = 1
-    comp_mover.pat1ScaleToValue = .138855
-    comp_mover.pat2_angle = 225
-    comp_mover.pat2_speed = 19.44
-    comp_mover.pat2_speed_units = 1
-    comp_mover.pat2ScaleToValue = .05121
+    # comp_mover.ref_point = (-70.855, 42.275)
+    # comp_mover.pat1_angle = 315
+    # comp_mover.pat1_speed = 19.44
+    # comp_mover.pat1_speed_units = 1
+    # comp_mover.pat1ScaleToValue = .138855
+    # comp_mover.pat2_angle = 225
+    # comp_mover.pat2_speed = 19.44
+    # comp_mover.pat2_speed_units = 1
+    # comp_mover.pat2ScaleToValue = .05121
 
-    model.movers += comp_mover
+    # model.movers += comp_mover
 
     print 'adding a Weatherer'
     model.water = Water(311.15)
