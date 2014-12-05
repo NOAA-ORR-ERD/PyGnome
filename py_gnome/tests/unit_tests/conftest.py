@@ -536,12 +536,15 @@ def sample_model_weathering(sample_model_fcn, oil, temp=311.16):
 
 
 @pytest.fixture(scope='function', params=['relpath', 'abspath'])
-def clean_temp(request):
-    temp = os.path.join(base_dir, 'temp')   # absolute path
+def clean_saveloc(dump, request):
+    temp = os.path.join(dump, 'temp')   # absolute path
 
     def cleanup():
         print '\nCleaning up %s' % temp
         shutil.rmtree(temp)
+
+    if os.path.exists(temp):
+        cleanup()
 
     request.addfinalizer(cleanup)
 

@@ -4,6 +4,7 @@ test functionality of the save_load module used to persist save files
 import os
 from datetime import datetime
 import shutil
+import sys
 
 from gnome.persist import References, load, Savable
 from gnome.movers import constant_wind_mover
@@ -129,19 +130,19 @@ g_objects = (environment.Tide(testdata['CatsMover']['tide']),
 
 
 @pytest.mark.parametrize("obj", g_objects)
-def test_save_load(clean_temp, obj):
+def test_save_load(clean_saveloc, obj):
     'test save/load functionality'
-    refs = obj.save(clean_temp)
-    obj2 = load(os.path.join(clean_temp, refs.reference(obj)))
+    refs = obj.save(clean_saveloc)
+    obj2 = load(os.path.join(clean_saveloc, refs.reference(obj)))
     assert obj == obj2
 
 
 '''
-Following movers fail on windows with clean_temp fixture. The clean_temp fixture
+Following movers fail on windows with clean_saveloc fixture. The clean_saveloc fixture
 deletes ./temp directory before each run of test_save_load(). This is causing
 an issue in windows for the NetCDF files - for some reason it is not able to
 delete the netcdf data files. All files are being closed in C++, but until we
-find the solution, lets break up above tests and not call clean_temp for
+find the solution, lets break up above tests and not call clean_saveloc for
 following tests.
 '''
 
@@ -158,20 +159,11 @@ l_movers2 = (movers.CurrentCycleMover(testdata['CurrentCycleMover']['curr'],
 
 
 @pytest.mark.parametrize("obj", l_movers2)
-def test_save_load2(obj):
+def test_save_load2(obj, dump):
     'test save/load functionality'
 
-    temp = os.path.join(base_dir, 'temp')
+    temp = os.path.join(dump, 'temp')
     for dir_ in (temp, os.path.relpath(temp, base_dir)):
         refs = obj.save(dir_)
         obj2 = load(os.path.join(dir_, refs.reference(obj)))
         assert obj == obj2
-
-
-@pytest.mark.xfail
-@pytest.mark.parametrize("obj", l_movers2[:1])
-def test_save_load_netcdf(clean_temp, obj):
-    'test save/load functionality'
-    refs = obj.save(clean_temp)
-    obj2 = load(os.path.join(clean_temp, refs.reference(obj)))
-    assert obj == obj2
