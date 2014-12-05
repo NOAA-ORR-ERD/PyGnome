@@ -97,6 +97,7 @@ class TNesdisOverlay : public TOverlay
 		// override base class functionality
 		virtual OSErr	ReadFromFile(char *path);
 		virtual OSErr	ReadFromBNAFile(char *path);
+		virtual OSErr	ReadFromShapeFile(char *path);
 		virtual void	Draw (Rect r, WorldRect view);
 
 		//
