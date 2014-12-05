@@ -304,7 +304,7 @@ class Model(Serializable):
 
     @property
     def has_weathering(self):
-        return (len(self.weatherers) > 0 and
+        return (any([w.on for w in self.weatherers]) and
                 len([o for o in self.outputters
                      if isinstance(o, WeatheringOutput)]) > 0)
 

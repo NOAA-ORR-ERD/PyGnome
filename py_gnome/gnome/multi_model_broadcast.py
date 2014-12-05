@@ -45,6 +45,7 @@ class ModelConsumer(mp.Process):
         self.model = model
 
     def run(self):
+        print '{0}: starting...'.format(self.name)
         context = zmq.Context()
 
         self.loop = ioloop.IOLoop.instance()
@@ -59,9 +60,9 @@ class ModelConsumer(mp.Process):
 
         self.loop.start()
 
+        sock.close()
         context.destroy(linger=0)
         print '{0}: exiting...'.format(self.name)
-        sys.exit()
 
     def handle_cmd(self, msg):
         '''
@@ -89,6 +90,7 @@ class ModelConsumer(mp.Process):
         begin = time.clock()
         ret = self.model.step()
         end = time.clock()
+
         ret['response_time'] = end - begin
         return ret
 
@@ -173,9 +175,7 @@ class ModelBroadcaster(GnomeId):
 
         self._get_available_ports(wind_speed_uncertainties,
                                   spill_amount_uncertainties)
-
         self._spawn_consumers()
-
         self._spawn_tasks()
 
         for wsu in wind_speed_uncertainties:
@@ -231,9 +231,11 @@ class ModelBroadcaster(GnomeId):
 
         for c in self.consumers:
             c.join()
+        print 'joined all consumers!!!'
 
         self.context.destroy()
 
+        self.consumers = []
         self.tasks = []
         self.lookup = {}
 
