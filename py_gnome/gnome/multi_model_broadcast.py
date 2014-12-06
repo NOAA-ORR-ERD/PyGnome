@@ -6,6 +6,7 @@ import time
 import traceback
 
 from cPickle import loads, dumps
+import uuid
 
 import multiprocessing
 mp = multiprocessing
@@ -51,7 +52,7 @@ class ModelConsumer(mp.Process):
         self.loop = ioloop.IOLoop.instance()
 
         sock = context.socket(zmq.REP)
-        sock.bind('ipc://ModelConsumerTask{0}'.format(self.task_port))
+        sock.bind('ipc://ipc_files/Task-{0}'.format(self.task_port))
 
         # We need to create a stream from our socket and
         # register a callback for recv events.
@@ -197,7 +198,7 @@ class ModelBroadcaster(GnomeId):
 
         for wsu in wind_speed_uncertainties:
             for sau in spill_amount_uncertainties:
-                self.task_ports.append(idx)
+                self.task_ports.append(uuid.uuid4())
                 self.lookup[(wsu, sau)] = idx
                 idx += 1
 
@@ -212,7 +213,7 @@ class ModelBroadcaster(GnomeId):
 
         for p in self.task_ports:
             task = self.context.socket(zmq.REQ)
-            task.connect('ipc://ModelConsumerTask{0}'.format(p))
+            task.connect('ipc://ipc_files/Task-{0}'.format(p))
 
             self.tasks.append(task)
 
