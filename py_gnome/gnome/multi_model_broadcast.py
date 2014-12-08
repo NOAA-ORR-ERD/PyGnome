@@ -2,10 +2,18 @@ from pprint import PrettyPrinter
 pp = PrettyPrinter(indent=2)
 
 import sys
+import time
 import traceback
+
+from cPickle import loads, dumps
+import uuid
 
 import multiprocessing
 mp = multiprocessing
+
+
+import zmq
+from zmq.eventloop import ioloop, zmqstream
 
 from gnome import GnomeId
 from gnome.environment import Wind
@@ -31,40 +39,61 @@ class ModelConsumer(mp.Process):
         - Returns the results in a results queue
 
     '''
-    def __init__(self, task_queue, result_queue, model):
+    def __init__(self, task_port, model):
         mp.Process.__init__(self)
 
-        self.task_queue = task_queue
-        self.result_queue = result_queue
+        self.task_port = task_port
         self.model = model
 
     def run(self):
-        proc_name = self.name
-        while True:
-            data = self.task_queue.get()
-            if data is None:
-                # Poison pill means shutdown
-                print '%s: Exiting' % proc_name
-                self.result_queue.put(None)
+        print '{0}: starting...'.format(self.name)
+        context = zmq.Context()
 
-                break
+        self.loop = ioloop.IOLoop.instance()
+
+        sock = context.socket(zmq.REP)
+        sock.bind('ipc://ipc_files/Task-{0}'.format(self.task_port))
+
+        # We need to create a stream from our socket and
+        # register a callback for recv events.
+        self.stream = zmqstream.ZMQStream(sock, self.loop)
+        self.stream.on_recv(self.handle_cmd)
+
+        self.loop.start()
+
+        sock.close()
+        context.destroy(linger=0)
+        print '{0}: exiting...'.format(self.name)
+
+    def handle_cmd(self, msg):
+        '''
+            the IOLoop only uses recv_multipart(), so we will always get
+            a list of byte strings.
+        '''
+        cmd = loads(msg[0])
+        if cmd is None:
+            # Poison pill means shutdown
+            self.loop.stop()
+        else:
             try:
-                cmd, kwargs = data
-                result = getattr(self, '_' + cmd)(**kwargs)
+                res = getattr(self, '_' + cmd[0])(**cmd[1])
+                self.stream.send_unicode(dumps(res))
             except:
                 exc_type, exc_value, exc_traceback = sys.exc_info()
                 fmt = traceback.format_exception(exc_type, exc_value,
                                                  exc_traceback)
-                result = fmt
-
-            self.result_queue.put(result)
-        return
+                self.stream.send_unicode(dumps(fmt))
 
     def _rewind(self):
         return self.model.rewind()
 
     def _step(self):
-        return self.model.step()
+        begin = time.clock()
+        ret = self.model.step()
+        end = time.clock()
+
+        ret['response_time'] = end - begin
+        return ret
 
     def _num_time_steps(self):
         return self.model.num_time_steps
@@ -139,70 +168,106 @@ class ModelBroadcaster(GnomeId):
     def __init__(self, model,
                  wind_speed_uncertainties,
                  spill_amount_uncertainties):
+        self.model = model
+        self.context = None
+        self.consumers = []
         self.tasks = []
-        self.results = []
         self.lookup = {}
 
-        idx = 0
+        self._get_available_ports(wind_speed_uncertainties,
+                                  spill_amount_uncertainties)
+        self._spawn_consumers()
+        self._spawn_tasks()
+
         for wsu in wind_speed_uncertainties:
             for sau in spill_amount_uncertainties:
-                self.tasks.append(mp.Queue())
-                self.results.append(mp.Queue())
+                self._set_uncertainty(wsu, sau)
 
-                model_consumer = ModelConsumer(self.tasks[idx],
-                                               self.results[idx],
-                                               model)
-                model_consumer.start()
-
-                self._set_uncertainty(idx, wsu, sau)
-                self._set_new_cache_dir(idx)
-                self._set_weathering_output_only(idx)
-
-                self.lookup[(wsu, sau)] = idx
-                idx += 1
+        for t in self.tasks:
+            self._set_new_cache_dir(t)
+            self._set_weathering_output_only(t)
 
     def __del__(self):
         self.stop()
 
+    def _get_available_ports(self,
+                             wind_speed_uncertainties,
+                             spill_amount_uncertainties):
+        self.task_ports = []
+        idx = 0
+
+        for wsu in wind_speed_uncertainties:
+            for sau in spill_amount_uncertainties:
+                self.task_ports.append(uuid.uuid4())
+                self.lookup[(wsu, sau)] = idx
+                idx += 1
+
+    def _spawn_consumers(self):
+        for p in self.task_ports:
+            model_consumer = ModelConsumer(p, self.model)
+            model_consumer.start()
+            self.consumers.append(model_consumer)
+
+    def _spawn_tasks(self):
+        self.context = zmq.Context()
+
+        for p in self.task_ports:
+            task = self.context.socket(zmq.REQ)
+            task.connect('ipc://ipc_files/Task-{0}'.format(p))
+
+            self.tasks.append(task)
+
     def cmd(self, command, args, key=None):
         if key is None:
-            [t.put((command, args)) for t in self.tasks]
-            return [r.get() for r in self.results]
+            [t.send(self._to_buff(command, args)) for t in self.tasks]
+            return [loads(t.recv()) for t in self.tasks]
         else:
             idx = self.lookup[key]
-            self.tasks[idx].put((command, args))
-            return self.results[idx].get()
+            self.tasks[idx].send(self._to_buff(command, args))
+            return loads(self.tasks[idx].recv())
 
     def stop(self):
-        [t.put(None) for t in self.tasks]
-        [r.get() for r in self.results]
+        [t.send(dumps(None)) for t in self.tasks]
         [t.close() for t in self.tasks]
-        [r.close() for r in self.results]
+
+        for c in self.consumers:
+            c.join()
+        print 'joined all consumers!!!'
+
+        self.context.destroy()
+
+        self.consumers = []
         self.tasks = []
-        self.results = []
         self.lookup = {}
 
-    def _set_uncertainty(self, index,
+    def _to_buff(self, cmd, args):
+        return dumps((cmd, args))
+
+    def _set_uncertainty(self,
                          wind_speed_uncertainty,
                          spill_amount_uncertainty):
         # py_gnome spill container uncertainty is not used here
         # so we turn it off always
-        self.tasks[index].put(('set_spill_container_uncertainty',
-                               dict(uncertain=False)))
-        self.results[index].get()
+        index = self.lookup[(wind_speed_uncertainty, spill_amount_uncertainty)]
+        cmd = self._to_buff('set_spill_container_uncertainty',
+                            dict(uncertain=False))
+        self.tasks[index].send(cmd)
+        self.tasks[index].recv()
 
-        self.tasks[index].put(('set_wind_speed_uncertainty',
-                               dict(up_or_down=wind_speed_uncertainty)))
-        self.results[index].get()
+        cmd = self._to_buff('set_wind_speed_uncertainty',
+                            dict(up_or_down=wind_speed_uncertainty))
+        self.tasks[index].send(cmd)
+        self.tasks[index].recv()
 
-        self.tasks[index].put(('set_spill_amount_uncertainty',
-                               dict(up_or_down=spill_amount_uncertainty)))
-        self.results[index].get()
+        cmd = self._to_buff('set_spill_amount_uncertainty',
+                            dict(up_or_down=spill_amount_uncertainty))
+        self.tasks[index].send(cmd)
+        self.tasks[index].recv()
 
-    def _set_new_cache_dir(self, index):
-        self.tasks[index].put(('set_cache_dir', {}))
-        self.results[index].get()
+    def _set_new_cache_dir(self, task):
+        task.send(self._to_buff('set_cache_dir', {}))
+        task.recv()
 
-    def _set_weathering_output_only(self, index):
-        self.tasks[index].put(('set_weathering_output_only', {}))
-        self.results[index].get()
+    def _set_weathering_output_only(self, task):
+        task.send(self._to_buff('set_weathering_output_only', {}))
+        task.recv()

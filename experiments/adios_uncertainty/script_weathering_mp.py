@@ -8,6 +8,8 @@ from datetime import datetime, timedelta
 import numpy
 np = numpy
 
+import zmq
+
 from gnome import scripting
 from gnome.basic_types import datetime_value_2d
 from gnome.utilities.remote_data import get_datafile
@@ -137,6 +139,4 @@ if __name__ == '__main__':
                ))
 
     model_broadcaster.stop()
-
-    # model.full_run(logger=True)
-    # post_run(model)
+    print 'main(): stopped broadcaster.'
