@@ -3,6 +3,8 @@
 #include "Overlays.h"
 #include "ObjectUtilsPD.h"
 
+#include "shapefil.h"
+
 /////////////////////////////////////////////////
 /////////////////////////////////////////////////
 
@@ -219,6 +221,20 @@ OSErr TOverlay::CheckAndPassOnMessage(TModelMessage *message)
 
 Boolean IsShapeFile(char * path) 
 {
+	// check that file extension is .shp
+
+	long len;
+	char copyPath[256], shortFileName[64];
+	
+	strcpy(copyPath, path);
+	SplitPathFile(copyPath,shortFileName);
+	
+	len = strlen(shortFileName);
+	if(len < 5) return false;
+	
+	if(strcmp(shortFileName+len-4,".shp") == 0 || strcmp(shortFileName+len-4,".SHP") == 0)
+		return true;
+		
 	return false;
 }
 /////////////////////////////
@@ -333,6 +349,157 @@ OSErr TNesdisOverlay::AllocateNesdisPoints(long numToAllocate)
 
 
 // code goes here, read directly from shape file
+OSErr TNesdisOverlay::ReadFromShapeFile(char * path)
+{
+	OSErr err = 0;
+	SHPHandle hSHP;
+	SHPObject *psObject;
+	int nShapeType, numEntries, numFields, numRecords, nVertices;
+	char outPath[256], dbfPath[256];
+	double *padfX, *padfY;
+	long numToAllocate = 0, len = 0;
+	NesdisPoint np;
+	double lat, lon;
+	int thisPolyNum = -1;
+	int thisPolyFlag = -1;
+	int thisPolyInteriorRingFlag = -1;
+    DBFHandle	hDBF;
+	const char *attStr;
+	
+	memset(&np,0,sizeof(np));
+	
+#if TARGET_API_MAC_CARBON
+	err = ConvertTraditionalPathToUnixPath((const char *) path, outPath, kMaxNameLen) ;
+	//status = nc_open(outPath, NC_NOWRITE, &ncid);
+#else
+	strcpy(outPath, path);
+#endif
+	
+	hSHP = SHPOpen(outPath,"rb");
+	if (hSHP==NULL)
+	{
+		printf( "SHPOpen(%s) failed.\n", outPath );
+		err=-1; goto done;
+	}
+	
+/*	strcpy(dbfPath,path);
+	{
+		len = strlen(dbfPath);
+		if(len >= 4) 
+		{
+			if(dbfPath[len-4] == '.')
+			{	// replace the extension
+				strcpy(&dbfPath[len-4],".dbf");
+			}
+		}
+	}
+#if TARGET_API_MAC_CARBON
+	err = ConvertTraditionalPathToUnixPath((const char *) dbfPath, outPath, kMaxNameLen) ;
+	//status = nc_open(outPath, NC_NOWRITE, &ncid);
+#else
+	strcpy(outPath, dbfPath);
+#endif
+	
+	hDBF = DBFOpen(outPath,"rb");
+    if( hDBF == NULL )
+    {
+		printf( "DBFOpen(%s) failed.\n", outPath );
+		err = -1; goto done;
+    }
+*/	
+	SHPGetInfo(hSHP,&numEntries,&nShapeType,NULL,NULL); 
+
+	//numFields = DBFGetFieldCount(hDBF);
+	//numRecords = DBFGetRecordCount(hDBF);
+
+	for (int i=0; i<numEntries; i++)
+	{
+		psObject = SHPReadObject( hSHP, i );
+		//attStr = DBFReadStringAttribute(hDBF, i, 0);
+		thisPolyNum++;
+		thisPolyInteriorRingFlag = 0;	// for now...
+		nVertices = psObject->nVertices;
+		if (nVertices <= 0) {err = -1; goto done;}
+		padfX = (double *) malloc(sizeof(double)*nVertices);
+		padfY = (double *) malloc(sizeof(double)*nVertices);
+
+		if (i==0) 
+		{
+			numToAllocate = nVertices; 
+			err = AllocateNesdisPoints(numToAllocate); 
+			if (err) goto done;
+		}
+		else 
+		{
+			numToAllocate += nVertices;
+			if(numToAllocate > 0) 
+			{ 
+				NesdisPoint *pts = (NesdisPoint*)realloc(fNesdisPoints.pts,sizeof(*fNesdisPoints.pts)*numToAllocate);
+				if ( pts != NULL ) //realloc was successful
+				{
+					fNesdisPoints.pts = pts;
+				}
+				else //there was an error
+				{
+					DisposeNesdisPoints();
+					err = -1;
+					goto done;
+				}
+				if(fNesdisPoints.pts) {
+					fNesdisPoints.numAllocated = numToAllocate;
+				}
+				else
+				{
+					err = memFullErr;
+					goto done;
+				}
+			}
+		}
+		for (int j=0; j<nVertices; j++)
+		{	// need to check for cw or ccw to determine interior ring (maybe this is a descriptor?)
+			padfX[j] = psObject->padfX[j];
+			padfY[j] = psObject->padfY[j];
+			if(fNesdisPoints.numFilledIn < fNesdisPoints.numAllocated)
+			{
+				np.lat = padfY[j];
+				np.lng = padfX[j];
+				np.polyNum = thisPolyNum;
+				np.flag = thisPolyFlag;
+				np.interiorRingFlag = thisPolyInteriorRingFlag;
+				fNesdisPoints.pts[fNesdisPoints.numFilledIn++] = np;
+			}
+		}
+		SHPDestroyObject(psObject);
+	}
+
+	free(padfX);
+	free(padfY);
+	
+	SHPClose( hSHP );
+	
+	strcpy(fFilePath,path); // record the path now that we have been successful
+	this->SetClassNameToFileName(); // for the wizard
+	
+	// figure out the bounds
+	fBounds = voidWorldRect;
+	for(int i = 0; i < fNesdisPoints.numFilledIn; i++) {
+		WorldPoint wp;
+		np = fNesdisPoints.pts[i];
+		wp.pLat = 1000000.0*np.lat;
+		wp.pLong = 1000000.0*np.lng;
+		AddWPointToWRect(wp.pLat, wp.pLong, &fBounds);
+	}
+	this->MakeBitmap(); //Amy wants to be able to auto fill a spray can with points, perhaps we could use a bitmap to do this for her, 6/6/10
+	
+	// make sure the overlay is shown in the current view
+	if(!EqualWRects(voidWorldRect,fBounds))
+		ChangeCurrentView(UnionWRect(settings.currentView,fBounds), TRUE, TRUE);
+	
+done:
+	InvalMapDrawingRect();
+	return err;
+}
+
 // generalize to overlay generic shape file or bna
 OSErr TNesdisOverlay::ReadFromBNAFile(char * path)
 {
@@ -2176,6 +2343,7 @@ Boolean IsOverlayFile(char* path)
 	if(IsSLDMBBuoyFile(path)) return true;
 	if(IsOverflightFile(path)) return true;
 	if(IsVectorMap(path, &isESI)) return true;
+	if(IsShapeFile(path)) return true;
 	return false; // not a recognized type of overlay file
 }
 
@@ -2187,7 +2355,7 @@ OSErr AddOverlayFromFile(char *path)
 	OSErr err = noErr;
 	char tempStr[256];
 	TOverlay *thisOverlay = NULL;
-	Boolean isESI = false;
+	Boolean isESI = false, isVectorMap = false, isShapeFile = false;
 
 	if(!IsOverlayFile(path)) {
 		err = true;
@@ -2209,10 +2377,16 @@ OSErr AddOverlayFromFile(char *path)
 	else if (IsVectorMap (path, &isESI)){
 		thisOverlay = new TNesdisOverlay ();
 	}
+	else if (IsShapeFile (path)){
+		thisOverlay = new TNesdisOverlay ();
+	}
 	/// read the file and add the overlay if we got one
 	if(thisOverlay) {
 		if (IsVectorMap (path, &isESI)){
 			err = ((TNesdisOverlay*)thisOverlay)->ReadFromBNAFile(path);
+		}
+		else if (IsShapeFile (path)) {
+			err = ((TNesdisOverlay*)thisOverlay)->ReadFromShapeFile(path);
 		}
 		else err = thisOverlay->ReadFromFile(path);
 		//err = thisOverlay->ReadFromFile(path);
