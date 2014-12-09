@@ -20,7 +20,7 @@ from gnome.utilities.serializable import Serializable, Field
 from gnome.spill_container import SpillContainerPair
 from gnome.movers import Mover
 from gnome.weatherers import Weatherer, IntrinsicProps
-from gnome.outputters import Outputter, NetCDFOutput
+from gnome.outputters import Outputter, NetCDFOutput, WeatheringOutput
 from gnome.persist import (extend_colander,
                            validators,
                            References,
@@ -304,7 +304,9 @@ class Model(Serializable):
 
     @property
     def has_weathering(self):
-        return len(self.weatherers) > 0
+        return (any([w.on for w in self.weatherers]) and
+                len([o for o in self.outputters
+                     if isinstance(o, WeatheringOutput)]) > 0)
 
     @property
     def start_time(self):
