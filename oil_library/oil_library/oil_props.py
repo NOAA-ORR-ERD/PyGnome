@@ -177,7 +177,38 @@ class OilProps(object):
 
     def tojson(self):
         'for now, just convert underlying oil object to json'
-        return self._r_oil.tojson()
+        return self.prune_oil_json(self._r_oil.tojson())
+
+    def prune_oil_json(self, oil_json):
+        '''
+            The tojson() routine recursively includes a bunch of redundant
+            content that we don't want to return.  So we will prune it.
+        '''
+        for c in oil_json['categories']:
+            if 'oils' in c:
+                del c['oils']
+
+        for c in oil_json['cuts']:
+            if 'imported' in c:
+                del c['imported']
+            if 'oil' in c:
+                del c['oil']
+
+        for d in oil_json['densities']:
+            if 'imported' in d:
+                del d['imported']
+            if 'oil' in d:
+                del d['oil']
+
+        for k in oil_json['kvis']:
+            if 'oil' in k:
+                del k['oil']
+
+        for f in oil_json['sara_fractions']:
+            if 'oil' in f:
+                del f['oil']
+
+        return oil_json
 
     def __eq__(self, other):
         '''need to explicitly compare __dict__'''
