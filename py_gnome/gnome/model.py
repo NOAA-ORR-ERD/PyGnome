@@ -441,6 +441,7 @@ class Model(Serializable):
             if mover.on:
                 array_types.update(mover.array_types)
 
+        weathering = False
         for w in self.weatherers:
             for sc in self.spills.items():
                 # weatherers will initialize 'weathering_data' key/values
@@ -448,9 +449,10 @@ class Model(Serializable):
                 w.prepare_for_model_run(sc)
 
             if w.on:
+                weathering = True
                 array_types.update(w.array_types)
 
-        if len(self.weatherers) > 0:
+        if weathering:
             if self.water is None:
                 self.water = Water()
 

@@ -232,7 +232,7 @@ class ElementCache(object):
                 data['weathering_data'][ix] = key
 
     def _get_weathering_data(self, data_arrays):
-        mb_data = None
+        mb_data = {}
         if 'weathering_data' in data_arrays:
             mb_names = data_arrays.pop('weathering_data')
             mb_data = {}
