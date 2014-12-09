@@ -7,12 +7,15 @@ pp = PrettyPrinter(indent=2)
 import pytest
 from hazpy import unit_conversion as uc
 
-from oil_library import _sample_oils, get_oil_props, get_oil
+from oil_library import get_oil_props, get_oil
 from oil_library.mock_oil import sample_oil_to_mock_oil
 from oil_library.utilities import get_boiling_points_from_api
 
 sample_oil = 'oil_conservative'
-so = _sample_oils[sample_oil]
+so = {'name': 'oil_conservative',
+      'api': uc.convert('Density',
+                        'gram per cubic centimeter',
+                        'API degree', 1)}
 
 
 def test_sample_oil_to_mock_oil():
