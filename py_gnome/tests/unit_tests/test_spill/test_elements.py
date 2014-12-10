@@ -33,7 +33,7 @@ from gnome.spill import Spill, Release
 from oil_library import get_oil_props
 from gnome.persist import load
 
-from conftest import mock_append_data_arrays
+from ..conftest import mock_append_data_arrays
 
 
 """ Helper functions """

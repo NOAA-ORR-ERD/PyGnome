@@ -29,7 +29,7 @@ from gnome.spill.elements import (floating,
                                   ElementType)
 import gnome.array_types
 
-from conftest import mock_append_data_arrays
+from ..conftest import mock_append_data_arrays
 
 
 # Used to mock SpillContainer functionality of creating/appending data_arrays
