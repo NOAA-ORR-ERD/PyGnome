@@ -177,8 +177,6 @@ class TestIntrinsicProps:
         for val in sc.weathering_data.values():
             assert val == 0.0
 
-        for spill in sc.spills:
-            assert spill.get('init_density') is not None
         # test initialization as well
 
         ts = 900

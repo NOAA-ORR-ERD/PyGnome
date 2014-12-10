@@ -68,11 +68,6 @@ class ElementType(Serializable):
 
         self.substance = substance
 
-        # initial density of each pseudo-component. This is fixed for all time
-        # and let the IntrisicProps object set this value since that's the only
-        # object that needs/uses it
-        self.init_density = None
-
     def __repr__(self):
         return ('{0.__class__.__module__}.{0.__class__.__name__}('
                 'initializers={0.initializers}, '
