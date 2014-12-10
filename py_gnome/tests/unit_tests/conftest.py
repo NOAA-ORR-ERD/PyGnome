@@ -521,7 +521,7 @@ def sample_model_weathering(sample_model_fcn, oil, temp=311.16):
     'update model the same way for multiple tests'
     model.uncertain = False     # fixme: with uncertainty, copying spill fails!
     model.duration = timedelta(hours=4)
-    et = gnome.spill.elements.floating_weathering(substance=oil)
+    et = gnome.spill.elements.floating_mass(substance=oil)
     start_time = model.start_time + timedelta(hours=1)
     end_time = start_time + timedelta(seconds=model.time_step*3)
     spill = gnome.spill.point_line_release_spill(10,

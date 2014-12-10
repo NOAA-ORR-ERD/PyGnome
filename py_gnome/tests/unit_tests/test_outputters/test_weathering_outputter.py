@@ -10,7 +10,7 @@ import pytest
 
 from gnome.environment import constant_wind, Water
 from gnome.weatherers import Evaporation, Dispersion, Skimmer, Burn
-from gnome.spill.elements import floating_weathering
+from gnome.spill.elements import floating_mass
 from gnome.spill import point_line_release_spill
 
 from gnome.outputters import WeatheringOutput
@@ -43,7 +43,7 @@ def model(sample_model, output_dir):
     # print start_points
     model.duration = timedelta(hours=2)
     end_time = model.start_time + timedelta(hours=1)
-    et = floating_weathering(substance='FUEL OIL NO.6')
+    et = floating_mass(substance='FUEL OIL NO.6')
     model.spills += point_line_release_spill(1000,
                                              start_position=rel_start_pos,
                                              release_time=model.start_time,

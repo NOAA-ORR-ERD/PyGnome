@@ -165,61 +165,6 @@ class InitWindages(InitBaseClass, Serializable):
                     data_arrays['windages'][-num_new_particles:])
 
 
-class InitArraysFromOilProps(InitBaseClass, Serializable):
-    '''
-       Initialize 'mass_components', this requires 'mass' array be initialized.
-       If 'mass' is not initialized or all 0.0, then it computes the mass, and
-       updates the array
-    '''
-    _state = copy.deepcopy(InitBaseClass._state)
-    _schema = base_schema.ObjType
-
-    def __init__(self):
-        """
-        Sets 'mass_components' and 'mass' arrays - it needs the 'mass' array
-        so currently it sets it.
-        """
-        super(InitArraysFromOilProps, self).__init__()
-        self.array_types.update({'mass_components': array_types.mass_components})
-        self.name = 'mass_components'
-
-    def initialize(self, num_new_particles, spill, data_arrays, substance):
-        '''
-           :param int num_new_particles: Number of new particles to initialize
-           :param Spill spill: The spill object from which the new particles
-                               are coming from.
-           :param data_arrays: The numpy arrays that make up the collective
-                               properties of our particles.
-           :type data_arrays: dict(<name>: <np.ndarray>,
-                                   ...
-                                   )
-           :param OilProps substance: The Oil Properties associated with the
-                                      spill.
-                                      (TODO: Why is this not simply contained
-                                             in the Spill??
-                                             Why the extra argument??)
-        '''
-        if spill.amount is None:
-            raise ValueError('mass attribute of spill is None - cannot '
-                             'compute particle mass without total mass')
-
-        mass_fractions = np.asarray(substance.mass_fraction,
-                                    dtype=np.float64)
-
-        # if 'mass' is defined, use it, otherwise, compute it and add
-        if np.all(data_arrays['mass'][-num_new_particles:] == 0.0):
-            le_mass = spill.get_mass('kg') / spill.release.num_elements
-            data_arrays['mass'][-num_new_particles:] = le_mass
-
-        masses = mass_fractions * (data_arrays['mass'][-num_new_particles:]
-                                   .reshape(num_new_particles, -1))
-        # currently only modeling one substance so:
-        #     masses.shape[1] == data_arrays['mass_components'].shape[1]
-        # however, code is there to model multiple substances and some basic
-        # tests are there so make this consistent so tests pass and things work
-        data_arrays['mass_components'][-num_new_particles:,
-                                       :masses.shape[1]] = masses
-
 # do following two classes work for a time release spill?
 
 

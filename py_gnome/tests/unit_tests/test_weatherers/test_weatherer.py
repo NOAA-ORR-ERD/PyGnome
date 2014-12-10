@@ -18,8 +18,7 @@ from gnome.utilities.inf_datetime import InfDateTime
 from gnome.array_types import mass, rise_vel, mass_components
 from gnome.spill.elements import (ElementType,
                                   InitMassFromSpillAmount,
-                                  InitRiseVelFromDist,
-                                  InitArraysFromOilProps)
+                                  InitRiseVelFromDist)
 
 from gnome.weatherers import Weatherer, HalfLifeWeatherer
 
@@ -30,7 +29,6 @@ arr_types = {'mass': mass,
              }
 initializers = [InitMassFromSpillAmount(),
                 InitRiseVelFromDist(),
-                InitArraysFromOilProps(),
                 ]
 oil = 'ALAMO'
 sc = sample_sc_release(5, (3., 6., 0.),
@@ -55,7 +53,7 @@ class TestWeatherer:
         assert weatherer.active
         assert weatherer.active_start == InfDateTime('-inf')
         assert weatherer.active_stop == InfDateTime('inf')
-        assert weatherer.array_types == {'mass_components': mass_components}
+        assert weatherer.array_types == {}
 
     @pytest.mark.parametrize("test_sc", [sc, u_sc])
     def test_one_weather(self, test_sc):

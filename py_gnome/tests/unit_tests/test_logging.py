@@ -14,7 +14,6 @@ from gnome.model import Model
 from gnome.environment import constant_wind, Water
 from gnome.weatherers import Evaporation
 from gnome.spill import point_line_release_spill
-from gnome.spill.elements import floating_weathering
 
 
 config_dict = {
@@ -98,14 +97,12 @@ class TestLog():
 
     def test_full_run_logging(self, logfile):
         c_dict = copy.deepcopy(config_dict)
-        et = floating_weathering(substance=u'ALAMO')
         initialize_log(c_dict, logfile)
         model = Model()
         model.spills += point_line_release_spill(100,
                                                  (0, 0, 0),
                                                  model.start_time,
                                                  end_release_time=model.start_time + timedelta(days=1),
-                                                 element_type=et,
                                                  amount=200,
                                                  units='m^3')
         model.environment += Water()

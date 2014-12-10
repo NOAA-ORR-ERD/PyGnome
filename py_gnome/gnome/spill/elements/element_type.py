@@ -18,7 +18,6 @@ from .initializers import (InitRiseVelFromDropletSizeFromDist,
                            InitRiseVelFromDist,
                            InitWindages,
                            InitMassFromSpillAmount,
-                           InitArraysFromOilProps,
                            InitMassFromPlume)
 from oil_library import get_oil_props
 
@@ -286,35 +285,6 @@ def floating_mass(windage_range=(.01, .04),
     """
     init = [InitWindages(windage_range, windage_persist),
             InitMassFromSpillAmount()]
-    return ElementType(init, substance)
-
-
-def floating_weathering(windage_range=(.01, .04),
-                        windage_persist=900,
-                        substance='oil_conservative'):
-    '''
-    Helper function returns an ElementType object containing following
-    initializers:
-
-    1. InitWindages(): for initializing 'windages' with user specified
-    windage_range and windage_persist.
-
-    2. InitMassFromSpillAmount(): Initializes mass of each element by equally
-    dividing the amount spilled by the total number of elements used to model
-    it. Requires the Spill has a valid 'amount', 'units' and 'substance' with
-    density if we need to convert from volume to mass.
-
-    3. InitArraysFromOilProps(): Initializes the 'mass_components' dataarray
-    for substance. It requires mass_fraction attribute attribute on substance
-    to return a list of mass fractions used to model the substance.
-
-    :param substance='oil_conservative': Type of oil spilled. Passed onto
-        ElementType constructor
-    :type substance: str or OilProps
-    '''
-    init = [InitWindages(windage_range, windage_persist),
-            InitMassFromSpillAmount(),  # set 'mass' array
-            InitArraysFromOilProps()]
     return ElementType(init, substance)
 
 

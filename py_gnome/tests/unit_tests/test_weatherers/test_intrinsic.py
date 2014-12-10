@@ -9,7 +9,7 @@ import pytest
 from gnome.environment import Water
 from gnome.weatherers.intrinsic import FayGravityViscous, IntrinsicProps
 from gnome.array_types import area, mol
-from gnome.spill.elements import floating_weathering
+from gnome.spill.elements import floating_mass
 from gnome.spill import point_line_release_spill
 from gnome.spill_container import SpillContainer
 
@@ -127,7 +127,7 @@ class TestFayGravityViscous:
 class TestIntrinsicProps:
     def test_init(self):
         intrinsic = IntrinsicProps(water)
-        assert len(intrinsic.array_types) == 2
+        assert len(intrinsic.array_types) == 4
 
         intrinsic = IntrinsicProps(water,
                                    {'area': area})
@@ -136,11 +136,11 @@ class TestIntrinsicProps:
                     'relative_bouyancy',
                     'frac_coverage'):
             assert key in intrinsic.array_types
-        assert len(intrinsic.array_types) == 7
+        assert len(intrinsic.array_types) == 8
 
         intrinsic.update_array_types({})
         assert 'density' in intrinsic.array_types
-        assert len(intrinsic.array_types) == 2
+        assert len(intrinsic.array_types) == 4
 
     @pytest.mark.parametrize(("s0", "s1"), [("ALAMO", "ALAMO"),
                                             ("ALAMO", "AGUA DULCE")])
@@ -152,8 +152,8 @@ class TestIntrinsicProps:
 
         rel_time = datetime.now().replace(microsecond=0)
         end_time = rel_time + timedelta(hours=1)
-        et0 = floating_weathering(substance=s0)
-        et1 = floating_weathering(substance=s1)
+        et0 = floating_mass(substance=s0)
+        et1 = floating_mass(substance=s1)
         spills = [point_line_release_spill(10,
                                            (0, 0, 0),
                                            rel_time,

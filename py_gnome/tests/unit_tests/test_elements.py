@@ -21,7 +21,7 @@ from gnome.spill.elements import (InitWindages,
                             InitRiseVelFromDist,
                             InitRiseVelFromDropletSizeFromDist,
                             floating,
-                            floating_weathering,
+                            floating_mass,
                             ElementType,
                             plume)
 
@@ -260,8 +260,8 @@ def test_initialize_InitRiseVelFromDist_normal():
 """ Element Types"""
 # additional array_types corresponding with ElementTypes for following test
 arr_types = {'windages': array_types.windages,
-            'windage_range': array_types.windage_range,
-            'windage_persist': array_types.windage_persist}
+             'windage_range': array_types.windage_range,
+             'windage_persist': array_types.windage_persist}
 
 rise_vel = {'rise_vel': array_types.rise_vel}
 rise_vel.update(arr_types)
@@ -279,7 +279,7 @@ inp_params = [((floating(substance=oil),
               ((floating(substance=oil),
                 ElementType([InitMassFromSpillAmount(), InitRiseVelFromDist()],
                             substance=oil)), rise_vel),
-              ((floating(substance=oil), floating_weathering(substance=oil)),
+              ((floating(substance=oil), floating_mass(substance=oil)),
                mass_comp),
               ]
 
@@ -320,11 +320,6 @@ def test_element_types(elem_type, arr_types, sample_sc_no_uncertainty):
             spill_mask = sc.get_spill_mask(spill)
             # todo: need better API for access
             s_arr_types = spill.get('array_types').keys()
-
-            if 'mass_components' in s_arr_types:
-                # floating_weathering() uses InitArraysFromOilProps() which
-                # also sets the following arrays
-                assert 'mass' in s_arr_types
 
             if np.any(spill_mask):
                 for key in arr_types:

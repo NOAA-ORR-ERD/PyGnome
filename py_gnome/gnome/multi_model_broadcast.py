@@ -2,6 +2,8 @@ from pprint import PrettyPrinter
 pp = PrettyPrinter(indent=2)
 
 import sys
+import os
+import psutil
 import time
 import traceback
 
@@ -47,6 +49,9 @@ class ModelConsumer(mp.Process):
 
     def run(self):
         print '{0}: starting...'.format(self.name)
+
+        self.cleanup_inherited_files()
+
         context = zmq.Context()
 
         self.loop = ioloop.IOLoop.instance()
@@ -64,6 +69,11 @@ class ModelConsumer(mp.Process):
         sock.close()
         context.destroy(linger=0)
         print '{0}: exiting...'.format(self.name)
+
+    def cleanup_inherited_files(self):
+        proc = psutil.Process(os.getpid())
+        [os.close(c.fd) for c in proc.get_connections()]
+        [os.close(f.fd) for f in proc.get_open_files()]
 
     def handle_cmd(self, msg):
         '''
@@ -88,11 +98,12 @@ class ModelConsumer(mp.Process):
         return self.model.rewind()
 
     def _step(self):
-        begin = time.clock()
+        begin = time.time()
         ret = self.model.step()
-        end = time.clock()
+        end = time.time()
 
-        ret['response_time'] = end - begin
+        if 'WeatheringOutput' in ret:
+            ret['WeatheringOutput']['response_time'] = end - begin
         return ret
 
     def _num_time_steps(self):
@@ -144,6 +155,12 @@ class ModelConsumer(mp.Process):
     def _set_cache_dir(self):
         return self.model._cache.create_new_dir()
 
+    def _get_cache_enabled(self):
+        return self.model._cache.enabled
+
+    def _set_cache_enabled(self, enabled):
+        self.model._cache.enabled = enabled
+
     def _get_outputters(self):
         return self.model.outputters
 
@@ -185,6 +202,7 @@ class ModelBroadcaster(GnomeId):
 
         for t in self.tasks:
             self._set_new_cache_dir(t)
+            self._disable_cache(t)
             self._set_weathering_output_only(t)
 
     def __del__(self):
@@ -266,6 +284,10 @@ class ModelBroadcaster(GnomeId):
 
     def _set_new_cache_dir(self, task):
         task.send(self._to_buff('set_cache_dir', {}))
+        task.recv()
+
+    def _disable_cache(self, task):
+        task.send(self._to_buff('set_cache_enabled', dict(enabled=False)))
         task.recv()
 
     def _set_weathering_output_only(self, task):

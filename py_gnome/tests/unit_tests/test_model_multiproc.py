@@ -21,7 +21,6 @@ from gnome.map import MapFromBNA
 from gnome.environment import Wind, Water, Tide
 
 from gnome.spill import point_line_release_spill
-from gnome.spill.elements import floating_weathering
 
 from gnome.movers import RandomMover, WindMover, CatsMover
 from gnome.weatherers import Evaporation, Dispersion, Skimmer, Burn
@@ -55,14 +54,12 @@ def make_model(images_dir=os.path.join(base_dir, 'images'),
                   map=gnome_map, uncertain=uncertain, cache_enabled=False)
 
     print 'adding a spill'
-    et = floating_weathering(substance='oil_conservative')
     spill = point_line_release_spill(num_elements=1000,
                                      start_position=(-72.419992,
                                                      41.202120, 0.0),
                                      release_time=start_time,
                                      amount=1000,
-                                     units='kg',
-                                     element_type=et)
+                                     units='kg')
     spill.amount_uncertainty_scale = 1.0
     model.spills += spill
 
