@@ -107,14 +107,13 @@ class Evaporation(Weatherer, Serializable):
             #            data['mol']).reshape(-1, 1)
             # d_denom = np.repeat(d_denom, d_numer.shape[1], axis=1)
             # data['evap_decay_constant'][:] = -d_numer/d_denom
-
-            data['evap_decay_constant'][:] = \
-                -(((data['area'] * f_diff).reshape(-1, 1) * K * vp) /
-                  np.repeat((constants['gas_constant'] * water_temp *
-                             data['mol']).reshape(-1, 1), len(vp), axis=1))
+            if len(data['evap_decay_constant']) > 0:
+                data['evap_decay_constant'][:] = \
+                    -(((data['area'] * f_diff).reshape(-1, 1) * K * vp) /
+                      np.repeat((constants['gas_constant'] * water_temp *
+                                 data['mol']).reshape(-1, 1), len(vp), axis=1))
 
             sc.update_from_substancedata(arrays)
-
             if np.any(data['evap_decay_constant'] > 0.0):
                 raise ValueError("Error in Evaporation routine. One of the"
                                  " exponential decay constant is positive")

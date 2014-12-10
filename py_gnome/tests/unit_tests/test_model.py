@@ -22,7 +22,7 @@ from gnome.environment import Wind, Tide, constant_wind, Water
 from gnome.model import Model
 
 from gnome.spill import Spill, SpatialRelease, point_line_release_spill
-from gnome.spill.elements import floating, floating_weathering
+from gnome.spill.elements import floating, floating_mass
 
 from gnome.movers import SimpleMover, RandomMover, WindMover, CatsMover
 
@@ -796,9 +796,6 @@ def test_simple_run_no_spills(model):
 def test_all_weatherers_in_model(model):
     '''
     test model run with weatherer
-    todo: This does not require floating_weathering() element_type, meaning
-    mass_components are not initialized correctly here - need to revisit this
-    concept
     '''
     model.weatherers += HalfLifeWeatherer()
     print 'model.weatherers:', model.weatherers
@@ -847,7 +844,7 @@ def test_contains_object(sample_model_fcn):
     model.water = water
     model.environment += wind
 
-    et = floating_weathering(substance=model.spills[0].get('substance').name)
+    et = floating_mass(substance=model.spills[0].get('substance').name)
     sp = point_line_release_spill(500, (0, 0, 0),
                                   rel_time + timedelta(hours=1),
                                   element_type=et,
@@ -894,14 +891,13 @@ def test_staggered_spills_weathering(sample_model_fcn, uncertain):
     rel_time = model.spills[0].get('release_time')
     model.start_time = rel_time - timedelta(hours=1)
     model.duration = timedelta(days=1)
-    # todo: figure out why we're not able to reuse 'substance' object
-    # et = floating_weathering(substance=model.spills[0].get('substance'))
-    et = floating_weathering(substance=model.spills[0].get('substance').name)
+
+    et = floating_mass(substance=model.spills[0].get('substance').name)
     cs = point_line_release_spill(500, (0, 0, 0),
                                   rel_time + timedelta(hours=1),
                                   element_type=et,
-                                  amount=100,
-                                  units='tons')
+                                  amount=1,
+                                  units='tonnes')
     model.spills += cs
     model.water = Water()
     model.environment += constant_wind(1., 0)
@@ -953,7 +949,7 @@ def test_weathering_data_attr():
     # use different element_type and initializers for both spills
     s[0].amount = 10.0
     s[0].units = 'kg'
-    s[0].element_type = floating_weathering()
+    s[0].element_type = floating_mass()
     model.rewind()
     model.step()
     for sc in model.spills.items():
@@ -962,7 +958,7 @@ def test_weathering_data_attr():
 
     s[1].amount = 5.0
     s[1].units = 'kg'
-    s[1].element_type = floating_weathering()
+    s[1].element_type = floating_mass()
     model.rewind()
     exp_rel = 0.0
     for ix in range(2):
@@ -981,7 +977,6 @@ def test_weathering_data_attr():
             assert not sc.weathering_data
 
 
-@pytest.mark.xfail
 def test_run_element_type_no_initializers(model):
     '''
     run model with only one spill, it contains an element_type.

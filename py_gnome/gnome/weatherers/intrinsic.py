@@ -126,13 +126,12 @@ class IntrinsicProps(object):
     _array_types_group = \
         {'area': {'init_area': init_area,
                   'init_volume': init_volume,
-                  'mass': mass,
                   'relative_bouyancy': relative_bouyancy,
                   'frac_coverage': frac_coverage},
          # need to add 'mol' as well to self.array_types because it needs to be
          # included when itersubstancedata() is invoked
-         'mol': {'mol': mol,
-                 'mass_components': mass_components}}
+         'mol': {'mol': mol}
+         }
 
     def __init__(self,
                  water,
@@ -141,7 +140,9 @@ class IntrinsicProps(object):
         self.water = water
         self.spreading = spreading
         self.array_types = {'density': density,
-                            'viscosity': viscosity}
+                            'viscosity': viscosity,
+                            'mass_components': mass_components,
+                            'mass': mass}
         if array_types:
             self.update_array_types(array_types)
 
@@ -236,6 +237,11 @@ class IntrinsicProps(object):
                         self.array_types['density'].initial_value)
                 data['density'][mask] = \
                     substance.get_density(water_temp)
+
+                # initialize mass_components - assume 'mass' is correctly set
+                data['mass_components'][mask, :len(substance.mass_fraction)] = \
+                    (np.asarray(substance.mass_fraction, dtype=np.float64) *
+                     (data['mass'][mask].reshape(len(data['mass'][mask]), -1)))
 
                 if substance.get_viscosity(water_temp) is not None:
                     'make sure we do not add NaN values'

@@ -42,7 +42,6 @@ class Weatherer(Process):
                               LEs are made up of.
         '''
         super(Weatherer, self).__init__(**kwargs)
-        self.array_types.update({'mass_components': mass_components})
 
     def __repr__(self):
         return ('{0.__class__.__module__}.{0.__class__.__name__}('
