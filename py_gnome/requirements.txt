@@ -23,6 +23,7 @@ pillow
 ## Python only packages: can be pip installed ##
 Cython>=0.20.1
 pytest
+psutil
 sphinx
 progressbar
 six
