@@ -439,8 +439,8 @@ class Model(Serializable):
             oc.remake()
 
         for mover in self.movers:
-            mover.prepare_for_model_run()
             if mover.on:
+                mover.prepare_for_model_run()
                 array_types.update(mover.array_types)
 
         weathering = False
@@ -448,11 +448,10 @@ class Model(Serializable):
             for sc in self.spills.items():
                 # weatherers will initialize 'weathering_data' key/values
                 # to 0.0
-                w.prepare_for_model_run(sc)
-
-            if w.on:
-                weathering = True
-                array_types.update(w.array_types)
+                if w.on:
+                    w.prepare_for_model_run(sc)
+                    weathering = True
+                    array_types.update(w.array_types)
 
         if weathering:
             if self.water is None:
