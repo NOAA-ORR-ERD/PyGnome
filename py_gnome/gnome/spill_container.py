@@ -411,9 +411,10 @@ class SpillContainer(SpillContainerData):
             return
 
         for ix, data in enumerate(self._substances_spills.data):
-            mask = self['substance'] == ix
-            for array in arrays:
-                self[array][mask] = data[array][:]
+            if self._substances_spills.substances[ix] is not None:
+                mask = self['substance'] == ix
+                for array in arrays:
+                    self[array][mask] = data[array][:]
 
     def _set_substancedata(self, arrays):
         '''
