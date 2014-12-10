@@ -4,8 +4,10 @@
 Tests Spill() class and the various release() classes
 
 Release objects were factored out but the tests are still all in here
-todo: create simple tests for release objects separate from these more complex
-tests
+Simple tests that do not use the Spill object have been moved to
+test_release.py - this module was getting too big
+
+todo: could still be refactored and made more concise
 """
 
 from datetime import datetime, timedelta
@@ -22,9 +24,7 @@ import hazpy.unit_conversion as uc
 from gnome.spill import (Spill,
                          Release,
                          point_line_release_spill,
-                         PointLineRelease,
-                         SpatialRelease,
-                         GridRelease)
+                         SpatialRelease)
 from gnome.spill.elements import (floating,
                                   ElementType)
 import gnome.array_types
@@ -155,40 +155,6 @@ def test_uncertain_copy():
                           spill.release.start_position)
     del spill
     del u_spill
-
-
-class TestRelease:
-    rel_time = datetime.now().replace(microsecond=0)
-
-    def test_init(self):
-        rel = Release(self.rel_time, 0)
-        assert rel.num_elements == 0
-        assert rel.release_time == self.rel_time
-        assert rel.start_time_invalid is None
-
-    @pytest.mark.parametrize("curr_time", [rel_time,
-                                           rel_time - timedelta(seconds=1),
-                                           rel_time + timedelta(seconds=1)])
-    def test_num_elements_to_release(self, curr_time):
-        rel = Release(self.rel_time, 0)
-        rel.num_elements_to_release(curr_time, 900)
-
-        if curr_time <= rel.release_time:
-            assert not rel.start_time_invalid
-        else:
-            assert rel.start_time_invalid
-
-    def test_rewind(self):
-        rel = Release(self.rel_time, 10)
-        rel.num_elements_to_release(self.rel_time, 900)
-        assert not rel.start_time_invalid
-
-        # change attribute manually for test
-        rel.num_released = rel.num_elements
-
-        rel.rewind()
-        assert rel.start_time_invalid is None
-        assert rel.num_released == 0
 
 
 class Test_point_line_release_spill:
@@ -1113,48 +1079,6 @@ def test_setget():
 
     spill.set('windage_range', [0.4, 0.4])
     assert spill.get('windage_range') == [0.4, 0.4]
-
-
-# todo: add SpatialRelease schema, then complete this test
-rel_time = datetime(2012, 8, 20, 13)
-rel_type = [PointLineRelease(release_time=rel_time,
-                             num_elements=5,
-                             start_position=(0, 0, 0))]
-            #SpatialRelease(rel_time, np.zeros((4, 3), dtype=np.float64))]
-
-
-@pytest.mark.parametrize("rel_type", rel_type)
-def test_release_serialization_deserialization(rel_type):
-    '''
-    test for a mid run state.
-    'save' preserves midrun parameters
-    'webapi' does not
-    '''
-    cls = rel_type.__class__
-    rel_type.num_released = 100  # read only parameter for releases
-    for json_ in ('save', 'webapi'):
-        dict_ = cls.deserialize(rel_type.serialize(json_))
-        n_rel = cls.new_from_dict(dict_)
-        if json_ == 'save':
-            assert n_rel == rel_type
-        else:
-            assert n_rel != rel_type
-
-
-def test_grid_release():
-
-    bounds = ( (0, 10), (2, 12) )
-    release = GridRelease( datetime.now(), bounds, 3)
-
-    assert np.array_equal(release.start_position, [[  0.,  10.,   0.],
-                                                   [  1.,  10.,   0.],
-                                                   [  2.,  10.,   0.],
-                                                   [  0.,  11.,   0.],
-                                                   [  1.,  11.,   0.],
-                                                   [  2.,  11.,   0.],
-                                                   [  0.,  12.,   0.],
-                                                   [  1.,  12.,   0.],
-                                                   [  2.,  12.,   0.]])
 
 
 if __name__ == '__main__':
