@@ -5,7 +5,8 @@ from release import (Release,
                      PointLineRelease,
                      SpatialRelease,
                      GridRelease,
-                     VerticalPlumeRelease)
+                     VerticalPlumeRelease,
+                     InitElemsFromFile)
 import elements
 
 __all__ = [Spill,
@@ -18,5 +19,6 @@ __all__ = [Spill,
            SpatialRelease,
            GridRelease,
            VerticalPlumeRelease,
+           InitElemsFromFile,
            elements,
            ]

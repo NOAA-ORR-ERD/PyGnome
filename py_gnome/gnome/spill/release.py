@@ -21,6 +21,7 @@ from gnome.basic_types import world_point_type
 from gnome.utilities.plume import Plume, PlumeGenerator
 
 from gnome.utilities.serializable import Serializable
+from gnome.outputters import NetCDFOutput
 
 
 class BaseReleaseSchema(ObjType):
@@ -621,3 +622,46 @@ class VerticalPlumeRelease(Release, Serializable):
         '''
         self.num_released = 0
         self.start_time_invalid = True
+
+
+class InitElemsFromFile(Release):
+    '''
+    release object that sets the initial state of particles from a previously
+    output NetCDF file
+    '''
+    def __init__(self, filename, index=None, time=None):
+        '''
+        '''
+        self._init_data = None
+        self._read_data_file(filename, index, time)
+        rel_time = self._init_data.pop('current_time_stamp').item()
+
+        super(InitElemsFromFile, self).__init__(rel_time,
+                                                  len(self._init_data['positions']))
+
+        self.set_newparticle_positions = self._set_data_arrays
+
+    def _read_data_file(self, filename, index, time):
+        if time is not None:
+            self._init_data = NetCDFOutput.read_data(filename, time,
+                                                     which_data='all')[0]
+        elif index is not None:
+            self._init_data = NetCDFOutput.read_data(filename, time,
+                                                     which_data='all')[0]
+        else:
+            self._init_data = NetCDFOutput.read_data(filename, index=-1,
+                                                     which_data='all')[0]
+
+    def num_elements_to_release(self):
+        return self.num_elements
+
+    def _set_data_arrays(self, num_new_particles, current_time, time_step,
+                         data_arrays):
+        '''
+        Will set positions and other properties
+        '''
+        for key, val in self._init_data.iteritems():
+            if key in data_arrays:
+                data_arrays[key][-num_new_particles:] = val
+
+        self.num_released = self.num_elements

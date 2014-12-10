@@ -698,7 +698,7 @@ class NetCDFOutput(Outputter, Serializable):
 
             # first find the index of index in which we are interested
             time_ = data.variables['time']
-            if time == None and index == None:
+            if time is None and index is None:
                 # there should only be 1 time in file. Read and
                 # return data associated with it
                 if len(time_) > 1:
@@ -716,6 +716,9 @@ class NetCDFOutput(Outputter, Serializable):
                         index = 0
                     else:
                         index = abs(time_[:] - time_offset).argmin()
+                elif index is not None:
+                    if index < 0:
+                        index = len(time_) + index
 
             for idx in range(index):
                 _start_ix += data.variables['particle_count'][idx]
