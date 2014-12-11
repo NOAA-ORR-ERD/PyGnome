@@ -239,14 +239,17 @@ class ModelBroadcaster(GnomeId):
 
             self.tasks.append(task)
 
-    def cmd(self, command, args, key=None):
-        if key is None:
-            [t.send(self._to_buff(command, args)) for t in self.tasks]
-            return [loads(t.recv()) for t in self.tasks]
-        else:
+    def cmd(self, command, args, key=None, idx=None):
+        if idx is not None:
+            self.tasks[idx].send(self._to_buff(command, args))
+            return loads(self.tasks[idx].recv())
+        elif key is not None:
             idx = self.lookup[key]
             self.tasks[idx].send(self._to_buff(command, args))
             return loads(self.tasks[idx].recv())
+        else:
+            [t.send(self._to_buff(command, args)) for t in self.tasks]
+            return [loads(t.recv()) for t in self.tasks]
 
     def stop(self):
         [t.send(dumps(None)) for t in self.tasks]
@@ -270,21 +273,18 @@ class ModelBroadcaster(GnomeId):
                          spill_amount_uncertainty):
         # py_gnome spill container uncertainty is not used here
         # so we turn it off always
-        index = self.lookup[(wind_speed_uncertainty, spill_amount_uncertainty)]
-        cmd = self._to_buff('set_spill_container_uncertainty',
-                            dict(uncertain=False))
-        self.tasks[index].send(cmd)
-        self.tasks[index].recv()
+        idx = self.lookup[(wind_speed_uncertainty, spill_amount_uncertainty)]
 
-        cmd = self._to_buff('set_wind_speed_uncertainty',
-                            dict(up_or_down=wind_speed_uncertainty))
-        self.tasks[index].send(cmd)
-        self.tasks[index].recv()
+        self.cmd('set_spill_container_uncertainty',
+                 dict(uncertain=False), idx=idx)
 
-        cmd = self._to_buff('set_spill_amount_uncertainty',
-                            dict(up_or_down=spill_amount_uncertainty))
-        self.tasks[index].send(cmd)
-        self.tasks[index].recv()
+        self.cmd('set_wind_speed_uncertainty',
+                 dict(up_or_down=wind_speed_uncertainty), idx=idx)
+
+        self.cmd('set_spill_amount_uncertainty',
+                 dict(up_or_down=spill_amount_uncertainty), idx=idx)
+
+        print 'our spill amounts', self.cmd('get_spill_amounts', {}, idx=idx)
 
     def _set_new_cache_dir(self, task):
         task.send(self._to_buff('set_cache_dir', {}))
