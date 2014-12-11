@@ -36,7 +36,7 @@ class ElementType(Serializable):
     _state += Field('substance', save=True, update=True, test_for_eq=False)
     _schema = base_schema.ObjType
 
-    def __init__(self, initializers=[], substance=None):
+    def __init__(self, initializers=[], substance='oil_conservative'):
         '''
         Define initializers for the type of elements.
         The default element_type has a substance with density of water
