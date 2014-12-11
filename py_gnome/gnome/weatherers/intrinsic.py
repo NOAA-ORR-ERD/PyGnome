@@ -264,7 +264,7 @@ class IntrinsicProps(object):
         if 'area' in sc and sc.num_released > 0:
             # create 'frac_coverage' array and pass it in to scale area by it
             self.spreading.update_area(self.water.get('kinematic_viscosity',
-                                                      'St'),
+                                                      'square meter per second'),
                                        sc['init_area'],
                                        sc['init_volume'],
                                        sc['relative_bouyancy'],
@@ -289,9 +289,9 @@ class IntrinsicProps(object):
         # Also, init_volume is same for all these new LEs so just provide
         # a scalar value
         data['init_area'][mask] = \
-            self.spreading.init_area(data['init_volume'][mask],
-                                     self.water.get('kinematic_viscosity',
-                                                    'St'),
+            self.spreading.init_area(self.water.get('kinematic_viscosity',
+                                                    'square meter per second'),
+                                     data['init_volume'][mask],
                                      data['relative_bouyancy'][mask],
                                      out=data['init_area'][mask])
 
