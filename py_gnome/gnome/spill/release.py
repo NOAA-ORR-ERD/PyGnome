@@ -637,7 +637,7 @@ class InitElemsFromFile(Release):
         rel_time = self._init_data.pop('current_time_stamp').item()
 
         super(InitElemsFromFile, self).__init__(rel_time,
-                                                  len(self._init_data['positions']))
+                                                len(self._init_data['positions']))
 
         self.set_newparticle_positions = self._set_data_arrays
 
@@ -646,13 +646,13 @@ class InitElemsFromFile(Release):
             self._init_data = NetCDFOutput.read_data(filename, time,
                                                      which_data='all')[0]
         elif index is not None:
-            self._init_data = NetCDFOutput.read_data(filename, time,
+            self._init_data = NetCDFOutput.read_data(filename, index=index,
                                                      which_data='all')[0]
         else:
             self._init_data = NetCDFOutput.read_data(filename, index=-1,
                                                      which_data='all')[0]
 
-    def num_elements_to_release(self):
+    def num_elements_to_release(self, current_time, time_step):
         return self.num_elements
 
     def _set_data_arrays(self, num_new_particles, current_time, time_step,
