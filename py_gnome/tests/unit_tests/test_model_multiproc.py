@@ -104,7 +104,6 @@ def make_model(images_dir=os.path.join(base_dir, 'images'),
     return model
 
 
-@pytest.mark.skipif
 def test_init():
     model = make_model()
 
@@ -123,7 +122,6 @@ def test_init():
     model_broadcaster.stop()
 
 
-@pytest.mark.skipif
 def test_uncertainty_array_size():
     model = make_model()
 
@@ -131,25 +129,21 @@ def test_uncertainty_array_size():
                                          ('down',),
                                          ('down',))
     assert len(model_broadcaster.tasks) == 1
-    assert len(model_broadcaster.results) == 1
     model_broadcaster.stop()
 
     model_broadcaster = ModelBroadcaster(model,
                                          ('down', 'up'),
                                          ('down', 'up'))
     assert len(model_broadcaster.tasks) == 4
-    assert len(model_broadcaster.results) == 4
     model_broadcaster.stop()
 
     model_broadcaster = ModelBroadcaster(model,
                                          ('down', 'normal', 'up'),
                                          ('down', 'normal', 'up'))
     assert len(model_broadcaster.tasks) == 9
-    assert len(model_broadcaster.results) == 9
     model_broadcaster.stop()
 
 
-@pytest.mark.skipif
 def test_uncertainty_array_indexing():
     model = make_model()
 
@@ -174,7 +168,6 @@ def test_uncertainty_array_indexing():
     model_broadcaster.stop()
 
 
-@pytest.mark.skipif
 def test_rewind():
     model = make_model()
 
@@ -190,7 +183,6 @@ def test_rewind():
     model_broadcaster.stop()
 
 
-@pytest.mark.skipif
 def test_step():
     model = make_model()
 
@@ -204,7 +196,6 @@ def test_step():
     model_broadcaster.stop()
 
 
-@pytest.mark.skipif
 def test_full_run():
     model = make_model()
 
@@ -226,7 +217,6 @@ def test_full_run():
     model_broadcaster.stop()
 
 
-@pytest.mark.skipif
 def test_cache_dirs():
     model = make_model()
 
@@ -242,7 +232,6 @@ def test_cache_dirs():
     model_broadcaster.stop()
 
 
-@pytest.mark.skipif
 def test_spills():
     model = make_model(uncertain=True)
 
@@ -256,7 +245,6 @@ def test_spills():
     model_broadcaster.stop()
 
 
-@pytest.mark.skipif
 def test_weathering_output_only():
     model = make_model(geojson_output=True)
 

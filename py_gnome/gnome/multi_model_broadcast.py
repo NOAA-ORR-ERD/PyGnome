@@ -41,11 +41,13 @@ class ModelConsumer(mp.Process):
         - Returns the results in a results queue
 
     '''
-    def __init__(self, task_port, model):
+    def __init__(self, task_port, model,
+                 ipc_folder='.'):
         mp.Process.__init__(self)
 
         self.task_port = task_port
         self.model = model
+        self.ipc_folder = ipc_folder
 
     def run(self):
         print '{0}: starting...'.format(self.name)
@@ -57,7 +59,7 @@ class ModelConsumer(mp.Process):
         self.loop = ioloop.IOLoop.instance()
 
         sock = context.socket(zmq.REP)
-        sock.bind('ipc://ipc_files/Task-{0}'.format(self.task_port))
+        sock.bind('ipc://{0}/Task-{1}'.format(self.ipc_folder, self.task_port))
 
         # We need to create a stream from our socket and
         # register a callback for recv events.
@@ -184,8 +186,10 @@ class ModelBroadcaster(GnomeId):
     '''
     def __init__(self, model,
                  wind_speed_uncertainties,
-                 spill_amount_uncertainties):
+                 spill_amount_uncertainties,
+                 ipc_folder='.'):
         self.model = model
+        self.ipc_folder = ipc_folder
         self.context = None
         self.consumers = []
         self.tasks = []
@@ -222,7 +226,7 @@ class ModelBroadcaster(GnomeId):
 
     def _spawn_consumers(self):
         for p in self.task_ports:
-            model_consumer = ModelConsumer(p, self.model)
+            model_consumer = ModelConsumer(p, self.model, self.ipc_folder)
             model_consumer.start()
             self.consumers.append(model_consumer)
 
@@ -231,7 +235,7 @@ class ModelBroadcaster(GnomeId):
 
         for p in self.task_ports:
             task = self.context.socket(zmq.REQ)
-            task.connect('ipc://ipc_files/Task-{0}'.format(p))
+            task.connect('ipc://{0}/Task-{1}'.format(self.ipc_folder, p))
 
             self.tasks.append(task)
 

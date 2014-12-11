@@ -79,7 +79,7 @@ def load_categories(session):
     refined.append('Fuel Oil 6 (HFO)')
     refined.append('Bunker')
     refined.append('Heavy Fuel Oil')
-    refined.append('Group 5')
+    refined.append('Group V')
 
     other.append('Other')
 
@@ -300,7 +300,7 @@ def link_refined_ifo(session):
 def link_refined_fuel_oil_6(session):
     '''
        Category Name:
-       - Fuel Oil #6/Bunker/Heavy Fuel Oil/Group 5
+       - Fuel Oil #6/Bunker/Heavy Fuel Oil/Group V
        Sample Oils:
        - Bunker C
        - Residual Oil
@@ -316,7 +316,7 @@ def link_refined_fuel_oil_6(session):
                   if c.name in ('Fuel Oil 6',
                                 'Bunker',
                                 'Heavy Fuel Oil',
-                                'Group 5')
+                                'Group V')
                   ]
 
     oils = get_oils_by_api(session, 'Refined',
