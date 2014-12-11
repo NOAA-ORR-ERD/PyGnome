@@ -232,8 +232,9 @@ def get_testdata():
          'component_curr2': get_datafile(os.path.join(bos, "WAC10msSW.cur"))
          }
 
-    data['nc'] = {'nc_output':
-                  get_datafile(os.path.join(s_data, 'nc', 'test_output.nc'))}
+    # todo: add datafile to server
+    #data['nc'] = {'nc_output':
+    #              get_datafile(os.path.join(s_data, 'nc', 'test_output.nc'))}
     return data
 
 
