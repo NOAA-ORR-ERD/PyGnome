@@ -556,14 +556,16 @@ class Spill(serializable.Serializable):
 
             dict_ = schema.deserialize(json_)
             rel = json_['release']['obj_type']
+            dict_['release'] = eval(rel).deserialize(json_['release'])
 
             if json_['json_'] == 'webapi':
                 '''
-                'webapi' replaces nested json_ objects with python objects
-                so just put them back in the dict here
+                save files store a reference to element_type so it will get
+                deserialized, created and added to this dict by load method
                 '''
-                dict_['release'] = json_['release']
-                dict_['element_type'] = json_['element_type']
+                element_type = json_['element_type']['obj_type']
+                dict_['element_type'] = (eval(element_type).deserialize(
+                                                        json_['element_type']))
 
             else:
                 '''
@@ -573,7 +575,6 @@ class Spill(serializable.Serializable):
                 For the 'webapi', we're not always creating a new object
                 so do this only for 'save' files
                 '''
-                dict_['release'] = eval(rel).deserialize(json_['release'])
                 obj_dict = dict_.pop('release')
                 obj_type = obj_dict.pop('obj_type')
                 obj = eval(obj_type).new_from_dict(obj_dict)
