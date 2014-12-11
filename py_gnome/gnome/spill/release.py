@@ -653,7 +653,7 @@ class InitElemsFromFile(Release):
                                                      which_data='all')[0]
 
     def num_elements_to_release(self, current_time, time_step):
-        return self.num_elements
+        return self.num_elements - self.num_released
 
     def _set_data_arrays(self, num_new_particles, current_time, time_step,
                          data_arrays):
