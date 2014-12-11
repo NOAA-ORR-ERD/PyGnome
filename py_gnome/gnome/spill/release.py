@@ -631,6 +631,28 @@ class InitElemsFromFile(Release):
     '''
     def __init__(self, filename, index=None, time=None):
         '''
+        Take a NetCDF file, which is an output of PyGnome's outputter:
+        NetCDFOutput, and use these dataarrays as initial condition for the
+        release. The release sets not only 'positions' but also all other
+        arrays it finds. Arrays found in NetCDF file but not in the
+        SpillContainer are ignored. Optional arguments, index and time can
+        be used to initialize the release from any other record in the
+        NetCDF file. Default behavior is to use the last record in the NetCDF
+        to initialize the release elements.
+
+        :param str filename: NetCDF file from which to initialize released
+            elements
+
+        Optional arguments:
+
+        :param int index=None: index of the record from which to initialize the
+            release elements. Default is to use -1 if neither time nor index is
+            specified
+
+        :param datetime time: timestamp at which the data is desired. Looks in
+            the netcdf data's 'time' array and finds the closest time to this
+            and use this data. If both 'time' and 'index' are None, use
+            data for index = -1
         '''
         self._init_data = None
         self._read_data_file(filename, index, time)
@@ -653,12 +675,23 @@ class InitElemsFromFile(Release):
                                                      which_data='all')[0]
 
     def num_elements_to_release(self, current_time, time_step):
+        '''
+        all elements should be released in the first timestep unless start time
+        is invalid. Start time is invalid if it is after the Spill's
+        releasetime
+        '''
+        super(InitElemsFromFile, self).num_elements_to_release(current_time,
+                                                               time_step)
+        if self.start_time_invalid:
+            return 0
+
         return self.num_elements - self.num_released
 
     def _set_data_arrays(self, num_new_particles, current_time, time_step,
                          data_arrays):
         '''
-        Will set positions and other properties
+        Will set positions and all other data arrays if data for them was found
+        in the NetCDF initialization file.
         '''
         for key, val in self._init_data.iteritems():
             if key in data_arrays:
