@@ -36,7 +36,7 @@ class ElementType(Serializable):
     _state += Field('substance', save=True, update=True, test_for_eq=False)
     _schema = base_schema.ObjType
 
-    def __init__(self, initializers=[], substance=None):
+    def __init__(self, initializers=[], substance='oil_conservative'):
         '''
         Define initializers for the type of elements.
         The default element_type has a substance with density of water
@@ -203,9 +203,6 @@ class ElementType(Serializable):
                 dict_['substance'] = substance['id']
             elif 'name' in substance:
                 dict_['substance'] = substance['name']
-                # do not add 'substance' attribute! - raise error
-            elif isinstance(substance, str):
-                dict_['substance'] = substance
 
             d_init = []
 
