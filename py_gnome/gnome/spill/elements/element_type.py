@@ -203,9 +203,6 @@ class ElementType(Serializable):
                 dict_['substance'] = substance['id']
             elif 'name' in substance:
                 dict_['substance'] = substance['name']
-                # do not add 'substance' attribute! - raise error
-            elif isinstance(substance, str):
-                dict_['substance'] = substance
 
             d_init = []
 
