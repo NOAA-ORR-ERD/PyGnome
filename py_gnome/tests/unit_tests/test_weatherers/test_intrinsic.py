@@ -51,6 +51,19 @@ class TestFayGravityViscous:
 
         return (A0, p_area)
 
+    def test_exception(self):
+        with pytest.raises(ValueError):
+            self.spread.init_area(water_viscosity, init_volume,
+                                  -relative_bouyancy)
+
+        init_area = self.spread.init_area(water_viscosity,
+                                          init_volume,
+                                          relative_bouyancy)
+
+        with pytest.raises(ValueError):
+            self.spread.update_area(water_viscosity, init_area, init_vol_array,
+                                    -d_bouy_array, age)
+
     def test_values(self):
         # compare to expected results
         (A0, p_area) = self.expected(init_volume, age[0])

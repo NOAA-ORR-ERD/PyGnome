@@ -54,6 +54,7 @@ class FayGravityViscous(object):
             out = np.zeros_like(init_volume)
             out = (out, out.reshape(-1))[out.shape == ()]
 
+        self._check_relative_bouyancy(relative_bouyancy)
         out[:] = (np.pi*(self.spreading_const[1]**4/self.spreading_const[0]**2)
                   * (((init_volume)**5*constants['g']*relative_bouyancy) /
                      (water_viscosity**2))**(1./6.))
@@ -62,6 +63,11 @@ class FayGravityViscous(object):
             out = out[0]
 
         return out
+
+    def _check_relative_bouyancy(self, rel_bouy):
+        if np.any(rel_bouy < 0):
+            raise ValueError("Found particles with relative_bouyancy < 0. "
+                             "Area does not handle this case at present.")
 
     def update_area(self,
                     water_viscosity,
@@ -75,6 +81,11 @@ class FayGravityViscous(object):
         scalars as input for init_volume, relative_bouyancy and age. Each
         element of the array is the property for an LE - array should be the
         same shape.
+
+        For now just raise an error if any relative_bouyancy is < 0. These
+        particles will sink, ask how we want to deal with them. They should
+        be removed or we should only look at floating particles when computing
+        area?
         '''
         out_scalar = False
         if np.isscalar(init_volume):
@@ -86,6 +97,8 @@ class FayGravityViscous(object):
         if out is None:
             out = np.zeros_like(init_volume, dtype=np.float64)
             out = (out, out.reshape(-1))[out.shape == ()]
+
+        self._check_relative_bouyancy(relative_bouyancy)
 
         out[:] = init_area
         mask = age > 0
