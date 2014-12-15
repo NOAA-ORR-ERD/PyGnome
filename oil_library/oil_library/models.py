@@ -398,13 +398,15 @@ class Oil(Base):
                         cascade="all, delete, delete-orphan")
     sara_fractions = relationship('SARAFraction', backref='oil',
                                   cascade="all, delete, delete-orphan")
+    molecular_weights = relationship('MolecularWeight', backref='oil',
+                                     cascade="all, delete, delete-orphan")
 
     def __repr__(self):
         return '<Oil("{0.name}")>'.format(self)
 
 
 class SARAFraction(Base):
-    __tablename__ = 'resin_fractions'
+    __tablename__ = 'sara_fractions'
     id = Column(Integer, primary_key=True)
     oil_id = Column(Integer, ForeignKey('oils.id'))
 
@@ -420,4 +422,26 @@ class SARAFraction(Base):
 
     def __repr__(self):
         return ('<SARAFraction({0.sara_type}={0.fraction} at {0.ref_temp_k}K)>'
+                .format(self))
+
+
+class MolecularWeight(Base):
+    __tablename__ = 'molecular_weights'
+    id = Column(Integer, primary_key=True)
+    oil_id = Column(Integer, ForeignKey('oils.id'))
+
+    saturate = Column(Float(53))
+    aromatic = Column(Float(53))
+    ref_temp_k = Column(Float(53))
+
+    def __init__(self, **kwargs):
+        for a, v in kwargs.iteritems():
+            if (a in self.columns):
+                setattr(self, a, v)
+
+    def __repr__(self):
+        return ('<MolecularWeight('
+                'saturate={0.saturate}, '
+                'aromatic={0.aromatic} '
+                'at {0.ref_temp_k}K)>'
                 .format(self))

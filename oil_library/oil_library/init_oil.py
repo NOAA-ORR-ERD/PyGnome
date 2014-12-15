@@ -6,12 +6,13 @@
     with the Oil object.  This is where we will place the estimated oil
     properties.
 '''
-import math
+from math import log, log10, exp, fabs
 
 import transaction
 
 from oil_library.models import (ImportedRecord, Oil,
-                                Density, KVis, Cut, SARAFraction)
+                                Density, KVis, Cut,
+                                SARAFraction, MolecularWeight)
 from oil_library.utilities import get_boiling_points_from_api
 
 
@@ -42,8 +43,9 @@ def add_oil(record):
     add_sulphur_mass_fraction(record, oil)
     add_soluability(record, oil)
     add_distillation_cut_boiling_point(record, oil)
-    add_saturate_fractions(oil)
-    add_aromatic_fractions(oil)
+    add_molecular_weights(record, oil)
+    add_saturate_fractions(record, oil)
+    add_aromatic_fractions(record, oil)
 
     record.oil = oil
 
@@ -116,7 +118,7 @@ def density_at_temperature(oil_rec, temperature, weathering=0.0):
             d_ref, t_ref = estimate_density_from_api(oil_rec.api)
 
     k_pt = 0.008
-    if density_list and math.fabs(t_ref - temperature) > (1 / k_pt):
+    if density_list and fabs(t_ref - temperature) > (1 / k_pt):
         # even if we got some measured densities, they could be at
         # temperatures that is out of range for our algorithm.
         return None
@@ -273,7 +275,7 @@ def estimate_pp_by_viscosity_ref(imported_rec):
     v_ref, t_ref = kvis_rec[0], kvis_rec[1]
     c_v1 = 5000.0
 
-    return c_v1 * t_ref / (c_v1 - t_ref * math.log(v_ref))
+    return c_v1 * t_ref / (c_v1 - t_ref * log(v_ref))
 
 
 def add_flash_point(imported_rec, oil):
@@ -377,15 +379,13 @@ def get_resin_coeffs(oil):
                    )
     '''
     try:
-        a = [(10 * math.exp(0.001 *
-                            density_at_temperature(oil, k.ref_temp_k)))
+        a = [(10 * exp(0.001 * density_at_temperature(oil, k.ref_temp_k)))
              for k in oil.kvis
              if k.weathering == 0.0 and
              k.ref_temp_k == 273.15 + 15 and
              density_at_temperature(oil, k.ref_temp_k) is not None]
-        b = [(10 * math.log(1000.0 *
-                            density_at_temperature(oil, k.ref_temp_k) *
-                            k.m_2_s))
+        b = [(10 * log(1000.0 * density_at_temperature(oil, k.ref_temp_k) *
+                       k.m_2_s))
              for k in oil.kvis
              if k.weathering == 0.0 and
              k.ref_temp_k == 273.15 + 15 and
@@ -422,7 +422,7 @@ def add_bullwinkle_fractions(oil):
                af.ref_temp_k == 273.15 + 15]
 
     if not f_bulls and oil.api >= 0.0:
-        f_bulls = [0.5762 * math.log10(oil.api)]
+        f_bulls = [0.5762 * log10(oil.api)]
 
     if not f_bulls:
         # this can happen if we do not have an asphaltene fraction
@@ -498,15 +498,64 @@ def add_distillation_cut_boiling_point(imported_rec, oil):
         pass
 
 
-def add_saturate_fractions(oil):
+def add_saturate_fractions(imported_rec, oil):
+    '''
+        (A) if these hold true:
+              - (i): oil library record contains summed mass fractions or
+                     weight (%) for the distillation cuts
+              - (ii): T(i) < 530K
+            then:
+              (Reference: CPPF, eq.s 3.77 and 3.78)
+              - f(sat, i) = (fmass(i) *
+                             (2.24 - 1.98 * SG(sat, i) - 0.009 * M(w, sat, i)))
+              - if f(sat, i) >= fmass(i):
+                  - f(sat, i) = fmass(i)
+              - else if f(sat, i) < 0:
+                  - f(sat, i) = 0
+            else if these hold true:
+              - (ii): T(i) >= 530K
+            then:
+              - f(sat, i) = fmass(i) / 2
+        (B) else if there were no measured mass fractions in the imported
+            record
+              - apply (A) except fmass(i) = 1/5 for all cuts
+    '''
+    pass
+
+
+def add_aromatic_fractions(imported_rec, oil):
     '''
         Reference: CPPF, eq.s 3.77 and 3.78
     '''
     pass
 
 
-def add_aromatic_fractions(oil):
+def add_molecular_weights(imported_rec, oil):
+    for c in imported_rec.cuts:
+        saturate = get_saturate_molecular_weight(c.vapor_temp_k)
+        aromatic = get_aromatic_molecular_weight(c.vapor_temp_k)
+
+        oil.molecular_weights.append(MolecularWeight(saturate=saturate,
+                                                     aromatic=aromatic,
+                                                     ref_temp_k=c.vapor_temp_k)
+                                     )
+
+
+def get_saturate_molecular_weight(vapor_temp):
     '''
-        Reference: CPPF, eq.s 3.77 and 3.78
+        (Reference: CPPF, eq. 2.48 and table 2.6)
     '''
-    pass
+    if vapor_temp < 1070.0:
+        return (49.7 * (6.983 - log(1070.0 - vapor_temp))) ** (3. / 2.)
+    else:
+        return None
+
+
+def get_aromatic_molecular_weight(vapor_temp):
+    '''
+        (Reference: CPPF, eq. 2.48 and table 2.6)
+    '''
+    if vapor_temp < 1015.0:
+        return (44.5 * (6.91 - log(1015.0 - vapor_temp))) ** (3. / 2.)
+    else:
+        return None
