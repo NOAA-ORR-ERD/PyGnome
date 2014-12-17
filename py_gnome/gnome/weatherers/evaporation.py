@@ -2,6 +2,7 @@
 model evaporation process
 '''
 import copy
+import os
 
 import numpy as np
 
@@ -153,8 +154,9 @@ class Evaporation(Weatherer, Serializable):
                 np.sum(sc['mass_components'][:, :] - mass_remain[:, :])
             sc['mass_components'][:] = mass_remain
             sc['mass'][:] = sc['mass_components'].sum(1)
-            self.logger.info('Amount Evaporated: {0}'.
-                             format(sc.weathering_data['evaporated']))
+            self.logger.info('{0} - Amount Evaporated: {1}'.
+                             format(os.getpid(),
+                                    sc.weathering_data['evaporated']))
 
     def serialize(self, json_='webapi'):
         """

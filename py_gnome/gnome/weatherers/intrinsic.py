@@ -3,7 +3,7 @@ For now just define a FayGravityInertial class here
 State is not persisted yet - we just have a default object that gets
 attached to Evaporation
 '''
-
+import os
 import numpy as np
 
 from gnome.basic_types import oil_status
@@ -18,6 +18,7 @@ from gnome.array_types import (density,
                                frac_coverage,
                                mol)
 from gnome.environment import constants
+from gnome import AddLogger
 
 
 class FayGravityViscous(object):
@@ -116,7 +117,7 @@ class FayGravityViscous(object):
         return out
 
 
-class IntrinsicProps(object):
+class IntrinsicProps(AddLogger):
     '''
     Updates intrinsic properties of Oil
     Doesn't have an id like other gnome objects. It isn't exposed to
@@ -232,6 +233,7 @@ class IntrinsicProps(object):
         water_temp = self.water.get('temperature', 'K')
 
         arrays = self.array_types.keys()
+
         for substance, data in sc.itersubstancedata(arrays):
             'update properties if elements for a substance are released'
             if len(data['density']) == 0:
@@ -258,6 +260,9 @@ class IntrinsicProps(object):
 
                 if 'area' in sc:
                     self._init_area_arrays(data, mask)
+
+                self.logger.info('{0} - New elements initialized: {1}'.
+                                 format(os.getpid(), sum(mask)))
 
             # set/update mols
             # - 'mass_components' are already set

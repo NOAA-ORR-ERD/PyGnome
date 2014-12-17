@@ -646,8 +646,6 @@ class Model(Serializable):
             self.move_elements()
             self.weather_elements()
             self.step_is_done()
-            self.logger.info("Completed step: {0.current_time_step} for "
-                             "{0.name}".format(self))
 
         self.current_time_step += 1
 
@@ -668,15 +666,17 @@ class Model(Serializable):
             if self._intrinsic_props:
                 self._intrinsic_props.update(num_released, sc)
 
-            self.logger.info("Released {0} elements for step: "
+            self.logger.info("Released {0} new elements for step: "
                              " {1.current_time_step} for {1.name}".
-                             format(sc.num_released, self))
+                             format(num_released, self))
 
         # cache the results - current_time_step is incremented but the
         # current_time_stamp in spill_containers (self.spills) is not updated
         # till we go through the prepare_for_model_step
         self._cache.save_timestep(self.current_time_step, self.spills)
         output_info = self.write_output()
+        self.logger.info("{1} - Completed step: {0.current_time_step} for "
+                         "{0.name}".format(self, os.getpid()))
         return output_info
 
     def __iter__(self):
