@@ -2,8 +2,9 @@
 """
 Unit tests for CyOSSMTime class
 """
-import os
 import pickle
+import gnome
+from numpy import array
 
 from pytest import raises
 import pytest
@@ -24,8 +25,8 @@ from ..conftest import testdata
 def test_exceptions(obj):
     with raises(IOError):
         # bad path
-        obj(filename=os.path.join('./', 'WindDataFromGnome.WNDX'),
-	    file_contains=ts_format.magnitude_direction)
+        obj(filename='WindDataFromGnome.WNDX',
+            file_format=ts_format.magnitude_direction)
 
     with raises(ValueError):
         # insufficient input info
@@ -33,7 +34,7 @@ def test_exceptions(obj):
 
     with raises(ValueError):
         # insufficient input info
-        obj(filename=filename=testdata['timeseries']['wind_bad_units'],
+        obj(filename=testdata['timeseries']['wind_bad_units'],
             file_format=ts_format.magnitude_direction)
 
     with raises(ValueError):
@@ -46,8 +47,7 @@ def test_properties():
     '''
     todo: need to check if CyOSSMTime is reading/setting properties from file
     '''
-    f = os.path.join(datadir, 'WindDataFromGnome.WND')
-    cy = CyOSSMTime(f, 5)
+    cy = CyOSSMTime(testdata['timeseries']['wind_ts'], 5)
     assert cy.station == ''
 
 
@@ -74,14 +74,7 @@ class TestObjectSerialization:
             Test that the repr method produces a string capable of reproducing
             the object.
         '''
-        # This works, but in order to properly eval the repr string, we need
-        # the top level gnome module, as well as the numpy 'array' type in the
-        # global name space.
-        # So before we try it, we first need to import like this:
-        import gnome
-        from numpy import array
-
-        ossmT = obj(filename=os.path.join(datadir, 'WindDataFromGnome.WND'),
+        ossmT = obj(filename=testdata['timeseries']['wind_ts'],
                     file_format=ts_format.magnitude_direction)
 
 #        print "repr of ossmT"
@@ -96,7 +89,7 @@ class TestObjectSerialization:
         '''
             Test that the object can be pickled and unpickled
         '''
-        ossmT = obj(filename=os.path.join(datadir, 'WindDataFromGnome.WND'),
+        ossmT = obj(filename=testdata['timeseries']['wind_ts'],
                     file_format=ts_format.magnitude_direction)
         new_ossm = pickle.loads(pickle.dumps(ossmT))
         assert new_ossm == ossmT
@@ -113,7 +106,7 @@ class TestCyTimeseries:
     tval = np.array([(0, (1, 2)), (1, (2, 3))],
                     dtype=basic_types.time_value_pair)
 
-    def test_init_timeseries(self):
+    def test_init_from_timeseries(self):
         """
         Sets the time series in OSSMTimeValue_c equal to the
         externally supplied numpy array containing time_value_pair data
@@ -149,76 +142,12 @@ class TestCyTimeseries:
         except TypeError:
             assert True
 
-class TestGetTimeValues:
-    """
-    test setting the timeseries using timeseries property
-    """
-    ossm = CyTimeseries(timeseries=self.tval)
-        t_val = ossm.timeseries
-
-        print 't_val before:', t_val['value']
-        # need to learn how to do the following in 1 line of code
-        t_val['value']['u'] += 2
-        t_val['value']['v'] += 2
-        print 't_val after:', t_val['value']
-
-        ossm.timeseries = t_val
-        new_val = ossm.timeseries
-
-        tol = 1e-10
-        msg = ('{0} is not within a tolerance of '
-               '{1}'.format('get_time_value', tol))
-        np.testing.assert_allclose(t_val['time'], new_val['time'],
-                                   tol, tol, msg, 0)
-        np.testing.assert_allclose(t_val['value']['u'], new_val['value']['u'],
-                                   tol, tol, msg, 0)
-        np.testing.assert_allclose(t_val['value']['v'], new_val['value']['v'],
-                                   tol, tol, msg, 0)
-
-    def test_get_time_value_array(self):
-        """
-        Test get_time_values method. It gets the time value pairs for the
-        model times stored in the data filename.
-        For each line in the data filename, the ReadTimeValues method creates
-        one time value pair
-        This test just gets the time series that was created from the filename.
-        It then invokes get_time_value for times in the time series.
-        """
-        ossmT = CyTimeseries(filename=os.path.join(datadir,
-                                                   'WindDataFromGnome.WND'),
-                             file_format=ts_format.magnitude_direction)
-        # Let's see what is stored in the Handle to expected result
-        t_val = ossmT.timeseries
-
-        # print t_val
-        # assert False
-        actual = np.array(t_val['value'], dtype=velocity_rec)
-        time = np.array(t_val['time'], dtype=seconds)
-
-        vel_rec = ossmT.get_time_value(time)
-
-        tol = 1e-6
-        msg = ('{0} is not within a tolerance of '
-               '{1}'.format('get_time_value', tol))
-        # TODO: Figure out why following fails??
-        # tol = 1e-3
-        # np.testing.assert_allclose(vel_rec, actual, tol, tol,
-        #                            msg.format('get_time_value', tol), 0)
-        np.testing.assert_allclose(vel_rec['u'], actual['u'], tol, tol, msg, 0)
-        np.testing.assert_allclose(vel_rec['v'], actual['v'], tol, tol, msg, 0)
-
-    def test__set_time_value_handle_none(self):
-        """Check TypeError exception for private method"""
-        try:
-            self.ossmT._set_time_value_handle(None)
-        except TypeError:
-            assert True
-
     def test_timeseries(self):
         """
         test setting the timeseries using timeseries property
         """
-        t_val = self.ossmT.timeseries
+        ossmT = CyTimeseries(timeseries=self.tval)
+        t_val = ossmT.timeseries
 
         print 't_val before:', t_val['value']
         # need to learn how to do the following in 1 line of code
@@ -226,8 +155,8 @@ class TestGetTimeValues:
         t_val['value']['v'] += 2
         print 't_val after:', t_val['value']
 
-        self.ossmT.timeseries = t_val
-        new_val = self.ossmT.timeseries
+        ossmT.timeseries = t_val
+        new_val = ossmT.timeseries
 
         tol = 1e-10
         msg = ('{0} is not within a tolerance of '
@@ -240,7 +169,7 @@ class TestGetTimeValues:
                                    tol, tol, msg, 0)
 
     def test_readfile_constant_wind(self):
-       """
+        """
         Read contents for a filename that contains a constant wind.
         This will be just 1 line in the text filename.
         Test get_time_values method. It gets the time value pair
@@ -268,42 +197,6 @@ class TestGetTimeValues:
                                        msg, 0)
             np.testing.assert_allclose(vel['v'], actual['v'], tol, tol,
                                        msg, 0)
-
-
-class TestObjectSerialization:
-    '''
-        Test all the serialization and deserialization methods that are
-        available to the CyOSSMTime object.
-    '''
-    ossmT = CyOSSMTime(filename=os.path.join(datadir, 'WindDataFromGnome.WND'),
-                       file_contains=ts_format.magnitude_direction)
-
-    def test_repr(self):
-        '''
-            Test that the repr method produces a string capable of reproducing
-            the object.
-        '''
-        # This works, but in order to properly eval the repr string, we need
-        # the top level gnome module, as well as the numpy 'array' type in the
-        # global name space.
-        # So before we try it, we first need to import like this:
-        import gnome
-        from numpy import array
-
-#        print "repr of ossmT"
-#        print repr(self.ossmT)
-        new_ossm = eval(repr(self.ossmT))
-
-        assert new_ossm == self.ossmT
-        assert repr(new_ossm) == repr(self.ossmT)
-
-    def test_pickle(self):
-        '''
-            Test that the object can be pickled and unpickled
-        '''
-        new_ossm = pickle.loads(pickle.dumps(self.ossmT))
-        assert new_ossm == self.ossmT
-        assert repr(new_ossm) == repr(self.ossmT)
 
 
 if __name__ == '__main__':
