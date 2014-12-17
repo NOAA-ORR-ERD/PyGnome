@@ -239,7 +239,7 @@ class ModelBroadcaster(GnomeId):
 
             self.tasks.append(task)
 
-    def cmd(self, command, args, key=None, idx=None):
+    def cmd(self, command, args, key=None, idx=None, serialize=False):
         if idx is not None:
             self.tasks[idx].send(self._to_buff(command, args))
             return loads(self.tasks[idx].recv())
@@ -248,8 +248,15 @@ class ModelBroadcaster(GnomeId):
             self.tasks[idx].send(self._to_buff(command, args))
             return loads(self.tasks[idx].recv())
         else:
-            [t.send(self._to_buff(command, args)) for t in self.tasks]
-            return [loads(t.recv()) for t in self.tasks]
+            if serialize:
+                out = []
+                for t in self.tasks:
+                    t.send(self._to_buff(command, args))
+                    out.append(loads(t.recv()))
+                return out
+            else:
+                [t.send(self._to_buff(command, args)) for t in self.tasks]
+                return [loads(t.recv()) for t in self.tasks]
 
     def stop(self):
         [t.send(dumps(None)) for t in self.tasks]
