@@ -231,16 +231,16 @@ def test_cache_dirs():
     model_broadcaster.stop()
 
 
-@mark.skipif
-def test_spills():
+def test_spill_containers_have_uncertainty_off():
     model = make_model(uncertain=True)
 
     model_broadcaster = ModelBroadcaster(model,
                                          ('down', 'normal', 'up'),
                                          ('down', 'normal', 'up'))
     print '\nSpill results:'
-    res = model_broadcaster.cmd('get_spills', {})
-    assert not any([r.uncertain for r in res])
+    res = model_broadcaster.cmd('get_spill_container_uncertainty', {})
+    print [r for r in res]
+    assert not any([r for r in res])
 
     model_broadcaster.stop()
 

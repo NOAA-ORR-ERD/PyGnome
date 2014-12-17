@@ -129,9 +129,6 @@ class ModelConsumer(mp.Process):
 
         return res
 
-    def _get_spills(self):
-        return self.model.spills
-
     def _get_spill_amounts(self):
         return [s.amount for s in self.model.spills]
 
@@ -141,6 +138,9 @@ class ModelConsumer(mp.Process):
         res = [w.set_speed_uncertainty(up_or_down) for w in winds]
 
         return all(res)
+
+    def _get_spill_container_uncertainty(self):
+        return self.model.spills.uncertain
 
     def _set_spill_container_uncertainty(self, uncertain):
         self.model.spills.uncertain = uncertain
@@ -204,10 +204,10 @@ class ModelBroadcaster(GnomeId):
             for sau in spill_amount_uncertainties:
                 self._set_uncertainty(wsu, sau)
 
-        for t in self.tasks:
-            self._set_new_cache_dir(t)
-            self._disable_cache(t)
-            self._set_weathering_output_only(t)
+        for i in range(len(self.tasks)):
+            self._set_new_cache_dir(i)
+            self._disable_cache(i)
+            self._set_weathering_output_only(i)
 
     def __del__(self):
         self.stop()
@@ -239,24 +239,26 @@ class ModelBroadcaster(GnomeId):
 
             self.tasks.append(task)
 
-    def cmd(self, command, args, key=None, idx=None, serialize=False):
+    def cmd(self, command, args, key=None, idx=None, in_parallel=True):
+        request = dumps((command, args))
+
         if idx is not None:
-            self.tasks[idx].send(self._to_buff(command, args))
+            self.tasks[idx].send(request)
             return loads(self.tasks[idx].recv())
         elif key is not None:
             idx = self.lookup[key]
-            self.tasks[idx].send(self._to_buff(command, args))
+            self.tasks[idx].send(request)
             return loads(self.tasks[idx].recv())
         else:
-            if serialize:
+            if in_parallel:
+                [t.send(request) for t in self.tasks]
+                return [loads(t.recv()) for t in self.tasks]
+            else:
                 out = []
                 for t in self.tasks:
-                    t.send(self._to_buff(command, args))
+                    t.send(request)
                     out.append(loads(t.recv()))
                 return out
-            else:
-                [t.send(self._to_buff(command, args)) for t in self.tasks]
-                return [loads(t.recv()) for t in self.tasks]
 
     def stop(self):
         [t.send(dumps(None)) for t in self.tasks]
@@ -271,9 +273,6 @@ class ModelBroadcaster(GnomeId):
         self.consumers = []
         self.tasks = []
         self.lookup = {}
-
-    def _to_buff(self, cmd, args):
-        return dumps((cmd, args))
 
     def _set_uncertainty(self,
                          wind_speed_uncertainty,
@@ -293,14 +292,11 @@ class ModelBroadcaster(GnomeId):
 
         print 'our spill amounts', self.cmd('get_spill_amounts', {}, idx=idx)
 
-    def _set_new_cache_dir(self, task):
-        task.send(self._to_buff('set_cache_dir', {}))
-        task.recv()
+    def _set_new_cache_dir(self, idx):
+        self.cmd('set_cache_dir', {}, idx=idx)
 
-    def _disable_cache(self, task):
-        task.send(self._to_buff('set_cache_enabled', dict(enabled=False)))
-        task.recv()
+    def _disable_cache(self, idx):
+        self.cmd('set_cache_enabled', dict(enabled=False), idx=idx)
 
-    def _set_weathering_output_only(self, task):
-        task.send(self._to_buff('set_weathering_output_only', {}))
-        task.recv()
+    def _set_weathering_output_only(self, idx):
+        self.cmd('set_weathering_output_only', {}, idx=idx)
