@@ -1183,6 +1183,8 @@ class TestSubstanceSpillsDataStructure():
               'mass_components': array_types.mass_components}
 
         sc.prepare_for_model_run(at)
+        assert len(sc.get_substances()) == 2
+
         print '\nElements released:'
         for ix in range(-1, 8):
             time = rel_time + timedelta(seconds=time_step) * ix
