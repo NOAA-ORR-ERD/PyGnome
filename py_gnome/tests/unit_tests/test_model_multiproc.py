@@ -5,8 +5,7 @@ pp = PrettyPrinter(indent=2)
 
 from datetime import datetime, timedelta
 
-import pytest
-from pytest import raises
+from pytest import raises, mark
 
 import numpy
 np = numpy
@@ -232,6 +231,7 @@ def test_cache_dirs():
     model_broadcaster.stop()
 
 
+@mark.skipif
 def test_spills():
     model = make_model(uncertain=True)
 
