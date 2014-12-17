@@ -16,11 +16,10 @@ def init_obj_log(obj, setLevel=logging.INFO):
     return logger
 
 
-class GnomeId(object):
+class AddLogger(object):
     '''
-    A class for assigning a unique ID for an object
+    Mixin for including a logger
     '''
-    _id = None
     _log = None
 
     @property
@@ -29,12 +28,18 @@ class GnomeId(object):
         define attribute '_log'. If it doesn't exist, define it here.
         This is so we don't have to add it to all PyGnome classes - this
         property makes the logger available to each object.
-        - 
         - default log_level is INFO
         '''
         if not self._log:
             self._log = init_obj_log(self)
         return self._log
+
+
+class GnomeId(AddLogger):
+    '''
+    A class for assigning a unique ID for an object
+    '''
+    _id = None
 
     @property
     def id(self):

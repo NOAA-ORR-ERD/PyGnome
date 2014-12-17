@@ -35,7 +35,7 @@ def _valid_units(unit_name):
 __version__ = '0.1.1'
 # a few imports so that the basic stuff is there
 
-from gnomeobject import GnomeId, init_obj_log
+from gnomeobject import GnomeId, init_obj_log, AddLogger
 from . import map
 from . import spill
 from . import spill_container
@@ -54,4 +54,5 @@ __all__ = [GnomeId,
            model,
            outputters,
            initialize_log,
+           AddLogger,
            multi_model_broadcast]
