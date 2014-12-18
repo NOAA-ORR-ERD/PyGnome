@@ -31,8 +31,8 @@ OSSMTimeValue_c::OSSMTimeValue_c() : TimeValue_c()
 	fFileType = OSSMTIMEFILE;
 	fScaleFactor = 0.;
 	fStationName[0] = 0;
-	fStationPosition.p.pLat = 0;
-	fStationPosition.p.pLong = 0;
+	fStationPosition.p.pLat = -999;
+	fStationPosition.p.pLong = -999;
 	fStationPosition.z = 0;
 	bOSSMStyle = true;
 	fTransport = 0;

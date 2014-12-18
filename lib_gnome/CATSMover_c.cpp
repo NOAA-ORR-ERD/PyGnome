@@ -39,9 +39,9 @@ CATSMover_c::CATSMover_c () : CurrentMover_c() {
 	bTimeFileActive = false;
 	fEddyDiffusion = 0; // JLM 5/20/991e6; // cm^2/sec
 	fEddyV0 = 0.1; // JLM 5/20/99
-	refPt3D.p.pLong = 0; // JS - see if we can initialize to NULL
-	refPt3D.p.pLat = 0;
-	refPt3D.z = -999;
+	refPt3D.p.pLong = -999; // JS - see if we can initialize to NULL
+	refPt3D.p.pLat = -999;
+	refPt3D.z = 0;
 	bApplyLogProfile = false;
 
 	memset(&fOptimize, 0, sizeof(fOptimize));
