@@ -12,6 +12,7 @@ from datetime import datetime
 import pytest
 
 import gnome
+from gnome.utilities import time_utils
 from gnome.cy_gnome.cy_shio_time import CyShioTime
 from ..conftest import testdata
 
@@ -88,8 +89,8 @@ def test_yeardata():
     assert shio.yeardata[:-1] == yd
 
     # bogus path but we just want to test that it gets set
-    shio.yeardata = here
-    assert shio.yeardata[:-1] == here
+    shio.yeardata = yd
+    assert shio.yeardata[:-1] == yd
 
 
 def test_get_time_value():
@@ -114,11 +115,6 @@ def test_eq():
 
     other_shio = CyShioTime(shio_file)
     other_shio.scale_factor = 2
-    assert shio != other_shio
-
-    other_shio = CyShioTime(shio_file)
-    # bogus yeardata path but that's ok since we're not using data
-    other_shio.yeardata = here
     assert shio != other_shio
 
     # TODO: need to test for inequality if read-only attributes are

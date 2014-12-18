@@ -322,7 +322,7 @@ class TestObjectSerialization:
         available to the CyTimeseries object.
     '''
     ossmT = CyTimeseries(filename=testdata['timeseries']['wind_ts'],
-                       file_contains=ts_format.magnitude_direction)
+                         file_format=ts_format.magnitude_direction)
     wm = CyWindMover()
     wm.set_ossm(ossmT)
 
