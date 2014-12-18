@@ -16,7 +16,7 @@ from gnome import environment
 from gnome.utilities import serializable
 
 g = environment.constants['gravity'] # the graviational contant.
-
+seawater_density = environment.constants['seawater_density']
 
 class Waves(environment.Environment, serializable.Serializable):
     """
@@ -25,17 +25,19 @@ class Waves(environment.Environment, serializable.Serializable):
     At the moment, it only does a single point, non spatially
     variable, but may be extended in the future
     """
-    def __init__(self, wind, fetch=None):
+    def __init__(self, wind, fetch=None, wave_height=None):
         """
-        :param wind: A wind object to get the wind speed
+        :param wind: A wind object to get the wind speed.
+                     This should be a moving average wind object.
         :type wind: a Wind type, or equivelent
 
         :param fetch: the limiting fetch for the wave generation
         :param type: floating point number, units of meters.
         """
 
-        self.fetch = fetch
         self.wind = wind
+        self.fetch = None if fetch is None else float(fetch)
+        self.wave_height = None if wave_height is None else float(wave_height)
 
     def get_value(self, time):
         """
@@ -45,15 +47,23 @@ class Waves(environment.Environment, serializable.Serializable):
         :param time: the time you want the wave data for 
         :type time: datetime.datetime object
 
-        :returns: wave_height, peak_period, percent_breaking
+        :returns: wave_height, peak_period, whitecap_fraction
 
         wave_height is in units of meters, percent_breaking is unitless percent.
         """
 
-        U = self.time.get_value(self, time)
+        if self.wave_height is None:
+            U = self.wind.get_value(time)[0] # only need velocity
+            H = self.compute_H(U)
+        else: # user specified a wave height
+            H = self.wave_height
+            U = self.comp_psuedo_wind(H)
+        Wf = self.comp_whitecap_fraction(U)
+        T = self.comp_period(U)
 
-        data = self.get_timeseries(time, 'm/s', 'r-theta')
-        return tuple(data[0]['value'])
+        De = self.disp_wave_energy(H)
+
+        return H, T, Wf, De
 
     def compute_H(self, U):
         """
@@ -94,10 +104,8 @@ class Waves(environment.Environment, serializable.Serializable):
         ##U_h = 2.0286*g*sqrt(H/g) # Bill's version
         U_h = sqrt(g * H / 0.243)
         if U_h < 4.433049525859078: # check if low wind case
-            print "low wind case"
+            #print "low wind case"
             U_h = (U_h/0.71)**0.813008
-        else:
-            print "high wind case"
         return U_h
 
     def comp_whitecap_fraction(self, U):
@@ -116,7 +124,7 @@ class Waves(environment.Environment, serializable.Serializable):
 
         if fw > 1.0: # only with U > 200m/s!
             fw = 1.0
-        return fw
+        return fw / 3.85 # Ding and Farmer time constant
 
     def comp_period(self, U):
         """
@@ -125,20 +133,22 @@ class Waves(environment.Environment, serializable.Serializable):
         # wind stress factor
         ## fixme: check for discontinuity at large fetch..
         ##        Is this s bit low??? 32 m/s -> T=15.7 s
-        ws = U * 0.71 * U**1.23 ## fixme -- linear for large windspeed?
-        if (self.fetch is None) or (self.fetch >= 2268*ws**2): # fetch unlimited
-            T = 0.83*ws
-        else:
-            T = 0.0624*(self.fetch*ws)**0.3333333333 # eq 3-34 (SPM?)
+        if self.wave_height is None:
+            ws = U * 0.71 * U**1.23 ## fixme -- linear for large windspeed?
+            if (self.fetch is None) or (self.fetch >= 2268*ws**2): # fetch unlimited
+                T = 0.83*ws
+            else:
+                T = 0.06238*(self.fetch*ws)**0.3333333333 # eq 3-34 (SPM?)
+        else: # user-specified wave height
+            T = 7.508*sqrt(self.wave_height)
         return T
 
-
-
-
-
-
-
-
+    def disp_wave_energy(self, H):
+        """
+        Compute the dissipative wave energy
+        """
+        # fixme: does this really only depend on height?
+        0.0034*seawater_density*g*H**2
 
 
 

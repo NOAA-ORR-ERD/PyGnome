@@ -507,6 +507,9 @@ class Wind(Environment, serializable.Serializable):
         different types of wind data. It returns the data in SI units (m/s)
         in 'r-theta' format (speed, direction)
 
+        :param time: the time(s) you want the data for
+        :type time: datetime object or sequence of datetime objects.
+        
         .. note:: It invokes get_timeseries(..) function
         '''
         data = self.get_timeseries(time, 'm/s', 'r-theta')

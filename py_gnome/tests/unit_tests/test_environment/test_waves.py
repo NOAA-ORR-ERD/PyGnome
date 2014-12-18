@@ -14,14 +14,31 @@ from gnome.basic_types import datetime_value_2d
 import pytest
 
 # some test setup
-
 start_time = datetime.datetime(2014, 12, 1, 0)
+
+# 10 m/s
 series = np.array((start_time, (10, 45)),
                       dtype=datetime_value_2d).reshape((1, ))
-test_wind = wind.Wind(timeseries=series, units='meter per second')
+test_wind_10 = wind.Wind(timeseries=series, units='meter per second')
+
+# 5 m/s
+series = np.array((start_time, (5, 45)),
+                      dtype=datetime_value_2d).reshape((1, ))
+test_wind_5 = wind.Wind(timeseries=series, units='meter per second')
+
+# 3 m/s
+series = np.array((start_time, (5, 45)),
+                      dtype=datetime_value_2d).reshape((1, ))
+test_wind_3 = wind.Wind(timeseries=series, units='meter per second')
+
+# 0 m/s
+series = np.array((start_time, (5, 45)),
+                      dtype=datetime_value_2d).reshape((1, ))
+test_wind_0 = wind.Wind(timeseries=series, units='meter per second')
+
 
 def test_init():
-    w = waves.Waves(wind)
+    w = waves.Waves(test_wind_5)
 
     # just to assert something
     assert type(w) == waves.Waves
@@ -31,7 +48,7 @@ def test_compute_H():
 
        fetch unlimited
     """
-    w = waves.Waves(wind)
+    w = waves.Waves(test_wind_5)
     H = w.compute_H(5) # five m/s wind
 
     print H
@@ -44,7 +61,7 @@ def test_compute_H_fetch():
 
        fetch limited case
     """
-    w = waves.Waves(wind, fetch=10000) # 10km
+    w = waves.Waves(test_wind_5, fetch=10000) # 10km
     H = w.compute_H(5) # five m/s wind
 
     print H
@@ -55,11 +72,10 @@ def test_compute_H_fetch_huge():
     """
     With a huge fetch, should be same as fetch-unlimited
     """
-    w = waves.Waves(wind, fetch=1e100) #
+    w = waves.Waves(test_wind_5, fetch=1e100) #
     H_f = w.compute_H(5) # five m/s wind
     w.fetch = None
     H_nf = w.compute_H(5)
-
 
     assert H_f == H_nf
 
@@ -71,7 +87,7 @@ def test_psuedo_wind(U):
 
     at least for fetch-unlimited
     """
-    w = waves.Waves(wind)
+    w = waves.Waves(test_wind_5)
 
     print "testing for U:", U
     ## 0.707 compensates for RMS wave height
@@ -84,7 +100,7 @@ def test_whitecap_fraction(U):
     This should reverse the wave height computation
     at least for fetch-unlimited
     """
-    w = waves.Waves(wind)
+    w = waves.Waves(test_wind_5)
 
     print "testing for U:", U
 
@@ -104,7 +120,7 @@ def test_period(U):
     """
     test the wave period
     """
-    w = waves.Waves(wind)
+    w = waves.Waves(test_wind_5)
 
     print "testing for U:", U
 
@@ -118,7 +134,7 @@ def test_period_fetch(U):
     """
     Test the wave period
     """
-    w = waves.Waves(wind, fetch = 10000)# 10km fetch
+    w = waves.Waves(test_wind_5, fetch = 10000)# 10km fetch
 
     print "testing for U:", U
 
@@ -127,5 +143,33 @@ def test_period_fetch(U):
     print T
     #assert False # what else to check for???
 
+def test_call_no_fetch_or_height():
+    "fully developed seas"
+    w = waves.Waves(test_wind_5)
 
+    H, T, Wf, De = w.get_value(start_time)
+
+    print H, T, Wf, De
+
+    print "Need to check reasonable numbers"
+
+def test_call_fetch():
+    w = waves.Waves(test_wind_5, fetch=10000)
+
+    H, T, Wf, De =  w.get_value(start_time)
+
+    print H, T, Wf, De
+
+    print "Need to check reasonable numbers"
+
+def test_call_height():
+    """ call with specified wave height """
+    w = waves.Waves(test_wind_5, wave_height=1.0)
+
+    H, T, Wf, De = w.get_value(start_time)
+
+    print H, T, Wf, De
+
+    assert H == 1.0
+    ## fixme: add some value checks -- what to use???
 
