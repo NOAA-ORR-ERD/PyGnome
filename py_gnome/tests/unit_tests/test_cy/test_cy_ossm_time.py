@@ -45,10 +45,15 @@ def test_exceptions(obj):
 
 def test_properties():
     '''
-    todo: need to check if CyOSSMTime is reading/setting properties from file
+    todo: OSSM needs to read station + location info if foudn in file
     '''
-    cy = CyOSSMTime(testdata['timeseries']['wind_ts'], 5)
-    assert cy.station == ''
+    cy = CyOSSMTime(testdata['timeseries']['wind_ts'],
+                    5)  # 5 is ts_format.magnitude_direction
+    #assert cy.station == 'Station Name'
+    #assert cy.station_location == None
+    assert cy.user_units == 'knots'
+    assert cy.filename == testdata['timeseries']['wind_ts']
+    assert cy.scale_factor == 1.0
 
 
 @pytest.mark.parametrize('obj', [CyOSSMTime, CyTimeseries])
@@ -114,11 +119,14 @@ class TestCyTimeseries:
         """
         ossm = CyTimeseries(timeseries=self.tval)
         t_val = ossm.timeseries
-
-        assert ossm.user_units == 'undefined'  # meters/second
         msg = ('{0}().get_time_value() did not return expected '
                'numpy array').format(ossm.__class__.__name__)
         np.testing.assert_array_equal(t_val, self.tval, msg, 0)
+        assert ossm.user_units == 'undefined'  # meters/second
+        assert ossm.station_location is None
+        assert ossm.station is None
+        assert ossm.filename is None
+        assert ossm.scale_factor == 1.0
 
     def test_get_time_value(self):
         ossm = CyTimeseries(timeseries=self.tval)
