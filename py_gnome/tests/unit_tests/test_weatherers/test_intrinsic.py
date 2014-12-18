@@ -127,6 +127,28 @@ class TestFayGravityViscous:
 
         assert all(area == p_area)
 
+    def test_minthickness_values(self):
+        (init_volume,
+         relative_bouyancy,
+         age, area, init_area, thickness) = data_arrays()
+        init_area[:] = self.spread.init_area(water_viscosity,
+                                             sum(init_volume),
+                                             relative_bouyancy)
+
+        age[:] = 900
+        thickness[[0, 2, 8]] = self.spread.thickness_limit
+
+        self.spread.update_area(water_viscosity,
+                                init_area,
+                                init_volume,
+                                relative_bouyancy,
+                                age,
+                                thickness,
+                                out=area)
+        mask = thickness > self.spread.thickness_limit
+        assert np.all(area[mask] > init_area[mask])
+        assert np.all(area[~mask] == init_area[~mask])
+
 
 class TestIntrinsicProps:
     def test_init(self):
@@ -149,7 +171,7 @@ class TestIntrinsicProps:
         assert 'density' in intrinsic.array_types
         assert len(intrinsic.array_types) == 4
 
-    @pytest.mark.parametrize(("s0", "s1"), [#("ALAMO", "ALAMO"),
+    @pytest.mark.parametrize(("s0", "s1"), [("ALAMO", "ALAMO"),
                                             ("ALAMO", "AGUA DULCE")])
     def test_update_intrinsic_props(self, s0, s1):
         arrays = {'area': area,
@@ -212,11 +234,10 @@ class TestIntrinsicProps:
                 # intrinsic props arrays initialized correctly
                 assert all(sc['density'] > 0)
                 assert all(sc['viscosity'] > 0)
-                print sc['mass_components']
                 if s0 != s1:
                     assert np.any(sc['mass_components'] > 0)
                 else:
-                    assert all(sc['mass_components'] > 0)
+                    assert np.all(sc['mass_components'] > 0)
 
             sc['age'] += ts     # model would do this operation
             print 'Completed step: ', i
