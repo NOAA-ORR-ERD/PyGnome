@@ -109,7 +109,7 @@ class Waves(environment.Environment, serializable.Serializable):
 
         ## fixme -- smooth this out toward zero?
         ## disontinuity at 3 m/s at about 1.5%
-        if U < 3: # m/s
+        if U < 3.0: # m/s
             fw = 0.0
         else:
             fw = 0.5 * (0.01*U + 0.01) # Ding and Farmer (JPO 1994)

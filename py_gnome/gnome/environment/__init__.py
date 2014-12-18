@@ -25,4 +25,7 @@ units = {'gas_constant': 'J/(K mol)',
          'acceleration': 'm/s^2'}
 constants = {'gas_constant': 8.314,
              'atmos_pressure': 101325.0,
-             'g': 9.81}
+             #'g': 9.80665, # why not 6 sig figs?
+             'gravity': 9.80665, # I like a longer name ;-)
+             }
+
