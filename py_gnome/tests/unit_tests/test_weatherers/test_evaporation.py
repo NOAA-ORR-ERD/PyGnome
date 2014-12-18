@@ -15,7 +15,7 @@ from gnome.weatherers import (Evaporation,
                               Dispersion,
                               IntrinsicProps)
 from gnome.outputters import WeatheringOutput
-from gnome.spill.elements import floating_weathering
+from gnome.spill.elements import floating_mass
 from gnome.array_types import (mass_components,
                                windages,
                                thickness,
@@ -41,7 +41,7 @@ def test_evaporation(oil, temp, num_elems, on):
     '''
     still working on tests ..
     '''
-    et = floating_weathering(substance=oil)
+    et = floating_mass(substance=oil)
     sc = sample_sc_release(num_elements=num_elems,
                            element_type=et,
                            arr_types=arrays)
@@ -148,10 +148,13 @@ def test_full_run_evap_not_active(sample_model_fcn):
     model.weatherers += Evaporation(on=False)
     model.outputters += WeatheringOutput()
     for step in model:
-        assert 'floating' in step['WeatheringOutput']
-        assert 'amount_released' in step['WeatheringOutput']
-        assert 'evaporated' not in step['WeatheringOutput']
-
+        '''
+        if no weatherers, then no weathering output - need to add on/off
+        switch to WeatheringOutput
+        '''
+        assert len(step['WeatheringOutput']) == 2
+        assert ('step_num' in step['WeatheringOutput'] and
+                'time_stamp' in step['WeatheringOutput'])
         print ("Completed step: {0}"
                .format(step['WeatheringOutput']['step_num']))
 

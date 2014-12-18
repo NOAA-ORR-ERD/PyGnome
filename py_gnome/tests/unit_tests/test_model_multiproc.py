@@ -5,8 +5,7 @@ pp = PrettyPrinter(indent=2)
 
 from datetime import datetime, timedelta
 
-import pytest
-from pytest import raises
+from pytest import raises, mark
 
 import numpy
 np = numpy
@@ -21,7 +20,6 @@ from gnome.map import MapFromBNA
 from gnome.environment import Wind, Water, Tide
 
 from gnome.spill import point_line_release_spill
-from gnome.spill.elements import floating_weathering
 
 from gnome.movers import RandomMover, WindMover, CatsMover
 from gnome.weatherers import Evaporation, Dispersion, Skimmer, Burn
@@ -55,14 +53,12 @@ def make_model(images_dir=os.path.join(base_dir, 'images'),
                   map=gnome_map, uncertain=uncertain, cache_enabled=False)
 
     print 'adding a spill'
-    et = floating_weathering(substance='oil_conservative')
     spill = point_line_release_spill(num_elements=1000,
                                      start_position=(-72.419992,
                                                      41.202120, 0.0),
                                      release_time=start_time,
                                      amount=1000,
-                                     units='kg',
-                                     element_type=et)
+                                     units='kg')
     spill.amount_uncertainty_scale = 1.0
     model.spills += spill
 
@@ -132,21 +128,18 @@ def test_uncertainty_array_size():
                                          ('down',),
                                          ('down',))
     assert len(model_broadcaster.tasks) == 1
-    assert len(model_broadcaster.results) == 1
     model_broadcaster.stop()
 
     model_broadcaster = ModelBroadcaster(model,
                                          ('down', 'up'),
                                          ('down', 'up'))
     assert len(model_broadcaster.tasks) == 4
-    assert len(model_broadcaster.results) == 4
     model_broadcaster.stop()
 
     model_broadcaster = ModelBroadcaster(model,
                                          ('down', 'normal', 'up'),
                                          ('down', 'normal', 'up'))
     assert len(model_broadcaster.tasks) == 9
-    assert len(model_broadcaster.results) == 9
     model_broadcaster.stop()
 
 
@@ -238,15 +231,16 @@ def test_cache_dirs():
     model_broadcaster.stop()
 
 
-def test_spills():
+def test_spill_containers_have_uncertainty_off():
     model = make_model(uncertain=True)
 
     model_broadcaster = ModelBroadcaster(model,
                                          ('down', 'normal', 'up'),
                                          ('down', 'normal', 'up'))
     print '\nSpill results:'
-    res = model_broadcaster.cmd('get_spills', {})
-    assert not any([r.uncertain for r in res])
+    res = model_broadcaster.cmd('get_spill_container_uncertainty', {})
+    print [r for r in res]
+    assert not any([r for r in res])
 
     model_broadcaster.stop()
 

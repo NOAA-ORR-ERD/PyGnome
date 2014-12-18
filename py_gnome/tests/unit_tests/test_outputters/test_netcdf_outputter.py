@@ -17,7 +17,7 @@ import netCDF4 as nc
 
 from gnome.spill import point_line_release_spill, Spill, Release
 
-from gnome.spill.elements import floating_weathering
+from gnome.spill.elements import floating_mass
 from gnome.weatherers import Evaporation
 from gnome.environment import Water
 from gnome.movers import RandomMover, constant_wind_mover
@@ -41,7 +41,7 @@ def model(sample_model_fcn, dump):
                                  start_position=sample_model_fcn['release_start_pos'],
                                  release_time=model.start_time,
                                  end_release_time=model.start_time + model.duration,
-                                 element_type=floating_weathering(substance='oil_diesel'),
+                                 element_type=floating_mass(substance='oil_diesel'),
                                  amount=1000,
                                  units='kg')
 

@@ -186,6 +186,7 @@ def get_testdata():
     get_datafile(os.path.join(curr_dir, 'file_series', 'hiog_file1.nc'))
     get_datafile(os.path.join(curr_dir, 'file_series', 'hiog_file2.nc'))
     get_datafile(os.path.join(curr_dir, 'gridcur_tsA.cur'))
+    get_datafile(os.path.join(curr_dir, 'gridcur_tsB.cur'))
 
     data['GridWindMover'] = \
         {'wind_curv': get_datafile(os.path.join(wind_dir,
@@ -231,6 +232,8 @@ def get_testdata():
          'component_curr2': get_datafile(os.path.join(bos, "WAC10msSW.cur"))
          }
 
+    data['nc'] = {'nc_output':
+                  get_datafile(os.path.join(s_data, 'nc', 'test_output.nc'))}
     return data
 
 
@@ -520,7 +523,7 @@ def sample_model_weathering(sample_model_fcn, oil, temp=311.16):
     'update model the same way for multiple tests'
     model.uncertain = False     # fixme: with uncertainty, copying spill fails!
     model.duration = timedelta(hours=4)
-    et = gnome.spill.elements.floating_weathering(substance=oil)
+    et = gnome.spill.elements.floating_mass(substance=oil)
     start_time = model.start_time + timedelta(hours=1)
     end_time = start_time + timedelta(seconds=model.time_step*3)
     spill = gnome.spill.point_line_release_spill(10,
@@ -535,12 +538,15 @@ def sample_model_weathering(sample_model_fcn, oil, temp=311.16):
 
 
 @pytest.fixture(scope='function', params=['relpath', 'abspath'])
-def clean_temp(request):
-    temp = os.path.join(base_dir, 'temp')   # absolute path
+def clean_saveloc(dump, request):
+    temp = os.path.join(dump, 'temp')   # absolute path
 
     def cleanup():
         print '\nCleaning up %s' % temp
         shutil.rmtree(temp)
+
+    if os.path.exists(temp):
+        cleanup()
 
     request.addfinalizer(cleanup)
 

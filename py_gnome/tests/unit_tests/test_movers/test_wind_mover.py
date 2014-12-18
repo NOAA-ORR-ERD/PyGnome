@@ -441,7 +441,7 @@ def test_save_load(save_ref):
     tests and illustrates the functionality of save/load for
     WindMover
     """
-    #saveloc = clean_temp
+    #saveloc = clean_saveloc
     base_dir = os.path.dirname(__file__)
     saveloc = os.path.join(base_dir, 'temp')
     if not os.path.exists(saveloc):

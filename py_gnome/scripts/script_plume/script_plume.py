@@ -70,7 +70,8 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
                              min_=.0002)  # 200 micron min
     end_time = start_time + timedelta(hours=24)
     spill = point_line_release_spill(num_elements=1000,
-                                     volume=90,  # default volume_units=m^3
+                                     amount=90,  # default volume_units=m^3
+                                     units='m^3',
                                      start_position=(-76.126872, 37.680952,
                                                      1700),
                                      release_time=start_time,
@@ -80,7 +81,8 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
 
     wd = WeibullDistribution(alpha=1.8, lambda_=.00456,
                              max_=.0002)  # 200 micron max
-    spill = point_line_release_spill(num_elements=1000, volume=10,
+    spill = point_line_release_spill(num_elements=1000, amount=10,
+                                     units='m^3',
                                      start_position=(-76.126872, 37.680952,
                                                      1800),
                                      release_time=start_time,

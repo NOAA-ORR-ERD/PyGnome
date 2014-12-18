@@ -21,7 +21,7 @@ from gnome.spill.elements import (InitWindages,
                             InitRiseVelFromDist,
                             InitRiseVelFromDropletSizeFromDist,
                             floating,
-                            floating_weathering,
+                            floating_mass,
                             ElementType,
                             plume)
 
@@ -33,7 +33,7 @@ from gnome.spill import Spill, Release
 from oil_library import get_oil_props
 from gnome.persist import load
 
-from conftest import mock_append_data_arrays
+from ..conftest import mock_append_data_arrays
 
 
 """ Helper functions """
@@ -260,8 +260,8 @@ def test_initialize_InitRiseVelFromDist_normal():
 """ Element Types"""
 # additional array_types corresponding with ElementTypes for following test
 arr_types = {'windages': array_types.windages,
-            'windage_range': array_types.windage_range,
-            'windage_persist': array_types.windage_persist}
+             'windage_range': array_types.windage_range,
+             'windage_persist': array_types.windage_persist}
 
 rise_vel = {'rise_vel': array_types.rise_vel}
 rise_vel.update(arr_types)
@@ -279,7 +279,7 @@ inp_params = [((floating(substance=oil),
               ((floating(substance=oil),
                 ElementType([InitMassFromSpillAmount(), InitRiseVelFromDist()],
                             substance=oil)), rise_vel),
-              ((floating(substance=oil), floating_weathering(substance=oil)),
+              ((floating(substance=oil), floating_mass(substance=oil)),
                mass_comp),
               ]
 
@@ -320,11 +320,6 @@ def test_element_types(elem_type, arr_types, sample_sc_no_uncertainty):
             spill_mask = sc.get_spill_mask(spill)
             # todo: need better API for access
             s_arr_types = spill.get('array_types').keys()
-
-            if 'mass_components' in s_arr_types:
-                # floating_weathering() uses InitArraysFromOilProps() which
-                # also sets the following arrays
-                assert 'mass' in s_arr_types
 
             if np.any(spill_mask):
                 for key in arr_types:
@@ -378,15 +373,15 @@ def test_serialize_deserialize():
 
 
 @pytest.mark.parametrize(("test_obj"), test_l)
-def test_save_load(clean_temp, test_obj):
+def test_save_load(clean_saveloc, test_obj):
     '''
     test save/load for initializers and for ElementType objects containing
     each initializer. Tests serialize/deserialize as well.
     These are stored as nested objects in the Spill but this should also work
     so test it here
     '''
-    refs = test_obj.save(clean_temp)
-    test_obj2 = load(os.path.join(clean_temp, refs.reference(test_obj)))
+    refs = test_obj.save(clean_saveloc)
+    test_obj2 = load(os.path.join(clean_saveloc, refs.reference(test_obj)))
     assert test_obj == test_obj2
 
 

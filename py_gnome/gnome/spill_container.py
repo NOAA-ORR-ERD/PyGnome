@@ -6,6 +6,7 @@ Implements a container for spills -- keeps all the data from each spill in one
 set of arrays. The spills themselves provide some of the arrays themselves
 (adding more each time LEs are released).
 """
+import os
 from collections import namedtuple
 
 import numpy
@@ -26,6 +27,7 @@ from gnome.array_types import (positions,
 
 from gnome.utilities.orderedcollection import OrderedCollection
 import gnome.spill
+from gnome import AddLogger
 
 
 # Organize information about spills per substance
@@ -224,7 +226,7 @@ class SpillContainerData(object):
         return self._data_arrays
 
 
-class SpillContainer(SpillContainerData):
+class SpillContainer(AddLogger, SpillContainerData):
     """
     Container class for all spills -- it takes care of capturing the released
     LEs from all the spills, putting them all in a single set of arrays.
@@ -340,6 +342,9 @@ class SpillContainer(SpillContainerData):
             # only one substance so reference the _data_arrays dict directly
             self._substances_spills.data[0] = self._data_arrays
 
+        self.logger.info('{0} - number of substances: {1}'.
+                         format(os.getpid(), len(self.get_substances())))
+
     def _update_substance_array_reset_data(self,
                                            subs_idx,
                                            num_rel_by_substance):
@@ -357,7 +362,9 @@ class SpillContainer(SpillContainerData):
             structure, then do nothing.
         '''
         if len(self.get_substances()) > 1:
-            self['substance'][-num_rel_by_substance:] = subs_idx
+            if num_rel_by_substance > 0:
+                self['substance'][-num_rel_by_substance:] = subs_idx
+
             self._substances_spills.data[subs_idx] = {}
 
     def _spills_changed(self, *args):
@@ -411,9 +418,10 @@ class SpillContainer(SpillContainerData):
             return
 
         for ix, data in enumerate(self._substances_spills.data):
-            mask = self['substance'] == ix
-            for array in arrays:
-                self[array][mask] = data[array][:]
+            if self._substances_spills.substances[ix] is not None:
+                mask = self['substance'] == ix
+                for array in arrays:
+                    self[array][mask] = data[array][:]
 
     def _set_substancedata(self, arrays):
         '''
@@ -475,6 +483,7 @@ class SpillContainer(SpillContainerData):
         self._reset_arrays()
         self.initialize_data_arrays()
         self.weathering_data = {}  # reset to empty array
+        self.logger.info('{0} - rewound SpillContainer'.format(os.getpid()))
 
     def get_spill_mask(self, spill):
         return self['spill_num'] == self.spills.index(spill)
@@ -633,9 +642,8 @@ class SpillContainer(SpillContainerData):
                                                  self._data_arrays)
                     num_rel_by_substance += num_rel
 
-            if num_rel_by_substance > 0:
-                self._update_substance_array_reset_data(ix,
-                                                        num_rel_by_substance)
+            # always reset data arrays else the changing arrays are stale
+            self._update_substance_array_reset_data(ix, num_rel_by_substance)
 
             # update total elements released for substance
             total_released += num_rel_by_substance

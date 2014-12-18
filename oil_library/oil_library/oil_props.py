@@ -180,11 +180,29 @@ class OilProps(object):
         return self._r_oil.tojson()
 
     def __eq__(self, other):
-        '''need to explicitly compare __dict__'''
+        '''
+        need to explicitly compare __dict__
+        However, PyGnome initializes two OilProps object when invoked from the
+        WebGnomeClient, there is an sql alchemy object embedded in _r_oil
+        which maybe different. To avoid comparing the sqlalchemy object that
+        is part of the raw oil record, this works as follows:
+
+        1. check if self.__dict__ == other.__dict__
+        2. if above fails, then check if the tojson() for both OilProps objects
+        match. This assumes that both objects contain tojson()
+        '''
         if type(self) != type(other):
             return False
 
-        return self.__dict__ == other.__dict__
+        if self.__dict__ == other.__dict__:
+            return True
+        else:
+            try:
+                return self.tojson() == other.tojson()
+            except Exception:
+                return False
+
+        return False
 
     def __ne__(self, other):
         return not self == other

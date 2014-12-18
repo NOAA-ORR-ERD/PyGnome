@@ -24,8 +24,7 @@ from gnome.spill.elements import (ElementType,
                             InitRiseVelFromDist,
                             InitRiseVelFromDropletSizeFromDist,
                             floating,
-                            floating_mass,
-                            floating_weathering)
+                            floating_mass)
 
 from gnome.utilities.distributions import UniformDistribution
 
@@ -1166,12 +1165,12 @@ class TestSubstanceSpillsDataStructure():
         splls0 = [point_line_release_spill(100, (1, 1, 1),
                                            rel_time,
                                            end_release_time=end_time,
-                                           element_type=floating_weathering(substance='ALAMO'),
+                                           element_type=floating_mass(substance='ALAMO'),
                                            amount=100,
                                            units='kg'),
                   point_line_release_spill(50, (2, 2, 2),
                                            rel_time + timedelta(seconds=900),
-                                           element_type=floating_weathering(substance='ALAMO'),
+                                           element_type=floating_mass(substance='ALAMO'),
                                            amount=150,
                                            units='kg'),
                   ]
@@ -1184,6 +1183,8 @@ class TestSubstanceSpillsDataStructure():
               'mass_components': array_types.mass_components}
 
         sc.prepare_for_model_run(at)
+        assert len(sc.get_substances()) == 2
+
         print '\nElements released:'
         for ix in range(-1, 8):
             time = rel_time + timedelta(seconds=time_step) * ix

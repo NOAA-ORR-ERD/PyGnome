@@ -60,24 +60,57 @@ class Base(object):
 
             for r in self.one_to_many_relationships:
                 if isinstance(getattr(self, r), InstrumentedList):
-                    ret[r] = [a.tojson(recurse=recurse)
+                    ret[r] = [a._tojson(recurse=recurse)
                               for a in getattr(self, r)]
                 elif getattr(self, r) is not None:
-                    ret[r] = getattr(self, r).tojson(recurse=recurse)
+                    ret[r] = getattr(self, r)._tojson(recurse=recurse)
 
             for r in self.many_to_many_relationships:
-                ret[r] = [a.tojson(recurse=recurse) for a in getattr(self, r)]
+                ret[r] = [a._tojson(recurse=recurse) for a in getattr(self, r)]
 
             for r in self.many_to_one_relationships:
                 if getattr(self, r) is not None:
-                    ret[r] = getattr(self, r).tojson(recurse=recurse)
+                    ret[r] = getattr(self, r)._tojson(recurse=recurse)
         return ret
 
     def __repr__(self):
         return '{}({})'.format(self.__class__.__name__, self.columnitems)
 
-    def tojson(self, recurse=2):
+    def _tojson(self, recurse=2):
+        'recursive called by columnitems'
         return self.columnitems(recurse)
+
+    def tojson(self):
+        '''
+            The _tojson() routine recursively includes a bunch of redundant
+            content that we don't want to return.  So we will prune it.
+        '''
+        oil_json = self._tojson()
+        for c in oil_json['categories']:
+            if 'oils' in c:
+                del c['oils']
+
+        for c in oil_json['cuts']:
+            if 'imported' in c:
+                del c['imported']
+            if 'oil' in c:
+                del c['oil']
+
+        for d in oil_json['densities']:
+            if 'imported' in d:
+                del d['imported']
+            if 'oil' in d:
+                del d['oil']
+
+        for k in oil_json['kvis']:
+            if 'oil' in k:
+                del k['oil']
+
+        for f in oil_json['sara_fractions']:
+            if 'oil' in f:
+                del f['oil']
+
+        return oil_json
 
 
 # UNMAPPED many-to-many association table
@@ -365,13 +398,15 @@ class Oil(Base):
                         cascade="all, delete, delete-orphan")
     sara_fractions = relationship('SARAFraction', backref='oil',
                                   cascade="all, delete, delete-orphan")
+    molecular_weights = relationship('MolecularWeight', backref='oil',
+                                     cascade="all, delete, delete-orphan")
 
     def __repr__(self):
         return '<Oil("{0.name}")>'.format(self)
 
 
 class SARAFraction(Base):
-    __tablename__ = 'resin_fractions'
+    __tablename__ = 'sara_fractions'
     id = Column(Integer, primary_key=True)
     oil_id = Column(Integer, ForeignKey('oils.id'))
 
@@ -387,4 +422,26 @@ class SARAFraction(Base):
 
     def __repr__(self):
         return ('<SARAFraction({0.sara_type}={0.fraction} at {0.ref_temp_k}K)>'
+                .format(self))
+
+
+class MolecularWeight(Base):
+    __tablename__ = 'molecular_weights'
+    id = Column(Integer, primary_key=True)
+    oil_id = Column(Integer, ForeignKey('oils.id'))
+
+    saturate = Column(Float(53))
+    aromatic = Column(Float(53))
+    ref_temp_k = Column(Float(53))
+
+    def __init__(self, **kwargs):
+        for a, v in kwargs.iteritems():
+            if (a in self.columns):
+                setattr(self, a, v)
+
+    def __repr__(self):
+        return ('<MolecularWeight('
+                'saturate={0.saturate}, '
+                'aromatic={0.aromatic} '
+                'at {0.ref_temp_k}K)>'
                 .format(self))

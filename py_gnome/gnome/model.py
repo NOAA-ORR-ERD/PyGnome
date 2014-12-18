@@ -20,7 +20,7 @@ from gnome.utilities.serializable import Serializable, Field
 from gnome.spill_container import SpillContainerPair
 from gnome.movers import Mover
 from gnome.weatherers import Weatherer, IntrinsicProps
-from gnome.outputters import Outputter, NetCDFOutput
+from gnome.outputters import Outputter, NetCDFOutput, WeatheringOutput
 from gnome.persist import (extend_colander,
                            validators,
                            References,
@@ -304,7 +304,9 @@ class Model(Serializable):
 
     @property
     def has_weathering(self):
-        return len(self.weatherers) > 0
+        return (any([w.on for w in self.weatherers]) and
+                len([o for o in self.outputters
+                     if isinstance(o, WeatheringOutput)]) > 0)
 
     @property
     def start_time(self):
@@ -402,8 +404,12 @@ class Model(Serializable):
         return self._num_time_steps
 
     def contains_object(self, obj_id):
-        if self.map.id == obj_id or self.water.id == obj_id:
+        if self.map.id == obj_id:
             return True
+
+        if self.water is not None:
+            if self.water.id == obj_id:
+                return True
 
         for collection in (self.environment,
                            self.spills,
@@ -433,20 +439,21 @@ class Model(Serializable):
             oc.remake()
 
         for mover in self.movers:
-            mover.prepare_for_model_run()
             if mover.on:
+                mover.prepare_for_model_run()
                 array_types.update(mover.array_types)
 
+        weathering = False
         for w in self.weatherers:
             for sc in self.spills.items():
                 # weatherers will initialize 'weathering_data' key/values
                 # to 0.0
-                w.prepare_for_model_run(sc)
+                if w.on:
+                    w.prepare_for_model_run(sc)
+                    weathering = True
+                    array_types.update(w.array_types)
 
-            if w.on:
-                array_types.update(w.array_types)
-
-        if len(self.weatherers) > 0:
+        if weathering:
             if self.water is None:
                 self.water = Water()
 
@@ -639,8 +646,6 @@ class Model(Serializable):
             self.move_elements()
             self.weather_elements()
             self.step_is_done()
-            self.logger.info("Completed step: {0.current_time_step} for "
-                             "{0.name}".format(self))
 
         self.current_time_step += 1
 
@@ -661,15 +666,17 @@ class Model(Serializable):
             if self._intrinsic_props:
                 self._intrinsic_props.update(num_released, sc)
 
-            self.logger.info("Released {0} elements for step: "
+            self.logger.info("Released {0} new elements for step: "
                              " {1.current_time_step} for {1.name}".
-                             format(sc.num_released, self))
+                             format(num_released, self))
 
         # cache the results - current_time_step is incremented but the
         # current_time_stamp in spill_containers (self.spills) is not updated
         # till we go through the prepare_for_model_step
         self._cache.save_timestep(self.current_time_step, self.spills)
         output_info = self.write_output()
+        self.logger.info("{1} - Completed step: {0.current_time_step} for "
+                         "{0.name}".format(self, os.getpid()))
         return output_info
 
     def __iter__(self):

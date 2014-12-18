@@ -4,9 +4,19 @@ Tests serialize/deserialize to create and update objects
 It just tests the interface works, doesn't actually change values
 '''
 
-from gnome.utilities.weathering.graphs import Graph
-#from gnome.persist.graph_schema import GraphSchema
-from gnome.utilities.weathering.graphs import GraphSchema
+#This code not in use, and MPL not always available
+import pytest
+
+try:
+    import matplotlib
+    from gnome.utilities.weathering.graphs import Graph
+    #from gnome.persist.graph_schema import GraphSchema
+    from gnome.utilities.weathering.graphs import GraphSchema
+except ImportError:
+    # this will force these tests to be skipped if MPL won't import
+    pytestmark = pytest.mark.skipif(True, reason="matplotlib won't import")
+
+
 
 
 class TestGraphSchema(object):

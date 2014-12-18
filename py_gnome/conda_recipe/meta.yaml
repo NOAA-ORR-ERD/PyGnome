@@ -1,0 +1,22 @@
+package:
+  name: py_gnome
+  version: 0.1.1
+
+# no source -- source is local
+
+requirements:
+  build:
+    - python
+    - setuptools
+    - numpy
+    - netcdf4
+    - cython
+  run:
+    - python
+    - numpy
+    - netcdf4
+
+about:
+  home: https://github.com/NOAA-ORR-ERD/PyGnome
+  license: Public Domain
+

@@ -21,6 +21,7 @@ from gnome.basic_types import world_point_type
 from gnome.utilities.plume import Plume, PlumeGenerator
 
 from gnome.utilities.serializable import Serializable
+from gnome.outputters import NetCDFOutput
 
 
 class BaseReleaseSchema(ObjType):
@@ -621,3 +622,79 @@ class VerticalPlumeRelease(Release, Serializable):
         '''
         self.num_released = 0
         self.start_time_invalid = True
+
+
+class InitElemsFromFile(Release):
+    '''
+    release object that sets the initial state of particles from a previously
+    output NetCDF file
+    '''
+    def __init__(self, filename, index=None, time=None):
+        '''
+        Take a NetCDF file, which is an output of PyGnome's outputter:
+        NetCDFOutput, and use these dataarrays as initial condition for the
+        release. The release sets not only 'positions' but also all other
+        arrays it finds. Arrays found in NetCDF file but not in the
+        SpillContainer are ignored. Optional arguments, index and time can
+        be used to initialize the release from any other record in the
+        NetCDF file. Default behavior is to use the last record in the NetCDF
+        to initialize the release elements.
+
+        :param str filename: NetCDF file from which to initialize released
+            elements
+
+        Optional arguments:
+
+        :param int index=None: index of the record from which to initialize the
+            release elements. Default is to use -1 if neither time nor index is
+            specified
+
+        :param datetime time: timestamp at which the data is desired. Looks in
+            the netcdf data's 'time' array and finds the closest time to this
+            and use this data. If both 'time' and 'index' are None, use
+            data for index = -1
+        '''
+        self._init_data = None
+        self._read_data_file(filename, index, time)
+        rel_time = self._init_data.pop('current_time_stamp').item()
+
+        super(InitElemsFromFile, self).__init__(rel_time,
+                                                len(self._init_data['positions']))
+
+        self.set_newparticle_positions = self._set_data_arrays
+
+    def _read_data_file(self, filename, index, time):
+        if time is not None:
+            self._init_data = NetCDFOutput.read_data(filename, time,
+                                                     which_data='all')[0]
+        elif index is not None:
+            self._init_data = NetCDFOutput.read_data(filename, index=index,
+                                                     which_data='all')[0]
+        else:
+            self._init_data = NetCDFOutput.read_data(filename, index=-1,
+                                                     which_data='all')[0]
+
+    def num_elements_to_release(self, current_time, time_step):
+        '''
+        all elements should be released in the first timestep unless start time
+        is invalid. Start time is invalid if it is after the Spill's
+        releasetime
+        '''
+        super(InitElemsFromFile, self).num_elements_to_release(current_time,
+                                                               time_step)
+        if self.start_time_invalid:
+            return 0
+
+        return self.num_elements - self.num_released
+
+    def _set_data_arrays(self, num_new_particles, current_time, time_step,
+                         data_arrays):
+        '''
+        Will set positions and all other data arrays if data for them was found
+        in the NetCDF initialization file.
+        '''
+        for key, val in self._init_data.iteritems():
+            if key in data_arrays:
+                data_arrays[key][-num_new_particles:] = val
+
+        self.num_released = self.num_elements

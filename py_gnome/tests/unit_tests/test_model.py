@@ -22,7 +22,7 @@ from gnome.environment import Wind, Tide, constant_wind, Water
 from gnome.model import Model
 
 from gnome.spill import Spill, SpatialRelease, point_line_release_spill
-from gnome.spill.elements import floating, floating_weathering
+from gnome.spill.elements import floating, floating_mass
 
 from gnome.movers import SimpleMover, RandomMover, WindMover, CatsMover
 
@@ -796,9 +796,6 @@ def test_simple_run_no_spills(model):
 def test_all_weatherers_in_model(model):
     '''
     test model run with weatherer
-    todo: This does not require floating_weathering() element_type, meaning
-    mass_components are not initialized correctly here - need to revisit this
-    concept
     '''
     model.weatherers += HalfLifeWeatherer()
     print 'model.weatherers:', model.weatherers
@@ -847,7 +844,7 @@ def test_contains_object(sample_model_fcn):
     model.water = water
     model.environment += wind
 
-    et = floating_weathering(substance=model.spills[0].get('substance').name)
+    et = floating_mass(substance=model.spills[0].get('substance').name)
     sp = point_line_release_spill(500, (0, 0, 0),
                                   rel_time + timedelta(hours=1),
                                   element_type=et,
@@ -880,28 +877,32 @@ def test_contains_object(sample_model_fcn):
         assert model.contains_object(o.id)
 
 
-@pytest.mark.parametrize("uncertain", [False, True])
-def test_staggered_spills_weathering(sample_model_fcn, uncertain):
+@pytest.mark.parametrize("delay", [timedelta(hours=0),
+                                   timedelta(hours=1)])
+def test_staggered_spills_weathering(sample_model_fcn, delay):
     '''
-    Just test that a model with weathering and spills staggered in time runs
-    without errors.
+    Test that a model with weathering and spills staggered in time runs
+    without errors. Also test that a continuous + instant release works
+    correctly where the total amount_released is the sum of oil removed by
+    weathering processes
 
     test exposed a bug, which is now fixed
     '''
     model = sample_model_weathering(sample_model_fcn, 'ALAMO')
     model.map = gnome.map.GnomeMap()    # make it all water
-    model.uncertain = uncertain
+    model.uncertain = False
     rel_time = model.spills[0].get('release_time')
     model.start_time = rel_time - timedelta(hours=1)
     model.duration = timedelta(days=1)
-    # todo: figure out why we're not able to reuse 'substance' object
-    # et = floating_weathering(substance=model.spills[0].get('substance'))
-    et = floating_weathering(substance=model.spills[0].get('substance').name)
+
+    et = floating_mass(substance=model.spills[0].get('substance').name)
     cs = point_line_release_spill(500, (0, 0, 0),
-                                  rel_time + timedelta(hours=1),
+                                  rel_time + delay,
+                                  end_release_time=(rel_time + delay +
+                                                    timedelta(hours=1)),
                                   element_type=et,
-                                  amount=100,
-                                  units='tons')
+                                  amount=1,
+                                  units='tonnes')
     model.spills += cs
     model.water = Water()
     model.environment += constant_wind(1., 0)
@@ -919,14 +920,8 @@ def test_staggered_spills_weathering(sample_model_fcn, uncertain):
                     sum_ += sc.weathering_data[key]
             assert abs(sum_ - sc.weathering_data['amount_released']) < 1.e-6
 
-        if uncertain:
-            # no uncertainty - using mock data for cleanup options
-            sc, sc_u = model.spills.items()
-            for key in sc.weathering_data:
-                assert (abs(sc.weathering_data[key] -
-                            sc_u.weathering_data[key]) < 1.e-6)
-
         print "completed step {0}".format(step)
+        print sc.weathering_data
 
 
 def test_weathering_data_attr():
@@ -953,7 +948,7 @@ def test_weathering_data_attr():
     # use different element_type and initializers for both spills
     s[0].amount = 10.0
     s[0].units = 'kg'
-    s[0].element_type = floating_weathering()
+    s[0].element_type = floating_mass()
     model.rewind()
     model.step()
     for sc in model.spills.items():
@@ -962,7 +957,7 @@ def test_weathering_data_attr():
 
     s[1].amount = 5.0
     s[1].units = 'kg'
-    s[1].element_type = floating_weathering()
+    s[1].element_type = floating_mass()
     model.rewind()
     exp_rel = 0.0
     for ix in range(2):
@@ -981,7 +976,6 @@ def test_weathering_data_attr():
             assert not sc.weathering_data
 
 
-@pytest.mark.xfail
 def test_run_element_type_no_initializers(model):
     '''
     run model with only one spill, it contains an element_type.
@@ -1035,22 +1029,23 @@ class TestMergeModels:
         sample_save_file = \
             os.path.join(here,
                          '../../scripts/script_boston/save_model/Model.json')
-        model = load(sample_save_file)
-        assert model.water is None
+        if os.path.exists(sample_save_file):
+            model = load(sample_save_file)
+            assert model.water is None
 
-        model.merge(m)
-        assert m.water is model.water
-        for oc in m._oc_list:
-            for item in getattr(m, oc):
-                model_oc = getattr(model, oc)
-                assert item is model_oc[item.id]
+            model.merge(m)
+            assert m.water is model.water
+            for oc in m._oc_list:
+                for item in getattr(m, oc):
+                    model_oc = getattr(model, oc)
+                    assert item is model_oc[item.id]
 
-        for spill in m.spills:
-            assert spill is model.spills[spill.id]
+            for spill in m.spills:
+                assert spill is model.spills[spill.id]
 
-        # merge the other way and ensure model != m
-        m.merge(model)
-        assert model != m
+            # merge the other way and ensure model != m
+            m.merge(model)
+            assert model != m
 
 if __name__ == '__main__':
 

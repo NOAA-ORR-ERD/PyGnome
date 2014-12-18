@@ -2,10 +2,20 @@ from pprint import PrettyPrinter
 pp = PrettyPrinter(indent=2)
 
 import sys
+import os
+import psutil
+import time
 import traceback
+
+from cPickle import loads, dumps
+import uuid
 
 import multiprocessing
 mp = multiprocessing
+
+
+import zmq
+from zmq.eventloop import ioloop, zmqstream
 
 from gnome import GnomeId
 from gnome.environment import Wind
@@ -31,40 +41,72 @@ class ModelConsumer(mp.Process):
         - Returns the results in a results queue
 
     '''
-    def __init__(self, task_queue, result_queue, model):
+    def __init__(self, task_port, model,
+                 ipc_folder='.'):
         mp.Process.__init__(self)
 
-        self.task_queue = task_queue
-        self.result_queue = result_queue
+        self.task_port = task_port
         self.model = model
+        self.ipc_folder = ipc_folder
 
     def run(self):
-        proc_name = self.name
-        while True:
-            data = self.task_queue.get()
-            if data is None:
-                # Poison pill means shutdown
-                print '%s: Exiting' % proc_name
-                self.result_queue.put(None)
+        print '{0}: starting...'.format(self.name)
 
-                break
+        self.cleanup_inherited_files()
+
+        context = zmq.Context()
+
+        self.loop = ioloop.IOLoop.instance()
+
+        sock = context.socket(zmq.REP)
+        sock.bind('ipc://{0}/Task-{1}'.format(self.ipc_folder, self.task_port))
+
+        # We need to create a stream from our socket and
+        # register a callback for recv events.
+        self.stream = zmqstream.ZMQStream(sock, self.loop)
+        self.stream.on_recv(self.handle_cmd)
+
+        self.loop.start()
+
+        sock.close()
+        context.destroy(linger=0)
+        print '{0}: exiting...'.format(self.name)
+
+    def cleanup_inherited_files(self):
+        proc = psutil.Process(os.getpid())
+        [os.close(c.fd) for c in proc.get_connections()]
+        [os.close(f.fd) for f in proc.get_open_files()]
+
+    def handle_cmd(self, msg):
+        '''
+            the IOLoop only uses recv_multipart(), so we will always get
+            a list of byte strings.
+        '''
+        cmd = loads(msg[0])
+        if cmd is None:
+            # Poison pill means shutdown
+            self.loop.stop()
+        else:
             try:
-                cmd, kwargs = data
-                result = getattr(self, '_' + cmd)(**kwargs)
+                res = getattr(self, '_' + cmd[0])(**cmd[1])
+                self.stream.send_unicode(dumps(res))
             except:
                 exc_type, exc_value, exc_traceback = sys.exc_info()
                 fmt = traceback.format_exception(exc_type, exc_value,
                                                  exc_traceback)
-                result = fmt
-
-            self.result_queue.put(result)
-        return
+                self.stream.send_unicode(dumps(fmt))
 
     def _rewind(self):
         return self.model.rewind()
 
     def _step(self):
-        return self.model.step()
+        begin = time.time()
+        ret = self.model.step()
+        end = time.time()
+
+        if 'WeatheringOutput' in ret:
+            ret['WeatheringOutput']['response_time'] = end - begin
+        return ret
 
     def _num_time_steps(self):
         return self.model.num_time_steps
@@ -87,9 +129,6 @@ class ModelConsumer(mp.Process):
 
         return res
 
-    def _get_spills(self):
-        return self.model.spills
-
     def _get_spill_amounts(self):
         return [s.amount for s in self.model.spills]
 
@@ -99,6 +138,9 @@ class ModelConsumer(mp.Process):
         res = [w.set_speed_uncertainty(up_or_down) for w in winds]
 
         return all(res)
+
+    def _get_spill_container_uncertainty(self):
+        return self.model.spills.uncertain
 
     def _set_spill_container_uncertainty(self, uncertain):
         self.model.spills.uncertain = uncertain
@@ -114,6 +156,12 @@ class ModelConsumer(mp.Process):
 
     def _set_cache_dir(self):
         return self.model._cache.create_new_dir()
+
+    def _get_cache_enabled(self):
+        return self.model._cache.enabled
+
+    def _set_cache_enabled(self, enabled):
+        self.model._cache.enabled = enabled
 
     def _get_outputters(self):
         return self.model.outputters
@@ -138,71 +186,117 @@ class ModelBroadcaster(GnomeId):
     '''
     def __init__(self, model,
                  wind_speed_uncertainties,
-                 spill_amount_uncertainties):
+                 spill_amount_uncertainties,
+                 ipc_folder='.'):
+        self.model = model
+        self.ipc_folder = ipc_folder
+        self.context = None
+        self.consumers = []
         self.tasks = []
-        self.results = []
         self.lookup = {}
 
-        idx = 0
+        self._get_available_ports(wind_speed_uncertainties,
+                                  spill_amount_uncertainties)
+        self._spawn_consumers()
+        self._spawn_tasks()
+
         for wsu in wind_speed_uncertainties:
             for sau in spill_amount_uncertainties:
-                self.tasks.append(mp.Queue())
-                self.results.append(mp.Queue())
+                self._set_uncertainty(wsu, sau)
 
-                model_consumer = ModelConsumer(self.tasks[idx],
-                                               self.results[idx],
-                                               model)
-                model_consumer.start()
-
-                self._set_uncertainty(idx, wsu, sau)
-                self._set_new_cache_dir(idx)
-                self._set_weathering_output_only(idx)
-
-                self.lookup[(wsu, sau)] = idx
-                idx += 1
+        for i in range(len(self.tasks)):
+            self._set_new_cache_dir(i)
+            self._disable_cache(i)
+            self._set_weathering_output_only(i)
 
     def __del__(self):
         self.stop()
 
-    def cmd(self, command, args, key=None):
-        if key is None:
-            [t.put((command, args)) for t in self.tasks]
-            return [r.get() for r in self.results]
-        else:
+    def _get_available_ports(self,
+                             wind_speed_uncertainties,
+                             spill_amount_uncertainties):
+        self.task_ports = []
+        idx = 0
+
+        for wsu in wind_speed_uncertainties:
+            for sau in spill_amount_uncertainties:
+                self.task_ports.append(uuid.uuid4())
+                self.lookup[(wsu, sau)] = idx
+                idx += 1
+
+    def _spawn_consumers(self):
+        for p in self.task_ports:
+            model_consumer = ModelConsumer(p, self.model, self.ipc_folder)
+            model_consumer.start()
+            self.consumers.append(model_consumer)
+
+    def _spawn_tasks(self):
+        self.context = zmq.Context()
+
+        for p in self.task_ports:
+            task = self.context.socket(zmq.REQ)
+            task.connect('ipc://{0}/Task-{1}'.format(self.ipc_folder, p))
+
+            self.tasks.append(task)
+
+    def cmd(self, command, args, key=None, idx=None, in_parallel=True):
+        request = dumps((command, args))
+
+        if idx is not None:
+            self.tasks[idx].send(request)
+            return loads(self.tasks[idx].recv())
+        elif key is not None:
             idx = self.lookup[key]
-            self.tasks[idx].put((command, args))
-            return self.results[idx].get()
+            self.tasks[idx].send(request)
+            return loads(self.tasks[idx].recv())
+        else:
+            if in_parallel:
+                [t.send(request) for t in self.tasks]
+                return [loads(t.recv()) for t in self.tasks]
+            else:
+                out = []
+                for t in self.tasks:
+                    t.send(request)
+                    out.append(loads(t.recv()))
+                return out
 
     def stop(self):
-        [t.put(None) for t in self.tasks]
-        [r.get() for r in self.results]
+        [t.send(dumps(None)) for t in self.tasks]
         [t.close() for t in self.tasks]
-        [r.close() for r in self.results]
+
+        for c in self.consumers:
+            c.join()
+        print 'joined all consumers!!!'
+
+        self.context.destroy()
+
+        self.consumers = []
         self.tasks = []
-        self.results = []
         self.lookup = {}
 
-    def _set_uncertainty(self, index,
+    def _set_uncertainty(self,
                          wind_speed_uncertainty,
                          spill_amount_uncertainty):
         # py_gnome spill container uncertainty is not used here
         # so we turn it off always
-        self.tasks[index].put(('set_spill_container_uncertainty',
-                               dict(uncertain=False)))
-        self.results[index].get()
+        idx = self.lookup[(wind_speed_uncertainty, spill_amount_uncertainty)]
 
-        self.tasks[index].put(('set_wind_speed_uncertainty',
-                               dict(up_or_down=wind_speed_uncertainty)))
-        self.results[index].get()
+        self.cmd('set_spill_container_uncertainty',
+                 dict(uncertain=False), idx=idx)
 
-        self.tasks[index].put(('set_spill_amount_uncertainty',
-                               dict(up_or_down=spill_amount_uncertainty)))
-        self.results[index].get()
+        self.cmd('set_wind_speed_uncertainty',
+                 dict(up_or_down=wind_speed_uncertainty), idx=idx)
 
-    def _set_new_cache_dir(self, index):
-        self.tasks[index].put(('set_cache_dir', {}))
-        self.results[index].get()
+        self.cmd('set_spill_amount_uncertainty',
+                 dict(up_or_down=spill_amount_uncertainty), idx=idx)
 
-    def _set_weathering_output_only(self, index):
-        self.tasks[index].put(('set_weathering_output_only', {}))
-        self.results[index].get()
+        print 'our spill amounts', self.cmd('get_spill_amounts', {}, idx=idx)
+
+    def _set_new_cache_dir(self, idx):
+        self.cmd('set_cache_dir', {}, idx=idx)
+
+    def _disable_cache(self, idx):
+        self.cmd('set_cache_enabled', dict(enabled=False), idx=idx)
+
+    def _set_weathering_output_only(self, idx):
+        self.cmd('set_weathering_output_only', {}, idx=idx)

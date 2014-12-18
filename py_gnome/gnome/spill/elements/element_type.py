@@ -18,7 +18,6 @@ from .initializers import (InitRiseVelFromDropletSizeFromDist,
                            InitRiseVelFromDist,
                            InitWindages,
                            InitMassFromSpillAmount,
-                           InitArraysFromOilProps,
                            InitMassFromPlume)
 from oil_library import get_oil_props
 
@@ -37,7 +36,7 @@ class ElementType(Serializable):
     _state += Field('substance', save=True, update=True, test_for_eq=False)
     _schema = base_schema.ObjType
 
-    def __init__(self, initializers=[], substance=None):
+    def __init__(self, initializers=[], substance='oil_conservative'):
         '''
         Define initializers for the type of elements.
         The default element_type has a substance with density of water
@@ -68,11 +67,6 @@ class ElementType(Serializable):
             self.initializers.append(initializers)
 
         self.substance = substance
-
-        # initial density of each pseudo-component. This is fixed for all time
-        # and let the IntrisicProps object set this value since that's the only
-        # object that needs/uses it
-        self.init_density = None
 
     def __repr__(self):
         return ('{0.__class__.__module__}.{0.__class__.__name__}('
@@ -209,9 +203,6 @@ class ElementType(Serializable):
                 dict_['substance'] = substance['id']
             elif 'name' in substance:
                 dict_['substance'] = substance['name']
-                # do not add 'substance' attribute! - raise error
-            elif isinstance(substance, str):
-                dict_['substance'] = substance
 
             d_init = []
 
@@ -286,35 +277,6 @@ def floating_mass(windage_range=(.01, .04),
     """
     init = [InitWindages(windage_range, windage_persist),
             InitMassFromSpillAmount()]
-    return ElementType(init, substance)
-
-
-def floating_weathering(windage_range=(.01, .04),
-                        windage_persist=900,
-                        substance='oil_conservative'):
-    '''
-    Helper function returns an ElementType object containing following
-    initializers:
-
-    1. InitWindages(): for initializing 'windages' with user specified
-    windage_range and windage_persist.
-
-    2. InitMassFromSpillAmount(): Initializes mass of each element by equally
-    dividing the amount spilled by the total number of elements used to model
-    it. Requires the Spill has a valid 'amount', 'units' and 'substance' with
-    density if we need to convert from volume to mass.
-
-    3. InitArraysFromOilProps(): Initializes the 'mass_components' dataarray
-    for substance. It requires mass_fraction attribute attribute on substance
-    to return a list of mass fractions used to model the substance.
-
-    :param substance='oil_conservative': Type of oil spilled. Passed onto
-        ElementType constructor
-    :type substance: str or OilProps
-    '''
-    init = [InitWindages(windage_range, windage_persist),
-            InitMassFromSpillAmount(),  # set 'mass' array
-            InitArraysFromOilProps()]
     return ElementType(init, substance)
 
 
