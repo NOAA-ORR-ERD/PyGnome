@@ -83,7 +83,11 @@ cdef class CyOSSMTime(object):
 
     property filename:
         def __get__(self):
-            return <bytes>self.time_dep.filePath
+            fname = <bytes>self.time_dep.filePath
+            if fname == '':
+                return None
+
+            return fname
 
     property scale_factor:
         def __get__(self):
@@ -96,10 +100,13 @@ cdef class CyOSSMTime(object):
         def __get__(self):
             """ get station location as read from file """
             cdef cnp.ndarray[WorldPoint3D, ndim = 1] wp
-            #wp = np.zeros((1,), dtype=basic_types.w_point_2d)
-            wp = np.zeros((1,), dtype=basic_types.world_point)
 
+            wp = np.zeros((1,), dtype=basic_types.world_point)
             wp[0] = self.time_dep.GetStationLocation()
+
+            if int(wp['lat'][0]) == -999:
+                return None
+
             wp['lat'][:] = wp['lat'][:] / 1.e6    # correct C++ scaling here
             wp['long'][:] = wp['long'][:] / 1.e6    # correct C++ scaling here
             wp['z'][:] = wp['z']
@@ -115,6 +122,10 @@ cdef class CyOSSMTime(object):
             '''
             cdef WorldPoint3D wp
 
+            if not isinstance(val, (list, tuple)) or len(val) != 3:
+                raise ValueError('station_location needs to be '
+                                 'in the format (long, lat, z)')
+
             wp.p.pLong = val[0] * 1e6
             wp.p.pLat = val[1] * 1e6
             wp.z = val[2]
@@ -126,6 +137,9 @@ cdef class CyOSSMTime(object):
             """ get station name as read from SHIO file """
             cdef bytes sName
             sName = self.time_dep.fStationName
+            if not sName:   # empty string
+                return None
+
             return sName
 
     def __repr__(self):
@@ -309,6 +323,7 @@ cdef class CyTimeseries(CyOSSMTime):
         else:
             self._set_time_value_handle(timeseries)
             self._file_format = 0
+            self.scale_factor = scale_factor
             # UserUnits for velocity assumed to be meter per second.
             # Leave undefined because the timeseries could be something
             # other than velocity.
