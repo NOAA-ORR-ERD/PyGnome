@@ -44,6 +44,7 @@ def add_oil(record):
     add_soluability(record, oil)
     add_distillation_cut_boiling_point(record, oil)
     add_molecular_weights(record, oil)
+    add_component_densities(record, oil)
     add_saturate_fractions(record, oil)
     add_aromatic_fractions(record, oil)
 
@@ -559,3 +560,15 @@ def get_aromatic_molecular_weight(vapor_temp):
         return (44.5 * (6.91 - log(1015.0 - vapor_temp))) ** (3. / 2.)
     else:
         return None
+
+
+def add_component_densities(imported_rec, oil):
+    '''
+        (Reference: CPPF, eq. 2.13 and table 9.6)
+    '''
+    P_asph = P_res = 1100.0  # kg/m^3
+
+    # Watson characterization factors
+    K_arom = 10.0
+    K_sat = 12.0
+    pass
