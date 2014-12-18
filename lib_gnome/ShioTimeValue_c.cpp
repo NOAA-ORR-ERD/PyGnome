@@ -1508,12 +1508,8 @@ OSErr ShioTimeValue_c::ReadTimeValues (char *path)
 	if ((err = this->GetKeyedValue(f, "Latitude=", lineNum++, strLine, &stationLat)) > 0)  goto readError;
 	if ((err = this->GetKeyedValue(f, "Longitude=", lineNum++, strLine, &stationLon)) > 0)  goto readError;
 
-	this->fStationPosition.p.pLat = stationLat;
-	this->fStationPosition.p.pLong = stationLon;
-#ifndef pyGNOME
-	this->fStationPosition.p.pLat = this->fStationPosition.p.pLat * 1000000;
-	this->fStationPosition.p.pLong = this->fStationPosition.p.pLong * 1000000;
-#endif
+	this->fStationPosition.p.pLat = stationLat * 1000000;
+	this->fStationPosition.p.pLong = stationLon * 1000000;
 
 	if ((!(p = GetKeyedLine(f, "[Constituents]", lineNum++, strLine))) > 0)  goto readError;
 

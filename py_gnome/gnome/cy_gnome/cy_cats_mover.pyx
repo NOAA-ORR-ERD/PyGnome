@@ -191,7 +191,10 @@ cdef class CyCatsMover(CyCurrentMover):
         from the Shio object.
         """
         self.cats.SetTimeDep(cy_shio.shio)
-        self.ref_point = cy_shio.station_location
+
+        if cy_shio.station_location is not None:
+            self.ref_point = cy_shio.station_location
+
         self.cats.bTimeFileActive = True
         self.cats.scaleType = 1
         return True
@@ -203,6 +206,8 @@ cdef class CyCatsMover(CyCurrentMover):
         """
         self.cats.SetTimeDep(ossm.time_dep)
         self.cats.bTimeFileActive = True   # What is this?
+        if ossm.station_location is not None:
+            self.ref_point = ossm.station_location
         return True
 
     def text_read(self, fname):

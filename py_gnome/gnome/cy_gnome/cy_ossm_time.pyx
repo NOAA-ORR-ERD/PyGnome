@@ -113,11 +113,10 @@ cdef class CyOSSMTime(object):
             '''
             todo: Double check this
             '''
-            #cdef cnp.ndarray[WorldPoint, ndim = 1] wp
             cdef WorldPoint3D wp
 
-            wp.p.pLat = val[0] * 1e6
-            wp.p.pLong = val[1] * 1e6
+            wp.p.pLong = val[0] * 1e6
+            wp.p.pLat = val[1] * 1e6
             wp.z = val[2]
 
             self.time_dep.fStationPosition = wp
