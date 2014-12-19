@@ -1,0 +1,18 @@
+package:
+  name: OilLibrary
+  version: 0.0
+
+# no source -- source is local
+
+requirements:
+  build:
+    - python
+    - setuptools
+  run:
+    - python
+
+about:
+  home: https://github.com/NOAA-ORR-ERD/PyGnome
+  license: Public Domain
+
+
