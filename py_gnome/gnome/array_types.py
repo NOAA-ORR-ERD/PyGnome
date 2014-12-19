@@ -157,7 +157,7 @@ _default_values = {
      'droplet_diameter': ((), np.float64, 0.),
      'age': ((), np.int32, 0),
      'density': ((), np.float64, 0),     # default assumes mass=0
-     'thickness': ((), np.float64, 1.),
+     'thickness': ((), np.float64, 0),  # default to 0 - catch errors easily
      'mol': ((), np.float64, 0.),     # total number of mols for each LE
      'mass_components': (None, np.float64, None),
      'evap_decay_constant': (None, np.float64, None),

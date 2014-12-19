@@ -12,11 +12,11 @@ Uses the same approach as ADIOS 2
 """
 from __future__ import division
 from math import sqrt
+
 from gnome import environment
 from gnome.utilities import serializable
 
 g = environment.constants['gravity'] # the graviational contant.
-seawater_density = environment.constants['seawater_density']
 
 class Waves(environment.Environment, serializable.Serializable):
     """
@@ -25,19 +25,30 @@ class Waves(environment.Environment, serializable.Serializable):
     At the moment, it only does a single point, non spatially
     variable, but may be extended in the future
     """
-    def __init__(self, wind, fetch=None, wave_height=None):
+    def __init__(self, wind, water):
         """
         :param wind: A wind object to get the wind speed.
                      This should be a moving average wind object.
         :type wind: a Wind type, or equivelent
 
-        :param fetch: the limiting fetch for the wave generation
-        :param type: floating point number, units of meters.
+        :param water: water properties, specifically fetch and wave height
+        :type water: environment.Water object.
         """
 
         self.wind = wind
-        self.fetch = None if fetch is None else float(fetch)
-        self.wave_height = None if wave_height is None else float(wave_height)
+        self.water = water
+
+    # def update_water(self):
+    #     """
+    #     updates values from water object
+
+    #     this should be called when you want to make sure new data is Used
+
+    #     note: yes, this is kludgy, but it avoids calling self.water.fetch all over the place
+    #     """
+    #     self.wave_height = self.water.wave_height
+    #     self.fetch = self.water.fetch
+    #     self.density = self.water.density
 
     def get_value(self, time):
         """
@@ -47,16 +58,22 @@ class Waves(environment.Environment, serializable.Serializable):
         :param time: the time you want the wave data for 
         :type time: datetime.datetime object
 
-        :returns: wave_height, peak_period, whitecap_fraction
+        :returns: wave_height, peak_period, whitecap_fraction, dissipation_energy
 
-        wave_height is in units of meters, percent_breaking is unitless percent.
+        Units:
+          wave_height: meters (RMS height)
+          peak_perid: seconds
+          whitecap_fraction: unit-less fraction
+          dissipation_energy: not sure!! # fixme!
         """
+        ## make are we are up to date with water object
+        wave_height = self.water.wave_height
 
-        if self.wave_height is None:
+        if wave_height is None:
             U = self.wind.get_value(time)[0] # only need velocity
             H = self.compute_H(U)
         else: # user specified a wave height
-            H = self.wave_height
+            H = wave_height
             U = self.comp_psuedo_wind(H)
         Wf = self.comp_whitecap_fraction(U)
         T = self.comp_period(U)
@@ -74,15 +91,15 @@ class Waves(environment.Environment, serializable.Serializable):
 
         :returns Hrms: RMS wave height in meters
         """
-
+        fetch = self.water.fetch
         ## wind stress factor
         ## Transition at U = 4.433049525859078 for linear scale with wind speed.
         ##   4.433049525859078 is where the solutions match
         ws = 0.71*U**1.23 if U < 4.433049525859078 else U # wind stress factor
 
         # 2268*ws**2 is limit of fetch limited case.
-        if (self.fetch is not None) and (self.fetch < 2268*ws**2): ## fetch limited case
-            H = 0.0016*sqrt(self.fetch/g)*ws
+        if (fetch is not None) and (fetch < 2268*ws**2): ## fetch limited case
+            H = 0.0016*sqrt(fetch/g)*ws
         else: # fetch unlimited
             H = 0.243*ws*ws/g
 
@@ -133,14 +150,16 @@ class Waves(environment.Environment, serializable.Serializable):
         # wind stress factor
         ## fixme: check for discontinuity at large fetch..
         ##        Is this s bit low??? 32 m/s -> T=15.7 s
-        if self.wave_height is None:
+        wave_height = self.water.wave_height
+        fetch = self.water.wave_height
+        if wave_height is None:
             ws = U * 0.71 * U**1.23 ## fixme -- linear for large windspeed?
-            if (self.fetch is None) or (self.fetch >= 2268*ws**2): # fetch unlimited
+            if (fetch is None) or (fetch >= 2268*ws**2): # fetch unlimited
                 T = 0.83*ws
             else:
-                T = 0.06238*(self.fetch*ws)**0.3333333333 # eq 3-34 (SPM?)
+                T = 0.06238*(fetch*ws)**0.3333333333 # eq 3-34 (SPM?)
         else: # user-specified wave height
-            T = 7.508*sqrt(self.wave_height)
+            T = 7.508*sqrt(wave_height)
         return T
 
     def disp_wave_energy(self, H):
@@ -148,7 +167,7 @@ class Waves(environment.Environment, serializable.Serializable):
         Compute the dissipative wave energy
         """
         # fixme: does this really only depend on height?
-        0.0034*seawater_density*g*H**2
+        0.0034*self.water.density*g*H**2
 
 
 

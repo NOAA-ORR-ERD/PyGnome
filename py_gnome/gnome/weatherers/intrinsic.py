@@ -16,7 +16,9 @@ from gnome.array_types import (density,
                                area,
                                mass,
                                frac_coverage,
-                               mol)
+                               mol,
+                               thickness,
+                               age)
 from gnome.environment import constants
 from gnome import AddLogger
 
@@ -24,48 +26,42 @@ from gnome import AddLogger
 class FayGravityViscous(object):
     def __init__(self):
         self.spreading_const = (1.53, 1.21)
+        self.thickness_limit = .0001
 
     def init_area(self,
                   water_viscosity,
                   init_volume,
-                  relative_bouyancy,
-                  out=None):
+                  relative_bouyancy):
         '''
-        Initial area is computed for each LE only once. This can take scalars
-        or numpy arrays for input since the initial_area for a bunch of LEs
-        will be the same - scalar input is supported
+        Initial area is computed for each LE only once. This takes scalars
+        inputs since water_viscosity, init_volume and relative_bouyancy for a
+        bunch of LEs released together will be the same.
 
         :param water_viscosity: viscosity of water
-        :type water_viscosity: float and a scalar
-        :param init_volume: initial volume
-        :type init_volume: numpy.ndarray with dtype=float
+        :type water_viscosity: float
+        :param init_volume: total initial volume of all LEs released together
+        :type init_volume: float
         :param relative_bouyancy: relative bouyance of oil wrt water:
             (rho_water - rho_oil)/rho_water where rho defines density
-        :type relative_bouyancy: numpy.ndarray with dtype=float
-
-        Optional:
-
-        :param out:
-        :type out: numpy.ndarray with out.shape == init_volume.shape
+        :type relative_bouyancy: float
 
         Equation:
         A0 = np.pi*(k2**4/k1**2)*(((n_LE*V0)**5*g*dbuoy)/(nu_h2o**2))**(1./6.)
         '''
-        if out is None:
-            out = np.zeros_like(init_volume)
-            out = (out, out.reshape(-1))[out.shape == ()]
-
         self._check_relative_bouyancy(relative_bouyancy)
-        out[:] = (np.pi*(self.spreading_const[1]**4/self.spreading_const[0]**2)
-                  * (((init_volume)**5*constants['gravity']*relative_bouyancy) /
-                     (water_viscosity**2))**(1./6.))
-
-        if np.isscalar(init_volume):
-            out = out[0]
+        out = (np.pi*(self.spreading_const[1]**4/self.spreading_const[0]**2)
+               * (((init_volume)**5*constants['gravity']*relative_bouyancy) /
+                  (water_viscosity**2))**(1./6.))
 
         return out
 
     def _check_relative_bouyancy(self, rel_bouy):
+        '''
+        For now just raise an error if any relative_bouyancy is < 0. These
+        particles will sink, ask how we want to deal with them. They should
+        be removed or we should only look at floating particles when computing
+        area?
+        '''
         if np.any(rel_bouy < 0):
             raise ValueError("Found particles with relative_bouyancy < 0. "
                              "Area does not handle this case at present.")
@@ -76,33 +72,32 @@ class FayGravityViscous(object):
                     init_volume,
                     relative_bouyancy,
                     age,
+                    thickness,
                     out=None):
         '''
-        Update area and stuff it in out array. This takes numpy arrays or
-        scalars as input for init_volume, relative_bouyancy and age. Each
+        Update area and stuff it in out array. This takes numpy arrays
+        as input for init_volume, relative_bouyancy and age. Each
         element of the array is the property for an LE - array should be the
         same shape.
 
-        For now just raise an error if any relative_bouyancy is < 0. These
-        particles will sink, ask how we want to deal with them. They should
-        be removed or we should only look at floating particles when computing
-        area?
+        Since this is for updating area, it assumes age > 0 for all elements.
+        It is used inside IntrinsicProps and invoked for particles with age > 0
+
+        It only updates the area for particles with thickness > xxx 
         '''
-        out_scalar = False
-        if np.isscalar(init_volume):
-            init_volume = np.asarray(init_volume).reshape(-1)
-            age = np.asarray(age).reshape(-1)
-            relative_bouyancy = np.asarray(relative_bouyancy).reshape(-1)
-            out_scalar = True
+        self._check_relative_bouyancy(relative_bouyancy)
+        if np.any(age == 0):
+            raise ValueError('for new particles use init_area - age '
+                             'must be > 0')
 
         if out is None:
             out = np.zeros_like(init_volume, dtype=np.float64)
-            out = (out, out.reshape(-1))[out.shape == ()]
 
-        self._check_relative_bouyancy(relative_bouyancy)
-
+        # ADIOS 2 used 0.1 mm as a minimum average spillet thickness for crude
+        # oil and heavy refined products and 0.01 mm for lighter refined
+        # products. Use 0.1mm for now
         out[:] = init_area
-        mask = age > 0
+        mask = thickness > self.thickness_limit  # units of meters
         if np.any(mask):
             dFay = (self.spreading_const[1]**2./16. *
                     (constants['gravity']*relative_bouyancy[mask] *
@@ -110,9 +105,6 @@ class FayGravityViscous(object):
                      np.sqrt(water_viscosity*age[mask])))
             dEddy = 0.033*age[mask]**(4./25)
             out[mask] += (dFay + dEddy) * age[mask]
-
-        if out_scalar:
-            return out[0]
 
         return out
 
@@ -138,10 +130,13 @@ class IntrinsicProps(AddLogger):
     # Evaporation. This object just sets the 'area' array and to do so it
     # requires these additional arrays
     _array_types_group = \
-        {'area': {'init_area': init_area,
+        {'area': {'area': area,
+                  'init_area': init_area,
                   'init_volume': init_volume,
                   'relative_bouyancy': relative_bouyancy,
-                  'frac_coverage': frac_coverage},
+                  'frac_coverage': frac_coverage,
+                  'thickness': thickness,
+                  'age': age},
          # need to add 'mol' as well to self.array_types because it needs to be
          # included when itersubstancedata() is invoked
          'mol': {'mol': mol}
@@ -230,88 +225,96 @@ class IntrinsicProps(AddLogger):
         - update intrinsic properties like 'density', 'viscosity' and optional
         arrays for previously released particles
         '''
-        water_temp = self.water.get('temperature', 'K')
-
         arrays = self.array_types.keys()
 
         for substance, data in sc.itersubstancedata(arrays):
-            'update properties if elements for a substance are released'
+            'update properties only if elements are released'
             if len(data['density']) == 0:
                 continue
 
-            if np.any(data['density'] == 0):
-                # init 'density', 'viscosity', 'area'
-                # the new LEs will be at the end so can probably do strided
-                # arrays for new LEs - get rid of mask here
-                mask = (data['density'] ==
-                        self.array_types['density'].initial_value)
-                data['density'][mask] = \
-                    substance.get_density(water_temp)
+            # could also use 'age' but better to use an uninitialized var since
+            # we might end up changing 'age' to something with less than a
+            # time_step resolution
+            new_LEs_mask = data['density'] == 0
+            if sum(new_LEs_mask) > 0:
+                self._init_new_particles(new_LEs_mask, data, substance)
+            if sum(~new_LEs_mask) > 0:
+                self._update_old_particles(~new_LEs_mask, data, substance)
 
-                # initialize mass_components - assume 'mass' is correctly set
-                data['mass_components'][mask, :len(substance.mass_fraction)] = \
-                    (np.asarray(substance.mass_fraction, dtype=np.float64) *
-                     (data['mass'][mask].reshape(len(data['mass'][mask]), -1)))
-
-                if substance.get_viscosity(water_temp) is not None:
-                    'make sure we do not add NaN values'
-                    data['viscosity'][mask] = \
-                        substance.get_viscosity(water_temp)
-
-                if 'area' in sc:
-                    self._init_area_arrays(data, mask)
-
-                self.logger.info('{0} - New elements initialized: {1}'.
-                                 format(os.getpid(), sum(mask)))
-
-            # set/update mols
+            # set/update mols -- happens the same way for new or old particles
             # - 'mass_components' are already set
-            if 'mol' in sc:
+            if 'mol' in data:
                 mw = substance.molecular_weight
-                data['mol'][:] = np.sum(data['mass_components'][:,
-                                                                :len(mw)]/mw, 1)
+                data['mol'][:] = \
+                    np.sum(data['mass_components'][:, :len(mw)]/mw, 1)
 
-            # update density/viscosity/area for previously released elements
-            # todo: Need formulas to update these
-            # prev_rel = sc.num_released-new_LEs
-            # if prev_rel > 0:
-            #    update density, viscosity .. etc
             sc.update_from_substancedata(arrays)
 
+    def _init_new_particles(self, mask, data, substance):
+        '''
+        '''
+        water_temp = self.water.get('temperature', 'K')
+        data['density'][mask] = substance.get_density(water_temp)
+
+        # initialize mass_components - assume 'mass' is correctly set
+        data['mass_components'][mask, :len(substance.mass_fraction)] = \
+            (np.asarray(substance.mass_fraction, dtype=np.float64) *
+             (data['mass'][mask].reshape(len(data['mass'][mask]), -1)))
+
+        if substance.get_viscosity(water_temp) is not None:
+            'make sure we do not add NaN values'
+            data['viscosity'][mask] = \
+                substance.get_viscosity(water_temp)
+
+        if 'area' in data:
+            '''
+            Sets relative_bouyancy, init_volume, init_area, thickness all of
+            which are required when computing the 'area' of each LE
+            '''
+            data['relative_bouyancy'][mask] = \
+                self._set_relative_bouyancy(data['density'][mask])
+            data['init_volume'][mask] = \
+                np.sum(data['mass'][mask] / data['density'][mask], 0)
+
+            # Cannot change the init_area in place since the following:
+            #    sc['init_area'][-new_LEs:][in_spill]
+            # is an advanced indexing operation that makes a copy anyway
+            # Also, init_volume is same for all these new LEs so just provide
+            # a scalar value
+            data['init_area'][mask] = \
+                self.spreading.init_area(self.water.get('kinematic_viscosity',
+                                                        'square meter per second'),
+                                         data['init_volume'][mask],
+                                         data['relative_bouyancy'][mask])
+            data['area'][mask] = data['init_area'][mask]
+            data['thickness'][mask] = \
+                data['init_volume'][mask]/data['area'][mask]
+
+    def _update_old_particles(self, mask, data, substance):
+        '''
+        update density, area
+        '''
+        # update density/viscosity/area for previously released elements
+        # todo: Need formulas to update these
+        # prev_rel = sc.num_released-new_LEs
+        # if prev_rel > 0:
+        #    update density, viscosity .. etc
         # update 'area' for all elements if it exists
-        if 'area' in sc and sc.num_released > 0:
+        if 'area' in data:
+            # update self.spreading.thickness_limit based on type of substance
             # create 'frac_coverage' array and pass it in to scale area by it
-            self.spreading.update_area(self.water.get('kinematic_viscosity',
-                                                      'square meter per second'),
-                                       sc['init_area'],
-                                       sc['init_volume'],
-                                       sc['relative_bouyancy'],
-                                       sc['age'],
-                                       out=sc['area'])
+            # update_area will only update the area for particles with
+            # thickness greater than some minimum thickness
+            data['area'][mask] = \
+                self.spreading.update_area(self.water.get('kinematic_viscosity',
+                                                          'square meter per second'),
+                                           data['init_area'][mask],
+                                           data['init_volume'][mask],
+                                           data['relative_bouyancy'][mask],
+                                           data['age'][mask],
+                                           data['thickness'][mask])
             # apply fraction coverage here
-            sc['area'] *= sc['frac_coverage']
-
-    def _init_area_arrays(self, data, mask):
-        '''
-        Sets relative_bouyancy, init_volume, init_area, all of which are
-        required when computing the 'area' of each LE
-        '''
-        data['relative_bouyancy'][mask] = \
-            self._set_relative_bouyancy(data['density'][mask])
-        data['init_volume'][mask] = \
-            np.sum(data['mass'][mask] / data['density'][mask], 0)
-
-        # Cannot change the init_area in place since the following:
-        #    sc['init_area'][-new_LEs:][in_spill]
-        # is an advanced indexing operation that makes a copy anyway
-        # Also, init_volume is same for all these new LEs so just provide
-        # a scalar value
-        data['init_area'][mask] = \
-            self.spreading.init_area(self.water.get('kinematic_viscosity',
-                                                    'square meter per second'),
-                                     data['init_volume'][mask],
-                                     data['relative_bouyancy'][mask],
-                                     out=data['init_area'][mask])
+            data['area'][mask] *= data['frac_coverage'][mask]
 
     def _set_relative_bouyancy(self, rho_oil):
         '''
