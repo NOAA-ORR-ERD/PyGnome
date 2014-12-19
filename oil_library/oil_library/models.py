@@ -398,6 +398,8 @@ class Oil(Base):
                         cascade="all, delete, delete-orphan")
     sara_fractions = relationship('SARAFraction', backref='oil',
                                   cascade="all, delete, delete-orphan")
+    sara_densities = relationship('SARADensity', backref='oil',
+                                  cascade="all, delete, delete-orphan")
     molecular_weights = relationship('MolecularWeight', backref='oil',
                                      cascade="all, delete, delete-orphan")
 
@@ -422,6 +424,26 @@ class SARAFraction(Base):
 
     def __repr__(self):
         return ('<SARAFraction({0.sara_type}={0.fraction} at {0.ref_temp_k}K)>'
+                .format(self))
+
+
+class SARADensity(Base):
+    __tablename__ = 'sara_densities'
+    id = Column(Integer, primary_key=True)
+    oil_id = Column(Integer, ForeignKey('oils.id'))
+
+    sara_type = Column(Enum('Saturates', 'Aromatics', 'Resins', 'Asphaltenes'),
+                       nullable=False)
+    density = Column(Float(53))
+    ref_temp_k = Column(Float(53))
+
+    def __init__(self, **kwargs):
+        for a, v in kwargs.iteritems():
+            if (a in self.columns):
+                setattr(self, a, v)
+
+    def __repr__(self):
+        return ('<SARAFraction({0.sara_type}={0.density} at {0.ref_temp_k}K)>'
                 .format(self))
 
 

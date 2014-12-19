@@ -12,7 +12,8 @@ import transaction
 
 from oil_library.models import (ImportedRecord, Oil,
                                 Density, KVis, Cut,
-                                SARAFraction, MolecularWeight)
+                                SARAFraction, SARADensity,
+                                MolecularWeight)
 from oil_library.utilities import get_boiling_points_from_api
 
 
@@ -565,10 +566,27 @@ def get_aromatic_molecular_weight(vapor_temp):
 def add_component_densities(imported_rec, oil):
     '''
         (Reference: CPPF, eq. 2.13 and table 9.6)
+        dependent on:
+        - P_0_oil: oil density at 15C (estimation 1)
+        - fmass_0_j: saturate & aromatic mass fractions (estimation 14,15)
     '''
-    P_asph = P_res = 1100.0  # kg/m^3
+    oil.sara_densities.append(SARADensity(sara_type='Asphaltenes',
+                                          density=1100.0))
+    oil.sara_densities.append(SARADensity(sara_type='Resins',
+                                          density=1100.0))
 
     # Watson characterization factors
     K_arom = 10.0
     K_sat = 12.0
+
+    for c in imported_rec.cuts:
+        T_i = c.vapor_temp_k
+        for K_w in (K_arom, K_sat):
+            P_try = 1000 * (T_i ** (1.0/3.0) /
+                            K_w)
     pass
+
+
+
+
+
