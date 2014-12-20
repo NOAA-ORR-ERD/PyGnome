@@ -19,6 +19,7 @@ cdef class CyOSSMTime(object):
     timeseries doesn't make sense for Shio. This base class captures the set of
     common properties/methods between children.
     '''
+
     def __cinit__(self):
         '''
         Child classes must initialize the appropriate C++ objects themselves.
@@ -28,12 +29,6 @@ cdef class CyOSSMTime(object):
             self.time_dep = new OSSMTimeValue_c()
         else:
             self.time_dep = NULL
-
-        # Define user units for velocity. In C++, these are #defined as
-        self._user_units_dict = {-1: 'undefined',
-                                 1: 'knots',
-                                 2: 'meters per second',
-                                 3: 'miles per hour'}
 
         # initialize this in init function
         self._file_format = 0
@@ -76,7 +71,7 @@ cdef class CyOSSMTime(object):
             happens in cython code
             '''
             try:
-                return self._user_units_dict[self.time_dep.GetUserUnits()]
+                return _user_units_dict[self.time_dep.GetUserUnits()]
             except KeyError:
                 raise ValueError('C++ GetUserUnits() gave a result which is '
                                  'outside the expected bounds.')
