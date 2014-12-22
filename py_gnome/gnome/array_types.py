@@ -170,6 +170,10 @@ _default_values = {
      'viscosity': ((), np.float64, 0),
      # fractional water content in emulsion, not being set currently
      'frac_water': ((), np.float64, 0),
+     # frac of mass lost due to evaporation + dissolution.
+     # Used to update viscosity
+     'frac_lost': ((), np.float64, 0),
+     'init_mass': ((), np.float64, 0),
 
      # same for all elements in a spill - since weatherer's iterate through
      # the data per substance as opposed to per spill, it is easier to define

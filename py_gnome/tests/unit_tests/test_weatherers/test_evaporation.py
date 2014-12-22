@@ -34,7 +34,7 @@ arrays.update(intrinsic.array_types)
 
 
 @pytest.mark.parametrize(('oil', 'temp', 'num_elems', 'on'),
-                         [('oil_conservative', 311.15, 3, True),
+                         [('AGUA DULCE', 311.15, 3, True),
                           ('ALAMO', 311.15, 3, True),
                           ('FUEL OIL NO.6', 311.15, 3, False)])
 def test_evaporation(oil, temp, num_elems, on):
@@ -57,6 +57,12 @@ def test_evaporation(oil, temp, num_elems, on):
     evap.prepare_for_model_step(sc, time_step, model_time)
     init_mass = sc['mass_components'].copy()
     evap.weather_elements(sc, time_step, model_time)
+
+    if on:
+        assert np.all(sc['frac_lost'] > 0) and np.all(sc['frac_lost'] < 1.0)
+
+        # all elements experience the same evaporation
+        assert np.all(sc['frac_lost'][0] == sc['frac_lost'])
 
     for spill in sc.spills:
         mask = sc.get_spill_mask(spill)
@@ -82,8 +88,9 @@ def test_evaporation(oil, temp, num_elems, on):
         assert sc.weathering_data['evaporated'] == 0.0
         assert np.all(sc['mass_components'] == init_mass)
 
-    print sc['evap_decay_constant']
-    print sc.weathering_data['evaporated']
+    print '\nevap_decay_const', sc['evap_decay_constant']
+    print 'frac_lost', sc['frac_lost']
+    print 'total evaporated', sc.weathering_data['evaporated']
 
 
 def assert_helper(sc, new_p):
@@ -108,7 +115,7 @@ def assert_helper(sc, new_p):
         assert np.all(sc['evap_decay_constant'][-new_p:, :sa] == 0.0)
 
 
-@pytest.mark.parametrize(('oil', 'temp'), [('oil_conservative', 333.0),
+@pytest.mark.parametrize(('oil', 'temp'), [('AGUA DULCE', 333.0),
                                            ('FUEL OIL NO.6', 333.0),
                                            ('ALAMO', 311.15),
                                            ])

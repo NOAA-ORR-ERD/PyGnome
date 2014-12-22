@@ -11,7 +11,8 @@ from gnome.array_types import (mass_components,
                                mol,
                                evap_decay_constant,
                                area,
-                               frac_water)
+                               frac_water,
+                               frac_lost)
 from gnome.utilities.serializable import Serializable, Field
 
 from .core import WeathererSchema
@@ -44,11 +45,8 @@ class Evaporation(Weatherer, Serializable):
         self.array_types.update({'area': area,
                                  'mol': mol,
                                  'evap_decay_constant': evap_decay_constant,
-                                 # frac_water_in_emulsion is currently not
-                                 # being set so don't carry around array of
-                                 # zeros. Once it is being set correctly,
-                                 # following can be uncommented
-                                 # 'frac_water': frac_water})
+                                 'frac_water': frac_water,
+                                 'frac_lost': frac_lost,
                                  })
 
     def prepare_for_model_run(self, sc):
@@ -157,6 +155,9 @@ class Evaporation(Weatherer, Serializable):
             self.logger.info('{0} - Amount Evaporated: {1}'.
                              format(os.getpid(),
                                     sc.weathering_data['evaporated']))
+
+            # add frac_lost
+            sc['frac_lost'][:] = 1 - sc['mass']/sc['init_mass']
 
     def serialize(self, json_='webapi'):
         """

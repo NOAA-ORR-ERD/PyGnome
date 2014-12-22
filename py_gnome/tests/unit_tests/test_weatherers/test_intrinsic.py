@@ -154,23 +154,20 @@ class TestFayGravityViscous:
 class TestIntrinsicProps:
     def test_init(self):
         intrinsic = IntrinsicProps(water)
-        assert len(intrinsic.array_types) == 4
+        default_len = len(intrinsic.array_types)
 
         intrinsic = IntrinsicProps(water,
                                    {'area': area})
-        for key in ('init_area',
-                    'thickness',
-                    'init_volume',
-                    'relative_bouyancy',
-                    'frac_coverage',
-                    'area',
-                    'age'):
+        add_arrays = ('init_area', 'thickness', 'relative_bouyancy',
+                      'frac_coverage', 'area', 'age')
+        for key in add_arrays:
             assert key in intrinsic.array_types
-        assert len(intrinsic.array_types) == 11
+
+        assert len(intrinsic.array_types) > default_len
 
         intrinsic.update_array_types({})
         assert 'density' in intrinsic.array_types
-        assert len(intrinsic.array_types) == 4
+        assert len(intrinsic.array_types) == default_len
 
     @pytest.mark.parametrize(("s0", "s1"), [("ALAMO", "ALAMO"),
                                             ("ALAMO", "AGUA DULCE")])
@@ -229,7 +226,7 @@ class TestIntrinsicProps:
                 assert all(sc['init_area'][~mask] < sc['area'][~mask])
 
                 assert all(sc['thickness'] > 0)
-                assert all(sc['init_volume'] > 0)
+                assert all(sc['init_mass'] > 0)
                 assert all(sc['relative_bouyancy'] > 0)
 
                 # intrinsic props arrays initialized correctly

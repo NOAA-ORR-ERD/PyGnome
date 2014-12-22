@@ -18,7 +18,10 @@ from gnome.array_types import (density,
                                frac_coverage,
                                mol,
                                thickness,
-                               age)
+                               frac_water,
+                               frac_lost,
+                               age,
+                               init_mass)
 from gnome.environment import constants
 from gnome import AddLogger
 
@@ -130,9 +133,9 @@ class IntrinsicProps(AddLogger):
     # Evaporation. This object just sets the 'area' array and to do so it
     # requires these additional arrays
     _array_types_group = \
-        {'area': {'area': area,
+        {'area': {'area': area,     # area no longer needs init_volume since
+                                    # init_mass is included
                   'init_area': init_area,
-                  'init_volume': init_volume,
                   'relative_bouyancy': relative_bouyancy,
                   'frac_coverage': frac_coverage,
                   'thickness': thickness,
@@ -151,9 +154,16 @@ class IntrinsicProps(AddLogger):
         self.array_types = {'density': density,
                             'viscosity': viscosity,
                             'mass_components': mass_components,
-                            'mass': mass}
+                            'mass': mass,
+                            'init_mass': init_mass,
+                            'frac_water': frac_water,
+                            'frac_lost': frac_lost}
         if array_types:
             self.update_array_types(array_types)
+
+        # following used to update viscosity
+        self.visc_curvfit_param = 1.5e3     # units are sec^0.5 / m
+        self.visc_f_ref = 0.84
 
     def update_array_types(self, m_array_types):
         '''
@@ -261,6 +271,8 @@ class IntrinsicProps(AddLogger):
             (np.asarray(substance.mass_fraction, dtype=np.float64) *
              (data['mass'][mask].reshape(len(data['mass'][mask]), -1)))
 
+        data['init_mass'][mask] = data['mass'][mask]
+
         if substance.get_viscosity(water_temp) is not None:
             'make sure we do not add NaN values'
             data['viscosity'][mask] = \
@@ -273,8 +285,6 @@ class IntrinsicProps(AddLogger):
             '''
             data['relative_bouyancy'][mask] = \
                 self._set_relative_bouyancy(data['density'][mask])
-            data['init_volume'][mask] = \
-                np.sum(data['mass'][mask] / data['density'][mask], 0)
 
             # Cannot change the init_area in place since the following:
             #    sc['init_area'][-new_LEs:][in_spill]
@@ -284,23 +294,41 @@ class IntrinsicProps(AddLogger):
             data['init_area'][mask] = \
                 self.spreading.init_area(self.water.get('kinematic_viscosity',
                                                         'square meter per second'),
-                                         data['init_volume'][mask],
-                                         data['relative_bouyancy'][mask])
+                                         np.sum(data['init_mass'][mask] /
+                                                data['density'][mask], 0),
+                                         data['relative_bouyancy'][mask][0])
             data['area'][mask] = data['init_area'][mask]
             data['thickness'][mask] = \
-                data['init_volume'][mask]/data['area'][mask]
+                (data['init_mass'][mask]/data['density'][mask]/
+                 data['area'][mask])
 
     def _update_old_particles(self, mask, data, substance):
         '''
         update density, area
         '''
         # update density/viscosity/area for previously released elements
-        # todo: Need formulas to update these
+
+        # following implementation results in an extra array called
+        # fw_d_fref but easy to read
+        v0 = substance.get_viscosity(self.water.get('temperature', 'K'))
+        if v0 is not None:
+            fw_d_fref = data['frac_water'][mask]/self.visc_f_ref
+            data['viscosity'][mask] = \
+                (v0 * np.exp(v0 * self.visc_curvfit_param *
+                             data['frac_lost'][mask]) *
+                 (1 + (fw_d_fref/(1.187 - fw_d_fref)))**2.49)
+
+        # todo: Need formulas to update density
         # prev_rel = sc.num_released-new_LEs
         # if prev_rel > 0:
         #    update density, viscosity .. etc
+
         # update 'area' for all elements if it exists
         if 'area' in data:
+            # at present water temp is fixed so substance's intial density can
+            # be obtained as follows
+            rho = substance.get_density(self.water.get('temperature', 'K'))
+
             # update self.spreading.thickness_limit based on type of substance
             # create 'frac_coverage' array and pass it in to scale area by it
             # update_area will only update the area for particles with
@@ -309,7 +337,7 @@ class IntrinsicProps(AddLogger):
                 self.spreading.update_area(self.water.get('kinematic_viscosity',
                                                           'square meter per second'),
                                            data['init_area'][mask],
-                                           data['init_volume'][mask],
+                                           data['init_mass'][mask]/rho, # init_volume
                                            data['relative_bouyancy'][mask],
                                            data['age'][mask],
                                            data['thickness'][mask])
