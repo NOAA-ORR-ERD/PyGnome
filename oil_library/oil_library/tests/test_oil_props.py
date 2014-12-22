@@ -99,10 +99,3 @@ class TestCopy():
         # reference so changing it in 'op' doesn't effect the list in 'dcop'
         op.mass_fraction[0] = 0
         assert op.mass_fraction != dcop.mass_fraction
-
-    def test_deepcopy_after_changing_attr(self):
-        op = get_oil_props(10)
-        op.mass_fraction[0] = -1
-        op.boiling_point[0] = -2
-        dcop = copy.deepcopy(op)
-        self._assert_deepcopy(op, dcop)

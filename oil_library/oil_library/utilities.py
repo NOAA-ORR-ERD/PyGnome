@@ -131,7 +131,8 @@ def get_viscosity(oil, temp, out=None):
         mask = v_max > out
         if np.any(mask):
             out[mask] = v_max
-    return out
+
+    return (out, out[0])[len(out) == 1]
 
 
 def get_viscosity_orig(oil, temp):
