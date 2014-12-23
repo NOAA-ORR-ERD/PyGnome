@@ -124,6 +124,13 @@ class TestInitElementsFromFile():
                           self.time_step.total_seconds() * index)
         assert release.release_time == exp_rel_time
 
+    def test_init_with_releasetime(self):
+        'test release time gets set correctly'
+        reltime = datetime(2014, 1, 1, 0, 0)
+        release = InitElemsFromFile(testdata['nc']['nc_output'], reltime)
+        assert release.num_elements == 4000
+        assert release.release_time == reltime
+
     @pytest.mark.parametrize("at", [{},
                                     {'windages': windages}])
     def test_release_elements(self, at):
