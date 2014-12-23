@@ -258,7 +258,7 @@ class IntrinsicProps(AddLogger):
                 data['mol'][:] = \
                     np.sum(data['mass_components'][:, :len(mw)]/mw, 1)
 
-            sc.update_from_substancedata(arrays)
+        sc.update_from_substancedata(arrays)
 
     def _init_new_particles(self, mask, data, substance):
         '''

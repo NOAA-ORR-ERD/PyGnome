@@ -112,10 +112,11 @@ class Evaporation(Weatherer, Serializable):
                       np.repeat((constants['gas_constant'] * water_temp *
                                  data['mol']).reshape(-1, 1), len(vp), axis=1))
 
-            sc.update_from_substancedata(arrays)
             if np.any(data['evap_decay_constant'] > 0.0):
                 raise ValueError("Error in Evaporation routine. One of the"
                                  " exponential decay constant is positive")
+
+        sc.update_from_substancedata(arrays)
 
     def _mass_transport_coeff(self, model_time):
         '''
