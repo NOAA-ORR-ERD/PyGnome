@@ -110,7 +110,7 @@ class TestInitElementsFromFile():
 
     @pytest.mark.parametrize("index", [None, 0, 2])
     def test_init(self, index):
-        release = InitElemsFromFile(testdata['nc']['nc_output'], index)
+        release = InitElemsFromFile(testdata['nc']['nc_output'], index=index)
         assert release.num_elements == 4000
         if index is None:
             # file contains initial condition plus 4 timesteps
