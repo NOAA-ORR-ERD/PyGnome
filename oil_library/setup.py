@@ -78,7 +78,7 @@ requires = [
     'transaction',
     'zope.sqlalchemy',
     'awesome-slugify',
-    'hazpy.unit_conversion',
+    'unit_conversion',
     'pytest',
     'numpy'
     ]

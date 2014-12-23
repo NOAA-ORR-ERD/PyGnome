@@ -13,7 +13,7 @@ from pytest import raises
 import numpy
 np = numpy
 
-from hazpy import unit_conversion as uc
+import unit_conversion as uc
 import gnome
 from gnome import array_types
 from gnome.spill.elements import (InitWindages,

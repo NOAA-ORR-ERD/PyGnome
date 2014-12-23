@@ -6,7 +6,7 @@ from setuptools import setup, Extension
 
 
 import numpy # so it can find the headers
-module1 = Extension('hazpy.file_tools.Utilities.FileScanner',
+module1 = Extension('gnome.utilities.file_tools.Utilities.FileScanner',
                     sources = ['Source/FileScan_module.c'],
                     include_dirs = [numpy.get_include(),],
                     )

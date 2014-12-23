@@ -19,7 +19,7 @@
 '''
 import transaction
 
-from hazpy import unit_conversion as uc
+import unit_conversion as uc
 
 from oil_library.models import Oil, ImportedRecord, Category
 from oil_library.utilities import get_viscosity

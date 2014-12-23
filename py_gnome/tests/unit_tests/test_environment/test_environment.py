@@ -2,7 +2,7 @@
 test object in environment module
 '''
 import pytest
-from hazpy.unit_conversion import InvalidUnitError
+from unit_conversion import InvalidUnitError
 from gnome.environment import Water
 
 

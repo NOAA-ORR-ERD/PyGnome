@@ -22,7 +22,7 @@ from .initializers import (InitRiseVelFromDropletSizeFromDist,
 from oil_library import get_oil_props
 
 from gnome.persist import base_schema
-from hazpy import unit_conversion as uc
+import unit_conversion as uc
 
 
 class ElementType(Serializable):

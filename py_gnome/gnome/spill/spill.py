@@ -12,8 +12,7 @@ import numpy
 np = numpy
 from repoze.lru import lru_cache
 
-from hazpy import unit_conversion
-uc = unit_conversion
+import unit_conversion as uc
 from colander import (SchemaNode, Bool, String, Float, drop)
 
 import gnome    # required by new_from_dict
