@@ -629,7 +629,7 @@ class InitElemsFromFile(Release):
     release object that sets the initial state of particles from a previously
     output NetCDF file
     '''
-    def __init__(self, filename, index=None, time=None):
+    def __init__(self, filename, release_time=None, index=None, time=None):
         '''
         Take a NetCDF file, which is an output of PyGnome's outputter:
         NetCDFOutput, and use these dataarrays as initial condition for the
@@ -656,9 +656,10 @@ class InitElemsFromFile(Release):
         '''
         self._init_data = None
         self._read_data_file(filename, index, time)
-        rel_time = self._init_data.pop('current_time_stamp').item()
+        if release_time is None:
+            release_time = self._init_data.pop('current_time_stamp').item()
 
-        super(InitElemsFromFile, self).__init__(rel_time,
+        super(InitElemsFromFile, self).__init__(release_time,
                                                 len(self._init_data['positions']))
 
         self.set_newparticle_positions = self._set_data_arrays
