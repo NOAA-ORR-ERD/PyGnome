@@ -258,7 +258,7 @@ class SpillContainer(AddLogger, SpillContainerData):
         # Initialize following either the first time it is used or in
         # prepare_for_model_run() -- it could change with each new spill
         self._substances_spills = None
-        self._oil_comp_array_len = 1
+        self._oil_comp_array_len = None
 
     def __setitem__(self, data_name, array):
         """
@@ -290,6 +290,9 @@ class SpillContainer(AddLogger, SpillContainerData):
         self._data_arrays = {}
         self._substances_spills = None
 
+        # reset following since arrays are reset
+        self._oil_comp_array_len = None
+
     def _set_substancespills(self):
         '''
         _substances could change when spills are added/deleted
@@ -307,6 +310,9 @@ class SpillContainer(AddLogger, SpillContainerData):
         subs = []
         spills = []
         num_rel = []
+        if self._oil_comp_array_len is None:
+            self._oil_comp_array_len = 1
+
         for spill in self.spills:
             if not spill.on:
                 continue
