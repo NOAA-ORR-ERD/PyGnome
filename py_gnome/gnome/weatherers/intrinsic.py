@@ -291,16 +291,15 @@ class IntrinsicProps(AddLogger):
             # is an advanced indexing operation that makes a copy anyway
             # Also, init_volume is same for all these new LEs so just provide
             # a scalar value
+            volume_released = np.sum(data['init_mass'][mask] /
+                                     data['density'][mask], 0)
             data['init_area'][mask] = \
                 self.spreading.init_area(self.water.get('kinematic_viscosity',
                                                         'square meter per second'),
-                                         np.sum(data['init_mass'][mask] /
-                                                data['density'][mask], 0),
+                                         volume_released,
                                          data['relative_bouyancy'][mask][0])
             data['area'][mask] = data['init_area'][mask]
-            data['thickness'][mask] = \
-                (data['init_mass'][mask]/data['density'][mask]/
-                 data['area'][mask])
+            data['thickness'][mask] = volume_released/data['area'][mask]
 
     def _update_old_particles(self, mask, data, substance):
         '''
