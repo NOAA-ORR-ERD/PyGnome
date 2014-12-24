@@ -33,11 +33,14 @@ class Skimmer(Weatherer, Serializable):
         self._units = None
         self.amount = amount
         self.units = units
+        self.efficiency = efficiency
         self.thickness_lim = 0.002
 
+        super(Skimmer, self).__init__(**kwargs)
+
         # get the rate as amount/sec, use this to compute amount at each step
-        self._rate = self.amount/(self.active_stop.total_seconds() -
-                                  self.active_start.total_seconds())
+        self._rate = self.amount/(self.active_stop -
+                                  self.active_start).total_seconds()
         # let prepare_for_model_step set timestep to use when active_start or
         # active_stop is between a timestep. Generally don't do subtimestep
         # resolution; however, in this case we want numbers to add up correctly
@@ -45,8 +48,6 @@ class Skimmer(Weatherer, Serializable):
 
         if self.units is None:
             raise TypeError('Need valid mass or volume units for amount')
-
-        super(Skimmer, self).__init__(**kwargs)
 
     def _validunits(self, value):
         'checks if units are either valid_vol_units or valid_mass_units'
@@ -81,23 +82,24 @@ class Skimmer(Weatherer, Serializable):
             return
 
         self._timestep = time_step
+        dt = timedelta(seconds=time_step)
 
-        if (self.active_start > model_time_datetime and
-            (model_time_datetime + timedelta(seconds=time_step)) <
-            self.active_stop):
+        if (model_time_datetime + dt > self.active_start and
+            self.active_stop > model_time_datetime):
             self._active = True
-            if self.active_start > model_time_datetime:
-                self._timestep = time_step - (self.active_start -
-                                              model_time_datetime).total_seconds()
 
-            if (self.active_stop <
-                model_time_datetime + timedelta(seconds=time_step)):
+            if (model_time_datetime < self.active_start):
+                self._timestep = \
+                    time_step - (self.active_start -
+                                 model_time_datetime).total_seconds()
+
+            if (self.active_stop < model_time_datetime + dt):
                 self._timestep = (self.active_stop -
                                   model_time_datetime).total_seconds()
         else:
             self._active = False
 
-    def _amount_removed(self, substance, time_step, model_time):
+    def _amount_removed(self, substance):
         '''
         use density at 15C, ie corresponding with API to do mass/volume
         conversion
@@ -125,7 +127,7 @@ class Skimmer(Weatherer, Serializable):
 
         for substance, data in sc.itersubstancedata(self._arrays):
             nc = substance.num_components
-            rm_mass = self._amount_removed(substance, time_step)
+            rm_mass = (self._amount_removed(substance) * self.efficiency)
             mask = data['thickness'] > self.thickness_lim
 
             if sum(mask) > 0:
