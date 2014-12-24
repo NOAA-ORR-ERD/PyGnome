@@ -48,6 +48,9 @@ class Evaporation(Weatherer, Serializable):
                                  'frac_water': frac_water,
                                  'frac_lost': frac_lost,
                                  })
+        self._arrays.extend(['init_mass',
+                             'frac_lost'])
+        self._arrays.extend(self.array_types.keys())
 
     def prepare_for_model_run(self, sc):
         '''
@@ -107,7 +110,7 @@ class Evaporation(Weatherer, Serializable):
             # d_denom = np.repeat(d_denom, d_numer.shape[1], axis=1)
             # data['evap_decay_constant'][:] = -d_numer/d_denom
             if len(data['evap_decay_constant']) > 0:
-                data['evap_decay_constant'][:] = \
+                data['evap_decay_constant'][:, :len(vp)] = \
                     -(((data['area'] * f_diff).reshape(-1, 1) * K * vp) /
                       np.repeat((constants['gas_constant'] * water_temp *
                                  data['mol']).reshape(-1, 1), len(vp), axis=1))
@@ -143,22 +146,47 @@ class Evaporation(Weatherer, Serializable):
         - currently also sets 'density' in sc.weathering_data but may update
           this as we add more weatherers and perhaps density gets set elsewhere
         '''
-        if self.active and sc.num_released > 0:
+        if not self.active:
+            return
+        if sc.num_released == 0:
+            return
+
+        for substance, data in sc.itersubstancedata(self._arrays):
             mass_remain = \
-                self._exp_decay(sc['mass_components'],
-                                sc['evap_decay_constant'],
+                self._exp_decay(data['mass_components'],
+                                data['evap_decay_constant'],
                                 time_step)
 
             sc.weathering_data['evaporated'] += \
-                np.sum(sc['mass_components'][:, :] - mass_remain[:, :])
-            sc['mass_components'][:] = mass_remain
-            sc['mass'][:] = sc['mass_components'].sum(1)
-            self.logger.info('{0} - Amount Evaporated: {1}'.
+                np.sum(data['mass_components'][:, :] - mass_remain[:, :])
+            data['mass_components'][:] = mass_remain
+            data['mass'][:] = data['mass_components'].sum(1)
+            self.logger.info('{0} - Amount Evaporated for {1}: {2}'.
                              format(os.getpid(),
+                                    substance.name,
                                     sc.weathering_data['evaporated']))
 
             # add frac_lost
-            sc['frac_lost'][:] = 1 - sc['mass']/sc['init_mass']
+            data['frac_lost'][:] = 1 - data['mass']/data['init_mass']
+        sc.update_from_substancedata(self._arrays)
+#==============================================================================
+#         if self.active and sc.num_released > 0:
+#             mass_remain = \
+#                 self._exp_decay(sc['mass_components'],
+#                                 sc['evap_decay_constant'],
+#                                 time_step)
+# 
+#             sc.weathering_data['evaporated'] += \
+#                 np.sum(sc['mass_components'][:, :] - mass_remain[:, :])
+#             sc['mass_components'][:] = mass_remain
+#             sc['mass'][:] = sc['mass_components'].sum(1)
+#             self.logger.info('{0} - Amount Evaporated: {1}'.
+#                              format(os.getpid(),
+#                                     sc.weathering_data['evaporated']))
+# 
+#             # add frac_lost
+#             sc['frac_lost'][:] = 1 - sc['mass']/sc['init_mass']
+#==============================================================================
 
     def serialize(self, json_='webapi'):
         """
