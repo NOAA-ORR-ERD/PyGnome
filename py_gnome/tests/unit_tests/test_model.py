@@ -924,6 +924,50 @@ def test_staggered_spills_weathering(sample_model_fcn, delay):
         print sc.weathering_data
 
 
+@pytest.mark.parametrize(("s0", "s1"), [("ALAMO", "ALAMO"),
+                                        ("ALAMO", "AGUA DULCE")])
+def test_two_substance_spills_weathering(sample_model_fcn, s0, s1):
+    '''
+    only tests data arrays are correct and we don't end up with stale data
+    in substance_data structure of spill container. It models each substance
+    independently
+    '''
+    model = sample_model_weathering(sample_model_fcn, s0)
+    model.map = gnome.map.GnomeMap()    # make it all water
+    model.uncertain = False
+    rel_time = model.spills[0].get('release_time')
+    model.start_time = rel_time - timedelta(hours=1)
+    model.duration = timedelta(days=1)
+
+    et = floating_mass(substance=s1)
+    cs = point_line_release_spill(500, (0, 0, 0),
+                                  rel_time,
+                                  end_release_time=(rel_time +
+                                                    timedelta(hours=1)),
+                                  element_type=et,
+                                  amount=1,
+                                  units='tonnes')
+    model.spills += cs
+    model.water = Water()
+    model.environment += constant_wind(1., 0)
+    model.weatherers += [Evaporation(model.water,
+                                     model.environment[0]),
+                         Dispersion(),
+                         Burn(),
+                         Skimmer()]
+    # model.full_run()
+    for step in model:
+        for sc in model.spills.items():
+            sum_ = 0.0
+            for key in sc.weathering_data:
+                if 'avg_' != key[:4] and 'amount_released' != key:
+                    sum_ += sc.weathering_data[key]
+            assert abs(sum_ - sc.weathering_data['amount_released']) < 1.e-6
+
+        print "completed step {0}".format(step)
+        print sc.weathering_data
+
+
 def test_weathering_data_attr():
     '''
     weathering_data is initialized/written if we have weatherers
