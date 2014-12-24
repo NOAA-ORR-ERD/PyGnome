@@ -137,7 +137,7 @@ class Skimmer(Weatherer, Serializable):
                 data['mass'][mask] = data['mass_components'][mask, :].sum(1)
 
                 # update thickness
-                vol = data['mass']/substance.get_density()
+                vol = data['mass'][mask]/substance.get_density()
                 data['thickness'][mask] = vol/data['thickness'][mask]
 
                 sc.weathering_data['skimmed'] += rm_mass
