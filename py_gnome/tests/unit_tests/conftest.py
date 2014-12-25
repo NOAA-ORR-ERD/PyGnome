@@ -26,6 +26,7 @@ from gnome.model import Model
 from gnome.spill_container import SpillContainer
 
 from gnome.movers import SimpleMover
+from gnome.weatherers import Skimmer
 from gnome.utilities.remote_data import get_datafile
 
 
@@ -234,6 +235,11 @@ def get_testdata():
 
     data['nc'] = {'nc_output':
                   get_datafile(os.path.join(s_data, 'nc', 'test_output.nc'))}
+    data['lis'] = \
+        {'map': get_datafile(os.path.join(lis, 'LongIslandSoundMap.BNA')),
+         'cats_curr': get_datafile(os.path.join(lis, r"LI_tidesWAC.CUR")),
+         'cats_tide': get_datafile(os.path.join(lis, r"CLISShio.txt"))
+         }
     return data
 
 
@@ -524,7 +530,7 @@ def sample_model_weathering(sample_model_fcn, oil, temp=311.16):
     model.uncertain = False     # fixme: with uncertainty, copying spill fails!
     model.duration = timedelta(hours=4)
     et = gnome.spill.elements.floating_mass(substance=oil)
-    start_time = model.start_time + timedelta(hours=1)
+    start_time = model.start_time   # do not add a delay here
     end_time = start_time + timedelta(seconds=model.time_step*3)
     spill = gnome.spill.point_line_release_spill(10,
                                                  rel_pos,
