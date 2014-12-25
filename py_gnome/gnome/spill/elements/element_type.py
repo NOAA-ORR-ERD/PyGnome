@@ -225,18 +225,6 @@ class ElementType(Serializable):
         else:
             return json_
 
-    def __eq__(self, other):
-        '''
-        override for comparing 'substance' - we should check to see that the
-        substance attribute (OilProps) object is equal; however, this check
-        fails - need to investigate further
-        '''
-        # todo: fix/add equality check for 'substance'
-        #if self.attr_to_dict('substance') != other.attr_to_dict('substance'):
-        #    return False
-
-        return super(ElementType, self).__eq__(other)
-
 
 def floating(windage_range=(.01, .04),
              windage_persist=900,
