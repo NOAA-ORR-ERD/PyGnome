@@ -857,7 +857,11 @@ def test_contains_object(sample_model_fcn):
     movers = [m for m in model.movers]
 
     evaporation = Evaporation(model.water, model.environment[0])
-    dispersion, burn, skimmer = Dispersion(), Burn(), Skimmer()
+    dispersion, burn = Dispersion(), Burn()
+    skim_start = sp.get('release_time') + timedelta(hours=1)
+    skimmer = Skimmer(.5*sp.amount, units=sp.units, efficiency=0.3,
+                      active_start=skim_start,
+                      active_stop=skim_start + timedelta(hours=1))
     model.weatherers += [evaporation, dispersion, burn, skimmer]
 
     renderer = Renderer(images_dir='Test_images',
@@ -875,6 +879,18 @@ def test_contains_object(sample_model_fcn):
 
     for o in movers:
         assert model.contains_object(o.id)
+
+
+def make_skimmer(spill, delay_hours=1):
+    'make a skimmer for sample model tests'
+    rel_time = spill.get('release_time')
+    skim_start = rel_time + timedelta(hours=delay_hours)
+    amount = spill.amount
+    units = spill.units
+    skimmer = Skimmer(.5*amount, units=units, efficiency=0.3,
+                      active_start=skim_start,
+                      active_stop=skim_start + timedelta(hours=delay_hours))
+    return skimmer
 
 
 @pytest.mark.parametrize("delay", [timedelta(hours=0),
@@ -906,11 +922,12 @@ def test_staggered_spills_weathering(sample_model_fcn, delay):
     model.spills += cs
     model.water = Water()
     model.environment += constant_wind(1., 0)
+    skimmer = make_skimmer(model.spills[0])
     model.weatherers += [Evaporation(model.water,
                                      model.environment[0]),
                          Dispersion(),
                          Burn(),
-                         Skimmer()]
+                         skimmer]
     # model.full_run()
     for step in model:
         for sc in model.spills.items():
@@ -936,7 +953,6 @@ def test_two_substance_spills_weathering(sample_model_fcn, s0, s1):
     model.map = gnome.map.GnomeMap()    # make it all water
     model.uncertain = False
     rel_time = model.spills[0].get('release_time')
-    model.start_time = rel_time - timedelta(hours=1)
     model.duration = timedelta(days=1)
 
     et = floating_mass(substance=s1)
@@ -950,11 +966,12 @@ def test_two_substance_spills_weathering(sample_model_fcn, s0, s1):
     model.spills += cs
     model.water = Water()
     model.environment += constant_wind(1., 0)
+    skimmer = make_skimmer(model.spills[0], 2)
     model.weatherers += [Evaporation(model.water,
                                      model.environment[0]),
                          Dispersion(),
                          Burn(),
-                         Skimmer()]
+                         skimmer]
     # model.full_run()
     for step in model:
         for sc in model.spills.items():

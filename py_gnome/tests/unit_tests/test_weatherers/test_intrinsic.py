@@ -39,7 +39,6 @@ def data_arrays(num_elems=10):
 
 
 class TestFayGravityViscous:
-    ## fixme: why is this here? it's ot an intrisic? -- no biggie though
     spread = FayGravityViscous()
 
     def expected(self, init_vol, p_age, num_elems):
@@ -153,29 +152,12 @@ class TestFayGravityViscous:
 
 class TestIntrinsicProps:
     def test_init(self):
-        intrinsic = IntrinsicProps(water)
-        default_len = len(intrinsic.array_types)
-
-        intrinsic = IntrinsicProps(water,
-                                   {'area': area})
-        add_arrays = ('init_area', 'thickness', 'relative_bouyancy',
-                      'frac_coverage', 'area', 'age')
-        for key in add_arrays:
-            assert key in intrinsic.array_types
-
-        assert len(intrinsic.array_types) > default_len
-
-        intrinsic.update_array_types({})
-        assert 'density' in intrinsic.array_types
-        assert len(intrinsic.array_types) == default_len
+        IntrinsicProps(water)
 
     @pytest.mark.parametrize(("s0", "s1"), [("ALAMO", "ALAMO"),
                                             ("ALAMO", "AGUA DULCE")])
     def test_update_intrinsic_props(self, s0, s1):
-        arrays = {'area': area,
-                  'mol': mol}
-        intrinsic = IntrinsicProps(water, arrays)
-        arrays.update(intrinsic.array_types)
+        intrinsic = IntrinsicProps(water)
 
         rel_time = datetime.now().replace(microsecond=0)
         end_time = rel_time + timedelta(hours=1)
@@ -197,7 +179,7 @@ class TestIntrinsicProps:
                   ]
         sc = SpillContainer()
         sc.spills += spills
-        sc.prepare_for_model_run(arrays)
+        sc.prepare_for_model_run(intrinsic.array_types)
 
         # test initialization as well
         intrinsic.initialize(sc)

@@ -29,7 +29,7 @@ from ..conftest import sample_sc_release, sample_model_weathering
 water = Water()
 
 arrays = Evaporation().array_types
-intrinsic = IntrinsicProps(water, arrays)
+intrinsic = IntrinsicProps(water)
 arrays.update(intrinsic.array_types)
 
 
@@ -127,10 +127,7 @@ def test_full_run(sample_model_fcn, oil, temp, dump):
     model = sample_model_weathering(sample_model_fcn, oil, temp)
     model.environment += [Water(temp), constant_wind(1., 0)]
     model.weatherers += [Evaporation(model.environment[0],
-                                     model.environment[1]),
-                         Dispersion(),
-                         Burn(),
-                         Skimmer()]
+                                     model.environment[1])]
     released = 0
     for step in model:
         for sc in model.spills.items():

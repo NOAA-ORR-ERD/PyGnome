@@ -24,16 +24,10 @@ def model(sample_model, output_dir):
 
     model.cache_enabled = True
     model.uncertain = False
+    model.water = Water(311.15)
 
     print 'adding a Weatherer'
-    model.environment += [Water(311.15),
-                          constant_wind(1.0, 0.0)]
-    # figure out mid-run save for weathering_data attribute, then add this in
-    model.weatherers += [Evaporation(model.environment[-2],
-                                     model.environment[-1]),
-                         Dispersion(),
-                         Burn(),
-                         Skimmer()]
+    model.environment += constant_wind(1.0, 0.0)
 
     N = 10  # a line of ten points
     line_pos = np.zeros((N, 3), dtype=np.float64)
@@ -41,7 +35,7 @@ def model(sample_model, output_dir):
     line_pos[:, 1] = np.linspace(rel_start_pos[1], rel_end_pos[1], N)
 
     # print start_points
-    model.duration = timedelta(hours=2)
+    model.duration = timedelta(hours=6)
     end_time = model.start_time + timedelta(hours=1)
     et = floating_mass(substance='FUEL OIL NO.6')
     model.spills += point_line_release_spill(1000,
@@ -52,6 +46,20 @@ def model(sample_model, output_dir):
                                              amount=1000,
                                              units='kg',
                                              element_type=et)
+
+    # figure out mid-run save for weathering_data attribute, then add this in
+    rel_time = model.spills[0].get('release_time')
+    skim_start = rel_time + timedelta(hours=1)
+    amount = model.spills[0].amount
+    units = model.spills[0].units
+    skimmer = Skimmer(.5*amount, units=units, efficiency=0.3,
+                      active_start=skim_start,
+                      active_stop=skim_start + timedelta(hours=1))
+    model.weatherers += [Evaporation(model.water,
+                                     model.environment[-1]),
+                         Dispersion(),
+                         Burn(),
+                         skimmer]
 
     model.outputters += WeatheringOutput(output_dir=output_dir)
     model.rewind()

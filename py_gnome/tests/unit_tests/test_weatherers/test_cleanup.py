@@ -8,7 +8,6 @@ import numpy as np
 
 from gnome.environment import Water
 from gnome.weatherers.intrinsic import IntrinsicProps
-from gnome.array_types import area
 
 from gnome.weatherers import Skimmer
 from gnome.spill_container import SpillContainer
@@ -22,7 +21,6 @@ units = 'kg'    # leave as SI units
 
 water = Water()
 intrinsic = IntrinsicProps(water)
-intrinsic.update_array_types({'area': area})
 
 sc = SpillContainer()
 sc.spills += point_line_release_spill(10,
