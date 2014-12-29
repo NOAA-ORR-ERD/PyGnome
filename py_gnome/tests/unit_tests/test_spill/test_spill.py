@@ -504,8 +504,9 @@ class Test_point_line_release_spill:
                                       start_position=start_position,
                                       release_time=self.release_time,
                                       end_position=end_position,
-                                      end_release_time=self.release_time +
-                                                       timedelta(minutes=50))
+                                      end_release_time=self.release_time + timedelta(minutes=50),
+                                      amount=1000,
+                                      units='kg')
 
         # start before release
         time = self.release_time - timedelta(minutes=10)
@@ -513,7 +514,6 @@ class Test_point_line_release_spill:
         num_rel_per_min = 1  # release 50 particles in 50 minutes
         data_arrays = {}
 
-        # multiplier for varying the timestep
         mult = 0
         if not vary_timestep:
             mult = 1
@@ -536,6 +536,8 @@ class Test_point_line_release_spill:
                                                   var_delta_t.total_seconds(),
                                                   data_arrays, exp_num_rel)
             time += var_delta_t
+
+        assert data_arrays['mass'].sum() == sp.get_mass('kg')
 
         # all particles have been released
         assert data_arrays['positions'].shape == (sp.release.num_elements, 3)
