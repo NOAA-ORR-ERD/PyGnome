@@ -17,7 +17,6 @@ from gnome.utilities.inf_datetime import InfDateTime
 
 from gnome.array_types import mass, rise_vel, mass_components
 from gnome.spill.elements import (ElementType,
-                                  InitMassFromSpillAmount,
                                   InitRiseVelFromDist)
 
 from gnome.weatherers import Weatherer, HalfLifeWeatherer
@@ -27,20 +26,19 @@ arr_types = {'mass': mass,
              'rise_vel': rise_vel,
              'mass_components': mass_components,
              }
-initializers = [InitMassFromSpillAmount(),
-                InitRiseVelFromDist(),
-                ]
 oil = 'ALAMO'
 sc = sample_sc_release(5, (3., 6., 0.),
                        rel_time,
                        uncertain=False,
                        arr_types=arr_types,
-                       element_type=ElementType(initializers, substance=oil))
+                       element_type=ElementType([InitRiseVelFromDist()],
+                                                substance=oil))
 u_sc = sample_sc_release(5, (3., 6., 0.),
                          rel_time,
                          uncertain=True,
                          arr_types=arr_types,
-                         element_type=ElementType(initializers, substance=oil))
+                         element_type=ElementType([InitRiseVelFromDist()],
+                                                  substance=oil))
 secs_in_minute = 60
 
 

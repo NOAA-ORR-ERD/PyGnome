@@ -35,7 +35,8 @@ from ..conftest import mock_append_data_arrays
 # Used to mock SpillContainer functionality of creating/appending data_arrays
 # Only care about 'positions' array type for all spills, no need to define
 # and carry remaining numpy arrays
-arr_types = {'positions': gnome.array_types.positions}
+arr_types = {'positions': gnome.array_types.positions,
+             'mass': gnome.array_types.mass}
 
 
 @pytest.mark.parametrize(("element_type", "amount"), [(None, None),
@@ -55,16 +56,12 @@ def test_init(element_type, amount):
     if element_type is None:
         assert np.all(spill.get('windage_range') == (0.01, 0.04))
         assert (spill.get('windage_persist') == 900)
-
-        if amount is not None:
-            assert 'mass' in spill.get('array_types')
-            assert len(spill.get('initializers')) == 2
-        else:
-            assert len(spill.get('initializers')) == 1
+        assert len(spill.get('initializers')) == 1  # add windages
     else:
         assert len(spill.get('initializers')) == 0
 
     assert spill.name == 'Spill'
+    assert spill.get('release_duration') == timedelta(0)
 
 
 @pytest.mark.parametrize(("amount", "units"), [(10.0, 'm^3'),
@@ -230,6 +227,7 @@ class Test_point_line_release_spill:
                 np.all(release.start_position == release.end_position))
         assert (np.all(release.release_time == self.release_time) and
                 np.all(release.release_time == release.end_release_time))
+        assert sp.get('release_duration') == timedelta(0)
 
     def test_noparticles_model_run_after_release_time(self):
         """
@@ -292,6 +290,7 @@ class Test_point_line_release_spill:
         sp = point_line_release_spill(num_elements=self.num_elements,
                                       start_position=self.start_position,
                                       release_time=self.release_time)
+        assert sp.get('release_duration') == timedelta(0)
         timestep = 3600  # seconds
 
         # release all particles
@@ -333,6 +332,8 @@ class Test_point_line_release_spill:
                                       release_time=self.release_time,
                                       end_release_time=self.release_time +
                                                        timedelta(hours=10))
+
+        assert sp.get('release_duration') == timedelta(hours=10)
         timestep = 3600  # one hour in seconds
 
         """
@@ -413,6 +414,8 @@ class Test_point_line_release_spill:
                                       end_position=end_position,
                                       end_release_time=self.release_time +
                                                        timedelta(minutes=100))
+        assert sp.get('release_duration') == timedelta(minutes=100)
+
         timestep = 100 * 60
 
         # the full release over one time step

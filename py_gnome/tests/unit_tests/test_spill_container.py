@@ -19,12 +19,10 @@ from gnome.basic_types import (oil_status,
                                id_type)
 from gnome import array_types
 from gnome.spill.elements import (ElementType,
-                            InitMassFromSpillAmount,
                             InitWindages,
                             InitRiseVelFromDist,
                             InitRiseVelFromDropletSizeFromDist,
-                            floating,
-                            floating_mass)
+                            floating)
 
 from gnome.utilities.distributions import UniformDistribution
 
@@ -480,13 +478,11 @@ def test_ordered_collection_api():
 """ tests w/ element types set for two spills """
 oil = 'ALAMO'
 el0 = ElementType([InitWindages((0.02, 0.02), -1),
-                   InitMassFromSpillAmount(),
                    InitRiseVelFromDist(
                        distribution=UniformDistribution(low=1, high=10))
                    ], substance=oil)
 
 el1 = ElementType([InitWindages(),
-                   InitMassFromSpillAmount(),
                    InitRiseVelFromDist()], substance=oil)
 
 arr_types = {'windages': array_types.windages,
@@ -1126,7 +1122,7 @@ class TestSubstanceSpillsDataStructure():
                                            element_type=et),
                   Spill(Release(datetime.now(), 10),
                         amount=100, units='kg',
-                        element_type=floating_mass(substance='ALAMO')),
+                        element_type=floating(substance='ALAMO')),
                   Spill(Release(datetime.now(), 10),
                         element_type=floating(substance=et.substance))
                   ]
@@ -1165,12 +1161,12 @@ class TestSubstanceSpillsDataStructure():
         splls0 = [point_line_release_spill(100, (1, 1, 1),
                                            rel_time,
                                            end_release_time=end_time,
-                                           element_type=floating_mass(substance='ALAMO'),
+                                           element_type=floating(substance='ALAMO'),
                                            amount=100,
                                            units='kg'),
                   point_line_release_spill(50, (2, 2, 2),
                                            rel_time + timedelta(seconds=900),
-                                           element_type=floating_mass(substance='ALAMO'),
+                                           element_type=floating(substance='ALAMO'),
                                            amount=150,
                                            units='kg'),
                   ]
