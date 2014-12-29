@@ -168,41 +168,6 @@ class InitWindages(InitBaseClass, Serializable):
 # do following two classes work for a time release spill?
 
 
-class InitMassFromSpillAmount(InitBaseClass, Serializable):
-    """
-    Initialize the 'mass' array based on total mass or volume spilled
-    """
-
-    _state = copy.deepcopy(InitBaseClass._state)
-    _schema = base_schema.ObjType
-
-    def __init__(self):
-        """
-        update array_types
-        """
-        super(InitMassFromSpillAmount, self).__init__()
-        self.array_types.update({'mass': array_types.mass})
-        self.name = 'mass'
-        self.total_mass = None  # always in SI units
-
-    def _set_total_mass(self, spill, substance):
-        ''' set 'total_mass' property from spill since we only need to do this
-        once '''
-        if spill.get_mass('kg') is None:
-            self.total_mass = 0     # do we want to raise an error?
-        else:
-            self.total_mass = spill.get_mass('kg')
-
-    def initialize(self, num_new_particles, spill, data_arrays, substance):
-        # store total_mass - it doesn't change so store it locally. The
-        # windages are also tied to the spill
-        if self.total_mass is None:
-            self._set_total_mass(spill, substance)
-
-        data_arrays['mass'][-num_new_particles:] = (self.total_mass /
-                                                    spill.release.num_elements)
-
-
 class InitMassFromPlume(InitBaseClass, Serializable):
     """
     Initialize the 'mass' array based on mass flux from the plume spilled
