@@ -21,7 +21,7 @@ from oil_library.models import (ImportedRecord,
 
 def purge_old_records(session):
     oilobjs = (session.query(ImportedRecord)
-               .filter(ImportedRecord.custom == False))
+               .filter(ImportedRecord.custom is False))
 
     rowcount = 0
     for o in oilobjs:
@@ -122,7 +122,7 @@ def add_densities(oil, row_dict):
 def fix_weathering(kwargs):
     # The weathering field is defined as an evaporation percentage
     # so if there is no weathering, we default to 0.0%
-    if kwargs.get('weathering') == None:
+    if kwargs.get('weathering') is None:
         kwargs['weathering'] = '0e0'
 
 
