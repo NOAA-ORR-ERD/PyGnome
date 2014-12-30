@@ -132,6 +132,8 @@ class IntrinsicProps(AddLogger):
                             'viscosity': viscosity,
                             'mass_components': mass_components,
                             'mass': mass,
+                            # init volume of all particles released together
+                            'init_volume': init_volume,
                             'init_mass': init_mass,
                             'frac_water': frac_water,
                             'frac_lost': frac_lost,
@@ -228,6 +230,12 @@ class IntrinsicProps(AddLogger):
 
     def _init_new_particles(self, mask, data, substance):
         '''
+        initialize new particles released together in a given timestep
+
+        :param mask: mask gives only the new LEs in data arrays
+        :type mask: numpy bool array
+        :param data: dict containing numpy arrays
+        :param substance: OilProps object defining the substance spilled
         '''
         water_temp = self.water.get('temperature', 'K')
         data['density'][mask] = substance.get_density(water_temp)
@@ -256,15 +264,15 @@ class IntrinsicProps(AddLogger):
         # is an advanced indexing operation that makes a copy anyway
         # Also, init_volume is same for all these new LEs so just provide
         # a scalar value
-        volume_released = np.sum(data['init_mass'][mask] /
-                                 data['density'][mask], 0)
+        data['init_volume'][mask] = np.sum(data['init_mass'][mask] /
+                                           data['density'][mask], 0)
         data['init_area'][mask] = \
             self.spreading.init_area(self.water.get('kinematic_viscosity',
                                                     'square meter per second'),
-                                     volume_released,
+                                     data['init_volume'][mask][0],
                                      data['relative_bouyancy'][mask][0])
         data['area'][mask] = data['init_area'][mask]
-        data['thickness'][mask] = volume_released/data['area'][mask]
+        data['thickness'][mask] = data['init_volume'][mask]/data['area'][mask]
 
     def _update_old_particles(self, mask, data, substance):
         '''
@@ -287,10 +295,6 @@ class IntrinsicProps(AddLogger):
         # if prev_rel > 0:
         #    update density, viscosity .. etc
 
-        # at present water temp is fixed so substance's intial density can
-        # be obtained as follows
-        rho = substance.get_density(self.water.get('temperature', 'K'))
-
         # update self.spreading.thickness_limit based on type of substance
         # create 'frac_coverage' array and pass it in to scale area by it
         # update_area will only update the area for particles with
@@ -299,7 +303,7 @@ class IntrinsicProps(AddLogger):
             self.spreading.update_area(self.water.get('kinematic_viscosity',
                                                       'square meter per second'),
                                        data['init_area'][mask],
-                                       data['init_mass'][mask]/rho, # init_volume
+                                       data['init_volume'][mask],
                                        data['relative_bouyancy'][mask],
                                        data['age'][mask],
                                        data['thickness'][mask])
