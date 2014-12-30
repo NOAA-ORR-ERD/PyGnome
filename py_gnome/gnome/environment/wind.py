@@ -16,6 +16,7 @@ from hazpy import unit_conversion as uc
 
 from gnome.cy_gnome.cy_ossm_time import CyOSSMTime
 from gnome import basic_types
+
 # TODO: The name 'convert' is doubly defined as
 #       hazpy.unit_conversion.convert and...
 #       gnome.utilities.convert
@@ -25,6 +26,8 @@ from gnome.utilities import serializable
 from gnome.utilities.convert import (to_time_value_pair,
                                      tsformat,
                                      to_datetime_value_2d)
+from gnome.utilities.distributions import RayleighDistribution as rayleigh
+
 from gnome.persist.extend_colander import (DefaultTupleSchema,
                                            LocalDateTime,
                                            DatetimeValue2dArraySchema)
@@ -509,7 +512,7 @@ class Wind(Environment, serializable.Serializable):
 
         :param time: the time(s) you want the data for
         :type time: datetime object or sequence of datetime objects.
-        
+
         .. note:: It invokes get_timeseries(..) function
         '''
         data = self.get_timeseries(time, 'm/s', 'r-theta')
@@ -519,32 +522,42 @@ class Wind(Environment, serializable.Serializable):
         '''
             This function shifts the wind speed values in our time series
             based on a single parameter Rayleigh distribution method,
-            and scaled by a value in the range [0.0 ... 1.0].
-            From this scaled distribution method, we determine either an
-            upper uncertainty or a lower uncertainty multiplier.  Then we
-            shift our wind speed values based on it.
+            and scaled by a value in the range [0.0 ... 0.5].
+            This range represents a plus-or-minus percent of uncertainty that
+            the distribution function should calculate
 
-            delta = 0.5  # medium uncertainty
-            u(t_k) = (1 + delta * sqrt(2/pi)) * U_10(t_k)
-            l(t_k) = (1 - delta * sqrt(2/pi)) * U_10(t_k)
+            For each wind value in our time series:
+            - We assume it to be the average speed for that sample time
+            - We calculate its respective Rayleigh distribution mode (sigma).
+            - We determine either an upper percent uncertainty or a
+              lower percent uncertainty based on a passed in parameter.
+            - Using the Rayleigh Quantile method and our calculated percent,
+              we determine the wind speed that is just at or above the
+              fractional area under the Probability distribution.
+            - We assign the wind speed to its new calculated value.
 
             Since we are irreversibly changing the wind speed values,
             we should probably do this only once.
         '''
-        if (self.speed_uncertainty_scale <= 0.0 or
-                self.speed_uncertainty_scale > 1.0):
+        if up_or_down not in ('up', 'down'):
             return False
 
-        if up_or_down == 'up':
-            scale = (1 + self.speed_uncertainty_scale * np.sqrt(2 / np.pi))
-        elif up_or_down == 'down':
-            scale = (1 - self.speed_uncertainty_scale * np.sqrt(2 / np.pi))
-        else:
+        if (self.speed_uncertainty_scale <= 0.0 or
+                self.speed_uncertainty_scale > 0.5):
             return False
+        else:
+            percent_uncertainty = self.speed_uncertainty_scale
 
         time_series = self.get_timeseries()
+
         for tse in time_series:
-            tse['value'][0] *= scale
+            sigma = rayleigh.sigma_from_wind(tse['value'][0])
+            if up_or_down == 'up':
+                tse['value'][0] = rayleigh.quantile(0.5 + percent_uncertainty,
+                                                    sigma)
+            elif up_or_down == 'down':
+                tse['value'][0] = rayleigh.quantile(0.5 - percent_uncertainty,
+                                                    sigma)
 
         self.set_timeseries(time_series, self.units)
 
