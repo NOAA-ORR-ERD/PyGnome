@@ -42,7 +42,7 @@ class OilLibraryFile(object):
         '''
         print 'checking version header:', self.__version__
         if len(self.__version__) != 3:
-            raise Exception('Bad file header: did not find 3 fields ' \
+            raise Exception('Bad file header: did not find 3 fields '
                             'for version!!')
         elif self.__version__[-1] != 'adios':
             raise Exception('Bad file header: did not find product field!!')
@@ -84,21 +84,21 @@ Required:
   FILE\t\t\tan input file containing Oil Library table data'''
     parser = OptionParser(usage=usage)
     parser.add_option('-f', '--field',
-            dest='fields',
-            help='list of fields to be displayed',
-            metavar='Field1,...,FieldN')
+                      dest='fields',
+                      help='list of fields to be displayed',
+                      metavar='Field1,...,FieldN')
     parser.add_option('-v', '--verbose',
-            action='store_true', default=False,
-            dest='verbose',
-            help='verbose output')
+                      action='store_true', default=False,
+                      dest='verbose',
+                      help='verbose output')
     parser.add_option('-n', '--noprompt',
-            action='store_false', default=True,
-            dest='prompt',
-            help='do not prompt for the next row')
+                      action='store_false', default=True,
+                      dest='prompt',
+                      help='do not prompt for the next row')
     parser.add_option('-r', '--raw',
-            action='store_true', default=False,
-            dest='raw',
-            help='just display the raw row data')
+                      action='store_true', default=False,
+                      dest='raw',
+                      help='just display the raw row data')
     (options, args) = parser.parse_args()
 
     # open our OilLib file
@@ -118,7 +118,8 @@ Required:
 
         if options.verbose:
             print '-' * 50
-            print 'Number of Fields/Header Columns: %d/%d' % (len(r), fd.num_columns)
+            print ('Number of Fields/Header Columns: '
+                   '{0}/{1}'.format(len(r), fd.num_columns))
 
         if options.fields:
             fields = options.fields.split(',')

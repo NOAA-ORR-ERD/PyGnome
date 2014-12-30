@@ -10,7 +10,7 @@ from math import log, log10, exp, fabs
 
 import transaction
 
-from oil_library.models import (ImportedRecord, Oil,
+from oil_library.models import (ImportedRecord, Oil, Estimated,
                                 Density, KVis, Cut,
                                 SARAFraction, SARADensity,
                                 MolecularWeight)
@@ -28,6 +28,7 @@ def process_oils(session):
 def add_oil(record):
     print 'Estimations for {0}'.format(record.adios_oil_id)
     oil = Oil()
+    oil.estimated = Estimated()
 
     add_demographics(record, oil)
     add_densities(record, oil)
@@ -82,6 +83,7 @@ def add_densities(imported_rec, oil):
         d_0 = density_at_temperature(oil, 273.15 + 15)
 
         oil.api = (141.5 * 1000 / d_0) - 131.5
+        oil.estimated.api = True
     else:
         print ('Warning: no densities and no api for record {0}'
                .format(imported_rec.adios_oil_id))
@@ -93,6 +95,7 @@ def add_densities(imported_rec, oil):
         oil.densities.append(Density(kg_m_3=kg_m_3,
                                      ref_temp_k=ref_temp_k,
                                      weathering=0.0))
+        oil.estimated.densities = True
 
 
 def estimate_density_from_api(api):
@@ -490,46 +493,11 @@ def add_distillation_cut_boiling_point(imported_rec, oil):
         if imported_rec.asphaltene_content:
             mass_left -= imported_rec.asphaltene_content
 
-        prev_mass_frac = 0.0
+        accumulated_frac = 0.0
         for t_i, fraction in get_boiling_points_from_api(5, mass_left,
                                                          oil.api):
-            oil.cuts.append(Cut(fraction=prev_mass_frac + fraction,
-                                vapor_temp_k=t_i))
-            prev_mass_frac += fraction
-
-        pass
-
-
-def add_saturate_fractions(imported_rec, oil):
-    '''
-        (A) if these hold true:
-              - (i): oil library record contains summed mass fractions or
-                     weight (%) for the distillation cuts
-              - (ii): T(i) < 530K
-            then:
-              (Reference: CPPF, eq.s 3.77 and 3.78)
-              - f(sat, i) = (fmass(i) *
-                             (2.24 - 1.98 * SG(sat, i) - 0.009 * M(w, sat, i)))
-              - if f(sat, i) >= fmass(i):
-                  - f(sat, i) = fmass(i)
-              - else if f(sat, i) < 0:
-                  - f(sat, i) = 0
-            else if these hold true:
-              - (ii): T(i) >= 530K
-            then:
-              - f(sat, i) = fmass(i) / 2
-        (B) else if there were no measured mass fractions in the imported
-            record
-              - apply (A) except fmass(i) = 1/5 for all cuts
-    '''
-    pass
-
-
-def add_aromatic_fractions(imported_rec, oil):
-    '''
-        Reference: CPPF, eq.s 3.77 and 3.78
-    '''
-    pass
+            accumulated_frac += fraction
+            oil.cuts.append(Cut(fraction=accumulated_frac, vapor_temp_k=t_i))
 
 
 def add_molecular_weights(imported_rec, oil):
@@ -561,6 +529,51 @@ def get_aromatic_molecular_weight(vapor_temp):
         return (44.5 * (6.91 - log(1015.0 - vapor_temp))) ** (3. / 2.)
     else:
         return None
+
+
+def add_saturate_fractions(imported_rec, oil):
+    '''
+        (A) if these hold true:
+              - (i): oil library record contains summed mass fractions
+                     (Saturate and aromatic combined)
+                     or weight (%) for the distillation cuts
+              - (ii): T(i) < 530K
+            then:
+              (Reference: CPPF, eq.s 3.77 and 3.78)
+              - f(sat, i) = (fmass(i) *
+                             (2.24 - 1.98 * SG(sat, i) - 0.009 * M(w, sat, i)))
+              - if f(sat, i) >= fmass(i):
+                  - f(sat, i) = fmass(i)
+              - else if f(sat, i) < 0:
+                  - f(sat, i) = 0
+            else if these hold true:
+              - (ii): T(i) >= 530K
+            then:
+              - f(sat, i) = fmass(i) / 2
+        (B) else if there were no measured mass fractions in the imported
+            record
+              - apply (A) except fmass(i) = 1/5 for all cuts
+
+        dependent on:
+            - oil.molecular_weights[:].saturate
+    '''
+    if len(oil.cuts) == 5:
+        print 'oil {0.name}: possibly estimated cuts {0.cuts}'.format(oil)
+
+    for c in oil.cuts:
+        if c.vapor_temp_k < 530.0:
+            pass
+        elif c.vapor_temp_k >= 530.0:
+            pass
+        else:
+            print 'oil {0.name}: invalid vapor temperature {1}'.format(oil, c)
+
+
+def add_aromatic_fractions(imported_rec, oil):
+    '''
+        Reference: CPPF, eq.s 3.77 and 3.78
+    '''
+    pass
 
 
 def add_component_densities(imported_rec, oil):
