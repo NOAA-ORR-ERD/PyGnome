@@ -58,6 +58,7 @@ class OilLibraryFile(object):
         if len(line) > 0:
             row = unicode(str(line), encoding='utf_8',
                           errors='replace').split(self.field_delim)
+            row = [c.strip('"') for c in row]
             row = [c if len(c) > 0 else None for c in row]
         else:
             row = []
