@@ -13,7 +13,7 @@ Not sure at present if this needs to be serializable?
 import copy
 from math import log, exp
 
-from hazpy import unit_conversion as uc
+import unit_conversion as uc
 from .utilities import get_density, get_boiling_points_from_cuts, get_viscosity
 
 

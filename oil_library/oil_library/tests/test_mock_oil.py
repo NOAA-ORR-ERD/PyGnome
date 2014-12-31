@@ -5,7 +5,7 @@ from pprint import PrettyPrinter
 pp = PrettyPrinter(indent=2)
 
 import pytest
-from hazpy import unit_conversion as uc
+import unit_conversion as uc
 
 from oil_library import get_oil_props, get_oil
 from oil_library.mock_oil import sample_oil_to_mock_oil

@@ -5,7 +5,7 @@ the Wind object defines the Wind conditions for the spill
 import copy
 
 from colander import SchemaNode, Float, MappingSchema, drop, String, OneOf
-from hazpy import unit_conversion as uc
+import unit_conversion as uc
 
 from gnome.utilities import serializable
 from gnome.persist import base_schema
@@ -163,7 +163,7 @@ class Water(Environment, serializable.Serializable):
         val = getattr(self, attr)
         if unit is None or unit == self.units[attr]:
             # Note: salinity and sediment only have one units since we don't
-            # have any conversions for them in hazpy yet - revisit this per
+            # have any conversions for them in unit_conversion yet - revisit this per
             # requirements
             return val
 
