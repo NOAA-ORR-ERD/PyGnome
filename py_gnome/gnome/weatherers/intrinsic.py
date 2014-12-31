@@ -75,6 +75,8 @@ class FayGravityViscous(object):
                     relative_bouyancy,
                     age,
                     thickness,
+                    area,   # update only if thickness > thickness_lim
+                    frac_coverage=None,
                     out=None):
         '''
         Update area and stuff it in out array. This takes numpy arrays
@@ -85,7 +87,15 @@ class FayGravityViscous(object):
         Since this is for updating area, it assumes age > 0 for all elements.
         It is used inside IntrinsicProps and invoked for particles with age > 0
 
-        It only updates the area for particles with thickness > xxx 
+        It only updates the area for particles with thickness > xxx
+        Since the frac_coverage should only be applied to particles which are
+        updated, let's apply this in here.
+
+        todo: unsure if thickness check should be here or outside this object.
+        Since thickness limit is here, leave it for now, but maybe
+        eventually move thickness_limit to OilProps/make it property of
+        substance - say 'max_spreading_thickness', then move thickness check
+        and frac_coverage back to IntrinsicProps
         '''
         self._check_relative_bouyancy(relative_bouyancy)
         if np.any(age == 0):
@@ -98,15 +108,21 @@ class FayGravityViscous(object):
         # ADIOS 2 used 0.1 mm as a minimum average spillet thickness for crude
         # oil and heavy refined products and 0.01 mm for lighter refined
         # products. Use 0.1mm for now
-        out[:] = init_area
+        out[:] = area
         mask = thickness > self.thickness_limit  # units of meters
         if np.any(mask):
+            out[mask] = init_area[mask]
             dFay = (self.spreading_const[1]**2./16. *
                     (constants['gravity']*relative_bouyancy[mask] *
                      init_volume[mask]**2 /
                      np.sqrt(water_viscosity*age[mask])))
             dEddy = 0.033*age[mask]**(4./25)
             out[mask] += (dFay + dEddy) * age[mask]
+
+            # apply fraction coverage here so particles less than min thickness
+            # are not changed
+            if frac_coverage is not None:
+                out[mask] *= frac_coverage[mask]
 
         return out
 
@@ -289,7 +305,9 @@ class IntrinsicProps(AddLogger):
         # update self.spreading.thickness_limit based on type of substance
         # create 'frac_coverage' array and pass it in to scale area by it
         # update_area will only update the area for particles with
-        # thickness greater than some minimum thickness
+        # thickness greater than some minimum thickness and the frac_coverage
+        # is only applied to LEs whose area is updated. Elements below a min
+        # thickness should not be updated
         data['area'][mask] = \
             self.spreading.update_area(self.water.get('kinematic_viscosity',
                                                       'square meter per second'),
@@ -297,10 +315,11 @@ class IntrinsicProps(AddLogger):
                                        data['init_volume'][mask],
                                        data['relative_bouyancy'][mask],
                                        data['age'][mask],
-                                       data['thickness'][mask])
-        # apply fraction coverage here
+                                       data['thickness'][mask],
+                                       data['area'][mask],
+                                       data['frac_coverage'][mask])
+
         # update thickness per the new area
-        data['area'][mask] *= data['frac_coverage'][mask]
         data['thickness'][mask] = data['init_volume'][mask]/data['area'][mask]
 
     def _set_relative_bouyancy(self, rho_oil):

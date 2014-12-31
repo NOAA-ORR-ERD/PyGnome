@@ -9,7 +9,6 @@ import pytest
 from gnome.environment import Water, constants
 from gnome.weatherers.intrinsic import FayGravityViscous, IntrinsicProps
 from gnome.array_types import area, mol
-from gnome.spill.elements import floating
 from gnome.spill import point_line_release_spill
 from gnome.spill_container import SpillContainer
 
@@ -83,6 +82,7 @@ class TestFayGravityViscous:
                                     relative_bouyancy,
                                     age,
                                     thickness,
+                                    area,
                                     out=area)
         with pytest.raises(ValueError):
             'age must be > 0'
@@ -95,6 +95,7 @@ class TestFayGravityViscous:
                                     relative_bouyancy,
                                     age,
                                     thickness,
+                                    area,
                                     out=area)
 
     def test_values(self):
@@ -123,6 +124,7 @@ class TestFayGravityViscous:
                                 relative_bouyancy,
                                 age,
                                 thickness,
+                                area,
                                 out=area)
 
         assert all(area == p_area)
@@ -134,6 +136,7 @@ class TestFayGravityViscous:
         init_area[:] = self.spread.init_area(water_viscosity,
                                              sum(init_volume),
                                              relative_bouyancy)
+        area[:] = init_area     # initial value
 
         age[:] = 900
         thickness[[0, 2, 8]] = self.spread.thickness_limit
@@ -144,6 +147,7 @@ class TestFayGravityViscous:
                                 relative_bouyancy,
                                 age,
                                 thickness,
+                                area,
                                 out=area)
         mask = thickness > self.spread.thickness_limit
         assert np.all(area[mask] > init_area[mask])
