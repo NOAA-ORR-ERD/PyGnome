@@ -92,11 +92,8 @@ class TestSkimmer:
             if not self.skimmer.active:
                 assert sc.weathering_data['skimmed'] == amt_skimmed
             else:
-                if sum(sc['thickness'] > self.skimmer.thickness_lim) > 0:
-                    # check total amount removed at each timestep
-                    assert sc.weathering_data['skimmed'] > 0.0
-                else:
-                    print 'no LE has thickness > threshold'
+                # check total amount removed at each timestep
+                assert sc.weathering_data['skimmed'] > amt_skimmed
 
             self.skimmer.model_step_is_done(sc)
             sc.model_step_is_done()
@@ -104,8 +101,7 @@ class TestSkimmer:
             sc['age'][:] = sc['age'][:] + time_step
             model_time += timedelta(seconds=time_step)
 
-        if np.any(sc['thickness'] > self.skimmer.thickness_lim):
-            assert (spill_amount ==
-                    sc.weathering_data['skimmed'] + sc['mass'].sum())
-            assert (sc.weathering_data['skimmed']/self.skimmer.amount ==
-                    self.skimmer.efficiency)
+        assert (spill_amount ==
+                sc.weathering_data['skimmed'] + sc['mass'].sum())
+        assert (sc.weathering_data['skimmed']/self.skimmer.amount ==
+                self.skimmer.efficiency)
