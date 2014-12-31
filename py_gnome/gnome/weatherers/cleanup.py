@@ -129,22 +129,19 @@ class Skimmer(Weatherer, Serializable):
             return
 
         for substance, data in sc.itersubstancedata(self._arrays):
-            nc = substance.num_components
             rm_mass = (self._amount_removed(substance) * self.efficiency)
-            if rm_mass > data['mass'].sum():
-                self.logger.info('{0} - removing more mass {1} '
-                                 'than available {2}'.
+            frac_mass_left = 1 - (rm_mass / data['mass'].sum())
+            if frac_mass_left < 0.:
+                self.logger.info('{0} - removing more mass {1} than '
+                                 'available {2}, remove only remaining mass'.
                                  format(os.getpid(), rm_mass,
                                         data['mass'].sum()))
-            frac_mass_left = 1 - (rm_mass / data['mass'].sum())
+                frac_mass_left = 0.
+
             self.logger.info('{0} - frac_mass_left: {1}'.
                              format(os.getpid(), frac_mass_left))
             data['mass_components'][:, :] *= frac_mass_left
             data['mass'][:] = data['mass_components'][:, :].sum(1)
-
-            if np.any(data['mass_components'] < 0):
-                self.logger.info('{0} - mass_components < 0 found, {1}'.
-                                 format(os.getpid(), data['mass_components']))
 
             sc.weathering_data['skimmed'] += rm_mass
 
