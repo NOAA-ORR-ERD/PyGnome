@@ -209,6 +209,25 @@ class WeibullDistribution(Serializable):
         self._weibull(np_array)
 
 
+class RayleighDistribution():
+    @classmethod
+    def sigma_from_wind(cls, avg_speed):
+        return np.sqrt(2.0 / np.pi) * avg_speed
+
+    @classmethod
+    def pdf(cls, x, sigma):
+        return ((x / sigma ** 2.0) *
+                np.exp((-1.0 / 2.0) * (x ** 2.0 / sigma ** 2.0)))
+
+    @classmethod
+    def cdf(cls, x, sigma):
+        return 1.0 - np.exp((-1.0 / 2.0) * (x ** 2.0 / sigma ** 2.0))
+
+    @classmethod
+    def quantile(cls, f, sigma):
+        return (sigma * np.sqrt((-1.0 * np.log((1.0 - f) ** 2.0)) + 0j)).real
+
+
 if __name__ == '__main__':
     # generates TypeError
     #DistributionBase()

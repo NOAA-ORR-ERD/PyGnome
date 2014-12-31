@@ -20,7 +20,6 @@ from gnome.environment import Wind, Tide, Water
 from gnome.model import Model
 from gnome.persist import load
 from gnome.spill import point_line_release_spill
-from gnome.spill.elements import floating_mass
 from gnome.movers import RandomMover, WindMover, CatsMover, ComponentMover
 from gnome.weatherers import Evaporation
 from gnome.outputters import Renderer
@@ -84,7 +83,6 @@ def make_model(images_dir, uncertain=False):
     print 'adding a spill'
     start_position = (144.664166, 13.441944, 0.0)
     end_release_time = start_time + timedelta(hours=6)
-    et = floating_mass(substance='ALAMO')
     model.spills += \
         point_line_release_spill(num_elements=1000,
                                  start_position=start_position,
@@ -92,7 +90,7 @@ def make_model(images_dir, uncertain=False):
                                  end_release_time=end_release_time,
                                  amount=1000.0,
                                  units='kg',
-                                 element_type=et)
+                                 substance='ALAMO')
 
     # need a scenario for SimpleMover
     # model.movers += SimpleMover(velocity=(1.0, -1.0, 0.0))

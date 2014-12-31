@@ -7,10 +7,10 @@ the logic about where an when the elements are released
 """
 import copy
 from inspect import getmembers, ismethod
+from datetime import timedelta
 
 import numpy
 np = numpy
-from repoze.lru import lru_cache
 
 from hazpy import unit_conversion
 uc = unit_conversion
@@ -93,15 +93,12 @@ class Spill(serializable.Serializable):
         """
         self.release = release
         if element_type is None:
-            if amount is None:
-                # default element type sets substance='oil_conservative'
-                element_type = elements.floating(substance=substance)
-            else:
-                element_type = elements.floating_mass(substance=substance)
+            element_type = elements.floating(substance=substance)
 
         self.element_type = element_type
 
         self.on = on    # spill is active or not
+        self._rate = None
         self._units = None
         self.amount = amount
 
@@ -205,6 +202,37 @@ class Spill(serializable.Serializable):
 
             all_props.extend(i_props)
         return all_props
+
+    def _elem_mass(self, num_new_particles, current_time, time_step):
+        '''
+        get the mass of each element released in duration specified by
+        'time_step'
+        Function is only called if num_new_particles > 0 - no check is made
+        for this case
+        '''
+        # set 'mass' data array if amount is given
+        le_mass = 0.
+        _mass = self.get_mass('kg')
+
+        if _mass is not None:
+            rd_sec = self.get('release_duration').total_seconds()
+            if rd_sec == 0:
+                le_mass = _mass / self.get('num_elements')
+            else:
+                time_at_step_end = current_time + timedelta(seconds=time_step)
+                if self.get('release_time') > current_time:
+                    # first time_step in which particles are released
+                    time_step = (time_at_step_end -
+                                 self.get('release_time')).total_seconds()
+
+                if self.get('end_release_time') < time_at_step_end:
+                    time_step = (self.get('end_release_time') -
+                                 current_time).total_seconds()
+
+                _mass_in_ts = _mass/rd_sec * time_step
+                le_mass = _mass_in_ts / num_new_particles
+
+        return le_mass
 
     def contains_object(self, obj_id):
         for o in (self.element_type, self.release):
@@ -401,7 +429,6 @@ class Spill(serializable.Serializable):
         self._check_units(units)  # check validity before setting
         self._units = units
 
-    @lru_cache(2)
     def get_mass(self, units=None):
         '''
         Return the mass released during the spill.
@@ -499,6 +526,9 @@ class Spill(serializable.Serializable):
         the data_arrays for 'position' get initialized correctly by the release
         object: self.release.set_newparticle_positions()
 
+        If a Spill Amount is given, the Spill object also sets the 'mass' data
+        array; else 'mass' array remains '0'
+
         :param int num_new_particles: number of new particles that were added.
             Always greater than 0
         :param current_time: current time
@@ -520,6 +550,9 @@ class Spill(serializable.Serializable):
 
         self.release.set_newparticle_positions(num_new_particles, current_time,
                                                time_step, data_arrays)
+
+        data_arrays['mass'][-num_new_particles:] = \
+            self._elem_mass(num_new_particles, current_time, time_step)
 
         # set arrays that are spill specific - 'frac_coverage'
         if 'frac_coverage' in data_arrays:

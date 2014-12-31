@@ -453,8 +453,7 @@ def sample_sc_no_uncertainty():
               gnome.spill.point_line_release_spill(num_elements,
                               start_position,
                               release_time + timedelta(hours=1),
-                              end_position, end_release_time,
-                              amount=10, units='l'),
+                              end_position, end_release_time),
               ]
     sc.spills.add(spills)
     return sc
@@ -529,8 +528,8 @@ def sample_model_weathering(sample_model_fcn, oil, temp=311.16):
     'update model the same way for multiple tests'
     model.uncertain = False     # fixme: with uncertainty, copying spill fails!
     model.duration = timedelta(hours=4)
-    et = gnome.spill.elements.floating_mass(substance=oil)
-    start_time = model.start_time   # do not add a delay here
+    et = gnome.spill.elements.floating(substance=oil)
+    start_time = model.start_time + timedelta(hours=1)
     end_time = start_time + timedelta(seconds=model.time_step*3)
     spill = gnome.spill.point_line_release_spill(10,
                                                  rel_pos,

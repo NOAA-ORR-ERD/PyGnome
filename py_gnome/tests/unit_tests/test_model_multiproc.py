@@ -61,14 +61,14 @@ def make_model(uncertain=False,
 
     print 'adding a wind mover:'
     series = np.zeros((5, ), dtype=datetime_value_2d)
-    series[0] = (start_time, (10, 45))
-    series[1] = (start_time + timedelta(hours=18), (10, 90))
-    series[2] = (start_time + timedelta(hours=30), (10, 135))
-    series[3] = (start_time + timedelta(hours=42), (10, 180))
-    series[4] = (start_time + timedelta(hours=54), (10, 225))
+    series[0] = (start_time, (20, 45))
+    series[1] = (start_time + timedelta(hours=18), (20, 90))
+    series[2] = (start_time + timedelta(hours=30), (20, 135))
+    series[3] = (start_time + timedelta(hours=42), (20, 180))
+    series[4] = (start_time + timedelta(hours=54), (20, 225))
 
     wind = Wind(timeseries=series, units='m/s',
-                speed_uncertainty_scale=0.5)
+                speed_uncertainty_scale=0.05)
     model.movers += WindMover(wind)
 
     print 'adding a cats mover:'
@@ -152,14 +152,16 @@ def test_uncertainty_array_indexing():
 
     print '\nGetting time & spill values for just the (down, down) model:'
     res = model_broadcaster.cmd('get_wind_timeseries', {}, ('down', 'down'))
-    assert np.allclose([r[0] for r in res], 6.010577)
+    assert np.allclose([r[0] for r in res], 17.449237)
 
     res = model_broadcaster.cmd('get_spill_amounts', {}, ('down', 'down'))
     assert np.isclose(res[0], 333.33333)
 
     print '\nGetting time & spill values for just the (up, up) model:'
     res = model_broadcaster.cmd('get_wind_timeseries', {}, ('up', 'up'))
-    assert np.allclose([r[0] for r in res], 13.989423)
+    print 'get_wind_timeseries:'
+    pp.pprint(res)
+    assert np.allclose([r[0] for r in res], 20.166224)
 
     res = model_broadcaster.cmd('get_spill_amounts', {}, ('up', 'up'))
     assert np.isclose(res[0], 1666.66666)

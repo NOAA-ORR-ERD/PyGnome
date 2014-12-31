@@ -36,6 +36,7 @@ class TestRelease:
         assert rel.num_elements == 0
         assert rel.release_time == self.rel_time
         assert rel.start_time_invalid is None
+        assert rel.release_duration == timedelta(0)
 
     @pytest.mark.parametrize("curr_time", [rel_time,
                                            rel_time - timedelta(seconds=1),

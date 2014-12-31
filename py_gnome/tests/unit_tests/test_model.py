@@ -22,7 +22,7 @@ from gnome.environment import Wind, Tide, constant_wind, Water
 from gnome.model import Model
 
 from gnome.spill import Spill, SpatialRelease, point_line_release_spill
-from gnome.spill.elements import floating, floating_mass
+from gnome.spill.elements import floating
 
 from gnome.movers import SimpleMover, RandomMover, WindMover, CatsMover
 
@@ -844,7 +844,7 @@ def test_contains_object(sample_model_fcn):
     model.water = water
     model.environment += wind
 
-    et = floating_mass(substance=model.spills[0].get('substance').name)
+    et = floating(substance=model.spills[0].get('substance').name)
     sp = point_line_release_spill(500, (0, 0, 0),
                                   rel_time + timedelta(hours=1),
                                   element_type=et,
@@ -911,7 +911,7 @@ def test_staggered_spills_weathering(sample_model_fcn, delay):
     model.start_time = rel_time - timedelta(hours=1)
     model.duration = timedelta(days=1)
 
-    et = floating_mass(substance=model.spills[0].get('substance').name)
+    et = floating(substance=model.spills[0].get('substance').name)
     cs = point_line_release_spill(500, (0, 0, 0),
                                   rel_time + delay,
                                   end_release_time=(rel_time + delay +
@@ -955,7 +955,7 @@ def test_two_substance_spills_weathering(sample_model_fcn, s0, s1):
     rel_time = model.spills[0].get('release_time')
     model.duration = timedelta(days=1)
 
-    et = floating_mass(substance=s1)
+    et = floating(substance=s1)
     cs = point_line_release_spill(500, (0, 0, 0),
                                   rel_time,
                                   end_release_time=(rel_time +
@@ -1009,7 +1009,6 @@ def test_weathering_data_attr():
     # use different element_type and initializers for both spills
     s[0].amount = 10.0
     s[0].units = 'kg'
-    s[0].element_type = floating_mass()
     model.rewind()
     model.step()
     for sc in model.spills.items():
@@ -1018,7 +1017,6 @@ def test_weathering_data_attr():
 
     s[1].amount = 5.0
     s[1].units = 'kg'
-    s[1].element_type = floating_mass()
     model.rewind()
     exp_rel = 0.0
     for ix in range(2):

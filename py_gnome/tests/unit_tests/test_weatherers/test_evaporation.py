@@ -15,7 +15,7 @@ from gnome.weatherers import (Evaporation,
                               Dispersion,
                               IntrinsicProps)
 from gnome.outputters import WeatheringOutput
-from gnome.spill.elements import floating_mass
+from gnome.spill.elements import floating
 from gnome.array_types import (mass_components,
                                windages,
                                thickness,
@@ -41,7 +41,7 @@ def test_evaporation(oil, temp, num_elems, on):
     '''
     still working on tests ..
     '''
-    et = floating_mass(substance=oil)
+    et = floating(substance=oil)
     sc = sample_sc_release(num_elements=num_elems,
                            element_type=et,
                            arr_types=arrays)

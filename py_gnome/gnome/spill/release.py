@@ -180,6 +180,15 @@ class Release(object):
 
         return serial
 
+    @property
+    def release_duration(self):
+        '''
+        returns a timedelta object defining the time over which the particles
+        are released. The default is 0; derived classes like PointLineRelease
+        must over-ride
+        '''
+        return timedelta(0)
+
     @classmethod
     def deserialize(cls, json_):
         schema = cls._schema(json_['json_'])
@@ -301,6 +310,13 @@ class PointLineRelease(Release, Serializable):
                 'end_position={0.end_position!r}, '
                 'end_release_time={0.end_release_time!r}'
                 ')'.format(self))
+
+    @property
+    def release_duration(self):
+        '''
+        duration over which particles are released
+        '''
+        return self.end_release_time - self.release_time
 
     @property
     def end_position(self):

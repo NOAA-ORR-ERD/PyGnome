@@ -9,7 +9,7 @@ import pytest
 from gnome.environment import Water, constants
 from gnome.weatherers.intrinsic import FayGravityViscous, IntrinsicProps
 from gnome.array_types import area, mol
-from gnome.spill.elements import floating_mass
+from gnome.spill.elements import floating
 from gnome.spill import point_line_release_spill
 from gnome.spill_container import SpillContainer
 
@@ -161,19 +161,17 @@ class TestIntrinsicProps:
 
         rel_time = datetime.now().replace(microsecond=0)
         end_time = rel_time + timedelta(hours=1)
-        et0 = floating_mass(substance=s0)
-        et1 = floating_mass(substance=s1)
         spills = [point_line_release_spill(10,
                                            (0, 0, 0),
                                            rel_time,
                                            end_release_time=end_time,
-                                           element_type=et0,
                                            amount=100,
-                                           units='kg'),
+                                           units='kg',
+                                           substance=s0),
                   point_line_release_spill(5,
                                            (0, 0, 0),
                                            rel_time + timedelta(hours=.25),
-                                           element_type=et1,
+                                           substance=s1,
                                            amount=100,
                                            units='kg')
                   ]
