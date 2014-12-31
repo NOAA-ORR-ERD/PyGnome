@@ -16,7 +16,6 @@ from gnome.array_types import (density,
                                area,
                                mass,
                                frac_coverage,
-                               mol,
                                thickness,
                                frac_water,
                                frac_lost,
@@ -142,8 +141,7 @@ class IntrinsicProps(AddLogger):
                             'relative_bouyancy': relative_bouyancy,
                             'frac_coverage': frac_coverage,
                             'thickness': thickness,
-                            'age': age,
-                            'mol': mol}
+                            'age': age}
         # following used to update viscosity
         self.visc_curvfit_param = 1.5e3     # units are sec^0.5 / m
         self.visc_f_ref = 0.84
@@ -218,13 +216,6 @@ class IntrinsicProps(AddLogger):
                 self._init_new_particles(new_LEs_mask, data, substance)
             if sum(~new_LEs_mask) > 0:
                 self._update_old_particles(~new_LEs_mask, data, substance)
-
-            # set/update mols -- happens the same way for new or old particles
-            # - 'mass_components' are already set
-            if 'mol' in data:
-                mw = substance.molecular_weight
-                data['mol'][:] = \
-                    np.sum(data['mass_components'][:, :len(mw)]/mw, 1)
 
         sc.update_from_substancedata(arrays)
 

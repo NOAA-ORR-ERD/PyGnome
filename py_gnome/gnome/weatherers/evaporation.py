@@ -98,12 +98,17 @@ class Evaporation(Weatherer, Serializable):
 
         # A more verbose description of the equation:
         # -------------------------------------------
-        # d_numer = (data['area'] * f_diff).reshape(-1, 1) * K * vp
+        # d_numer = -(data['area'] * f_diff).reshape(-1, 1) * K * vp
         # d_denom = (constants['gas_constant'] * water_temp *
         #            data['mol']).reshape(-1, 1)
         # d_denom = np.repeat(d_denom, d_numer.shape[1], axis=1)
-        # data['evap_decay_constant'][:] = -d_numer/d_denom
+        # data['evap_decay_constant'][:] = d_numer/d_denom
         if len(data['evap_decay_constant']) > 0:
+            # set/update mols -- happens the same way for new or old particles
+            mw = substance.molecular_weight
+            data['mol'][:] = \
+                np.sum(data['mass_components'][:, :len(mw)]/mw, 1)
+
             data['evap_decay_constant'][:, :len(vp)] = \
                 -(((data['area'] * f_diff).reshape(-1, 1) * K * vp) /
                   np.repeat((constants['gas_constant'] * water_temp *
@@ -113,6 +118,10 @@ class Evaporation(Weatherer, Serializable):
             inwater = data['status_codes'] == oil_status.in_water
             data['evap_decay_constant'][~inwater, :len(vp)] = 0
 
+            self.logger.info('{0} - Max decay: {1}, Min decay: {2}'.
+                             format(os.getpid(),
+                                    np.max(data['evap_decay_constant']),
+                                    np.min(data['evap_decay_constant'])))
         if np.any(data['evap_decay_constant'] > 0.0):
             raise ValueError("Error in Evaporation routine. One of the"
                              " exponential decay constant is positive")

@@ -4,6 +4,7 @@ add these as weatherers
 '''
 from datetime import timedelta
 import copy
+import os
 
 import numpy as np
 from gnome.weatherers import Weatherer
@@ -111,6 +112,8 @@ class Skimmer(Weatherer, Serializable):
             rm_vol = uc.convert('Volume', self.units, 'm^3', amount)
             rm_mass = substance.get_density() * rm_vol
 
+        self.logger.info('{0} - Amount skimmed before efficiency: {1}'.
+                         format(os.getpid(), rm_mass))
         return rm_mass
 
     def weather_elements(self, sc, time_step, model_time):
@@ -128,19 +131,22 @@ class Skimmer(Weatherer, Serializable):
         for substance, data in sc.itersubstancedata(self._arrays):
             nc = substance.num_components
             rm_mass = (self._amount_removed(substance) * self.efficiency)
-            mask = data['thickness'] > self.thickness_lim
+            if rm_mass > data['mass'].sum():
+                self.logger.info('{0} - removing more mass {1} '
+                                 'than available {2}'.
+                                 format(os.getpid(), rm_mass,
+                                        data['mass'].sum()))
+            frac_mass_left = 1 - (rm_mass / data['mass'].sum())
+            self.logger.info('{0} - frac_mass_left: {1}'.
+                             format(os.getpid(), frac_mass_left))
+            data['mass_components'][:, :] *= frac_mass_left
+            data['mass'][:] = data['mass_components'][:, :].sum(1)
 
-            if sum(mask) > 0:
-                'only remove mass if any elements > 2mm thickness'
-                rm_mass_per_comp = rm_mass/sum(mask)/nc
-                data['mass_components'][mask, :nc] -= rm_mass_per_comp
-                data['mass'][mask] = data['mass_components'][mask, :].sum(1)
+            if np.any(data['mass_components'] < 0):
+                self.logger.info('{0} - mass_components < 0 found, {1}'.
+                                 format(os.getpid(), data['mass_components']))
 
-                # update thickness
-                vol = data['mass'][mask]/substance.get_density()
-                data['thickness'][mask] = vol/data['thickness'][mask]
-
-                sc.weathering_data['skimmed'] += rm_mass
+            sc.weathering_data['skimmed'] += rm_mass
 
         sc.update_from_substancedata(self._arrays)
 
