@@ -299,7 +299,9 @@ class IntrinsicProps(AddLogger):
                                        data['age'][mask],
                                        data['thickness'][mask])
         # apply fraction coverage here
+        # update thickness per the new area
         data['area'][mask] *= data['frac_coverage'][mask]
+        data['thickness'][mask] = data['init_volume'][mask]/data['area'][mask]
 
     def _set_relative_bouyancy(self, rho_oil):
         '''

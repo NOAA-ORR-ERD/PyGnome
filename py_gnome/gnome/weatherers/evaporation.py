@@ -7,7 +7,6 @@ import os
 import numpy as np
 
 from gnome.array_types import (mass_components,
-                               thickness,
                                mol,
                                evap_decay_constant,
                                area,

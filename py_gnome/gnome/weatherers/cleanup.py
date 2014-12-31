@@ -35,7 +35,6 @@ class Skimmer(Weatherer, Serializable):
         self.amount = amount
         self.units = units
         self.efficiency = efficiency
-        self.thickness_lim = 0.002
 
         super(Skimmer, self).__init__(**kwargs)
 
@@ -120,7 +119,6 @@ class Skimmer(Weatherer, Serializable):
         '''
         Assumes there is only ever 1 substance being modeled!
         remove mass equally from all elements and all components
-        with thickness > 2mm?
         '''
         if not self.active:
             return
