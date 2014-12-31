@@ -13,6 +13,7 @@ from oil_library.mock_oil import sample_oil_to_mock_oil
 from oil_library.oil_props import OilProps
 
 
+
 # Some standard oils - scope is module level, non-public
 # create mock_oil objects instead of dict - we always want the same instance
 # of mock_oil object for say 'oil_conservative' otherwise equality fails

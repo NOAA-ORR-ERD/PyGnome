@@ -12,9 +12,19 @@ requirements:
     - netcdf4
     - cython
   run:
+    - oil_library
     - python
+    - pytest
+    - scipy
     - numpy
     - netcdf4
+    - colander
+    - pil
+    - pyzmq
+    - repoze.lru
+    - six
+    - geojson
+
 
 about:
   home: https://github.com/NOAA-ORR-ERD/PyGnome

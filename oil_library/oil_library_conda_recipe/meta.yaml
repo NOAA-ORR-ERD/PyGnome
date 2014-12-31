@@ -1,5 +1,5 @@
 package:
-  name: OilLibrary
+  name: oil_library
   version: 0.0
 
 # no source -- source is local
@@ -7,9 +7,23 @@ package:
 requirements:
   build:
     - python
+    - numpy
     - setuptools
+    - sqlalchemy
+    - transaction
+    - zope.sqlalchemy
+    - awesome-slugify
+    - unit_conversion
+    - pytest
   run:
+    - numpy
     - python
+    - sqlalchemy
+    - transaction
+    - zope.sqlalchemy
+    - awesome-slugify
+    - pytest
+    - unit_conversion
 
 about:
   home: https://github.com/NOAA-ORR-ERD/PyGnome
