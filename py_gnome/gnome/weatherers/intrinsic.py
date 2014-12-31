@@ -285,7 +285,8 @@ class IntrinsicProps(AddLogger):
         '''
         update density, area
         '''
-        # update density/viscosity/area for previously released elements
+        # update density/viscosity/relative_bouyance/area for previously
+        # released elements
 
         # following implementation results in an extra array called
         # fw_d_fref but easy to read
