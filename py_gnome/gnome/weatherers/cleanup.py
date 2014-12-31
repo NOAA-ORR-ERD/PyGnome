@@ -171,7 +171,7 @@ class Burn(Weatherer, Serializable):
                 data['mass_components'] = mass_remain
                 data['mass'][:] = data['mass_components'].sum(1)
 
-        sc.update_from_substancedata(self._arrays)
+            sc.update_from_substancedata(self._arrays)
 
 
 class Dispersion(Weatherer, Serializable):
@@ -194,4 +194,4 @@ class Dispersion(Weatherer, Serializable):
                 data['mass_components'] = mass_remain
                 data['mass'][:] = data['mass_components'].sum(1)
 
-        sc.update_from_substancedata(self._arrays)
+            sc.update_from_substancedata(self._arrays)
