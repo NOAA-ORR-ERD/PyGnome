@@ -694,7 +694,7 @@ class Model(Serializable):
         '''
         return self.step()
 
-    def full_run(self, rewind=True, logger=False):
+    def full_run(self, rewind=True):
         '''
         Do a full run of the model.
 
