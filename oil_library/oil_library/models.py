@@ -376,6 +376,21 @@ class Estimated(Base):
     name = Column(Boolean, default=False)
     api = Column(Boolean, default=False)
     densities = Column(Boolean, default=False)
+    viscosities = Column(Boolean, default=False)
+    oil_water_interfacial_tension_n_m = Column(Boolean, default=False)
+    oil_water_interfacial_tension_ref_temp_k = Column(Boolean, default=False)
+    pour_point_min_k = Column(Boolean, default=False)
+    pour_point_max_k = Column(Boolean, default=False)
+    flash_point_min_k = Column(Boolean, default=False)
+    flash_point_max_k = Column(Boolean, default=False)
+    emulsion_water_fraction_max = Column(Boolean, default=False)
+    sara_fractions = Column(Boolean, default=True)
+    bullwinkle_fraction = Column(Boolean, default=False)
+    adhesion_kg_m_2 = Column(Boolean, default=False)
+    sulphur_fraction = Column(Boolean, default=False)
+    soluability = Column(Boolean, default=False)
+    cuts = Column(Boolean, default=False)
+    molecular_weights = Column(Boolean, default=True)
 
     # relationship fields
     oil = relationship('Oil', backref='estimated', uselist=False)
@@ -409,9 +424,11 @@ class Oil(Base):
     flash_point_min_k = Column(Float(53))
     flash_point_max_k = Column(Float(53))
     emulsion_water_fraction_max = Column(Float(53))
+    bullwinkle_time = Column(Float(53))
     bullwinkle_fraction = Column(Float(53))
     adhesion_kg_m_2 = Column(Float(53))
     sulphur_fraction = Column(Float(53))
+    soluability = Column(Float(53))
 
     categories = relationship('Category', secondary=oil_to_category,
                               backref='oils')
