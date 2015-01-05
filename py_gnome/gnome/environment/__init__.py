@@ -22,9 +22,13 @@ in the code, implicitly assuming the units are SI and untouched.
 '''
 units = {'gas_constant': 'J/(K mol)',
          'pressure': 'Pa',
+         'min emul drop diameter': 'm',
+         'max emul drop diameter': 'm',
          'acceleration': 'm/s^2'}
 constants = {'gas_constant': 8.314,
              'atmos_pressure': 101325.0,
+             'drop_min': 1.0e-6,
+             'drop_max': 1.0e-5,
              #'g': 9.80665, # why not 6 sig figs?
              'gravity': 9.80665, # I like a longer name ;-)
              }
