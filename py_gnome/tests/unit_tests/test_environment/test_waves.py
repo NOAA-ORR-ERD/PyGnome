@@ -106,8 +106,8 @@ def test_psuedo_wind(U):
 @pytest.mark.parametrize("U", [0.0, 1.0, 2.0, 2.99, 3.0, 4.0, 8.0, 16.0, 32.0, 200.0])
 def test_whitecap_fraction(U):
     """
-    This should reverse the wave height computation
-    at least for fetch-unlimited
+    Fraction whitcapping -- doesn't really check values
+    but should catch gross errors!
     """
     w = waves.Waves(test_wind_5, default_water)
 
@@ -118,10 +118,8 @@ def test_whitecap_fraction(U):
     assert f >= 0.0
     assert f <= 1.0
 
-    if U < 3.0:
-        assert f == 0.0
-
-    ##fixme: add a value check???
+    if U == 4.0:
+        assert round(f, 8) == round(0.05 / 3.85, 8)
 
 
 @pytest.mark.parametrize("U", [0.0, 1.0, 2.0, 3.0, 4.0, 8.0, 16.0, 32.0])

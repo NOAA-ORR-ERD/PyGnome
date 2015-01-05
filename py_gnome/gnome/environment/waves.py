@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 """
-the waves environment object.
+The waves environment object.
 
 Computes the wave hight and percent wave breaking
 
@@ -105,7 +105,9 @@ class Waves(environment.Environment, serializable.Serializable):
 
         Hrms = 0.707*H
     
-        return Hrms
+        # arbitrary limit at 30 m -- about the largest waves recorded
+        # fixme -- this really depends on water depth -- should take that into account?
+        return Hrms if Hrms < 30.0 else 30.0
 
     def comp_psuedo_wind(self, H):
         """
@@ -121,7 +123,6 @@ class Waves(environment.Environment, serializable.Serializable):
         ##U_h = 2.0286*g*sqrt(H/g) # Bill's version
         U_h = sqrt(g * H / 0.243)
         if U_h < 4.433049525859078: # check if low wind case
-            #print "low wind case"
             U_h = (U_h/0.71)**0.813008
         return U_h
 
@@ -130,18 +131,33 @@ class Waves(environment.Environment, serializable.Serializable):
         compute the white capping fraction
 
         This and wave height drives dispersion
+
+        This based on the formula in:
+        Lehr and Simecek-Beatty
+        The Relation of Langmuir Circulation Processes to the Standard Oil Spill Spreading, Dispersion and Transport Algorithms
+        Spill Sci. and Tech. Bull, 6:247-253 (2000)
+        (maybe typo -- didn't match)
+
+        Should look in:  Ocean Waves Breaking and Marine Aerosol Fluxes
+                         By Stanislaw R. Massel
+
         """
 
-        ## fixme -- smooth this out toward zero?
-        ## disontinuity at 3 m/s at about 1.5%
-        if U < 3.0: # m/s
-            fw = 0.0
+        ## Monahan(JPO, 1971) time constant characterizing exponential whitecap decay.
+        ## The saltwater value for   is 3.85 sec while the freshwater value is 2.54 sec.
+        #  interpolate with salinity:
+        Tm = 0.03742857*self.water.salinity + 2.54
+        
+        if U < 4.0: # m/s
+            ## linear fit from 0 to the 4m/s value from Ding and Farmer
+            ## maybe should be a exponential / quadratic fit?
+            ## or zero less than 3, then a sharp increase to 4m/s?
+            fw = (0.0125*U) / Tm
         else:
-            fw = 0.5 * (0.01*U + 0.01) # Ding and Farmer (JPO 1994)
+            fw = (0.01*U + 0.01) / Tm # Ding and Farmer (JPO 1994)
 
-        if fw > 1.0: # only with U > 200m/s!
-            fw = 1.0
-        return fw / 3.85 # Ding and Farmer time constant
+        return fw if fw <= 1.0 else 1.0 # only with U > 200m/s!
+
 
     def comp_period(self, U):
         """
