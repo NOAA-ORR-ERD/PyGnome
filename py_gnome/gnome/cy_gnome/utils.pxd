@@ -37,6 +37,7 @@ cdef extern from "OSSMTimeValue_c.h":
         OSErr   ReadTimeValues (char *, short, short)
         void    SetTimeValueHandle(TimeValuePairH)    # sets all time values 
         TimeValuePairH GetTimeValueHandle()
+        TimeValuePairH  CalculateRunningAverage(long pastHoursToAverage)	
         short   GetUserUnits()
         void    SetUserUnits(short)
         void    Dispose()
@@ -78,4 +79,7 @@ cdef extern from "ShioTimeValue_c.h":
         OSErr       GetConvertedHeightValue(Seconds  , VelocityRec *)
         OSErr       GetProgressiveWaveValue(Seconds &, VelocityRec *)
 
+cdef extern from "Weatherers_c.h":
+    #OSErr emulsify(int n, unsigned long step_len, double *frac_water, double *interfacial_area, double *frac_evap, double *droplet_diameter, unsigned long *age, unsigned long *bulltime, double k_emul, unsigned long emul_time, double emul_C, double S_max, double Y_max, double drop_max)
+    OSErr emulsify(int n, unsigned long step_len, double *frac_water, double *interfacial_area, double *frac_evap, double *droplet_diameter, unsigned long *age, double *bulltime, double k_emul, double emul_time, double emul_C, double S_max, double Y_max, double drop_max)
     

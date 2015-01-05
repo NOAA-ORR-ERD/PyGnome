@@ -10,7 +10,7 @@ import transaction
 
 from slugify import slugify_filename
 
-from oil_library.models import (ImportedRecord,
+from oil_library.models import (ImportedRecord, Oil,
                                 Synonym,
                                 Density,
                                 KVis,
@@ -20,8 +20,16 @@ from oil_library.models import (ImportedRecord,
 
 
 def purge_old_records(session):
+    imported_rowcount = purge_imported_records(session)
+    oil_rowcount = purge_oil_records(session)
+
+    transaction.commit()
+    return imported_rowcount, oil_rowcount
+
+
+def purge_imported_records(session):
     oilobjs = (session.query(ImportedRecord)
-               .filter(ImportedRecord.custom is False))
+               .filter(ImportedRecord.custom == False))
 
     rowcount = 0
     for o in oilobjs:
@@ -32,7 +40,21 @@ def purge_old_records(session):
 
         rowcount += 1
 
-    transaction.commit()
+    return rowcount
+
+
+def purge_oil_records(session):
+    oilobjs = session.query(Oil)
+
+    rowcount = 0
+    for o in oilobjs:
+        session.delete(o)
+
+        if rowcount % 100 == 0:
+            sys.stderr.write('.')
+
+        rowcount += 1
+
     return rowcount
 
 

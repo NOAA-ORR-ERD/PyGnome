@@ -274,7 +274,8 @@ extension_names = ['cy_mover',
                    'cy_shio_time',
                    'cy_grid',
                    'cy_grid_rect',
-                   'cy_grid_curv'
+                   'cy_grid_curv',
+                   'cy_weatherers'
                    ]
 
 cpp_files = ['RectGridVeL_c.cpp',
@@ -316,6 +317,7 @@ cpp_files = ['RectGridVeL_c.cpp',
              'GridMapUtils.cpp',
              'RandomVertical_c.cpp',
              'RiseVelocity_c.cpp',
+             'Weatherers_c.cpp',
              ]
 
 
