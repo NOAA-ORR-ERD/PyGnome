@@ -223,6 +223,6 @@ class OilProps(object):
             '''
             for attr in c_op.__dict__:
                 if getattr(self, attr) != getattr(c_op, attr):
-                    setattr(c_op, attr, copy.deepcopy(getattr(self, attr),
-                                                      memo))
+                    setattr(c_op, attr,
+                            copy.deepcopy(getattr(self, attr), memo))
         return c_op

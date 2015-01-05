@@ -1088,7 +1088,7 @@ class Model(Serializable):
         '''
         for attr in self.__dict__:
             if (getattr(self, attr) is None and
-                getattr(model, attr) is not None):
+                    getattr(model, attr) is not None):
                 setattr(self, attr, getattr(model, attr))
         # update orderedcollections
         for oc in self._oc_list:
