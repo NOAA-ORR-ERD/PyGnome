@@ -75,7 +75,7 @@ def get_v_max(oil, k_v2=5000.0):
                       key=lambda v: v[1])[0][0]
         v_ref = visc.m_2_s
         t_ref = visc.ref_temp_k
-        v_max = v_ref * exp(k_v2 / pour_point - k_v2 / t_ref)
+        v_max = v_ref * exp(k_v2 / t_ref - k_v2 / pour_point)
 
     return v_max
 
