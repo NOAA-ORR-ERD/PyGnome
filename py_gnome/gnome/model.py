@@ -1090,6 +1090,11 @@ class Model(Serializable):
             if (getattr(self, attr) is None and
                     getattr(model, attr) is not None):
                 setattr(self, attr, getattr(model, attr))
+
+        self._start_time = model._start_time
+        self._duration = model._duration
+        self.name = model.name
+
         # update orderedcollections
         for oc in self._oc_list:
             my_oc = getattr(self, oc)
