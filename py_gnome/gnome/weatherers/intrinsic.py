@@ -200,8 +200,8 @@ class IntrinsicProps(AddLogger):
         sc.weathering_data['avg_density'] = \
             np.sum(sc['mass']/np.sum(sc['mass']) * sc['density'])
         sc.weathering_data['avg_viscosity'] = \
-            np.sum(sc['mass']/np.sum(sc['mass']) * sc['viscosity'])
-        sc.weathering_data['floating'] = np.sum(sc['mass'][mask])
+            np.sum(sc['mass']/sc['mass'].sum() * sc['viscosity'])
+        sc.weathering_data['floating'] = sc['mass'][mask].sum()
 
         if new_LEs > 0:
             amount_released = np.sum(sc['mass'][-new_LEs:])
