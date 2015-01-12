@@ -254,7 +254,7 @@ def get_boiling_points_from_api(max_cuts, total_mass, api):
     Assume max_cuts * 2 components containing [saturate, aromatic]
     Output boiling point in this form:
 
-      components: [s_0, a_0, s_1, a_1, ..., s_n, a_n]
+      components: [s_0, a_0, s_1, a_1, ..., s_i, a_i]
       index, i:   [0, 1, 2, .., max_cuts-1]
 
     where s_i is boiling point corresponding with i-th saturate component
