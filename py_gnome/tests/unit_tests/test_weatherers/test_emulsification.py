@@ -16,12 +16,6 @@ from gnome.weatherers import (Emulsification,
                               Dispersion)
 from gnome.outputters import WeatheringOutput
 from gnome.spill.elements import floating
-# from gnome.array_types import (mass_components,
-#                                windages,
-#                                thickness,
-#                                mol,
-#                                evap_decay_constant)
-#from gnome.basic_types import oil_status
 
 from ..conftest import sample_sc_release, sample_model_weathering, sample_model_weathering2
 
