@@ -827,7 +827,7 @@ class Serializable(GnomeId, Savable):
             return False
 
         if (self._state.get_field_by_attribute('save') !=
-            other._state.get_field_by_attribute('save')):
+                other._state.get_field_by_attribute('save')):
             return False
 
         for name in self._state.get_names('save'):
@@ -868,14 +868,14 @@ class Serializable(GnomeId, Savable):
             attrlist = self._attrlist(do=('save',))
         else:
             raise ValueError("desired json_ payload must be either for webapi "
-                "or for save files: ('webapi', 'save')")
+                             "or for save files: ('webapi', 'save')")
 
         toserial = {}
         for key in attrlist:
             if key in dict_:
                 # if attribute is None, then dict_ does not contain it
                 if (hasattr(self, key) and
-                    hasattr(getattr(self, key), 'to_serialize')):
+                        hasattr(getattr(self, key), 'to_serialize')):
                     attr = getattr(self, key)
                     # recursively call for nested objects
                     toserial[key] = attr.to_serialize(json_)

@@ -7,13 +7,16 @@
     properties.
 '''
 from math import log, log10, exp, fabs
-
 import transaction
+
+import numpy
+np = numpy
 
 from oil_library.models import (ImportedRecord, Oil, Estimated,
                                 Density, KVis, Cut,
                                 SARAFraction, SARADensity,
                                 MolecularWeight)
+
 from oil_library.utilities import get_boiling_points_from_api
 
 
@@ -292,7 +295,7 @@ def estimate_pp_by_viscosity_ref(imported_rec):
     v_ref, t_ref = kvis_rec[0], kvis_rec[1]
     c_v1 = 5000.0
 
-    return c_v1 * t_ref / (c_v1 - t_ref * log(v_ref))
+    return (c_v1 * t_ref) / (c_v1 - t_ref * log(v_ref))
 
 
 def add_flash_point(imported_rec, oil):
@@ -404,13 +407,13 @@ def get_resin_coeffs(oil):
         a = [(10 * exp(0.001 * density_at_temperature(oil, k.ref_temp_k)))
              for k in oil.kvis
              if k.weathering == 0.0 and
-             k.ref_temp_k == 273.15 + 15 and
+             k.ref_temp_k in (288.15, 288.0) and
              density_at_temperature(oil, k.ref_temp_k) is not None]
         b = [(10 * log(1000.0 * density_at_temperature(oil, k.ref_temp_k) *
                        k.m_2_s))
              for k in oil.kvis
              if k.weathering == 0.0 and
-             k.ref_temp_k == 273.15 + 15 and
+             k.ref_temp_k in (288.15, 288.0) and
              density_at_temperature(oil, k.ref_temp_k) is not None]
     except:
         print 'generated exception for oil = ', oil
@@ -503,7 +506,6 @@ def add_distillation_cut_boiling_point(imported_rec, oil):
         oil.cuts.append(c)
 
     if not oil.cuts:
-        # TODO: get boiling point from api inside utilities module
         mass_left = 1.0
 
         if imported_rec.resins:
@@ -512,9 +514,21 @@ def add_distillation_cut_boiling_point(imported_rec, oil):
         if imported_rec.asphaltene_content:
             mass_left -= imported_rec.asphaltene_content
 
+        summed_boiling_points = []
+        for t, f in get_boiling_points_from_api(5, mass_left, oil.api):
+            added_to_sums = False
+
+            for idx, [ut, summed_value] in enumerate(summed_boiling_points):
+                if np.isclose(t, ut):
+                    summed_boiling_points[idx][1] += f
+                    added_to_sums = True
+                    break
+
+            if added_to_sums is False:
+                summed_boiling_points.append([t, f])
+
         accumulated_frac = 0.0
-        for t_i, fraction in get_boiling_points_from_api(5, mass_left,
-                                                         oil.api):
+        for t_i, fraction in summed_boiling_points:
             accumulated_frac += fraction
             oil.cuts.append(Cut(fraction=accumulated_frac, vapor_temp_k=t_i))
 
@@ -579,7 +593,10 @@ def add_saturate_fractions(imported_rec, oil):
             - oil.molecular_weights[:].saturate
     '''
     if len(oil.cuts) == 5:
-        print 'oil {0.name}: possibly estimated cuts {0.cuts}'.format(oil)
+        # the way we determine that we have estimated cuts is that the
+        # imported record cuts will be different than the oil cuts
+        #print 'oil {0.name}: possibly estimated cuts {0.cuts}'.format(oil)
+        pass
 
     for c in oil.cuts:
         if c.vapor_temp_k < 530.0:
@@ -616,8 +633,7 @@ def add_component_densities(imported_rec, oil):
     for c in imported_rec.cuts:
         T_i = c.vapor_temp_k
         for K_w in (K_arom, K_sat):
-            P_try = 1000 * (T_i ** (1.0/3.0) /
-                            K_w)
+            P_try = 1000 * (T_i ** (1.0 / 3.0) / K_w)
     pass
 
 
