@@ -310,4 +310,6 @@ cdef class CyOSSMTime(object):
         tval = np.empty((sz / tmp_size,), dtype=basic_types.time_value_pair)
 
         memcpy(&tval[0], time_val_hdlH[0], sz)
+        print "tval"
+        print tval
         return tval

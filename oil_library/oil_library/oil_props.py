@@ -121,6 +121,18 @@ class OilProps(object):
         '''
         return get_viscosity(self._r_oil, temp, out)
 
+    def get_bulltime(self):
+        '''
+        return bulltime (time to emulsify)
+        either user set or just return a flag
+
+        '''
+
+		# check for user input value, otherwise set to -999 as a flag
+        bulltime = -999.
+
+        return bulltime
+
     @property
     def num_components(self):
         return len(self.mass_fraction)

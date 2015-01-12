@@ -1378,7 +1378,7 @@ TimeValuePairH OSSMTimeValue_c::CalculateRunningAverage(long pastHoursToAverage)
 	Seconds firstTime, lastTime, timeDiff, runningAverageTimeStep = 3600, timeToAverage, currentTime;
 	VelocityRec velocity = {0.,0.}, average = {0.,0.};
 	double speed = 0;
-	char errmsg[256];
+	//char errmsg[256];
 	
 	long i, j, numTimeValues = 0, numRunningAverageValues = 0;
 	
@@ -1409,7 +1409,8 @@ TimeValuePairH OSSMTimeValue_c::CalculateRunningAverage(long pastHoursToAverage)
 	if (lastTime == firstTime)
 		numRunningAverageValues = 1;
 	else
-		numRunningAverageValues = (lastTime - firstTime) / timeDiff + 1;
+		//numRunningAverageValues = (lastTime - firstTime) / timeDiff + 1;
+		numRunningAverageValues = (lastTime - firstTime) / runningAverageTimeStep + 1;
 	
 	//sprintf(errmsg,"numRunningAverageValues  = %ld\n",numRunningAverageValues);
 	//printNote(errmsg);

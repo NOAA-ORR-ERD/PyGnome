@@ -13,18 +13,38 @@ Uses the same approach as ADIOS 2
 from __future__ import division
 from math import sqrt
 
-from gnome import environment
+import copy
+
+#from gnome import environment
 from gnome.utilities import serializable
+from gnome.utilities.serializable import Field
+from gnome.persist import base_schema
+from .environment import Environment
+from wind import WindSchema
+from .environment import WaterSchema
 
-g = environment.constants['gravity'] # the graviational contant.
+#g = environment.constants['gravity'] # the gravitational constant.
+g = 9.80665 # the gravitational constant.
 
-class Waves(environment.Environment, serializable.Serializable):
+class WavesSchema(base_schema.ObjType):
+    'Colander Schema for Conditions object'
+    name = 'Waves'
+    description = 'waves schema base class'
+
+class Waves(Environment, serializable.Serializable):
     """
     class to compute the wave height for a time series
 
     At the moment, it only does a single point, non spatially
     variable, but may be extended in the future
     """
+    _state = copy.deepcopy(Environment._state)
+    _state += [Field('water', save=True, update=True, save_reference=True),
+               Field('wind', save=True, update=True, save_reference=True)]
+    _schema = WavesSchema
+
+    _state['name'].test_for_eq = False
+
     def __init__(self, wind, water):
         """
         :param wind: A wind object to get the wind speed.
@@ -172,5 +192,39 @@ class Waves(environment.Environment, serializable.Serializable):
 
 
 
+    def serialize(self, json_='webapi'):
+        """
+        Since 'wind'/'water' property is saved as references in save file
+        need to add appropriate node to WindMover schema for 'webapi'
+        """
+        toserial = self.to_serialize(json_)
+        schema = self.__class__._schema()
+        if json_ == 'webapi':
+            if self.wind:
+                # add wind schema
+                schema.add(WindSchema(name='wind'))
+            if self.water:
+                schema.add(WaterSchema(name='water'))
+
+        serial = schema.serialize(toserial)
+
+        return serial
+
+    @classmethod
+    def deserialize(cls, json_):
+        """
+        append correct schema for wind object
+        """
+        schema = cls._schema()
+        if 'wind' in json_:
+            schema.add(WindSchema(name='wind'))
+
+        if 'water' in json_:
+            schema.add(WaterSchema(name='water'))
+        _to_dict = schema.deserialize(json_)
+
+        return _to_dict
+        
+        
 # wind.get_timeseries(self, datetime=None, units=None, format='r-theta')
 
