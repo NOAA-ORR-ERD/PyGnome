@@ -102,6 +102,17 @@ class Waves(Environment, serializable.Serializable):
 
         return H, T, Wf, De
 
+    def get_pseudo_wind(self, model_time):
+        wave_height = self.water.wave_height
+        if wave_height is None:
+            U = self.wind.get_value(model_time)[0] # only need velocity
+            H = self.compute_H(U)
+        else: # user specified a wave height
+            H = wave_height
+        U = self.comp_psuedo_wind(H)
+
+        return U
+
     def compute_H(self, U):
         """
         compute the wave height
