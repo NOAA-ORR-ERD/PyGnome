@@ -103,7 +103,18 @@ class Emulsification(Weatherer, Serializable):
                 continue
             S_max = (6. / constants['drop_min']) * (Y_max / (1.0 - Y_max))
             #emulsify_oil(time_step,sc['frac_water'],sc['interfacial_area'],sc['frac_lost'],sc['droplet_diameter'],sc['age'],sc['bulltime'],k_emul,emul_time, emul_constant, Y_max,S_max,constants['drop_max'])
-            emulsify_oil(time_step,data['frac_water'],data['interfacial_area'],data['frac_lost'],data['droplet_diameter'],data['age'],data['bulltime'],k_emul,emul_time, emul_constant, S_max,Y_max,constants['drop_max'])
+            emulsify_oil(time_step,
+                         data['frac_water'],
+                         data['interfacial_area'],
+                         data['frac_lost'],
+                         data['droplet_diameter'],
+                         data['age'],
+                         data['bulltime'],
+                         k_emul,
+                         emul_time,
+                         emul_constant,
+                         S_max,
+                         Y_max,constants['drop_max'])
 
             #sc.weathering_data['emulsified'] += \
                 #np.sum(data['frac_water'][:]) / sc.num_released
@@ -167,18 +178,19 @@ class Emulsification(Weatherer, Serializable):
         '''
         wind_speed = self.wind.get_value(model_time)[0] # what happens if no wind or wave height data? returns zero?
         #wave_height = self.water.get('wave_height','m'] # should be time dependent
-        wave_height = self.waves.get_value(model_time)[0] # from the waves module
+        # wave_height = self.waves.get_value(model_time)[0] # from the waves module
         K0Y = substance.get('k0y')    # water uptake rate constant - get this from database
         
         #note should probably use comp_psuedo_wind from the waves module (pass in wave_height)
+        pseudo_wind = self.waves.get_pseudo_wind(model_time)
+
+        # if wave_height > 0.0:
+        #     pseudo_wind = 2.0286 * np.sqrt(constants['gravity'] * wave_height) 
+        # else:
+        #     pseudo_wind = 0
  
-        if wave_height > 0.0:
-            pseudo_wind = 2.0286 * np.sqrt(constants['gravity'] * wave_height) 
-        else:
-            pseudo_wind = 0
- 
-        if pseudo_wind > 4.429:
-            pseudo_wind = np.power(pseudo_wind / .71, .813) 
+        # if pseudo_wind > 4.429:
+        #     pseudo_wind = np.power(pseudo_wind / .71, .813) 
 
         if wind_speed < pseudo_wind:
             wind_speed = pseudo_wind 
