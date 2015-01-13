@@ -15,33 +15,39 @@ from gnome.spill import point_line_release_spill
 
 
 delay = 1.
-rel_time = datetime(2014, 1, 1, 0, 0)
-amount = 36000.
-units = 'kg'    # leave as SI units
-
-water = Water()
-intrinsic = IntrinsicProps(water)
-
-sc = SpillContainer()
-sc.spills += point_line_release_spill(10,
-                                      (0, 0, 0),
-                                      rel_time,
-                                      substance='ALAMO',
-                                      amount=amount,
-                                      units='kg')
 time_step = 900
 
 
 class TestSkimmer:
+    rel_time = datetime(2014, 1, 1, 0, 0)
     active_start = rel_time + timedelta(seconds=time_step)
     active_stop = active_start + timedelta(hours=1.)
+    amount = 36000.
+    units = 'kg'    # leave as SI units
+
     skimmer = Skimmer(amount,
                       'kg',
                       efficiency=0.3,
                       active_start=active_start,
                       active_stop=active_stop)
 
+    def make_sc_and_release(self):
+        water = Water()
+        sc = SpillContainer()
+        sc.spills += point_line_release_spill(10,
+                                              (0, 0, 0),
+                                              self.rel_time,
+                                              substance='ALAMO',
+                                              amount=self.amount,
+                                              units='kg')
+        intrinsic = IntrinsicProps(water)
+        intrinsic.initialize(sc)
+        sc.prepare_for_model_run(intrinsic.array_types)
+        num_rel = sc.release_elements(time_step, self.rel_time)
+        return (sc, intrinsic, num_rel)
+
     def test_prepare_for_model_run(self):
+        sc = self.make_sc_and_release()[0]
         self.skimmer.prepare_for_model_run(sc)
         assert sc.weathering_data['skimmed'] == 0.
         assert (self.skimmer._rate ==
@@ -61,7 +67,9 @@ class TestSkimmer:
                         time_step/3.)   # before active stop
                        ])
     def test_prepare_for_model_step(self, model_time, active, ts):
-        num_rel = sc.release_elements(time_step, model_time)
+        ''
+        # NOTE: Force SpillContainer to release all particles
+        (sc, intrinsic, num_rel) = self.make_sc_and_release()
         intrinsic.update(num_rel, sc)
         self.skimmer.prepare_for_model_step(sc, time_step, model_time)
 
@@ -70,14 +78,15 @@ class TestSkimmer:
             assert self.skimmer._timestep == ts
 
     def test_weather_elements(self):
-        spill_amount = amount
+        spill_amount = self.amount
+        (sc, intrinsic, num_rel) = self.make_sc_and_release()
         sc.rewind()
         sc.prepare_for_model_run(intrinsic.array_types)
         self.skimmer.prepare_for_model_run(sc)
 
         assert sc.weathering_data['skimmed'] == 0.0
 
-        model_time = rel_time
+        model_time = self.rel_time
         while (model_time <
                self.skimmer.active_stop + timedelta(seconds=2*time_step)):
 
@@ -101,7 +110,13 @@ class TestSkimmer:
             sc['age'][:] = sc['age'][:] + time_step
             model_time += timedelta(seconds=time_step)
 
-        assert (spill_amount ==
-                sc.weathering_data['skimmed'] + sc['mass'].sum())
-        assert (sc.weathering_data['skimmed']/self.skimmer.amount ==
-                self.skimmer.efficiency)
+            # check - useful for debugging issues with recursion
+            assert (spill_amount ==
+                    sc.weathering_data['skimmed'] + sc['mass'].sum())
+
+        # following should finally hold true for entire run
+        assert np.allclose(spill_amount,
+                           sc.weathering_data['skimmed'] + sc['mass'].sum(),
+                           atol=1e-6)
+        assert np.allclose(sc.weathering_data['skimmed']/self.skimmer.amount,
+                           self.skimmer.efficiency, atol=1e-6)
