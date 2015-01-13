@@ -750,7 +750,7 @@ class Model(Serializable):
                            "added weatherer named: {0.name}. "
                            "Model's Water object is used to update intrinsic "
                            "properties").format(obj_added)
-                    self.log.warning(msg)
+                    self.logger.warning(msg)
 
         self.rewind()  # rewind model if a new weatherer is added
 
