@@ -13,7 +13,7 @@ from gnome.utilities.serializable import Serializable
 from .core import WeathererSchema
 from .. import _valid_units
 
-from hazpy import unit_conversion as uc
+import unit_conversion as uc
 
 
 class Skimmer(Weatherer, Serializable):
@@ -127,16 +127,6 @@ class Skimmer(Weatherer, Serializable):
                                   total_mass_removed)[0][0] + 1
                     data['status_codes'][:ix] = oil_status.skim
 
-                # need to make a copy because there may not be enough mass
-                # left in lighter elements to remove equal fraction from all
-                # mass_components. There requires fancy indexing which makes
-                # copies. Instead of creating a copy for every time step,
-                # create an instance level copy to manipulate
-                # todo: another way would be to keep track of indices since
-                # assignment by index even if non-contiguous works in numpy
-                self._skim_mass_array = \
-                    (data['mass_components']
-                     [data['status_codes'] == oil_status.skim].copy())
                 sc.update_from_substancedata(self._arrays, substance)
 
         else:
@@ -164,31 +154,6 @@ class Skimmer(Weatherer, Serializable):
 
         return rm_mass
 
-    def _remove_mass_per_component(self, rm_mass):
-        '''
-        recursively remove mass from each component of self._skim_mass_array
-        '''
-        # evenly remove mass from all pseudo components with mass > 0
-        num_comp = (self._skim_mass_array > 0).sum((0, 1))
-        rm_mass_per_c = rm_mass / num_comp
-
-        _to_zero = np.logical_and(self._skim_mass_array > 0,
-                                  self._skim_mass_array < rm_mass_per_c)
-        if np.any(_to_zero):
-            # components with mass > 0 and mass < rm_mass_per_c, go to 0
-            rm_mass -= self._skim_mass_array[_to_zero].sum()
-            num_comp = \
-                np.logical_and(self._skim_mass_array > 0, ~_to_zero).sum()
-            self.logger.info('{0} - Remaining num_comp: {1}'.
-                             format(os.getpid(), num_comp))
-            rm_mass_per_c = rm_mass / num_comp
-            self._skim_mass_array[_to_zero] = 0
-
-            # recursively call until all elements have mass > 0
-            rm_mass_per_c = self._remove_mass_per_component(rm_mass)
-
-        return rm_mass_per_c
-
     def weather_elements(self, sc, time_step, model_time):
         '''
         Assumes there is only ever 1 substance being modeled!
@@ -205,14 +170,13 @@ class Skimmer(Weatherer, Serializable):
 
             self.logger.info('{0} - Amount skimmed: {1}'.
                              format(os.getpid(), rm_mass))
-            rm_mass_per_c = self._remove_mass_per_component(rm_mass)
 
             # following should work even if all elements go to zero so
             # ~c_to_zero is all False since rm_mass_per_c is a scalar
-            self._skim_mass_array[self._skim_mass_array > 0] -= rm_mass_per_c
-
             mask = data['status_codes'] == oil_status.skim
-            data['mass_components'][mask, :] = self._skim_mass_array
+            rm_mass_frac = rm_mass / data['mass'][mask].sum()
+            data['mass_components'][mask, :] = \
+                (1 - rm_mass_frac) * data['mass_components'][mask, :]
             data['mass'][mask] = data['mass_components'][mask, :].sum(1)
 
             sc.weathering_data['skimmed'] += rm_mass
