@@ -17,7 +17,7 @@
 using namespace std;
 
 
-OSErr emulsify(int n, unsigned long step_len, double *frac_water, double *interfacial_area, double *frac_evap, double *droplet_diameter, int *age, double *bulltime, double k_emul, double emul_time, double emul_C, double S_max, double Y_max, double drop_max)
+OSErr emulsify(int n, unsigned long step_len, double *frac_water, double *interfacial_area, double *frac_evap, int *age, double *bulltime, double k_emul, double emul_time, double emul_C, double S_max, double Y_max, double drop_max)
 {
 	OSErr err = 0;
 	double Y, S;
@@ -63,15 +63,13 @@ OSErr emulsify(int n, unsigned long step_len, double *frac_water, double *interf
 		if (S < ((6.0 / drop_max) * (Y_max / (1.0 - Y_max))))
 		{
 			Y = S * drop_max / (6.0 + (S * drop_max));
-			//droplet_diameter[i] = drop_max;
-		//sprintf(errmsg,"Y = %lf, S = %lf, droplet_diameter = %lf\n",Y,S,droplet_diameter[i]);
+		//sprintf(errmsg,"Y = %lf, S = %lf\n",Y,S);
 		//printNote(errmsg);
 		}
 		else
 		{
 			Y = Y_max;
-			//droplet_diameter[i] = (6.0 / S) * (Y_max / (1.0 - Y_max));
-		//sprintf(errmsg,"Y = %lf, S = %lf, droplet_diameter = %lf\n",Y,S,droplet_diameter[i]);
+		//sprintf(errmsg,"Y = %lf, S = %lf\n",Y,S);
 		//printNote(errmsg);
 		}
 		
