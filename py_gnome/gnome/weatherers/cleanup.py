@@ -7,18 +7,32 @@ import copy
 import os
 
 import numpy as np
+from colander import (SchemaNode, drop, OneOf,
+                      Float, String, Range)
+
 from gnome.basic_types import oil_status
 from gnome.weatherers import Weatherer
-from gnome.utilities.serializable import Serializable
+from gnome.utilities.serializable import Serializable, Field
+
 from .core import WeathererSchema
 from .. import _valid_units
 
 import unit_conversion as uc
 
 
+class SkimmerSchema(WeathererSchema):
+    amount = SchemaNode(Float())
+    units = SchemaNode(String())
+    efficiency = SchemaNode(Float())
+
+
 class Skimmer(Weatherer, Serializable):
     _state = copy.deepcopy(Weatherer._state)
-    _schema = WeathererSchema
+    _state += [Field('amount', save=True, update=True),
+               Field('units', save=True, update=True),
+               Field('efficiency', save=True, update=True)]
+
+    _schema = SkimmerSchema
 
     # todo: following is same as Spill code so rework to make it DRY
     valid_vol_units = _valid_units('Volume')
@@ -28,16 +42,21 @@ class Skimmer(Weatherer, Serializable):
                  amount,
                  units,
                  efficiency,
+                 active_start,
+                 active_stop,
                  **kwargs):
         '''
         initialize Skimmer object - calls base class __init__ using super()
+        active_start and active_stop time are required
         '''
         self._units = None
         self.amount = amount
         self.units = units
         self.efficiency = efficiency
 
-        super(Skimmer, self).__init__(**kwargs)
+        super(Skimmer, self).__init__(active_start=active_start,
+                                      active_stop=active_stop,
+                                      **kwargs)
 
         # get the rate as amount/sec, use this to compute amount at each step
         self._rate = self.amount/(self.active_stop -
