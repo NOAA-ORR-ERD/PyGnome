@@ -11,7 +11,7 @@ import gnome    # required by new_from_dict
 
 from gnome.array_types import (frac_lost,	# due to evaporation and dissolution
                                age,
-                               droplet_diameter,
+                               #droplet_diameter,
                                bulltime,
                                interfacial_area,
                                frac_water)
@@ -49,7 +49,7 @@ class Emulsification(Weatherer, Serializable):
 
         super(Emulsification, self).__init__(**kwargs)
         self.array_types.update({'age': age,
-                                 'droplet_diameter': droplet_diameter,
+                                 #'droplet_diameter': droplet_diameter,
                                  'bulltime': bulltime,
                                  'frac_water': frac_water,
                                  'interfacial_area': interfacial_area,
@@ -107,7 +107,7 @@ class Emulsification(Weatherer, Serializable):
                          data['frac_water'],
                          data['interfacial_area'],
                          data['frac_lost'],
-                         data['droplet_diameter'],
+                         #data['droplet_diameter'],
                          data['age'],
                          data['bulltime'],
                          k_emul,
