@@ -95,6 +95,7 @@ def test_model_webapi_output(model):
             sum_mass += step['WeatheringOutput'][key]['floating']
             np.isclose(sum_mass, step['WeatheringOutput'][key]['amount_released'])
 
+        print 'Completed step: ', step
 
 def test_model_dump_output(model):
     'Test weathering outputter with a model since simplest to do that'
