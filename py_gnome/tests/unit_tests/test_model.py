@@ -13,7 +13,7 @@ np = numpy
 import pytest
 from pytest import raises
 
-from gnome.basic_types import datetime_value_2d
+from gnome.basic_types import datetime_value_2d, oil_status
 from gnome.utilities import inf_datetime
 from gnome.persist import load
 
@@ -881,7 +881,7 @@ def test_contains_object(sample_model_fcn):
         assert model.contains_object(o.id)
 
 
-def make_skimmer(spill, delay_hours=1):
+def make_skimmer(spill, delay_hours=1, duration=2):
     'make a skimmer for sample model tests'
     rel_time = spill.get('release_time')
     skim_start = rel_time + timedelta(hours=delay_hours)
@@ -889,7 +889,7 @@ def make_skimmer(spill, delay_hours=1):
     units = spill.units
     skimmer = Skimmer(.5*amount, units=units, efficiency=0.3,
                       active_start=skim_start,
-                      active_stop=skim_start + timedelta(hours=delay_hours))
+                      active_stop=skim_start + timedelta(hours=duration))
     return skimmer
 
 
@@ -931,7 +931,8 @@ def test_staggered_spills_weathering(sample_model_fcn, delay):
     # model.full_run()
     for step in model:
         for sc in model.spills.items():
-            sum_ = 0.0
+            unaccounted = sc['status_codes'] != oil_status.in_water
+            sum_ = sc['mass'][unaccounted].sum()
             for key in sc.weathering_data:
                 if 'avg_' != key[:4] and 'amount_released' != key:
                     sum_ += sc.weathering_data[key]
@@ -966,16 +967,24 @@ def test_two_substance_spills_weathering(sample_model_fcn, s0, s1):
     model.spills += cs
     model.water = Water()
     model.environment += constant_wind(1., 0)
-    skimmer = make_skimmer(model.spills[0], 2)
-    model.weatherers += [Evaporation(model.water,
-                                     model.environment[0]),
-                         Dispersion(),
-                         Burn(),
-                         skimmer]
+    model.weatherers += Evaporation(model.water, model.environment[0])
+    if s0 == s1:
+        '''
+        multiple substances will not work with Skimmer
+        '''
+        skimmer = make_skimmer(model.spills[0], 2)
+        model.weatherers += [Dispersion(),
+                             Burn(),
+                             skimmer]
+
     # model.full_run()
     for step in model:
         for sc in model.spills.items():
-            sum_ = 0.0
+            # If LEs are marked as 'skim', add them to sum_ since the mass must
+            # be accounted for in the assertion
+            unaccounted = sc['status_codes'] != oil_status.in_water
+            sum_ = sc['mass'][unaccounted].sum()
+            print 'starting sum_: ', sum_
             for key in sc.weathering_data:
                 if 'avg_' != key[:4] and 'amount_released' != key:
                     sum_ += sc.weathering_data[key]
