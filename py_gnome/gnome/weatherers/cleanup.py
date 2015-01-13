@@ -7,8 +7,7 @@ import copy
 import os
 
 import numpy as np
-from colander import (SchemaNode, drop, OneOf,
-                      Float, String, Range)
+from colander import (SchemaNode, Float, String)
 
 from gnome.basic_types import oil_status
 from gnome.weatherers import Weatherer
