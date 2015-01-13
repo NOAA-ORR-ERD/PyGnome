@@ -22,9 +22,10 @@ from gnome.persist.extend_colander import (DefaultTupleSchema,
                                            DatetimeValue2dArraySchema)
 
 # TODO: The name 'convert' is doubly defined as
-#       hazpy.unit_conversion.convert and...
+#       unit_conversion.convert and...
 #       gnome.utilities.convert
 #       This will inevitably cause namespace collisions.
+#       CHB-- I don't think that's a problem -- that's what namespaces are for!
 
 from gnome.utilities.time_utils import date_to_sec
 from gnome.utilities.convert import (to_time_value_pair,

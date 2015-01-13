@@ -15,7 +15,7 @@ from math import log, exp
 
 from repoze.lru import lru_cache
 
-from hazpy import unit_conversion as uc
+import unit_conversion as uc
 from .utilities import get_density, get_boiling_points_from_cuts, get_viscosity
 
 
@@ -125,6 +125,18 @@ class OilProps(object):
         '''
         return get_viscosity(self._r_oil, temp, out)
 
+    def get_bulltime(self):
+        '''
+        return bulltime (time to emulsify)
+        either user set or just return a flag
+
+        '''
+
+		# check for user input value, otherwise set to -999 as a flag
+        bulltime = -999.
+
+        return bulltime
+
     @property
     def num_components(self):
         return len(self.mass_fraction)
@@ -228,6 +240,6 @@ class OilProps(object):
             '''
             for attr in c_op.__dict__:
                 if getattr(self, attr) != getattr(c_op, attr):
-                    setattr(c_op, attr, copy.deepcopy(getattr(self, attr),
-                                                      memo))
+                    setattr(c_op, attr,
+                            copy.deepcopy(getattr(self, attr), memo))
         return c_op

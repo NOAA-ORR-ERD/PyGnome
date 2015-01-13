@@ -4,8 +4,7 @@ It could be duck typed, though right now it defines a models.Oil object
 Currently only works/tested for _sample_oils dict which only contains name
 and API - needs work, but will suffice for testing
 '''
-from hazpy import unit_conversion
-uc = unit_conversion
+import unit_conversion as uc
 
 from .models import Oil, Density, Cut
 from .utilities import get_boiling_points_from_api

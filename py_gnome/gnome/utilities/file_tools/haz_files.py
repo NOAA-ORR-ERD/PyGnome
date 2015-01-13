@@ -80,15 +80,6 @@ class BNAData:
     def __str__(self):
         return 'BNAData instance: {0} polygons'.format(len(self))
 
-#    def get_BBox(self):
-#        print "in get_BBox"
-#        from hazpy.geometry import BBox
-#
-#        BB = BBox.NullBBox()
-#        for poly in self.PointsData:
-#            print poly
-#            BB.Merge()
-
     def Save(self, filename=None):
         if not filename:
             filename = self.filename
@@ -289,7 +280,7 @@ def WriteBNA(filename, polyset):
     """
     Writes a BNA file to filename
 
-    polyset must be a A hazpy.geometry.polygons.PolygonSet object,
+    polyset must be a A geometry.polygons.PolygonSet object,
               with metadata- (poly_type, name, secondary name)
     (such as returned by ReadBNA)
     """
@@ -312,7 +303,7 @@ def ReadBNA(filename, polytype="list", dtype=np.float):
     - "list": A list of tuples:
               (points, poly_type, name, secondary name)
 
-    - "PolygonSet": A hazpy.geometry.polygons.PolygonSet object,
+    - "PolygonSet": A geometry.polygons.PolygonSet object,
                     with metadata- (poly_type, name, secondary name)
 
     - "BNADataClass": A BNAData class object -- this may be broken now!
@@ -342,7 +333,7 @@ def ReadBNA(filename, polytype="list", dtype=np.float):
             Output.append(poly[0], poly[1:])
 
     elif polytype == 'BNADataClass':
-        from hazpy.geometry import polygons
+        from ..geometry import polygons
         polys = polygons.PolygonSet()
         Types = []
         Names = []

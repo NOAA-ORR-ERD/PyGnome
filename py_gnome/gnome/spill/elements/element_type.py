@@ -21,7 +21,7 @@ from .initializers import (InitRiseVelFromDropletSizeFromDist,
 from oil_library import get_oil_props
 
 from gnome.persist import base_schema
-from hazpy import unit_conversion as uc
+import unit_conversion as uc
 
 
 class ElementType(Serializable):
@@ -56,7 +56,6 @@ class ElementType(Serializable):
         :type substance: str or OilProps
 
         '''
-        self._substance = None
         self.initializers = []
         try:
             self.initializers.extend(initializers)
@@ -65,6 +64,7 @@ class ElementType(Serializable):
             # append it to list
             self.initializers.append(initializers)
 
+        self._substance = None
         self.substance = substance
 
     def __repr__(self):
@@ -152,8 +152,8 @@ class ElementType(Serializable):
         return dict_
 
     def initializers_to_dict(self):
-        'just return a deepcopy of the initializers'
-        return copy.deepcopy(self.initializers)
+        'just return the initializers'
+        return self.initializers
 
     def serialize(self, json_='webapi'):
         """
@@ -323,6 +323,6 @@ def plume_from_model(distribution_type='droplet_size',
                             InitMassFromPlume()])
     elif distribution_type == 'rise_velocity':
         return ElementType([InitRiseVelFromDist(distribution=distribution,
-                                                 **kwargs),
+                                                **kwargs),
                             InitWindages(windage_range, windage_persist),
                             InitMassFromPlume()])

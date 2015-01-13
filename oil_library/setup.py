@@ -73,18 +73,21 @@ class remake_oil_db(Command):
         print 'OilLibrary database successfully generated from file!'
 
 
+## note: maybe better to keep this in requrements.txt instead
+#requires = []
+
 requires = [
     'SQLAlchemy >= 0.9.1',
     'transaction',
     'zope.sqlalchemy',
     'awesome-slugify',
-    'hazpy.unit_conversion',
+    'unit_conversion',
     'pytest',
     'numpy'
     ]
 
 s = setup(name=pkg_name,
-          version='0.0',
+          version='0.1',
           description='OilLibrary',
           long_description=README,
           author='ADIOS/GNOME team at NOAA ORR',
@@ -105,16 +108,20 @@ s = setup(name=pkg_name,
                                              'oil_library.initializedb'
                                              ':make_db'),
                                             ],
-                        }
+                        },
+          zip_safe = False,
           )
 
 # make database post install - couldn't call this directly so used
 # console script
 if 'install' in s.script_args:
+    print "Calling initialize_OilLibrary_db"
     call("initialize_OilLibrary_db")
 elif 'develop' in s.script_args:
     if os.path.exists(os.path.join(here, 'oil_library', 'OilLib.db')):
         print 'OilLibrary database exists - do not remake!'
     else:
+        print "Calling initialize_OilLibrary_db"
         call("initialize_OilLibrary_db")
         print 'OilLibrary database successfully generated from file!'
+

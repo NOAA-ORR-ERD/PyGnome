@@ -209,6 +209,7 @@ def get_testdata():
     # path correctly
     data['timeseries'] = \
         {'wind_ts': os.path.join(s_data, 'WindDataFromGnome.WND'),
+         'wind_ts_av': os.path.join(s_data, 'WindDataFromGnome2.WND'),
          'wind_constant': os.path.join(s_data,
                                        'WindDataFromGnomeConstantWind.WND'),
          'wind_bad_units': os.path.join(s_data,
@@ -531,6 +532,26 @@ def sample_model_weathering(sample_model_fcn, oil, temp=311.16):
     et = gnome.spill.elements.floating(substance=oil)
     start_time = model.start_time + timedelta(hours=1)
     end_time = start_time + timedelta(seconds=model.time_step*3)
+    spill = gnome.spill.point_line_release_spill(10,
+                                                 rel_pos,
+                                                 start_time,
+                                                 end_release_time=end_time,
+                                                 element_type=et,
+                                                 amount=100,
+                                                 units='kg')
+    model.spills += spill
+    return model
+
+
+def sample_model_weathering2(sample_model_fcn, oil, temp=311.16):
+    model = sample_model_fcn['model']
+    rel_pos = sample_model_fcn['release_start_pos']
+    'update model the same way for multiple tests'
+    model.uncertain = False     # fixme: with uncertainty, copying spill fails!
+    model.duration = timedelta(hours=24)
+    et = gnome.spill.elements.floating(substance=oil)
+    start_time = model.start_time
+    end_time = start_time
     spill = gnome.spill.point_line_release_spill(10,
                                                  rel_pos,
                                                  start_time,

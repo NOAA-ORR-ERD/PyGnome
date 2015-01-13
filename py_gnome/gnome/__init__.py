@@ -7,7 +7,7 @@ from itertools import chain
 import logging.config
 import json
 
-from hazpy import unit_conversion as uc
+import unit_conversion as uc
 
 
 def initialize_log(config, logfile=None):
@@ -25,7 +25,7 @@ def initialize_log(config, logfile=None):
 
 
 def _valid_units(unit_name):
-    'convenience function to get all valid units accepted by hazpy'
+    'convenience function to get all valid units accepted by unit_conversion'
     _valid_units = uc.GetUnitNames(unit_name)
     _valid_units.extend(chain(*[val[1] for val in
                                 uc.ConvertDataUnits[unit_name].values()]))

@@ -9,9 +9,10 @@ import numpy as np
 
 from copy import copy
 
-from gnome.environment import waves
+from gnome.environment import constant_wind
+from gnome.environment import Waves
 from gnome.environment import Water
-from gnome.environment import wind
+from gnome.environment import Wind
 from gnome.basic_types import datetime_value_2d
 
 import pytest
@@ -22,38 +23,38 @@ start_time = datetime.datetime(2014, 12, 1, 0)
 # 10 m/s
 series = np.array((start_time, (10, 45)),
                       dtype=datetime_value_2d).reshape((1, ))
-test_wind_10 = wind.Wind(timeseries=series, units='meter per second')
+test_wind_10 = Wind(timeseries=series, units='meter per second')
 
 # 5 m/s
 series = np.array((start_time, (5, 45)),
                       dtype=datetime_value_2d).reshape((1, ))
-test_wind_5 = wind.Wind(timeseries=series, units='meter per second')
+test_wind_5 = Wind(timeseries=series, units='meter per second')
 
 # 3 m/s
 series = np.array((start_time, (5, 45)),
                       dtype=datetime_value_2d).reshape((1, ))
-test_wind_3 = wind.Wind(timeseries=series, units='meter per second')
+test_wind_3 = Wind(timeseries=series, units='meter per second')
 
 # 0 m/s
 series = np.array((start_time, (5, 45)),
                       dtype=datetime_value_2d).reshape((1, ))
-test_wind_0 = wind.Wind(timeseries=series, units='meter per second')
+test_wind_0 = Wind(timeseries=series, units='meter per second')
 
 # default water object
 default_water = Water()
 
 def test_init():
-    w = waves.Waves(test_wind_5, default_water)
+    w = Waves(test_wind_5, default_water)
 
     # just to assert something
-    assert type(w) == waves.Waves
+    assert type(w) == Waves
 
 def test_compute_H():
     """can it compute a wave height at all?
 
        fetch unlimited
     """
-    w = waves.Waves(test_wind_5, default_water)
+    w = Waves(test_wind_5, default_water)
     H = w.compute_H(5) # five m/s wind
 
     print H
@@ -68,7 +69,7 @@ def test_compute_H_fetch():
     """
     water = copy(default_water)
     water.fetch = 10000 # 10km 
-    w = waves.Waves(test_wind_5, water) # 10km
+    w = Waves(test_wind_5, water) # 10km
     H = w.compute_H(5) # five m/s wind
 
     print H
@@ -81,7 +82,7 @@ def test_compute_H_fetch_huge():
     """
     water = copy(default_water)
     water.fetch = 1e100 # 10km 
-    w = waves.Waves(test_wind_5, water)
+    w = Waves(test_wind_5, water)
     H_f = w.compute_H(5) # five m/s wind
     w.fetch = None
     H_nf = w.compute_H(5)
@@ -96,7 +97,7 @@ def test_psuedo_wind(U):
 
     at least for fetch-unlimited
     """
-    w = waves.Waves(test_wind_5, default_water)
+    w = Waves(test_wind_5, default_water)
 
     print "testing for U:", U
     ## 0.707 compensates for RMS wave height
@@ -106,10 +107,10 @@ def test_psuedo_wind(U):
 @pytest.mark.parametrize("U", [0.0, 1.0, 2.0, 2.99, 3.0, 4.0, 8.0, 16.0, 32.0, 200.0])
 def test_whitecap_fraction(U):
     """
-    This should reverse the wave height computation
-    at least for fetch-unlimited
+    Fraction whitcapping -- doesn't really check values
+    but should catch gross errors!
     """
-    w = waves.Waves(test_wind_5, default_water)
+    w = Waves(test_wind_5, default_water)
 
     print "testing for U:", U
 
@@ -118,10 +119,8 @@ def test_whitecap_fraction(U):
     assert f >= 0.0
     assert f <= 1.0
 
-    if U < 3.0:
-        assert f == 0.0
-
-    ##fixme: add a value check???
+    if U == 4.0:
+        assert round(f, 8) == round(0.05 / 3.85, 8)
 
 
 @pytest.mark.parametrize("U", [0.0, 1.0, 2.0, 3.0, 4.0, 8.0, 16.0, 32.0])
@@ -129,7 +128,7 @@ def test_period(U):
     """
     test the wave period
     """
-    w = waves.Waves(test_wind_5, default_water)
+    w = Waves(test_wind_5, default_water)
 
     print "testing for U:", U
 
@@ -145,7 +144,7 @@ def test_period_fetch(U):
     """
     water = copy(default_water)
     water.fetch = 1e4 # 10km 
-    w = waves.Waves(test_wind_5, water)# 10km fetch
+    w = Waves(test_wind_5, water)# 10km fetch
 
     print "testing for U:", U
 
@@ -156,7 +155,7 @@ def test_period_fetch(U):
 
 def test_call_no_fetch_or_height():
     "fully developed seas"
-    w = waves.Waves(test_wind_5, default_water)
+    w = Waves(test_wind_5, default_water)
 
 
     H, T, Wf, De = w.get_value(start_time)
@@ -169,7 +168,7 @@ def test_call_fetch():
 
     water = copy(default_water)
     water.fetch = 1e4 # 10km 
-    w = waves.Waves(test_wind_5, water)
+    w = Waves(test_wind_5, water)
 
     H, T, Wf, De =  w.get_value(start_time)
 
@@ -182,7 +181,7 @@ def test_call_height():
 
     water = copy(default_water)
     water.wave_height=1.0
-    w = waves.Waves(test_wind_5, water)
+    w = Waves(test_wind_5, water)
 
     H, T, Wf, De = w.get_value(start_time)
 
@@ -191,3 +190,23 @@ def test_call_height():
     assert H == 1.0
     ## fixme: add some value checks -- what to use???
 
+def test_serialize_deseriailize():
+    'test serialize/deserialize for webapi'
+    wind = constant_wind(1., 0)
+    water = Water()
+    w = Waves(wind, water)
+    json_ = w.serialize()
+    json_['wind'] = wind.serialize()
+    json_['water'] = water.serialize()
+
+    # deserialize and ensure the dict's are correct
+    d_ = Waves.deserialize(json_)
+    print 'd_'
+    print d_
+    assert d_['wind'] == Wind.deserialize(json_['wind'])
+    assert d_['water'] == Water.deserialize(json_['water'])
+    d_['wind'] = wind
+    d_['water'] = water
+    w.update_from_dict(d_)
+    assert w.wind is wind
+    assert w.water is water

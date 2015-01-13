@@ -12,15 +12,10 @@ np = numpy
 
 from colander import (SchemaNode, drop, OneOf,
                       Float, String, Range)
-from hazpy import unit_conversion as uc
+import unit_conversion as uc
 
 from gnome.cy_gnome.cy_ossm_time import CyOSSMTime
 from gnome import basic_types
-
-# TODO: The name 'convert' is doubly defined as
-#       hazpy.unit_conversion.convert and...
-#       gnome.utilities.convert
-#       This will inevitably cause namespace collisions.
 from gnome.utilities.time_utils import date_to_sec
 from gnome.utilities import serializable
 from gnome.utilities.convert import (to_time_value_pair,
@@ -167,7 +162,7 @@ class Wind(Environment, serializable.Serializable):
             is given, then units are read in from the file.
             get_timeseries() will use these as default units to
             output data, unless user specifies otherwise.
-            These units must be valid as defined in the hazpy
+            These units must be valid as defined in the
             unit_conversion module
         :type units:  string, for example: 'knot', 'meter per second',
             'mile per hour' etc.
@@ -403,8 +398,8 @@ class Wind(Environment, serializable.Serializable):
         :type datetime: datetime object
         :param units: [optional] outputs data in these units. Default is to
                       output data in units
-        :type units: string. Uses the hazpy.unit_conversion module.
-                     hazpy.unit_conversion throws error for invalid units
+        :type units: string. Uses the unit_conversion module.
+                     unit_conversion throws error for invalid units
         :param format: output format for the times series:
                        either 'r-theta' or 'uv'
         :type format: either string or integer value defined by

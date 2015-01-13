@@ -1371,3 +1371,81 @@ void OSSMTimeValue_c::CorrectTwoDigitYear(DateTimeRec &dateTime)
 }
 
 
+TimeValuePairH OSSMTimeValue_c::CalculateRunningAverage(long pastHoursToAverage)
+{	// will need to handle / return errors somehow
+	OSErr err = 0;
+	TimeValuePairH runningAverageTimeValues = 0;
+	Seconds firstTime, lastTime, timeDiff, runningAverageTimeStep = 3600, timeToAverage, currentTime;
+	VelocityRec velocity = {0.,0.}, average = {0.,0.};
+	double speed = 0;
+	//char errmsg[256];
+	
+	long i, j, numTimeValues = 0, numRunningAverageValues = 0;
+	
+	// could have OSSMTimeValue do this and return the running average
+	if (!timeValues) {err = -1; return runningAverageTimeValues;}
+	
+	numTimeValues = this -> GetNumValues();
+	
+	if (numTimeValues == 0) {err = -1; return runningAverageTimeValues;}
+
+	
+	firstTime = (*timeValues)[0].time;
+	lastTime = (*timeValues)[numTimeValues-1].time;
+	
+	//printNote("Got Here\n");
+	for (i = 0; i<numTimeValues-1; i++)
+	{
+		timeDiff = (*timeValues)[i+1].time - (*timeValues)[i].time;
+		if (timeDiff < runningAverageTimeStep && runningAverageTimeStep > 0) runningAverageTimeStep = timeDiff;	// 10 minute minimum instead?
+		//sprintf(errmsg,"Time Diff = %ld\n",timeDiff);
+		//printNote(errmsg);
+	
+	}
+	
+	//sprintf(errmsg,"Num Time Values = %ld\n",numTimeValues);
+	//printNote(errmsg);
+	
+	if (lastTime == firstTime)
+		numRunningAverageValues = 1;
+	else
+		//numRunningAverageValues = (lastTime - firstTime) / timeDiff + 1;
+		numRunningAverageValues = (lastTime - firstTime) / runningAverageTimeStep + 1;
+	
+	//sprintf(errmsg,"numRunningAverageValues  = %ld\n",numRunningAverageValues);
+	//printNote(errmsg);
+	
+	runningAverageTimeValues = (TimeValuePairH)_NewHandle(numRunningAverageValues * sizeof(TimeValuePair));
+	if (!runningAverageTimeValues) {
+		err = -1;
+		TechError("OSSMTimeValue_c::CalculateRunningAverage()", "_NewHandle()", 0);
+		goto done;
+	}
+	
+	for (i=0; i<numRunningAverageValues; i++)
+	{
+		speed = 0;
+
+		currentTime = firstTime + i * runningAverageTimeStep;
+		for (j=0; j<pastHoursToAverage+1; j++)
+		{
+			timeToAverage = currentTime - j * 3600; 	// will get first value for any time before time zero
+			GetTimeValue(timeToAverage, &velocity);
+			
+			speed = speed + sqrt(velocity.u*velocity.u + velocity.v*velocity.v);
+			//sprintf(errmsg,"speed = %lf, time = %lu\n",speed,timeToAverage);
+			//printNote(errmsg);
+		}
+		speed = speed / (double)(pastHoursToAverage + 1);
+		average.u = speed;
+		average.v = 0;
+		(*runningAverageTimeValues)[i].value = average;
+		(*runningAverageTimeValues)[i].time = currentTime;
+		//sprintf(errmsg,"average speed = %lf, time = %lu\n",average.u,currentTime);
+		//printNote(errmsg);
+	
+	}
+	
+done:
+	return runningAverageTimeValues;
+}

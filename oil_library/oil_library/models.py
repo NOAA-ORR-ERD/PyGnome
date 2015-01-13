@@ -198,8 +198,7 @@ class ImportedRecord(Base):
                         cascade="all, delete, delete-orphan")
     toxicities = relationship('Toxicity', backref='imported',
                               cascade="all, delete, delete-orphan")
-    oil = relationship('Oil', backref='imported',
-                       uselist=False)
+    oil = relationship('Oil', backref='imported', uselist=False)
 
     def __init__(self, **kwargs):
         for a, v in kwargs.iteritems():
@@ -364,6 +363,47 @@ class Category(Base):
                 .format(self.name, self.id, self.parent_id))
 
 
+class Estimated(Base):
+    '''
+        This object, is created as a single place where we can track
+        which fields in the Oil object were estimated, and which ones
+        were simply copied from the imported record.
+    '''
+    __tablename__ = 'estimated'
+    id = Column(Integer, primary_key=True)
+
+    # flag fields
+    name = Column(Boolean, default=False)
+    api = Column(Boolean, default=False)
+    densities = Column(Boolean, default=False)
+    viscosities = Column(Boolean, default=False)
+    oil_water_interfacial_tension_n_m = Column(Boolean, default=False)
+    oil_water_interfacial_tension_ref_temp_k = Column(Boolean, default=False)
+    pour_point_min_k = Column(Boolean, default=False)
+    pour_point_max_k = Column(Boolean, default=False)
+    flash_point_min_k = Column(Boolean, default=False)
+    flash_point_max_k = Column(Boolean, default=False)
+    emulsion_water_fraction_max = Column(Boolean, default=False)
+    sara_fractions = Column(Boolean, default=True)
+    bullwinkle_fraction = Column(Boolean, default=False)
+    adhesion_kg_m_2 = Column(Boolean, default=False)
+    sulphur_fraction = Column(Boolean, default=False)
+    soluability = Column(Boolean, default=False)
+    cuts = Column(Boolean, default=False)
+    molecular_weights = Column(Boolean, default=True)
+
+    # relationship fields
+    oil = relationship('Oil', backref='estimated', uselist=False)
+
+    def __init__(self, **kwargs):
+        for a, v in kwargs.iteritems():
+            if (a in self.columns):
+                setattr(self, a, v)
+
+    def __repr__(self):
+        return "<Estimated('%s')>" % (self.id)
+
+
 class Oil(Base):
     '''
         This is where we will put our estimated oil properties.
@@ -371,6 +411,7 @@ class Oil(Base):
     __tablename__ = 'oils'
     id = Column(Integer, primary_key=True)
     imported_record_id = Column(Integer, ForeignKey('imported_records.id'))
+    estimated_id = Column(Integer, ForeignKey('estimated.id'))
 
     name = Column(String(100), unique=True, nullable=False)
     api = Column(Float(53))
@@ -383,9 +424,11 @@ class Oil(Base):
     flash_point_min_k = Column(Float(53))
     flash_point_max_k = Column(Float(53))
     emulsion_water_fraction_max = Column(Float(53))
+    bullwinkle_time = Column(Float(53))
     bullwinkle_fraction = Column(Float(53))
     adhesion_kg_m_2 = Column(Float(53))
     sulphur_fraction = Column(Float(53))
+    soluability = Column(Float(53))
 
     categories = relationship('Category', secondary=oil_to_category,
                               backref='oils')

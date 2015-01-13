@@ -4,7 +4,7 @@ Tests for oil_props module in gnome.db.oil_library
 import copy
 
 import pytest
-from hazpy import unit_conversion as uc
+import unit_conversion as uc
 
 from oil_library import get_oil_props
 
@@ -81,6 +81,7 @@ class TestCopy():
         assert op is not dcop
 
         for item in op.__dict__:
+            print "item checking:", item
             assert getattr(op, item) == getattr(dcop, item)
             if item == '_r_oil' or getattr(op, item) is None:
                 assert getattr(op, item) is getattr(dcop, item)

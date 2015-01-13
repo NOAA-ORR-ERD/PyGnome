@@ -19,7 +19,7 @@
 '''
 import transaction
 
-from hazpy import unit_conversion as uc
+import unit_conversion as uc
 
 from oil_library.models import Oil, ImportedRecord, Category
 from oil_library.utilities import get_viscosity
@@ -415,10 +415,10 @@ def get_oils_by_api(session, product_type,
     oil_query = (session.query(Oil).join(ImportedRecord)
                  .filter(ImportedRecord.product_type == product_type))
 
-    if api_max != None:
+    if api_max is not None:
         oil_query = oil_query.filter(Oil.api <= api_max)
 
-    if api_min != None:
+    if api_min is not None:
         oil_query = oil_query.filter(Oil.api > api_min)
 
     return oil_query.all()

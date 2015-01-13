@@ -19,7 +19,7 @@ from pytest import raises
 import numpy
 np = numpy
 
-import hazpy.unit_conversion as uc
+import unit_conversion as uc
 
 from gnome.spill import (Spill,
                          Release,
