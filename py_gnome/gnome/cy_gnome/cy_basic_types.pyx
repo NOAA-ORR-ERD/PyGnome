@@ -35,7 +35,9 @@ oil_status = enum(not_released=OILSTAT_NOTRELEASED,
                   on_land=OILSTAT_ONLAND,
                   off_maps=OILSTAT_OFFMAPS,
                   evaporated=OILSTAT_EVAPORATED,
-                  to_be_removed=OILSTAT_TO_BE_REMOVED)
+                  to_be_removed=OILSTAT_TO_BE_REMOVED,
+                  burn=13,
+                  skim=14)
 
 """
 disperse status as an enum type

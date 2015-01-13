@@ -47,7 +47,7 @@ class Weatherer(Process):
         # SpillContainer for substance data and also resyn back to data_arrays:
         #    SpillContainer().itersubstancedata(self._arrays)
         #    SpillContainer().update_from_substancedata(self._arrays)
-        self._arrays = ['mass_components', 'mass']
+        self._arrays = ['mass_components', 'mass', 'status_codes']
 
     def __repr__(self):
         return ('{0.__class__.__module__}.{0.__class__.__name__}('

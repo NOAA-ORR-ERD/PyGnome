@@ -163,6 +163,8 @@ _default_values = {
      'evap_decay_constant': (None, np.float64, None),
 
      # initial volume - used to compute spreading (LE area)
+     # this is initial volume of oil released per LE - it'll be the same for
+     # all LEs released at once
      'init_volume': ((), np.float64, 0),
      'init_area': ((), np.float64, 0),
      'relative_bouyancy': ((), np.float64, 0),

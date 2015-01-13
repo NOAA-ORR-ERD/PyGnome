@@ -26,6 +26,7 @@ from gnome.model import Model
 from gnome.spill_container import SpillContainer
 
 from gnome.movers import SimpleMover
+from gnome.weatherers import Skimmer
 from gnome.utilities.remote_data import get_datafile
 
 
@@ -235,6 +236,11 @@ def get_testdata():
 
     data['nc'] = {'nc_output':
                   get_datafile(os.path.join(s_data, 'nc', 'test_output.nc'))}
+    data['lis'] = \
+        {'map': get_datafile(os.path.join(lis, 'LongIslandSoundMap.BNA')),
+         'cats_curr': get_datafile(os.path.join(lis, r"LI_tidesWAC.CUR")),
+         'cats_tide': get_datafile(os.path.join(lis, r"CLISShio.txt"))
+         }
     return data
 
 
