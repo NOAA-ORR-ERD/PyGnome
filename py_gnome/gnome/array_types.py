@@ -178,8 +178,8 @@ _default_values = {
      'init_mass': ((), np.float64, 0),
 
      'interfacial_area': ((), np.float64, 0),
-     #'bulltime': ((), np.int32, 0.), # time when emulsification starts
-     'bulltime': ((), np.float64, -1.),	# use negative as a not yet set flag
+     # 'bulltime': ((), np.int32, 0.), # time when emulsification starts
+     'bulltime': ((), np.float64, -1.),  # use negative as a not yet set flag
 
      # same for all elements in a spill - since weatherer's iterate through
      # the data per substance as opposed to per spill, it is easier to define
