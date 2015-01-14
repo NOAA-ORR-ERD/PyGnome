@@ -16,12 +16,9 @@ from gnome.array_types import (frac_lost,  # due to evaporation and dissolution
                                frac_water)
 
 from gnome.utilities.serializable import Serializable, Field
-
+from gnome import constants
 from .core import WeathererSchema
 from gnome.weatherers import Weatherer
-from gnome.environment import constants
-
-
 from gnome.cy_gnome.cy_weatherers import emulsify_oil
 
 
@@ -103,7 +100,7 @@ class Emulsification(Weatherer, Serializable):
             # doesn't emulsify, avoid the nans
             if Y_max <= 0:
                 continue
-            S_max = (6. / constants['drop_min']) * (Y_max / (1.0 - Y_max))
+            S_max = (6. / constants.drop_min) * (Y_max / (1.0 - Y_max))
 
             emulsify_oil(time_step,
                          data['frac_water'],
@@ -116,7 +113,7 @@ class Emulsification(Weatherer, Serializable):
                          emul_constant,
                          S_max,
                          Y_max,
-                         constants['drop_max'])
+                         constants.drop_max)
 
             #sc.weathering_data['emulsified'] += \
                 #np.sum(data['frac_water'][:]) / sc.num_released
@@ -202,6 +199,6 @@ class Emulsification(Weatherer, Serializable):
         if wind_speed < pseudo_wind:
             wind_speed = pseudo_wind
 
-        k_emul = 6.0 * K0Y * wind_speed * wind_speed / constants['drop_max']
+        k_emul = 6.0 * K0Y * wind_speed * wind_speed / constants.drop_max
 
         return k_emul

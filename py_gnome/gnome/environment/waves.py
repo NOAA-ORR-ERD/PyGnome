@@ -15,16 +15,16 @@ from math import sqrt
 
 import copy
 
+from gnome import constants
 from gnome.utilities import serializable
 from gnome.utilities.serializable import Field
 from gnome.persist import base_schema
 from .environment import Environment
 from wind import WindSchema
 from .environment import WaterSchema
-from . import constants
 
 
-g = constants['gravity']  # the gravitational constant.
+g = constants.gravity  # the gravitational constant.
 
 
 class WavesSchema(base_schema.ObjType):

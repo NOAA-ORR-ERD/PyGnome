@@ -21,8 +21,7 @@ from gnome.array_types import (density,
                                frac_lost,
                                age,
                                init_mass)
-from gnome.environment import constants
-from gnome import AddLogger
+from gnome import AddLogger, constants
 
 
 class FayGravityViscous(object):
@@ -52,7 +51,7 @@ class FayGravityViscous(object):
         '''
         self._check_relative_bouyancy(relative_bouyancy)
         out = (np.pi*(self.spreading_const[1]**4/self.spreading_const[0]**2)
-               * (((init_volume)**5*constants['gravity']*relative_bouyancy) /
+               * (((init_volume)**5*constants.gravity*relative_bouyancy) /
                   (water_viscosity**2))**(1./6.))
 
         return out
@@ -113,7 +112,7 @@ class FayGravityViscous(object):
         if np.any(mask):
             out[mask] = init_area[mask]
             dFay = (self.spreading_const[1]**2./16. *
-                    (constants['gravity']*relative_bouyancy[mask] *
+                    (constants.gravity*relative_bouyancy[mask] *
                      init_volume[mask]**2 /
                      np.sqrt(water_viscosity*age[mask])))
             dEddy = 0.033*age[mask]**(4./25)

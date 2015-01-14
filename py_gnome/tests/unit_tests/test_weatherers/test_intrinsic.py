@@ -6,7 +6,8 @@ from datetime import datetime, timedelta
 import numpy as np
 import pytest
 
-from gnome.environment import Water, constants
+from gnome import constants
+from gnome.environment import Water
 from gnome.weatherers.intrinsic import FayGravityViscous, IntrinsicProps
 from gnome.array_types import area, mol
 from gnome.spill import point_line_release_spill
@@ -48,7 +49,7 @@ class TestFayGravityViscous:
         '''
         k1 = self.spread.spreading_const[0]
         k2 = self.spread.spreading_const[1]
-        g = constants['gravity']
+        g = constants.gravity
         nu_h2o = water_viscosity
         dbuoy = elem_rel_bouy
         A0 = np.pi*(k2**4/k1**2)*(((init_vol)**5*g*dbuoy)/(nu_h2o**2))**(1./6.)

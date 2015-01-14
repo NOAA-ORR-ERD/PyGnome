@@ -14,11 +14,10 @@ from gnome.array_types import (mass_components,
                                frac_lost)
 from gnome.basic_types import oil_status
 from gnome.utilities.serializable import Serializable, Field
-
+from gnome import constants
 from .core import WeathererSchema
 from gnome.weatherers import Weatherer
-from gnome.environment import (constants,
-                               WindSchema,
+from gnome.environment import (WindSchema,
                                WaterSchema)
 
 
@@ -110,7 +109,7 @@ class Evaporation(Weatherer, Serializable):
 
             data['evap_decay_constant'][:, :len(vp)] = \
                 -(((data['area'] * f_diff).reshape(-1, 1) * K * vp) /
-                  np.repeat((constants['gas_constant'] * water_temp *
+                  np.repeat((constants.gas_constant * water_temp *
                              data['mol']).reshape(-1, 1), len(vp), axis=1))
 
             # only elements 'in_water' experience evaporation
