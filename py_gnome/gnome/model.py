@@ -731,6 +731,10 @@ class Model(Serializable):
             if obj_added.tide.id not in self.environment:
                 self.environment += obj_added.tide
 
+        if hasattr(obj_added, 'waves') and obj_added.waves is not None:
+            if obj_added.waves.id not in self.environment:
+                self.environment += obj_added.waves
+
     def _callback_add_mover(self, obj_added):
         'Callback after mover has been added'
         self._add_to_environ_collec(obj_added)
