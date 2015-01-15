@@ -173,31 +173,12 @@ class Emulsification(Weatherer, Serializable):
             k_emul = 6.0 * K0Y * U * U / d_max
 
         '''
-        # what happens if no wind or wave height data? returns zero?
-        wind_speed = self.wind.get_value(model_time)[0]
 
-        # should be time dependent
-        # wave_height = self.water.get('wave_height','m']
-        # from the waves module
-        # wave_height = self.waves.get_value(model_time)[0]
+        ## higher of real or psuedo wind
+        wind_speed = self.waves.get_emulsifiation_wind(model_time)
 
         # water uptake rate constant - get this from database
         K0Y = substance.get('k0y')
-
-        # note should probably use comp_psuedo_wind from the waves module
-        # (pass in wave_height)
-        pseudo_wind = self.waves.get_pseudo_wind(model_time)
-
-        # if wave_height > 0.0:
-        #     pseudo_wind = 2.0286 * np.sqrt(constants['gravity'] * wave_height)
-        # else:
-        #     pseudo_wind = 0
-
-        # if pseudo_wind > 4.429:
-        #     pseudo_wind = np.power(pseudo_wind / .71, .813)
-
-        if wind_speed < pseudo_wind:
-            wind_speed = pseudo_wind
 
         k_emul = 6.0 * K0Y * wind_speed * wind_speed / constants.drop_max
 

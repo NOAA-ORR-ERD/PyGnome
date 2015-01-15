@@ -210,3 +210,36 @@ def test_serialize_deseriailize():
     w.update_from_dict(d_)
     assert w.wind is wind
     assert w.water is water
+
+def test_get_emulsification_wind():
+    wind = constant_wind(3., 0)
+    water = Water()
+    w = Waves(wind, water)
+
+    print w.get_emulsifiation_wind(start_time)
+    assert w.get_emulsifiation_wind(start_time) == 3.0
+
+def test_get_emulsification_wind_with_wave_height():
+    wind = constant_wind(3., 0)
+    water = Water()
+    water.wave_height = 2.0
+    w = Waves(wind, water)
+
+    print w.get_value(start_time)
+
+    print w.get_emulsifiation_wind(start_time)
+    ## input wave height should hav overwhelmed
+    assert w.get_emulsifiation_wind(start_time) > 3.0
+
+def test_get_emulsification_wind_with_wave_height2():
+    wind = constant_wind(10., 0)
+    water = Water()
+    water.wave_height = 2.0
+    w = Waves(wind, water)
+
+    print w.get_value(start_time)
+
+    print w.get_emulsifiation_wind(start_time)
+    ## input wave height should not have overwhelmed wind speed
+    assert w.get_emulsifiation_wind(start_time)  ==  10.0
+
