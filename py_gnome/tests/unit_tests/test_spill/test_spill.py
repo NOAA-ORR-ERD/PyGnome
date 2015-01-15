@@ -19,7 +19,7 @@ from pytest import raises
 import numpy
 np = numpy
 
-import hazpy.unit_conversion as uc
+import unit_conversion as uc
 
 from gnome.spill import (Spill,
                          Release,
@@ -35,7 +35,8 @@ from ..conftest import mock_append_data_arrays
 # Used to mock SpillContainer functionality of creating/appending data_arrays
 # Only care about 'positions' array type for all spills, no need to define
 # and carry remaining numpy arrays
-arr_types = {'positions': gnome.array_types.positions}
+arr_types = {'positions': gnome.array_types.positions,
+             'mass': gnome.array_types.mass}
 
 
 @pytest.mark.parametrize(("element_type", "amount"), [(None, None),
@@ -55,16 +56,12 @@ def test_init(element_type, amount):
     if element_type is None:
         assert np.all(spill.get('windage_range') == (0.01, 0.04))
         assert (spill.get('windage_persist') == 900)
-
-        if amount is not None:
-            assert 'mass' in spill.get('array_types')
-            assert len(spill.get('initializers')) == 2
-        else:
-            assert len(spill.get('initializers')) == 1
+        assert len(spill.get('initializers')) == 1  # add windages
     else:
         assert len(spill.get('initializers')) == 0
 
     assert spill.name == 'Spill'
+    assert spill.get('release_duration') == timedelta(0)
 
 
 @pytest.mark.parametrize(("amount", "units"), [(10.0, 'm^3'),
@@ -230,6 +227,7 @@ class Test_point_line_release_spill:
                 np.all(release.start_position == release.end_position))
         assert (np.all(release.release_time == self.release_time) and
                 np.all(release.release_time == release.end_release_time))
+        assert sp.get('release_duration') == timedelta(0)
 
     def test_noparticles_model_run_after_release_time(self):
         """
@@ -291,7 +289,10 @@ class Test_point_line_release_spill:
         """
         sp = point_line_release_spill(num_elements=self.num_elements,
                                       start_position=self.start_position,
-                                      release_time=self.release_time)
+                                      release_time=self.release_time,
+                                      amount=100,
+                                      units='kg')
+        assert sp.get('release_duration') == timedelta(0)
         timestep = 3600  # seconds
 
         # release all particles
@@ -318,6 +319,7 @@ class Test_point_line_release_spill:
         data_arrays = self.release_and_assert(sp, self.release_time,
                                               timestep, {}, self.num_elements)
         assert np.alltrue(data_arrays['positions'] == self.start_position)
+        assert data_arrays['mass'].sum() == sp.get_mass('kg')
 
     def test_cont_point_release(self):
         """
@@ -332,7 +334,11 @@ class Test_point_line_release_spill:
                                       start_position=self.start_position,
                                       release_time=self.release_time,
                                       end_release_time=self.release_time +
-                                                       timedelta(hours=10))
+                                                       timedelta(hours=10),
+                                      amount=123,
+                                      units='kg')
+
+        assert sp.get('release_duration') == timedelta(hours=10)
         timestep = 3600  # one hour in seconds
 
         """
@@ -351,8 +357,11 @@ class Test_point_line_release_spill:
                                 timedelta(hours=1),
                                 timedelta(hours=2),
                                 timedelta(hours=10)]
-        ts = [timestep, timestep, timestep / 2, timestep]
-        exp_num_released = [10, 10, 5, 75]
+        # todo: figure out how we want point/line release to work!
+        #ts = [timestep, timestep, timestep / 2, timestep]
+        #exp_num_released = [10, 10, 5, 75]
+        ts = [timestep, timestep, timestep * 8, timestep]
+        exp_num_released = [10, 10, 80, 0]
 
         for ix in range(4):
             data_arrays = self.release_and_assert(sp,
@@ -363,6 +372,8 @@ class Test_point_line_release_spill:
             assert np.alltrue(data_arrays['positions'] == self.start_position)
 
         assert sp.get('num_released') == sp.release.num_elements
+        assert np.allclose(data_arrays['mass'].sum(), sp.get_mass('kg'),
+                           atol=1e-6)
 
         # rewind and reset data arrays for new release
         sp.rewind()
@@ -413,6 +424,8 @@ class Test_point_line_release_spill:
                                       end_position=end_position,
                                       end_release_time=self.release_time +
                                                        timedelta(minutes=100))
+        assert sp.get('release_duration') == timedelta(minutes=100)
+
         timestep = 100 * 60
 
         # the full release over one time step
@@ -501,8 +514,9 @@ class Test_point_line_release_spill:
                                       start_position=start_position,
                                       release_time=self.release_time,
                                       end_position=end_position,
-                                      end_release_time=self.release_time +
-                                                       timedelta(minutes=50))
+                                      end_release_time=self.release_time + timedelta(minutes=50),
+                                      amount=1000,
+                                      units='kg')
 
         # start before release
         time = self.release_time - timedelta(minutes=10)
@@ -510,7 +524,6 @@ class Test_point_line_release_spill:
         num_rel_per_min = 1  # release 50 particles in 50 minutes
         data_arrays = {}
 
-        # multiplier for varying the timestep
         mult = 0
         if not vary_timestep:
             mult = 1
@@ -533,6 +546,8 @@ class Test_point_line_release_spill:
                                                   var_delta_t.total_seconds(),
                                                   data_arrays, exp_num_rel)
             time += var_delta_t
+
+        assert data_arrays['mass'].sum() == sp.get_mass('kg')
 
         # all particles have been released
         assert data_arrays['positions'].shape == (sp.release.num_elements, 3)

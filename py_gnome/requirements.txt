@@ -30,7 +30,7 @@ six
 geojson
 repoze.lru
 
-git+https://github.com/NOAA-ORR-ERD/hazpy.unit_conversion.git#egg=hazpy.unit_conversion
+git+https://github.com/NOAA-ORR-ERD/PyNUCOS.git#egg=unit_conversion
 
 # Use specified commit 
 # git+https://github.com/Pylons/colander.git@5816554a6f0c0f025922dd03d1518de361a9f0ed#egg=colander-dev

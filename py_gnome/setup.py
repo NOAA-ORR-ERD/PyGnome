@@ -171,6 +171,7 @@ class install_self_and_oil_lib(install):
 ## setup our environment and architecture
 ## These should be properties that are used by all Extensions
 libfile = ''
+## fixme: is this only for the mac? and aren't there better ways to get the architecture?
 if sys.maxsize <= 2 ** 32:
     architecture = 'i386'
 else:
@@ -274,7 +275,8 @@ extension_names = ['cy_mover',
                    'cy_shio_time',
                    'cy_grid',
                    'cy_grid_rect',
-                   'cy_grid_curv'
+                   'cy_grid_curv',
+                   'cy_weatherers'
                    ]
 
 cpp_files = ['RectGridVeL_c.cpp',
@@ -316,6 +318,7 @@ cpp_files = ['RectGridVeL_c.cpp',
              'GridMapUtils.cpp',
              'RandomVertical_c.cpp',
              'RiseVelocity_c.cpp',
+             'Weatherers_c.cpp',
              ]
 
 

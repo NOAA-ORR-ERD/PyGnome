@@ -17,12 +17,11 @@ from gnome.utilities.serializable import Serializable, Field
 from .initializers import (InitRiseVelFromDropletSizeFromDist,
                            InitRiseVelFromDist,
                            InitWindages,
-                           InitMassFromSpillAmount,
                            InitMassFromPlume)
 from oil_library import get_oil_props
 
 from gnome.persist import base_schema
-from hazpy import unit_conversion as uc
+import unit_conversion as uc
 
 
 class ElementType(Serializable):
@@ -57,7 +56,6 @@ class ElementType(Serializable):
         :type substance: str or OilProps
 
         '''
-        self._substance = None
         self.initializers = []
         try:
             self.initializers.extend(initializers)
@@ -66,6 +64,7 @@ class ElementType(Serializable):
             # append it to list
             self.initializers.append(initializers)
 
+        self._substance = None
         self.substance = substance
 
     def __repr__(self):
@@ -153,8 +152,8 @@ class ElementType(Serializable):
         return dict_
 
     def initializers_to_dict(self):
-        'just return a deepcopy of the initializers'
-        return copy.deepcopy(self.initializers)
+        'just return the initializers'
+        return self.initializers
 
     def serialize(self, json_='webapi'):
         """
@@ -225,18 +224,6 @@ class ElementType(Serializable):
         else:
             return json_
 
-    def __eq__(self, other):
-        '''
-        override for comparing 'substance' - we should check to see that the
-        substance attribute (OilProps) object is equal; however, this check
-        fails - need to investigate further
-        '''
-        # todo: fix/add equality check for 'substance'
-        #if self.attr_to_dict('substance') != other.attr_to_dict('substance'):
-        #    return False
-
-        return super(ElementType, self).__eq__(other)
-
 
 def floating(windage_range=(.01, .04),
              windage_persist=900,
@@ -253,30 +240,6 @@ def floating(windage_range=(.01, .04),
     :type substance: str or OilProps
     """
     init = [InitWindages(windage_range, windage_persist)]
-    return ElementType(init, substance)
-
-
-def floating_mass(windage_range=(.01, .04),
-                  windage_persist=900,
-                  substance='oil_conservative'):
-    """
-    Helper function returns an ElementType object containing following
-    initializers:
-
-    1. InitWindages(): for initializing 'windages' with user specified
-    windage_range and windage_persist.
-
-    2. InitMassFromSpillAmount(): Initializes mass of each element by equally
-    dividing the amount spilled by the total number of elements used to model
-    it. Requires the Spill has a valid 'amount', 'units' and 'substance' with
-    density if we need to convert from volume to mass.
-
-    :param substance='oil_conservative': Type of oil spilled. Passed onto
-        ElementType constructor
-    :type substance: str or OilProps
-    """
-    init = [InitWindages(windage_range, windage_persist),
-            InitMassFromSpillAmount()]
     return ElementType(init, substance)
 
 
@@ -322,14 +285,12 @@ def plume(distribution_type='droplet_size',
     if distribution_type == 'droplet_size':
         return ElementType([InitRiseVelFromDropletSizeFromDist(
                                 distribution=distribution, **kwargs),
-                            InitWindages(windage_range, windage_persist),
-                            InitMassFromSpillAmount()],
+                            InitWindages(windage_range, windage_persist)],
                            substance)
     elif distribution_type == 'rise_velocity':
         return ElementType([InitRiseVelFromDist(distribution=distribution,
                                                 **kwargs),
-                            InitWindages(windage_range, windage_persist),
-                            InitMassFromSpillAmount()],
+                            InitWindages(windage_range, windage_persist)],
                            substance)
 
 
@@ -341,9 +302,7 @@ plume.__doc__ += ("\nDocumentation of InitRiseVelFromDropletSizeFromDist:\n" +
                    "\nDocumentation of InitRiseVelFromDist:\n" +
                    InitRiseVelFromDist.__init__.__doc__ +
                    "\nDocumentation of InitWindages:\n" +
-                   InitWindages.__init__.__doc__ +
-                   "\nDocumentation of InitMassFromVolume:\n" +
-                   InitMassFromSpillAmount.__init__.__doc__
+                   InitWindages.__init__.__doc__
                    )
 
 
@@ -364,6 +323,6 @@ def plume_from_model(distribution_type='droplet_size',
                             InitMassFromPlume()])
     elif distribution_type == 'rise_velocity':
         return ElementType([InitRiseVelFromDist(distribution=distribution,
-                                                 **kwargs),
+                                                **kwargs),
                             InitWindages(windage_range, windage_persist),
                             InitMassFromPlume()])

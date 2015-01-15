@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 """
-the waves environment object.
+The waves environment object.
 
 Computes the wave hight and percent wave breaking
 
@@ -12,30 +12,65 @@ Uses the same approach as ADIOS 2
 """
 from __future__ import division
 from math import sqrt
-from gnome import environment
+
+import copy
+
+from gnome import constants
 from gnome.utilities import serializable
+from gnome.utilities.serializable import Field
+from gnome.persist import base_schema
+from .environment import Environment
+from wind import WindSchema
+from .environment import WaterSchema
 
-g = environment.constants['gravity'] # the graviational contant.
+
+g = constants.gravity  # the gravitational constant.
 
 
-class Waves(environment.Environment, serializable.Serializable):
+class WavesSchema(base_schema.ObjType):
+    'Colander Schema for Conditions object'
+    name = 'Waves'
+    description = 'waves schema base class'
+
+
+class Waves(Environment, serializable.Serializable):
     """
     class to compute the wave height for a time series
 
     At the moment, it only does a single point, non spatially
     variable, but may be extended in the future
     """
-    def __init__(self, wind, fetch=None):
+    _state = copy.deepcopy(Environment._state)
+    _state += [Field('water', save=True, update=True, save_reference=True),
+               Field('wind', save=True, update=True, save_reference=True)]
+    _schema = WavesSchema
+
+    _state['name'].test_for_eq = False
+
+    def __init__(self, wind, water):
         """
-        :param wind: A wind object to get the wind speed
+        :param wind: A wind object to get the wind speed.
+                     This should be a moving average wind object.
         :type wind: a Wind type, or equivelent
 
-        :param fetch: the limiting fetch for the wave generation
-        :param type: floating point number, units of meters.
+        :param water: water properties, specifically fetch and wave height
+        :type water: environment.Water object.
         """
 
-        self.fetch = fetch
         self.wind = wind
+        self.water = water
+
+    # def update_water(self):
+    #     """
+    #     updates values from water object
+
+    #     this should be called when you want to make sure new data is Used
+
+    #     note: yes, this is kludgy, but it avoids calling self.water.fetch all over the place
+    #     """
+    #     self.wave_height = self.water.wave_height
+    #     self.fetch = self.water.fetch
+    #     self.density = self.water.density
 
     def get_value(self, time):
         """
@@ -45,15 +80,40 @@ class Waves(environment.Environment, serializable.Serializable):
         :param time: the time you want the wave data for 
         :type time: datetime.datetime object
 
-        :returns: wave_height, peak_period, percent_breaking
+        :returns: wave_height, peak_period, whitecap_fraction, dissipation_energy
 
-        wave_height is in units of meters, percent_breaking is unitless percent.
+        Units:
+          wave_height: meters (RMS height)
+          peak_perid: seconds
+          whitecap_fraction: unit-less fraction
+          dissipation_energy: not sure!! # fixme!
         """
+        # make are we are up to date with water object
+        wave_height = self.water.wave_height
 
-        U = self.time.get_value(self, time)
+        if wave_height is None:
+            U = self.wind.get_value(time)[0]  # only need velocity
+            H = self.compute_H(U)
+        else:  # user specified a wave height
+            H = wave_height
+            U = self.comp_psuedo_wind(H)
+        Wf = self.comp_whitecap_fraction(U)
+        T = self.comp_period(U)
 
-        data = self.get_timeseries(time, 'm/s', 'r-theta')
-        return tuple(data[0]['value'])
+        De = self.disp_wave_energy(H)
+
+        return H, T, Wf, De
+
+    def get_pseudo_wind(self, model_time):
+        wave_height = self.water.wave_height
+        if wave_height is None:
+            U = self.wind.get_value(model_time)[0]  # only need velocity
+            H = self.compute_H(U)
+        else:  # user specified a wave height
+            H = wave_height
+        U = self.comp_psuedo_wind(H)
+
+        return U
 
     def compute_H(self, U):
         """
@@ -64,21 +124,23 @@ class Waves(environment.Environment, serializable.Serializable):
 
         :returns Hrms: RMS wave height in meters
         """
-
+        fetch = self.water.fetch
         ## wind stress factor
         ## Transition at U = 4.433049525859078 for linear scale with wind speed.
         ##   4.433049525859078 is where the solutions match
         ws = 0.71*U**1.23 if U < 4.433049525859078 else U # wind stress factor
 
         # 2268*ws**2 is limit of fetch limited case.
-        if (self.fetch is not None) and (self.fetch < 2268*ws**2): ## fetch limited case
-            H = 0.0016*sqrt(self.fetch/g)*ws
-        else: # fetch unlimited
+        if (fetch is not None) and (fetch < 2268*ws**2):  # fetch limited case
+            H = 0.0016*sqrt(fetch/g)*ws
+        else:  # fetch unlimited
             H = 0.243*ws*ws/g
 
         Hrms = 0.707*H
-    
-        return Hrms
+
+        # arbitrary limit at 30 m -- about the largest waves recorded
+        # fixme -- this really depends on water depth -- should take that into account?
+        return Hrms if Hrms < 30.0 else 30.0
 
     def comp_psuedo_wind(self, H):
         """
@@ -93,11 +155,8 @@ class Waves(environment.Environment, serializable.Serializable):
 
         ##U_h = 2.0286*g*sqrt(H/g) # Bill's version
         U_h = sqrt(g * H / 0.243)
-        if U_h < 4.433049525859078: # check if low wind case
-            print "low wind case"
+        if U_h < 4.433049525859078:  # check if low wind case
             U_h = (U_h/0.71)**0.813008
-        else:
-            print "high wind case"
         return U_h
 
     def comp_whitecap_fraction(self, U):
@@ -105,18 +164,32 @@ class Waves(environment.Environment, serializable.Serializable):
         compute the white capping fraction
 
         This and wave height drives dispersion
+
+        This based on the formula in:
+        Lehr and Simecek-Beatty
+        The Relation of Langmuir Circulation Processes to the Standard Oil Spill Spreading, Dispersion and Transport Algorithms
+        Spill Sci. and Tech. Bull, 6:247-253 (2000)
+        (maybe typo -- didn't match)
+
+        Should look in:  Ocean Waves Breaking and Marine Aerosol Fluxes
+                         By Stanislaw R. Massel
+
         """
 
-        ## fixme -- smooth this out toward zero?
-        ## disontinuity at 3 m/s at about 1.5%
-        if U < 3.0: # m/s
-            fw = 0.0
-        else:
-            fw = 0.5 * (0.01*U + 0.01) # Ding and Farmer (JPO 1994)
+        ## Monahan(JPO, 1971) time constant characterizing exponential whitecap decay.
+        ## The saltwater value for   is 3.85 sec while the freshwater value is 2.54 sec.
+        #  interpolate with salinity:
+        Tm = 0.03742857*self.water.salinity + 2.54
 
-        if fw > 1.0: # only with U > 200m/s!
-            fw = 1.0
-        return fw
+        if U < 4.0: # m/s
+            ## linear fit from 0 to the 4m/s value from Ding and Farmer
+            ## maybe should be a exponential / quadratic fit?
+            ## or zero less than 3, then a sharp increase to 4m/s?
+            fw = (0.0125*U) / Tm
+        else:
+            fw = (0.01*U + 0.01) / Tm  # Ding and Farmer (JPO 1994)
+
+        return fw if fw <= 1.0 else 1.0  # only with U > 200m/s!
 
     def comp_period(self, U):
         """
@@ -125,23 +198,57 @@ class Waves(environment.Environment, serializable.Serializable):
         # wind stress factor
         ## fixme: check for discontinuity at large fetch..
         ##        Is this s bit low??? 32 m/s -> T=15.7 s
-        ws = U * 0.71 * U**1.23 ## fixme -- linear for large windspeed?
-        if (self.fetch is None) or (self.fetch >= 2268*ws**2): # fetch unlimited
-            T = 0.83*ws
-        else:
-            T = 0.0624*(self.fetch*ws)**0.3333333333 # eq 3-34 (SPM?)
+        wave_height = self.water.wave_height
+        fetch = self.water.wave_height
+        if wave_height is None:
+            ws = U * 0.71 * U**1.23  ## fixme -- linear for large windspeed?
+            if (fetch is None) or (fetch >= 2268*ws**2):  # fetch unlimited
+                T = 0.83*ws
+            else:
+                T = 0.06238*(fetch*ws)**0.3333333333  # eq 3-34 (SPM?)
+        else:  # user-specified wave height
+            T = 7.508*sqrt(wave_height)
         return T
 
+    def disp_wave_energy(self, H):
+        """
+        Compute the dissipative wave energy
+        """
+        # fixme: does this really only depend on height?
+        0.0034*self.water.density*g*H**2
 
+    def serialize(self, json_='webapi'):
+        """
+        Since 'wind'/'water' property is saved as references in save file
+        need to add appropriate node to WindMover schema for 'webapi'
+        """
+        toserial = self.to_serialize(json_)
+        schema = self.__class__._schema()
+        if json_ == 'webapi':
+            if self.wind:
+                # add wind schema
+                schema.add(WindSchema(name='wind'))
+            if self.water:
+                schema.add(WaterSchema(name='water'))
 
+        serial = schema.serialize(toserial)
 
+        return serial
 
+    @classmethod
+    def deserialize(cls, json_):
+        """
+        append correct schema for wind object
+        """
+        schema = cls._schema()
+        if 'wind' in json_:
+            schema.add(WindSchema(name='wind'))
 
+        if 'water' in json_:
+            schema.add(WaterSchema(name='water'))
+        _to_dict = schema.deserialize(json_)
 
-
-
-
-
+        return _to_dict
 
 # wind.get_timeseries(self, datetime=None, units=None, format='r-theta')
 

@@ -8,7 +8,7 @@ from pytest import raises
 import numpy
 np = numpy
 
-from hazpy import unit_conversion
+import unit_conversion
 
 from gnome.basic_types import (datetime_value_2d,
                                ts_format)

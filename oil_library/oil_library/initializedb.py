@@ -26,8 +26,11 @@ def load_database(settings):
 
         # 1. purge our builtin rows if any exist
         sys.stderr.write('Purging old records in database')
-        num_purged = purge_old_records(session)
-        print 'finished!!!  %d rows processed.' % (num_purged)
+        imported_recs_purged, oil_recs_purged = purge_old_records(session)
+        print ('finished!!!\n'
+               '    {0} imported records purged.\n'
+               '    {0} oil records purged.'
+               .format(imported_recs_purged, oil_recs_purged))
 
         # 2. we need to open our OilLib file
         print 'opening file: %s ...' % (settings['oillib.file'])

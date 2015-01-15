@@ -1,0 +1,18 @@
+'''
+Constants are mostly used internally. They are all documented here to keep them
+in one place. The 'units' serve as documentation ** do not mess with them **.
+There is no unit conversion when using these constants - they are used as is
+in the code, implicitly assuming the units are SI and untouched.
+'''
+gas_constant = 8.314
+atmos_pressure = 101325.0
+drop_min = 1.0e-6
+drop_max = 1.0e-5
+gravity = 9.80665
+
+
+units = {'gas_constant': 'J/(K mol)',
+         'pressure': 'Pa',
+         'min emul drop diameter': 'm',
+         'max emul drop diameter': 'm',
+         'acceleration': 'm/s^2'}

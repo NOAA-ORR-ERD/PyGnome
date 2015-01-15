@@ -75,7 +75,7 @@ def get_v_max(oil, k_v2=5000.0):
                       key=lambda v: v[1])[0][0]
         v_ref = visc.m_2_s
         t_ref = visc.ref_temp_k
-        v_max = v_ref * exp(k_v2 / pour_point - k_v2 / t_ref)
+        v_max = v_ref * exp(k_v2 / t_ref - k_v2 / pour_point)
 
     return v_max
 
@@ -131,7 +131,8 @@ def get_viscosity(oil, temp, out=None):
         mask = v_max > out
         if np.any(mask):
             out[mask] = v_max
-    return out
+
+    return (out, out[0])[len(out) == 1]
 
 
 def get_viscosity_orig(oil, temp):
@@ -253,7 +254,7 @@ def get_boiling_points_from_api(max_cuts, total_mass, api):
     Assume max_cuts * 2 components containing [saturate, aromatic]
     Output boiling point in this form:
 
-      components: [s_0, a_0, s_1, a_1, ..., s_n, a_n]
+      components: [s_0, a_0, s_1, a_1, ..., s_i, a_i]
       index, i:   [0, 1, 2, .., max_cuts-1]
 
     where s_i is boiling point corresponding with i-th saturate component

@@ -36,6 +36,7 @@ class TestRelease:
         assert rel.num_elements == 0
         assert rel.release_time == self.rel_time
         assert rel.start_time_invalid is None
+        assert rel.release_duration == timedelta(0)
 
     @pytest.mark.parametrize("curr_time", [rel_time,
                                            rel_time - timedelta(seconds=1),
@@ -110,7 +111,7 @@ class TestInitElementsFromFile():
 
     @pytest.mark.parametrize("index", [None, 0, 2])
     def test_init(self, index):
-        release = InitElemsFromFile(testdata['nc']['nc_output'], index)
+        release = InitElemsFromFile(testdata['nc']['nc_output'], index=index)
         assert release.num_elements == 4000
         if index is None:
             # file contains initial condition plus 4 timesteps
@@ -123,6 +124,13 @@ class TestInitElementsFromFile():
             assert np.all(release._init_data['age'] ==
                           self.time_step.total_seconds() * index)
         assert release.release_time == exp_rel_time
+
+    def test_init_with_releasetime(self):
+        'test release time gets set correctly'
+        reltime = datetime(2014, 1, 1, 0, 0)
+        release = InitElemsFromFile(testdata['nc']['nc_output'], reltime)
+        assert release.num_elements == 4000
+        assert release.release_time == reltime
 
     @pytest.mark.parametrize("at", [{},
                                     {'windages': windages}])

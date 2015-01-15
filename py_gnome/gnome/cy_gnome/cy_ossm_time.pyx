@@ -420,3 +420,25 @@ cdef class CyTimeseries(CyOSSMTime):
 
         memcpy(&tval[0], time_val_hdlH[0], sz)
         return tval
+
+
+    def create_running_average(self, past_hours = 3):
+        """
+            Invokes the GetTimeValueHandle method of OSSMTimeValue_c object
+            to read the time series data
+        """
+        cdef short tmp_size = sizeof(TimeValuePair)
+        cdef TimeValuePairH time_val_hdlH
+        cdef cnp.ndarray[TimeValuePair, ndim = 1] tval
+
+        # allocate memory and copy it over
+        time_val_hdlH = self.time_dep.CalculateRunningAverage(past_hours)
+        sz = _GetHandleSize(<Handle>time_val_hdlH)
+
+        # will this always work?
+        tval = np.empty((sz / tmp_size,), dtype=basic_types.time_value_pair)
+
+        memcpy(&tval[0], time_val_hdlH[0], sz)
+        print "tval"
+        print tval
+        return tval

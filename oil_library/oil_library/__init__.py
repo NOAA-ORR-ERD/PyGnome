@@ -6,12 +6,12 @@ from sqlalchemy import create_engine
 from sqlalchemy.exc import UnboundExecutionError
 from sqlalchemy.orm.exc import NoResultFound
 
-from hazpy import unit_conversion
-uc = unit_conversion
+import unit_conversion as uc
 
 from oil_library.models import Oil, Density, DBSession
 from oil_library.mock_oil import sample_oil_to_mock_oil
 from oil_library.oil_props import OilProps
+
 
 
 # Some standard oils - scope is module level, non-public

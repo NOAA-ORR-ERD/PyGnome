@@ -13,7 +13,9 @@ Not sure at present if this needs to be serializable?
 import copy
 from math import log, exp
 
-from hazpy import unit_conversion as uc
+from repoze.lru import lru_cache
+
+import unit_conversion as uc
 from .utilities import get_density, get_boiling_points_from_cuts, get_viscosity
 
 
@@ -97,6 +99,7 @@ class OilProps(object):
 
         return val
 
+    @lru_cache(2)
     def get_density(self, temp=None, out=None):
         '''
         return density at a temperature
@@ -111,6 +114,7 @@ class OilProps(object):
         else:
             return uc.convert('density', 'API', 'kg/m^3', self.api)
 
+    @lru_cache(2)
     def get_viscosity(self, temp=288.15, out=None):
         '''
         return viscosity at a temperature, default is viscosity at 15degC
@@ -120,6 +124,18 @@ class OilProps(object):
         :type temp: scalar, list, tuple or ndarray - assumes it is in Kelvin
         '''
         return get_viscosity(self._r_oil, temp, out)
+
+    def get_bulltime(self):
+        '''
+        return bulltime (time to emulsify)
+        either user set or just return a flag
+
+        '''
+
+		# check for user input value, otherwise set to -999 as a flag
+        bulltime = -999.
+
+        return bulltime
 
     @property
     def num_components(self):
@@ -151,6 +167,7 @@ class OilProps(object):
                 self.molecular_weight[ix] = molecular_weight(bp, 'aromatic')
                 # self.molecular_weight.append(molecular_weight(bp, 'aromatic'))
 
+    @lru_cache(2)
     def vapor_pressure(self, temp, atmos_pressure=101325.0):
         '''
         water_temp and boiling point units are Kelvin
@@ -223,6 +240,6 @@ class OilProps(object):
             '''
             for attr in c_op.__dict__:
                 if getattr(self, attr) != getattr(c_op, attr):
-                    setattr(c_op, attr, copy.deepcopy(getattr(self, attr),
-                                                      memo))
+                    setattr(c_op, attr,
+                            copy.deepcopy(getattr(self, attr), memo))
         return c_op

@@ -4,7 +4,7 @@ Tests for oil_props module in gnome.db.oil_library
 import copy
 
 import pytest
-from hazpy import unit_conversion as uc
+import unit_conversion as uc
 
 from oil_library import get_oil_props
 
@@ -81,6 +81,7 @@ class TestCopy():
         assert op is not dcop
 
         for item in op.__dict__:
+            print "item checking:", item
             assert getattr(op, item) == getattr(dcop, item)
             if item == '_r_oil' or getattr(op, item) is None:
                 assert getattr(op, item) is getattr(dcop, item)
@@ -99,10 +100,3 @@ class TestCopy():
         # reference so changing it in 'op' doesn't effect the list in 'dcop'
         op.mass_fraction[0] = 0
         assert op.mass_fraction != dcop.mass_fraction
-
-    def test_deepcopy_after_changing_attr(self):
-        op = get_oil_props(10)
-        op.mass_fraction[0] = -1
-        op.boiling_point[0] = -2
-        dcop = copy.deepcopy(op)
-        self._assert_deepcopy(op, dcop)

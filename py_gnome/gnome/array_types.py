@@ -163,6 +163,8 @@ _default_values = {
      'evap_decay_constant': (None, np.float64, None),
 
      # initial volume - used to compute spreading (LE area)
+     # this is initial volume of oil released per LE - it'll be the same for
+     # all LEs released at once
      'init_volume': ((), np.float64, 0),
      'init_area': ((), np.float64, 0),
      'relative_bouyancy': ((), np.float64, 0),
@@ -170,6 +172,14 @@ _default_values = {
      'viscosity': ((), np.float64, 0),
      # fractional water content in emulsion, not being set currently
      'frac_water': ((), np.float64, 0),
+     # frac of mass lost due to evaporation + dissolution.
+     # Used to update viscosity
+     'frac_lost': ((), np.float64, 0),
+     'init_mass': ((), np.float64, 0),
+
+     'interfacial_area': ((), np.float64, 0),
+     #'bulltime': ((), np.int32, 0.), # time when emulsification starts
+     'bulltime': ((), np.float64, -1.),	# use negative as a not yet set flag
 
      # same for all elements in a spill - since weatherer's iterate through
      # the data per substance as opposed to per spill, it is easier to define

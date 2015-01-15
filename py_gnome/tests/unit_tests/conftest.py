@@ -26,6 +26,7 @@ from gnome.model import Model
 from gnome.spill_container import SpillContainer
 
 from gnome.movers import SimpleMover
+from gnome.weatherers import Skimmer
 from gnome.utilities.remote_data import get_datafile
 
 
@@ -208,6 +209,7 @@ def get_testdata():
     # path correctly
     data['timeseries'] = \
         {'wind_ts': os.path.join(s_data, 'WindDataFromGnome.WND'),
+         'wind_ts_av': os.path.join(s_data, 'WindDataFromGnome2.WND'),
          'wind_constant': os.path.join(s_data,
                                        'WindDataFromGnomeConstantWind.WND'),
          'wind_bad_units': os.path.join(s_data,
@@ -234,6 +236,11 @@ def get_testdata():
 
     data['nc'] = {'nc_output':
                   get_datafile(os.path.join(s_data, 'nc', 'test_output.nc'))}
+    data['lis'] = \
+        {'map': get_datafile(os.path.join(lis, 'LongIslandSoundMap.BNA')),
+         'cats_curr': get_datafile(os.path.join(lis, r"LI_tidesWAC.CUR")),
+         'cats_tide': get_datafile(os.path.join(lis, r"CLISShio.txt"))
+         }
     return data
 
 
@@ -447,8 +454,7 @@ def sample_sc_no_uncertainty():
               gnome.spill.point_line_release_spill(num_elements,
                               start_position,
                               release_time + timedelta(hours=1),
-                              end_position, end_release_time,
-                              amount=10, units='l'),
+                              end_position, end_release_time),
               ]
     sc.spills.add(spills)
     return sc
@@ -523,9 +529,29 @@ def sample_model_weathering(sample_model_fcn, oil, temp=311.16):
     'update model the same way for multiple tests'
     model.uncertain = False     # fixme: with uncertainty, copying spill fails!
     model.duration = timedelta(hours=4)
-    et = gnome.spill.elements.floating_mass(substance=oil)
+    et = gnome.spill.elements.floating(substance=oil)
     start_time = model.start_time + timedelta(hours=1)
     end_time = start_time + timedelta(seconds=model.time_step*3)
+    spill = gnome.spill.point_line_release_spill(10,
+                                                 rel_pos,
+                                                 start_time,
+                                                 end_release_time=end_time,
+                                                 element_type=et,
+                                                 amount=100,
+                                                 units='kg')
+    model.spills += spill
+    return model
+
+
+def sample_model_weathering2(sample_model_fcn, oil, temp=311.16):
+    model = sample_model_fcn['model']
+    rel_pos = sample_model_fcn['release_start_pos']
+    'update model the same way for multiple tests'
+    model.uncertain = False     # fixme: with uncertainty, copying spill fails!
+    model.duration = timedelta(hours=24)
+    et = gnome.spill.elements.floating(substance=oil)
+    start_time = model.start_time
+    end_time = start_time
     spill = gnome.spill.point_line_release_spill(10,
                                                  rel_pos,
                                                  start_time,

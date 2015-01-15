@@ -43,6 +43,12 @@ class Weatherer(Process):
         '''
         super(Weatherer, self).__init__(**kwargs)
 
+        # arrays that all weatherers will update - use this to ask
+        # SpillContainer for substance data and also resyn back to data_arrays:
+        #    SpillContainer().itersubstancedata(self._arrays)
+        #    SpillContainer().update_from_substancedata(self._arrays)
+        self._arrays = ['mass_components', 'mass', 'status_codes']
+
     def __repr__(self):
         return ('{0.__class__.__module__}.{0.__class__.__name__}('
                 'active_start={0.active_start!r}, '
@@ -121,8 +127,17 @@ class HalfLifeWeatherer(Weatherer):
         weather elements over time_step
         '''
         if not self.active:
-            return sc['mass_components']
+            return
+        if sc.num_released == 0:
+            return
 
-        hl = self._halflife(sc['mass_components'], self.half_lives, time_step)
-        sc['mass_components'][:] = hl
-        sc['mass'][:] = sc['mass_components'].sum(1)
+        arrays = ['mass_components', 'mass']
+        for substance, data in sc.itersubstancedata(arrays):
+            hl = self._halflife(data['mass_components'],
+                                self.half_lives, time_step)
+            data['mass_components'][:] = hl
+            data['mass'][:] = data['mass_components'].sum(1)
+
+        sc.update_from_substancedata(arrays)
+        #sc['mass_components'][:] = hl
+        #sc['mass'][:] = sc['mass_components'].sum(1)

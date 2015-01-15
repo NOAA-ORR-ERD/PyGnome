@@ -111,8 +111,8 @@ class ModelConsumer(mp.Process):
     def _num_time_steps(self):
         return self.model.num_time_steps
 
-    def _full_run(self, rewind=True, logger=False):
-        return self.model.full_run(rewind=rewind, logger=logger)
+    def _full_run(self, rewind=True):
+        return self.model.full_run(rewind=rewind)
 
     def _get_wind_timeseries(self):
         '''

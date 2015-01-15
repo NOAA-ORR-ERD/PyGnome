@@ -13,15 +13,13 @@ from pytest import raises
 import numpy
 np = numpy
 
-from hazpy import unit_conversion as uc
+import unit_conversion as uc
 import gnome
 from gnome import array_types
 from gnome.spill.elements import (InitWindages,
-                            InitMassFromSpillAmount,
                             InitRiseVelFromDist,
                             InitRiseVelFromDropletSizeFromDist,
                             floating,
-                            floating_mass,
                             ElementType,
                             plume)
 
@@ -61,8 +59,6 @@ def assert_dataarray_shape_size(arr_types, data_arrays, num_released):
 
 """ Initializers - following are used for parameterizing tests """
 fcn_list = (InitWindages(),
-            InitMassFromSpillAmount(),
-            InitMassFromSpillAmount(),
             InitRiseVelFromDist(),
             InitRiseVelFromDist(distribution=NormalDistribution(mean=0,
                                                                 sigma=0.1)),
@@ -76,14 +72,10 @@ fcn_list = (InitWindages(),
             )
 
 arrays_ = (windages,
-           mass_array, mass_array,
            rise_vel_array, rise_vel_array, rise_vel_array, rise_vel_array,
            rise_vel_diameter_array)
 
-spill_list = (None,
-              Spill(Release(datetime.now()), amount=10, units='l'),
-              Spill(Release(datetime.now()), amount=10, units='kg'),
-              None, None, None, None,
+spill_list = (None, None, None, None, None,
               Spill(Release(datetime.now())))
 
 
@@ -168,23 +160,6 @@ class TestInitConstantWindageRange:
             obj.windage_persist = bad_wp
 
 
-def test_initailize_InitMassFromSpillAmount():
-    data_arrays = mock_append_data_arrays(mass_array, num_elems)
-    substance = get_oil_props('oil_conservative')
-
-    spill = Spill(Release(datetime.now()))
-    spill.release.num_elements = 10
-    spill.amount = num_elems
-    spill.units = 'g'
-
-    fcn = InitMassFromSpillAmount()
-    fcn.initialize(num_elems, spill, data_arrays, substance)
-
-    assert_dataarray_shape_size(mass_array, data_arrays, num_elems)
-    mass_per_le = spill.get_mass('kg')/spill.release.num_elements
-    assert np.all(mass_per_le == data_arrays['mass'])
-
-
 def test_initialize_InitRiseVelFromDist_uniform():
     'Test initialize data_arrays with uniform dist'
     data_arrays = mock_append_data_arrays(rise_vel_array, num_elems)
@@ -266,21 +241,16 @@ arr_types = {'windages': array_types.windages,
 rise_vel = {'rise_vel': array_types.rise_vel}
 rise_vel.update(arr_types)
 
-mass_comp = {'mass_components': array_types.mass_components}
-mass_comp.update(arr_types)
 oil = 'ALAMO'
 
 inp_params = [((floating(substance=oil),
-                ElementType([InitWindages(), InitMassFromSpillAmount()],
-                            substance=oil)), arr_types),
+                ElementType([InitWindages()], substance=oil)), arr_types),
               ((floating(substance=oil),
                 ElementType([InitWindages(), InitRiseVelFromDist()],
                             substance=oil)), rise_vel),
               ((floating(substance=oil),
-                ElementType([InitMassFromSpillAmount(), InitRiseVelFromDist()],
+                ElementType([InitRiseVelFromDist()],
                             substance=oil)), rise_vel),
-              ((floating(substance=oil), floating_mass(substance=oil)),
-               mass_comp),
               ]
 
 
@@ -361,7 +331,6 @@ def test_serialize_deserialize():
     This tests serialize/deserilize with 'webapi' option
     '''
     et = floating()
-    et.initializers.append(InitMassFromSpillAmount())
     dict_ = ElementType.deserialize(et.serialize('webapi'))
 
     # for webapi, make new objects from nested objects before creating

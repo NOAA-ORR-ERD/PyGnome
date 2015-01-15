@@ -10,7 +10,7 @@ import transaction
 
 from slugify import slugify_filename
 
-from oil_library.models import (ImportedRecord,
+from oil_library.models import (ImportedRecord, Oil,
                                 Synonym,
                                 Density,
                                 KVis,
@@ -20,6 +20,14 @@ from oil_library.models import (ImportedRecord,
 
 
 def purge_old_records(session):
+    imported_rowcount = purge_imported_records(session)
+    oil_rowcount = purge_oil_records(session)
+
+    transaction.commit()
+    return imported_rowcount, oil_rowcount
+
+
+def purge_imported_records(session):
     oilobjs = (session.query(ImportedRecord)
                .filter(ImportedRecord.custom == False))
 
@@ -32,7 +40,21 @@ def purge_old_records(session):
 
         rowcount += 1
 
-    transaction.commit()
+    return rowcount
+
+
+def purge_oil_records(session):
+    oilobjs = session.query(Oil)
+
+    rowcount = 0
+    for o in oilobjs:
+        session.delete(o)
+
+        if rowcount % 100 == 0:
+            sys.stderr.write('.')
+
+        rowcount += 1
+
     return rowcount
 
 
@@ -40,6 +62,12 @@ def add_oil_object(session, file_columns, row_data):
     file_columns = [slugify_filename(c).lower()
                     for c in file_columns]
     row_dict = dict(zip(file_columns, row_data))
+
+    if rejected(row_dict):
+        print ('### Rejecting record {0} ({1})'
+               .format(row_dict.get('adios_oil_id'),
+                       row_dict.get('oil_name')))
+        return
 
     fix_pour_point(row_dict)
     fix_flash_point(row_dict)
@@ -57,6 +85,17 @@ def add_oil_object(session, file_columns, row_data):
 
     session.add(oil)
     transaction.commit()
+
+
+def rejected(kwargs):
+    adios_oil_id = kwargs.get('adios_oil_id')
+    if adios_oil_id in ('AD02130',  # FOROOZAN
+                        'AD00121',  # BCF 13
+                        'AD02042',  # BOSCAN
+                        'AD02240',  # LUCULA
+                        ):
+        return True
+    return False
 
 
 def fix_pour_point(kwargs):
@@ -122,7 +161,7 @@ def add_densities(oil, row_dict):
 def fix_weathering(kwargs):
     # The weathering field is defined as an evaporation percentage
     # so if there is no weathering, we default to 0.0%
-    if kwargs.get('weathering') == None:
+    if kwargs.get('weathering') is None:
         kwargs['weathering'] = '0e0'
 
 

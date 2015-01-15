@@ -258,7 +258,7 @@ class SpillContainer(AddLogger, SpillContainerData):
         # Initialize following either the first time it is used or in
         # prepare_for_model_run() -- it could change with each new spill
         self._substances_spills = None
-        self._oil_comp_array_len = 1
+        self._oil_comp_array_len = None
 
     def __setitem__(self, data_name, array):
         """
@@ -290,6 +290,9 @@ class SpillContainer(AddLogger, SpillContainerData):
         self._data_arrays = {}
         self._substances_spills = None
 
+        # reset following since arrays are reset
+        self._oil_comp_array_len = None
+
     def _set_substancespills(self):
         '''
         _substances could change when spills are added/deleted
@@ -307,6 +310,9 @@ class SpillContainer(AddLogger, SpillContainerData):
         subs = []
         spills = []
         num_rel = []
+        if self._oil_comp_array_len is None:
+            self._oil_comp_array_len = 1
+
         for spill in self.spills:
             if not spill.on:
                 continue
@@ -375,6 +381,31 @@ class SpillContainer(AddLogger, SpillContainerData):
         '''
         self._substances_spills = None
 
+    def _index_of_substance(self, substance):
+        try:
+            return self._substances_spills.substances.index(substance)
+        except ValueError:
+            'substance is not in list'
+            self.logger.debug('{0} - Substance named: {1}, not found in data '
+                              'structure'.format(os.getpid(), substance.name))
+            return None
+
+    def substancedata(self, substance, arrays):
+        'return the data for specified substance'
+        if self._substances_spills is None:
+            # todo: figure out if we need this check everywhere
+            self._set_substancespills()
+
+        ix = self._index_of_substance(substance)
+
+        if ix is None:
+            return
+
+        if len(self.get_substances()) > 1:
+            self._set_substancedata(arrays)
+
+        return self._substances_spills.data[ix]
+
     def iterspillsbysubstance(self):
         '''
         iterate through the substances spills datastructure and return the
@@ -408,7 +439,7 @@ class SpillContainer(AddLogger, SpillContainerData):
                       zip(self._substances_spills.substances,
                           self._substances_spills.data))
 
-    def update_from_substancedata(self, arrays):
+    def update_from_substancedata(self, arrays, substance=None):
         '''
         let's only update the arrays that were changed
         only update if a copy of 'data' exists. This is the case if there are
@@ -416,7 +447,18 @@ class SpillContainer(AddLogger, SpillContainerData):
         '''
         if len(self.get_substances()) == 1:
             return
+        if substance is None:
+            self._update_all_from_substancedata(arrays)
+        else:
+            ix = self._index_of_substance(substance)
+            if ix is None:
+                return
+            data = self._substances_spills.data[ix]
+            mask = self['substance'] == ix
+            for array in arrays:
+                self[array][mask] = data[array][:]
 
+    def _update_all_from_substancedata(self, arrays):
         for ix, data in enumerate(self._substances_spills.data):
             if self._substances_spills.substances[ix] is not None:
                 mask = self['substance'] == ix

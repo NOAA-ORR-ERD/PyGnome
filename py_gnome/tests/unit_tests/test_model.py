@@ -13,7 +13,7 @@ np = numpy
 import pytest
 from pytest import raises
 
-from gnome.basic_types import datetime_value_2d
+from gnome.basic_types import datetime_value_2d, oil_status
 from gnome.utilities import inf_datetime
 from gnome.persist import load
 
@@ -22,7 +22,7 @@ from gnome.environment import Wind, Tide, constant_wind, Water
 from gnome.model import Model
 
 from gnome.spill import Spill, SpatialRelease, point_line_release_spill
-from gnome.spill.elements import floating, floating_mass
+from gnome.spill.elements import floating
 
 from gnome.movers import SimpleMover, RandomMover, WindMover, CatsMover
 
@@ -844,7 +844,7 @@ def test_contains_object(sample_model_fcn):
     model.water = water
     model.environment += wind
 
-    et = floating_mass(substance=model.spills[0].get('substance').name)
+    et = floating(substance=model.spills[0].get('substance').name)
     sp = point_line_release_spill(500, (0, 0, 0),
                                   rel_time + timedelta(hours=1),
                                   element_type=et,
@@ -857,7 +857,11 @@ def test_contains_object(sample_model_fcn):
     movers = [m for m in model.movers]
 
     evaporation = Evaporation(model.water, model.environment[0])
-    dispersion, burn, skimmer = Dispersion(), Burn(), Skimmer()
+    dispersion, burn = Dispersion(), Burn()
+    skim_start = sp.get('release_time') + timedelta(hours=1)
+    skimmer = Skimmer(.5*sp.amount, units=sp.units, efficiency=0.3,
+                      active_start=skim_start,
+                      active_stop=skim_start + timedelta(hours=1))
     model.weatherers += [evaporation, dispersion, burn, skimmer]
 
     renderer = Renderer(images_dir='Test_images',
@@ -875,6 +879,18 @@ def test_contains_object(sample_model_fcn):
 
     for o in movers:
         assert model.contains_object(o.id)
+
+
+def make_skimmer(spill, delay_hours=1, duration=2):
+    'make a skimmer for sample model tests'
+    rel_time = spill.get('release_time')
+    skim_start = rel_time + timedelta(hours=delay_hours)
+    amount = spill.amount
+    units = spill.units
+    skimmer = Skimmer(.5*amount, units=units, efficiency=0.3,
+                      active_start=skim_start,
+                      active_stop=skim_start + timedelta(hours=duration))
+    return skimmer
 
 
 @pytest.mark.parametrize("delay", [timedelta(hours=0),
@@ -895,7 +911,7 @@ def test_staggered_spills_weathering(sample_model_fcn, delay):
     model.start_time = rel_time - timedelta(hours=1)
     model.duration = timedelta(days=1)
 
-    et = floating_mass(substance=model.spills[0].get('substance').name)
+    et = floating(substance=model.spills[0].get('substance').name)
     cs = point_line_release_spill(500, (0, 0, 0),
                                   rel_time + delay,
                                   end_release_time=(rel_time + delay +
@@ -906,15 +922,69 @@ def test_staggered_spills_weathering(sample_model_fcn, delay):
     model.spills += cs
     model.water = Water()
     model.environment += constant_wind(1., 0)
+    skimmer = make_skimmer(model.spills[0])
     model.weatherers += [Evaporation(model.water,
                                      model.environment[0]),
                          Dispersion(),
                          Burn(),
-                         Skimmer()]
+                         skimmer]
     # model.full_run()
     for step in model:
         for sc in model.spills.items():
-            sum_ = 0.0
+            unaccounted = sc['status_codes'] != oil_status.in_water
+            sum_ = sc['mass'][unaccounted].sum()
+            for key in sc.weathering_data:
+                if 'avg_' != key[:4] and 'amount_released' != key:
+                    sum_ += sc.weathering_data[key]
+            assert abs(sum_ - sc.weathering_data['amount_released']) < 1.e-6
+
+        print "completed step {0}".format(step)
+        print sc.weathering_data
+
+
+@pytest.mark.parametrize(("s0", "s1"), [("ALAMO", "ALAMO"),
+                                        ("ALAMO", "AGUA DULCE")])
+def test_two_substance_spills_weathering(sample_model_fcn, s0, s1):
+    '''
+    only tests data arrays are correct and we don't end up with stale data
+    in substance_data structure of spill container. It models each substance
+    independently
+    '''
+    model = sample_model_weathering(sample_model_fcn, s0)
+    model.map = gnome.map.GnomeMap()    # make it all water
+    model.uncertain = False
+    rel_time = model.spills[0].get('release_time')
+    model.duration = timedelta(days=1)
+
+    et = floating(substance=s1)
+    cs = point_line_release_spill(500, (0, 0, 0),
+                                  rel_time,
+                                  end_release_time=(rel_time +
+                                                    timedelta(hours=1)),
+                                  element_type=et,
+                                  amount=1,
+                                  units='tonnes')
+    model.spills += cs
+    model.water = Water()
+    model.environment += constant_wind(1., 0)
+    model.weatherers += Evaporation(model.water, model.environment[0])
+    if s0 == s1:
+        '''
+        multiple substances will not work with Skimmer
+        '''
+        skimmer = make_skimmer(model.spills[0], 2)
+        model.weatherers += [Dispersion(),
+                             Burn(),
+                             skimmer]
+
+    # model.full_run()
+    for step in model:
+        for sc in model.spills.items():
+            # If LEs are marked as 'skim', add them to sum_ since the mass must
+            # be accounted for in the assertion
+            unaccounted = sc['status_codes'] != oil_status.in_water
+            sum_ = sc['mass'][unaccounted].sum()
+            print 'starting sum_: ', sum_
             for key in sc.weathering_data:
                 if 'avg_' != key[:4] and 'amount_released' != key:
                     sum_ += sc.weathering_data[key]
@@ -948,7 +1018,6 @@ def test_weathering_data_attr():
     # use different element_type and initializers for both spills
     s[0].amount = 10.0
     s[0].units = 'kg'
-    s[0].element_type = floating_mass()
     model.rewind()
     model.step()
     for sc in model.spills.items():
@@ -957,7 +1026,6 @@ def test_weathering_data_attr():
 
     s[1].amount = 5.0
     s[1].units = 'kg'
-    s[1].element_type = floating_mass()
     model.rewind()
     exp_rel = 0.0
     for ix in range(2):

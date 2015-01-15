@@ -20,9 +20,8 @@ from gnome.environment import Wind, Tide, Water
 from gnome.model import Model
 from gnome.persist import load
 from gnome.spill import point_line_release_spill
-from gnome.spill.elements import floating_mass
 from gnome.movers import RandomMover, WindMover, CatsMover, ComponentMover
-from gnome.weatherers import Evaporation
+from gnome.weatherers import Evaporation, Skimmer
 from gnome.outputters import Renderer
 # from gnome.utilities.remote_data import get_datafile
 
@@ -84,15 +83,16 @@ def make_model(images_dir, uncertain=False):
     print 'adding a spill'
     start_position = (144.664166, 13.441944, 0.0)
     end_release_time = start_time + timedelta(hours=6)
-    et = floating_mass(substance='ALAMO')
+    spill_amount = 1000.0
+    spill_units = 'kg'
     model.spills += \
         point_line_release_spill(num_elements=1000,
                                  start_position=start_position,
                                  release_time=start_time,
                                  end_release_time=end_release_time,
-                                 amount=1000.0,
-                                 units='kg',
-                                 element_type=et)
+                                 amount=spill_amount,
+                                 units=spill_units,
+                                 substance='ALAMO')
 
     # need a scenario for SimpleMover
     # model.movers += SimpleMover(velocity=(1.0, -1.0, 0.0))
@@ -164,7 +164,13 @@ def make_model(images_dir, uncertain=False):
 
     print 'adding a Weatherer'
     model.water = Water(311.15)
-    model.weatherers += Evaporation(model.water, w_mover.wind)
+    skim_start = start_time + timedelta(hours=3)
+    model.weatherers += [Evaporation(model.water, w_mover.wind),
+                         Skimmer(spill_amount * .5,
+                                 spill_units,
+                                 efficiency=.3,
+                                 active_start=skim_start,
+                                 active_stop=skim_start + timedelta(hours=2))]
 
     return model
 
