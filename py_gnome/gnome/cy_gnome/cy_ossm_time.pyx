@@ -30,6 +30,12 @@ cdef class CyOSSMTime(object):
         else:
             self.time_dep = NULL
 
+        # Define user units for velocity. In C++, these are #defined as
+        self._user_units_dict = {-1: 'undefined',
+                                 1: 'knots',
+                                 2: 'meters per second',
+                                 3: 'miles per hour'}
+
         # initialize this in init function
         self._file_format = 0
 
@@ -71,7 +77,7 @@ cdef class CyOSSMTime(object):
             happens in cython code
             '''
             try:
-                return _user_units_dict[self.time_dep.GetUserUnits()]
+                return self._user_units_dict[self.time_dep.GetUserUnits()]
             except KeyError:
                 raise ValueError('C++ GetUserUnits() gave a result which is '
                                  'outside the expected bounds.')
