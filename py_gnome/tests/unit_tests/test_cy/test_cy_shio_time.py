@@ -62,7 +62,7 @@ def test_properties_read_from_file():
             assert val == data[s_idx + len(item):e_idx]
 
     assert not shio.daylight_savings_off
-    assert shio.filename == shio_file
+    assert shio.path_filename == shio_file
 
 
 def test_daylight_savings_off():
