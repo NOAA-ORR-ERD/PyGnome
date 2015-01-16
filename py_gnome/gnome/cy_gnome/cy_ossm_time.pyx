@@ -87,11 +87,26 @@ cdef class CyOSSMTime(object):
 
     property filename:
         def __get__(self):
-            fname = <bytes>self.time_dep.filePath
+            '''
+            Only want to preserve filename - not full path
+            derived classes may initialize with timeseries in which case this
+            will be '' or None
+            '''
+            fname = <bytes>self.time_dep.fileName
             if fname == '':
                 return None
 
             return fname
+
+    property _fullpath_filename:
+        def __get__(self):
+            '''
+            used by repr and pickle
+            todo: check if we really need this - if we don't need to pickle
+            then just do away with this code
+            '''
+            fname = <bytes>self.time_dep.filePath
+            return (fname, None)[fname == '']
 
     property scale_factor:
         def __get__(self):
@@ -155,8 +170,9 @@ cdef class CyOSSMTime(object):
 
         NOTE: this may fail with a unicode file name.
         """
+        filewithpath = <bytes>self.time_dep.filePath
         return ('{0.__class__.__module__}.{0.__class__.__name__}('
-                'filename=r"{0.filename}", '
+                'filename=r"{0._fullpath_filename}", '
                 'file_format={0._file_format}'
                 ')').format(self)
 
@@ -166,7 +182,7 @@ cdef class CyOSSMTime(object):
                 '(filename="{0.filename}"').format(self)
 
     def __reduce__(self):
-        return (CyOSSMTime, (self.filename,
+        return (CyOSSMTime, (self._fullpath_filename,
                              self._file_format,
                              self.scale_factor))
 
@@ -375,10 +391,10 @@ cdef class CyTimeseries(CyOSSMTime):
         child = parent[:-1] + ' timeseries=<see timeseries attribute>)'
 
     def __reduce__(self):
-        return (CyTimeseries, (self.filename,
-                             self._file_format,
-                             self.timeseries,
-                             self.scale_factor))
+        return (CyTimeseries, (self._fullpath_filename,
+                               self._file_format,
+                               self.timeseries,
+                               self.scale_factor))
 
     def __eq(self, CyTimeseries other):
         if not super(CyTimeseries, self).__eq(other):
