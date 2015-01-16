@@ -20,16 +20,19 @@ data_dir = os.path.join(os.path.dirname(__file__), 'sample_data')
 wind_file = testdata['timeseries']['wind_ts']
 
 
-def test_set_timeseries():
+def test_set_timeseries_prop():
     '''
-    following operation requires a numpy array. Slicing numy array
+    following operation requires a numpy array. Slicing numpy array
     automatically makes it a 0-D array, make sure it gets converted to a 1-D
     array correctly
     '''
     wm = Wind(filename=wind_file)
     x = wm.timeseries[0]
     wm.timeseries = x
-    assert wm.timeseries == x
+
+    # add assertions
+    assert wm.timeseries['time'] == x[0]
+    assert np.allclose(wm.timeseries['value'], x[1], atol=1e-6)
 
     x = (datetime.now().replace(microsecond=0, second=0), (4, 5))
     wm.timeseries = x
@@ -88,7 +91,7 @@ def test_exceptions(invalid_rq):
         Wind(timeseries=dtv_rq, units='meter per second')
 
     # exception raised since no units given for timeseries during init
-    with raises(unit_conversion.InvalidUnitError):
+    with raises(TypeError):
         Wind(timeseries=dtv)
 
     # no units during set_timeseries
@@ -98,7 +101,7 @@ def test_exceptions(invalid_rq):
 
     # invalid units
     with raises(unit_conversion.InvalidUnitError):
-        wind = Wind(timeseries=dtv, units='met per second')
+        Wind(timeseries=dtv, units='met per second')
 
 
 def test_read_file_init():

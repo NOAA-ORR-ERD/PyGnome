@@ -14,13 +14,10 @@ from colander import (SchemaNode, drop, OneOf,
                       Float, String, Range)
 import unit_conversion as uc
 
-from gnome.cy_gnome.cy_ossm_time import CyOSSMTime
 from gnome import basic_types
-from gnome.utilities.time_utils import date_to_sec
+
 from gnome.utilities import serializable
-from gnome.utilities.convert import (to_time_value_pair,
-                                     tsformat,
-                                     to_datetime_value_2d)
+
 from gnome.utilities.distributions import RayleighDistribution as rayleigh
 
 from gnome.persist.extend_colander import (DefaultTupleSchema,
@@ -28,9 +25,8 @@ from gnome.persist.extend_colander import (DefaultTupleSchema,
                                            DatetimeValue2dArraySchema)
 from gnome.persist import validators, base_schema
 
-from gnome.cy_gnome.cy_ossm_time import CyTimeseries
-
 from .environment import Environment
+from gnome.utilities.timeseries import Timeseries
 from .. import _valid_units
 
 
@@ -100,7 +96,7 @@ class WindSchema(base_schema.ObjType):
     name = 'wind'
 
 
-class Wind(Environment, serializable.Serializable):
+class Wind(Timeseries, Environment, serializable.Serializable):
     '''
     Defines the Wind conditions for a spill
     '''
@@ -145,87 +141,8 @@ class Wind(Environment, serializable.Serializable):
                  speed_uncertainty_scale=0.0,
                  **kwargs):
         """
-        Initializes a wind object from timeseries or datafile
-        If both are given, it will read data from the file
-
-        If neither are given, timeseries gets initialized as:
-
-            timeseries = np.zeros((1,), dtype=basic_types.datetime_value_2d)
-            units = 'mps'
-
-        If user provides timeseries, they *must* also provide units
-
-        All other keywords are optional. Optional parameters (kwargs):
-
-        :param timeseries: numpy array containing time_value_pair
-        :type timeseries: numpy.ndarray[basic_types.time_value_pair, ndim=1]
-        :param filename: path to a long wind file from which to read wind data
-        :param units: units associated with the timeseries data. If 'filename'
-            is given, then units are read in from the file.
-            get_timeseries() will use these as default units to
-            output data, unless user specifies otherwise.
-            These units must be valid as defined in the
-            unit_conversion module
-        :type units:  string, for example: 'knot', 'meter per second',
-            'mile per hour' etc.
-            Default units for input/output timeseries data
-        :param format: (Optional) default timeseries format is
-            magnitude direction: 'r-theta'
-        :type format: string 'r-theta' or 'uv'. Default is 'r-theta'.
-            Converts string to integer defined by
-            gnome.basic_types.ts_format.*
-            TODO: 'format' is a python builtin keyword.  We should
-            not use it as an argument name
-        :param name: (Optional) human readable string for wind object name.
-            Default is filename if data is from file or "Wind Object"
-        :param source_type: (Optional) Default is undefined, but can be one of
-            the following: ['buoy', 'manual', 'undefined', 'file', 'nws']
-            If data is read from file, then it is 'file'
-        :param latitude: (Optional) latitude of station or location where
-            wind data is obtained from NWS
-        :param longitude: (Optional) longitude of station or location where
-            wind data is obtained from NWS
-
+        todo: update docstrings!
         """
-        if (timeseries is None and filename is None):
-            timeseries = np.zeros((1,), dtype=basic_types.datetime_value_2d)
-            units = 'mps'
-
-        self._filename = None
-
-        if not filename:
-            time_value_pair = self._convert_to_time_value_pair(timeseries,
-                                                               units, format)
-
-            if units is None:
-                raise TypeError("Setting from timeseries requires units")
-            else:
-                self._check_units(units)
-
-            # this has same scope as CyWindMover object
-            #
-            # TODO: move this as a class attribute if we can.
-            #       I can see that we are instantiating the class,
-            #       but maybe we can find a way to not have to
-            #       pickle this attribute when we pickle a Wind instance
-            #
-            self.ossm = CyTimeseries(timeseries=time_value_pair)
-            self._user_units = units
-            self.source_type = (kwargs.pop('source_type')
-                                if kwargs.get('source_type')
-                                in basic_types.wind_datasource._attr
-                                else 'undefined')
-            self.name = kwargs.pop('name', self.__class__.__name__)
-        else:
-            ts_format = tsformat(format)
-            self._filename = filename
-            self.ossm = CyTimeseries(filename=self._filename,
-                                   file_format=ts_format)
-            self._user_units = self.ossm.user_units
-
-            self.source_type = 'file'  # this must be file
-            self.name = kwargs.pop('name', os.path.split(self.filename)[1])
-
         self.updated_at = kwargs.pop('updated_at', None)
         self.source_id = kwargs.pop('source_id', 'undefined')
         self.longitude = longitude
@@ -233,22 +150,26 @@ class Wind(Environment, serializable.Serializable):
         self.description = kwargs.pop('description', 'Wind Object')
         self.speed_uncertainty_scale = speed_uncertainty_scale
 
-        super(Wind, self).__init__(**kwargs)
+        if filename is not None:
+            super(Wind, self).__init__(filename=filename, format=format,
+                                       **kwargs)
+            # set _user_units attribute to match user_units read from file.
+            self._user_units = self.ossm.user_units
+        else:
+            # either timeseries is given or nothing is given
+            # create an empty default object
+            source_type = (kwargs.pop('source_type')
+                           if kwargs.get('source_type')
+                           in basic_types.wind_datasource._attr
+                           else 'undefined')
+            super(Wind, self).__init__(source_type=source_type,
+                                       **kwargs)
+            self.units = 'mps'  # units for default object
+            if timeseries is not None:
+                if units is None:
+                    raise TypeError('Units must be provided with timeseries')
 
-    def _convert_units(self, data, ts_format, from_unit, to_unit):
-        '''
-        Private method to convert units for the 'value' stored in the
-        date/time value pair
-        '''
-        if from_unit != to_unit:
-            data[:, 0] = uc.convert('Velocity', from_unit, to_unit, data[:, 0])
-
-            if ts_format == basic_types.ts_format.uv:
-                # TODO: avoid clobbering the 'ts_format' namespace
-                data[:, 1] = uc.convert('Velocity', from_unit, to_unit,
-                                        data[:, 1])
-
-        return data
+                self.set_timeseries(timeseries, units, format)
 
     def _check_units(self, units):
         '''
@@ -256,41 +177,6 @@ class Wind(Environment, serializable.Serializable):
         '''
         if units not in Wind.valid_vel_units:
             raise uc.InvalidUnitError((units, 'Velocity'))
-
-    def _check_timeseries(self, timeseries, units):
-        '''
-        Run some checks to make sure timeseries is valid
-        Also, make the resolution to minutes as opposed to seconds
-        '''
-        try:
-            if timeseries.dtype != basic_types.datetime_value_2d:
-                # Both 'is' or '==' work in this case.  There is only one
-                # instance of basic_types.datetime_value_2d.
-                # Maybe in future we can consider working with a list,
-                # but that's a bit more cumbersome for different dtypes
-                raise ValueError('timeseries must be a numpy array containing '
-                                 'basic_types.datetime_value_2d dtype')
-        except AttributeError, err:
-            msg = 'timeseries is not a numpy array. {0}'
-            raise AttributeError(msg.format(err.message))
-
-        # check to make sure the time values are in ascending order
-        if np.any(timeseries['time'][np.argsort(timeseries['time'])]
-                  != timeseries['time']):
-            raise ValueError('timeseries are not in ascending order. '
-                             'The datetime values in the array must be in '
-                             'ascending order')
-
-        # check for duplicate entries
-        unique = np.unique(timeseries['time'])
-        if len(unique) != len(timeseries['time']):
-            raise ValueError('timeseries must contain unique time entries. '
-                             'Number of duplicate entries: '
-                             '{0}'.format(len(timeseries) - len(unique)))
-
-        # make resolution to minutes in datetime
-        for ix, tm in enumerate(timeseries['time'].astype(datetime.datetime)):
-            timeseries['time'][ix] = tm.replace(second=0)
 
     def __repr__(self):
         self_ts = self.timeseries.__repr__()
@@ -303,22 +189,20 @@ class Wind(Environment, serializable.Serializable):
                 'timeseries={1}'
                 ')').format(self, self_ts)
 
-    def __str__(self):
-        return "Wind( timeseries=Wind.get_timeseries('uv'), format='uv')"
-
     def __eq__(self, other):
         '''
         call super to test for equality of objects for all attributes
         except 'units' and 'timeseries' - test 'timeseries' here by converting
         to consistent units
         '''
+        # following invokes __eq__ in Serializable since __eq__ is not defined
+        # for Timeseries class
+        check = super(Wind, self).__eq__(other)
+
         # since this has numpy array - need to compare that as well
         # By default, tolerance for comparison is atol=1e-10, rtol=0
         # persisting data requires unit conversions and finite precision,
         # both of which will introduce a difference between two objects
-
-        check = super(Wind, self).__eq__(other)
-
         if check:
             sts = self.get_timeseries(units=self.units)
             ots = other.get_timeseries(units=self.units)
@@ -336,7 +220,27 @@ class Wind(Environment, serializable.Serializable):
     # user_units = property( lambda self: self._user_units)
 
     @property
+    def timeseries(self):
+        '''
+        returns entire timeseries in 'r-theta' format in the units in which
+        the data was entered or as specified by units attribute
+        '''
+        return self.get_timeseries(units=self.units)
+
+    @timeseries.setter
+    def timeseries(self, value):
+        '''
+        set the timeseries for wind. The units for value are as specified by
+        self.units attribute. Property converts the units to 'm/s' so Cython/
+        C++ object stores timeseries in 'm/s'
+        '''
+        self.set_timeseries(value, units=self.units)
+
+    @property
     def units(self):
+        '''
+        define units in which wind data is input/output
+        '''
         return self._user_units
 
     @units.setter
@@ -344,112 +248,28 @@ class Wind(Environment, serializable.Serializable):
         """
         User can set default units for input/output data
 
-        These are given as string and must be one of the units defined in
-        unit_conversion module. Also given in 'valid_vel_units' class attribute
+        These are given as string - derived classes should override
+        _check_units() to customize for their data. Base class first checks
+        units, then sets it - derived classes can raise an error in
+        _check_units if units are incorrect for their type of data
         """
         self._check_units(value)
         self._user_units = value
 
-    @property
-    def filename(self):
-        return self._filename
-
-    @property
-    def timeseries(self):
-        return self.get_timeseries()
-
-    @timeseries.setter
-    def timeseries(self, value):
-        self.set_timeseries(value, units=self.units)
-
-    def _convert_to_time_value_pair(self, datetime_value_2d, units,
-                                    fmt):
+    def _convert_units(self, data, ts_format, from_unit, to_unit):
         '''
-        fmt datetime_value_2d so it is a numpy array with
-        dtype=basic_types.time_value_pair as the C++ code expects
+        method to convert units for the 'value' stored in the
+        date/time value pair
         '''
-        # following fails for 0-d objects so make sure we have a 1-D array
-        # to work with
-        datetime_value_2d = np.asarray(datetime_value_2d,
-                                       dtype=basic_types.datetime_value_2d)
-        if datetime_value_2d.shape == ():
-            datetime_value_2d = np.asarray([datetime_value_2d],
-                                           dtype=basic_types.datetime_value_2d)
+        if from_unit != to_unit:
+            data[:, 0] = uc.convert('Velocity', from_unit, to_unit, data[:, 0])
 
-        self._check_units(units)
-        self._check_timeseries(datetime_value_2d, units)
-        datetime_value_2d['value'] = \
-            self._convert_units(datetime_value_2d['value'],
-                                fmt, units, 'meter per second')
+            if ts_format == basic_types.ts_format.uv:
+                # TODO: avoid clobbering the 'ts_format' namespace
+                data[:, 1] = uc.convert('Velocity', from_unit, to_unit,
+                                        data[:, 1])
 
-        timeval = to_time_value_pair(datetime_value_2d, fmt)
-        return timeval
-
-    def get_timeseries(self, datetime=None, units=None, format='r-theta'):
-        """
-        Returns the timeseries in the requested format. If datetime=None,
-        then the original timeseries that was entered is returned.
-        If datetime is a list containing datetime objects, then the wind value
-        for each of those date times is determined by the underlying
-        CyTimeseries object and the timeseries is returned.
-
-        The output format is defined by the strings 'r-theta', 'uv'
-
-        :param datetime: [optional] datetime object or list of datetime
-                         objects for which the value is desired
-        :type datetime: datetime object
-        :param units: [optional] outputs data in these units. Default is to
-                      output data in units
-        :type units: string. Uses the unit_conversion module.
-                     unit_conversion throws error for invalid units
-        :param format: output format for the times series:
-                       either 'r-theta' or 'uv'
-        :type format: either string or integer value defined by
-                      basic_types.ts_format.* (see cy_basic_types.pyx)
-
-        :returns: numpy array containing dtype=basic_types.datetime_value_2d.
-                  Contains user specified datetime and the corresponding
-                  values in user specified ts_format
-        """
-        if datetime is None:
-            datetimeval = to_datetime_value_2d(self.ossm.timeseries, format)
-        else:
-            datetime = np.asarray(datetime, dtype='datetime64[s]').reshape(-1)
-            timeval = np.zeros((len(datetime), ),
-                               dtype=basic_types.time_value_pair)
-            timeval['time'] = date_to_sec(datetime)
-            timeval['value'] = self.ossm.get_time_value(timeval['time'])
-            datetimeval = to_datetime_value_2d(timeval, format)
-
-        if units is None:
-            units = self.units
-
-        datetimeval['value'] = self._convert_units(datetimeval['value'],
-                                                   format, 'meter per second',
-                                                   units)
-
-        return datetimeval
-
-    def set_timeseries(self, datetime_value_2d, units, format='r-theta'):
-        """
-        Sets the timeseries of the Wind object to the new value given by
-        a numpy array.  The format for the input data defaults to
-        basic_types.format.magnitude_direction but can be changed by the user
-
-        :param datetime_value_2d: timeseries of wind data defined in a
-                                  numpy array
-        :type datetime_value_2d: numpy array of dtype
-                                 basic_types.datetime_value_2d
-        :param units: units associated with the data. Valid units defined in
-                      Wind.valid_vel_units list
-        :param format: output format for the times series; as defined by
-                       basic_types.format.
-        :type format: either string or integer value defined by
-                      basic_types.format.* (see cy_basic_types.pyx)
-        """
-        timeval = self._convert_to_time_value_pair(datetime_value_2d,
-                                                   units, format)
-        self.ossm.timeseries = timeval
+        return data
 
     def save(self, saveloc, references=None, name=None):
         '''
@@ -498,6 +318,71 @@ class Wind(Environment, serializable.Serializable):
             return True
         else:
             return updated
+
+    def get_timeseries(self, datetime=None, units=None, format='r-theta'):
+        """
+        Returns the timeseries in the requested format. If datetime=None,
+        then the original timeseries that was entered is returned.
+        If datetime is a list containing datetime objects, then the value
+        for each of those date times is determined by the underlying
+        C++ object and the timeseries is returned.
+
+        The output format is defined by the strings 'r-theta', 'uv'
+
+        :param datetime: [optional] datetime object or list of datetime
+                         objects for which the value is desired
+        :type datetime: datetime object
+        :param units: [optional] outputs data in these units. Default is to
+            output data without unit conversion
+        :type units: string. Uses the hazpy.unit_conversion module.
+        :param format: output format for the times series:
+                       either 'r-theta' or 'uv'
+        :type format: either string or integer value defined by
+                      basic_types.ts_format.* (see cy_basic_types.pyx)
+
+        :returns: numpy array containing dtype=basic_types.datetime_value_2d.
+                  Contains user specified datetime and the corresponding
+                  values in user specified ts_format
+
+        .. note:: Invokes self._convert_units() to do the unit conversion.
+        Override this method to define the derived object's unit conversion
+        functionality
+        """
+        datetimeval = super(Wind, self).get_timeseries(datetime, format)
+        units = (units, self._user_units)[units is None]
+
+        datetimeval['value'] = self._convert_units(datetimeval['value'],
+                                                   format,
+                                                   'meter per second',
+                                                   units)
+
+        return datetimeval
+
+    def set_timeseries(self, datetime_value_2d, units, format='r-theta'):
+        """
+        Sets the timeseries of the Wind object to the new value given by
+        a numpy array.  The format for the input data defaults to
+        basic_types.format.magnitude_direction but can be changed by the user.
+        Units are also required with the data.
+
+        :param datetime_value_2d: timeseries of wind data defined in a
+                                  numpy array
+        :type datetime_value_2d: numpy array of dtype
+                                 basic_types.datetime_value_2d
+        :param units: units associated with the data. Valid units defined in
+                      Wind.valid_vel_units list
+        :param format: output format for the times series; as defined by
+                       basic_types.format.
+        :type format: either string or integer value defined by
+                      basic_types.format.* (see cy_basic_types.pyx)
+        """
+        self._check_units(units)
+        self.units = units
+        datetime_value_2d = self._xform_input_timeseries(datetime_value_2d)
+        datetime_value_2d['value'] = \
+            self._convert_units(datetime_value_2d['value'],
+                                format, units, 'meter per second')
+        super(Wind, self).set_timeseries(datetime_value_2d, format)
 
     def get_value(self, time):
         '''

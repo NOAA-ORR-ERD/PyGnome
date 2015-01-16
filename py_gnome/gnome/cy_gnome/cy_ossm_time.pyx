@@ -12,6 +12,12 @@ from utils cimport OSSMTimeValue_c
 from cy_helpers import filename_as_bytes
 
 
+ossm_wind_units = {-1: 'undefined',
+                   1: 'knots',
+                   2: 'meters per second',
+                   3: 'miles per hour'}
+
+
 cdef class CyOSSMTime(object):
     '''
     Base class for CyShioTime and CyTimeseries. Since CyShioTime does not have
@@ -29,12 +35,6 @@ cdef class CyOSSMTime(object):
             self.time_dep = new OSSMTimeValue_c()
         else:
             self.time_dep = NULL
-
-        # Define user units for velocity. In C++, these are #defined as
-        self._user_units_dict = {-1: 'undefined',
-                                 1: 'knots',
-                                 2: 'meters per second',
-                                 3: 'miles per hour'}
 
         # initialize this in init function
         self._file_format = 0
@@ -75,9 +75,12 @@ cdef class CyOSSMTime(object):
             upon file read. When setting the timeseries from a numpy data
             array, we always assume the data is in MKS units - no conversion
             happens in cython code
+
+            .. note:: These do not need to be set. They are only used by Wind
+            object to find out the units when data is read from file.
             '''
             try:
-                return self._user_units_dict[self.time_dep.GetUserUnits()]
+                return ossm_wind_units[self.time_dep.GetUserUnits()]
             except KeyError:
                 raise ValueError('C++ GetUserUnits() gave a result which is '
                                  'outside the expected bounds.')
@@ -426,7 +429,6 @@ cdef class CyTimeseries(CyOSSMTime):
 
         memcpy(&tval[0], time_val_hdlH[0], sz)
         return tval
-
 
     def create_running_average(self, past_hours = 3):
         """
