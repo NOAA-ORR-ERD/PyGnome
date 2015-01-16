@@ -351,7 +351,28 @@ def sample_graph():
 
 
 @pytest.fixture(scope='module')
-def wind_circ(rq_wind):
+def wind_timeseries(rq_wind):
+    dtv_rq = np.zeros((len(rq_wind['rq']), ),
+                      dtype=datetime_value_2d).view(dtype=np.recarray)
+    dtv_rq.time = [datetime(
+        2012,
+        11,
+        06,
+        20,
+        10 + i,
+        0,
+        ) for i in range(len(dtv_rq))]
+    dtv_rq.value = rq_wind['rq']
+    dtv_uv = np.zeros((len(dtv_rq), ),
+                      dtype=datetime_value_2d).view(dtype=np.recarray)
+    dtv_uv.time = dtv_rq.time
+    dtv_uv.value = rq_wind['uv']
+
+    return {'rq': dtv_rq, 'uv': dtv_uv}
+
+
+@pytest.fixture(scope='module')
+def wind_circ(wind_timeseries):
     """
     Create Wind object using the time series given by test fixture 'rq_wind'
     'wind' object where timeseries is defined as:
@@ -366,24 +387,10 @@ def wind_circ(rq_wind):
     """
 
     from gnome import environment
-    dtv_rq = np.zeros((len(rq_wind['rq']), ),
-                      dtype=datetime_value_2d).view(dtype=np.recarray)
-    dtv_rq.time = [datetime(
-        2012,
-        11,
-        06,
-        20,
-        10 + i,
-        0,
-        ) for i in range(len(dtv_rq))]
-    dtv_rq.value = rq_wind['rq']
-    dtv_uv = np.zeros((len(dtv_rq), ),
-                   dtype=datetime_value_2d).view(dtype=np.recarray)
-    dtv_uv.time = dtv_rq.time
-    dtv_uv.value = rq_wind['uv']
+    dtv_rq = wind_timeseries['rq']
     wm = environment.Wind(timeseries=dtv_rq, format='r-theta',
                           units='meter per second')
-    return {'wind': wm, 'rq': dtv_rq, 'uv': dtv_uv}
+    return {'wind': wm, 'rq': dtv_rq, 'uv': wind_timeseries['uv']}
 
 
 @pytest.fixture(scope='module')

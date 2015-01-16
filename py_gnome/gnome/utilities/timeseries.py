@@ -84,7 +84,6 @@ class Timeseries(object):
             datetime_value_2d = self._xform_input_timeseries(timeseries)
             time_value_pair = to_time_value_pair(datetime_value_2d, format)
             self.ossm = CyTimeseries(timeseries=time_value_pair)
-            self.ossm.user_units = 'undefined'
             self.name = kwargs.pop('name', self.__class__.__name__)
             self.source_type = kwargs.pop('source_type', None)
 
@@ -119,18 +118,6 @@ class Timeseries(object):
         Also, make the resolution to minutes as opposed to seconds
         todo: update exceptions to logged errors
         '''
-        try:
-            if timeseries.dtype != basic_types.datetime_value_2d:
-                # Both 'is' or '==' work in this case.  There is only one
-                # instance of basic_types.datetime_value_2d.
-                # Maybe in future we can consider working with a list,
-                # but that's a bit more cumbersome for different dtypes
-                raise ValueError('timeseries must be a numpy array containing '
-                                 'basic_types.datetime_value_2d dtype')
-        except AttributeError, err:
-            msg = 'timeseries is not a numpy array. {0}'
-            raise AttributeError(msg.format(err.message))
-
         # check to make sure the time values are in ascending order
         if np.any(timeseries['time'][np.argsort(timeseries['time'])]
                   != timeseries['time']):
@@ -209,5 +196,6 @@ class Timeseries(object):
         :type format: either string or integer value defined by
                       basic_types.format.* (see cy_basic_types.pyx)
         """
+        datetime_value_2d = self._xform_input_timeseries(datetime_value_2d)
         timeval = to_time_value_pair(datetime_value_2d, format)
         self.ossm.timeseries = timeval

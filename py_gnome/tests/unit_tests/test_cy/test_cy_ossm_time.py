@@ -5,6 +5,7 @@ Unit tests for CyOSSMTime class
 import pickle
 import gnome
 from numpy import array
+import os
 
 from pytest import raises
 import pytest
@@ -52,7 +53,8 @@ def test_properties():
     #assert cy.station == 'Station Name'
     #assert cy.station_location == None
     assert cy.user_units == 'knots'
-    assert cy.filename == testdata['timeseries']['wind_ts']
+    assert (cy.filename ==
+            os.path.split(testdata['timeseries']['wind_ts'])[1])
     assert cy.scale_factor == 1.0
 
 
@@ -82,8 +84,6 @@ class TestObjectSerialization:
         ossmT = obj(filename=testdata['timeseries']['wind_ts'],
                     file_format=ts_format.magnitude_direction)
 
-#        print "repr of ossmT"
-#        print repr(ossmT)
         new_ossm = eval(repr(ossmT))
 
         assert new_ossm == ossmT
