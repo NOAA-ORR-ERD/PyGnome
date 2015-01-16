@@ -121,7 +121,7 @@ cdef class CyShioTime(CyOSSMTime):
         recreated
         """
         return ('{0.__class__.__module__}.{0.__class__.__name__}('
-                '{0.filename!r}, '
+                '{0.path_filename!r}, '
                 'daylight_savings_off={0.daylight_savings_off}, '
                 'scale_factor={0.scale_factor}, '
                 'yeardata={0.yeardata!r}'
@@ -136,7 +136,7 @@ cdef class CyShioTime(CyOSSMTime):
         """
 
         info = ("CyShioTime object - Info read from file:\n"
-                "  File: {1.filename} \n"
+                "  File: {1.path_filename} \n"
                 "  StationName : {0[StationName]},"
                 "  StationType : {0[StationType]}\n"
                 "  (Long, Lat) : ({0[Long]}, {0[Lat]})\n"
@@ -146,7 +146,7 @@ cdef class CyShioTime(CyOSSMTime):
         return info
 
     def __reduce__(self):
-        return (CyShioTime, (self.filename,
+        return (CyShioTime, (self.path_filename,
                              self.daylight_savings_off,
                              self.scale_factor,
                              self.yeardata))

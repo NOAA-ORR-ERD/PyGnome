@@ -95,10 +95,9 @@ cdef class CyOSSMTime(object):
             fname = <bytes>self.time_dep.fileName
             if fname == '':
                 return None
-
             return fname
 
-    property _fullpath_filename:
+    property path_filename:
         def __get__(self):
             '''
             used by repr and pickle
@@ -172,7 +171,7 @@ cdef class CyOSSMTime(object):
         """
         filewithpath = <bytes>self.time_dep.filePath
         return ('{0.__class__.__module__}.{0.__class__.__name__}('
-                'filename=r"{0._fullpath_filename}", '
+                'filename=r"{0.path_filename}", '
                 'file_format={0._file_format}'
                 ')').format(self)
 
@@ -182,7 +181,7 @@ cdef class CyOSSMTime(object):
                 '(filename="{0.filename}"').format(self)
 
     def __reduce__(self):
-        return (CyOSSMTime, (self._fullpath_filename,
+        return (CyOSSMTime, (self.path_filename,
                              self._file_format,
                              self.scale_factor))
 
@@ -391,7 +390,7 @@ cdef class CyTimeseries(CyOSSMTime):
         child = parent[:-1] + ' timeseries=<see timeseries attribute>)'
 
     def __reduce__(self):
-        return (CyTimeseries, (self._fullpath_filename,
+        return (CyTimeseries, (self.path_filename,
                                self._file_format,
                                self.timeseries,
                                self.scale_factor))
