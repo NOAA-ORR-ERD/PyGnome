@@ -3,7 +3,7 @@
 """
 The waves environment object.
 
-Computes the wave hight and percent wave breaking
+Computes the wave height and percent wave breaking
 
 Uses the same approach as ADIOS 2
 
@@ -104,16 +104,42 @@ class Waves(Environment, serializable.Serializable):
 
         return H, T, Wf, De
 
-    def get_pseudo_wind(self, model_time):
-        wave_height = self.water.wave_height
-        if wave_height is None:
-            U = self.wind.get_value(model_time)[0]  # only need velocity
-            H = self.compute_H(U)
-        else:  # user specified a wave height
-            H = wave_height
-        U = self.comp_psuedo_wind(H)
+    def get_emulsifiation_wind(self, time):
+        """
+        Return the right wind for the wave climate
 
-        return U
+        If a wave height was specified, then you need the greater of the real or
+        psuedo wind. 
+
+        If not, then you need the actual wind.
+
+        The idea here is that if there is a low wind, but the user specified waves,
+        we really want emulsification that makes sense for the waves. But if the
+        actual wind is stronger than that for the wave height give, we should use
+        the actual wind.
+
+        fixme: I'm not sure this is right -- if we stick with the wave energy given
+        by the user for dispesion, why not for emulsification?
+
+        """
+        wave_height = self.water.wave_height
+        U = self.wind.get_value(time)[0]  # only need velocity
+        if wave_height is None:
+            return U
+        else:  # user specified a wave height
+            return max( U, self.comp_psuedo_wind(wave_height) )
+
+
+    # def get_pseudo_wind(self, time):
+    #     wave_height = self.water.wave_height
+    #     if wave_height is None:
+    #         U = self.wind.get_value(time)[0]  # only need velocity
+    #         H = self.compute_H(U)
+    #     else:  # user specified a wave height
+    #         H = wave_height
+    #     U = self.comp_psuedo_wind(H)
+
+    #     return U
 
     def compute_H(self, U):
         """
@@ -215,7 +241,7 @@ class Waves(Environment, serializable.Serializable):
         Compute the dissipative wave energy
         """
         # fixme: does this really only depend on height?
-        0.0034*self.water.density*g*H**2
+        return 0.0034*self.water.density*g*H**2
 
     def serialize(self, json_='webapi'):
         """

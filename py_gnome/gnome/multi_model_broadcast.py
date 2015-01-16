@@ -290,8 +290,6 @@ class ModelBroadcaster(GnomeId):
         self.cmd('set_spill_amount_uncertainty',
                  dict(up_or_down=spill_amount_uncertainty), idx=idx)
 
-        print 'our spill amounts', self.cmd('get_spill_amounts', {}, idx=idx)
-
     def _set_new_cache_dir(self, idx):
         self.cmd('set_cache_dir', {}, idx=idx)
 
