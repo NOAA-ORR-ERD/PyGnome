@@ -1437,7 +1437,7 @@ OSErr ShioTimeValue_c::ReadTimeValues (char *path)
 	strncpy(strLine, path, kMaxNameLen);
 	strLine[kMaxNameLen - 1] = 0;
 
-	SplitPathFile(strLine, this->fileName);
+	SplitPathFileName(strLine, this->fileName);
 	
 //	err = ReadFileContents(TERMINATED, 0, 0, path, 0, 0, &f);
 //	if(err)	{ TechError("TShioTimeValue::ReadTimeValues()", "ReadFileContents()", 0); return -1; }
