@@ -50,8 +50,7 @@ def add_oil(record):
     add_distillation_cut_boiling_point(record, oil)
     add_molecular_weights(record, oil)
     add_component_densities(record, oil)
-    add_saturate_fractions(record, oil)
-    add_aromatic_fractions(record, oil)
+    add_saturate_aromatic_fractions(record, oil)
 
     record.oil = oil
 
@@ -407,13 +406,13 @@ def get_resin_coeffs(oil):
         a = [(10 * exp(0.001 * density_at_temperature(oil, k.ref_temp_k)))
              for k in oil.kvis
              if k.weathering == 0.0 and
-             k.ref_temp_k in (288.15, 288.0) and
+             np.isclose(k.ref_temp_k, 288.0, atol=0.15) and
              density_at_temperature(oil, k.ref_temp_k) is not None]
         b = [(10 * log(1000.0 * density_at_temperature(oil, k.ref_temp_k) *
                        k.m_2_s))
              for k in oil.kvis
              if k.weathering == 0.0 and
-             k.ref_temp_k in (288.15, 288.0) and
+             np.isclose(k.ref_temp_k, 288.0, atol=0.15) and
              density_at_temperature(oil, k.ref_temp_k) is not None]
     except:
         print 'generated exception for oil = ', oil
@@ -508,11 +507,13 @@ def add_distillation_cut_boiling_point(imported_rec, oil):
     if not oil.cuts:
         mass_left = 1.0
 
-        if imported_rec.resins:
-            mass_left -= imported_rec.resins
-
-        if imported_rec.asphaltene_content:
-            mass_left -= imported_rec.asphaltene_content
+        mass_left -= sum([f.fraction for f in oil.sara_fractions
+                          if f.sara_type in ('Resins', 'Asphaltenes')])
+        # if imported_rec.resins:
+        #     mass_left -= imported_rec.resins
+        #
+        # if imported_rec.asphaltene_content:
+        #     mass_left -= imported_rec.asphaltene_content
 
         summed_boiling_points = []
         for t, f in get_boiling_points_from_api(5, mass_left, oil.api):
@@ -566,7 +567,51 @@ def get_aromatic_molecular_weight(vapor_temp):
         return None
 
 
-def add_saturate_fractions(imported_rec, oil):
+def add_saturate_aromatic_fractions(imported_rec, oil):
+    for f_sat, f_arom, T_i in get_sa_mass_fractions(oil):
+        oil.sara_fractions.append(SARAFraction(sara_type='Saturates',
+                                               fraction=f_sat,
+                                               ref_temp_k=T_i))
+        oil.sara_fractions.append(SARAFraction(sara_type='Aromatics',
+                                               fraction=f_arom,
+                                               ref_temp_k=T_i))
+
+
+def get_ptry_values(oil_obj, component_type, sub_fraction=None):
+    '''
+        This gives an initial trial estimate for each density component.
+
+        In theory the fractionally weighted average of these densities,
+        combined with the fractionally weighted average resin and asphaltene
+        densities, should match the measured total oil density.
+
+        :param oil_obj: an oil database object
+        :param watson_factor: The characterization factor originally defined
+                              by Watson et al. of the Universal Oil Products
+                              in the mid 1930's
+                              (Reference: CPPF, section 2.1.15 )
+        :param sub_fraction: a list of fractions to be used in lieu of the
+                             calculated cut fractions in the database.
+    '''
+    watson_factors = {'Saturates': 12, 'Aromatics': 10}
+    watson_factor = watson_factors[component_type]
+
+    previous_cut_fraction = 0.0
+    for idx, c in enumerate(oil_obj.cuts):
+        T_i = c.vapor_temp_k
+
+        F_i = c.fraction - previous_cut_fraction
+        previous_cut_fraction = c.fraction
+
+        P_try = 1000 * (T_i ** (1.0 / 3.0) / watson_factor)
+
+        if sub_fraction is not None and len(sub_fraction) > idx:
+            F_i = sub_fraction[idx]
+
+        yield (P_try, F_i, T_i, component_type)
+
+
+def get_sa_mass_fractions(oil_obj):
     '''
         (A) if these hold true:
               - (i): oil library record contains summed mass fractions
@@ -592,26 +637,32 @@ def add_saturate_fractions(imported_rec, oil):
         dependent on:
             - oil.molecular_weights[:].saturate
     '''
-    if len(oil.cuts) == 5:
-        # the way we determine that we have estimated cuts is that the
-        # imported record cuts will be different than the oil cuts
-        #print 'oil {0.name}: possibly estimated cuts {0.cuts}'.format(oil)
-        pass
+    for P_try, F_i, T_i, c_type in get_ptry_values(oil_obj, 'Saturates'):
+        if T_i < 530.0:
+            sg = P_try / 1000
+            mw = None
+            for v in oil_obj.molecular_weights:
+                if np.isclose(v.ref_temp_k, T_i):
+                    mw = v.saturate
+                    break
 
-    for c in oil.cuts:
-        if c.vapor_temp_k < 530.0:
-            pass
-        elif c.vapor_temp_k >= 530.0:
-            pass
+            if mw is not None:
+                f_sat = F_i * (2.2843 - 1.98138 * sg - 0.009108 * mw)
+
+                if f_sat >= F_i:
+                    f_sat = F_i
+                elif f_sat < 0:
+                    f_sat = 0
+
+                f_arom = F_i * (1 - f_sat)
+
+                yield (f_sat, f_arom, T_i)
+            else:
+                print '\tNo molecular weight at that temperature.'
         else:
-            print 'oil {0.name}: invalid vapor temperature {1}'.format(oil, c)
+            f_sat = f_arom = F_i / 2
 
-
-def add_aromatic_fractions(imported_rec, oil):
-    '''
-        Reference: CPPF, eq.s 3.77 and 3.78
-    '''
-    pass
+            yield (f_sat, f_arom, T_i)
 
 
 def add_component_densities(imported_rec, oil):
