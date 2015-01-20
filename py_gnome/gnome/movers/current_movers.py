@@ -5,7 +5,7 @@ Movers using currents and tides as forcing functions
 import os
 import copy
 
-from colander import (SchemaNode, Bool, String, Float, Int, drop)
+from colander import (SchemaNode, Bool, String, Float, drop)
 
 from gnome.persist.base_schema import ObjType, WorldPoint, LongLat
 
@@ -126,7 +126,7 @@ class CatsMover(CyMover, serializable.Serializable):
 
         if (self.scale and
             self.scale_value != 0.0 and
-            self.scale_refpoint is None):
+                self.scale_refpoint is None):
             raise TypeError("Provide a reference point in 'scale_refpoint'.")
 
         super(CatsMover, self).__init__(**kwargs)
@@ -685,27 +685,17 @@ class ComponentMoverSchema(ObjType, ProcessSchema):
     '''static schema for ComponentMover'''
     filename1 = SchemaNode(String(), missing=drop)
     filename2 = SchemaNode(String(), missing=drop)
-
-    ref_point = LongLat(missing=drop)
-
-    pat1_angle = SchemaNode(Float(), missing=drop)
-    pat1_speed = SchemaNode(Float(), missing=drop)
-    pat1_speed_units = SchemaNode(Float(), missing=drop)
-    pat1_scale_to_value = SchemaNode(Float(), missing=drop)
-
-    pat2_angle = SchemaNode(Float(), missing=drop)
-    pat2_speed = SchemaNode(Float(), missing=drop)
-    pat2_speed_units = SchemaNode(Float(), missing=drop)
-    pat2_scale_to_value = SchemaNode(Float(), missing=drop)
-    
-    scale_by = SchemaNode(Int(), missing=drop)
+    #scale = SchemaNode(Bool())
+    #ref_point = WorldPoint(missing=drop)
+    scale_refpoint = LongLat(missing=drop)
+    #scale_value = SchemaNode(Float())
 
 
 class ComponentMover(CyMover, serializable.Serializable):
 
     _state = copy.deepcopy(CyMover._state)
 
-    _update = ['ref_point',
+    _update = ['scale_refpoint',
                'pat1_angle', 'pat1_speed', 'pat1_speed_units',
                'pat1_scale_to_value',
                'pat2_angle', 'pat2_speed', 'pat2_speed_units',
@@ -803,9 +793,9 @@ class ComponentMover(CyMover, serializable.Serializable):
 #                      lambda self, val: setattr(self.mover, 'scale_by'
 #                      , int(val)))
 
-    ref_point = property(lambda self: self.mover.ref_point,
-                         lambda self, val: setattr(self.mover,
-                                                   'ref_point', val))
+    scale_refpoint = property(lambda self: self.mover.ref_point,
+                              lambda self, val: setattr(self.mover,
+                                                        'ref_point', val))
 
     pat1_angle = property(lambda self: self.mover.pat1_angle,
                           lambda self, val: setattr(self.mover,

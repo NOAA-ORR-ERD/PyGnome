@@ -139,17 +139,15 @@ def to_datetime_value_1d(time_value_pair):
     return datetime_value_1d
 
 
-def tsformat(format):
+def tsformat(format_):
     """
-    convert string 'uv' or 'magnitude_direction' into appropriate integer given by basic_types.ts_format.*
+    convert string 'uv' or 'magnitude_direction' into appropriate integer given
+    by basic_types.ts_format.*
     """
 
-    if format == 'r-theta':
-        return basic_types.ts_format.magnitude_direction
-    elif format == 'uv':
-        return basic_types.ts_format.uv
-    else:
-        raise ValueError("timeseries format can only be 'r-theta' or 'uv', the format entered is not recognized as valid format"
-                         )
-
-
+    try:
+        format_ = (format_, 'r_theta')[format_ == 'r-theta']
+        return getattr(basic_types.ts_format, format_)
+    except AttributeError:
+        raise ValueError("timeseries format can only be 'r-theta' or 'uv',"
+            " format entered is not recognized: {0}".format(format_))

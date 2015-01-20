@@ -34,7 +34,7 @@ from gnome.utilities.convert import (to_time_value_pair,
 
 from gnome.utilities.serializable import Serializable, Field
 
-from gnome.cy_gnome.cy_ossm_time import CyOSSMTime
+from gnome.cy_gnome.cy_ossm_time import CyTimeseries
 from gnome.cy_gnome.cy_shio_time import CyShioTime
 
 
@@ -138,7 +138,7 @@ class Tide(Environment, Serializable):
         self.yeardata = yeardata  # set yeardata
         self.name = kwargs.pop('name', os.path.split(self.filename)[1])
         self.scale_factor = kwargs.get('scale_factor',
-                self.cy_obj.scale_factor)
+                                       self.cy_obj.scale_factor)
 
         kwargs.pop('scale_factor', None)
         super(Tide, self).__init__(**kwargs)
@@ -165,9 +165,9 @@ class Tide(Environment, Serializable):
     filename = property(lambda self: (self.cy_obj.filename, None
                                       )[self.cy_obj.filename == ''])
 
-    scale_factor = property(lambda self: \
-            self.cy_obj.scale_factor, lambda self, val: \
-            setattr(self.cy_obj, 'scale_factor', val))
+    scale_factor = property(lambda self:
+                            self.cy_obj.scale_factor, lambda self, val:
+                            setattr(self.cy_obj, 'scale_factor', val))
 
     def _obj_to_create(self, filename):
         """
@@ -199,8 +199,18 @@ class Tide(Environment, Serializable):
             # maybe log / display a warning that v=0 for tide file and will be
             # ignored
             # if float( string.split(lines[3],',')[-1]) != 0.0:
-            return CyOSSMTime(filename, file_contains=tsformat('uv'))
+            return CyTimeseries(filename, file_format=tsformat('uv'))
         else:
             raise ValueError('This does not appear to be a valid file format '
                              'that can be read by OSSM or Shio to get '
                              'tide information')
+
+    def serialize(self, json_='webapi'):
+        '''
+        For the filename - need to make it the full path before saving
+        '''
+        serial = super(Tide, self).serialize(json_)
+        if json_ == 'save':
+            serial['filename'] = self.cy_obj.path_filename
+
+        return serial

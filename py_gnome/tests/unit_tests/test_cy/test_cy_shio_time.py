@@ -7,10 +7,12 @@ todo: still need to add tests for functions that get the data from C++ code
 """
 
 import os
+from datetime import datetime
 
 import pytest
 
 import gnome
+from gnome.utilities import time_utils
 from gnome.cy_gnome.cy_shio_time import CyShioTime
 from ..conftest import testdata
 
@@ -60,7 +62,7 @@ def test_properties_read_from_file():
             assert val == data[s_idx + len(item):e_idx]
 
     assert not shio.daylight_savings_off
-    assert shio.filename == shio_file
+    assert shio.path_filename == shio_file
 
 
 def test_daylight_savings_off():
@@ -78,15 +80,27 @@ def test_scale_factor():
 
 
 def test_yeardata():
+    'test default yeardata is set correctly. Also test set function.'
     shio = CyShioTime(shio_file)
-    assert shio.yeardata == ''
 
     yd = os.path.join(os.path.dirname(gnome.__file__), 'data', 'yeardata')
-    shio.yeardata = yd
-
     # shio puts a trailing slash at the end that is platform dependent
     # so compare the names without the platform dependent trailing slash
     assert shio.yeardata[:-1] == yd
+
+    # bogus path but we just want to test that it gets set
+    shio.yeardata = yd
+    assert shio.yeardata[:-1] == yd
+
+
+def test_get_time_value():
+    'make sure get_time_value goes to correct C++ derived class function'
+    shio = CyShioTime(shio_file)
+    t = time_utils.date_to_sec(datetime(2012, 8, 20, 13))
+    time = [t + 3600.*dt for dt in range(10)]
+    vel_rec = shio.get_time_value(time)
+    assert all(vel_rec['u'] != 0)
+    assert all(vel_rec['v'] == 0)
 
 
 def test_eq():
@@ -101,11 +115,6 @@ def test_eq():
 
     other_shio = CyShioTime(shio_file)
     other_shio.scale_factor = 2
-    assert shio != other_shio
-
-    other_shio = CyShioTime(shio_file)
-    yd = os.path.join(os.path.dirname(gnome.__file__), 'data', 'yeardata')
-    other_shio.yeardata = yd
     assert shio != other_shio
 
     # TODO: need to test for inequality if read-only attributes are

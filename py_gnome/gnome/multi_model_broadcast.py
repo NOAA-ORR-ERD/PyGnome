@@ -111,8 +111,8 @@ class ModelConsumer(mp.Process):
     def _num_time_steps(self):
         return self.model.num_time_steps
 
-    def _full_run(self, rewind=True, logger=False):
-        return self.model.full_run(rewind=rewind, logger=logger)
+    def _full_run(self, rewind=True):
+        return self.model.full_run(rewind=rewind)
 
     def _get_wind_timeseries(self):
         '''
@@ -289,8 +289,6 @@ class ModelBroadcaster(GnomeId):
 
         self.cmd('set_spill_amount_uncertainty',
                  dict(up_or_down=spill_amount_uncertainty), idx=idx)
-
-        print 'our spill amounts', self.cmd('get_spill_amounts', {}, idx=idx)
 
     def _set_new_cache_dir(self, idx):
         self.cmd('set_cache_dir', {}, idx=idx)

@@ -1004,7 +1004,7 @@ void GridCurMover::Draw(Rect r, WorldRect view)
 	
 	if (!bShowArrows && !bShowGrid) return;
 	
-	p = GetQuickDrawPt(refP.pLong, refP.pLat, &r, &offQuickDrawPlane);
+	p = GetQuickDrawPt(refPt3D.p.pLong, refPt3D.p.pLat, &r, &offQuickDrawPlane);
 	bounds = rectGrid->GetBounds();
 	
 	// draw the reference point

@@ -38,7 +38,7 @@ def test_file(filename):
     """
 
     td = Tide(filename)
-    assert td.filename == filename
+    assert td.filename == os.path.split(filename)[1]
 
 
 @pytest.mark.parametrize(('filename', 'json_'),

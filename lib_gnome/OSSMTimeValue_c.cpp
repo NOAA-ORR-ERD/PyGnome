@@ -31,8 +31,9 @@ OSSMTimeValue_c::OSSMTimeValue_c() : TimeValue_c()
 	fFileType = OSSMTIMEFILE;
 	fScaleFactor = 0.;
 	fStationName[0] = 0;
-	fStationPosition.pLat = 0;
-	fStationPosition.pLong = 0;
+	fStationPosition.p.pLat = -999;
+	fStationPosition.p.pLong = -999;
+	fStationPosition.z = 0;
 	bOSSMStyle = true;
 	fTransport = 0;
 	fVelAtRefPt = 0;
@@ -53,8 +54,9 @@ OSSMTimeValue_c::OSSMTimeValue_c(TMover *theOwner) : TimeValue_c(theOwner)
 	fFileType = OSSMTIMEFILE;
 	fScaleFactor = 0.;
 	fStationName[0] = 0;
-	fStationPosition.pLat = 0;
-	fStationPosition.pLong = 0;
+	fStationPosition.p.pLat = 0;
+	fStationPosition.p.pLong = 0;
+	fStationPosition.z = 0;
 	bOSSMStyle = true;
 	fTransport = 0;
 	fVelAtRefPt = 0;
@@ -1107,7 +1109,8 @@ OSErr OSSMTimeValue_c::ReadHydrologyHeader(vector<string> &linesInFile)
 	string currentLine;
 	char* stationName;
 
-	WorldPoint wp;
+	WorldPoint3D wp = {0, 0, 0};
+	//wp.z = 0;
 	
 	memset(strLine, 0, 512);
 	memset(firstPartOfFile, 0, 512);
@@ -1148,17 +1151,17 @@ OSErr OSSMTimeValue_c::ReadHydrologyHeader(vector<string> &linesInFile)
 			goto done;
 		}
 		else {
-			wp.pLat = latdeg * 1000000;
-			wp.pLong = latmin * 1000000;
+			wp.p.pLat = latdeg * 1000000;
+			wp.p.pLong = latmin * 1000000;
 			bOSSMStyle = false;
 		}
 
 	}
 	else {
 		// support old OSSM style
-		wp.pLat = (latdeg + latmin / 60.) * 1000000;
+		wp.p.pLat = (latdeg + latmin / 60.) * 1000000;
 		// need to have header include direction...
-		wp.pLong = -(longdeg + longmin / 60.) * 1000000;
+		wp.p.pLong = -(longdeg + longmin / 60.) * 1000000;
 		bOSSMStyle = true;
 	}
 
@@ -1226,7 +1229,7 @@ OSErr OSSMTimeValue_c::ReadOSSMTimeHeader(char *path)
 	float latdeg, latmin, longdeg, longmin;
 	short selectedUnits;
 
-	WorldPoint wp = {0, 0};
+	WorldPoint3D wp = {0, 0, 0};
 	
 
 	memset(strLine, 0, 512);
@@ -1262,16 +1265,16 @@ OSErr OSSMTimeValue_c::ReadOSSMTimeHeader(char *path)
 							&latdeg, &latmin, &longdeg, &longmin);
 		if (numScanned == 4) {
 			// support old OSSM style
-			wp.pLat = (latdeg + latmin / 60.) * 1000000;
-			wp.pLong = -(longdeg + longmin / 60.) * 1000000;
+			wp.p.pLat = (latdeg + latmin / 60.) * 1000000;
+			wp.p.pLong = -(longdeg + longmin / 60.) * 1000000;
 		}
 		else if (numScanned == 2) {
-			wp.pLat = latdeg * 1000000;
-			wp.pLong = latmin * 1000000;
+			wp.p.pLat = latdeg * 1000000;
+			wp.p.pLong = latmin * 1000000;
 		}
 		else {
-			wp.pLat = 0;
-			wp.pLong = 0;
+			wp.p.pLat = 0;
+			wp.p.pLong = 0;
 		}
 
 		fStationPosition = wp;

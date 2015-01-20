@@ -95,10 +95,10 @@ cdef extern from "TypeDefs.h":
     ctypedef enum LEStatus:
         OILSTAT_NOTRELEASED = 0
         OILSTAT_INWATER = 2
-        OILSTAT_ONLAND
+        OILSTAT_ONLAND = 3
         OILSTAT_OFFMAPS = 7
-        OILSTAT_EVAPORATED = 10 
-        OILSTAT_TO_BE_REMOVED = 12 
+        OILSTAT_EVAPORATED = 10
+        OILSTAT_TO_BE_REMOVED = 12
     
     # In C++, this information is defined for each LE
     # However, it is the same for all LEs in a spill.

@@ -26,7 +26,8 @@ cdef class CyMover(object):
     CyMover object in Python. Though this object doesn't do anything and it
     does not have a get_move method.
     """
-    def __init__(self):
+    def __init__(self,
+                 uncertain_duration=48*3600):
         """
         By default it sets self.mover=NULL. This is only so Python doesn't
         crash if user instantiates a CyMover object in Python.
@@ -89,8 +90,8 @@ cdef class CyMover(object):
                 For now just raise an OSError - until the types of possible
                 errors are defined and enumerated
                 """
-                raise OSError("PrepareForModelStep returned an error: {0}"
-                              .format(err))
+                raise OSError("{0.__class__.__name__} returned an error: {1}"
+                              .format(self, err))
 
     def model_step_is_done(self, cnp.ndarray[short] LE_status=None):
         """

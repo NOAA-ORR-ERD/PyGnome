@@ -458,9 +458,7 @@ class Model(Serializable):
                 self.water = Water()
 
             if self._intrinsic_props is None:
-                self._intrinsic_props = IntrinsicProps(self.water, array_types)
-            else:
-                self._intrinsic_props.update_array_types(array_types)
+                self._intrinsic_props = IntrinsicProps(self.water)
 
             # this adds 'density' array. It also adds data_arrays used to
             # compute area if Evaporation is included since it requires 'area'
@@ -472,6 +470,7 @@ class Model(Serializable):
         for sc in self.spills.items():
             sc.prepare_for_model_run(array_types)
             if self._intrinsic_props:
+                # do this only if we have user has added spills!
                 self._intrinsic_props.initialize(sc)
 
         # outputters need array_types, so this needs to come after those
@@ -695,7 +694,7 @@ class Model(Serializable):
         '''
         return self.step()
 
-    def full_run(self, rewind=True, logger=False):
+    def full_run(self, rewind=True):
         '''
         Do a full run of the model.
 
@@ -731,6 +730,10 @@ class Model(Serializable):
         if hasattr(obj_added, 'tide') and obj_added.tide is not None:
             if obj_added.tide.id not in self.environment:
                 self.environment += obj_added.tide
+
+        if hasattr(obj_added, 'waves') and obj_added.waves is not None:
+            if obj_added.waves.id not in self.environment:
+                self.environment += obj_added.waves
 
     def _callback_add_mover(self, obj_added):
         'Callback after mover has been added'
@@ -904,8 +907,7 @@ class Model(Serializable):
             array_types.update(w.array_types)
 
         if self._intrinsic_props:
-                self._intrinsic_props.update_array_types(array_types)
-                array_types.update(self._intrinsic_props.array_types)
+            array_types.update(self._intrinsic_props.array_types)
 
         for sc in self.spills.items():
             sc.prepare_for_model_run(array_types)

@@ -5572,7 +5572,7 @@ OSErr AnalysisInit(DialogPtr dialog, VOIDPTR data)
 	if (!map) return -1;
 	TMover *mover = map->GetMover(TYPE_CATSMOVER3D);
 	if (!mover) return -1;
-	 WorldPoint wp = (dynamic_cast<TCATSMover*>(mover))->refP;
+	 WorldPoint wp = (dynamic_cast<TCATSMover*>(mover))->refPt3D.p;
 
 	SetDialogItemHandle(dialog, ANALYSIS_HILITE, (Handle)FrameDefault);
 	SetDialogItemHandle(dialog, ANALYSIS_FROST1, (Handle)FrameEmbossed);

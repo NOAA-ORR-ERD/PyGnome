@@ -78,8 +78,9 @@ CATSDialogNonPtrFields GetCATSDialogNonPtrFields(TCATSMover	* cm)
 	f.fUncertainStartTime  = cm->fUncertainStartTime; 	
 	f.fDuration  = cm->fDuration; 
 	//
-	f.refP  = cm->refP; 	
-	f.refZ  = cm->refZ; 	
+	f.refP  = cm->refPt3D.p; 	
+	f.refZ  = cm->refPt3D.z; 	
+	//f.refZ  = cm->refZ; 	
 	f.scaleType = cm->scaleType; 
 	f.scaleValue = cm->scaleValue;
 	strcpy(f.scaleOtherFile,cm->scaleOtherFile);
@@ -102,8 +103,9 @@ void SetCATSDialogNonPtrFields(TCATSMover	* cm,CATSDialogNonPtrFields * f)
 	cm->fUncertainStartTime = f->fUncertainStartTime; 	
 	cm->fDuration  = f->fDuration; 
 	//
-	cm->refP = f->refP; 	
-	cm->refZ  = f->refZ; 	
+	cm->refPt3D.p = f->refP; 	
+	cm->refPt3D.z  = f->refZ; 	
+	//cm->refZ  = f->refZ; 	
 	cm->scaleType = f->scaleType; 
 	cm->scaleValue = f->scaleValue;
 	strcpy(cm->scaleOtherFile,f->scaleOtherFile);
@@ -157,8 +159,9 @@ Boolean TCATSMover::OkToAddToUniversalMap()
 OSErr TCATSMover::InitMover(TGridVel *grid, WorldPoint p)
 {
 	fGrid = grid;
-	refP = p;
-	refZ = 0;
+	refPt3D.p = p;
+	refPt3D.z = 0;
+	//refZ = 0;
 	scaleType = SCALE_NONE;
 	scaleValue = 1.0;
 	scaleOtherFile[0] = 0;
@@ -227,10 +230,11 @@ OSErr TCATSMover::Write (BFPB *bfpb)
 	StartReadWriteSequence("TCatsMover::Write()");
 	if (err = WriteMacValue(bfpb, id)) return err;
 	if (err = WriteMacValue(bfpb, version)) return err;
-	if (err = WriteMacValue(bfpb, refP.pLong)) return err;
-	if (err = WriteMacValue(bfpb, refP.pLat)) return err;
+	if (err = WriteMacValue(bfpb, refPt3D.p.pLong)) return err;
+	if (err = WriteMacValue(bfpb, refPt3D.p.pLat)) return err;
 	if (err = WriteMacValue(bfpb, refScale)) return err;
-	if (err = WriteMacValue(bfpb, refZ)) return err;
+	//if (err = WriteMacValue(bfpb, refZ)) return err;
+	if (err = WriteMacValue(bfpb, refPt3D.z)) return err;
 	if (err = WriteMacValue(bfpb, scaleType)) return err;
 	if (err = WriteMacValue(bfpb, scaleValue)) return err;
 	if (err = WriteMacValue(bfpb, scaleOtherFile, sizeof(scaleOtherFile))) return err; // don't swap !! 
@@ -279,10 +283,11 @@ OSErr TCATSMover::Read(BFPB *bfpb)
 	if (id != GetClassID ()) { TechError("TCATSMover::Read()", "id != TYPE_CATSMOVER", 0); return -1; }
 	if (err = ReadMacValue(bfpb,&version)) return err;
 	if (version != TCATSMoverREADWRITEVERSION) { printSaveFileVersionError(); return -1; }
-	if (err = ReadMacValue(bfpb,&refP.pLong)) return err;
-	if (err = ReadMacValue(bfpb,&refP.pLat)) return err;
+	if (err = ReadMacValue(bfpb,&refPt3D.p.pLong)) return err;
+	if (err = ReadMacValue(bfpb,&refPt3D.p.pLat)) return err;
 	if (err = ReadMacValue(bfpb,&refScale)) return err;
-	if (err = ReadMacValue(bfpb,&refZ)) return err;
+	//if (err = ReadMacValue(bfpb,&refZ)) return err;
+	if (err = ReadMacValue(bfpb,&refPt3D.z)) return err;
 	if (err = ReadMacValue(bfpb,&scaleType)) return err;
 	if (err = ReadMacValue(bfpb,&scaleValue)) return err;
 	if (err = ReadMacValue(bfpb, scaleOtherFile, sizeof(scaleOtherFile))) return err;  // don't swap !! 
@@ -371,7 +376,7 @@ OSErr TCATSMover::CheckAndPassOnMessage(TModelMessage *message)
 		}
 		/////////////
 		err = message->GetParameterAsWorldPoint("refP",&wp,false);
-		if(!err) this->refP = wp;
+		if(!err) this->refPt3D.p = wp;
 		//////////////
 		message->GetParameterString("timeFile",str,256);
 		ResolvePath(str);
@@ -575,7 +580,7 @@ ListItem TCATSMover::GetNthListItem(long n, short indent, short *style, char *te
 				item.indent++;
 				item.index = (n == 0) ? I_CATSLAT : I_CATSLONG;
 				//item.bullet = BULLET_DASH;
-				WorldPointToStrings(refP, latS, longS);
+				WorldPointToStrings(refPt3D.p, latS, longS);
 				strcpy(text, (n == 0) ? latS : longS);
 				
 				return item;
@@ -974,7 +979,7 @@ short HydrologyClick(DialogPtr dialog, short itemNum, long lParam, VOIDPTR data)
 			transportConversionFactor = ConvertTransportUnitsToCMS(sTimeValue->fUserUnits) / ConvertTransportUnitsToCMS(transportUnits);
 			// get value at reference point and calculate scale factor
 			// need units conversion for transport and velocity
-			refPoint3D.p = sTimeValue->fStationPosition;
+			refPoint3D.p = sTimeValue->fStationPosition.p;
 			//refVel = ((TCATSMover*)(TTimeValue*)sTimeValue->owner)->GetPatValue(sTimeValue->fStationPosition);
 			refVel = ((TCATSMover*)(TTimeValue*)sTimeValue->owner)->GetPatValue(refPoint3D);
 			//origScaleFactor = sTimeValue->fScaleFactor;
@@ -1053,7 +1058,7 @@ OSErr HydrologyInit(DialogPtr dialog, VOIDPTR data)
 	
 	mysetitext(dialog, M32FILENAME, sTimeValue->fStationName);
 	settings.latLongFormat = DEGREES;
-	WorldPointToStrings2(sTimeValue->fStationPosition, latStr, &roundLat, longStr, &roundLong);	
+	WorldPointToStrings2(sTimeValue->fStationPosition.p, latStr, &roundLat, longStr, &roundLong);	
 	SimplifyLLString(longStr, 3, roundLong);
 	SimplifyLLString(latStr, 3, roundLat);
 	sprintf(posStr, "%s, %s", latStr,longStr);
@@ -1317,7 +1322,7 @@ short CATSClick(DialogPtr dialog, short itemNum, long lParam, VOIDPTR data)
 			sharedCMover->scaleValue = EditText2Float(dialog, M16SCALEVALUE);
 			mygetitext(dialog, M16SCALEGRIDNAME, sharedCMover->scaleOtherFile, 31);
 			
-			err = EditTexts2LL(dialog, M16LATDEGREES, &sharedCMover->refP,TRUE);
+			err = EditTexts2LL(dialog, M16LATDEGREES, &sharedCMover->refPt3D.p,TRUE);
 			if(err) break;
 			
 			if(!(sharedCMDialogTimeDep && (sharedCMDialogTimeDep->GetFileType() == HYDROLOGYFILE) && sharedCMDialogTimeDep->bOSSMStyle))
@@ -1535,12 +1540,12 @@ short CATSClick(DialogPtr dialog, short itemNum, long lParam, VOIDPTR data)
 					{
 						WorldRect gridBounds;
 						char msg[256], latS[20], longS[20];
-						WorldPointToStrings(timeFile->fStationPosition, latS, longS);
+						WorldPointToStrings(timeFile->fStationPosition.p, latS, longS);
 						if(sharedCMover -> fGrid == 0)
 						{ printError("Programmer error: sharedCMover -> fGrid is nil"); break;}
 						gridBounds = sharedCMover -> fGrid -> GetBounds();
 						
-						if(!WPointInWRect(timeFile->fStationPosition.pLong,timeFile->fStationPosition.pLat,&gridBounds))
+						if(!WPointInWRect(timeFile->fStationPosition.p.pLong,timeFile->fStationPosition.p.pLat,&gridBounds))
 						{
 							sprintf(msg,"Check that this is the right file.%sThe reference point in this file is not within the grid bounds.%sLat: %s%sLng: %s",NEWLINESTRING,NEWLINESTRING,latS,NEWLINESTRING,longS);
 							printWarning(msg);
@@ -1556,7 +1561,7 @@ short CATSClick(DialogPtr dialog, short itemNum, long lParam, VOIDPTR data)
 					}
 					else
 					{
-						sharedCMover->refP = timeFile->fStationPosition;
+						sharedCMover->refPt3D.p = timeFile->fStationPosition.p;
 						if (!timeFile->bOSSMStyle) 
 						{
 							sharedCMover->refScale = timeFile->fScaleFactor;
@@ -1564,7 +1569,7 @@ short CATSClick(DialogPtr dialog, short itemNum, long lParam, VOIDPTR data)
 							Float2EditText(dialog, M16SCALEVALUE, timeFile->fScaleFactor, 4);
 						}
 						SwitchLLFormat(dialog, M16LATDEGREES, M16DEGREES);
-						LL2EditTexts(dialog, M16LATDEGREES, &sharedCMover->refP);
+						LL2EditTexts(dialog, M16LATDEGREES, &sharedCMover->refPt3D.p);
 						(void)CATSClick(dialog,M16SCALETOCONSTANT,lParam,data);
 					}
 				}
@@ -1572,18 +1577,18 @@ short CATSClick(DialogPtr dialog, short itemNum, long lParam, VOIDPTR data)
 				if(timeFile->GetClassID () == TYPE_SHIOTIMEVALUES)
 				{	// it is a SHIO mover
 					TShioTimeValue * shioTimeValue = (TShioTimeValue*)timeFile; // typecast
-					WorldPoint wp = shioTimeValue -> GetStationLocation();
+					WorldPoint3D wp = shioTimeValue -> GetStationLocation();
 					VelocityRec vel;
 					short btnHit;
 					char msg[256], latS[20], longS[20];
-					WorldPointToStrings(wp, latS, longS);
+					WorldPointToStrings(wp.p, latS, longS);
 					WorldRect gridBounds;
 					if(sharedCMover -> fGrid == 0)
 					{ printError("Programmer error: sharedCMover -> fGrid is nil"); break;}
 					gridBounds = sharedCMover -> fGrid -> GetBounds();
 					
 					//if(WPointInWRect(wp.pLong,wp.pLat,&sharedCMover -> bounds))
-					if(WPointInWRect(wp.pLong,wp.pLat,&gridBounds))
+					if(WPointInWRect(wp.p.pLong,wp.p.pLat,&gridBounds))
 					{
 						btnHit = MULTICHOICEALERT(1670, 0, FALSE);
 						switch(btnHit)
@@ -1591,7 +1596,7 @@ short CATSClick(DialogPtr dialog, short itemNum, long lParam, VOIDPTR data)
 							case 1:  // Yes, default button
 								// user want to use the ref point info from the file
 								// set the lat,long 
-								LL2EditTexts(dialog, M16LATDEGREES, &wp);
+								LL2EditTexts(dialog, M16LATDEGREES, &wp.p);
 								// set the scale to either 1 or -1 
 								scaleValue = EditText2Float(dialog, M16SCALEVALUE);
 								if(scaleValue < 0.0) Float2EditText(dialog, M16SCALEVALUE,-1.0, 4);//preserve the sign, i.e. preserve the direction the user set
@@ -1696,7 +1701,7 @@ OSErr CATSInit(DialogPtr dialog, VOIDPTR data)
 	Float2EditText(dialog, M16SCALEVALUE, sharedCMover->scaleValue, 4);
 	mysetitext(dialog, M16SCALEGRIDNAME, sharedCMover->scaleOtherFile);
 	SwitchLLFormat(dialog, M16LATDEGREES, M16DEGREES);
-	LL2EditTexts(dialog, M16LATDEGREES, &sharedCMover->refP);
+	LL2EditTexts(dialog, M16LATDEGREES, &sharedCMover->refPt3D.p);
 	
 	ShowHideCATSDialogItems(dialog);
   	ShowHideScaleFactorItems(dialog);
@@ -1834,6 +1839,7 @@ TCurrentMover *CreateAndInitLocationFileCurrentsMover (TMap *owner, char* givenP
 		if (grid)
 		{
 			WorldRect mapBounds = voidWorldRect;
+			WorldPoint3D refPos;
 			err = newTCATSMover3D->InitMover(grid, WorldRectCenter(mapBounds));
 			if(err) goto Error;
 			
@@ -1841,7 +1847,9 @@ TCurrentMover *CreateAndInitLocationFileCurrentsMover (TMap *owner, char* givenP
 			if(err) goto Error;	
 			if (*newMap) mapBounds = (*newMap)->GetMapBounds();
 			else mapBounds = (newTCATSMover3D->moverMap)->GetMapBounds();
-			newTCATSMover3D->SetRefPosition(WorldRectCenter(mapBounds),0.);
+			refPos.p = WorldRectCenter(mapBounds);
+			refPos.z = 0.;
+			newTCATSMover3D->SetRefPosition(refPos);
 			// if refP not in grid should set it inside a triangle
 		}
 	}
@@ -2106,6 +2114,7 @@ TCurrentMover *CreateAndInitCurrentsMover (TMap *owner, Boolean askForFile, char
 		if (grid)
 		{
 			WorldRect mapBounds = voidWorldRect;
+			WorldPoint3D refPos;
 			err = newTCATSMover3D->InitMover(grid, WorldRectCenter(mapBounds));
 			if(err) goto Error;
 			
@@ -2113,7 +2122,9 @@ TCurrentMover *CreateAndInitCurrentsMover (TMap *owner, Boolean askForFile, char
 			if(err) goto Error;	
 			if (*newMap) mapBounds = (*newMap)->GetMapBounds();
 			else mapBounds = (newTCATSMover3D->moverMap)->GetMapBounds();
-			newTCATSMover3D->SetRefPosition(WorldRectCenter(mapBounds),0.);
+			refPos.p = WorldRectCenter(mapBounds);
+			refPos.z = 0.;
+			newTCATSMover3D->SetRefPosition(refPos);
 			// if refP not in grid should set it inside a triangle
 		}
 	}
@@ -2559,7 +2570,7 @@ Error: // JLM 	 10/27/98
 void TCATSMover::Draw(Rect r, WorldRect view)
 {
 	if(fGrid && (bShowArrows || bShowGrid))
-		fGrid->Draw(r,view,refP,refScale,arrowScale,arrowDepth,bShowArrows,bShowGrid,fColor);
+		fGrid->Draw(r,view,refPt3D.p,refScale,arrowScale,arrowDepth,bShowArrows,bShowGrid,fColor);
 	//if (bShowDepthContours) ((TTriGridVel3D*)fGrid)->DrawDepthContours(r,view,bShowDepthContourLabels);
 	//if (true) ((TTriGridVel*)fGrid)->DrawDepthContours(r,view,true);
 }

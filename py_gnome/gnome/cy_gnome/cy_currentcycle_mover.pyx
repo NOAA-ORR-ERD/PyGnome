@@ -3,7 +3,8 @@ import numpy as np
 import os
 
 from type_defs cimport *
-from movers cimport Mover_c, GridCurrentMover_c, CurrentCycleMover_c, TimeGridVel_c
+from movers cimport Mover_c
+from current_movers cimport CurrentCycleMover_c
 from gnome import basic_types
 from gnome.cy_gnome.cy_ossm_time cimport CyOSSMTime
 from gnome.cy_gnome.cy_shio_time cimport CyShioTime
@@ -51,7 +52,8 @@ cdef class CyCurrentCycleMover(cy_mover.CyMover):
             For now just raise an OSError - until the types of possible errors
             are defined and enumerated
             """
-            raise OSError("GridCurrentMover_c.TextRead returned an error.")
+            raise OSError("{0}.TextRead returned an error."
+                          .format(self.__class__.__name__))
 
 #     def export_topology(self, topology_file):
 #         """
@@ -164,7 +166,6 @@ cdef class CyCurrentCycleMover(cy_mover.CyMover):
         
         def __set__(self, value):
             self.current_cycle.SetTimeShift(value)
-        
 
     def extrapolate_in_time(self, extrapolate):
         self.current_cycle.SetExtrapolationInTime(extrapolate)

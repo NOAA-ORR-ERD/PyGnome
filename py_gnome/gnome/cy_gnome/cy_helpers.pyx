@@ -1,5 +1,6 @@
 from libc cimport stdlib
 import locale
+import os
 
 cimport numpy as cnp
 import numpy as np
@@ -70,3 +71,16 @@ cdef bytes to_bytes(unicode ucode):
         raise err
 
     return byte_string
+
+
+def filename_as_bytes(filename):
+    '''
+    filename is a python basestring (either string or unicode).
+    make it a unicode, then call to_bytes to encode correctly and return
+    a byte string
+    '''
+    cdef bytes file_
+    filename = os.path.normpath(filename)
+    file_ = to_bytes(unicode(filename))
+
+    return file_

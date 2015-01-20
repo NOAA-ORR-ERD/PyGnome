@@ -1,7 +1,6 @@
 import os
 from datetime import datetime
 import shutil
-import json
 
 import pytest
 from pytest import raises
@@ -16,28 +15,10 @@ from gnome.environment import Wind, constant_wind
 
 from ..conftest import testdata
 
-data_dir = os.path.join(os.path.dirname(__file__), 'sample_data')
 wind_file = testdata['timeseries']['wind_ts']
 
 
-def test_set_timeseries():
-    '''
-    following operation requires a numpy array. Slicing numy array
-    automatically makes it a 0-D array, make sure it gets converted to a 1-D
-    array correctly
-    '''
-    wm = Wind(filename=wind_file)
-    x = wm.timeseries[0]
-    wm.timeseries = x
-    assert wm.timeseries == x
-
-    x = (datetime.now().replace(microsecond=0, second=0), (4, 5))
-    wm.timeseries = x
-    assert wm.timeseries['time'] == x[0]
-    assert np.allclose(wm.timeseries['value'], x[1], atol=1e-6)
-
-
-def test_exceptions(invalid_rq):
+def test_exceptions():
     """
     Test ValueError exception thrown if improper input arguments
     Test TypeError thrown if units are not given - so they are None
@@ -48,47 +29,8 @@ def test_exceptions(invalid_rq):
     dtv.time = [datetime(2012, 11, 06, 20, 10 + i, 30,) for i in range(4)]
     dtv.value = (1, 0)
 
-    # incorrect type of numpy array for init
-
-    # todo: np.asarray does not raise an error for the following. 
-    #with raises(ValueError):
-    #    wind_vel = np.zeros((1, ), dtype=velocity_rec)
-    #    w = Wind(timeseries=wind_vel, format='uv', units='meter per second')
-
-    # Following also raises ValueError. This gives invalid (r,theta) inputs
-    # which are rejected by the transforms.r_theta_to_uv_wind method.
-    # It tests the inner exception is correct
-
-    with raises(ValueError):
-        invalid_dtv_rq = np.zeros((len(invalid_rq['rq']), ),
-                                  dtype=datetime_value_2d)
-        invalid_dtv_rq['value'] = invalid_rq['rq']
-        Wind(timeseries=invalid_dtv_rq, format='r-theta',
-             units='meter per second')
-
-    # exception raised if datetime values are not in ascending order
-    # or not unique
-
-    with raises(ValueError):
-        # not unique datetime values
-        dtv_rq = np.zeros((2, ),
-                          dtype=datetime_value_2d).view(dtype=np.recarray)
-        (dtv_rq.value[0])[:] = (1, 0)
-        (dtv_rq.value[1])[:] = (1, 10)
-        Wind(timeseries=dtv_rq, units='meter per second')
-
-        # not in ascending order
-
-    with raises(ValueError):
-        dtv_rq = np.zeros((4, ),
-                          dtype=datetime_value_2d).view(dtype=np.recarray)
-        dtv_rq.value = (1, 0)
-        dtv_rq.time[:len(dtv_rq) - 1] = [datetime(2012, 11, 06, 20, 10 + i, 30)
-                                         for i in range(len(dtv_rq) - 1)]
-        Wind(timeseries=dtv_rq, units='meter per second')
-
     # exception raised since no units given for timeseries during init
-    with raises(unit_conversion.InvalidUnitError):
+    with raises(TypeError):
         Wind(timeseries=dtv)
 
     # no units during set_timeseries
@@ -98,7 +40,7 @@ def test_exceptions(invalid_rq):
 
     # invalid units
     with raises(unit_conversion.InvalidUnitError):
-        wind = Wind(timeseries=dtv, units='met per second')
+        Wind(timeseries=dtv, units='met per second')
 
 
 def test_read_file_init():

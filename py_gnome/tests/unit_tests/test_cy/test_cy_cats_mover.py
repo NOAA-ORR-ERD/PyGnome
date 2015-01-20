@@ -131,18 +131,9 @@ def test_default_props():
     test default properties
     """
 
-    assert c_cats.scale_type == 0
     assert c_cats.scale_value == 1
-
-
-def test_scale_type():
-    """
-    test setting / getting properties
-    """
-
-    c_cats.scale_type = 1
-    print c_cats.scale_type
-    assert c_cats.scale_type == 1
+    assert c_cats.uncertain_eddy_diffusion == 0
+    assert c_cats.ref_point is None
 
 
 def test_scale_value():

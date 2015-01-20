@@ -20,7 +20,7 @@ TComponentMover::TComponentMover (TMap *owner, char *name) : TCurrentMover (owne
 	bPat2Open = true;
 	timeFile = nil;
 	
-	memset(&refP,0,sizeof(refP));
+	memset(&refPt3D.p,0,sizeof(refPt3D.p));
 	bRefPointOpen = false;
 	pat1Angle = 0;
 	pat2Angle = pat1Angle + 90;
@@ -226,7 +226,7 @@ ListItem TComponentMover::GetNthListItem (long n, short indent, short *style, ch
 				item.indent++;
 				item.index = (n == 0) ? I_COMPONENTLAT : I_COMPONENTLONG;
 				//item.bullet = BULLET_DASH;
-				WorldPointToStrings(refP, latS, longS);
+				WorldPointToStrings(refPt3D.p, latS, longS);
 				strcpy(text, (n == 0) ? latS : longS);
 				
 				return item;
@@ -380,7 +380,7 @@ OSErr TComponentMover::CheckAndPassOnMessage(TModelMessage *message)
 			////////////// 
 			if(mover) 
 			{
-				mover -> refP = this -> refP;	// need to set mover's refP so it is drawn correctly, 3/28/00
+				mover -> refPt3D.p = this -> refPt3D.p;	// need to set mover's refP so it is drawn correctly, 3/28/00
 				switch(lVal)
 				{
 					case 1: this -> pattern1 = mover; break;
@@ -447,9 +447,9 @@ OSErr TComponentMover::CheckAndPassOnMessage(TModelMessage *message)
 			   )
 			{
 				DoublesToWorldPoint(degreesLat, degreesLong, dirLat, dirLong, &p);
-				this->refP = p;
-				if (this -> pattern2)	this -> pattern2 -> refP = p;	// need to set mover's refP so it is drawn correctly, 3/28/00
-				if (this -> pattern1)	this -> pattern1 -> refP = p;	// need to set mover's refP so it is drawn correctly, 3/28/00
+				this->refPt3D.p = p;
+				if (this -> pattern2)	this -> pattern2 -> refPt3D.p = p;	// need to set mover's refP so it is drawn correctly, 3/28/00
+				if (this -> pattern1)	this -> pattern1 -> refPt3D.p = p;	// need to set mover's refP so it is drawn correctly, 3/28/00
 			}
 		}
 		////////////////
@@ -779,10 +779,10 @@ short ComponentDlgClick(DialogPtr dialog, short itemNum, long lParam, VOIDPTR da
 			
 			// point of no return
 			////////////////////////////////////////////////////////////
-			mover -> refP = p;
+			mover -> refPt3D.p = p;
 			
-			if (mover -> pattern1) mover -> pattern1 -> refP = p;	// need to set pattern's refP so it is drawn correctly, 3/28/00
-			if (mover -> pattern2) mover -> pattern2 -> refP = p;	// need to set pattern's refP so it is drawn correctly, 3/28/00
+			if (mover -> pattern1) mover -> pattern1 -> refPt3D.p = p;	// need to set pattern's refP so it is drawn correctly, 3/28/00
+			if (mover -> pattern2) mover -> pattern2 -> refPt3D.p = p;	// need to set pattern's refP so it is drawn correctly, 3/28/00
 			
 			// delete original patterns if they are no longer the pattern of choice
 			if (sSharedOriginalPattern1 && sSharedOriginalPattern1 != mover -> pattern1) {
@@ -1093,7 +1093,7 @@ OSErr ComponentDlgInit(DialogPtr dialog, VOIDPTR data)
 	SetDialogItemHandle(dialog, M20FROST3, (Handle)FrameEmbossed);
 	SetDialogItemHandle(dialog, M20FROST4, (Handle)FrameEmbossed);
 	
-	LL2EditTexts (dialog, M20LATDEGREES, &mover -> refP);
+	LL2EditTexts (dialog, M20LATDEGREES, &mover -> refPt3D.p);
 	
 	SwitchLLFormatHelper(dialog, M20LATDEGREES, M20DEGREES,true);
 	
@@ -1182,8 +1182,8 @@ OSErr TComponentMover::Write(BFPB *bfpb)
 	if (err = WriteMacValue(bfpb, bPat1Open)) return err;
 	if (err = WriteMacValue(bfpb, bPat2Open)) return err;
 	
-	if (err = WriteMacValue(bfpb, refP.pLat)) return err;
-	if (err = WriteMacValue(bfpb, refP.pLong)) return err;
+	if (err = WriteMacValue(bfpb, refPt3D.p.pLat)) return err;
+	if (err = WriteMacValue(bfpb, refPt3D.p.pLong)) return err;
 	if (err = WriteMacValue(bfpb, bRefPointOpen)) return err;
 	
 	if (err = WriteMacValue(bfpb, pat1Angle)) return err;
@@ -1268,8 +1268,8 @@ OSErr TComponentMover::Read(BFPB *bfpb)
 	if (err = ReadMacValue(bfpb, &bPat1Open)) return err;
 	if (err = ReadMacValue(bfpb, &bPat2Open)) return err;
 	
-	if (err = ReadMacValue(bfpb, &refP.pLat)) return err;
-	if (err = ReadMacValue(bfpb, &refP.pLong)) return err;
+	if (err = ReadMacValue(bfpb, &refPt3D.p.pLat)) return err;
+	if (err = ReadMacValue(bfpb, &refPt3D.p.pLong)) return err;
 	if (err = ReadMacValue(bfpb, &bRefPointOpen)) return err;
 	
 	if (err = ReadMacValue(bfpb, &pat1Angle)) return err;
@@ -1378,7 +1378,7 @@ OSErr TComponentMover::InitMover ()
 	OSErr	err = noErr;
 	TMap * owner = this -> GetMoverMap();
 	err = TCurrentMover::InitMover ();
-	if(owner) refP = WorldRectCenter(owner->GetMapBounds());
+	if(owner) refPt3D.p = WorldRectCenter(owner->GetMapBounds());
 	return err;
 }
 

@@ -5,14 +5,13 @@ pp = PrettyPrinter(indent=2)
 
 from datetime import datetime, timedelta
 
-from pytest import raises, mark
+from pytest import raises
 
 import numpy
 np = numpy
 
 from gnome import scripting
 from gnome.basic_types import datetime_value_2d
-from gnome.utilities.remote_data import get_datafile
 
 from gnome.model import Model
 
@@ -22,25 +21,20 @@ from gnome.environment import Wind, Water, Tide
 from gnome.spill import point_line_release_spill
 
 from gnome.movers import RandomMover, WindMover, CatsMover
-from gnome.weatherers import Evaporation, Dispersion, Skimmer, Burn
+from gnome.weatherers import Evaporation, Dispersion, Burn, Skimmer
 
 from gnome.outputters import WeatheringOutput, GeoJson
 
 from gnome.multi_model_broadcast import ModelBroadcaster
-
-# define base directory
-base_dir = os.path.join(os.path.dirname(__file__),
-                        'sample_data',
-                        'long_island_sound')
+from conftest import testdata
 
 
-def make_model(images_dir=os.path.join(base_dir, 'images'),
-               uncertain=False,
+def make_model(uncertain=False,
                geojson_output=False):
     print 'initializing the model'
 
     start_time = datetime(2012, 9, 15, 12, 0)
-    mapfile = get_datafile(os.path.join(base_dir, 'LongIslandSoundMap.BNA'))
+    mapfile = testdata["lis"]["map"]
 
     gnome_map = MapFromBNA(mapfile, refloat_halflife=6)  # hours
 
@@ -78,21 +72,27 @@ def make_model(images_dir=os.path.join(base_dir, 'images'),
     model.movers += WindMover(wind)
 
     print 'adding a cats mover:'
-    curr_file = get_datafile(os.path.join(base_dir, r"./LI_tidesWAC.CUR"))
-    tide_file = get_datafile(os.path.join(base_dir, r"./CLISShio.txt"))
-
-    c_mover = CatsMover(curr_file, tide=Tide(tide_file))
+    c_mover = CatsMover(testdata["lis"]["cats_curr"],
+                        tide=Tide(testdata["lis"]["cats_tide"]))
     model.movers += c_mover
 
     model.environment += c_mover.tide
 
     print 'adding Weatherers'
+    rel_time = model.spills[0].get('release_time')
+    skim_start = rel_time + timedelta(hours=4)
+    amount = spill.amount
+    units = spill.units
+    skimmer = Skimmer(0.5*amount, units=units, efficiency=0.3,
+                      active_start=skim_start,
+                      active_stop=skim_start + timedelta(hours=4))
+
     water_env = Water(311.15)
     model.environment += water_env
     model.weatherers += [Evaporation(water_env, wind),
                          Dispersion(),
-                         Burn(),
-                         Skimmer()]
+                         Burn(),]
+                         #skimmer]
 
     print 'adding outputters'
     model.outputters += WeatheringOutput()

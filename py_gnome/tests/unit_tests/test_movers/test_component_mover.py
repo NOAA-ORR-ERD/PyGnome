@@ -63,8 +63,11 @@ def test_loop():
     """
 
     pSpill = sample_sc_release(num_le, start_pos, rel_time)
-    component = ComponentMover(curr1_file, curr2_file, wind=wnd, ref_point = (-75.262319, 39.142987))
-    component.ref_point = (-75.262319, 39.142987)
+    component = ComponentMover(curr1_file,
+                               curr2_file,
+                               wind=wnd,
+                               scale_refpoint=(-75.262319, 39.142987, 0))
+    print component.scale_refpoint
     delta = _certain_loop(pSpill, component)
 
     _assert_move(delta)
@@ -85,7 +88,7 @@ def test_uncertain_loop():
     pSpill = sample_sc_release(num_le, start_pos, rel_time,
                                uncertain=True)
     component = ComponentMover(curr1_file, curr2_file, wind=wnd)
-    component.ref_point = (-75.262319, 39.142987)
+    component.scale_refpoint = (-75.262319, 39.142987, 0)
     u_delta = _uncertain_loop(pSpill, component)
 
     _assert_move(u_delta)
@@ -144,11 +147,11 @@ def test_ref_point():
     test setting / getting properties
     """
 
-    tgt = (1, 2)
-    c_component.ref_point = tgt  # can be a list or a tuple
-    assert c_component.ref_point == tuple(tgt)
-    c_component.ref_point = list(tgt)  # can be a list or a tuple
-    assert c_component.ref_point == tuple(tgt)
+    tgt = (1, 2, 3)
+    c_component.scale_refpoint = tgt  # can be a list or a tuple
+    assert c_component.scale_refpoint == tuple(tgt)
+    c_component.scale_refpoint = list(tgt)  # can be a list or a tuple
+    assert c_component.scale_refpoint == tuple(tgt)
 
 
 # Helper functions for tests

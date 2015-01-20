@@ -23,8 +23,9 @@ TOSSMTimeValue::TOSSMTimeValue(TMover *theOwner,TimeValuePairH tvals,short userU
 	fFileType = OSSMTIMEFILE;
 	fScaleFactor = 0.;
 	fStationName[0] = 0;
-	fStationPosition.pLat = 0;
-	fStationPosition.pLong = 0;
+	fStationPosition.p.pLat = 0;
+	fStationPosition.p.pLong = 0;
+	fStationPosition.z = 0;
 	bOSSMStyle = true;
 	fTransport = 0;
 	fVelAtRefPt = 0;
@@ -40,8 +41,9 @@ TOSSMTimeValue::TOSSMTimeValue(TMover *theOwner) : TTimeValue(theOwner)
 	fFileType = OSSMTIMEFILE;
 	fScaleFactor = 0.;
 	fStationName[0] = 0;
-	fStationPosition.pLat = 0;
-	fStationPosition.pLong = 0;
+	fStationPosition.p.pLat = 0;
+	fStationPosition.p.pLong = 0;
+	fStationPosition.z = 0;
 	bOSSMStyle = true;
 	fTransport = 0;
 	fVelAtRefPt = 0;
@@ -187,6 +189,9 @@ OSErr TOSSMTimeValue::Write(BFPB *bfpb)
 			if (err = WriteMacValue(bfpb, pair.value.v)) return err;
 		}
 	
+	if (err = WriteMacValue(bfpb, fStationName, kMaxNameLen)) return err;
+	if (err = WriteMacValue(bfpb, fStationPosition.p.pLat)) return err;
+	if (err = WriteMacValue(bfpb, fStationPosition.p.pLong)) return err;
 	if (err = WriteMacValue(bfpb, fInterpolationType)) return err;
 	
 	return 0;
@@ -243,9 +248,9 @@ OSErr TOSSMTimeValue::Read(BFPB *bfpb)
 	
 	if (version>2)
 	{
-		//if (err = ReadMacValue(bfpb, fStationName, kMaxNameLen)) return err;
-		//if (err = ReadMacValue(bfpb, &fStationPosition.pLat)) return err;	// could get this from CATSMover refP
-		//if (err = ReadMacValue(bfpb, &fStationPosition.pLong)) return err;
+		if (err = ReadMacValue(bfpb, fStationName, kMaxNameLen)) return err;
+		if (err = ReadMacValue(bfpb, &fStationPosition.p.pLat)) return err;	// could get this from CATSMover refP
+		if (err = ReadMacValue(bfpb, &fStationPosition.p.pLong)) return err;
 		if (err = ReadMacValue(bfpb, &fInterpolationType)) return err;
 	}
 	else fInterpolationType = HERMITE;

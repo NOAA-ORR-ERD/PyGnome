@@ -17,7 +17,7 @@ from gnome.basic_types import (spill_type, ts_format,
                                world_point_type)
 from gnome.utilities import projections
 
-from gnome.cy_gnome.cy_ossm_time import CyOSSMTime
+from gnome.cy_gnome.cy_ossm_time import CyTimeseries
 from gnome.cy_gnome.cy_wind_mover import CyWindMover
 
 import cy_fixtures
@@ -116,7 +116,7 @@ class ConstantWind(cy_fixtures.CyTestMove):
 
 class ConstantWindWithOSSM(cy_fixtures.CyTestMove):
     """
-    This defines the OSSMTimeValue_c object using the CyOSSMTime class,
+    This defines the OSSMTimeValue_c object using the CyTimeseries class,
     then uses the set_ossm method of CyWindMover object to set the
     time_dep member of the underlying WindMover_c C++ object
 
@@ -131,7 +131,7 @@ class ConstantWindWithOSSM(cy_fixtures.CyTestMove):
         time_val['time'] = 0  # should not matter
         time_val['value'] = const_wind
 
-        self.ossm = CyOSSMTime(timeseries=time_val)
+        self.ossm = CyTimeseries(timeseries=time_val)
         self.wm.set_ossm(self.ossm)
 
     def test_move(self):
@@ -246,11 +246,11 @@ class TestVariableWind:
     (time_val['time'])[:] = np.add([0, 3600], cm.model_time)  # after 1 hour
     (time_val['value']['v'])[:] = [100, 200]
 
-    # CyOSSMTime needs the same scope as CyWindMover because CyWindMover
-    # uses the C++ pointer defined in CyOSSMTime.time_dep. This must be defined
+    # CyTimeseries needs the same scope as CyWindMover because CyWindMover
+    # uses the C++ pointer defined in CyTimeseries.time_dep. This must be defined
     # for the scope of CyWindMover
 
-    ossm = CyOSSMTime(timeseries=time_val)
+    ossm = CyTimeseries(timeseries=time_val)
     wm.set_ossm(ossm)
 
     def test_move(self):
@@ -319,10 +319,10 @@ def test_z_greater_than_0():
 class TestObjectSerialization:
     '''
         Test all the serialization and deserialization methods that are
-        available to the CyOSSMTime object.
+        available to the CyTimeseries object.
     '''
-    ossmT = CyOSSMTime(filename=testdata['timeseries']['wind_ts'],
-                       file_contains=ts_format.magnitude_direction)
+    ossmT = CyTimeseries(filename=testdata['timeseries']['wind_ts'],
+                         file_format=ts_format.magnitude_direction)
     wm = CyWindMover()
     wm.set_ossm(ossmT)
 

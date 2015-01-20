@@ -31,8 +31,6 @@ void ShioTimeValue_c::InitInstanceVariables(void)
 	// initialize any fields we have
 	this->fStationName[0] = 0;
 	this->fStationType = 0;
-	this->fLatitude = 0;
-	this->fLongitude = 0;
 	//HEIGHTOFFSET fHeightOffset;
 	memset(&this->fConstituent,0,sizeof(this->fConstituent));
 	memset(&this->fHeightOffset,0,sizeof(this->fHeightOffset));
@@ -1223,14 +1221,6 @@ OSErr ShioTimeValue_c::GetProgressiveWaveValue(const Seconds& forTime, VelocityR
 	return err;
 }
 
-WorldPoint ShioTimeValue_c::GetStationLocation (void)
-{
-	WorldPoint wp;
-	wp.pLat = fLatitude * 1000000;
-	wp.pLong = fLongitude * 1000000;
-	return wp;
-}
-
 /////////////////////////////////////////////////
 OSErr ShioTimeValue_c::GetLocationInTideCycle(const Seconds& model_time, short *ebbFloodType, float *fraction)
 {
@@ -1429,7 +1419,7 @@ OSErr ShioTimeValue_c::ReadTimeValues (char *path)
 	long lineNum = 0;
 	char *p;
 	long numScanned;
-	double value;
+	double value, stationLat, stationLon;
 	CONTROLVAR  DatumControls;
 	
 	if ((err = OSSMTimeValue_c::InitTimeFunc()) > 0)
@@ -1447,7 +1437,7 @@ OSErr ShioTimeValue_c::ReadTimeValues (char *path)
 	strncpy(strLine, path, kMaxNameLen);
 	strLine[kMaxNameLen - 1] = 0;
 
-	SplitPathFile(strLine, this->fileName);
+	SplitPathFileName(strLine, this->fileName);
 	
 //	err = ReadFileContents(TERMINATED, 0, 0, path, 0, 0, &f);
 //	if(err)	{ TechError("TShioTimeValue::ReadTimeValues()", "ReadFileContents()", 0); return -1; }
@@ -1514,8 +1504,12 @@ OSErr ShioTimeValue_c::ReadTimeValues (char *path)
 	strncpy(this->fStationName,p,MAXSTATIONNAMELEN);
 	this->fStationName[MAXSTATIONNAMELEN-1] = 0;
 
-	if ((err = this->GetKeyedValue(f, "Latitude=", lineNum++, strLine, &this->fLatitude)) > 0)  goto readError;
-	if ((err = this->GetKeyedValue(f, "Longitude=", lineNum++, strLine, &this->fLongitude)) > 0)  goto readError;
+	// set fStationPosition correctly so base class GetStationLocation() works
+	if ((err = this->GetKeyedValue(f, "Latitude=", lineNum++, strLine, &stationLat)) > 0)  goto readError;
+	if ((err = this->GetKeyedValue(f, "Longitude=", lineNum++, strLine, &stationLon)) > 0)  goto readError;
+
+	this->fStationPosition.p.pLat = stationLat * 1000000;
+	this->fStationPosition.p.pLong = stationLon * 1000000;
 
 	if ((!(p = GetKeyedLine(f, "[Constituents]", lineNum++, strLine))) > 0)  goto readError;
 

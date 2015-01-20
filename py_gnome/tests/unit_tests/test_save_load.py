@@ -138,12 +138,12 @@ def test_save_load(clean_saveloc, obj):
 
 
 '''
-Following movers fail on windows with clean_saveloc fixture. The clean_saveloc fixture
-deletes ./temp directory before each run of test_save_load(). This is causing
-an issue in windows for the NetCDF files - for some reason it is not able to
-delete the netcdf data files. All files are being closed in C++, but until we
-find the solution, lets break up above tests and not call clean_saveloc for
-following tests.
+Following movers fail on windows with clean_saveloc fixture. The clean_saveloc
+fixture deletes ./temp directory before each run of test_save_load(). This is
+causing an issue in windows for the NetCDF files - for some reason it is not
+able to delete the netcdf data files. All files are being closed in C++, but
+until we find the solution, lets break up above tests and not call
+clean_saveloc for following tests.
 '''
 
 l_movers2 = (movers.CurrentCycleMover(testdata['CurrentCycleMover']['curr'],

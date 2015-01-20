@@ -26,6 +26,7 @@ from gnome.model import Model
 from gnome.spill_container import SpillContainer
 
 from gnome.movers import SimpleMover
+from gnome.weatherers import Skimmer
 from gnome.utilities.remote_data import get_datafile
 
 
@@ -235,6 +236,11 @@ def get_testdata():
 
     data['nc'] = {'nc_output':
                   get_datafile(os.path.join(s_data, 'nc', 'test_output.nc'))}
+    data['lis'] = \
+        {'map': get_datafile(os.path.join(lis, 'LongIslandSoundMap.BNA')),
+         'cats_curr': get_datafile(os.path.join(lis, r"LI_tidesWAC.CUR")),
+         'cats_tide': get_datafile(os.path.join(lis, r"CLISShio.txt"))
+         }
     return data
 
 
@@ -345,7 +351,28 @@ def sample_graph():
 
 
 @pytest.fixture(scope='module')
-def wind_circ(rq_wind):
+def wind_timeseries(rq_wind):
+    dtv_rq = np.zeros((len(rq_wind['rq']), ),
+                      dtype=datetime_value_2d).view(dtype=np.recarray)
+    dtv_rq.time = [datetime(
+        2012,
+        11,
+        06,
+        20,
+        10 + i,
+        0,
+        ) for i in range(len(dtv_rq))]
+    dtv_rq.value = rq_wind['rq']
+    dtv_uv = np.zeros((len(dtv_rq), ),
+                      dtype=datetime_value_2d).view(dtype=np.recarray)
+    dtv_uv.time = dtv_rq.time
+    dtv_uv.value = rq_wind['uv']
+
+    return {'rq': dtv_rq, 'uv': dtv_uv}
+
+
+@pytest.fixture(scope='module')
+def wind_circ(wind_timeseries):
     """
     Create Wind object using the time series given by test fixture 'rq_wind'
     'wind' object where timeseries is defined as:
@@ -360,24 +387,10 @@ def wind_circ(rq_wind):
     """
 
     from gnome import environment
-    dtv_rq = np.zeros((len(rq_wind['rq']), ),
-                      dtype=datetime_value_2d).view(dtype=np.recarray)
-    dtv_rq.time = [datetime(
-        2012,
-        11,
-        06,
-        20,
-        10 + i,
-        0,
-        ) for i in range(len(dtv_rq))]
-    dtv_rq.value = rq_wind['rq']
-    dtv_uv = np.zeros((len(dtv_rq), ),
-                   dtype=datetime_value_2d).view(dtype=np.recarray)
-    dtv_uv.time = dtv_rq.time
-    dtv_uv.value = rq_wind['uv']
+    dtv_rq = wind_timeseries['rq']
     wm = environment.Wind(timeseries=dtv_rq, format='r-theta',
                           units='meter per second')
-    return {'wind': wm, 'rq': dtv_rq, 'uv': dtv_uv}
+    return {'wind': wm, 'rq': dtv_rq, 'uv': wind_timeseries['uv']}
 
 
 @pytest.fixture(scope='module')
@@ -575,3 +588,21 @@ def clean_saveloc(dump, request):
         return os.path.relpath(temp)    # do save/load tests with relative path
     else:
         return temp
+
+
+'''
+Default properties for CyCurrentMover base class - double check cython
+derived classes are getting/setting cython base class properties correctly
+'''
+
+
+@pytest.fixture(scope='function')
+def CyCurrentMover_props():
+    'gives the property names and default values for CyCurrentMover base class'
+    default_prop = (('uncertain_duration', 172800),
+                    ('uncertain_time_delay', 0),
+                    ('up_cur_uncertain', 0.3),
+                    ('down_cur_uncertain', -0.3),
+                    ('right_cur_uncertain', 0.1),
+                    ('left_cur_uncertain', -0.1))
+    return default_prop

@@ -32,9 +32,8 @@
 class DLL_API CATSMover_c : virtual public CurrentMover_c {
 
 public:
-	WorldPoint 		refP; 					// location of tide station or map-join pin
 	TGridVel		*fGrid;					//VelocityH		grid; 
-	long 			refZ; 					// meters, positive up
+	WorldPoint3D	refPt3D;
 	short 			scaleType; 				// none, constant, or file
 	double 			scaleValue; 			// constant value to match at refP
 	char 			scaleOtherFile[32]; 	// file to match at refP
@@ -60,8 +59,9 @@ public:
 	virtual			   ~CATSMover_c () { Dispose (); }
 	virtual void		Dispose ();
 	virtual OSErr		AddUncertainty(long setIndex, long leIndex,VelocityRec *patVelocity,double timeStep,Boolean useEddyUncertainty);
-	void				SetRefPosition (WorldPoint p, long z) { refP = p; refZ = z; }
-	void				GetRefPosition (WorldPoint *p, long *z) { (*p) = refP; (*z) = refZ; }
+	void				SetRefPosition(WorldPoint3D pos) {this->refPt3D = pos; }
+	void				GetRefPosition (WorldPoint3D *pos) { (*pos) = this->refPt3D; }
+	WorldPoint3D		GetRefPosition () { return this->refPt3D; }	// overloaded for pyGnome
 	virtual WorldRect GetGridBounds(){return fGrid->GetBounds();}	
 	void				SetTimeDep (TOSSMTimeValue *newTimeDep);
 	TOSSMTimeValue		*GetTimeDep () { return (timeDep); }
