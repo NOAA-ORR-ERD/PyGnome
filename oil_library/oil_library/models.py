@@ -486,7 +486,7 @@ class SARADensity(Base):
                 setattr(self, a, v)
 
     def __repr__(self):
-        return ('<SARAFraction({0.sara_type}={0.density} at {0.ref_temp_k}K)>'
+        return ('<SARADensity({0.sara_type}={0.density} at {0.ref_temp_k}K)>'
                 .format(self))
 
 
