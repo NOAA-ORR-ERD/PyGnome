@@ -38,9 +38,10 @@ cdef extern from "OSSMTimeValue_c.h":
         OSErr   ReadTimeValues (char *, short, short)
         void    SetTimeValueHandle(TimeValuePairH)    # sets all time values 
         TimeValuePairH GetTimeValueHandle()
-        TimeValuePairH  CalculateRunningAverage(long pastHoursToAverage)	
+        TimeValuePairH  CalculateRunningAverage(long pastHoursToAverage, Seconds)	
         short   GetUserUnits()
         void    SetUserUnits(short)
+        OSErr    CheckStartTime(Seconds)
         void    Dispose()
         
 """

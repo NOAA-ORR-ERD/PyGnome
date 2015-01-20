@@ -339,12 +339,12 @@ OSErr OSSMTimeValue_c::CheckStartTime(Seconds forTime)
 
 	if (forTime < INDEXH(timeValues, 0).time) {
 		// before first element
-		return -1;
+		return -3;
 	}
 	
 	if (forTime > INDEXH(timeValues, n - 1).time) {
 		// after last element
-		return -1;
+		return -3;
 	}
 
 	return 0;
@@ -1371,13 +1371,15 @@ void OSSMTimeValue_c::CorrectTwoDigitYear(DateTimeRec &dateTime)
 }
 
 
-TimeValuePairH OSSMTimeValue_c::CalculateRunningAverage(long pastHoursToAverage)
+TimeValuePairH OSSMTimeValue_c::CalculateRunningAverage(long pastHoursToAverage, Seconds model_time)
 {	// will need to handle / return errors somehow
 	OSErr err = 0;
 	TimeValuePairH runningAverageTimeValues = 0;
 	Seconds firstTime, lastTime, timeDiff, runningAverageTimeStep = 3600, timeToAverage, currentTime;
+	Seconds startTime, endTime;
 	VelocityRec velocity = {0.,0.}, average = {0.,0.};
 	double speed = 0;
+	Boolean calculateAll = true;
 	//char errmsg[256];
 	
 	long i, j, numTimeValues = 0, numRunningAverageValues = 0;
@@ -1393,6 +1395,29 @@ TimeValuePairH OSSMTimeValue_c::CalculateRunningAverage(long pastHoursToAverage)
 	firstTime = (*timeValues)[0].time;
 	lastTime = (*timeValues)[numTimeValues-1].time;
 	
+	if ((lastTime - firstTime) > 48. * 3600) // if time series is really long don't calculate entire thing
+		calculateAll = false;
+
+	if (calculateAll)
+	{
+		startTime = firstTime;
+		endTime = lastTime;
+	}
+	else
+	{
+		if (model_time==0)
+		{
+			startTime = firstTime;
+			endTime = startTime + 48 * 3600;	// two days worth of average
+		}
+		else
+		{
+			startTime = model_time; // check that model_time is in time series range? (checked on outside)
+			endTime = startTime + 48 * 3600;	// two days worth of average
+			if (endTime > lastTime) endTime = lastTime;
+		}
+	}
+
 	//printNote("Got Here\n");
 	for (i = 0; i<numTimeValues-1; i++)
 	{
@@ -1406,11 +1431,13 @@ TimeValuePairH OSSMTimeValue_c::CalculateRunningAverage(long pastHoursToAverage)
 	//sprintf(errmsg,"Num Time Values = %ld\n",numTimeValues);
 	//printNote(errmsg);
 	
-	if (lastTime == firstTime)
+	//if (lastTime == firstTime)
+	if (endTime == startTime)
 		numRunningAverageValues = 1;
 	else
 		//numRunningAverageValues = (lastTime - firstTime) / timeDiff + 1;
-		numRunningAverageValues = (lastTime - firstTime) / runningAverageTimeStep + 1;
+		//numRunningAverageValues = (lastTime - firstTime) / runningAverageTimeStep + 1;
+		numRunningAverageValues = (endTime - startTime) / runningAverageTimeStep + 1;
 	
 	//sprintf(errmsg,"numRunningAverageValues  = %ld\n",numRunningAverageValues);
 	//printNote(errmsg);
@@ -1426,7 +1453,8 @@ TimeValuePairH OSSMTimeValue_c::CalculateRunningAverage(long pastHoursToAverage)
 	{
 		speed = 0;
 
-		currentTime = firstTime + i * runningAverageTimeStep;
+		//currentTime = firstTime + i * runningAverageTimeStep;
+		currentTime = startTime + i * runningAverageTimeStep;
 		for (j=0; j<pastHoursToAverage+1; j++)
 		{
 			timeToAverage = currentTime - j * 3600; 	// will get first value for any time before time zero

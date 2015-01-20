@@ -13,6 +13,7 @@
 //#define _USE_32BIT_TIME_T	1
 
 #include <cstdlib>
+#include <stdint.h>
 #include <math.h>
 #include <cstring>
 #include <ios>

@@ -76,6 +76,9 @@ class OilProps(object):
         self.molecular_weight = None
         self._component_mw()
 
+        #self.bullwinkle = None
+        #self.bulltime = None
+
     def __repr__(self):
         return ('{0.__class__.__module__}.{0.__class__.__name__}('
                 'oil_={0._r_oil!r})'.format(self))

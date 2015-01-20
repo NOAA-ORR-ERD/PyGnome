@@ -215,9 +215,14 @@ OSErr ComponentMover_c::CalculateAveragedWindsVelocity(const Seconds& model_time
 	//averageTimeSteps = fPastHoursToAverage+1; // for now, will change to match model time steps...
 	averageTimeSteps = fPastHoursToAverage; // for now, will change to match model time steps...
 	// code goes here, may want to change to GetStartTime, GetEndTime, then check out of range
-	if (timeFile) timeFile->CheckStartTime(startPastTime);
+	if (timeFile) err = timeFile->CheckStartTime(startPastTime);
 	else {err = -1; strcpy(errmsg,"There is no wind data to average"); return err;}
 	if (err==-1) 
+	{
+		strcpy(errmsg,"There is no wind data to average"); 
+		return err;
+	}
+	if (err==-3) 
 	{
 		if (bExtrapolateWinds)
 		{	// GetTimeValue() already extrapolates
@@ -397,6 +402,11 @@ OSErr ComponentMover_c::CalculateAveragedWindsHdl(char *errmsg)
 		// code goes here, may want to change to GetStartTime, GetEndTime, then check out of range
 		if (i==0) 	err = dynamic_cast<TWindMover *>(mover)->CheckStartTime(startPastTime); //if (forTime < INDEXH(timeValues, 0).time) 
 		if (err==-1) 
+		{
+			strcpy(errmsg,"There is no wind data to average"); 
+			return err;
+		}
+		if (err==-3) 
 		{
 			if (bExtrapolateWinds)
 			{	// GetTimeValue() already extrapolates

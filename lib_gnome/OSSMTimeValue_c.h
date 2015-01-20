@@ -77,7 +77,7 @@ public:
 	OSErr					ReadHydrologyHeader (char *path);
 
 	virtual OSErr 			GetLocationInTideCycle(const Seconds& model_time, short *ebbFloodType, float *fraction) {*ebbFloodType=0; *fraction=0; return 0;}
-	TimeValuePairH 			CalculateRunningAverage(long pastHoursToAverage);
+	TimeValuePairH 			CalculateRunningAverage(long pastHoursToAverage, Seconds model_time);
 	
 protected:
 	OSErr					GetInterpolatedComponent (Seconds forTime, double *value, short index);
