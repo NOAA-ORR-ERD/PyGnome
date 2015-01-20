@@ -445,7 +445,36 @@ cdef class CyTimeseries(CyOSSMTime):
         memcpy(&tval[0], time_val_hdlH[0], sz)
         return tval
 
-    def create_running_average(self, past_hours = 3):
+
+    def check_time_in_range(self, Seconds model_time):
+        """
+        .. function:: check_time_in_range(self, model_time)
+
+        checks whether the time value falls in the range of
+        the time series data
+
+        :param model_time: current model time.
+        """
+        cdef OSErr err
+        err = self.time_dep.CheckStartTime(model_time)
+
+        if err == -1:
+            """
+            For now just raise an OSError - this is for no time series
+            """
+            raise OSError("PrepareForModelStep returned an error: {0}" .format(err))
+
+        # data outside of time series range
+        if err == -3:
+            return False
+
+        # err == -2 means single value in series
+        # treat as constant value for all time for now
+
+        return True
+
+
+    def create_running_average(self, past_hours = 3, model_time = 0):
         """
             Invokes the GetTimeValueHandle method of OSSMTimeValue_c object
             to read the time series data
@@ -455,7 +484,7 @@ cdef class CyTimeseries(CyOSSMTime):
         cdef cnp.ndarray[TimeValuePair, ndim = 1] tval
 
         # allocate memory and copy it over
-        time_val_hdlH = self.time_dep.CalculateRunningAverage(past_hours)
+        time_val_hdlH = self.time_dep.CalculateRunningAverage(past_hours, model_time)
         sz = _GetHandleSize(<Handle>time_val_hdlH)
 
         # will this always work?

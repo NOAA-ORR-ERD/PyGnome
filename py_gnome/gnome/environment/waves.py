@@ -88,7 +88,7 @@ class Waves(Environment, serializable.Serializable):
           whitecap_fraction: unit-less fraction
           dissipation_energy: not sure!! # fixme!
         """
-        # make are we are up to date with water object
+        # make sure are we are up to date with water object
         wave_height = self.water.wave_height
 
         if wave_height is None:

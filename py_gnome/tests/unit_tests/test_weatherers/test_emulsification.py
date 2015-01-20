@@ -43,7 +43,7 @@ def test_emulsification(oil, temp, num_elems, on):
     model_time = (sc.spills[0].get('release_time') +
                   timedelta(seconds=time_step))
 
-    emul = Emulsification(waves, wind)
+    emul = Emulsification(waves)
     emul.on = on
 
     emul.prepare_for_model_run(sc)
@@ -89,8 +89,7 @@ def test_full_run(sample_model_fcn, oil, temp, dump):
     '''
     model = sample_model_weathering2(sample_model_fcn, oil, temp)
     model.environment += [Water(temp), waves, constant_wind(15., 0)]
-    model.weatherers += Emulsification(model.environment[1],
-                                       model.environment[2])
+    model.weatherers += Emulsification(model.environment[1])
     released = 0
     for step in model:
         for sc in model.spills.items():
@@ -129,17 +128,17 @@ def test_serialize_deseriailize():
     'test serialize/deserialize for webapi'
     wind = constant_wind(15., 0)
     waves = Waves(wind, Water())
-    e = Emulsification(waves,wind)
+    e = Emulsification(waves)
     json_ = e.serialize()
-    json_['wind'] = wind.serialize()
+    #json_['wind'] = wind.serialize()
     json_['waves'] = waves.serialize()
 
     # deserialize and ensure the dict's are correct
     d_ = Emulsification.deserialize(json_)
-    assert d_['wind'] == Wind.deserialize(json_['wind'])
+    #assert d_['wind'] == Wind.deserialize(json_['wind'])
     assert d_['waves'] == Waves.deserialize(json_['waves']) 
-    d_['wind'] = wind
+    #d_['wind'] = wind
     d_['waves'] = waves
     e.update_from_dict(d_)
-    assert e.wind is wind
+    #assert e.wind is wind
     assert e.waves is waves

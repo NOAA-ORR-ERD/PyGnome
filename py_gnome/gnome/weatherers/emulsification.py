@@ -24,22 +24,22 @@ from gnome.cy_gnome.cy_weatherers import emulsify_oil
 
 class Emulsification(Weatherer, Serializable):
     _state = copy.deepcopy(Weatherer._state)
-    _state += [Field('wind', save=True, update=True, save_reference=True),
-               Field('waves', save=True, update=True, save_reference=True)]
+    _state += [Field('waves', save=True, update=True, save_reference=True)]
+              # Field('wind', save=True, update=True, save_reference=True)]
     _schema = WeathererSchema
 
     def __init__(self,
                  waves=None,
-                 wind=None,
+                 #wind=None,
                  **kwargs):
         '''
         :param conditions: gnome.environment.Conditions object which contains
             things like water temperature
-        :param wind: wind object for obtaining speed at specified time
-        :type wind: Wind API, specifically must have get_value(time) method
+        :param waves: waves object for obtaining emulsification wind speed at specified time
+        :type waves: get_emulsifiation_wind(model_time)
         '''
         self.waves = waves
-        self.wind = wind
+        #self.wind = wind
 
         super(Emulsification, self).__init__(**kwargs)
         self.array_types.update({'age': age,
@@ -75,9 +75,7 @@ class Emulsification(Weatherer, Serializable):
     def weather_elements(self, sc, time_step, model_time):
         '''
         weather elements over time_step
-        - sets 'evaporation' in sc.weathering_data
-        - currently also sets 'density' in sc.weathering_data but may update
-          this as we add more weatherers and perhaps density gets set elsewhere
+        - sets 'emulsified' in sc.weathering_data
         '''
 
         if not self.active:
@@ -138,23 +136,23 @@ class Emulsification(Weatherer, Serializable):
         if json_ == 'webapi':
             if self.waves is not None:
                 serial['waves'] = self.waves.serialize(json_)
-            if self.wind is not None:
-                serial['wind'] = self.wind.serialize(json_)
+#             if self.wind is not None:
+#                 serial['wind'] = self.wind.serialize(json_)
 
         return serial
 
     @classmethod
     def deserialize(cls, json_):
         """
-        append correct schema for wind object
+        append correct schema for waves object
         """
         if not cls.is_sparse(json_):
             schema = cls._schema()
 
             dict_ = schema.deserialize(json_)
-            if 'wind' in json_:
-                obj = json_['wind']['obj_type']
-                dict_['wind'] = (eval(obj).deserialize(json_['wind']))
+#             if 'wind' in json_:
+#                 obj = json_['wind']['obj_type']
+#                 dict_['wind'] = (eval(obj).deserialize(json_['wind']))
             if 'waves' in json_:
                 obj = json_['waves']['obj_type']
                 dict_['waves'] = (eval(obj).deserialize(json_['waves']))
