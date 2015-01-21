@@ -19,7 +19,7 @@ from gnome.utilities.serializable import Serializable, Field
 
 from gnome.spill_container import SpillContainerPair
 from gnome.movers import Mover
-from gnome.weatherers import Weatherer, IntrinsicProps
+from gnome.weatherers import weatherer_sort, Weatherer, IntrinsicProps
 from gnome.outputters import Outputter, NetCDFOutput, WeatheringOutput
 from gnome.persist import (extend_colander,
                            validators,
@@ -426,6 +426,13 @@ class Model(Serializable):
 
         return False
 
+    def _order_weatherers(self):
+        'use weatherer_sort to sort the weatherers'
+        s_weatherers = sorted(self.weatherers, key=weatherer_sort)
+        if self.weatherers.values() != s_weatherers:
+            self.weatherers.clear()
+            self.weatherers += s_weatherers
+
     def setup_model_run(self):
         '''
         Sets up each mover for the model run
@@ -437,6 +444,9 @@ class Model(Serializable):
         for oc in [self.movers, self.weatherers,
                    self.outputters, self.environment]:
             oc.remake()
+
+        # order weatherers collection
+        self._order_weatherers()
 
         for mover in self.movers:
             if mover.on:

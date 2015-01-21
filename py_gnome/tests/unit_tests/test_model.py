@@ -30,7 +30,8 @@ from gnome.weatherers import (HalfLifeWeatherer,
                               Evaporation,
                               Dispersion,
                               Burn,
-                              Skimmer)
+                              Skimmer,
+                              Emulsification)
 from gnome.outputters import Renderer, GeoJson
 
 from conftest import sample_model_weathering, testdata
@@ -1114,6 +1115,41 @@ class TestMergeModels:
             # merge the other way and ensure model != m
             m.merge(model)
             assert model != m
+
+
+# test sorting function weatherer_sort
+def test_weatherer_sort():
+    model = Model()
+    model.water = Water()
+    skimmer = Skimmer(100, 'kg', efficiency=0.3,
+                      active_start=datetime(2014, 1, 1, 0, 0),
+                      active_stop=datetime(2014, 1, 1, 0, 3))
+    weatherers = [Emulsification(),
+                  Evaporation(model.water,
+                              constant_wind(1, 0)),
+                  Burn(),
+                  Dispersion(),
+                  skimmer]
+    exp_order = [weatherers[ix] for ix in (2, 4, 3, 1, 0)]
+
+    model.weatherers += weatherers
+    assert model.weatherers.values() != exp_order
+
+    model.setup_model_run()
+    assert model.weatherers.values() == exp_order
+
+    # check second time around order is kept
+    model.rewind()
+    assert model.weatherers.values() == exp_order
+
+    # Burn, Dispersion are at same sorting level so appending another Burn to
+    # end of the list will sort it to be just after Dispersion so index 2
+    exp_order.insert(2, Burn())
+    model.weatherers += exp_order[2]  # add this and check sorting still works
+    assert model.weatherers.values() != exp_order
+
+    model.setup_model_run()
+    assert model.weatherers.values() == exp_order
 
 if __name__ == '__main__':
 
