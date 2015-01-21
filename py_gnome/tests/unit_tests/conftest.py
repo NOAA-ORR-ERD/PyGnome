@@ -209,7 +209,7 @@ def get_testdata():
     # path correctly
     data['timeseries'] = \
         {'wind_ts': os.path.join(s_data, 'WindDataFromGnome.WND'),
-         'wind_ts_av': os.path.join(s_data, 'WindDataFromGnome2.WND'),
+         'wind_ts_av': os.path.join(s_data, 'WindDataFromGnomeAv.WND'),
          'wind_constant': os.path.join(s_data,
                                        'WindDataFromGnomeConstantWind.WND'),
          'wind_bad_units': os.path.join(s_data,
