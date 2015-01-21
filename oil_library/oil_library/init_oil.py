@@ -76,7 +76,8 @@ def add_densities(imported_rec, oil):
           stated they would like there to always be a 15C density value.
     '''
     for d in imported_rec.densities:
-        oil.densities.append(d)
+        if d.kg_m_3 is not None:
+            oil.densities.append(d)
 
     if imported_rec.api is not None:
         oil.api = imported_rec.api
@@ -677,15 +678,41 @@ def add_component_densities(imported_rec, oil):
     oil.sara_densities.append(SARADensity(sara_type='Resins',
                                           density=1100.0))
 
-    # Watson characterization factors
-    K_arom = 10.0
-    K_sat = 12.0
+    sa_ratios = list(get_sa_mass_fractions(oil))
+    ptry_values = (list(get_ptry_values(oil, 'Saturates',
+                                        [r[0] for r in sa_ratios])) +
+                   list(get_ptry_values(oil, 'Aromatics',
+                                        [r[1] for r in sa_ratios])))
 
-    for c in imported_rec.cuts:
-        T_i = c.vapor_temp_k
-        for K_w in (K_arom, K_sat):
-            P_try = 1000 * (T_i ** (1.0 / 3.0) / K_w)
-    pass
+    ra_ptry_values = [(1100.0, f.fraction)
+                      for f in oil.sara_fractions
+                      if f.sara_type in ('Resins', 'Asphaltenes')]
+
+    ptry_avg_density = sum([(P_try * F_i)
+                            for P_try, F_i, T_i, c_type in ptry_values] +
+                           [(P_try * F_i)
+                            for P_try, F_i in ra_ptry_values]
+                           )
+
+    total_sa_fraction = sum([F_i for P_try, F_i, T_i, c_type in ptry_values])
+
+    total_ra_fraction = sum([f.fraction for f in oil.sara_fractions
+                             if f.sara_type in ('Resins', 'Asphaltenes')])
+    oil_density = density_at_temperature(oil, 288.15)
+
+    # print '\n\nNow we will try to adjust our ptry densities to match the oil total density'
+    oil_sa_avg_density = ((oil_density - total_ra_fraction * 1100.0) /
+                          total_sa_fraction)
+
+    density_adjustment = oil_sa_avg_density / ptry_avg_density
+    ptry_values = [(P_try * density_adjustment, F_i, T_i, c_type)
+                   for P_try, F_i, T_i, c_type in ptry_values]
+
+    for P_try, F_i, T_i, c_type in ptry_values:
+        oil.sara_densities.append(SARADensity(sara_type=c_type,
+                                              density=P_try,
+                                              ref_temp_k=T_i))
+
 
 
 

@@ -98,6 +98,7 @@ class TestLog():
     def test_full_run_logging(self, logfile):
         c_dict = copy.deepcopy(config_dict)
         initialize_log(c_dict, logfile)
+        #model = Model(time_step=timedelta(minutes=15))
         model = Model()
         model.spills += point_line_release_spill(100,
                                                  (0, 0, 0),
@@ -105,9 +106,9 @@ class TestLog():
                                                  end_release_time=model.start_time + timedelta(days=1),
                                                  amount=200,
                                                  units='m^3')
-        model.environment += Water()
+        model.water = Water()
         model.environment += constant_wind(1., 0.)
-        model.weatherers += Evaporation(model.environment[-2],
+        model.weatherers += Evaporation(model.water,
                                         model.environment[-1])
         for spill in model.spills:
             spill.set('num_released', 10)
