@@ -447,9 +447,11 @@ class Model(Serializable):
                    self.outputters, self.environment]:
             oc.remake()
 
+        transport = False
         for mover in self.movers:
             if mover.on:
                 mover.prepare_for_model_run()
+                transport = True
                 array_types.update(mover.array_types)
 
         weathering = False
@@ -480,7 +482,14 @@ class Model(Serializable):
             # for now hard-code this; however, it should depend on weathering
             # note: do not set time_step attribute because we don't want to
             # rewind because that will reset spill_container data
-            self._time_step = 900
+            if transport:
+                self._time_step = 900
+            elif weathering and not transport:
+                # todo: find out what this should be?
+                self._time_step = 900
+            else:
+                # simple case with no weatherers or movers
+                self._time_step = 900
             self._reset_num_time_steps()
 
         for sc in self.spills.items():
