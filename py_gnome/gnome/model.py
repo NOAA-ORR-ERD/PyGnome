@@ -161,7 +161,7 @@ class Model(Serializable):
         return model
 
     def __init__(self,
-                 time_step=timedelta(minutes=15),
+                 time_step=None,
                  start_time=round_time(datetime.now(), 3600),
                  duration=timedelta(days=1),
                  weathering_substeps=1,
@@ -236,7 +236,13 @@ class Model(Serializable):
 
         self._map = map
         self.water = water
-        self.time_step = time_step  # this calls rewind() !
+
+        # reset _current_time_step
+        self._current_time_step = -1
+        self._time_step = None
+        if time_step is not None:
+            self.time_step = time_step  # this calls rewind() !
+        self._reset_num_time_steps()
 
     def reset(self, **kwargs):
         '''
@@ -250,15 +256,13 @@ class Model(Serializable):
         Rewinds the model to the beginning (start_time)
         '''
 
+        self._current_time_step = -1
+        self.model_time = self._start_time
         # fixme: do the movers need re-setting? -- or wait for
         #        prepare_for_model_run?
 
-        self.current_time_step = -1
-        self.model_time = self._start_time
-
         # note: This may be redundant.  They will get reset in
         #       setup_model_run() anyway..
-
         self.spills.rewind()
 
         # set rand before each call so windages are set correctly
@@ -340,11 +344,7 @@ class Model(Serializable):
         except AttributeError:
             self._time_step = int(time_step)
 
-        # We do not count any remainder time.
-        initial_0th_step = 1
-        self._num_time_steps = (initial_0th_step +
-                                int(self._duration.total_seconds()
-                                    // self._time_step))
+        self._reset_num_time_steps()
         self.rewind()
 
     @property
@@ -375,12 +375,7 @@ class Model(Serializable):
             # is beyond new time...
             self.rewind()
         self._duration = duration
-
-        # We do not count any remainder time.
-        initial_0th_step = 1
-        self._num_time_steps = (initial_0th_step +
-                                int(self._duration.total_seconds()
-                                    // self._time_step))
+        self._reset_num_time_steps()
 
     @property
     def map(self):
@@ -402,6 +397,19 @@ class Model(Serializable):
         py:attribute:`time_step`
         '''
         return self._num_time_steps
+
+    def _reset_num_time_steps(self):
+        '''
+        reset number of time steps if duration, or time_step change
+        '''
+        # We do not count any remainder time.
+        if self.duration is not None and self.time_step is not None:
+            initial_0th_step = 1
+            self._num_time_steps = (initial_0th_step +
+                                    int(self.duration.total_seconds()
+                                        // self.time_step))
+        else:
+            self._num_time_steps = None
 
     def contains_object(self, obj_id):
         if self.map.id == obj_id:
@@ -437,6 +445,7 @@ class Model(Serializable):
         '''
         Sets up each mover for the model run
         '''
+
         self.spills.rewind()  # why is rewind for spills here?
         array_types = {}
 
@@ -447,10 +456,11 @@ class Model(Serializable):
 
         # order weatherers collection
         self._order_weatherers()
-
+	transport = False
         for mover in self.movers:
             if mover.on:
                 mover.prepare_for_model_run()
+                transport = True
                 array_types.update(mover.array_types)
 
         weathering = False
@@ -476,6 +486,20 @@ class Model(Serializable):
         else:
             # reset to None if no weatherers found
             self._intrinsic_props = None
+
+        if self.time_step is None:
+            # for now hard-code this; however, it should depend on weathering
+            # note: do not set time_step attribute because we don't want to
+            # rewind because that will reset spill_container data
+            if transport:
+                self._time_step = 900
+            elif weathering and not transport:
+                # todo: find out what this should be?
+                self._time_step = 900
+            else:
+                # simple case with no weatherers or movers
+                self._time_step = 900
+            self._reset_num_time_steps()
 
         for sc in self.spills.items():
             sc.prepare_for_model_run(array_types)
@@ -642,14 +666,18 @@ class Model(Serializable):
             # just so we're not carrying around the old time_stamp
             sc.current_time_stamp = None
 
-        # it gets incremented after this check
-        if self.current_time_step >= self._num_time_steps - 1:
-            raise StopIteration
-
         if self.current_time_step == -1:
             # that's all we need to do for the zeroth time step
             self.setup_model_run()
             self.logger.info("Setup run for: {0}".format(self.name))
+
+        elif self.current_time_step >= self._num_time_steps - 1:
+            # _num_time_steps is set when self.time_step is set. If user does
+            # not specify time_step, then setup_model_run() automatically
+            # initializes it. Thus, do StopIteration check after
+            # setup_model_run() is invoked
+            raise StopIteration
+
         else:
             self.setup_time_step()
             self.move_elements()
