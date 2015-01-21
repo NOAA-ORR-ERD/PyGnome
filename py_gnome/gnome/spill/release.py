@@ -53,9 +53,6 @@ class PointLineReleaseSchema(ReleaseSchema):
     end_position = WorldPoint(missing=drop)
     end_release_time = SchemaNode(LocalDateTime(), missing=drop,
                                   validator=convertible_to_seconds)
-
-    # Not sure how this will work w/ WebGnome
-    #prev_release_pos = WorldPoint(missing=drop)
     description = 'PointLineRelease object schema'
 
 
@@ -274,9 +271,6 @@ class PointLineRelease(Release, Serializable):
         self.delta_release = (self.end_release_time
                               - self.release_time).total_seconds()
 
-        # number of new particles released at each timestep
-        #self.prev_release_pos = self.start_position.copy()
-
     def __getstate__(self):
         '''
             Used by pickle.dump() and pickle.dumps()
@@ -450,13 +444,6 @@ class PointLineRelease(Release, Serializable):
                 self.start_position + n * self.delta_pos
 
         self.num_released += num_new_particles
-
-    def rewind(self):
-        """
-        reset to initial conditions -- i.e. nothing released.
-        """
-        super(PointLineRelease, self).rewind()
-        #self.prev_release_pos = self.start_position.copy()
 
 
 class SpatialRelease(Release, Serializable):
