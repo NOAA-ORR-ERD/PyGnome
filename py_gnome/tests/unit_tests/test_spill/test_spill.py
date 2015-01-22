@@ -218,15 +218,15 @@ class Test_point_line_release_spill:
         - self.end_release_time == self.release_time if not given as input
         """
         sp = point_line_release_spill(num_elements=self.num_elements,
-                start_position=self.start_position,
-                release_time=self.release_time)
+                                      start_position=self.start_position,
+                                      release_time=self.release_time)
 
         release = sp.release
         assert release.num_elements == self.num_elements
         assert (np.all(release.start_position == self.start_position) and
-                np.all(release.start_position == release.end_position))
+                np.all(release.end_position is None))
         assert (np.all(release.release_time == self.release_time) and
-                np.all(release.release_time == release.end_release_time))
+                release.end_release_time is None)
         assert sp.get('release_duration') == timedelta(0)
 
     def test_noparticles_model_run_after_release_time(self):
@@ -247,7 +247,6 @@ class Test_point_line_release_spill:
             num = sp.num_elements_to_release(self.release_time
                                              + timedelta(hours=rel_delay),
                                              time_step=30 * 60)
-            #assert num is None
             assert num == 0
 
         # rewind and it should work
@@ -270,7 +269,6 @@ class Test_point_line_release_spill:
         # right before the release
         num = sp.num_elements_to_release(self.release_time -
                                          timedelta(seconds=360), timestep)
-        #assert num is None
         assert num == 0
 
         # right after the release
@@ -303,7 +301,6 @@ class Test_point_line_release_spill:
         # no more particles to release since all particles have been released
         num = sp.num_elements_to_release(self.release_time + timedelta(10),
                                          timestep)
-        #assert num is None
         assert num == 0
 
         # reset and try again
@@ -311,7 +308,6 @@ class Test_point_line_release_spill:
         assert sp.get('num_released') == 0
         num = sp.num_elements_to_release(self.release_time - timedelta(10),
                                          timestep)
-        #assert num is None
         assert num == 0
         assert sp.get('num_released') == 0
 
@@ -648,37 +644,45 @@ class Test_point_line_release_spill:
 
     def test_end_position(self):
         """
-        if end_position = None, then automatically set it to start_position
+        Define a point release since end_position is not given. Now if
+        start_position is changed, the end_position is still None, unless
+        user explicitly changes it. If we started out with Point release, it
+        continues to be a Point release until end_position attribute is
+        modified
         """
         sp = point_line_release_spill(num_elements=self.num_elements,
                                       start_position=self.start_position,
                                       release_time=self.release_time)
 
-        sp.release.start_position = (0, 0, 0)
-        assert np.any(sp.release.start_position != sp.release.end_position)
+        assert sp.release.end_position is None
 
-        sp.release.end_position = None
-        assert np.all(sp.release.start_position == sp.release.end_position)
+        sp.release.start_position = (0, 0, 0)
+        assert np.all(sp.release.start_position == (0, 0, 0))
+        assert sp.release.end_position is None
 
     def test_end_release_time(self):
         """
-        if end_release_time = None, then automatically set it to release_time
+        similar to test_end_position - if end_release_time is None, user
+        defined an instantaneous release and varying the release_time will
+        not effect end_release_time. User must explicitly change
+        end_release_time if we want to make this time varying
         """
         sp = point_line_release_spill(num_elements=self.num_elements,
                                       start_position=self.start_position,
                                       release_time=self.release_time)
 
-        sp.release.release_time = (self.release_time + timedelta(hours=20))
-        assert sp.release.release_time != sp.release.end_release_time
+        assert sp.get('end_release_time') is None
+        new_time = (self.release_time + timedelta(hours=20))
 
-        sp.release.end_release_time = None
-        assert sp.release.release_time == sp.release.end_release_time
+        sp.release.release_time = new_time
+        assert sp.get('release_time') == new_time
+        assert sp.get('end_release_time') is None
 
     @pytest.mark.parametrize(("json_", "amount", "units"),
-                            [('save', 1.0, 'kg'),
-                             ('webapi', 1.0, 'g'),
-                             ('save', 5.0, 'l'),
-                             ('webapi', 5.0, 'barrels')])
+                             [('save', 1.0, 'kg'),
+                              ('webapi', 1.0, 'g'),
+                              ('save', 5.0, 'l'),
+                              ('webapi', 5.0, 'barrels')])
     def test_serialization_deserialization(self, json_, amount, units):
         """
         tests serializatin/deserialization of the Spill object
