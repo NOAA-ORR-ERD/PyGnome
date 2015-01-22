@@ -41,7 +41,7 @@ class BaseReleaseSchema(ObjType):
 
 class ReleaseSchema(BaseReleaseSchema):
     'Base Class for Release Schemas'
-    num_elements = SchemaNode(Int(), default=1000, missing=drop)
+    num_elements = SchemaNode(Int(), missing=drop)
 
 
 class PointLineReleaseSchema(ReleaseSchema):
@@ -199,7 +199,8 @@ class PointLineRelease(Release, Serializable):
     non-weathering particles, can be instantaneous or continuous, and be
     released at a single point, or over a line.
     """
-    _update = ['start_position', 'end_position', 'end_release_time']
+    _update = ['start_position', 'end_position', 'end_release_time',
+               'num_per_timestep']
 
     _create = []
     _create.extend(_update)

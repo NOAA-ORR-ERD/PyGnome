@@ -83,6 +83,9 @@ def test_grid_release():
 rel_time = datetime(2012, 8, 20, 13)
 rel_type = [PointLineRelease(release_time=rel_time,
                              num_elements=5,
+                             start_position=(0, 0, 0)),
+            PointLineRelease(release_time=rel_time,
+                             num_per_timestep=5,
                              start_position=(0, 0, 0))]
             #SpatialRelease(rel_time, np.zeros((4, 3), dtype=np.float64))]
 
