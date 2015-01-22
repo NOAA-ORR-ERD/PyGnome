@@ -356,7 +356,7 @@ class PointLineRelease(Release, Serializable):
 
     @property
     def num_per_timestep(self):
-        return self.__num_per_timestep
+        return self._num_per_timestep
 
     @num_per_timestep.setter
     def num_per_timestep(self, val):
@@ -423,8 +423,8 @@ class PointLineRelease(Release, Serializable):
 
     def _num_to_release_given_timestep_rate(self, current_time, time_step):
         num = self._num_elements_to_release_common(current_time, time_step)
-        if num != 0:
-            if self.end_release_time > current_time:
+        if num is None:
+            if self.end_release_time >= current_time:
                 return self.num_per_timestep
             else:
                 return 0
