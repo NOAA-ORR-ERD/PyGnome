@@ -32,6 +32,20 @@ class Environment(object):
             self.name = name
 
 
+    def prepare_for_model_run(self, model_time):
+        """
+        Override this method if a derived environment class needs to perform any
+        actions prior to a model run
+        """
+        pass
+
+    def prepare_for_model_step(self, model_time):
+        """
+        Override this method if a derived environment class needs to perform any
+        actions prior to a model run
+        """
+        pass
+
 # define valid units at module scope because the Schema and Object both use it
 _valid_temp_units = _valid_units('Temperature')
 _valid_dist_units = _valid_units('Length')

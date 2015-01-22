@@ -6,7 +6,7 @@ from environment import Environment, Water, WaterSchema
 from waves import Waves, WavesSchema
 from tide import Tide, TideSchema
 from wind import Wind, WindSchema, constant_wind
-#from running_average import RunningAverage, RunningAverageSchema
+from running_average import RunningAverage, RunningAverageSchema
 
 
 __all__ = [Environment,
@@ -18,6 +18,6 @@ __all__ = [Environment,
            TideSchema,
            Wind,
            WindSchema,
-           #RunningAverage,
-           #RunningAverageSchema,
+           RunningAverage,
+           RunningAverageSchema,
            constant_wind]

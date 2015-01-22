@@ -487,6 +487,9 @@ class Model(Serializable):
             # reset to None if no weatherers found
             self._intrinsic_props = None
 
+        for environment in self.environment:
+            environment.prepare_for_model_run(self.start_time)
+                
         if self.time_step is None:
             # for now hard-code this; however, it should depend on weathering
             # note: do not set time_step attribute because we don't want to
@@ -530,6 +533,9 @@ class Model(Serializable):
                 # maybe we will setup a super-sampling step here???
                 w.prepare_for_model_step(sc, self.time_step, self.model_time)
 
+        for environment in self.environment:
+            environment.prepare_for_model_step(self.model_time)
+                
         for outputter in self.outputters:
             outputter.prepare_for_model_step(self.time_step, self.model_time)
 
