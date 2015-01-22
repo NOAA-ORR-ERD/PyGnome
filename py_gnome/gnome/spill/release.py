@@ -41,7 +41,7 @@ class BaseReleaseSchema(ObjType):
 
 class ReleaseSchema(BaseReleaseSchema):
     'Base Class for Release Schemas'
-    num_elements = SchemaNode(Int(), default=1000)
+    num_elements = SchemaNode(Int(), default=1000, missing=drop)
 
 
 class PointLineReleaseSchema(ReleaseSchema):
@@ -53,6 +53,7 @@ class PointLineReleaseSchema(ReleaseSchema):
     end_position = WorldPoint(missing=drop)
     end_release_time = SchemaNode(LocalDateTime(), missing=drop,
                                   validator=convertible_to_seconds)
+    num_per_timestep = SchemaNode(Int(), missing=drop)
     description = 'PointLineRelease object schema'
 
 
@@ -211,7 +212,8 @@ class PointLineRelease(Release, Serializable):
     def __init__(self,
                  release_time,
                  start_position,
-                 num_elements,
+                 num_elements=None,
+                 num_per_timestep=None,
                  end_release_time=None,
                  end_position=None,
                  name=None):
@@ -235,6 +237,13 @@ class PointLineRelease(Release, Serializable):
         num_elements and release_time passed to base class __init__ using super
         See base :class:`Release` documentation
         """
+        if ((num_elements is None and num_per_timestep is None) or
+            (num_elements is not None and num_per_timestep is not None)):
+            msg = ('Either num_elements released or a release rate, defined by'
+                   ' num_per_timestep must be given, not both')
+            raise TypeError(msg)
+
+        self._num_per_timestep = num_per_timestep
         super(PointLineRelease, self).__init__(release_time,
                                                num_elements,
                                                name)
@@ -256,17 +265,28 @@ class PointLineRelease(Release, Serializable):
                 self._init_positions_timevarying_release
 
         self.start_position = np.array(start_position,
-                            dtype=world_point_type).reshape((3, ))
+                                       dtype=world_point_type).reshape((3, ))
         if end_position is None:
             # also sets self._end_position
             end_position = start_position
 
         self.end_position = np.array(end_position,
-                dtype=world_point_type).reshape((3, ))
+                                     dtype=world_point_type).reshape((3, ))
 
-        # only needs to be computed once
-        self.delta_pos = ((self.end_position - self.start_position) /
-                          max(1, self.num_elements - 1))
+        if self.num_elements is None:
+            # todo: for now just put something for delta_pos, but need to thing
+            # this through for a line release if elements per timestep are
+            # given
+            self.delta_pos = ((self.end_position - self.start_position) /
+                              self.num_per_timestep)
+            self.num_elements_to_release = \
+                self._num_to_release_given_timestep_rate
+        else:
+            # only needs to be computed once
+            self.delta_pos = ((self.end_position - self.start_position) /
+                              max(1, self.num_elements - 1))
+            self.num_elements_to_release = \
+                self._num_to_release_given_total_elements
 
         self.delta_release = (self.end_release_time
                               - self.release_time).total_seconds()
@@ -334,7 +354,17 @@ class PointLineRelease(Release, Serializable):
         else:
             self._end_release_time = val
 
-    def num_elements_to_release(self, current_time, time_step):
+    @property
+    def num_per_timestep(self):
+        return self.__num_per_timestep
+
+    @num_per_timestep.setter
+    def num_per_timestep(self, val):
+        self._num_per_timestep = val
+        if self.num_elements is not None:
+            self.num_elements = None
+
+    def _num_elements_to_release_common(self, current_time, time_step):
         """
         return number of particles released in current_time + time_step
         """
@@ -344,20 +374,29 @@ class PointLineRelease(Release, Serializable):
         if self.start_time_invalid:
             return 0
 
-        if self.num_released >= self.num_elements:
-            # nothing left to release
-            return 0
-
         # it's been called before the release_time
         if current_time + timedelta(seconds=time_step) \
             <= self.release_time:
             #print 'not time to release yet'
             return 0
 
+        return None
+
+    def _num_to_release_given_total_elements(self, current_time, time_step):
+        '''
+        requires num_elements is not None
+        '''
+        num = self._num_elements_to_release_common(current_time, time_step)
+        if num == 0:
+            return num
+
+        if self.num_released >= self.num_elements:
+            # nothing left to release
+            return 0
+
         delta_release = ((self.end_release_time - self.release_time)
                          .total_seconds())
-        if delta_release <= 0:
-            # instantaneous release. All particles released at this timestep
+        if delta_release == 0:
             return self.num_elements
 
         # time varying release
@@ -381,6 +420,16 @@ class PointLineRelease(Release, Serializable):
         # subsequent steps for a fixed time_step
         _num_new_particles = n_1 - n_0 + 1
         return _num_new_particles
+
+    def _num_to_release_given_timestep_rate(self, current_time, time_step):
+        num = self._num_elements_to_release_common(current_time, time_step)
+        if num != 0:
+            if self.end_release_time > current_time:
+                return self.num_per_timestep
+            else:
+                return 0
+
+        return num
 
     def _init_positions_instantaneous_release(self, num_new_particles,
                                               current_time, time_step,
