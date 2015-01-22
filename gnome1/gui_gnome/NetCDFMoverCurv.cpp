@@ -250,6 +250,8 @@ OSErr NetCDFMoverCurv::TextRead(char *path, TMap **newMap, char *topFilePath)
 		timeUnits[t_len] = '\0'; // moved this statement before StringSubstitute, JLM 5/2/10
 		StringSubstitute(timeUnits, ':', ' ');
 		StringSubstitute(timeUnits, '-', ' ');
+		StringSubstitute(timeUnits, 'T', ' ');
+		StringSubstitute(timeUnits, 'Z', ' ');
 		
 		numScanned=sscanf(timeUnits, "%s %s %hd %hd %hd %hd %hd %hd",
 						  unitStr, junk, &time.year, &time.month, &time.day,

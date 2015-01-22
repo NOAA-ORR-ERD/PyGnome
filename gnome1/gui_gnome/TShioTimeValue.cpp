@@ -629,8 +629,8 @@ OSErr TShioTimeValue::Write(BFPB *bfpb)
 	if (err = WriteMacValue(bfpb, fStationName, MAXSTATIONNAMELEN)) return err; // don't swap !! 
 	if (err = WriteMacValue(bfpb,fStationType)) return err;  
 	// just to keep save files matched up...
-	fLatitude = fStationPosition.pLat / 1.e6;
-	fLongitude = fStationPosition.pLong / 1.e.6;
+	fLatitude = fStationPosition.p.pLat / 1.e6;
+	fLongitude = fStationPosition.p.pLong / 1.e6;
 	if (err = WriteMacValue(bfpb,fLatitude)) return err;
 	if (err = WriteMacValue(bfpb,fLongitude)) return err;
 
@@ -770,8 +770,8 @@ OSErr TShioTimeValue::Read(BFPB *bfpb)
 		if (err = ReadMacValue(bfpb,&fLatitude)) return err;
 		if (err = ReadMacValue(bfpb,&fLongitude)) return err;
 		// should set the station position
-		fStationPosition.pLat = fLatitude * 1.e6;
-		fStationPosition.pLong = fLongitude * 1.e6;
+		fStationPosition.p.pLat = fLatitude * 1.e6;
+		fStationPosition.p.pLong = fLongitude * 1.e6;
 	}
 	if (err = ReadMacValue(bfpb,&fConstituent.DatumControls.datum)) return err;
 	if (err = ReadMacValue(bfpb,&fConstituent.DatumControls.FDir)) return err;

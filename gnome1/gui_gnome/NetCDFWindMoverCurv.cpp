@@ -240,6 +240,8 @@ OSErr NetCDFWindMoverCurv::TextRead(char *path, TMap **newMap, char *topFilePath
 		timeUnits[t_len] = '\0'; // moved this statement before StringSubstitute, JLM 5/2/10
 		StringSubstitute(timeUnits, ':', ' ');
 		StringSubstitute(timeUnits, '-', ' ');
+		StringSubstitute(timeUnits, 'T', ' ');
+		StringSubstitute(timeUnits, 'Z', ' ');
 		
 		numScanned=sscanf(timeUnits, "%s %s %hd %hd %hd %hd %hd %hd",
 						  unitStr, junk, &time.year, &time.month, &time.day,
@@ -697,12 +699,17 @@ OSErr NetCDFWindMoverCurv::ReadTimeData(long index,VelocityFH *velocityH, char* 
 	{
 		for (j=0;j<lonlength;j++)
 		{
+			if (wind_uvals[(latlength-i-1)*lonlength+j]==fill_value)
+				wind_uvals[(latlength-i-1)*lonlength+j]=0.;
+			if (wind_vvals[(latlength-i-1)*lonlength+j]==fill_value)
+				wind_vvals[(latlength-i-1)*lonlength+j]=0.;
+			if (isnan(wind_uvals[(latlength-i-1)*lonlength+j])) 
+				wind_uvals[(latlength-i-1)*lonlength+j]=0.;
+			if (isnan(wind_vvals[(latlength-i-1)*lonlength+j])) 
+				wind_vvals[(latlength-i-1)*lonlength+j]=0.;
+
 			if (fIsNavy)
 			{
-				if (wind_uvals[(latlength-i-1)*lonlength+j]==fill_value)
-					wind_uvals[(latlength-i-1)*lonlength+j]=0.;
-				if (wind_vvals[(latlength-i-1)*lonlength+j]==fill_value)
-					wind_vvals[(latlength-i-1)*lonlength+j]=0.;
 				u_grid = (float)wind_uvals[(latlength-i-1)*lonlength+j];
 				v_grid = (float)wind_vvals[(latlength-i-1)*lonlength+j];
 				if (bRotated) angle = angle_vals[(latlength-i-1)*lonlength+j];
@@ -711,10 +718,6 @@ OSErr NetCDFWindMoverCurv::ReadTimeData(long index,VelocityFH *velocityH, char* 
 			}
 			else if (bIsNWSSpeedDirData)
 			{
-				if (wind_uvals[(latlength-i-1)*lonlength+j]==fill_value)
-					wind_uvals[(latlength-i-1)*lonlength+j]=0.;
-				if (wind_vvals[(latlength-i-1)*lonlength+j]==fill_value)
-					wind_vvals[(latlength-i-1)*lonlength+j]=0.;
 				//INDEXH(velH,i*lonlength+j).u = KNOTSTOMETERSPERSEC * wind_uvals[(latlength-i-1)*lonlength+j] * sin ((PI/180.) * wind_vvals[(latlength-i-1)*lonlength+j]);	// need units
 				//INDEXH(velH,i*lonlength+j).v = KNOTSTOMETERSPERSEC * wind_uvals[(latlength-i-1)*lonlength+j] * cos ((PI/180.) * wind_vvals[(latlength-i-1)*lonlength+j]);
 				// since direction is from rather than to need to switch the sign
@@ -732,10 +735,6 @@ OSErr NetCDFWindMoverCurv::ReadTimeData(long index,VelocityFH *velocityH, char* 
 				// just leave fillValue as velocity for new algorithm - comment following lines out
 				// should eliminate the above problem, assuming fill_value is a land mask
 				// leave for now since not using a map...use the entire grid
-				if (wind_uvals[(latlength-i-1)*lonlength+j]==fill_value)
-					wind_uvals[(latlength-i-1)*lonlength+j]=0.;
-				if (wind_vvals[(latlength-i-1)*lonlength+j]==fill_value)
-					wind_vvals[(latlength-i-1)*lonlength+j]=0.;
 				/////////////////////////////////////////////////
 				
 				INDEXH(velH,i*lonlength+j).u = /*KNOTSTOMETERSPERSEC**/velConversion*wind_uvals[(latlength-i-1)*lonlength+j];	// need units
