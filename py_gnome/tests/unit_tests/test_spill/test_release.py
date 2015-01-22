@@ -83,6 +83,9 @@ def test_grid_release():
 rel_time = datetime(2012, 8, 20, 13)
 rel_type = [PointLineRelease(release_time=rel_time,
                              num_elements=5,
+                             start_position=(0, 0, 0)),
+            PointLineRelease(release_time=rel_time,
+                             num_per_timestep=5,
                              start_position=(0, 0, 0))]
             #SpatialRelease(rel_time, np.zeros((4, 3), dtype=np.float64))]
 
@@ -170,7 +173,45 @@ class TestInitElementsFromFile():
                                'mass',
                                'id',
                                'spill_num',
-                               'last_water_positions'): # all water map
+                               'last_water_positions'):  # all water map
                         assert np.all(sc[key] == s.release._init_data[key])
                     else:
                         assert np.any(sc[key] != s.release._init_data[key])
+
+
+class TestPointLineRelease:
+    rel_time = datetime(2014, 1, 1, 0, 0)
+    pos = (0, 1, 2)
+
+    def test_num_per_timestep(self):
+        'test PointLineRelease when a fixed rate per timestep is given'
+        r = PointLineRelease(self.rel_time,
+                             self.pos,
+                             num_per_timestep=100)
+        assert r.num_elements is None
+        for ts in (100, 400):
+            num = r.num_elements_to_release(self.rel_time, ts)
+            assert num == 100
+
+    def test_num_per_timestep_release_elements(self):
+        'release elements in the context of a spill container'
+        # todo: need a test for a line release where rate is given - to check
+        # positions are being initialized correctly
+        end_time = self.rel_time + timedelta(hours=1)
+        release = PointLineRelease(self.rel_time,
+                                   self.pos,
+                                   num_per_timestep=100,
+                                   end_release_time=end_time)
+        s = Spill(release)
+        sc = SpillContainer()
+        sc.spills += s
+        sc.prepare_for_model_run()
+        for ix in range(5):
+            time = self.rel_time + timedelta(seconds=900 * ix)
+            num_les = sc.release_elements(900, time)
+            if time <= s.get('end_release_time'):
+                assert num_les == 100
+                assert sc.num_released == 100 + ix * 100
+            else:
+                assert num_les == 0
+ 

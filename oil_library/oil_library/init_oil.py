@@ -17,7 +17,8 @@ from oil_library.models import (ImportedRecord, Oil, Estimated,
                                 SARAFraction, SARADensity,
                                 MolecularWeight)
 
-from oil_library.utilities import get_boiling_points_from_api
+from oil_library.utilities import (get_boiling_points_from_api,
+                                   get_viscosity)
 
 
 def process_oils(session):
@@ -157,7 +158,6 @@ def add_viscosities(imported_rec, oil):
             oil.kvis.append(KVis(**dict(zip(kwargs, v))))
 
         if any(estimated):
-            print 'estimated viscosities:', estimated
             oil.estimated.viscosities = True
 
 
@@ -365,27 +365,32 @@ def add_emulsion_water_fraction_max(imported_rec, oil):
 
 
 def add_resin_fractions(oil):
-    for a, b, t in get_resin_coeffs(oil):
-        f_res = (0.033 * a +
-                 0.00087 * b -
-                 0.74)
+    try:
+        a, b, t = get_resin_coeffs(oil)
+
+        f_res = (0.033 * a + 0.00087 * b - 0.74)
         f_res = 0.0 if f_res < 0.0 else f_res
 
         oil.sara_fractions.append(SARAFraction(sara_type='Resins',
                                                fraction=f_res,
                                                ref_temp_k=t))
+    except:
+        print 'Failed to add Resin fraction!'
 
 
 def add_asphaltene_fractions(oil):
-    for a, b, t in get_asphaltene_coeffs(oil):
-        f_asph = (0.000014 * a +
-                  0.000004 * b -
-                  0.18)
+    try:
+        a, b, t = get_asphaltene_coeffs(oil)
+
+        f_asph = (0.000014 * a + 0.000004 * b - 0.18)
+        print 'Initial Asphaltene fraction = ', f_asph
         f_asph = 0.0 if f_asph < 0.0 else f_asph
 
         oil.sara_fractions.append(SARAFraction(sara_type='Asphaltenes',
                                                fraction=f_asph,
                                                ref_temp_k=t))
+    except:
+        print 'Failed to add Asphaltene fraction!'
 
 
 def get_resin_coeffs(oil):
@@ -395,38 +400,23 @@ def get_resin_coeffs(oil):
         database.
         Bill has clarified that we want to get the coefficients for just
         the 15C Density
-        For now, we will assume we need to gather an array of coefficients
-        based on the existing measured viscosities and densities.
-        So we assume we are dealing with an oil object that has both.
-        We return ((a0, b0),
-                   (a1, b1),
-                   ...
-                   )
     '''
     try:
-        a = [(10 * exp(0.001 * density_at_temperature(oil, k.ref_temp_k)))
-             for k in oil.kvis
-             if k.weathering == 0.0 and
-             np.isclose(k.ref_temp_k, 288.0, atol=0.15) and
-             density_at_temperature(oil, k.ref_temp_k) is not None]
-        b = [(10 * log(1000.0 * density_at_temperature(oil, k.ref_temp_k) *
-                       k.m_2_s))
-             for k in oil.kvis
-             if k.weathering == 0.0 and
-             np.isclose(k.ref_temp_k, 288.0, atol=0.15) and
-             density_at_temperature(oil, k.ref_temp_k) is not None]
+        temperature = 273.15 + 15
+        P0_oil = density_at_temperature(oil, temperature)
+        V0_oil = get_viscosity(oil, temperature)
+        a = 10 * exp(0.001 * P0_oil)
+        b = 10 * log(1000.0 * P0_oil * V0_oil)
+
     except:
-        print 'generated exception for oil = ', oil
-        print 'oil.kvis = ', oil.kvis
-        print [(density_at_temperature(oil, k.ref_temp_k), k.m_2_s)
-               for k in oil.kvis
-               if k.weathering == 0.0]
+        print 'get_resin_coeffs() generated exception:'
+        print '\toil = ', oil
+        print '\toil.kvis = ', oil.kvis
+        print '\tP0_oil = ', density_at_temperature(oil, temperature)
+        print '\tV0_oil = ', get_viscosity(oil, temperature)
         raise
 
-    t = [k.ref_temp_k
-         for k in oil.kvis
-         if k.weathering == 0.0]
-    return zip(a, b, t)
+    return a, b, temperature
 
 
 def get_asphaltene_coeffs(oil):
@@ -700,7 +690,8 @@ def add_component_densities(imported_rec, oil):
                              if f.sara_type in ('Resins', 'Asphaltenes')])
     oil_density = density_at_temperature(oil, 288.15)
 
-    # print '\n\nNow we will try to adjust our ptry densities to match the oil total density'
+    # print ('\n\nNow we will try to adjust our ptry densities '
+    #        'to match the oil total density')
     oil_sa_avg_density = ((oil_density - total_ra_fraction * 1100.0) /
                           total_sa_fraction)
 
