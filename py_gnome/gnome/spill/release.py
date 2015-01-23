@@ -231,8 +231,7 @@ class PointLineRelease(Release, Serializable):
                  end_position=None,
                  name=None):
         """
-        :param num_elements: total number of elements to be released
-        :type num_elements: integer
+        Required Arguments:
 
         :param release_time: time the LEs are released (datetime object)
         :type release_time: datetime.datetime
@@ -240,18 +239,34 @@ class PointLineRelease(Release, Serializable):
         :param start_position: initial location the elements are released
         :type start_position: 3-tuple of floats (long, lat, z)
 
-        :param end_position=None: optional. For moving source, the end position
-        :type end_position: 3-tuple of floats (long, lat, z)
+        Optional arguments:
 
-        :param end_release_time=None: optional -- for a release over time, the
-            end release time
+        .. note:: Either num_elements or num_per_timestep must be given. If
+            both are None, then it defaults to num_elements=1000. If both are
+            given a TypeError is raised because user can only specify one or
+            the other, not both.
+
+        :param num_elements: total number of elements to be released
+        :type num_elements: integer
+
+        :param num_per_timestep: fixed number of LEs released at each timestep
+        :type num_elements: integer
+
+        :param end_release_time=None: optional -- for a time varying release,
+            the end release time. If None, then release is instantaneous
         :type end_release_time: datetime.datetime
+
+        :param end_position=None: optional. For moving source, the end position
+            If None, then release from a point source
+        :type end_position: 3-tuple of floats (long, lat, z)
 
         num_elements and release_time passed to base class __init__ using super
         See base :class:`Release` documentation
         """
-        if ((num_elements is None and num_per_timestep is None) or
-            (num_elements is not None and num_per_timestep is not None)):
+        if num_elements is None and num_per_timestep is None:
+            num_elements = 1000
+
+        if num_elements is not None and num_per_timestep is not None:
             msg = ('Either num_elements released or a release rate, defined by'
                    ' num_per_timestep must be given, not both')
             raise TypeError(msg)
