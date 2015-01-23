@@ -12,7 +12,7 @@ np = numpy
 
 from colander import (SchemaNode, drop, OneOf,
                       Float, String, Range)
-from hazpy import unit_conversion as uc
+import unit_conversion as uc
 
 from gnome.cy_gnome.cy_ossm_time import CyOSSMTime, CyTimeseries
 from gnome import basic_types
@@ -49,28 +49,24 @@ class TimeSeriesTuple(DefaultTupleSchema):
 
 
 class TimeSeriesSchema(DatetimeValue2dArraySchema):
-    'Tide object schema'
     '''
     Schema for list of running average tuples, to make the timeseries
     '''
     value = TimeSeriesTuple(default=(datetime.datetime.now(), 0, 0))
 
     def validator(self, node, cstruct):
-         '''
-         validate running average timeseries numpy array
-         '''
-         validators.no_duplicate_datetime(node, cstruct)
-         validators.ascending_datetime(node, cstruct)
-         
+        '''
+        validate running average timeseries numpy array
+        '''
+        validators.no_duplicate_datetime(node, cstruct)
+        validators.ascending_datetime(node, cstruct)
 
 
 class RunningAverageSchema(base_schema.ObjType):
     'Time series object schema'
-
     timeseries = TimeSeriesSchema(missing=drop)
     name = 'running average'
     past_hours_to_average = SchemaNode(Float(), missing=drop)
-
 
 
 class RunningAverage(Environment, Serializable):
