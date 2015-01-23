@@ -42,9 +42,11 @@ def add_oil(record):
     add_pour_point(record, oil)
     add_flash_point(record, oil)
     add_emulsion_water_fraction_max(record, oil)
-    add_resin_fractions(oil)
-    add_asphaltene_fractions(oil)
-    add_bullwinkle_fractions(oil)
+
+    add_resin_fractions(record, oil)
+    add_asphaltene_fractions(record, oil)
+
+    add_bullwinkle_fractions(record, oil)
     add_adhesion(record, oil)
     add_sulphur_mass_fraction(record, oil)
     add_soluability(record, oil)
@@ -92,7 +94,8 @@ def add_densities(imported_rec, oil):
         print ('Warning: no densities and no api for record {0}'
                .format(imported_rec.adios_oil_id))
 
-    if not [d for d in oil.densities if d.ref_temp_k == 273.15 + 15]:
+    if not [d for d in oil.densities
+            if np.isclose(d.ref_temp_k, 273.0 + 15, atol=.15)]:
         # add a 15C density from api
         kg_m_3, ref_temp_k = estimate_density_from_api(oil.api)
 
@@ -229,7 +232,7 @@ def add_oil_water_interfacial_tension(imported_rec, oil):
             api = None
 
         oil.oil_water_interfacial_tension_n_m = (0.001 * (39 - 0.2571 * api))
-        oil.oil_water_interfacial_tension_ref_temp_k = 273.15 * 15.0
+        oil.oil_water_interfacial_tension_ref_temp_k = 273.15 + 15.0
 
         oil.estimated.oil_water_interfacial_tension_n_m = True
         oil.estimated.oil_water_interfacial_tension_ref_temp_k = True
@@ -364,14 +367,19 @@ def add_emulsion_water_fraction_max(imported_rec, oil):
     oil.estimated.emulsion_water_fraction_max = True
 
 
-def add_resin_fractions(oil):
+def add_resin_fractions(imported_rec, oil):
     try:
-        a, b, t = get_corrected_density_and_viscosity(oil)
+        if (imported_rec.resins is not None and
+                imported_rec.resins >= 0.0 and
+                imported_rec.resins <= 1.0):
+            f_res = imported_rec.resins
+            t = 273.15 + 15
+        else:
+            a, b, t = get_corrected_density_and_viscosity(oil)
 
-        f_res = (3.3 * a + 0.087 * b - 74.0)
-        f_res /= 100.0  # percent to fractional value
-        f_res = 0.0 if f_res < 0.0 else f_res
-        print '\tFinal Resin fraction = ', f_res
+            f_res = (3.3 * a + 0.087 * b - 74.0)
+            f_res /= 100.0  # percent to fractional value
+            f_res = 0.0 if f_res < 0.0 else f_res
 
         oil.sara_fractions.append(SARAFraction(sara_type='Resins',
                                                fraction=f_res,
@@ -380,16 +388,21 @@ def add_resin_fractions(oil):
         print 'Failed to add Resin fraction!'
 
 
-def add_asphaltene_fractions(oil):
+def add_asphaltene_fractions(imported_rec, oil):
     try:
-        a, b, t = get_corrected_density_and_viscosity(oil)
+        if (imported_rec.asphaltene_content is not None and
+                imported_rec.asphaltene_content >= 0.0 and
+                imported_rec.asphaltene_content <= 1.0):
+            f_asph = imported_rec.asphaltene_content
+            t = 273.15 + 15
+        else:
+            a, b, t = get_corrected_density_and_viscosity(oil)
 
-        f_asph = (0.0014 * (a ** 3.0) +
-                  0.0004 * (b ** 2.0) -
-                  18.0)
-        f_asph /= 100.0  # percent to fractional value
-        f_asph = 0.0 if f_asph < 0.0 else f_asph
-        print '\tFinal Asphaltene fraction = ', f_asph
+            f_asph = (0.0014 * (a ** 3.0) +
+                      0.0004 * (b ** 2.0) -
+                      18.0)
+            f_asph /= 100.0  # percent to fractional value
+            f_asph = 0.0 if f_asph < 0.0 else f_asph
 
         oil.sara_fractions.append(SARAFraction(sara_type='Asphaltenes',
                                                fraction=f_asph,
@@ -403,8 +416,10 @@ def get_corrected_density_and_viscosity(oil):
         Get coefficients for calculating resin (and asphaltene) fractions
         based on Merv Fingas' empirical analysis of ESTC oil properties
         database.
-        Bill has clarified that we want to get the coefficients for just
-        the 15C Density
+        - Bill has clarified that we want to get the coefficients for just
+          the 15C Density
+        - Mervs calculations depend on a density measured in g/mL and a
+          viscosity measured in mPa.s, so we do a conversion here.
     '''
     try:
         temperature = 273.15 + 15
@@ -424,31 +439,50 @@ def get_corrected_density_and_viscosity(oil):
     return a, b, temperature
 
 
-def add_bullwinkle_fractions(oil):
+def add_bullwinkle_fractions(imported_rec, oil):
     '''
         This is the mass fraction that must evaporate or dissolve before
         stable emulsification can begin.
-        For this estimation, we depend on an oil object with a valid
-        asphaltene fraction or a valid api
-        This is a scalar value calculated with a reference temperature of 15C
+        - For this estimation, we depend on an oil object with a valid
+          asphaltene fraction or a valid api
+        - This is a scalar value calculated with a reference temperature of 15C
+        - For right now we are referencing the Adios2 code file
+          OilInitialize.cpp, function CAdiosData::Bullwinkle(void)
     '''
-    f_bulls = [0.32 - 3.59 * af.fraction
-               for af in oil.sara_fractions
-               if af.fraction > 0 and af.sara_type == 'Asphaltenes' and
-               af.ref_temp_k == 273.15 + 15]
-
-    if not f_bulls and oil.api >= 0.0:
-        f_bulls = [0.5762 * log10(oil.api)]
-
-    if not f_bulls:
-        # this can happen if we do not have an asphaltene fraction
-        # (thus, viscosity or density) at 15C, and the api is 0.0 or less
-        print 'Warning: could not estimate bullwinkle fractions'
-        print ('\tOil(name={0.name}, sara={0.sara_fractions}, api={0.api}'
-               .format(oil))
+    if imported_rec.product_type == "refined":
+        bullwinkle_fraction = 1.0
     else:
-        oil.bullwinkle_fraction = f_bulls[0]
-        oil.estimated.bullwinkle_fraction = True
+        # product type is crude
+        Ni = (imported_rec.nickel
+              if imported_rec.nickel is not None else 0.0)
+        Va = (imported_rec.vanadium
+              if imported_rec.vanadium is not None else 0.0)
+        f_asph = [af.fraction
+                  for af in oil.sara_fractions
+                  if af.sara_type == 'Asphaltenes'
+                  and af.fraction > 0
+                  and np.isclose(af.ref_temp_k, 273.0 + 15, atol=.15)]
+        f_asph = f_asph[0] if len(f_asph) > 0 else 0.0
+
+        if (Ni > 0.0 and Va > 0.0 and Ni + Va > 15.0):
+            bullwinkle_fraction = 0.0
+        elif f_asph > 0.0:
+            # Bullvalue = 0.32 - 3.59 * f_Asph
+            bullwinkle_fraction = 0.20219 - 0.168 * log10(f_asph)
+
+            if bullwinkle_fraction < 0.0:
+                bullwinkle_fraction = 0.0
+            elif bullwinkle_fraction > 0.303:
+                bullwinkle_fraction = 0.303
+        elif oil.api < 26.0:
+            bullwinkle_fraction = 0.08
+        elif oil.api > 50.0:
+            bullwinkle_fraction = 0.303
+        else:
+            bullwinkle_fraction = -1.038 - 0.78935 * log10(1.0 / oil.api)
+
+    oil.bullwinkle_fraction = bullwinkle_fraction
+    oil.estimated.bullwinkle_fraction = True
 
 
 def add_adhesion(imported_rec, oil):

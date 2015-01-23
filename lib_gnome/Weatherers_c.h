@@ -18,6 +18,6 @@
 // emulsify is exposed to Cython/Python for PyGnome
 
 //OSErr DLL_API emulsify(int n, unsigned long step_len, double *frac_water, double *le_interfacial_area, double *frac_evap, double *droplet_diameter, unsigned long *age, unsigned long *bulltime, double k_emul, unsigned long emul_time, double emul_C, double S_max, double Y_max, double drop_max);
-OSErr DLL_API emulsify(int n, unsigned long step_len, double *frac_water, double *le_interfacial_area, double *frac_evap, int *age, double *bulltime, double k_emul, double emul_time, double emul_C, double S_max, double Y_max, double drop_max);
+OSErr DLL_API emulsify(int n, unsigned long step_len, double *frac_water, double *le_interfacial_area, double *frac_evap, int32_t *age, double *bulltime, double k_emul, double emul_time, double emul_C, double S_max, double Y_max, double drop_max);
 
 #endif
