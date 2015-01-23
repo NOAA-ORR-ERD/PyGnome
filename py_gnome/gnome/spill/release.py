@@ -324,7 +324,7 @@ class PointLineRelease(Release, Serializable):
     @property
     def release_duration(self):
         '''
-        duration over which particles are released as a timedelta object
+        duration over which particles are released in seconds
         '''
         if self.end_release_time is None:
             return 0
@@ -434,7 +434,11 @@ class PointLineRelease(Release, Serializable):
 
     def _num_to_release_given_total_elements(self, current_time, time_step):
         '''
-        requires num_elements is not None
+        if _release() method returns True, then release particles.
+        Release particles linearly where the rate of release is the total
+        number of particles divided by release_duration. Also ensure a fraction
+        of particle is not released; ie. an integer number of particles
+        released.
         '''
 
         if not self._release(current_time, time_step):
@@ -470,6 +474,12 @@ class PointLineRelease(Release, Serializable):
         return _num_new_particles
 
     def _num_to_release_given_timestep_rate(self, current_time, time_step):
+        '''
+        if _release() method returns True, then release particles.
+        In this case the number of particles released is always fixed
+        regardless of timestep. If end_release_time >= current_time, then
+        release num_per_timestep number of particles.
+        '''
         if not self._release(current_time, time_step):
             return 0
 
