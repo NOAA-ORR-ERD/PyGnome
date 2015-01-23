@@ -36,7 +36,7 @@ class TestRelease:
         assert rel.num_elements == 0
         assert rel.release_time == self.rel_time
         assert rel.start_time_invalid is None
-        assert rel.release_duration == timedelta(0)
+        assert rel.release_duration == 0
 
     @pytest.mark.parametrize("curr_time", [rel_time,
                                            rel_time - timedelta(seconds=1),
@@ -182,6 +182,22 @@ class TestInitElementsFromFile():
 class TestPointLineRelease:
     rel_time = datetime(2014, 1, 1, 0, 0)
     pos = (0, 1, 2)
+
+    def test_property_num_per_timestep_elements(self):
+        '''
+        test either num_elements or num_per_timestep is set but not both
+        also test the num_elements_to_release references correct method
+        '''
+        r = PointLineRelease(self.rel_time,
+                             self.pos,
+                             num_per_timestep=100)
+        r.num_elements = 10
+        assert r.num_per_timestep is None
+        assert r.num_elements_to_release(self.rel_time, 900) == 10
+
+        r.num_per_timestep = 100
+        assert r.num_elements is None
+        assert r.num_elements_to_release(self.rel_time, 900) == 100
 
     def test_num_per_timestep(self):
         'test PointLineRelease when a fixed rate per timestep is given'

@@ -214,7 +214,7 @@ class Spill(serializable.Serializable):
         _mass = self.get_mass('kg')
 
         if _mass is not None:
-            rd_sec = self.get('release_duration').total_seconds()
+            rd_sec = self.get('release_duration')
             if rd_sec == 0:
                 le_mass = _mass / self.get('num_elements')
             else:
