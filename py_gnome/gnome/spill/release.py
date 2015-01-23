@@ -393,31 +393,37 @@ class PointLineRelease(Release, Serializable):
             self.num_elements_to_release = \
                 self._num_to_release_given_total_elements
 
-    def _num_elements_to_release_common(self, current_time, time_step):
+    def _release(self, current_time, time_step):
         """
-        return number of particles released in current_time + time_step
+        returns a bool (True) if elements can be released at this time, so
+        following are True:
+
+        1)  start_time is valid: so model start time is not after the
+            release_time
+        2)  release_time <= current_time + time_step so it isn't too early to
+            release particles
+
+        if either of above conditions fail, then return False
         """
         # call base class method to check if start_time is valid
         super(PointLineRelease, self).num_elements_to_release(current_time,
                                                               time_step)
         if self.start_time_invalid:
-            return 0
+            return False
 
         # it's been called before the release_time
-        if current_time + timedelta(seconds=time_step) \
-            <= self.release_time:
-            #print 'not time to release yet'
-            return 0
+        if current_time + timedelta(seconds=time_step) <= self.release_time:
+            return False
 
-        return None
+        return True
 
     def _num_to_release_given_total_elements(self, current_time, time_step):
         '''
         requires num_elements is not None
         '''
-        num = self._num_elements_to_release_common(current_time, time_step)
-        if num == 0:
-            return num
+
+        if not self._release(current_time, time_step):
+            return 0
 
         if self.num_released >= self.num_elements:
             # nothing left to release
@@ -449,21 +455,20 @@ class PointLineRelease(Release, Serializable):
         return _num_new_particles
 
     def _num_to_release_given_timestep_rate(self, current_time, time_step):
-        num = self._num_elements_to_release_common(current_time, time_step)
-        if num is None:
-            if self.end_release_time is None:
-                return self.num_per_timestep
+        if not self._release(current_time, time_step):
+            return 0
 
-            elif self.end_release_time >= current_time:
-                # todo: should we have above condition or the one listed below:
-                # self.end_release_time <= (current_time +
-                #                           timedelta(seconds=time_step)):
-                return self.num_per_timestep
+        if self.end_release_time is None:
+            return self.num_per_timestep
 
-            else:
-                return 0
+        elif self.end_release_time >= current_time:
+            # todo: should we have above condition or the one listed below:
+            # self.end_release_time <= (current_time +
+            #                           timedelta(seconds=time_step)):
+            return self.num_per_timestep
 
-        return num
+        else:
+            return 0
 
     def _init_positions_instantaneous_release(self, num_new_particles,
                                               current_time, time_step,
