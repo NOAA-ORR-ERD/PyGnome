@@ -78,7 +78,12 @@ def assert_sc_single_spill(sc):
     # only one spill in SpillContainer
     for spill in sc.spills:
         assert np.array_equal(sc['positions'][0], spill.release.start_position)
-        assert np.array_equal(sc['positions'][-1], spill.release.end_position)
+        if spill.get('end_position') is None:
+            assert np.array_equal(sc['positions'][-1],
+                                  spill.get('start_position'))
+        else:
+            assert np.array_equal(sc['positions'][-1],
+                                  spill.get('end_position'))
 
 
 def test_test_spill_container():
@@ -103,9 +108,13 @@ def test_one_simple_spill(spill):
     time_step = 3600
 
     sc.prepare_for_model_run(windage_at)
-    num_steps = ((spill.release.end_release_time -
-                  spill.release.release_time).seconds / time_step + 1)
-    for step in range(num_steps):
+    if spill.get('end_release_time') is None:
+        num_steps = 0
+    else:
+        num_steps = ((spill.release.end_release_time -
+                      spill.release.release_time).seconds / time_step + 1)
+
+    for step in xrange(num_steps + 1):
         current_time = (spill.release.release_time +
                         timedelta(seconds=time_step * step))
         sc.release_elements(time_step, current_time)
