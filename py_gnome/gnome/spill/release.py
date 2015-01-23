@@ -513,7 +513,7 @@ class PointLineRelease(Release, Serializable):
             return
 
         if (self.end_position is None or
-            self.end_position == self.start_position):
+            np.all(self.end_position == self.start_position)):
             # point release
             data_arrays['positions'][-num_new_particles:, :] = \
                 self.start_position
@@ -546,7 +546,7 @@ class PointLineRelease(Release, Serializable):
             return
 
         if (self.end_position is None or
-            self.end_position == self.start_position):
+            np.all(self.end_position == self.start_position)):
             # point release
             data_arrays['positions'][-num_new_particles:] = \
                 self.start_position
