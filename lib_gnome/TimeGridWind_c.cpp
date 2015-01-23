@@ -208,6 +208,8 @@ OSErr TimeGridWindRect_c::TextRead(const char *path, const char *topFilePath)
 		timeUnits[t_len] = '\0'; // moved this statement before StringSubstitute, JLM 5/2/10
 		StringSubstitute(timeUnits, ':', ' ');
 		StringSubstitute(timeUnits, '-', ' ');
+		StringSubstitute(timeUnits, 'T', ' ');
+		StringSubstitute(timeUnits, 'Z', ' ');
 		
 		numScanned=sscanf(timeUnits, "%s %s %hd %hd %hd %hd %hd %hd",
 						  unitStr, junk, &time.year, &time.month, &time.day,
@@ -539,9 +541,13 @@ LAS:
 	{
 		for (j=0;j<lonlength;j++)
 		{
-			if (wind_uvals[(latlength-i-1)*lonlength+j]==fill_value)	// should store in wind array and check before drawing or moving
+			if (wind_uvals[(latlength-i-1)*lonlength+j]==fill_value)
 				wind_uvals[(latlength-i-1)*lonlength+j]=0.;
 			if (wind_vvals[(latlength-i-1)*lonlength+j]==fill_value)
+				wind_vvals[(latlength-i-1)*lonlength+j]=0.;
+			if (isnan(wind_uvals[(latlength-i-1)*lonlength+j])) 
+				wind_uvals[(latlength-i-1)*lonlength+j]=0.;
+			if (isnan(wind_vvals[(latlength-i-1)*lonlength+j])) 
 				wind_vvals[(latlength-i-1)*lonlength+j]=0.;
 			INDEXH(velH,i*lonlength+j).u = (float)wind_uvals[(latlength-i-1)*lonlength+j];
 			INDEXH(velH,i*lonlength+j).v = (float)wind_vvals[(latlength-i-1)*lonlength+j];
@@ -775,6 +781,8 @@ OSErr TimeGridWindCurv_c::TextRead(const char *path, const char *topFilePath) //
 		timeUnits[t_len] = '\0'; // moved this statement before StringSubstitute, JLM 5/2/10
 		StringSubstitute(timeUnits, ':', ' ');
 		StringSubstitute(timeUnits, '-', ' ');
+		StringSubstitute(timeUnits, 'T', ' ');
+		StringSubstitute(timeUnits, 'Z', ' ');
 		
 		numScanned = sscanf(timeUnits, "%s %s %hd %hd %hd %hd %hd %hd",
 							unitStr, junk, &time.year, &time.month, &time.day,
@@ -1217,12 +1225,16 @@ OSErr TimeGridWindCurv_c::ReadTimeData(long index,VelocityFH *velocityH, char* e
 	{
 		for (j=0;j<lonlength;j++)
 		{
+			if (wind_uvals[(latlength-i-1)*lonlength+j]==fill_value)
+				wind_uvals[(latlength-i-1)*lonlength+j]=0.;
+			if (wind_vvals[(latlength-i-1)*lonlength+j]==fill_value)
+				wind_vvals[(latlength-i-1)*lonlength+j]=0.;
+			if (isnan(wind_uvals[(latlength-i-1)*lonlength+j])) 
+				wind_uvals[(latlength-i-1)*lonlength+j]=0.;
+			if (isnan(wind_vvals[(latlength-i-1)*lonlength+j])) 
+				wind_vvals[(latlength-i-1)*lonlength+j]=0.;
 			if (fIsNavy)
 			{
-				if (wind_uvals[(latlength-i-1)*lonlength+j]==fill_value)
-					wind_uvals[(latlength-i-1)*lonlength+j]=0.;
-				if (wind_vvals[(latlength-i-1)*lonlength+j]==fill_value)
-					wind_vvals[(latlength-i-1)*lonlength+j]=0.;
 				u_grid = (float)wind_uvals[(latlength-i-1)*lonlength+j];
 				v_grid = (float)wind_vvals[(latlength-i-1)*lonlength+j];
 				if (bRotated) angle = angle_vals[(latlength-i-1)*lonlength+j];
@@ -1231,10 +1243,6 @@ OSErr TimeGridWindCurv_c::ReadTimeData(long index,VelocityFH *velocityH, char* e
 			}
 			else if (bIsNWSSpeedDirData)
 			{
-				if (wind_uvals[(latlength-i-1)*lonlength+j]==fill_value)
-					wind_uvals[(latlength-i-1)*lonlength+j]=0.;
-				if (wind_vvals[(latlength-i-1)*lonlength+j]==fill_value)
-					wind_vvals[(latlength-i-1)*lonlength+j]=0.;
 				//INDEXH(velH,i*lonlength+j).u = KNOTSTOMETERSPERSEC * wind_uvals[(latlength-i-1)*lonlength+j] * sin ((PI/180.) * wind_vvals[(latlength-i-1)*lonlength+j]);	// need units
 				//INDEXH(velH,i*lonlength+j).v = KNOTSTOMETERSPERSEC * wind_uvals[(latlength-i-1)*lonlength+j] * cos ((PI/180.) * wind_vvals[(latlength-i-1)*lonlength+j]);
 				// since direction is from rather than to need to switch the sign
@@ -1252,10 +1260,6 @@ OSErr TimeGridWindCurv_c::ReadTimeData(long index,VelocityFH *velocityH, char* e
 				// just leave fillValue as velocity for new algorithm - comment following lines out
 				// should eliminate the above problem, assuming fill_value is a land mask
 				// leave for now since not using a map...use the entire grid
-				if (wind_uvals[(latlength-i-1)*lonlength+j]==fill_value)
-					wind_uvals[(latlength-i-1)*lonlength+j]=0.;
-				if (wind_vvals[(latlength-i-1)*lonlength+j]==fill_value)
-					wind_vvals[(latlength-i-1)*lonlength+j]=0.;
 				/////////////////////////////////////////////////
 				
 				INDEXH(velH,i*lonlength+j).u = /*KNOTSTOMETERSPERSEC**/velConversion*wind_uvals[(latlength-i-1)*lonlength+j];	// need units
@@ -1515,6 +1519,7 @@ OSErr TimeGridWindCurv_c::ReorderPoints(char* errmsg)
 	if (!landWaterInfo || !ptIndexHdl || !gridCellInfo || !verdatPtsH /*|| !maskH2*/) {err = memFullErr; goto done;}
 	
 	err = ReadTimeData(indexOfStart,&velocityH,errmsg);	// try to use velocities to set grid
+	if (err) return err;
 	
 	for (i=0;i<fNumRows;i++)
 	{

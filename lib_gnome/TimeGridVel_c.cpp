@@ -599,6 +599,8 @@ OSErr TimeGridVel_c::ReadInputFileNames(char *fileNamesPath)
 				timeUnits[t_len] = '\0'; // moved this statement before StringSubstitute, JLM 5/2/10
 				StringSubstitute(timeUnits, ':', ' ');
 				StringSubstitute(timeUnits, '-', ' ');
+				StringSubstitute(timeUnits, 'T', ' ');
+				StringSubstitute(timeUnits, 'Z', ' ');
 				
 				numScanned = sscanf(timeUnits, "%s %s %hd %hd %hd %hd %hd %hd",
 									unitStr, junk, &time.year, &time.month, &time.day,
@@ -772,6 +774,8 @@ OSErr TimeGridVelRect_c::TextRead(const char *path, const char *topFilePath)
 		timeUnits[t_len] = '\0'; // moved this statement before StringSubstitute, JLM 5/2/10
 		StringSubstitute(timeUnits, ':', ' ');
 		StringSubstitute(timeUnits, '-', ' ');
+		StringSubstitute(timeUnits, 'T', ' ');
+		StringSubstitute(timeUnits, 'Z', ' ');
 		
 		numScanned=sscanf(timeUnits, "%s %s %hd %hd %hd %hd %hd %hd",
 						  unitStr, junk, &time.year, &time.month, &time.day,
@@ -2592,6 +2596,8 @@ OSErr TimeGridVelCurv_c::TextRead(const char *path, const char *topFilePath)
 		timeUnits[t_len] = '\0'; // moved this statement before StringSubstitute, JLM 5/2/10
 		StringSubstitute(timeUnits, ':', ' ');
 		StringSubstitute(timeUnits, '-', ' ');
+		StringSubstitute(timeUnits, 'T', ' ');
+		StringSubstitute(timeUnits, 'Z', ' ');
 		
 		numScanned=sscanf(timeUnits, "%s %s %hd %hd %hd %hd %hd %hd",
 						  unitStr, junk, &time.year, &time.month, &time.day,
@@ -3220,6 +3226,10 @@ OSErr TimeGridVelCurv_c::ReadTimeData(long index,VelocityFH *velocityH, char* er
 					if (curr_uvals[(latlength-i-1)*lonlength+j+k*fNumRows*fNumCols]==fill_value)
 						curr_uvals[(latlength-i-1)*lonlength+j+k*fNumRows*fNumCols]=0.;
 					if (curr_vvals[(latlength-i-1)*lonlength+j+k*fNumRows*fNumCols]==fill_value)
+						curr_vvals[(latlength-i-1)*lonlength+j+k*fNumRows*fNumCols]=0.;
+					if (isnan(curr_uvals[(latlength-i-1)*lonlength+j+k*fNumRows*fNumCols]))
+						curr_uvals[(latlength-i-1)*lonlength+j+k*fNumRows*fNumCols]=0.;
+					if (isnan(curr_vvals[(latlength-i-1)*lonlength+j+k*fNumRows*fNumCols]))
 						curr_vvals[(latlength-i-1)*lonlength+j+k*fNumRows*fNumCols]=0.;
 					u_grid = (double)curr_uvals[(latlength-i-1)*lonlength+j+k*fNumRows*fNumCols];
 					v_grid = (double)curr_vvals[(latlength-i-1)*lonlength+j+k*fNumRows*fNumCols];
@@ -5808,6 +5818,8 @@ OSErr TimeGridVelTri_c::TextRead(const char *path, const char *topFilePath)
 		timeUnits[t_len] = '\0'; // moved this statement before StringSubstitute, JLM 5/2/10
 		StringSubstitute(timeUnits, ':', ' ');
 		StringSubstitute(timeUnits, '-', ' ');
+		StringSubstitute(timeUnits, 'T', ' ');
+		StringSubstitute(timeUnits, 'Z', ' ');
 		
 		if (bIsCycleMover)
 		{
@@ -6518,6 +6530,10 @@ OSErr TimeGridVelTri_c::ReadTimeData(long index,VelocityFH *velocityH, char* err
 			if (curr_uvals[j*numVelsAtDepthLevel+i]==fill_value)
 				curr_uvals[j*numVelsAtDepthLevel+i]=0.;
 			if (curr_vvals[j*numVelsAtDepthLevel+i]==fill_value)
+				curr_vvals[j*numVelsAtDepthLevel+i]=0.;
+			if (isnan(curr_uvals[j*numVelsAtDepthLevel+i]))
+				curr_uvals[j*numVelsAtDepthLevel+i]=0.;
+			if (isnan(curr_vvals[j*numVelsAtDepthLevel+i]))
 				curr_vvals[j*numVelsAtDepthLevel+i]=0.;
 			if (curr_uvals[j*numVelsAtDepthLevel+i]==dry_value)
 				curr_uvals[j*numVelsAtDepthLevel+i]=0.;
@@ -7902,6 +7918,8 @@ OSErr ScanFileForTimes(char *path,Seconds ***timeH)
 		timeUnits[t_len] = '\0'; // moved this statement before StringSubstitute, JLM 5/2/10
 		StringSubstitute(timeUnits, ':', ' ');
 		StringSubstitute(timeUnits, '-', ' ');
+		StringSubstitute(timeUnits, 'T', ' ');
+		StringSubstitute(timeUnits, 'Z', ' ');
 
 		numScanned=sscanf(timeUnits, "%s %s %hd %hd %hd %hd %hd %hd",
 						  unitStr, junk, &time.year, &time.month, &time.day,

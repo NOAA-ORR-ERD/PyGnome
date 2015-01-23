@@ -247,6 +247,7 @@ OSErr NetCDFWindMoverCurv_c::ReorderPoints(TMap **newMap, char* errmsg)
 	if (!landWaterInfo || !ptIndexHdl || !gridCellInfo || !verdatPtsH || !maskH2) {err = memFullErr; goto done;}
 	
 	err = ReadTimeData(indexOfStart,&velocityH,errmsg);	// try to use velocities to set grid
+	if (err) return err;
 	
 	for (i=0;i<fNumRows;i++)
 	{

@@ -366,10 +366,12 @@ def add_emulsion_water_fraction_max(imported_rec, oil):
 
 def add_resin_fractions(oil):
     try:
-        a, b, t = get_resin_coeffs(oil)
+        a, b, t = get_corrected_density_and_viscosity(oil)
 
-        f_res = (0.033 * a + 0.00087 * b - 0.74)
+        f_res = (3.3 * a + 0.087 * b - 74.0)
+        f_res /= 100.0  # percent to fractional value
         f_res = 0.0 if f_res < 0.0 else f_res
+        print '\tFinal Resin fraction = ', f_res
 
         oil.sara_fractions.append(SARAFraction(sara_type='Resins',
                                                fraction=f_res,
@@ -380,11 +382,14 @@ def add_resin_fractions(oil):
 
 def add_asphaltene_fractions(oil):
     try:
-        a, b, t = get_asphaltene_coeffs(oil)
+        a, b, t = get_corrected_density_and_viscosity(oil)
 
-        f_asph = (0.000014 * a + 0.000004 * b - 0.18)
-        print 'Initial Asphaltene fraction = ', f_asph
+        f_asph = (0.0014 * (a ** 3.0) +
+                  0.0004 * (b ** 2.0) -
+                  18.0)
+        f_asph /= 100.0  # percent to fractional value
         f_asph = 0.0 if f_asph < 0.0 else f_asph
+        print '\tFinal Asphaltene fraction = ', f_asph
 
         oil.sara_fractions.append(SARAFraction(sara_type='Asphaltenes',
                                                fraction=f_asph,
@@ -393,7 +398,7 @@ def add_asphaltene_fractions(oil):
         print 'Failed to add Asphaltene fraction!'
 
 
-def get_resin_coeffs(oil):
+def get_corrected_density_and_viscosity(oil):
     '''
         Get coefficients for calculating resin (and asphaltene) fractions
         based on Merv Fingas' empirical analysis of ESTC oil properties
@@ -417,10 +422,6 @@ def get_resin_coeffs(oil):
         raise
 
     return a, b, temperature
-
-
-def get_asphaltene_coeffs(oil):
-    return get_resin_coeffs(oil)
 
 
 def add_bullwinkle_fractions(oil):
