@@ -520,6 +520,10 @@ LAS:
 				wind_uvals[(latlength-i-1)*lonlength+j]=0.;
 			if (wind_vvals[(latlength-i-1)*lonlength+j]==fill_value)
 				wind_vvals[(latlength-i-1)*lonlength+j]=0.;
+			if (isnan(wind_uvals[(latlength-i-1)*lonlength+j])) 
+				wind_uvals[(latlength-i-1)*lonlength+j]=0.;
+			if (isnan(wind_vvals[(latlength-i-1)*lonlength+j])) 
+				wind_vvals[(latlength-i-1)*lonlength+j]=0.;
 			INDEXH(velH,i*lonlength+j).u = (float)wind_uvals[(latlength-i-1)*lonlength+j];
 			INDEXH(velH,i*lonlength+j).v = (float)wind_vvals[(latlength-i-1)*lonlength+j];
 		}

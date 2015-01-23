@@ -170,6 +170,8 @@ OSErr NetCDFMoverTri::TextRead(char *path, TMap **newMap, char *topFilePath)
 		timeUnits[t_len] = '\0'; // moved this statement before StringSubstitute, JLM 5/2/10
 		StringSubstitute(timeUnits, ':', ' ');
 		StringSubstitute(timeUnits, '-', ' ');
+		StringSubstitute(timeUnits, 'T', ' ');
+		StringSubstitute(timeUnits, 'Z', ' ');
 		
 		numScanned=sscanf(timeUnits, "%s %s %hd %hd %hd %hd %hd %hd",
 						  unitStr, junk, &time.year, &time.month, &time.day,
@@ -776,6 +778,10 @@ OSErr NetCDFMoverTri::ReadTimeData(long index,VelocityFH *velocityH, char* errms
 			if (curr_uvals[j*numVelsAtDepthLevel+i]==fill_value)
 				curr_uvals[j*numVelsAtDepthLevel+i]=0.;
 			if (curr_vvals[j*numVelsAtDepthLevel+i]==fill_value)
+				curr_vvals[j*numVelsAtDepthLevel+i]=0.;
+			if (isnan(curr_uvals[j*numVelsAtDepthLevel+i]))
+				curr_uvals[j*numVelsAtDepthLevel+i]=0.;
+			if (isnan(curr_vvals[j*numVelsAtDepthLevel+i]))
 				curr_vvals[j*numVelsAtDepthLevel+i]=0.;
 			//if (fVar.gridType==MULTILAYER /*sigmaReversed*/)
 			/*{
