@@ -82,8 +82,8 @@ def assert_sc_single_spill(sc):
             assert np.array_equal(sc['positions'][-1],
                                   spill.get('start_position'))
         else:
-            assert np.array_equal(sc['positions'][-1],
-                                  spill.get('end_position'))
+            assert np.allclose(sc['positions'][-1],
+                               spill.get('end_position'), atol=1e-10)
 
 
 def test_test_spill_container():
