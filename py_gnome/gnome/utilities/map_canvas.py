@@ -356,15 +356,6 @@ class MapCanvas(object):
                              transparency=self.colors['transparent'])
 
 
-    # Not sure this is required yet
-#    def projection_pickle_to_dict(self):
-#        """ returns a pickled projection object """
-#        return pickle.dumps(self.projection)
-#
-#    def land_polygons_to_dict(self):
-#        """ returns a pickled land_polygons object """
-#        return pickle.dumps(self.land_polygons)
-
 class BW_MapCanvas(MapCanvas):
     """
     a version of the map canvas that draws Black and White images

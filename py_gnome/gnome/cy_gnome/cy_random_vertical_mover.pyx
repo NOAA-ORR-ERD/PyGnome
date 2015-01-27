@@ -101,12 +101,6 @@ cdef class CyRandomVerticalMover(cy_mover.CyMover):
                         self.vertical_diffusion_coef_below_ml,
                         self.mixed_layer_depth))
 
-    def __reduce__(self):
-        return (CyRandomVerticalMover,
-                (self.vertical_diffusion_coef_above_ml,
-                 self.vertical_diffusion_coef_below_ml,
-                 self.mixed_layer_depth))
-
     def get_move(self,
                  model_time,
                  step_len,

@@ -295,26 +295,6 @@ class PointLineRelease(Release, Serializable):
 
         self._reference_to_num_elements_to_release()
 
-    def __getstate__(self):
-        '''
-            Used by pickle.dump() and pickle.dumps()
-            Note: Dynamically set instance methods cannot be pickled methods.
-                  They should not be present in the resulting dict.
-        '''
-        return dict([(k, v) for k, v in self.__dict__.iteritems()
-                     if type(v) != types.MethodType])
-
-    def __setstate__(self, d):
-        '''
-            Used by pickle.load() and pickle.loads()
-            Note: We will need to explicitly reconstruct any instance methods
-                  that were dynamically set in __init__()
-        '''
-        self.__dict__ = d
-
-        # reconstruct our dynamically set methods.
-        self._reference_to_num_elements_to_release()
-
     def __repr__(self):
         return ('{0.__class__.__module__}.{0.__class__.__name__}('
                 'release_time={0.release_time!r}, '
