@@ -174,17 +174,6 @@ cdef class CyCatsMover(CyCurrentMover):
                          .format(self))
         return c_str
 
-    def __reduce__(self):
-        '''
-        required or pickle/unpickle
-        '''
-        props = [self.scale_type,
-                 self.scale_value,
-                 self.uncertain_eddy_diffusion,
-                 self.uncertain_eddy_v0,
-                 self.ref_point]
-        return self._append_base_reduce(props)
-
     def set_shio(self, CyShioTime cy_shio):
         """
         Takes a CyShioTime object as input and sets C++ Cats mover properties

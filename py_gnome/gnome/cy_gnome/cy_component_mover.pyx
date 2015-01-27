@@ -217,15 +217,6 @@ cdef class CyComponentMover(CyCurrentMover):
                          '  ref_point = {0.ref_point}').format(self)
         return c_str
 
-    def __reduce__(self):
-        '''
-        required or pickle/unpickle
-        '''
-        props = [self.pat1_angle, self.pat1_speed,
-                 self.pat1_speed_units, self.pat1_scale_to_value,
-                 self.ref_point]
-        return self._append_base_reduce(props)
-
     def set_ossm(self, CyOSSMTime ossm):
         """
         Takes a CyOSSMTime object as input and sets C++ Component mover properties from the OSSM object.

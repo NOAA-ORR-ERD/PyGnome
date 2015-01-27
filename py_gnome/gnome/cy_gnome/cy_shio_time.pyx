@@ -145,12 +145,6 @@ cdef class CyShioTime(CyOSSMTime):
 
         return info
 
-    def __reduce__(self):
-        return (CyShioTime, (self.path_filename,
-                             self.daylight_savings_off,
-                             self.scale_factor,
-                             self.yeardata))
-
     def __eq(self, CyShioTime other):
         attrs = ('filename', 'daylight_savings_off', 'scale_factor',
                  'station', 'station_type', 'station_location',

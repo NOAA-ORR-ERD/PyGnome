@@ -70,9 +70,6 @@ cdef class CyRandomMover(cy_mover.CyMover):
         return ('CyRandomMover(diffusion_coef={0}, uncertain_factor={1})'
                 .format(self.diffusion_coef, self.uncertain_factor))
 
-    def __reduce__(self):
-        return (CyRandomMover, (self.diffusion_coef, self.uncertain_factor))
-
     def get_move(self,
                  model_time,
                  step_len,
