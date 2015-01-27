@@ -33,7 +33,7 @@ arrays = Emulsification().array_types
                           ('FUEL OIL NO.6', 311.15, 3, False)])
 def test_emulsification(oil, temp, num_elems, on):
     '''
-    still working on tests ..
+    Fuel Oil #6 does not emulsify
     '''
     et = floating(substance=oil)
     sc = sample_sc_release(num_elements=num_elems,
@@ -65,7 +65,6 @@ def test_emulsification(oil, temp, num_elems, on):
         assert np.all(sc['frac_lost'] > 0) and np.all(sc['frac_lost'] < 1.0)
         assert np.all(sc['frac_water'] > 0) and np.all(sc['frac_water'] <= .9)
     else:
-        #assert np.all(sc['frac_lost'] > 0) and np.all(sc['frac_lost'] < 1.0)
         assert np.all(sc['frac_water'] == 0)
 
     sc['frac_lost'][:] = .2
@@ -94,9 +93,9 @@ def test_full_run(sample_model_fcn, oil, temp, dump):
     released = 0
     for step in model:
         for sc in model.spills.items():
-            assert sc.weathering_data['emulsified'] < 1
+            assert sc.weathering_data['water_content'] <= .9
             print ("Water fraction: {0}".
-                   format(sc.weathering_data['emulsified']))
+                   format(sc.weathering_data['water_content']))
             print "Completed step: {0}\n".format(step['step_num'])
 
     m_json_ = model.serialize('webapi')
@@ -127,15 +126,11 @@ def test_serialize_deseriailize():
     waves = Waves(wind, Water())
     e = Emulsification(waves)
     json_ = e.serialize()
-    #json_['wind'] = wind.serialize()
     json_['waves'] = waves.serialize()
 
     # deserialize and ensure the dict's are correct
     d_ = Emulsification.deserialize(json_)
-    #assert d_['wind'] == Wind.deserialize(json_['wind'])
     assert d_['waves'] == Waves.deserialize(json_['waves']) 
-    #d_['wind'] = wind
     d_['waves'] = waves
     e.update_from_dict(d_)
-    #assert e.wind is wind
     assert e.waves is waves
