@@ -73,7 +73,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     #w_mover.uncertain_time_delay = 6
     #w_mover.uncertain_duration = 6
     w_mover.uncertain_speed_scale = 1
-    w_mover.set_uncertain_angle(.2, 'rad')  # default is .4
+    w_mover.uncertain_angle_scale = 0.2  # default is .4
     w_mover.wind_scale = 2
 
     model.movers += w_mover

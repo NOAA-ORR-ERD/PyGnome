@@ -13,7 +13,7 @@ from colander import (iso8601,
                       SchemaNode, SequenceSchema,
                       drop, Bool, Int)
 
-from gnome.persist.base_schema import ObjType, WorldPoint
+from gnome.persist.base_schema import ObjType, WorldPoint, WorldPointNumpy
 from gnome.persist.extend_colander import LocalDateTime
 from gnome.persist.validators import convertible_to_seconds
 
@@ -46,11 +46,16 @@ class ReleaseSchema(BaseReleaseSchema):
 
 class PointLineReleaseSchema(ReleaseSchema):
     '''
-    Contains properties required by UpdateWindMover and CreateWindMover
-    TODO: also need a way to persist list of element_types
+    Contains properties required for persistence
     '''
+    # start_position + end_position are only persisted as WorldPoint() instead
+    # of WorldPointNumpy because setting the properties converts them to Numpy
+    # _next_release_pos is set when loading from 'save' file and this does have
+    # a setter that automatically converts it to Numpy array so use
+    # WorldPointNumpy schema for it.
     start_position = WorldPoint()
     end_position = WorldPoint(missing=drop)
+    _next_release_pos = WorldPointNumpy(missing=drop)
     end_release_time = SchemaNode(LocalDateTime(), missing=drop,
                                   validator=convertible_to_seconds)
     num_per_timestep = SchemaNode(Int(), missing=drop)
@@ -214,7 +219,7 @@ class PointLineRelease(Release, Serializable):
     _update = ['start_position', 'end_position', 'end_release_time',
                'num_per_timestep']
 
-    _create = []
+    _create = ['_next_release_pos']
     _create.extend(_update)
 
     _state = copy.deepcopy(Release._state)
@@ -276,20 +281,19 @@ class PointLineRelease(Release, Serializable):
                                                name)
         self._num_per_timestep = num_per_timestep
 
-        # initializes internal variable: _end_release_time
+        # initializes internal variables: _end_release_time, _start_position,
+        # _end_position
         self.end_release_time = end_release_time
-
-        # make attributes into numpy arrays
-        self.start_position = np.array(start_position,
-                                       dtype=world_point_type).reshape((3, ))
-        if end_position is not None:
-            end_position = np.array(end_position,
-                                    dtype=world_point_type).reshape((3, ))
+        self.start_position = start_position
         self.end_position = end_position
 
-        # _assign_set_newparticle_positions
-        self._assign_set_num_elements_to_release()
-        self._assign_set_newparticle_positions()
+        # need this for a line release
+        self._next_release_pos = self.start_position
+
+        # set this the first time it is used
+        self._delta_pos = None
+
+        self._reference_to_num_elements_to_release()
 
     def __getstate__(self):
         '''
@@ -309,8 +313,7 @@ class PointLineRelease(Release, Serializable):
         self.__dict__ = d
 
         # reconstruct our dynamically set methods.
-        self._assign_set_num_elements_to_release()
-        self._assign_set_newparticle_positions()
+        self._reference_to_num_elements_to_release()
 
     def __repr__(self):
         return ('{0.__class__.__module__}.{0.__class__.__name__}('
@@ -320,6 +323,22 @@ class PointLineRelease(Release, Serializable):
                 'end_position={0.end_position!r}, '
                 'end_release_time={0.end_release_time!r}'
                 ')'.format(self))
+
+    @property
+    def is_pointsource(self):
+        '''
+        if end_position - start_position == 0, point source
+        otherwise it is a line source
+
+        :returns: True if point source, false otherwise
+        '''
+        if self.end_position is None:
+            return True
+
+        if np.all(self.end_position == self.start_position):
+            return True
+
+        return False
 
     @property
     def release_duration(self):
@@ -351,7 +370,6 @@ class PointLineRelease(Release, Serializable):
                              'release_time')
 
         self._end_release_time = val
-        self._assign_set_newparticle_positions()
 
     @property
     def num_per_timestep(self):
@@ -367,36 +385,59 @@ class PointLineRelease(Release, Serializable):
         1. sets num_per_timestep attribute
         2. sets num_elements to None since total elements depends on duration
             and timestep
-        3. invokes _assign_set_num_elements_to_release(), which updates the
+        3. invokes _reference_to_num_elements_to_release(), which updates the
             method referenced by num_elements_to_release
         '''
         self._num_per_timestep = val
-        if self._num_elements is not None:
+        if val is not None:
             self._num_elements = None
-        self._assign_set_num_elements_to_release()
+        self._reference_to_num_elements_to_release()
 
     @Release.num_elements.setter
     def num_elements(self, val):
         '''
-        over ride base class setter.
+        over ride base class setter. Makes num_per_timestep None since only one
+        can be set at a time
         '''
         self._num_elements = val
-        if self._num_per_timestep is not None:
+        if val is not None:
             self._num_per_timestep = None
-        self._assign_set_num_elements_to_release()
+        self._reference_to_num_elements_to_release()
 
-    def _assign_set_newparticle_positions(self):
-        '''
-        reference correct method for set_newparticle_positions
-        '''
-        if self.release_duration == 0:
-            self.set_newparticle_positions = \
-                self._init_positions_instantaneous_release
-        else:
-            self.set_newparticle_positions = \
-                self._init_positions_timevarying_release
+    @property
+    def start_position(self):
+        return self._start_position
 
-    def _assign_set_num_elements_to_release(self):
+    @start_position.setter
+    def start_position(self, val):
+        '''
+        set start_position and also make _delta_pos = None so it gets
+        recomputed when model runs - it should be updated
+        '''
+        self._start_position = np.array(val,
+                                        dtype=world_point_type).reshape((3, ))
+        self._delta_pos = None
+
+    @property
+    def end_position(self):
+        return self._end_position
+
+    @end_position.setter
+    def end_position(self, val):
+        '''
+        set end_position and also make _delta_pos = None so it gets
+        recomputed - it should be updated
+
+        :param val: Set end_position to val. This can be None if release is a
+            point source.
+        '''
+        if val is not None:
+            val = np.array(val, dtype=world_point_type).reshape((3, ))
+
+        self._end_position = val
+        self._delta_pos = None
+
+    def _reference_to_num_elements_to_release(self):
         '''
         assign correct reference for num_elements_to_release
         '''
@@ -495,72 +536,114 @@ class PointLineRelease(Release, Serializable):
         else:
             return 0
 
-    def _init_positions_instantaneous_release(self, num_new_particles,
-                                              current_time, time_step,
-                                              data_arrays):
-        """
-        initialize all elements in the very first instant (timestep) of the run
-        The particles can be released at a single 'point' or along a 'line'
+    def _set_delta_pos(self, num_new_particles, current_time, time_step):
+        '''
+        This sets the self._delta_pos variable. For a line release, this is
+        the amount by which each element is shifted in (x, y, z). This assumes
+        a linear release rate and position rate over the release_duration.
+        '''
+        if self.is_pointsource:
+            # point source should be handled correctly by
+            # _get_start_end_position() - don't do anything if not line source
+            return
 
-        For each axis (x,y,z), it evenly spaces all elements along a line:
-            np.linspace( self.start_position, self.end_position,
-                         self._num_new_particles)
+        if self.num_elements is None:
+            # for each timestep estimate number of total elements released
+            # This should be fixed since we assume a linear rate; however,
+            # if num_per_timestep is given and the timestep varies, then
+            # total num_elements are not known and not changing at a constant
+            # rate. For now, for this case just update _delta_pos at each
+            # timestep.
+            ts = min(time_step,
+                     (self.end_release_time - current_time).total_seconds())
+            frac = ((current_time + timedelta(seconds=ts) -
+                     self.release_time).total_seconds()/self.release_duration)
+            est_total_num_elems = (self.num_released + num_new_particles)/frac
+            self._delta_pos = ((self.end_position - self.start_position) /
+                               (est_total_num_elems-1))
 
-        If self.start_position == self.end_position, then all particles are
-        released at self.start_position.
-        """
+        else:
+            # if num_elements given, _delta_pos only set if it is None
+            if self._delta_pos is None:
+                self._delta_pos = ((self.end_position - self.start_position) /
+                                   (self.num_elements - 1))
+
+    def _get_start_end_position(self,
+                                num_new_particles,
+                                current_time,
+                                time_step):
+        '''
+        returns a tuple containing (start_position, end_postion) for
+        set_newparticle_positions to use for linspace
+
+        1) Point source just returns start position
+        if is_pointsource():
+            return (self.start_position, self.start_position)
+
+        2) For instantaneous release, return user defined start and end:
+        if release_duration == 0,
+            return (self.start_position, self.end_position)
+
+        3) For timevarying line release, use _set_delta_pos() to set the delta
+        (x, y, z) by which each particle is moved along the line. The delta_pos
+        is given as (end_position - start_position)/(num_elements - 1)
+        however, when num_elements is not defined, it is estimated based on
+        the fraction of time elapsed and the number of elements released
+        thus far.
+
+        After computing (start_position, end_position), update
+        self._next_release_position as end_position + delta_pos
+        '''
+        if self.is_pointsource:
+            return (self.start_position, self.start_position)
+
+        if self.release_duration == 0:
+            # particles released from start to end since a delta_pos_rate is
+            # not defined
+            return (self.start_position, self.end_position)
+
+        # for fixed timestep, estimate total number of particles and
+        # compute delta_pos based on it
+        self._set_delta_pos(num_new_particles, current_time, time_step)
+        positions = (self._next_release_pos.copy(), self._next_release_pos +
+                     (num_new_particles - 1) * self._delta_pos)
+
+        if not np.allclose(positions[1], self.end_position, atol=1e-10):
+            self._next_release_pos = positions[1] + self._delta_pos
+
+        return positions
+
+    def set_newparticle_positions(self,
+                                  num_new_particles,
+                                  current_time,
+                                  time_step,
+                                  data_arrays):
+        '''
+        sets positions for newly released particles. It evenly spaces the
+        particles using numpy.linespace. Set (start_postion, end_position)
+        depending on whether it is a point source, a line release
+        an instantaneous release or a time varying release.
+        '''
         if num_new_particles == 0:
             return
 
-        if (self.end_position is None or
-            np.all(self.end_position == self.start_position)):
-            # point release
-            data_arrays['positions'][-num_new_particles:, :] = \
-                self.start_position
-        else:
-            # line release
-            data_arrays['positions'][-num_new_particles:, 0] = \
-                np.linspace(self.start_position[0],
-                            self.end_position[0],
-                            num_new_particles)
-            data_arrays['positions'][-num_new_particles:, 1] = \
-                np.linspace(self.start_position[1],
-                            self.end_position[1],
-                            num_new_particles)
-            data_arrays['positions'][-num_new_particles:, 2] = \
-                np.linspace(self.start_position[2],
-                            self.end_position[2],
-                            num_new_particles)
+        # get start_position, end_position
+        (start_position, end_position) = \
+            self._get_start_end_position(num_new_particles,
+                                         current_time, time_step)
 
-        # expect self.num_released to be 0 before the instantaneous release
-        self.num_released += num_new_particles
-
-    def _init_positions_timevarying_release(self, num_new_particles,
-                                            current_time, time_step,
-                                            data_arrays):
-        """
-        Time varying release of particles. Initialize particles as they are
-        released in each timestep
-        """
-        if num_new_particles == 0:
-            return
-
-        if (self.end_position is None or
-            np.all(self.end_position == self.start_position)):
-            # point release
-            data_arrays['positions'][-num_new_particles:] = \
-                self.start_position
-        else:
-            # calculate delta_pos each time here otherwise it must be updated
-            # each time user changes end_position, start_position
-            delta_pos = ((self.end_position - self.start_position) /
-                         max(1, self.num_elements - 1))
-            # continuous line release
-            n_0 = self.num_released
-            n_1 = self.num_released + num_new_particles
-            n = np.arange(n_0, n_1).reshape((-1, 1))
-            data_arrays['positions'][-num_new_particles:] = \
-                self.start_position + n * delta_pos
+        data_arrays['positions'][-num_new_particles:, 0] = \
+            np.linspace(start_position[0],
+                        end_position[0],
+                        num_new_particles)
+        data_arrays['positions'][-num_new_particles:, 1] = \
+            np.linspace(start_position[1],
+                        end_position[1],
+                        num_new_particles)
+        data_arrays['positions'][-num_new_particles:, 2] = \
+            np.linspace(start_position[2],
+                        end_position[2],
+                        num_new_particles)
 
         self.num_released += num_new_particles
 

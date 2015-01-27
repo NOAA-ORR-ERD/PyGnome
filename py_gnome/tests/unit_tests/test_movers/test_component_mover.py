@@ -142,16 +142,20 @@ def test_pat1_speed():
     assert c_component.pat1_speed == 5
 
 
-def test_ref_point():
+@pytest.mark.parametrize("tgt", [(1, 2, 3), (5, 6)])
+def test_scale_refpoint(tgt):
     """
     test setting / getting properties
     """
 
-    tgt = (1, 2, 3)
+    if len(tgt) == 2:
+        exp_tgt = (tgt[0], tgt[1], 0.)
+    else:
+        exp_tgt = tgt
     c_component.scale_refpoint = tgt  # can be a list or a tuple
-    assert c_component.scale_refpoint == tuple(tgt)
+    assert c_component.scale_refpoint == tuple(exp_tgt)
     c_component.scale_refpoint = list(tgt)  # can be a list or a tuple
-    assert c_component.scale_refpoint == tuple(tgt)
+    assert c_component.scale_refpoint == tuple(exp_tgt)
 
 
 # Helper functions for tests

@@ -456,7 +456,7 @@ class Model(Serializable):
 
         # order weatherers collection
         self._order_weatherers()
-	transport = False
+        transport = False
         for mover in self.movers:
             if mover.on:
                 mover.prepare_for_model_run()
@@ -489,7 +489,7 @@ class Model(Serializable):
 
         for environment in self.environment:
             environment.prepare_for_model_run(self.start_time)
-                
+
         if self.time_step is None:
             # for now hard-code this; however, it should depend on weathering
             # note: do not set time_step attribute because we don't want to

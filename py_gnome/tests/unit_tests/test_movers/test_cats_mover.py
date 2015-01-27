@@ -128,16 +128,21 @@ def test_scale_value():
     assert c_cats.scale_value == 0
 
 
-def test_scale_refpoint():
+@pytest.mark.parametrize("tgt", [(1, 2, 3), (5, 6)])
+def test_scale_refpoint(tgt):
     """
     test setting / getting properties
     """
 
-    tgt = (1, 2, 3)
     c_cats.scale_refpoint = tgt  # can be a list or a tuple
-    assert c_cats.scale_refpoint == tuple(tgt)
+    if len(tgt) == 2:
+        exp_tgt = (tgt[0], tgt[1], 0.)
+    else:
+        exp_tgt = tgt
+
+    assert c_cats.scale_refpoint == tuple(exp_tgt)
     c_cats.scale_refpoint = list(tgt)  # can be a list or a tuple
-    assert c_cats.scale_refpoint == tuple(tgt)
+    assert c_cats.scale_refpoint == tuple(exp_tgt)
 
 
 # Helper functions for tests
@@ -186,27 +191,3 @@ def test_serialize_deserialize(tide):
         assert c_cats.tide is tide
 
     c_cats.update_from_dict(dict_)
-
-#==============================================================================
-# d_cats = {'scale': False,
-#           'scale_refpoint': (90, 90, 10),
-#           'scale_value': 5,
-#           'uncertain_duration': 48,
-#           'uncertain_time_delay': 0,
-#           'up_cur_uncertain': 0,
-#           'down_cur_uncertain': 0,
-#           'right_cur_uncertain': 0,
-#           'left_cur_uncertain': 0,
-#           'uncertain_eddy_diffusion': 4,
-#           'uncertain_eddy_v0': 0}
-# 
-# #d_cats_td = dict(d_cats)
-# #d_cats_td['tide'] = {}
-# 
-# 
-# @pytest.mark.parametrize("tide", (None, td))
-# def test_update_from_dict():
-#     c_cats = CatsMover(curr_file, tide=td)
-#     toserial = c_cats.serialize('webapi')
-#     dict_ = c_cats.deserialize(toserial)
-#==============================================================================

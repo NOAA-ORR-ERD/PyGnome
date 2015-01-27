@@ -167,6 +167,19 @@ class Test_point_line_release_spill:
                      ((-128.0, 28.0, 0.),
                       (-129.0, 29.0, 1.))]  # w/ z!=0
 
+    def _release(self, sp, release_time, timestep, data_arrays):
+        num = sp.num_elements_to_release(release_time, timestep)
+        if num > 0:
+            # only invoked if particles are released
+            data_arrays = mock_append_data_arrays(arr_types, num, data_arrays)
+            sp.set_newparticle_values(num, release_time, timestep, data_arrays)
+        else:
+            # initialize all data arrays even if no particles are released
+            if data_arrays == {}:
+                data_arrays = mock_append_data_arrays(arr_types, num,
+                                                      data_arrays)
+        return (num, data_arrays)
+
     def release_and_assert(self, sp, release_time, timestep,
                            data_arrays, expected_num_released):
         """
@@ -190,23 +203,11 @@ class Test_point_line_release_spill:
         SpillContainer will work until a rewind.
         """
         prev_num_rel = sp.get('num_released')
-        num = sp.num_elements_to_release(release_time, timestep)
+        (num, data_arrays) = \
+            self._release(sp, release_time, timestep, data_arrays)
         assert num == expected_num_released
 
-        # updated after set_newparticle_values is called
-        assert prev_num_rel == sp.get('num_released')
-
-        if num > 0:
-            # only invoked if particles are released
-            data_arrays = mock_append_data_arrays(arr_types, num, data_arrays)
-            sp.set_newparticle_values(num, release_time, timestep, data_arrays)
-            assert sp.get('num_released') == prev_num_rel + expected_num_released
-        else:
-            # initialize all data arrays even if no particles are released
-            if data_arrays == {}:
-                data_arrays = mock_append_data_arrays(arr_types, num,
-                                                      data_arrays)
-
+        assert (sp.get('num_released') == prev_num_rel + expected_num_released)
         assert data_arrays['positions'].shape == (sp.get('num_released'), 3)
 
         return data_arrays
@@ -471,27 +472,26 @@ class Test_point_line_release_spill:
         # over the last timestep
         timestep = 600
         data_arrays = {}
-        delay_after_rel_time = [timedelta(0),
-                                timedelta(seconds=timestep),
-                                #timedelta(minutes=100)    # releases 0!
-                                timedelta(minutes=90)]
-        ts = [timestep, timestep, timestep]
+        ts = [timestep, timestep,
+              (rel.end_release_time - rel.release_time).total_seconds() -
+              2*timestep]
         exp_elems = [10, 10, 80]
-
+        time = self.release_time
         for ix in range(len(ts)):
             data_arrays = self.release_and_assert(sp,
-                                                  self.release_time +
-                                                  delay_after_rel_time[ix],
+                                                  time,
                                                   ts[ix], data_arrays,
                                                   exp_elems[ix])
-            assert np.array_equal(data_arrays['positions'][:, 0],
-                                  lats[:sp.get('num_released')])
-            assert np.array_equal(data_arrays['positions'][:, 1],
-                                  lons[:sp.get('num_released')])
+            assert np.allclose(data_arrays['positions'][:, 0],
+                               lats[:sp.get('num_released')], atol=1e-10)
+            assert np.allclose(data_arrays['positions'][:, 1],
+                               lons[:sp.get('num_released')], atol=1e-10)
 
             if np.any(z != 0):
-                assert np.array_equal(data_arrays['positions'][:, 2],
-                                      z[:sp.get('num_released')])
+                assert np.allclose(data_arrays['positions'][:, 2],
+                                   z[:sp.get('num_released')], atol=1e-10)
+
+            time += timedelta(seconds=ts[ix])
 
     @pytest.mark.parametrize(('start_position', 'end_position'), nom_positions)
     def test_cont_line_release_vary_timestep(self,
@@ -550,9 +550,9 @@ class Test_point_line_release_spill:
         # all particles have been released
         assert data_arrays['positions'].shape == (sp.release.num_elements, 3)
         assert np.allclose(data_arrays['positions'][0],
-                           sp.release.start_position, 0, 1e-14)
+                           sp.release.start_position, 0, atol=1e-10)
         assert np.allclose(data_arrays['positions'][-1],
-                           sp.release.end_position, 0, 1e-14)
+                           sp.release.end_position, 0, atol=1e-10)
 
         # the delta position is a constant and is given by
         # (sp.end_position-sp.start_position)/(sp.num_elements-1)
@@ -622,10 +622,10 @@ class Test_point_line_release_spill:
             time += delta_t
 
         assert data_arrays['positions'].shape == (sp.release.num_elements, 3)
-        assert np.array_equal(data_arrays['positions'][0],
-                              sp.release.start_position)
-        assert np.array_equal(data_arrays['positions'][-1],
-                              sp.release.end_position)
+        assert np.allclose(data_arrays['positions'][0],
+                           sp.release.start_position, atol=1e-10)
+        assert np.allclose(data_arrays['positions'][-1],
+                           sp.release.end_position, atol=1e-10)
 
         # the delta position is a constant and is given by
         # (sp.end_position-sp.start_position)/(sp.num_elements-1)

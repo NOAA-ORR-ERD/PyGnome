@@ -24,10 +24,10 @@ from gnome.utilities import serializable
 from gnome.movers import Mover, ProcessSchema
 
 from gnome.persist.base_schema import ObjType
-from gnome.persist.extend_colander import VelocityArraySchema
+from gnome.persist.extend_colander import NumpyArraySchema
 
 
-class SimpleMoverVelocitySchema(VelocityArraySchema):
+class SimpleMoverVelocitySchema(NumpyArraySchema):
     '''
     Currently this is only used by SimpleMover so it is here. If it becomes
     more general purpose then move it to gnome.persist.base_schema

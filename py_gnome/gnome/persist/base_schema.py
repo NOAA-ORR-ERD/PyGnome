@@ -4,6 +4,8 @@ from colander import (SchemaNode, deferred, drop,
                       SequenceSchema, TupleSchema, MappingSchema,
                       String, Float, Int)
 
+from extend_colander import NumpyArraySchema
+
 
 @deferred
 def now(node, kw):
@@ -53,6 +55,16 @@ class LongLatBounds(SequenceSchema):
 class WorldPoint(LongLat):
     'Used to define reference points. 3D positions (long,lat,z)'
     z = SchemaNode(Float(), default=0.0)
+
+
+class WorldPointNumpy(NumpyArraySchema):
+    '''
+    Define same schema as WorldPoint; however, the base class NumpyArraySchema
+    serializes/deserializes it from/to a numpy array
+    '''
+    long = SchemaNode(Float())
+    lat = SchemaNode(Float())
+    z = SchemaNode(Float())
 
 
 class ImageSize(TupleSchema):
