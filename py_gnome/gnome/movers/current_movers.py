@@ -204,6 +204,8 @@ class CatsMover(CyMover, serializable.Serializable):
         '''
         if len(val) == 2:
             self.mover.ref_point = (val[0], val[1], 0.)
+        else:
+            self.mover.ref_point = val
 
     @property
     def tide(self):
@@ -836,6 +838,8 @@ class ComponentMover(CyMover, serializable.Serializable):
         '''
         if len(val) == 2:
             self.mover.ref_point = (val[0], val[1], 0.)
+        else:
+            self.mover.ref_point = val
 
     @property
     def wind(self):
