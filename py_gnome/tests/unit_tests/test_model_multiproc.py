@@ -5,7 +5,8 @@ pp = PrettyPrinter(indent=2)
 
 from datetime import datetime, timedelta
 
-from pytest import raises
+from pytest import raises, mark
+import sys
 
 import numpy
 np = numpy
@@ -28,6 +29,7 @@ from gnome.outputters import WeatheringOutput, GeoJson
 from gnome.multi_model_broadcast import ModelBroadcaster
 from conftest import testdata
 
+pytestmark = mark.skipif("sys.platform=='win32'",reason="skip on windows")
 
 def make_model(uncertain=False,
                geojson_output=False):

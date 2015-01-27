@@ -50,16 +50,16 @@ def test_emulsification(oil, temp, num_elems, on):
 
     # also want a test for a user set value for bulltime or bullwinkle
     if oil=='ALAMO':
-        sc['frac_lost'][:] = .8
+        sc['frac_lost'][:] = .35
     if oil=='AGUA DULCE':
-        sc['frac_lost'][:] = .92
-    #sc['frac_lost'][:] = .92
-    #print "sc['frac_lost'][:]"
-    #print sc['frac_lost'][:]
+        sc['frac_lost'][:] = .25
+    #sc['frac_lost'][:] = .35
+    print "sc['frac_lost'][:]"
+    print sc['frac_lost'][:]
     emul.prepare_for_model_step(sc, time_step, model_time)
     emul.weather_elements(sc, time_step, model_time)
-    #print "sc['frac_water'][:]"
-    #print sc['frac_water'][:]
+    print "sc['frac_water'][:]"
+    print sc['frac_water'][:]
 
     if on:
         assert np.all(sc['frac_lost'] > 0) and np.all(sc['frac_lost'] < 1.0)
@@ -68,13 +68,13 @@ def test_emulsification(oil, temp, num_elems, on):
         #assert np.all(sc['frac_lost'] > 0) and np.all(sc['frac_lost'] < 1.0)
         assert np.all(sc['frac_water'] == 0)
 
-    sc['frac_lost'][:] = .75
-    #print "sc['frac_lost'][:]"
-    #print sc['frac_lost'][:]
+    sc['frac_lost'][:] = .2
+    print "sc['frac_lost'][:]"
+    print sc['frac_lost'][:]
     emul.prepare_for_model_step(sc, time_step, model_time)
     emul.weather_elements(sc, time_step, model_time)
-    #print "sc['frac_water'][:]"
-    #print sc['frac_water'][:]
+    print "sc['frac_water'][:]"
+    print sc['frac_water'][:]
 
     assert np.all(sc['frac_water'] == 0)
 
@@ -89,17 +89,14 @@ def test_full_run(sample_model_fcn, oil, temp, dump):
     '''
     model = sample_model_weathering2(sample_model_fcn, oil, temp)
     model.environment += [Water(temp), waves, constant_wind(15., 0)]
+    model.weatherers += Evaporation(model.environment[0],model.environment[2])
     model.weatherers += Emulsification(model.environment[1])
     released = 0
     for step in model:
         for sc in model.spills.items():
-            #assert_helper(sc, sc.num_released - released)
-            #released = sc.num_released
-            #mask = sc['status_codes'] == oil_status.in_water
             assert sc.weathering_data['emulsified'] < 1
             print ("Water fraction: {0}".
                    format(sc.weathering_data['emulsified']))
-            #print "Mass floating: {0}".format(sc.weathering_data['floating'])
             print "Completed step: {0}\n".format(step['step_num'])
 
     m_json_ = model.serialize('webapi')

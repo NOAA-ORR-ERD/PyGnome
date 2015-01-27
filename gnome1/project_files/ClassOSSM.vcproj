@@ -149,7 +149,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="..\gui_gnome;..\..\lib_gnome;WinResources;&quot;..\third_party_lib\qt libraries\CIncludes&quot;;&quot;..\..\third_party_lib\netcdf-3&quot;;&quot;..\third_party_lib\qt libraries\Libraries&quot;;..\project_files\WinResources"
+				AdditionalIncludeDirectories="..\gui_gnome;..\..\lib_gnome;WinResources;&quot;..\third_party_lib\qt libraries\CIncludes&quot;;&quot;..\..\third_party_lib\netcdf-3&quot;;&quot;..\third_party_lib\qt libraries\Libraries&quot;;..\project_files\WinResources;..\third_party_lib\shapelib_new"
 				PreprocessorDefinitions="_DEBUG;OSSM;WIN32;_WINDOWS;IBM;_CRT_SECURE_NO_DEPRECATE;_USE_32BIT_TIME_T"
 				MinimalRebuild="true"
 				RuntimeLibrary="1"
@@ -177,7 +177,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="odbc32.lib odbccp32.lib ..\..\third_party_lib\netcdf-3\win32\i386\netcdfs.lib &quot;..\third_party_lib\qt libraries\libraries\qtmlclient.lib&quot;"
+				AdditionalDependencies="odbc32.lib odbccp32.lib ..\..\third_party_lib\netcdf-3\win32\i386\netcdfs.lib &quot;..\third_party_lib\qt libraries\libraries\qtmlclient.lib&quot; &quot;..\third_party_lib\shapelib_new\shapelib.lib&quot;"
 				OutputFile=".\Debug\Gnome.exe"
 				LinkIncremental="1"
 				SuppressStartupBanner="true"
@@ -320,6 +320,14 @@
 				</File>
 				<File
 					RelativePath="..\..\lib_gnome\CompoundMover_c.h"
+					>
+				</File>
+				<File
+					RelativePath="..\..\lib_gnome\CurrentCycleMover_c.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\..\lib_gnome\CurrentCycleMover_c.h"
 					>
 				</File>
 				<File
@@ -779,6 +787,14 @@
 					>
 				</File>
 				<File
+					RelativePath="..\..\lib_gnome\Weatherers_c.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\..\lib_gnome\Weatherers_c.h"
+					>
+				</File>
+				<File
 					RelativePath="..\..\lib_gnome\WindMover_c.cpp"
 					>
 				</File>
@@ -852,6 +868,14 @@
 				</File>
 				<File
 					RelativePath="..\gui_gnome\CROSS2.CPP"
+					>
+				</File>
+				<File
+					RelativePath="..\gui_gnome\CurrentCycleMover.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\gui_gnome\CurrentCycleMover.h"
 					>
 				</File>
 				<File
