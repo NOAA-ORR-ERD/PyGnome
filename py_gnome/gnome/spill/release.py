@@ -13,7 +13,7 @@ from colander import (iso8601,
                       SchemaNode, SequenceSchema,
                       drop, Bool, Int)
 
-from gnome.persist.base_schema import ObjType, WorldPoint
+from gnome.persist.base_schema import ObjType, WorldPoint, WorldPointNumpy
 from gnome.persist.extend_colander import LocalDateTime
 from gnome.persist.validators import convertible_to_seconds
 
@@ -46,12 +46,16 @@ class ReleaseSchema(BaseReleaseSchema):
 
 class PointLineReleaseSchema(ReleaseSchema):
     '''
-    Contains properties required by UpdateWindMover and CreateWindMover
-    TODO: also need a way to persist list of element_types
+    Contains properties required for persistence
     '''
+    # start_position + end_position are only persisted as WorldPoint() instead
+    # of WorldPointNumpy because setting the properties converts them to Numpy
+    # _next_release_pos is set when loading from 'save' file and this does have
+    # a setter that automatically converts it to Numpy array so use
+    # WorldPointNumpy schema for it.
     start_position = WorldPoint()
     end_position = WorldPoint(missing=drop)
-    _next_release_pos = WorldPoint(missing=drop)
+    _next_release_pos = WorldPointNumpy(missing=drop)
     end_release_time = SchemaNode(LocalDateTime(), missing=drop,
                                   validator=convertible_to_seconds)
     num_per_timestep = SchemaNode(Int(), missing=drop)
@@ -277,15 +281,10 @@ class PointLineRelease(Release, Serializable):
                                                name)
         self._num_per_timestep = num_per_timestep
 
-        # initializes internal variable: _end_release_time
+        # initializes internal variables: _end_release_time, _start_position,
+        # _end_position
         self.end_release_time = end_release_time
-
-        # make attributes into numpy arrays
-        self.start_position = np.array(start_position,
-                                       dtype=world_point_type).reshape((3, ))
-        if end_position is not None:
-            end_position = np.array(end_position,
-                                    dtype=world_point_type).reshape((3, ))
+        self.start_position = start_position
         self.end_position = end_position
 
         # need this for a line release
@@ -404,6 +403,39 @@ class PointLineRelease(Release, Serializable):
         if val is not None:
             self._num_per_timestep = None
         self._reference_to_num_elements_to_release()
+
+    @property
+    def start_position(self):
+        return self._start_position
+
+    @start_position.setter
+    def start_position(self, val):
+        '''
+        set start_position and also make _delta_pos = None so it gets
+        recomputed when model runs - it should be updated
+        '''
+        self._start_position = np.array(val,
+                                        dtype=world_point_type).reshape((3, ))
+        self._delta_pos = None
+
+    @property
+    def end_position(self):
+        return self._end_position
+
+    @end_position.setter
+    def end_position(self, val):
+        '''
+        set end_position and also make _delta_pos = None so it gets
+        recomputed - it should be updated
+
+        :param val: Set end_position to val. This can be None if release is a
+            point source.
+        '''
+        if val is not None:
+            val = np.array(val, dtype=world_point_type).reshape((3, ))
+
+        self._end_position = val
+        self._delta_pos = None
 
     def _reference_to_num_elements_to_release(self):
         '''
