@@ -135,53 +135,6 @@ def get_viscosity(oil, temp, out=None):
     return (out, out[0])[len(out) == 1]
 
 
-def get_viscosity_orig(oil, temp):
-    '''
-        The Oil object has a list of kinematic viscosities at empirically
-        measured temperatures.  We need to use the ones closest to our
-        current temperature and calculate our viscosity from it.
-    '''
-    if oil.kvis:
-        # first get our v_max
-        k_v2 = 5000.0
-        pour_point = (oil.pour_point_max_k
-                      if oil.pour_point_max_k is not None
-                      else oil.pour_point_min_k)
-        if pour_point:
-            try:
-                visc = sorted([(v, abs(v.ref_temp_k - pour_point))
-                               for v in oil.kvis
-                               if v is not None],
-                              key=lambda v: v[1])[0][0]
-            except:
-                print ('failed on {0.id}, adios_id {0.imported.adios_oil_id}'
-                       .format(oil))
-            v_ref = visc.m_2_s
-            t_ref = visc.ref_temp_k
-
-            v_max = v_ref * exp(k_v2 / pour_point - k_v2 / t_ref)
-        else:
-            v_max = None
-
-        # now get our v_0
-        visc = sorted([(v, abs(v.ref_temp_k - temp)) for v in oil.kvis],
-                      key=lambda v: v[1])[0][0]
-        v_ref = visc.m_2_s
-        t_ref = visc.ref_temp_k
-
-        if (temp - t_ref) == 0:
-            v_0 = v_ref
-        else:
-            v_0 = v_ref * exp(k_v2 / temp - k_v2 / t_ref)
-
-        if v_max:
-            return (v_max, v_0)[v_0 <= v_max]
-        else:
-            return v_0
-    else:
-        return None
-
-
 def get_boiling_points_from_cuts(oil):
     '''
     Need the mass_fraction to sum up to 1.0
