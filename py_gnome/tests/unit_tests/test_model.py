@@ -685,9 +685,14 @@ def test_release_at_right_time():
     assert model.spills.items()[0].num_released == 12
 
 
-def test_full_run(model, dump):
+@pytest.mark.parametrize("traj_only", [False, True])
+def test_full_run(model, dump, traj_only):
     'Test doing a full run'
     # model = setup_simple_model()
+    if traj_only:
+        for spill in model.spills:
+            spill.set('substance', None)
+        model.weatherers.clear()
 
     results = model.full_run()
     print results
