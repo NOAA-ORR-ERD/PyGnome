@@ -51,6 +51,7 @@ class PointLineReleaseSchema(ReleaseSchema):
     '''
     start_position = WorldPoint()
     end_position = WorldPoint(missing=drop)
+    _next_release_pos = WorldPoint(missing=drop)
     end_release_time = SchemaNode(LocalDateTime(), missing=drop,
                                   validator=convertible_to_seconds)
     num_per_timestep = SchemaNode(Int(), missing=drop)
@@ -214,7 +215,7 @@ class PointLineRelease(Release, Serializable):
     _update = ['start_position', 'end_position', 'end_release_time',
                'num_per_timestep']
 
-    _create = []
+    _create = ['_next_release_pos']
     _create.extend(_update)
 
     _state = copy.deepcopy(Release._state)
