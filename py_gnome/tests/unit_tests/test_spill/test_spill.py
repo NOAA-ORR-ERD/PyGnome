@@ -955,7 +955,7 @@ class TestVerticalPlumeRelease:
     def test_rewind(self):
         ''' test rewind sets _state to original '''
         assert self.spill.get('num_released') == 0
-        assert self.spill.get('start_time_invalid') == True
+        assert self.spill.get('start_time_invalid') is None
 
     def test_release_bounds(self):
         '''
