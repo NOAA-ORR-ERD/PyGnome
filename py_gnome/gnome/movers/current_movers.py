@@ -144,32 +144,11 @@ class CatsMover(CyMover, serializable.Serializable):
                                                'scale_type',
                                                int(val)))
 
-    scale_refpoint = property(lambda self: self.mover.ref_point,
-                              lambda self, val: setattr(self.mover,
-                                                        'ref_point',
-                                                        val))
-
     scale_value = property(lambda self: self.mover.scale_value,
                            lambda self, val: setattr(self.mover,
                                                      'scale_value',
                                                      val))
 
-#     @property
-#     def uncertain_duration(self):
-#         return self._seconds_to_hours(self.mover.uncertain_duration)
-#
-#     @uncertain_duration.setter
-#     def uncertain_duration(self, val):
-#         self.mover.uncertain_duration = self._hours_to_seconds(val)
-#
-#     @property
-#     def uncertain_time_delay(self):
-#         return self._seconds_to_hours(self.mover.uncertain_time_delay)
-#
-#     @uncertain_time_delay.setter
-#     def uncertain_time_delay(self, val):
-#         self.mover.uncertain_time_delay = self._hours_to_seconds(val)
-#
     uncertain_duration = property(lambda self:
                                   self.mover.uncertain_duration / 3600.,
                                   lambda self, val: setattr(self.mover,
@@ -212,6 +191,19 @@ class CatsMover(CyMover, serializable.Serializable):
                                  lambda self, val: setattr(self.mover,
                                                            'uncertain_eddy_v0',
                                                            val))
+
+    @property
+    def scale_refpoint(self):
+        return self.mover.ref_point
+
+    @scale_refpoint.setter
+    def scale_refpoint(self, val):
+        '''
+        Must be a tuple of length 2 or 3: (long, lat, z). If only (long, lat)
+        is given, the set z = 0
+        '''
+        if len(val) == 2:
+            self.mover.ref_point = (val[0], val[1], 0.)
 
     @property
     def tide(self):
@@ -687,7 +679,7 @@ class ComponentMoverSchema(ObjType, ProcessSchema):
     filename2 = SchemaNode(String(), missing=drop)
     #scale = SchemaNode(Bool())
     #ref_point = WorldPoint(missing=drop)
-    scale_refpoint = LongLat(missing=drop)
+    scale_refpoint = WorldPoint(missing=drop)
     #scale_value = SchemaNode(Float())
 
 
@@ -793,10 +785,6 @@ class ComponentMover(CyMover, serializable.Serializable):
 #                      lambda self, val: setattr(self.mover, 'scale_by'
 #                      , int(val)))
 
-    scale_refpoint = property(lambda self: self.mover.ref_point,
-                              lambda self, val: setattr(self.mover,
-                                                        'ref_point', val))
-
     pat1_angle = property(lambda self: self.mover.pat1_angle,
                           lambda self, val: setattr(self.mover,
                                                     'pat1_angle', val))
@@ -834,9 +822,20 @@ class ComponentMover(CyMover, serializable.Serializable):
                                                              val))
 
     scale_by = property(lambda self: self.mover.scale_by,
-                                   lambda self, val: setattr(self.mover,
-                                                             'scale_by',
-                                                             val))
+                        lambda self, val: setattr(self.mover, 'scale_by', val))
+
+    @property
+    def scale_refpoint(self):
+        return self.mover.ref_point
+
+    @scale_refpoint.setter
+    def scale_refpoint(self, val):
+        '''
+        Must be a tuple of length 2 or 3: (long, lat, z). If only (long, lat)
+        is given, the set z = 0
+        '''
+        if len(val) == 2:
+            self.mover.ref_point = (val[0], val[1], 0.)
 
     @property
     def wind(self):
