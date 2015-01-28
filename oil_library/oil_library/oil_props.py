@@ -14,6 +14,7 @@ import copy
 from math import log, exp
 
 from repoze.lru import lru_cache
+import numpy as np
 
 import unit_conversion as uc
 from .utilities import get_density, get_boiling_points_from_cuts, get_viscosity
@@ -30,6 +31,13 @@ def molecular_weight(bp, component):
         mw = (0.04132 - 1.985e-4 * bp + (9.494e-7 * bp ** 2))
 
     return mw
+
+
+# create a dtype for storing sara information in numpy array
+sara_dtype = np.dtype([('type', 'S1'),
+                       ('boiling_point', np.float64),
+                       ('fraction', np.float64),
+                       ('density', np.float64)])
 
 
 class OilProps(object):
@@ -67,12 +75,10 @@ class OilProps(object):
 
         # Default format for mass components:
         # mass_fraction =
-        # [m0_s, m0_a, m1_s, m1_a, ..., m_resins, m_asphaltenes]
-        self.mass_fraction = []
-        self.boiling_point = []
-        for bp, mf in get_boiling_points_from_cuts(oil_):
-            self.mass_fraction.append(mf)
-            self.boiling_point.append(bp)
+        #     [m0_s, m0_a, m1_s, m1_a, ..., m_resins, m_asphaltenes]
+        #
+        # the boiling points are in ascending order
+        self._init_sara()
 
         # set molecular weights
         self.molecular_weight = None
@@ -142,15 +148,12 @@ class OilProps(object):
 
     @property
     def num_components(self):
-        return len(self.mass_fraction)
+        return len(self.get('sara_fractions'))
 
     def _component_mw(self):
-        'estimate molecular weights of components'
-        if self.boiling_point == [float('inf')] * len(self.boiling_point):
-            # if there are only resins + asphaltenes, unclear how to set
-            # molecular weight - we don't want an array of 'nan' values so
-            # leave it as None
-            return
+        '''
+        estimate molecular weights of components
+        '''
 
         self.molecular_weight = [float('nan')] * self.num_components
         # self.molecular_weight = []
@@ -169,6 +172,18 @@ class OilProps(object):
                 # will define a different function for mw_aromatics
                 self.molecular_weight[ix] = molecular_weight(bp, 'aromatic')
                 # self.molecular_weight.append(molecular_weight(bp, 'aromatic'))
+
+    @property
+    def mass_fraction(self):
+        return self._sara['fraction']
+
+    @property
+    def boiling_point(self):
+        return self._sara['boiling_point']
+
+    @property
+    def component_density(self):
+        return self._sara['density']
 
     @lru_cache(2)
     def vapor_pressure(self, temp, atmos_pressure=101325.0):
@@ -199,6 +214,20 @@ class OilProps(object):
         'for now, just convert underlying oil object to json'
         return self._r_oil.tojson()
 
+    def _compare__dict(self, other):
+        '''
+        cannot just do self.__dict__ == other.__dict__ since 
+        '''
+        for key, val in self.__dict__.iteritems():
+            o_val = other.__dict__[key]
+            if isinstance(val, np.ndarray):
+                if np.any(val != o_val):
+                    return False
+            else:
+                if val != o_val:
+                    return False
+        return True
+
     def __eq__(self, other):
         '''
         need to explicitly compare __dict__
@@ -214,15 +243,13 @@ class OilProps(object):
         if type(self) != type(other):
             return False
 
-        if self.__dict__ == other.__dict__:
+        if self._compare__dict(other):
             return True
-        else:
-            try:
-                return self.tojson() == other.tojson()
-            except Exception:
-                return False
 
-        return False
+        try:
+            return self.tojson() == other.tojson()
+        except Exception:
+            return False
 
     def __ne__(self, other):
         return not self == other
@@ -246,3 +273,47 @@ class OilProps(object):
                     setattr(c_op, attr,
                             copy.deepcopy(getattr(self, attr), memo))
         return c_op
+
+    def _init_sara(self):
+        '''
+        initialize self._sara as a numpy array. The information is structured
+        in increasing boiling points as:
+            ['S', 'lowest BP', 'mass_fraction', 'density']
+        '''
+        s_cuts = sorted(self._r_oil.cuts, key=lambda cut: cut.vapor_temp_k)
+        items = np.zeros((self.num_components,), dtype=sara_dtype)
+
+        ind = 0
+        for cut in s_cuts:
+            # saturates
+            sa = [ix for ix in self._r_oil.sara_fractions
+                  if cut.vapor_temp_k == ix.ref_temp_k]
+
+            d = [ix for ix in self._r_oil.sara_densities
+                 if cut.vapor_temp_k == ix.ref_temp_k]
+
+            if len(sa) != len(d) != 2:
+                raise Exception('Did not find a Saturate, and an Aromatic for'
+                                ' the cut at {0} K'.format(cut.vapor_temp_k))
+
+            # want [Saturates, Aromatics]
+            sa.sort(key=lambda sara: sara.sara_type, reverse=True)
+            d.sort(key=lambda sara: sara.sara_type, reverse=True)
+            items[ind] = ('S', sa[0].ref_temp_k, sa[0].fraction, d[0].density)
+            items[ind + 1] = ('A', sa[1].ref_temp_k, sa[1].fraction,
+                              d[1].density)
+            ind += 2
+
+        items[ind] = ('R', float('inf'),
+                      [ix.fraction for ix in self._r_oil.sara_fractions
+                       if ix.sara_type == u'Resins'][0],
+                      [ix.density for ix in self._r_oil.sara_densities
+                       if ix.sara_type == u'Resins'][0])
+
+        items[ind + 1] = ('A', float('inf'),
+                          [ix.fraction for ix in self._r_oil.sara_fractions
+                           if ix.sara_type == u'Asphaltenes'][0],
+                          [ix.density for ix in self._r_oil.sara_densities
+                           if ix.sara_type == u'Asphaltenes'][0])
+
+        self._sara = items
