@@ -528,7 +528,15 @@ def add_distillation_cut_boiling_point(imported_rec, oil):
             get a single cut from the API
     '''
     for c in imported_rec.cuts:
-        oil.cuts.append(c)
+        # Most of our oils seem to be fractional amounts regardless of
+        # the stated cut units.  There are only a small number of outliers
+        # - 2 cuts are negative, which is impossible
+        # - 55 are between 1.0 and 10.0 which could possibly be percent
+        #   values, but since they are so low, it is unlikely.
+        if c.fraction >= 0.0 and c.fraction <= 1.0:
+            oil.cuts.append(c)
+        else:
+            print ('{0}: {1}: bad distillation cut!'.format(imported_rec, c))
 
     if not oil.cuts:
         mass_left = 1.0
@@ -738,9 +746,3 @@ def add_component_densities(imported_rec, oil):
         oil.sara_densities.append(SARADensity(sara_type=c_type,
                                               density=P_try,
                                               ref_temp_k=T_i))
-
-
-
-
-
-
