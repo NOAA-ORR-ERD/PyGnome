@@ -116,23 +116,3 @@ cdef class CyCurrentMover(CyMover):
                 '  right_cur_uncertain = {0.right_cur_uncertain}\n'
                 '  left_cur_uncertain = {0.left_cur_uncertain}\n'
                 .format(self))
-
-    def _append_base_reduce(self, props):
-        '''
-        Append base class properties defined by CyCurrentMover().__reduce__ to
-        children's props defined as input. This is to ensure __reduce__
-        captures all input args down to base class so pickle/unpickle works
-        '''
-        b_props = super(self.__class__, self).__reduce__()
-        for b_prop in b_props[1]:
-            props.append(b_prop)
-
-        return (self.__class__, tuple(props))
-
-    def __reduce__(self):
-        return (CyCurrentMover, (self.uncertain_duration,
-                                 self.uncertain_time_delay,
-                                 self.up_cur_uncertain,
-                                 self.down_cur_uncertain,
-                                 self.right_cur_uncertain,
-                                 self.left_cur_uncertain))

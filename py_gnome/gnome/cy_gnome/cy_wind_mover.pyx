@@ -92,12 +92,6 @@ cdef class CyWindMover(cy_mover.CyMover):
 
         return info
 
-    def __reduce__(self):
-        return (CyWindMover, (self.uncertain_duration,
-                              self.uncertain_time_delay,
-                              self.uncertain_speed_scale,
-                              self.uncertain_angle_scale))
-
     def __eq(self, CyWindMover other):
         scalar_attrs = ('uncertain_duration', 'uncertain_time_delay',
                         'uncertain_speed_scale', 'uncertain_angle_scale')

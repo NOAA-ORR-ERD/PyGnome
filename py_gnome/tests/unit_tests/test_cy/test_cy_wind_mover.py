@@ -343,16 +343,6 @@ class TestObjectSerialization:
         assert new_wm == self.wm
         assert repr(new_wm) == repr(self.wm)
 
-    def test_pickle(self):
-        '''
-            Test that the object can be pickled and unpickled
-        '''
-        import pickle
-
-        new_wm = pickle.loads(pickle.dumps(self.wm))
-        assert new_wm == self.wm
-        assert repr(new_wm) == repr(self.wm)
-
 if __name__ == '__main__':
     cw = TestConstantWind()
     cw.test_constant_wind()

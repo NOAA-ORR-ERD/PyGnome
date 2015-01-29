@@ -2,7 +2,6 @@
 """
 Unit tests for CyOSSMTime class
 """
-import pickle
 import gnome
 from numpy import array
 import os
@@ -86,17 +85,6 @@ class TestObjectSerialization:
 
         new_ossm = eval(repr(ossmT))
 
-        assert new_ossm == ossmT
-        assert repr(new_ossm) == repr(ossmT)
-
-    @pytest.mark.parametrize('obj', [CyOSSMTime, CyTimeseries])
-    def test_pickle(self, obj):
-        '''
-            Test that the object can be pickled and unpickled
-        '''
-        ossmT = obj(filename=testdata['timeseries']['wind_ts'],
-                    file_format=ts_format.magnitude_direction)
-        new_ossm = pickle.loads(pickle.dumps(ossmT))
         assert new_ossm == ossmT
         assert repr(new_ossm) == repr(ossmT)
 

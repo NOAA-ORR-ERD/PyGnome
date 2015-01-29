@@ -7,7 +7,6 @@ import pytest
 from oil_library import get_oil
 from oil_library.utilities import (get_density,
                                    get_viscosity,
-                                   get_viscosity_orig,
                                    get_v_max)
 
 

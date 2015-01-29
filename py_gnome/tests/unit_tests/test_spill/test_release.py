@@ -14,7 +14,7 @@ import numpy as np
 
 from gnome.model import Model
 from gnome.movers import RandomMover
-from gnome.array_types import windages
+from gnome.array_types import windages, positions
 from gnome.spill import (Release,
                          PointLineRelease,
                          GridRelease,
@@ -230,4 +230,31 @@ class TestPointLineRelease:
                 assert sc.num_released == 100 + ix * 100
             else:
                 assert num_les == 0
- 
+
+    def test_rewind(self):
+        '''
+        test rewind resets all parameters of interest
+        '''
+        r = PointLineRelease(self.rel_time,
+                             self.pos,
+                             end_position=(1, 2, 3),
+                             num_per_timestep=100,
+                             end_release_time=self.rel_time+timedelta(hours=2))
+        num = r.num_elements_to_release(self.rel_time, 900)
+        assert not r.start_time_invalid
+
+        # updated only after set_newparticle_positions is called
+        assert r.num_released == 0
+        pos = {'positions': positions.initialize(num)}
+        r.set_newparticle_positions(num,
+                                     self.rel_time,
+                                     900,
+                                     pos)
+        assert r.num_released == num
+        assert r._delta_pos is not None
+        assert np.any(r._next_release_pos != r.start_position)
+
+        r.rewind()
+        assert r.start_time_invalid is None
+        assert r._delta_pos is None
+        assert np.all(r._next_release_pos == r.start_position)

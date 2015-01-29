@@ -295,26 +295,6 @@ class PointLineRelease(Release, Serializable):
 
         self._reference_to_num_elements_to_release()
 
-    def __getstate__(self):
-        '''
-            Used by pickle.dump() and pickle.dumps()
-            Note: Dynamically set instance methods cannot be pickled methods.
-                  They should not be present in the resulting dict.
-        '''
-        return dict([(k, v) for k, v in self.__dict__.iteritems()
-                     if type(v) != types.MethodType])
-
-    def __setstate__(self, d):
-        '''
-            Used by pickle.load() and pickle.loads()
-            Note: We will need to explicitly reconstruct any instance methods
-                  that were dynamically set in __init__()
-        '''
-        self.__dict__ = d
-
-        # reconstruct our dynamically set methods.
-        self._reference_to_num_elements_to_release()
-
     def __repr__(self):
         return ('{0.__class__.__module__}.{0.__class__.__name__}('
                 'release_time={0.release_time!r}, '
@@ -647,6 +627,14 @@ class PointLineRelease(Release, Serializable):
 
         self.num_released += num_new_particles
 
+    def rewind(self):
+        '''
+        Rewind to initial conditions -- i.e. nothing released.
+        '''
+        super(PointLineRelease, self).rewind()
+        self._next_release_pos = self.start_position
+        self._delta_pos = None
+
 
 class SpatialRelease(Release, Serializable):
     """
@@ -820,13 +808,6 @@ class VerticalPlumeRelease(Release, Serializable):
 
         self.num_released += num_new_particles
         data_arrays['positions'][-self.coords.shape[0]:, :] = self.coords
-
-    def rewind(self):
-        '''
-        Rewind to initial conditions -- i.e. nothing released.
-        '''
-        self.num_released = 0
-        self.start_time_invalid = True
 
 
 class InitElemsFromFile(Release):

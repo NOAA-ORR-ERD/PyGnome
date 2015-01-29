@@ -180,11 +180,6 @@ cdef class CyOSSMTime(object):
         return ('{0.__class__.__name__}'
                 '(filename="{0.filename}"').format(self)
 
-    def __reduce__(self):
-        return (CyOSSMTime, (self.path_filename,
-                             self._file_format,
-                             self.scale_factor))
-
     def __eq(self, CyOSSMTime other):
         scalar_attrs = ('filename', '_file_format', 'scale_factor',
                         'station_location', 'user_units')
@@ -388,12 +383,6 @@ cdef class CyTimeseries(CyOSSMTime):
         """Return string info about the object"""
         parent = super(CyTimeseries, self).__str__()
         child = parent[:-1] + ' timeseries=<see timeseries attribute>)'
-
-    def __reduce__(self):
-        return (CyTimeseries, (self.path_filename,
-                               self._file_format,
-                               self.timeseries,
-                               self.scale_factor))
 
     def __eq(self, CyTimeseries other):
         if not super(CyTimeseries, self).__eq(other):
