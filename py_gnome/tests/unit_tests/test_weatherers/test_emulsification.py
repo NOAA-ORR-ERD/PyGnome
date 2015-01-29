@@ -87,10 +87,11 @@ def test_full_run(sample_model_fcn, oil, temp, dump):
     for 'weathering_model.json' in dump directory
     '''
     model = sample_model_weathering2(sample_model_fcn, oil, temp)
-    model.environment += [Water(temp), waves, constant_wind(15., 0)]
-    model.weatherers += Evaporation(model.environment[0],model.environment[2])
-    model.weatherers += Emulsification(model.environment[1])
-    released = 0
+    model.water = Water(temp)
+    model.environment += [waves, constant_wind(15., 0)]
+    model.weatherers += Evaporation(model.water, model.environment[1])
+    model.weatherers += Emulsification(model.environment[0])
+
     for step in model:
         for sc in model.spills.items():
             assert sc.weathering_data['water_content'] <= .9
