@@ -685,10 +685,10 @@ def get_sa_mass_fractions(oil_obj):
 
                 if f_sat >= F_i:
                     f_sat = F_i
-                elif f_sat < 0:
-                    f_sat = 0
+                elif f_sat < 0.0:
+                    f_sat = 0.0
 
-                f_arom = F_i * (1 - f_sat)
+                f_arom = F_i - f_sat
 
                 yield (f_sat, f_arom, T_i)
             else:
