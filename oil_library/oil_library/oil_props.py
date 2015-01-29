@@ -132,10 +132,8 @@ class OilProps(object):
         '''
         return bulltime (time to emulsify)
         either user set or just return a flag
-
         '''
-
-		# check for user input value, otherwise set to -999 as a flag
+        # check for user input value, otherwise set to -999 as a flag
         bulltime = -999.
 
         return bulltime
