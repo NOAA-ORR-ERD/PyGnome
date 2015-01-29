@@ -68,7 +68,7 @@ def model(sample_model_fcn, dump):
     release = SpatialRelease(start_position=line_pos,
                              release_time=model.start_time)
 
-    model.spills += Spill(release)
+    model.spills += Spill(release, substance='ALAMO')
 
     return model
 
@@ -937,15 +937,14 @@ def test_staggered_spills_weathering(sample_model_fcn, delay):
     # model.full_run()
     for step in model:
         for sc in model.spills.items():
+            print "completed step {0}".format(step)
+            print sc.weathering_data
             unaccounted = sc['status_codes'] != oil_status.in_water
             sum_ = sc['mass'][unaccounted].sum()
             for key in sc.weathering_data:
                 if 'avg_' != key[:4] and 'amount_released' != key:
                     sum_ += sc.weathering_data[key]
             assert abs(sum_ - sc.weathering_data['amount_released']) < 1.e-6
-
-        print "completed step {0}".format(step)
-        print sc.weathering_data
 
 
 @pytest.mark.parametrize(("s0", "s1"), [("ALAMO", "ALAMO"),

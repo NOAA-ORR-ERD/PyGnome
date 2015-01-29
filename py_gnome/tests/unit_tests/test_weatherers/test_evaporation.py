@@ -66,11 +66,7 @@ def test_evaporation(oil, temp, num_elems, on):
 
     for spill in sc.spills:
         mask = sc.get_spill_mask(spill)
-        bp = spill.get('substance').boiling_point
-        if float('inf') in bp:
-            sa = bp.index(float('inf'))
-        else:
-            sa = len(bp)
+        sa = -2     # last two elements are now always resins and asphaltenes 
         if on:
             assert np.all(sc['evap_decay_constant'][mask, :sa] < 0.0)
             assert np.all(sc['evap_decay_constant'][mask, sa:] == 0.0)
@@ -98,11 +94,8 @@ def assert_helper(sc, new_p):
     total_mass = sum([spill.get_mass('kg') for spill in sc.spills])
     arrays = ['evap_decay_constant', 'mass_components', 'mass', 'status_codes']
     for substance, data in sc.itersubstancedata(arrays):
-        bp = substance.boiling_point
-        if float('inf') in bp:
-            sa = bp.index(float('inf'))
-        else:
-            sa = len(bp)
+        # resins and asphaltenes are always present in data now
+        sa = -2
 
         if len(sc) > new_p:
             old_le = len(sc)-new_p

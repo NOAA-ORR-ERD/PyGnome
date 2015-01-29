@@ -148,7 +148,7 @@ class OilProps(object):
 
     @property
     def num_components(self):
-        return len(self.get('sara_fractions'))
+        return len(self._r_oil.sara_fractions)
 
     def _component_mw(self):
         '''
