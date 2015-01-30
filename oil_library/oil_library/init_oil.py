@@ -373,17 +373,15 @@ def add_resin_fractions(imported_rec, oil):
                 imported_rec.resins >= 0.0 and
                 imported_rec.resins <= 1.0):
             f_res = imported_rec.resins
-            t = 273.15 + 15
         else:
-            a, b, t = get_corrected_density_and_viscosity(oil)
+            a, b = get_corrected_density_and_viscosity(oil)
 
             f_res = (3.3 * a + 0.087 * b - 74.0)
             f_res /= 100.0  # percent to fractional value
             f_res = 0.0 if f_res < 0.0 else f_res
 
         oil.sara_fractions.append(SARAFraction(sara_type='Resins',
-                                               fraction=f_res,
-                                               ref_temp_k=t))
+                                               fraction=f_res))
     except:
         print 'Failed to add Resin fraction!'
 
@@ -394,9 +392,8 @@ def add_asphaltene_fractions(imported_rec, oil):
                 imported_rec.asphaltene_content >= 0.0 and
                 imported_rec.asphaltene_content <= 1.0):
             f_asph = imported_rec.asphaltene_content
-            t = 273.15 + 15
         else:
-            a, b, t = get_corrected_density_and_viscosity(oil)
+            a, b = get_corrected_density_and_viscosity(oil)
 
             f_asph = (0.0014 * (a ** 3.0) +
                       0.0004 * (b ** 2.0) -
@@ -405,8 +402,7 @@ def add_asphaltene_fractions(imported_rec, oil):
             f_asph = 0.0 if f_asph < 0.0 else f_asph
 
         oil.sara_fractions.append(SARAFraction(sara_type='Asphaltenes',
-                                               fraction=f_asph,
-                                               ref_temp_k=t))
+                                               fraction=f_asph))
     except:
         print 'Failed to add Asphaltene fraction!'
 
@@ -429,14 +425,14 @@ def get_corrected_density_and_viscosity(oil):
         b = 10 * log(1000.0 * P0_oil * V0_oil)
 
     except:
-        print 'get_resin_coeffs() generated exception:'
+        print 'get_corrected_density_and_viscosity() generated exception:'
         print '\toil = ', oil
         print '\toil.kvis = ', oil.kvis
         print '\tP0_oil = ', density_at_temperature(oil, temperature)
         print '\tV0_oil = ', get_viscosity(oil, temperature)
         raise
 
-    return a, b, temperature
+    return a, b
 
 
 def add_bullwinkle_fractions(imported_rec, oil):
@@ -460,8 +456,7 @@ def add_bullwinkle_fractions(imported_rec, oil):
         f_asph = [af.fraction
                   for af in oil.sara_fractions
                   if af.sara_type == 'Asphaltenes'
-                  and af.fraction > 0
-                  and np.isclose(af.ref_temp_k, 273.0 + 15, atol=.15)]
+                  and af.fraction > 0]
         f_asph = f_asph[0] if len(f_asph) > 0 else 0.0
 
         if (Ni > 0.0 and Va > 0.0 and Ni + Va > 15.0):
