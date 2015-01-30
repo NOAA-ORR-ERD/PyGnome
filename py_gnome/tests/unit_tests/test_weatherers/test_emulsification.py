@@ -94,7 +94,10 @@ def test_full_run(sample_model_fcn, oil, temp, dump):
 
     for step in model:
         for sc in model.spills.items():
-            assert sc.weathering_data['water_content'] <= .9
+            # need or condition to account for water_content = 0.9000000000012
+            # or just a little bit over 0.9
+            assert (sc.weathering_data['water_content'] <= .9 or
+                    np.allclose(sc.weathering_data['water_content'], 0.9))
             print ("Water fraction: {0}".
                    format(sc.weathering_data['water_content']))
             print "Completed step: {0}\n".format(step['step_num'])
