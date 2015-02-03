@@ -269,8 +269,8 @@ class TestIntrinsicProps:
             curr_time = rel_time + timedelta(seconds=i * ts)
             num_released = sc.release_elements(ts, curr_time)
             intrinsic.update(num_released, sc)
-            for val in sc.weathering_data.values():
-                if len(sc) > 0:
+            for key, val in sc.weathering_data.iteritems():
+                if len(sc) > 0 and key != 'beached':
                     assert val > 0
                 else:
                     # everything, including avg_density is 0 if nothing is
