@@ -666,6 +666,9 @@ def get_sa_mass_fractions(oil_obj):
         dependent on:
             - oil.molecular_weights[:].saturate
     '''
+    fraction_sum = sum([sara.fraction for sara in oil_obj.sara_fractions
+                        if sara.sara_type in ('Resins', 'Asphaltenes')])
+
     for P_try, F_i, T_i, c_type in get_ptry_values(oil_obj, 'Saturates'):
         if T_i < 530.0:
             sg = P_try / 1000
@@ -684,13 +687,27 @@ def get_sa_mass_fractions(oil_obj):
                     f_sat = 0.0
 
                 f_arom = F_i - f_sat
-
-                yield (f_sat, f_arom, T_i)
             else:
                 print '\tNo molecular weight at that temperature.'
+                continue
         else:
+            # Above 530K we will evenly split the saturates & aromatics
             f_sat = f_arom = F_i / 2
 
+        if fraction_sum >= 1.0:
+            # we can't add any more.
+            pass
+        elif f_sat + f_arom + fraction_sum > 1.0:
+            # we need to scale our sub-fractions so that the
+            # fraction sum adds up to 1.0
+            scale = (1.0 - fraction_sum) / (f_sat + f_arom)
+            f_sat *= scale
+            f_arom *= scale
+
+            fraction_sum += f_sat + f_arom
+            yield (f_sat, f_arom, T_i)
+        else:
+            fraction_sum += f_sat + f_arom
             yield (f_sat, f_arom, T_i)
 
 
