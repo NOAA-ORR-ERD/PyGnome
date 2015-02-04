@@ -54,6 +54,7 @@ def add_oil(record):
     add_molecular_weights(record, oil)
     add_component_densities(record, oil)
     add_saturate_aromatic_fractions(record, oil)
+    adjust_resin_asphaltene_fractions(record, oil)
 
     record.oil = oil
 
@@ -378,10 +379,12 @@ def add_resin_fractions(imported_rec, oil):
 
             f_res = (3.3 * a + 0.087 * b - 74.0)
             f_res /= 100.0  # percent to fractional value
+
             f_res = 0.0 if f_res < 0.0 else f_res
 
         oil.sara_fractions.append(SARAFraction(sara_type='Resins',
-                                               fraction=f_res))
+                                               fraction=f_res,
+                                               ref_temp_k=1015.0))
     except:
         print 'Failed to add Resin fraction!'
 
@@ -399,10 +402,12 @@ def add_asphaltene_fractions(imported_rec, oil):
                       0.0004 * (b ** 2.0) -
                       18.0)
             f_asph /= 100.0  # percent to fractional value
+
             f_asph = 0.0 if f_asph < 0.0 else f_asph
 
         oil.sara_fractions.append(SARAFraction(sara_type='Asphaltenes',
-                                               fraction=f_asph))
+                                               fraction=f_asph,
+                                               ref_temp_k=1015.0))
     except:
         print 'Failed to add Asphaltene fraction!'
 
@@ -606,6 +611,40 @@ def add_saturate_aromatic_fractions(imported_rec, oil):
                                                ref_temp_k=T_i))
 
 
+def adjust_resin_asphaltene_fractions(imported_rec, oil):
+    '''
+        After we have added our saturate & aromatic fractions,
+        the fraction sum may still be less than 1.0.
+
+        If we have a resonable number of distillation cuts, we could
+        make the rationalization that the remaining fraction is composed
+        of resins and asphaltenes.
+        We need to determine to a certain level of confidence if this is true,
+        but if so we can scale up the resin and asphaltene amounts.
+    '''
+    sara_total = sum([sara.fraction for sara in oil.sara_fractions])
+    if (not np.isclose(sara_total, 1.0) and sara_total > 1.0):
+        # probably need a check to see if we had a reasonable number of
+        # distillation cuts covering a reasonable range of temperatures.
+        ra_fraction = sum([sara.fraction
+                           for sara in oil.sara_fractions
+                           if sara.sara_type in ('Resins', 'Asphaltenes')])
+        if ra_fraction > 0.0:
+            sa_fraction = sum([sara.fraction
+                               for sara in oil.sara_fractions
+                               if sara.sara_type in ('Saturates',
+                                                     'Aromatics')])
+            leftover = 1.0 - sa_fraction
+            scale = leftover / ra_fraction
+
+            for sara in oil.sara_fractions:
+                if sara.sara_type in ('Resins', 'Asphaltenes'):
+                    sara.fraction *= scale
+
+        print '\tNew SARA total = ', sum([sara.fraction
+                                          for sara in oil.sara_fractions])
+
+
 def get_ptry_values(oil_obj, component_type, sub_fraction=None):
     '''
         This gives an initial trial estimate for each density component.
@@ -719,9 +758,11 @@ def add_component_densities(imported_rec, oil):
         - fmass_0_j: saturate & aromatic mass fractions (estimation 14,15)
     '''
     oil.sara_densities.append(SARADensity(sara_type='Asphaltenes',
-                                          density=1100.0))
+                                          density=1100.0,
+                                          ref_temp_k=1015.0))
     oil.sara_densities.append(SARADensity(sara_type='Resins',
-                                          density=1100.0))
+                                          density=1100.0,
+                                          ref_temp_k=1015.0))
 
     sa_ratios = list(get_sa_mass_fractions(oil))
     ptry_values = (list(get_ptry_values(oil, 'Saturates',
