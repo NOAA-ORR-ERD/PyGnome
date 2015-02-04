@@ -556,17 +556,25 @@ class SpillContainer(AddLogger, SpillContainerData):
         :param model_start_time: model_start_time to initialize
             current_time_stamp. This is the time_stamp associated with 0-th
             step so initial conditions for data arrays
-        :param array_types: a dict of additional array_types to append to
-            standard array_types attribute. The data_arrays are initialized and
-            appended based on the values of array_types attribute
+        :param array_types: a set of additional names and/or array_types to
+            append to standard array_types attribute. Set can contain only
+            strings or a tuple with (string, ArrayType). See Note below.
 
-        .. note:: The SpillContainer cycles through each of the keys in
-        array_types and checks to see if there is an associated initializer
-        in each Spill. If a corresponding initializer is found, it gets the
-        array_types from initializer and appends them to its own list. This was
-        added for the case where 'droplet_diameter' array is defined/used by
-        initializer (InitRiseVelFromDropletSizeFromDist) and we would like to
-        see it in output, but no Mover/Weatherer needs it.
+        .. note:: set can contains strings or tuples. If set contains only
+            strings, say: {'mass', 'windages'},
+            then SpillContainer looks for corresponding ArrayType object
+            defined in gnome.array_types for 'mass' and 'windages'.
+            If set contains a tuple, say: {('mass', gnome.array_types.mass)},
+            then SpillContainer uses the ArrayType defined in the tuple.
+
+        .. note:: The SpillContainer iterates through each of the item in
+            array_types and checks to see if there is an associated initializer
+            in any Spill. If corresponding initializer is found, it gets the
+            array_types from initializer and appends them to its own list. This
+            was added for the case where 'droplet_diameter' array is
+            defined/used by initializer (InitRiseVelFromDropletSizeFromDist)
+            and we would like to see it in output, but no Mover/Weatherer needs
+            it.
         """
         # Question - should we purge any new arrays that were added in previous
         # call to prepare_for_model_run()?

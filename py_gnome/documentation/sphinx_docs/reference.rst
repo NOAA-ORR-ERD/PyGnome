@@ -101,8 +101,6 @@ Class Reference:
    :members:
    :inherited-members:
 .. autofunction:: floating
-.. autofunction:: floating_mass
-.. autofunction:: floating_weathering
 .. autofunction:: plume
 
 ``gnome.movers`` -- PyGnome mover classes

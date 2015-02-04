@@ -298,12 +298,12 @@ def plume(distribution_type='droplet_size',
 # Note: following gives sphinx warnings on build, ignore for now.
 
 plume.__doc__ += ("\nDocumentation of InitRiseVelFromDropletSizeFromDist:\n" +
-                   InitRiseVelFromDropletSizeFromDist.__init__.__doc__ +
-                   "\nDocumentation of InitRiseVelFromDist:\n" +
-                   InitRiseVelFromDist.__init__.__doc__ +
-                   "\nDocumentation of InitWindages:\n" +
-                   InitWindages.__init__.__doc__
-                   )
+                  InitRiseVelFromDropletSizeFromDist.__init__.__doc__ +
+                  "\nDocumentation of InitRiseVelFromDist:\n" +
+                  InitRiseVelFromDist.__init__.__doc__ +
+                  "\nDocumentation of InitWindages:\n" +
+                  InitWindages.__init__.__doc__
+                  )
 
 
 def plume_from_model(distribution_type='droplet_size',
