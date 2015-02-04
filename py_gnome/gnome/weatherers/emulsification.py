@@ -51,13 +51,13 @@ class Emulsification(Weatherer, Serializable):
 
     def prepare_for_model_run(self, sc):
         '''
-        add emulsified key to weathering_data
+        add water_content key to weathering_data
         Assumes all spills have the same type of oil
         '''
-        # create 'emulsified' key if it doesn't exist - are we tracking this ?
+        # create 'water_content' key if it doesn't exist
         # let's only define this the first time
         if self.active:
-            sc.weathering_data['emulsified'] = 0.0
+            sc.weathering_data['water_content'] = 0.0
 
     def prepare_for_model_step(self, sc, time_step, model_time):
         '''
@@ -75,7 +75,7 @@ class Emulsification(Weatherer, Serializable):
     def weather_elements(self, sc, time_step, model_time):
         '''
         weather elements over time_step
-        - sets 'emulsified' in sc.weathering_data
+        - sets 'water_content' in sc.weathering_data
         '''
 
         if not self.active:
@@ -113,14 +113,14 @@ class Emulsification(Weatherer, Serializable):
                          Y_max,
                          constants.drop_max)
 
-            #sc.weathering_data['emulsified'] += \
+            #sc.weathering_data['water_content'] += \
                 #np.sum(data['frac_water'][:]) / sc.num_released
             # just average the water fraction each time - it is not per time
             # step value but at a certain time value
-            sc.weathering_data['emulsified'] = \
+            sc.weathering_data['water_content'] = \
                 np.sum(data['frac_water'][:]) / sc.num_released
-            self.logger.info('Amount Emulsified: {0}'.
-                             format(sc.weathering_data['emulsified']))
+            self.logger.info('Amount water_content: {0}'.
+                             format(sc.weathering_data['water_content']))
 
         sc.update_from_substancedata(self._arrays)
 
