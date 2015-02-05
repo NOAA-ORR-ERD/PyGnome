@@ -28,6 +28,7 @@ from gnome.spill_container import SpillContainer
 from gnome.movers import SimpleMover
 from gnome.weatherers import Skimmer
 from gnome.utilities.remote_data import get_datafile
+import gnome.array_types as gat
 
 
 base_dir = os.path.dirname(__file__)
@@ -55,6 +56,24 @@ def dump(dump_loc=None):
     except:
         pass
     return dump_loc
+
+
+def mock_sc_array_types(array_types):
+    '''
+    function that creates the SpillContainer's array_types attribute
+    '''
+    d_array_types = {}
+    for array in array_types:
+        if array not in d_array_types:
+            try:
+                d_array_types[array] = getattr(gat, array)
+            except AttributeError:
+                pass
+        else:
+            # must be a tuple of length 2
+            d_array_types[array[0]] = array[1]
+
+    return d_array_types
 
 
 def mock_append_data_arrays(array_types, num_elements, data_arrays={}):

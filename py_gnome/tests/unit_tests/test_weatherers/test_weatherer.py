@@ -51,7 +51,8 @@ class TestWeatherer:
         assert weatherer.active
         assert weatherer.active_start == InfDateTime('-inf')
         assert weatherer.active_stop == InfDateTime('inf')
-        assert weatherer.array_types == {}
+        assert weatherer.array_types == set(['mass_components', 'mass',
+                                             'status_codes'])
 
     @pytest.mark.parametrize("test_sc", [sc, u_sc])
     def test_one_weather(self, test_sc):
