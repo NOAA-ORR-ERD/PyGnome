@@ -583,17 +583,18 @@ class SpillContainer(AddLogger, SpillContainerData):
         '''
         for array in array_types:
             if isinstance(array, basestring):
-                if array not in self._array_types:
-                    try:
-                        at = getattr(gat, array)
-                        self._array_types[at.name] = at
-                    except AttributeError:
-                        msg = ("Skipping {0} - not found in gnome.array_types;"
-                               " and ArrayType is not provided.").format(array)
-                        self.logger.error(msg)
-            else:
-                # must be a tuple of length 2
-                self._array_types[array.name] = array
+                # allow user to override an array_type that might already exist
+                # in self._array_types
+                try:
+                    array = getattr(gat, array)
+                except AttributeError:
+                    msg = ("Skipping {0} - not found in gnome.array_types;"
+                           " and ArrayType is not provided.").format(array)
+                    self.logger.error(msg)
+                    continue
+
+            # must be an ArrayType of an object
+            self._array_types[array.name] = array
 
     def prepare_for_model_run(self, array_types=set()):
         """

@@ -358,6 +358,18 @@ class TestAddArrayTypes:
         self.sc.prepare_for_model_run(array_types={self.new_at})
         assert 'new_name' in self.sc.array_types
 
+    def test_bad_array_types_prepare_for_model_run(self):
+        """
+        Can add a new array type via prepare_for_model_run()
+        at the beginning of the run
+        """
+        self.default_arraytypes()
+        self.sc.prepare_for_model_run(array_types={'junk', self.new_at,
+                                                   'mass'})
+        assert 'new_name' in self.sc.array_types
+        assert 'junk' not in self.sc.array_types
+        assert 'mass' in self.sc.array_types
+
     def test_addto_array_types_via_data_array(self):
         """
         can also add a new data array in the middle of the run, which will
