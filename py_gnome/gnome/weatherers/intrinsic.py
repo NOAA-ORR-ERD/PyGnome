@@ -128,13 +128,13 @@ class IntrinsicProps(AddLogger):
                  spreading=FayGravityViscous()):
         self.water = water
         self.spreading = spreading
-        self.array_types = set(['density', 'viscosity',
-                                'mass_components', 'mass',
-                                # init volume of particles released together
-                                'init_volume',
-                                'init_mass', 'frac_water', 'frac_lost',
-                                'area', 'init_area', 'relative_bouyancy',
-                                'frac_coverage', 'thickness','age'])
+        self.array_types = {'density', 'viscosity',
+                            'mass_components', 'mass',
+                            # init volume of particles released together
+                            'init_volume',
+                            'init_mass', 'frac_water', 'frac_lost',
+                            'area', 'init_area', 'relative_bouyancy',
+                            'frac_coverage', 'thickness', 'age'}
         self._arrays = list(self.array_types)
 
         # following used to update viscosity

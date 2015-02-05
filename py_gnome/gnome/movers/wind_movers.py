@@ -84,9 +84,9 @@ class WindMoversBase(CyMover):
         # also sets self._uncertain_angle_units
         self.uncertain_angle_scale = uncertain_angle_scale
 
-        self.array_types.update(['windages',
+        self.array_types.update({'windages',
                                  'windage_range',
-                                 'windage_persist'])
+                                 'windage_persist'})
 
     # no conversion necessary - simply sets/gets the stored value
     uncertain_speed_scale = \

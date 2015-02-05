@@ -49,7 +49,7 @@ class RiseVelocityMover(CyMover, serializable.Serializable):
        # self.mover = CyRiseVelocityMover(water_density, water_viscosity)
         self.mover = CyRiseVelocityMover()
         super(RiseVelocityMover, self).__init__(**kwargs)
-        self.array_types.update('rise_vel')
+        self.array_types.add('rise_vel')
 
 #     @property
 #     def water_density(self):

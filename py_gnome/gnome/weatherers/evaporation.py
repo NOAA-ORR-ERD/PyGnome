@@ -35,8 +35,8 @@ class Evaporation(Weatherer, Serializable):
         self.wind = wind
 
         super(Evaporation, self).__init__(**kwargs)
-        self.array_types.update(('area', 'mol', 'evap_decay_constant',
-                                 'frac_water', 'frac_lost', 'init_mass'))
+        self.array_types.update({'area', 'mol', 'evap_decay_constant',
+                                 'frac_water', 'frac_lost', 'init_mass'})
 
     def prepare_for_model_run(self, sc):
         '''

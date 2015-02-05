@@ -31,7 +31,7 @@ from gnome.spill import point_line_release_spill, Spill, Release
 
 
 # additional array_type for testing spill_container functionality
-windage_at = set(['windages', 'windage_range', 'windage_persist'])
+windage_at = {'windages', 'windage_range', 'windage_persist'}
 
 # Sample data for creating spill
 num_elements = 100
@@ -291,6 +291,7 @@ def test_data_setting_new():
     assert 'new_name' in sc.data_arrays
     assert 'new_name' in sc.array_types
     assert sc['new_name'] is new_arr
+    assert sc.array_types['new_name'].name == 'new_name'
     assert_dataarray_shape_size(sc)
 
     # now release remaining particles and check to see new_name is populated
@@ -330,7 +331,7 @@ class TestAddArrayTypes:
       inferred and created
     """
     sc = SpillContainer()
-    new_at = array_types.ArrayType((3,), np.float64, 0)
+    new_at = array_types.ArrayType((3,), np.float64, 'new_name', 0)
 
     def default_arraytypes(self):
         """ return array_types back to baseline for SpillContainer """
@@ -354,7 +355,7 @@ class TestAddArrayTypes:
         at the beginning of the run
         """
         self.default_arraytypes()
-        self.sc.prepare_for_model_run(array_types=[('new_name', self.new_at)])
+        self.sc.prepare_for_model_run(array_types={self.new_at})
         assert 'new_name' in self.sc.array_types
 
     def test_addto_array_types_via_data_array(self):
@@ -497,7 +498,7 @@ el0 = ElementType([InitWindages((0.02, 0.02), -1),
 el1 = ElementType([InitWindages(),
                    InitRiseVelFromDist()], substance=oil)
 
-arr_types = ('windages', 'windage_range', 'windage_persist', 'rise_vel')
+arr_types = {'windages', 'windage_range', 'windage_persist', 'rise_vel'}
 
 
 @pytest.mark.parametrize(("elem_type", "arr_types"), [((el0, el1), arr_types)])

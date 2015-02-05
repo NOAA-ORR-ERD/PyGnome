@@ -272,7 +272,8 @@ class SpillContainer(AddLogger, SpillContainerData):
             shape = self._data_arrays[data_name].shape[1:]
             dtype = self._data_arrays[data_name].dtype.type
 
-            self._array_types[data_name] = ArrayType(shape, dtype)
+            self._array_types[data_name] = ArrayType(shape, dtype,
+                                                     name=data_name)
 
     def _reset_arrays(self):
         '''
@@ -565,14 +566,15 @@ class SpillContainer(AddLogger, SpillContainerData):
             if isinstance(array, basestring):
                 if array not in self._array_types:
                     try:
-                        self._array_types[array] = getattr(gat, array)
+                        at = getattr(gat, array)
+                        self._array_types[at.name] = at
                     except AttributeError:
                         msg = ("Skipping {0} - not found in gnome.array_types;"
                                " and ArrayType is not provided.").format(array)
                         self.logger.error(msg)
             else:
                 # must be a tuple of length 2
-                self._array_types[array[0]] = array[1]
+                self._array_types[array.name] = array
 
     def prepare_for_model_run(self, array_types=set()):
         """

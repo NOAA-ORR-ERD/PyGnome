@@ -39,8 +39,8 @@ class Emulsification(Weatherer, Serializable):
         self.waves = waves
 
         super(Emulsification, self).__init__(**kwargs)
-        self.array_types.update(['age', 'bulltime', 'frac_water',
-                                 'interfacial_area', 'frac_lost'])
+        self.array_types.update({'age', 'bulltime', 'frac_water',
+                                 'interfacial_area', 'frac_lost'})
 
     def prepare_for_model_run(self, sc):
         '''
