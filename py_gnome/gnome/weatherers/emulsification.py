@@ -49,8 +49,6 @@ class Emulsification(Weatherer, Serializable):
         '''
         # create 'water_content' key if it doesn't exist
         # let's only define this the first time
-        super(Emulsification, self).prepare_for_model_run(sc)
-
         if self.active:
             sc.weathering_data['water_content'] = 0.0
 
@@ -78,7 +76,7 @@ class Emulsification(Weatherer, Serializable):
         if sc.num_released == 0:
             return
 
-        for substance, data in sc.itersubstancedata(self._arrays):
+        for substance, data in sc.itersubstancedata(self.array_types):
             k_emul = self._water_uptake_coeff(model_time, substance)
 
             # bulltime is not in database, but could be set by user
@@ -117,7 +115,7 @@ class Emulsification(Weatherer, Serializable):
             self.logger.info('Amount water_content: {0}'.
                              format(sc.weathering_data['water_content']))
 
-        sc.update_from_substancedata(self._arrays)
+        sc.update_from_substancedata(self.array_types)
 
     def serialize(self, json_='webapi'):
         """

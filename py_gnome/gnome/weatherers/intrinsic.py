@@ -135,7 +135,6 @@ class IntrinsicProps(AddLogger):
                             'init_mass', 'frac_water', 'frac_lost',
                             'area', 'init_area', 'relative_bouyancy',
                             'frac_coverage', 'thickness', 'age'}
-        self._arrays = list(self.array_types)
 
         # following used to update viscosity
         self.visc_curvfit_param = 1.5e3     # units are sec^0.5 / m
@@ -200,7 +199,7 @@ class IntrinsicProps(AddLogger):
         - update intrinsic properties like 'density', 'viscosity' and optional
         arrays for previously released particles
         '''
-        for substance, data in sc.itersubstancedata(self._arrays):
+        for substance, data in sc.itersubstancedata(self.array_types):
             'update properties only if elements are released'
             if len(data['density']) == 0:
                 continue
@@ -214,7 +213,7 @@ class IntrinsicProps(AddLogger):
             if sum(~new_LEs_mask) > 0:
                 self._update_old_particles(~new_LEs_mask, data, substance)
 
-        sc.update_from_substancedata(self._arrays)
+        sc.update_from_substancedata(self.array_types)
 
     def _init_new_particles(self, mask, data, substance):
         '''

@@ -44,8 +44,6 @@ class Evaporation(Weatherer, Serializable):
         for now also add 'density' key here
         Assumes all spills have the same type of oil
         '''
-        super(Evaporation, self).prepare_for_model_run(sc)
-
         # create 'evaporated' key if it doesn't exist
         # let's only define this the first time
         if self.active:
@@ -125,7 +123,7 @@ class Evaporation(Weatherer, Serializable):
         if sc.num_released == 0:
             return
 
-        for substance, data in sc.itersubstancedata(self._arrays):
+        for substance, data in sc.itersubstancedata(self.array_types):
             # set evap_decay_constant array
             self._set_evap_decay_constant(model_time, data, substance)
             mass_remain = \
@@ -144,7 +142,7 @@ class Evaporation(Weatherer, Serializable):
 
             # add frac_lost
             data['frac_lost'][:] = 1 - data['mass']/data['init_mass']
-        sc.update_from_substancedata(self._arrays)
+        sc.update_from_substancedata(self.array_types)
 
     def serialize(self, json_='webapi'):
         """

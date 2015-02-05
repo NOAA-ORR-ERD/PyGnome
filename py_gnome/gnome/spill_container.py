@@ -392,8 +392,22 @@ class SpillContainer(AddLogger, SpillContainerData):
                               'structure'.format(os.getpid(), substance.name))
             return None
 
-    def substancedata(self, substance, arrays):
-        'return the data for specified substance'
+    def _array_name(self, at):
+        '''
+        given an array type, return the name of the array. This can be string,
+        in which case, it is the name of the array so return it. If its not
+        a string, then return the at.name attribute.
+        '''
+        if isinstance(at, basestring):
+            return at
+        else:
+            return at.name
+
+    def substancedata(self, substance, array_types):
+        '''
+        return the data for specified substance
+        data must contain array names specified in 'array_types'
+        '''
         if self._substances_spills is None:
             # todo: figure out if we need this check everywhere
             self._set_substancespills()
@@ -404,7 +418,7 @@ class SpillContainer(AddLogger, SpillContainerData):
             return
 
         if len(self.get_substances()) > 1:
-            self._set_substancedata(arrays)
+            self._set_substancedata(array_types)
 
         return self._substances_spills.data[ix]
 
@@ -419,7 +433,7 @@ class SpillContainer(AddLogger, SpillContainerData):
             self._set_substancespills()
         return self._substances_spills.spills
 
-    def itersubstancedata(self, arrays):
+    def itersubstancedata(self, array_types):
         '''
         iterates through and returns the following for each iteration:
         (substance, substance_data)
@@ -427,7 +441,9 @@ class SpillContainer(AddLogger, SpillContainerData):
         This is used by weatherers - if a substance is None, omit it from
         the iteration.
 
-        :param arrays: list of array names that should be in the data.
+        :param array_types: iterable containing array that should be in the
+            data. This could be a set of strings corresponding with array names
+            or ArrayType objects which have a name attribute
         :returns: (substance, substance_data) for each iteration
             substance: substance object
             substance_data: dict of numpy arrays associated with substance
@@ -436,12 +452,12 @@ class SpillContainer(AddLogger, SpillContainerData):
             self._set_substancespills()
 
         if len(self.get_substances()) > 1:
-            self._set_substancedata(arrays)
+            self._set_substancedata(array_types)
         return filter(lambda x: x[0] is not None,
                       zip(self._substances_spills.substances,
                           self._substances_spills.data))
 
-    def update_from_substancedata(self, arrays, substance=None):
+    def update_from_substancedata(self, array_types, substance=None):
         '''
         let's only update the arrays that were changed
         only update if a copy of 'data' exists. This is the case if there are
@@ -450,35 +466,38 @@ class SpillContainer(AddLogger, SpillContainerData):
         if len(self.get_substances()) == 1:
             return
         if substance is None:
-            self._update_all_from_substancedata(arrays)
+            self._update_all_from_substancedata(array_types)
         else:
             ix = self._index_of_substance(substance)
             if ix is None:
                 return
             data = self._substances_spills.data[ix]
             mask = self['substance'] == ix
-            for array in arrays:
+            for at in array_types:
+                array = self._array_name(at)
                 self[array][mask] = data[array][:]
 
-    def _update_all_from_substancedata(self, arrays):
+    def _update_all_from_substancedata(self, array_types):
         for ix, data in enumerate(self._substances_spills.data):
             if self._substances_spills.substances[ix] is not None:
                 mask = self['substance'] == ix
-                for array in arrays:
+                for at in array_types:
+                    array = self._array_name(at)
                     self[array][mask] = data[array][:]
 
-    def _set_substancedata(self, arrays):
+    def _set_substancedata(self, array_types):
         '''
-        - update substance data, create a list of strided arrays
-        for now only weathering data cares about this view so if 'substance' is
-        None, then don't bother updating 'data'
+        * update substance data,
+        * for now only weathering data cares about this view so if 'substance'
+          is None, then don't bother updating 'data'
         '''
         for ix, data in enumerate(self._substances_spills.data):
             if self._substances_spills.substances[ix] is None:
                 continue
 
             mask = self['substance'] == ix
-            for array in arrays:
+            for at in array_types:
+                array = self._array_name(at)
                 if array not in data:
                     data[array] = self[array][mask]
 
