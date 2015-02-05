@@ -25,12 +25,10 @@ from gnome.cy_gnome.cy_weatherers import emulsify_oil
 class Emulsification(Weatherer, Serializable):
     _state = copy.deepcopy(Weatherer._state)
     _state += [Field('waves', save=True, update=True, save_reference=True)]
-              # Field('wind', save=True, update=True, save_reference=True)]
     _schema = WeathererSchema
 
     def __init__(self,
                  waves=None,
-                 #wind=None,
                  **kwargs):
         '''
         :param conditions: gnome.environment.Conditions object which contains
@@ -39,15 +37,10 @@ class Emulsification(Weatherer, Serializable):
         :type waves: get_emulsifiation_wind(model_time)
         '''
         self.waves = waves
-        #self.wind = wind
 
         super(Emulsification, self).__init__(**kwargs)
-        self.array_types.update({'age': age,
-                                 'bulltime': bulltime,
-                                 'frac_water': frac_water,
-                                 'interfacial_area': interfacial_area,
-                                 'frac_lost': frac_lost,
-                                 })
+        self.array_types.update(['age', 'bulltime', 'frac_water',
+                                 'interfacial_area', 'frac_lost'])
 
     def prepare_for_model_run(self, sc):
         '''
@@ -56,6 +49,8 @@ class Emulsification(Weatherer, Serializable):
         '''
         # create 'water_content' key if it doesn't exist
         # let's only define this the first time
+        super(Emulsification, self).prepare_for_model_run(sc)
+
         if self.active:
             sc.weathering_data['water_content'] = 0.0
 

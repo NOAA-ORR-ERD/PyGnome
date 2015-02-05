@@ -13,6 +13,7 @@ import numpy
 np = numpy
 
 from gnome.basic_types import oil_status
+import gnome.array_types as gat
 from gnome.array_types import (positions,
                                next_positions,
                                last_water_positions,
@@ -543,7 +544,37 @@ class SpillContainer(AddLogger, SpillContainerData):
 
         return u_sc
 
-    def prepare_for_model_run(self, array_types={}):
+    def _append_array_types(self, array_types):
+        '''
+        append to self.array_types the input array_types.
+
+        :param array_types: set of array_types to be appended
+        :type array_types: set()
+
+        The set contains either a name as a string, say: 'rise_vel'
+        In this case, get the ArrayType from gnome.array_types.rise_vel
+        Set elements could also be tuples, say: ('rise_vel': ArrayType())
+        In this case the user name of the data_array and its array_type is
+        specified by the tuple so append it.
+
+        .. note:: If a tuple: ('name', ArrayType()), is given and an ArrayType
+            with that name already exists in self._array_types, then it is
+            overwritten.
+        '''
+        for array in array_types:
+            if isinstance(array, basestring):
+                if array not in self._array_types:
+                    try:
+                        self._array_types[array] = getattr(gat, array)
+                    except AttributeError:
+                        msg = ("Skipping {0} - not found in gnome.array_types;"
+                               " and ArrayType is not provided.").format(array)
+                        self.logger.error(msg)
+            else:
+                # must be a tuple of length 2
+                self._array_types[array[0]] = array[1]
+
+    def prepare_for_model_run(self, array_types=set()):
         """
         called when setting up the model prior to 1st time step
         This is considered 0th timestep by model
@@ -580,8 +611,7 @@ class SpillContainer(AddLogger, SpillContainerData):
         # call to prepare_for_model_run()?
         # No! If user made modifications to _array_types before running model,
         # let's keep those. A rewind will reset data_arrays.
-        self._array_types.update(array_types)
-
+        self._append_array_types(array_types)
         self._append_initializer_array_types(array_types)
 
         if self._substances_spills is None:
@@ -592,12 +622,12 @@ class SpillContainer(AddLogger, SpillContainerData):
         self.initialize_data_arrays()
 
     def _append_initializer_array_types(self, array_types):
-        # for each array_types, use the key to get the associated initializer
-        for key in array_types:
+        # for each array_types, use the name to get the associated initializer
+        for name in array_types:
             for spill in self.spills:
-                if spill.is_initializer(key):
-                    self._array_types.update(
-                        spill.get_initializer(key).array_types)
+                if spill.has_initializer(name):
+                    self._append_array_types(spill.get_initializer(name).
+                                             array_types)
 
     def initialize_data_arrays(self):
         """

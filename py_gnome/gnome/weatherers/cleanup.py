@@ -89,6 +89,9 @@ class Skimmer(Weatherer, Serializable):
             self.logger.warn(msg)
 
     def prepare_for_model_run(self, sc):
+        '''
+        no need to call base class since no new array_types were added
+        '''
         if sc.spills:
             sc.weathering_data['skimmed'] = 0.0
 

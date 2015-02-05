@@ -332,25 +332,25 @@ class Spill(serializable.Serializable):
         else:
             return init[0]
 
-    def is_initializer(self, key):
+    def has_initializer(self, name):
         '''
         Returns True if an initializer is present in the list which sets the
-        data_array corresponding with 'key', otherwise returns False
+        data_array corresponding with 'name', otherwise returns False
         '''
         for i in self.element_type.initializers:
-            if key in i.array_types:
+            if name in i.array_types:
                 return True
 
         return False
 
-    def get_initializer(self, key=None):
+    def get_initializer(self, name=None):
         '''
-        if key is None, return list of all initializers else return initializer
-        that sets given 'key'. 'key' refers to the data_array initialized by
-        initializer. For instance, if key='rise_vel', function will look in
+        if name is None, return list of all initializers else return initializer
+        that sets given 'name'. 'name' refers to the data_array initialized by
+        initializer. For instance, if name='rise_vel', function will look in
         all initializers to find the one whose array_types contain 'rise_vel'.
 
-        If multiple initializers set 'key', then return the first one in the
+        If multiple initializers set 'name', then return the first one in the
         list. Although nothing prevents the user from having two initializers
         for the same data_array, it doesn't make much sense.
 
@@ -364,12 +364,12 @@ class Spill(serializable.Serializable):
         included in the Model. User can change the name of the initializer
 
         '''
-        if key is None:
+        if name is None:
             return self.element_type.initializers
 
         init = None
         for i in self.element_type.initializers:
-            if key in i.array_types:
+            if name in i.array_types:
                 return i
 
         return init
@@ -386,8 +386,7 @@ class Spill(serializable.Serializable):
 
         '''
         ix = [ix for ix, i in enumerate(self.element_type.initializers)
-              if sorted(i.array_types.keys()) ==
-              sorted(init.array_types.keys())]
+              if sorted(i.array_types) == sorted(init.array_types)]
         if len(ix) == 0:
             self.element_type.initializers.append(init)
         else:

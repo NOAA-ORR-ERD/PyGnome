@@ -6,12 +6,6 @@ import os
 
 import numpy as np
 
-from gnome.array_types import (mass_components,
-                               mol,
-                               evap_decay_constant,
-                               area,
-                               frac_water,
-                               frac_lost)
 from gnome.basic_types import oil_status
 from gnome.utilities.serializable import Serializable, Field
 from gnome import constants
@@ -41,15 +35,8 @@ class Evaporation(Weatherer, Serializable):
         self.wind = wind
 
         super(Evaporation, self).__init__(**kwargs)
-        self.array_types.update({'area': area,
-                                 'mol': mol,
-                                 'evap_decay_constant': evap_decay_constant,
-                                 'frac_water': frac_water,
-                                 'frac_lost': frac_lost,
-                                 })
-        self._arrays.extend(['init_mass',
-                             'frac_lost'])
-        self._arrays.extend(self.array_types.keys())
+        self.array_types.update(('area', 'mol', 'evap_decay_constant',
+                                 'frac_water', 'frac_lost', 'init_mass'))
 
     def prepare_for_model_run(self, sc):
         '''
@@ -57,6 +44,8 @@ class Evaporation(Weatherer, Serializable):
         for now also add 'density' key here
         Assumes all spills have the same type of oil
         '''
+        super(Evaporation, self).prepare_for_model_run(sc)
+
         # create 'evaporated' key if it doesn't exist
         # let's only define this the first time
         if self.active:

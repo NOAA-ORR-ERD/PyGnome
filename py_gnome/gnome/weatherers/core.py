@@ -44,10 +44,15 @@ class Weatherer(Process):
         super(Weatherer, self).__init__(**kwargs)
 
         # arrays that all weatherers will update - use this to ask
+        self.array_types.update(['mass_components', 'mass', 'status_codes'])
+
         # SpillContainer for substance data and also resyn back to data_arrays:
         #    SpillContainer().itersubstancedata(self._arrays)
         #    SpillContainer().update_from_substancedata(self._arrays)
-        self._arrays = ['mass_components', 'mass', 'status_codes']
+        # automatically set in prepare_for_model_run() - set it as internal
+        # variable so we only create list(self.array_types) once at beginning
+        # or run.
+        self._arrays = list(self.array_types)
 
     def __repr__(self):
         return ('{0.__class__.__module__}.{0.__class__.__name__}('
@@ -62,7 +67,7 @@ class Weatherer(Process):
         Override for weatherers so they can initialize correct 'mass_balance'
         key and set initial value to 0.0
         """
-        pass
+        self._arrays = list(self.array_types)
 
     def weather_elements(self, sc, time_step, model_time):
         '''

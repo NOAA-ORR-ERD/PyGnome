@@ -447,7 +447,10 @@ class Model(Serializable):
         '''
 
         self.spills.rewind()  # why is rewind for spills here?
-        array_types = {}
+
+        # use a set since we only want to add unique 'names' for data_arrays
+        # that will be added
+        array_types = set()
 
         # remake orderedcollections defined by model
         for oc in [self.movers, self.weatherers,
@@ -535,7 +538,7 @@ class Model(Serializable):
 
         for environment in self.environment:
             environment.prepare_for_model_step(self.model_time)
-                
+
         for outputter in self.outputters:
             outputter.prepare_for_model_step(self.time_step, self.model_time)
 
@@ -942,7 +945,7 @@ class Model(Serializable):
                                         '{0}_uncertain{1}'
                                         .format(spill_data_fname, ext))
 
-        array_types = {}
+        array_types = set()
 
         for m in self.movers:
             array_types.update(m.array_types)

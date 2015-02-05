@@ -7,20 +7,6 @@ import os
 import numpy as np
 
 from gnome.basic_types import oil_status
-from gnome.array_types import (density,
-                               viscosity,
-                               mass_components,
-                               init_volume,
-                               init_area,
-                               relative_bouyancy,
-                               area,
-                               mass,
-                               frac_coverage,
-                               thickness,
-                               frac_water,
-                               frac_lost,
-                               age,
-                               init_mass)
 from gnome import AddLogger, constants
 
 
@@ -142,21 +128,15 @@ class IntrinsicProps(AddLogger):
                  spreading=FayGravityViscous()):
         self.water = water
         self.spreading = spreading
-        self.array_types = {'density': density,
-                            'viscosity': viscosity,
-                            'mass_components': mass_components,
-                            'mass': mass,
-                            # init volume of all particles released together
-                            'init_volume': init_volume,
-                            'init_mass': init_mass,
-                            'frac_water': frac_water,
-                            'frac_lost': frac_lost,
-                            'area': area,     # area no longer needs init_volume since
-                            'init_area': init_area,
-                            'relative_bouyancy': relative_bouyancy,
-                            'frac_coverage': frac_coverage,
-                            'thickness': thickness,
-                            'age': age}
+        self.array_types = set(['density', 'viscosity',
+                                'mass_components', 'mass',
+                                # init volume of particles released together
+                                'init_volume',
+                                'init_mass', 'frac_water', 'frac_lost',
+                                'area', 'init_area', 'relative_bouyancy',
+                                'frac_coverage', 'thickness','age'])
+        self._arrays = list(self.array_types)
+
         # following used to update viscosity
         self.visc_curvfit_param = 1.5e3     # units are sec^0.5 / m
         self.visc_f_ref = 0.84
@@ -220,9 +200,7 @@ class IntrinsicProps(AddLogger):
         - update intrinsic properties like 'density', 'viscosity' and optional
         arrays for previously released particles
         '''
-        arrays = self.array_types.keys()
-
-        for substance, data in sc.itersubstancedata(arrays):
+        for substance, data in sc.itersubstancedata(self._arrays):
             'update properties only if elements are released'
             if len(data['density']) == 0:
                 continue
@@ -236,7 +214,7 @@ class IntrinsicProps(AddLogger):
             if sum(~new_LEs_mask) > 0:
                 self._update_old_particles(~new_LEs_mask, data, substance)
 
-        sc.update_from_substancedata(arrays)
+        sc.update_from_substancedata(self._arrays)
 
     def _init_new_particles(self, mask, data, substance):
         '''

@@ -11,7 +11,6 @@ import copy
 import numpy
 np = numpy
 from colander import SchemaNode, Int, Float, Range, TupleSchema
-from collections import OrderedDict
 
 import gnome    # required by new_from_dict
 from gnome.utilities.rand import random_with_persistance
@@ -21,7 +20,6 @@ from gnome.utilities.distributions import UniformDistribution
 from gnome.cy_gnome.cy_rise_velocity_mover import rise_velocity_from_drop_size
 
 from gnome.persist import base_schema
-from gnome import array_types
 """
 Initializers for various element types
 """
@@ -41,18 +39,14 @@ class InitBaseClass(object):
     _state = copy.deepcopy(Serializable._state)
 
     def __init__(self):
-        # make it an ordered dict so first element in array_types for any
-        # initializer will be the primary data_array that is required by a
-        # mover or weatherer. All other data_arrays are set by the initializer
-        # by may not be directly required by a mover/weather. An example is
-        # InitRiseVelFromDropletSizeFromDist() which stores the
-        # droplet_diameter in the data_arrays even though it isn't required by
-        # the mover
-        #
-        # NOTE: It is not necessary to make this an OrderedDict since the
-        # data_arrays will contain all array_types set by the initializer if
-        # the mover sets the primary data_array (ie rise_vel for above example)
-        self.array_types = OrderedDict()
+        # Contains the array_types that are set by an initializer but defined
+        # anywhere else. For example, InitRiseVelFromDropletSizeFromDist()
+        # computes droplet_diameter in the data_arrays even though it isn't
+        # required by the mover. SpillContainer queries all initializers so it
+        # knows about these array_types and can include them.
+        # Make it a set since ElementType does a membership check in
+        # set_newparticle_values()
+        self.array_types = set()
 
     def initialize(self, num_new_particles, spill, data_arrays, substance):
         """
@@ -108,10 +102,9 @@ class InitWindages(InitBaseClass, Serializable):
         super(InitWindages, self).__init__()
         self.windage_persist = windage_persist
         self.windage_range = windage_range
-        self.array_types.update({'windages': array_types.windages,
-                                 'windage_range': array_types.windage_range,
-                                 'windage_persist': array_types.windage_persist
-                                 })
+        self.array_types.update(('windages',
+                                 'windage_range',
+                                 'windage_persist'))
         self.name = 'windages'
 
     def __repr__(self):
@@ -180,7 +173,7 @@ class InitMassFromPlume(InitBaseClass, Serializable):
         update array_types
         """
         super(InitMassFromPlume, self).__init__()
-        self.array_types.update({'mass': array_types.mass})
+        self.array_types.add('mass')
         self.name = 'mass'
 
     def initialize(self, num_new_particles, spill, data_arrays, substance):
@@ -269,7 +262,7 @@ class InitRiseVelFromDist(DistributionBase):
         else:
             self.distribution = UniformDistribution()
 
-        self.array_types.update({'rise_vel': array_types.rise_vel})
+        self.array_types.add('rise_vel')
         self.name = 'rise_vel'
 
     def initialize(self, num_new_particles, spill, data_arrays,
@@ -321,8 +314,7 @@ class InitRiseVelFromDropletSizeFromDist(DistributionBase):
 
         self.water_viscosity = water_viscosity
         self.water_density = water_density
-        self.array_types.update({'rise_vel': array_types.rise_vel,
-                            'droplet_diameter': array_types.droplet_diameter})
+        self.array_types.update(('rise_vel', 'droplet_diameter'))
         self.name = 'rise_vel'
 
     def initialize(self, num_new_particles, spill, data_arrays, substance):

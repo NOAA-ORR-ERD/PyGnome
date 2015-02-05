@@ -6,7 +6,6 @@ from gnome.persist.base_schema import ObjType
 from gnome.utilities import serializable
 from gnome.movers import CyMover, ProcessSchema
 from gnome.cy_gnome.cy_rise_velocity_mover import CyRiseVelocityMover
-from gnome.array_types import rise_vel
 from gnome.basic_types import world_point, world_point_type
 
 
@@ -50,7 +49,7 @@ class RiseVelocityMover(CyMover, serializable.Serializable):
        # self.mover = CyRiseVelocityMover(water_density, water_viscosity)
         self.mover = CyRiseVelocityMover()
         super(RiseVelocityMover, self).__init__(**kwargs)
-        self.array_types.update({'rise_vel': rise_vel})
+        self.array_types.update('rise_vel')
 
 #     @property
 #     def water_density(self):
