@@ -623,9 +623,10 @@ def adjust_resin_asphaltene_fractions(imported_rec, oil):
         but if so we can scale up the resin and asphaltene amounts.
     '''
     sara_total = sum([sara.fraction for sara in oil.sara_fractions])
-    if (not np.isclose(sara_total, 1.0) and sara_total > 1.0):
+    if (not np.isclose(sara_total, 1.0) and sara_total < 1.0):
         # probably need a check to see if we had a reasonable number of
         # distillation cuts covering a reasonable range of temperatures.
+        # ...or we could just not scale our fractions over a certain amount.
         ra_fraction = sum([sara.fraction
                            for sara in oil.sara_fractions
                            if sara.sara_type in ('Resins', 'Asphaltenes')])
@@ -641,8 +642,9 @@ def adjust_resin_asphaltene_fractions(imported_rec, oil):
                 if sara.sara_type in ('Resins', 'Asphaltenes'):
                     sara.fraction *= scale
 
-        print '\tNew SARA total = ', sum([sara.fraction
-                                          for sara in oil.sara_fractions])
+            print ('\tNew SARA total = {0}, RA fractions scaled by {1}'
+                   .format(sum([sara.fraction for sara in oil.sara_fractions]),
+                           scale))
 
 
 def get_ptry_values(oil_obj, component_type, sub_fraction=None):
