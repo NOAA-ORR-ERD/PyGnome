@@ -11,7 +11,6 @@ These are properties that are spill specific like:
 '''
 import copy
 
-from colander import (SchemaNode, drop, String)
 import gnome    # required by new_from_dict
 from gnome.utilities.serializable import Serializable, Field
 from .initializers import (InitRiseVelFromDropletSizeFromDist,
@@ -114,7 +113,7 @@ class ElementType(Serializable):
         compile/return dict of array_types set by all initializers contained
         by ElementType object
         '''
-        at = {}
+        at = set()
         for init in self.initializers:
             at.update(init.array_types)
 
@@ -127,10 +126,8 @@ class ElementType(Serializable):
         '''
         if num_new_particles > 0:
             for i in self.initializers:
-                # If a mover is using an initializers, the data_arrays will
-                # contain all
-                p_key = i.array_types.keys()[0]
-                if p_key in data_arrays:
+                # looks like issubset() looks at data_arrays.keys()
+                if i.array_types.issubset(data_arrays):
                     i.initialize(num_new_particles, spill, data_arrays,
                                  self.substance)
 
@@ -298,12 +295,12 @@ def plume(distribution_type='droplet_size',
 # Note: following gives sphinx warnings on build, ignore for now.
 
 plume.__doc__ += ("\nDocumentation of InitRiseVelFromDropletSizeFromDist:\n" +
-                   InitRiseVelFromDropletSizeFromDist.__init__.__doc__ +
-                   "\nDocumentation of InitRiseVelFromDist:\n" +
-                   InitRiseVelFromDist.__init__.__doc__ +
-                   "\nDocumentation of InitWindages:\n" +
-                   InitWindages.__init__.__doc__
-                   )
+                  InitRiseVelFromDropletSizeFromDist.__init__.__doc__ +
+                  "\nDocumentation of InitRiseVelFromDist:\n" +
+                  InitRiseVelFromDist.__init__.__doc__ +
+                  "\nDocumentation of InitWindages:\n" +
+                  InitWindages.__init__.__doc__
+                  )
 
 
 def plume_from_model(distribution_type='droplet_size',

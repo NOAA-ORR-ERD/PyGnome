@@ -19,10 +19,10 @@ from gnome.basic_types import (oil_status,
                                id_type)
 from gnome import array_types
 from gnome.spill.elements import (ElementType,
-                            InitWindages,
-                            InitRiseVelFromDist,
-                            InitRiseVelFromDropletSizeFromDist,
-                            floating)
+                                  InitWindages,
+                                  InitRiseVelFromDist,
+                                  InitRiseVelFromDropletSizeFromDist,
+                                  floating)
 
 from gnome.utilities.distributions import UniformDistribution
 
@@ -31,9 +31,7 @@ from gnome.spill import point_line_release_spill, Spill, Release
 
 
 # additional array_type for testing spill_container functionality
-windage_at = {'windages': array_types.windages,
-              'windage_range': array_types.windage_range,
-              'windage_persist': array_types.windage_persist}
+windage_at = {'windages', 'windage_range', 'windage_persist'}
 
 # Sample data for creating spill
 num_elements = 100
@@ -45,7 +43,7 @@ end_release_time = datetime(2012, 1, 1, 12) + timedelta(hours=4)
 
 def test_simple_init():
     sc = SpillContainer()
-    assert sc != None
+    assert sc is not None
 
 
 def test_length_zero():
@@ -59,14 +57,16 @@ def test_length():
     assert len(sp) == 10
 
 
-### Helper functions ###
+''' Helper functions '''
+
+
 def assert_dataarray_shape_size(sc):
     for key, val in sc.array_types.iteritems():
         assert sc[key].shape == (sc.num_released,) + val.shape
         assert sc[key].dtype == val.dtype
 
     assert np.all(sc['status_codes']
-                      == sc.array_types['status_codes'].initial_value)
+                  == sc.array_types['status_codes'].initial_value)
     assert np.all(sc['id'] == range(0, sc.num_released))
 
 
@@ -93,13 +93,13 @@ def test_test_spill_container():
 
 @pytest.mark.parametrize("spill",
                          [point_line_release_spill(num_elements,
-                                          start_position,
-                                          release_time),
+                                                   start_position,
+                                                   release_time),
                           point_line_release_spill(num_elements,
-                                          start_position,
-                                          release_time,
-                                          end_position,
-                                          end_release_time)])
+                                                   start_position,
+                                                   release_time,
+                                                   end_position,
+                                                   end_release_time)])
 def test_one_simple_spill(spill):
     """ checks data_arrays correctly populated for a single spill in
     SpillContainer """
@@ -136,8 +136,8 @@ def test_multiple_spills(uncertain):
     spills = [point_line_release_spill(num_elements, start_position,
                                        release_time),
               point_line_release_spill(num_elements, start_position,
-                    release_time + timedelta(hours=1),
-                    end_position, end_release_time)]
+                                       release_time + timedelta(hours=1),
+                                       end_position, end_release_time)]
 
     sc.spills.add(spills)
 
@@ -184,8 +184,10 @@ def test_rewind():
     start_position = (23.0, -78.5, 0.0)
     sc = SpillContainer()
 
-    spills = [point_line_release_spill(num_elements, start_position, release_time),
-              point_line_release_spill(num_elements, start_position, release_time2)]
+    spills = [point_line_release_spill(num_elements, start_position,
+                                       release_time),
+              point_line_release_spill(num_elements, start_position,
+                                       release_time2)]
     sc.spills.add(spills)
 
     sc.prepare_for_model_run(windage_at)
@@ -277,7 +279,7 @@ def test_data_setting_new():
     numpy array for newly released particles
     """
     spill = point_line_release_spill(20, start_position, release_time,
-                            end_release_time=end_release_time)
+                                     end_release_time=end_release_time)
     # release 10 particles
     time_step = (end_release_time - release_time) / 2
     sc = sample_sc_release(time_step=time_step.seconds, spill=spill)
@@ -289,6 +291,7 @@ def test_data_setting_new():
     assert 'new_name' in sc.data_arrays
     assert 'new_name' in sc.array_types
     assert sc['new_name'] is new_arr
+    assert sc.array_types['new_name'].name == 'new_name'
     assert_dataarray_shape_size(sc)
 
     # now release remaining particles and check to see new_name is populated
@@ -328,7 +331,7 @@ class TestAddArrayTypes:
       inferred and created
     """
     sc = SpillContainer()
-    new_at = array_types.ArrayType((3,), np.float64, 0)
+    new_at = array_types.ArrayType((3,), np.float64, 'new_name', 0)
 
     def default_arraytypes(self):
         """ return array_types back to baseline for SpillContainer """
@@ -352,8 +355,20 @@ class TestAddArrayTypes:
         at the beginning of the run
         """
         self.default_arraytypes()
-        self.sc.prepare_for_model_run(array_types={'new_name': self.new_at})
+        self.sc.prepare_for_model_run(array_types={self.new_at})
         assert 'new_name' in self.sc.array_types
+
+    def test_bad_array_types_prepare_for_model_run(self):
+        """
+        Can add a new array type via prepare_for_model_run()
+        at the beginning of the run
+        """
+        self.default_arraytypes()
+        self.sc.prepare_for_model_run(array_types={'junk', self.new_at,
+                                                   'mass'})
+        assert 'new_name' in self.sc.array_types
+        assert 'junk' not in self.sc.array_types
+        assert 'mass' in self.sc.array_types
 
     def test_addto_array_types_via_data_array(self):
         """
@@ -408,10 +423,10 @@ def test_uncertain_copy():
 
     sc = SpillContainer()
     spill = point_line_release_spill(num_elements, start_position,
-            release_time)
+                                     release_time)
 
     sp2 = point_line_release_spill(num_elements, start_position2,
-                                    start_time2)
+                                   start_time2)
 
     sc.spills.add(spill)
     sc.spills.add(sp2)
@@ -480,7 +495,8 @@ def test_ordered_collection_api():
 
     sc = SpillContainer()
     sc.spills += point_line_release_spill(num_elements,
-            start_position, release_time)
+                                          start_position,
+                                          release_time)
     assert len(sc.spills) == 1
 
 
@@ -494,10 +510,7 @@ el0 = ElementType([InitWindages((0.02, 0.02), -1),
 el1 = ElementType([InitWindages(),
                    InitRiseVelFromDist()], substance=oil)
 
-arr_types = {'windages': array_types.windages,
-             'windage_range': array_types.windage_range,
-             'windage_persist': array_types.windage_persist,
-             'rise_vel': array_types.rise_vel}
+arr_types = {'windages', 'windage_range', 'windage_persist', 'rise_vel'}
 
 
 @pytest.mark.parametrize(("elem_type", "arr_types"), [((el0, el1), arr_types)])

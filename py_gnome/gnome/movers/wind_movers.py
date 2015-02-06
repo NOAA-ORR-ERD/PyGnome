@@ -15,7 +15,6 @@ from gnome.basic_types import (ts_format,
                                world_point,
                                world_point_type,
                                datetime_value_2d)
-from gnome import array_types
 
 from gnome.utilities import serializable, rand
 
@@ -85,10 +84,9 @@ class WindMoversBase(CyMover):
         # also sets self._uncertain_angle_units
         self.uncertain_angle_scale = uncertain_angle_scale
 
-        self.array_types.update({'windages': array_types.windages,
-                                 'windage_range': array_types.windage_range,
-                                 'windage_persist': array_types.windage_persist
-                                 })
+        self.array_types.update({'windages',
+                                 'windage_range',
+                                 'windage_persist'})
 
     # no conversion necessary - simply sets/gets the stored value
     uncertain_speed_scale = \
@@ -190,9 +188,6 @@ class WindMover(WindMoversBase, serializable.Serializable):
 
     The real work is done by the CyWindMover object.  CyMover
     sets everything up that is common to all movers.
-
-    In addition to base class array_types.basic, also use the
-    array_types.windage dict since WindMover requires a windage array
     """
     _state = copy.deepcopy(WindMoversBase._state)
     _state.add_field(serializable.Field('wind', save=True, update=True,

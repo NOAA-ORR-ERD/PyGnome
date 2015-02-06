@@ -71,7 +71,7 @@ class Process(object):
         self.active_stop = active_stop
 
         # empty dict since no array_types required for all movers at present
-        self.array_types = {}
+        self.array_types = set()
         self.name = kwargs.pop('name', self.__class__.__name__)
 
     # Methods for active property definition

@@ -25,12 +25,10 @@ from gnome.cy_gnome.cy_weatherers import emulsify_oil
 class Emulsification(Weatherer, Serializable):
     _state = copy.deepcopy(Weatherer._state)
     _state += [Field('waves', save=True, update=True, save_reference=True)]
-              # Field('wind', save=True, update=True, save_reference=True)]
     _schema = WeathererSchema
 
     def __init__(self,
                  waves=None,
-                 #wind=None,
                  **kwargs):
         '''
         :param conditions: gnome.environment.Conditions object which contains
@@ -39,15 +37,10 @@ class Emulsification(Weatherer, Serializable):
         :type waves: get_emulsifiation_wind(model_time)
         '''
         self.waves = waves
-        #self.wind = wind
 
         super(Emulsification, self).__init__(**kwargs)
-        self.array_types.update({'age': age,
-                                 'bulltime': bulltime,
-                                 'frac_water': frac_water,
-                                 'interfacial_area': interfacial_area,
-                                 'frac_lost': frac_lost,
-                                 })
+        self.array_types.update({'age', 'bulltime', 'frac_water',
+                                 'interfacial_area', 'frac_lost'})
 
     def prepare_for_model_run(self, sc):
         '''
@@ -83,7 +76,7 @@ class Emulsification(Weatherer, Serializable):
         if sc.num_released == 0:
             return
 
-        for substance, data in sc.itersubstancedata(self._arrays):
+        for substance, data in sc.itersubstancedata(self.array_types):
             k_emul = self._water_uptake_coeff(model_time, substance)
 
             # bulltime is not in database, but could be set by user
@@ -122,7 +115,7 @@ class Emulsification(Weatherer, Serializable):
             self.logger.info('Amount water_content: {0}'.
                              format(sc.weathering_data['water_content']))
 
-        sc.update_from_substancedata(self._arrays)
+        sc.update_from_substancedata(self.array_types)
 
     def serialize(self, json_='webapi'):
         """
