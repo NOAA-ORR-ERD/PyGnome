@@ -97,6 +97,7 @@ def test_model_webapi_output(model):
 
         print 'Completed step: ', step
 
+
 def test_model_dump_output(model):
     'Test weathering outputter with a model since simplest to do that'
     output_dir = model.outputters[0].output_dir

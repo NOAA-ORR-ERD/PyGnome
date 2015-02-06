@@ -54,6 +54,7 @@ def add_oil(record):
     add_molecular_weights(record, oil)
     add_component_densities(record, oil)
     add_saturate_aromatic_fractions(record, oil)
+    adjust_resin_asphaltene_fractions(record, oil)
 
     record.oil = oil
 
@@ -373,17 +374,17 @@ def add_resin_fractions(imported_rec, oil):
                 imported_rec.resins >= 0.0 and
                 imported_rec.resins <= 1.0):
             f_res = imported_rec.resins
-            t = 273.15 + 15
         else:
-            a, b, t = get_corrected_density_and_viscosity(oil)
+            a, b = get_corrected_density_and_viscosity(oil)
 
             f_res = (3.3 * a + 0.087 * b - 74.0)
             f_res /= 100.0  # percent to fractional value
+
             f_res = 0.0 if f_res < 0.0 else f_res
 
         oil.sara_fractions.append(SARAFraction(sara_type='Resins',
                                                fraction=f_res,
-                                               ref_temp_k=t))
+                                               ref_temp_k=1015.0))
     except:
         print 'Failed to add Resin fraction!'
 
@@ -394,19 +395,19 @@ def add_asphaltene_fractions(imported_rec, oil):
                 imported_rec.asphaltene_content >= 0.0 and
                 imported_rec.asphaltene_content <= 1.0):
             f_asph = imported_rec.asphaltene_content
-            t = 273.15 + 15
         else:
-            a, b, t = get_corrected_density_and_viscosity(oil)
+            a, b = get_corrected_density_and_viscosity(oil)
 
             f_asph = (0.0014 * (a ** 3.0) +
                       0.0004 * (b ** 2.0) -
                       18.0)
             f_asph /= 100.0  # percent to fractional value
+
             f_asph = 0.0 if f_asph < 0.0 else f_asph
 
         oil.sara_fractions.append(SARAFraction(sara_type='Asphaltenes',
                                                fraction=f_asph,
-                                               ref_temp_k=t))
+                                               ref_temp_k=1015.0))
     except:
         print 'Failed to add Asphaltene fraction!'
 
@@ -429,14 +430,14 @@ def get_corrected_density_and_viscosity(oil):
         b = 10 * log(1000.0 * P0_oil * V0_oil)
 
     except:
-        print 'get_resin_coeffs() generated exception:'
+        print 'get_corrected_density_and_viscosity() generated exception:'
         print '\toil = ', oil
         print '\toil.kvis = ', oil.kvis
         print '\tP0_oil = ', density_at_temperature(oil, temperature)
         print '\tV0_oil = ', get_viscosity(oil, temperature)
         raise
 
-    return a, b, temperature
+    return a, b
 
 
 def add_bullwinkle_fractions(imported_rec, oil):
@@ -460,8 +461,7 @@ def add_bullwinkle_fractions(imported_rec, oil):
         f_asph = [af.fraction
                   for af in oil.sara_fractions
                   if af.sara_type == 'Asphaltenes'
-                  and af.fraction > 0
-                  and np.isclose(af.ref_temp_k, 273.0 + 15, atol=.15)]
+                  and af.fraction > 0]
         f_asph = f_asph[0] if len(f_asph) > 0 else 0.0
 
         if (Ni > 0.0 and Va > 0.0 and Ni + Va > 15.0):
@@ -611,6 +611,42 @@ def add_saturate_aromatic_fractions(imported_rec, oil):
                                                ref_temp_k=T_i))
 
 
+def adjust_resin_asphaltene_fractions(imported_rec, oil):
+    '''
+        After we have added our saturate & aromatic fractions,
+        the fraction sum may still be less than 1.0.
+
+        If we have a resonable number of distillation cuts, we could
+        make the rationalization that the remaining fraction is composed
+        of resins and asphaltenes.
+        We need to determine to a certain level of confidence if this is true,
+        but if so we can scale up the resin and asphaltene amounts.
+    '''
+    sara_total = sum([sara.fraction for sara in oil.sara_fractions])
+    if (not np.isclose(sara_total, 1.0) and sara_total < 1.0):
+        # probably need a check to see if we had a reasonable number of
+        # distillation cuts covering a reasonable range of temperatures.
+        # ...or we could just not scale our fractions over a certain amount.
+        ra_fraction = sum([sara.fraction
+                           for sara in oil.sara_fractions
+                           if sara.sara_type in ('Resins', 'Asphaltenes')])
+        if ra_fraction > 0.0:
+            sa_fraction = sum([sara.fraction
+                               for sara in oil.sara_fractions
+                               if sara.sara_type in ('Saturates',
+                                                     'Aromatics')])
+            leftover = 1.0 - sa_fraction
+            scale = leftover / ra_fraction
+
+            for sara in oil.sara_fractions:
+                if sara.sara_type in ('Resins', 'Asphaltenes'):
+                    sara.fraction *= scale
+
+            print ('\tNew SARA total = {0}, RA fractions scaled by {1}'
+                   .format(sum([sara.fraction for sara in oil.sara_fractions]),
+                           scale))
+
+
 def get_ptry_values(oil_obj, component_type, sub_fraction=None):
     '''
         This gives an initial trial estimate for each density component.
@@ -671,6 +707,9 @@ def get_sa_mass_fractions(oil_obj):
         dependent on:
             - oil.molecular_weights[:].saturate
     '''
+    fraction_sum = sum([sara.fraction for sara in oil_obj.sara_fractions
+                        if sara.sara_type in ('Resins', 'Asphaltenes')])
+
     for P_try, F_i, T_i, c_type in get_ptry_values(oil_obj, 'Saturates'):
         if T_i < 530.0:
             sg = P_try / 1000
@@ -685,17 +724,31 @@ def get_sa_mass_fractions(oil_obj):
 
                 if f_sat >= F_i:
                     f_sat = F_i
-                elif f_sat < 0:
-                    f_sat = 0
+                elif f_sat < 0.0:
+                    f_sat = 0.0
 
-                f_arom = F_i * (1 - f_sat)
-
-                yield (f_sat, f_arom, T_i)
+                f_arom = F_i - f_sat
             else:
                 print '\tNo molecular weight at that temperature.'
+                continue
         else:
+            # Above 530K we will evenly split the saturates & aromatics
             f_sat = f_arom = F_i / 2
 
+        if fraction_sum >= 1.0:
+            # we can't add any more.
+            pass
+        elif f_sat + f_arom + fraction_sum > 1.0:
+            # we need to scale our sub-fractions so that the
+            # fraction sum adds up to 1.0
+            scale = (1.0 - fraction_sum) / (f_sat + f_arom)
+            f_sat *= scale
+            f_arom *= scale
+
+            fraction_sum += f_sat + f_arom
+            yield (f_sat, f_arom, T_i)
+        else:
+            fraction_sum += f_sat + f_arom
             yield (f_sat, f_arom, T_i)
 
 
@@ -707,9 +760,11 @@ def add_component_densities(imported_rec, oil):
         - fmass_0_j: saturate & aromatic mass fractions (estimation 14,15)
     '''
     oil.sara_densities.append(SARADensity(sara_type='Asphaltenes',
-                                          density=1100.0))
+                                          density=1100.0,
+                                          ref_temp_k=1015.0))
     oil.sara_densities.append(SARADensity(sara_type='Resins',
-                                          density=1100.0))
+                                          density=1100.0,
+                                          ref_temp_k=1015.0))
 
     sa_ratios = list(get_sa_mass_fractions(oil))
     ptry_values = (list(get_ptry_values(oil, 'Saturates',

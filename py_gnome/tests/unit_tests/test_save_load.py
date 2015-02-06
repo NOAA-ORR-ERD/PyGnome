@@ -13,8 +13,6 @@ from conftest import testdata
 
 import pytest
 
-base_dir = os.path.dirname(__file__)
-
 
 def test_exceptions():
     a = 1
@@ -70,17 +68,19 @@ def test_gnome_obj_reference():
 Run the following save/load test on multiple pygnome objects so collect tests
 here and parametrize it by the objects
 '''
-base_dir = os.path.dirname(__file__)
 
 
-def test_savloc_created():
+def test_savloc_created(dump):
     'unit test for _make_saveloc method'
     sav = Savable()
-    temp = os.path.join(base_dir, 'temp')
+    temp = os.path.join(dump, 'test_make_saveloc')
     sav._make_saveloc(temp)
 
     assert os.path.exists(temp)
     shutil.rmtree(temp)
+
+
+base_dir = os.path.dirname(__file__)
 
 
 # For WindMover test_save_load in test_wind_mover
@@ -163,7 +163,7 @@ def test_save_load2(obj, dump):
     'test save/load functionality'
 
     temp = os.path.join(dump, 'temp')
-    for dir_ in (temp, os.path.relpath(temp, base_dir)):
+    for dir_ in (temp, os.path.relpath(temp)):
         refs = obj.save(dir_)
         obj2 = load(os.path.join(dir_, refs.reference(obj)))
         assert obj == obj2

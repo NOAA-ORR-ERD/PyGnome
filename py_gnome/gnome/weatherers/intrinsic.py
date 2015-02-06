@@ -169,7 +169,7 @@ class IntrinsicProps(AddLogger):
         '''
         # nothing released yet - set everything to 0.0
         for key in ('avg_density', 'floating', 'amount_released',
-                    'avg_viscosity'):
+                    'avg_viscosity', 'beached'):
             sc.weathering_data[key] = 0.0
 
     def update(self, num_new_released, sc):
@@ -191,7 +191,6 @@ class IntrinsicProps(AddLogger):
         set these - will user be able to use select weatherers? Currently,
         evaporation defines 'density' data array
         '''
-        mask = sc['status_codes'] == oil_status.in_water
         # update avg_density from density array
         # wasted cycles at present since all values in density for given
         # timestep should be the same, but that will likely change
@@ -200,7 +199,12 @@ class IntrinsicProps(AddLogger):
             np.sum(sc['mass']/np.sum(sc['mass']) * sc['density'])
         sc.weathering_data['avg_viscosity'] = \
             np.sum(sc['mass']/sc['mass'].sum() * sc['viscosity'])
-        sc.weathering_data['floating'] = sc['mass'][mask].sum()
+
+        # include floating + beached oil since we could have a map
+        sc.weathering_data['floating'] = sc['mass'][sc['status_codes'] ==
+                                                    oil_status.in_water].sum()
+        sc.weathering_data['beached'] = sc['mass'][sc['status_codes'] ==
+                                                   oil_status.on_land].sum()
 
         if new_LEs > 0:
             amount_released = np.sum(sc['mass'][-new_LEs:])

@@ -1381,7 +1381,7 @@ TimeValuePairH OSSMTimeValue_c::CalculateRunningAverage(long pastHoursToAverage,
 	Seconds firstTime, lastTime, timeDiff, runningAverageTimeStep = 3600, timeToAverage, currentTime;
 	Seconds startTime, endTime;
 	VelocityRec velocity = {0.,0.}, average = {0.,0.};
-	double speed = 0;
+	double speed = 0, speed1 = 0, speed2 = 0;
 	Boolean calculateAll = true;
 	//char errmsg[256];
 	
@@ -1452,7 +1452,7 @@ TimeValuePairH OSSMTimeValue_c::CalculateRunningAverage(long pastHoursToAverage,
 		goto done;
 	}
 	
-	for (i=0; i<numRunningAverageValues; i++)
+	/*for (i=0; i<numRunningAverageValues; i++)
 	{
 		speed = 0;
 
@@ -1468,6 +1468,37 @@ TimeValuePairH OSSMTimeValue_c::CalculateRunningAverage(long pastHoursToAverage,
 			//printNote(errmsg);
 		}
 		speed = speed / (double)(pastHoursToAverage + 1);
+		average.u = speed;
+		average.v = 0;
+		(*runningAverageTimeValues)[i].value = average;
+		(*runningAverageTimeValues)[i].time = currentTime;
+		//sprintf(errmsg,"average speed = %lf, time = %lu\n",average.u,currentTime);
+		//printNote(errmsg);
+	
+	}*/
+	// try to make it more of an integral between the past time and current time
+	for (i=0; i<numRunningAverageValues; i++)
+	{
+		speed = 0, speed1 = 0, speed2 = 0;
+
+		//currentTime = firstTime + i * runningAverageTimeStep;
+		currentTime = startTime + i * runningAverageTimeStep;
+		for (j=0; j<pastHoursToAverage+1; j++)
+		{
+			timeToAverage = currentTime - j * 3600; 	// will get first value for any time before time zero
+			GetTimeValue(timeToAverage, &velocity);
+			
+			speed2 = sqrt(velocity.u*velocity.u + velocity.v*velocity.v);
+			if (j > 0)
+			{
+				speed = speed + (speed1 + speed2) / 2.;
+			}
+			//sprintf(errmsg,"speed = %lf, time = %lu\n",speed,timeToAverage);
+			//printNote(errmsg);
+			speed1 = speed2;
+		}
+		//speed = speed / (double)(pastHoursToAverage + 1);
+		speed = speed / (double)(pastHoursToAverage);
 		average.u = speed;
 		average.v = 0;
 		(*runningAverageTimeValues)[i].value = average;
