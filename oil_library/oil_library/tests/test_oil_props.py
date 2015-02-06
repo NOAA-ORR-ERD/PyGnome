@@ -64,7 +64,6 @@ class TestProperties:
     op = get_oil_props(u'ALASKA NORTH SLOPE')
     s_comp = sorted(op._r_oil.sara_fractions, key=lambda s: s.ref_temp_k)
     s_dens = sorted(op._r_oil.sara_densities, key=lambda s: s.ref_temp_k)
-    #s_cuts = sorted(op._r_oil.cuts, key=lambda s: s.vapor_temp_k)
 
     def test_sara(self):
         # boiling points
