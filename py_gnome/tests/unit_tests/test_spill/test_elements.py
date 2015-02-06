@@ -17,11 +17,11 @@ import unit_conversion as uc
 import gnome
 
 from gnome.spill.elements import (InitWindages,
-                            InitRiseVelFromDist,
-                            InitRiseVelFromDropletSizeFromDist,
-                            floating,
-                            ElementType,
-                            plume)
+                                  InitRiseVelFromDist,
+                                  InitRiseVelFromDropletSizeFromDist,
+                                  floating,
+                                  ElementType,
+                                  plume)
 
 from gnome.utilities.distributions import (NormalDistribution,
                                            LogNormalDistribution,
@@ -31,7 +31,7 @@ from gnome.spill import Spill, Release
 from oil_library import get_oil_props
 from gnome.persist import load
 
-from ..conftest import mock_sc_array_types, mock_append_data_arrays
+from ..conftest import mock_sc_array_types, mock_append_data_arrays, test_oil
 
 
 """ Helper functions """
@@ -45,8 +45,8 @@ rise_vel_array = mock_sc_array_types(['rise_vel'])
 rise_vel_diameter_array = mock_sc_array_types(['rise_vel',
                                                 'droplet_diameter'])
 
-oil = 'ALAMO'
 num_elems = 10
+oil = test_oil
 
 
 def assert_dataarray_shape_size(arr_types, data_arrays, num_released):
@@ -89,7 +89,7 @@ def test_correct_particles_set_by_initializers(fcn, arr_types, spill):
     # the values for the correct elements are set
     data_arrays = mock_append_data_arrays(arr_types, num_elems)
     data_arrays = mock_append_data_arrays(arr_types, num_elems, data_arrays)
-    substance = get_oil_props('oil_conservative')
+    substance = get_oil_props(oil)
 
     if spill is not None:
         spill.release.num_elements = 10
@@ -176,7 +176,7 @@ def test_initialize_InitRiseVelFromDropletDist_weibull():
     'Test initialize data_arrays with Weibull dist'
     num_elems = 10
     data_arrays = mock_append_data_arrays(rise_vel_diameter_array, num_elems)
-    substance = get_oil_props('oil_conservative')
+    substance = get_oil_props(oil)
     spill = Spill(Release(datetime.now()))
 
     # (.001*.2) / (.693 ** (1 / 1.8)) - smaller droplet test case, in mm
@@ -195,7 +195,7 @@ def test_initialize_InitRiseVelFromDropletDist_weibull_with_min_max():
     'Test initialize data_arrays with Weibull dist'
     num_elems = 1000
     data_arrays = mock_append_data_arrays(rise_vel_diameter_array, num_elems)
-    substance = get_oil_props('oil_conservative')
+    substance = get_oil_props(oil)
     spill = Spill(Release(datetime.now()))
 
     # (.001*3.8) / (.693 ** (1 / 1.8)) - larger droplet test case, in mm
@@ -236,7 +236,7 @@ arr_types = windages
 rise_vel = mock_sc_array_types(['rise_vel'])
 rise_vel.update(arr_types)
 
-oil = 'ALAMO'
+oil = test_oil
 
 inp_params = [((floating(substance=oil),
                 ElementType([InitWindages()], substance=oil)), arr_types),
@@ -316,8 +316,9 @@ def test_serialize_deserialize_initializers(fcn):
 
 test_l = []
 test_l.extend(fcn_list)
-test_l.extend([ElementType(initializers=fcn) for fcn in fcn_list])
-test_l.append(floating())
+test_l.extend([ElementType(initializers=fcn, substance=test_oil)
+               for fcn in fcn_list])
+test_l.append(floating(substance=test_oil))
 
 
 def test_serialize_deserialize():
@@ -349,26 +350,9 @@ def test_save_load(clean_saveloc, test_obj):
     assert test_obj == test_obj2
 
 
-@pytest.mark.parametrize(("substance_name", "density", "density_units"),
-                         [("oil_conservative", None, 'kg/m^3'),
-                          ("test_1", 1000.0, 'kg/m^3'),
-                          ("test_2", 10.0, 'api')])
-def test_plume_init(substance_name, density, density_units):
-    'test the plume() helper creates oil_props object correctly'
-    et = plume(substance_name=substance_name,
-               density=density,
-               density_units=density_units)
-    assert substance_name == et.substance.name
-    if density:
-        assert np.isclose(et.substance.get_density(),
-            uc.convert('density', density_units, 'kg/m^3', density))
-        assert np.isclose(et.substance.api,
-            uc.convert('density', density_units, 'api', density))
-
-
-@pytest.mark.parametrize("substance", [u'ALAMO',
-                                       51,  # oil record in DB
-                                       get_oil_props(u'ALAMO')])
+@pytest.mark.parametrize("substance", [test_oil,
+                                       10,  # oil record in DB
+                                       get_oil_props(test_oil)])
 def test_element_type_init(substance):
     et = ElementType(substance=substance)
     if isinstance(substance, basestring):

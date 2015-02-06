@@ -28,13 +28,13 @@ from gnome.spill import (Spill,
 from gnome.spill.elements import (floating,
                                   ElementType)
 
-from ..conftest import mock_sc_array_types, mock_append_data_arrays
+from ..conftest import mock_sc_array_types, mock_append_data_arrays, test_oil
 
 
 # Used to mock SpillContainer functionality of creating/appending data_arrays
 # Only care about 'positions' array type for all spills, no need to define
 # and carry remaining numpy arrays
-arr_types = mock_sc_array_types(['positions', 'mass'])
+arr_types = mock_sc_array_types({'positions', 'mass'})
 
 
 @pytest.mark.parametrize(("element_type", "amount"), [(None, None),
@@ -69,7 +69,10 @@ def test_amount_mass_vol(amount, units):
     ensure mass is being returned correctly when 'amount' is initialized wtih
     'mass' or 'volume'
     '''
-    spill = Spill(Release(datetime.now()), amount=amount, units=units)
+    spill = Spill(Release(datetime.now()),
+                  amount=amount,
+                  units=units,
+                  substance=test_oil)
     assert spill.amount == amount
     assert spill.units == units
 

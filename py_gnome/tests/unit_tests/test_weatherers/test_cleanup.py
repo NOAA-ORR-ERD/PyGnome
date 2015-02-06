@@ -12,6 +12,7 @@ from gnome.weatherers.intrinsic import IntrinsicProps
 from gnome.weatherers import Skimmer
 from gnome.spill_container import SpillContainer
 from gnome.spill import point_line_release_spill
+from ..conftest import test_oil
 
 
 delay = 1.
@@ -37,7 +38,7 @@ class TestSkimmer:
         sc.spills += point_line_release_spill(10,
                                               (0, 0, 0),
                                               self.rel_time,
-                                              substance='ALAMO',
+                                              substance=test_oil,
                                               amount=self.amount,
                                               units='kg')
         intrinsic = IntrinsicProps(water)

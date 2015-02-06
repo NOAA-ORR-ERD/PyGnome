@@ -34,7 +34,7 @@ from gnome.weatherers import (HalfLifeWeatherer,
                               Emulsification)
 from gnome.outputters import Renderer, GeoJson
 
-from conftest import sample_model_weathering, testdata
+from conftest import sample_model_weathering, testdata, test_oil
 
 
 @pytest.fixture(scope='function')
@@ -68,7 +68,7 @@ def model(sample_model_fcn, dump):
     release = SpatialRelease(start_position=line_pos,
                              release_time=model.start_time)
 
-    model.spills += Spill(release, substance='ALAMO')
+    model.spills += Spill(release, substance=test_oil)
 
     return model
 
@@ -838,7 +838,7 @@ def test_contains_object(sample_model_fcn):
     '''
     Test that we can find all contained object types with a model.
     '''
-    model = sample_model_weathering(sample_model_fcn, 'ALAMO')
+    model = sample_model_weathering(sample_model_fcn, test_oil)
 
     gnome_map = model.map = gnome.map.GnomeMap()    # make it all water
 
@@ -910,7 +910,7 @@ def test_staggered_spills_weathering(sample_model_fcn, delay):
 
     test exposed a bug, which is now fixed
     '''
-    model = sample_model_weathering(sample_model_fcn, 'ALAMO')
+    model = sample_model_weathering(sample_model_fcn, test_oil)
     model.map = gnome.map.GnomeMap()    # make it all water
     model.uncertain = False
     rel_time = model.spills[0].get('release_time')

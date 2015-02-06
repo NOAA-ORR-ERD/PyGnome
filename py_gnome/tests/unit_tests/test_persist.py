@@ -25,7 +25,7 @@ from gnome.weatherers import Evaporation, Skimmer
 from gnome.outputters import Renderer
 # from gnome.utilities.remote_data import get_datafile
 
-from conftest import dump, testdata
+from conftest import dump, testdata, test_oil
 
 
 saveloc_ = os.path.join(dump(), 'save_model')
@@ -92,7 +92,7 @@ def make_model(images_dir, uncertain=False):
                                  end_release_time=end_release_time,
                                  amount=spill_amount,
                                  units=spill_units,
-                                 substance='ALAMO')
+                                 substance=test_oil)
 
     # need a scenario for SimpleMover
     # model.movers += SimpleMover(velocity=(1.0, -1.0, 0.0))

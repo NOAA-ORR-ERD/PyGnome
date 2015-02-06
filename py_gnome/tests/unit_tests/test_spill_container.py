@@ -28,6 +28,7 @@ from gnome.utilities.distributions import UniformDistribution
 
 from gnome.spill_container import SpillContainer, SpillContainerPair
 from gnome.spill import point_line_release_spill, Spill, Release
+from conftest import test_oil
 
 
 # additional array_type for testing spill_container functionality
@@ -501,7 +502,7 @@ def test_ordered_collection_api():
 
 
 """ tests w/ element types set for two spills """
-oil = 'ALAMO'
+oil = test_oil
 el0 = ElementType([InitWindages((0.02, 0.02), -1),
                    InitRiseVelFromDist(
                        distribution=UniformDistribution(low=1, high=10))
@@ -1122,7 +1123,7 @@ class TestSubstanceSpillsDataStructure():
                             element_type=floating(substance=None),
                             name='spill0'),
                       Spill(Release(datetime.now(), 10),
-                            element_type=floating(),
+                            element_type=floating(substance=test_oil),
                             name='spill1')]
 
         assert len(sc.get_substances()) == 2

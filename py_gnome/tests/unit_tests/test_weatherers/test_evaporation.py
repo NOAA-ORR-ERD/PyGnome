@@ -27,8 +27,9 @@ arrays.update(intrinsic.array_types)
 
 @pytest.mark.parametrize(('oil', 'temp', 'num_elems', 'on'),
                          [('AGUA DULCE', 311.15, 3, True),
-                          ('ALAMO', 311.15, 3, True),
-                          ('FUEL OIL NO.6', 311.15, 3, False)])
+                          ('ALASKA NORTH SLOPE', 311.15, 3, True),
+                          ('FUEL OIL NO.6', 311.15, 3, False)
+                          ])
 def test_evaporation(oil, temp, num_elems, on):
     '''
     still working on tests ..
@@ -58,17 +59,10 @@ def test_evaporation(oil, temp, num_elems, on):
 
     for spill in sc.spills:
         mask = sc.get_spill_mask(spill)
-        sa = -2     # last two elements are now always resins and asphaltenes 
         if on:
-            assert np.all(sc['evap_decay_constant'][mask, :sa] < 0.0)
-            assert np.all(sc['evap_decay_constant'][mask, sa:] == 0.0)
+            assert np.all(sc['evap_decay_constant'][mask, :] < 0.0)
         else:
             assert np.all(sc['evap_decay_constant'][mask, :] == 0.0)
-
-        assert np.all(init_mass[mask, :sa] >=
-                      sc['mass_components'][mask, :sa])
-        assert np.all(init_mass[mask, sa:] ==
-                      sc['mass_components'][mask, sa:])
 
     if on:
         assert sc.weathering_data['evaporated'] > 0.0
@@ -84,22 +78,20 @@ def test_evaporation(oil, temp, num_elems, on):
 def assert_helper(sc, new_p):
     'common assertions for spills and data in SpillContainer'
     total_mass = sum([spill.get_mass('kg') for spill in sc.spills])
-    arrays = ['evap_decay_constant', 'mass_components', 'mass', 'status_codes']
-    for substance, data in sc.itersubstancedata(arrays):
-        # resins and asphaltenes are always present in data now
-        sa = -2
+    arrays = {'evap_decay_constant', 'mass_components', 'mass', 'status_codes'}
 
+    for substance, data in sc.itersubstancedata(arrays):
         if len(sc) > new_p:
             old_le = len(sc)-new_p
             inwater = data['status_codes'][:old_le] == oil_status.in_water
-            assert np.all(data['evap_decay_constant'][:old_le, :sa][inwater] <
+            assert np.all(data['evap_decay_constant'][:old_le, :][inwater] <
                           0.0)
-            assert np.all(data['evap_decay_constant'][:old_le, :sa][~inwater]
+            assert np.all(data['evap_decay_constant'][:old_le, :][~inwater]
                           == 0.0)
-            # heavy components always have evap_decay_constant of 0.0
-            assert np.all(data['evap_decay_constant'][:old_le, sa:] == 0.0)
+
             assert np.allclose(np.sum(data['mass_components'], 1),
                                data['mass'])
+
             # not an instantaneous release so following is true even at step 0
             assert data['mass'].sum() < total_mass
 

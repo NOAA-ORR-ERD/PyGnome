@@ -14,6 +14,7 @@ from gnome.model import Model
 from gnome.environment import constant_wind, Water
 from gnome.weatherers import Evaporation
 from gnome.spill import point_line_release_spill
+from conftest import test_oil
 
 
 config_dict = {
@@ -105,7 +106,8 @@ class TestLog():
                                                  model.start_time,
                                                  end_release_time=model.start_time + timedelta(days=1),
                                                  amount=200,
-                                                 units='m^3')
+                                                 units='m^3',
+                                                 substance=test_oil)
         model.water = Water()
         model.environment += constant_wind(1., 0.)
         model.weatherers += Evaporation(model.water,

@@ -232,8 +232,9 @@ class TestIntrinsicProps:
             sc100['age'] += ts
             print 'Completed step: ', i
 
-    @pytest.mark.parametrize(("s0", "s1"), [("ALAMO", "ALAMO"),
-                                            ("ALAMO", "AGUA DULCE")])
+    @pytest.mark.parametrize(("s0", "s1"),
+                             [("ALASKA NORTH SLOPE", "ALASKA NORTH SLOPE"),
+                              ("ALASKA NORTH SLOPE", "AGUA DULCE")])
     def test_update_intrinsic_props(self, s0, s1):
         intrinsic = IntrinsicProps(water)
 
@@ -293,7 +294,7 @@ class TestIntrinsicProps:
                 if s0 != s1:
                     assert np.any(sc['mass_components'] > 0)
                 else:
-                    assert np.all(sc['mass_components'] > 0)
+                    assert np.any(sc['mass_components'] != 0)
 
             sc['age'] += ts     # model would do this operation
             print 'Completed step: ', i
