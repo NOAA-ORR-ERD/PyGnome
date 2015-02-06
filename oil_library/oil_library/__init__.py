@@ -161,4 +161,8 @@ def get_oil_props(oil_info, max_cuts=None):
     When pulling record from database, this is ignored.
     '''
     oil_ = get_oil(oil_info, max_cuts)
-    return OilProps(oil_)
+    try:
+        return OilProps(oil_)
+    except:
+        # record found in DB but failed to create a valid OilProps object
+        return None

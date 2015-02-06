@@ -27,6 +27,18 @@ def test_get_oil(search):
         assert o.imported.id == search
 
 
+# Record number 51: "AUTOMOTIVE GASOLINE, EXXON" is found in database
+# but mass fractions do not sum upto one so valid OilProps object not created.
+# In this case return None
+@pytest.mark.parametrize(("search", "isNone"),
+                         [('FUEL OIL NO.6', False), (51, True)])
+def test_get_oil_props(search, isNone):
+    op = get_oil_props(search)
+    if isNone:
+        assert op is None
+    else:
+        assert op is not None
+
 # just double check values for _sample_oil are entered correctly
 
 oil_density_units = [
