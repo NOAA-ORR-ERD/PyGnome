@@ -34,7 +34,7 @@ class ElementType(Serializable):
     _state += Field('substance', save=True, update=True, test_for_eq=False)
     _schema = base_schema.ObjType
 
-    def __init__(self, initializers=[], substance='oil_conservative'):
+    def __init__(self, initializers=[], substance=None):
         '''
         Define initializers for the type of elements.
         The default element_type has a substance with density of water
@@ -64,7 +64,8 @@ class ElementType(Serializable):
             self.initializers.append(initializers)
 
         self._substance = None
-        self.substance = substance
+        if substance is not None:
+            self.substance = substance
 
     def __repr__(self):
         return ('{0.__class__.__module__}.{0.__class__.__name__}('
@@ -100,8 +101,7 @@ class ElementType(Serializable):
         user has provided a valid OilProps object and use it as is
         '''
         try:
-            # leave for now to preserve tests
-            self._substance = get_oil_props(val, 2)
+            self._substance = get_oil_props(val)
         except:
             self.logger.info('Failed to get_oil_props for {0}. Use as is '
                              'assuming has OilProps interface'.format(val))
@@ -194,11 +194,12 @@ class ElementType(Serializable):
             # we don't have a way to construct to object fromjson()
             dict_ = et_schema.deserialize(json_)
 
-            substance = json_.pop('substance', 'oil_conservative')
-            if 'id' in substance and substance['id'] is not None:
-                dict_['substance'] = substance['id']
-            elif 'name' in substance:
-                dict_['substance'] = substance['name']
+            substance = json_.pop('substance', None)
+            if substance is not None:
+                if 'id' in substance and substance['id'] is not None:
+                    dict_['substance'] = substance['id']
+                elif 'name' in substance:
+                    dict_['substance'] = substance['name']
 
             d_init = []
 
@@ -224,7 +225,7 @@ class ElementType(Serializable):
 
 def floating(windage_range=(.01, .04),
              windage_persist=900,
-             substance='oil_conservative'):
+             substance=None):
     """
     Helper function returns an ElementType object containing following
     initializers:
@@ -244,7 +245,7 @@ def plume(distribution_type='droplet_size',
           distribution='weibull',
           windage_range=(.01, .04),
           windage_persist=900,
-          substance_name='oil_conservative',
+          substance_name=None,
           density=None,
           density_units='kg/m^3',
           **kwargs):
