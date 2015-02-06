@@ -62,54 +62,31 @@ def test_OilProps_DBquery(oil, api):
 
 class TestProperties:
     op = get_oil_props(u'ALASKA NORTH SLOPE')
-    sa = [ix for ix in op._r_oil.sara_fractions
-          if ix.sara_type not in ('Resins', 'Asphaltenes')]
-    rho_sa = [ix for ix in op._r_oil.sara_densities
-              if ix.sara_type not in ('Resins', 'Asphaltenes')]
-    sa.sort(key=lambda s: s.ref_temp_k)
-    rho_sa.sort(key=lambda s: s.ref_temp_k)
-
-    ra = [ix for ix in op._r_oil.sara_fractions
-          if ix.sara_type in ('Resins', 'Asphaltenes')]
-    rho_ra = [ix for ix in op._r_oil.sara_densities
-              if ix.sara_type in ('Resins', 'Asphaltenes')]
-    ra.sort(key=lambda s: s.sara_type, reverse=True)
-    rho_ra.sort(key=lambda s: s.sara_type, reverse=True)
+    s_comp = sorted(op._r_oil.sara_fractions, key=lambda s: s.ref_temp_k)
+    s_dens = sorted(op._r_oil.sara_densities, key=lambda s: s.ref_temp_k)
+    #s_cuts = sorted(op._r_oil.cuts, key=lambda s: s.vapor_temp_k)
 
     def test_sara(self):
         # boiling points
-        assert np.all(self.op.boiling_point[:-2] ==
-                      [comp.ref_temp_k for comp in self.sa])
-        np.all(self.op.boiling_point[-2:] == float('inf'))
-        # resins and asphaltenes mass_fractions
-        np.all(self.op.mass_fraction[-2:] ==
-               [ix.fraction for ix in self.ra])
+        assert np.all(self.op.boiling_point ==
+                      [comp.ref_temp_k for comp in self.s_comp])
 
-        # resins and asphaltenes density
-        np.all(self.op.component_density[-2:] ==
-               [ix.density for ix in self.rho_ra])
+        # mass fraction
+        assert np.all(self.op.mass_fraction ==
+                      [comp.fraction for comp in self.s_comp])
 
-        # saturates + aromatics density + mass_fractions
-        for ix in xrange(len(self.sa)/2):
-            assert self.op._sara['type'][ix*2] == 'S'
-            assert self.op._sara['type'][ix*2 + 1] == 'A'
+        # sara type
+        assert np.all(self.op._sara['type'] ==
+                      [comp.sara_type for comp in self.s_comp])
 
-            # Make no assumptions about order of sara_fraction and
-            # sara_densities
-            sa_frac = sorted(self.sa[ix*2:ix*2 + 2], key=lambda s: s.sara_type,
-                             reverse=True)
-            rho_sa = sorted(self.rho_sa[ix*2:ix*2 + 2],
-                            key=lambda s: s.sara_type, reverse=True)
-            # Saturates
-            assert sa_frac[0].sara_type == 'Saturates'
-            assert sa_frac[0].fraction == self.op.mass_fraction[ix*2]
-            assert rho_sa[0].density == self.op.component_density[ix*2]
+        # density
+        assert np.all(self.op.boiling_point ==
+                      [comp.ref_temp_k for comp in self.s_dens])
 
-            # Aromatics
-            assert sa_frac[1].sara_type == 'Aromatics'
-            assert sa_frac[1].fraction == self.op.mass_fraction[ix*2 + 1]
-            assert rho_sa[1].density == self.op.component_density[ix*2 + 1]
+        assert np.all(self.op.component_density ==
+                      dens for dens in self.s_dens)
 
+        assert np.allclose(self.op.mass_fraction.sum(), 1.0)
 
 
 def test_eq():

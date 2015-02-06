@@ -242,13 +242,13 @@ class OilProps(object):
         '''
         initialize self._sara as a numpy array. The information is structured
         in increasing boiling points as:
-            ['S', boiling_point_0, mass_fraction, density]
-            ['A', boiling_point_0, mass_fraction, density]
-            ['S', boiling_point_1, mass_fraction, density]
-            ['A', boiling_point_1, mass_fraction, density]
+            ['Saturates', boiling_point_0, mass_fraction, density]
+            ['Aromatics', boiling_point_0, mass_fraction, density]
+            ['Saturates', boiling_point_1, mass_fraction, density]
+            ['Aromatics', boiling_point_1, mass_fraction, density]
             ...
-            ['R', boiling_point_terminal, mass_fraction, density]
-            ['A', boiling_point_termnal, mass_fraction, density]
+            ['Resins', boiling_point_terminal, mass_fraction, density]
+            ['Asphaltenes', boiling_point_terminal, mass_fraction, density]
         '''
         all_comp = sorted(self._r_oil.sara_fractions,
                           key=lambda s: s.ref_temp_k)
@@ -265,9 +265,9 @@ class OilProps(object):
             items[ix] = (comp.sara_type, comp.ref_temp_k, comp.fraction,
                          dens.density)
 
-        if items[:]['fraction'].sum() != 1.0:
+        if not np.allclose(items[:]['fraction'].sum(), 1.0):
             msg = ("mass fractions add up to: {0} - required "
-                   "to add to 1.0").format(items.sum())
+                   "to add to 1.0").format(items[:]['fraction'].sum())
             raise ValueError(msg)
 
         self._sara = items

@@ -4,6 +4,7 @@ test dict_to_oil functions
 from pprint import PrettyPrinter
 pp = PrettyPrinter(indent=2)
 
+import numpy as np
 import pytest
 import unit_conversion as uc
 
@@ -26,7 +27,7 @@ def test_sample_oil_to_mock_oil():
 @pytest.mark.xfail
 def test_get_oil_props():
     op = get_oil_props(sample_oil)
-    assert abs(sum(op.mass_fraction) - 1.0) < 1e-10
-    assert op.mass_fraction > 0
+    assert np.allclose(op.mass_fraction, 1.0)
+    assert np.all(op.mass_fraction >= 0)
     assert op.api == \
         uc.convert('density', 'kg/m^3', 'API', op.get_density(273.16 + 15))
