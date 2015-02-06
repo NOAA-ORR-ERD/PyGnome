@@ -27,16 +27,14 @@ from gnome.spill import (Spill,
                          SpatialRelease)
 from gnome.spill.elements import (floating,
                                   ElementType)
-import gnome.array_types
 
-from ..conftest import mock_append_data_arrays
+from ..conftest import mock_sc_array_types, mock_append_data_arrays
 
 
 # Used to mock SpillContainer functionality of creating/appending data_arrays
 # Only care about 'positions' array type for all spills, no need to define
 # and carry remaining numpy arrays
-arr_types = {'positions': gnome.array_types.positions,
-             'mass': gnome.array_types.mass}
+arr_types = mock_sc_array_types(['positions', 'mass'])
 
 
 @pytest.mark.parametrize(("element_type", "amount"), [(None, None),

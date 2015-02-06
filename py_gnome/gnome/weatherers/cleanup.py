@@ -89,6 +89,9 @@ class Skimmer(Weatherer, Serializable):
             self.logger.warn(msg)
 
     def prepare_for_model_run(self, sc):
+        '''
+        no need to call base class since no new array_types were added
+        '''
         if sc.spills:
             sc.weathering_data['skimmed'] = 0.0
 
@@ -145,7 +148,7 @@ class Skimmer(Weatherer, Serializable):
                                   total_mass_removed)[0][0] + 1
                     data['status_codes'][:ix] = oil_status.skim
 
-                sc.update_from_substancedata(self._arrays, substance)
+                sc.update_from_substancedata(self.array_types, substance)
 
         else:
             self._active = False
@@ -183,7 +186,7 @@ class Skimmer(Weatherer, Serializable):
         if len(sc) == 0:
             return
 
-        for substance, data in sc.itersubstancedata(self._arrays):
+        for substance, data in sc.itersubstancedata(self.array_types):
             rm_mass = (self._mass_to_remove(substance) * self.efficiency)
 
             self.logger.info('{0} - Amount skimmed: {1}'.
@@ -199,7 +202,7 @@ class Skimmer(Weatherer, Serializable):
 
             sc.weathering_data['skimmed'] += rm_mass
 
-        sc.update_from_substancedata(self._arrays)
+        sc.update_from_substancedata(self.array_types)
 
 
 class Burn(Weatherer, Serializable):
@@ -213,7 +216,7 @@ class Burn(Weatherer, Serializable):
     def weather_elements(self, sc, time_step, model_time):
         'for now just take away 0.1% at every step'
         if self.active and len(sc) > 0:
-            for substance, data in sc.itersubstancedata(self._arrays):
+            for substance, data in sc.itersubstancedata(self.array_types):
                 mask = data['status_codes'] == oil_status.in_water
                 # take out 0.25% of the mass
                 pct_per_le = (1 - 0.25/data['mass_components'].shape[1])
@@ -223,7 +226,7 @@ class Burn(Weatherer, Serializable):
                 data['mass_components'][mask, :] = mass_remain
                 data['mass'][mask] = data['mass_components'][mask, :].sum(1)
 
-            sc.update_from_substancedata(self._arrays)
+            sc.update_from_substancedata(self.array_types)
 
 
 class Dispersion(Weatherer, Serializable):
@@ -237,7 +240,7 @@ class Dispersion(Weatherer, Serializable):
     def weather_elements(self, sc, time_step, model_time):
         'for now just take away 0.1% at every step'
         if self.active and len(sc) > 0:
-            for substance, data in sc.itersubstancedata(self._arrays):
+            for substance, data in sc.itersubstancedata(self.array_types):
                 mask = data['status_codes'] == oil_status.in_water
                 # take out 0.25% of the mass
                 pct_per_le = (1 - 0.015/data['mass_components'].shape[1])
@@ -247,4 +250,4 @@ class Dispersion(Weatherer, Serializable):
                 data['mass_components'][mask, :] = mass_remain
                 data['mass'][mask] = data['mass_components'][mask, :].sum(1)
 
-            sc.update_from_substancedata(self._arrays)
+            sc.update_from_substancedata(self.array_types)

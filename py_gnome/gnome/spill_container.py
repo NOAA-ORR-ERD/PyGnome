@@ -13,6 +13,7 @@ import numpy
 np = numpy
 
 from gnome.basic_types import oil_status
+import gnome.array_types as gat
 from gnome.array_types import (positions,
                                next_positions,
                                last_water_positions,
@@ -271,7 +272,8 @@ class SpillContainer(AddLogger, SpillContainerData):
             shape = self._data_arrays[data_name].shape[1:]
             dtype = self._data_arrays[data_name].dtype.type
 
-            self._array_types[data_name] = ArrayType(shape, dtype)
+            self._array_types[data_name] = ArrayType(shape, dtype,
+                                                     name=data_name)
 
     def _reset_arrays(self):
         '''
@@ -390,8 +392,22 @@ class SpillContainer(AddLogger, SpillContainerData):
                               'structure'.format(os.getpid(), substance.name))
             return None
 
-    def substancedata(self, substance, arrays):
-        'return the data for specified substance'
+    def _array_name(self, at):
+        '''
+        given an array type, return the name of the array. This can be string,
+        in which case, it is the name of the array so return it. If its not
+        a string, then return the at.name attribute.
+        '''
+        if isinstance(at, basestring):
+            return at
+        else:
+            return at.name
+
+    def substancedata(self, substance, array_types):
+        '''
+        return the data for specified substance
+        data must contain array names specified in 'array_types'
+        '''
         if self._substances_spills is None:
             # todo: figure out if we need this check everywhere
             self._set_substancespills()
@@ -402,7 +418,7 @@ class SpillContainer(AddLogger, SpillContainerData):
             return
 
         if len(self.get_substances()) > 1:
-            self._set_substancedata(arrays)
+            self._set_substancedata(array_types)
 
         return self._substances_spills.data[ix]
 
@@ -417,7 +433,7 @@ class SpillContainer(AddLogger, SpillContainerData):
             self._set_substancespills()
         return self._substances_spills.spills
 
-    def itersubstancedata(self, arrays):
+    def itersubstancedata(self, array_types):
         '''
         iterates through and returns the following for each iteration:
         (substance, substance_data)
@@ -425,7 +441,9 @@ class SpillContainer(AddLogger, SpillContainerData):
         This is used by weatherers - if a substance is None, omit it from
         the iteration.
 
-        :param arrays: list of array names that should be in the data.
+        :param array_types: iterable containing array that should be in the
+            data. This could be a set of strings corresponding with array names
+            or ArrayType objects which have a name attribute
         :returns: (substance, substance_data) for each iteration
             substance: substance object
             substance_data: dict of numpy arrays associated with substance
@@ -434,12 +452,12 @@ class SpillContainer(AddLogger, SpillContainerData):
             self._set_substancespills()
 
         if len(self.get_substances()) > 1:
-            self._set_substancedata(arrays)
+            self._set_substancedata(array_types)
         return filter(lambda x: x[0] is not None,
                       zip(self._substances_spills.substances,
                           self._substances_spills.data))
 
-    def update_from_substancedata(self, arrays, substance=None):
+    def update_from_substancedata(self, array_types, substance=None):
         '''
         let's only update the arrays that were changed
         only update if a copy of 'data' exists. This is the case if there are
@@ -448,35 +466,38 @@ class SpillContainer(AddLogger, SpillContainerData):
         if len(self.get_substances()) == 1:
             return
         if substance is None:
-            self._update_all_from_substancedata(arrays)
+            self._update_all_from_substancedata(array_types)
         else:
             ix = self._index_of_substance(substance)
             if ix is None:
                 return
             data = self._substances_spills.data[ix]
             mask = self['substance'] == ix
-            for array in arrays:
+            for at in array_types:
+                array = self._array_name(at)
                 self[array][mask] = data[array][:]
 
-    def _update_all_from_substancedata(self, arrays):
+    def _update_all_from_substancedata(self, array_types):
         for ix, data in enumerate(self._substances_spills.data):
             if self._substances_spills.substances[ix] is not None:
                 mask = self['substance'] == ix
-                for array in arrays:
+                for at in array_types:
+                    array = self._array_name(at)
                     self[array][mask] = data[array][:]
 
-    def _set_substancedata(self, arrays):
+    def _set_substancedata(self, array_types):
         '''
-        - update substance data, create a list of strided arrays
-        for now only weathering data cares about this view so if 'substance' is
-        None, then don't bother updating 'data'
+        * update substance data,
+        * for now only weathering data cares about this view so if 'substance'
+          is None, then don't bother updating 'data'
         '''
         for ix, data in enumerate(self._substances_spills.data):
             if self._substances_spills.substances[ix] is None:
                 continue
 
             mask = self['substance'] == ix
-            for array in arrays:
+            for at in array_types:
+                array = self._array_name(at)
                 if array not in data:
                     data[array] = self[array][mask]
 
@@ -543,7 +564,39 @@ class SpillContainer(AddLogger, SpillContainerData):
 
         return u_sc
 
-    def prepare_for_model_run(self, array_types={}):
+    def _append_array_types(self, array_types):
+        '''
+        append to self.array_types the input array_types.
+
+        :param array_types: set of array_types to be appended
+        :type array_types: set()
+
+        The set contains either a name as a string, say: 'rise_vel'
+        In this case, get the ArrayType from gnome.array_types.rise_vel
+        Set elements could also be tuples, say: ('rise_vel': ArrayType())
+        In this case the user name of the data_array and its array_type is
+        specified by the tuple so append it.
+
+        .. note:: If a tuple: ('name', ArrayType()), is given and an ArrayType
+            with that name already exists in self._array_types, then it is
+            overwritten.
+        '''
+        for array in array_types:
+            if isinstance(array, basestring):
+                # allow user to override an array_type that might already exist
+                # in self._array_types
+                try:
+                    array = getattr(gat, array)
+                except AttributeError:
+                    msg = ("Skipping {0} - not found in gnome.array_types;"
+                           " and ArrayType is not provided.").format(array)
+                    self.logger.error(msg)
+                    continue
+
+            # must be an ArrayType of an object
+            self._array_types[array.name] = array
+
+    def prepare_for_model_run(self, array_types=set()):
         """
         called when setting up the model prior to 1st time step
         This is considered 0th timestep by model
@@ -556,24 +609,31 @@ class SpillContainer(AddLogger, SpillContainerData):
         :param model_start_time: model_start_time to initialize
             current_time_stamp. This is the time_stamp associated with 0-th
             step so initial conditions for data arrays
-        :param array_types: a dict of additional array_types to append to
-            standard array_types attribute. The data_arrays are initialized and
-            appended based on the values of array_types attribute
+        :param array_types: a set of additional names and/or array_types to
+            append to standard array_types attribute. Set can contain only
+            strings or a tuple with (string, ArrayType). See Note below.
 
-        .. note:: The SpillContainer cycles through each of the keys in
-        array_types and checks to see if there is an associated initializer
-        in each Spill. If a corresponding initializer is found, it gets the
-        array_types from initializer and appends them to its own list. This was
-        added for the case where 'droplet_diameter' array is defined/used by
-        initializer (InitRiseVelFromDropletSizeFromDist) and we would like to
-        see it in output, but no Mover/Weatherer needs it.
+        .. note:: set can contains strings or tuples. If set contains only
+            strings, say: {'mass', 'windages'},
+            then SpillContainer looks for corresponding ArrayType object
+            defined in gnome.array_types for 'mass' and 'windages'.
+            If set contains a tuple, say: {('mass', gnome.array_types.mass)},
+            then SpillContainer uses the ArrayType defined in the tuple.
+
+        .. note:: The SpillContainer iterates through each of the item in
+            array_types and checks to see if there is an associated initializer
+            in any Spill. If corresponding initializer is found, it gets the
+            array_types from initializer and appends them to its own list. This
+            was added for the case where 'droplet_diameter' array is
+            defined/used by initializer (InitRiseVelFromDropletSizeFromDist)
+            and we would like to see it in output, but no Mover/Weatherer needs
+            it.
         """
         # Question - should we purge any new arrays that were added in previous
         # call to prepare_for_model_run()?
         # No! If user made modifications to _array_types before running model,
         # let's keep those. A rewind will reset data_arrays.
-        self._array_types.update(array_types)
-
+        self._append_array_types(array_types)
         self._append_initializer_array_types(array_types)
 
         if self._substances_spills is None:
@@ -584,12 +644,12 @@ class SpillContainer(AddLogger, SpillContainerData):
         self.initialize_data_arrays()
 
     def _append_initializer_array_types(self, array_types):
-        # for each array_types, use the key to get the associated initializer
-        for key in array_types:
+        # for each array_types, use the name to get the associated initializer
+        for name in array_types:
             for spill in self.spills:
-                if spill.is_initializer(key):
-                    self._array_types.update(
-                        spill.get_initializer(key).array_types)
+                if spill.has_initializer(name):
+                    self._append_array_types(spill.get_initializer(name).
+                                             array_types)
 
     def initialize_data_arrays(self):
         """

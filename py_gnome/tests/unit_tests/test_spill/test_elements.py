@@ -15,7 +15,7 @@ np = numpy
 
 import unit_conversion as uc
 import gnome
-from gnome import array_types
+
 from gnome.spill.elements import (InitWindages,
                             InitRiseVelFromDist,
                             InitRiseVelFromDropletSizeFromDist,
@@ -31,22 +31,20 @@ from gnome.spill import Spill, Release
 from oil_library import get_oil_props
 from gnome.persist import load
 
-from ..conftest import mock_append_data_arrays
+from ..conftest import mock_sc_array_types, mock_append_data_arrays
 
 
 """ Helper functions """
 # first key in windages array must be 'windages' because test function:
 # test_element_type_serialize_deserialize assumes this is the case
-windages = {'windages': array_types.windages,
-            'windage_range': array_types.windage_range,
-            'windage_persist': array_types.windage_persist}
+windages = mock_sc_array_types(['windages',
+                                 'windage_range',
+                                 'windage_persist'])
+mass_array = mock_sc_array_types(['mass'])
+rise_vel_array = mock_sc_array_types(['rise_vel'])
+rise_vel_diameter_array = mock_sc_array_types(['rise_vel',
+                                                'droplet_diameter'])
 
-mass_array = {'mass': array_types.mass}
-
-rise_vel_array = {'rise_vel': array_types.rise_vel}
-
-rise_vel_diameter_array = {'rise_vel': array_types.rise_vel,
-                           'droplet_diameter': array_types.droplet_diameter}
 oil = 'ALAMO'
 num_elems = 10
 
@@ -234,11 +232,8 @@ def test_initialize_InitRiseVelFromDist_normal():
 
 """ Element Types"""
 # additional array_types corresponding with ElementTypes for following test
-arr_types = {'windages': array_types.windages,
-             'windage_range': array_types.windage_range,
-             'windage_persist': array_types.windage_persist}
-
-rise_vel = {'rise_vel': array_types.rise_vel}
+arr_types = windages
+rise_vel = mock_sc_array_types(['rise_vel'])
 rise_vel.update(arr_types)
 
 oil = 'ALAMO'
@@ -289,7 +284,7 @@ def test_element_types(elem_type, arr_types, sample_sc_no_uncertainty):
         for spill in sc.spills:
             spill_mask = sc.get_spill_mask(spill)
             # todo: need better API for access
-            s_arr_types = spill.get('array_types').keys()
+            s_arr_types = spill.get('array_types')
 
             if np.any(spill_mask):
                 for key in arr_types:

@@ -13,7 +13,6 @@ import unit_conversion
 from gnome.basic_types import (datetime_value_2d,
                                ts_format)
 
-from gnome import array_types
 
 from gnome.utilities.projections import FlatEarthProjection
 from gnome.utilities.time_utils import date_to_sec, sec_to_date
@@ -220,7 +219,7 @@ class TestWindMover:
                    '{1}'.format('WindMover.get_move()', tol))
             np.testing.assert_allclose(delta, actual, tol, tol, msg, 0)
 
-            assert self.wm.active == True
+            assert self.wm.active
 
             ts = date_to_sec(curr_time) - date_to_sec(self.model_time)
             print ('Time step [sec]:\t{0}'
@@ -279,9 +278,7 @@ def test_windage_index():
                                 )
         sc.spills.add(spill)
 
-    windage = {'windages': array_types.windages,
-               'windage_range': array_types.windage_range,
-               'windage_persist': array_types.windage_persist}
+    windage = ['windages', 'windage_range', 'windage_persist']
     sc.prepare_for_model_run(array_types=windage)
     sc.release_elements(timestep, rel_time)
 
