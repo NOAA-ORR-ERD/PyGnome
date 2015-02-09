@@ -9,9 +9,10 @@ import pytest
 from gnome import constants
 from gnome.environment import Water
 from gnome.weatherers.intrinsic import FayGravityViscous, IntrinsicProps
-from gnome.array_types import area, mol
 from gnome.spill import point_line_release_spill
 from gnome.spill_container import SpillContainer
+
+from ..conftest import test_oil
 
 
 # scalar inputs
@@ -161,6 +162,9 @@ class TestIntrinsicProps:
         IntrinsicProps(water)
 
     def sample_sc_intrinsic(self, num_elements, rel_time):
+        '''
+        initialize Sample SC and IntrinsicProps object
+        '''
         intrinsic = IntrinsicProps(water)
         end_time = rel_time + timedelta(hours=1)
         spills = [point_line_release_spill(num_elements,
@@ -169,7 +173,7 @@ class TestIntrinsicProps:
                                            end_release_time=end_time,
                                            amount=100,
                                            units='kg',
-                                           substance='ALAMO')]
+                                           substance=test_oil)]
         sc = SpillContainer()
         sc.spills += spills
         sc.prepare_for_model_run(intrinsic.array_types)
@@ -182,7 +186,65 @@ class TestIntrinsicProps:
         # test initialization as well
         return (sc, intrinsic)
 
+    def mock_weather_data(self, sc, intrinsic):
+        '''
+        helper function that mocks a weatherer - like evaporation. It simply
+        changes the mass_fraction and updates frac_lost accordingly
+        '''
+        for substance, data in sc.itersubstancedata(intrinsic.array_types):
+            # following simulates weathered/evaporated oil
+            data['mass_components'][:, :3] = 0
+            data['mass'][:] = sc['mass_components'].sum(1)
+            data['frac_lost'][:] = 1 - data['mass']/data['init_mass']
+
+        sc.update_from_substancedata(intrinsic.array_types)
+
+    @pytest.mark.parametrize("vary_mf", [True, False])
+    def test_density_visc_update(self, vary_mf):
+        '''
+        If no weathering, then density should remain unchanged since mass
+        fraction is not changing. Viscosity is also unchanged if no weathering
+        '''
+        rel_time = datetime.now().replace(microsecond=0)
+        (sc, intrinsic) = self.sample_sc_intrinsic(100, rel_time)
+        spill = sc.spills[0]
+        init_dens = \
+            spill.get('substance').get_density(intrinsic.water.temperature)
+        init_visc = \
+            spill.get('substance').get_viscosity(intrinsic.water.temperature)
+
+        num = sc.release_elements(900, rel_time)
+        intrinsic.update(num, sc)
+        assert np.allclose(sc['density'], init_dens)
+        assert np.allclose(sc['viscosity'], init_visc)
+
+        # need this so 'area' computation doesn't break
+        # todo: this shouldn't be required, revisit this!
+        sc['age'] += 900
+        if vary_mf:
+            self.mock_weather_data(sc, intrinsic)
+
+            # say we are now in 2nd step - no new particles are released
+            # just updating the previously released particles
+            intrinsic.update(0, sc)
+
+            # viscosity/density
+            # should weathered density/viscosity always increase?
+            assert not np.allclose(sc['density'], init_dens)
+            assert not np.allclose(sc['viscosity'], init_visc)
+        else:
+            # nothing weathered so equations should have produced no change
+            intrinsic.update(0, sc)
+            assert np.allclose(sc['density'], init_dens)
+            assert np.allclose(sc['viscosity'], init_visc)
+
     def test_intrinsic_props_vary_num_LEs(self):
+        '''
+        Release rate in kg/sec is the same; however, vary the number of LEs
+        used to model the spill. The following properties should be independent
+        of the number of LEs used to model the same spill so the values should
+        match.
+        '''
         rel_time = datetime.now().replace(microsecond=0)
         (sc10, intrinsic10) = self.sample_sc_intrinsic(10, rel_time)
         (sc100, intrinsic100) = self.sample_sc_intrinsic(100, rel_time)

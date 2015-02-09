@@ -15,18 +15,15 @@ np = numpy
 
 from gnome.utilities.inf_datetime import InfDateTime
 
-from gnome.array_types import mass, rise_vel, mass_components
 from gnome.spill.elements import (ElementType,
                                   InitRiseVelFromDist)
 
 from gnome.weatherers import Weatherer, HalfLifeWeatherer
+from ..conftest import test_oil as oil
 
 rel_time = datetime(2012, 8, 20, 13)  # yyyy/month/day/hr/min/sec
-arr_types = {'mass': mass,
-             'rise_vel': rise_vel,
-             'mass_components': mass_components,
-             }
-oil = 'ALAMO'
+arr_types = {'mass', 'rise_vel', 'mass_components'}
+
 sc = sample_sc_release(5, (3., 6., 0.),
                        rel_time,
                        uncertain=False,

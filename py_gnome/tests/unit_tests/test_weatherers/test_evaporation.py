@@ -102,7 +102,7 @@ def assert_helper(sc, new_p):
 
 @pytest.mark.parametrize(('oil', 'temp'), [('AGUA DULCE', 333.0),
                                            ('FUEL OIL NO.6', 333.0),
-                                           ('ALAMO', 311.15),
+                                           ('ALASKA NORTH SLOPE', 311.15),
                                            ])
 def test_full_run(sample_model_fcn, oil, temp, dump):
     '''

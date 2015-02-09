@@ -14,7 +14,7 @@ import numpy as np
 
 from gnome.model import Model
 from gnome.movers import RandomMover
-from gnome.array_types import windages, positions
+from gnome.array_types import positions
 from gnome.spill import (Release,
                          PointLineRelease,
                          GridRelease,
@@ -136,7 +136,7 @@ class TestInitElementsFromFile():
         assert release.release_time == reltime
 
     @pytest.mark.parametrize("at", [{},
-                                    {'windages': windages}])
+                                    {'windages'}])
     def test_release_elements(self, at):
         'release elements in the context of a spill container'
         s = Spill(InitElemsFromFile(testdata['nc']['nc_output']))

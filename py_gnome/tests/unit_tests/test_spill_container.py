@@ -967,7 +967,7 @@ def test_SpillContainer_add_array_types():
     # Now say you added RiseVelocityMover and the Model collects ArrayTypes
     # from all movers and passes it into SpillContainer's prepare_for_model_run
     #
-    sc.prepare_for_model_run(array_types={'rise_vel': array_types.rise_vel})
+    sc.prepare_for_model_run(array_types={'rise_vel'})
     assert 'rise_vel' in sc.array_types
     assert 'droplet_diameter' in sc.array_types
 
@@ -1027,7 +1027,7 @@ def test_reuse_substance():
     '''
     scp = SpillContainerPair(uncertain=True)
     s0 = Spill(Release(datetime.now(), 10),
-               element_type=floating(substance='ALAMO'))
+               element_type=floating(substance='ALASKA NORTH SLOPE'))
     s1 = Spill(Release(datetime.now(), 10),
                element_type=floating(substance=s0.get('substance')))
     assert s1.element_type is not s0.element_type
@@ -1140,12 +1140,12 @@ class TestSubstanceSpillsDataStructure():
 
     def test_spills_same_substance_init(self):
         sc = SpillContainer()
-        et = floating(substance='ALAMO')
+        et = floating(substance='ALASKA NORTH SLOPE')
         sp_add = [point_line_release_spill(3, (1, 1, 1), datetime.now(),
                                            element_type=et),
                   Spill(Release(datetime.now(), 10),
                         amount=100, units='kg',
-                        element_type=floating(substance='ALAMO')),
+                        element_type=floating(substance='ALASKA NORTH SLOPE')),
                   Spill(Release(datetime.now(), 10),
                         element_type=floating(substance=et.substance))
                   ]
@@ -1159,9 +1159,9 @@ class TestSubstanceSpillsDataStructure():
         sc = SpillContainer()
         splls0 = [point_line_release_spill(3, (1, 1, 1),
                                            datetime.now(),
-                                           element_type=floating(substance='ALAMO')),
+                                           element_type=floating(substance='ALASKA NORTH SLOPE')),
                   Spill(Release(datetime.now(), 10),
-                        element_type=floating(substance='ALAMO')),
+                        element_type=floating(substance='ALASKA NORTH SLOPE')),
                   ]
         sc.spills += splls0
         splls1 = [Spill(Release(datetime.now(), 10),
@@ -1184,12 +1184,12 @@ class TestSubstanceSpillsDataStructure():
         splls0 = [point_line_release_spill(100, (1, 1, 1),
                                            rel_time,
                                            end_release_time=end_time,
-                                           element_type=floating(substance='ALAMO'),
+                                           element_type=floating(substance='ALASKA NORTH SLOPE'),
                                            amount=100,
                                            units='kg'),
                   point_line_release_spill(50, (2, 2, 2),
                                            rel_time + timedelta(seconds=900),
-                                           element_type=floating(substance='ALAMO'),
+                                           element_type=floating(substance='ALASKA NORTH SLOPE'),
                                            amount=150,
                                            units='kg'),
                   ]
@@ -1198,9 +1198,8 @@ class TestSubstanceSpillsDataStructure():
                                           rel_time,
                                           element_type=floating(substance=None))
         sc.spills += splls1
-        at = {'density': array_types.density,
-              'mass_components': array_types.mass_components}
 
+        at = {'density', 'mass_components'}
         sc.prepare_for_model_run(at)
         assert len(sc.get_substances()) == 2
 
@@ -1209,8 +1208,8 @@ class TestSubstanceSpillsDataStructure():
             time = rel_time + timedelta(seconds=time_step) * ix
             num_rel = sc.release_elements(time_step, time)
             print num_rel
-            for substance, data in sc.itersubstancedata(at.keys()):
-                assert substance.name == 'ALAMO'
+            for substance, data in sc.itersubstancedata(at):
+                assert substance.name == 'ALASKA NORTH SLOPE'
                 idx = sc._substances_spills.substances.index(substance)
                 mask = sc['substance'] == idx
                 for array in at:
