@@ -18,7 +18,6 @@ import pytest
 
 import gnome
 from gnome.basic_types import datetime_value_2d
-from gnome.array_types import windages, windage_range, windage_persist
 
 from gnome.map import MapFromBNA
 from gnome.model import Model
@@ -145,9 +144,7 @@ def sample_sc_release(num_elements=10,
 
     if arr_types is None:
         # default always has standard windage parameters required by wind_mover
-        arr_types = {'windages': windages,
-                     'windage_range': windage_range,
-                     'windage_persist': windage_persist}
+        arr_types = {'windages', 'windage_range', 'windage_persist'}
 
     sc = SpillContainer(uncertain)
     sc.spills.add(spill)

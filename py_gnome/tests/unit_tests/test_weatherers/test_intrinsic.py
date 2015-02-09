@@ -9,9 +9,10 @@ import pytest
 from gnome import constants
 from gnome.environment import Water
 from gnome.weatherers.intrinsic import FayGravityViscous, IntrinsicProps
-from gnome.array_types import area, mol
 from gnome.spill import point_line_release_spill
 from gnome.spill_container import SpillContainer
+
+from ..conftest import test_oil
 
 
 # scalar inputs
@@ -169,7 +170,7 @@ class TestIntrinsicProps:
                                            end_release_time=end_time,
                                            amount=100,
                                            units='kg',
-                                           substance='ALAMO')]
+                                           substance=test_oil)]
         sc = SpillContainer()
         sc.spills += spills
         sc.prepare_for_model_run(intrinsic.array_types)
