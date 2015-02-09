@@ -5,6 +5,7 @@ attached to Evaporation
 '''
 import os
 import numpy as np
+from repoze.lru import lru_cache
 
 from gnome.basic_types import oil_status
 from gnome import AddLogger, constants
@@ -227,8 +228,16 @@ class IntrinsicProps(AddLogger):
         water_temp = self.water.get('temperature', 'K')
         data['density'][mask] = substance.get_density(water_temp)
 
-        # initialize mass_components - assume 'mass' is correctly set
-        data['mass_components'][mask, :len(substance.mass_fraction)] = \
+        # initialize mass_components -
+        # sub-select mass_components array by substance.num_components.
+        # Currently, the physics for modeling multiple spills with different
+        # substances is not being correctly done in the same model. However,
+        # let's put some basic code in place so the data arrays can infact
+        # contain two substances and the code does not raise exceptions. The
+        # mass_components are zero padded for substance which has fewer
+        # psuedocomponents. Subselecting mass_components array by
+        # [mask, :substance.num_components] ensures numpy operations work
+        data['mass_components'][mask, :substance.num_components] = \
             (np.asarray(substance.mass_fraction, dtype=np.float64) *
              (data['mass'][mask].reshape(len(data['mass'][mask]), -1)))
 
@@ -261,20 +270,77 @@ class IntrinsicProps(AddLogger):
         data['area'][mask] = data['init_area'][mask]
         data['thickness'][mask] = data['init_volume'][mask]/data['area'][mask]
 
+    @lru_cache(2)
+    def _get_kv1_weathering_visc_update(self, v0):
+        '''
+        kv1 is constant.
+        It defining the exponential change in viscosity as it weathers due to
+        the fraction lost to evaporation/dissolution:
+            v(t) = v' * exp(kv1 * f_lost_evap_diss)
+
+        kv1 = sqrt(v0) * 1500
+        if kv1 < 1, then return 1
+        if kv1 > 10, then return 10
+
+        Since this is fixed for an oil, it only needs to be computed once. Use
+        lru_cache on this function to cache the result for a given initial
+        viscosity: v0
+        '''
+        # find kv1
+        kv1 = np.sqrt(v0) * self.visc_curvfit_param
+        if kv1 < 1:
+            kv1 = 1
+
+        if kv1 > 10:
+            kv1 = 10
+
+        return kv1
+
+    @lru_cache(2)
+    def _get_k_rho_weathering_dens_update(self, substance):
+        '''
+        use lru_cache on substance. substance is an OilProps object, if this
+        object stays the same, then return the cached value for k_rho
+        This depends on initial mass fractions, initial density and fixed
+        component densities
+        '''
+        # update density/viscosity/relative_bouyance/area for previously
+        # released elements
+        rho0 = substance.get_density(self.water.get('temperature', 'K'))
+
+        # dimensionless constant
+        k_rho = (rho0 /
+                 (substance.component_density * substance.mass_fraction).sum())
+
+        return k_rho
+
     def _update_old_particles(self, mask, data, substance):
         '''
         update density, area
         '''
-        # update density/viscosity/relative_bouyance/area for previously
-        # released elements
+        k_rho = self._get_k_rho_weathering_dens_update(substance)
+        # sub-select mass_components array by substance.num_components.
+        # Currently, the physics for modeling multiple spills with different
+        # substances is not being correctly done in the same model. However,
+        # let's put some basic code in place so the data arrays can infact
+        # contain two substances and the code does not raise exceptions. The
+        # mass_components are zero padded for substance which has fewer
+        # psuedocomponents. Subselecting mass_components array by
+        # [mask, :substance.num_components] ensures numpy operations work
+        mass_frac = \
+            (data['mass_components'][mask, :substance.num_components] /
+             data['mass'][mask].reshape(np.sum(mask), -1))
+        data['density'][mask] = \
+            k_rho*(substance.component_density * mass_frac).sum(1)
 
         # following implementation results in an extra array called
-        # fw_d_fref but easy to read
+        # fw_d_fref but is easy to read
         v0 = substance.get_viscosity(self.water.get('temperature', 'K'))
         if v0 is not None:
+            kv1 = self._get_kv1_weathering_visc_update(v0)
             fw_d_fref = data['frac_water'][mask]/self.visc_f_ref
             data['viscosity'][mask] = \
-                (v0 * np.exp(v0 * self.visc_curvfit_param *
+                (v0 * np.exp(kv1 *
                              data['frac_lost'][mask]) *
                  (1 + (fw_d_fref/(1.187 - fw_d_fref)))**2.49)
 
