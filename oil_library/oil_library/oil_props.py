@@ -132,7 +132,10 @@ class OilProps(object):
 
     @property
     def num_components(self):
-        return len(self._r_oil.sara_fractions)
+        '''
+        number of components with mass fraction > 0.0 used to model the oil
+        '''
+        return len(self._sara)
 
     def _component_mw(self):
         '''
@@ -249,25 +252,29 @@ class OilProps(object):
             ...
             ['Resins', boiling_point_terminal, mass_fraction, density]
             ['Asphaltenes', boiling_point_terminal, mass_fraction, density]
+
+        Omit components that have 0 mass fraction
         '''
         all_comp = sorted(self._r_oil.sara_fractions,
                           key=lambda s: s.ref_temp_k)
         all_dens = sorted(self._r_oil.sara_densities,
                           key=lambda s: s.ref_temp_k)
-        items = np.zeros((self.num_components,), dtype=sara_dtype)
-
-        for ix, (comp, dens) in enumerate(zip(all_comp, all_dens)):
+        items = []
+        sum_frac = 0.
+        for comp, dens in zip(all_comp, all_dens):
             if (comp.ref_temp_k != comp.ref_temp_k or
                 comp.sara_type != comp.sara_type):
                 msg = "mismatch in sara_fractions and sara_densities tables"
                 raise ValueError(msg)
 
-            items[ix] = (comp.sara_type, comp.ref_temp_k, comp.fraction,
-                         dens.density)
+            if comp.fraction > 0.0:
+                items.append((comp.sara_type, comp.ref_temp_k, comp.fraction,
+                              dens.density))
+                sum_frac += comp.fraction
 
-        if not np.allclose(items[:]['fraction'].sum(), 1.0):
+        self._sara = np.asarray(items, dtype=sara_dtype)
+        if not np.allclose(self._sara[:]['fraction'].sum(), 1.0):
             msg = ("mass fractions add up to: {0} - required "
                    "to add to 1.0").format(items[:]['fraction'].sum())
             raise ValueError(msg)
 
-        self._sara = items

@@ -75,7 +75,17 @@ def test_OilProps_DBquery(oil, api):
 class TestProperties:
     op = get_oil_props(u'ALASKA NORTH SLOPE')
     s_comp = sorted(op._r_oil.sara_fractions, key=lambda s: s.ref_temp_k)
+
     s_dens = sorted(op._r_oil.sara_densities, key=lambda s: s.ref_temp_k)
+
+    # only keep density records + sara_fractions which fraction > 0.
+    # OilProps prunes SARA to keep data for fractions > 0.
+    s_dens = [d_comp for ix, d_comp in enumerate(s_dens)
+              if s_comp[ix].fraction > 0.]
+    s_comp = [comp for comp in s_comp if comp.fraction > 0.]
+
+    def test_num_components(self):
+        assert self.op.num_components == len(self.s_comp)
 
     def test_sara(self):
         # boiling points
