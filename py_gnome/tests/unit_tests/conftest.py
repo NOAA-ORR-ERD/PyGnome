@@ -593,18 +593,27 @@ def sample_model_weathering2(sample_model_fcn, oil, temp=311.16):
 
 @pytest.fixture(scope='function', params=['relpath', 'abspath'])
 def clean_saveloc(dump, request):
-    temp = os.path.join(dump, 'temp')   # absolute path
+    '''
+    use the request object to generate a name for the temp file. Do this so
+    we have a unique name else xdist-pytest fails when tests are parallelized
+    '''
+    name = 'temp_{0}'.format(request._pyfuncitem._genid)
+    temp = os.path.join(dump, name)   # absolute path
 
     def cleanup():
         print '\nCleaning up %s' % temp
         shutil.rmtree(temp)
 
-    if os.path.exists(temp):
-        cleanup()
+    # do not cleanup on exit
+    #if os.path.exists(temp):
+    #    cleanup()
 
-    request.addfinalizer(cleanup)
+    #request.addfinalizer(cleanup)
 
-    os.mkdir(temp)    # let path get created by save_load
+    if not os.path.exists(temp):
+        os.mkdir(temp)    # let path get created by save_load
+        print '\nmkdir: {0}'.format(temp)
+
     if request.param == 'relpath':
         return os.path.relpath(temp)    # do save/load tests with relative path
     else:

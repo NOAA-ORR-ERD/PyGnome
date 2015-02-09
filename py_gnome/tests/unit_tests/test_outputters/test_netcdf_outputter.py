@@ -27,7 +27,7 @@ here = os.path.dirname(__file__)
 
 
 @pytest.fixture(scope='function')
-def model(sample_model_fcn, dump):
+def model(sample_model_fcn, dump, request):
     """
     Use fixture model_surface_release_spill and add a few things to it for the
     test
@@ -50,8 +50,8 @@ def model(sample_model_fcn, dump):
     model.movers += constant_wind_mover(1.0, 0.0)
     model.weatherers += Evaporation(water, model.movers[-1].wind)
 
-    model.outputters += NetCDFOutput(os.path.join(dump,
-                                                  u'sample_model.nc'))
+    file_name = request.function.func_name + '_sample.nc'
+    model.outputters += NetCDFOutput(os.path.join(dump, file_name))
 
     model.rewind()
 
@@ -368,10 +368,10 @@ def test_read_standard_arrays(model, output_ts_factor, use_time):
             curr_time = scp.LE('current_time_stamp', uncertain)
             if use_time:
                 (nc_data, weathering_data) = NetCDFOutput.read_data(file_,
-                                                                 curr_time)
+                                                                    curr_time)
             else:
                 (nc_data, weathering_data) = NetCDFOutput.read_data(file_,
-                                                                 index=idx)
+                                                                    index=idx)
 
             # check time
             if curr_time == nc_data['current_time_stamp'].item():
