@@ -863,11 +863,12 @@ def test_contains_object(sample_model_fcn):
     movers = [m for m in model.movers]
 
     evaporation = Evaporation(model.water, model.environment[0])
-    dispersion, burn = Dispersion(), Burn()
+    dispersion = Dispersion()
     skim_start = sp.get('release_time') + timedelta(hours=1)
     skimmer = Skimmer(.5*sp.amount, units=sp.units, efficiency=0.3,
                       active_start=skim_start,
                       active_stop=skim_start + timedelta(hours=1))
+    burn = burn_obj(sp)
     model.weatherers += [evaporation, dispersion, burn, skimmer]
 
     renderer = Renderer(images_dir='Test_images',
@@ -897,6 +898,16 @@ def make_skimmer(spill, delay_hours=1, duration=2):
                       active_start=skim_start,
                       active_stop=skim_start + timedelta(hours=duration))
     return skimmer
+
+
+def burn_obj(spill, delay_hours=1.5):
+    rel_time = spill.get('release_time')
+    burn_start = rel_time + timedelta(hours=delay_hours)
+    volume = spill.get_mass()/spill.get('substance').get_density()
+    thick = 1   # in meters
+    area = (0.2 * volume)/thick
+    burn = Burn(area, thick, active_start=burn_start)
+    return burn
 
 
 @pytest.mark.parametrize("delay", [timedelta(hours=0),
@@ -929,10 +940,11 @@ def test_staggered_spills_weathering(sample_model_fcn, delay):
     model.water = Water()
     model.environment += constant_wind(1., 0)
     skimmer = make_skimmer(model.spills[0])
+    burn = burn_obj(model.spills[0])
     model.weatherers += [Evaporation(model.water,
                                      model.environment[0]),
                          Dispersion(),
-                         Burn(),
+                         burn,
                          skimmer]
     # model.full_run()
     for step in model:
@@ -975,11 +987,12 @@ def test_two_substance_spills_weathering(sample_model_fcn, s0, s1):
     model.weatherers += Evaporation(model.water, model.environment[0])
     if s0 == s1:
         '''
-        multiple substances will not work with Skimmer
+        multiple substances will not work with Skimmer or Burn
         '''
         skimmer = make_skimmer(model.spills[0], 2)
+        burn = burn_obj(model.spills[0], 2.5)
         model.weatherers += [Dispersion(),
-                             Burn(),
+                             burn,
                              skimmer]
 
     # model.full_run()
@@ -1123,15 +1136,20 @@ class TestMergeModels:
 
 # test sorting function weatherer_sort
 def test_weatherer_sort():
+    '''
+    Sample model with weatherers - only tests sorting of weathereres. The
+    Model may or may not run.
+    '''
     model = Model()
     model.water = Water()
     skimmer = Skimmer(100, 'kg', efficiency=0.3,
                       active_start=datetime(2014, 1, 1, 0, 0),
                       active_stop=datetime(2014, 1, 1, 0, 3))
+    burn = Burn(100, 1, active_start=datetime(2014, 1, 1, 0, 0))
     weatherers = [Emulsification(),
                   Evaporation(model.water,
                               constant_wind(1, 0)),
-                  Burn(),
+                  burn,
                   Dispersion(),
                   skimmer]
     exp_order = [weatherers[ix] for ix in (2, 4, 3, 1, 0)]
@@ -1148,7 +1166,8 @@ def test_weatherer_sort():
 
     # Burn, Dispersion are at same sorting level so appending another Burn to
     # end of the list will sort it to be just after Dispersion so index 2
-    exp_order.insert(2, Burn())
+    burn = Burn(50, 1, active_start=datetime(2014, 1, 1, 0, 0))
+    exp_order.insert(2, burn)
     model.weatherers += exp_order[2]  # add this and check sorting still works
     assert model.weatherers.values() != exp_order
 

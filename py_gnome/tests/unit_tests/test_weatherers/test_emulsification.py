@@ -8,12 +8,9 @@ from datetime import timedelta
 import pytest
 import numpy as np
 
-from gnome.environment import constant_wind, Water, Waves, Wind
+from gnome.environment import constant_wind, Water, Waves
 from gnome.weatherers import (Emulsification,
-                              Evaporation,
-                              Burn,
-                              Skimmer,
-                              Dispersion)
+                              Evaporation)
 from gnome.outputters import WeatheringOutput
 from gnome.spill.elements import floating
 
@@ -21,7 +18,7 @@ from ..conftest import sample_sc_release, sample_model_weathering, sample_model_
 
 
 water = Water()
-wind=constant_wind(15., 0)	#also test with lower wind no emulsification
+wind = constant_wind(15., 0)	#also test with lower wind no emulsification
 waves = Waves(wind,water)
 
 arrays = Emulsification().array_types

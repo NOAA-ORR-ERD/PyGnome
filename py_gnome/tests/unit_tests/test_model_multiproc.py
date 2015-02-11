@@ -27,9 +27,10 @@ from gnome.weatherers import Evaporation, Dispersion, Burn, Skimmer
 from gnome.outputters import WeatheringOutput, GeoJson
 
 from gnome.multi_model_broadcast import ModelBroadcaster
-from conftest import testdata
+from conftest import testdata, test_oil
 
-pytestmark = mark.skipif("sys.platform=='win32'",reason="skip on windows")
+pytestmark = mark.skipif("sys.platform=='win32'", reason="skip on windows")
+
 
 def make_model(uncertain=False,
                geojson_output=False):
@@ -54,6 +55,7 @@ def make_model(uncertain=False,
                                                      41.202120, 0.0),
                                      release_time=start_time,
                                      amount=1000,
+                                     substance=test_oil,
                                      units='kg')
     spill.amount_uncertainty_scale = 1.0
     model.spills += spill
@@ -85,15 +87,21 @@ def make_model(uncertain=False,
     skim_start = rel_time + timedelta(hours=4)
     amount = spill.amount
     units = spill.units
+
+    # define skimmer/burn cleanup options
     skimmer = Skimmer(0.5*amount, units=units, efficiency=0.3,
                       active_start=skim_start,
                       active_stop=skim_start + timedelta(hours=4))
+    # thickness = 1m so area is just 20% of volume
+    volume = spill.get_mass()/spill.get('substance').get_density()
+    burn = Burn(0.2 * volume, 1.0,
+                active_start=skim_start)
 
     water_env = Water(311.15)
     model.environment += water_env
     model.weatherers += [Evaporation(water_env, wind),
                          Dispersion(),
-                         Burn(),]
+                         burn,]
                          #skimmer]
 
     print 'adding outputters'
