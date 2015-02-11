@@ -174,6 +174,8 @@ class IntrinsicProps(AddLogger):
         # update avg_density from density array
         # wasted cycles at present since all values in density for given
         # timestep should be the same, but that will likely change
+        # Any optimization in doing the following?:
+        #   (sc['mass'] * sc['density']).sum()/sc['mass'].sum()
         # todo: test weighted average
         sc.weathering_data['avg_density'] = \
             np.sum(sc['mass']/np.sum(sc['mass']) * sc['density'])
