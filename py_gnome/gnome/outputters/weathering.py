@@ -77,9 +77,7 @@ class WeatheringOutput(Outputter, Serializable):
             # Not capturing 'uncertain' info yet
             # dict_ = {'uncertain': sc.uncertain}
             dict_ = {}
-
-            for key, val in sc.weathering_data.iteritems():
-                dict_[key] = val
+            dict_.update(sc.weathering_data)
 
             output_info = {'step_num': step_num,
                            'time_stamp': sc.current_time_stamp.isoformat()}
