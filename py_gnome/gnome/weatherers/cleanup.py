@@ -71,8 +71,9 @@ class CleanUpBase(Weatherer):
             # sum up mass until threshold is reached, find index where
             # total_mass_removed is reached or exceeded
             ix = np.where(np.cumsum(data['mass']) >=
-                          mass_to_remove)[0][0] + 1
-            data['status_codes'][:ix] = status
+                          mass_to_remove)[0][0]
+            # change status for elements upto and including 'ix'
+            data['status_codes'][:ix + 1] = status
 
         sc.update_from_substancedata(self.array_types, substance)
 
@@ -374,14 +375,14 @@ class Burn(CleanUpBase, Serializable):
             # keep updating thickness
             mask = data['status_codes'] == oil_status.burn
             avg_frac_water = ((data['mass'][mask] * data['frac_water'][mask]).
-                              sum()/data['mass'].sum())
+                              sum()/data['mass'][mask].sum())
             burn_th_rate = self._burn_rate_constant * (1 - avg_frac_water)
             burn_time = ((self._curr_thickness - self._min_thickness) /
                          burn_th_rate)
 
             self._timestep = min(burn_time, self._timestep)
             if self._timestep > 0:
-                th_burned = (burn_th_rate * self._timestep)
+                th_burned = burn_th_rate * self._timestep
                 rm_mass = self._get_mass(substance, th_burned * self.area,
                                          'm^3')
                 rm_mass_frac = rm_mass / data['mass'][mask].sum()

@@ -151,12 +151,7 @@ class TestSkimmer:
 
 class TestBurn:
     (sc, intrinsic) = test_objs()
-    spill = point_line_release_spill(10,
-                                     (0, 0, 0),
-                                     rel_time,
-                                     substance=test_oil,
-                                     amount=amount,
-                                     units='kg')
+    spill = sc.spills[0]
     op = spill.get('substance')
     volume = spill.get_mass()/op.get_density(intrinsic.water.temperature)
     thick = 1
@@ -210,11 +205,22 @@ class TestBurn:
         burn.prepare_for_model_step(self.sc, time_step, rel_time)
         assert not burn._active
 
-    @mark.parametrize("thick", [0.003, 1])
-    def test_weather_elements(self, thick):
+    @mark.parametrize(("thick", "frac_water"), [(0.003, None),
+                                                (1, None),
+                                                (1, 0.5)])
+    def test_weather_elements_zero_frac_water(self, thick, frac_water):
         '''
-        weather elements and test that 
+        weather elements and test. frac_water is 0
+
+        1) tests the expected burned mass equals 'burned' amount stored in
+           weathering_data
+        2) also tests the mass_remaining is consistent with what we expect
+
+        Also sets the 'frac_water' to 0.5 for one of the tests just to ensure
+        it works. No assertion for testing that water_frac > 0 runs longer but
+        this is visually checked for this example.
         '''
+        self.spill.set('num_elements', 500)
         self.reset_test_objs()
         area = (0.5 * self.volume)/thick
         burn = Burn(area, thick, active_start)
@@ -228,6 +234,8 @@ class TestBurn:
         while burn.active or self.sc.weathering_data['burned'] == 0.0:
             step_num = (model_time - rel_time).total_seconds() // time_step
             num = self.sc.release_elements(time_step, model_time)
+            if num > 0 and frac_water is not None:
+                self.sc['frac_water'][:] = frac_water
             self.intrinsic.update(num, self.sc)
 
             dt = timedelta(seconds=time_step)
@@ -261,13 +269,25 @@ class TestBurn:
                            self.sc['mass'].sum(), atol=1e-6)
         assert burn._burn_duration > 0.0
 
-        # todo: How should LEs get marked for Burning?
-        print ((burn.thickness - burn._curr_thickness) * self.area *
-               self.op.get_density(self.intrinsic.water.temperature))
-        print self.sc['mass'][self.sc['status_codes'] == oil_status.burn].sum()
-        print self.sc.weathering_data['burned']
+        # since frac_water is zero, expected burn is known
+        exp_burned = ((burn.thickness - burn._curr_thickness) * burn.area *
+                      self.op.get_density())
+        assert np.isclose(self.sc.weathering_data['burned'], exp_burned)
 
-        print 'Completed steps: {0:2}'.format(step_num)
+        # given LEs are discrete elements, we cannot add a fraction of an LE
+        # to be burned. Thus, the LEs marked to be burnt will have a mass >=
+        # mass specified from area * thickness * density(). For the assertion
+        # below include this extra mass.
+        mass_per_le = self.sc['init_mass'][0]
+        extra_init_mass = mass_per_le - (burn.thickness * burn.area *
+                                         self.op.get_density() % mass_per_le)
+        exp_mass_remain = (burn._curr_thickness * burn.area *
+                           self.op.get_density() + extra_init_mass)
+        mass_remain_for_burn_LEs = self.sc['mass'][self.sc['status_codes'] ==
+                                                   oil_status.burn].sum()
+        assert np.allclose(exp_mass_remain, mass_remain_for_burn_LEs)
+
+        print '\nCompleted steps: {0:2}'.format(step_num)
         print ('Current Thickness: {0:.3f}, '
                'Duration (hrs): {1:.3f}').format(burn._curr_thickness,
                                                  burn._burn_duration/3600)
