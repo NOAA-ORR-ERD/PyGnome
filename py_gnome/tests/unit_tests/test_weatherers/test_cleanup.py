@@ -205,25 +205,13 @@ class TestBurn:
         burn.prepare_for_model_step(self.sc, time_step, rel_time)
         assert not burn._active
 
-    @mark.parametrize(("thick", "frac_water"), [(0.003, None),
-                                                (1, None),
-                                                (1, 0.5)])
-    def test_weather_elements_zero_frac_water(self, thick, frac_water):
+    def _weather_elements_helper(self, burn, frac_water=None):
         '''
-        weather elements and test. frac_water is 0
-
-        1) tests the expected burned mass equals 'burned' amount stored in
-           weathering_data
-        2) also tests the mass_remaining is consistent with what we expect
-
-        Also sets the 'frac_water' to 0.5 for one of the tests just to ensure
-        it works. No assertion for testing that water_frac > 0 runs longer but
-        this is visually checked for this example.
+        refactored model run from test_weather_elements to this helper function
+        It is also used by next test:
+        test_elements_weather_slower_with_frac_water
         '''
-        self.spill.set('num_elements', 500)
         self.reset_test_objs()
-        area = (0.5 * self.volume)/thick
-        burn = Burn(area, thick, active_start)
 
         model_time = rel_time
         burn.prepare_for_model_run(self.sc)
@@ -264,10 +252,32 @@ class TestBurn:
                 assert False
                 break
 
+        assert burn._burn_duration > 0.0
+        print '\nCompleted steps: {0:2}'.format(step_num)
+
+    @mark.parametrize(("thick", "frac_water"), [(0.003, None),
+                                                (1, None),
+                                                (1, 0.5)])
+    def test_weather_elements(self, thick, frac_water):
+        '''
+        weather elements and test. frac_water is 0
+
+        1) tests the expected burned mass equals 'burned' amount stored in
+           weathering_data
+        2) also tests the mass_remaining is consistent with what we expect
+
+        Also sets the 'frac_water' to 0.5 for one of the tests just to ensure
+        it works.
+        '''
+        self.spill.set('num_elements', 500)
+        area = (0.5 * self.volume)/thick
+        burn = Burn(area, thick, active_start)
+
+        self._weather_elements_helper(burn, frac_water)
+
         # following should finally hold true for entire run
         assert np.allclose(amount, self.sc.weathering_data['burned'] +
                            self.sc['mass'].sum(), atol=1e-6)
-        assert burn._burn_duration > 0.0
 
         # since frac_water is zero, expected burn is known
         exp_burned = ((burn.thickness - burn._curr_thickness) * burn.area *
@@ -287,7 +297,24 @@ class TestBurn:
                                                    oil_status.burn].sum()
         assert np.allclose(exp_mass_remain, mass_remain_for_burn_LEs)
 
-        print '\nCompleted steps: {0:2}'.format(step_num)
         print ('Current Thickness: {0:.3f}, '
                'Duration (hrs): {1:.3f}').format(burn._curr_thickness,
                                                  burn._burn_duration/3600)
+
+    def test_elements_weather_slower_with_frac_water(self):
+        '''
+        Tests that water_frac > 0 runs longer
+        '''
+        self.spill.set('num_elements', 500)
+        area = (0.5 * self.volume)/1.
+        burn1 = Burn(area, 1., active_start)
+        burn2 = Burn(area, 1., active_start)
+        burn3 = Burn(area, 1., active_start)
+
+        self._weather_elements_helper(burn1)
+        self._weather_elements_helper(burn2, frac_water=0.3)
+        self._weather_elements_helper(burn3, frac_water=0.5)
+
+        assert (burn1._burn_duration < burn2._burn_duration <
+                burn3._burn_duration)
+
