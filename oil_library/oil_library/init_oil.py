@@ -482,6 +482,8 @@ def add_bullwinkle_fractions(imported_rec, oil):
     '''
     if imported_rec.product_type == "refined":
         bullwinkle_fraction = 1.0
+    elif imported_rec.emuls_constant_max is not None:
+        bullwinkle_fraction = imported_rec.emuls_constant_max
     else:
         # product type is crude
         Ni = (imported_rec.nickel
