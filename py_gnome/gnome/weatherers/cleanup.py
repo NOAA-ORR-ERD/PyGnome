@@ -35,6 +35,14 @@ class CleanUpBase(Weatherer):
     valid_vol_units = _valid_units('Volume')
     valid_mass_units = _valid_units('Mass')
 
+    def __init__(self, **kwargs):
+        '''
+        add 'frac_water' to array_types and pass **kwargs to base class
+        __init__ using super
+        '''
+        super(CleanUpBase, self).__init__(**kwargs)
+        self.array_types.update({'frac_water'})
+
     def _get_mass(self, substance, amount, units):
         '''
         return 'amount' in units of 'kg' for specified substance
@@ -62,20 +70,39 @@ class CleanUpBase(Weatherer):
         return substance[0]
 
     def _update_LE_status_codes(self, sc, status, substance, mass_to_remove):
-        ''' Need to mark LEs for skimming/burning. Mark LEs based on mass '''
-        data = sc.substancedata(substance, ['status_codes', 'mass'])
+        '''
+        Need to mark LEs for skimming/burning. Mark LEs based on mass
+        Mass to remove is the oil_water mixture so we need to find the
+        oil_amount given the water_frac:
 
-        if mass_to_remove >= data['mass'].sum():
+            volume = sc['mass']/API_density
+            (1 - sc['frac_water']) * oil_water_vol = volume
+            oil_water_vol = volume / (1 - sc['frac_water'])
+
+        Now, do a cumsum of oil_water_mass and find where
+            np.cumsum(oil_water_vol) >= vol_to_remove
+        and change the status_codes of these LEs. Can just as easily multiple
+        everything by API_density to get
+            np.cumsum(oil_water_mass) >= mass_to_remove
+            mass_to_remove = sc['mass'] / (1 - sc['frac_water'])
+        This is why the input is 'mass_to_remove' instead of 'vol_to_remove'
+        - less computation
+        '''
+        arrays = ['status_codes', 'mass', 'frac_water']
+        data = sc.substancedata(substance, arrays)
+        oil_water = data['mass'] / (1 - data['frac_water'])
+
+        # (1 - frac_water) * mass_to_remove
+        if mass_to_remove >= oil_water.sum():
             data['status_codes'][:] = status
         else:
             # sum up mass until threshold is reached, find index where
             # total_mass_removed is reached or exceeded
-            ix = np.where(np.cumsum(data['mass']) >=
-                          mass_to_remove)[0][0]
+            ix = np.where(np.cumsum(oil_water) >= mass_to_remove)[0][0]
             # change status for elements upto and including 'ix'
             data['status_codes'][:ix + 1] = status
 
-        sc.update_from_substancedata(self.array_types, substance)
+        sc.update_from_substancedata(arrays, substance)
 
     def _set__timestep(self, time_step, model_time):
         '''
@@ -100,6 +127,15 @@ class CleanUpBase(Weatherer):
         if (self.active_stop < model_time + dt):
             self._timestep = (self.active_stop -
                               model_time).total_seconds()
+
+    def _avg_frac_oil(self, data, mask):
+        '''
+        find weighted average of frac_water array, return (1 - avg_frac_water)
+        since we want the average fraction of oil in this data
+        '''
+        avg_frac_water = ((data['mass'][mask] * data['frac_water'][mask]).
+                          sum()/data['mass'][mask].sum())
+        return (1 - avg_frac_water)
 
 
 class Skimmer(CleanUpBase, Serializable):
@@ -223,14 +259,16 @@ class Skimmer(CleanUpBase, Serializable):
             return
 
         for substance, data in sc.itersubstancedata(self.array_types):
-            rm_mass = (self._mass_to_remove(substance) * self.efficiency)
+            mask = data['status_codes'] == oil_status.skim
+            rm_amount = \
+                self._rate * self._avg_frac_oil(data, mask) * self._timestep
+            rm_mass = self._get_mass(substance,
+                                     rm_amount,
+                                     self.units) * self.efficiency
 
             self.logger.info('{0} - Amount skimmed: {1}'.
                              format(os.getpid(), rm_mass))
 
-            # following should work even if all elements go to zero so
-            # ~c_to_zero is all False since rm_mass_per_c is a scalar
-            mask = data['status_codes'] == oil_status.skim
             rm_mass_frac = rm_mass / data['mass'][mask].sum()
 
             # if elements are also evaporating following could be true
@@ -251,7 +289,7 @@ class Skimmer(CleanUpBase, Serializable):
 class BurnSchema(WeathererSchema):
     area = SchemaNode(Float())
     thickness = SchemaNode(Float())
-    _curr_thickness = SchemaNode(Float(), missing=drop)
+    _oil_thickness = SchemaNode(Float(), missing=drop)
 
 
 class Burn(CleanUpBase, Serializable):
@@ -260,7 +298,7 @@ class Burn(CleanUpBase, Serializable):
     _state = copy.deepcopy(Weatherer._state)
     _state += [Field('area', save=True, update=True),
                Field('thickness', save=True, update=True),
-               Field('_curr_thickness', save=True)]
+               Field('_oil_thickness', save=True)]
 
     def __init__(self,
                  area,
@@ -281,13 +319,13 @@ class Burn(CleanUpBase, Serializable):
         super(Burn, self).__init__(active_start=active_start,
                                    **kwargs)
         self.area = area
-        self.thickness = thickness
-
-        self._init_volume = self.area * self.thickness
-        self._min_thickness = 0.002
+        self.thickness = thickness      # thickness of oil_water mixture
 
         # thickness of burned/boomed oil which is updated at each timestep
-        self._curr_thickness = thickness
+        # this will be set once we figure out how much oil will be burned
+        # in prepare_for_model_step()
+        self._oil_thickness = None
+        self._min_thickness = 0.002     # stop burn threshold
 
         # burn rate is defined as a volume rate in m^3/sec
         # where rate = 0.000058 * self.area * (1 - frac_water_content)
@@ -296,15 +334,13 @@ class Burn(CleanUpBase, Serializable):
         self._burn_rate_constant = 0.000058
         self._burn_duration = None
 
-        self.array_types.update({'frac_water'})
-
     def prepare_for_model_run(self, sc):
         '''
-        resets internal _curr_thickness variable to initial thickness specified
+        resets internal _oil_thickness variable to initial thickness specified
         by user. Also resets _burn_duration to None
         '''
         # reset current thickness to initial thickness whenever model is rerun
-        self._curr_thickness = self.thickness
+        self._oil_thickness = None
         self._burn_duration = None
         if sc.spills:
             sc.weathering_data['burned'] = 0.0
@@ -325,10 +361,6 @@ class Burn(CleanUpBase, Serializable):
             self._active = False
             return
 
-        if self._curr_thickness <= self._min_thickness:
-            self._active = False
-            return
-
         if model_time + timedelta(seconds=time_step) > self.active_start:
             self._active = True
         else:
@@ -339,10 +371,20 @@ class Burn(CleanUpBase, Serializable):
         self._set__timestep(time_step, model_time)
         if (sc['status_codes'] == oil_status.burn).sum() == 0:
             substance = self._get_substance(sc)
-            mass_removed = self._get_mass(substance, self._init_volume,
-                                          'm^3')
+            mass_to_remove = self._get_mass(substance,
+                                            self.area * self.thickness,
+                                            'm^3')
             self._update_LE_status_codes(sc, oil_status.burn,
-                                         substance, mass_removed)
+                                         substance, mass_to_remove)
+            # now also set up self._oil_thickness
+            self._oil_thickness = \
+                (sc['mass'][sc['status_codes'] == oil_status.burn].sum() /
+                 (substance.get_density() * self.area))
+
+        # check _oil_thickness after property is set in code block above
+        if self._oil_thickness <= self._min_thickness:
+            self._active = False
+            return
 
     def weather_elements(self, sc, time_step, model_time):
         '''
@@ -351,7 +393,7 @@ class Burn(CleanUpBase, Serializable):
         burn. This is the avg_frac_water to use when computing the burn rate.
 
             burn_rate_th := burn_rate/area = 0.000058 * (1 - avg_frac_water)
-            burn_time = ((self._curr_thickness - 0.002) / burn_rate_th
+            burn_time = ((self._oil_thickness - 0.002) / burn_rate_th
             _timestep = min(burn_time, time_step)
             remove_volume = burn_rate_th * _timestep * area
 
@@ -374,10 +416,9 @@ class Burn(CleanUpBase, Serializable):
         for substance, data in sc.itersubstancedata(self.array_types):
             # keep updating thickness
             mask = data['status_codes'] == oil_status.burn
-            avg_frac_water = ((data['mass'][mask] * data['frac_water'][mask]).
-                              sum()/data['mass'][mask].sum())
-            burn_th_rate = self._burn_rate_constant * (1 - avg_frac_water)
-            burn_time = ((self._curr_thickness - self._min_thickness) /
+            burn_th_rate = \
+                self._burn_rate_constant * self._avg_frac_oil(data, mask)
+            burn_time = ((self._oil_thickness - self._min_thickness) /
                          burn_th_rate)
 
             self._timestep = min(burn_time, self._timestep)
@@ -391,7 +432,7 @@ class Burn(CleanUpBase, Serializable):
                 data['mass'][mask] = data['mass_components'][mask, :].sum(1)
 
                 # new thickness
-                self._curr_thickness -= th_burned
+                self._oil_thickness -= th_burned
 
                 sc.weathering_data['burned'] += rm_mass
 
