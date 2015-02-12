@@ -66,6 +66,17 @@ datetime_value_1d = np.dtype([('time', 'datetime64[s]'),
 
 wind_datasource = enum(undefined=0, file=1, manual=2, nws=3, buoy=4)
 
+### WEATHERING STATUS ###
+# Define an enum for weathering status. The numpy array will contain np.uint8
+# datatype. Can still define 2 more flags as 2**6, 2**7
+weather_codes = enum(non_weather=1,      # 2**0
+                     surface_weather=2,  # 2**1
+                     subsurf_weather=4,  # 2**2
+                     skim=8,             # 2**3
+                     burn=16,            # 2**4
+                     disperse=32,        # 2**5
+                     )
+
 # ----------------------------------------------------------------
 # Mirror C++ structures, following are used by cython code to
 # access C++ methods/classes
