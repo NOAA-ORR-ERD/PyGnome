@@ -1,9 +1,14 @@
 '''
+This module was originally intended to hold classes that initialize weathering
+data arrays that are not set by any weathering process. It was also meant to
+update the intrinsic properties of the LEs, hence the name 'intrinsic.py'
+However, it sets and updates weathering data arrays including intrinsic data
+like 'viscosity', 'density' and other data. Call the class WeatheringData()
+which is defined in a gnome model if there are weatherers defined.
+
 For now just define a FayGravityInertial class here
-State is not persisted yet - we just have a default object that gets
-attached to Evaporation
+It is only used by WeatheringData to update the 'area' and related arrays
 '''
-import os
 import numpy as np
 from repoze.lru import lru_cache
 
@@ -71,7 +76,7 @@ class FayGravityViscous(object):
         same shape.
 
         Since this is for updating area, it assumes age > 0 for all elements.
-        It is used inside IntrinsicProps and invoked for particles with age > 0
+        It is used inside WeatheringData and invoked for particles with age > 0
 
         It only updates the area for particles with thickness > xxx
         Since the frac_coverage should only be applied to particles which are
@@ -81,7 +86,7 @@ class FayGravityViscous(object):
         Since thickness limit is here, leave it for now, but maybe
         eventually move thickness_limit to OilProps/make it property of
         substance - say 'max_spreading_thickness', then move thickness check
-        and frac_coverage back to IntrinsicProps
+        and frac_coverage back to WeatheringData
         '''
         self._check_relative_bouyancy(relative_bouyancy)
         if np.any(age == 0):
@@ -113,7 +118,7 @@ class FayGravityViscous(object):
         return out
 
 
-class IntrinsicProps(AddLogger):
+class WeatheringData(AddLogger):
     '''
     Updates intrinsic properties of Oil
     Doesn't have an id like other gnome objects. It isn't exposed to
@@ -122,7 +127,7 @@ class IntrinsicProps(AddLogger):
 
     Use this to manage data_arrays associated with weathering that are not
     defined in Weatherers. This is inplace of defining initializers for every
-    single array, let IntrinsicProps set/initialize/update these arrays.
+    single array, let WeatheringData set/initialize/update these arrays.
     '''
     def __init__(self,
                  water,

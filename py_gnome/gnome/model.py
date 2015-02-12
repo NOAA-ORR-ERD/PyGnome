@@ -19,7 +19,7 @@ from gnome.utilities.serializable import Serializable, Field
 
 from gnome.spill_container import SpillContainerPair
 from gnome.movers import Mover
-from gnome.weatherers import weatherer_sort, Weatherer, IntrinsicProps
+from gnome.weatherers import weatherer_sort, Weatherer, WeatheringData
 from gnome.outputters import Outputter, NetCDFOutput, WeatheringOutput
 from gnome.persist import (extend_colander,
                            validators,
@@ -144,7 +144,7 @@ class Model(Serializable):
 
         # todo: set Water / intrinsic properties
         if model.water is not None and len(model.weatherers) > 0:
-            model._intrinsic_props = IntrinsicProps(model.water)
+            model._intrinsic_props = WeatheringData(model.water)
         else:
             model._intrinsic_props = None
 
@@ -481,7 +481,7 @@ class Model(Serializable):
                 self.water = Water()
 
             if self._intrinsic_props is None:
-                self._intrinsic_props = IntrinsicProps(self.water)
+                self._intrinsic_props = WeatheringData(self.water)
 
             # this adds 'density' array. It also adds data_arrays used to
             # compute area if Evaporation is included since it requires 'area'

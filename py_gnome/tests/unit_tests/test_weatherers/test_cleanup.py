@@ -8,7 +8,7 @@ import numpy as np
 
 from gnome.basic_types import oil_status
 from gnome.environment import Water
-from gnome.weatherers.intrinsic import IntrinsicProps
+from gnome.weatherers.intrinsic import WeatheringData
 
 from gnome.weatherers import Skimmer, Burn
 from gnome.spill_container import SpillContainer
@@ -29,11 +29,11 @@ units = 'kg'    # leave as SI units
 
 def test_objs():
     '''
-    function for created tests SpillContainer and test IntrinsicProps object
+    function for created tests SpillContainer and test WeatheringData object
     test objects so we can run Skimmer, Burn like a model without using a
     full on Model
     '''
-    intrinsic = IntrinsicProps(Water())
+    intrinsic = WeatheringData(Water())
     sc = SpillContainer()
     sc.spills += point_line_release_spill(10,
                                           (0, 0, 0),
