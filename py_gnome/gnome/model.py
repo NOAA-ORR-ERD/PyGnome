@@ -144,9 +144,9 @@ class Model(Serializable):
 
         # todo: set Water / intrinsic properties
         if model.water is not None and len(model.weatherers) > 0:
-            model._intrinsic_props = WeatheringData(model.water)
+            model._weathering_data = WeatheringData(model.water)
         else:
-            model._intrinsic_props = None
+            model._weathering_data = None
 
         # register callback with OrderedCollection
         model.movers.register_callback(model._callback_add_mover,
@@ -192,7 +192,7 @@ class Model(Serializable):
                          uncertain, cache_enabled, map, name)
 
         # set in setup_model_run if weatherers are added
-        self._intrinsic_props = None
+        self._weathering_data = None
 
         # register callback with OrderedCollection
         self.movers.register_callback(self._callback_add_mover,
@@ -480,15 +480,15 @@ class Model(Serializable):
             if self.water is None:
                 self.water = Water()
 
-            if self._intrinsic_props is None:
-                self._intrinsic_props = WeatheringData(self.water)
+            if self._weathering_data is None:
+                self._weathering_data = WeatheringData(self.water)
 
             # this adds 'density' array. It also adds data_arrays used to
             # compute area if Evaporation is included since it requires 'area'
-            array_types.update(self._intrinsic_props.array_types)
+            array_types.update(self._weathering_data.array_types)
         else:
             # reset to None if no weatherers found
-            self._intrinsic_props = None
+            self._weathering_data = None
 
         for environment in self.environment:
             environment.prepare_for_model_run(self.start_time)
@@ -509,9 +509,9 @@ class Model(Serializable):
 
         for sc in self.spills.items():
             sc.prepare_for_model_run(array_types)
-            if self._intrinsic_props:
+            if self._weathering_data:
                 # do this only if we have user has added spills!
-                self._intrinsic_props.initialize(sc)
+                self._weathering_data.initialize(sc)
 
         # outputters need array_types, so this needs to come after those
         # have been updated.
@@ -709,8 +709,8 @@ class Model(Serializable):
             # release particles for next step - these particles will be aged
             # in the next step
             num_released = sc.release_elements(self.time_step, self.model_time)
-            if self._intrinsic_props:
-                self._intrinsic_props.update(num_released, sc)
+            if self._weathering_data:
+                self._weathering_data.update(num_released, sc)
 
             self.logger.info("Released {0} new elements for step: "
                              " {1.current_time_step} for {1.name}".
@@ -953,8 +953,8 @@ class Model(Serializable):
         for w in self.weatherers:
             array_types.update(w.array_types)
 
-        if self._intrinsic_props:
-            array_types.update(self._intrinsic_props.array_types)
+        if self._weathering_data:
+            array_types.update(self._weathering_data.array_types)
 
         for sc in self.spills.items():
             sc.prepare_for_model_run(array_types)
