@@ -63,12 +63,6 @@ def add_oil_object(session, file_columns, row_data):
                     for c in file_columns]
     row_dict = dict(zip(file_columns, row_data))
 
-    if rejected(row_dict):
-        print ('### Rejecting record {0} ({1})'
-               .format(row_dict.get('adios_oil_id'),
-                       row_dict.get('oil_name')))
-        return
-
     fix_pour_point(row_dict)
     fix_flash_point(row_dict)
     fix_preferred_oils(row_dict)
@@ -85,17 +79,6 @@ def add_oil_object(session, file_columns, row_data):
 
     session.add(oil)
     transaction.commit()
-
-
-def rejected(kwargs):
-    adios_oil_id = kwargs.get('adios_oil_id')
-    if adios_oil_id in ('AD02130',  # FOROOZAN
-                        'AD00121',  # BCF 13
-                        'AD02042',  # BOSCAN
-                        'AD02240',  # LUCULA
-                        ):
-        return True
-    return False
 
 
 def fix_pour_point(kwargs):
