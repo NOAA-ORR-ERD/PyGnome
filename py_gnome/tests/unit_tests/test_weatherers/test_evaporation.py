@@ -10,7 +10,7 @@ import numpy as np
 
 from gnome.environment import constant_wind, Water, Wind
 from gnome.weatherers import (Evaporation,
-                              IntrinsicProps)
+                              WeatheringData)
 from gnome.outputters import WeatheringOutput
 from gnome.spill.elements import floating
 from gnome.basic_types import oil_status
@@ -21,7 +21,7 @@ from ..conftest import sample_sc_release, sample_model_weathering
 water = Water()
 
 arrays = Evaporation().array_types
-intrinsic = IntrinsicProps(water)
+intrinsic = WeatheringData(water)
 arrays.update(intrinsic.array_types)
 
 
