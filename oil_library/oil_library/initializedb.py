@@ -12,10 +12,19 @@ from .init_imported_record import purge_old_records, add_oil_object
 from .init_categories import process_categories
 from .init_oil import process_oils
 
+from zope.sqlalchemy import ZopeTransactionExtension
+
 
 def initialize_sql(settings):
     engine = engine_from_config(settings, 'sqlalchemy.')
     DBSession.configure(bind=engine)
+
+    # Here, we configure our transaction manager to keep the session open
+    # after a commit.
+    # - This of course means that we need to manually close the session when
+    #   we are done.
+    DBSession.configure(extension=ZopeTransactionExtension(keep_session=True))
+
     Base.metadata.create_all(engine)
 
 

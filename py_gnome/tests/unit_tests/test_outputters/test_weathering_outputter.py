@@ -13,6 +13,7 @@ from gnome.weatherers import Evaporation, Dispersion, Skimmer, Burn
 from gnome.spill import point_line_release_spill
 
 from gnome.outputters import WeatheringOutput
+from ..conftest import test_oil
 
 
 @pytest.fixture(scope='module')
@@ -36,14 +37,15 @@ def model(sample_model, output_dir):
     # print start_points
     model.duration = timedelta(hours=6)
     end_time = model.start_time + timedelta(hours=1)
-    model.spills += point_line_release_spill(1000,
-                                             start_position=rel_start_pos,
-                                             release_time=model.start_time,
-                                             end_release_time=end_time,
-                                             end_position=rel_end_pos,
-                                             substance='FUEL OIL NO.6',
-                                             amount=1000,
-                                             units='kg')
+    spill = point_line_release_spill(1000,
+                                     start_position=rel_start_pos,
+                                     release_time=model.start_time,
+                                     end_release_time=end_time,
+                                     end_position=rel_end_pos,
+                                     substance=test_oil,
+                                     amount=1000,
+                                     units='kg')
+    model.spills += spill
 
     # figure out mid-run save for weathering_data attribute, then add this in
     rel_time = model.spills[0].get('release_time')
@@ -53,10 +55,14 @@ def model(sample_model, output_dir):
     skimmer = Skimmer(.5*amount, units=units, efficiency=0.3,
                       active_start=skim_start,
                       active_stop=skim_start + timedelta(hours=1))
+    # thickness = 1m so area is just 20% of volume
+    volume = spill.get_mass()/spill.get('substance').get_density()
+    burn = Burn(0.2 * volume, 1.0,
+                active_start=skim_start)
     model.weatherers += [Evaporation(model.water,
                                      model.environment[-1]),
                          Dispersion(),
-                         Burn(),
+                         burn,
                          skimmer]
 
     model.outputters += WeatheringOutput(output_dir=output_dir)

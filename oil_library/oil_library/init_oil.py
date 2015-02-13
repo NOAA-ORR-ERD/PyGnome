@@ -21,12 +21,40 @@ from oil_library.utilities import (get_boiling_points_from_api,
                                    get_viscosity)
 
 
+class OilRejected(Exception):
+    '''
+        Custom exception for Oil initialization that we can raise if we
+        decide we need to reject an oil record for any reason.
+    '''
+    def __init__(self, message, oil_name, *args):
+        # without this you may get DeprecationWarning
+        self.message = message
+
+        # Special attribute you desire with your Error,
+        # perhaps the value that caused the error?:
+        self.oil_name = oil_name
+
+        # allow users initialize misc. arguments as any other builtin Error
+        super(OilRejected, self).__init__(message, oil_name, *args)
+
+    def __repr__(self):
+        return '{0}(oil={1}, errors={2})'.format(self.__class__.__name__,
+                                                 self.oil_name,
+                                                 self.message)
+
+
 def process_oils(session):
     print '\nAdding Oil objects...'
     for rec in session.query(ImportedRecord):
-        add_oil(rec)
-
-    transaction.commit()
+        # Note: committing our transaction for every record slows the
+        #       import job significantly.  But this is necessary if we
+        #       want the option of rejecting oil records.
+        try:
+            add_oil(rec)
+            transaction.commit()
+        except OilRejected as e:
+            print repr(e)
+            transaction.abort()
 
 
 def add_oil(record):
@@ -55,6 +83,8 @@ def add_oil(record):
     add_component_densities(record, oil)
     add_saturate_aromatic_fractions(record, oil)
     adjust_resin_asphaltene_fractions(record, oil)
+
+    reject_oil_if_bad(record, oil)
 
     record.oil = oil
 
@@ -452,6 +482,8 @@ def add_bullwinkle_fractions(imported_rec, oil):
     '''
     if imported_rec.product_type == "refined":
         bullwinkle_fraction = 1.0
+    elif imported_rec.emuls_constant_max is not None:
+        bullwinkle_fraction = imported_rec.emuls_constant_max
     else:
         # product type is crude
         Ni = (imported_rec.nickel
@@ -801,3 +833,58 @@ def add_component_densities(imported_rec, oil):
         oil.sara_densities.append(SARADensity(sara_type=c_type,
                                               density=P_try,
                                               ref_temp_k=T_i))
+
+
+def reject_oil_if_bad(imported_rec, oil):
+    '''
+        Here, we have an oil in which all estimations have been made.
+        We will now check the imported record and the oil object to see
+        if there are any detectable flaws.
+        If any flaw is detected, we will raise the OilRejected exception.
+        All flaws will be compiled into a list of error messages to be passed
+        into the exception.
+    '''
+    errors = []
+
+    if imported_rec_was_manually_rejected(imported_rec):
+        errors.append('Imported Record was manually rejected')
+
+    if oil_has_duplicate_cuts(oil):
+        errors.append('Oil has duplicate cuts')
+
+    if errors:
+        raise OilRejected(errors, imported_rec.adios_oil_id)
+
+
+def imported_rec_was_manually_rejected(imported_rec):
+    '''
+        This list was initially compiled to try and fix some anomalies
+        that were showing up in the oil query form.
+
+        When we update the source file that provides our imported record
+        data, we should revisit this list.
+        We should also revisit this list as we add methods to detect flaws
+        in our oil record.
+    '''
+    adios_oil_id = imported_rec.adios_oil_id
+    if adios_oil_id in ('AD00121',  # BCF 13
+                        'AD02042',  # BOSCAN
+                        'AD02130',  # FOROOZAN
+                        'AD02240',  # LUCULA
+                        ):
+        return True
+    return False
+
+
+def oil_has_duplicate_cuts(oil):
+    '''
+        Some oil records have been found to have distillation cuts with
+        duplicate vapor temperatures, and the fraction that should be chosen
+        at that temperature is ambiguous.
+    '''
+    unique_temps = set([o.vapor_temp_k for o in oil.cuts])
+
+    if len(oil.cuts) != len(unique_temps):
+        return True
+    else:
+        return False

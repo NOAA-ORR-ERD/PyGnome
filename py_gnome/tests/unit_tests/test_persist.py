@@ -21,7 +21,7 @@ from gnome.model import Model
 from gnome.persist import load
 from gnome.spill import point_line_release_spill
 from gnome.movers import RandomMover, WindMover, CatsMover, ComponentMover
-from gnome.weatherers import Evaporation, Skimmer
+from gnome.weatherers import Evaporation, Skimmer, Burn
 from gnome.outputters import Renderer
 # from gnome.utilities.remote_data import get_datafile
 
@@ -93,7 +93,8 @@ def make_model(images_dir, uncertain=False):
                                  amount=spill_amount,
                                  units=spill_units,
                                  substance=test_oil)
-
+    spill = model.spills[-1]
+    spill_volume = spill.get_mass()/spill.get('substance').get_density()
     # need a scenario for SimpleMover
     # model.movers += SimpleMover(velocity=(1.0, -1.0, 0.0))
 
@@ -165,12 +166,14 @@ def make_model(images_dir, uncertain=False):
     print 'adding a Weatherer'
     model.water = Water(311.15)
     skim_start = start_time + timedelta(hours=3)
+
     model.weatherers += [Evaporation(model.water, w_mover.wind),
                          Skimmer(spill_amount * .5,
                                  spill_units,
                                  efficiency=.3,
                                  active_start=skim_start,
-                                 active_stop=skim_start + timedelta(hours=2))]
+                                 active_stop=skim_start + timedelta(hours=2)),
+                         Burn(0.2 * spill_volume, 1.0, skim_start)]
 
     return model
 

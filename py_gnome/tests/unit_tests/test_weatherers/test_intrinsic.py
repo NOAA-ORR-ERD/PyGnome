@@ -8,7 +8,7 @@ import pytest
 
 from gnome import constants
 from gnome.environment import Water
-from gnome.weatherers.intrinsic import FayGravityViscous, IntrinsicProps
+from gnome.weatherers.intrinsic import FayGravityViscous, WeatheringData
 from gnome.spill import point_line_release_spill
 from gnome.spill_container import SpillContainer
 
@@ -157,15 +157,15 @@ class TestFayGravityViscous:
         assert np.all(area[~mask] == init_area[~mask])
 
 
-class TestIntrinsicProps:
+class TestWeatheringData:
     def test_init(self):
-        IntrinsicProps(water)
+        WeatheringData(water)
 
     def sample_sc_intrinsic(self, num_elements, rel_time):
         '''
-        initialize Sample SC and IntrinsicProps object
+        initialize Sample SC and WeatheringData object
         '''
-        intrinsic = IntrinsicProps(water)
+        intrinsic = WeatheringData(water)
         end_time = rel_time + timedelta(hours=1)
         spills = [point_line_release_spill(num_elements,
                                            (0, 0, 0),
@@ -298,7 +298,7 @@ class TestIntrinsicProps:
                              [("ALASKA NORTH SLOPE", "ALASKA NORTH SLOPE"),
                               ("ALASKA NORTH SLOPE", "AGUA DULCE")])
     def test_update_intrinsic_props(self, s0, s1):
-        intrinsic = IntrinsicProps(water)
+        intrinsic = WeatheringData(water)
 
         rel_time = datetime.now().replace(microsecond=0)
         end_time = rel_time + timedelta(hours=1)
