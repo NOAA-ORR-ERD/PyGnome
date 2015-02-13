@@ -12,7 +12,7 @@ It is only used by WeatheringData to update the 'area' and related arrays
 import numpy as np
 from repoze.lru import lru_cache
 
-from gnome.basic_types import oil_status
+from gnome.basic_types import oil_status, fate
 from gnome import AddLogger, constants
 
 
@@ -134,7 +134,8 @@ class WeatheringData(AddLogger):
                  spreading=FayGravityViscous()):
         self.water = water
         self.spreading = spreading
-        self.array_types = {'density', 'viscosity',
+        self.array_types = {'fate_status', 'positions',
+                            'density', 'viscosity',
                             'mass_components', 'mass',
                             # init volume of particles released together
                             'init_volume',
@@ -188,10 +189,16 @@ class WeatheringData(AddLogger):
             np.sum(sc['mass']/sc['mass'].sum() * sc['viscosity'])
 
         # include floating + beached oil since we could have a map
-        sc.weathering_data['floating'] = sc['mass'][sc['status_codes'] ==
-                                                    oil_status.in_water].sum()
+        sc.weathering_data['floating'] = sc['mass'][sc['fate_status'] ==
+                                                    fate.surface_weather].sum()
         sc.weathering_data['beached'] = sc['mass'][sc['status_codes'] ==
                                                    oil_status.on_land].sum()
+
+        # add 'non_weathering' key if any mass is released for nonweathering
+        # particles.
+        nonweather = sc['mass'][sc['fate_status'] == fate.non_weather].sum()
+        if nonweather > 0:
+            sc.weathering_data['non_weathering'] = nonweather
 
         if new_LEs > 0:
             amount_released = np.sum(sc['mass'][-new_LEs:])
@@ -221,7 +228,22 @@ class WeatheringData(AddLogger):
             if sum(~new_LEs_mask) > 0:
                 self._update_old_particles(~new_LEs_mask, data, substance)
 
+            self._update_weather_status(data)
+
         sc.update_from_substancedata(self.array_types)
+
+    def _update_weather_status(self, data):
+        '''
+        update weather_status array for all LEs
+        '''
+        surf_mask = np.logical_and(data['positions'][:, 2] == 0,
+                                   data['status_codes'] == oil_status.in_water)
+        data['fate_status'][surf_mask] = fate.surface_weather
+        subs_mask = np.logical_and(data['positions'][:, 2] > 0,
+                                   data['status_codes'] == oil_status.in_water)
+        data['fate_status'][subs_mask] = fate.subsurf_weather
+        data['fate_status'][data['status_codes'] != oil_status.in_water] = \
+            fate.non_weather
 
     def _init_new_particles(self, mask, data, substance):
         '''

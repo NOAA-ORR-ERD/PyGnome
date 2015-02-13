@@ -590,6 +590,9 @@ class Model(Serializable):
             return
 
         for sc in self.spills.items():
+            if self._weathering_data is not None:
+                self._weathering_data._update_weather_status(sc)
+
             for w in self.weatherers:
                 for model_time, time_step in self._split_into_substeps():
                     # change 'mass_components' in weatherer
