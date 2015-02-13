@@ -19,7 +19,7 @@ def initialize_sql(settings):
     engine = engine_from_config(settings, 'sqlalchemy.')
     DBSession.configure(bind=engine)
 
-    # here, we configure our transaction manager to keep the session open
+    # Here, we configure our transaction manager to keep the session open
     # after a commit.
     # - This of course means that we need to manually close the session when
     #   we are done.
