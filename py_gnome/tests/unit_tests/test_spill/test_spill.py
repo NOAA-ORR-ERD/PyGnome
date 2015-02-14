@@ -139,8 +139,8 @@ def test_uncertain_copy():
                                      start_position=(28, -78, 0.),
                                      release_time=datetime.now(),
                                      end_position=(29, -79, 0.),
-                                     end_release_time=datetime.now() +
-                                                      timedelta(hours=24),
+                                     end_release_time=(datetime.now() +
+                                                       timedelta(hours=24)),
                                      element_type=floating(windage_range=(.02,
                                                                           .03),
                                                            windage_persist=-1)
@@ -239,8 +239,8 @@ class Test_point_line_release_spill:
         they don't get anything.
         """
         sp = point_line_release_spill(num_elements=self.num_elements,
-                start_position=self.start_position,
-                release_time=self.release_time)
+                                      start_position=self.start_position,
+                                      release_time=self.release_time)
 
         # Test no particles released for following conditions
         #     current_time > spill's release_time
@@ -331,8 +331,8 @@ class Test_point_line_release_spill:
         sp = point_line_release_spill(num_elements=100,
                                       start_position=self.start_position,
                                       release_time=self.release_time,
-                                      end_release_time=self.release_time +
-                                                       timedelta(hours=10),
+                                      end_release_time=(self.release_time +
+                                                        timedelta(hours=10)),
                                       amount=123,
                                       units='kg')
 
@@ -357,8 +357,8 @@ class Test_point_line_release_spill:
                                 timedelta(hours=2),
                                 timedelta(hours=10)]
         # todo: figure out how we want point/line release to work!
-        #ts = [timestep, timestep, timestep / 2, timestep]
-        #exp_num_released = [10, 10, 5, 75]
+        # ts = [timestep, timestep, timestep / 2, timestep]
+        # exp_num_released = [10, 10, 5, 75]
         ts = [timestep, timestep, timestep * 8, timestep]
         exp_num_released = [10, 10, 80, 0]
 
@@ -421,8 +421,9 @@ class Test_point_line_release_spill:
                                       start_position=start_position,
                                       release_time=self.release_time,
                                       end_position=end_position,
-                                      end_release_time=self.release_time +
-                                                       timedelta(minutes=100))
+                                      end_release_time=(self.release_time +
+                                                        timedelta(minutes=100))
+                                      )
         assert (sp.get('release_duration') ==
                 timedelta(minutes=100).total_seconds())
 
@@ -457,8 +458,9 @@ class Test_point_line_release_spill:
                                       start_position=start_position,
                                       release_time=self.release_time,
                                       end_position=end_position,
-                                      end_release_time=self.release_time +
-                                                       timedelta(minutes=100))
+                                      end_release_time=(self.release_time +
+                                                        timedelta(minutes=100))
+                                      )
         rel = sp.release
         lats = np.linspace(rel.start_position[0], rel.end_position[0],
                            num_elems)
@@ -513,7 +515,8 @@ class Test_point_line_release_spill:
                                       start_position=start_position,
                                       release_time=self.release_time,
                                       end_position=end_position,
-                                      end_release_time=self.release_time + timedelta(minutes=50),
+                                      end_release_time=(self.release_time +
+                                                        timedelta(minutes=50)),
                                       amount=1000,
                                       units='kg')
 
@@ -559,7 +562,7 @@ class Test_point_line_release_spill:
         # (sp.end_position-sp.start_position)/(sp.num_elements-1)
         delta_p = ((sp.release.end_position - sp.release.start_position) /
                    (sp.release.num_elements - 1))
-        #assert np.all(delta_p == sp.release.delta_pos)
+        # assert np.all(delta_p == sp.release.delta_pos)
         assert np.allclose(delta_p, np.diff(data_arrays['positions'], axis=0),
                            0, 1e-10)
 
@@ -600,8 +603,9 @@ class Test_point_line_release_spill:
                                       start_position=start_position,
                                       release_time=self.release_time,
                                       end_position=end_position,
-                                      end_release_time=self.release_time +
-                                                       timedelta(minutes=50))
+                                      end_release_time=(self.release_time +
+                                                        timedelta(minutes=50))
+                                      )
 
         # start before release
         time = self.release_time - timedelta(minutes=2)
@@ -632,7 +636,7 @@ class Test_point_line_release_spill:
         # (sp.end_position-sp.start_position)/(sp.num_elements-1)
         delta_p = ((sp.release.end_position - sp.release.start_position) /
                    (sp.release.num_elements - 1))
-        #assert np.all(delta_p == sp.release.delta_pos)
+        # assert np.all(delta_p == sp.release.delta_pos)
         assert np.allclose(delta_p, np.diff(data_arrays['positions'], axis=0),
                            0, 1e-10)
 
@@ -642,8 +646,9 @@ class Test_point_line_release_spill:
             point_line_release_spill(num_elements=100,
                                      start_position=self.start_position,
                                      release_time=self.release_time,
-                                     end_release_time=self.release_time -
-                                                      timedelta(seconds=1))
+                                     end_release_time=(self.release_time -
+                                                       timedelta(seconds=1))
+                                     )
 
     def test_end_position(self):
         """
@@ -741,7 +746,7 @@ def test_single_line(num_elements):
     time = release_time
     data_arrays = {}
     while time <= end_time + time_step * 2:
-        #data = sp.release_elements(time, time_step.total_seconds())
+        # data = sp.release_elements(time, time_step.total_seconds())
         num = sp.num_elements_to_release(time, time_step.total_seconds())
         data_arrays = mock_append_data_arrays(arr_types, num, data_arrays)
         if num > 0:
@@ -816,7 +821,8 @@ def test_line_release_with_big_timestep():
     # all axes should release particles with same, evenly spaced delta_position
     for ix in range(3):
         assert np.allclose(data_arrays['positions'][:, ix],
-            np.linspace(start_pos[ix], end_pos[ix], sp.release.num_elements))
+                           np.linspace(start_pos[ix], end_pos[ix],
+                                       sp.release.num_elements))
 
 """ end line release (point_line_release_spill) tests"""
 
@@ -853,7 +859,7 @@ class TestSpatialRelease:
         After each test, the autouse fixture setup is called so self.sp and
         self.start_positions get defined
         """
-        #if not hasattr(self, 'sp'):
+        # if not hasattr(self, 'sp'):
         self.sp = sample_spatial_release_spill[0]
         self.start_positions = sample_spatial_release_spill[1]
         self.sp.rewind()
@@ -888,7 +894,8 @@ class TestSpatialRelease:
 
         # now it should:
         (data_arrays, num) = release_elements(self.sp,
-                                            self.sp.release.release_time, 600)
+                                              self.sp.release.release_time,
+                                              600)
         assert np.alltrue(data_arrays['positions'] == self.start_positions)
 
     def test_SpatialRelease(self):
@@ -896,7 +903,8 @@ class TestSpatialRelease:
         see if the right arrays get created
         """
         (data_arrays, num) = release_elements(self.sp,
-                                            self.sp.release.release_time, 600)
+                                              self.sp.release.release_time,
+                                              600)
 
         assert (self.sp.get('num_released') == self.sp.release.num_elements and
                 self.sp.release.num_elements == num)
@@ -907,7 +915,8 @@ class TestSpatialRelease:
         make sure they don't release elements twice
         """
         (data_arrays, num) = release_elements(self.sp,
-                                            self.sp.release.release_time, 600)
+                                              self.sp.release.release_time,
+                                              600)
         assert (self.sp.get('num_released') == self.sp.release.num_elements and
                 self.sp.release.num_elements == num)
 
@@ -923,14 +932,15 @@ class TestSpatialRelease:
         sp2 = Spill(SpatialRelease(self.sp.release.release_time,
                                    ((0, 0, 0), (0, 0, 0))))
         (data_arrays, num) = release_elements(self.sp,
-                                            self.sp.release.release_time, 600)
+                                              self.sp.release.release_time,
+                                              600)
         assert (self.sp.get('num_released') == self.sp.release.num_elements and
                 self.sp.release.num_elements == num)
 
         (data_arrays, num2) = release_elements(sp2,
-                                              sp2.release.release_time,
-                                              600,
-                                              data_arrays)
+                                               sp2.release.release_time,
+                                               600,
+                                               data_arrays)
         assert (sp2.get('num_released') == sp2.release.num_elements and
                 len(data_arrays['positions']) == num2 + num)
         assert (np.all(data_arrays['positions'][:num, :] ==
@@ -984,9 +994,11 @@ class TestVerticalPlumeRelease:
         '''
         time_step = timedelta(hours=1).total_seconds()
         total_elems = 0
-        for off_time in range(int(-time_step), int(time_step * 30), int(time_step)):
+        for off_time in range(int(-time_step),
+                              int(time_step * 30),
+                              int(time_step)):
             current_time = (self.spill.release.release_time +
-                timedelta(seconds=off_time))
+                            timedelta(seconds=off_time))
             elems = self.spill.num_elements_to_release(current_time, time_step)
             total_elems += elems
 
@@ -1011,11 +1023,11 @@ class TestVerticalPlumeRelease:
 
         (data_arrays, num) = release_elements(self.spill,
                                               (self.spill.release.release_time
-                                              + timedelta(seconds=time_step)),
+                                               + timedelta(seconds=time_step)),
                                               time_step,
                                               data_arrays)
 
-        #print 'positions:', data_arrays['positions']
+        # print 'positions:', data_arrays['positions']
         assert num == 6
         assert data_arrays['positions'].shape == (10, 3)
 
@@ -1065,7 +1077,7 @@ class TestVerticalPlumeRelease:
 #         else:
 #             assert spill.__getattribute__(key) \
 #                 == sp_dict.__getitem__(key)
-#==============================================================================
+# ==============================================================================
 
 
 """

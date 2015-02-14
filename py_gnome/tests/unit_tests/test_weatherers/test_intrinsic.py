@@ -295,8 +295,10 @@ class TestWeatheringData:
             print 'Completed step: ', i
 
     @pytest.mark.parametrize(("s0", "s1"),
-                             [("ALASKA NORTH SLOPE", "ALASKA NORTH SLOPE"),
-                              ("ALASKA NORTH SLOPE", "AGUA DULCE")])
+                             [("ALASKA NORTH SLOPE",
+                               "ALASKA NORTH SLOPE"),
+                              ("ALASKA NORTH SLOPE",
+                               "ALASKA NORTH SLOPE, OIL & GAS")])
     def test_update_intrinsic_props(self, s0, s1):
         intrinsic = WeatheringData(water)
 

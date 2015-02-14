@@ -14,12 +14,14 @@ from gnome.weatherers import (Emulsification,
 from gnome.outputters import WeatheringOutput
 from gnome.spill.elements import floating
 
-from ..conftest import sample_sc_release, sample_model_weathering, sample_model_weathering2
+from ..conftest import (sample_sc_release,
+                        sample_model_weathering,
+                        sample_model_weathering2)
 
 
 water = Water()
-wind = constant_wind(15., 0)	#also test with lower wind no emulsification
-waves = Waves(wind,water)
+wind = constant_wind(15., 0)  # also test with lower wind no emulsification
+waves = Waves(wind, water)
 
 arrays = Emulsification().array_types
 
@@ -46,11 +48,12 @@ def test_emulsification(oil, temp, num_elems, on):
     emul.prepare_for_model_run(sc)
 
     # also want a test for a user set value for bulltime or bullwinkle
-    if oil=='ALBERTA':
+    if oil == 'ALBERTA':
         sc['frac_lost'][:] = .31
-    if oil=='BREGA':
+    if oil == 'BREGA':
         sc['frac_lost'][:] = .23
-    #sc['frac_lost'][:] = .35
+
+    # sc['frac_lost'][:] = .35
     print "sc['frac_lost'][:]"
     print sc['frac_lost'][:]
     emul.prepare_for_model_step(sc, time_step, model_time)
@@ -73,6 +76,7 @@ def test_emulsification(oil, temp, num_elems, on):
     print sc['frac_water'][:]
 
     assert np.all(sc['frac_water'] == 0)
+
 
 @pytest.mark.parametrize(('oil', 'temp'), [('ALBERTA', 333.0),
                                            ('FUEL OIL NO.6', 333.0),
@@ -121,6 +125,7 @@ def test_full_run_emul_not_active(sample_model_fcn):
         print ("Completed step: {0}"
                .format(step['WeatheringOutput']['step_num']))
 
+
 def test_serialize_deseriailize():
     'test serialize/deserialize for webapi'
     wind = constant_wind(15., 0)
@@ -131,7 +136,7 @@ def test_serialize_deseriailize():
 
     # deserialize and ensure the dict's are correct
     d_ = Emulsification.deserialize(json_)
-    assert d_['waves'] == Waves.deserialize(json_['waves']) 
+    assert d_['waves'] == Waves.deserialize(json_['waves'])
     d_['waves'] = waves
     e.update_from_dict(d_)
     assert e.waves is waves

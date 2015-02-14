@@ -959,8 +959,9 @@ def test_staggered_spills_weathering(sample_model_fcn, delay):
             assert abs(sum_ - sc.weathering_data['amount_released']) < 1.e-6
 
 
-@pytest.mark.parametrize(("s0", "s1"), [("ALASKA NORTH SLOPE", "ALASKA NORTH SLOPE"),
-                                        ("ALASKA NORTH SLOPE", "AGUA DULCE")])
+@pytest.mark.parametrize(("s0", "s1"),
+                         [("ALASKA NORTH SLOPE", "ALASKA NORTH SLOPE"),
+                          ("ALASKA NORTH SLOPE", "HIGH ISLAND, AMOCO")])
 def test_two_substance_spills_weathering(sample_model_fcn, s0, s1):
     '''
     only tests data arrays are correct and we don't end up with stale data
