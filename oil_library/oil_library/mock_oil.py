@@ -27,9 +27,9 @@ def sample_oil_to_mock_oil(max_cuts=None, **kwargs):
     oil = Oil(**kwargs)
 
     # need to add densities list
-    oil.densities = [
-        Density(kg_m_3=uc.convert('density', 'api', 'kg/m^3', oil.api),
-                ref_temp_k=288.16)]
+    oil.densities = [Density(kg_m_3=uc.convert('density', 'api', 'kg/m^3',
+                                               oil.api),
+                             ref_temp_k=288.16)]
 
     # add cuts - all mass goes into saturates/aromatics for now
     oil.resins = None

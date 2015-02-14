@@ -43,12 +43,21 @@ class OilRejected(Exception):
                                                  self.message)
 
 
-def process_oils(session):
+def process_oils(session_class):
+    session = session_class()
+    record_ids = [r.adios_oil_id for r in session.query(ImportedRecord)]
+    session.close()
+
     print '\nAdding Oil objects...'
-    for rec in session.query(ImportedRecord):
+    for record_id in record_ids:
         # Note: committing our transaction for every record slows the
         #       import job significantly.  But this is necessary if we
         #       want the option of rejecting oil records.
+        session = session_class()
+        rec = (session.query(ImportedRecord)
+               .filter(ImportedRecord.adios_oil_id == record_id)
+               .one())
+
         try:
             add_oil(rec)
             transaction.commit()
