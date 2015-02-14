@@ -25,8 +25,8 @@ arrays = Emulsification().array_types
 
 
 @pytest.mark.parametrize(('oil', 'temp', 'num_elems', 'on'),
-                         [('AGUA DULCE', 311.15, 3, True),
-                          ('ALAMO', 311.15, 3, True),
+                         [('ALBERTA', 311.15, 3, True),
+                          ('BREGA', 311.15, 3, True),
                           ('FUEL OIL NO.6', 311.15, 3, False)])
 def test_emulsification(oil, temp, num_elems, on):
     '''
@@ -46,10 +46,10 @@ def test_emulsification(oil, temp, num_elems, on):
     emul.prepare_for_model_run(sc)
 
     # also want a test for a user set value for bulltime or bullwinkle
-    if oil=='ALAMO':
-        sc['frac_lost'][:] = .35
-    if oil=='AGUA DULCE':
-        sc['frac_lost'][:] = .25
+    if oil=='ALBERTA':
+        sc['frac_lost'][:] = .31
+    if oil=='BREGA':
+        sc['frac_lost'][:] = .23
     #sc['frac_lost'][:] = .35
     print "sc['frac_lost'][:]"
     print sc['frac_lost'][:]
@@ -74,9 +74,9 @@ def test_emulsification(oil, temp, num_elems, on):
 
     assert np.all(sc['frac_water'] == 0)
 
-@pytest.mark.parametrize(('oil', 'temp'), [('AGUA DULCE', 333.0),
+@pytest.mark.parametrize(('oil', 'temp'), [('ALBERTA', 333.0),
                                            ('FUEL OIL NO.6', 333.0),
-                                           ('ALASKA NORTH SLOPE', 311.15),
+                                           ('BREGA', 311.15),
                                            ])
 def test_full_run(sample_model_fcn, oil, temp, dump):
     '''

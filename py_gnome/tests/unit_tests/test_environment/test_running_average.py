@@ -22,9 +22,7 @@ wind_file = testdata['timeseries']['wind_ts_av']
 
 def test_av_from_variable_wind():
     '''
-    following operation requires a numpy array. Slicing numy array
-    automatically makes it a 0-D array, make sure it gets converted to a 1-D
-    array correctly
+    test variable wind to running average
     '''
     ts = np.zeros((4,), dtype=datetime_value_2d)
     ts[:] = [(datetime(2012, 9, 7, 8, 0), (10, 270)),
@@ -46,9 +44,7 @@ def test_av_from_variable_wind():
 
 def test_av_from_constant_wind():
     '''
-    following operation requires a numpy array. Slicing numy array
-    automatically makes it a 0-D array, make sure it gets converted to a 1-D
-    array correctly
+    test constant wind gives constant running average
     '''
     wind = constant_wind(1., 270.)
 
@@ -76,8 +72,7 @@ def test_av_from_timeseries():
     
 def test_full_run():
     '''
-    test evapoartion outputs post step for a full run of model. Dump json
-    for 'weathering_model.json' in dump directory
+    test a wind series that has a constant average
     '''
     ts = np.zeros((10,), dtype=datetime_value_2d)
     ts[:] = [(datetime(2015, 1, 1, 1, 0), (10, 0)),
@@ -113,8 +108,7 @@ def test_full_run():
 
 def test_full_run_extended():
     '''
-    test evapoartion outputs post step for a full run of model. Dump json
-    for 'weathering_model.json' in dump directory
+    test algorithm resets two day running average with a new time
     '''
     ts = np.zeros((20,), dtype=datetime_value_2d)
     ts[:] = [(datetime(2015, 1, 1, 1, 0), (10, 0)),
@@ -178,7 +172,7 @@ def test_default_init():
     assert av.units == 'mps'
 
 
-def test_serialize_deseriailize():
+def test_serialize_deserialize():
     'test serialize/deserialize for webapi'
     wind = constant_wind(1., 0)
     av = RunningAverage(wind)

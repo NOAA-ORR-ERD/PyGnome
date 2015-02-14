@@ -1,7 +1,7 @@
 from core import Weatherer, HalfLifeWeatherer
 from evaporation import Evaporation
 from emulsification import Emulsification
-from intrinsic import IntrinsicProps
+from intrinsic import WeatheringData
 from cleanup import Skimmer, Burn, Dispersion
 
 __all__ = [Weatherer,
@@ -11,7 +11,7 @@ __all__ = [Weatherer,
            Skimmer,
            Burn,
            Dispersion,
-           IntrinsicProps]
+           WeatheringData]
 
 
 def weatherer_sort(weatherer):
