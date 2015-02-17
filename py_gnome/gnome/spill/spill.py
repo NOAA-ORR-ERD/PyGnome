@@ -216,7 +216,10 @@ class Spill(serializable.Serializable):
         if _mass is not None:
             rd_sec = self.get('release_duration')
             if rd_sec == 0:
-                le_mass = _mass / self.get('num_elements')
+                try:
+                    le_mass = _mass / self.get('num_elements')
+                except TypeError:
+                    le_mass = _mass / self.get('num_per_timestep')
             else:
                 time_at_step_end = current_time + timedelta(seconds=time_step)
                 if self.get('release_time') > current_time:
