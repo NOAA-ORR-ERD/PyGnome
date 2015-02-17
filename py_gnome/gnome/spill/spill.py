@@ -56,7 +56,7 @@ class Spill(serializable.Serializable):
 
     def __init__(self, release,
                  element_type=None,
-                 substance='oil_conservative',
+                 substance=None,
                  on=True,
                  amount=None,   # could be volume or mass
                  units=None,
@@ -627,7 +627,7 @@ def point_line_release_spill(num_elements,
                              end_position=None,
                              end_release_time=None,
                              element_type=None,
-                             substance='oil_conservative',
+                             substance=None,
                              on=True,
                              amount=None,
                              units=None,

@@ -9,7 +9,7 @@ import sys
 from gnome.persist import References, load, Savable
 from gnome.movers import constant_wind_mover
 from gnome import movers, outputters, environment, map, spill, weatherers
-from conftest import testdata
+from conftest import testdata, test_oil
 
 import pytest
 
@@ -118,7 +118,7 @@ g_objects = (environment.Tide(testdata['CatsMover']['tide']),
                                     num_elements=10,
                                     start_position=(0, 0, 0)),
              spill.point_line_release_spill(10, (0, 0, 0), datetime.now()),
-             spill.elements.ElementType(substance='oil_jetfuels'),
+             spill.elements.ElementType(substance=test_oil),
              weatherers.Evaporation(environment.constant_wind(1., 0.),
                                     environment.Water(333.0)),
              weatherers.Skimmer(100, 'kg', 0.3, datetime(2014, 1, 1, 0, 0),
