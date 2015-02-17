@@ -3,6 +3,7 @@ test functions in remote_data module
 '''
 
 import os
+import shutil
 from urllib2 import HTTPError, URLError
 
 from gnome.utilities.remote_data import get_datafile
@@ -30,14 +31,18 @@ def test_exception():
 def test_get_datafile():
     """
     downloads CLISShio.txt to make sure get_datafile works as expected
-
-    removes the file sample_data/CLISShio.txt after downloading it to leave it
-    in clean _state
+    Uses testdata['CatsMover']['tide'] as test file. If it exists, it moves
+    it '*.renamed'. It then trys to download file and if it fails for any
+    reason (most likely internet connection is missing), then copy the
+    file back from '*.renamed' to testdata['CatsMover']['tide']
+    At the end also, move the renamed file back
     """
 
     file_ = testdata['CatsMover']['tide']
+    renamed = None
     if os.path.exists(file_):
-        os.remove(file_)
+        renamed = file_ + '.renamed'
+        shutil.move(file_, renamed)
 
     num_calls = 0
     while num_calls < 2:
@@ -46,9 +51,12 @@ def test_get_datafile():
         try:
             r_file = get_datafile(file_)
         except:
+            if renamed is not None:
+                shutil.move(renamed, file_)
             return
 
         assert os.path.exists(r_file)
         num_calls += 1
-    # clean up file_ that was downloaded just for this test
-    os.remove(file_)
+    # do not delete file_
+    if renamed is not None:
+        shutil.move(renamed, file_)
