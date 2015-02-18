@@ -70,6 +70,9 @@ class OilProps(object):
         self.molecular_weight = None
         self._component_mw()
 
+        self._bullwinkle = None
+        self._bulltime = None
+
     def __repr__(self):
         return ('{0.__class__.__module__}.{0.__class__.__name__}('
                 'oil_={0._r_oil!r})'.format(self))
@@ -117,7 +120,8 @@ class OilProps(object):
         '''
         return get_viscosity(self._r_oil, temp, out)
 
-    def get_bulltime(self):
+    @property
+    def bulltime(self):
         '''
         return bulltime (time to emulsify)
         either user set or just return a flag
@@ -125,7 +129,37 @@ class OilProps(object):
         # check for user input value, otherwise set to -999 as a flag
         bulltime = -999.
 
-        return bulltime
+        if self._bulltime is not None:
+            return self._bulltime
+        else:
+            return bulltime
+
+    @bulltime.setter
+    def bulltime(self, value):
+        """
+        time to start emulsification 
+        """
+        self._bulltime = value
+
+    @property
+    def bullwinkle(self):
+        '''
+        return bullwinkle (emulsion constant)
+        either user set or return database value
+        '''
+        # check for user input value, otherwise return database value
+
+        if self._bullwinkle is not None:
+            return self._bullwinkle
+        else:
+            return self.get('bullwinkle_fraction')
+
+    @bullwinkle.setter
+    def bullwinkle(self, value):
+        """
+        emulsion constant 
+        """
+        self._bullwinkle = value
 
     @property
     def num_components(self):
