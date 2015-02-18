@@ -409,7 +409,8 @@ def add_emulsion_water_fraction_max(imported_rec, oil):
 
 def add_resin_fractions(imported_rec, oil):
     try:
-        if (imported_rec.resins is not None and
+        if (imported_rec is not None and
+            imported_rec.resins is not None and
                 imported_rec.resins >= 0.0 and
                 imported_rec.resins <= 1.0):
             f_res = imported_rec.resins
@@ -430,7 +431,8 @@ def add_resin_fractions(imported_rec, oil):
 
 def add_asphaltene_fractions(imported_rec, oil):
     try:
-        if (imported_rec.asphaltene_content is not None and
+        if (imported_rec is not None and
+            imported_rec.asphaltene_content is not None and
                 imported_rec.asphaltene_content >= 0.0 and
                 imported_rec.asphaltene_content <= 1.0):
             f_asph = imported_rec.asphaltene_content

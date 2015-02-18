@@ -446,6 +446,11 @@ class Oil(Base):
     molecular_weights = relationship('MolecularWeight', backref='oil',
                                      cascade="all, delete, delete-orphan")
 
+    def __init__(self, **kwargs):
+        for a, v in kwargs.iteritems():
+            if (a in self.columns):
+                setattr(self, a, v)
+
     def __repr__(self):
         return '<Oil("{0.name}")>'.format(self)
 
