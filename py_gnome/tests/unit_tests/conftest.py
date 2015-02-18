@@ -588,18 +588,20 @@ def sample_model_weathering2(sample_model_fcn, oil, temp=311.16):
     return model
 
 
-@pytest.fixture(scope='function', params=['relpath', 'abspath'])
-def clean_saveloc(dump, request):
+#@pytest.fixture(scope='function', params=['relpath', 'abspath'])
+@pytest.fixture(scope='function')
+def clean_saveloc(dump):
     '''
     use the request object to generate a name for the temp file. Do this so
     we have a unique name else xdist-pytest fails when tests are parallelized
     '''
-    name = 'temp_{0}'.format(request._pyfuncitem._genid)
+    #name = 'temp_{0}'.format(request._pyfuncitem._genid)
+    name = 'temp_saveloc'
     temp = os.path.join(dump, name)   # absolute path
 
-    def cleanup():
-        print '\nCleaning up %s' % temp
-        shutil.rmtree(temp)
+    #def cleanup():
+    #    print '\nCleaning up %s' % temp
+    #    shutil.rmtree(temp)
 
     # do not cleanup on exit
     #if os.path.exists(temp):
@@ -611,10 +613,36 @@ def clean_saveloc(dump, request):
         os.mkdir(temp)    # let path get created by save_load
         print '\nmkdir: {0}'.format(temp)
 
-    if request.param == 'relpath':
-        return os.path.relpath(temp)    # do save/load tests with relative path
-    else:
-        return temp
+    return temp
+    #if request.param == 'relpath':
+    #    return os.path.relpath(temp)    # do save/load tests with relative path
+    #else:
+    #    return temp
+
+
+def clean_saveloc2(dump, name):
+    '''
+    use the request object to generate a name for the temp file. Do this so
+    we have a unique name else xdist-pytest fails when tests are parallelized
+    '''
+    temp = os.path.join(dump, name)   # absolute path
+
+    def cleanup():
+        print '\nCleaning up %s' % temp
+        shutil.rmtree(temp)
+
+    # do not cleanup on exit
+    if os.path.exists(temp):
+        cleanup()
+
+    #request.addfinalizer(cleanup)
+
+    if not os.path.exists(temp):
+        os.mkdir(temp)    # let path get created by save_load
+        print '\nmkdir: {0}'.format(temp)
+
+    return temp
+
 
 
 '''

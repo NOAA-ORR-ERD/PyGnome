@@ -25,8 +25,8 @@ arrays = Emulsification().array_types
 
 
 @pytest.mark.parametrize(('oil', 'temp', 'num_elems', 'on'),
-                         [('AGUA DULCE', 311.15, 3, True),
-                          ('ALAMO', 311.15, 3, True),
+                         [#('AGUA DULCE', 311.15, 3, True),
+                          #('ALAMO', 311.15, 3, True),
                           ('FUEL OIL NO.6', 311.15, 3, False)])
 def test_emulsification(oil, temp, num_elems, on):
     '''
@@ -74,7 +74,8 @@ def test_emulsification(oil, temp, num_elems, on):
 
     assert np.all(sc['frac_water'] == 0)
 
-@pytest.mark.parametrize(('oil', 'temp'), [('AGUA DULCE', 333.0),
+
+@pytest.mark.parametrize(('oil', 'temp'), [#('AGUA DULCE', 333.0),
                                            ('FUEL OIL NO.6', 333.0),
                                            ('ALASKA NORTH SLOPE', 311.15),
                                            ])
