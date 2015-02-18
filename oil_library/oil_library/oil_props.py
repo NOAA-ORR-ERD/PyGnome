@@ -11,12 +11,13 @@ object used to initialize and OilProps object
 Not sure at present if this needs to be serializable?
 '''
 import copy
+from itertools import groupby, chain
 
 from repoze.lru import lru_cache
 import numpy as np
 
 import unit_conversion as uc
-from .utilities import get_density, get_boiling_points_from_cuts, get_viscosity
+from .utilities import get_density, get_viscosity
 
 
 # create a dtype for storing sara information in numpy array
@@ -253,10 +254,22 @@ class OilProps(object):
 
         Omit components that have 0 mass fraction
         '''
-        all_comp = sorted(self._r_oil.sara_fractions,
-                          key=lambda s: s.ref_temp_k)
-        all_dens = sorted(self._r_oil.sara_densities,
-                          key=lambda s: s.ref_temp_k)
+        all_comp = list(chain(*[sorted(list(g), key=lambda s: s.sara_type,
+                                       reverse=True)
+                                for k, g
+                                in groupby(sorted(self._r_oil.sara_fractions,
+                                                  key=lambda s: s.ref_temp_k),
+                                           lambda x: x.ref_temp_k)]
+                              ))
+
+        all_dens = list(chain(*[sorted(list(g), key=lambda s: s.sara_type,
+                                       reverse=True)
+                                for k, g
+                                in groupby(sorted(self._r_oil.sara_densities,
+                                                  key=lambda s: s.ref_temp_k),
+                                           lambda x: x.ref_temp_k)]
+                              ))
+
         items = []
         sum_frac = 0.
         for comp, dens in zip(all_comp, all_dens):
