@@ -614,12 +614,19 @@ def add_distillation_cut_boiling_point(imported_rec, oil):
 
 
 def add_molecular_weights(imported_rec, oil):
+    '''
+        Molecular weight units = g/mol
+    '''
     for c in oil.cuts:
         saturate = get_saturate_molecular_weight(c.vapor_temp_k)
         aromatic = get_aromatic_molecular_weight(c.vapor_temp_k)
 
-        oil.molecular_weights.append(MolecularWeight(saturate=saturate,
-                                                     aromatic=aromatic,
+        oil.molecular_weights.append(MolecularWeight(sara_type='Saturates',
+                                                     g_mol=saturate,
+                                                     ref_temp_k=c.vapor_temp_k)
+                                     )
+        oil.molecular_weights.append(MolecularWeight(sara_type='Aromatics',
+                                                     g_mol=aromatic,
                                                      ref_temp_k=c.vapor_temp_k)
                                      )
 
@@ -758,8 +765,9 @@ def get_sa_mass_fractions(oil_obj):
             sg = P_try / 1000
             mw = None
             for v in oil_obj.molecular_weights:
-                if np.isclose(v.ref_temp_k, T_i):
-                    mw = v.saturate
+                if (np.isclose(v.ref_temp_k, T_i) and
+                        v.sara_type == 'Saturates'):
+                    mw = v.g_mol
                     break
 
             if mw is not None:

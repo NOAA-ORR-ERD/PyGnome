@@ -67,7 +67,14 @@ class remake_oil_db(Command):
 
     def run(self):
         to_rm = os.path.join(here, r'oil_library', 'OilLib.db')
-        os.remove(to_rm)
+        try:
+            os.remove(to_rm)
+        except OSError as e:
+            if e.errno == 2:
+                pass
+            else:
+                raise
+
         print "Deleting {0} ..".format(to_rm)
         call("initialize_OilLibrary_db")
         print 'OilLibrary database successfully generated from file!'
