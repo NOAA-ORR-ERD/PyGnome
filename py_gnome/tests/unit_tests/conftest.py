@@ -234,6 +234,8 @@ def get_testdata():
                                         'WindDataFromGnome_BadUnits.WND'),
          'wind_cardinal': os.path.join(s_data,
                                        'WindDataFromGnomeCardinal.WND'),
+         'wind_kph': os.path.join(s_data,
+                                       'WindDataFromGnomeKPH.WND'),
          'tide_shio': get_datafile(os.path.join(tide_dir, 'CLISShio.txt')),
          'tide_ossm': get_datafile(os.path.join(tide_dir, 'TideHdr.FINAL'))
          }
