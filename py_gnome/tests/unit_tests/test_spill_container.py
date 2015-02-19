@@ -1116,7 +1116,10 @@ class TestSubstanceSpillsDataStructure():
     def test_spills_with_and_notwith_substance(self):
         '''
         datastructure only adds substance/spills if substance is not None
-        deleting spill resets datastructure
+        deleting spill resets datastructure.
+
+        - the spills in _substances_spills 'is' the same as the spills
+          in sc.spills - same object
         '''
         sc = SpillContainer()
         sc.spills += [Spill(Release(datetime.now(), 10),
@@ -1129,10 +1132,9 @@ class TestSubstanceSpillsDataStructure():
         assert len(sc.get_substances()) == 2
         sc.prepare_for_model_run()
         all_spills = list(chain.from_iterable(sc._substances_spills.spills))
-        for ix, spill in enumerate(all_spills):
-            # spills are added to data structure in same order as present in
-            # sc.spills
-            assert spill is sc.spills[ix]
+        assert len(all_spills) == len(sc.spills)
+        for spill in all_spills:
+            assert sc.spills[spill.id] is spill
 
         del sc.spills[-1]
         assert len(sc.get_substances()) == 1
@@ -1152,7 +1154,6 @@ class TestSubstanceSpillsDataStructure():
         sc.spills += sp_add
         assert len(sc.get_substances()) == 1
         sc.prepare_for_model_run()
-        assert sc._substances_spills.data[0] is sc._data_arrays
         assert all([sp_add == spills for spills in sc.iterspillsbysubstance()])
 
     def test_spills_different_substance_init(self):
