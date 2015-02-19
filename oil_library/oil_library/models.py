@@ -500,8 +500,9 @@ class MolecularWeight(Base):
     id = Column(Integer, primary_key=True)
     oil_id = Column(Integer, ForeignKey('oils.id'))
 
-    saturate = Column(Float(53))
-    aromatic = Column(Float(53))
+    sara_type = Column(Enum('Saturates', 'Aromatics', 'Resins', 'Asphaltenes'),
+                       nullable=False)
+    g_mol = Column(Float(53))
     ref_temp_k = Column(Float(53))
 
     def __init__(self, **kwargs):
