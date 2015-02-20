@@ -134,7 +134,7 @@ class WeatheringData(AddLogger):
                  spreading=FayGravityViscous()):
         self.water = water
         self.spreading = spreading
-        self.array_types = {'fate_status', 'positions',
+        self.array_types = {'fate_status', 'positions', 'status_codes',
                             'density', 'viscosity',
                             'mass_components', 'mass',
                             # init volume of particles released together
@@ -214,7 +214,9 @@ class WeatheringData(AddLogger):
         - update intrinsic properties like 'density', 'viscosity' and optional
         arrays for previously released particles
         '''
-        for substance, data in sc.itersubstancedata(self.array_types):
+
+        for substance, data in sc.itersubstancedata(self.array_types,
+                                                    fate='all'):
             'update properties only if elements are released'
             if len(data['density']) == 0:
                 continue
@@ -228,22 +230,15 @@ class WeatheringData(AddLogger):
             if sum(~new_LEs_mask) > 0:
                 self._update_old_particles(~new_LEs_mask, data, substance)
 
-            self._update_weather_status(data)
+        sc.update_from_fatedataview(fate='all')
 
-        sc.update_from_substancedata(self.array_types)
-
-    def _update_weather_status(self, data):
+    def update_fate_status(self, data):
         '''
-        update weather_status array for all LEs
+        update fate status after elements have beached
         '''
-        surf_mask = np.logical_and(data['positions'][:, 2] == 0,
-                                   data['status_codes'] == oil_status.in_water)
-        data['fate_status'][surf_mask] = fate.surface_weather
-        subs_mask = np.logical_and(data['positions'][:, 2] > 0,
-                                   data['status_codes'] == oil_status.in_water)
-        data['fate_status'][subs_mask] = fate.subsurf_weather
-        data['fate_status'][data['status_codes'] != oil_status.in_water] = \
-            fate.non_weather
+        # for old particles, update fate_status
+        non_w_mask = data['status_codes'] != oil_status.in_water
+        data['fate_status'][non_w_mask] = fate.non_weather
 
     def _init_new_particles(self, mask, data, substance):
         '''
@@ -298,6 +293,28 @@ class WeatheringData(AddLogger):
                                      data['relative_bouyancy'][mask][0])
         data['area'][mask] = data['init_area'][mask]
         data['thickness'][mask] = data['init_volume'][mask]/data['area'][mask]
+
+        # initialize the fate_status array based on positions and status_codes
+        self._init_fate_status(mask, data)
+
+    def _init_fate_status(self, new_LEs_mask, data):
+        '''
+        initialize fate_status for newly released LEs
+        '''
+        surf_mask = \
+            np.logical_and(new_LEs_mask,
+                           np.logical_and(data['positions'][:, 2] == 0,
+                                          data['status_codes'] ==
+                                          oil_status.in_water))
+        subs_mask = \
+            np.logical_and(new_LEs_mask,
+                           np.logical_and(data['positions'][:, 2] > 0,
+                                          data['status_codes'] ==
+                                          oil_status.in_water))
+
+        # set status for new_LEs correctly
+        data['fate_status'][surf_mask] = fate.surface_weather
+        data['fate_status'][subs_mask] = fate.subsurf_weather
 
     @lru_cache(2)
     def _get_kv1_weathering_visc_update(self, v0):

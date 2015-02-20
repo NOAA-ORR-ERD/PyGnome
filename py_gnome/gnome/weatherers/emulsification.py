@@ -115,7 +115,7 @@ class Emulsification(Weatherer, Serializable):
             self.logger.info('Amount water_content: {0}'.
                              format(sc.weathering_data['water_content']))
 
-        sc.update_from_substancedata(self.array_types)
+        sc.update_from_fatedataview()
 
     def serialize(self, json_='webapi'):
         """

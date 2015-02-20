@@ -591,7 +591,9 @@ class Model(Serializable):
 
         for sc in self.spills.items():
             if self._weathering_data is not None:
-                self._weathering_data._update_weather_status(sc)
+                self._weathering_data.update_fate_status(sc)
+
+            sc.reset_fate_dataview()
 
             for w in self.weatherers:
                 for model_time, time_step in self._split_into_substeps():

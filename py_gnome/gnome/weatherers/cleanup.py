@@ -9,7 +9,7 @@ import os
 import numpy as np
 from colander import (SchemaNode, Float, String, drop)
 
-from gnome.basic_types import oil_status
+from gnome.basic_types import oil_status, fate as bt_fate
 from gnome.weatherers import Weatherer
 from gnome.utilities.serializable import Serializable, Field
 from gnome.utilities.inf_datetime import InfDateTime
@@ -69,7 +69,7 @@ class CleanUpBase(Weatherer):
             self.logger.error(msg)
         return substance[0]
 
-    def _update_LE_status_codes(self, sc, status, substance, mass_to_remove):
+    def _update_LE_status_codes(self, sc, fate, substance, mass_to_remove):
         '''
         Need to mark LEs for skimming/burning. Mark LEs based on mass
         Mass to remove is the oil_water mixture so we need to find the
@@ -88,21 +88,22 @@ class CleanUpBase(Weatherer):
         This is why the input is 'mass_to_remove' instead of 'vol_to_remove'
         - less computation
         '''
-        arrays = ['status_codes', 'mass', 'frac_water']
-        data = sc.substancedata(substance, arrays)
+        status = getattr(bt_fate, fate)
+        arrays = {'fate_status', 'mass', 'frac_water'}
+        data = sc.substancefatedata(substance, arrays, 'surface_weather')
         oil_water = data['mass'] / (1 - data['frac_water'])
 
         # (1 - frac_water) * mass_to_remove
         if mass_to_remove >= oil_water.sum():
-            data['status_codes'][:] = status
+            data['fate_status'][:] = status
         else:
             # sum up mass until threshold is reached, find index where
             # total_mass_removed is reached or exceeded
             ix = np.where(np.cumsum(oil_water) >= mass_to_remove)[0][0]
             # change status for elements upto and including 'ix'
-            data['status_codes'][:ix + 1] = status
+            data['fate_status'][:ix + 1] = status
 
-        sc.update_from_substancedata(arrays, substance)
+        sc.update_from_fatedataview(substance, 'surface_weather')
 
     def _set__timestep(self, time_step, model_time):
         '''
@@ -128,13 +129,13 @@ class CleanUpBase(Weatherer):
             self._timestep = (self.active_stop -
                               model_time).total_seconds()
 
-    def _avg_frac_oil(self, data, mask):
+    def _avg_frac_oil(self, data):
         '''
         find weighted average of frac_water array, return (1 - avg_frac_water)
         since we want the average fraction of oil in this data
         '''
-        avg_frac_water = ((data['mass'][mask] * data['frac_water'][mask]).
-                          sum()/data['mass'][mask].sum())
+        avg_frac_water = ((data['mass'] * data['frac_water']).
+                          sum()/data['mass'].sum())
         return (1 - avg_frac_water)
 
 
@@ -229,12 +230,12 @@ class Skimmer(CleanUpBase, Serializable):
 
         # only when it is active, update the status codes
         self._set__timestep(time_step, model_time)
-        if (sc['status_codes'] == oil_status.skim).sum() == 0:
+        if (sc['fate_status'] == bt_fate.skim).sum() == 0:
             substance = self._get_substance(sc)
             total_mass_removed = (self._get_mass(substance, self.amount,
                                                  self.units) *
                                   self.efficiency)
-            self._update_LE_status_codes(sc, oil_status.skim,
+            self._update_LE_status_codes(sc, 'skim',
                                          substance, total_mass_removed)
 
     def _mass_to_remove(self, substance):
@@ -258,10 +259,10 @@ class Skimmer(CleanUpBase, Serializable):
         if len(sc) == 0:
             return
 
-        for substance, data in sc.itersubstancedata(self.array_types):
-            mask = data['status_codes'] == oil_status.skim
+        for substance, data in sc.itersubstancedata(self.array_types,
+                                                    fate='skim'):
             rm_amount = \
-                self._rate * self._avg_frac_oil(data, mask) * self._timestep
+                self._rate * self._avg_frac_oil(data) * self._timestep
             rm_mass = self._get_mass(substance,
                                      rm_amount,
                                      self.units) * self.efficiency
@@ -269,7 +270,7 @@ class Skimmer(CleanUpBase, Serializable):
             self.logger.info('{0} - Amount skimmed: {1}'.
                              format(os.getpid(), rm_mass))
 
-            rm_mass_frac = rm_mass / data['mass'][mask].sum()
+            rm_mass_frac = rm_mass / data['mass'].sum()
 
             # if elements are also evaporating following could be true
             # need to include weathering for skimmed particles, then test and
@@ -277,13 +278,13 @@ class Skimmer(CleanUpBase, Serializable):
             # if rm_mass_frac > 1:
             #     rm_mass_frac = 1.0
 
-            data['mass_components'][mask, :] = \
-                (1 - rm_mass_frac) * data['mass_components'][mask, :]
-            data['mass'][mask] = data['mass_components'][mask, :].sum(1)
+            data['mass_components'] = \
+                (1 - rm_mass_frac) * data['mass_components']
+            data['mass'] = data['mass_components'].sum(1)
 
             sc.weathering_data['skimmed'] += rm_mass
 
-        sc.update_from_substancedata(self.array_types)
+        sc.update_from_fatedataview(fate='skim')
 
 
 class BurnSchema(WeathererSchema):
@@ -369,16 +370,16 @@ class Burn(CleanUpBase, Serializable):
 
         # only when it is active, update the status codes
         self._set__timestep(time_step, model_time)
-        if (sc['status_codes'] == oil_status.burn).sum() == 0:
+        if (sc['fate_status'] == bt_fate.burn).sum() == 0:
             substance = self._get_substance(sc)
             mass_to_remove = self._get_mass(substance,
                                             self.area * self.thickness,
                                             'm^3')
-            self._update_LE_status_codes(sc, oil_status.burn,
+            self._update_LE_status_codes(sc, 'burn',
                                          substance, mass_to_remove)
             # now also set up self._oil_thickness
             self._oil_thickness = \
-                (sc['mass'][sc['status_codes'] == oil_status.burn].sum() /
+                (sc['mass'][sc['fate_status'] == bt_fate.burn].sum() /
                  (substance.get_density() * self.area))
 
         # check _oil_thickness after property is set in code block above
@@ -413,11 +414,11 @@ class Burn(CleanUpBase, Serializable):
         if not self.active or len(sc) == 0:
             return
 
-        for substance, data in sc.itersubstancedata(self.array_types):
+        for substance, data in sc.itersubstancedata(self.array_types,
+                                                    fate='burn'):
             # keep updating thickness
-            mask = data['status_codes'] == oil_status.burn
             burn_th_rate = \
-                self._burn_rate_constant * self._avg_frac_oil(data, mask)
+                self._burn_rate_constant * self._avg_frac_oil(data)
             burn_time = ((self._oil_thickness - self._min_thickness) /
                          burn_th_rate)
 
@@ -426,10 +427,10 @@ class Burn(CleanUpBase, Serializable):
                 th_burned = burn_th_rate * self._timestep
                 rm_mass = self._get_mass(substance, th_burned * self.area,
                                          'm^3')
-                rm_mass_frac = rm_mass / data['mass'][mask].sum()
-                data['mass_components'][mask, :] = \
-                    (1 - rm_mass_frac) * data['mass_components'][mask, :]
-                data['mass'][mask] = data['mass_components'][mask, :].sum(1)
+                rm_mass_frac = rm_mass / data['mass'].sum()
+                data['mass_components'] = \
+                    (1 - rm_mass_frac) * data['mass_components']
+                data['mass'] = data['mass_components'].sum(1)
 
                 # new thickness
                 self._oil_thickness -= th_burned
@@ -441,7 +442,7 @@ class Burn(CleanUpBase, Serializable):
                     (model_time + timedelta(seconds=self._timestep) -
                      self.active_start).total_seconds()
 
-        sc.update_from_substancedata(self.array_types)
+        sc.update_from_fatedataview(fate='burn')
 
 
 class Dispersion(Weatherer, Serializable):
@@ -465,4 +466,4 @@ class Dispersion(Weatherer, Serializable):
                 data['mass_components'][mask, :] = mass_remain
                 data['mass'][mask] = data['mass_components'][mask, :].sum(1)
 
-            sc.update_from_substancedata(self.array_types)
+            sc.update_from_fatedataview()

@@ -100,8 +100,8 @@ class Evaporation(Weatherer, Serializable):
                              data['mol']).reshape(-1, 1), len(vp), axis=1))
 
             # only elements 'in_water' experience evaporation
-            inwater = data['status_codes'] == oil_status.in_water
-            data['evap_decay_constant'][~inwater, :len(vp)] = 0
+            #inwater = data['status_codes'] == oil_status.in_water
+            #data['evap_decay_constant'][~inwater, :len(vp)] = 0
 
             self.logger.info('{0} - Max decay: {1}, Min decay: {2}'.
                              format(os.getpid(),
@@ -142,7 +142,7 @@ class Evaporation(Weatherer, Serializable):
 
             # add frac_lost
             data['frac_lost'][:] = 1 - data['mass']/data['init_mass']
-        sc.update_from_substancedata(self.array_types)
+        sc.update_from_fatedataview()
 
     def serialize(self, json_='webapi'):
         """
