@@ -6,7 +6,7 @@ from datetime import datetime, timedelta
 from pytest import mark
 import numpy as np
 
-from gnome.basic_types import oil_status
+from gnome.basic_types import oil_status, fate
 from gnome.environment import Water
 from gnome.weatherers.intrinsic import WeatheringData
 
@@ -102,7 +102,7 @@ class TestSkimmer:
         assert self.skimmer.active is active
         if active:
             assert self.skimmer._timestep == ts
-            mask = self.sc['status_codes'] == oil_status.skim
+            mask = self.sc['fate_status'] & fate.skim == fate.skim
             assert mask.sum() > 0
 
     @mark.parametrize("avg_frac_water", [0.0, 0.4])
@@ -306,7 +306,7 @@ class TestBurn:
                       self.op.get_density())
         assert np.isclose(self.sc.weathering_data['burned'], exp_burned)
 
-        mask = self.sc['status_codes'] == oil_status.burn
+        mask = self.sc['fate_status'] & fate.burn == fate.burn
 
         # given LEs are discrete elements, we cannot add a fraction of an LE
         mass_per_le = self.sc['init_mass'][mask][0]
