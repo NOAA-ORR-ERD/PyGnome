@@ -22,6 +22,7 @@ from gnome.environment import Water
 from gnome.movers import RandomMover, constant_wind_mover
 from gnome.outputters import NetCDFOutput
 from gnome.model import Model
+from ..conftest import test_oil
 
 here = os.path.dirname(__file__)
 
@@ -40,7 +41,7 @@ def model(sample_model_fcn, dump):
                                  start_position=sample_model_fcn['release_start_pos'],
                                  release_time=model.start_time,
                                  end_release_time=model.start_time + model.duration,
-                                 substance='oil_diesel',
+                                 substance=test_oil,
                                  amount=1000,
                                  units='kg')
 

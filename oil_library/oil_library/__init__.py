@@ -13,7 +13,6 @@ from oil_library.mock_oil import sample_oil_to_mock_oil
 from oil_library.oil_props import OilProps
 
 
-
 # Some standard oils - scope is module level, non-public
 # create mock_oil objects instead of dict - we always want the same instance
 # of mock_oil object for say 'oil_conservative' otherwise equality fails
@@ -48,7 +47,7 @@ _sample_oils = {
                                   'api': uc.convert('Density',
                                                     'gram per cubic centimeter',
                                                     'API degree', 0.90)}),
-    'oil_6': 
+    'oil_6':
         sample_oil_to_mock_oil(max_cuts=2,
                                **{'name': 'oil_6',
                                   'api': uc.convert('Density',
@@ -124,32 +123,25 @@ def get_oil(oil_, max_cuts=None):
 
     if oil_ in _sample_oils.keys():
         return _sample_oils[oil_]
-
     else:
         '''
         db_file should exist - if it doesn't then create if first
         should we raise error here?
         '''
-
         session = _get_db_session()
 
         try:
             oil = session.query(Oil).filter(Oil.name == oil_).one()
-            oil.cuts
             oil.densities
             oil.kvis
+            oil.cuts
             oil.sara_fractions
+            oil.sara_densities
+            oil.molecular_weights
             return oil
-        except:
-            pass    # try checking imported_record_id
-
-        try:
-            return (session.query(Oil).filter(Oil.imported_record_id == oil_).
-                    one())
         except NoResultFound, ex:
-            # or sqlalchemy.orm.exc.MultipleResultsFound as ex:
-            ex.message = ("oil with name or imported_record_id, '{0}', not "
-                          "found in database. {1}".format(oil_, ex.message))
+            ex.message = ("oil with name '{0}', not found in database.  "
+                          "{1}".format(oil_, ex.message))
             ex.args = (ex.message, )
             raise ex
 
@@ -161,8 +153,4 @@ def get_oil_props(oil_info, max_cuts=None):
     When pulling record from database, this is ignored.
     '''
     oil_ = get_oil(oil_info, max_cuts)
-    try:
-        return OilProps(oil_)
-    except:
-        # record found in DB but failed to create a valid OilProps object
-        return None
+    return OilProps(oil_)

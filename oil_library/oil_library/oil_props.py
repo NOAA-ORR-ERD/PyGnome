@@ -70,9 +70,6 @@ class OilProps(object):
         self.molecular_weight = None
         self._component_mw()
 
-        #self.bullwinkle = None
-        #self.bulltime = None
-
     def __repr__(self):
         return ('{0.__class__.__module__}.{0.__class__.__name__}('
                 'oil_={0._r_oil!r})'.format(self))
@@ -140,7 +137,8 @@ class OilProps(object):
     def _component_mw(self):
         '''
         return the molecular weight of the pseudocomponents (mw_i) given the
-        boiling points. It returns the mw_i for saturates and aromatic components
+        boiling points.
+        It returns the mw_i for saturates and aromatic components
         '''
         self.molecular_weight = (0.04132 - 1.985e-4 * self.boiling_point +
                                  (9.494e-7 * self.boiling_point ** 2))
@@ -183,7 +181,7 @@ class OilProps(object):
 
     def _compare__dict(self, other):
         '''
-        cannot just do self.__dict__ == other.__dict__ since 
+        cannot just do self.__dict__ == other.__dict__ since
         '''
         for key, val in self.__dict__.iteritems():
             o_val = other.__dict__[key]
@@ -263,7 +261,7 @@ class OilProps(object):
         sum_frac = 0.
         for comp, dens in zip(all_comp, all_dens):
             if (comp.ref_temp_k != comp.ref_temp_k or
-                comp.sara_type != comp.sara_type):
+                    comp.sara_type != comp.sara_type):
                 msg = "mismatch in sara_fractions and sara_densities tables"
                 raise ValueError(msg)
 
@@ -275,6 +273,5 @@ class OilProps(object):
         self._sara = np.asarray(items, dtype=sara_dtype)
         if not np.allclose(self._sara[:]['fraction'].sum(), 1.0):
             msg = ("mass fractions add up to: {0} - required "
-                   "to add to 1.0").format(items[:]['fraction'].sum())
+                   "to add to 1.0").format(self._sara[:]['fraction'].sum())
             raise ValueError(msg)
-

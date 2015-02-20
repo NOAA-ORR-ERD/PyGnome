@@ -4,27 +4,34 @@ Tests for oil_props module in gnome.db.oil_library
 import copy
 
 import numpy as np
+
 import pytest
+from pytest import raises
+
 import unit_conversion as uc
 
 from oil_library import get_oil_props, get_oil
+from oil_library.utilities import get_density
+
+from sqlalchemy.orm.exc import NoResultFound
 
 
 def test_OilProps_exceptions():
-    from sqlalchemy.orm.exc import NoResultFound
     with pytest.raises(NoResultFound):
         get_oil_props('test')
 
 
-@pytest.mark.parametrize("search", ['FUEL OIL NO.6', 51])
-def test_get_oil(search):
-    o = get_oil(search)
-    if isinstance(search, basestring):
-        assert o.name == search
+@pytest.mark.parametrize(("search", "isNone"),
+                         [('FUEL OIL NO.6', False), (51, True)])
+def test_get_oil(search, isNone):
+
+    if isNone:
+        with raises(NoResultFound):
+            o = get_oil(search)
     else:
-        # cannot search by adios ID yet
-        assert o.imported_record_id == search
-        assert o.imported.id == search
+        o = get_oil(search)
+        if isinstance(search, basestring):
+            assert o.name == search
 
 
 # Record number 51: "AUTOMOTIVE GASOLINE, EXXON" is found in database
@@ -33,10 +40,11 @@ def test_get_oil(search):
 @pytest.mark.parametrize(("search", "isNone"),
                          [('FUEL OIL NO.6', False), (51, True)])
 def test_get_oil_props(search, isNone):
-    op = get_oil_props(search)
     if isNone:
-        assert op is None
+        with raises(NoResultFound):
+            op = get_oil_props(search)
     else:
+        op = get_oil_props(search)
         assert op is not None
 
 # just double check values for _sample_oil are entered correctly
@@ -60,8 +68,8 @@ def test_OilProps_sample_oil(oil, density, units):
 
     o = get_oil_props(oil)
     d = uc.convert('density', units, 'kg/m^3', density)
-    assert abs(o.get_density(273.16 + 15) - d) < 1e-3
-    assert abs(o.get_density() - d) < 1e-3
+    assert abs(get_density(o, 273.15 + 15) - d) < 1e-3
+    # assert abs(o.get_density() - d) < 1e-3
     assert o.name == oil
 
 
@@ -111,13 +119,14 @@ class TestProperties:
 
 
 def test_eq():
-    op = get_oil_props(10)
-    op1 = get_oil_props(10)
+    op = get_oil_props('ARABIAN EXTRA LIGHT, PHILLIPS')
+    op1 = get_oil_props('ARABIAN EXTRA LIGHT, PHILLIPS')
     assert op == op1
 
 
 def test_ne():
-    assert get_oil_props(10) != get_oil_props(11)
+    assert (get_oil_props('ARABIAN EXTRA LIGHT, PHILLIPS') !=
+            get_oil_props('ARABIAN EXTRA LIGHT, STAR ENTERPRISE'))
 
 
 class TestCopy():
@@ -125,7 +134,7 @@ class TestCopy():
         '''
         do a shallow copy and test that it is a shallow copy
         '''
-        op = get_oil_props(10)
+        op = get_oil_props('ARABIAN EXTRA LIGHT, PHILLIPS')
         cop = copy.copy(op)
         assert op == cop
         assert op is not cop
@@ -143,7 +152,7 @@ class TestCopy():
         '''
         do a shallow copy and test that it is a shallow copy
         '''
-        op = get_oil_props(10)
+        op = get_oil_props('ARABIAN EXTRA LIGHT, PHILLIPS')
         dcop = copy.deepcopy(op)
 
         assert op == dcop

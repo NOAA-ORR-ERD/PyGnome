@@ -56,7 +56,7 @@ class Spill(serializable.Serializable):
 
     def __init__(self, release,
                  element_type=None,
-                 substance='oil_conservative',
+                 substance=None,
                  on=True,
                  amount=None,   # could be volume or mass
                  units=None,
@@ -216,7 +216,10 @@ class Spill(serializable.Serializable):
         if _mass is not None:
             rd_sec = self.get('release_duration')
             if rd_sec == 0:
-                le_mass = _mass / self.get('num_elements')
+                try:
+                    le_mass = _mass / self.get('num_elements')
+                except TypeError:
+                    le_mass = _mass / self.get('num_per_timestep')
             else:
                 time_at_step_end = current_time + timedelta(seconds=time_step)
                 if self.get('release_time') > current_time:
@@ -624,7 +627,7 @@ def point_line_release_spill(num_elements,
                              end_position=None,
                              end_release_time=None,
                              element_type=None,
-                             substance='oil_conservative',
+                             substance=None,
                              on=True,
                              amount=None,
                              units=None,

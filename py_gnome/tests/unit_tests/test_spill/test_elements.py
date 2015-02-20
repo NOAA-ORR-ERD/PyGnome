@@ -351,7 +351,7 @@ def test_save_load(clean_saveloc, test_obj):
 
 
 @pytest.mark.parametrize("substance", [test_oil,
-                                       10,  # oil record in DB
+                                       'ALASKA NORTH SLOPE',  # oil record in DB
                                        get_oil_props(test_oil)])
 def test_element_type_init(substance):
     et = ElementType(substance=substance)
