@@ -76,11 +76,11 @@ MESSAGE setfield;TO ElizabethPort.CUR; DownCurUncertainty .50;
 MESSAGE setfield;TO ElizabethPort.CUR; CrossCurUncertainty .20;
 --------------
 
-MESSAGE createMover;TO New York Harbor Map;TYPE Cats; NAME TremelyPtReach.CUR;PATH resnum 10021;
+MESSAGE createMover;TO New York Harbor Map;TYPE Cats; NAME TremleyPtReach.CUR;PATH resnum 10021;
 
-MESSAGE setfield;TO TremelyPtReach.CUR; scaleType constant;refP 74.207333 W 40.586166 N; scaleValue 1; timeFile resNum 10020;
-MESSAGE setfield;TO TremelyPtReach.CUR; DownCurUncertainty .50;
-MESSAGE setfield;TO TremelyPtReach.CUR; CrossCurUncertainty .20;
+MESSAGE setfield;TO TremleyPtReach.CUR; scaleType constant;refP 74.207333 W 40.586166 N; scaleValue 1; timeFile resNum 10020;
+MESSAGE setfield;TO TremleyPtReach.CUR; DownCurUncertainty .50;
+MESSAGE setfield;TO TremleyPtReach.CUR; CrossCurUncertainty .20;
 --------------
 
 MESSAGE createMover;TO New York Harbor Map;TYPE Cats; NAME TuftsPtSmokingPt.CUR;PATH resnum 10023;

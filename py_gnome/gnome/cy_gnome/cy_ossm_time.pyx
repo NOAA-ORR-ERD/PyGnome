@@ -15,7 +15,8 @@ from cy_helpers import filename_as_bytes
 ossm_wind_units = {-1: 'undefined',
                    1: 'knots',
                    2: 'meters per second',
-                   3: 'miles per hour'}
+                   3: 'miles per hour',
+                   4: 'kilometer per hour'}
 
 
 cdef class CyOSSMTime(object):

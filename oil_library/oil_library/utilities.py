@@ -16,6 +16,8 @@ def get_density(oil, temp, out=None):
     result into it, and returns a reference to out. out must be the same
     shape as temp
     '''
+    if hasattr(oil, '_r_oil'):
+        oil = oil._r_oil
 
     # convert to numpy array if it isn't already one
     temp = np.asarray(temp, dtype=float)

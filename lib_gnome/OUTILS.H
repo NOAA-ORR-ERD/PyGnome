@@ -4,6 +4,7 @@
 
 #define	KNOTSTOMETERSPERSEC		.5144
 #define MILESTOMETERSPERSEC		.44704
+#define KMHRTOMETERSPERSEC		.277777
 
 #define	kNumDirCodes	16
 
@@ -13,6 +14,7 @@
 #define	kKnots			1
 #define kMetersPerSec	2
 #define kMilesPerHour	3
+#define kKilometersPerHour	4
 
 #define	kCMS			1		// Transport units for Hydrology time files
 #define kKCMS			2

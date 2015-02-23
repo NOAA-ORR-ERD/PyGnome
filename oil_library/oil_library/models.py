@@ -446,6 +446,11 @@ class Oil(Base):
     molecular_weights = relationship('MolecularWeight', backref='oil',
                                      cascade="all, delete, delete-orphan")
 
+    def __init__(self, **kwargs):
+        for a, v in kwargs.iteritems():
+            if (a in self.columns):
+                setattr(self, a, v)
+
     def __repr__(self):
         return '<Oil("{0.name}")>'.format(self)
 
@@ -495,8 +500,9 @@ class MolecularWeight(Base):
     id = Column(Integer, primary_key=True)
     oil_id = Column(Integer, ForeignKey('oils.id'))
 
-    saturate = Column(Float(53))
-    aromatic = Column(Float(53))
+    sara_type = Column(Enum('Saturates', 'Aromatics', 'Resins', 'Asphaltenes'),
+                       nullable=False)
+    g_mol = Column(Float(53))
     ref_temp_k = Column(Float(53))
 
     def __init__(self, **kwargs):
