@@ -152,8 +152,11 @@ class Model(Serializable):
         model.movers.register_callback(model._callback_add_mover,
                                        ('add', 'replace'))
 
-        model.weatherers.register_callback(model._callback_add_weatherer,
+        model.weatherers.register_callback(model._callback_add_weatherer_env,
                                            ('add', 'replace'))
+
+        model.environment.register_callback(model._callback_add_weatherer_env,
+                                            ('add', 'replace'))
 
         # restore the spill data outside this method - let's not try to find
         # the saveloc here
@@ -198,8 +201,11 @@ class Model(Serializable):
         self.movers.register_callback(self._callback_add_mover,
                                       ('add', 'replace'))
 
-        self.weatherers.register_callback(self._callback_add_weatherer,
+        self.weatherers.register_callback(self._callback_add_weatherer_env,
                                           ('add', 'replace'))
+
+        self.environment.register_callback(self._callback_add_weatherer_env,
+                                           ('add', 'replace'))
         self.logger.info('New model initialized')
 
     def __restore__(self, time_step, start_time, duration,
@@ -255,9 +261,9 @@ class Model(Serializable):
         '''
         Rewinds the model to the beginning (start_time)
         '''
-
         self._current_time_step = -1
         self.model_time = self._start_time
+
         # fixme: do the movers need re-setting? -- or wait for
         #        prepare_for_model_run?
 
@@ -768,7 +774,9 @@ class Model(Serializable):
 
     def _add_to_environ_collec(self, obj_added):
         '''
-        if an environment object exists
+        if an environment object exists in obj_added, but not in the Model's
+        environment collection, then add it automatically.
+        todo: maybe we don't want to do this - revisit this requirement
         '''
         if hasattr(obj_added, 'wind') and obj_added.wind is not None:
             if obj_added.wind.id not in self.environment:
@@ -782,14 +790,11 @@ class Model(Serializable):
             if obj_added.waves.id not in self.environment:
                 self.environment += obj_added.waves
 
-    def _callback_add_mover(self, obj_added):
-        'Callback after mover has been added'
-        self._add_to_environ_collec(obj_added)
-        self.rewind()  # rewind model if a new mover is added
-
-    def _callback_add_weatherer(self, obj_added):
-        'Callback after weatherer has been added'
-        self._add_to_environ_collec(obj_added)
+    def _add_water(self, obj_added):
+        '''
+        if Water object is found in obj_added as an attribute, then also set
+        the Model's 'water' attribute to this object
+        '''
         if hasattr(obj_added, 'water') and obj_added.water is not None:
             if self.water is None:
                 self.water = obj_added.water
@@ -802,6 +807,19 @@ class Model(Serializable):
                            "properties").format(obj_added)
                     self.logger.warning(msg)
 
+    def _callback_add_mover(self, obj_added):
+        'Callback after mover has been added'
+        self._add_to_environ_collec(obj_added)
+        self.rewind()  # rewind model if a new mover is added
+
+    def _callback_add_weatherer_env(self, obj_added):
+        '''
+        Callback after weatherer/environment object has been added. 'waves'
+        environment object contains 'wind' and 'water' so add those to
+        environment collection and the 'water' attribute.
+        '''
+        self._add_to_environ_collec(obj_added)
+        self._add_water(obj_added)
         self.rewind()  # rewind model if a new weatherer is added
 
     def __eq__(self, other):
