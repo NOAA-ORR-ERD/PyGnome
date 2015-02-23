@@ -50,12 +50,14 @@ def test_get_datafile():
         # been downloaded in 1st call
         try:
             r_file = get_datafile(file_)
+            assert os.path.exists(r_file)
         except:
             if renamed is not None:
                 shutil.move(renamed, file_)
+            reason = ("Most likely urllib2.HTTPError exception in "
+                      "get_datafile(). Check internet connectivity.")
+            pytest.xfail(reason=reason)
             return
-
-        assert os.path.exists(r_file)
         num_calls += 1
     # do not delete file_
     if renamed is not None:
