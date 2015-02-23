@@ -197,7 +197,7 @@ class TestWeatheringData:
             data['mass'][:] = sc['mass_components'].sum(1)
             data['frac_lost'][:] = 1 - data['mass']/data['init_mass']
 
-        sc.update_from_substancedata(intrinsic.array_types)
+        sc.update_from_fatedataview()
 
     @pytest.mark.parametrize("vary_mf", [True, False])
     def test_density_visc_update(self, vary_mf):
