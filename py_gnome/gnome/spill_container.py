@@ -82,7 +82,7 @@ class FateDataView(object):
         '''
         # return all data associated with substance
         if 'substance' in sc:
-            fate_mask = np.locigal_and(sc['substance'] == self.substance_id,
+            fate_mask = np.logical_and(sc['substance'] == self.substance_id,
                                        fate_mask)
 
         if np.all(fate_mask):
@@ -126,11 +126,26 @@ class FateDataView(object):
         w_mask = self._get_fate_mask(sc, fate)
 
         if 'substance' in sc:
-            w_mask = np.locigal_and(sc['substance'] == self.substance_id,
+            w_mask = np.logical_and(sc['substance'] == self.substance_id,
                                     w_mask)
+
+        # if fate_status of LEs was updated, then reset data attribute. This is
+        # because the data in the attribute is no longer valid. For instance,
+        # if the 'burn' started with 'surface_weather' data_arrays, then
+        # marked some of these LEs to be burned, they should no longer be
+        # contained in the 'surface_weather' dict - easisest to reset the dict
+        # and let it be recreated when the next weatherer asks for data.
+        reset_view = False
+        if ('fate_status' in d_to_sync and
+            np.any(sc['fate_status'][w_mask] != d_to_sync['fate_status'])):
+                reset_view = True
+                print 'reset_view {0} - {1}'.format(fate, self.substance_id)
 
         for key, val in d_to_sync.iteritems():
             sc[key][w_mask] = val
+
+        if reset_view:
+            setattr(self, fate, {})
 
 
 class SpillContainerData(object):

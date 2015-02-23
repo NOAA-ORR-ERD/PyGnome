@@ -20,6 +20,7 @@ from gnome import constants
 from .core import WeathererSchema
 from gnome.weatherers import Weatherer
 from gnome.cy_gnome.cy_weatherers import emulsify_oil
+from gnome.basic_types import fate as bt_fate
 
 
 class Emulsification(Weatherer, Serializable):
@@ -77,6 +78,10 @@ class Emulsification(Weatherer, Serializable):
             return
 
         for substance, data in sc.itersubstancedata(self.array_types):
+            if len(data['frac_water']) == 0:
+                # substance does not contain any surface_weathering LEs
+                continue
+
             k_emul = self._water_uptake_coeff(model_time, substance)
 
             # bulltime is not in database, but could be set by user

@@ -261,6 +261,9 @@ class Skimmer(CleanUpBase, Serializable):
 
         for substance, data in sc.itersubstancedata(self.array_types,
                                                     fate='skim'):
+            if len(data['mass']) is 0:
+                continue
+
             rm_amount = \
                 self._rate * self._avg_frac_oil(data) * self._timestep
             rm_mass = self._get_mass(substance,
@@ -416,6 +419,9 @@ class Burn(CleanUpBase, Serializable):
 
         for substance, data in sc.itersubstancedata(self.array_types,
                                                     fate='burn'):
+            if len(data['mass']) is 0:
+                continue
+
             # keep updating thickness
             burn_th_rate = \
                 self._burn_rate_constant * self._avg_frac_oil(data)
@@ -457,13 +463,15 @@ class Dispersion(Weatherer, Serializable):
         'for now just take away 0.1% at every step'
         if self.active and len(sc) > 0:
             for substance, data in sc.itersubstancedata(self.array_types):
-                mask = data['status_codes'] == oil_status.in_water
+                if len(data['mass']) is 0:
+                    continue
+
                 # take out 0.25% of the mass
                 pct_per_le = (1 - 0.015/data['mass_components'].shape[1])
-                mass_remain = pct_per_le * data['mass_components'][mask, :]
+                mass_remain = pct_per_le * data['mass_components']
                 sc.weathering_data['dispersed'] += \
-                    np.sum(data['mass_components'][mask, :] - mass_remain[:, :])
-                data['mass_components'][mask, :] = mass_remain
-                data['mass'][mask] = data['mass_components'][mask, :].sum(1)
+                    np.sum(data['mass_components'] - mass_remain[:, :])
+                data['mass_components'] = mass_remain
+                data['mass'] = data['mass_components'].sum(1)
 
             sc.update_from_fatedataview()
