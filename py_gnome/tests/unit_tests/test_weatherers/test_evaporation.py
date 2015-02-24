@@ -100,8 +100,7 @@ def assert_helper(sc, new_p):
                           0.0)
 
 
-@pytest.mark.parametrize(('oil', 'temp'), [('HIGH ISLAND, AMOCO', 333.0),
-                                           ('FUEL OIL NO.6', 333.0),
+@pytest.mark.parametrize(('oil', 'temp'), [('FUEL OIL NO.6', 333.0),
                                            ('ALASKA NORTH SLOPE', 311.15),
                                            ])
 def test_full_run(sample_model_fcn, oil, temp, dump):
@@ -117,10 +116,16 @@ def test_full_run(sample_model_fcn, oil, temp, dump):
     model.weatherers += [Evaporation(model.environment[0],
                                      model.environment[1])]
     released = 0
+    init_rho = model.spills[0].get('substance').get_density(temp)
+    init_vis = model.spills[0].get('substance').get_viscosity(temp)
     for step in model:
         for sc in model.spills.items():
             assert_helper(sc, sc.num_released - released)
             released = sc.num_released
+            if sc.num_released > 0:
+                assert np.all(sc['density'] >= init_rho)
+                assert np.all(sc['viscosity'] >= init_vis)
+
             mask = sc['status_codes'] == oil_status.in_water
             assert sc.weathering_data['floating'] == np.sum(sc['mass'][mask])
 
