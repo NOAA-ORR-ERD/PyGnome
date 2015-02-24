@@ -11,12 +11,13 @@ object used to initialize and OilProps object
 Not sure at present if this needs to be serializable?
 '''
 import copy
+from itertools import groupby, chain
 
 from repoze.lru import lru_cache
 import numpy as np
 
 import unit_conversion as uc
-from .utilities import get_density, get_boiling_points_from_cuts, get_viscosity
+from .utilities import get_density, get_viscosity
 
 
 # create a dtype for storing sara information in numpy array
@@ -70,8 +71,8 @@ class OilProps(object):
         self.molecular_weight = None
         self._component_mw()
 
-        #self.bullwinkle = None
-        #self.bulltime = None
+        self._bullwinkle = None
+        self._bulltime = None
 
     def __repr__(self):
         return ('{0.__class__.__module__}.{0.__class__.__name__}('
@@ -120,7 +121,8 @@ class OilProps(object):
         '''
         return get_viscosity(self._r_oil, temp, out)
 
-    def get_bulltime(self):
+    @property
+    def bulltime(self):
         '''
         return bulltime (time to emulsify)
         either user set or just return a flag
@@ -128,7 +130,37 @@ class OilProps(object):
         # check for user input value, otherwise set to -999 as a flag
         bulltime = -999.
 
-        return bulltime
+        if self._bulltime is not None:
+            return self._bulltime
+        else:
+            return bulltime
+
+    @bulltime.setter
+    def bulltime(self, value):
+        """
+        time to start emulsification 
+        """
+        self._bulltime = value
+
+    @property
+    def bullwinkle(self):
+        '''
+        return bullwinkle (emulsion constant)
+        either user set or return database value
+        '''
+        # check for user input value, otherwise return database value
+
+        if self._bullwinkle is not None:
+            return self._bullwinkle
+        else:
+            return self.get('bullwinkle_fraction')
+
+    @bullwinkle.setter
+    def bullwinkle(self, value):
+        """
+        emulsion constant 
+        """
+        self._bullwinkle = value
 
     @property
     def num_components(self):
@@ -140,7 +172,8 @@ class OilProps(object):
     def _component_mw(self):
         '''
         return the molecular weight of the pseudocomponents (mw_i) given the
-        boiling points. It returns the mw_i for saturates and aromatic components
+        boiling points.
+        It returns the mw_i for saturates and aromatic components
         '''
         self.molecular_weight = (0.04132 - 1.985e-4 * self.boiling_point +
                                  (9.494e-7 * self.boiling_point ** 2))
@@ -183,7 +216,7 @@ class OilProps(object):
 
     def _compare__dict(self, other):
         '''
-        cannot just do self.__dict__ == other.__dict__ since 
+        cannot just do self.__dict__ == other.__dict__ since
         '''
         for key, val in self.__dict__.iteritems():
             o_val = other.__dict__[key]
@@ -255,15 +288,27 @@ class OilProps(object):
 
         Omit components that have 0 mass fraction
         '''
-        all_comp = sorted(self._r_oil.sara_fractions,
-                          key=lambda s: s.ref_temp_k)
-        all_dens = sorted(self._r_oil.sara_densities,
-                          key=lambda s: s.ref_temp_k)
+        all_comp = list(chain(*[sorted(list(g), key=lambda s: s.sara_type,
+                                       reverse=True)
+                                for k, g
+                                in groupby(sorted(self._r_oil.sara_fractions,
+                                                  key=lambda s: s.ref_temp_k),
+                                           lambda x: x.ref_temp_k)]
+                              ))
+
+        all_dens = list(chain(*[sorted(list(g), key=lambda s: s.sara_type,
+                                       reverse=True)
+                                for k, g
+                                in groupby(sorted(self._r_oil.sara_densities,
+                                                  key=lambda s: s.ref_temp_k),
+                                           lambda x: x.ref_temp_k)]
+                              ))
+
         items = []
         sum_frac = 0.
         for comp, dens in zip(all_comp, all_dens):
             if (comp.ref_temp_k != comp.ref_temp_k or
-                comp.sara_type != comp.sara_type):
+                    comp.sara_type != comp.sara_type):
                 msg = "mismatch in sara_fractions and sara_densities tables"
                 raise ValueError(msg)
 
@@ -275,6 +320,5 @@ class OilProps(object):
         self._sara = np.asarray(items, dtype=sara_dtype)
         if not np.allclose(self._sara[:]['fraction'].sum(), 1.0):
             msg = ("mass fractions add up to: {0} - required "
-                   "to add to 1.0").format(items[:]['fraction'].sum())
+                   "to add to 1.0").format(self._sara[:]['fraction'].sum())
             raise ValueError(msg)
-

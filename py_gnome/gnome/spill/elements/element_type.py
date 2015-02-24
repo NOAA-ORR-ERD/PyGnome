@@ -196,9 +196,7 @@ class ElementType(Serializable):
 
             substance = json_.pop('substance', None)
             if substance is not None:
-                if 'id' in substance and substance['id'] is not None:
-                    dict_['substance'] = substance['id']
-                elif 'name' in substance:
+                if 'name' in substance:
                     dict_['substance'] = substance['name']
 
             d_init = []

@@ -30,7 +30,7 @@ A virtualenv is *not required* to run PyGnome.
 Depending on your access level/permissions, you may require a virtualenv if you cannot 
 install python packages in the global site-packages. 
 
-### Linux (Tested in 32-bit, raring 13.04) ###
+### Linux (Tested in 32-bit, Ubuntu raring 13.04) ###
 
 For Linux use appropriate package manager (apt-get on ubuntu) to download/install binary dependencies.
 
@@ -76,6 +76,12 @@ See [Build PyGnome](https://github.com/NOAA-ORR-ERD/GNOME2#build-pygnome) sectio
 
 ### Windows 7 (32-bit, using VS-2008 express edition) ###
 
+On Windows, you need the correct version of the MS Visual Studio Complier. MS has recetnly released a free-of-charge version configured for compiling python:
+
+http://www.microsoft.com/en-us/download/details.aspx?id=44266
+
+This compiler should work for both 32 bit and 64 bit Windows.
+
 #### Binary Dependencies ####
 
 Download and install the newest Windows executable distribution of [Python 2.7](http://www.python.org/download/)
@@ -89,6 +95,12 @@ Fortunately, [Chris Gohlke's website](http://www.lfd.uci.edu/~gohlke/pythonlibs/
 
 *(The full list of dependent packages and their minimum versions can be found in the file
  GNOME2/py_gnome/requirements.txt)*
+
+Another option is to use a Python scientific distribution, such as Anaconda or Enthought Canopy:
+
+https://store.continuum.io/cshop/anaconda/
+
+https://www.enthought.com/products/canopy/
 
 Here are the binary packages required:
 
@@ -128,25 +140,6 @@ Building GNOME for 64 bit Windows is similar to the 32 bit Windows build, and ha
 binary dependencies.
 There are however some extra steps you need to perform in order to build py_gnome.
 
-If you are not on a 64 bit Windows system, you may skip forward to the section
-[Build PyGnome](https://github.com/NOAA-ORR-ERD/GNOME2#build-pygnome)
-
-1. Download and install the windows SDK.  Here is the link that we are using:  
-   [Microsoft Windows SDK for Windows 7 and .NET Framework 3.5 SP1](http://www.microsoft.com/en-us/download/details.aspx?id=3138)
-
-2. Start the Windows SDK command window.  
-   From your Windows Desktop, select:  
-   **`Start`->`All Programs`->`Microsoft Windows SDK v7.0`->`CMD Shell`**
-
-   The title of your command window should read:  
-   **'Microsoft Windows 7 x64 DEBUG Build Environment'**
-
-3. Inside your x64 Build Console:
-   run the command `"\Program Files (x86)\Microsoft Visual Studio 9.0\VC\bin\vcvars64.bat"`  
-   This sets up the environment variables needed for 64 bit compilation.
-
-4. Stay inside this Build console for all further build actions.
-
 ### Build PyGnome ###
 
 1. Clone the GNOME2 repository.  
@@ -172,8 +165,11 @@ If you are not on a 64 bit Windows system, you may skip forward to the section
 	```
 
 Once all of the py_gnome unit tests pass, PyGnome is now built and ready to be put to use.
-You can use the `gnome` module inside your python scripts to build a variety of modelling
+You can use the `gnome` module inside your python scripts to set up a variety of modelling
 scenarios.
+
+There are example full scripts in the ``py_gnome/scripts`` directory.
+
 
 ### Accessing GNOME from the Web ###
 

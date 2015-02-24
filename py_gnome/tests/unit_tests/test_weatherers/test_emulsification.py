@@ -14,19 +14,21 @@ from gnome.weatherers import (Emulsification,
 from gnome.outputters import WeatheringOutput
 from gnome.spill.elements import floating
 
-from ..conftest import sample_sc_release, sample_model_weathering, sample_model_weathering2
+from ..conftest import (sample_sc_release,
+                        sample_model_weathering,
+                        sample_model_weathering2)
 
 
 water = Water()
-wind = constant_wind(15., 0)	#also test with lower wind no emulsification
-waves = Waves(wind,water)
+wind = constant_wind(15., 0)  # also test with lower wind no emulsification
+waves = Waves(wind, water)
 
 arrays = Emulsification().array_types
 
 
 @pytest.mark.parametrize(('oil', 'temp', 'num_elems', 'on'),
-                         [#('AGUA DULCE', 311.15, 3, True),
-                          #('ALAMO', 311.15, 3, True),
+                         [('ALBERTA', 311.15, 3, True),
+                          ('BREGA', 311.15, 3, True),
                           ('FUEL OIL NO.6', 311.15, 3, False)])
 def test_emulsification(oil, temp, num_elems, on):
     '''
@@ -46,11 +48,12 @@ def test_emulsification(oil, temp, num_elems, on):
     emul.prepare_for_model_run(sc)
 
     # also want a test for a user set value for bulltime or bullwinkle
-    if oil=='ALAMO':
-        sc['frac_lost'][:] = .35
-    if oil=='AGUA DULCE':
-        sc['frac_lost'][:] = .25
-    #sc['frac_lost'][:] = .35
+    if oil == 'ALBERTA':
+        sc['frac_lost'][:] = .31
+    if oil == 'BREGA':
+        sc['frac_lost'][:] = .23
+
+    # sc['frac_lost'][:] = .35
     print "sc['frac_lost'][:]"
     print sc['frac_lost'][:]
     emul.prepare_for_model_step(sc, time_step, model_time)
@@ -74,10 +77,9 @@ def test_emulsification(oil, temp, num_elems, on):
 
     assert np.all(sc['frac_water'] == 0)
 
-
-@pytest.mark.parametrize(('oil', 'temp'), [#('AGUA DULCE', 333.0),
+@pytest.mark.parametrize(('oil', 'temp'), [('AGUA DULCE', 333.0),
                                            ('FUEL OIL NO.6', 333.0),
-                                           ('ALASKA NORTH SLOPE', 311.15),
+                                           ('BREGA', 311.15),
                                            ])
 def test_full_run(sample_model_fcn, oil, temp, dump):
     '''
@@ -122,6 +124,27 @@ def test_full_run_emul_not_active(sample_model_fcn):
         print ("Completed step: {0}"
                .format(step['WeatheringOutput']['step_num']))
 
+
+def test_bulltime():
+    '''
+    user set time to start emulsification
+    '''
+
+    et = floating(substance="ALBERTA")
+    assert et.substance.bulltime == -999
+    et.substance.bulltime = 3600
+    assert et.substance.bulltime == 3600
+
+def test_bullwinkle():
+    '''
+    user set emulsion constant
+    '''
+
+    et = floating(substance="ALBERTA")
+    assert et.substance.bullwinkle == .303
+    et.substance.bullwinkle = .4
+    assert et.substance.bullwinkle == .4
+
 def test_serialize_deseriailize():
     'test serialize/deserialize for webapi'
     wind = constant_wind(15., 0)
@@ -132,7 +155,7 @@ def test_serialize_deseriailize():
 
     # deserialize and ensure the dict's are correct
     d_ = Emulsification.deserialize(json_)
-    assert d_['waves'] == Waves.deserialize(json_['waves']) 
+    assert d_['waves'] == Waves.deserialize(json_['waves'])
     d_['waves'] = waves
     e.update_from_dict(d_)
     assert e.waves is waves
