@@ -19,7 +19,12 @@ def pytest_addoption(parser):
     '''
     Skip slow tests
     '''
-    parser.addoption('--runslow', action='store_true', help='run slow tests')
+    parser.addoption('--runslow',
+                     action='store_true',
+                     help='run slow tests and all other tests')
+    parser.addoption('--serial',
+                     action='store_true',
+                     help='run only tests marked as serial')
 
 
 def pytest_runtest_setup(item):
@@ -33,6 +38,10 @@ def pytest_runtest_setup(item):
     if ('slow' in item.keywords and
         not item.config.getoption('--runslow')):
         pytest.skip('need --runslow option to run')
+
+    if (item.config.getoption('--serial') and
+        'serial' not in item.keywords):
+        pytest.skip('only run tests marked as isolate')
 
     # set random seed:
     # Let's not print anything - it clearly works, its just extra output
