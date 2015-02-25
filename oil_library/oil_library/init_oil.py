@@ -871,6 +871,9 @@ def reject_oil_if_bad(imported_rec, oil):
     if oil_has_duplicate_cuts(oil):
         errors.append('Oil has duplicate cuts')
 
+    if oil_has_heavy_sa_components(oil):
+        errors.append('Oil has heavy SA components')
+
     if errors:
         raise OilRejected(errors, imported_rec.adios_oil_id)
 
@@ -907,3 +910,19 @@ def oil_has_duplicate_cuts(oil):
         return True
     else:
         return False
+
+
+def oil_has_heavy_sa_components(oil):
+    '''
+        Some oil records have been found to have Saturate & Asphaltene
+        densities that were calculated to be heavier than the Resins &
+        Asphaltenes.
+        This is highly improbable and indicates the record has problems
+        with its imported data values.
+    '''
+    for d in oil.sara_densities:
+        if d.sara_type in ('Saturates', 'Aromatics'):
+            if d.density > 1100.0:
+                return True
+
+    return False

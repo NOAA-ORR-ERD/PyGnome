@@ -26,7 +26,7 @@ arrays.update(intrinsic.array_types)
 
 
 @pytest.mark.parametrize(('oil', 'temp', 'num_elems', 'on'),
-                         [('HIGH ISLAND, AMOCO', 311.15, 3, True),
+                         [('ARABIAN MEDIUM, EXXON', 311.15, 3, True),
                           ('ALASKA NORTH SLOPE', 311.15, 3, True),
                           ('FUEL OIL NO.6', 311.15, 3, False)
                           ])
