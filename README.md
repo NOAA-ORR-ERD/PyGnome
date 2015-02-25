@@ -30,6 +30,13 @@ A virtualenv is *not required* to run PyGnome.
 Depending on your access level/permissions, you may require a virtualenv if you cannot 
 install python packages in the global site-packages. 
 
+There is C++/Cython code that must be built - **setuptools must be >= 2.1.**  
+
+### python.org ###
+
+The following has been tested against [Python 2.7.6](https://www.python.org/downloads/)
+(can be obtained from python.org)
+
 ### Linux (Tested in 32-bit, Ubuntu raring 13.04) ###
 
 For Linux use appropriate package manager (apt-get on ubuntu) to download/install binary dependencies.
