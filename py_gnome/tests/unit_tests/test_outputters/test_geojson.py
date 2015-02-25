@@ -76,6 +76,7 @@ def test_rewind(model, output_dir):
 #==============================================================================
 
 
+@pytest.mark.serial
 @pytest.mark.slow
 @pytest.mark.parametrize("output_ts_factor", [1, 2, 2.4])
 def test_write_output_post_run(model, output_ts_factor, output_dir):
@@ -99,6 +100,7 @@ def test_write_output_post_run(model, output_ts_factor, output_dir):
     model.outputters += o_geojson
 
 
+@pytest.mark.serial
 def test_geojson_multipoint_output(model):
     'test geojson outputter with a model since simplest to do that'
     # default is to round data

@@ -28,7 +28,22 @@ here = os.path.dirname(__file__)
 
 
 @pytest.fixture(scope='function')
-def model(sample_model_fcn, dump, request):
+def output_filename(dump, request):
+    dirname = os.path.join(dump, 'test_netcdf_outputter')
+    if not os.path.exists(dirname):
+        os.mkdir(dirname)
+
+    file_name = request.function.func_name
+    if request._pyfuncitem._genid is None:
+        file_name += '_sample.nc'
+    else:
+        file_name += '_' + request._pyfuncitem._genid + '_sample.nc'
+
+    return os.path.join(dirname, file_name)
+
+
+@pytest.fixture(scope='function')
+def model(sample_model_fcn, output_filename):
     """
     Use fixture model_surface_release_spill and add a few things to it for the
     test
@@ -51,8 +66,15 @@ def model(sample_model_fcn, dump, request):
     model.movers += constant_wind_mover(1.0, 0.0)
     model.weatherers += Evaporation(water, model.movers[-1].wind)
 
-    file_name = request.function.func_name + '_sample.nc'
-    model.outputters += NetCDFOutput(os.path.join(dump, file_name))
+    #==========================================================================
+    # file_name = request.function.func_name
+    # if request._pyfuncitem._genid is None:
+    #     file_name += '_sample.nc'
+    # else:
+    #     file_name += '_' + request._pyfuncitem._genid + '_sample.nc'
+    #==========================================================================
+
+    model.outputters += NetCDFOutput(output_filename)
 
     model.rewind()
 
@@ -556,7 +578,7 @@ def test_write_output_post_run(model, output_ts_factor):
 
 
 @pytest.mark.parametrize(("json_"), ['save', 'webapi'])
-def test_serialize_deserialize(json_):
+def test_serialize_deserialize(json_, output_filename):
     '''
     todo: this behaves in unexpected ways when using the 'model' testfixture.
     For now, define a model in here for the testing - not sure where the
@@ -565,10 +587,10 @@ def test_serialize_deserialize(json_):
     s_time = datetime(2014, 1, 1, 1, 1, 1)
     model = Model(start_time=s_time)
     model.spills += point_line_release_spill(num_elements=5,
-        start_position=(0, 0, 0),
-        release_time=model.start_time)
+                                             start_position=(0, 0, 0),
+                                             release_time=model.start_time)
 
-    o_put = NetCDFOutput(os.path.join(here, u'xtemp.nc'))
+    o_put = NetCDFOutput(output_filename)
     model.outputters += o_put
     model.movers += RandomMover(diffusion_coef=100000)
 
