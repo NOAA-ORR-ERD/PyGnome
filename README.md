@@ -131,7 +131,7 @@ Here are the binary packages required:
    ```
 3. [numpy-MKL](http://www.lfd.uci.edu/~gohlke/pythonlibs/#numpy)
 4. [Cython](http://www.lfd.uci.edu/~gohlke/pythonlibs/#cython)
-5. Install [PIL](http://www.pythonware.com/products/pil/) instead of Pillow
+5. Install [PIL](http://www.pythonware.com/products/pil/)
 6. 32-bit 1.0.6 version of [netCDF4](http://www.lfd.uci.edu/~gohlke/pythonlibs/#netcdf4)
 7. [lxml] (http://www.lfd.uci.edu/~gohlke/pythonlibs/#lxml) - required for webgnome
 8. [python-cjson] (http://www.lfd.uci.edu/~gohlke/pythonlibs/#python-cjson) - required for webgnome
