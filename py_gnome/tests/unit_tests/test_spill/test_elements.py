@@ -337,6 +337,7 @@ def test_serialize_deserialize():
     assert n_et == et
 
 
+@pytest.mark.serial
 @pytest.mark.parametrize(("test_obj"), test_l)
 def test_save_load(clean_saveloc, test_obj):
     '''

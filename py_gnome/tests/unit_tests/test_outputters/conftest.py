@@ -19,4 +19,3 @@ def output_dir(dump, request):
     if not os.path.isdir(odir):
         os.mkdir(odir)
     return odir
-

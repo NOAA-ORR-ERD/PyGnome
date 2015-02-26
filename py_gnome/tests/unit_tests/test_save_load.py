@@ -9,9 +9,11 @@ import sys
 from gnome.persist import References, load, Savable
 from gnome.movers import constant_wind_mover
 from gnome import movers, outputters, environment, map, spill, weatherers
-from conftest import testdata, test_oil, clean_saveloc2
+from conftest import testdata, test_oil
 
 import pytest
+
+pytestmark = pytest.mark.serial
 
 
 def test_exceptions():
@@ -133,21 +135,8 @@ g_objects = (environment.Tide(testdata['CatsMover']['tide']),
 
 
 @pytest.mark.parametrize("obj", g_objects)
-def test_save_loadx(clean_saveloc, obj, request):
+def test_save_load(clean_saveloc, obj):
     'test save/load functionality'
-    name = 'temp_{0}'.format(request._pyfuncitem._genid)
-    saveloc = os.path.join(clean_saveloc, name)
-    os.mkdir(saveloc)
-    refs = obj.save(saveloc)
-    obj2 = load(os.path.join(saveloc, refs.reference(obj)))
-    assert obj == obj2
-
-
-def xtest_save_loadx(dump):
-    'test save/load functionality'
-    for ix, obj in enumerate(g_objects):
-        name = 'temp_{0}'.format(ix)
-        clean_saveloc = clean_saveloc2(dump, name)
     refs = obj.save(clean_saveloc)
     obj2 = load(os.path.join(clean_saveloc, refs.reference(obj)))
     assert obj == obj2
@@ -174,7 +163,7 @@ l_movers2 = (movers.CurrentCycleMover(testdata['CurrentCycleMover']['curr'],
 
 
 @pytest.mark.parametrize("obj", l_movers2)
-def test_save_load2(obj, dump):
+def test_save_load_grids(obj, dump):
     'test save/load functionality'
 
     temp = os.path.join(dump, 'temp')

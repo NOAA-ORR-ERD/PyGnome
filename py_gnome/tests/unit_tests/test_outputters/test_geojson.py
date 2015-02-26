@@ -65,17 +65,6 @@ def test_rewind(model, output_dir):
     assert len(files) == 0
 
 
-# keep this incase we want to look at geo_json output in a file
-#==============================================================================
-# def test_model_dump_outputgeojson(model):
-#     'test geojson outputter with a model since simplest to do that'
-#     model.rewind()
-#     model.full_run()
-#     files = glob(os.path.join(output_dir, '*.geojson'))
-#     assert len(files) == model.num_time_steps
-#==============================================================================
-
-
 @pytest.mark.serial
 @pytest.mark.slow
 @pytest.mark.parametrize("output_ts_factor", [1, 2, 2.4])

@@ -29,7 +29,8 @@ from gnome.outputters import WeatheringOutput, GeoJson
 from gnome.multi_model_broadcast import ModelBroadcaster
 from conftest import testdata, test_oil
 
-pytestmark = mark.skipif("sys.platform=='win32'", reason="skip on windows")
+pytestmark = [mark.skipif("sys.platform=='win32'", reason="skip on windows"),
+              mark.serial]
 
 
 def make_model(uncertain=False,
