@@ -118,14 +118,14 @@ class TestProperties:
 
 
 def test_eq():
-    op = get_oil_props('ARABIAN EXTRA LIGHT, PHILLIPS')
-    op1 = get_oil_props('ARABIAN EXTRA LIGHT, PHILLIPS')
+    op = get_oil_props('ARABIAN MEDIUM, PHILLIPS')
+    op1 = get_oil_props('ARABIAN MEDIUM, PHILLIPS')
     assert op == op1
 
 
 def test_ne():
-    assert (get_oil_props('ARABIAN EXTRA LIGHT, PHILLIPS') !=
-            get_oil_props('ARABIAN EXTRA LIGHT, STAR ENTERPRISE'))
+    assert (get_oil_props('ARABIAN MEDIUM, PHILLIPS') !=
+            get_oil_props('ARABIAN MEDIUM, EXXON'))
 
 
 class TestCopy():
@@ -133,7 +133,7 @@ class TestCopy():
         '''
         do a shallow copy and test that it is a shallow copy
         '''
-        op = get_oil_props('ARABIAN EXTRA LIGHT, PHILLIPS')
+        op = get_oil_props('ARABIAN MEDIUM, PHILLIPS')
         cop = copy.copy(op)
         assert op == cop
         assert op is not cop
@@ -151,7 +151,7 @@ class TestCopy():
         '''
         do a shallow copy and test that it is a shallow copy
         '''
-        op = get_oil_props('ARABIAN EXTRA LIGHT, PHILLIPS')
+        op = get_oil_props('ARABIAN MEDIUM, PHILLIPS')
         dcop = copy.deepcopy(op)
 
         assert op == dcop
