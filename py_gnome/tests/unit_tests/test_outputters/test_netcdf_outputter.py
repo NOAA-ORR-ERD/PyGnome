@@ -28,8 +28,8 @@ here = os.path.dirname(__file__)
 
 
 @pytest.fixture(scope='function')
-def output_filename(dump, request):
-    dirname = os.path.join(dump, 'test_netcdf_outputter')
+def output_filename(output_dir, request):
+    dirname = os.path.join(output_dir, 'test_netcdf_outputter')
     if not os.path.exists(dirname):
         os.mkdir(dirname)
 
