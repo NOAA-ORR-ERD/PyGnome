@@ -71,14 +71,15 @@ def upload_package(package):
     package_file = package_files[-1] # should get the latest version
     
     package_path = os.path.join(bld_dir, package_file)
-
+    print package_path
     try:
         print "Uploading %s to binstar"%package
         DESCRIPTION = "Package: %s, auto-generated from PyPI"
-        result = check_output(["binstar", "upload",
-                               "-d", "DESCRIPTION",
-                               "--user", BINSTAR_USER,
-                               package_path],
+        cmds = ["binstar", "upload",
+                "-d", "DESCRIPTION",
+                "--user", BINSTAR_USER,
+                package_path]
+        result = check_output(cmds,
                               stderr=STDOUT)
     except CalledProcessError as err:
         if "Distribution already exists" in err.output:
@@ -132,6 +133,8 @@ if __name__ == "__main__":
                     'iso8601',
                     'colander',
                     'geojson',
+                    'waitress'
+                    'webtest'
                     ]
     else:
         packages = [package]
