@@ -1,24 +1,24 @@
 package:
-  name: awesome-slugify
-  version: "1.6.2"
+  name: transaction
+  version: "1.4.3"
 
 source:
-  fn: awesome-slugify-1.6.2.tar.gz
-  url: https://pypi.python.org/packages/source/a/awesome-slugify/awesome-slugify-1.6.2.tar.gz
-  md5: 6ff079a109646055f9af6c0df285a450
+  fn: transaction-1.4.3.tar.gz
+  url: https://pypi.python.org/packages/source/t/transaction/transaction-1.4.3.tar.gz
+  md5: b4ca5983c9e3a0808ff5ff7648092c76
 #  patches:
    # List any patch files here
    # - fix.patch
 
-# build:
-  # preserve_egg_dir: True
+build:
+  preserve_egg_dir: True
   # entry_points:
     # Put any entry points (scripts to be generated automatically) here. The
     # syntax is module:function.  For example
     #
-    # - awesome-slugify = awesome-slugify:main
+    # - transaction = transaction:main
     #
-    # Would create an entry point called awesome-slugify that calls awesome-slugify.main()
+    # Would create an entry point called transaction that calls transaction.main()
 
 
   # If this is a new build for the same version, increment the build
@@ -29,18 +29,18 @@ requirements:
   build:
     - python
     - setuptools
-    - regex
-    - unidecode >=0.04.14,<0.05
+    - zope.interface
 
   run:
     - python
-    - regex
-    - unidecode >=0.04.14,<0.05
+    - setuptools
+    - zope.interface
 
 test:
   # Python imports
   imports:
-    - slugify
+    - transaction
+    - transaction.tests
 
   # commands:
     # You can put test commands to be run here.  Use this to test that the
@@ -55,9 +55,9 @@ test:
     # - nose
 
 about:
-  home: https://github.com/dimka665/awesome-slugify
-  license: GNU General Public License v3 (GPLv3)
-  summary: 'Python flexible slugify function'
+  home: http://www.zope.org/Products/ZODB
+  license: Zope Public License
+  summary: 'Transaction management for Python'
 
 # See
 # http://docs.continuum.io/conda/build.html for

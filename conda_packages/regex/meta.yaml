@@ -1,11 +1,11 @@
 package:
-  name: awesome-slugify
-  version: "1.6.2"
+  name: regex
+  version: "2014.12.24"
 
 source:
-  fn: awesome-slugify-1.6.2.tar.gz
-  url: https://pypi.python.org/packages/source/a/awesome-slugify/awesome-slugify-1.6.2.tar.gz
-  md5: 6ff079a109646055f9af6c0df285a450
+  fn: regex-2014.12.24.tar.gz
+  url: https://pypi.python.org/packages/source/r/regex/regex-2014.12.24.tar.gz
+  md5: f7897fed0c7cee3fca3445222f829d8f
 #  patches:
    # List any patch files here
    # - fix.patch
@@ -16,9 +16,9 @@ source:
     # Put any entry points (scripts to be generated automatically) here. The
     # syntax is module:function.  For example
     #
-    # - awesome-slugify = awesome-slugify:main
+    # - regex = regex:main
     #
-    # Would create an entry point called awesome-slugify that calls awesome-slugify.main()
+    # Would create an entry point called regex that calls regex.main()
 
 
   # If this is a new build for the same version, increment the build
@@ -28,19 +28,14 @@ source:
 requirements:
   build:
     - python
-    - setuptools
-    - regex
-    - unidecode >=0.04.14,<0.05
 
   run:
     - python
-    - regex
-    - unidecode >=0.04.14,<0.05
 
 test:
   # Python imports
   imports:
-    - slugify
+    - regex
 
   # commands:
     # You can put test commands to be run here.  Use this to test that the
@@ -55,9 +50,9 @@ test:
     # - nose
 
 about:
-  home: https://github.com/dimka665/awesome-slugify
-  license: GNU General Public License v3 (GPLv3)
-  summary: 'Python flexible slugify function'
+  home: https://code.google.com/p/mrab-regex-hg/
+  license: Python Software Foundation License
+  summary: 'Alternative regular expression module, to replace re.'
 
 # See
 # http://docs.continuum.io/conda/build.html for

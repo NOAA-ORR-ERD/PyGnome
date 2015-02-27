@@ -1,24 +1,24 @@
 package:
-  name: awesome-slugify
-  version: "1.6.2"
+  name: zope.sqlalchemy
+  version: "0.7.5"
 
 source:
-  fn: awesome-slugify-1.6.2.tar.gz
-  url: https://pypi.python.org/packages/source/a/awesome-slugify/awesome-slugify-1.6.2.tar.gz
-  md5: 6ff079a109646055f9af6c0df285a450
+  fn: zope.sqlalchemy-0.7.5.zip
+  url: https://pypi.python.org/packages/source/z/zope.sqlalchemy/zope.sqlalchemy-0.7.5.zip
+  md5: 0a468bd5b8884cd29fb71acbf7eaa31e
 #  patches:
    # List any patch files here
    # - fix.patch
 
-# build:
-  # preserve_egg_dir: True
+build:
+  preserve_egg_dir: True
   # entry_points:
     # Put any entry points (scripts to be generated automatically) here. The
     # syntax is module:function.  For example
     #
-    # - awesome-slugify = awesome-slugify:main
+    # - zope.sqlalchemy = zope.sqlalchemy:main
     #
-    # Would create an entry point called awesome-slugify that calls awesome-slugify.main()
+    # Would create an entry point called zope.sqlalchemy that calls zope.sqlalchemy.main()
 
 
   # If this is a new build for the same version, increment the build
@@ -29,18 +29,22 @@ requirements:
   build:
     - python
     - setuptools
-    - regex
-    - unidecode >=0.04.14,<0.05
+    - sqlalchemy >=0.5.1
+    - transaction
+    - zope.interface >=3.6.0
 
   run:
     - python
-    - regex
-    - unidecode >=0.04.14,<0.05
+    - setuptools
+    - sqlalchemy >=0.5.1
+    - transaction
+    - zope.interface >=3.6.0
 
 test:
   # Python imports
   imports:
-    - slugify
+    - zope
+    - zope.sqlalchemy
 
   # commands:
     # You can put test commands to be run here.  Use this to test that the
@@ -55,9 +59,9 @@ test:
     # - nose
 
 about:
-  home: https://github.com/dimka665/awesome-slugify
-  license: GNU General Public License v3 (GPLv3)
-  summary: 'Python flexible slugify function'
+  home: http://pypi.python.org/pypi/zope.sqlalchemy
+  license: Zope Public License
+  summary: 'Minimal Zope/SQLAlchemy transaction integration'
 
 # See
 # http://docs.continuum.io/conda/build.html for

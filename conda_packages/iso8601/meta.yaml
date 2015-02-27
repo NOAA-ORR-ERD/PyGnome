@@ -1,11 +1,11 @@
 package:
-  name: awesome-slugify
-  version: "1.6.2"
+  name: iso8601
+  version: "0.1.10"
 
 source:
-  fn: awesome-slugify-1.6.2.tar.gz
-  url: https://pypi.python.org/packages/source/a/awesome-slugify/awesome-slugify-1.6.2.tar.gz
-  md5: 6ff079a109646055f9af6c0df285a450
+  fn: iso8601-0.1.10.tar.gz
+  url: https://pypi.python.org/packages/source/i/iso8601/iso8601-0.1.10.tar.gz
+  md5: 23acb1029acfef9c32069c6c851c3a41
 #  patches:
    # List any patch files here
    # - fix.patch
@@ -16,9 +16,9 @@ source:
     # Put any entry points (scripts to be generated automatically) here. The
     # syntax is module:function.  For example
     #
-    # - awesome-slugify = awesome-slugify:main
+    # - iso8601 = iso8601:main
     #
-    # Would create an entry point called awesome-slugify that calls awesome-slugify.main()
+    # Would create an entry point called iso8601 that calls iso8601.main()
 
 
   # If this is a new build for the same version, increment the build
@@ -29,18 +29,14 @@ requirements:
   build:
     - python
     - setuptools
-    - regex
-    - unidecode >=0.04.14,<0.05
 
   run:
     - python
-    - regex
-    - unidecode >=0.04.14,<0.05
 
 test:
   # Python imports
   imports:
-    - slugify
+    - iso8601
 
   # commands:
     # You can put test commands to be run here.  Use this to test that the
@@ -55,9 +51,9 @@ test:
     # - nose
 
 about:
-  home: https://github.com/dimka665/awesome-slugify
-  license: GNU General Public License v3 (GPLv3)
-  summary: 'Python flexible slugify function'
+  home: https://bitbucket.org/micktwomey/pyiso8601
+  license: MIT License
+  summary: 'Simple module to parse ISO 8601 dates'
 
 # See
 # http://docs.continuum.io/conda/build.html for

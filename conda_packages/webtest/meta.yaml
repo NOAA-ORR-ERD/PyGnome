@@ -1,24 +1,24 @@
 package:
-  name: awesome-slugify
-  version: "1.6.2"
+  name: webtest
+  version: "2.0.18"
 
 source:
-  fn: awesome-slugify-1.6.2.tar.gz
-  url: https://pypi.python.org/packages/source/a/awesome-slugify/awesome-slugify-1.6.2.tar.gz
-  md5: 6ff079a109646055f9af6c0df285a450
+  fn: WebTest-2.0.18.zip
+  url: https://pypi.python.org/packages/source/W/WebTest/WebTest-2.0.18.zip
+  md5: 444a4160408670a50d7cb149a4035cf5
 #  patches:
    # List any patch files here
    # - fix.patch
 
-# build:
-  # preserve_egg_dir: True
+build:
+  preserve_egg_dir: True
   # entry_points:
     # Put any entry points (scripts to be generated automatically) here. The
     # syntax is module:function.  For example
     #
-    # - awesome-slugify = awesome-slugify:main
+    # - webtest = webtest:main
     #
-    # Would create an entry point called awesome-slugify that calls awesome-slugify.main()
+    # Would create an entry point called webtest that calls webtest.main()
 
 
   # If this is a new build for the same version, increment the build
@@ -29,18 +29,23 @@ requirements:
   build:
     - python
     - setuptools
-    - regex
-    - unidecode >=0.04.14,<0.05
+    - six
+    - webob >=1.2
+    - waitress >=0.8.5
+    - beautifulsoup4
 
   run:
     - python
-    - regex
-    - unidecode >=0.04.14,<0.05
+    - setuptools
+    - six
+    - webob >=1.2
+    - waitress >=0.8.5
+    - beautifulsoup4
 
 test:
   # Python imports
   imports:
-    - slugify
+    - webtest
 
   # commands:
     # You can put test commands to be run here.  Use this to test that the
@@ -55,9 +60,9 @@ test:
     # - nose
 
 about:
-  home: https://github.com/dimka665/awesome-slugify
-  license: GNU General Public License v3 (GPLv3)
-  summary: 'Python flexible slugify function'
+  home: http://webtest.pythonpaste.org/
+  license: MIT License
+  summary: 'Helper to test WSGI applications'
 
 # See
 # http://docs.continuum.io/conda/build.html for

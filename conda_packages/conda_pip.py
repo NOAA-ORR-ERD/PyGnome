@@ -127,7 +127,8 @@ if __name__ == "__main__":
         sys.exit(1)
 
     if package == "all":
-        packages = ['awesome-slugify',
+        packages = ['regex',
+                    'awesome-slugify',
                     'transaction',
                     'zope.sqlalchemy',
                     'iso8601',

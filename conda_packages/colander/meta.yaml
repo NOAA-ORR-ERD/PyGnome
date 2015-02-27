@@ -1,11 +1,11 @@
 package:
-  name: awesome-slugify
-  version: "1.6.2"
+  name: colander
+  version: "1.0"
 
 source:
-  fn: awesome-slugify-1.6.2.tar.gz
-  url: https://pypi.python.org/packages/source/a/awesome-slugify/awesome-slugify-1.6.2.tar.gz
-  md5: 6ff079a109646055f9af6c0df285a450
+  fn: colander-1.0.tar.gz
+  url: https://pypi.python.org/packages/source/c/colander/colander-1.0.tar.gz
+  md5: 058576123da7216288c079c9f47693f8
 #  patches:
    # List any patch files here
    # - fix.patch
@@ -16,9 +16,9 @@ source:
     # Put any entry points (scripts to be generated automatically) here. The
     # syntax is module:function.  For example
     #
-    # - awesome-slugify = awesome-slugify:main
+    # - colander = colander:main
     #
-    # Would create an entry point called awesome-slugify that calls awesome-slugify.main()
+    # Would create an entry point called colander that calls colander.main()
 
 
   # If this is a new build for the same version, increment the build
@@ -29,18 +29,19 @@ requirements:
   build:
     - python
     - setuptools
-    - regex
-    - unidecode >=0.04.14,<0.05
+    - translationstring
+    - iso8601
 
   run:
     - python
-    - regex
-    - unidecode >=0.04.14,<0.05
+    - translationstring
+    - iso8601
 
 test:
   # Python imports
   imports:
-    - slugify
+    - colander
+    - colander.tests
 
   # commands:
     # You can put test commands to be run here.  Use this to test that the
@@ -55,9 +56,9 @@ test:
     # - nose
 
 about:
-  home: https://github.com/dimka665/awesome-slugify
-  license: GNU General Public License v3 (GPLv3)
-  summary: 'Python flexible slugify function'
+  home: http://docs.pylonsproject.org/projects/colander/en/latest/
+  license: BSD-derived (http://www.repoze.org/LICENSE.txt)
+  summary: 'A simple schema-based serialization and deserialization library'
 
 # See
 # http://docs.continuum.io/conda/build.html for
