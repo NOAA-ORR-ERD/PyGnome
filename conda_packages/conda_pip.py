@@ -8,14 +8,13 @@ build the conda packge, push it up to binstar, then install it.
 
 This is helpful for making sure that all your packages are managed by conda
 
-NOTE: you should add your channel to conda before running this:
+NOTE: On Windows, you need the conda "patch" package for this to work:
+      $ conda install patch
 
-conda config --add channels http://conda.binstar.org/USER
+NOTE: This will add both your binstar channel, and Aaron Meurer's channel
+    -- he's a core conda dev and has a lot of semi-experimental stuff.
 
-You also need Aaron Meurer's channel -- he's a core conda dev and has a lot of semi-experimental stuff.
-
-   conda config --add channels http://conda.binstar.org/asmeurer
-
+Set you channel by setting BINSTAR_USE below:
 """ 
 
 # hard coded binstar channel -- update for your needs
@@ -95,11 +94,12 @@ def find_conda_build_dir():
     return bld_dir
 
 def conda_config_as_dict():
-    result = check_output(['conda', 'info']).split('\n')
+    result = check_output(['conda', 'info'])
+    result = result.split('\n')
     config = {}
     for i in range(1,len(result)):
-        line = result[i]
-        if line:
+        line = result[i].strip()
+        if line:            
             key, val = [item.strip() for item in line.split(':', 1)]
             config[key] = val
             if key == 'channel URLs': #next lines may be more URLS
