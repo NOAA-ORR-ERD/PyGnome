@@ -49,7 +49,7 @@ class Emulsification(Weatherer, Serializable):
         '''
         # create 'water_content' key if it doesn't exist
         # let's only define this the first time
-        if self.active:
+        if self.on:
             sc.weathering_data['water_content'] = 0.0
 
     def prepare_for_model_step(self, sc, time_step, model_time):
