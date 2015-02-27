@@ -546,7 +546,6 @@ class SpillContainer(AddLogger, SpillContainerData):
         self._reset_arrays()
         self.initialize_data_arrays()
         self.weathering_data = {}  # reset to empty array
-        self.logger.info('{0} - rewound SpillContainer'.format(os.getpid()))
 
     def get_spill_mask(self, spill):
         return self['spill_num'] == self.spills.index(spill)

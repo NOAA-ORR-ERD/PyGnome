@@ -160,7 +160,9 @@ class Model(Serializable):
 
         # restore the spill data outside this method - let's not try to find
         # the saveloc here
-        model.logger.info("'new_from_dict' created new model")
+        msg = ("{0._pid} 'new_from_dict' created new model: "
+               "{0.name}").format(model)
+        model.logger.info(msg)
         return model
 
     def __init__(self,
@@ -206,7 +208,6 @@ class Model(Serializable):
 
         self.environment.register_callback(self._callback_add_weatherer_env,
                                            ('add', 'replace'))
-        self.logger.info('New model initialized')
 
     def __restore__(self, time_step, start_time, duration,
                     weathering_substeps, uncertain, cache_enabled, map, name,
@@ -526,7 +527,8 @@ class Model(Serializable):
                                             cache=self._cache,
                                             uncertain=self.uncertain,
                                             spills=self.spills)
-        self.logger.info("{0} setup_model_run complete".format(self.name))
+        self.logger.debug("{0._pid} setup_model_run complete for: "
+                          "{0.name}".format(self))
 
     def setup_time_step(self):
         '''
@@ -684,7 +686,6 @@ class Model(Serializable):
         if self.current_time_step == -1:
             # that's all we need to do for the zeroth time step
             self.setup_model_run()
-            self.logger.info("Setup run for: {0}".format(self.name))
 
         elif self.current_time_step >= self._num_time_steps - 1:
             # _num_time_steps is set when self.time_step is set. If user does
@@ -718,17 +719,17 @@ class Model(Serializable):
             if self._weathering_data:
                 self._weathering_data.update(num_released, sc)
 
-            self.logger.info("Released {0} new elements for step: "
-                             " {1.current_time_step} for {1.name}".
-                             format(num_released, self))
+            self.logger.debug("{1._pid} released {0} new elements for step:"
+                              " {1.current_time_step} for {1.name}".
+                              format(num_released, self))
 
         # cache the results - current_time_step is incremented but the
         # current_time_stamp in spill_containers (self.spills) is not updated
         # till we go through the prepare_for_model_step
         self._cache.save_timestep(self.current_time_step, self.spills)
         output_info = self.write_output()
-        self.logger.info("{1} - Completed step: {0.current_time_step} for "
-                         "{0.name}".format(self, os.getpid()))
+        self.logger.debug("{0._pid} - Completed step: {0.current_time_step} "
+                          "for {0.name}".format(self))
         return output_info
 
     def __iter__(self):
