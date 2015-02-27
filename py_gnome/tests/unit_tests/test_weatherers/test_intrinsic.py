@@ -193,7 +193,7 @@ class TestWeatheringData:
         '''
         for substance, data in sc.itersubstancedata(intrinsic.array_types):
             # following simulates weathered/evaporated oil
-            data['mass_components'][:, :3] = 0
+            data['mass_components'][:, :3] *= .2
             data['mass'][:] = sc['mass_components'].sum(1)
             data['frac_lost'][:] = 1 - data['mass']/data['init_mass']
 
@@ -230,8 +230,8 @@ class TestWeatheringData:
 
             # viscosity/density
             # should weathered density/viscosity always increase?
-            assert not np.allclose(sc['density'], init_dens)
-            assert not np.allclose(sc['viscosity'], init_visc)
+            assert np.all(sc['density'] > init_dens)
+            assert np.all(sc['viscosity'] > init_visc)
         else:
             # nothing weathered so equations should have produced no change
             intrinsic.update(0, sc)

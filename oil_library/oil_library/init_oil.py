@@ -409,7 +409,8 @@ def add_emulsion_water_fraction_max(imported_rec, oil):
 
 def add_resin_fractions(imported_rec, oil):
     try:
-        if (imported_rec.resins is not None and
+        if (imported_rec is not None and
+            imported_rec.resins is not None and
                 imported_rec.resins >= 0.0 and
                 imported_rec.resins <= 1.0):
             f_res = imported_rec.resins
@@ -430,7 +431,8 @@ def add_resin_fractions(imported_rec, oil):
 
 def add_asphaltene_fractions(imported_rec, oil):
     try:
-        if (imported_rec.asphaltene_content is not None and
+        if (imported_rec is not None and
+            imported_rec.asphaltene_content is not None and
                 imported_rec.asphaltene_content >= 0.0 and
                 imported_rec.asphaltene_content <= 1.0):
             f_asph = imported_rec.asphaltene_content
@@ -612,12 +614,19 @@ def add_distillation_cut_boiling_point(imported_rec, oil):
 
 
 def add_molecular_weights(imported_rec, oil):
+    '''
+        Molecular weight units = g/mol
+    '''
     for c in oil.cuts:
         saturate = get_saturate_molecular_weight(c.vapor_temp_k)
         aromatic = get_aromatic_molecular_weight(c.vapor_temp_k)
 
-        oil.molecular_weights.append(MolecularWeight(saturate=saturate,
-                                                     aromatic=aromatic,
+        oil.molecular_weights.append(MolecularWeight(sara_type='Saturates',
+                                                     g_mol=saturate,
+                                                     ref_temp_k=c.vapor_temp_k)
+                                     )
+        oil.molecular_weights.append(MolecularWeight(sara_type='Aromatics',
+                                                     g_mol=aromatic,
                                                      ref_temp_k=c.vapor_temp_k)
                                      )
 
@@ -756,8 +765,9 @@ def get_sa_mass_fractions(oil_obj):
             sg = P_try / 1000
             mw = None
             for v in oil_obj.molecular_weights:
-                if np.isclose(v.ref_temp_k, T_i):
-                    mw = v.saturate
+                if (np.isclose(v.ref_temp_k, T_i) and
+                        v.sara_type == 'Saturates'):
+                    mw = v.g_mol
                     break
 
             if mw is not None:
@@ -861,6 +871,9 @@ def reject_oil_if_bad(imported_rec, oil):
     if oil_has_duplicate_cuts(oil):
         errors.append('Oil has duplicate cuts')
 
+    if oil_has_heavy_sa_components(oil):
+        errors.append('Oil has heavy SA components')
+
     if errors:
         raise OilRejected(errors, imported_rec.adios_oil_id)
 
@@ -897,3 +910,19 @@ def oil_has_duplicate_cuts(oil):
         return True
     else:
         return False
+
+
+def oil_has_heavy_sa_components(oil):
+    '''
+        Some oil records have been found to have Saturate & Asphaltene
+        densities that were calculated to be heavier than the Resins &
+        Asphaltenes.
+        This is highly improbable and indicates the record has problems
+        with its imported data values.
+    '''
+    for d in oil.sara_densities:
+        if d.sara_type in ('Saturates', 'Aromatics'):
+            if d.density > 1100.0:
+                return True
+
+    return False

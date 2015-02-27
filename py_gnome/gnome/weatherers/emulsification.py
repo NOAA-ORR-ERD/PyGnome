@@ -49,7 +49,7 @@ class Emulsification(Weatherer, Serializable):
         '''
         # create 'water_content' key if it doesn't exist
         # let's only define this the first time
-        if self.active:
+        if self.on:
             sc.weathering_data['water_content'] = 0.0
 
     def prepare_for_model_step(self, sc, time_step, model_time):
@@ -80,10 +80,12 @@ class Emulsification(Weatherer, Serializable):
             k_emul = self._water_uptake_coeff(model_time, substance)
 
             # bulltime is not in database, but could be set by user
-            emul_time = substance.get_bulltime()
+            #emul_time = substance.get_bulltime()
+            emul_time = substance.bulltime
 
             # get from database bullwinkle (could be overridden by user)
-            emul_constant = substance.get('bullwinkle_fraction')
+            #emul_constant = substance.get('bullwinkle_fraction')
+            emul_constant = substance.bullwinkle
 
             # max water content fraction - get from database
             Y_max = substance.get('emulsion_water_fraction_max')

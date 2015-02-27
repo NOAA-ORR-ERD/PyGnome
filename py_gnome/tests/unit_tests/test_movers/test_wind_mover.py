@@ -35,6 +35,7 @@ from ..conftest import sample_sc_release, testdata
 
 file_ = testdata['timeseries']['wind_ts']
 file2_ = testdata['timeseries']['wind_cardinal']
+filekph_ = testdata['timeseries']['wind_kph']
 
 
 def test_exceptions():
@@ -413,6 +414,12 @@ def test_wind_mover_from_file_cardinal():
     wm = wind_mover_from_file(file2_)
     print wm.wind.filename
     assert wm.wind.filename == file2_
+
+
+def test_wind_mover_from_file_kph_units():
+    wm = wind_mover_from_file(filekph_)
+    print wm.wind.filename
+    assert wm.wind.filename == filekph_
 
 
 def test_serialize_deserialize(wind_circ):

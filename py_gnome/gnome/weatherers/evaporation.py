@@ -46,8 +46,10 @@ class Evaporation(Weatherer, Serializable):
         '''
         # create 'evaporated' key if it doesn't exist
         # let's only define this the first time
-        if self.active:
+        if self.on:
             sc.weathering_data['evaporated'] = 0.0
+            msg = ("{0._pid} init 'evaporated' key to 0.0").format(self)
+            self.logger.debug(msg)
 
     def _mass_transport_coeff(self, model_time):
         '''
@@ -103,10 +105,9 @@ class Evaporation(Weatherer, Serializable):
             inwater = data['status_codes'] == oil_status.in_water
             data['evap_decay_constant'][~inwater, :len(vp)] = 0
 
-            self.logger.info('{0} - Max decay: {1}, Min decay: {2}'.
-                             format(os.getpid(),
-                                    np.max(data['evap_decay_constant']),
-                                    np.min(data['evap_decay_constant'])))
+            self.logger.debug(self._pid + 'max decay: {0}, min decay: {1}'.
+                              format(np.max(data['evap_decay_constant']),
+                                     np.min(data['evap_decay_constant'])))
         if np.any(data['evap_decay_constant'] > 0.0):
             raise ValueError("Error in Evaporation routine. One of the"
                              " exponential decay constant is positive")
@@ -135,10 +136,9 @@ class Evaporation(Weatherer, Serializable):
                 np.sum(data['mass_components'][:, :] - mass_remain[:, :])
             data['mass_components'][:] = mass_remain
             data['mass'][:] = data['mass_components'].sum(1)
-            self.logger.info('{0} - Amount Evaporated for {1}: {2}'.
-                             format(os.getpid(),
-                                    substance.name,
-                                    sc.weathering_data['evaporated']))
+            self.logger.debug(self._pid + 'amount Evaporated for {0}: {1}'.
+                              format(substance.name,
+                                     sc.weathering_data['evaporated']))
 
             # add frac_lost
             data['frac_lost'][:] = 1 - data['mass']/data['init_mass']

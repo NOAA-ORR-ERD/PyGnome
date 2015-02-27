@@ -156,6 +156,8 @@ class Skimmer(CleanUpBase, Serializable):
         '''
         initialize Skimmer object - calls base class __init__ using super()
         active_start and active_stop time are required
+        cleanup operations must have a valid datetime - cannot use -inf and inf
+        active_start/active_stop is used to get the mass removal rate
         '''
 
         super(Skimmer, self).__init__(active_start=active_start,
@@ -201,7 +203,7 @@ class Skimmer(CleanUpBase, Serializable):
         '''
         no need to call base class since no new array_types were added
         '''
-        if sc.spills:
+        if self.on:
             sc.weathering_data['skimmed'] = 0.0
 
     def prepare_for_model_step(self, sc, time_step, model_time):
@@ -311,6 +313,7 @@ class Burn(CleanUpBase, Serializable):
         is no unit conversion.
 
         Set intial thickness of this oil as specified by user.
+        cleanup operations must have a valid datetime - cannot use -inf
         '''
         if 'active_stop' in kwargs:
             # user cannot set 'active_stop'
@@ -342,7 +345,7 @@ class Burn(CleanUpBase, Serializable):
         # reset current thickness to initial thickness whenever model is rerun
         self._oil_thickness = None
         self._burn_duration = None
-        if sc.spills:
+        if self.on:
             sc.weathering_data['burned'] = 0.0
 
     def prepare_for_model_step(self, sc, time_step, model_time):

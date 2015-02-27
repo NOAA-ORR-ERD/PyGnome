@@ -26,7 +26,7 @@ arrays.update(intrinsic.array_types)
 
 
 @pytest.mark.parametrize(('oil', 'temp', 'num_elems', 'on'),
-                         [('HIGH ISLAND, AMOCO', 311.15, 3, True),
+                         [('ALBERTA', 311.15, 3, True),
                           ('ALASKA NORTH SLOPE', 311.15, 3, True),
                           ('FUEL OIL NO.6', 311.15, 3, False)
                           ])
@@ -64,15 +64,15 @@ def test_evaporation(oil, temp, num_elems, on):
         else:
             assert np.all(sc['evap_decay_constant'][mask, :] == 0.0)
 
-    if on:
-        assert sc.weathering_data['evaporated'] > 0.0
-    else:
-        assert sc.weathering_data['evaporated'] == 0.0
-        assert np.all(sc['mass_components'] == init_mass)
-
     print '\nevap_decay_const', sc['evap_decay_constant']
     print 'frac_lost', sc['frac_lost']
-    print 'total evaporated', sc.weathering_data['evaporated']
+
+    if on:
+        assert sc.weathering_data['evaporated'] > 0.0
+        print 'total evaporated', sc.weathering_data['evaporated']
+    else:
+        assert 'evaporated' not in sc.weathering_data
+        assert np.all(sc['mass_components'] == init_mass)
 
 
 def assert_helper(sc, new_p):
@@ -100,8 +100,7 @@ def assert_helper(sc, new_p):
                           0.0)
 
 
-@pytest.mark.parametrize(('oil', 'temp'), [('HIGH ISLAND, AMOCO', 333.0),
-                                           ('FUEL OIL NO.6', 333.0),
+@pytest.mark.parametrize(('oil', 'temp'), [('FUEL OIL NO.6', 333.0),
                                            ('ALASKA NORTH SLOPE', 311.15),
                                            ])
 def test_full_run(sample_model_fcn, oil, temp, dump):
@@ -117,10 +116,16 @@ def test_full_run(sample_model_fcn, oil, temp, dump):
     model.weatherers += [Evaporation(model.environment[0],
                                      model.environment[1])]
     released = 0
+    init_rho = model.spills[0].get('substance').get_density(temp)
+    init_vis = model.spills[0].get('substance').get_viscosity(temp)
     for step in model:
         for sc in model.spills.items():
             assert_helper(sc, sc.num_released - released)
             released = sc.num_released
+            if sc.num_released > 0:
+                assert np.all(sc['density'] >= init_rho)
+                assert np.all(sc['viscosity'] >= init_vis)
+
             mask = sc['status_codes'] == oil_status.in_water
             assert sc.weathering_data['floating'] == np.sum(sc['mass'][mask])
 
