@@ -134,11 +134,15 @@ class Evaporation(Weatherer, Serializable):
 
             sc.weathering_data['evaporated'] += \
                 np.sum(data['mass_components'][:, :] - mass_remain[:, :])
+
+            # log amount evaporated at each step
+            self.logger.debug(self._pid + 'amount evaporated for {0}: {1}'.
+                              format(substance.name,
+                                     np.sum(data['mass_components'][:, :] -
+                                            mass_remain[:, :])))
+
             data['mass_components'][:] = mass_remain
             data['mass'][:] = data['mass_components'].sum(1)
-            self.logger.debug(self._pid + 'amount Evaporated for {0}: {1}'.
-                              format(substance.name,
-                                     sc.weathering_data['evaporated']))
 
             # add frac_lost
             data['frac_lost'][:] = 1 - data['mass']/data['init_mass']

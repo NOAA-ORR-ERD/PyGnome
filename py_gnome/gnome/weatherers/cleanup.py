@@ -268,9 +268,6 @@ class Skimmer(CleanUpBase, Serializable):
                                      rm_amount,
                                      self.units) * self.efficiency
 
-            self.logger.info('{0} - Amount skimmed: {1}'.
-                             format(os.getpid(), rm_mass))
-
             rm_mass_frac = rm_mass / data['mass'][mask].sum()
 
             # if elements are also evaporating following could be true
@@ -284,6 +281,8 @@ class Skimmer(CleanUpBase, Serializable):
             data['mass'][mask] = data['mass_components'][mask, :].sum(1)
 
             sc.weathering_data['skimmed'] += rm_mass
+            self.logger.debug(self._pid + 'amount skimmed for {0}: {1}'.
+                              format(substance.name, rm_mass))
 
         sc.update_from_substancedata(self.array_types)
 
@@ -438,6 +437,8 @@ class Burn(CleanUpBase, Serializable):
                 self._oil_thickness -= th_burned
 
                 sc.weathering_data['burned'] += rm_mass
+                self.logger.debug(self._pid + 'amount burned for {0}: {1}'.
+                                  format(substance.name, rm_mass))
 
                 # update burn duration at each timestep
                 self._burn_duration = \
