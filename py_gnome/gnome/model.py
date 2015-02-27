@@ -152,12 +152,17 @@ class Model(Serializable):
         model.movers.register_callback(model._callback_add_mover,
                                        ('add', 'replace'))
 
-        model.weatherers.register_callback(model._callback_add_weatherer,
+        model.weatherers.register_callback(model._callback_add_weatherer_env,
                                            ('add', 'replace'))
+
+        model.environment.register_callback(model._callback_add_weatherer_env,
+                                            ('add', 'replace'))
 
         # restore the spill data outside this method - let's not try to find
         # the saveloc here
-        model.logger.info("'new_from_dict' created new model")
+        msg = ("{0._pid} 'new_from_dict' created new model: "
+               "{0.name}").format(model)
+        model.logger.info(msg)
         return model
 
     def __init__(self,
@@ -198,9 +203,11 @@ class Model(Serializable):
         self.movers.register_callback(self._callback_add_mover,
                                       ('add', 'replace'))
 
-        self.weatherers.register_callback(self._callback_add_weatherer,
+        self.weatherers.register_callback(self._callback_add_weatherer_env,
                                           ('add', 'replace'))
-        self.logger.info('New model initialized')
+
+        self.environment.register_callback(self._callback_add_weatherer_env,
+                                           ('add', 'replace'))
 
     def __restore__(self, time_step, start_time, duration,
                     weathering_substeps, uncertain, cache_enabled, map, name,
@@ -255,9 +262,9 @@ class Model(Serializable):
         '''
         Rewinds the model to the beginning (start_time)
         '''
-
         self._current_time_step = -1
         self.model_time = self._start_time
+
         # fixme: do the movers need re-setting? -- or wait for
         #        prepare_for_model_run?
 
@@ -520,7 +527,8 @@ class Model(Serializable):
                                             cache=self._cache,
                                             uncertain=self.uncertain,
                                             spills=self.spills)
-        self.logger.info("{0} setup_model_run complete".format(self.name))
+        self.logger.debug("{0._pid} setup_model_run complete for: "
+                          "{0.name}".format(self))
 
     def setup_time_step(self):
         '''
@@ -678,7 +686,6 @@ class Model(Serializable):
         if self.current_time_step == -1:
             # that's all we need to do for the zeroth time step
             self.setup_model_run()
-            self.logger.info("Setup run for: {0}".format(self.name))
 
         elif self.current_time_step >= self._num_time_steps - 1:
             # _num_time_steps is set when self.time_step is set. If user does
@@ -712,17 +719,17 @@ class Model(Serializable):
             if self._weathering_data:
                 self._weathering_data.update(num_released, sc)
 
-            self.logger.info("Released {0} new elements for step: "
-                             " {1.current_time_step} for {1.name}".
-                             format(num_released, self))
+            self.logger.debug("{1._pid} released {0} new elements for step:"
+                              " {1.current_time_step} for {1.name}".
+                              format(num_released, self))
 
         # cache the results - current_time_step is incremented but the
         # current_time_stamp in spill_containers (self.spills) is not updated
         # till we go through the prepare_for_model_step
         self._cache.save_timestep(self.current_time_step, self.spills)
         output_info = self.write_output()
-        self.logger.info("{1} - Completed step: {0.current_time_step} for "
-                         "{0.name}".format(self, os.getpid()))
+        self.logger.debug("{0._pid} - Completed step: {0.current_time_step} "
+                          "for {0.name}".format(self))
         return output_info
 
     def __iter__(self):
@@ -768,7 +775,9 @@ class Model(Serializable):
 
     def _add_to_environ_collec(self, obj_added):
         '''
-        if an environment object exists
+        if an environment object exists in obj_added, but not in the Model's
+        environment collection, then add it automatically.
+        todo: maybe we don't want to do this - revisit this requirement
         '''
         if hasattr(obj_added, 'wind') and obj_added.wind is not None:
             if obj_added.wind.id not in self.environment:
@@ -782,14 +791,11 @@ class Model(Serializable):
             if obj_added.waves.id not in self.environment:
                 self.environment += obj_added.waves
 
-    def _callback_add_mover(self, obj_added):
-        'Callback after mover has been added'
-        self._add_to_environ_collec(obj_added)
-        self.rewind()  # rewind model if a new mover is added
-
-    def _callback_add_weatherer(self, obj_added):
-        'Callback after weatherer has been added'
-        self._add_to_environ_collec(obj_added)
+    def _add_water(self, obj_added):
+        '''
+        if Water object is found in obj_added as an attribute, then also set
+        the Model's 'water' attribute to this object
+        '''
         if hasattr(obj_added, 'water') and obj_added.water is not None:
             if self.water is None:
                 self.water = obj_added.water
@@ -802,6 +808,19 @@ class Model(Serializable):
                            "properties").format(obj_added)
                     self.logger.warning(msg)
 
+    def _callback_add_mover(self, obj_added):
+        'Callback after mover has been added'
+        self._add_to_environ_collec(obj_added)
+        self.rewind()  # rewind model if a new mover is added
+
+    def _callback_add_weatherer_env(self, obj_added):
+        '''
+        Callback after weatherer/environment object has been added. 'waves'
+        environment object contains 'wind' and 'water' so add those to
+        environment collection and the 'water' attribute.
+        '''
+        self._add_to_environ_collec(obj_added)
+        self._add_water(obj_added)
         self.rewind()  # rewind model if a new weatherer is added
 
     def __eq__(self, other):

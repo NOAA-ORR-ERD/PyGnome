@@ -3,7 +3,8 @@ Tests for oil_props module in gnome.db.oil_library
 '''
 import copy
 
-import numpy as np
+import numpy
+np = numpy
 
 import pytest
 from pytest import raises
@@ -55,12 +56,9 @@ oil_density_units = [
     ('oil_4', 0.90, 'g/cm^3'),
     ('oil_crude', 0.90, 'g/cm^3'),
     ('oil_6', 0.99, 'g/cm^3'),
-    ('oil_conservative', 1, 'g/cm^3'),
-    ('chemical', 1, 'g/cm^3'),
     ]
 
 
-@pytest.mark.xfail
 @pytest.mark.parametrize(('oil', 'density', 'units'), oil_density_units)
 def test_OilProps_sample_oil(oil, density, units):
     """ compare expected values with values stored in OilProps - make sure
@@ -68,9 +66,10 @@ def test_OilProps_sample_oil(oil, density, units):
 
     o = get_oil_props(oil)
     d = uc.convert('density', units, 'kg/m^3', density)
-    assert abs(get_density(o, 273.15 + 15) - d) < 1e-3
-    # assert abs(o.get_density() - d) < 1e-3
+
     assert o.name == oil
+    assert np.isclose(get_density(o, 273.15 + 15), d)
+    # assert abs(o.get_density() - d) < 1e-3
 
 
 @pytest.mark.parametrize(('oil', 'api'), [('FUEL OIL NO.6', 12.3)])
@@ -119,14 +118,14 @@ class TestProperties:
 
 
 def test_eq():
-    op = get_oil_props('ARABIAN EXTRA LIGHT, PHILLIPS')
-    op1 = get_oil_props('ARABIAN EXTRA LIGHT, PHILLIPS')
+    op = get_oil_props('ARABIAN MEDIUM, PHILLIPS')
+    op1 = get_oil_props('ARABIAN MEDIUM, PHILLIPS')
     assert op == op1
 
 
 def test_ne():
-    assert (get_oil_props('ARABIAN EXTRA LIGHT, PHILLIPS') !=
-            get_oil_props('ARABIAN EXTRA LIGHT, STAR ENTERPRISE'))
+    assert (get_oil_props('ARABIAN MEDIUM, PHILLIPS') !=
+            get_oil_props('ARABIAN MEDIUM, EXXON'))
 
 
 class TestCopy():
@@ -134,7 +133,7 @@ class TestCopy():
         '''
         do a shallow copy and test that it is a shallow copy
         '''
-        op = get_oil_props('ARABIAN EXTRA LIGHT, PHILLIPS')
+        op = get_oil_props('ARABIAN MEDIUM, PHILLIPS')
         cop = copy.copy(op)
         assert op == cop
         assert op is not cop
@@ -152,7 +151,7 @@ class TestCopy():
         '''
         do a shallow copy and test that it is a shallow copy
         '''
-        op = get_oil_props('ARABIAN EXTRA LIGHT, PHILLIPS')
+        op = get_oil_props('ARABIAN MEDIUM, PHILLIPS')
         dcop = copy.deepcopy(op)
 
         assert op == dcop

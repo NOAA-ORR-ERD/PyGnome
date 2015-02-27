@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-
+import os
 from uuid import uuid1, UUID
 import copy
 import logging
@@ -33,6 +33,17 @@ class AddLogger(object):
         if not self._log:
             self._log = init_obj_log(self)
         return self._log
+
+    @property
+    def _pid(self):
+        '''
+        returns os.getpid() as a string. Since we have multiple models, each
+        running in its own process that is managed by multi_model_broadcast
+        module, each debug log messages starts with os.getpid(). This function
+        just returns a string that the gnome object can append to - don't
+        want to keep typing this everywhere.
+        '''
+        return "{0} - ".format(os.getpid())
 
 
 class GnomeId(AddLogger):

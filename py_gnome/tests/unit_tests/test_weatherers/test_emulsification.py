@@ -126,6 +126,26 @@ def test_full_run_emul_not_active(sample_model_fcn):
                .format(step['WeatheringOutput']['step_num']))
 
 
+def test_bulltime():
+    '''
+    user set time to start emulsification
+    '''
+
+    et = floating(substance="ALBERTA")
+    assert et.substance.bulltime == -999
+    et.substance.bulltime = 3600
+    assert et.substance.bulltime == 3600
+
+def test_bullwinkle():
+    '''
+    user set emulsion constant
+    '''
+
+    et = floating(substance="ALBERTA")
+    assert et.substance.bullwinkle == .303
+    et.substance.bullwinkle = .4
+    assert et.substance.bullwinkle == .4
+
 def test_serialize_deseriailize():
     'test serialize/deserialize for webapi'
     wind = constant_wind(15., 0)
