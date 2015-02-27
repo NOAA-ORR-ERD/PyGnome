@@ -64,15 +64,15 @@ def test_evaporation(oil, temp, num_elems, on):
         else:
             assert np.all(sc['evap_decay_constant'][mask, :] == 0.0)
 
-    if on:
-        assert sc.weathering_data['evaporated'] > 0.0
-    else:
-        assert sc.weathering_data['evaporated'] == 0.0
-        assert np.all(sc['mass_components'] == init_mass)
-
     print '\nevap_decay_const', sc['evap_decay_constant']
     print 'frac_lost', sc['frac_lost']
-    print 'total evaporated', sc.weathering_data['evaporated']
+
+    if on:
+        assert sc.weathering_data['evaporated'] > 0.0
+        print 'total evaporated', sc.weathering_data['evaporated']
+    else:
+        assert 'evaporated' not in sc.weathering_data
+        assert np.all(sc['mass_components'] == init_mass)
 
 
 def assert_helper(sc, new_p):
