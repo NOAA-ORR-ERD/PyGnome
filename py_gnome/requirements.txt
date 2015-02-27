@@ -9,16 +9,20 @@
 ## making sure pip is up to date first
 pip>=1.5.6
 
-#setuptools      # needed before pip can be installed anyway...
+#setuptools>=2.1    # needed before pip can be installed anyway...
 #numpy>=1.7.0   
-#netCDF4         # requires netcdf-4 binaries 
+#netCDF4            # requires netcdf-4 binaries 
 #matplotlib
+#
+## projections uses interpolate routine so most of py_gnome will work without this
+#scipy      
 #
 ## End Binary packages ##
 
 ##Binary dependencies that can probably be pip installed
-# these have binary wheels for Windows at least...
+# these have binary wheels for Windows and Mac at least...
 pillow
+pyzmq
 
 ## Python only packages: can be pip installed ##
 Cython>=0.20.1
@@ -36,14 +40,6 @@ git+https://github.com/NOAA-ORR-ERD/PyNUCOS.git#egg=unit_conversion
 # git+https://github.com/Pylons/colander.git@5816554a6f0c0f025922dd03d1518de361a9f0ed#egg=colander-dev
 # Latest colander is working with py_gnome
 git+https://github.com/Pylons/colander.git#egg=colander
-
-# Oil Library database
-# todo: need to move this to oil_library requirements,
-# need to test in clean environment before updating
-pyramid
-sqlalchemy
-transaction
-zope.sqlalchemy
 
 ## Python package but included with PyGnome repo at present so run setup.py to install ##
 # Currently required to run setup.py from oil_library directory

@@ -1142,6 +1142,8 @@ class Model(Serializable):
 
         self._start_time = model._start_time
         self._duration = model._duration
+        self._time_step = model._time_step
+        self._num_time_steps = model._num_time_steps
         self.name = model.name
 
         # update orderedcollections
