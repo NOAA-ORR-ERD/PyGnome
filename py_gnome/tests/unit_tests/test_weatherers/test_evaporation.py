@@ -15,7 +15,7 @@ from gnome.outputters import WeatheringOutput
 from gnome.spill.elements import floating
 from gnome.basic_types import oil_status
 
-from ..conftest import sample_sc_release, sample_model_weathering
+from ..conftest import sample_sc_release, sample_model_weathering, test_oil
 
 
 water = Water()
@@ -23,6 +23,26 @@ water = Water()
 arrays = Evaporation().array_types
 intrinsic = WeatheringData(water)
 arrays.update(intrinsic.array_types)
+
+
+def test_evaporation_no_wind():
+    et = floating(substance=test_oil)
+    sc = sample_sc_release(num_elements=100,
+                           element_type=et,
+                           arr_types=arrays)
+    intrinsic.update(sc.num_released, sc)
+    time_step = 15. * 60
+    model_time = (sc.spills[0].get('release_time') +
+                  timedelta(seconds=time_step))
+
+    evap = Evaporation(water, wind=constant_wind(0., 0))
+
+    evap.prepare_for_model_run(sc)
+    evap.prepare_for_model_step(sc, time_step, model_time)
+    evap.weather_elements(sc, time_step, model_time)
+    for spill in sc.spills:
+        mask = sc.get_spill_mask(spill)
+        assert np.all(sc['evap_decay_constant'][mask, :] < 0.0)
 
 
 @pytest.mark.parametrize(('oil', 'temp', 'num_elems', 'on'),

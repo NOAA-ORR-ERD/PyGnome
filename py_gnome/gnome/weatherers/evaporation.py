@@ -61,8 +61,10 @@ class Evaporation(Weatherer, Serializable):
 
         If K is expressed in m/sec, then Buchanan and Hurford set c = 0.0025
         U is wind_speed 10m above the surface
+
+        .. note:: wind speed is at least 1 m/s.
         '''
-        wind_speed = self.wind.get_value(model_time)[0]
+        wind_speed = max(1, self.wind.get_value(model_time)[0])
         c_evap = 0.0025     # if wind_speed in m/s
         if wind_speed <= 10.0:
             return c_evap * wind_speed ** 0.78
