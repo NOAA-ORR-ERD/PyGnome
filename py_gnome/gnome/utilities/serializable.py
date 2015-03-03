@@ -849,6 +849,9 @@ class Serializable(GnomeId, Savable):
                         return False
                 elif self_attr != other_attr:
                     return False
+            else:
+                if not np.allclose(self_attr, other_attr):
+                    return False
 
         return True
 
