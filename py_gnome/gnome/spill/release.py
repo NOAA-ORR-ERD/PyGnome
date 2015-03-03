@@ -663,8 +663,9 @@ class SpatialRelease(Release, Serializable):
         num_elements and release_time passed to base class __init__ using super
         See base :class:`Release` documentation
         """
-        self.start_position = np.asarray(start_position,
-                dtype=world_point_type).reshape((-1, 3))
+        self.start_position = (np.asarray(start_position,
+                                          dtype=world_point_type)
+                               .reshape((-1, 3)))
         super(SpatialRelease, self).__init__(release_time,
                                              self.start_position.shape[0],
                                              name)
@@ -675,7 +676,7 @@ class SpatialRelease(Release, Serializable):
             Custom new_from_dict() functionality for SpatialRelease
         '''
         if ('release_time' in dict_ and
-            not isinstance(dict_['release_time'], datetime)):
+                not isinstance(dict_['release_time'], datetime)):
             print 'handling release_time...'
             dict_['release_time'] = iso8601.parse_date(dict_['release_time'],
                                                        default_timezone=None)
@@ -692,8 +693,8 @@ class SpatialRelease(Release, Serializable):
         if self.start_time_invalid:
             return 0
 
-        if (self.num_released >= self.num_elements or
-            current_time + timedelta(seconds=time_step) <= self.release_time):
+        if (current_time + timedelta(seconds=time_step) <= self.release_time or
+                self.num_released >= self.num_elements):
             return 0
 
         return self.num_elements
@@ -739,7 +740,7 @@ class VerticalPlumeRelease(Release, Serializable):
     _state = copy.deepcopy(Release._state)
 
     # what kinds of customized state attributes would we like to add here?
-    #_state.add(update=['start_position'], save=['start_position'])
+    # _state.add(update=['start_position'], save=['start_position'])
 
     def __init__(self, release_time, num_elements, start_position,
                  plume_data, end_release_time, name=None):
@@ -758,7 +759,7 @@ class VerticalPlumeRelease(Release, Serializable):
             -- (long, lat, z)
         '''
         super(VerticalPlumeRelease, self).__init__(release_time,
-                                                num_elements, name)
+                                                   num_elements, name)
 
         self.start_position = np.array(start_position,
                                        dtype=world_point_type).reshape((3, ))
@@ -845,8 +846,8 @@ class InitElemsFromFile(Release):
         if release_time is None:
             release_time = self._init_data.pop('current_time_stamp').item()
 
-        super(InitElemsFromFile, self).__init__(release_time,
-                                                len(self._init_data['positions']))
+        super(InitElemsFromFile,
+              self).__init__(release_time, len(self._init_data['positions']))
 
         self.set_newparticle_positions = self._set_data_arrays
 
