@@ -981,8 +981,7 @@ def test_staggered_spills_weathering(sample_model_fcn, delay):
         for sc in model.spills.items():
             print "completed step {0}".format(step)
             print sc.weathering_data
-            unaccounted = sc['status_codes'] != oil_status.in_water
-            sum_ = sc['mass'][unaccounted].sum()
+            sum_ = 0
             for key in sc.weathering_data:
                 if 'avg_' != key[:4] and 'amount_released' != key:
                     sum_ += sc.weathering_data[key]
@@ -1031,8 +1030,7 @@ def test_two_substance_spills_weathering(sample_model_fcn, s0, s1):
         for sc in model.spills.items():
             # If LEs are marked as 'skim', add them to sum_ since the mass must
             # be accounted for in the assertion
-            unaccounted = sc['status_codes'] != oil_status.in_water
-            sum_ = sc['mass'][unaccounted].sum()
+            sum_ = 0
             print 'starting sum_: ', sum_
             for key in sc.weathering_data:
                 if 'avg_' != key[:4] and 'amount_released' != key:

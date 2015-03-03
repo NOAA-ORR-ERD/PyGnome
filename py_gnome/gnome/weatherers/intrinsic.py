@@ -187,9 +187,12 @@ class WeatheringData(AddLogger):
         sc.weathering_data['avg_viscosity'] = \
             np.sum(sc['mass']/sc['mass'].sum() * sc['viscosity'])
 
+        # floating includes LEs marked to be skimmed + burned
+        sc.weathering_data['floating'] = \
+            (sc['mass'][sc['status_codes'] == oil_status.in_water].sum() +
+             sc['mass'][sc['status_codes'] == oil_status.skim].sum() +
+             sc['mass'][sc['status_codes'] == oil_status.burn].sum())
         # include floating + beached oil since we could have a map
-        sc.weathering_data['floating'] = sc['mass'][sc['status_codes'] ==
-                                                    oil_status.in_water].sum()
         sc.weathering_data['beached'] = sc['mass'][sc['status_codes'] ==
                                                    oil_status.on_land].sum()
 
