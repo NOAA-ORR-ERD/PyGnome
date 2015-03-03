@@ -988,24 +988,13 @@ def test_staggered_spills_weathering(sample_model_fcn, delay):
             print "completed step {0}".format(step)
             # sum up all the weathered mass + mass of LEs marked for weathering
             # and ensure this equals the total amount released
-            sum_ = 0.0
-
-            # mass marked for skimming/burning/dispersion that is not yet
-            # removed
-            u_mask = sc['fate_status'] & bt_fate.skim == bt_fate.skim
-            sum_ = sc['mass'][u_mask].sum()
-            u_mask = sc['fate_status'] & bt_fate.burn == bt_fate.burn
-            sum_ += sc['mass'][u_mask].sum()
-            u_mask = sc['fate_status'] & bt_fate.disperse == bt_fate.disperse
-            sum_ += sc['mass'][u_mask].sum()
-
-            sum_ += (sc.weathering_data['beached'] +
-                     sc.weathering_data['burned'] +
-                     sc.weathering_data['dispersed'] +
-                     sc.weathering_data['evaporated'] +
-                     sc.weathering_data['floating'] +
-                     sc.weathering_data['skimmed']
-                     )
+            sum_ = (sc.weathering_data['beached'] +
+                    sc.weathering_data['burned'] +
+                    sc.weathering_data['dispersed'] +
+                    sc.weathering_data['evaporated'] +
+                    sc.weathering_data['floating'] +
+                    sc.weathering_data['skimmed']
+                    )
 
             assert abs(sum_ - sc.weathering_data['amount_released']) < 1.e-6
 
@@ -1065,12 +1054,6 @@ def test_two_substance_spills_weathering(sample_model_fcn, s0, s1):
             if s0 == s1:
                 # mass marked for skimming/burning/dispersion that is not yet
                 # removed - cleanup operations only work on single substance
-                u_mask = sc['fate_status'] & bt_fate.skim == bt_fate.skim
-                sum_ = sc['mass'][u_mask].sum()
-                u_mask = sc['fate_status'] & bt_fate.burn == bt_fate.burn
-                sum_ += sc['mass'][u_mask].sum()
-                u_mask = sc['fate_status'] & bt_fate.disperse == bt_fate.disperse
-                sum_ += sc['mass'][u_mask].sum()
                 sum_ += (sc.weathering_data['burned'] +
                          sc.weathering_data['dispersed'] +
                          sc.weathering_data['skimmed'])

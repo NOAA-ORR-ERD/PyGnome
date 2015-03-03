@@ -188,10 +188,16 @@ class WeatheringData(AddLogger):
         sc.weathering_data['avg_viscosity'] = \
             np.sum(sc['mass']/sc['mass'].sum() * sc['viscosity'])
 
-        # floating includes LEs marked to be skimmed + burned
-        # include floating + beached oil since we could have a map
-        sc.weathering_data['floating'] = sc['mass'][sc['fate_status'] ==
-                                                    fate.surface_weather].sum()
+        # floating includes LEs marked to be skimmed + burned + dispersed
+        # todo: remove fate_status and add 'surface' to status_codes. LEs
+        # marked to be skimmed, burned, dispersed will also be marked as
+        # 'surface' so following can get cleaned up.
+        sc.weathering_data['floating'] = \
+            (sc['mass'][sc['fate_status'] == fate.surface_weather].sum() +
+             sc['mass'][sc['fate_status'] & fate.skim == fate.skim].sum() +
+             sc['mass'][sc['fate_status'] & fate.burn == fate.burn].sum() +
+             sc['mass'][sc['fate_status'] & fate.disperse == fate.disperse].sum())
+
         sc.weathering_data['beached'] = sc['mass'][sc['status_codes'] ==
                                                    oil_status.on_land].sum()
 
