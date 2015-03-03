@@ -904,6 +904,9 @@ class SpillContainerPair(SpillContainerPairData):
 
         if self.uncertain:
             self._u_spill_container.rewind()
+            if self._spill_container.spills != self._u_spill_container.spills:
+                self._u_spill_container = \
+                    self._spill_container.uncertain_copy()
 
     def __repr__(self):
         'unambiguous repr'

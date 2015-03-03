@@ -565,25 +565,51 @@ def test_element_types(elem_type, arr_types, sample_sc_no_uncertainty):
                         assert (np.all(sc[key][spill_mask] <= high))
 
 
-def test_init_SpillContainerPair():
-    'All this does is test that it can be initialized'
-    SpillContainerPair()
-    SpillContainerPair(True)
+class TestSpillContainerPairBasicTests:
+    '''
+    Group basic tests together
+    '''
+    def test_init_SpillContainerPair(self):
+        'All this does is test that it can be initialized'
+        SpillContainerPair()
+        SpillContainerPair(True)
+        assert True
 
-    assert True
+    def test_SpillContainerPair_uncertainty(self):
+        'test uncertainty property'
 
+        u_scp = SpillContainerPair(True)
+        u_scp.uncertain = False
+        assert not u_scp.uncertain
+        assert not hasattr(u_scp, '_u_spill_container')
 
-def test_SpillContainerPair_uncertainty():
-    'test uncertainty property'
+        u_scp.uncertain = True
+        assert u_scp.uncertain
+        assert hasattr(u_scp, '_u_spill_container')
 
-    u_scp = SpillContainerPair(True)
-    u_scp.uncertain = False
-    assert not u_scp.uncertain
-    assert not hasattr(u_scp, '_u_spill_container')
+    def test_rewind_change_spill_attribute(self):
+        '''
+        check that if an attribute of forcast spillcontainer is updated,
+        the uncertain spill container creates a new copy of uncertain spills
+        '''
+        num_elements = 100
+        release_time = datetime(2012, 1, 1, 12)
+        start_position = (23.0, -78.5, 0.0)
+        scp = SpillContainerPair(uncertain=True)
 
-    u_scp.uncertain = True
-    assert u_scp.uncertain
-    assert hasattr(u_scp, '_u_spill_container')
+        scp += point_line_release_spill(num_elements, start_position,
+                                        release_time)
+        (forecast_sc, uncertain_sc) = scp.items()
+        assert forecast_sc.spills == uncertain_sc.spills
+
+        forecast_sc.spills[0].set('release_time',
+                                  release_time + timedelta(hours=1))
+        (forecast_sc, uncertain_sc) = scp.items()
+        assert forecast_sc.spills != uncertain_sc.spills
+
+        scp.rewind()
+        (forecast_sc, uncertain_sc) = scp.items()
+        assert forecast_sc.spills == uncertain_sc.spills
 
 
 class TestAddSpillContainerPair:
