@@ -708,6 +708,9 @@ def test_full_run(model, dump, traj_only):
     assert num_images == model.num_time_steps + 1
 
 
+''' Test Callbacks on OrderedCollections '''
+
+
 def test_callback_add_mover():
     'Test callback after add mover'
     units = 'meter per second'
@@ -782,6 +785,33 @@ def test_callback_add_mover_midrun():
     # now add another mover and make sure model rewinds
     model.movers += SimpleMover(velocity=(2., -2., 0.))
     assert model.current_time_step == -1
+
+
+def test_callback_add_weather():
+    '''
+    Test callback when weatherer is added
+    '''
+    model = Model()
+    water = Water()
+    wind = constant_wind(1, 30)
+    assert len(model.environment) == 0
+
+    model.weatherers += Evaporation(water, wind)
+
+    # only wind is added to environment collection
+    assert len(model.environment) == 1
+    assert wind in model.environment
+
+
+def test_callback_add_water_to_env():
+    '''
+    test callback if Water is added to environment collection, it sets Model's
+    water attribute if it is None
+    '''
+    model = Model()
+    assert model.water is None
+    model.environment += Water()
+    assert model.environment[-1] == model.water
 
 
 def test_simple_run_no_spills(model):
@@ -984,7 +1014,7 @@ def test_staggered_spills_weathering(sample_model_fcn, delay):
 
 @pytest.mark.parametrize(("s0", "s1"),
                          [("ALASKA NORTH SLOPE", "ALASKA NORTH SLOPE"),
-                          ("ALASKA NORTH SLOPE", "HIGH ISLAND, AMOCO")])
+                          ("ALASKA NORTH SLOPE", "ARABIAN MEDIUM, EXXON")])
 def test_two_substance_spills_weathering(sample_model_fcn, s0, s1):
     '''
     only tests data arrays are correct and we don't end up with stale data

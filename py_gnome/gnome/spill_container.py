@@ -720,7 +720,6 @@ class SpillContainer(AddLogger, SpillContainerData):
         self._reset__fate_data_list()
         self.initialize_data_arrays()
         self.weathering_data = {}  # reset to empty array
-        self.logger.info('{0} - rewound SpillContainer'.format(os.getpid()))
 
     def get_spill_mask(self, spill):
         return self['spill_num'] == self.spills.index(spill)
@@ -1015,6 +1014,9 @@ class SpillContainerPair(SpillContainerPairData):
 
         if self.uncertain:
             self._u_spill_container.rewind()
+            if self._spill_container.spills != self._u_spill_container.spills:
+                self._u_spill_container = \
+                    self._spill_container.uncertain_copy()
 
     def __repr__(self):
         'unambiguous repr'
@@ -1034,11 +1036,9 @@ class SpillContainerPair(SpillContainerPairData):
         if self._uncertain is True and value is False:
             self._uncertain = value
             del self._u_spill_container  # delete if it exists
-            self.rewind()  # Not sure if we want to do this?
         elif self._uncertain is False and value is True:
             self._uncertain = value
             self._u_spill_container = self._spill_container.uncertain_copy()
-            self.rewind()
 
     def _add_spill_pair(self, pair_tuple):
         'add both certain and uncertain spills given as a pair'

@@ -50,7 +50,7 @@ class Emulsification(Weatherer, Serializable):
         '''
         # create 'water_content' key if it doesn't exist
         # let's only define this the first time
-        if self.active:
+        if self.on:
             sc.weathering_data['water_content'] = 0.0
 
     def prepare_for_model_step(self, sc, time_step, model_time):
@@ -117,10 +117,12 @@ class Emulsification(Weatherer, Serializable):
                 #np.sum(data['frac_water'][:]) / sc.num_released
             # just average the water fraction each time - it is not per time
             # step value but at a certain time value
+            # todo: probably should be weighted avg
             sc.weathering_data['water_content'] = \
                 np.sum(data['frac_water'][:]) / sc.num_released
-            self.logger.info('Amount water_content: {0}'.
-                             format(sc.weathering_data['water_content']))
+            self.logger.debug(self._pid + 'water_content for {0}: {1}'.
+                              format(substance.name,
+                                     sc.weathering_data['water_content']))
 
         sc.update_from_fatedataview()
 
