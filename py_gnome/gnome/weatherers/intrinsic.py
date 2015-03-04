@@ -244,7 +244,9 @@ class WeatheringData(AddLogger):
         update fate status after elements have beached
         '''
         # for old particles, update fate_status
-        non_w_mask = data['status_codes'] != oil_status.in_water
+        # particles in_water or off_maps continue to weather
+        # only particles on_land stop weathering
+        non_w_mask = data['status_codes'] == oil_status.on_land
         data['fate_status'][non_w_mask] = fate.non_weather
 
     def _init_new_particles(self, mask, data, substance):

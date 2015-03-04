@@ -121,8 +121,8 @@ class Model(Serializable):
         default_restore = dict(zip(kwargs[0][1:], kwargs[3]))
 
         if json_ == 'webapi':
-            # default is to enable cache
-            default_restore['cache_enabled'] = True
+            # default is to disable cache
+            default_restore['cache_enabled'] = False
 
         for key in default_restore:
             default_restore[key] = dict_.pop(key, default_restore[key])
