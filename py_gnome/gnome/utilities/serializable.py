@@ -808,26 +808,15 @@ class Serializable(GnomeId, Savable):
         It looks at attributes defined in self._state and checks the plain
         python types match.
 
-        It does not compare numpy arrays - only the plain python types. If an
-        object's state contains numpy arrays like Wind object, it must override
-        this method and do the comparison in its own class. This is especially
-        useful when a Model object is recreated from mid-run save and the
-        SpillContainer's data_arrays are repopulated. The arrays may not be
-        exact so SpillContainer does the equality check for numpy arrays but
-        can still use this base class for testing equality for all other
-        attributes. Helps in following the DRY principle.
+        It does an allclose() check for numpy arrays using default atol, rtol.
 
         :param other: object of the same type as self that is used for
                       comparison in obj1 == other
 
-        NOTE: This class does not have __init__ method and super is not used.
+        NOTE: super is not used.
         """
 
         if not self._check_type(other):
-            return False
-
-        if (self._state.get_field_by_attribute('save') !=
-                other._state.get_field_by_attribute('save')):
             return False
 
         for name in self._state.get_names('save'):

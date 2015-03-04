@@ -27,10 +27,6 @@ class ElementType(Serializable):
     _state = copy.deepcopy(Serializable._state)
     _state.add(save=['initializers'],
                update=['initializers'])
-    # for some reason, the test for equality on the underlying OilProps object
-    # is failing - for now, don't check for equality and just manually override
-    # __eq__ and check 'substance' name is equal. Need to figure out why
-    # equality is failing
     _state += Field('substance', save=True, update=True, test_for_eq=False)
     _schema = base_schema.ObjType
 
