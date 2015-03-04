@@ -186,14 +186,14 @@ class TestWeatheringData:
         # test initialization as well
         return (sc, intrinsic)
 
-    def mock_weather_data(self, sc, intrinsic):
+    def mock_weather_data(self, sc, intrinsic, zero_elems=5):
         '''
         helper function that mocks a weatherer - like evaporation. It simply
         changes the mass_fraction and updates frac_lost accordingly
         '''
         for substance, data in sc.itersubstancedata(intrinsic.array_types):
             # following simulates weathered/evaporated oil
-            data['mass_components'][:, :3] *= .2
+            data['mass_components'][:, :zero_elems] = 0
             data['mass'][:] = sc['mass_components'].sum(1)
             data['frac_lost'][:] = 1 - data['mass']/data['init_mass']
 
@@ -237,6 +237,23 @@ class TestWeatheringData:
             intrinsic.update(0, sc)
             assert np.allclose(sc['density'], init_dens)
             assert np.allclose(sc['viscosity'], init_visc)
+
+    def test_density_threshold(self):
+        '''
+        check that density does not fall below water density
+        '''
+        rel_time = datetime.now().replace(microsecond=0)
+        (sc, intrinsic) = self.sample_sc_intrinsic(100, rel_time)
+        num = sc.release_elements(900, rel_time)
+        intrinsic.update(num, sc)
+        self.mock_weather_data(sc, intrinsic, -1)
+        sc['age'] += 900
+
+        # say we are now in 2nd step - no new particles are released
+        # just updating the previously released particles
+        intrinsic.water.density = 960   # force this for test
+        intrinsic.update(0, sc)
+        assert np.all(sc['density'] >= intrinsic.water.density)
 
     def test_intrinsic_props_vary_num_LEs(self):
         '''

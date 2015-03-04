@@ -383,8 +383,14 @@ class WeatheringData(AddLogger):
         mass_frac = \
             (data['mass_components'][mask, :substance.num_components] /
              data['mass'][mask].reshape(np.sum(mask), -1))
-        data['density'][mask] = \
-            k_rho*(substance.component_density * mass_frac).sum(1)
+        # check if density becomes > water, set it equal to water in this case
+        new_rho = k_rho*(substance.component_density * mass_frac).sum(1)
+        if np.any(new_rho > self.water.density):
+            new_rho[new_rho > self.water.density] = self.water.density
+            self.logger.info(self._pid + "during update, density is greater "
+                             "than water density - set it to water density ")
+
+        data['density'][mask] = new_rho
 
         # following implementation results in an extra array called
         # fw_d_fref but is easy to read
