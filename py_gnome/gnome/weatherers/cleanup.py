@@ -103,6 +103,9 @@ class CleanUpBase(Weatherer):
             # change status for elements upto and including 'ix'
             data['fate_status'][:ix + 1] = status
 
+        mask = data['fate_status'] & status == status
+        self.logger.debug(self._pid + 'marked {0} LEs with mass: '
+                          '{1}'.format(mask.sum(), data['mass'][mask].sum()))
         sc.update_from_fatedataview(substance, 'surface_weather')
 
     def _set__timestep(self, time_step, model_time):
@@ -272,7 +275,7 @@ class Skimmer(CleanUpBase, Serializable):
                                      rm_amount,
                                      self.units) * self.efficiency
 
-            rm_mass_frac = rm_mass / data['mass'].sum()
+            rm_mass_frac = min(rm_mass / data['mass'].sum(), 1.0)
 
             # if elements are also evaporating following could be true
             # need to include weathering for skimmed particles, then test and
