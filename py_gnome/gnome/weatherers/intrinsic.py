@@ -241,13 +241,18 @@ class WeatheringData(AddLogger):
 
     def update_fate_status(self, data):
         '''
-        update fate status after elements have beached
+        update fate status after elements have beached - Model calls this
         '''
         # for old particles, update fate_status
         # particles in_water or off_maps continue to weather
         # only particles on_land stop weathering
         non_w_mask = data['status_codes'] == oil_status.on_land
         data['fate_status'][non_w_mask] = fate.non_weather
+
+        # update old particles that may now have refloated
+        # non_weather particles will have no other flag
+        mask = data['fate_status'] == fate.non_weather
+        self._init_fate_status(mask, data)
 
     def _init_new_particles(self, mask, data, substance):
         '''
@@ -306,17 +311,24 @@ class WeatheringData(AddLogger):
         # initialize the fate_status array based on positions and status_codes
         self._init_fate_status(mask, data)
 
-    def _init_fate_status(self, new_LEs_mask, data):
+    def _init_fate_status(self, update_LEs_mask, data):
         '''
-        initialize fate_status for newly released LEs
+        initialize fate_status for newly released LEs or refloated LEs
+        For refloated LEs, the mask should apply to non_weather LEs.
+        Currently, the 'status_codes' is separate from 'fate_status' and we
+        don't want to reset the 'fate_status' of LEs that have been marked
+        as 'skim' or 'burn' or 'disperse'. This should only apply for newly
+        released LEs (currently marked as non_weather since that's the default)
+        and for refloated LEs which should also have been marked as non_weather
+        when they beached.
         '''
         surf_mask = \
-            np.logical_and(new_LEs_mask,
+            np.logical_and(update_LEs_mask,
                            np.logical_and(data['positions'][:, 2] == 0,
                                           data['status_codes'] ==
                                           oil_status.in_water))
         subs_mask = \
-            np.logical_and(new_LEs_mask,
+            np.logical_and(update_LEs_mask,
                            np.logical_and(data['positions'][:, 2] > 0,
                                           data['status_codes'] ==
                                           oil_status.in_water))

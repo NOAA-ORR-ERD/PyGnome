@@ -11,6 +11,7 @@ from gnome.environment import Water
 from gnome.weatherers.intrinsic import FayGravityViscous, WeatheringData
 from gnome.spill import point_line_release_spill
 from gnome.spill_container import SpillContainer
+from gnome.basic_types import oil_status, fate as bt_fate
 
 from ..conftest import test_oil
 
@@ -379,3 +380,38 @@ class TestWeatheringData:
 
             sc['age'] += ts     # model would do this operation
             print 'Completed step: ', i
+
+    def test_update_fate_status(self):
+        '''
+        test update_fate_status() as it is invoked by Model after elements
+        beach
+        '''
+        rel_time = datetime.now().replace(microsecond=0)
+        (sc, intrinsic) = self.sample_sc_intrinsic(100, rel_time)
+        num = sc.release_elements(900, rel_time)
+        intrinsic.update(num, sc)
+
+        # in next step and set some particles as beached
+        beach_mask = np.arange(2, 20, 2)
+        sc['status_codes'][beach_mask] = oil_status.on_land
+
+        # during weathering, intrinsic updates fate_status
+        intrinsic.update_fate_status(sc)
+        assert np.all(sc['fate_status'][beach_mask] == bt_fate.non_weather)
+        sc['age'] += 900    # model updates age
+
+        # next step, assume no particles released
+        intrinsic.update(0, sc)     # no new particles released
+
+        # in the step a subset of particles are reflaoted
+        refloat = beach_mask[:-5]
+        still_beached = list(set(beach_mask).difference(refloat))
+        sc['status_codes'][refloat] = oil_status.in_water
+        sc['positions'][refloat, 2] = 4     # just check for surface
+
+        # during weathering, intrinsic updates fate_status
+        intrinsic.update_fate_status(sc)
+        assert np.all(sc['status_codes'][still_beached] == oil_status.on_land)
+        assert np.all(sc['fate_status'][still_beached] == bt_fate.non_weather)
+        assert np.all(sc['fate_status'][refloat] == bt_fate.subsurf_weather)
+        assert np.all(sc['status_codes'][refloat] == oil_status.in_water) 
