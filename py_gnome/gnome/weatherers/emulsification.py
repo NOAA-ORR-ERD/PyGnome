@@ -119,7 +119,8 @@ class Emulsification(Weatherer, Serializable):
             # step value but at a certain time value
             # todo: probably should be weighted avg
             sc.weathering_data['water_content'] = \
-                np.sum(data['frac_water'][:]) / sc.num_released
+                np.sum(data['frac_water'][:]) / len(data['frac_water'])
+                #np.sum(data['frac_water'][:]) / sc.num_released
             self.logger.debug(self._pid + 'water_content for {0}: {1}'.
                               format(substance.name,
                                      sc.weathering_data['water_content']))
