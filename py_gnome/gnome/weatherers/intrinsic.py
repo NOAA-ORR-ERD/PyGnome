@@ -239,20 +239,31 @@ class WeatheringData(AddLogger):
 
         sc.update_from_fatedataview(fate='all')
 
-    def update_fate_status(self, data):
+    def update_fate_status(self, sc):
         '''
-        update fate status after elements have beached - Model calls this
+        Update fate status after model invokes move_elements()
+        - elements will beach or refloat
+        - then Model will update fate_status of elements that beached/refloated
+
+        Model calls this and input is spill container, not a view of the data
         '''
         # for old particles, update fate_status
         # particles in_water or off_maps continue to weather
         # only particles on_land stop weathering
-        non_w_mask = data['status_codes'] == oil_status.on_land
-        data['fate_status'][non_w_mask] = fate.non_weather
+        non_w_mask = sc['status_codes'] == oil_status.on_land
+        sc['fate_status'][non_w_mask] = fate.non_weather
 
         # update old particles that may now have refloated
-        # non_weather particles will have no other flag
-        mask = data['fate_status'] == fate.non_weather
-        self._init_fate_status(mask, data)
+        # only want to do this for particles with a valid substance - if
+        # substance is None, they do not weather
+        # also get all data for a substance since we are modifying the
+        # fate_status - lets not use it to filter data
+        for substance, data in sc.itersubstancedata(self.array_types,
+                                                    fate='all'):
+            mask = np.asarray([True] * len(data['fate_status']))
+            self._init_fate_status(mask, data)
+
+        sc.update_from_fatedataview(fate='all')
 
     def _init_new_particles(self, mask, data, substance):
         '''
