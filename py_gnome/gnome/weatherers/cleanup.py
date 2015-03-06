@@ -96,6 +96,9 @@ class CleanUpBase(Weatherer):
         # (1 - frac_water) * mass_to_remove
         if mass_to_remove >= oil_water.sum():
             data['fate_status'][:] = status
+            self.logger.debug(self._pid + 'marked ALL ({0}) LEs with mass: '
+                              '{1}'.format(len(data['fate_status']),
+                                           data['mass'].sum()))
         else:
             # sum up mass until threshold is reached, find index where
             # total_mass_removed is reached or exceeded
@@ -103,9 +106,9 @@ class CleanUpBase(Weatherer):
             # change status for elements upto and including 'ix'
             data['fate_status'][:ix + 1] = status
 
-        mask = data['fate_status'] & status == status
-        self.logger.debug(self._pid + 'marked {0} LEs with mass: '
-                          '{1}'.format(mask.sum(), data['mass'][mask].sum()))
+            self.logger.debug(self._pid + 'marked {0} LEs with mass: '
+                              '{1}'.format(ix, data['mass'][:ix].sum()))
+
         sc.update_from_fatedataview(substance, 'surface_weather')
 
     def _set__timestep(self, time_step, model_time):

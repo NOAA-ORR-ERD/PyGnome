@@ -507,8 +507,8 @@ class Model(Serializable):
             if transport:
                 self._time_step = 900
             elif weathering and not transport:
-                # todo: find out what this should be?
-                self._time_step = 900
+                # todo: 1 hour
+                self._time_step = 3600
             else:
                 # simple case with no weatherers or movers
                 self._time_step = 900

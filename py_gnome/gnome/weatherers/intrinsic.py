@@ -182,11 +182,15 @@ class WeatheringData(AddLogger):
         # timestep should be the same, but that will likely change
         # Any optimization in doing the following?:
         #   (sc['mass'] * sc['density']).sum()/sc['mass'].sum()
-        # todo: test weighted average
-        sc.weathering_data['avg_density'] = \
-            np.sum(sc['mass']/np.sum(sc['mass']) * sc['density'])
-        sc.weathering_data['avg_viscosity'] = \
-            np.sum(sc['mass']/sc['mass'].sum() * sc['viscosity'])
+        # todo: move weighted average to utilities
+        # also added a check for 'mass' == 0, edge case
+        if sc['mass'].sum() > 0.0:
+            sc.weathering_data['avg_density'] = \
+                np.sum(sc['mass']/sc['mass'].sum() * sc['density'])
+            sc.weathering_data['avg_viscosity'] = \
+                np.sum(sc['mass']/sc['mass'].sum() * sc['viscosity'])
+        else:
+            self.logger.info(self._pid + "sum of 'mass' array went to 0.0")
 
         # floating includes LEs marked to be skimmed + burned + dispersed
         # todo: remove fate_status and add 'surface' to status_codes. LEs
