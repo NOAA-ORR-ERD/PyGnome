@@ -260,7 +260,7 @@ class WeatheringData(AddLogger):
         # fate_status - lets not use it to filter data
         for substance, data in sc.itersubstancedata(self.array_types,
                                                     fate='all'):
-            mask = np.asarray([True] * len(data['fate_status']))
+            mask = data['fate_status'] & fate.non_weather == fate.non_weather
             self._init_fate_status(mask, data)
 
         sc.update_from_fatedataview(fate='all')

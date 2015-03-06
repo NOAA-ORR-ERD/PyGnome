@@ -997,6 +997,8 @@ def test_staggered_spills_weathering(sample_model_fcn, delay):
                     )
 
             assert abs(sum_ - sc.weathering_data['amount_released']) < 1.e-6
+    assert sc.weathering_data['burned'] > 0
+    assert sc.weathering_data['skimmed'] > 0
 
     assert np.isclose(exp_total_mass, sc.weathering_data['amount_released'])
 
