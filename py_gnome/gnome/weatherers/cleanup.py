@@ -173,8 +173,9 @@ class Skimmer(CleanUpBase, Serializable):
         self.efficiency = efficiency
 
         # get the rate as amount/sec, use this to compute amount at each step
-        self._rate = self.amount/(self.active_stop -
-                                  self.active_start).total_seconds()
+        # set in prepare_for_model_run()
+        self._rate = None
+
         # let prepare_for_model_step set timestep to use when active_start or
         # active_stop is between a timestep. Generally don't do subtimestep
         # resolution; however, in this case we want numbers to add up correctly
@@ -207,6 +208,8 @@ class Skimmer(CleanUpBase, Serializable):
         '''
         no need to call base class since no new array_types were added
         '''
+        self._rate = self.amount/(self.active_stop -
+                                  self.active_start).total_seconds()
         if self.on:
             sc.weathering_data['skimmed'] = 0.0
 
