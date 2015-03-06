@@ -295,6 +295,8 @@ class BurnSchema(WeathererSchema):
     area = SchemaNode(Float())
     thickness = SchemaNode(Float())
     _oil_thickness = SchemaNode(Float(), missing=drop)
+    area_units = SchemaNode(String())
+    thickness_units = SchemaNode(String())
 
 
 class Burn(CleanUpBase, Serializable):
@@ -303,12 +305,19 @@ class Burn(CleanUpBase, Serializable):
     _state = copy.deepcopy(Weatherer._state)
     _state += [Field('area', save=True, update=True),
                Field('thickness', save=True, update=True),
+               Field('area_units', save=True, update=True),
+               Field('thickness_units', save=True, update=True),
                Field('_oil_thickness', save=True)]
+
+    valid_area_units = _valid_units('Area')
+    valid_length_units = _valid_units('Length')
 
     def __init__(self,
                  area,
                  thickness,
                  active_start,
+                 area_units='m^2',
+                 thickness_units='m',
                  **kwargs):
         '''
         Set the area of boomed oil to be burned. Assumes the area and thickness
@@ -324,8 +333,25 @@ class Burn(CleanUpBase, Serializable):
 
         super(Burn, self).__init__(active_start=active_start,
                                    **kwargs)
-        self.area = area
-        self.thickness = thickness      # thickness of oil_water mixture
+
+        # store in SI units - internally, object uses these
+        self._si_thickness = None  # in SI units
+        self._si_area = None       # in SI units
+
+        # validate user units before setting _area_units/_thickness_units
+        # if any of the following are updated via setters, then update
+        # _si_thickness/_si_area
+        self._area = area
+        self._thickness = thickness
+
+        # initialize user units to valid units - setters following this will
+        # initialize area_units and thickness_units per input values
+        self._area_units = 'm^2'
+        self._thickness_units = 'm'
+
+        # setters will validate the units
+        self.area_units = area_units
+        self.thickness_units = thickness_units
 
         # thickness of burned/boomed oil which is updated at each timestep
         # this will be set once we figure out how much oil will be burned
@@ -339,6 +365,81 @@ class Burn(CleanUpBase, Serializable):
         # burn_time = area/burn_rate * (thickness - 0.002)
         self._burn_rate_constant = 0.000058
         self._burn_duration = None
+
+    def _update_si_area(self):
+        '''
+        update internal _area variable. Called if user sets the 'area' or
+        the 'area_units'
+        '''
+        if self.area_units != 'm^2':
+            value = uc.Convert('Area', self.area_units, 'm^2', self.area)
+        else:
+            value = self.area
+
+        self._si_area = value
+
+    def _update_si_thickness(self):
+        '''
+        update internal _thickness variable. Called if user sets 'thickness'
+        or the 'thickness_units'
+        '''
+        if self.thickness_units != 'm':
+            value = uc.Convert('Length', self.thickness_units, 'm',
+                               self.thickness)
+        else:
+            value = self.thickness
+
+        self._si_thickness = value
+
+    @property
+    def area(self):
+        '''
+        return area in user specified area_units
+        '''
+        return self._area
+
+    @area.setter
+    def area(self, value):
+        self._area = value
+        self._update_si_area()
+
+    @property
+    def thickness(self):
+        '''
+        return thickness in user specified area_units
+        '''
+        return self._thickness
+
+    @thickness.setter
+    def thickness(self, value):
+        self._thickness = value
+        self._update_si_thickness()
+
+    @property
+    def area_units(self):
+        return self._area_units
+
+    @area_units.setter
+    def area_units(self, value):
+        if value not in self.valid_area_units:
+            self.logger.error(self._pid + "ignoring invalid area units: {0}".
+                              format(value))
+        else:
+            self._area_units = value
+            self._update_si_area()
+
+    @property
+    def thickness_units(self):
+        return self._thickness_units
+
+    @thickness_units.setter
+    def thickness_units(self, value):
+        if value not in self.valid_length_units:
+            self.logger.error(self._pid + "ignoring invalid thickness units: "
+                              "{0}".format(value))
+        else:
+            self._thickness_units = value
+            self._update_si_thickness()
 
     def prepare_for_model_run(self, sc):
         '''
@@ -378,14 +479,14 @@ class Burn(CleanUpBase, Serializable):
         if (sc['fate_status'] == bt_fate.burn).sum() == 0:
             substance = self._get_substance(sc)
             mass_to_remove = self._get_mass(substance,
-                                            self.area * self.thickness,
+                                            self._si_area * self._si_thickness,
                                             'm^3')
             self._update_LE_status_codes(sc, 'burn',
                                          substance, mass_to_remove)
             # now also set up self._oil_thickness
             self._oil_thickness = \
                 (sc['mass'][sc['fate_status'] == bt_fate.burn].sum() /
-                 (substance.get_density() * self.area))
+                 (substance.get_density() * self._si_area))
 
         # check _oil_thickness after property is set in code block above
         if self._oil_thickness <= self._min_thickness:
@@ -433,7 +534,7 @@ class Burn(CleanUpBase, Serializable):
             self._timestep = min(burn_time, self._timestep)
             if self._timestep > 0:
                 th_burned = burn_th_rate * self._timestep
-                rm_mass = self._get_mass(substance, th_burned * self.area,
+                rm_mass = self._get_mass(substance, th_burned * self._si_area,
                                          'm^3')
                 rm_mass_frac = rm_mass / data['mass'].sum()
                 data['mass_components'] = \

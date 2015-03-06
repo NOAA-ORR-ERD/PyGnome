@@ -5,6 +5,7 @@ from datetime import datetime, timedelta
 
 from pytest import mark
 import numpy as np
+import unit_conversion as uc
 
 from gnome.basic_types import oil_status, fate
 from gnome.environment import Water
@@ -157,6 +158,42 @@ class TestSkimmer:
                            atol=1e-6)
 
 
+class TestBurnProperties:
+    area = 10.
+    thick = 1.
+    start = datetime(2015, 1, 1, 1, 0)
+
+    def test_area_units(self):
+        b = Burn(self.area, self.thick, self.start)
+        b.area_units = 'km^2'
+        assert self.area == b.area
+        assert (uc.convert('Area', 'm^2', b.area_units, b._si_area) ==
+                b.area)
+
+    def test_area(self):
+        b = Burn(self.area, self.thick, self.start)
+        new_area = self.area / 1000.
+        b.area = new_area
+        assert new_area == b.area
+        assert (uc.convert('Area', 'm^2', b.area_units, b._si_area) ==
+                b.area)
+
+    def test_thick_units(self):
+        b = Burn(self.area, self.thick, self.start)
+        b.thickness_units = 'km'
+        assert self.thick == b.thickness
+        assert (uc.convert('Length', 'm', b.thickness_units, b._si_thickness)
+                == b.thickness)
+
+    def test_thickness(self):
+        b = Burn(self.area, self.thick, self.start)
+        new_thick = self.thick / 1000.
+        b.thickness = new_thick
+        assert new_thick == b.thickness
+        assert (uc.convert('Length', 'm', b.thickness_units, b._si_thickness)
+                == b.thickness)
+
+
 class TestBurn:
     (sc, intrinsic) = test_objs()
     spill = sc.spills[0]
@@ -164,7 +201,10 @@ class TestBurn:
     volume = spill.get_mass()/op.get_density(intrinsic.water.temperature)
     thick = 1
     area = (0.5 * volume)/thick
-    burn = Burn(area, thick, active_start)
+
+    # test with non SI units
+    burn = Burn(area, thick, active_start,
+                area_units='km^2', thickness_units='km')
 
     def reset_test_objs(self):
         '''
