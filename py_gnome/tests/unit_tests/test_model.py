@@ -13,7 +13,7 @@ np = numpy
 import pytest
 from pytest import raises
 
-from gnome.basic_types import datetime_value_2d, oil_status
+from gnome.basic_types import datetime_value_2d, oil_status, fate as bt_fate
 from gnome.utilities import inf_datetime
 from gnome.persist import load
 
@@ -708,6 +708,9 @@ def test_full_run(model, dump, traj_only):
     assert num_images == model.num_time_steps + 1
 
 
+''' Test Callbacks on OrderedCollections '''
+
+
 def test_callback_add_mover():
     'Test callback after add mover'
     units = 'meter per second'
@@ -782,6 +785,33 @@ def test_callback_add_mover_midrun():
     # now add another mover and make sure model rewinds
     model.movers += SimpleMover(velocity=(2., -2., 0.))
     assert model.current_time_step == -1
+
+
+def test_callback_add_weather():
+    '''
+    Test callback when weatherer is added
+    '''
+    model = Model()
+    water = Water()
+    wind = constant_wind(1, 30)
+    assert len(model.environment) == 0
+
+    model.weatherers += Evaporation(water, wind)
+
+    # only wind is added to environment collection
+    assert len(model.environment) == 1
+    assert wind in model.environment
+
+
+def test_callback_add_water_to_env():
+    '''
+    test callback if Water is added to environment collection, it sets Model's
+    water attribute if it is None
+    '''
+    model = Model()
+    assert model.water is None
+    model.environment += Water()
+    assert model.environment[-1] == model.water
 
 
 def test_simple_run_no_spills(model):
@@ -937,6 +967,12 @@ def test_staggered_spills_weathering(sample_model_fcn, delay):
                                   amount=1,
                                   units='tonnes')
     model.spills += cs
+
+    # ensure amount released is equal to exp_total_mass
+    exp_total_mass = 0.0
+    for spill in model.spills:
+        exp_total_mass += spill.get_mass()
+
     model.water = Water()
     model.environment += constant_wind(1., 0)
     skimmer = make_skimmer(model.spills[0])
@@ -950,13 +986,21 @@ def test_staggered_spills_weathering(sample_model_fcn, delay):
     for step in model:
         for sc in model.spills.items():
             print "completed step {0}".format(step)
-            print sc.weathering_data
-            unaccounted = sc['status_codes'] != oil_status.in_water
-            sum_ = sc['mass'][unaccounted].sum()
-            for key in sc.weathering_data:
-                if 'avg_' != key[:4] and 'amount_released' != key:
-                    sum_ += sc.weathering_data[key]
+            # sum up all the weathered mass + mass of LEs marked for weathering
+            # and ensure this equals the total amount released
+            sum_ = (sc.weathering_data['beached'] +
+                    sc.weathering_data['burned'] +
+                    sc.weathering_data['dispersed'] +
+                    sc.weathering_data['evaporated'] +
+                    sc.weathering_data['floating'] +
+                    sc.weathering_data['skimmed']
+                    )
+
             assert abs(sum_ - sc.weathering_data['amount_released']) < 1.e-6
+    assert sc.weathering_data['burned'] > 0
+    assert sc.weathering_data['skimmed'] > 0
+
+    assert np.isclose(exp_total_mass, sc.weathering_data['amount_released'])
 
 
 @pytest.mark.parametrize(("s0", "s1"),
@@ -983,6 +1027,12 @@ def test_two_substance_spills_weathering(sample_model_fcn, s0, s1):
                                   amount=1,
                                   units='tonnes')
     model.spills += cs
+
+    # ensure amount released is equal to exp_total_mass
+    exp_total_mass = 0.0
+    for spill in model.spills:
+        exp_total_mass += spill.get_mass()
+
     model.water = Water()
     model.environment += constant_wind(1., 0)
     model.weatherers += Evaporation(model.water, model.environment[0])
@@ -999,18 +1049,26 @@ def test_two_substance_spills_weathering(sample_model_fcn, s0, s1):
     # model.full_run()
     for step in model:
         for sc in model.spills.items():
-            # If LEs are marked as 'skim', add them to sum_ since the mass must
-            # be accounted for in the assertion
-            unaccounted = sc['status_codes'] != oil_status.in_water
-            sum_ = sc['mass'][unaccounted].sum()
-            print 'starting sum_: ', sum_
-            for key in sc.weathering_data:
-                if 'avg_' != key[:4] and 'amount_released' != key:
-                    sum_ += sc.weathering_data[key]
+            # sum up all the weathered mass + mass of LEs marked for weathering
+            # and ensure this equals the total amount released
+            sum_ = 0.0
+
+            if s0 == s1:
+                # mass marked for skimming/burning/dispersion that is not yet
+                # removed - cleanup operations only work on single substance
+                sum_ += (sc.weathering_data['burned'] +
+                         sc.weathering_data['dispersed'] +
+                         sc.weathering_data['skimmed'])
+
+            sum_ += (sc.weathering_data['beached'] +
+                     sc.weathering_data['evaporated'] +
+                     sc.weathering_data['floating'])
+
             assert abs(sum_ - sc.weathering_data['amount_released']) < 1.e-6
 
         print "completed step {0}".format(step)
-        print sc.weathering_data
+
+    assert np.isclose(exp_total_mass, sc.weathering_data['amount_released'])
 
 
 def test_weathering_data_attr():
@@ -1040,8 +1098,10 @@ def test_weathering_data_attr():
     model.rewind()
     model.step()
     for sc in model.spills.items():
-        assert sc.weathering_data['floating'] == sum(sc['mass'])
-        assert sc.weathering_data['floating'] == s[0].amount
+        # since no substance is defined, all the LEs are marked as
+        # nonweathering
+        assert sc.weathering_data['non_weathering'] == sc['mass'].sum()
+        assert sc.weathering_data['non_weathering'] == s[0].amount
 
     s[1].amount = 5.0
     s[1].units = 'kg'
@@ -1051,8 +1111,8 @@ def test_weathering_data_attr():
         model.step()
         exp_rel += s[ix].amount
         for sc in model.spills.items():
-            assert sc.weathering_data['floating'] == sum(sc['mass'])
-            assert sc.weathering_data['floating'] == exp_rel
+            assert sc.weathering_data['non_weathering'] == sc['mass'].sum()
+            assert sc.weathering_data['non_weathering'] == exp_rel
     model.rewind()
     assert sc.weathering_data == {}
 

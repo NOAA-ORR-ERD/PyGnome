@@ -36,7 +36,8 @@ from gnome.basic_types import (world_point_type,
                                windage_type,
                                status_code_type,
                                oil_status,
-                               id_type)
+                               id_type,
+                               fate)
 
 import numpy
 np = numpy
@@ -195,7 +196,9 @@ _default_values = {'positions': ((3,), world_point_type, 'positions',
                    # substance index - used label elements from same substance
                    # used internally only by SpillContainer *if* more than one
                    # substance
-                   'substance': ((), np.uint8, 'substance', 0)
+                   'substance': ((), np.uint8, 'substance', 0),
+                   'fate_status': ((), np.uint8, 'fate_status',
+                                   fate.non_weather)
                    }
 
 

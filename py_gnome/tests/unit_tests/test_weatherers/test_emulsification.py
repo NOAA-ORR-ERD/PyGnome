@@ -10,7 +10,8 @@ import numpy as np
 
 from gnome.environment import constant_wind, Water, Waves
 from gnome.weatherers import (Emulsification,
-                              Evaporation)
+                              Evaporation,
+                              WeatheringData)
 from gnome.outputters import WeatheringOutput
 from gnome.spill.elements import floating
 
@@ -20,10 +21,12 @@ from ..conftest import (sample_sc_release,
 
 
 water = Water()
-wind = constant_wind(15., 0)  # also test with lower wind no emulsification
-waves = Waves(wind, water)
+wind = constant_wind(15., 0)	#also test with lower wind no emulsification
+waves = Waves(wind,water)
 
 arrays = Emulsification().array_types
+intrinsic = WeatheringData(water)
+arrays.update(intrinsic.array_types)
 
 
 @pytest.mark.parametrize(('oil', 'temp', 'num_elems', 'on'),
@@ -38,6 +41,7 @@ def test_emulsification(oil, temp, num_elems, on):
     sc = sample_sc_release(num_elements=num_elems,
                            element_type=et,
                            arr_types=arrays)
+    intrinsic.update(sc.num_released, sc)
     time_step = 15. * 60
     model_time = (sc.spills[0].get('release_time') +
                   timedelta(seconds=time_step))

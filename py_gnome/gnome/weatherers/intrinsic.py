@@ -12,7 +12,7 @@ It is only used by WeatheringData to update the 'area' and related arrays
 import numpy as np
 from repoze.lru import lru_cache
 
-from gnome.basic_types import oil_status
+from gnome.basic_types import oil_status, fate
 from gnome import AddLogger, constants
 
 
@@ -134,7 +134,8 @@ class WeatheringData(AddLogger):
                  spreading=FayGravityViscous()):
         self.water = water
         self.spreading = spreading
-        self.array_types = {'density', 'viscosity',
+        self.array_types = {'fate_status', 'positions', 'status_codes',
+                            'density', 'viscosity',
                             'mass_components', 'mass',
                             # init volume of particles released together
                             'init_volume',
@@ -181,17 +182,34 @@ class WeatheringData(AddLogger):
         # timestep should be the same, but that will likely change
         # Any optimization in doing the following?:
         #   (sc['mass'] * sc['density']).sum()/sc['mass'].sum()
-        # todo: test weighted average
-        sc.weathering_data['avg_density'] = \
-            np.sum(sc['mass']/np.sum(sc['mass']) * sc['density'])
-        sc.weathering_data['avg_viscosity'] = \
-            np.sum(sc['mass']/sc['mass'].sum() * sc['viscosity'])
+        # todo: move weighted average to utilities
+        # also added a check for 'mass' == 0, edge case
+        if sc['mass'].sum() > 0.0:
+            sc.weathering_data['avg_density'] = \
+                np.sum(sc['mass']/sc['mass'].sum() * sc['density'])
+            sc.weathering_data['avg_viscosity'] = \
+                np.sum(sc['mass']/sc['mass'].sum() * sc['viscosity'])
+        else:
+            self.logger.info(self._pid + "sum of 'mass' array went to 0.0")
 
-        # include floating + beached oil since we could have a map
-        sc.weathering_data['floating'] = sc['mass'][sc['status_codes'] ==
-                                                    oil_status.in_water].sum()
+        # floating includes LEs marked to be skimmed + burned + dispersed
+        # todo: remove fate_status and add 'surface' to status_codes. LEs
+        # marked to be skimmed, burned, dispersed will also be marked as
+        # 'surface' so following can get cleaned up.
+        sc.weathering_data['floating'] = \
+            (sc['mass'][sc['fate_status'] == fate.surface_weather].sum() +
+             sc['mass'][sc['fate_status'] & fate.skim == fate.skim].sum() +
+             sc['mass'][sc['fate_status'] & fate.burn == fate.burn].sum() +
+             sc['mass'][sc['fate_status'] & fate.disperse == fate.disperse].sum())
+
         sc.weathering_data['beached'] = sc['mass'][sc['status_codes'] ==
                                                    oil_status.on_land].sum()
+
+        # add 'non_weathering' key if any mass is released for nonweathering
+        # particles.
+        nonweather = sc['mass'][sc['fate_status'] == fate.non_weather].sum()
+        if nonweather > 0:
+            sc.weathering_data['non_weathering'] = nonweather
 
         if new_LEs > 0:
             amount_released = np.sum(sc['mass'][-new_LEs:])
@@ -207,7 +225,9 @@ class WeatheringData(AddLogger):
         - update intrinsic properties like 'density', 'viscosity' and optional
         arrays for previously released particles
         '''
-        for substance, data in sc.itersubstancedata(self.array_types):
+
+        for substance, data in sc.itersubstancedata(self.array_types,
+                                                    fate='all'):
             'update properties only if elements are released'
             if len(data['density']) == 0:
                 continue
@@ -221,7 +241,33 @@ class WeatheringData(AddLogger):
             if sum(~new_LEs_mask) > 0:
                 self._update_old_particles(~new_LEs_mask, data, substance)
 
-        sc.update_from_substancedata(self.array_types)
+        sc.update_from_fatedataview(fate='all')
+
+    def update_fate_status(self, sc):
+        '''
+        Update fate status after model invokes move_elements()
+        - elements will beach or refloat
+        - then Model will update fate_status of elements that beached/refloated
+
+        Model calls this and input is spill container, not a view of the data
+        '''
+        # for old particles, update fate_status
+        # particles in_water or off_maps continue to weather
+        # only particles on_land stop weathering
+        non_w_mask = sc['status_codes'] == oil_status.on_land
+        sc['fate_status'][non_w_mask] = fate.non_weather
+
+        # update old particles that may now have refloated
+        # only want to do this for particles with a valid substance - if
+        # substance is None, they do not weather
+        # also get all data for a substance since we are modifying the
+        # fate_status - lets not use it to filter data
+        for substance, data in sc.itersubstancedata(self.array_types,
+                                                    fate='all'):
+            mask = data['fate_status'] & fate.non_weather == fate.non_weather
+            self._init_fate_status(mask, data)
+
+        sc.update_from_fatedataview(fate='all')
 
     def _init_new_particles(self, mask, data, substance):
         '''
@@ -276,6 +322,35 @@ class WeatheringData(AddLogger):
                                      data['relative_bouyancy'][mask][0])
         data['area'][mask] = data['init_area'][mask]
         data['thickness'][mask] = data['init_volume'][mask]/data['area'][mask]
+
+        # initialize the fate_status array based on positions and status_codes
+        self._init_fate_status(mask, data)
+
+    def _init_fate_status(self, update_LEs_mask, data):
+        '''
+        initialize fate_status for newly released LEs or refloated LEs
+        For refloated LEs, the mask should apply to non_weather LEs.
+        Currently, the 'status_codes' is separate from 'fate_status' and we
+        don't want to reset the 'fate_status' of LEs that have been marked
+        as 'skim' or 'burn' or 'disperse'. This should only apply for newly
+        released LEs (currently marked as non_weather since that's the default)
+        and for refloated LEs which should also have been marked as non_weather
+        when they beached.
+        '''
+        surf_mask = \
+            np.logical_and(update_LEs_mask,
+                           np.logical_and(data['positions'][:, 2] == 0,
+                                          data['status_codes'] ==
+                                          oil_status.in_water))
+        subs_mask = \
+            np.logical_and(update_LEs_mask,
+                           np.logical_and(data['positions'][:, 2] > 0,
+                                          data['status_codes'] ==
+                                          oil_status.in_water))
+
+        # set status for new_LEs correctly
+        data['fate_status'][surf_mask] = fate.surface_weather
+        data['fate_status'][subs_mask] = fate.subsurf_weather
 
     @lru_cache(2)
     def _get_kv1_weathering_visc_update(self, v0):
@@ -337,8 +412,14 @@ class WeatheringData(AddLogger):
         mass_frac = \
             (data['mass_components'][mask, :substance.num_components] /
              data['mass'][mask].reshape(np.sum(mask), -1))
-        data['density'][mask] = \
-            k_rho*(substance.component_density * mass_frac).sum(1)
+        # check if density becomes > water, set it equal to water in this case
+        new_rho = k_rho*(substance.component_density * mass_frac).sum(1)
+        if np.any(new_rho > self.water.density):
+            new_rho[new_rho > self.water.density] = self.water.density
+            self.logger.info(self._pid + "during update, density is greater "
+                             "than water density - set it to water density ")
+
+        data['density'][mask] = new_rho
 
         # following implementation results in an extra array called
         # fw_d_fref but is easy to read

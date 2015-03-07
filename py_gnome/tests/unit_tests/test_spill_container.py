@@ -565,25 +565,51 @@ def test_element_types(elem_type, arr_types, sample_sc_no_uncertainty):
                         assert (np.all(sc[key][spill_mask] <= high))
 
 
-def test_init_SpillContainerPair():
-    'All this does is test that it can be initialized'
-    SpillContainerPair()
-    SpillContainerPair(True)
+class TestSpillContainerPairBasicTests:
+    '''
+    Group basic tests together
+    '''
+    def test_init_SpillContainerPair(self):
+        'All this does is test that it can be initialized'
+        SpillContainerPair()
+        SpillContainerPair(True)
+        assert True
 
-    assert True
+    def test_SpillContainerPair_uncertainty(self):
+        'test uncertainty property'
 
+        u_scp = SpillContainerPair(True)
+        u_scp.uncertain = False
+        assert not u_scp.uncertain
+        assert not hasattr(u_scp, '_u_spill_container')
 
-def test_SpillContainerPair_uncertainty():
-    'test uncertainty property'
+        u_scp.uncertain = True
+        assert u_scp.uncertain
+        assert hasattr(u_scp, '_u_spill_container')
 
-    u_scp = SpillContainerPair(True)
-    u_scp.uncertain = False
-    assert not u_scp.uncertain
-    assert not hasattr(u_scp, '_u_spill_container')
+    def test_rewind_change_spill_attribute(self):
+        '''
+        check that if an attribute of forcast spillcontainer is updated,
+        the uncertain spill container creates a new copy of uncertain spills
+        '''
+        num_elements = 100
+        release_time = datetime(2012, 1, 1, 12)
+        start_position = (23.0, -78.5, 0.0)
+        scp = SpillContainerPair(uncertain=True)
 
-    u_scp.uncertain = True
-    assert u_scp.uncertain
-    assert hasattr(u_scp, '_u_spill_container')
+        scp += point_line_release_spill(num_elements, start_position,
+                                        release_time)
+        (forecast_sc, uncertain_sc) = scp.items()
+        assert forecast_sc.spills == uncertain_sc.spills
+
+        forecast_sc.spills[0].set('release_time',
+                                  release_time + timedelta(hours=1))
+        (forecast_sc, uncertain_sc) = scp.items()
+        assert forecast_sc.spills != uncertain_sc.spills
+
+        scp.rewind()
+        (forecast_sc, uncertain_sc) = scp.items()
+        assert forecast_sc.spills == uncertain_sc.spills
 
 
 class TestAddSpillContainerPair:
@@ -1116,7 +1142,10 @@ class TestSubstanceSpillsDataStructure():
     def test_spills_with_and_notwith_substance(self):
         '''
         datastructure only adds substance/spills if substance is not None
-        deleting spill resets datastructure
+        deleting spill resets datastructure.
+
+        - the spills in _substances_spills 'is' the same as the spills
+          in sc.spills - same object
         '''
         sc = SpillContainer()
         sc.spills += [Spill(Release(datetime.now(), 10),
@@ -1129,10 +1158,9 @@ class TestSubstanceSpillsDataStructure():
         assert len(sc.get_substances()) == 2
         sc.prepare_for_model_run()
         all_spills = list(chain.from_iterable(sc._substances_spills.spills))
-        for ix, spill in enumerate(all_spills):
-            # spills are added to data structure in same order as present in
-            # sc.spills
-            assert spill is sc.spills[ix]
+        assert len(all_spills) == len(sc.spills)
+        for spill in all_spills:
+            assert sc.spills[spill.id] is spill
 
         del sc.spills[-1]
         assert len(sc.get_substances()) == 1
@@ -1152,7 +1180,6 @@ class TestSubstanceSpillsDataStructure():
         sc.spills += sp_add
         assert len(sc.get_substances()) == 1
         sc.prepare_for_model_run()
-        assert sc._substances_spills.data[0] is sc._data_arrays
         assert all([sp_add == spills for spills in sc.iterspillsbysubstance()])
 
     def test_spills_different_substance_init(self):

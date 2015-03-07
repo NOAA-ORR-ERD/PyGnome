@@ -11,6 +11,7 @@ from gnome.environment import Water
 from gnome.weatherers.intrinsic import FayGravityViscous, WeatheringData
 from gnome.spill import point_line_release_spill
 from gnome.spill_container import SpillContainer
+from gnome.basic_types import oil_status, fate as bt_fate
 
 from ..conftest import test_oil
 
@@ -186,18 +187,18 @@ class TestWeatheringData:
         # test initialization as well
         return (sc, intrinsic)
 
-    def mock_weather_data(self, sc, intrinsic):
+    def mock_weather_data(self, sc, intrinsic, zero_elems=5):
         '''
         helper function that mocks a weatherer - like evaporation. It simply
         changes the mass_fraction and updates frac_lost accordingly
         '''
         for substance, data in sc.itersubstancedata(intrinsic.array_types):
             # following simulates weathered/evaporated oil
-            data['mass_components'][:, :3] *= .2
+            data['mass_components'][:, :zero_elems] = 0
             data['mass'][:] = sc['mass_components'].sum(1)
             data['frac_lost'][:] = 1 - data['mass']/data['init_mass']
 
-        sc.update_from_substancedata(intrinsic.array_types)
+        sc.update_from_fatedataview()
 
     @pytest.mark.parametrize("vary_mf", [True, False])
     def test_density_visc_update(self, vary_mf):
@@ -237,6 +238,23 @@ class TestWeatheringData:
             intrinsic.update(0, sc)
             assert np.allclose(sc['density'], init_dens)
             assert np.allclose(sc['viscosity'], init_visc)
+
+    def test_density_threshold(self):
+        '''
+        check that density does not fall below water density
+        '''
+        rel_time = datetime.now().replace(microsecond=0)
+        (sc, intrinsic) = self.sample_sc_intrinsic(100, rel_time)
+        num = sc.release_elements(900, rel_time)
+        intrinsic.update(num, sc)
+        self.mock_weather_data(sc, intrinsic, -1)
+        sc['age'] += 900
+
+        # say we are now in 2nd step - no new particles are released
+        # just updating the previously released particles
+        intrinsic.water.density = 960   # force this for test
+        intrinsic.update(0, sc)
+        assert np.all(sc['density'] >= intrinsic.water.density)
 
     def test_intrinsic_props_vary_num_LEs(self):
         '''
@@ -362,3 +380,38 @@ class TestWeatheringData:
 
             sc['age'] += ts     # model would do this operation
             print 'Completed step: ', i
+
+    def test_update_fate_status(self):
+        '''
+        test update_fate_status() as it is invoked by Model after elements
+        beach
+        '''
+        rel_time = datetime.now().replace(microsecond=0)
+        (sc, intrinsic) = self.sample_sc_intrinsic(100, rel_time)
+        num = sc.release_elements(900, rel_time)
+        intrinsic.update(num, sc)
+
+        # in next step and set some particles as beached
+        beach_mask = np.arange(2, 20, 2)
+        sc['status_codes'][beach_mask] = oil_status.on_land
+
+        # during weathering, intrinsic updates fate_status
+        intrinsic.update_fate_status(sc)
+        assert np.all(sc['fate_status'][beach_mask] == bt_fate.non_weather)
+        sc['age'] += 900    # model updates age
+
+        # next step, assume no particles released
+        intrinsic.update(0, sc)     # no new particles released
+
+        # in the step a subset of particles are reflaoted
+        refloat = beach_mask[:-5]
+        still_beached = list(set(beach_mask).difference(refloat))
+        sc['status_codes'][refloat] = oil_status.in_water
+        sc['positions'][refloat, 2] = 4     # just check for surface
+
+        # during weathering, intrinsic updates fate_status
+        intrinsic.update_fate_status(sc)
+        assert np.all(sc['status_codes'][still_beached] == oil_status.on_land)
+        assert np.all(sc['fate_status'][still_beached] == bt_fate.non_weather)
+        assert np.all(sc['fate_status'][refloat] == bt_fate.subsurf_weather)
+        assert np.all(sc['status_codes'][refloat] == oil_status.in_water) 
