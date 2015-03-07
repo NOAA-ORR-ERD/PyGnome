@@ -47,7 +47,7 @@ substances_spills = namedtuple('substances_spills',
                                 'spills'])
 
 
-class FateDataView(object):
+class FateDataView(AddLogger):
     def __init__(self, substance_id):
         self.reset()
         self.substance_id = substance_id
@@ -65,7 +65,7 @@ class FateDataView(object):
 
     def _get_fate_mask(self, sc, fate):
         '''
-        get fate_status mask over SC
+        get fate_status mask over SC - only include LEs with 'mass' > 0.0
         '''
         if fate == 'all':
             # look at all fate data
@@ -74,6 +74,7 @@ class FateDataView(object):
             w_mask = (sc['fate_status'] & getattr(bt_fate, fate) ==
                       getattr(bt_fate, fate))
 
+        w_mask = np.logical_and(w_mask, sc['mass'] > 0.0)
         return w_mask
 
     def _set_data(self, sc, array_types, fate_mask, fate):
@@ -99,6 +100,9 @@ class FateDataView(object):
 
     def get_data(self, sc, array_types, fate='surface_weather'):
         '''
+        Get data that matches 'susbstance_id'. Also, since this is weathering
+        data, only include LEs with 'mass' > 0
+
         'all', 'surface_weather', 'subsurf_weather', 'skim', 'non_weather',
         'burn'
         '''
@@ -111,6 +115,10 @@ class FateDataView(object):
         '''
         update SC arrays with data viewer arrays for specified fate
         - update all arrays just to make sure everything is in sync
+
+        After update, remove LEs with mass = 0. Since weatherers call this at
+        the end of a weathering step, this ensures zero mass LEs are removed
+        from the arrays.
 
         .. note:: the 'id' of each LE corresponds with the index into SC array
             however, if LEs are removed, then this will not be the case. Do not
@@ -139,7 +147,12 @@ class FateDataView(object):
         if ('fate_status' in d_to_sync and
             np.any(sc['fate_status'][w_mask] != d_to_sync['fate_status'])):
                 reset_view = True
-                print 'reset_view {0} - {1}'.format(fate, self.substance_id)
+        elif ('mass' in d_to_sync and
+              np.any(np.isclose(d_to_sync['mass'], 0))):
+            # probably need a threshold close to 0.0 as opposed to equality
+            reset_view = True
+            self.logger.debug(self._pid + "found LEs with 'mass' equal to 0. "
+                              "reset_view")
 
         for key, val in d_to_sync.iteritems():
             sc[key][w_mask] = val

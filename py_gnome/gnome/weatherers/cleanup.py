@@ -281,7 +281,9 @@ class Skimmer(CleanUpBase, Serializable):
                                      rm_amount,
                                      self.units) * self.efficiency
 
-            rm_mass_frac = min(rm_mass / data['mass'].sum(), 1.0)
+            total_mass = data['mass'].sum()
+            rm_mass_frac = min(rm_mass / total_mass, 1.0)
+            rm_mass = rm_mass_frac * total_mass
 
             # if elements are also evaporating following could be true
             # need to include weathering for skimmed particles, then test and
