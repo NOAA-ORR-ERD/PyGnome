@@ -69,9 +69,14 @@ class CleanUpBase(Weatherer):
             self.logger.error(msg)
         return substance[0]
 
-    def _update_LE_status_codes(self, sc, fate, substance, mass_to_remove):
+    def _update_LE_status_codes(self,
+                                sc,
+                                new_status,
+                                substance,
+                                mass_to_remove):
         '''
-        Need to mark LEs for skimming/burning. Mark LEs based on mass
+        Need to mark LEs to 'new_status'. It updates the 'fate_status' for
+        'surface_weather' LEs. Mark LEs based on mass.
         Mass to remove is the oil_water mixture so we need to find the
         oil_amount given the water_frac:
 
@@ -88,14 +93,13 @@ class CleanUpBase(Weatherer):
         This is why the input is 'mass_to_remove' instead of 'vol_to_remove'
         - less computation
         '''
-        status = getattr(bt_fate, fate)
         arrays = {'fate_status', 'mass', 'frac_water'}
         data = sc.substancefatedata(substance, arrays, 'surface_weather')
         oil_water = data['mass'] / (1 - data['frac_water'])
 
         # (1 - frac_water) * mass_to_remove
         if mass_to_remove >= oil_water.sum():
-            data['fate_status'][:] = status
+            data['fate_status'][:] = new_status
             self.logger.debug(self._pid + 'marked ALL ({0}) LEs with mass: '
                               '{1}'.format(len(data['fate_status']),
                                            data['mass'].sum()))
@@ -104,7 +108,7 @@ class CleanUpBase(Weatherer):
             # total_mass_removed is reached or exceeded
             ix = np.where(np.cumsum(oil_water) >= mass_to_remove)[0][0]
             # change status for elements upto and including 'ix'
-            data['fate_status'][:ix + 1] = status
+            data['fate_status'][:ix + 1] = new_status
 
             self.logger.debug(self._pid + 'marked {0} LEs with mass: '
                               '{1}'.format(ix, data['mass'][:ix].sum()))
@@ -246,7 +250,8 @@ class Skimmer(CleanUpBase, Serializable):
             total_mass_removed = (self._get_mass(substance, self.amount,
                                                  self.units) *
                                   self.efficiency)
-            self._update_LE_status_codes(sc, 'skim',
+            self._update_LE_status_codes(sc,
+                                         bt_fate.skim | bt_fate.surface_weather,
                                          substance, total_mass_removed)
 
     def _mass_to_remove(self, substance):
@@ -492,7 +497,7 @@ class Burn(CleanUpBase, Serializable):
             mass_to_remove = self._get_mass(substance,
                                             self._si_area * self._si_thickness,
                                             'm^3')
-            self._update_LE_status_codes(sc, 'burn',
+            self._update_LE_status_codes(sc, bt_fate.burn,
                                          substance, mass_to_remove)
             # now also set up self._oil_thickness
             self._oil_thickness = \
