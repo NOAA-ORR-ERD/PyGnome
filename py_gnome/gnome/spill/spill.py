@@ -463,9 +463,16 @@ class Spill(serializable.Serializable):
 
         Not much to this method, but it could be overridden to do something
         fancier in the future or a subclass.
-        """
 
+        There are a number of python objects that cannot be deepcopied.
+        - Logger objects
+
+        So we copy them temporarily to local variables before we deepcopy
+        our Spill object.
+        """
         u_copy = copy.deepcopy(self)
+        self.logger.debug(self._pid + "deepcopied spill {0}".format(self.id))
+
         return u_copy
 
     def set_amount_uncertainty(self, up_or_down=None):

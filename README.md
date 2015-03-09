@@ -30,6 +30,13 @@ A virtualenv is *not required* to run PyGnome.
 Depending on your access level/permissions, you may require a virtualenv if you cannot 
 install python packages in the global site-packages. 
 
+There is C++/Cython code that must be built - **setuptools must be >= 2.1.**  
+
+### python.org ###
+
+The following has been tested against [Python 2.7.6](https://www.python.org/downloads/)
+(can be obtained from python.org)
+
 ### Linux (Tested in 32-bit, Ubuntu raring 13.04) ###
 
 For Linux use appropriate package manager (apt-get on ubuntu) to download/install binary dependencies.
@@ -124,7 +131,7 @@ Here are the binary packages required:
    ```
 3. [numpy-MKL](http://www.lfd.uci.edu/~gohlke/pythonlibs/#numpy)
 4. [Cython](http://www.lfd.uci.edu/~gohlke/pythonlibs/#cython)
-5. Install [PIL](http://www.pythonware.com/products/pil/) instead of Pillow
+5. Install [PIL](http://www.pythonware.com/products/pil/)
 6. 32-bit 1.0.6 version of [netCDF4](http://www.lfd.uci.edu/~gohlke/pythonlibs/#netcdf4)
 7. [lxml] (http://www.lfd.uci.edu/~gohlke/pythonlibs/#lxml) - required for webgnome
 8. [python-cjson] (http://www.lfd.uci.edu/~gohlke/pythonlibs/#python-cjson) - required for webgnome

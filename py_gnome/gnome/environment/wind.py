@@ -189,34 +189,6 @@ class Wind(Timeseries, Environment, serializable.Serializable):
                 'timeseries={1}'
                 ')').format(self, self_ts)
 
-    def __eq__(self, other):
-        '''
-        call super to test for equality of objects for all attributes
-        except 'units' and 'timeseries' - test 'timeseries' here by converting
-        to consistent units
-        '''
-        # following invokes __eq__ in Serializable since __eq__ is not defined
-        # for Timeseries class
-        check = super(Wind, self).__eq__(other)
-
-        # since this has numpy array - need to compare that as well
-        # By default, tolerance for comparison is atol=1e-10, rtol=0
-        # persisting data requires unit conversions and finite precision,
-        # both of which will introduce a difference between two objects
-        if check:
-            sts = self.get_timeseries(units=self.units)
-            ots = other.get_timeseries(units=self.units)
-
-            if (sts['time'] != ots['time']).all():
-                return False
-            else:
-                return np.allclose(sts['value'], ots['value'], 0, 1e-2)
-
-        return check
-
-    def __ne__(self, other):
-        return not self == other
-
     # user_units = property( lambda self: self._user_units)
 
     @property
