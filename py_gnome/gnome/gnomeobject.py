@@ -8,6 +8,8 @@ import logging
 def init_obj_log(obj, setLevel=logging.INFO):
     '''
     convenience function for initializing a logger with an object
+    the logging.getLogger() will always return the same logger so calling
+    this multiple times for same object is valid.
     '''
     logger = logging.getLogger("{0.__class__.__module__}."
                                "{0.__class__.__name__}".format(obj))
@@ -76,8 +78,8 @@ class GnomeId(AddLogger):
         """
         the deepcopy implementation
 
-        We need this, as we don't want the spill_nums copied,
-        but do want everything else.
+        We need this, as we don't want the id of spill object and logger
+        object copied, but do want everything else.
 
         got the method from:
             http://stackoverflow.com/questions/3253439/python-copy-how-to-inherit-the-default-copying-behaviour
@@ -86,6 +88,14 @@ class GnomeId(AddLogger):
         ends up using recursion
         """
         obj_copy = object.__new__(type(self))
+
+        if '_log' in self.__dict__:
+            # just set the _log to None since it cannot be deepcopied
+            # since logging.getLogger() is used to get the logger - can leave
+            # this as None and the 'logger' property will automatically set
+            # this the next time it is used
+            self.__dict__['_log'] = None
+
         obj_copy.__dict__ = copy.deepcopy(self.__dict__, memo)
         obj_copy.__create_new_id()
         return obj_copy
