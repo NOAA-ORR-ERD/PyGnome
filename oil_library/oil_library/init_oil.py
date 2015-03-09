@@ -54,6 +54,7 @@ def process_oils(session_class):
         #       import job significantly.  But this is necessary if we
         #       want the option of rejecting oil records.
         session = session_class()
+        transaction.begin()
         rec = (session.query(ImportedRecord)
                .filter(ImportedRecord.adios_oil_id == record_id)
                .one())
@@ -68,6 +69,8 @@ def process_oils(session_class):
 
 def add_oil(record):
     print 'Estimations for {0}'.format(record.adios_oil_id)
+    reject_imported_record_if_bad(record)
+
     oil = Oil()
     oil.estimated = Estimated()
 
@@ -432,10 +435,10 @@ def add_resin_fractions(imported_rec, oil):
 def add_asphaltene_fractions(imported_rec, oil):
     try:
         if (imported_rec is not None and
-            imported_rec.asphaltene_content is not None and
-                imported_rec.asphaltene_content >= 0.0 and
-                imported_rec.asphaltene_content <= 1.0):
-            f_asph = imported_rec.asphaltene_content
+            imported_rec.asphaltenes is not None and
+                imported_rec.asphaltenes >= 0.0 and
+                imported_rec.asphaltenes <= 1.0):
+            f_asph = imported_rec.asphaltenes
         else:
             a, b = get_corrected_density_and_viscosity(oil)
 
@@ -854,7 +857,7 @@ def add_component_densities(imported_rec, oil):
                                               ref_temp_k=T_i))
 
 
-def reject_oil_if_bad(imported_rec, oil):
+def reject_imported_record_if_bad(imported_rec):
     '''
         Here, we have an oil in which all estimations have been made.
         We will now check the imported record and the oil object to see
@@ -867,12 +870,6 @@ def reject_oil_if_bad(imported_rec, oil):
 
     if imported_rec_was_manually_rejected(imported_rec):
         errors.append('Imported Record was manually rejected')
-
-    if oil_has_duplicate_cuts(oil):
-        errors.append('Oil has duplicate cuts')
-
-    if oil_has_heavy_sa_components(oil):
-        errors.append('Oil has heavy SA components')
 
     if errors:
         raise OilRejected(errors, imported_rec.adios_oil_id)
@@ -896,6 +893,27 @@ def imported_rec_was_manually_rejected(imported_rec):
                         ):
         return True
     return False
+
+
+def reject_oil_if_bad(imported_rec, oil):
+    '''
+        Here, we have an oil in which all estimations have been made.
+        We will now check the imported record and the oil object to see
+        if there are any detectable flaws.
+        If any flaw is detected, we will raise the OilRejected exception.
+        All flaws will be compiled into a list of error messages to be passed
+        into the exception.
+    '''
+    errors = []
+
+    if oil_has_duplicate_cuts(oil):
+        errors.append('Oil has duplicate cuts')
+
+    if oil_has_heavy_sa_components(oil):
+        errors.append('Oil has heavy SA components')
+
+    if errors:
+        raise OilRejected(errors, imported_rec.adios_oil_id)
 
 
 def oil_has_duplicate_cuts(oil):
