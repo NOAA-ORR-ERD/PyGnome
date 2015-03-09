@@ -16,7 +16,7 @@ np = numpy
 import netCDF4 as nc
 
 from gnome.spill import point_line_release_spill, Spill, Release
-
+from gnome.spill_container import SpillContainerPair
 from gnome.weatherers import Evaporation
 from gnome.environment import Water
 from gnome.movers import RandomMover, constant_wind_mover
@@ -24,12 +24,18 @@ from gnome.outputters import NetCDFOutput
 from gnome.model import Model
 from ..conftest import test_oil
 
-here = os.path.dirname(__file__)
+
+pytestmark = pytest.mark.serial
 
 
 @pytest.fixture(scope='function')
 def output_filename(output_dir, request):
-    dirname = os.path.join(output_dir, 'test_netcdf_outputter')
+    '''
+    trying to create a unique file for tests so pytest_xdist doesn't have
+    issues. However, this still seems to fail occasionally so just mark
+    these tests as serial
+    '''
+    dirname = output_dir
     if not os.path.exists(dirname):
         os.mkdir(dirname)
 
@@ -66,14 +72,6 @@ def model(sample_model_fcn, output_filename):
     model.movers += constant_wind_mover(1.0, 0.0)
     model.weatherers += Evaporation(water, model.movers[-1].wind)
 
-    #==========================================================================
-    # file_name = request.function.func_name
-    # if request._pyfuncitem._genid is None:
-    #     file_name += '_sample.nc'
-    # else:
-    #     file_name += '_' + request._pyfuncitem._genid + '_sample.nc'
-    #==========================================================================
-
     model.outputters += NetCDFOutput(output_filename)
 
     model.rewind()
@@ -93,12 +91,11 @@ def test_init_exceptions():
         NetCDFOutput('invalid_path_to_file/file.nc')
 
 
-def test_exceptions(model):
-    t_file = os.path.join(here, 'temp.nc')
-    spill_pair = model.spills
+def test_exceptions(output_filename):
+    spill_pair = SpillContainerPair()
 
     # begin tests
-    netcdf = NetCDFOutput(t_file, which_data='all')
+    netcdf = NetCDFOutput(output_filename, which_data='all')
     netcdf.rewind() # delete temporary files
 
     with raises(TypeError):
@@ -622,7 +619,7 @@ def test_serialize_deserialize(json_, output_filename):
 
 
 @pytest.mark.slow
-def test_var_attr_spill_num():
+def test_var_attr_spill_num(output_filename):
     '''
     call prepare_for_model_run and ensure the spill_num attributes are written
     correctly. Just a simple test that creates two models and adds a spill to
@@ -643,12 +640,13 @@ def test_var_attr_spill_num():
         except:
             pass
 
+    here = os.path.dirname(__file__)
     spills = []
     model = []
     nc_name = []
     for ix in (0, 1):
         spills.append(Spill(Release(datetime.now()),
-                                    name='m{0}_spill'.format(ix)))
+                            name='m{0}_spill'.format(ix)))
         nc_name.append(os.path.join(here, 'temp_m{0}.nc'.format(ix)))
         _del_nc_file(nc_name[ix])
         _make_run_model(spills[ix], nc_name[ix])
