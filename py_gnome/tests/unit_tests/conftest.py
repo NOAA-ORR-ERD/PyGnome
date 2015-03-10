@@ -550,7 +550,10 @@ def sample_model_fcn():
     return sample_model()
 
 
-def sample_model_weathering(sample_model_fcn, oil, temp=311.16):
+def sample_model_weathering(sample_model_fcn,
+                            oil,
+                            temp=311.16,
+                            num_les=10):
     model = sample_model_fcn['model']
     rel_pos = sample_model_fcn['release_start_pos']
     'update model the same way for multiple tests'
@@ -559,7 +562,7 @@ def sample_model_weathering(sample_model_fcn, oil, temp=311.16):
     et = gnome.spill.elements.floating(substance=oil)
     start_time = model.start_time + timedelta(hours=1)
     end_time = start_time + timedelta(seconds=model.time_step*3)
-    spill = gnome.spill.point_line_release_spill(10,
+    spill = gnome.spill.point_line_release_spill(num_les,
                                                  rel_pos,
                                                  start_time,
                                                  end_release_time=end_time,

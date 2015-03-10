@@ -211,6 +211,7 @@ class Spill(serializable.Serializable):
         # set 'mass' data array if amount is given
         le_mass = 0.
         _mass = self.get_mass('kg')
+        self.logger.debug(self._pid + "spill mass (kg): {0}".format(_mass))
 
         if _mass is not None:
             rd_sec = self.get('release_duration')
@@ -232,6 +233,8 @@ class Spill(serializable.Serializable):
 
                 _mass_in_ts = _mass/rd_sec * time_step
                 le_mass = _mass_in_ts / num_new_particles
+
+        self.logger.debug(self._pid + "LE mass (kg): {0}".format(le_mass))
 
         return le_mass
 
