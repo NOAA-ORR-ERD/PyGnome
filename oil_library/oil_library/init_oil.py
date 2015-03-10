@@ -54,6 +54,7 @@ def process_oils(session_class):
         #       import job significantly.  But this is necessary if we
         #       want the option of rejecting oil records.
         session = session_class()
+        transaction.begin()
         rec = (session.query(ImportedRecord)
                .filter(ImportedRecord.adios_oil_id == record_id)
                .one())
@@ -129,7 +130,7 @@ def add_densities(imported_rec, oil):
         d_0 = density_at_temperature(oil, 273.15 + 15)
 
         oil.api = (141.5 * 1000 / d_0) - 131.5
-        oil.estimated.api = True
+        # oil.estimated.api = True
     else:
         print ('Warning: no densities and no api for record {0}'
                .format(imported_rec.adios_oil_id))
@@ -142,7 +143,7 @@ def add_densities(imported_rec, oil):
         oil.densities.append(Density(kg_m_3=kg_m_3,
                                      ref_temp_k=ref_temp_k,
                                      weathering=0.0))
-        oil.estimated.densities = True
+        # oil.estimated.densities = True
 
 
 def estimate_density_from_api(api):
@@ -874,6 +875,9 @@ def reject_oil_if_bad(imported_rec, oil):
     if oil_has_heavy_sa_components(oil):
         errors.append('Oil has heavy SA components')
 
+    if not oil_api_matches_density(oil):
+        errors.append('Oil API does not match its density')
+
     if errors:
         raise OilRejected(errors, imported_rec.adios_oil_id)
 
@@ -925,4 +929,18 @@ def oil_has_heavy_sa_components(oil):
             if d.density > 1100.0:
                 return True
 
+    return False
+
+
+def oil_api_matches_density(oil):
+    '''
+        The oil API should pretty closely match its density at 15C.
+    '''
+    d_0 = density_at_temperature(oil, 273.15 + 15)
+    api_from_density = (141.5 * 1000 / d_0) - 131.5
+
+    if np.isclose(oil.api, api_from_density, atol=1.0):
+        return True
+
+    print '(oil.api, api_from_density) = ', (oil.api, api_from_density)
     return False
