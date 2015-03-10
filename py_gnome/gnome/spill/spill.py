@@ -97,7 +97,6 @@ class Spill(serializable.Serializable):
         self.element_type = element_type
 
         self.on = on    # spill is active or not
-        self._rate = None
         self._units = None
         self.amount = amount
 
