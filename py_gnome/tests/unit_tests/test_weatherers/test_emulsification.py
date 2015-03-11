@@ -85,7 +85,7 @@ def test_emulsification(oil, temp, num_elems, on):
                                            ('FUEL OIL NO.6', 333.0),
                                            ('BREGA', 311.15),
                                            ])
-def test_full_run(sample_model_fcn, oil, temp, dump):
+def test_full_run(sample_model_fcn, oil, temp):
     '''
     test evapoartion outputs post step for a full run of model. Dump json
     for 'weathering_model.json' in dump directory
@@ -105,11 +105,6 @@ def test_full_run(sample_model_fcn, oil, temp, dump):
             print ("Water fraction: {0}".
                    format(sc.weathering_data['water_content']))
             print "Completed step: {0}\n".format(step['step_num'])
-
-    m_json_ = model.serialize('webapi')
-    dump_json = os.path.join(dump, 'weathering_model.json')
-    with open(dump_json, 'w') as f:
-        json.dump(m_json_, f, indent=True)
 
 
 def test_full_run_emul_not_active(sample_model_fcn):

@@ -184,13 +184,25 @@ class WeatheringData(AddLogger):
         #   (sc['mass'] * sc['density']).sum()/sc['mass'].sum()
         # todo: move weighted average to utilities
         # also added a check for 'mass' == 0, edge case
-        if sc['mass'].sum() > 0.0:
-            sc.weathering_data['avg_density'] = \
-                np.sum(sc['mass']/sc['mass'].sum() * sc['density'])
-            sc.weathering_data['avg_viscosity'] = \
-                np.sum(sc['mass']/sc['mass'].sum() * sc['viscosity'])
+        if len(sc.substances) > 1:
+            self.logger.warning(self._pid + "current code isn't valid for "
+                                "multiple weathering substances")
+        elif len(sc.substances) == 0:
+            # should not happen with the Web API. Just log a warning for now
+            self.logger.warning(self._pid + "weathering is on but found no"
+                                "weatherable substances.")
         else:
-            self.logger.info(self._pid + "sum of 'mass' array went to 0.0")
+            # avg_density, avg_viscosity applies to elements that are on the
+            # surface and being weathered
+            data = sc.substancefatedata(sc.substances[0],
+                                        {'mass', 'density', 'viscosity'})
+            if data['mass'].sum() > 0.0:
+                sc.weathering_data['avg_density'] = \
+                    np.sum(data['mass']/data['mass'].sum() * data['density'])
+                sc.weathering_data['avg_viscosity'] = \
+                    np.sum(data['mass']/data['mass'].sum() * data['viscosity'])
+            else:
+                self.logger.info(self._pid + "sum of 'mass' array went to 0.0")
 
         # floating includes LEs marked to be skimmed + burned + dispersed
         # todo: remove fate_status and add 'surface' to status_codes. LEs

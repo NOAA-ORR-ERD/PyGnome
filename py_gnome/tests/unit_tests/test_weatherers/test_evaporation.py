@@ -15,7 +15,10 @@ from gnome.outputters import WeatheringOutput
 from gnome.spill.elements import floating
 from gnome.basic_types import oil_status
 
-from ..conftest import sample_sc_release, sample_model_weathering, test_oil
+from ..conftest import (sample_sc_release,
+                        sample_model,
+                        sample_model_weathering,
+                        test_oil)
 
 
 water = Water()
@@ -121,17 +124,16 @@ def assert_helper(sc, new_p):
 
 
 @pytest.mark.parametrize(('oil', 'temp'), [('FUEL OIL NO.6', 333.0),
-                                           ('ALASKA NORTH SLOPE', 311.15),
+                                           ('ALASKA NORTH SLOPE (MIDDLE PIPELINE)', 311.15),
                                            ])
-def test_full_run(sample_model_fcn, oil, temp, dump):
+def test_full_run(oil, temp):
     '''
-    test evapoartion outputs post step for a full run of model. Dump json
-    for 'weathering_model.json' in dump directory
+    test evaporation outputs for a full run of model.
     This contains a mover so at some point several elements end up on_land.
     This test also checks the evap_decay_constant for elements that are not
     in water is 0 so mass is unchanged.
     '''
-    model = sample_model_weathering(sample_model_fcn, oil, temp)
+    model = sample_model_weathering(sample_model(), oil, temp, 1)
     model.environment += [Water(temp), constant_wind(1., 0)]
     model.weatherers += [Evaporation(model.environment[0],
                                      model.environment[1])]
@@ -157,11 +159,6 @@ def test_full_run(sample_model_fcn, oil, temp, dump):
             print "Mass on land: {0}".format(np.sum(sc['mass'][~mask]))
 
             print "Completed step: {0}\n".format(step['step_num'])
-
-    m_json_ = model.serialize('webapi')
-    dump_json = os.path.join(dump, 'weathering_model.json')
-    with open(dump_json, 'w') as f:
-        json.dump(m_json_, f, indent=True)
 
 
 def test_full_run_evap_not_active(sample_model_fcn):
