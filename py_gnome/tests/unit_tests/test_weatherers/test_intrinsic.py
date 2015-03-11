@@ -312,12 +312,7 @@ class TestWeatheringData:
             sc100['age'] += ts
             print 'Completed step: ', i
 
-    @pytest.mark.parametrize(("s0", "s1"),
-                             [("ALASKA NORTH SLOPE",
-                               "ALASKA NORTH SLOPE"),
-                              ("ALASKA NORTH SLOPE",
-                               "ALASKA NORTH SLOPE, OIL & GAS")])
-    def test_update_intrinsic_props(self, s0, s1):
+    def test_update_intrinsic_props(self):
         intrinsic = WeatheringData(water)
 
         rel_time = datetime.now().replace(microsecond=0)
@@ -328,11 +323,11 @@ class TestWeatheringData:
                                            end_release_time=end_time,
                                            amount=100,
                                            units='kg',
-                                           substance=s0),
+                                           substance="ALASKA NORTH SLOPE"),
                   point_line_release_spill(5,
                                            (0, 0, 0),
                                            rel_time + timedelta(hours=.25),
-                                           substance=s1,
+                                           substance="ALASKA NORTH SLOPE",
                                            amount=100,
                                            units='kg')
                   ]
@@ -373,10 +368,6 @@ class TestWeatheringData:
                 # intrinsic props arrays initialized correctly
                 assert all(sc['density'] > 0)
                 assert all(sc['viscosity'] > 0)
-                if s0 != s1:
-                    assert np.any(sc['mass_components'] > 0)
-                else:
-                    assert np.any(sc['mass_components'] != 0)
 
             sc['age'] += ts     # model would do this operation
             print 'Completed step: ', i

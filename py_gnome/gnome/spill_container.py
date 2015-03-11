@@ -700,6 +700,15 @@ class SpillContainer(AddLogger, SpillContainerData):
             return filter(None, self._substances_spills.substances)
 
     @property
+    def substances(self):
+        '''
+        Returns list of substances for weathering - not including None since
+        that is non-weathering.
+        Currently, only one weathering substance is supported
+        '''
+        return self.get_substances(complete=False)
+
+    @property
     def array_types(self):
         """
         user can modify ArrayType initial_value in middle of run. Changing
