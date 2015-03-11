@@ -869,6 +869,9 @@ def reject_oil_if_bad(imported_rec, oil):
     if imported_rec_was_manually_rejected(imported_rec):
         errors.append('Imported Record was manually rejected')
 
+    if not oil_has_kvis(oil):
+        errors.append('Oil has no kinematic viscosities')
+
     if oil_has_duplicate_cuts(oil):
         errors.append('Oil has duplicate cuts')
 
@@ -900,6 +903,17 @@ def imported_rec_was_manually_rejected(imported_rec):
                         ):
         return True
     return False
+
+
+def oil_has_kvis(oil):
+    '''
+        Our oil record should have at least one kinematic viscosity when
+        estimations are complete.
+    '''
+    if len(oil.kvis) > 0:
+        return True
+    else:
+        return False
 
 
 def oil_has_duplicate_cuts(oil):
