@@ -42,6 +42,25 @@ end_position = (24.0, -79.5, 1.0)
 end_release_time = datetime(2012, 1, 1, 12) + timedelta(hours=4)
 
 
+def test_total_mass():
+    '''
+    test total_mass attribute
+    '''
+    sc = SpillContainer()
+    sc.spills += [Spill(Release(datetime.now(), 10),
+                        amount=100,
+                        units='kg'),
+                  Spill(Release(datetime.now(), 1000),
+                        amount=1234,
+                        units='kg'),
+                  Spill(Release(datetime.now(), 100))]
+    assert sc.total_mass == 100 + 1234
+
+    sc.spills.clear()
+    sc.spills += [Spill(Release(datetime.now(), 10))]
+    assert sc.total_mass is None
+
+
 def test_simple_init():
     sc = SpillContainer()
     assert sc is not None
