@@ -19,8 +19,7 @@ from ..conftest import test_oil
 # scalar inputs
 num_elems = 10
 water_viscosity = 0.000001
-elem_volume = 0.00001
-elem_thick = 965.0    # m - dummy value for testing
+elem_volume = 1.0
 elem_rel_bouy = 0.2
 
 water = Water()
@@ -34,11 +33,10 @@ def data_arrays(num_elems=10):
     init_volume = np.asarray([elem_volume*num_elems] * num_elems)
     relative_bouyancy = np.asarray([elem_rel_bouy] * num_elems)
     age = np.zeros_like(init_volume, dtype=int)
-    area = np.zeros_like(init_volume)
     init_area = np.zeros_like(init_volume)
-    thickness = np.asarray([elem_thick] * num_elems)
+    thickness = np.zeros_like(init_volume)
 
-    return (init_volume, relative_bouyancy, age, area, init_area, thickness)
+    return (init_volume, relative_bouyancy, age, init_area, thickness)
 
 
 class TestFayGravityViscous:
@@ -76,41 +74,35 @@ class TestFayGravityViscous:
             'relative_bouyancy >= 0'
             (init_volume,
              relative_bouyancy,
-             age, area, init_area, thickness) = data_arrays()
+             age, init_area, thickness) = data_arrays()
             relative_bouyancy[0] = -relative_bouyancy[0]
             age[:] = 900
-            self.spread.update_area(water_viscosity,
-                                    init_area,
-                                    init_volume,
-                                    relative_bouyancy,
-                                    age,
-                                    thickness,
-                                    area,
-                                    out=area)
+            self.spread.update_thickness(water_viscosity,
+                                         init_area,
+                                         init_volume,
+                                         relative_bouyancy,
+                                         age,
+                                         thickness)
         with pytest.raises(ValueError):
             'age must be > 0'
             (init_volume,
              relative_bouyancy,
-             age, area, init_area, thickness) = data_arrays()
-            self.spread.update_area(water_viscosity,
-                                    init_area,
-                                    init_volume,
-                                    relative_bouyancy,
-                                    age,
-                                    thickness,
-                                    area,
-                                    out=area)
+             age, init_area, thickness) = data_arrays()
+            self.spread.update_thickness(water_viscosity,
+                                         init_area,
+                                         init_volume,
+                                         relative_bouyancy,
+                                         age,
+                                         thickness)
 
     def test_values(self):
         '''
-        Compare output of _init_area and _update_area to expected output
+        Compare output of _init_area and _update_thickness to expected output
         returned by self.expected() function.
-        For _update_area, 'use_list' = True means the inputs are lists instead
-        of numpy arrays
         '''
         (init_volume,
          relative_bouyancy,
-         age, area, init_area, thickness) = data_arrays()
+         age, init_area, thickness) = data_arrays()
         init_area[:] = self.spread.init_area(water_viscosity,
                                              init_volume[0],
                                              relative_bouyancy)
@@ -122,40 +114,38 @@ class TestFayGravityViscous:
         (A0, p_area) = self.expected(init_volume[0], age[0])
         assert all(A0 == init_area)
 
-        self.spread.update_area(water_viscosity,
-                                init_area,
-                                init_volume,
-                                relative_bouyancy,
-                                age,
-                                thickness,
-                                area,
-                                out=area)
+        thickness[:] = init_volume/init_area    # initialize it correctly
+        thickness[:] = self.spread.update_thickness(water_viscosity,
+                                                    init_area,
+                                                    init_volume,
+                                                    relative_bouyancy,
+                                                    age,
+                                                    thickness)
 
-        assert all(area == p_area)
+        assert all(thickness == init_volume[0]/p_area)
 
     def test_minthickness_values(self):
         (init_volume,
          relative_bouyancy,
-         age, area, init_area, thickness) = data_arrays()
+         age, init_area, thickness) = data_arrays()
         init_area[:] = self.spread.init_area(water_viscosity,
                                              sum(init_volume),
                                              relative_bouyancy)
-        area[:] = init_area     # initial value
+        # initial value
+        thickness[:] = init_volume/init_area
 
         age[:] = 900
         thickness[[0, 2, 8]] = self.spread.thickness_limit
 
-        self.spread.update_area(water_viscosity,
-                                init_area,
-                                init_volume,
-                                relative_bouyancy,
-                                age,
-                                thickness,
-                                area,
-                                out=area)
+        new_thick = self.spread.update_thickness(water_viscosity,
+                                                 init_area,
+                                                 init_volume,
+                                                 relative_bouyancy,
+                                                 age,
+                                                 thickness)
         mask = thickness > self.spread.thickness_limit
-        assert np.all(area[mask] > init_area[mask])
-        assert np.all(area[~mask] == init_area[~mask])
+        assert np.all(new_thick[mask] < thickness[mask])
+        assert np.all(new_thick[~mask] == thickness[~mask])
 
 
 class TestWeatheringData:
@@ -298,8 +288,8 @@ class TestWeatheringData:
                                    sc100['init_volume'][mask100][0], atol=1e-6)
                 assert np.allclose(np.unique(sc10['init_area'][mask10]),
                                    sc10['init_area'][mask10][0], atol=1e-6)
-                assert np.allclose(sc10['area'][mask10][0],
-                                   sc100['area'][mask100][0], atol=1e-6)
+                assert np.allclose(sc10['thickness'][mask10][0],
+                                   sc100['thickness'][mask100][0], atol=1e-6)
 
                 # thickness
                 assert (np.unique(sc10['thickness'][mask10]) ==
@@ -358,8 +348,10 @@ class TestWeatheringData:
             if len(sc) > 0:
                 # area arrays initialized correctly
                 mask = sc['age'] == 0
-                assert all(sc['init_area'][mask] == sc['area'][mask])
-                assert all(sc['init_area'][~mask] < sc['area'][~mask])
+                assert all(sc['init_area'][mask] ==
+                           sc['init_volume'][mask]/sc['thickness'][mask])
+                assert all(sc['init_area'][~mask] <
+                           sc['init_volume'][~mask]/sc['thickness'][~mask])
 
                 assert all(sc['thickness'] > 0)
                 assert all(sc['init_mass'] > 0)

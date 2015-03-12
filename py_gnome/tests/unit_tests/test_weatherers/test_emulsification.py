@@ -102,7 +102,7 @@ def test_full_run(sample_model_fcn, oil, temp):
             # need or condition to account for water_content = 0.9000000000012
             # or just a little bit over 0.9
             assert (sc.weathering_data['water_content'] <= .9 or
-                    np.allclose(sc.weathering_data['water_content'], 0.9))
+                    np.isclose(sc.weathering_data['water_content'], 0.9))
             print ("Water fraction: {0}".
                    format(sc.weathering_data['water_content']))
             print "Completed step: {0}\n".format(step['step_num'])
@@ -134,6 +134,7 @@ def test_bulltime():
     assert et.substance.bulltime == -999
     et.substance.bulltime = 3600
     assert et.substance.bulltime == 3600
+
 
 def test_bullwinkle():
     '''

@@ -1,13 +1,13 @@
 '''
 Test evaporation module
 '''
-import os
-import json
-from datetime import timedelta
+from datetime import timedelta, datetime
 
 import pytest
 import numpy as np
 
+from gnome.model import Model
+from gnome.spill import point_line_release_spill
 from gnome.environment import constant_wind, Water, Wind
 from gnome.weatherers import (Evaporation,
                               WeatheringData)
@@ -96,6 +96,88 @@ def test_evaporation(oil, temp, num_elems, on):
     else:
         assert 'evaporated' not in sc.weathering_data
         assert np.all(sc['mass_components'] == init_mass)
+
+
+class TestDecayConst:
+    '''
+    WIP - Currently has one working test, but may have more so grouped it in
+    a class
+    '''
+    def setup_test(self, delay, num_les):
+        stime = datetime(2015, 1, 1, 12, 0)
+        etime = stime + delay
+        st_pos = (0, 0, 0)
+        oil = 'ALASKA NORTH SLOPE'
+        ts = 3600.
+
+        m1 = Model(start_time=stime, time_step=ts)
+        m1.environment += constant_wind(0, 0)
+        m1.water = Water()
+        m1.weatherers += [Evaporation(m1.water, m1.environment[0])]
+        m1.spills += point_line_release_spill(num_les[0], st_pos, stime,
+                                              end_release_time=etime,
+                                              substance=oil,
+                                              amount=36000, units='kg')
+        m1.outputters += WeatheringOutput()
+
+        m2 = Model(start_time=stime, time_step=ts)
+        m2.environment += constant_wind(0, 0)
+        m2.water = Water()
+        m2.weatherers += [Evaporation(m2.water, m2.environment[0])]
+        m2.spills += point_line_release_spill(num_les[1], st_pos, stime,
+                                              end_release_time=etime,
+                                              substance=oil,
+                                              amount=36000, units='kg')
+        m2.outputters += WeatheringOutput()
+        return (m1, m2)
+
+    @pytest.mark.xfail
+    def test_evap_decay_const_vary_ts(self, delay=timedelta(0)):
+        '''
+        evap decay constant does depend on timestep since thickness has a
+        nonlinear dependence on age so varying the timestep gives different
+        evaporation results
+        '''
+        (m1, m2) = self.setup_test(delay, (10, 10))
+        m2.time_step = 900
+
+        for ix in xrange(m1.num_time_steps):
+            w1 = m1.step()['WeatheringOutput']
+            if ix == 0:
+                w2 = m2.step()['WeatheringOutput']
+
+            if ix > 0:
+                for iy in xrange(4):
+                    w2 = m2.step()['WeatheringOutput']
+
+                val1 = w1.values()
+                val2 = w2.values()
+                d_time1 = val1.pop(4)
+                d_time2 = val2.pop(4)
+
+                if d_time1 == d_time2:
+                    assert np.allclose(val1, val2)
+
+    @pytest.mark.parametrize("delay", [timedelta(hours=0),
+                                       timedelta(hours=4)])
+    def test_evap_decay_const_vary_numLE(self, delay):
+        '''
+        test checks the evaporation decay constant does not depend on the number
+        of elements.
+        '''
+        (m1, m2) = self.setup_test(delay, (10, 100))
+
+        for ix in xrange(m1.num_time_steps):
+            w1 = m1.step()['WeatheringOutput']
+            w2 = m2.step()['WeatheringOutput']
+
+            val1 = w1.values()
+            val2 = w2.values()
+            d_time1 = val1.pop(4)
+            d_time2 = val2.pop(4)
+
+            assert d_time1 == d_time2
+            assert np.allclose(val1, val2)
 
 
 def assert_helper(sc, new_p):
