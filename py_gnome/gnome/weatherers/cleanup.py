@@ -100,9 +100,11 @@ class CleanUpBase(Weatherer):
         # (1 - frac_water) * mass_to_remove
         if mass_to_remove >= oil_water.sum():
             data['fate_status'][:] = new_status
-            self.logger.debug(self._pid + 'marked ALL ({0}) LEs with mass: '
-                              '{1}'.format(len(data['fate_status']),
-                                           data['mass'].sum()))
+            msg = "insufficient mass released for cleanup"
+            self.logger.warning(self._pid + msg)
+            self.logger.warning(self._pid + "marked ALL ({0}) LEs, total mass:"
+                                " {1}".format(len(data['fate_status']),
+                                              data['mass'].sum()))
         else:
             # sum up mass until threshold is reached, find index where
             # total_mass_removed is reached or exceeded

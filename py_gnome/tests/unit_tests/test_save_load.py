@@ -13,6 +13,8 @@ from conftest import testdata, test_oil
 
 import pytest
 
+pytestmark = pytest.mark.serial
+
 
 def test_exceptions():
     a = 1
@@ -139,7 +141,6 @@ def test_save_load(clean_saveloc, obj):
     obj2 = load(os.path.join(clean_saveloc, refs.reference(obj)))
     assert obj == obj2
 
-
 '''
 Following movers fail on windows with clean_saveloc fixture. The clean_saveloc
 fixture deletes ./temp directory before each run of test_save_load(). This is
@@ -162,7 +163,7 @@ l_movers2 = (movers.CurrentCycleMover(testdata['CurrentCycleMover']['curr'],
 
 
 @pytest.mark.parametrize("obj", l_movers2)
-def test_save_load2(obj, dump):
+def test_save_load_grids(obj, dump):
     'test save/load functionality'
 
     temp = os.path.join(dump, 'temp')

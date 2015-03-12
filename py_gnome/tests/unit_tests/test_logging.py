@@ -98,9 +98,10 @@ class TestLog():
 
     def test_full_run_logging(self, logfile):
         c_dict = copy.deepcopy(config_dict)
+        c_dict["root"]["level"] = "DEBUG"
         initialize_log(c_dict, logfile)
         #model = Model(time_step=timedelta(minutes=15))
-        model = Model()
+        model = Model(uncertain=True)
         model.spills += point_line_release_spill(100,
                                                  (0, 0, 0),
                                                  model.start_time,
@@ -112,7 +113,9 @@ class TestLog():
         model.environment += constant_wind(1., 0.)
         model.weatherers += Evaporation(model.water,
                                         model.environment[-1])
+        model.full_run()
+
+        # log warning - visually check logged warnging to ensure message logged
+        # after deepcopy
         for spill in model.spills:
             spill.set('num_released', 10)
-
-        model.full_run()

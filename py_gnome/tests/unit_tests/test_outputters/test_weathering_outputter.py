@@ -17,7 +17,7 @@ from ..conftest import test_oil
 
 
 @pytest.fixture(scope='module')
-def model(sample_model, output_dir):
+def model(sample_model):
     model = sample_model['model']
     rel_start_pos = sample_model['release_start_pos']
     rel_end_pos = sample_model['release_end_pos']
@@ -65,7 +65,7 @@ def model(sample_model, output_dir):
                          burn,
                          skimmer]
 
-    model.outputters += WeatheringOutput(output_dir=output_dir)
+    model.outputters += WeatheringOutput()
     model.rewind()
 
     return model
@@ -77,9 +77,14 @@ def test_init():
     assert g.output_dir is None
 
 
+@pytest.mark.serial
 @pytest.mark.slow
-def test_model_webapi_output(model):
-    'Test weathering outputter with a model since simplest to do that'
+def test_model_webapi_output(model, output_dir):
+    '''
+    Test weathering outputter with a model since simplest to do that
+    Writing data to file so mark it as serial
+    '''
+    model.outputters[-1].output_dir = output_dir
     model.rewind()
 
     # floating mass at beginning of step - though tests will only pass for
@@ -107,7 +112,7 @@ def test_model_webapi_output(model):
 
     # removed last test and do the assertion here itself instead of writing to
     # file again which takes awhile!
-    output_dir = model.outputters[0].output_dir
+    #output_dir = model.outputters[0].output_dir
     if output_dir is not None:
         files = glob(os.path.join(output_dir, '*.json'))
         assert len(files) == model.num_time_steps

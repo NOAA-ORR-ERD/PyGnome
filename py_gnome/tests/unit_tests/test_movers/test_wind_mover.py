@@ -439,6 +439,7 @@ def test_serialize_deserialize(wind_circ):
     assert wm.wind == wind_circ['wind']
 
 
+@pytest.mark.serial
 @pytest.mark.parametrize("save_ref", [False, True])
 def test_save_load(save_ref):
     """
@@ -467,28 +468,6 @@ def test_save_load(save_ref):
     assert (obj == wm and obj is not wm)
     assert (obj.wind == wind and obj.wind is not wind)
     shutil.rmtree(saveloc)  # clean-up
-
-
-#==============================================================================
-# def test_new_from_dict():
-#     """
-#     Currently only checks that new object can be created from dict
-#     It does not check equality of objects
-#     """
-#     wind = Wind(filename=file_)
-#     wm = WindMover(wind)  # WindMover does not modify Wind object!
-#     wm_state = wm.to_dict('save')
-# 
-#     # must create a Wind object and add this to wm_state dict
-# 
-#     wind2 = Wind.new_from_dict(wind.to_dict('save'))
-#     wm_state.update({'wind': wind2})
-#     wm2 = WindMover.new_from_dict(wm_state)
-# 
-#     assert wm is not wm2
-#     assert wm.wind is not wm2.wind
-#     assert wm == wm2
-#==============================================================================
 
 
 def test_array_types():

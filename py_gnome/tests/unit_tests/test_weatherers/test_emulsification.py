@@ -81,7 +81,6 @@ def test_emulsification(oil, temp, num_elems, on):
 
     assert np.all(sc['frac_water'] == 0)
 
-
 @pytest.mark.parametrize(('oil', 'temp'), [('ALBERTA', 333.0),
                                            ('FUEL OIL NO.6', 333.0),
                                            ('BREGA', 311.15),

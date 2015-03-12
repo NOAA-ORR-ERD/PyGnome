@@ -19,7 +19,13 @@ def pytest_addoption(parser):
     '''
     Skip slow tests
     '''
-    parser.addoption('--runslow', action='store_true', help='run slow tests')
+    parser.addoption('--runslow',
+                     action='store_true',
+                     help='run slow tests and all other tests')
+    parser.addoption('--serial',
+                     action='store_true',
+                     help=('run only tests marked as serial. '
+                           'used to run tests skipped by xdist'))
 
 
 def pytest_runtest_setup(item):
@@ -34,7 +40,20 @@ def pytest_runtest_setup(item):
         not item.config.getoption('--runslow')):
         pytest.skip('need --runslow option to run')
 
+    if (item.config.getoption('--serial') and
+        'serial' not in item.keywords):
+        pytest.skip('only run tests marked as serial')
+
     # set random seed:
     # Let's not print anything - it clearly works, its just extra output
     # print "Seed C++, python, numpy random number generator to 1"
     rand.seed(1)
+
+
+@pytest.fixture(autouse=True)
+def skip_serial(request):
+    if (request.node.get_marker('serial') and
+        getattr(request.config, 'slaveinput', {}).get('slaveid', 'local') !=
+        'local'):
+        # under xdist and serial so skip the test
+        pytest.skip('serial')
