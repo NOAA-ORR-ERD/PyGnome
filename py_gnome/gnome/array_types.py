@@ -166,21 +166,20 @@ _default_values = {'positions': ((3,), world_point_type, 'positions',
                    'age': ((), np.int32, 'age', 0),
                    # default assumes mass=0
                    'density': ((), np.float64, 'density', 0),
-                   'thickness': ((), np.float64, 'thickness', 0),
-                   'mol': ((), np.float64, 'mol', 0.),
                    'mass_components': (None, np.float64, 'mass_components',
                                        None),
                    'evap_decay_constant': (None, np.float64,
                                            'evap_decay_constant', None),
 
-                   # initial volume - used to compute spreading (LE area)
-                   # this is initial volume of oil released per LE - it'll be
+                   # following used to compute spreading (LE thickness)
+                   # init_volume initial volume of blob of oil - it'll be
                    # the same for all LEs released at once
                    'init_volume': ((), np.float64, 'init_volume', 0),
                    'init_area': ((), np.float64, 'init_area', 0),
                    'relative_bouyancy': ((), np.float64, 'relative_bouyancy',
                                          0),
-                   'area': ((), np.float64, 'area', 0),
+                   'thickness': ((), np.float64, 'thickness', 0),
+
                    'viscosity': ((), np.float64, 'viscosity', 0),
                    # fractional water content in emulsion
                    'frac_water': ((), np.float64, 'frac_water', 0),

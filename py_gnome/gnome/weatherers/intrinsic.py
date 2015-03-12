@@ -17,6 +17,14 @@ from gnome import AddLogger, constants
 
 
 class FayGravityViscous(object):
+    '''
+    Model the FayGravityViscous spreading of the oil. This assumes all LEs
+    released together spread as a blob. The blob can be partitioned into 'N'
+    LEs and the assumption is that the thickness and initial volume of the
+    blob applies to all LEs in it. As such, instead of computing area, lets
+    compute thickness - whether 1 or 10 LEs is used to model the blob, the
+    thickness remains the same.
+    '''
     def __init__(self):
         self.spreading_const = (1.53, 1.21)
         self.thickness_limit = .0001
@@ -58,6 +66,48 @@ class FayGravityViscous(object):
         if np.any(rel_bouy < 0):
             raise ValueError("Found particles with relative_bouyancy < 0. "
                              "Area does not handle this case at present.")
+
+    def update_thickness(self,
+                         water_viscosity,
+                         init_area,
+                         init_volume,
+                         relative_bouyancy,
+                         age,
+                         thickness,
+                         frac_coverage=None,
+                         out=None):
+        '''
+        '''
+        self._check_relative_bouyancy(relative_bouyancy)
+        if np.any(age == 0):
+            raise ValueError('for new particles use init_area - age '
+                             'must be > 0')
+
+        if out is None:
+            out = np.zeros_like(init_volume, dtype=np.float64)
+
+        # ADIOS 2 used 0.1 mm as a minimum average spillet thickness for crude
+        # oil and heavy refined products and 0.01 mm for lighter refined
+        # products. Use 0.1mm for now
+        out[:] = init_volume/thickness
+        mask = thickness > self.thickness_limit  # units of meters
+        if np.any(mask):
+            out[mask] = init_area[mask]
+            dFay = (self.spreading_const[1]**2./16. *
+                    (constants.gravity*relative_bouyancy[mask] *
+                     init_volume[mask]**2 /
+                     np.sqrt(water_viscosity*age[mask])))
+            dEddy = 0.033*age[mask]**(4./25)
+            out[mask] += (dFay + dEddy) * age[mask]
+
+            # apply fraction coverage here so particles less than min thickness
+            # are not changed
+            if frac_coverage is not None:
+                out[mask] *= frac_coverage[mask]
+
+        # finally return the new thickness
+        out = init_volume/out
+        return out
 
     def update_area(self,
                     water_viscosity,
@@ -140,7 +190,7 @@ class WeatheringData(AddLogger):
                             # init volume of particles released together
                             'init_volume',
                             'init_mass', 'frac_water', 'frac_lost',
-                            'area', 'init_area', 'relative_bouyancy',
+                            'init_area', 'relative_bouyancy',
                             'frac_coverage', 'thickness', 'age'}
 
         # following used to update viscosity
@@ -332,8 +382,8 @@ class WeatheringData(AddLogger):
                                                     'square meter per second'),
                                      data['init_volume'][mask][0],
                                      data['relative_bouyancy'][mask][0])
-        data['area'][mask] = data['init_area'][mask]
-        data['thickness'][mask] = data['init_volume'][mask]/data['area'][mask]
+        data['thickness'][mask] = \
+            data['init_volume'][mask]/data['init_area'][mask]
 
         # initialize the fate_status array based on positions and status_codes
         self._init_fate_status(mask, data)
@@ -455,19 +505,31 @@ class WeatheringData(AddLogger):
         # thickness greater than some minimum thickness and the frac_coverage
         # is only applied to LEs whose area is updated. Elements below a min
         # thickness should not be updated
-        data['area'][mask] = \
-            self.spreading.update_area(self.water.get('kinematic_viscosity',
-                                                      'square meter per second'),
-                                       data['init_area'][mask],
-                                       data['init_volume'][mask],
-                                       data['relative_bouyancy'][mask],
-                                       data['age'][mask],
-                                       data['thickness'][mask],
-                                       data['area'][mask],
-                                       data['frac_coverage'][mask])
+        data['thickness'][mask] = \
+            self.spreading.update_thickness(self.water.get('kinematic_viscosity',
+                                                           'square meter per second'),
+                                            data['init_area'][mask],
+                                            data['init_volume'][mask],
+                                            data['relative_bouyancy'][mask],
+                                            data['age'][mask],
+                                            data['thickness'][mask],
+                                            data['frac_coverage'][mask])
+
+        #======================================================================
+        # data['area'][mask] = \
+        #     self.spreading.update_area(self.water.get('kinematic_viscosity',
+        #                                               'square meter per second'),
+        #                                data['init_area'][mask],
+        #                                data['init_volume'][mask],
+        #                                data['relative_bouyancy'][mask],
+        #                                data['age'][mask],
+        #                                data['thickness'][mask],
+        #                                data['area'][mask],
+        #                                data['frac_coverage'][mask])
+        #======================================================================
 
         # update thickness per the new area
-        data['thickness'][mask] = data['init_volume'][mask]/data['area'][mask]
+        #data['thickness'][mask] = data['init_volume'][mask]/data['area'][mask]
 
     def _set_relative_bouyancy(self, rho_oil):
         '''
