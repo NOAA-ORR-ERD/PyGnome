@@ -31,12 +31,12 @@ series = np.array((start_time, (5, 45)),
 test_wind_5 = Wind(timeseries=series, units='meter per second')
 
 # 3 m/s
-series = np.array((start_time, (5, 45)),
+series = np.array((start_time, (3, 45)),
                       dtype=datetime_value_2d).reshape((1, ))
 test_wind_3 = Wind(timeseries=series, units='meter per second')
 
 # 0 m/s
-series = np.array((start_time, (5, 45)),
+series = np.array((start_time, (0, 45)),
                       dtype=datetime_value_2d).reshape((1, ))
 test_wind_0 = Wind(timeseries=series, units='meter per second')
 
@@ -216,8 +216,8 @@ def test_get_emulsification_wind():
     water = Water()
     w = Waves(wind, water)
 
-    print w.get_emulsifiation_wind(start_time)
-    assert w.get_emulsifiation_wind(start_time) == 3.0
+    print w.get_emulsification_wind(start_time)
+    assert w.get_emulsification_wind(start_time) == 3.0
 
 def test_get_emulsification_wind_with_wave_height():
     wind = constant_wind(3., 0)
@@ -227,9 +227,9 @@ def test_get_emulsification_wind_with_wave_height():
 
     print w.get_value(start_time)
 
-    print w.get_emulsifiation_wind(start_time)
+    print w.get_emulsification_wind(start_time)
     ## input wave height should hav overwhelmed
-    assert w.get_emulsifiation_wind(start_time) > 3.0
+    assert w.get_emulsification_wind(start_time) > 3.0
 
 def test_get_emulsification_wind_with_wave_height2():
     wind = constant_wind(10., 0)
@@ -239,7 +239,7 @@ def test_get_emulsification_wind_with_wave_height2():
 
     print w.get_value(start_time)
 
-    print w.get_emulsifiation_wind(start_time)
+    print w.get_emulsification_wind(start_time)
     ## input wave height should not have overwhelmed wind speed
-    assert w.get_emulsifiation_wind(start_time)  ==  10.0
+    assert w.get_emulsification_wind(start_time)  ==  10.0
 
