@@ -18,6 +18,7 @@ from gnome.utilities.orderedcollection import OrderedCollection
 from gnome.utilities.serializable import Serializable, Field
 
 from gnome.spill_container import SpillContainerPair
+from gnome.environment import Wind
 from gnome.movers import Mover
 from gnome.weatherers import weatherer_sort, Weatherer, WeatheringData
 from gnome.outputters import Outputter, NetCDFOutput, WeatheringOutput
@@ -314,10 +315,16 @@ class Model(Serializable):
         self._cache.enabled = enabled
 
     @property
-    def has_weathering(self):
+    def has_weathering_uncertainty(self):
         return (any([w.on for w in self.weatherers]) and
                 len([o for o in self.outputters
-                     if isinstance(o, WeatheringOutput)]) > 0)
+                     if isinstance(o, WeatheringOutput)]) > 0 and
+                (any([s.amount_uncertainty_scale > 0.0
+                     for s in self.spills]) or
+                 any([w.speed_uncertainty_scale > 0.0
+                     for w in self.environment
+                     if isinstance(w, Wind)]))
+                )
 
     @property
     def start_time(self):
