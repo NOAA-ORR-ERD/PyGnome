@@ -57,6 +57,7 @@ class FateDataView(AddLogger):
         self.subsurf_weather = {}
         self.skim = {}
         self.burn = {}
+        self.disperse = {}
         self.non_weather = {}
 
         # all substance data - this is required by WeatheringData to update
@@ -698,6 +699,21 @@ class SpillContainer(AddLogger, SpillContainerData):
             return self._substances_spills.substances
         else:
             return filter(None, self._substances_spills.substances)
+
+    @property
+    def total_mass(self):
+        '''
+        return total mass spilled in 'kg'
+        '''
+        mass = 0
+        for spill in self.spills:
+            if spill.get_mass() is not None:
+                mass += spill.get_mass()
+
+        if mass == 0:
+            return None
+        else:
+            return mass
 
     @property
     def substances(self):
