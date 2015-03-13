@@ -11,6 +11,7 @@ import gnome    # required by new_from_dict
 
 from gnome.array_types import (frac_lost,  # due to evaporation and dissolution
                                age,
+                               mass,
                                bulltime,
                                interfacial_area,
                                frac_water)
@@ -35,13 +36,13 @@ class Emulsification(Weatherer, Serializable):
         :param conditions: gnome.environment.Conditions object which contains
             things like water temperature
         :param waves: waves object for obtaining emulsification wind speed at specified time
-        :type waves: get_emulsifiation_wind(model_time)
+        :type waves: get_emulsification_wind(model_time)
         '''
         self.waves = waves
 
         super(Emulsification, self).__init__(**kwargs)
         self.array_types.update({'age', 'bulltime', 'frac_water',
-                                 'interfacial_area', 'frac_lost'})
+                                 'mass', 'interfacial_area', 'frac_lost'})
 
     def prepare_for_model_run(self, sc):
         '''
@@ -119,7 +120,9 @@ class Emulsification(Weatherer, Serializable):
             # step value but at a certain time value
             # todo: probably should be weighted avg
             sc.weathering_data['water_content'] = \
-                np.sum(data['frac_water'][:]) / len(data['frac_water'])
+                np.sum(data['mass']/data['mass'].sum() * data['frac_water'])
+                #np.sum(data['frac_water'][:]*data['mass'][:]) / np.sum(data['mass'])
+                #np.sum(data['frac_water'][:]) / len(data['frac_water']
                 #np.sum(data['frac_water'][:]) / sc.num_released
             self.logger.debug(self._pid + 'water_content for {0}: {1}'.
                               format(substance.name,
@@ -176,7 +179,7 @@ class Emulsification(Weatherer, Serializable):
         '''
 
         ## higher of real or psuedo wind
-        wind_speed = self.waves.get_emulsifiation_wind(model_time)
+        wind_speed = self.waves.get_emulsification_wind(model_time)
 
         # water uptake rate constant - get this from database
         K0Y = substance.get('k0y')

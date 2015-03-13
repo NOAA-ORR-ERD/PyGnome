@@ -104,7 +104,7 @@ class Waves(Environment, serializable.Serializable):
 
         return H, T, Wf, De
 
-    def get_emulsifiation_wind(self, time):
+    def get_emulsification_wind(self, time):
         """
         Return the right wind for the wave climate
 
