@@ -141,7 +141,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     #todo: callback did not work correctly below - fix!
     #comp_mover = ComponentMover(component_file1,component_file2,Wind(timeseries=series, units='m/s'))
 
-    comp_mover.ref_point = (-70.855, 42.275)
+    comp_mover.scale_refpoint = (-70.855, 42.275)
     comp_mover.pat1_angle = 315
     comp_mover.pat1_speed = 19.44
     comp_mover.pat1_speed_units = 1
