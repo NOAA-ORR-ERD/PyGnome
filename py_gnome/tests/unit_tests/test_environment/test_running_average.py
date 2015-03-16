@@ -24,13 +24,21 @@ def test_av_from_variable_wind():
     '''
     test variable wind to running average
     '''
-    ts = np.zeros((4,), dtype=datetime_value_2d)
-    ts[:] = [(datetime(2012, 9, 7, 8, 0), (10, 270)),
-             (datetime(2012, 9, 7, 14, 0), (28, 270)),
-             (datetime(2012, 9, 7, 20, 0), (28, 270)),
-             (datetime(2012, 9, 8, 02, 0), (10, 270))]
+    # ts = np.zeros((4,), dtype=datetime_value_2d)
+    # ts[:] = [(datetime(2012, 9, 7, 8, 0), (10, 270)),
+    #          (datetime(2012, 9, 7, 14, 0), (28, 270)),
+    #          (datetime(2012, 9, 7, 20, 0), (28, 270)),
+    #          (datetime(2012, 9, 8, 02, 0), (10, 270))]
              
-    wm = Wind(timeseries=ts, units='m/s')
+    # wm = Wind(timeseries=ts, units='m/s')
+
+    wm = Wind(timeseries=[(datetime(2012, 9, 7, 8, 0), (10, 270)),
+                          (datetime(2012, 9, 7, 14, 0), (28, 270)),
+                          (datetime(2012, 9, 7, 20, 0), (28, 270)),
+                          (datetime(2012, 9, 8, 02, 0), (10, 270))],
+              units='m/s')
+
+
     #wm = Wind(filename=wind_file)
     av = RunningAverage(wm)
 #     print "wm.ossm.timeseries"
@@ -74,17 +82,16 @@ def test_full_run():
     '''
     test a wind series that has a constant average
     '''
-    ts = np.zeros((10,), dtype=datetime_value_2d)
-    ts[:] = [(datetime(2015, 1, 1, 1, 0), (10, 0)),
-             (datetime(2015, 1, 1, 2, 0), (20, 0)),
-             (datetime(2015, 1, 1, 3, 0), (10, 0)),
-             (datetime(2015, 1, 1, 4, 0), (20, 0)),
-             (datetime(2015, 1, 1, 5, 0), (10, 0)),
-             (datetime(2015, 1, 1, 6, 0), (20, 0)),
-             (datetime(2015, 1, 1, 7, 0), (10, 0)),
-             (datetime(2015, 1, 1, 8, 0), (20, 0)),
-             (datetime(2015, 1, 1, 9, 0), (10, 0)),
-             (datetime(2015, 1, 1, 10, 0), (20, 0))]
+    ts = [(datetime(2015, 1, 1, 1, 0), (10, 0)),
+          (datetime(2015, 1, 1, 2, 0), (20, 0)),
+          (datetime(2015, 1, 1, 3, 0), (10, 0)),
+          (datetime(2015, 1, 1, 4, 0), (20, 0)),
+          (datetime(2015, 1, 1, 5, 0), (10, 0)),
+          (datetime(2015, 1, 1, 6, 0), (20, 0)),
+          (datetime(2015, 1, 1, 7, 0), (10, 0)),
+          (datetime(2015, 1, 1, 8, 0), (20, 0)),
+          (datetime(2015, 1, 1, 9, 0), (10, 0)),
+          (datetime(2015, 1, 1, 10, 0),(20, 0))]
 
     start_time = datetime(2015, 1, 1, 1)
     model_time = start_time
