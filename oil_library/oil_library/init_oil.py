@@ -136,7 +136,8 @@ def add_densities(imported_rec, oil):
                .format(imported_rec.adios_oil_id))
 
     if not [d for d in oil.densities
-            if np.isclose(d.ref_temp_k, 273.0 + 15, atol=.15)]:
+            if d.ref_temp_k is not None
+            and np.isclose(d.ref_temp_k, 273.0 + 15, atol=.15)]:
         # add a 15C density from api
         kg_m_3, ref_temp_k = estimate_density_from_api(oil.api)
 
@@ -157,7 +158,8 @@ def density_at_temperature(oil_rec, temperature, weathering=0.0):
     # first, get the density record closest to our temperature
     density_list = [(d, abs(d.ref_temp_k - temperature))
                     for d in oil_rec.densities
-                    if d.weathering == weathering]
+                    if d.ref_temp_k is not None
+                    and d.weathering == weathering]
     if density_list:
         density_rec = sorted(density_list, key=lambda d: d[1])[0][0]
         d_ref = density_rec.kg_m_3
@@ -241,7 +243,7 @@ def get_kvis_from_dvis(oil_rec):
                          d.ref_temp_k,
                          (0.0 if d.weathering is None else d.weathering))
                          for d in oil_rec.dvis
-                         if d.kg_ms > 0.0]:
+                         if d.kg_ms > 0.0 and d.ref_temp_k is not None]:
             density = density_at_temperature(oil_rec, t, w)
 
             # kvis = dvis/density
@@ -433,10 +435,10 @@ def add_resin_fractions(imported_rec, oil):
 def add_asphaltene_fractions(imported_rec, oil):
     try:
         if (imported_rec is not None and
-            imported_rec.asphaltene_content is not None and
-                imported_rec.asphaltene_content >= 0.0 and
-                imported_rec.asphaltene_content <= 1.0):
-            f_asph = imported_rec.asphaltene_content
+            imported_rec.asphaltenes is not None and
+                imported_rec.asphaltenes >= 0.0 and
+                imported_rec.asphaltenes <= 1.0):
+            f_asph = imported_rec.asphaltenes
         else:
             a, b = get_corrected_density_and_viscosity(oil)
 
