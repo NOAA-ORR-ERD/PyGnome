@@ -317,10 +317,12 @@ class Renderer(Outputter, MapCanvas):
         return self._json_to_saveloc(json_, saveloc, references, name)
 
     @classmethod
-    def load(cls, saveloc, json_data, references=None):
+    def loads(cls, json_data, saveloc, references=None):
         '''
-        append saveloc path to 'images_dir' then call super to load object
+        loads object from json_data
+
+        prepend saveloc path to 'images_dir' then call super to load object
         '''
         json_data['images_dir'] = os.path.join(saveloc,
                                                json_data['images_dir'])
-        return super(Renderer, cls).load(saveloc, json_data, references)
+        return super(Renderer, cls).loads(json_data, saveloc, references)

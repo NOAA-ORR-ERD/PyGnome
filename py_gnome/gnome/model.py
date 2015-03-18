@@ -96,6 +96,8 @@ class Model(Serializable):
     _state += [Field('spills', save=True, update=True, test_for_eq=False),
                Field('uncertain_spills', save=True, test_for_eq=False),
                Field('num_time_steps', read=True),
+               # save water a reference so if same object is contained in
+               # Environment collection, it isn't saved in two locations
                Field('water', update=True, save=True, save_reference=True)]
 
     # list of OrderedCollections
@@ -1106,14 +1108,28 @@ class Model(Serializable):
             return None
 
     @classmethod
-    def load(cls, saveloc, json_data, references=None):
+    def loads(cls, json_data, saveloc, references=None):
         '''
-        Load a model from json format - the saveloc is location of save files
-        for objects contained in the model
+        loads a model from json_data
+
+        - load json for references from files
+        - update paths of datafiles if needed
+        - deserialize json_data
+        - and create object with new_from_dict()
+
+        :param saveloc: location of data files
+
+        Optional parameter
+
+        :param references: references object - if this is called by the Model,
+            it will pass a references object. It is not required.
         '''
         references = (references, References())[references is None]
-        ref_dict = cls._load_refs(saveloc, json_data, references)
-        cls._update_datafile_path(saveloc, json_data)
+        ref_dict = cls._load_refs(json_data, saveloc, references)
+
+        # there are no datafiles for model properties; so no need for following
+        # at present
+        cls._update_datafile_path(json_data, saveloc)
 
         # deserialize after removing references
         _to_dict = cls.deserialize(json_data)
@@ -1125,9 +1141,9 @@ class Model(Serializable):
         # for laoding save files/location files, so it assumes:
         # json_data['json_'] == 'save'
         if ('map' in json_data):
-            map_obj = eval(json_data['map']['obj_type']).load(saveloc,
-                                                              json_data['map'],
-                                                              references)
+            map_obj = eval(json_data['map']['obj_type']).loads(json_data['map'],
+                                                               saveloc,
+                                                               references)
             _to_dict['map'] = map_obj
 
         # load collections

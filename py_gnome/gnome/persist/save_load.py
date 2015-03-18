@@ -4,6 +4,7 @@ Save/load gnome objects
 import os
 import shutil
 import json
+import zipfile
 
 import gnome    # used in eval to 'load' gnome object from json
 
@@ -88,23 +89,25 @@ class References(object):
 def load(fname, references=None):
     '''
     read json from file and load the appropriate object
-    This is a general purpose load method that look at the json['obj_type']
-    and invokes json['obj_type'].load(json) method
+    This is a general purpose load method that looks at the json['obj_type']
+    and invokes json['obj_type'].loads(json) method
 
     :param fname: .json file to load. If this is a directory, then look for a
         default name of 'Model.json' to load
     :param references=None:
     '''
+    # is a directory, look for Model.json in directory
     if os.path.isdir(fname):
         fname = os.path.join(fname, 'Model.json')
 
-    with open(fname, 'r') as infile:
-        json_data = json.load(infile)
+    with open(fname, 'r') as fd:
+        json_data = json.loads("".join([l.rstrip('\n') for l in fd]))
+        #json_data = json.load(infile)
 
     # create a reference to the object being loaded
     saveloc, name = os.path.split(fname)
     obj_type = json_data.pop('obj_type')
-    obj = eval(obj_type).load(saveloc, json_data, references)
+    obj = eval(obj_type).loads(json_data, saveloc, references)
 
     # after loading, add the object to references
     if references:
@@ -118,6 +121,10 @@ class Savable(object):
     gnome objects. Mix this in with the Serializable class so all gnome objects
     can save/load themselves
     '''
+
+    # Let Model set this to its own name - if this is not set, then don't zip
+    _zipname = None
+
     def _json_to_saveloc(self,
                          json_,
                          saveloc,
@@ -226,7 +233,7 @@ class Savable(object):
         return json_
 
     @classmethod
-    def _load_refs(cls, saveloc, json_data, references):
+    def _load_refs(cls, json_data, saveloc, references):
         '''
         loads up references. First looks for object in references, if not found
         then it creates object from json and adds a reference to it. If found
@@ -250,7 +257,7 @@ class Savable(object):
         return ref_dict
 
     @classmethod
-    def _update_datafile_path(cls, saveloc, json_data):
+    def _update_datafile_path(cls, json_data, saveloc):
         'update path to attributes that use a datafile'
         datafiles = cls._state.get_field_by_attribute('isdatafile')
         # fix datafiles path from relative to absolute so we can load datafiles
@@ -260,15 +267,27 @@ class Savable(object):
                                                      json_data[field.name])
 
     @classmethod
-    def load(cls, saveloc, json_data, references=None):
+    def loads(cls, json_data, saveloc=None, references=None):
         '''
-        load json file, deserialize, and create object with new_from_dict()
+        loads object from json_data
 
-        :param saveloc: location of data files
+        - load json for references from files
+        - update paths of datafiles if needed
+        - deserialize json_data
+        - and create object with new_from_dict()
+
+        Optional parameter
+
+        :param saveloc: location of data files or *.json files for objects
+            stored as references. If object requires no datafiles and does not
+            need to read references from a *.json file in saveloc, then this
+            can be None.
+        :param references: references object - if this is called by the Model,
+            it will pass a references object. It is not required.
         '''
         references = (references, References())[references is None]
-        ref_dict = cls._load_refs(saveloc, json_data, references)
-        cls._update_datafile_path(saveloc, json_data)
+        ref_dict = cls._load_refs(json_data, saveloc, references)
+        cls._update_datafile_path(json_data, saveloc)
 
         # deserialize after removing references
         _to_dict = cls.deserialize(json_data)

@@ -191,7 +191,7 @@ def test_dir_gets_created(images_dir):
     assert os.path.exists(saveloc_)
 
 
-@pytest.mark.slow
+#@pytest.mark.slow
 @pytest.mark.parametrize('uncertain', [False, True])
 def test_save_load_model(images_dir, uncertain):
     '''
@@ -349,5 +349,5 @@ def test_location_file():
     '''
     Simple test to check if json_ contains nothing - default model is created
     '''
-    model = Model.load('.', {'json_': 'save'})
+    model = Model.loads({'json_': 'save'}, '.')
     assert model == Model()
