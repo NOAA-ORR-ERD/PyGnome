@@ -162,14 +162,6 @@ def test_init_exception(saveloc_):
         m.save(os.path.join(saveloc_, 'x', 'junk'))
 
 
-@pytest.mark.xfail
-def test_dir_gets_created(images_dir):
-    model = make_model(images_dir, True)
-    assert not os.path.exists(saveloc_)
-    model.save(os.path.join(saveloc_))
-    assert os.path.exists(saveloc_)
-
-
 @pytest.mark.slow
 @pytest.mark.parametrize('uncertain', [False, True])
 def test_save_load_model(uncertain, saveloc_):
