@@ -17,22 +17,26 @@ from gnome.spill.elements import floating
 
 from ..conftest import (sample_sc_release,
                         sample_model_weathering,
-                        sample_model_weathering2)
+                        sample_model_weathering2,
+                        test_oil)
 
 
 water = Water()
 wind = constant_wind(15., 0)	#also test with lower wind no emulsification
-waves = Waves(wind,water)
+waves = Waves(wind, water)
 
 arrays = Emulsification().array_types
 intrinsic = WeatheringData(water)
 arrays.update(intrinsic.array_types)
 
+# need an oil that emulsifies and one that does not
+#s_oils = [test_oil, 'FUEL OIL NO.6']
+s_oils = [test_oil, test_oil]
+
 
 @pytest.mark.parametrize(('oil', 'temp', 'num_elems', 'on'),
-                         [('ALBERTA', 311.15, 3, True),
-                          ('BREGA', 311.15, 3, True),
-                          ('FUEL OIL NO.6', 311.15, 3, False)])
+                         [(s_oils[0], 311.15, 3, True),
+                          (s_oils[1], 311.15, 3, False)])
 def test_emulsification(oil, temp, num_elems, on):
     '''
     Fuel Oil #6 does not emulsify
@@ -52,10 +56,8 @@ def test_emulsification(oil, temp, num_elems, on):
     emul.prepare_for_model_run(sc)
 
     # also want a test for a user set value for bulltime or bullwinkle
-    if oil == 'ALBERTA':
+    if oil == s_oils[0]:
         sc['frac_lost'][:] = .31
-    if oil == 'BREGA':
-        sc['frac_lost'][:] = .23
 
     # sc['frac_lost'][:] = .35
     print "sc['frac_lost'][:]"
@@ -81,9 +83,9 @@ def test_emulsification(oil, temp, num_elems, on):
 
     assert np.all(sc['frac_water'] == 0)
 
-@pytest.mark.parametrize(('oil', 'temp'), [('ALBERTA', 333.0),
-                                           ('FUEL OIL NO.6', 333.0),
-                                           ('BREGA', 311.15),
+
+@pytest.mark.parametrize(('oil', 'temp'), [(s_oils[0], 333.0),
+                                           (s_oils[1], 333.0),
                                            ])
 def test_full_run(sample_model_fcn, oil, temp):
     '''
@@ -109,7 +111,7 @@ def test_full_run(sample_model_fcn, oil, temp):
 
 def test_full_run_emul_not_active(sample_model_fcn):
     'no water/wind/waves object and no evaporation'
-    model = sample_model_weathering(sample_model_fcn, 'oil_conservative')
+    model = sample_model_weathering(sample_model_fcn, 'oil_crude')
     model.weatherers += Emulsification(on=False)
     model.outputters += WeatheringOutput()
     for step in model:
@@ -129,7 +131,7 @@ def test_bulltime():
     user set time to start emulsification
     '''
 
-    et = floating(substance="ALBERTA")
+    et = floating(substance=test_oil)
     assert et.substance.bulltime == -999
     et.substance.bulltime = 3600
     assert et.substance.bulltime == 3600
@@ -140,7 +142,7 @@ def test_bullwinkle():
     user set emulsion constant
     '''
 
-    et = floating(substance="ALBERTA")
+    et = floating(substance=test_oil)
     assert et.substance.bullwinkle == .303
     et.substance.bullwinkle = .4
     assert et.substance.bullwinkle == .4

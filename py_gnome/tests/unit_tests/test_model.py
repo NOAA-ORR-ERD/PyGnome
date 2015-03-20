@@ -1004,8 +1004,8 @@ def test_staggered_spills_weathering(sample_model_fcn, delay):
 
 
 @pytest.mark.parametrize(("s0", "s1"),
-                         [("ALASKA NORTH SLOPE", "ALASKA NORTH SLOPE"),
-                          ("ALASKA NORTH SLOPE", "ARABIAN MEDIUM, EXXON")])
+                         [(test_oil, test_oil),
+                          (test_oil, "ARABIAN MEDIUM, EXXON")])
 def test_two_substance_spills_weathering(sample_model_fcn, s0, s1):
     '''
     only tests data arrays are correct and we don't end up with stale data

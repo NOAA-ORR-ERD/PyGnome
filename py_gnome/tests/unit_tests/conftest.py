@@ -32,7 +32,7 @@ import gnome.array_types as gat
 
 base_dir = os.path.dirname(__file__)
 
-test_oil = u'ALASKA NORTH SLOPE'
+test_oil = u'ALASKA NORTH SLOPE (MIDDLE PIPELINE)'
 
 
 @pytest.fixture(scope="session")
