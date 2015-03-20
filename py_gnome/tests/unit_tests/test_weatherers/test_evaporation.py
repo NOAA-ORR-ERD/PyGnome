@@ -49,9 +49,8 @@ def test_evaporation_no_wind():
 
 
 @pytest.mark.parametrize(('oil', 'temp', 'num_elems', 'on'),
-                         [('ALBERTA', 311.15, 3, True),
-                          ('ALASKA NORTH SLOPE', 311.15, 3, True),
-                          ('FUEL OIL NO.6', 311.15, 3, False)
+                         [(test_oil, 311.15, 3, True),
+                          ('oil_6', 311.15, 3, False)
                           ])
 def test_evaporation(oil, temp, num_elems, on):
     '''
@@ -107,7 +106,7 @@ class TestDecayConst:
         stime = datetime(2015, 1, 1, 12, 0)
         etime = stime + delay
         st_pos = (0, 0, 0)
-        oil = 'ALASKA NORTH SLOPE'
+        oil = test_oil
         ts = 3600.
 
         m1 = Model(start_time=stime, time_step=ts)
@@ -205,8 +204,8 @@ def assert_helper(sc, new_p):
                           0.0)
 
 
-@pytest.mark.parametrize(('oil', 'temp'), [('FUEL OIL NO.6', 333.0),
-                                           ('ALASKA NORTH SLOPE (MIDDLE PIPELINE)', 311.15),
+@pytest.mark.parametrize(('oil', 'temp'), [('oil_6', 333.0),
+                                           (test_oil, 311.15),
                                            ])
 def test_full_run(oil, temp):
     '''
@@ -245,7 +244,7 @@ def test_full_run(oil, temp):
 
 def test_full_run_evap_not_active(sample_model_fcn):
     'no water/wind object'
-    model = sample_model_weathering(sample_model_fcn, 'oil_conservative')
+    model = sample_model_weathering(sample_model_fcn, 'oil_6')
     model.weatherers += Evaporation(on=False)
     model.outputters += WeatheringOutput()
     for step in model:

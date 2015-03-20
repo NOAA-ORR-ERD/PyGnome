@@ -48,12 +48,3 @@ def pytest_runtest_setup(item):
     # Let's not print anything - it clearly works, its just extra output
     # print "Seed C++, python, numpy random number generator to 1"
     rand.seed(1)
-
-
-@pytest.fixture(autouse=True)
-def skip_serial(request):
-    if (request.node.get_marker('serial') and
-        getattr(request.config, 'slaveinput', {}).get('slaveid', 'local') !=
-        'local'):
-        # under xdist and serial so skip the test
-        pytest.skip('serial')

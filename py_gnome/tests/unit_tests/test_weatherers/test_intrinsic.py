@@ -156,7 +156,7 @@ class TestWeatheringData:
         '''
         initialize Sample SC and WeatheringData object
         '''
-        intrinsic = WeatheringData(water)
+        intrinsic = WeatheringData(Water())
         end_time = rel_time + timedelta(hours=1)
         spills = [point_line_release_spill(num_elements,
                                            (0, 0, 0),
@@ -237,12 +237,12 @@ class TestWeatheringData:
         (sc, intrinsic) = self.sample_sc_intrinsic(100, rel_time)
         num = sc.release_elements(900, rel_time)
         intrinsic.update(num, sc)
-        self.mock_weather_data(sc, intrinsic, -1)
+        self.mock_weather_data(sc, intrinsic, 3)
         sc['age'] += 900
 
         # say we are now in 2nd step - no new particles are released
         # just updating the previously released particles
-        intrinsic.water.density = 960   # force this for test
+        intrinsic.water.density = sc['density'][0] - 10  # force this for test
         intrinsic.update(0, sc)
         assert np.all(sc['density'] >= intrinsic.water.density)
 
@@ -313,11 +313,11 @@ class TestWeatheringData:
                                            end_release_time=end_time,
                                            amount=100,
                                            units='kg',
-                                           substance="ALASKA NORTH SLOPE"),
+                                           substance=test_oil),
                   point_line_release_spill(5,
                                            (0, 0, 0),
                                            rel_time + timedelta(hours=.25),
-                                           substance="ALASKA NORTH SLOPE",
+                                           substance=test_oil,
                                            amount=100,
                                            units='kg')
                   ]
@@ -348,8 +348,8 @@ class TestWeatheringData:
             if len(sc) > 0:
                 # area arrays initialized correctly
                 mask = sc['age'] == 0
-                assert all(sc['init_area'][mask] ==
-                           sc['init_volume'][mask]/sc['thickness'][mask])
+                assert np.allclose(sc['init_area'][mask],
+                                   sc['init_volume'][mask]/sc['thickness'][mask])
                 assert all(sc['init_area'][~mask] <
                            sc['init_volume'][~mask]/sc['thickness'][~mask])
 

@@ -38,11 +38,11 @@ from conftest import sample_model_weathering, testdata, test_oil
 
 
 @pytest.fixture(scope='function')
-def model(sample_model_fcn, dump):
+def model(sample_model_fcn, tmpdir):
     '''
     Utility to setup up a simple, but complete model for tests
     '''
-    images_dir = os.path.join(dump, 'Test_images')
+    images_dir = tmpdir.mkdir('Test_images').strpath
 
     if os.path.isdir(images_dir):
         shutil.rmtree(images_dir)
@@ -704,7 +704,7 @@ def test_full_run(model, dump, traj_only):
 
     # check if the images are there:
     # (1 extra for background image)
-    num_images = len(os.listdir(os.path.join(dump, 'Test_images')))
+    num_images = len(os.listdir(model.outputters[-1].images_dir))
     assert num_images == model.num_time_steps + 1
 
 
@@ -1004,8 +1004,8 @@ def test_staggered_spills_weathering(sample_model_fcn, delay):
 
 
 @pytest.mark.parametrize(("s0", "s1"),
-                         [("ALASKA NORTH SLOPE", "ALASKA NORTH SLOPE"),
-                          ("ALASKA NORTH SLOPE", "ARABIAN MEDIUM, EXXON")])
+                         [(test_oil, test_oil),
+                          (test_oil, "ARABIAN MEDIUM, EXXON")])
 def test_two_substance_spills_weathering(sample_model_fcn, s0, s1):
     '''
     only tests data arrays are correct and we don't end up with stale data

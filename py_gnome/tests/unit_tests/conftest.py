@@ -32,7 +32,7 @@ import gnome.array_types as gat
 
 base_dir = os.path.dirname(__file__)
 
-test_oil = u'ALASKA NORTH SLOPE'
+test_oil = u'ALASKA NORTH SLOPE (MIDDLE PIPELINE)'
 
 
 @pytest.fixture(scope="session")
@@ -57,6 +57,20 @@ def dump():
     except:
         pass
     return dump_loc
+
+
+@pytest.fixture(autouse=True)
+def skip_serial(request):
+    '''
+    when defined in ..conftest.py, this wasn't loaded if tests are run from
+    here. For now, moved this to unit_tests/conftest.py since all tests are
+    contained here
+    '''
+    if (request.node.get_marker('serial') and
+        getattr(request.config, 'slaveinput', {}).get('slaveid', 'local') !=
+        'local'):
+        # under xdist and serial so skip the test
+        pytest.skip('serial')
 
 
 def mock_sc_array_types(array_types):

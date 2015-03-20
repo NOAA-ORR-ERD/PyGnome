@@ -1072,7 +1072,7 @@ def test_reuse_substance():
     '''
     scp = SpillContainerPair(uncertain=True)
     s0 = Spill(Release(datetime.now(), 10),
-               element_type=floating(substance='ALASKA NORTH SLOPE'))
+               element_type=floating(substance=test_oil))
     s1 = Spill(Release(datetime.now(), 10),
                element_type=floating(substance=s0.get('substance')))
     assert s1.element_type is not s0.element_type
@@ -1187,12 +1187,12 @@ class TestSubstanceSpillsDataStructure():
 
     def test_spills_same_substance_init(self):
         sc = SpillContainer()
-        et = floating(substance='ALASKA NORTH SLOPE')
+        et = floating(substance=test_oil)
         sp_add = [point_line_release_spill(3, (1, 1, 1), datetime.now(),
                                            element_type=et),
                   Spill(Release(datetime.now(), 10),
                         amount=100, units='kg',
-                        element_type=floating(substance='ALASKA NORTH SLOPE')),
+                        element_type=floating(substance=test_oil)),
                   Spill(Release(datetime.now(), 10),
                         element_type=floating(substance=et.substance))
                   ]
@@ -1205,13 +1205,13 @@ class TestSubstanceSpillsDataStructure():
         sc = SpillContainer()
         splls0 = [point_line_release_spill(3, (1, 1, 1),
                                            datetime.now(),
-                                           element_type=floating(substance='ALASKA NORTH SLOPE')),
+                                           element_type=floating(substance=test_oil)),
                   Spill(Release(datetime.now(), 10),
-                        element_type=floating(substance='ALASKA NORTH SLOPE')),
+                        element_type=floating(substance=test_oil)),
                   ]
         sc.spills += splls0
         splls1 = [Spill(Release(datetime.now(), 10),
-                        element_type=floating(substance='oil_conservative'))
+                        element_type=floating(substance='oil_crude'))
                   ]
         sc.spills += splls1
 
@@ -1230,12 +1230,12 @@ class TestSubstanceSpillsDataStructure():
         splls0 = [point_line_release_spill(100, (1, 1, 1),
                                            rel_time,
                                            end_release_time=end_time,
-                                           element_type=floating(substance='ALASKA NORTH SLOPE'),
+                                           element_type=floating(substance=test_oil),
                                            amount=100,
                                            units='kg'),
                   point_line_release_spill(50, (2, 2, 2),
                                            rel_time + timedelta(seconds=900),
-                                           element_type=floating(substance='ALASKA NORTH SLOPE'),
+                                           element_type=floating(substance=test_oil),
                                            amount=150,
                                            units='kg'),
                   ]
@@ -1255,7 +1255,7 @@ class TestSubstanceSpillsDataStructure():
             num_rel = sc.release_elements(time_step, time)
             print num_rel
             for substance, data in sc.itersubstancedata(at):
-                assert substance.name == 'ALASKA NORTH SLOPE'
+                assert substance.name == test_oil
                 idx = sc._substances_spills.substances.index(substance)
                 mask = sc['substance'] == idx
                 for array in at:

@@ -352,7 +352,6 @@ def test_save_load(clean_saveloc, test_obj):
 
 
 @pytest.mark.parametrize("substance", [test_oil,
-                                       'ALASKA NORTH SLOPE',  # oil record in DB
                                        get_oil_props(test_oil)])
 def test_element_type_init(substance):
     et = ElementType(substance=substance)
@@ -362,3 +361,8 @@ def test_element_type_init(substance):
         assert et.substance.get('id') == substance
     else:
         assert et.substance.get('name') == substance.get('name')
+
+
+def test_exception():
+    with pytest.raises(Exception):
+        ElementType(substance='junk')

@@ -99,6 +99,9 @@ class ElementType(Serializable):
         try:
             self._substance = get_oil_props(val)
         except:
+            if isinstance(val, basestring):
+                raise
+
             self.logger.info('Failed to get_oil_props for {0}. Use as is '
                              'assuming has OilProps interface'.format(val))
             self._substance = val
