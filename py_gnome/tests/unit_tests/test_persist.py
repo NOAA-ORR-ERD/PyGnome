@@ -27,17 +27,6 @@ from gnome.outputters import Renderer
 from conftest import dump, testdata, test_oil
 
 
-@pytest.fixture(scope='function')
-def saveloc_(tmpdir, request):
-    name = 'save_' + request.function.func_name
-    if request._pyfuncitem._genid is not None:
-        name += '_{0}'.format(request._pyfuncitem._genid)
-
-    name = tmpdir.mkdir(name).strpath
-
-    return name
-
-
 def make_model(uncertain=False):
     '''
     Create a model from the data in sample_data/boston_data
@@ -153,12 +142,13 @@ def make_model(uncertain=False):
                                  active_stop=skim_start + timedelta(hours=2)),
                          Burn(0.2 * spill_volume, 1.0, skim_start)]
 
+    model.zipsave = False   # save in directory structure
     return model
 
 
 def test_init_exception(saveloc_):
     m = make_model(False)
-    with raises(ValueError):
+    with raises(IOError):
         m.save(os.path.join(saveloc_, 'x', 'junk'))
 
 

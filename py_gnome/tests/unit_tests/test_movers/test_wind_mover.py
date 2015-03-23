@@ -439,18 +439,12 @@ def test_serialize_deserialize(wind_circ):
     assert wm.wind == wind_circ['wind']
 
 
-@pytest.mark.serial
 @pytest.mark.parametrize("save_ref", [False, True])
-def test_save_load(save_ref):
+def test_save_load(save_ref, saveloc_):
     """
     tests and illustrates the functionality of save/load for
     WindMover
     """
-    #saveloc = clean_saveloc
-    base_dir = os.path.dirname(__file__)
-    saveloc = os.path.join(base_dir, 'temp')
-    if not os.path.exists(saveloc):
-        os.mkdir(saveloc)
     wind = Wind(filename=file_)
     wm = WindMover(wind)
     wm_fname = 'WindMover_save_test.json'
@@ -459,15 +453,15 @@ def test_save_load(save_ref):
         w_fname = 'Wind.json'
         refs = References()
         refs.reference(wind, w_fname)
-        wind.save(saveloc, refs, w_fname)
+        wind.save(saveloc_, refs, w_fname)
 
-    wm.save(saveloc, references=refs, name=wm_fname)
+    wm.save(saveloc_, references=refs, name=wm_fname)
 
     l_refs = References()
-    obj = load(os.path.join(saveloc, wm_fname), l_refs)
+    obj = load(os.path.join(saveloc_, wm_fname), l_refs)
     assert (obj == wm and obj is not wm)
     assert (obj.wind == wind and obj.wind is not wind)
-    shutil.rmtree(saveloc)  # clean-up
+    shutil.rmtree(saveloc_)  # clean-up
 
 
 def test_array_types():

@@ -72,16 +72,6 @@ here and parametrize it by the objects
 '''
 
 
-def test_savloc_created(dump):
-    'unit test for _make_saveloc method'
-    sav = Savable()
-    temp = os.path.join(dump, 'test_make_saveloc')
-    sav._make_saveloc(temp)
-
-    assert os.path.exists(temp)
-    shutil.rmtree(temp)
-
-
 base_dir = os.path.dirname(__file__)
 
 
@@ -98,17 +88,6 @@ g_objects = (environment.Tide(testdata['CatsMover']['tide']),
              movers.ComponentMover(testdata['ComponentMover']['curr'],
                  wind=environment.Wind(
                      filename=testdata['ComponentMover']['wind'])),
-            #==================================================================
-            # movers.CurrentCycleMover(testdata['CurrentCycleMover']['curr'],
-            #   topology_file=testdata['CurrentCycleMover']['topology'],
-            #   tide=environment.Tide(testdata['CurrentCycleMover']['tide'])),
-            # movers.CurrentCycleMover(testdata['CurrentCycleMover']['curr'],
-            #   topology_file=testdata['CurrentCycleMover']['topology']),
-            # movers.GridCurrentMover(testdata['GridCurrentMover']['curr'],
-            #   testdata['GridCurrentMover']['topology']),
-            # movers.GridWindMover(testdata['GridWindMover']['wind'],
-            #   testdata['GridWindMover']['topology']),
-            #===================================================================
              movers.RandomVerticalMover(),
              movers.SimpleMover(velocity=(10.0, 10.0, 0.0)),
              map.MapFromBNA(testdata['MapFromBNA']['testmap'], 6),
@@ -135,19 +114,16 @@ g_objects = (environment.Tide(testdata['CatsMover']['tide']),
 
 
 @pytest.mark.parametrize("obj", g_objects)
-def test_save_load(clean_saveloc, obj):
+def test_save_load(saveloc_, obj):
     'test save/load functionality'
-    refs = obj.save(clean_saveloc)
-    obj2 = load(os.path.join(clean_saveloc, refs.reference(obj)))
+    refs = obj.save(saveloc_)
+    obj2 = load(os.path.join(saveloc_, refs.reference(obj)))
     assert obj == obj2
 
 '''
-Following movers fail on windows with clean_saveloc fixture. The clean_saveloc
-fixture deletes ./temp directory before each run of test_save_load(). This is
-causing an issue in windows for the NetCDF files - for some reason it is not
-able to delete the netcdf data files. All files are being closed in C++, but
-until we find the solution, lets break up above tests and not call
-clean_saveloc for following tests.
+Following movers fail on windows with fixture. This is causing an issue in
+windows for the NetCDF files - for some reason it is not able to delete the
+netcdf data files. All files are being closed in C++.
 '''
 
 l_movers2 = (movers.CurrentCycleMover(testdata['CurrentCycleMover']['curr'],
@@ -163,11 +139,15 @@ l_movers2 = (movers.CurrentCycleMover(testdata['CurrentCycleMover']['curr'],
 
 
 @pytest.mark.parametrize("obj", l_movers2)
-def test_save_load_grids(obj, dump):
+def test_save_load_grids(saveloc_, obj):
     'test save/load functionality'
-
-    temp = os.path.join(dump, 'temp')
-    for dir_ in (temp, os.path.relpath(temp)):
-        refs = obj.save(dir_)
-        obj2 = load(os.path.join(dir_, refs.reference(obj)))
-        assert obj == obj2
+    refs = obj.save(saveloc_)
+    obj2 = load(os.path.join(saveloc_, refs.reference(obj)))
+    assert obj == obj2
+    #==========================================================================
+    # temp = os.path.join(dump, 'temp')
+    # for dir_ in (temp, os.path.relpath(temp)):
+    #     refs = obj.save(dir_)
+    #     obj2 = load(os.path.join(dir_, refs.reference(obj)))
+    #     assert obj == obj2
+    #==========================================================================
