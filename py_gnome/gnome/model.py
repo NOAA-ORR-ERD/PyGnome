@@ -4,6 +4,7 @@ import shutil
 from datetime import datetime, timedelta
 import copy
 import inspect
+from zipfile import ZipFile
 
 import numpy
 np = numpy
@@ -253,6 +254,9 @@ class Model(Serializable):
         if time_step is not None:
             self.time_step = time_step  # this calls rewind() !
         self._reset_num_time_steps()
+
+        # default is to zip save file
+        self.zipsave = True
 
     def reset(self, **kwargs):
         '''
@@ -887,11 +891,22 @@ class Model(Serializable):
     def save(self, saveloc, references=None, name=None):
         # Note: Defining references=References() in the function definition
         # keeps the references object in memory between tests - it changes the
-        # scope of Referneces() to be outside the Model() instance. We don't
+        # scope of References() to be outside the Model() instance. We don't
         # want this
+        if self.zipsave:
+            if name is None and self.name is None:
+                z_name = 'Model.zip'
+            else:
+                z_name = name if name is not None else self.name
+
+            # create the zipfile and update saveloc - _json_to_saveloc checks
+            # to see if saveloc is a zipfile
+            z = ZipFile(z_name, 'w')
+            z.close()
+            saveloc = os.path.join(saveloc, z_name)
+
+        #self._empty_save_dir(saveloc)
         references = (references, References())[references is None]
-        self._make_saveloc(saveloc)
-        self._empty_save_dir(saveloc)
         json_ = self.serialize('save')
 
         # map is the only nested structure - let's manually call
@@ -918,8 +933,11 @@ class Model(Serializable):
             self._save_spill_data(os.path.join(saveloc,
                                                'spills_data_arrays.nc'))
 
-        # there should be no more references
-        self._json_to_saveloc(json_, saveloc, references, name)
+        # if saved as zipfile, then store model's json in Model.json - this is
+        # default if name is None
+        mdl_name = None if self.zipsave else name
+        self._json_to_saveloc(json_, saveloc, references, mdl_name)
+
         return references
 
     def _save_collection(self, saveloc, coll_, refs, coll_json):
@@ -1008,6 +1026,7 @@ class Model(Serializable):
             sc._data_arrays = data
             sc.weathering_data = weather_data
 
+    # todo: remove following
     def _empty_save_dir(self, saveloc):
         '''
         Remove all files, directories under saveloc

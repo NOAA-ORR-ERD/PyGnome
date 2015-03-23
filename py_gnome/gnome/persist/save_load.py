@@ -26,6 +26,10 @@ class References(object):
         else:
             return False
 
+    @property
+    def files(self):
+        return self._refs.keys()
+
     def get_reference(self, obj):
         '''
         return key if obj already exists in references list
@@ -121,10 +125,6 @@ class Savable(object):
     gnome objects. Mix this in with the Serializable class so all gnome objects
     can save/load themselves
     '''
-
-    # Let Model set this to its own name - if this is not set, then don't zip
-    _zipname = None
-
     def _json_to_saveloc(self,
                          json_,
                          saveloc,
@@ -132,7 +132,7 @@ class Savable(object):
                          name=None):
         '''
         break up save into two steps so child classes can modify json if
-        desired before saving
+        desired before invoking this method
         '''
 
         references = (references, References())[references is None]
@@ -163,16 +163,25 @@ class Savable(object):
 
         # move datafiles to saveloc
         json_ = self._move_data_file(saveloc, json_)
-        full_name = os.path.join(saveloc, f_name)
-
-        with open(full_name, 'w') as outfile:
-            json.dump(json_, outfile, indent=True)
+        if zipfile.is_zipfile(saveloc):
+            self._write_to_zip(saveloc, json_)
+        else:
+            # make last leaf of save location if it doesn't exist
+            #self._make_saveloc(saveloc)
+            self._write_to_file(os.path.join(saveloc, f_name), json_)
 
         return references
 
+    def _write_to_file(self, full_name, json_):
+        with open(full_name, 'w') as outfile:
+            json.dump(json_, outfile, indent=True)
+
+    def _write_to_zip(self):
+        pass
+
     def _make_saveloc(self, saveloc):
         '''
-        Create the last leave in saveloc path if it doesn't exist
+        Create the last leaf in saveloc path if it doesn't exist
         '''
         path_, savedir = os.path.split(saveloc)
         if path_ == '':
@@ -202,7 +211,6 @@ class Savable(object):
             how a reference a nested object.
         """
 
-        self._make_saveloc(saveloc)
         json_ = self.serialize('save')
         return self._json_to_saveloc(json_, saveloc, references=references,
                                      name=name)
@@ -222,13 +230,21 @@ class Savable(object):
             if field.name not in json_:
                 continue
 
-            value = json_[field.name]
-            if value != os.path.join(saveloc, os.path.split(value)[1]):
-                if os.path.exists(value) and os.path.isfile(value):
-                    shutil.copy(value, saveloc)
+            # data filename
+            d_fname = os.path.split(json_[field.name])[1]
+
+            if zipfile.is_zipfile(saveloc):
+                # add datafile to zip archive
+                with zipfile.ZipFile(saveloc, 'a') as z:
+                    if d_fname not in z.namelist():
+                        z.write(d_fname)
+            else:
+                # move datafile to saveloc
+                if json_[field.name] != os.path.join(saveloc, d_fname):
+                    shutil.copy(json_[field.name], saveloc)
 
             # always want to update the reference so it is relative to saveloc
-            json_[field.name] = os.path.split(value)[1]
+            json_[field.name] = d_fname
 
         return json_
 
