@@ -77,12 +77,10 @@ def test_init():
     assert g.output_dir is None
 
 
-@pytest.mark.serial
 @pytest.mark.slow
 def test_model_webapi_output(model, output_dir):
     '''
     Test weathering outputter with a model since simplest to do that
-    Writing data to file so mark it as serial
     '''
     model.outputters[-1].output_dir = output_dir
     model.rewind()
@@ -112,7 +110,6 @@ def test_model_webapi_output(model, output_dir):
 
     # removed last test and do the assertion here itself instead of writing to
     # file again which takes awhile!
-    #output_dir = model.outputters[0].output_dir
     if output_dir is not None:
         files = glob(os.path.join(output_dir, '*.json'))
         assert len(files) == model.num_time_steps

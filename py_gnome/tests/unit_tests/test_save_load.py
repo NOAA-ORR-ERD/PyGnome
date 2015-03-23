@@ -13,8 +13,6 @@ from conftest import testdata, test_oil
 
 import pytest
 
-pytestmark = pytest.mark.serial
-
 
 def test_exceptions():
     a = 1
