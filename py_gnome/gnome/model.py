@@ -4,7 +4,7 @@ import shutil
 from datetime import datetime, timedelta
 import copy
 import inspect
-from zipfile import ZipFile
+import zipfile
 
 import numpy
 np = numpy
@@ -888,24 +888,46 @@ class Model(Serializable):
 
         return None
 
-    def save(self, saveloc, references=None, name=None):
-        # Note: Defining references=References() in the function definition
-        # keeps the references object in memory between tests - it changes the
-        # scope of References() to be outside the Model() instance. We don't
-        # want this
+    def _create_zip(self, saveloc, name):
+        '''
+        create a zipfile and update saveloc to point to it. This is now
+        passed down to all the objects contained within the Model so they can
+        save themselves to zipfile
+        '''
         if self.zipsave:
             if name is None and self.name is None:
                 z_name = 'Model.zip'
             else:
-                z_name = name if name is not None else self.name
+                z_name = name if name is not None else self.name + '.zip'
 
             # create the zipfile and update saveloc - _json_to_saveloc checks
             # to see if saveloc is a zipfile
-            z = ZipFile(z_name, 'w')
-            z.close()
             saveloc = os.path.join(saveloc, z_name)
+            z = zipfile.ZipFile(saveloc, 'w',
+                                compression=zipfile.ZIP_DEFLATED,
+                                allowZip64=True)
+            z.close()
 
-        #self._empty_save_dir(saveloc)
+        return saveloc
+
+    def save(self, saveloc, references=None, name=None):
+        '''
+        save the model state in saveloc. If self.zipsave is True, then a
+        zip archive is created and model files are saved to the archive.
+
+        This overrides the base class save(). Model contains collections and
+        model must invoke save for each object in the collection. It must also
+        save the data in the SpillContainer's if it is a mid-run save.
+
+        :returns: references
+        '''
+        # if zipsave is on, the create zip and update saveloc
+        saveloc = self._create_zip(saveloc, name)
+
+        # Note: Defining references=References() in the function definition
+        # keeps the references object in memory between tests - it changes the
+        # scope of References() to be outside the Model() instance. We don't
+        # want this so define the default here
         references = (references, References())[references is None]
         json_ = self.serialize('save')
 
@@ -930,12 +952,11 @@ class Model(Serializable):
             hard code the filename - can make this an attribute if user wants
             to change it - but not sure if that will ever be needed?
             '''
-            self._save_spill_data(os.path.join(saveloc,
-                                               'spills_data_arrays.nc'))
+            self._save_spill_data(saveloc, 'spills_data_arrays.nc')
 
         # if saved as zipfile, then store model's json in Model.json - this is
         # default if name is None
-        mdl_name = None if self.zipsave else name
+        mdl_name = 'Model.json' if self.zipsave or name is None else name
         self._json_to_saveloc(json_, saveloc, references, mdl_name)
 
         return references
@@ -977,25 +998,46 @@ class Model(Serializable):
             else:
                 coll_json[count]['id'] = obj_ref
 
-    def _save_spill_data(self, datafile):
-        """ save the data arrays for current timestep to NetCDF """
+    def _save_spill_data(self, saveloc, nc_file):
+        """
+        save the data arrays for current timestep to NetCDF
+        If saveloc is zipfile, then move NetCDF to zipfile
+        """
+        zipname = None
+        if zipfile.is_zipfile(saveloc):
+            saveloc, zipname = os.path.split(saveloc)
+
+        datafile = os.path.join(saveloc, nc_file)
         nc_out = NetCDFOutput(datafile, which_data='all', cache=self._cache)
         nc_out.prepare_for_model_run(model_start_time=self.start_time,
                                      uncertain=self.uncertain,
                                      spills=self.spills)
         nc_out.write_output(self.current_time_step)
+        if zipname is not None:
+            with zipfile.ZipFile(os.path.join(saveloc, zipname), 'a',
+                                 compression=zipfile.ZIP_DEFLATED,
+                                 allowZip64=True) as z:
+                z.write(datafile, nc_file)
+                os.remove(datafile)
 
-    def _load_spill_data(self, spill_data):
+    def _load_spill_data(self, saveloc, nc_file):
         """
         load NetCDF file and add spill data back in - designed for savefiles
         """
+        if zipfile.is_zipfile(saveloc):
+            with zipfile.ZipFile(saveloc, 'r') as z:
+                if nc_file not in z.namelist():
+                    return
 
+                saveloc = os.path.split(saveloc)[0]
+                z.extract(nc_file, saveloc)
+
+        spill_data = os.path.join(saveloc, nc_file)
         if not os.path.exists(spill_data):
             return
 
         if self.uncertain:
-            saveloc, spill_data_fname = os.path.split(spill_data)
-            spill_data_fname, ext = os.path.splitext(spill_data_fname)
+            spill_data_fname, ext = os.path.splitext(nc_file)
             u_spill_data = os.path.join(saveloc,
                                         '{0}_uncertain{1}'
                                         .format(spill_data_fname, ext))
@@ -1025,6 +1067,11 @@ class Model(Serializable):
             sc.current_time_stamp = data.pop('current_time_stamp').item()
             sc._data_arrays = data
             sc.weathering_data = weather_data
+
+        # delete file after data is loaded - since no longer needed
+        os.remove(spill_data)
+        if self.uncertain:
+            os.remove(u_spill_data)
 
     # todo: remove following
     def _empty_save_dir(self, saveloc):
@@ -1180,7 +1227,7 @@ class Model(Serializable):
 
         model = cls.new_from_dict(_to_dict)
 
-        model._load_spill_data(os.path.join(saveloc, 'spills_data_arrays.nc'))
+        model._load_spill_data(saveloc, 'spills_data_arrays.nc')
 
         return model
 
@@ -1196,8 +1243,7 @@ class Model(Serializable):
             if refs.retrieve(i_ref):
                 l_coll.append(refs.retrieve(i_ref))
             else:
-                f_name = os.path.join(saveloc, item['id'])
-                obj = load(f_name, refs)    # will add obj to refs
+                obj = load(saveloc, item['id'], refs)
                 l_coll.append(obj)
         return (l_coll)
 

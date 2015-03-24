@@ -6,6 +6,8 @@ the Wind object defines the Wind conditions for the spill
 import datetime
 import os
 import copy
+import StringIO
+import zipfile
 
 import numpy
 np = numpy
@@ -245,18 +247,38 @@ class Wind(Timeseries, Environment, serializable.Serializable):
 
     def save(self, saveloc, references=None, name=None):
         '''
-        Write Wind timeseries to file, then call save method using super
+        Write Wind timeseries to file or to zip,
+        then call save method using super
         '''
         name = (name, 'Wind.json')[name is None]
-        datafile = os.path.join(saveloc,
-                                os.path.splitext(name)[0] + '_data.WND')
-        self._write_timeseries_to_file(datafile)
-        self._filename = datafile
+        ts_name = os.path.splitext(name)[0] + '_data.WND'
+
+        if zipfile.is_zipfile(saveloc):
+            self._write_timeseries_to_zip(saveloc, ts_name)
+            self._filename = ts_name
+        else:
+            datafile = os.path.join(saveloc, ts_name)
+            self._write_timeseries_to_file(datafile)
+            self._filename = datafile
         return super(Wind, self).save(saveloc, references, name)
 
-    def _write_timeseries_to_file(self, datafile):
-        '''write to temp file '''
+    def _write_timeseries_to_zip(self, saveloc, ts_name):
+        '''
+        use a StringIO type of file descriptor and write directly to zipfile
+        '''
+        fd = StringIO.StringIO()
+        self._write_timeseries_to_fd(fd)
+        self._write_to_zip(saveloc, ts_name, fd.getvalue())
 
+    def _write_timeseries_to_file(self, datafile):
+        '''write timeseries data to file '''
+        with open(datafile, 'w') as fd:
+            self._write_timeseries_to_fd(fd)
+
+    def _write_timeseries_to_fd(self, fd):
+        '''
+        Takes a general file descriptor as input and writes data to it.
+        '''
         header = ('Station Name\n'
                   'Position\n'
                   'knots\n'
@@ -266,24 +288,23 @@ class Wind(Timeseries, Environment, serializable.Serializable):
         dt = (self.get_timeseries(units='knots')['time']
               .astype(datetime.datetime))
 
-        with open(datafile, 'w') as file_:
-            file_.write(header)
+        fd.write(header)
 
-            for i, idt in enumerate(dt):
-                file_.write('{0.day:02}, '
-                            '{0.month:02}, '
-                            '{0.year:04}, '
-                            '{0.hour:02}, '
-                            '{0.minute:02}, '
-                            '{1:02.4f}, {2:02.4f}\n'
-                            .format(idt,
-                                    round(val[i, 0], 4),
-                                    round(val[i, 1], 4))
-                            )
-        file_.close()   # just incase we get issues on windows
+        for i, idt in enumerate(dt):
+            fd.write('{0.day:02}, '
+                     '{0.month:02}, '
+                     '{0.year:04}, '
+                     '{0.hour:02}, '
+                     '{0.minute:02}, '
+                     '{1:02.4f}, {2:02.4f}\n'.format(idt,
+                                                     round(val[i, 0], 4),
+                                                     round(val[i, 1], 4)))
 
     def update_from_dict(self, data):
         '''
+        update attributes from dict - override base class because we want to
+        set the units before updating the data so conversion is done correctly.
+        Internally all data is stored in SI units.
         '''
         updated = self.update_attr('units', data.pop('units', self.units))
         if super(Wind, self).update_from_dict(data):

@@ -74,8 +74,7 @@ class References(object):
         if key is not None:
             return key
 
-        key = "{0}_{1}.json".format(obj.__class__.__name__,
-                len(self._refs))
+        key = "{0}_{1}.json".format(obj.__class__.__name__, len(self._refs))
 
         self._refs[key] = obj
         return key
@@ -90,32 +89,54 @@ class References(object):
             return None
 
 
-def load(fname, references=None):
+def load(saveloc, fname='Model.json', references=None):
     '''
     read json from file and load the appropriate object
     This is a general purpose load method that looks at the json['obj_type']
     and invokes json['obj_type'].loads(json) method
 
-    :param fname: .json file to load. If this is a directory, then look for a
-        default name of 'Model.json' to load
-    :param references=None:
+    :param saveloc: path to zipfile that contains data files and json files.
+        It could also be a directory containing files - keep original support
+        for location files.
+    :param fname: .json file to load. Default is 'Model.json'. zipfile/dir
+        must contain 'fname'
+    :param references=None: References object that keeps track of objects
+        in a dict as they are constructed, using the filename as the key
+
+    :returns: object constructed from the json
+
+    .. note:: Function first assumes saveloc is a directory and looks for
+        saveloc/fname. If this fails, it checks if saveloc is a zipfile. If
+        this fails, it checks if saveloc is a file and loads this assuming its
+        json for a gnome object. If none of these work, it just returns None.
     '''
     # is a directory, look for Model.json in directory
-    if os.path.isdir(fname):
-        fname = os.path.join(fname, 'Model.json')
+    if os.path.isdir(saveloc):
+        fd = open(os.path.join(saveloc, fname), 'r')
 
-    with open(fname, 'r') as fd:
-        json_data = json.loads("".join([l.rstrip('\n') for l in fd]))
-        #json_data = json.load(infile)
+    elif zipfile.is_zipfile(saveloc):
+        z = zipfile.ZipFile(saveloc)
+        fd = z.open(fname, 'r')
+
+    elif os.path.isfile(saveloc):
+        fd = open(saveloc, 'r')
+        saveloc, fname = os.path.split(saveloc)
+
+    else:
+        # nothing to do, saveloc is not zipfile or a directory
+        return
+
+    # load json data from file descriptor
+    json_data = json.loads("".join([l.rstrip('\n') for l in fd]))
+    fd.close()
 
     # create a reference to the object being loaded
-    saveloc, name = os.path.split(fname)
     obj_type = json_data.pop('obj_type')
     obj = eval(obj_type).loads(json_data, saveloc, references)
 
     # after loading, add the object to references
     if references:
-        references.reference(obj, name)
+        references.reference(obj, fname)
     return obj
 
 
@@ -125,17 +146,24 @@ class Savable(object):
     gnome objects. Mix this in with the Serializable class so all gnome objects
     can save/load themselves
     '''
-    def _json_to_saveloc(self,
-                         json_,
-                         saveloc,
-                         references=None,
-                         name=None):
+    def _ref_in_saveloc(self, saveloc, ref):
         '''
-        break up save into two steps so child classes can modify json if
-        desired before invoking this method
+        returns true if reference is found in saveloc, false otherwise
         '''
+        if zipfile.is_zipfile(saveloc):
+            with zipfile.ZipFile(saveloc, 'r') as z:
+                if ref in z.namelist():
+                    return True
+                else:
+                    return False
+        else:
+            return os.path.exists(os.path.join(saveloc, ref))
 
-        references = (references, References())[references is None]
+    def _update_and_save_refs(self, json_, saveloc, references):
+        '''
+        for attributes that are stored as references - ensure the references
+        are moved to saveloc, and update its value in the json_
+        '''
         for field in self._state:
             if (field.save_reference and
                 getattr(self, field.name) is not None):
@@ -147,8 +175,38 @@ class Savable(object):
                 obj = getattr(self, field.name)
                 ref = references.reference(obj)
                 json_[field.name] = ref
-                if not os.path.exists(os.path.join(saveloc, ref)):
+                if not self._ref_in_saveloc(saveloc, ref):
                     obj.save(saveloc, references, name=ref)
+        return json_
+
+    def _json_to_saveloc(self,
+                         json_,
+                         saveloc,
+                         references=None,
+                         name=None):
+        '''
+        save json_ to saveloc
+
+        -. first save and update references if any attributes are stored as
+            references
+        -. add self to references
+        -. move any datafiles to saveloc that need to be persisted
+        -. finally, write json_ directly to zip if saveloc is a zip or dump
+            to *.json of saveloc is a directory
+
+        :param json_: json data after serialization. Default is the output of
+            self.serialize('save')
+        :param saveloc: Either zipfile to which object's json can be appended.
+            Or a valid path where object's *.json can be dumped to a file
+        :param references: References object to keep track of objects that
+            have been constructed. If a referenced object has been saved,
+            no need to add it again to saveloc - don't want multiple copies
+        :param name: json is stored in 'name.json' in zip archive/specified
+            directory. Default is self.__class__.__name__. If references object
+            contains self.__class__.__name__, then let
+        '''
+        references = (references, References())[references is None]
+        json_ = self._update_and_save_refs(json_, saveloc, references)
 
         f_name = \
             (name, '{0}.json'.format(self.__class__.__name__))[name is None]
@@ -164,51 +222,46 @@ class Savable(object):
         # move datafiles to saveloc
         json_ = self._move_data_file(saveloc, json_)
         if zipfile.is_zipfile(saveloc):
-            self._write_to_zip(saveloc, json_)
+            self._write_to_zip(saveloc, f_name, json.dumps(json_, indent=True))
         else:
             # make last leaf of save location if it doesn't exist
-            #self._make_saveloc(saveloc)
-            self._write_to_file(os.path.join(saveloc, f_name), json_)
+            self._write_to_file(saveloc, f_name, json_)
 
         return references
 
-    def _write_to_file(self, full_name, json_):
+    def _write_to_file(self, saveloc, f_name, json_):
+        full_name = os.path.join(saveloc, f_name)
         with open(full_name, 'w') as outfile:
             json.dump(json_, outfile, indent=True)
 
-    def _write_to_zip(self):
-        pass
-
-    def _make_saveloc(self, saveloc):
+    def _write_to_zip(self, saveloc, f_name, s_data):
         '''
-        Create the last leaf in saveloc path if it doesn't exist
+        general function for writing string data directly to zipfile.
+
+        f_name is the archive name and s_data is the corresponding string,
+        added to zipfile
         '''
-        path_, savedir = os.path.split(saveloc)
-        if path_ == '':
-            path_ = '.'
-
-        if not os.path.exists(path_):
-            raise ValueError('"{0}" does not exist. \nCannot create "{1}"'
-                             .format(path_, savedir))
-
-        if not os.path.exists(saveloc):
-            os.mkdir(saveloc)
+        with zipfile.ZipFile(saveloc, 'a',
+                             compression=zipfile.ZIP_DEFLATED,
+                             allowZip64=True) as z:
+            z.writestr(f_name, s_data)
 
     def save(self, saveloc, references=None, name=None):
         """
-        save object serialized to json format to user specified saveloc
+        save object state as json to user specified saveloc
 
-        :param saveloc: A valid directory. Model files are either persisted
-            here or a new model is re-created from the files stored here.
-            The files are clobbered when save() is called.
+        :param saveloc: zip archive or a valid directory. Model files are
+            either persisted here or a new model is re-created from the files
+            stored here. The files are clobbered when save() is called.
         :type saveloc: A path as a string or unicode
         :param name=None: filename to store json. If None, default name is:
-            "{0}.json".format(self.__class__.__name__)
+            "{0}.json".format(self.__class__.__name__). If saveloc is zipfile,
+            this is the name of archive in which json for self is stored.
         :type name: str
         :param references: dict of references mapping 'id' to a string used for
             the reference. The value could be a unique integer or it could be
             a filename. It is upto the creator of the reference list to decide
-            how a reference a nested object.
+            how to reference a nested object.
         """
 
         json_ = self.serialize('save')
@@ -218,11 +271,9 @@ class Savable(object):
     def _move_data_file(self, saveloc, json_):
         """
         Look at _state attribute of object. Find all fields with 'isdatafile'
-        attribute as True. If there is a key in to_json corresponding with
+        attribute as True. If there is a key in json_ corresponding with
         'name' of the fields with True 'isdatafile' attribute then move that
-        datafile and update the key in the to_json to point to new location
-
-        TODO: maybe this belongs in serializable base class? Revisit this
+        datafile and update the key in the json_ to point to new location
         """
         fields = self._state.get_field_by_attribute('isdatafile')
 
@@ -237,7 +288,7 @@ class Savable(object):
                 # add datafile to zip archive
                 with zipfile.ZipFile(saveloc, 'a') as z:
                     if d_fname not in z.namelist():
-                        z.write(d_fname)
+                        z.write(json_[field.name], d_fname)
             else:
                 # move datafile to saveloc
                 if json_[field.name] != os.path.join(saveloc, d_fname):
@@ -265,8 +316,7 @@ class Savable(object):
                     i_ref = json_data.pop(field.name)
                     ref_obj = references.retrieve(i_ref)
                     if not ref_obj:
-                        ref_filename = os.path.join(saveloc, i_ref)
-                        ref_obj = load(ref_filename, references)
+                        ref_obj = load(saveloc, i_ref, references)
 
                     ref_dict[field.name] = ref_obj
 
@@ -274,13 +324,32 @@ class Savable(object):
 
     @classmethod
     def _update_datafile_path(cls, json_data, saveloc):
-        'update path to attributes that use a datafile'
+        '''
+        update path to attributes that use a datafile
+        if saveloc is a zipfile, then extract the datafile to same location
+        as zipfile and upate path in json_data.
+        '''
         datafiles = cls._state.get_field_by_attribute('isdatafile')
+        if len(datafiles) == 0:
+            return
+
+        iszip = False
+
+        if zipfile.is_zipfile(saveloc):
+            iszip = True
+            z = zipfile.ZipFile(saveloc, 'r')
+            saveloc = os.path.split(saveloc)[0]
+
         # fix datafiles path from relative to absolute so we can load datafiles
         for field in datafiles:
             if field.name in json_data:
+                if iszip:
+                    z.extract(json_data[field.name], saveloc)
+
                 json_data[field.name] = os.path.join(saveloc,
                                                      json_data[field.name])
+        if iszip:
+            z.close()
 
     @classmethod
     def loads(cls, json_data, saveloc=None, references=None):
@@ -292,6 +361,11 @@ class Savable(object):
         - deserialize json_data
         - and create object with new_from_dict()
 
+        json_data: dict containing json data. It has been parsed through the
+            json.loads() command. The json will be valided here when it gets
+            deserialized. Its references and datafile paths will be recreated
+            here prior to calling new_from_dict()
+
         Optional parameter
 
         :param saveloc: location of data files or *.json files for objects
@@ -300,6 +374,8 @@ class Savable(object):
             can be None.
         :param references: references object - if this is called by the Model,
             it will pass a references object. It is not required.
+
+        :returns: object constructed from json_data.
         '''
         references = (references, References())[references is None]
         ref_dict = cls._load_refs(json_data, saveloc, references)

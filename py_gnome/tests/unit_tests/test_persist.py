@@ -1,6 +1,7 @@
 '''
 primarily tests the operations of the scenario module, the colander schemas,
 and the ability of Model to be recreated in midrun
+tests save/load to directory - original functionality and save/load to zip
 '''
 
 import os
@@ -142,8 +143,15 @@ def make_model(uncertain=False):
                                  active_stop=skim_start + timedelta(hours=2)),
                          Burn(0.2 * spill_volume, 1.0, skim_start)]
 
-    model.zipsave = False   # save in directory structure
     return model
+
+
+def zipname(saveloc, mdl):
+    # put common two lines of functionality here
+    if mdl.zipsave:
+        # default name of zip file is same as model.name attribute
+        return os.path.join(saveloc, mdl.name + '.zip')
+    return saveloc
 
 
 def test_init_exception(saveloc_):
@@ -153,26 +161,31 @@ def test_init_exception(saveloc_):
 
 
 @pytest.mark.slow
-@pytest.mark.parametrize('uncertain', [False, True])
-def test_save_load_model(uncertain, saveloc_):
+@pytest.mark.parametrize(('uncertain', 'zipsave'),
+                         [(False, False), (True, False),
+                          (False, True), (True, True)])
+def test_save_load_model(uncertain, zipsave, saveloc_):
     '''
     create a model, save it, then load it back up and check it is equal to
     original model
     '''
     model = make_model(uncertain)
+    model.zipsave = zipsave
 
     print 'saving scenario ..'
     model.save(saveloc_)
 
     print 'loading scenario ..'
-    model2 = load(saveloc_)
+    model2 = load(zipname(saveloc_, model))
 
     assert model == model2
 
 
 @pytest.mark.slow
-@pytest.mark.parametrize('uncertain', [False, True])
-def test_save_load_midrun_scenario(uncertain, saveloc_):
+@pytest.mark.parametrize(('uncertain', 'zipsave'),
+                         [(False, False), (True, False),
+                          (False, True), (True, True)])
+def test_save_load_midrun_scenario(uncertain, zipsave, saveloc_):
     """
     create model, save it after 1step, then load and check equality of original
     model and persisted model
@@ -185,7 +198,7 @@ def test_save_load_midrun_scenario(uncertain, saveloc_):
     model.save(saveloc_)
 
     print 'loading scenario ..'
-    model2 = load(os.path.join(saveloc_, 'Model.json'))
+    model2 = load(zipname(saveloc_, model))
 
     for sc in zip(model.spills.items(), model2.spills.items()):
         sc[0]._array_allclose_atol = 1e-5  # need to change both atol
@@ -196,8 +209,10 @@ def test_save_load_midrun_scenario(uncertain, saveloc_):
 
 
 @pytest.mark.slow
-@pytest.mark.parametrize('uncertain', [False, True])
-def test_save_load_midrun_no_movers(uncertain, saveloc_):
+@pytest.mark.parametrize(('uncertain', 'zipsave'),
+                         [(False, False), (True, False),
+                          (False, True), (True, True)])
+def test_save_load_midrun_no_movers(uncertain, zipsave, saveloc_):
     """
     create model, save it after 1step, then load and check equality of original
     model and persisted model
@@ -214,7 +229,7 @@ def test_save_load_midrun_no_movers(uncertain, saveloc_):
     model.save(saveloc_)
 
     print 'loading scenario ..'
-    model2 = load(os.path.join(saveloc_, 'Model.json'))
+    model2 = load(zipname(saveloc_, model))
 
     for sc in zip(model.spills.items(), model2.spills.items()):
         # need to change both atol since reading persisted data
@@ -243,7 +258,7 @@ def test_load_midrun_ne_rewound_model(uncertain, saveloc_):
     model.save(saveloc_)
 
     model.rewind()
-    model2 = load(os.path.join(saveloc_, 'Model.json'))
+    model2 = load(zipname(saveloc_, model))
 
     assert model.spills != model2.spills
     assert model != model2
