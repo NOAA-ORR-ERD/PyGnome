@@ -919,6 +919,20 @@ class Model(Serializable):
         model must invoke save for each object in the collection. It must also
         save the data in the SpillContainer's if it is a mid-run save.
 
+        :param saveloc: zip archive or a valid directory. Model files are
+            either persisted here or a new model is re-created from the files
+            stored here. The files are clobbered when save() is called.
+        :type saveloc: A path as a string or unicode
+        :param name=None: If data is saved to zipfile (default behavior), then
+            this is name of zip file. For a zipfile, the model's state is
+            always contained in Model.json. If zipsave is False, then model's
+            json is stored in name.json
+        :type name: str
+        :param references: dict of references mapping 'id' to a string used for
+            the reference. The value could be a unique integer or it could be
+            a filename. It is upto the creator of the reference list to decide
+            how to reference a nested object.
+
         :returns: references
         '''
         # if zipsave is on, the create zip and update saveloc
