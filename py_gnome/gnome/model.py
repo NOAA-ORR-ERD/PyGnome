@@ -164,7 +164,7 @@ class Model(Serializable):
 
         # restore the spill data outside this method - let's not try to find
         # the saveloc here
-        msg = ("{0._pid} 'new_from_dict' created new model: "
+        msg = ("{0._pid}'new_from_dict' created new model: "
                "{0.name}").format(model)
         model.logger.info(msg)
         return model
@@ -287,6 +287,8 @@ class Model(Serializable):
 
         for outputter in self.outputters:
             outputter.rewind()
+
+        self.logger.info(self._pid + "rewound model - " + self.name)
 
 #    def write_from_cache(self, filetype='netcdf', time_step='all'):
 #        """
