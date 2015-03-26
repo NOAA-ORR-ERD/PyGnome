@@ -9,6 +9,7 @@ module to hold all the map rendering code.
 import os
 import glob
 import copy
+import zipfile
 
 from colander import SchemaNode, String, drop
 
@@ -305,12 +306,11 @@ class Renderer(Outputter, MapCanvas):
     def save(self, saveloc, references=None, name=None):
         '''
         update the 'images_dir' key in the json_ to point to directory
-        inside saveloc, then save the json
+        inside saveloc, then save the json - do not copy image files or
+        image directory over
         '''
         json_ = self.serialize('save')
         out_dir = os.path.split(json_['images_dir'])[1]
-        os.mkdir(os.path.join(saveloc, out_dir))
-
         # store images_dir relative to saveloc
         json_['images_dir'] = os.path.join('./', out_dir)
 
@@ -321,8 +321,13 @@ class Renderer(Outputter, MapCanvas):
         '''
         loads object from json_data
 
-        prepend saveloc path to 'images_dir' then call super to load object
+        prepend saveloc path to 'images_dir' and create images_dir in saveloc,
+        then call super to load object
         '''
+        if zipfile.is_zipfile(saveloc):
+            saveloc = os.path.split(saveloc)[0]
+
+        os.mkdir(os.path.join(saveloc, json_data['images_dir']))
         json_data['images_dir'] = os.path.join(saveloc,
                                                json_data['images_dir'])
         return super(Renderer, cls).loads(json_data, saveloc, references)
