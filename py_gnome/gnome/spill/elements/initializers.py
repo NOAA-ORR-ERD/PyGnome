@@ -12,14 +12,13 @@ import numpy
 np = numpy
 from colander import SchemaNode, Int, Float, Range, TupleSchema
 
-import gnome    # required by new_from_dict
 from gnome.utilities.rand import random_with_persistance
 from gnome.utilities.serializable import Serializable
 from gnome.utilities.distributions import UniformDistribution
 
 from gnome.cy_gnome.cy_rise_velocity_mover import rise_velocity_from_drop_size
 
-from gnome.persist import base_schema
+from gnome.persist import base_schema, class_from_objtype
 """
 Initializers for various element types
 """
@@ -209,26 +208,30 @@ class DistributionBase(InitBaseClass, Serializable):
         'Add distribution schema based on "distribution" - then serialize'
 
         dict_ = self.to_serialize(json_)
-        schema = self.__class__._schema(name=self.__class__.__name__,
-                   distribution=self.distribution._schema(name='distribution'))
+        # note: it is important to change the 'name' attribute to distribution
+        # that's the key we look for in json_
+        schema = \
+            self.__class__._schema(name=self.__class__.__name__,
+                                   distribution=(self.distribution.
+                                                 _schema(name='distribution')))
         return schema.serialize(dict_)
 
     @classmethod
     def deserialize(cls, json_):
         'Add distribution schema based on "distribution" - then deserialize'
-        dist_type = json_['distribution']['obj_type']
-        to_eval = "{0}._schema(name='distribution')".format(dist_type)
-        dist_schema = eval(to_eval)
-        schema = cls._schema(name=cls.__name__, distribution=dist_schema)
+        dcls = class_from_objtype(json_['distribution']['obj_type'])
+
+        # note: it is important to change the 'name' attribute to distribution
+        # that's the key we look for in json_
+        schema = cls._schema(name=cls.__name__,
+                             distribution=dcls._schema(name='distribution'))
         dict_ = schema.deserialize(json_)
 
         # convert nested object ['distribution'] saved as a
         # dict, back to an object if json_ == 'save' here itself
         if json_['json_'] == 'save':
             distribution = dict_.get('distribution')
-            to_eval = '{0}.new_from_dict(distribution)'.format(
-                                                    distribution['obj_type'])
-            dict_['distribution'] = eval(to_eval)
+            dict_['distribution'] = dcls.new_from_dict(distribution)
 
         return dict_
 

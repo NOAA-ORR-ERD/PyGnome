@@ -26,7 +26,8 @@ from gnome.outputters import Outputter, NetCDFOutput, WeatheringOutput
 from gnome.persist import (extend_colander,
                            validators,
                            References,
-                           load)
+                           load,
+                           class_from_objtype)
 from gnome.persist.base_schema import (ObjType,
                                        OrderedCollectionItemsList)
 
@@ -1223,9 +1224,8 @@ class Model(Serializable):
         # for laoding save files/location files, so it assumes:
         # json_data['json_'] == 'save'
         if ('map' in json_data):
-            map_obj = eval(json_data['map']['obj_type']).loads(json_data['map'],
-                                                               saveloc,
-                                                               references)
+            mapcls = class_from_objtype(json_data['map'].pop('obj_type'))
+            map_obj = mapcls.loads(json_data['map'], saveloc, references)
             _to_dict['map'] = map_obj
 
         # load collections

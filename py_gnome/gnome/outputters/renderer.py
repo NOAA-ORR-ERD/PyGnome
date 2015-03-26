@@ -13,9 +13,8 @@ import zipfile
 
 from colander import SchemaNode, String, drop
 
-from gnome.persist import base_schema
+from gnome.persist import base_schema, class_from_objtype
 
-import gnome    # implicitly used when loading from dict by new_from_dict
 from . import Outputter, BaseSchema
 from gnome.utilities.map_canvas import MapCanvas
 from gnome.utilities.serializable import Field
@@ -77,7 +76,7 @@ class Renderer(Outputter, MapCanvas):
             revisit this and see if we can make it consistent with nested
             objects .. but this works!
             '''
-            proj = eval(dict_.pop('projection_class'))
+            proj = class_from_objtype(dict_.pop('projection_class'))
             viewport = dict_.pop('viewport')
 
             obj = cls(projection_class=proj, **dict_)

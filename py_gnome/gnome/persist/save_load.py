@@ -5,8 +5,9 @@ import os
 import shutil
 import json
 import zipfile
+import logging
 
-import gnome    # used in eval to 'load' gnome object from json
+import gnome
 
 
 class References(object):
@@ -89,6 +90,20 @@ class References(object):
             return None
 
 
+def class_from_objtype(obj_type):
+    '''
+    object type must be a string in the gnome namespace:
+        gnome.xxx.xxx
+    '''
+    try:
+        # call getattr recursively
+        obj = reduce(getattr, obj_type.split('.')[1:], gnome)
+        return obj
+    except AttributeError:
+        log = logging.getLogger(__name__)
+        log.warning("{0} is not part of gnome namespace".format(obj_type))
+
+
 def load(saveloc, fname='Model.json', references=None):
     '''
     read json from file and load the appropriate object
@@ -131,8 +146,8 @@ def load(saveloc, fname='Model.json', references=None):
     fd.close()
 
     # create a reference to the object being loaded
-    obj_type = json_data.pop('obj_type')
-    obj = eval(obj_type).loads(json_data, saveloc, references)
+    cls = class_from_objtype(json_data.pop('obj_type'))
+    obj = cls.loads(json_data, saveloc, references)
 
     # after loading, add the object to references
     if references:

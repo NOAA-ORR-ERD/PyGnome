@@ -11,7 +11,6 @@ These are properties that are spill specific like:
 '''
 import copy
 
-import gnome    # required by new_from_dict
 from gnome.utilities.serializable import Serializable, Field
 from .initializers import (InitRiseVelFromDropletSizeFromDist,
                            InitRiseVelFromDist,
@@ -19,7 +18,7 @@ from .initializers import (InitRiseVelFromDropletSizeFromDist,
                            InitMassFromPlume)
 from oil_library import get_oil_props
 
-from gnome.persist import base_schema
+from gnome.persist import base_schema, class_from_objtype
 import unit_conversion as uc
 
 
@@ -201,14 +200,15 @@ class ElementType(Serializable):
             d_init = []
 
             for i_val in json_['initializers']:
-                deserial = eval(i_val['obj_type']).deserialize(i_val)
+                i_cls = class_from_objtype(i_val['obj_type'])
+                deserial = i_cls.deserialize(i_val)
 
                 if json_['json_'] == 'save':
                     '''
                     If loading from save file, convert the dict_ to new object
                     here itself
                     '''
-                    obj = eval(deserial['obj_type']).new_from_dict(deserial)
+                    obj = i_cls.new_from_dict(deserial)
                     d_init.append(obj)
                 else:
                     d_init.append(deserial)
