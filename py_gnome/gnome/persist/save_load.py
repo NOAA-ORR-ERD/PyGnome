@@ -95,6 +95,9 @@ def class_from_objtype(obj_type):
     object type must be a string in the gnome namespace:
         gnome.xxx.xxx
     '''
+    if len(obj_type.split('.')) == 1:
+        return
+
     try:
         # call getattr recursively
         obj = reduce(getattr, obj_type.split('.')[1:], gnome)
