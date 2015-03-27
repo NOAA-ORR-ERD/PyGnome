@@ -76,10 +76,12 @@ class FayGravityViscous(object):
                          thickness,
                          frac_coverage=None):
         '''
-        Update thickness and stuff it in out array. This takes numpy arrays
+        Update thickness in place. This takes numpy arrays
         as input for init_volume, relative_bouyancy, age, thickness. Each
         element of the array is the property for an LE - array should be the
-        same shape.
+        same shape. Also return thickness array.
+
+        :returns: thickness data array
 
         Since this is for updating area/thickness, it assumes age > 0 for all
         elements. It is used inside WeatheringData and invoked for particles
@@ -88,6 +90,12 @@ class FayGravityViscous(object):
         It only updates the area for particles with thickness > xxx
         Since the frac_coverage should only be applied to particles which are
         updated, let's apply this in here.
+
+
+        .. note:: Assumes init_area, init_volume for blog of oil is evenly
+            divided into number of elements. The computation here requires the
+            init_volume and init_area for blob of oil. To get this we sum up
+            the init_volume and init_area for all LEs with same age.
 
         .. todo: unsure if thickness check should be here or outside this object.
             Since thickness limit is here, leave it for now, but maybe
@@ -100,29 +108,35 @@ class FayGravityViscous(object):
             raise ValueError('for new particles use init_area - age '
                              'must be > 0')
 
-        area = np.zeros_like(init_volume, dtype=np.float64)
+        blob_init_area = np.zeros_like(init_area)
+        blob_init_vol = np.zeros_like(init_volume)
+        for blob_age in np.unique(age):
+            mask = age == blob_age
+            blob_init_area[mask] = init_area[mask].sum()
+            blob_init_vol[mask] = init_volume[mask].sum()
 
         # ADIOS 2 used 0.1 mm as a minimum average spillet thickness for crude
         # oil and heavy refined products and 0.01 mm for lighter refined
         # products. Use 0.1mm for now
-        area[:] = init_volume/thickness
         mask = thickness > self.thickness_limit  # units of meters
         if np.any(mask):
-            area[mask] = init_area[mask]
+            blob_area = blob_init_area[mask]
             dFay = (self.spreading_const[1]**2./16. *
                     (constants.gravity*relative_bouyancy[mask] *
-                     init_volume[mask]**2 /
+                     blob_init_vol[mask]**2 /
                      np.sqrt(water_viscosity*age[mask])))
             dEddy = 0.033*age[mask]**(4./25)
-            area[mask] += (dFay + dEddy) * age[mask]
+            blob_area[:] += (dFay + dEddy) * age[mask]
 
             # apply fraction coverage here so particles less than min thickness
             # are not changed
             if frac_coverage is not None:
-                area[mask] *= frac_coverage[mask]
+                blob_area[:] *= frac_coverage[mask]
 
-        # finally return the new thickness
-        return init_volume/area
+            thickness[mask] = blob_init_vol[mask]/blob_area
+
+        # finally return the updated thickness
+        return thickness
 
 
 class WeatheringData(AddLogger):
@@ -327,18 +341,16 @@ class WeatheringData(AddLogger):
         data['relative_bouyancy'][mask] = \
             self._set_relative_bouyancy(data['density'][mask])
 
-        # Cannot change the init_area in place since the following:
-        #    sc['init_area'][-new_LEs:][in_spill]
-        # is an advanced indexing operation that makes a copy anyway
-        # Also, init_volume is same for all these new LEs so just provide
-        # a scalar value
-        data['init_volume'][mask] = np.sum(data['init_mass'][mask] /
-                                           data['density'][mask], 0)
-        data['init_area'][mask] = \
+        # evenly divide volume released to each LE. The blob volume for oil
+        # with same age is the sum of init_volume for LEs with same age
+        data['init_volume'][mask] = \
+            data['init_mass'][mask] / data['density'][mask]
+        area = \
             self.spreading.init_area(self.water.get('kinematic_viscosity',
                                                     'square meter per second'),
-                                     data['init_volume'][mask][0],
+                                     data['init_volume'][mask].sum(),
                                      data['relative_bouyancy'][mask][0])
+        data['init_area'][mask] = area/mask.sum()
         data['thickness'][mask] = \
             data['init_volume'][mask]/data['init_area'][mask]
 

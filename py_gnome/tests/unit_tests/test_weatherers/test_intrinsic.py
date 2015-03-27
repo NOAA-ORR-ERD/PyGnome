@@ -30,7 +30,8 @@ def data_arrays(num_elems=10):
     return a dict of numpy arrays similar to SpillContainer's data_arrays
     All elements are released together so they have same init_volume
     '''
-    init_volume = np.asarray([elem_volume*num_elems] * num_elems)
+    #init_volume = np.asarray([elem_volume*num_elems] * num_elems)
+    init_volume = np.asarray([elem_volume] * num_elems)
     relative_bouyancy = np.asarray([elem_rel_bouy] * num_elems)
     age = np.zeros_like(init_volume, dtype=int)
     init_area = np.zeros_like(init_volume)
@@ -103,26 +104,29 @@ class TestFayGravityViscous:
         (init_volume,
          relative_bouyancy,
          age, init_area, thickness) = data_arrays()
-        init_area[:] = self.spread.init_area(water_viscosity,
-                                             init_volume[0],
-                                             relative_bouyancy)
+        i_area = self.spread.init_area(water_viscosity,
+                                       init_volume.sum(),
+                                       relative_bouyancy[0])
 
         age[:] = 900
+        init_area[:] = i_area/len(init_area)
         # init_volume[0] and age[0] represents the volume and age of all
         # particles released at once
         # computes the init_area and updated area for particles at 900 sec
-        (A0, p_area) = self.expected(init_volume[0], age[0])
-        assert all(A0 == init_area)
+        (A0, p_area) = self.expected(init_volume.sum(), age[0])
+        assert A0 == i_area
+        assert A0 == init_area.sum()
 
-        thickness[:] = init_volume/init_area    # initialize it correctly
-        thickness[:] = self.spread.update_thickness(water_viscosity,
-                                                    init_area,
-                                                    init_volume,
-                                                    relative_bouyancy,
-                                                    age,
-                                                    thickness)
+        # initialize it correctly
+        thickness[:] = init_volume/init_area
+        self.spread.update_thickness(water_viscosity,
+                                     init_area,
+                                     init_volume,
+                                     relative_bouyancy,
+                                     age,
+                                     thickness)
 
-        assert all(thickness == init_volume[0]/p_area)
+        assert all(thickness == init_volume.sum()/p_area)
 
     def test_minthickness_values(self):
         (init_volume,
@@ -278,24 +282,20 @@ class TestWeatheringData:
             for age in ages:
                 mask10 = sc10['age'] == age
                 mask100 = sc100['age'] == age
-                assert np.allclose(sc10['mass'][mask10].sum(),
-                                   sc100['mass'][mask100].sum(), atol=1e-6)
+                assert np.isclose(sc10['mass'][mask10].sum(),
+                                  sc100['mass'][mask100].sum(), atol=1e-6)
 
                 # init_volume/init_area/area
-                assert (np.unique(sc10['init_volume'][mask10]) ==
-                        sc10['init_volume'][mask10][0])
-                assert np.allclose(sc10['init_volume'][mask10][0],
-                                   sc100['init_volume'][mask100][0], atol=1e-6)
-                assert np.allclose(np.unique(sc10['init_area'][mask10]),
-                                   sc10['init_area'][mask10][0], atol=1e-6)
-                assert np.allclose(sc10['thickness'][mask10][0],
-                                   sc100['thickness'][mask100][0], atol=1e-6)
+                assert np.isclose(sc10['init_volume'][mask10].sum(),
+                                  sc100['init_volume'][mask100].sum())
+                assert np.isclose(sc10['init_area'][mask10].sum(),
+                                  sc100['init_area'][mask100].sum())
+                assert np.isclose(sc10['thickness'][mask10][0],
+                                  sc100['thickness'][mask100][0], atol=1e-6)
 
-                # thickness
+                # all thickness values are same for given age
                 assert (np.unique(sc10['thickness'][mask10]) ==
                         sc10['thickness'][mask10][0])
-                assert np.allclose(sc10['thickness'][mask10][0],
-                                   sc100['thickness'][mask100][0], atol=1e-6)
 
             # model would update the age
             sc10['age'] += ts
