@@ -3,15 +3,35 @@ test functionality of the save_load module used to persist save files
 '''
 import os
 from datetime import datetime
-import shutil
-import sys
 
-from gnome.persist import References, load, Savable
+from gnome.persist import References, load
 from gnome.movers import constant_wind_mover
 from gnome import movers, outputters, environment, map, spill, weatherers
+from gnome.persist import class_from_objtype
 from conftest import testdata, test_oil
 
 import pytest
+from testfixtures import LogCapture
+
+
+def test_warning_logged():
+    '''
+    warning is logged if we try to get a class from 'obj_type' that is not
+    in the gnome namespace
+    '''
+    with LogCapture() as l:
+        class_from_objtype('os.path')
+        l.check(('gnome.persist.save_load',
+                 'WARNING',
+                 'os.path is not part of gnome namespace'))
+
+
+def test_class_from_objtype():
+    '''
+    test that correct class is returned by class_from_objtype
+    '''
+    cls = class_from_objtype('gnome.movers.WindMover')
+    assert cls is movers.WindMover
 
 
 def test_exceptions():

@@ -27,6 +27,7 @@ pyzmq
 ## Python only packages: can be pip installed ##
 Cython>=0.20.1
 pytest
+testfixtures
 psutil
 sphinx
 progressbar

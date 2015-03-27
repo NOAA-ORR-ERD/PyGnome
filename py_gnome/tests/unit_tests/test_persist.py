@@ -23,7 +23,6 @@ from gnome.persist import load
 from gnome.spill import point_line_release_spill
 from gnome.movers import RandomMover, WindMover, CatsMover, ComponentMover
 from gnome.weatherers import Evaporation, Skimmer, Burn
-from gnome.outputters import Renderer
 
 from conftest import dump, testdata, test_oil
 
