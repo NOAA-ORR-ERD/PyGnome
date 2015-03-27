@@ -30,7 +30,6 @@ movers needs
 '''
 
 import sys
-import inspect
 
 from gnome.basic_types import (world_point_type,
                                windage_type,
@@ -217,22 +216,20 @@ for key, val in _default_values.iteritems():
                                 initial_value=_default_values[key][3])
 
 
-# use reflection to:
-#    - define all array_types once the above for loop defines the ArrayTypes
-#      in module scope
-_to_reset = inspect.getmembers(sys.modules[__name__],
-                               predicate=lambda members:
-                               (False, True)[isinstance(members, ArrayType)])
-
 # list of names of all ArrayTypes defined in this module
-_at_names = [item[0] for item in _to_reset]
+mod = sys.modules[__name__]
 
 
 #    define a function to reset all ArrayTypes to defaults
-def reset_to_defaults(names=_at_names):
-    for item in _to_reset:
-        if item[0] in names:
-            obj = eval(item[0])
-            obj.shape = _default_values[item[0]][0]
-            obj.dtype = _default_values[item[0]][1]
-            obj.initial_value = _default_values[item[0]][2]
+def reset_to_defaults(names=_default_values.keys()):
+    for name in names:
+        try:
+            obj = getattr(mod, name)
+            obj.shape = _default_values[name][0]
+            obj.dtype = _default_values[name][1]
+            obj.name = _default_values[name][2]
+            obj.initial_value = _default_values[name][3]
+
+        except AttributeError:
+            # name is not part of the defaults - ignore it
+            pass

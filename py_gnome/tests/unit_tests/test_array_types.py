@@ -11,6 +11,18 @@ from gnome.basic_types import world_point_type, oil_status, \
     status_code_type
 
 from gnome.array_types import ArrayType
+from gnome.array_types import reset_to_defaults, age
+
+
+def test_reset_to_defaults():
+    '''
+    will reset the object that found in array_types._default_values and
+    ignore the one not found in this dict.
+    '''
+    ival = age.initial_value
+    age.initial_value = 100
+    reset_to_defaults(['age', 'junk'])
+    assert age.initial_value == ival
 
 
 class TestArrayType_eq(object):
