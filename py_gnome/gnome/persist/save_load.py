@@ -152,10 +152,19 @@ def load(saveloc, fname='Model.json', references=None):
     cls = class_from_objtype(json_data.pop('obj_type'))
     obj = cls.loads(json_data, saveloc, references)
 
+    if obj is None:
+        # object failed to load - look in log messages for clues
+        return
+
     # after loading, add the object to references
     if references:
         references.reference(obj, fname)
     return obj
+
+
+'''
+Define general purpose functions for checking and rejecting bad zipfiles
+'''
 
 
 class Savable(object):
@@ -164,6 +173,8 @@ class Savable(object):
     gnome objects. Mix this in with the Serializable class so all gnome objects
     can save/load themselves
     '''
+    _allowzip64 = True
+
     def _ref_in_saveloc(self, saveloc, ref):
         '''
         returns true if reference is found in saveloc, false otherwise
@@ -261,7 +272,7 @@ class Savable(object):
         '''
         with zipfile.ZipFile(saveloc, 'a',
                              compression=zipfile.ZIP_DEFLATED,
-                             allowZip64=True) as z:
+                             allowZip64=self._allowzip64) as z:
             z.writestr(f_name, s_data)
 
     def save(self, saveloc, references=None, name=None):
@@ -304,7 +315,9 @@ class Savable(object):
 
             if zipfile.is_zipfile(saveloc):
                 # add datafile to zip archive
-                with zipfile.ZipFile(saveloc, 'a') as z:
+                with zipfile.ZipFile(saveloc, 'a',
+                                     compression=zipfile.ZIP_DEFLATED,
+                                     allowZip64=self._allowzip64) as z:
                     if d_fname not in z.namelist():
                         z.write(json_[field.name], d_fname)
             else:
@@ -349,7 +362,7 @@ class Savable(object):
         '''
         datafiles = cls._state.get_field_by_attribute('isdatafile')
         if len(datafiles) == 0:
-            return
+            return True
 
         iszip = False
 
@@ -364,10 +377,21 @@ class Savable(object):
                 if iszip:
                     z.extract(json_data[field.name], saveloc)
 
+                # ZipCheck: path must only be defined relative to saveloc
+                if json_data[field.name].startswith('..'):
+                    log = logging.getLogger(cls.__name__)
+                    msg = ("paths must be relative to saveloc, "
+                           "rejecting {0} since {1} starts with '..'".
+                           format(cls.__name__, json_data[field.name]))
+                    log.warning(msg)
+                    return False
+
                 json_data[field.name] = os.path.join(saveloc,
                                                      json_data[field.name])
         if iszip:
             z.close()
+
+        return True
 
     @classmethod
     def loads(cls, json_data, saveloc=None, references=None):
@@ -397,7 +421,9 @@ class Savable(object):
         '''
         references = (references, References())[references is None]
         ref_dict = cls._load_refs(json_data, saveloc, references)
-        cls._update_datafile_path(json_data, saveloc)
+        sucess = cls._update_datafile_path(json_data, saveloc)
+        if not sucess:
+            return None
 
         # deserialize after removing references
         _to_dict = cls.deserialize(json_data)
@@ -408,3 +434,18 @@ class Savable(object):
         obj = cls.new_from_dict(_to_dict)
 
         return obj
+
+
+def is_savezipvalid(savezip):
+    '''
+    some basic checks on validity of zipfile
+    '''
+    if not zipfile.is_zipfile(savezip):
+        return False
+
+    with zipfile.ZipFile(savezip, 'r') as z:
+        badfile = z.testzip()
+        if badfile is not None:
+            # or maybe we should return badfile?
+            return False
+        

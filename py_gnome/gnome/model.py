@@ -908,7 +908,7 @@ class Model(Serializable):
             saveloc = os.path.join(saveloc, z_name)
             z = zipfile.ZipFile(saveloc, 'w',
                                 compression=zipfile.ZIP_DEFLATED,
-                                allowZip64=True)
+                                allowZip64=self._allowzip64)
             z.close()
 
         return saveloc
@@ -1033,7 +1033,7 @@ class Model(Serializable):
         if zipname is not None:
             with zipfile.ZipFile(os.path.join(saveloc, zipname), 'a',
                                  compression=zipfile.ZIP_DEFLATED,
-                                 allowZip64=True) as z:
+                                 allowZip64=self._allowzip64) as z:
                 z.write(datafile, nc_file)
                 os.remove(datafile)
 
@@ -1212,7 +1212,9 @@ class Model(Serializable):
 
         # there are no datafiles for model properties; so no need for following
         # at present
-        cls._update_datafile_path(json_data, saveloc)
+        sucess = cls._update_datafile_path(json_data, saveloc)
+        if not sucess:
+            return None
 
         # deserialize after removing references
         _to_dict = cls.deserialize(json_data)
