@@ -174,7 +174,7 @@ class Savable(object):
     gnome objects. Mix this in with the Serializable class so all gnome objects
     can save/load themselves
     '''
-    _allowzip64 = True
+    _allowzip64 = False
 
     def _ref_in_saveloc(self, saveloc, ref):
         '''
