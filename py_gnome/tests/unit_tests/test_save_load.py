@@ -8,7 +8,7 @@ from zipfile import ZipFile, ZIP_DEFLATED
 from gnome.persist import References, load
 from gnome.movers import constant_wind_mover
 from gnome import movers, outputters, environment, map, spill, weatherers
-from gnome.persist import class_from_objtype, is_savezipvalid
+from gnome.persist import class_from_objtype, is_savezip_valid
 # following is modified for testing only
 from gnome.persist import save_load
 
@@ -179,7 +179,7 @@ class TestSaveZipIsValid:
     def test_invalid_zip(self):
         ''' invalid zipfile '''
         with LogCapture() as l:
-            assert not is_savezipvalid('junk.zip')
+            assert not is_savezip_valid('junk.zip')
             l.check(('gnome.persist.save_load',
                      'WARNING',
                      'junk.zip is not a valid zipfile'))
@@ -199,7 +199,7 @@ class TestSaveZipIsValid:
             z.write(testdata['boston_data']['cats_ossm'], filetoobig)
 
         with LogCapture() as l:
-            assert not is_savezipvalid(badzip)
+            assert not is_savezip_valid(badzip)
             l.check(('gnome.persist.save_load',
                      'WARNING',
                      "Filesize of {0} is {1}. It must be less than "
@@ -221,7 +221,7 @@ class TestSaveZipIsValid:
             z.writestr(badfile, ''.join(['0'] * 100))
 
         with LogCapture() as l:
-            assert not is_savezipvalid(badzip)
+            assert not is_savezip_valid(badzip)
             zi = z.NameToInfo[badfile]
             l.check(('gnome.persist.save_load',
                      'WARNING',

@@ -443,7 +443,7 @@ _max_json_filesize = 1024 * 1024
 _max_compress_ratio = 3
 
 
-def is_savezipvalid(savezip):
+def is_savezip_valid(savezip):
     '''
     some basic checks on validity of zipfile. Primarily for checking save
     zipfiles loaded from the Web. Following are the types of errors it checks:
