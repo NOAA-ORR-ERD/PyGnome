@@ -9,6 +9,8 @@ import logging
 
 import gnome
 
+log = logging.getLogger(__name__)
+
 
 class References(object):
     '''
@@ -103,7 +105,6 @@ def class_from_objtype(obj_type):
         obj = reduce(getattr, obj_type.split('.')[1:], gnome)
         return obj
     except AttributeError:
-        log = logging.getLogger(__name__)
         log.warning("{0} is not part of gnome namespace".format(obj_type))
 
 
@@ -436,16 +437,68 @@ class Savable(object):
         return obj
 
 
+# max json filesize is 1MegaByte
+# max compression ratio: uncompressed/compressed = 3
+_max_json_filesize = 1024 * 1024
+_max_compress_ratio = 3
+
+
 def is_savezipvalid(savezip):
     '''
-    some basic checks on validity of zipfile
+    some basic checks on validity of zipfile. Primarily for checking save
+    zipfiles loaded from the Web. Following are the types of errors it checks:
+
+    :returns: True if zip is valid, False otherwise
+
+    1. Failed to open zipfile
+    2. CRC failed for a file in the archive - rejecting zip
+    3. Found a *.json with size > _max_json_filesize - rejecting
+    4. Reject - found a file with:
+        uncompressed_size/compressed_size > _max_compress_ratio.
+
+    .. note:: can change _max_json_filesize, _max_compress_ratio if required.
     '''
     if not zipfile.is_zipfile(savezip):
+        log.warning("{0} is not a valid zipfile".format(savezip))
         return False
 
     with zipfile.ZipFile(savezip, 'r') as z:
-        badfile = z.testzip()
-        if badfile is not None:
-            # or maybe we should return badfile?
+        # 1) Failed to open zipfile
+        try:
+            badfile = z.testzip()
+        except:
+            msg = "Failed to open or run testzip() on {0}".format(savezip)
+            log.warning(msg)
             return False
-        
+
+        # 2) CRC failed for a file in the archive - rejecting zip
+        if badfile is not None:
+            # log the bad zipfile and return False
+            log.warning("{0} is corrupt. rejecting zipfile".format(badfile))
+            return False
+
+        for zi in z.filelist:
+            if (os.path.splitext(zi.filename)[1] == '.json' and
+                zi.file_size > _max_json_filesize):
+                # 3) Found a *.json with size > _max_json_filesize. Rejecting.
+                msg = ("Filesize of {0} is {1}. It must be less than "
+                       "_max_json_filesize: {2}. "
+                       "Rejecting zipfile.".format(zi.filename, zi.file_size,
+                                                   _max_json_filesize))
+                log.warning(msg)
+                return False
+
+        # integer division - it will floor
+        if zi.file_size/zi.compress_size > _max_compress_ratio:
+            # 4) Found a file with
+            #    uncompressed_size/compressed_size > _max_compress_ratio.
+            #    Rejecting.
+            msg = ("uncompressed filesize is {0} time compressed filesize."
+                   "_max_compress_ratio must be less than {1}. "
+                   "Rejecting zipfile".format(zi.file_size/zi.compress_size,
+                                              _max_compress_ratio))
+            log.warning(msg)
+            return False
+
+    # all checks pass - so we can load zipfile
+    return True

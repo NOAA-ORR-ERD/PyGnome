@@ -3,11 +3,15 @@ test functionality of the save_load module used to persist save files
 '''
 import os
 from datetime import datetime
+from zipfile import ZipFile, ZIP_DEFLATED
 
 from gnome.persist import References, load
 from gnome.movers import constant_wind_mover
 from gnome import movers, outputters, environment, map, spill, weatherers
-from gnome.persist import class_from_objtype
+from gnome.persist import class_from_objtype, is_savezipvalid
+# following is modified for testing only
+from gnome.persist import save_load
+
 from conftest import testdata, test_oil
 
 import pytest
@@ -169,3 +173,59 @@ def test_save_load_grids(saveloc_, obj):
     #     obj2 = load(os.path.join(dir_, refs.reference(obj)))
     #     assert obj == obj2
     #==========================================================================
+
+
+class TestSaveZipIsValid:
+    def test_invalid_zip(self):
+        ''' invalid zipfile '''
+        with LogCapture() as l:
+            assert not is_savezipvalid('junk.zip')
+            l.check(('gnome.persist.save_load',
+                     'WARNING',
+                     'junk.zip is not a valid zipfile'))
+
+    # need a bad zip that fails CRC check
+    # check max_json_filesize
+    def test_max_json_filesize(self):
+        '''
+        create a fake zip containing
+        'sample_data/boston_data/MerrimackMassCoastOSSM.json'
+        change _max_json_filesize 4K
+        '''
+        save_load._max_json_filesize = 8 * 1024
+        badzip = 'sample_data/badzip_max_json_filesize.zip'
+        filetoobig = 'filetoobig.json'
+        with ZipFile(badzip, 'a', compression=ZIP_DEFLATED) as z:
+            z.write(testdata['boston_data']['cats_ossm'], filetoobig)
+
+        with LogCapture() as l:
+            assert not is_savezipvalid(badzip)
+            l.check(('gnome.persist.save_load',
+                     'WARNING',
+                     "Filesize of {0} is {1}. It must be less than "
+                     "_max_json_filesize: {2}. Rejecting zipfile.".
+                     format(filetoobig,
+                            z.NameToInfo[filetoobig].file_size,
+                            save_load._max_json_filesize)))
+
+        save_load._max_json_filesize = 1 * 1024
+
+    def test_check_max_compress_ratio(self):
+        '''
+        create fake zip containing 100 '0' as string. The compression ratio
+        should be big
+        '''
+        badzip = 'sample_data/badzip_max_compress_ratio.zip'
+        badfile = 'badcompressratio.json'
+        with ZipFile(badzip, 'a', compression=ZIP_DEFLATED) as z:
+            z.writestr(badfile, ''.join(['0'] * 100))
+
+        with LogCapture() as l:
+            assert not is_savezipvalid(badzip)
+            zi = z.NameToInfo[badfile]
+            l.check(('gnome.persist.save_load',
+                     'WARNING',
+                     ("uncompressed filesize is {0} time compressed filesize."
+                      "_max_compress_ratio must be less than {1}. Rejecting "
+                      "zipfile".format(zi.file_size/zi.compress_size,
+                                       save_load._max_compress_ratio))))
