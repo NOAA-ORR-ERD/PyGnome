@@ -529,6 +529,29 @@ depths:
 		//((TTriGridVel3D*)fGrid)->SetDepths(totalDepthsH);
 	}
 	
+	fNumDepthLevels = sigmaLength;
+	if (sigmaLength>1)
+	{
+		//status = nc_get_vara_double(ncid, depthvarid, &ptIndex, &pt_count[2], depthLevels);
+		//if (status != NC_NOERR) {err=-1; goto done;}
+		float sigma = 0;
+		fDepthLevelsHdl = (FLOATH)_NewHandleClear(sigmaLength * sizeof(float));
+		if (!fDepthLevelsHdl) {err = memFullErr; goto done;}
+		for (i=0;i<sigmaLength;i++)
+		{	// decide what to do here, may be upside down for ROMS
+			sigma = sigma_vals[i];
+			if (sigma_vals[0]==1) 
+				INDEXH(fDepthLevelsHdl,i) = (1-sigma);	// in this case velocities will be upside down too...
+			else
+			{
+				if (fVar.gridType == SIGMA_ROMS)
+					INDEXH(fDepthLevelsHdl,i) = sigma;
+				else
+					INDEXH(fDepthLevelsHdl,i) = fabs(sigma);
+			}
+			
+		}
+	}
 	// CalculateVerticalGrid(sigmaLength,sigmaLevelsH,totalDepthsH);	// maybe multigrid
 	{
 		long j,index = 0;
@@ -590,7 +613,12 @@ depths:
 							(*fDepthsH)[index+j] = (*totalDepthsH)[i] - sigma_vals[sigmaLength - j - 1] ; 
 						else (*fDepthsH)[index+j] = (*totalDepthsH)[i]+1;
 					}
-					else (*fDepthsH)[index+j] = (*totalDepthsH)[i]*(1-sigma_vals[j]);
+					//else (*fDepthsH)[index+j] = (*totalDepthsH)[i]*(1-sigma_vals[j]);
+					else 
+					{
+						sigma_vals[j] = fabs(sigma_vals[j]);
+						(*fDepthsH)[index+j] = (*totalDepthsH)[i]*(1-sigma_vals[j]);
+					}
 					//(*fDepthsH)[j*fNumNodes+i] = totalDepthsH[i]*(1-sigmaLevelsH[j]);
 				}
 				index+=sigmaLength;
@@ -1059,12 +1087,26 @@ void NetCDFMoverTri::Draw(Rect r, WorldRect view)
 				Boolean offQuickDrawPlane = false;
 				long depthIndex1,depthIndex2;	// default to -1?, eventually use in surface velocity case
 				
+				wp1 = (*ptsHdl)[(*topH)[i].vertex1];
+				wp2 = (*ptsHdl)[(*topH)[i].vertex2];
+				wp3 = (*ptsHdl)[(*topH)[i].vertex3];
+				
+				wp.pLong = (wp1.h+wp2.h+wp3.h)/3;
+				wp.pLat = (wp1.v+wp2.v+wp3.v)/3;
+
 				//GetDepthIndices(i,fVar.arrowDepth,&depthIndex1,&depthIndex2);
 				//amtOfDepthData = _GetHandleSize((Handle)fDepthDataInfo)/sizeof(**fDepthDataInfo);
-	 			if (amtOfDepthData>0 && !bVelocitiesOnTriangles)	// for now, will have to figure out how depth data is handled
+	 			if (amtOfDepthData>0 /*&& !bVelocitiesOnTriangles*/)	// for now, will have to figure out how depth data is handled
 				{
 					//GetDepthIndices(index,fVar.arrowDepth,&depthIndex1,&depthIndex2);
-					dynamic_cast<NetCDFMoverTri *>(this)->GetDepthIndices(i,fVar.arrowDepth,&depthIndex1,&depthIndex2);
+					if (!bVelocitiesOnTriangles)
+						dynamic_cast<NetCDFMoverTri *>(this)->GetDepthIndices(i,fVar.arrowDepth,&depthIndex1,&depthIndex2);
+					else 
+					{
+						double depthAtPoint = dynamic_cast<TriGridVel_c *>(fGrid)->GetDepthAtPoint(wp);
+						dynamic_cast<NetCDFMoverCurv *>(this)->GetDepthIndices(i,fVar.arrowDepth,depthAtPoint,&depthIndex1,&depthIndex2);
+					}
+
 				}
 				else
 				{	// for old SAV files without fDepthDataInfo
@@ -1084,12 +1126,13 @@ void NetCDFMoverTri::Draw(Rect r, WorldRect view)
 					depthAlpha = (bottomDepth - fVar.arrowDepth)/(double)(bottomDepth - topDepth);
 				}
 				
-				wp1 = (*ptsHdl)[(*topH)[i].vertex1];
+				/*wp1 = (*ptsHdl)[(*topH)[i].vertex1];
 				wp2 = (*ptsHdl)[(*topH)[i].vertex2];
 				wp3 = (*ptsHdl)[(*topH)[i].vertex3];
 				
 				wp.pLong = (wp1.h+wp2.h+wp3.h)/3;
-				wp.pLat = (wp1.v+wp2.v+wp3.v)/3;
+				wp.pLat = (wp1.v+wp2.v+wp3.v)/3;*/
+				
 				//velocity = GetPatValue(wp);
 				
 				/*if (fVar.gridType == MULTILAYER)
