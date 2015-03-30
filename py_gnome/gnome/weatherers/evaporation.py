@@ -6,12 +6,6 @@ import os
 
 import numpy as np
 
-from gnome.array_types import (mass_components,
-                               mol,
-                               evap_decay_constant,
-                               area,
-                               frac_water,
-                               frac_lost)
 from gnome.basic_types import oil_status
 from gnome.utilities.serializable import Serializable, Field
 from gnome import constants
@@ -41,15 +35,8 @@ class Evaporation(Weatherer, Serializable):
         self.wind = wind
 
         super(Evaporation, self).__init__(**kwargs)
-        self.array_types.update({'area': area,
-                                 'mol': mol,
-                                 'evap_decay_constant': evap_decay_constant,
-                                 'frac_water': frac_water,
-                                 'frac_lost': frac_lost,
-                                 })
-        self._arrays.extend(['init_mass',
-                             'frac_lost'])
-        self._arrays.extend(self.array_types.keys())
+        self.array_types.update({'thickness', 'evap_decay_constant',
+                                 'frac_water', 'frac_lost', 'init_mass'})
 
     def prepare_for_model_run(self, sc):
         '''
@@ -59,8 +46,10 @@ class Evaporation(Weatherer, Serializable):
         '''
         # create 'evaporated' key if it doesn't exist
         # let's only define this the first time
-        if self.active:
+        if self.on:
             sc.weathering_data['evaporated'] = 0.0
+            msg = ("{0._pid} init 'evaporated' key to 0.0").format(self)
+            self.logger.debug(msg)
 
     def _mass_transport_coeff(self, model_time):
         '''
@@ -72,8 +61,10 @@ class Evaporation(Weatherer, Serializable):
 
         If K is expressed in m/sec, then Buchanan and Hurford set c = 0.0025
         U is wind_speed 10m above the surface
+
+        .. note:: wind speed is at least 1 m/s.
         '''
-        wind_speed = self.wind.get_value(model_time)[0]
+        wind_speed = max(1, self.wind.get_value(model_time)[0])
         c_evap = 0.0025     # if wind_speed in m/s
         if wind_speed <= 10.0:
             return c_evap * wind_speed ** 0.78
@@ -93,33 +84,28 @@ class Evaporation(Weatherer, Serializable):
             f_diff = (1.0 - data['frac_water'])
 
         vp = substance.vapor_pressure(water_temp)
+        rho = substance.get_density()
 
-        # A more verbose description of the equation:
-        # -------------------------------------------
-        # d_numer = -(data['area'] * f_diff).reshape(-1, 1) * K * vp
-        # d_denom = (constants['gas_constant'] * water_temp *
-        #            data['mol']).reshape(-1, 1)
-        # d_denom = np.repeat(d_denom, d_numer.shape[1], axis=1)
-        # data['evap_decay_constant'][:] = d_numer/d_denom
-        if len(data['evap_decay_constant']) > 0:
-            # set/update mols -- happens the same way for new or old particles
-            mw = substance.molecular_weight
-            data['mol'][:] = \
-                np.sum(data['mass_components'][:, :len(mw)]/mw, 1)
+        mw = substance.molecular_weight
+        sum_frac_mw = (data['mass_components'][:, :len(vp)] /
+                       data['mass'].reshape(-1, 1) /
+                       mw).sum(axis=1)
+        # d_numer = -1/rho * f_diff.reshape(-1, 1) * K * vp
+        # d_denom = (data['thickness'] * constants.gas_constant *
+        #            water_temp * sum_frac_mw).reshape(-1, 1)
+        # data['evap_decay_constant'][:, :len(vp)] = d_numer/d_denom
+        #
+        # Do computation together so we don't need to make intermediate copies
+        # of data - left sum_frac_mw, which is a copy but easier to
+        # read/understand
+        data['evap_decay_constant'][:, :len(vp)] = \
+            ((-1/rho * f_diff.reshape(-1, 1) * K * vp) /
+             (data['thickness'] * constants.gas_constant *
+              water_temp * sum_frac_mw).reshape(-1, 1))
 
-            data['evap_decay_constant'][:, :len(vp)] = \
-                -(((data['area'] * f_diff).reshape(-1, 1) * K * vp) /
-                  np.repeat((constants.gas_constant * water_temp *
-                             data['mol']).reshape(-1, 1), len(vp), axis=1))
-
-            # only elements 'in_water' experience evaporation
-            inwater = data['status_codes'] == oil_status.in_water
-            data['evap_decay_constant'][~inwater, :len(vp)] = 0
-
-            self.logger.info('{0} - Max decay: {1}, Min decay: {2}'.
-                             format(os.getpid(),
-                                    np.max(data['evap_decay_constant']),
-                                    np.min(data['evap_decay_constant'])))
+        self.logger.debug(self._pid + 'max decay: {0}, min decay: {1}'.
+                          format(np.max(data['evap_decay_constant']),
+                                 np.min(data['evap_decay_constant'])))
         if np.any(data['evap_decay_constant'] > 0.0):
             raise ValueError("Error in Evaporation routine. One of the"
                              " exponential decay constant is positive")
@@ -130,13 +116,56 @@ class Evaporation(Weatherer, Serializable):
         - sets 'evaporation' in sc.weathering_data
         - currently also sets 'density' in sc.weathering_data but may update
           this as we add more weatherers and perhaps density gets set elsewhere
+
+        Following diff eq models rate of change each pseudocomponent of oil:
+        ::
+            dm(t)/dt = -(1 - fw) * A/(B * C) * m(t)
+
+        Over a time-step, A, B, C are assumed constant. m(t) is the component
+        mass at beginning of timestep; m(t + Dt) is mass at end of timestep:
+        ::
+            m(t + Dt) = m(t) * exp(-L * Dt)
+            L := (1 - fw) * A/(B * C)
+
+        Define properties for each pseudocomponent of oil and constants:
+        ::
+            vp: vapor pressure
+            mw: molecular weight
+
+        The following quantities are defined for a given blob of oil. The
+        thickness of the blob is same for all LEs regardless of how many LEs
+        are used to model the blob:
+        ::
+            rho: density of oil - use API density in SI units
+            blob_mass: mass of blob; LEs modeling the blob have same 'age'
+            blob_mass/rho: volume of the blob
+            thickness: thickness of blob over time modeled by FayGravityViscous
+            f_i: mass fraction of component i, so m_i/blob_mass
+            sum_f_mw: sum(f_i/mw_i) over all components
+
+        effect of wind - mass transport coefficient:
+        ::
+            K: See _mass_transport_coeff()
+
+        Finally, Evaporation of component 'i' for blob of oil:
+        ::
+            A = (blob_mass/rho) * K * vp
+            B = thickness * gas_constant * water_temp
+            C = blob_mass * sum_f_mw
+
+        L becomes:
+        ::
+            L = (1 - fw) * 1/rho * K * vp
         '''
         if not self.active:
             return
         if sc.num_released == 0:
             return
 
-        for substance, data in sc.itersubstancedata(self._arrays):
+        for substance, data in sc.itersubstancedata(self.array_types):
+            if len(data['mass']) is 0:
+                continue
+
             # set evap_decay_constant array
             self._set_evap_decay_constant(model_time, data, substance)
             mass_remain = \
@@ -146,16 +175,19 @@ class Evaporation(Weatherer, Serializable):
 
             sc.weathering_data['evaporated'] += \
                 np.sum(data['mass_components'][:, :] - mass_remain[:, :])
+
+            # log amount evaporated at each step
+            self.logger.debug(self._pid + 'amount evaporated for {0}: {1}'.
+                              format(substance.name,
+                                     np.sum(data['mass_components'][:, :] -
+                                            mass_remain[:, :])))
+
             data['mass_components'][:] = mass_remain
             data['mass'][:] = data['mass_components'].sum(1)
-            self.logger.info('{0} - Amount Evaporated for {1}: {2}'.
-                             format(os.getpid(),
-                                    substance.name,
-                                    sc.weathering_data['evaporated']))
 
             # add frac_lost
             data['frac_lost'][:] = 1 - data['mass']/data['init_mass']
-        sc.update_from_substancedata(self._arrays)
+        sc.update_from_fatedataview()
 
     def serialize(self, json_='webapi'):
         """

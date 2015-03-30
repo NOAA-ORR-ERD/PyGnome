@@ -153,7 +153,7 @@ class ImportedRecord(Base):
     pour_point_max_k = Column(Float(53))
     product_type = Column(String(16))
     comments = Column(Text)
-    asphaltene_content = Column(Float(53))
+    asphaltenes = Column(Float(53))
     wax_content = Column(Float(53))
     aromatics = Column(Float(53))
     water_content_emulsion = Column(Float(53))
@@ -168,7 +168,7 @@ class ImportedRecord(Base):
     cut_units = Column(String(16))
     oil_class = Column(String(16))
     adhesion = Column(Float(53))
-    benezene = Column(Float(53))
+    benzene = Column(Float(53))
     naphthenes = Column(Float(53))
     paraffins = Column(Float(53))
     polars = Column(Float(53))
@@ -446,6 +446,11 @@ class Oil(Base):
     molecular_weights = relationship('MolecularWeight', backref='oil',
                                      cascade="all, delete, delete-orphan")
 
+    def __init__(self, **kwargs):
+        for a, v in kwargs.iteritems():
+            if (a in self.columns):
+                setattr(self, a, v)
+
     def __repr__(self):
         return '<Oil("{0.name}")>'.format(self)
 
@@ -495,8 +500,9 @@ class MolecularWeight(Base):
     id = Column(Integer, primary_key=True)
     oil_id = Column(Integer, ForeignKey('oils.id'))
 
-    saturate = Column(Float(53))
-    aromatic = Column(Float(53))
+    sara_type = Column(Enum('Saturates', 'Aromatics', 'Resins', 'Asphaltenes'),
+                       nullable=False)
+    g_mol = Column(Float(53))
     ref_temp_k = Column(Float(53))
 
     def __init__(self, **kwargs):

@@ -8,29 +8,35 @@ from datetime import timedelta
 import pytest
 import numpy as np
 
-from gnome.environment import constant_wind, Water, Waves, Wind
+from gnome.environment import constant_wind, Water, Waves
 from gnome.weatherers import (Emulsification,
                               Evaporation,
-                              Burn,
-                              Skimmer,
-                              Dispersion)
+                              WeatheringData)
 from gnome.outputters import WeatheringOutput
 from gnome.spill.elements import floating
 
-from ..conftest import sample_sc_release, sample_model_weathering, sample_model_weathering2
+from ..conftest import (sample_sc_release,
+                        sample_model_weathering,
+                        sample_model_weathering2,
+                        test_oil)
 
 
 water = Water()
-wind=constant_wind(15., 0)	#also test with lower wind no emulsification
-waves = Waves(wind,water)
+wind = constant_wind(15., 0)	#also test with lower wind no emulsification
+waves = Waves(wind, water)
 
 arrays = Emulsification().array_types
+intrinsic = WeatheringData(water)
+arrays.update(intrinsic.array_types)
+
+# need an oil that emulsifies and one that does not
+#s_oils = [test_oil, 'FUEL OIL NO.6']
+s_oils = [test_oil, test_oil]
 
 
 @pytest.mark.parametrize(('oil', 'temp', 'num_elems', 'on'),
-                         [('AGUA DULCE', 311.15, 3, True),
-                          ('ALAMO', 311.15, 3, True),
-                          ('FUEL OIL NO.6', 311.15, 3, False)])
+                         [(s_oils[0], 311.15, 3, True),
+                          (s_oils[1], 311.15, 3, False)])
 def test_emulsification(oil, temp, num_elems, on):
     '''
     Fuel Oil #6 does not emulsify
@@ -39,6 +45,7 @@ def test_emulsification(oil, temp, num_elems, on):
     sc = sample_sc_release(num_elements=num_elems,
                            element_type=et,
                            arr_types=arrays)
+    intrinsic.update(sc.num_released, sc)
     time_step = 15. * 60
     model_time = (sc.spills[0].get('release_time') +
                   timedelta(seconds=time_step))
@@ -49,11 +56,10 @@ def test_emulsification(oil, temp, num_elems, on):
     emul.prepare_for_model_run(sc)
 
     # also want a test for a user set value for bulltime or bullwinkle
-    if oil=='ALAMO':
-        sc['frac_lost'][:] = .35
-    if oil=='AGUA DULCE':
-        sc['frac_lost'][:] = .25
-    #sc['frac_lost'][:] = .35
+    if oil == s_oils[0]:
+        sc['frac_lost'][:] = .31
+
+    # sc['frac_lost'][:] = .35
     print "sc['frac_lost'][:]"
     print sc['frac_lost'][:]
     emul.prepare_for_model_step(sc, time_step, model_time)
@@ -77,11 +83,11 @@ def test_emulsification(oil, temp, num_elems, on):
 
     assert np.all(sc['frac_water'] == 0)
 
-@pytest.mark.parametrize(('oil', 'temp'), [('AGUA DULCE', 333.0),
-                                           ('FUEL OIL NO.6', 333.0),
-                                           ('ALAMO', 311.15),
+
+@pytest.mark.parametrize(('oil', 'temp'), [(s_oils[0], 333.0),
+                                           (s_oils[1], 333.0),
                                            ])
-def test_full_run(sample_model_fcn, oil, temp, dump):
+def test_full_run(sample_model_fcn, oil, temp):
     '''
     test evapoartion outputs post step for a full run of model. Dump json
     for 'weathering_model.json' in dump directory
@@ -97,20 +103,15 @@ def test_full_run(sample_model_fcn, oil, temp, dump):
             # need or condition to account for water_content = 0.9000000000012
             # or just a little bit over 0.9
             assert (sc.weathering_data['water_content'] <= .9 or
-                    np.allclose(sc.weathering_data['water_content'], 0.9))
+                    np.isclose(sc.weathering_data['water_content'], 0.9))
             print ("Water fraction: {0}".
                    format(sc.weathering_data['water_content']))
             print "Completed step: {0}\n".format(step['step_num'])
 
-    m_json_ = model.serialize('webapi')
-    dump_json = os.path.join(dump, 'weathering_model.json')
-    with open(dump_json, 'w') as f:
-        json.dump(m_json_, f, indent=True)
-
 
 def test_full_run_emul_not_active(sample_model_fcn):
     'no water/wind/waves object and no evaporation'
-    model = sample_model_weathering(sample_model_fcn, 'oil_conservative')
+    model = sample_model_weathering(sample_model_fcn, 'oil_crude')
     model.weatherers += Emulsification(on=False)
     model.outputters += WeatheringOutput()
     for step in model:
@@ -124,6 +125,28 @@ def test_full_run_emul_not_active(sample_model_fcn):
         print ("Completed step: {0}"
                .format(step['WeatheringOutput']['step_num']))
 
+
+def test_bulltime():
+    '''
+    user set time to start emulsification
+    '''
+
+    et = floating(substance=test_oil)
+    assert et.substance.bulltime == -999
+    et.substance.bulltime = 3600
+    assert et.substance.bulltime == 3600
+
+
+def test_bullwinkle():
+    '''
+    user set emulsion constant
+    '''
+
+    et = floating(substance=test_oil)
+    assert et.substance.bullwinkle == .303
+    et.substance.bullwinkle = .4
+    assert et.substance.bullwinkle == .4
+
 def test_serialize_deseriailize():
     'test serialize/deserialize for webapi'
     wind = constant_wind(15., 0)
@@ -134,7 +157,7 @@ def test_serialize_deseriailize():
 
     # deserialize and ensure the dict's are correct
     d_ = Emulsification.deserialize(json_)
-    assert d_['waves'] == Waves.deserialize(json_['waves']) 
+    assert d_['waves'] == Waves.deserialize(json_['waves'])
     d_['waves'] = waves
     e.update_from_dict(d_)
     assert e.waves is waves

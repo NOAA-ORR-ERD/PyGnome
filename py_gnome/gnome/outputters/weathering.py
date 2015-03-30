@@ -67,27 +67,31 @@ class WeatheringOutput(Outputter, Serializable):
         super(WeatheringOutput, self).__init__(**kwargs)
 
     def write_output(self, step_num, islast_step=False):
+        '''
+        Weathering data is only output for forecast spill container, not
+        the uncertain spill container. This is because Weathering has its
+        own uncertainty and mixing the two was giving weird results. The
+        cloned models that are modeling weathering uncertainty do not include
+        the uncertain spill container.
+        '''
         super(WeatheringOutput, self).write_output(step_num, islast_step)
 
         if not self._write_step:
             return None
 
         # return a dict - json of the weathering_data data
-        for sc in self.cache.load_timestep(step_num).items():
-            # Not capturing 'uncertain' info yet
-            # dict_ = {'uncertain': sc.uncertain}
-            dict_ = {}
+        # weathering outputter should only apply to forecast spill_container
+        sc = self.cache.load_timestep(step_num).items()[0]
+        dict_ = {}
+        dict_.update(sc.weathering_data)
 
-            for key, val in sc.weathering_data.iteritems():
-                dict_[key] = val
+        output_info = {'step_num': step_num,
+                       'time_stamp': sc.current_time_stamp.isoformat()}
+        output_info.update(dict_)
 
-            output_info = {'step_num': step_num,
-                           'time_stamp': sc.current_time_stamp.isoformat()}
-            output_info.update(dict_)
-
-            if self.output_dir:
-                output_filename = self.output_to_file(output_info, step_num)
-                output_info.update({'output_filename': output_filename})
+        if self.output_dir:
+            output_filename = self.output_to_file(output_info, step_num)
+            output_info.update({'output_filename': output_filename})
 
         return output_info
 

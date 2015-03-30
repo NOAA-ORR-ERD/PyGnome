@@ -2,7 +2,6 @@
 common fixture for output_dirs required by different outputters
 '''
 import os
-import shutil
 
 import pytest
 
@@ -17,7 +16,6 @@ def output_dir(dump, request):
     '''
     d_name = request.fspath.purebasename.split('_')[1] + '_outputdir'
     odir = os.path.join(dump, d_name)
-    if os.path.isdir(odir):
-        shutil.rmtree(odir)
-    os.mkdir(odir)
+    if not os.path.isdir(odir):
+        os.mkdir(odir)
     return odir

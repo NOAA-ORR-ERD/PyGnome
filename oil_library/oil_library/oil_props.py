@@ -11,25 +11,20 @@ object used to initialize and OilProps object
 Not sure at present if this needs to be serializable?
 '''
 import copy
-from math import log, exp
+from itertools import groupby, chain
 
 from repoze.lru import lru_cache
+import numpy as np
 
 import unit_conversion as uc
-from .utilities import get_density, get_boiling_points_from_cuts, get_viscosity
+from .utilities import get_density, get_viscosity
 
 
-def molecular_weight(bp, component):
-    '''
-    return the molecular weight of the pseudocomponents (mw_i) given the
-    boiling points. It returns the mw_i for saturates and aromatic components
-    '''
-    if component == 'saturate':
-        mw = (0.04132 - 1.985e-4 * bp + (9.494e-7 * bp ** 2))
-    elif component == 'aromatic':
-        mw = (0.04132 - 1.985e-4 * bp + (9.494e-7 * bp ** 2))
-
-    return mw
+# create a dtype for storing sara information in numpy array
+sara_dtype = np.dtype([('type', 'S16'),
+                       ('boiling_point', np.float64),
+                       ('fraction', np.float64),
+                       ('density', np.float64)])
 
 
 class OilProps(object):
@@ -67,19 +62,17 @@ class OilProps(object):
 
         # Default format for mass components:
         # mass_fraction =
-        # [m0_s, m0_a, m1_s, m1_a, ..., m_resins, m_asphaltenes]
-        self.mass_fraction = []
-        self.boiling_point = []
-        for bp, mf in get_boiling_points_from_cuts(oil_):
-            self.mass_fraction.append(mf)
-            self.boiling_point.append(bp)
+        #     [m0_s, m0_a, m1_s, m1_a, ..., m_resins, m_asphaltenes]
+        #
+        # the boiling points are in ascending order
+        self._init_sara()
 
         # set molecular weights
         self.molecular_weight = None
         self._component_mw()
 
-        #self.bullwinkle = None
-        #self.bulltime = None
+        self._bullwinkle = None
+        self._bulltime = None
 
     def __repr__(self):
         return ('{0.__class__.__module__}.{0.__class__.__name__}('
@@ -128,7 +121,8 @@ class OilProps(object):
         '''
         return get_viscosity(self._r_oil, temp, out)
 
-    def get_bulltime(self):
+    @property
+    def bulltime(self):
         '''
         return bulltime (time to emulsify)
         either user set or just return a flag
@@ -136,37 +130,65 @@ class OilProps(object):
         # check for user input value, otherwise set to -999 as a flag
         bulltime = -999.
 
-        return bulltime
+        if self._bulltime is not None:
+            return self._bulltime
+        else:
+            return bulltime
+
+    @bulltime.setter
+    def bulltime(self, value):
+        """
+        time to start emulsification 
+        """
+        self._bulltime = value
+
+    @property
+    def bullwinkle(self):
+        '''
+        return bullwinkle (emulsion constant)
+        either user set or return database value
+        '''
+        # check for user input value, otherwise return database value
+
+        if self._bullwinkle is not None:
+            return self._bullwinkle
+        else:
+            return self.get('bullwinkle_fraction')
+
+    @bullwinkle.setter
+    def bullwinkle(self, value):
+        """
+        emulsion constant 
+        """
+        self._bullwinkle = value
 
     @property
     def num_components(self):
-        return len(self.mass_fraction)
+        '''
+        number of components with mass fraction > 0.0 used to model the oil
+        '''
+        return len(self._sara)
 
     def _component_mw(self):
-        'estimate molecular weights of components'
-        if self.boiling_point == [float('inf')] * len(self.boiling_point):
-            # if there are only resins + asphaltenes, unclear how to set
-            # molecular weight - we don't want an array of 'nan' values so
-            # leave it as None
-            return
+        '''
+        return the molecular weight of the pseudocomponents (mw_i) given the
+        boiling points.
+        It returns the mw_i for saturates and aromatic components
+        '''
+        self.molecular_weight = (0.04132 - 1.985e-4 * self.boiling_point +
+                                 (9.494e-7 * self.boiling_point ** 2))
 
-        self.molecular_weight = [float('nan')] * self.num_components
-        # self.molecular_weight = []
+    @property
+    def mass_fraction(self):
+        return self._sara['fraction']
 
-        for ix, bp in enumerate(self.boiling_point):
-            if bp == float('inf'):
-                # this should be the case for resins + asphaltenes so just
-                # make the mw equal to the components with highest BP
-                self.molecular_weight[ix] = self.molecular_weight[ix - 1]
-                continue
+    @property
+    def boiling_point(self):
+        return self._sara['boiling_point']
 
-            if ix % 2 == 0:
-                self.molecular_weight[ix] = molecular_weight(bp, 'saturate')
-                # self.molecular_weight.append(molecular_weight(bp, 'saturate'))
-            else:
-                # will define a different function for mw_aromatics
-                self.molecular_weight[ix] = molecular_weight(bp, 'aromatic')
-                # self.molecular_weight.append(molecular_weight(bp, 'aromatic'))
+    @property
+    def component_density(self):
+        return self._sara['density']
 
     @lru_cache(2)
     def vapor_pressure(self, temp, atmos_pressure=101325.0):
@@ -178,24 +200,33 @@ class OilProps(object):
         D_Zb = 0.97
         R_cal = 1.987  # calories
 
-        Pi = []
-        for bp in self.boiling_point:
-            if bp == float('inf'):
-                # make the exponential decay constant 0 so mass is unchanged
-                Pi.append(0.0)
-            else:
-                D_S = 8.75 + 1.987 * log(bp)
-                C_2i = 0.19 * bp - 18
+        D_S = 8.75 + 1.987 * np.log(self.boiling_point)
+        C_2i = 0.19 * self.boiling_point - 18
 
-                var = 1. / (bp - C_2i) - 1. / (temp - C_2i)
-                ln_Pi_Po = D_S * (bp - C_2i) ** 2 / (D_Zb * R_cal * bp) * var
-                Pi.append(exp(ln_Pi_Po) * atmos_pressure)
+        var = 1. / (self.boiling_point - C_2i) - 1. / (temp - C_2i)
+        ln_Pi_Po = (D_S * (self.boiling_point - C_2i) ** 2 /
+                    (D_Zb * R_cal * self.boiling_point) * var)
+        Pi = np.exp(ln_Pi_Po) * atmos_pressure
 
         return Pi
 
     def tojson(self):
         'for now, just convert underlying oil object to json'
         return self._r_oil.tojson()
+
+    def _compare__dict(self, other):
+        '''
+        cannot just do self.__dict__ == other.__dict__ since
+        '''
+        for key, val in self.__dict__.iteritems():
+            o_val = other.__dict__[key]
+            if isinstance(val, np.ndarray):
+                if np.any(val != o_val):
+                    return False
+            else:
+                if val != o_val:
+                    return False
+        return True
 
     def __eq__(self, other):
         '''
@@ -212,15 +243,13 @@ class OilProps(object):
         if type(self) != type(other):
             return False
 
-        if self.__dict__ == other.__dict__:
+        if self._compare__dict(other):
             return True
-        else:
-            try:
-                return self.tojson() == other.tojson()
-            except Exception:
-                return False
 
-        return False
+        try:
+            return self.tojson() == other.tojson()
+        except Exception:
+            return False
 
     def __ne__(self, other):
         return not self == other
@@ -244,3 +273,52 @@ class OilProps(object):
                     setattr(c_op, attr,
                             copy.deepcopy(getattr(self, attr), memo))
         return c_op
+
+    def _init_sara(self):
+        '''
+        initialize self._sara as a numpy array. The information is structured
+        in increasing boiling points as:
+            ['Saturates', boiling_point_0, mass_fraction, density]
+            ['Aromatics', boiling_point_0, mass_fraction, density]
+            ['Saturates', boiling_point_1, mass_fraction, density]
+            ['Aromatics', boiling_point_1, mass_fraction, density]
+            ...
+            ['Resins', boiling_point_terminal, mass_fraction, density]
+            ['Asphaltenes', boiling_point_terminal, mass_fraction, density]
+
+        Omit components that have 0 mass fraction
+        '''
+        all_comp = list(chain(*[sorted(list(g), key=lambda s: s.sara_type,
+                                       reverse=True)
+                                for k, g
+                                in groupby(sorted(self._r_oil.sara_fractions,
+                                                  key=lambda s: s.ref_temp_k),
+                                           lambda x: x.ref_temp_k)]
+                              ))
+
+        all_dens = list(chain(*[sorted(list(g), key=lambda s: s.sara_type,
+                                       reverse=True)
+                                for k, g
+                                in groupby(sorted(self._r_oil.sara_densities,
+                                                  key=lambda s: s.ref_temp_k),
+                                           lambda x: x.ref_temp_k)]
+                              ))
+
+        items = []
+        sum_frac = 0.
+        for comp, dens in zip(all_comp, all_dens):
+            if (comp.ref_temp_k != comp.ref_temp_k or
+                    comp.sara_type != comp.sara_type):
+                msg = "mismatch in sara_fractions and sara_densities tables"
+                raise ValueError(msg)
+
+            if comp.fraction > 0.0:
+                items.append((comp.sara_type, comp.ref_temp_k, comp.fraction,
+                              dens.density))
+                sum_frac += comp.fraction
+
+        self._sara = np.asarray(items, dtype=sara_dtype)
+        if not np.allclose(self._sara[:]['fraction'].sum(), 1.0):
+            msg = ("mass fractions add up to: {0} - required "
+                   "to add to 1.0").format(self._sara[:]['fraction'].sum())
+            raise ValueError(msg)

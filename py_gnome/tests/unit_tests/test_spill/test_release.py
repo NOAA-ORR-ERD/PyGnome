@@ -14,7 +14,7 @@ import numpy as np
 
 from gnome.model import Model
 from gnome.movers import RandomMover
-from gnome.array_types import windages, positions
+from gnome.array_types import positions
 from gnome.spill import (Release,
                          PointLineRelease,
                          GridRelease,
@@ -136,7 +136,7 @@ class TestInitElementsFromFile():
         assert release.release_time == reltime
 
     @pytest.mark.parametrize("at", [{},
-                                    {'windages': windages}])
+                                    {'windages'}])
     def test_release_elements(self, at):
         'release elements in the context of a spill container'
         s = Spill(InitElemsFromFile(testdata['nc']['nc_output']))
@@ -258,3 +258,16 @@ class TestPointLineRelease:
         assert r.start_time_invalid is None
         assert r._delta_pos is None
         assert np.all(r._next_release_pos == r.start_position)
+
+    def test__eq__(self):
+        r = PointLineRelease(self.rel_time,
+                             self.pos,
+                             end_position=(1, 2, 3),
+                             num_per_timestep=100,
+                             end_release_time=self.rel_time+timedelta(hours=2))
+        r1 = PointLineRelease(self.rel_time,
+                              (0, 0, 0),
+                              end_position=(1, 2, 3),
+                              num_per_timestep=100,
+                              end_release_time=self.rel_time+timedelta(hours=2))
+        assert r != r1

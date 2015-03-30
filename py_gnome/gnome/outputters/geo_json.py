@@ -100,16 +100,17 @@ class GeoJson(Outputter, Serializable):
         # feature per step rather than (n) features per step.
         features = []
         for sc in self.cache.load_timestep(step_num).items():
-            sc_type = 'forecast'
-            if sc.uncertain:
-                sc_type = 'uncertain'
+            sc_type = 'uncertain' if sc.uncertain else 'forecast'
 
             # only display lat/long for now
             lat_long = self._dataarray_p_types(sc['positions'][:, :2])
             feature = Feature(geometry=MultiPoint(lat_long),
                               id="1",
                               properties={'sc_type': sc_type})
-            features.append(feature)
+            if sc.uncertain:
+                features.insert(0, feature)
+            else:
+                features.append(feature)
 
         geojson = FeatureCollection(features)
         # default geojson should not output data to file

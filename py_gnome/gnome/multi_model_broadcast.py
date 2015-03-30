@@ -1,3 +1,5 @@
+import logging
+
 from pprint import PrettyPrinter
 pp = PrettyPrinter(indent=2)
 
@@ -6,6 +8,7 @@ import os
 import psutil
 import time
 import traceback
+import logging
 
 from cPickle import loads, dumps
 import uuid
@@ -51,6 +54,11 @@ class ModelConsumer(mp.Process):
 
     def run(self):
         print '{0}: starting...'.format(self.name)
+
+        # remove any root handlers else we get IOErrors for shared file
+        # handlers
+        # todo: find a better way to capture log messages for child processes
+        logging.getLogger().handlers = []
 
         self.cleanup_inherited_files()
 

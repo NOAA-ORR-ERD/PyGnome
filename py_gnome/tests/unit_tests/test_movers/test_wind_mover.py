@@ -13,7 +13,6 @@ import unit_conversion
 from gnome.basic_types import (datetime_value_2d,
                                ts_format)
 
-from gnome import array_types
 
 from gnome.utilities.projections import FlatEarthProjection
 from gnome.utilities.time_utils import date_to_sec, sec_to_date
@@ -36,6 +35,7 @@ from ..conftest import sample_sc_release, testdata
 
 file_ = testdata['timeseries']['wind_ts']
 file2_ = testdata['timeseries']['wind_cardinal']
+filekph_ = testdata['timeseries']['wind_kph']
 
 
 def test_exceptions():
@@ -220,7 +220,7 @@ class TestWindMover:
                    '{1}'.format('WindMover.get_move()', tol))
             np.testing.assert_allclose(delta, actual, tol, tol, msg, 0)
 
-            assert self.wm.active == True
+            assert self.wm.active
 
             ts = date_to_sec(curr_time) - date_to_sec(self.model_time)
             print ('Time step [sec]:\t{0}'
@@ -279,9 +279,7 @@ def test_windage_index():
                                 )
         sc.spills.add(spill)
 
-    windage = {'windages': array_types.windages,
-               'windage_range': array_types.windage_range,
-               'windage_persist': array_types.windage_persist}
+    windage = ['windages', 'windage_range', 'windage_persist']
     sc.prepare_for_model_run(array_types=windage)
     sc.release_elements(timestep, rel_time)
 
@@ -418,6 +416,12 @@ def test_wind_mover_from_file_cardinal():
     assert wm.wind.filename == file2_
 
 
+def test_wind_mover_from_file_kph_units():
+    wm = wind_mover_from_file(filekph_)
+    print wm.wind.filename
+    assert wm.wind.filename == filekph_
+
+
 def test_serialize_deserialize(wind_circ):
     """
     tests and illustrate the funcitonality of serialize/deserialize for
@@ -435,6 +439,7 @@ def test_serialize_deserialize(wind_circ):
     assert wm.wind == wind_circ['wind']
 
 
+@pytest.mark.serial
 @pytest.mark.parametrize("save_ref", [False, True])
 def test_save_load(save_ref):
     """
@@ -463,28 +468,6 @@ def test_save_load(save_ref):
     assert (obj == wm and obj is not wm)
     assert (obj.wind == wind and obj.wind is not wind)
     shutil.rmtree(saveloc)  # clean-up
-
-
-#==============================================================================
-# def test_new_from_dict():
-#     """
-#     Currently only checks that new object can be created from dict
-#     It does not check equality of objects
-#     """
-#     wind = Wind(filename=file_)
-#     wm = WindMover(wind)  # WindMover does not modify Wind object!
-#     wm_state = wm.to_dict('save')
-# 
-#     # must create a Wind object and add this to wm_state dict
-# 
-#     wind2 = Wind.new_from_dict(wind.to_dict('save'))
-#     wm_state.update({'wind': wind2})
-#     wm2 = WindMover.new_from_dict(wm_state)
-# 
-#     assert wm is not wm2
-#     assert wm.wind is not wm2.wind
-#     assert wm == wm2
-#==============================================================================
 
 
 def test_array_types():

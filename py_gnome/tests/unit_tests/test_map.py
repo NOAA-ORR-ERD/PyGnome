@@ -777,7 +777,8 @@ class Test_full_move:
         """
         Test LEs that go off the map
 
-        should get off_map flag
+        should get off_map flag - no longer setting to_be_removed flag. map
+        simply sets the off_maps flag.
         """
 
         gmap = RasterMap(refloat_halflife=6, bitmap_array=self.raster,
@@ -816,9 +817,8 @@ class Test_full_move:
 
         gmap.beach_elements(spill)
 
-        # off = np.ones(4,) * basic_types.oil_status.off_maps
-
-        off = np.ones(4) * oil_status.to_be_removed
+        off = np.ones(4,) * oil_status.off_maps
+        # off = np.ones(4) * oil_status.to_be_removed
         assert np.array_equal(spill['status_codes'][0::2], off)
 
         on = np.ones(4) * oil_status.in_water

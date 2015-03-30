@@ -18,7 +18,6 @@ import pytest
 
 import gnome
 from gnome.basic_types import datetime_value_2d
-from gnome.array_types import windages, windage_range, windage_persist
 
 from gnome.map import MapFromBNA
 from gnome.model import Model
@@ -28,13 +27,16 @@ from gnome.spill_container import SpillContainer
 from gnome.movers import SimpleMover
 from gnome.weatherers import Skimmer
 from gnome.utilities.remote_data import get_datafile
+import gnome.array_types as gat
 
 
 base_dir = os.path.dirname(__file__)
 
+test_oil = u'ALASKA NORTH SLOPE (MIDDLE PIPELINE)'
+
 
 @pytest.fixture(scope="session")
-def dump(dump_loc=None):
+def dump():
     '''
     create dump folder for output data/files
     session scope so it is only executed the first time it is used
@@ -44,8 +46,8 @@ def dump(dump_loc=None):
     this as a function and use it to define their own dump directory if desired
     '''
     # dump_loc = os.path.join(request.session.fspath.strpath, 'dump')
-    if dump_loc is None:
-        dump_loc = os.path.join(base_dir, 'dump')
+    dump_loc = os.path.join(base_dir, 'dump')
+
     try:
         shutil.rmtree(dump_loc)
     except:
@@ -55,6 +57,38 @@ def dump(dump_loc=None):
     except:
         pass
     return dump_loc
+
+
+@pytest.fixture(autouse=True)
+def skip_serial(request):
+    '''
+    when defined in ..conftest.py, this wasn't loaded if tests are run from
+    here. For now, moved this to unit_tests/conftest.py since all tests are
+    contained here
+    '''
+    if (request.node.get_marker('serial') and
+        getattr(request.config, 'slaveinput', {}).get('slaveid', 'local') !=
+        'local'):
+        # under xdist and serial so skip the test
+        pytest.skip('serial')
+
+
+def mock_sc_array_types(array_types):
+    '''
+    function that creates the SpillContainer's array_types attribute
+    '''
+    d_array_types = {}
+    for array in array_types:
+        if array not in d_array_types:
+            try:
+                d_array_types[array] = getattr(gat, array)
+            except AttributeError:
+                pass
+        else:
+            # must be a tuple of length 2
+            d_array_types[array[0]] = array[1]
+
+    return d_array_types
 
 
 def mock_append_data_arrays(array_types, num_elements, data_arrays={}):
@@ -124,9 +158,7 @@ def sample_sc_release(num_elements=10,
 
     if arr_types is None:
         # default always has standard windage parameters required by wind_mover
-        arr_types = {'windages': windages,
-                     'windage_range': windage_range,
-                     'windage_persist': windage_persist}
+        arr_types = {'windages', 'windage_range', 'windage_persist'}
 
     sc = SpillContainer(uncertain)
     sc.spills.add(spill)
@@ -216,6 +248,8 @@ def get_testdata():
                                         'WindDataFromGnome_BadUnits.WND'),
          'wind_cardinal': os.path.join(s_data,
                                        'WindDataFromGnomeCardinal.WND'),
+         'wind_kph': os.path.join(s_data,
+                                       'WindDataFromGnomeKPH.WND'),
          'tide_shio': get_datafile(os.path.join(tide_dir, 'CLISShio.txt')),
          'tide_ossm': get_datafile(os.path.join(tide_dir, 'TideHdr.FINAL'))
          }
@@ -530,7 +564,10 @@ def sample_model_fcn():
     return sample_model()
 
 
-def sample_model_weathering(sample_model_fcn, oil, temp=311.16):
+def sample_model_weathering(sample_model_fcn,
+                            oil,
+                            temp=311.16,
+                            num_les=10):
     model = sample_model_fcn['model']
     rel_pos = sample_model_fcn['release_start_pos']
     'update model the same way for multiple tests'
@@ -539,7 +576,7 @@ def sample_model_weathering(sample_model_fcn, oil, temp=311.16):
     et = gnome.spill.elements.floating(substance=oil)
     start_time = model.start_time + timedelta(hours=1)
     end_time = start_time + timedelta(seconds=model.time_step*3)
-    spill = gnome.spill.point_line_release_spill(10,
+    spill = gnome.spill.point_line_release_spill(num_les,
                                                  rel_pos,
                                                  start_time,
                                                  end_release_time=end_time,
@@ -572,18 +609,28 @@ def sample_model_weathering2(sample_model_fcn, oil, temp=311.16):
 
 @pytest.fixture(scope='function', params=['relpath', 'abspath'])
 def clean_saveloc(dump, request):
-    temp = os.path.join(dump, 'temp')   # absolute path
+    '''
+    This does not parallelize well - tests using this may need to be marked
+    with serial so xdist does not try to
+    '''
+    name = 'temp_{0}'.format(request._pyfuncitem._genid)
+    #name = 'temp_saveloc'
+    temp = os.path.join(dump, name)   # absolute path
 
     def cleanup():
         print '\nCleaning up %s' % temp
         shutil.rmtree(temp)
 
+    # do not cleanup on exit
     if os.path.exists(temp):
         cleanup()
 
     request.addfinalizer(cleanup)
 
-    os.mkdir(temp)    # let path get created by save_load
+    if not os.path.exists(temp):
+        os.mkdir(temp)    # let path get created by save_load
+        print '\nmkdir: {0}'.format(temp)
+
     if request.param == 'relpath':
         return os.path.relpath(temp)    # do save/load tests with relative path
     else:

@@ -63,12 +63,6 @@ def add_oil_object(session, file_columns, row_data):
                     for c in file_columns]
     row_dict = dict(zip(file_columns, row_data))
 
-    if rejected(row_dict):
-        print ('### Rejecting record {0} ({1})'
-               .format(row_dict.get('adios_oil_id'),
-                       row_dict.get('oil_name')))
-        return
-
     fix_pour_point(row_dict)
     fix_flash_point(row_dict)
     fix_preferred_oils(row_dict)
@@ -85,17 +79,6 @@ def add_oil_object(session, file_columns, row_data):
 
     session.add(oil)
     transaction.commit()
-
-
-def rejected(kwargs):
-    adios_oil_id = kwargs.get('adios_oil_id')
-    if adios_oil_id in ('AD02130',  # FOROOZAN
-                        'AD00121',  # BCF 13
-                        'AD02042',  # BOSCAN
-                        'AD02240',  # LUCULA
-                        ):
-        return True
-    return False
 
 
 def fix_pour_point(kwargs):
@@ -146,7 +129,7 @@ def add_synonyms(session, oil, row_dict):
 def add_densities(oil, row_dict):
     for i in range(1, 5):
         obj_args = ('kg_m_3', 'ref_temp_k', 'weathering')
-        row_fields = ['density_{0}_{1}'.format(i, a) for a in obj_args]
+        row_fields = ['density{0}_{1}'.format(i, a) for a in obj_args]
 
         if any([row_dict.get(k) for k in row_fields]):
             densityargs = {}
@@ -168,7 +151,7 @@ def fix_weathering(kwargs):
 def add_kinematic_viscosities(oil, row_dict):
     for i in range(1, 7):
         obj_args = ('m_2_s', 'ref_temp_k', 'weathering')
-        row_fields = ['kvis_{0}_{1}'.format(i, a) for a in obj_args]
+        row_fields = ['kvis{0}_{1}'.format(i, a) for a in obj_args]
 
         if any([row_dict.get(k) for k in row_fields]):
             kvisargs = {}
@@ -183,7 +166,7 @@ def add_kinematic_viscosities(oil, row_dict):
 def add_dynamic_viscosities(oil, row_dict):
     for i in range(1, 7):
         obj_args = ('kg_ms', 'ref_temp_k', 'weathering')
-        row_fields = ['dvis_{0}_{1}'.format(i, a) for a in obj_args]
+        row_fields = ['dvis{0}_{1}'.format(i, a) for a in obj_args]
 
         if any([row_dict.get(k) for k in row_fields]):
             dvisargs = {}
@@ -198,7 +181,7 @@ def add_dynamic_viscosities(oil, row_dict):
 def add_distillation_cuts(oil, row_dict):
     for i in range(1, 16):
         obj_args = ('vapor_temp_k', 'liquid_temp_k', 'fraction')
-        row_fields = ['cut_{0}_{1}'.format(i, a) for a in obj_args]
+        row_fields = ['cut{0}_{1}'.format(i, a) for a in obj_args]
 
         if any([row_dict.get(k) for k in row_fields]):
             cutargs = {}
@@ -212,7 +195,7 @@ def add_distillation_cuts(oil, row_dict):
 def add_toxicity_effective_concentrations(oil, row_dict):
     for i in range(1, 4):
         obj_args = ('species', '24h', '48h', '96h')
-        row_fields = ['tox_ec_{0}_{1}'.format(i, a) for a in obj_args]
+        row_fields = ['tox_ec{0}_{1}'.format(i, a) for a in obj_args]
 
         if any([row_dict.get(k) for k in row_fields]):
             toxargs = {}
@@ -230,7 +213,7 @@ def add_toxicity_effective_concentrations(oil, row_dict):
 def add_toxicity_lethal_concentrations(oil, row_dict):
     for i in range(1, 4):
         obj_args = ('species', '24h', '48h', '96h')
-        row_fields = ['tox_lc_{0}_{1}'.format(i, a) for a in obj_args]
+        row_fields = ['tox_lc{0}_{1}'.format(i, a) for a in obj_args]
 
         if any([row_dict.get(k) for k in row_fields]):
             toxargs = {}

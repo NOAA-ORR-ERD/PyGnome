@@ -1,30 +1,30 @@
 '''
-For now just define a FayGravityInertial class here
-State is not persisted yet - we just have a default object that gets
-attached to Evaporation
-'''
-import os
-import numpy as np
+This module was originally intended to hold classes that initialize weathering
+data arrays that are not set by any weathering process. It was also meant to
+update the intrinsic properties of the LEs, hence the name 'intrinsic.py'
+However, it sets and updates weathering data arrays including intrinsic data
+like 'viscosity', 'density' and other data. Call the class WeatheringData()
+which is defined in a gnome model if there are weatherers defined.
 
-from gnome.basic_types import oil_status
-from gnome.array_types import (density,
-                               viscosity,
-                               mass_components,
-                               init_volume,
-                               init_area,
-                               relative_bouyancy,
-                               area,
-                               mass,
-                               frac_coverage,
-                               thickness,
-                               frac_water,
-                               frac_lost,
-                               age,
-                               init_mass)
+For now just define a FayGravityInertial class here
+It is only used by WeatheringData to update the 'area' and related arrays
+'''
+import numpy as np
+from repoze.lru import lru_cache
+
+from gnome.basic_types import oil_status, fate
 from gnome import AddLogger, constants
 
 
 class FayGravityViscous(object):
+    '''
+    Model the FayGravityViscous spreading of the oil. This assumes all LEs
+    released together spread as a blob. The blob can be partitioned into 'N'
+    LEs and the assumption is that the thickness and initial volume of the
+    blob applies to all LEs in it. As such, instead of computing area, lets
+    compute thickness - whether 1 or 10 LEs is used to model the blob, the
+    thickness remains the same.
+    '''
     def __init__(self):
         self.spreading_const = (1.53, 1.21)
         self.thickness_limit = .0001
@@ -67,66 +67,65 @@ class FayGravityViscous(object):
             raise ValueError("Found particles with relative_bouyancy < 0. "
                              "Area does not handle this case at present.")
 
-    def update_area(self,
-                    water_viscosity,
-                    init_area,
-                    init_volume,
-                    relative_bouyancy,
-                    age,
-                    thickness,
-                    area,   # update only if thickness > thickness_lim
-                    frac_coverage=None,
-                    out=None):
+    def update_thickness(self,
+                         water_viscosity,
+                         init_area,
+                         init_volume,
+                         relative_bouyancy,
+                         age,
+                         thickness,
+                         frac_coverage=None):
         '''
-        Update area and stuff it in out array. This takes numpy arrays
-        as input for init_volume, relative_bouyancy and age. Each
+        Update thickness and stuff it in out array. This takes numpy arrays
+        as input for init_volume, relative_bouyancy, age, thickness. Each
         element of the array is the property for an LE - array should be the
         same shape.
 
-        Since this is for updating area, it assumes age > 0 for all elements.
-        It is used inside IntrinsicProps and invoked for particles with age > 0
+        Since this is for updating area/thickness, it assumes age > 0 for all
+        elements. It is used inside WeatheringData and invoked for particles
+        with age > 0 so assumption is fine since user doesn't interact with it
 
         It only updates the area for particles with thickness > xxx
         Since the frac_coverage should only be applied to particles which are
         updated, let's apply this in here.
 
-        todo: unsure if thickness check should be here or outside this object.
-        Since thickness limit is here, leave it for now, but maybe
-        eventually move thickness_limit to OilProps/make it property of
-        substance - say 'max_spreading_thickness', then move thickness check
-        and frac_coverage back to IntrinsicProps
+        .. todo: unsure if thickness check should be here or outside this object.
+            Since thickness limit is here, leave it for now, but maybe
+            eventually move thickness_limit to OilProps/make it property of
+            substance - say 'max_spreading_thickness', then move thickness check
+            and frac_coverage back to WeatheringData
         '''
         self._check_relative_bouyancy(relative_bouyancy)
         if np.any(age == 0):
             raise ValueError('for new particles use init_area - age '
                              'must be > 0')
 
-        if out is None:
-            out = np.zeros_like(init_volume, dtype=np.float64)
+        area = np.zeros_like(init_volume, dtype=np.float64)
 
         # ADIOS 2 used 0.1 mm as a minimum average spillet thickness for crude
         # oil and heavy refined products and 0.01 mm for lighter refined
         # products. Use 0.1mm for now
-        out[:] = area
+        area[:] = init_volume/thickness
         mask = thickness > self.thickness_limit  # units of meters
         if np.any(mask):
-            out[mask] = init_area[mask]
+            area[mask] = init_area[mask]
             dFay = (self.spreading_const[1]**2./16. *
                     (constants.gravity*relative_bouyancy[mask] *
                      init_volume[mask]**2 /
                      np.sqrt(water_viscosity*age[mask])))
             dEddy = 0.033*age[mask]**(4./25)
-            out[mask] += (dFay + dEddy) * age[mask]
+            area[mask] += (dFay + dEddy) * age[mask]
 
             # apply fraction coverage here so particles less than min thickness
             # are not changed
             if frac_coverage is not None:
-                out[mask] *= frac_coverage[mask]
+                area[mask] *= frac_coverage[mask]
 
-        return out
+        # finally return the new thickness
+        return init_volume/area
 
 
-class IntrinsicProps(AddLogger):
+class WeatheringData(AddLogger):
     '''
     Updates intrinsic properties of Oil
     Doesn't have an id like other gnome objects. It isn't exposed to
@@ -135,28 +134,22 @@ class IntrinsicProps(AddLogger):
 
     Use this to manage data_arrays associated with weathering that are not
     defined in Weatherers. This is inplace of defining initializers for every
-    single array, let IntrinsicProps set/initialize/update these arrays.
+    single array, let WeatheringData set/initialize/update these arrays.
     '''
     def __init__(self,
                  water,
                  spreading=FayGravityViscous()):
         self.water = water
         self.spreading = spreading
-        self.array_types = {'density': density,
-                            'viscosity': viscosity,
-                            'mass_components': mass_components,
-                            'mass': mass,
-                            # init volume of all particles released together
-                            'init_volume': init_volume,
-                            'init_mass': init_mass,
-                            'frac_water': frac_water,
-                            'frac_lost': frac_lost,
-                            'area': area,     # area no longer needs init_volume since
-                            'init_area': init_area,
-                            'relative_bouyancy': relative_bouyancy,
-                            'frac_coverage': frac_coverage,
-                            'thickness': thickness,
-                            'age': age}
+        self.array_types = {'fate_status', 'positions', 'status_codes',
+                            'density', 'viscosity',
+                            'mass_components', 'mass',
+                            # init volume of particles released together
+                            'init_volume',
+                            'init_mass', 'frac_water', 'frac_lost',
+                            'init_area', 'relative_bouyancy',
+                            'frac_coverage', 'thickness', 'age'}
+
         # following used to update viscosity
         self.visc_curvfit_param = 1.5e3     # units are sec^0.5 / m
         self.visc_f_ref = 0.84
@@ -169,7 +162,7 @@ class IntrinsicProps(AddLogger):
         '''
         # nothing released yet - set everything to 0.0
         for key in ('avg_density', 'floating', 'amount_released',
-                    'avg_viscosity'):
+                    'avg_viscosity', 'beached'):
             sc.weathering_data[key] = 0.0
 
     def update(self, num_new_released, sc):
@@ -191,16 +184,51 @@ class IntrinsicProps(AddLogger):
         set these - will user be able to use select weatherers? Currently,
         evaporation defines 'density' data array
         '''
-        mask = sc['status_codes'] == oil_status.in_water
         # update avg_density from density array
         # wasted cycles at present since all values in density for given
         # timestep should be the same, but that will likely change
-        # todo: test weighted average
-        sc.weathering_data['avg_density'] = \
-            np.sum(sc['mass']/np.sum(sc['mass']) * sc['density'])
-        sc.weathering_data['avg_viscosity'] = \
-            np.sum(sc['mass']/sc['mass'].sum() * sc['viscosity'])
-        sc.weathering_data['floating'] = sc['mass'][mask].sum()
+        # Any optimization in doing the following?:
+        #   (sc['mass'] * sc['density']).sum()/sc['mass'].sum()
+        # todo: move weighted average to utilities
+        # also added a check for 'mass' == 0, edge case
+        if len(sc.substances) > 1:
+            self.logger.warning(self._pid + "current code isn't valid for "
+                                "multiple weathering substances")
+        elif len(sc.substances) == 0:
+            # should not happen with the Web API. Just log a warning for now
+            self.logger.warning(self._pid + "weathering is on but found no"
+                                "weatherable substances.")
+        else:
+            # avg_density, avg_viscosity applies to elements that are on the
+            # surface and being weathered
+            data = sc.substancefatedata(sc.substances[0],
+                                        {'mass', 'density', 'viscosity'})
+            if data['mass'].sum() > 0.0:
+                sc.weathering_data['avg_density'] = \
+                    np.sum(data['mass']/data['mass'].sum() * data['density'])
+                sc.weathering_data['avg_viscosity'] = \
+                    np.sum(data['mass']/data['mass'].sum() * data['viscosity'])
+            else:
+                self.logger.info(self._pid + "sum of 'mass' array went to 0.0")
+
+        # floating includes LEs marked to be skimmed + burned + dispersed
+        # todo: remove fate_status and add 'surface' to status_codes. LEs
+        # marked to be skimmed, burned, dispersed will also be marked as
+        # 'surface' so following can get cleaned up.
+        sc.weathering_data['floating'] = \
+            (sc['mass'][sc['fate_status'] == fate.surface_weather].sum() +
+             sc['mass'][sc['fate_status'] & fate.skim == fate.skim].sum() +
+             sc['mass'][sc['fate_status'] & fate.burn == fate.burn].sum() +
+             sc['mass'][sc['fate_status'] & fate.disperse == fate.disperse].sum())
+
+        sc.weathering_data['beached'] = sc['mass'][sc['status_codes'] ==
+                                                   oil_status.on_land].sum()
+
+        # add 'non_weathering' key if any mass is released for nonweathering
+        # particles.
+        nonweather = sc['mass'][sc['fate_status'] == fate.non_weather].sum()
+        if nonweather > 0:
+            sc.weathering_data['non_weathering'] = nonweather
 
         if new_LEs > 0:
             amount_released = np.sum(sc['mass'][-new_LEs:])
@@ -216,9 +244,9 @@ class IntrinsicProps(AddLogger):
         - update intrinsic properties like 'density', 'viscosity' and optional
         arrays for previously released particles
         '''
-        arrays = self.array_types.keys()
 
-        for substance, data in sc.itersubstancedata(arrays):
+        for substance, data in sc.itersubstancedata(self.array_types,
+                                                    fate='all'):
             'update properties only if elements are released'
             if len(data['density']) == 0:
                 continue
@@ -232,7 +260,33 @@ class IntrinsicProps(AddLogger):
             if sum(~new_LEs_mask) > 0:
                 self._update_old_particles(~new_LEs_mask, data, substance)
 
-        sc.update_from_substancedata(arrays)
+        sc.update_from_fatedataview(fate='all')
+
+    def update_fate_status(self, sc):
+        '''
+        Update fate status after model invokes move_elements()
+        - elements will beach or refloat
+        - then Model will update fate_status of elements that beached/refloated
+
+        Model calls this and input is spill container, not a view of the data
+        '''
+        # for old particles, update fate_status
+        # particles in_water or off_maps continue to weather
+        # only particles on_land stop weathering
+        non_w_mask = sc['status_codes'] == oil_status.on_land
+        sc['fate_status'][non_w_mask] = fate.non_weather
+
+        # update old particles that may now have refloated
+        # only want to do this for particles with a valid substance - if
+        # substance is None, they do not weather
+        # also get all data for a substance since we are modifying the
+        # fate_status - lets not use it to filter data
+        for substance, data in sc.itersubstancedata(self.array_types,
+                                                    fate='all'):
+            mask = data['fate_status'] & fate.non_weather == fate.non_weather
+            self._init_fate_status(mask, data)
+
+        sc.update_from_fatedataview(fate='all')
 
     def _init_new_particles(self, mask, data, substance):
         '''
@@ -246,8 +300,16 @@ class IntrinsicProps(AddLogger):
         water_temp = self.water.get('temperature', 'K')
         data['density'][mask] = substance.get_density(water_temp)
 
-        # initialize mass_components - assume 'mass' is correctly set
-        data['mass_components'][mask, :len(substance.mass_fraction)] = \
+        # initialize mass_components -
+        # sub-select mass_components array by substance.num_components.
+        # Currently, the physics for modeling multiple spills with different
+        # substances is not being correctly done in the same model. However,
+        # let's put some basic code in place so the data arrays can infact
+        # contain two substances and the code does not raise exceptions. The
+        # mass_components are zero padded for substance which has fewer
+        # psuedocomponents. Subselecting mass_components array by
+        # [mask, :substance.num_components] ensures numpy operations work
+        data['mass_components'][mask, :substance.num_components] = \
             (np.asarray(substance.mass_fraction, dtype=np.float64) *
              (data['mass'][mask].reshape(len(data['mass'][mask]), -1)))
 
@@ -260,7 +322,7 @@ class IntrinsicProps(AddLogger):
 
         '''
         Sets relative_bouyancy, init_volume, init_area, thickness all of
-        which are required when computing the 'area' of each LE
+        which are required when computing the 'thickness' of each LE
         '''
         data['relative_bouyancy'][mask] = \
             self._set_relative_bouyancy(data['density'][mask])
@@ -277,23 +339,115 @@ class IntrinsicProps(AddLogger):
                                                     'square meter per second'),
                                      data['init_volume'][mask][0],
                                      data['relative_bouyancy'][mask][0])
-        data['area'][mask] = data['init_area'][mask]
-        data['thickness'][mask] = data['init_volume'][mask]/data['area'][mask]
+        data['thickness'][mask] = \
+            data['init_volume'][mask]/data['init_area'][mask]
+
+        # initialize the fate_status array based on positions and status_codes
+        self._init_fate_status(mask, data)
+
+    def _init_fate_status(self, update_LEs_mask, data):
+        '''
+        initialize fate_status for newly released LEs or refloated LEs
+        For refloated LEs, the mask should apply to non_weather LEs.
+        Currently, the 'status_codes' is separate from 'fate_status' and we
+        don't want to reset the 'fate_status' of LEs that have been marked
+        as 'skim' or 'burn' or 'disperse'. This should only apply for newly
+        released LEs (currently marked as non_weather since that's the default)
+        and for refloated LEs which should also have been marked as non_weather
+        when they beached.
+        '''
+        surf_mask = \
+            np.logical_and(update_LEs_mask,
+                           np.logical_and(data['positions'][:, 2] == 0,
+                                          data['status_codes'] ==
+                                          oil_status.in_water))
+        subs_mask = \
+            np.logical_and(update_LEs_mask,
+                           np.logical_and(data['positions'][:, 2] > 0,
+                                          data['status_codes'] ==
+                                          oil_status.in_water))
+
+        # set status for new_LEs correctly
+        data['fate_status'][surf_mask] = fate.surface_weather
+        data['fate_status'][subs_mask] = fate.subsurf_weather
+
+    @lru_cache(2)
+    def _get_kv1_weathering_visc_update(self, v0):
+        '''
+        kv1 is constant.
+        It defining the exponential change in viscosity as it weathers due to
+        the fraction lost to evaporation/dissolution:
+            v(t) = v' * exp(kv1 * f_lost_evap_diss)
+
+        kv1 = sqrt(v0) * 1500
+        if kv1 < 1, then return 1
+        if kv1 > 10, then return 10
+
+        Since this is fixed for an oil, it only needs to be computed once. Use
+        lru_cache on this function to cache the result for a given initial
+        viscosity: v0
+        '''
+        # find kv1
+        kv1 = np.sqrt(v0) * self.visc_curvfit_param
+        if kv1 < 1:
+            kv1 = 1
+
+        if kv1 > 10:
+            kv1 = 10
+
+        return kv1
+
+    @lru_cache(2)
+    def _get_k_rho_weathering_dens_update(self, substance):
+        '''
+        use lru_cache on substance. substance is an OilProps object, if this
+        object stays the same, then return the cached value for k_rho
+        This depends on initial mass fractions, initial density and fixed
+        component densities
+        '''
+        # update density/viscosity/relative_bouyance/area for previously
+        # released elements
+        rho0 = substance.get_density(self.water.get('temperature', 'K'))
+
+        # dimensionless constant
+        k_rho = (rho0 /
+                 (substance.component_density * substance.mass_fraction).sum())
+
+        return k_rho
 
     def _update_old_particles(self, mask, data, substance):
         '''
         update density, area
         '''
-        # update density/viscosity/relative_bouyance/area for previously
-        # released elements
+        k_rho = self._get_k_rho_weathering_dens_update(substance)
+        # sub-select mass_components array by substance.num_components.
+        # Currently, the physics for modeling multiple spills with different
+        # substances is not being correctly done in the same model. However,
+        # let's put some basic code in place so the data arrays can infact
+        # contain two substances and the code does not raise exceptions. The
+        # mass_components are zero padded for substance which has fewer
+        # psuedocomponents. Subselecting mass_components array by
+        # [mask, :substance.num_components] ensures numpy operations work
+        mass_frac = \
+            (data['mass_components'][mask, :substance.num_components] /
+             data['mass'][mask].reshape(np.sum(mask), -1))
+        # check if density becomes > water, set it equal to water in this case
+        new_rho = k_rho*(substance.component_density * mass_frac).sum(1)
+        if np.any(new_rho > self.water.density):
+            new_rho[new_rho > self.water.density] = self.water.density
+            self.logger.info(self._pid + "during update, density is greater "
+                             "than water density - set it to water density ")
+
+        data['density'][mask] = new_rho
 
         # following implementation results in an extra array called
-        # fw_d_fref but easy to read
+        # fw_d_fref but is easy to read
         v0 = substance.get_viscosity(self.water.get('temperature', 'K'))
         if v0 is not None:
+            kv1 = self._get_kv1_weathering_visc_update(v0)
             fw_d_fref = data['frac_water'][mask]/self.visc_f_ref
             data['viscosity'][mask] = \
-                (v0 * np.exp(v0 * self.visc_curvfit_param *
+                (v0 * np.exp(kv1 *
                              data['frac_lost'][mask]) *
                  (1 + (fw_d_fref/(1.187 - fw_d_fref)))**2.49)
 
@@ -308,19 +462,15 @@ class IntrinsicProps(AddLogger):
         # thickness greater than some minimum thickness and the frac_coverage
         # is only applied to LEs whose area is updated. Elements below a min
         # thickness should not be updated
-        data['area'][mask] = \
-            self.spreading.update_area(self.water.get('kinematic_viscosity',
-                                                      'square meter per second'),
-                                       data['init_area'][mask],
-                                       data['init_volume'][mask],
-                                       data['relative_bouyancy'][mask],
-                                       data['age'][mask],
-                                       data['thickness'][mask],
-                                       data['area'][mask],
-                                       data['frac_coverage'][mask])
-
-        # update thickness per the new area
-        data['thickness'][mask] = data['init_volume'][mask]/data['area'][mask]
+        data['thickness'][mask] = \
+            self.spreading.update_thickness(self.water.get('kinematic_viscosity',
+                                                           'square meter per second'),
+                                            data['init_area'][mask],
+                                            data['init_volume'][mask],
+                                            data['relative_bouyancy'][mask],
+                                            data['age'][mask],
+                                            data['thickness'][mask],
+                                            data['frac_coverage'][mask])
 
     def _set_relative_bouyancy(self, rho_oil):
         '''

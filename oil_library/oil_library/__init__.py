@@ -13,7 +13,6 @@ from oil_library.mock_oil import sample_oil_to_mock_oil
 from oil_library.oil_props import OilProps
 
 
-
 # Some standard oils - scope is module level, non-public
 # create mock_oil objects instead of dict - we always want the same instance
 # of mock_oil object for say 'oil_conservative' otherwise equality fails
@@ -23,49 +22,90 @@ _sample_oils = {
                                **{'name': 'oil_gas',
                                   'api': uc.convert('Density',
                                                     'gram per cubic centimeter',
-                                                    'API degree', 0.75)}),
+                                                    'API degree', 0.75),
+                                  'kvis': [{'m_2_s': 1.32e-6, 'ref_temp_k': 273.15},
+                                           {'m_2_s': 9.98e-7, 'ref_temp_k': 288.15},
+                                           {'m_2_s': 8.6e-7, 'ref_temp_k': 311.0},
+                                           ],
+                                  }
+                               ),
     'oil_jetfuels':
         sample_oil_to_mock_oil(max_cuts=2,
                                **{'name': 'oil_jetfuels',
                                   'api': uc.convert('Density',
                                                     'gram per cubic centimeter',
-                                                    'API degree', 0.81)}),
+                                                    'API degree', 0.81),
+                                  'kvis': [{'m_2_s': 6.9e-6, 'ref_temp_k': 255.0},
+                                           {'m_2_s': 2.06e-6, 'ref_temp_k': 273.0},
+                                           {'m_2_s': 2.08e-6, 'ref_temp_k': 288.0},
+                                           {'m_2_s': 1.3e-6, 'ref_temp_k': 313.0},
+                                           ],
+                                  }
+                               ),
     'oil_diesel':
         sample_oil_to_mock_oil(max_cuts=2,
                                **{'name': 'oil_diesel',
                                   'api': uc.convert('Density',
                                                     'gram per cubic centimeter',
-                                                    'API degree', 0.87)}),
+                                                    'API degree', 0.87),
+                                  'kvis': [{'m_2_s': 6.5e-6, 'ref_temp_k': 273.0},
+                                           {'m_2_s': 3.9e-6, 'ref_temp_k': 288.0},
+                                           {'m_2_s': 2.27e-6, 'ref_temp_k': 311.0},
+                                           ],
+                                  }
+                               ),
     'oil_4':
         sample_oil_to_mock_oil(max_cuts=2,
                                **{'name': 'oil_4',
                                   'api': uc.convert('Density',
                                                     'gram per cubic centimeter',
-                                                    'API degree', 0.90)}),
+                                                    'API degree', 0.90),
+                                  'kvis': [{'m_2_s': 0.06, 'ref_temp_k': 273.0},
+                                           {'m_2_s': 0.03, 'ref_temp_k': 278.0},
+                                           {'m_2_s': 0.0175, 'ref_temp_k': 283.0},
+                                           {'m_2_s': 0.0057, 'ref_temp_k': 288.0},
+                                           ],
+                                  }
+                               ),
     'oil_crude':
         sample_oil_to_mock_oil(max_cuts=2,
                                **{'name': 'oil_crude',
                                   'api': uc.convert('Density',
                                                     'gram per cubic centimeter',
-                                                    'API degree', 0.90)}),
-    'oil_6': 
+                                                    'API degree', 0.90),
+                                  'kvis': [{'m_2_s': 0.0005, 'ref_temp_k': 273.0},
+                                           {'m_2_s': 0.0006, 'ref_temp_k': 288.0},
+                                           {'m_2_s': 8.3e-5, 'ref_temp_k': 293.0},
+                                           {'m_2_s': 8.53e-5, 'ref_temp_k': 311.0},
+                                           ],
+                                  }
+                               ),
+    'oil_6':
         sample_oil_to_mock_oil(max_cuts=2,
                                **{'name': 'oil_6',
                                   'api': uc.convert('Density',
                                                     'gram per cubic centimeter',
-                                                    'API degree', 0.99)}),
-    'oil_conservative':
-        sample_oil_to_mock_oil(max_cuts=2,
-                               **{'name': 'oil_conservative',
-                                  'api': uc.convert('Density',
-                                                    'gram per cubic centimeter',
-                                                    'API degree', 1)}),
-    'chemical':
-        sample_oil_to_mock_oil(max_cuts=2,
-                               **{'name': 'chemical',
-                                  'api': uc.convert('Density',
-                                                    'gram per cubic centimeter',
-                                                    'API degree', 1)}),
+                                                    'API degree', 0.99),
+                                  'kvis': [{'m_2_s': 0.25, 'ref_temp_k': 273.0},
+                                           {'m_2_s': 0.038, 'ref_temp_k': 278.0},
+                                           {'m_2_s': 0.019, 'ref_temp_k': 283.0},
+                                           {'m_2_s': 0.017, 'ref_temp_k': 288.0},
+                                           {'m_2_s': 0.000826, 'ref_temp_k': 323.0},
+                                           ],
+                                  }
+                               ),
+    # 'oil_conservative':
+    #    sample_oil_to_mock_oil(max_cuts=2,
+    #                           **{'name': 'oil_conservative',
+    #                              'api': uc.convert('Density',
+    #                                                'gram per cubic centimeter',
+    #                                                'API degree', 1)}),
+    # 'chemical':
+    #    sample_oil_to_mock_oil(max_cuts=2,
+    #                           **{'name': 'chemical',
+    #                              'api': uc.convert('Density',
+    #                                                'gram per cubic centimeter',
+    #                                                'API degree', 1)}),
     }
 
 '''
@@ -124,32 +164,25 @@ def get_oil(oil_, max_cuts=None):
 
     if oil_ in _sample_oils.keys():
         return _sample_oils[oil_]
-
     else:
         '''
         db_file should exist - if it doesn't then create if first
         should we raise error here?
         '''
-
         session = _get_db_session()
 
         try:
             oil = session.query(Oil).filter(Oil.name == oil_).one()
-            oil.cuts
             oil.densities
             oil.kvis
+            oil.cuts
             oil.sara_fractions
+            oil.sara_densities
+            oil.molecular_weights
             return oil
-        except:
-            pass    # try checking imported_record_id
-
-        try:
-            return (session.query(Oil).filter(Oil.imported_record_id == oil_).
-                    one())
         except NoResultFound, ex:
-            # or sqlalchemy.orm.exc.MultipleResultsFound as ex:
-            ex.message = ("oil with name or imported_record_id, '{0}', not "
-                          "found in database. {1}".format(oil_, ex.message))
+            ex.message = ("oil with name '{0}', not found in database.  "
+                          "{1}".format(oil_, ex.message))
             ex.args = (ex.message, )
             raise ex
 

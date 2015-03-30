@@ -11,6 +11,7 @@ import gnome    # required by new_from_dict
 
 from gnome.array_types import (frac_lost,  # due to evaporation and dissolution
                                age,
+                               mass,
                                bulltime,
                                interfacial_area,
                                frac_water)
@@ -20,34 +21,28 @@ from gnome import constants
 from .core import WeathererSchema
 from gnome.weatherers import Weatherer
 from gnome.cy_gnome.cy_weatherers import emulsify_oil
+from gnome.basic_types import fate as bt_fate
 
 
 class Emulsification(Weatherer, Serializable):
     _state = copy.deepcopy(Weatherer._state)
     _state += [Field('waves', save=True, update=True, save_reference=True)]
-              # Field('wind', save=True, update=True, save_reference=True)]
     _schema = WeathererSchema
 
     def __init__(self,
                  waves=None,
-                 #wind=None,
                  **kwargs):
         '''
         :param conditions: gnome.environment.Conditions object which contains
             things like water temperature
         :param waves: waves object for obtaining emulsification wind speed at specified time
-        :type waves: get_emulsifiation_wind(model_time)
+        :type waves: get_emulsification_wind(model_time)
         '''
         self.waves = waves
-        #self.wind = wind
 
         super(Emulsification, self).__init__(**kwargs)
-        self.array_types.update({'age': age,
-                                 'bulltime': bulltime,
-                                 'frac_water': frac_water,
-                                 'interfacial_area': interfacial_area,
-                                 'frac_lost': frac_lost,
-                                 })
+        self.array_types.update({'age', 'bulltime', 'frac_water',
+                                 'mass', 'interfacial_area', 'frac_lost'})
 
     def prepare_for_model_run(self, sc):
         '''
@@ -56,7 +51,7 @@ class Emulsification(Weatherer, Serializable):
         '''
         # create 'water_content' key if it doesn't exist
         # let's only define this the first time
-        if self.active:
+        if self.on:
             sc.weathering_data['water_content'] = 0.0
 
     def prepare_for_model_step(self, sc, time_step, model_time):
@@ -83,14 +78,20 @@ class Emulsification(Weatherer, Serializable):
         if sc.num_released == 0:
             return
 
-        for substance, data in sc.itersubstancedata(self._arrays):
+        for substance, data in sc.itersubstancedata(self.array_types):
+            if len(data['frac_water']) == 0:
+                # substance does not contain any surface_weathering LEs
+                continue
+
             k_emul = self._water_uptake_coeff(model_time, substance)
 
             # bulltime is not in database, but could be set by user
-            emul_time = substance.get_bulltime()
+            #emul_time = substance.get_bulltime()
+            emul_time = substance.bulltime
 
             # get from database bullwinkle (could be overridden by user)
-            emul_constant = substance.get('bullwinkle_fraction')
+            #emul_constant = substance.get('bullwinkle_fraction')
+            emul_constant = substance.bullwinkle
 
             # max water content fraction - get from database
             Y_max = substance.get('emulsion_water_fraction_max')
@@ -117,12 +118,17 @@ class Emulsification(Weatherer, Serializable):
                 #np.sum(data['frac_water'][:]) / sc.num_released
             # just average the water fraction each time - it is not per time
             # step value but at a certain time value
+            # todo: probably should be weighted avg
             sc.weathering_data['water_content'] = \
-                np.sum(data['frac_water'][:]) / sc.num_released
-            self.logger.info('Amount water_content: {0}'.
-                             format(sc.weathering_data['water_content']))
+                np.sum(data['mass']/data['mass'].sum() * data['frac_water'])
+                #np.sum(data['frac_water'][:]*data['mass'][:]) / np.sum(data['mass'])
+                #np.sum(data['frac_water'][:]) / len(data['frac_water']
+                #np.sum(data['frac_water'][:]) / sc.num_released
+            self.logger.debug(self._pid + 'water_content for {0}: {1}'.
+                              format(substance.name,
+                                     sc.weathering_data['water_content']))
 
-        sc.update_from_substancedata(self._arrays)
+        sc.update_from_fatedataview()
 
     def serialize(self, json_='webapi'):
         """
@@ -173,7 +179,7 @@ class Emulsification(Weatherer, Serializable):
         '''
 
         ## higher of real or psuedo wind
-        wind_speed = self.waves.get_emulsifiation_wind(model_time)
+        wind_speed = self.waves.get_emulsification_wind(model_time)
 
         # water uptake rate constant - get this from database
         K0Y = substance.get('k0y')

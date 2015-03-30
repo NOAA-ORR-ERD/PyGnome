@@ -14,6 +14,7 @@ from gnome.model import Model
 from gnome.environment import constant_wind, Water
 from gnome.weatherers import Evaporation
 from gnome.spill import point_line_release_spill
+from conftest import test_oil
 
 
 config_dict = {
@@ -97,20 +98,24 @@ class TestLog():
 
     def test_full_run_logging(self, logfile):
         c_dict = copy.deepcopy(config_dict)
+        c_dict["root"]["level"] = "DEBUG"
         initialize_log(c_dict, logfile)
         #model = Model(time_step=timedelta(minutes=15))
-        model = Model()
+        model = Model(uncertain=True)
         model.spills += point_line_release_spill(100,
                                                  (0, 0, 0),
                                                  model.start_time,
                                                  end_release_time=model.start_time + timedelta(days=1),
                                                  amount=200,
-                                                 units='m^3')
+                                                 units='m^3',
+                                                 substance=test_oil)
         model.water = Water()
         model.environment += constant_wind(1., 0.)
         model.weatherers += Evaporation(model.water,
                                         model.environment[-1])
+        model.full_run()
+
+        # log warning - visually check logged warnging to ensure message logged
+        # after deepcopy
         for spill in model.spills:
             spill.set('num_released', 10)
-
-        model.full_run()

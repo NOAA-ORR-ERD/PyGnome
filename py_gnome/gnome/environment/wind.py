@@ -189,34 +189,6 @@ class Wind(Timeseries, Environment, serializable.Serializable):
                 'timeseries={1}'
                 ')').format(self, self_ts)
 
-    def __eq__(self, other):
-        '''
-        call super to test for equality of objects for all attributes
-        except 'units' and 'timeseries' - test 'timeseries' here by converting
-        to consistent units
-        '''
-        # following invokes __eq__ in Serializable since __eq__ is not defined
-        # for Timeseries class
-        check = super(Wind, self).__eq__(other)
-
-        # since this has numpy array - need to compare that as well
-        # By default, tolerance for comparison is atol=1e-10, rtol=0
-        # persisting data requires unit conversions and finite precision,
-        # both of which will introduce a difference between two objects
-        if check:
-            sts = self.get_timeseries(units=self.units)
-            ots = other.get_timeseries(units=self.units)
-
-            if (sts['time'] != ots['time']).all():
-                return False
-            else:
-                return np.allclose(sts['value'], ots['value'], 0, 1e-2)
-
-        return check
-
-    def __ne__(self, other):
-        return not self == other
-
     # user_units = property( lambda self: self._user_units)
 
     @property
@@ -345,8 +317,8 @@ class Wind(Timeseries, Environment, serializable.Serializable):
                   values in user specified ts_format
 
         .. note:: Invokes self._convert_units() to do the unit conversion.
-        Override this method to define the derived object's unit conversion
-        functionality
+            Override this method to define the derived object's unit conversion
+            functionality
         """
         datetimeval = super(Wind, self).get_timeseries(datetime, format)
         units = (units, self._user_units)[units is None]
@@ -402,24 +374,25 @@ class Wind(Timeseries, Environment, serializable.Serializable):
 
     def set_speed_uncertainty(self, up_or_down=None):
         '''
-            This function shifts the wind speed values in our time series
-            based on a single parameter Rayleigh distribution method,
-            and scaled by a value in the range [0.0 ... 0.5].
-            This range represents a plus-or-minus percent of uncertainty that
-            the distribution function should calculate
+        This function shifts the wind speed values in our time series
+        based on a single parameter Rayleigh distribution method,
+        and scaled by a value in the range [0.0 ... 0.5].
+        This range represents a plus-or-minus percent of uncertainty that
+        the distribution function should calculate
 
-            For each wind value in our time series:
-            - We assume it to be the average speed for that sample time
-            - We calculate its respective Rayleigh distribution mode (sigma).
-            - We determine either an upper percent uncertainty or a
-              lower percent uncertainty based on a passed in parameter.
-            - Using the Rayleigh Quantile method and our calculated percent,
-              we determine the wind speed that is just at or above the
-              fractional area under the Probability distribution.
-            - We assign the wind speed to its new calculated value.
+        For each wind value in our time series:
 
-            Since we are irreversibly changing the wind speed values,
-            we should probably do this only once.
+        * We assume it to be the average speed for that sample time
+        * We calculate its respective Rayleigh distribution mode (sigma).
+        * We determine either an upper percent uncertainty or a
+          lower percent uncertainty based on a passed in parameter.
+        * Using the Rayleigh Quantile method and our calculated percent,
+          we determine the wind speed that is just at or above the
+          fractional area under the Probability distribution.
+        * We assign the wind speed to its new calculated value.
+
+        Since we are irreversibly changing the wind speed values,
+        we should probably do this only once.
         '''
         if up_or_down not in ('up', 'down'):
             return False

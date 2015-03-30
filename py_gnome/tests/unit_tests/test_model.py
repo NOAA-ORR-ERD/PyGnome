@@ -13,7 +13,7 @@ np = numpy
 import pytest
 from pytest import raises
 
-from gnome.basic_types import datetime_value_2d, oil_status
+from gnome.basic_types import datetime_value_2d, oil_status, fate as bt_fate
 from gnome.utilities import inf_datetime
 from gnome.persist import load
 
@@ -34,15 +34,15 @@ from gnome.weatherers import (HalfLifeWeatherer,
                               Emulsification)
 from gnome.outputters import Renderer, GeoJson
 
-from conftest import sample_model_weathering, testdata
+from conftest import sample_model_weathering, testdata, test_oil
 
 
 @pytest.fixture(scope='function')
-def model(sample_model_fcn, dump):
+def model(sample_model_fcn, tmpdir):
     '''
     Utility to setup up a simple, but complete model for tests
     '''
-    images_dir = os.path.join(dump, 'Test_images')
+    images_dir = tmpdir.mkdir('Test_images').strpath
 
     if os.path.isdir(images_dir):
         shutil.rmtree(images_dir)
@@ -68,7 +68,7 @@ def model(sample_model_fcn, dump):
     release = SpatialRelease(start_position=line_pos,
                              release_time=model.start_time)
 
-    model.spills += Spill(release)
+    model.spills += Spill(release, substance=test_oil)
 
     return model
 
@@ -704,8 +704,11 @@ def test_full_run(model, dump, traj_only):
 
     # check if the images are there:
     # (1 extra for background image)
-    num_images = len(os.listdir(os.path.join(dump, 'Test_images')))
+    num_images = len(os.listdir(model.outputters[-1].images_dir))
     assert num_images == model.num_time_steps + 1
+
+
+''' Test Callbacks on OrderedCollections '''
 
 
 def test_callback_add_mover():
@@ -784,6 +787,33 @@ def test_callback_add_mover_midrun():
     assert model.current_time_step == -1
 
 
+def test_callback_add_weather():
+    '''
+    Test callback when weatherer is added
+    '''
+    model = Model()
+    water = Water()
+    wind = constant_wind(1, 30)
+    assert len(model.environment) == 0
+
+    model.weatherers += Evaporation(water, wind)
+
+    # only wind is added to environment collection
+    assert len(model.environment) == 1
+    assert wind in model.environment
+
+
+def test_callback_add_water_to_env():
+    '''
+    test callback if Water is added to environment collection, it sets Model's
+    water attribute if it is None
+    '''
+    model = Model()
+    assert model.water is None
+    model.environment += Water()
+    assert model.environment[-1] == model.water
+
+
 def test_simple_run_no_spills(model):
     # model = setup_simple_model()
 
@@ -838,7 +868,7 @@ def test_contains_object(sample_model_fcn):
     '''
     Test that we can find all contained object types with a model.
     '''
-    model = sample_model_weathering(sample_model_fcn, 'ALAMO')
+    model = sample_model_weathering(sample_model_fcn, test_oil)
 
     gnome_map = model.map = gnome.map.GnomeMap()    # make it all water
 
@@ -863,11 +893,12 @@ def test_contains_object(sample_model_fcn):
     movers = [m for m in model.movers]
 
     evaporation = Evaporation(model.water, model.environment[0])
-    dispersion, burn = Dispersion(), Burn()
+    dispersion = Dispersion()
     skim_start = sp.get('release_time') + timedelta(hours=1)
     skimmer = Skimmer(.5*sp.amount, units=sp.units, efficiency=0.3,
                       active_start=skim_start,
                       active_stop=skim_start + timedelta(hours=1))
+    burn = burn_obj(sp)
     model.weatherers += [evaporation, dispersion, burn, skimmer]
 
     renderer = Renderer(images_dir='Test_images',
@@ -899,6 +930,16 @@ def make_skimmer(spill, delay_hours=1, duration=2):
     return skimmer
 
 
+def burn_obj(spill, delay_hours=1.5):
+    rel_time = spill.get('release_time')
+    burn_start = rel_time + timedelta(hours=delay_hours)
+    volume = spill.get_mass()/spill.get('substance').get_density()
+    thick = 1   # in meters
+    area = (0.2 * volume)/thick
+    burn = Burn(area, thick, active_start=burn_start)
+    return burn
+
+
 @pytest.mark.parametrize("delay", [timedelta(hours=0),
                                    timedelta(hours=1)])
 def test_staggered_spills_weathering(sample_model_fcn, delay):
@@ -910,7 +951,7 @@ def test_staggered_spills_weathering(sample_model_fcn, delay):
 
     test exposed a bug, which is now fixed
     '''
-    model = sample_model_weathering(sample_model_fcn, 'ALAMO')
+    model = sample_model_weathering(sample_model_fcn, test_oil)
     model.map = gnome.map.GnomeMap()    # make it all water
     model.uncertain = False
     rel_time = model.spills[0].get('release_time')
@@ -926,30 +967,45 @@ def test_staggered_spills_weathering(sample_model_fcn, delay):
                                   amount=1,
                                   units='tonnes')
     model.spills += cs
+
+    # ensure amount released is equal to exp_total_mass
+    exp_total_mass = 0.0
+    for spill in model.spills:
+        exp_total_mass += spill.get_mass()
+
     model.water = Water()
     model.environment += constant_wind(1., 0)
     skimmer = make_skimmer(model.spills[0])
+    burn = burn_obj(model.spills[0])
     model.weatherers += [Evaporation(model.water,
                                      model.environment[0]),
                          Dispersion(),
-                         Burn(),
+                         burn,
                          skimmer]
     # model.full_run()
     for step in model:
         for sc in model.spills.items():
-            unaccounted = sc['status_codes'] != oil_status.in_water
-            sum_ = sc['mass'][unaccounted].sum()
-            for key in sc.weathering_data:
-                if 'avg_' != key[:4] and 'amount_released' != key:
-                    sum_ += sc.weathering_data[key]
+            print "completed step {0}".format(step)
+            # sum up all the weathered mass + mass of LEs marked for weathering
+            # and ensure this equals the total amount released
+            sum_ = (sc.weathering_data['beached'] +
+                    sc.weathering_data['burned'] +
+                    sc.weathering_data['dispersed'] +
+                    sc.weathering_data['evaporated'] +
+                    sc.weathering_data['floating'] +
+                    sc.weathering_data['skimmed']
+                    )
+
             assert abs(sum_ - sc.weathering_data['amount_released']) < 1.e-6
+    assert sc.weathering_data['burned'] > 0
+    assert sc.weathering_data['skimmed'] > 0
 
-        print "completed step {0}".format(step)
-        print sc.weathering_data
+    assert np.isclose(exp_total_mass, sc.weathering_data['amount_released'])
 
 
-@pytest.mark.parametrize(("s0", "s1"), [("ALAMO", "ALAMO"),
-                                        ("ALAMO", "AGUA DULCE")])
+@pytest.mark.parametrize(("s0", "s1"),
+                         [(test_oil, test_oil),
+                          (test_oil, "ARABIAN MEDIUM, EXXON")])
 def test_two_substance_spills_weathering(sample_model_fcn, s0, s1):
     '''
     only tests data arrays are correct and we don't end up with stale data
@@ -971,33 +1027,48 @@ def test_two_substance_spills_weathering(sample_model_fcn, s0, s1):
                                   amount=1,
                                   units='tonnes')
     model.spills += cs
+
+    # ensure amount released is equal to exp_total_mass
+    exp_total_mass = 0.0
+    for spill in model.spills:
+        exp_total_mass += spill.get_mass()
+
     model.water = Water()
     model.environment += constant_wind(1., 0)
     model.weatherers += Evaporation(model.water, model.environment[0])
     if s0 == s1:
         '''
-        multiple substances will not work with Skimmer
+        multiple substances will not work with Skimmer or Burn
         '''
         skimmer = make_skimmer(model.spills[0], 2)
+        burn = burn_obj(model.spills[0], 2.5)
         model.weatherers += [Dispersion(),
-                             Burn(),
+                             burn,
                              skimmer]
 
     # model.full_run()
     for step in model:
         for sc in model.spills.items():
-            # If LEs are marked as 'skim', add them to sum_ since the mass must
-            # be accounted for in the assertion
-            unaccounted = sc['status_codes'] != oil_status.in_water
-            sum_ = sc['mass'][unaccounted].sum()
-            print 'starting sum_: ', sum_
-            for key in sc.weathering_data:
-                if 'avg_' != key[:4] and 'amount_released' != key:
-                    sum_ += sc.weathering_data[key]
+            # sum up all the weathered mass + mass of LEs marked for weathering
+            # and ensure this equals the total amount released
+            sum_ = 0.0
+
+            if s0 == s1:
+                # mass marked for skimming/burning/dispersion that is not yet
+                # removed - cleanup operations only work on single substance
+                sum_ += (sc.weathering_data['burned'] +
+                         sc.weathering_data['dispersed'] +
+                         sc.weathering_data['skimmed'])
+
+            sum_ += (sc.weathering_data['beached'] +
+                     sc.weathering_data['evaporated'] +
+                     sc.weathering_data['floating'])
+
             assert abs(sum_ - sc.weathering_data['amount_released']) < 1.e-6
 
         print "completed step {0}".format(step)
-        print sc.weathering_data
+
+    assert np.isclose(exp_total_mass, sc.weathering_data['amount_released'])
 
 
 def test_weathering_data_attr():
@@ -1027,8 +1098,10 @@ def test_weathering_data_attr():
     model.rewind()
     model.step()
     for sc in model.spills.items():
-        assert sc.weathering_data['floating'] == sum(sc['mass'])
-        assert sc.weathering_data['floating'] == s[0].amount
+        # since no substance is defined, all the LEs are marked as
+        # nonweathering
+        assert sc.weathering_data['non_weathering'] == sc['mass'].sum()
+        assert sc.weathering_data['non_weathering'] == s[0].amount
 
     s[1].amount = 5.0
     s[1].units = 'kg'
@@ -1038,8 +1111,8 @@ def test_weathering_data_attr():
         model.step()
         exp_rel += s[ix].amount
         for sc in model.spills.items():
-            assert sc.weathering_data['floating'] == sum(sc['mass'])
-            assert sc.weathering_data['floating'] == exp_rel
+            assert sc.weathering_data['non_weathering'] == sc['mass'].sum()
+            assert sc.weathering_data['non_weathering'] == exp_rel
     model.rewind()
     assert sc.weathering_data == {}
 
@@ -1124,15 +1197,20 @@ class TestMergeModels:
 
 # test sorting function weatherer_sort
 def test_weatherer_sort():
+    '''
+    Sample model with weatherers - only tests sorting of weathereres. The
+    Model may or may not run.
+    '''
     model = Model()
     model.water = Water()
     skimmer = Skimmer(100, 'kg', efficiency=0.3,
                       active_start=datetime(2014, 1, 1, 0, 0),
                       active_stop=datetime(2014, 1, 1, 0, 3))
+    burn = Burn(100, 1, active_start=datetime(2014, 1, 1, 0, 0))
     weatherers = [Emulsification(),
                   Evaporation(model.water,
                               constant_wind(1, 0)),
-                  Burn(),
+                  burn,
                   Dispersion(),
                   skimmer]
     exp_order = [weatherers[ix] for ix in (2, 4, 3, 1, 0)]
@@ -1149,7 +1227,8 @@ def test_weatherer_sort():
 
     # Burn, Dispersion are at same sorting level so appending another Burn to
     # end of the list will sort it to be just after Dispersion so index 2
-    exp_order.insert(2, Burn())
+    burn = Burn(50, 1, active_start=datetime(2014, 1, 1, 0, 0))
+    exp_order.insert(2, burn)
     model.weatherers += exp_order[2]  # add this and check sorting still works
     assert model.weatherers.values() != exp_order
 

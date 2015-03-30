@@ -15,18 +15,18 @@ np = numpy
 
 from gnome.utilities.inf_datetime import InfDateTime
 
-from gnome.array_types import mass, rise_vel, mass_components
 from gnome.spill.elements import (ElementType,
                                   InitRiseVelFromDist)
-
-from gnome.weatherers import Weatherer, HalfLifeWeatherer
+from gnome.environment import Water
+from gnome.weatherers import Weatherer, HalfLifeWeatherer, WeatheringData
+from ..conftest import test_oil as oil
 
 rel_time = datetime(2012, 8, 20, 13)  # yyyy/month/day/hr/min/sec
-arr_types = {'mass': mass,
-             'rise_vel': rise_vel,
-             'mass_components': mass_components,
-             }
-oil = 'ALAMO'
+arr_types = {'mass', 'rise_vel', 'mass_components'}
+intrinsic = WeatheringData(Water())
+arr_types.update(intrinsic.array_types)
+
+
 sc = sample_sc_release(5, (3., 6., 0.),
                        rel_time,
                        uncertain=False,
@@ -51,7 +51,7 @@ class TestWeatherer:
         assert weatherer.active
         assert weatherer.active_start == InfDateTime('-inf')
         assert weatherer.active_stop == InfDateTime('inf')
-        assert weatherer.array_types == {}
+        assert weatherer.array_types == {'mass_components', 'mass'}
 
     @pytest.mark.parametrize("test_sc", [sc, u_sc])
     def test_one_weather(self, test_sc):
@@ -59,6 +59,9 @@ class TestWeatherer:
         calls one weathering step and checks that we decayed at the expected
         rate. Needs more tests with varying half_lives
         '''
+        intrinsic.initialize(test_sc)
+        intrinsic.update(sc.num_released, test_sc)
+
         print '\nsc["mass"]:\n', test_sc['mass']
 
         orig_mc = np.copy(test_sc['mass_components'])

@@ -1,42 +1,57 @@
 '''
 Test evaporation module
 '''
-import os
-import json
-from datetime import timedelta
+from datetime import timedelta, datetime
 
 import pytest
 import numpy as np
 
+from gnome.model import Model
+from gnome.spill import point_line_release_spill
 from gnome.environment import constant_wind, Water, Wind
 from gnome.weatherers import (Evaporation,
-                              Burn,
-                              Skimmer,
-                              Dispersion,
-                              IntrinsicProps)
+                              WeatheringData)
 from gnome.outputters import WeatheringOutput
 from gnome.spill.elements import floating
-from gnome.array_types import (mass_components,
-                               windages,
-                               thickness,
-                               mol,
-                               evap_decay_constant)
 from gnome.basic_types import oil_status
 
-from ..conftest import sample_sc_release, sample_model_weathering
+from ..conftest import (sample_sc_release,
+                        sample_model,
+                        sample_model_weathering,
+                        test_oil)
 
 
 water = Water()
 
 arrays = Evaporation().array_types
-intrinsic = IntrinsicProps(water)
+intrinsic = WeatheringData(water)
 arrays.update(intrinsic.array_types)
 
 
+def test_evaporation_no_wind():
+    et = floating(substance=test_oil)
+    sc = sample_sc_release(num_elements=100,
+                           element_type=et,
+                           arr_types=arrays)
+    intrinsic.update(sc.num_released, sc)
+    time_step = 15. * 60
+    model_time = (sc.spills[0].get('release_time') +
+                  timedelta(seconds=time_step))
+
+    evap = Evaporation(water, wind=constant_wind(0., 0))
+
+    evap.prepare_for_model_run(sc)
+    evap.prepare_for_model_step(sc, time_step, model_time)
+    evap.weather_elements(sc, time_step, model_time)
+    for spill in sc.spills:
+        mask = sc.get_spill_mask(spill)
+        assert np.all(sc['evap_decay_constant'][mask, :] < 0.0)
+
+
 @pytest.mark.parametrize(('oil', 'temp', 'num_elems', 'on'),
-                         [('AGUA DULCE', 311.15, 3, True),
-                          ('ALAMO', 311.15, 3, True),
-                          ('FUEL OIL NO.6', 311.15, 3, False)])
+                         [(test_oil, 311.15, 3, True),
+                          ('oil_6', 311.15, 3, False)
+                          ])
 def test_evaporation(oil, temp, num_elems, on):
     '''
     still working on tests ..
@@ -66,55 +81,121 @@ def test_evaporation(oil, temp, num_elems, on):
 
     for spill in sc.spills:
         mask = sc.get_spill_mask(spill)
-        bp = spill.get('substance').boiling_point
-        if float('inf') in bp:
-            sa = bp.index(float('inf'))
-        else:
-            sa = len(bp)
         if on:
-            assert np.all(sc['evap_decay_constant'][mask, :sa] < 0.0)
-            assert np.all(sc['evap_decay_constant'][mask, sa:] == 0.0)
+            assert np.all(sc['evap_decay_constant'][mask, :] < 0.0)
         else:
             assert np.all(sc['evap_decay_constant'][mask, :] == 0.0)
 
-        assert np.all(init_mass[mask, :sa] >=
-                      sc['mass_components'][mask, :sa])
-        assert np.all(init_mass[mask, sa:] ==
-                      sc['mass_components'][mask, sa:])
+    print '\nevap_decay_const', sc['evap_decay_constant']
+    print 'frac_lost', sc['frac_lost']
 
     if on:
         assert sc.weathering_data['evaporated'] > 0.0
+        print 'total evaporated', sc.weathering_data['evaporated']
     else:
-        assert sc.weathering_data['evaporated'] == 0.0
+        assert 'evaporated' not in sc.weathering_data
         assert np.all(sc['mass_components'] == init_mass)
 
-    print '\nevap_decay_const', sc['evap_decay_constant']
-    print 'frac_lost', sc['frac_lost']
-    print 'total evaporated', sc.weathering_data['evaporated']
+
+class TestDecayConst:
+    '''
+    WIP - Currently has one working test, but may have more so grouped it in
+    a class
+    '''
+    def setup_test(self, delay, num_les):
+        stime = datetime(2015, 1, 1, 12, 0)
+        etime = stime + delay
+        st_pos = (0, 0, 0)
+        oil = test_oil
+        ts = 3600.
+
+        m1 = Model(start_time=stime, time_step=ts)
+        m1.environment += constant_wind(0, 0)
+        m1.water = Water()
+        m1.weatherers += [Evaporation(m1.water, m1.environment[0])]
+        m1.spills += point_line_release_spill(num_les[0], st_pos, stime,
+                                              end_release_time=etime,
+                                              substance=oil,
+                                              amount=36000, units='kg')
+        m1.outputters += WeatheringOutput()
+
+        m2 = Model(start_time=stime, time_step=ts)
+        m2.environment += constant_wind(0, 0)
+        m2.water = Water()
+        m2.weatherers += [Evaporation(m2.water, m2.environment[0])]
+        m2.spills += point_line_release_spill(num_les[1], st_pos, stime,
+                                              end_release_time=etime,
+                                              substance=oil,
+                                              amount=36000, units='kg')
+        m2.outputters += WeatheringOutput()
+        return (m1, m2)
+
+    @pytest.mark.xfail
+    def test_evap_decay_const_vary_ts(self, delay=timedelta(0)):
+        '''
+        evap decay constant does depend on timestep since thickness has a
+        nonlinear dependence on age so varying the timestep gives different
+        evaporation results
+        '''
+        (m1, m2) = self.setup_test(delay, (10, 10))
+        m2.time_step = 900
+
+        for ix in xrange(m1.num_time_steps):
+            w1 = m1.step()['WeatheringOutput']
+            if ix == 0:
+                w2 = m2.step()['WeatheringOutput']
+
+            if ix > 0:
+                for iy in xrange(4):
+                    w2 = m2.step()['WeatheringOutput']
+
+                val1 = w1.values()
+                val2 = w2.values()
+                d_time1 = val1.pop(4)
+                d_time2 = val2.pop(4)
+
+                if d_time1 == d_time2:
+                    assert np.allclose(val1, val2)
+
+    @pytest.mark.parametrize("delay", [timedelta(hours=0),
+                                       timedelta(hours=4)])
+    def test_evap_decay_const_vary_numLE(self, delay):
+        '''
+        test checks the evaporation decay constant does not depend on the number
+        of elements.
+        '''
+        (m1, m2) = self.setup_test(delay, (10, 100))
+
+        for ix in xrange(m1.num_time_steps):
+            w1 = m1.step()['WeatheringOutput']
+            w2 = m2.step()['WeatheringOutput']
+
+            val1 = w1.values()
+            val2 = w2.values()
+            d_time1 = val1.pop(4)
+            d_time2 = val2.pop(4)
+
+            assert d_time1 == d_time2
+            assert np.allclose(val1, val2)
 
 
 def assert_helper(sc, new_p):
     'common assertions for spills and data in SpillContainer'
     total_mass = sum([spill.get_mass('kg') for spill in sc.spills])
-    arrays = ['evap_decay_constant', 'mass_components', 'mass', 'status_codes']
-    for substance, data in sc.itersubstancedata(arrays):
-        bp = substance.boiling_point
-        if float('inf') in bp:
-            sa = bp.index(float('inf'))
-        else:
-            sa = len(bp)
+    arrays = {'evap_decay_constant', 'mass_components', 'mass', 'status_codes'}
 
+    for substance, data in sc.itersubstancedata(arrays):
         if len(sc) > new_p:
             old_le = len(sc)-new_p
             inwater = data['status_codes'][:old_le] == oil_status.in_water
-            assert np.all(data['evap_decay_constant'][:old_le, :sa][inwater] <
+            assert np.all(data['evap_decay_constant'][:old_le, :][inwater] <
                           0.0)
-            assert np.all(data['evap_decay_constant'][:old_le, :sa][~inwater]
+            assert np.all(data['evap_decay_constant'][:old_le, :][~inwater]
                           == 0.0)
-            # heavy components always have evap_decay_constant of 0.0
-            assert np.all(data['evap_decay_constant'][:old_le, sa:] == 0.0)
+
             assert np.allclose(np.sum(data['mass_components'], 1),
                                data['mass'])
+
             # not an instantaneous release so following is true even at step 0
             assert data['mass'].sum() < total_mass
 
@@ -123,27 +204,31 @@ def assert_helper(sc, new_p):
                           0.0)
 
 
-@pytest.mark.parametrize(('oil', 'temp'), [('AGUA DULCE', 333.0),
-                                           ('FUEL OIL NO.6', 333.0),
-                                           ('ALAMO', 311.15),
+@pytest.mark.parametrize(('oil', 'temp'), [('oil_6', 333.0),
+                                           (test_oil, 311.15),
                                            ])
-def test_full_run(sample_model_fcn, oil, temp, dump):
+def test_full_run(oil, temp):
     '''
-    test evapoartion outputs post step for a full run of model. Dump json
-    for 'weathering_model.json' in dump directory
+    test evaporation outputs for a full run of model.
     This contains a mover so at some point several elements end up on_land.
     This test also checks the evap_decay_constant for elements that are not
     in water is 0 so mass is unchanged.
     '''
-    model = sample_model_weathering(sample_model_fcn, oil, temp)
+    model = sample_model_weathering(sample_model(), oil, temp, 1)
     model.environment += [Water(temp), constant_wind(1., 0)]
     model.weatherers += [Evaporation(model.environment[0],
                                      model.environment[1])]
     released = 0
+    init_rho = model.spills[0].get('substance').get_density(temp)
+    init_vis = model.spills[0].get('substance').get_viscosity(temp)
     for step in model:
         for sc in model.spills.items():
             assert_helper(sc, sc.num_released - released)
             released = sc.num_released
+            if sc.num_released > 0:
+                assert np.all(sc['density'] >= init_rho)
+                assert np.all(sc['viscosity'] >= init_vis)
+
             mask = sc['status_codes'] == oil_status.in_water
             assert sc.weathering_data['floating'] == np.sum(sc['mass'][mask])
 
@@ -156,15 +241,10 @@ def test_full_run(sample_model_fcn, oil, temp, dump):
 
             print "Completed step: {0}\n".format(step['step_num'])
 
-    m_json_ = model.serialize('webapi')
-    dump_json = os.path.join(dump, 'weathering_model.json')
-    with open(dump_json, 'w') as f:
-        json.dump(m_json_, f, indent=True)
-
 
 def test_full_run_evap_not_active(sample_model_fcn):
     'no water/wind object'
-    model = sample_model_weathering(sample_model_fcn, 'oil_conservative')
+    model = sample_model_weathering(sample_model_fcn, 'oil_6')
     model.weatherers += Evaporation(on=False)
     model.outputters += WeatheringOutput()
     for step in model:

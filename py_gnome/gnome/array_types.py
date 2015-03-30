@@ -36,7 +36,8 @@ from gnome.basic_types import (world_point_type,
                                windage_type,
                                status_code_type,
                                oil_status,
-                               id_type)
+                               id_type,
+                               fate)
 
 import numpy
 np = numpy
@@ -49,7 +50,7 @@ class ArrayType(object):
     An ArrayType specifies how data arrays associated with elements
     are defined.
     """
-    def __init__(self, shape, dtype, initial_value=0):
+    def __init__(self, shape, dtype, name, initial_value=0):
         """
         constructor for ArrayType
 
@@ -61,6 +62,7 @@ class ArrayType(object):
         self.shape = shape
         self.dtype = dtype
         self.initial_value = initial_value
+        self.name = name
 
     def initialize_null(self, shape=None):
         """
@@ -142,71 +144,77 @@ class IdArrayType(ArrayType):
 # and 'element_id' properly. Referencing global ArrayType objects for this
 # means the initial values may not get reset. Need a function to reset
 # to default values
-_default_values = {
-     'positions': ((3,), world_point_type, (0., 0., 0.)),
-     'next_positions': ((3,), world_point_type, (0., 0., 0.)),
-     'last_water_positions': ((3,), world_point_type, (0., 0., 0.)),
-     'status_codes': ((), status_code_type, oil_status.in_water),
-     'spill_num': ((), id_type, 0),
-     'id': ((), np.uint32, 0, IdArrayType),
-     'mass': ((), np.float64, 0),
-     'windages': ((), windage_type, 0),
-     'windage_range': ((2,), np.float64, (0., 0.)),
-     'windage_persist': ((), np.int, 0),
-     'rise_vel': ((), np.float64, 0.),
-     'droplet_diameter': ((), np.float64, 0.),
-     'age': ((), np.int32, 0),
-     'density': ((), np.float64, 0),     # default assumes mass=0
-     'thickness': ((), np.float64, 0),  # default to 0 - catch errors easily
-     'mol': ((), np.float64, 0.),     # total number of mols for each LE
-     'mass_components': (None, np.float64, None),
-     'evap_decay_constant': (None, np.float64, None),
+_default_values = {'positions': ((3,), world_point_type, 'positions',
+                                 (0., 0., 0.)),
+                   'next_positions': ((3,), world_point_type, 'next_positiosn',
+                                      (0., 0., 0.)),
+                   'last_water_positions': ((3,), world_point_type,
+                                            'last_water_positions',
+                                            (0., 0., 0.)),
+                   'status_codes': ((), status_code_type, 'status_codes',
+                                    oil_status.in_water),
+                   'spill_num': ((), id_type, 'spill_num', 0),
+                   'id': ((), np.uint32, 0, 'id', IdArrayType),
+                   'mass': ((), np.float64, 'mass', 0),
+                   'windages': ((), windage_type, 'windages', 0),
+                   'windage_range': ((2,), np.float64, 'windage_range',
+                                     (0., 0.)),
+                   'windage_persist': ((), np.int, 'windage_persist', 0),
+                   'rise_vel': ((), np.float64, 'rise_vel', 0.),
+                   'droplet_diameter': ((), np.float64, 'droplet_diameter',
+                                        0.),
+                   'age': ((), np.int32, 'age', 0),
+                   # default assumes mass=0
+                   'density': ((), np.float64, 'density', 0),
+                   'mass_components': (None, np.float64, 'mass_components',
+                                       None),
+                   'evap_decay_constant': (None, np.float64,
+                                           'evap_decay_constant', None),
 
-     # initial volume - used to compute spreading (LE area)
-     # this is initial volume of oil released per LE - it'll be the same for
-     # all LEs released at once
-     'init_volume': ((), np.float64, 0),
-     'init_area': ((), np.float64, 0),
-     'relative_bouyancy': ((), np.float64, 0),
-     'area': ((), np.float64, 0),
-     'viscosity': ((), np.float64, 0),
-     # fractional water content in emulsion, not being set currently
-     'frac_water': ((), np.float64, 0),
-     # frac of mass lost due to evaporation + dissolution.
-     # Used to update viscosity
-     'frac_lost': ((), np.float64, 0),
-     'init_mass': ((), np.float64, 0),
+                   # following used to compute spreading (LE thickness)
+                   # init_volume initial volume of blob of oil - it'll be
+                   # the same for all LEs released at once
+                   'init_volume': ((), np.float64, 'init_volume', 0),
+                   'init_area': ((), np.float64, 'init_area', 0),
+                   'relative_bouyancy': ((), np.float64, 'relative_bouyancy',
+                                         0),
+                   'thickness': ((), np.float64, 'thickness', 0),
 
-     'interfacial_area': ((), np.float64, 0),
-     # 'bulltime': ((), np.int32, 0.), # time when emulsification starts
-     'bulltime': ((), np.float64, -1.),  # use negative as a not yet set flag
+                   'viscosity': ((), np.float64, 'viscosity', 0),
+                   # fractional water content in emulsion
+                   'frac_water': ((), np.float64, 'frac_water', 0),
+                   # frac of mass lost due to evaporation + dissolution.
+                   # Used to update viscosity
+                   'frac_lost': ((), np.float64, 'frac_lost', 0),
+                   'init_mass': ((), np.float64, 'init_mass', 0),
+                   'interfacial_area': ((), np.float64, 'interfacial_area', 0),
+                   # use negative as a not yet set flag
+                   'bulltime': ((), np.float64, 'bulltime', -1.),
+                   'frac_coverage': ((), np.float32, 'frac_coverage', 1),
 
-     # same for all elements in a spill - since weatherer's iterate through
-     # the data per substance as opposed to per spill, it is easier to define
-     # fractional coverage as a data_array even though it is not changing with
-     # time and same for all LEs in a spill. Alternatively, we could define
-     # frac_coverage in IntrinsicProps and manage it there - but since we have
-     # to make an array anyway, let's just keep it with SpillContainer
-     'frac_coverage': ((), np.float32, 1),
-
-     # substance index - used label elements from same substance
-     # used internally only by SpillContainer *if* more than one substance
-     'substance': ((), np.uint8, 0)
-     }
+                   # substance index - used label elements from same substance
+                   # used internally only by SpillContainer *if* more than one
+                   # substance
+                   'substance': ((), np.uint8, 'substance', 0),
+                   'fate_status': ((), np.uint8, 'fate_status',
+                                   fate.non_weather)
+                   }
 
 
 # dynamically create the ArrayType objects in this module from _default_values
 # dict. Reason for this logic and subsequent functions is so we only have to
 # update/modify the _default_values dict above
 for key, val in _default_values.iteritems():
-    if len(val) > 3:
-        vars()[key] = val[3](shape=_default_values[key][0],
+    if len(val) > 4:
+        vars()[key] = val[4](shape=_default_values[key][0],
                              dtype=_default_values[key][1],
-                             initial_value=_default_values[key][2])
+                             name=_default_values[key][2],
+                             initial_value=_default_values[key][3])
     else:
         vars()[key] = ArrayType(shape=_default_values[key][0],
                                 dtype=_default_values[key][1],
-                                initial_value=_default_values[key][2])
+                                name=_default_values[key][2],
+                                initial_value=_default_values[key][3])
 
 
 # use reflection to:

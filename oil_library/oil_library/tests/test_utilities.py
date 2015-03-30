@@ -7,7 +7,8 @@ import pytest
 from oil_library import get_oil
 from oil_library.utilities import (get_density,
                                    get_viscosity,
-                                   get_v_max)
+                                   get_v_max,
+                                   get_boiling_points_from_api)
 
 
 oil_ = get_oil('FUEL OIL NO.6')
@@ -86,3 +87,26 @@ def test_get_viscosity(temps, exp_value, use_out):
     else:
         out = get_viscosity(oil_, temps)
     assert np.all(out == exp_value)   # so it works for scalar + arrays
+
+
+
+@pytest.mark.parametrize("max_cuts", (1, 2, 3, 4, 5))
+def test_boiling_point(max_cuts):
+    '''
+    some basic testing of boiling_point function
+    - checks the expected BP for 0th component for api=1
+    - checks len(bp) == max_cuts * 2
+    - also checks the BP for saturates == BP for aromatics
+    '''
+    api = 1
+    slope = 1356.7
+    intercept = 457.16 - 3.3447
+
+    exp_bp_0 = 1./(max_cuts * 2) * slope + intercept
+    bp = get_boiling_points_from_api(max_cuts, 1.0, api)
+    print '\nBoiling Points: '
+    print bp
+    assert len(bp) == max_cuts * 2
+    assert ([bp[ix][0] - bp[ix + 1][0] for ix in range(0, max_cuts * 2, 2)] ==
+            [0.0] * max_cuts)
+    assert [n[0] for n in bp[:2]] == [exp_bp_0] * 2

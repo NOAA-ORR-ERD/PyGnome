@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-
+import os
 from uuid import uuid1, UUID
 import copy
 import logging
@@ -8,6 +8,8 @@ import logging
 def init_obj_log(obj, setLevel=logging.INFO):
     '''
     convenience function for initializing a logger with an object
+    the logging.getLogger() will always return the same logger so calling
+    this multiple times for same object is valid.
     '''
     logger = logging.getLogger("{0.__class__.__module__}."
                                "{0.__class__.__name__}".format(obj))
@@ -33,6 +35,17 @@ class AddLogger(object):
         if not self._log:
             self._log = init_obj_log(self)
         return self._log
+
+    @property
+    def _pid(self):
+        '''
+        returns os.getpid() as a string. Since we have multiple models, each
+        running in its own process that is managed by multi_model_broadcast
+        module, each debug log messages starts with os.getpid(). This function
+        just returns a string that the gnome object can append to - don't
+        want to keep typing this everywhere.
+        '''
+        return "{0} - ".format(os.getpid())
 
 
 class GnomeId(AddLogger):
@@ -65,8 +78,8 @@ class GnomeId(AddLogger):
         """
         the deepcopy implementation
 
-        We need this, as we don't want the spill_nums copied,
-        but do want everything else.
+        We need this, as we don't want the id of spill object and logger
+        object copied, but do want everything else.
 
         got the method from:
             http://stackoverflow.com/questions/3253439/python-copy-how-to-inherit-the-default-copying-behaviour
@@ -75,6 +88,14 @@ class GnomeId(AddLogger):
         ends up using recursion
         """
         obj_copy = object.__new__(type(self))
+
+        if '_log' in self.__dict__:
+            # just set the _log to None since it cannot be deepcopied
+            # since logging.getLogger() is used to get the logger - can leave
+            # this as None and the 'logger' property will automatically set
+            # this the next time it is used
+            self.__dict__['_log'] = None
+
         obj_copy.__dict__ = copy.deepcopy(self.__dict__, memo)
         obj_copy.__create_new_id()
         return obj_copy

@@ -9,11 +9,11 @@ import sys
 from gnome.persist import References, load, Savable
 from gnome.movers import constant_wind_mover
 from gnome import movers, outputters, environment, map, spill, weatherers
-from conftest import testdata
+from conftest import testdata, test_oil
 
 import pytest
 
-base_dir = os.path.dirname(__file__)
+pytestmark = pytest.mark.serial
 
 
 def test_exceptions():
@@ -70,17 +70,19 @@ def test_gnome_obj_reference():
 Run the following save/load test on multiple pygnome objects so collect tests
 here and parametrize it by the objects
 '''
-base_dir = os.path.dirname(__file__)
 
 
-def test_savloc_created():
+def test_savloc_created(dump):
     'unit test for _make_saveloc method'
     sav = Savable()
-    temp = os.path.join(base_dir, 'temp')
+    temp = os.path.join(dump, 'test_make_saveloc')
     sav._make_saveloc(temp)
 
     assert os.path.exists(temp)
     shutil.rmtree(temp)
+
+
+base_dir = os.path.dirname(__file__)
 
 
 # For WindMover test_save_load in test_wind_mover
@@ -118,9 +120,12 @@ g_objects = (environment.Tide(testdata['CatsMover']['tide']),
                                     num_elements=10,
                                     start_position=(0, 0, 0)),
              spill.point_line_release_spill(10, (0, 0, 0), datetime.now()),
-             spill.elements.ElementType(substance='oil_jetfuels'),
+             spill.elements.ElementType(substance=test_oil),
              weatherers.Evaporation(environment.constant_wind(1., 0.),
-                 environment.Water(333.0)),
+                                    environment.Water(333.0)),
+             weatherers.Skimmer(100, 'kg', 0.3, datetime(2014, 1, 1, 0, 0),
+                                datetime(2014, 1, 1, 4, 0)),
+             weatherers.Burn(100, 1, datetime(2014, 1, 1, 0, 0)),
             # todo: ask Caitlin how to fix
             #movers.RiseVelocityMover(),
             # todo: This is incomplete - no _schema for SpatialRelease, GeoJson
@@ -135,7 +140,6 @@ def test_save_load(clean_saveloc, obj):
     refs = obj.save(clean_saveloc)
     obj2 = load(os.path.join(clean_saveloc, refs.reference(obj)))
     assert obj == obj2
-
 
 '''
 Following movers fail on windows with clean_saveloc fixture. The clean_saveloc
@@ -159,11 +163,11 @@ l_movers2 = (movers.CurrentCycleMover(testdata['CurrentCycleMover']['curr'],
 
 
 @pytest.mark.parametrize("obj", l_movers2)
-def test_save_load2(obj, dump):
+def test_save_load_grids(obj, dump):
     'test save/load functionality'
 
     temp = os.path.join(dump, 'temp')
-    for dir_ in (temp, os.path.relpath(temp, base_dir)):
+    for dir_ in (temp, os.path.relpath(temp)):
         refs = obj.save(dir_)
         obj2 = load(os.path.join(dir_, refs.reference(obj)))
         assert obj == obj2

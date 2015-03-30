@@ -21,12 +21,50 @@ from oil_library.utilities import (get_boiling_points_from_api,
                                    get_viscosity)
 
 
-def process_oils(session):
-    print '\nAdding Oil objects...'
-    for rec in session.query(ImportedRecord):
-        add_oil(rec)
+class OilRejected(Exception):
+    '''
+        Custom exception for Oil initialization that we can raise if we
+        decide we need to reject an oil record for any reason.
+    '''
+    def __init__(self, message, oil_name, *args):
+        # without this you may get DeprecationWarning
+        self.message = message
 
-    transaction.commit()
+        # Special attribute you desire with your Error,
+        # perhaps the value that caused the error?:
+        self.oil_name = oil_name
+
+        # allow users initialize misc. arguments as any other builtin Error
+        super(OilRejected, self).__init__(message, oil_name, *args)
+
+    def __repr__(self):
+        return '{0}(oil={1}, errors={2})'.format(self.__class__.__name__,
+                                                 self.oil_name,
+                                                 self.message)
+
+
+def process_oils(session_class):
+    session = session_class()
+    record_ids = [r.adios_oil_id for r in session.query(ImportedRecord)]
+    session.close()
+
+    print '\nAdding Oil objects...'
+    for record_id in record_ids:
+        # Note: committing our transaction for every record slows the
+        #       import job significantly.  But this is necessary if we
+        #       want the option of rejecting oil records.
+        session = session_class()
+        transaction.begin()
+        rec = (session.query(ImportedRecord)
+               .filter(ImportedRecord.adios_oil_id == record_id)
+               .one())
+
+        try:
+            add_oil(rec)
+            transaction.commit()
+        except OilRejected as e:
+            print repr(e)
+            transaction.abort()
 
 
 def add_oil(record):
@@ -54,6 +92,9 @@ def add_oil(record):
     add_molecular_weights(record, oil)
     add_component_densities(record, oil)
     add_saturate_aromatic_fractions(record, oil)
+    adjust_resin_asphaltene_fractions(record, oil)
+
+    reject_oil_if_bad(record, oil)
 
     record.oil = oil
 
@@ -89,20 +130,21 @@ def add_densities(imported_rec, oil):
         d_0 = density_at_temperature(oil, 273.15 + 15)
 
         oil.api = (141.5 * 1000 / d_0) - 131.5
-        oil.estimated.api = True
+        # oil.estimated.api = True
     else:
         print ('Warning: no densities and no api for record {0}'
                .format(imported_rec.adios_oil_id))
 
     if not [d for d in oil.densities
-            if np.isclose(d.ref_temp_k, 273.0 + 15, atol=.15)]:
+            if d.ref_temp_k is not None
+            and np.isclose(d.ref_temp_k, 273.0 + 15, atol=.15)]:
         # add a 15C density from api
         kg_m_3, ref_temp_k = estimate_density_from_api(oil.api)
 
         oil.densities.append(Density(kg_m_3=kg_m_3,
                                      ref_temp_k=ref_temp_k,
                                      weathering=0.0))
-        oil.estimated.densities = True
+        # oil.estimated.densities = True
 
 
 def estimate_density_from_api(api):
@@ -116,7 +158,8 @@ def density_at_temperature(oil_rec, temperature, weathering=0.0):
     # first, get the density record closest to our temperature
     density_list = [(d, abs(d.ref_temp_k - temperature))
                     for d in oil_rec.densities
-                    if d.weathering == weathering]
+                    if d.ref_temp_k is not None
+                    and d.weathering == weathering]
     if density_list:
         density_rec = sorted(density_list, key=lambda d: d[1])[0][0]
         d_ref = density_rec.kg_m_3
@@ -200,7 +243,7 @@ def get_kvis_from_dvis(oil_rec):
                          d.ref_temp_k,
                          (0.0 if d.weathering is None else d.weathering))
                          for d in oil_rec.dvis
-                         if d.kg_ms > 0.0]:
+                         if d.kg_ms > 0.0 and d.ref_temp_k is not None]:
             density = density_at_temperature(oil_rec, t, w)
 
             # kvis = dvis/density
@@ -369,44 +412,46 @@ def add_emulsion_water_fraction_max(imported_rec, oil):
 
 def add_resin_fractions(imported_rec, oil):
     try:
-        if (imported_rec.resins is not None and
+        if (imported_rec is not None and
+            imported_rec.resins is not None and
                 imported_rec.resins >= 0.0 and
                 imported_rec.resins <= 1.0):
             f_res = imported_rec.resins
-            t = 273.15 + 15
         else:
-            a, b, t = get_corrected_density_and_viscosity(oil)
+            a, b = get_corrected_density_and_viscosity(oil)
 
             f_res = (3.3 * a + 0.087 * b - 74.0)
             f_res /= 100.0  # percent to fractional value
+
             f_res = 0.0 if f_res < 0.0 else f_res
 
         oil.sara_fractions.append(SARAFraction(sara_type='Resins',
                                                fraction=f_res,
-                                               ref_temp_k=t))
+                                               ref_temp_k=1015.0))
     except:
         print 'Failed to add Resin fraction!'
 
 
 def add_asphaltene_fractions(imported_rec, oil):
     try:
-        if (imported_rec.asphaltene_content is not None and
-                imported_rec.asphaltene_content >= 0.0 and
-                imported_rec.asphaltene_content <= 1.0):
-            f_asph = imported_rec.asphaltene_content
-            t = 273.15 + 15
+        if (imported_rec is not None and
+            imported_rec.asphaltenes is not None and
+                imported_rec.asphaltenes >= 0.0 and
+                imported_rec.asphaltenes <= 1.0):
+            f_asph = imported_rec.asphaltenes
         else:
-            a, b, t = get_corrected_density_and_viscosity(oil)
+            a, b = get_corrected_density_and_viscosity(oil)
 
             f_asph = (0.0014 * (a ** 3.0) +
                       0.0004 * (b ** 2.0) -
                       18.0)
             f_asph /= 100.0  # percent to fractional value
+
             f_asph = 0.0 if f_asph < 0.0 else f_asph
 
         oil.sara_fractions.append(SARAFraction(sara_type='Asphaltenes',
                                                fraction=f_asph,
-                                               ref_temp_k=t))
+                                               ref_temp_k=1015.0))
     except:
         print 'Failed to add Asphaltene fraction!'
 
@@ -429,14 +474,14 @@ def get_corrected_density_and_viscosity(oil):
         b = 10 * log(1000.0 * P0_oil * V0_oil)
 
     except:
-        print 'get_resin_coeffs() generated exception:'
+        print 'get_corrected_density_and_viscosity() generated exception:'
         print '\toil = ', oil
         print '\toil.kvis = ', oil.kvis
         print '\tP0_oil = ', density_at_temperature(oil, temperature)
         print '\tV0_oil = ', get_viscosity(oil, temperature)
         raise
 
-    return a, b, temperature
+    return a, b
 
 
 def add_bullwinkle_fractions(imported_rec, oil):
@@ -451,6 +496,8 @@ def add_bullwinkle_fractions(imported_rec, oil):
     '''
     if imported_rec.product_type == "refined":
         bullwinkle_fraction = 1.0
+    elif imported_rec.emuls_constant_max is not None:
+        bullwinkle_fraction = imported_rec.emuls_constant_max
     else:
         # product type is crude
         Ni = (imported_rec.nickel
@@ -460,8 +507,7 @@ def add_bullwinkle_fractions(imported_rec, oil):
         f_asph = [af.fraction
                   for af in oil.sara_fractions
                   if af.sara_type == 'Asphaltenes'
-                  and af.fraction > 0
-                  and np.isclose(af.ref_temp_k, 273.0 + 15, atol=.15)]
+                  and af.fraction > 0]
         f_asph = f_asph[0] if len(f_asph) > 0 else 0.0
 
         if (Ni > 0.0 and Va > 0.0 and Ni + Va > 15.0):
@@ -571,12 +617,19 @@ def add_distillation_cut_boiling_point(imported_rec, oil):
 
 
 def add_molecular_weights(imported_rec, oil):
+    '''
+        Molecular weight units = g/mol
+    '''
     for c in oil.cuts:
         saturate = get_saturate_molecular_weight(c.vapor_temp_k)
         aromatic = get_aromatic_molecular_weight(c.vapor_temp_k)
 
-        oil.molecular_weights.append(MolecularWeight(saturate=saturate,
-                                                     aromatic=aromatic,
+        oil.molecular_weights.append(MolecularWeight(sara_type='Saturates',
+                                                     g_mol=saturate,
+                                                     ref_temp_k=c.vapor_temp_k)
+                                     )
+        oil.molecular_weights.append(MolecularWeight(sara_type='Aromatics',
+                                                     g_mol=aromatic,
                                                      ref_temp_k=c.vapor_temp_k)
                                      )
 
@@ -609,6 +662,42 @@ def add_saturate_aromatic_fractions(imported_rec, oil):
         oil.sara_fractions.append(SARAFraction(sara_type='Aromatics',
                                                fraction=f_arom,
                                                ref_temp_k=T_i))
+
+
+def adjust_resin_asphaltene_fractions(imported_rec, oil):
+    '''
+        After we have added our saturate & aromatic fractions,
+        the fraction sum may still be less than 1.0.
+
+        If we have a resonable number of distillation cuts, we could
+        make the rationalization that the remaining fraction is composed
+        of resins and asphaltenes.
+        We need to determine to a certain level of confidence if this is true,
+        but if so we can scale up the resin and asphaltene amounts.
+    '''
+    sara_total = sum([sara.fraction for sara in oil.sara_fractions])
+    if (not np.isclose(sara_total, 1.0) and sara_total < 1.0):
+        # probably need a check to see if we had a reasonable number of
+        # distillation cuts covering a reasonable range of temperatures.
+        # ...or we could just not scale our fractions over a certain amount.
+        ra_fraction = sum([sara.fraction
+                           for sara in oil.sara_fractions
+                           if sara.sara_type in ('Resins', 'Asphaltenes')])
+        if ra_fraction > 0.0:
+            sa_fraction = sum([sara.fraction
+                               for sara in oil.sara_fractions
+                               if sara.sara_type in ('Saturates',
+                                                     'Aromatics')])
+            leftover = 1.0 - sa_fraction
+            scale = leftover / ra_fraction
+
+            for sara in oil.sara_fractions:
+                if sara.sara_type in ('Resins', 'Asphaltenes'):
+                    sara.fraction *= scale
+
+            print ('\tNew SARA total = {0}, RA fractions scaled by {1}'
+                   .format(sum([sara.fraction for sara in oil.sara_fractions]),
+                           scale))
 
 
 def get_ptry_values(oil_obj, component_type, sub_fraction=None):
@@ -671,13 +760,17 @@ def get_sa_mass_fractions(oil_obj):
         dependent on:
             - oil.molecular_weights[:].saturate
     '''
+    fraction_sum = sum([sara.fraction for sara in oil_obj.sara_fractions
+                        if sara.sara_type in ('Resins', 'Asphaltenes')])
+
     for P_try, F_i, T_i, c_type in get_ptry_values(oil_obj, 'Saturates'):
         if T_i < 530.0:
             sg = P_try / 1000
             mw = None
             for v in oil_obj.molecular_weights:
-                if np.isclose(v.ref_temp_k, T_i):
-                    mw = v.saturate
+                if (np.isclose(v.ref_temp_k, T_i) and
+                        v.sara_type == 'Saturates'):
+                    mw = v.g_mol
                     break
 
             if mw is not None:
@@ -685,17 +778,31 @@ def get_sa_mass_fractions(oil_obj):
 
                 if f_sat >= F_i:
                     f_sat = F_i
-                elif f_sat < 0:
-                    f_sat = 0
+                elif f_sat < 0.0:
+                    f_sat = 0.0
 
-                f_arom = F_i * (1 - f_sat)
-
-                yield (f_sat, f_arom, T_i)
+                f_arom = F_i - f_sat
             else:
                 print '\tNo molecular weight at that temperature.'
+                continue
         else:
+            # Above 530K we will evenly split the saturates & aromatics
             f_sat = f_arom = F_i / 2
 
+        if fraction_sum >= 1.0:
+            # we can't add any more.
+            pass
+        elif f_sat + f_arom + fraction_sum > 1.0:
+            # we need to scale our sub-fractions so that the
+            # fraction sum adds up to 1.0
+            scale = (1.0 - fraction_sum) / (f_sat + f_arom)
+            f_sat *= scale
+            f_arom *= scale
+
+            fraction_sum += f_sat + f_arom
+            yield (f_sat, f_arom, T_i)
+        else:
+            fraction_sum += f_sat + f_arom
             yield (f_sat, f_arom, T_i)
 
 
@@ -707,9 +814,11 @@ def add_component_densities(imported_rec, oil):
         - fmass_0_j: saturate & aromatic mass fractions (estimation 14,15)
     '''
     oil.sara_densities.append(SARADensity(sara_type='Asphaltenes',
-                                          density=1100.0))
+                                          density=1100.0,
+                                          ref_temp_k=1015.0))
     oil.sara_densities.append(SARADensity(sara_type='Resins',
-                                          density=1100.0))
+                                          density=1100.0,
+                                          ref_temp_k=1015.0))
 
     sa_ratios = list(get_sa_mass_fractions(oil))
     ptry_values = (list(get_ptry_values(oil, 'Saturates',
@@ -746,3 +855,108 @@ def add_component_densities(imported_rec, oil):
         oil.sara_densities.append(SARADensity(sara_type=c_type,
                                               density=P_try,
                                               ref_temp_k=T_i))
+
+
+def reject_oil_if_bad(imported_rec, oil):
+    '''
+        Here, we have an oil in which all estimations have been made.
+        We will now check the imported record and the oil object to see
+        if there are any detectable flaws.
+        If any flaw is detected, we will raise the OilRejected exception.
+        All flaws will be compiled into a list of error messages to be passed
+        into the exception.
+    '''
+    errors = []
+
+    if imported_rec_was_manually_rejected(imported_rec):
+        errors.append('Imported Record was manually rejected')
+
+    if not oil_has_kvis(oil):
+        errors.append('Oil has no kinematic viscosities')
+
+    if oil_has_duplicate_cuts(oil):
+        errors.append('Oil has duplicate cuts')
+
+    if oil_has_heavy_sa_components(oil):
+        errors.append('Oil has heavy SA components')
+
+    if not oil_api_matches_density(oil):
+        errors.append('Oil API does not match its density')
+
+    if errors:
+        raise OilRejected(errors, imported_rec.adios_oil_id)
+
+
+def imported_rec_was_manually_rejected(imported_rec):
+    '''
+        This list was initially compiled to try and fix some anomalies
+        that were showing up in the oil query form.
+
+        When we update the source file that provides our imported record
+        data, we should revisit this list.
+        We should also revisit this list as we add methods to detect flaws
+        in our oil record.
+    '''
+    adios_oil_id = imported_rec.adios_oil_id
+    if adios_oil_id in ('AD00121',  # BCF 13
+                        'AD02042',  # BOSCAN
+                        'AD02130',  # FOROOZAN
+                        'AD02240',  # LUCULA
+                        ):
+        return True
+    return False
+
+
+def oil_has_kvis(oil):
+    '''
+        Our oil record should have at least one kinematic viscosity when
+        estimations are complete.
+    '''
+    if len(oil.kvis) > 0:
+        return True
+    else:
+        return False
+
+
+def oil_has_duplicate_cuts(oil):
+    '''
+        Some oil records have been found to have distillation cuts with
+        duplicate vapor temperatures, and the fraction that should be chosen
+        at that temperature is ambiguous.
+    '''
+    unique_temps = set([o.vapor_temp_k for o in oil.cuts])
+
+    if len(oil.cuts) != len(unique_temps):
+        return True
+    else:
+        return False
+
+
+def oil_has_heavy_sa_components(oil):
+    '''
+        Some oil records have been found to have Saturate & Asphaltene
+        densities that were calculated to be heavier than the Resins &
+        Asphaltenes.
+        This is highly improbable and indicates the record has problems
+        with its imported data values.
+    '''
+    for d in oil.sara_densities:
+        if d.sara_type in ('Saturates', 'Aromatics'):
+            if d.density > 1100.0:
+                return True
+
+    return False
+
+
+def oil_api_matches_density(oil):
+    '''
+        The oil API should pretty closely match its density at 15C.
+    '''
+    d_0 = density_at_temperature(oil, 273.15 + 15)
+    api_from_density = (141.5 * 1000 / d_0) - 131.5
+
+    if np.isclose(oil.api, api_from_density, atol=1.0):
+        return True
+
+    print '(oil.api, api_from_density) = ', (oil.api, api_from_density)
+    return False

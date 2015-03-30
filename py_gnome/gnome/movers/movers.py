@@ -63,16 +63,20 @@ class Process(object):
         active_stop = kwargs.pop('active_stop',
                                  inf_datetime.InfDateTime('inf'))
 
-        if active_stop <= active_start:
-            msg = 'active_start {0} should be smaller than active_stop {1}'
-            raise ValueError(msg.format(active_start, active_stop))
+        self._check_active_startstop(active_start, active_stop)
 
         self.active_start = active_start
         self.active_stop = active_stop
 
         # empty dict since no array_types required for all movers at present
-        self.array_types = {}
+        self.array_types = set()
         self.name = kwargs.pop('name', self.__class__.__name__)
+
+    def _check_active_startstop(self, active_start, active_stop):
+        if active_stop <= active_start:
+            msg = 'active_start {0} should be smaller than active_stop {1}'
+            raise ValueError(msg.format(active_start, active_stop))
+        return True
 
     # Methods for active property definition
     @property

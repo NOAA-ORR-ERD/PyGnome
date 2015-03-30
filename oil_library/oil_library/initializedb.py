@@ -12,10 +12,19 @@ from .init_imported_record import purge_old_records, add_oil_object
 from .init_categories import process_categories
 from .init_oil import process_oils
 
+from zope.sqlalchemy import ZopeTransactionExtension
+
 
 def initialize_sql(settings):
     engine = engine_from_config(settings, 'sqlalchemy.')
     DBSession.configure(bind=engine)
+
+    # Here, we configure our transaction manager to keep the session open
+    # after a commit.
+    # - This of course means that we need to manually close the session when
+    #   we are done.
+    DBSession.configure(extension=ZopeTransactionExtension())
+
     Base.metadata.create_all(engine)
 
 
@@ -33,7 +42,7 @@ def load_database(settings):
                .format(imported_recs_purged, oil_recs_purged))
 
         # 2. we need to open our OilLib file
-        print 'opening file: %s ...' % (settings['oillib.file'])
+        print 'opening file: {0} ...'.format(settings['oillib.file'])
         fd = OilLibraryFile(settings['oillib.file'])
         print 'file version:', fd.__version__
 
@@ -52,9 +61,15 @@ def load_database(settings):
 
             rowcount += 1
 
-        print 'finished!!!  %d rows processed.' % (rowcount)
+        print 'finished!!!  {0} rows processed.'.format(rowcount)
+        session.close()
 
-        process_oils(session)
+        # we need to open a session for each record here because we want
+        # the option of transactionally rolling back rejected records.
+        # So we just pass the session class instead of an open session.
+        process_oils(DBSession)
+
+        session = DBSession()
         process_categories(session)
 
 

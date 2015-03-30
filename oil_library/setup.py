@@ -67,14 +67,18 @@ class remake_oil_db(Command):
 
     def run(self):
         to_rm = os.path.join(here, r'oil_library', 'OilLib.db')
-        os.remove(to_rm)
+        try:
+            os.remove(to_rm)
+        except OSError as e:
+            if e.errno == 2:
+                pass
+            else:
+                raise
+
         print "Deleting {0} ..".format(to_rm)
         call("initialize_OilLibrary_db")
         print 'OilLibrary database successfully generated from file!'
 
-
-## note: maybe better to keep this in requrements.txt instead
-#requires = []
 
 requires = [
     'SQLAlchemy >= 0.9.1',
@@ -109,7 +113,7 @@ s = setup(name=pkg_name,
                                              ':make_db'),
                                             ],
                         },
-          zip_safe = False,
+          zip_safe=False,
           )
 
 # make database post install - couldn't call this directly so used
@@ -124,4 +128,3 @@ elif 'develop' in s.script_args:
         print "Calling initialize_OilLibrary_db"
         call("initialize_OilLibrary_db")
         print 'OilLibrary database successfully generated from file!'
-

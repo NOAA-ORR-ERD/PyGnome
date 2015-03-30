@@ -56,7 +56,7 @@ class Spill(serializable.Serializable):
 
     def __init__(self, release,
                  element_type=None,
-                 substance='oil_conservative',
+                 substance=None,
                  on=True,
                  amount=None,   # could be volume or mass
                  units=None,
@@ -97,7 +97,6 @@ class Spill(serializable.Serializable):
         self.element_type = element_type
 
         self.on = on    # spill is active or not
-        self._rate = None
         self._units = None
         self.amount = amount
 
@@ -212,11 +211,15 @@ class Spill(serializable.Serializable):
         # set 'mass' data array if amount is given
         le_mass = 0.
         _mass = self.get_mass('kg')
+        self.logger.debug(self._pid + "spill mass (kg): {0}".format(_mass))
 
         if _mass is not None:
             rd_sec = self.get('release_duration')
             if rd_sec == 0:
-                le_mass = _mass / self.get('num_elements')
+                try:
+                    le_mass = _mass / self.get('num_elements')
+                except TypeError:
+                    le_mass = _mass / self.get('num_per_timestep')
             else:
                 time_at_step_end = current_time + timedelta(seconds=time_step)
                 if self.get('release_time') > current_time:
@@ -230,6 +233,8 @@ class Spill(serializable.Serializable):
 
                 _mass_in_ts = _mass/rd_sec * time_step
                 le_mass = _mass_in_ts / num_new_particles
+
+        self.logger.debug(self._pid + "LE mass (kg): {0}".format(le_mass))
 
         return le_mass
 
@@ -332,25 +337,25 @@ class Spill(serializable.Serializable):
         else:
             return init[0]
 
-    def is_initializer(self, key):
+    def has_initializer(self, name):
         '''
         Returns True if an initializer is present in the list which sets the
-        data_array corresponding with 'key', otherwise returns False
+        data_array corresponding with 'name', otherwise returns False
         '''
         for i in self.element_type.initializers:
-            if key in i.array_types:
+            if name in i.array_types:
                 return True
 
         return False
 
-    def get_initializer(self, key=None):
+    def get_initializer(self, name=None):
         '''
-        if key is None, return list of all initializers else return initializer
-        that sets given 'key'. 'key' refers to the data_array initialized by
-        initializer. For instance, if key='rise_vel', function will look in
+        if name is None, return list of all initializers else return initializer
+        that sets given 'name'. 'name' refers to the data_array initialized by
+        initializer. For instance, if name='rise_vel', function will look in
         all initializers to find the one whose array_types contain 'rise_vel'.
 
-        If multiple initializers set 'key', then return the first one in the
+        If multiple initializers set 'name', then return the first one in the
         list. Although nothing prevents the user from having two initializers
         for the same data_array, it doesn't make much sense.
 
@@ -364,12 +369,12 @@ class Spill(serializable.Serializable):
         included in the Model. User can change the name of the initializer
 
         '''
-        if key is None:
+        if name is None:
             return self.element_type.initializers
 
         init = None
         for i in self.element_type.initializers:
-            if key in i.array_types:
+            if name in i.array_types:
                 return i
 
         return init
@@ -386,8 +391,7 @@ class Spill(serializable.Serializable):
 
         '''
         ix = [ix for ix, i in enumerate(self.element_type.initializers)
-              if sorted(i.array_types.keys()) ==
-              sorted(init.array_types.keys())]
+              if sorted(i.array_types) == sorted(init.array_types)]
         if len(ix) == 0:
             self.element_type.initializers.append(init)
         else:
@@ -461,9 +465,16 @@ class Spill(serializable.Serializable):
 
         Not much to this method, but it could be overridden to do something
         fancier in the future or a subclass.
-        """
 
+        There are a number of python objects that cannot be deepcopied.
+        - Logger objects
+
+        So we copy them temporarily to local variables before we deepcopy
+        our Spill object.
+        """
         u_copy = copy.deepcopy(self)
+        self.logger.debug(self._pid + "deepcopied spill {0}".format(self.id))
+
         return u_copy
 
     def set_amount_uncertainty(self, up_or_down=None):
@@ -625,7 +636,7 @@ def point_line_release_spill(num_elements,
                              end_position=None,
                              end_release_time=None,
                              element_type=None,
-                             substance='oil_conservative',
+                             substance=None,
                              on=True,
                              amount=None,
                              units=None,

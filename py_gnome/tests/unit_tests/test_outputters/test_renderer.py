@@ -23,6 +23,9 @@ from gnome.utilities.projections import GeoProjection
 from ..conftest import sample_sc_release, testdata
 
 
+# do not run these tests with xdist
+pytestmark = pytest.mark.serial
+
 bna_sample = testdata['Renderer']['bna_sample']
 bna_star = testdata['Renderer']['bna_star']
 

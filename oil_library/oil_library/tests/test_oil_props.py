@@ -3,16 +3,50 @@ Tests for oil_props module in gnome.db.oil_library
 '''
 import copy
 
+import numpy
+np = numpy
+
 import pytest
+from pytest import raises
+
 import unit_conversion as uc
 
-from oil_library import get_oil_props
+from oil_library import get_oil_props, get_oil
+from oil_library.utilities import get_density
+
+from sqlalchemy.orm.exc import NoResultFound
 
 
 def test_OilProps_exceptions():
-    from sqlalchemy.orm.exc import NoResultFound
     with pytest.raises(NoResultFound):
         get_oil_props('test')
+
+
+@pytest.mark.parametrize(("search", "isNone"),
+                         [('FUEL OIL NO.6', False), (51, True)])
+def test_get_oil(search, isNone):
+
+    if isNone:
+        with raises(NoResultFound):
+            o = get_oil(search)
+    else:
+        o = get_oil(search)
+        if isinstance(search, basestring):
+            assert o.name == search
+
+
+# Record number 51: "AUTOMOTIVE GASOLINE, EXXON" is found in database
+# but mass fractions do not sum upto one so valid OilProps object not created.
+# In this case return None
+@pytest.mark.parametrize(("search", "isNone"),
+                         [('FUEL OIL NO.6', False), (51, True)])
+def test_get_oil_props(search, isNone):
+    if isNone:
+        with raises(NoResultFound):
+            op = get_oil_props(search)
+    else:
+        op = get_oil_props(search)
+        assert op is not None
 
 # just double check values for _sample_oil are entered correctly
 
@@ -22,8 +56,6 @@ oil_density_units = [
     ('oil_4', 0.90, 'g/cm^3'),
     ('oil_crude', 0.90, 'g/cm^3'),
     ('oil_6', 0.99, 'g/cm^3'),
-    ('oil_conservative', 1, 'g/cm^3'),
-    ('chemical', 1, 'g/cm^3'),
     ]
 
 
@@ -34,9 +66,10 @@ def test_OilProps_sample_oil(oil, density, units):
 
     o = get_oil_props(oil)
     d = uc.convert('density', units, 'kg/m^3', density)
-    assert abs(o.get_density(273.16 + 15) - d) < 1e-3
-    assert abs(o.get_density() - d) < 1e-3
+
     assert o.name == oil
+    assert np.isclose(get_density(o, 273.15 + 15), d)
+    # assert abs(o.get_density() - d) < 1e-3
 
 
 @pytest.mark.parametrize(('oil', 'api'), [('FUEL OIL NO.6', 12.3)])
@@ -46,14 +79,53 @@ def test_OilProps_DBquery(oil, api):
     assert o.api == api
 
 
+class TestProperties:
+    op = get_oil_props(u'ALASKA NORTH SLOPE')
+    s_comp = sorted(op._r_oil.sara_fractions, key=lambda s: s.ref_temp_k)
+
+    s_dens = sorted(op._r_oil.sara_densities, key=lambda s: s.ref_temp_k)
+
+    # only keep density records + sara_fractions which fraction > 0.
+    # OilProps prunes SARA to keep data for fractions > 0.
+    s_dens = [d_comp for ix, d_comp in enumerate(s_dens)
+              if s_comp[ix].fraction > 0.]
+    s_comp = [comp for comp in s_comp if comp.fraction > 0.]
+
+    def test_num_components(self):
+        assert self.op.num_components == len(self.s_comp)
+
+    def test_sara(self):
+        # boiling points
+        assert np.all(self.op.boiling_point ==
+                      [comp.ref_temp_k for comp in self.s_comp])
+
+        # mass fraction
+        assert np.all(self.op.mass_fraction ==
+                      [comp.fraction for comp in self.s_comp])
+
+        # sara type
+        assert np.all(self.op._sara['type'] ==
+                      [comp.sara_type for comp in self.s_comp])
+
+        # density
+        assert np.all(self.op.boiling_point ==
+                      [comp.ref_temp_k for comp in self.s_dens])
+
+        assert np.all(self.op.component_density ==
+                      dens for dens in self.s_dens)
+
+        assert np.allclose(self.op.mass_fraction.sum(), 1.0)
+
+
 def test_eq():
-    op = get_oil_props(10)
-    op1 = get_oil_props(10)
+    op = get_oil_props('ARABIAN MEDIUM, PHILLIPS')
+    op1 = get_oil_props('ARABIAN MEDIUM, PHILLIPS')
     assert op == op1
 
 
 def test_ne():
-    assert get_oil_props(10) != get_oil_props(11)
+    assert (get_oil_props('ARABIAN MEDIUM, PHILLIPS') !=
+            get_oil_props('ARABIAN MEDIUM, EXXON'))
 
 
 class TestCopy():
@@ -61,42 +133,38 @@ class TestCopy():
         '''
         do a shallow copy and test that it is a shallow copy
         '''
-        op = get_oil_props(10)
+        op = get_oil_props('ARABIAN MEDIUM, PHILLIPS')
         cop = copy.copy(op)
         assert op == cop
         assert op is not cop
         assert op._r_oil is cop._r_oil
 
         for item in op.__dict__:
-            assert getattr(op, item) == getattr(cop, item)
+            try:
+                assert getattr(op, item) == getattr(cop, item)
+            except ValueError:
+                assert np.all(getattr(op, item) == getattr(cop, item))
+
             assert getattr(op, item) is getattr(cop, item)
-
-        # shallow copy means cop.mass_fraction list is a reference to original so
-        # changing it in op, also changes it for cop
-        op.mass_fraction[0] = 0
-        assert op.mass_fraction == cop.mass_fraction
-
-    def _assert_deepcopy(self, op, dcop):
-        assert op == dcop
-        assert op is not dcop
-
-        for item in op.__dict__:
-            print "item checking:", item
-            assert getattr(op, item) == getattr(dcop, item)
-            if item == '_r_oil' or getattr(op, item) is None:
-                assert getattr(op, item) is getattr(dcop, item)
-            else:
-                assert getattr(op, item) is not getattr(dcop, item)
 
     def test_deepcopy(self):
         '''
         do a shallow copy and test that it is a shallow copy
         '''
-        op = get_oil_props(10)
+        op = get_oil_props('ARABIAN MEDIUM, PHILLIPS')
         dcop = copy.deepcopy(op)
-        self._assert_deepcopy(op, dcop)
 
-        # deepcopy means dcop.mass_fraction list is a new list as opposed to a
-        # reference so changing it in 'op' doesn't effect the list in 'dcop'
-        op.mass_fraction[0] = 0
-        assert op.mass_fraction != dcop.mass_fraction
+        assert op == dcop
+        assert op is not dcop
+
+        for item in op.__dict__:
+            print "item checking:", item
+            try:
+                assert getattr(op, item) == getattr(dcop, item)
+            except ValueError:
+                assert np.all(getattr(op, item) == getattr(dcop, item))
+
+            if item == '_r_oil' or getattr(op, item) is None:
+                assert getattr(op, item) is getattr(dcop, item)
+            else:
+                assert getattr(op, item) is not getattr(dcop, item)
