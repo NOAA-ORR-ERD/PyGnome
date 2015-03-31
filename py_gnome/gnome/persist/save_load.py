@@ -375,17 +375,17 @@ class Savable(object):
         # fix datafiles path from relative to absolute so we can load datafiles
         for field in datafiles:
             if field.name in json_data:
-                if iszip:
-                    z.extract(json_data[field.name], saveloc)
-
                 # ZipCheck: path must only be defined relative to saveloc
-                if json_data[field.name].startswith('..'):
-                    log = logging.getLogger(cls.__name__)
-                    msg = ("paths must be relative to saveloc, "
-                           "rejecting {0} since {1} starts with '..'".
-                           format(cls.__name__, json_data[field.name]))
-                    log.warning(msg)
-                    return False
+                # currently, all datafiles stored at same level in saveloc,
+                # no subdirectories.
+                # Also, the datafiles are extracted to saveloc/.
+                # For zip files coming from the web, is_savezip_valid() tests
+                # filenames in archive do not contain paths with '..'
+                # In here, we just extract datafile to saveloc/.
+                if iszip:
+                    json_data[field.name] = \
+                        os.path.split(json_data[field.name])[1]
+                    z.extract(json_data[field.name], saveloc)
 
                 json_data[field.name] = os.path.join(saveloc,
                                                      json_data[field.name])
@@ -455,6 +455,7 @@ def is_savezip_valid(savezip):
     3. Found a *.json with size > _max_json_filesize - rejecting
     4. Reject - found a file with:
         uncompressed_size/compressed_size > _max_compress_ratio.
+    5. Found a file in archive that has path outside of saveloc - rejecting
 
     .. note:: can change _max_json_filesize, _max_compress_ratio if required.
     '''
@@ -497,6 +498,17 @@ def is_savezip_valid(savezip):
                    "_max_compress_ratio must be less than {1}. "
                    "Rejecting zipfile".format(zi.file_size/zi.compress_size,
                                               _max_compress_ratio))
+            log.warning(msg)
+            return False
+
+        if '..' in zi.filename:
+            '''
+            reject zipfile if it contains .. anywhere in filename.
+            currently, all datafiles stored at same level in saveloc,
+            no subdirectories. Even if we start using subdirectories, there
+            should never be a need to do '..'
+            '''
+            msg = ("Found '..' in {0}. Rejecting zipfile".format(zi.filename))
             log.warning(msg)
             return False
 

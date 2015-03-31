@@ -229,3 +229,17 @@ class TestSaveZipIsValid:
                       "_max_compress_ratio must be less than {1}. Rejecting "
                       "zipfile".format(zi.file_size/zi.compress_size,
                                        save_load._max_compress_ratio))))
+
+    def test_filenames_dont_contain_dotdot(self):
+        '''
+        '''
+        badzip = 'sample_data/badzip_max_compress_ratio.zip'
+        badfile = './../badpath.json'
+        with ZipFile(badzip, 'a', compression=ZIP_DEFLATED) as z:
+            z.writestr(badfile, 'bad file, contains path')
+
+        with LogCapture() as l:
+            assert not is_savezip_valid(badzip)
+            l.check(('gnome.persist.save_load',
+                     'WARNING',
+                     "Found '..' in " + badfile + ". Rejecting zipfile"))
