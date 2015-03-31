@@ -1173,8 +1173,10 @@ class TestMergeModels:
                                              datetime(2014, 1, 1, 12, 0))
 
         # create save model
-        sample_save_file = os.path.join(dump, 'SampleSaveModel.zip')
-        model.save(dump, name='SampleSaveModel.zip')
+        folder_name = os.path.join(dump, 'SampleSave')
+        os.mkdir(folder_name)
+        sample_save_file = os.path.join(folder_name, 'SampleSaveModel.zip')
+        model.save(folder_name, name='SampleSaveModel.zip')
         if os.path.exists(sample_save_file):
             model = load(sample_save_file)
             assert model.water is None
