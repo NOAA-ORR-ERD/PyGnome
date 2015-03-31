@@ -456,6 +456,7 @@ def is_savezip_valid(savezip):
     4. Reject - found a file with:
         uncompressed_size/compressed_size > _max_compress_ratio.
     5. Found a file in archive that has path outside of saveloc - rejecting
+        rejects zipfile if it contains an archive with '..'
 
     .. note:: can change _max_json_filesize, _max_compress_ratio if required.
     '''
@@ -502,12 +503,10 @@ def is_savezip_valid(savezip):
             return False
 
         if '..' in zi.filename:
-            '''
-            reject zipfile if it contains .. anywhere in filename.
-            currently, all datafiles stored at same level in saveloc,
-            no subdirectories. Even if we start using subdirectories, there
-            should never be a need to do '..'
-            '''
+            # 5) reject zipfile if it contains .. anywhere in filename.
+            #    currently, all datafiles stored at same level in saveloc,
+            #    no subdirectories. Even if we start using subdirectories,
+            #    there should never be a need to do '..'
             msg = ("Found '..' in {0}. Rejecting zipfile".format(zi.filename))
             log.warning(msg)
             return False
