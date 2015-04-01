@@ -13,9 +13,7 @@ from gnome.utilities.convert import (to_time_value_pair,
 
 
 class Timeseries(object):
-    def __init__(self, timeseries=None,
-                 filename=None, format='uv',
-                 **kwargs):
+    def __init__(self, timeseries=None, filename=None, format='uv'):
         """
         Initializes a timeseries object from either a timeseries or datafile
         containing the timeseries. If both timeseries and file are given,
@@ -71,9 +69,6 @@ class Timeseries(object):
             gnome.basic_types.ts_format.*
             TODO: 'format' is a python builtin keyword.  We should
             not use it as an argument name
-
-        Remaining kwargs are passed onto the the next method in the Method
-        Resolution Order, so this calls super() at the end.
         """
         if (timeseries is None and filename is None):
             timeseries = np.zeros((1,), dtype=basic_types.datetime_value_2d)
@@ -84,16 +79,11 @@ class Timeseries(object):
             datetime_value_2d = self._xform_input_timeseries(timeseries)
             time_value_pair = to_time_value_pair(datetime_value_2d, format)
             self.ossm = CyTimeseries(timeseries=time_value_pair)
-            self.name = kwargs.pop('name', self.__class__.__name__)
-            self.source_type = kwargs.pop('source_type', None)
-
         else:
             ts_format = tsformat(format)
             self._filename = filename
             self.ossm = CyTimeseries(filename=self._filename,
                                      file_format=ts_format)
-            self.source_type = 'file'  # todo: check this must be file
-            self.name = kwargs.pop('name', os.path.split(self.filename)[1])
 
     def _xform_input_timeseries(self, datetime_value_2d):
         '''
@@ -199,3 +189,24 @@ class Timeseries(object):
         datetime_value_2d = self._xform_input_timeseries(datetime_value_2d)
         timeval = to_time_value_pair(datetime_value_2d, format)
         self.ossm.timeseries = timeval
+
+    def __eq__(self, other):
+        '''
+        only checks the timeseries data is equal in (m/s), in 'uv' format
+        filename is irrelevant after data is loaded
+        checks self.get_timeseries() == other.get_timeseries()
+
+        Duck typing check - it does not expect type(self) == type(other)
+        '''
+        self_ts = self.get_timeseries()
+        other_ts = other.get_timeseries()
+        if not np.all(self_ts['time'] == other_ts['time']):
+            return False
+
+        if not np.allclose(self_ts['value'], other_ts['value']):
+            return False
+
+        return True
+
+    def __ne__(self, other):
+        return not self == other
