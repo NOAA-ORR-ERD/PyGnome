@@ -119,7 +119,7 @@ class Waves(Environment, serializable.Serializable):
         the actual wind.
 
         fixme: I'm not sure this is right -- if we stick with the wave energy given
-        by the user for dispesion, why not for emulsification?
+        by the user for dispersion, why not for emulsification?
 
         """
         wave_height = self.water.wave_height

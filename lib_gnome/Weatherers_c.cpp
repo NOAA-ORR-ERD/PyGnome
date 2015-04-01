@@ -82,3 +82,73 @@ OSErr emulsify(int n, unsigned long step_len, double *frac_water, double *interf
 	return err;
 }
 
+OSErr disperse(int n, unsigned long step_len, double *frac_water, double *le_thickness, double *le_mass, /*double *le_area,*/ double *le_viscosity, double *le_density, double *d_disp, double frac_breaking_waves, double disp_wave_energy, double wave_height, double visc_w, double rho_w, double C_sed, double V_entrain, double ka)
+{
+	OSErr err = 0;
+	
+	double rho, mass, Y, C_Roy, C_disp, A, q_disp;
+
+	double Vemul, thickness, droplet, speed;
+	double V_refloat, q_refloat;
+	double C_oil, Q_sed, visc, g = 9.80665;
+	double De = disp_wave_energy, fbw = frac_breaking_waves, Hrms = wave_height;
+	
+	char errmsg[256];
+
+
+	V_entrain = 3.9e-8;
+	C_disp = pow(De, 0.57) * fbw; // dispersion term at current time
+
+	for (int i=0; i < n; i++)
+	{
+		rho = le_density[i];	// pure oil density
+		mass = le_mass[i];	
+		visc = le_viscosity[i]; // oil (or emulsion) viscosity
+		Y = frac_water[i]; // water fraction
+		if (Y>=1) {d_disp[i]=0; continue;}	// shouldn't happen
+		//A = le_area[i];
+		C_Roy = 2400.0 * exp(-73.682 * sqrt(visc)); // Roy's constant
+
+		Vemul = (le_mass[i] / le_density[i])  / (1.0 - Y); // emulsion volume (m3)
+		thickness = le_thickness[i];
+	
+		//Vemul = LE[n].volume / (1.0 - Y); // emulsion volume (m3)
+		//thickness = Vemul / A;
+		
+		if (thickness > 0) 
+			//A = Vemul / thickness;
+			A = 5.;
+		else 
+		{
+			err = -1;
+			return err;	// log a message in python
+		}
+		
+		q_disp = C_Roy * C_disp * V_entrain * (1.0 - Y) * A / rho; // (m3/sec)
+
+		if (C_sed > 0.0 && thickness >= 1.0e-4) {
+			// sediment load and > min thick
+			droplet = 0.613 * thickness;
+			speed = droplet * droplet * g * (1.0 - rho / rho_w) / (18.0 * visc_w); //vert drop vel
+			V_refloat = 0.588 * (pow(thickness, 1.7) - 5.0e-8); //vol of refloat oil/wave p
+			if (V_refloat < 0.0)
+				V_refloat = 0.0;
+	
+			q_refloat = C_Roy * C_disp * V_refloat * A; //(kg/m2-sec) mass rate of emulsion
+			C_oil = q_refloat * step_len / (speed * step_len + 1.5 * Hrms);
+			Q_sed = 1.6 * ka * sqrt(Hrms * De * fbw / (rho_w * visc_w)) * C_oil * C_sed / rho; //vol rate
+		
+		}
+		else
+			Q_sed=0.0;
+	
+		d_disp[i] = (q_disp + (1.0 - Y) * Q_sed) * step_len; //total. vol oil loss
+		
+		d_disp[i] = d_disp[i] * le_density[i]; 
+	
+		if (d_disp[i] > le_mass[i])
+			d_disp[i] = le_mass[i];
+	}
+
+	return err;
+}
