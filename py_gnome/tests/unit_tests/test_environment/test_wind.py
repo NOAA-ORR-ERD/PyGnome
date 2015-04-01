@@ -36,7 +36,7 @@ def test_exceptions():
     # no units during set_timeseries
     with raises(TypeError):
         wind = Wind(timeseries=dtv, units='meter per second')
-        wind.set_timeseries(dtv)
+        wind.set_wind_data(dtv)
 
     # invalid units
     with raises(unit_conversion.InvalidUnitError):
@@ -221,7 +221,7 @@ class TestWind:
         assert np.allclose(gtime_val['value'], all_winds['rq'].value,
                            atol, rtol)
 
-    def test_set_timeseries(self, all_winds):
+    def test_set_wind_data(self, all_winds):
         """
         get_wind_data with default output format
         """
@@ -234,7 +234,7 @@ class TestWind:
         x['value'] = [(1, 10), (2, 20)]
 
         # default format is 'r-theta'
-        wm.set_timeseries(x, 'meter per second')
+        wm.set_wind_data(x, 'meter per second')
 
         # only matches to 10^-14
         assert np.allclose(wm.get_wind_data()['value'][:, 0],

@@ -131,7 +131,7 @@ def test_update_wind(wind_circ):
                   for i in range(3)]
     t_dtv.value = np.random.uniform(1, 5, (3, 2))
 
-    o_wind.set_timeseries(t_dtv, units='meter per second', format='uv')
+    o_wind.set_wind_data(t_dtv, units='meter per second', format='uv')
 
     cpp_timeseries = _get_timeseries_from_cpp(wm)
 
@@ -139,12 +139,12 @@ def test_update_wind(wind_circ):
     assert np.allclose(cpp_timeseries['value'], t_dtv.value, atol, rtol)
 
     # set the wind timeseries back to test fixture values
-    o_wind.set_timeseries(wind_circ['rq'], units='meter per second')
+    o_wind.set_wind_data(wind_circ['rq'], units='meter per second')
     cpp_timeseries = _get_timeseries_from_cpp(wm)
 
     assert np.all(cpp_timeseries['time'] == wind_circ['uv']['time'])
-    assert np.allclose(cpp_timeseries['value'], wind_circ['uv']['value'
-                       ], atol, rtol)
+    assert np.allclose(cpp_timeseries['value'], wind_circ['uv']['value'],
+                       atol, rtol)
 
 
 def test_prepare_for_model_step():
@@ -242,8 +242,7 @@ class TestWindMover:
 
     def test_update_wind_vel(self):
         self.time_val['value'] = (1., 120.)  # now given as (r, theta)
-        self.wind.set_timeseries(self.time_val, units='meter per second'
-                                 )
+        self.wind.set_wind_data(self.time_val, units='meter per second')
         self.test_get_move()
         self.test_get_move_exceptions()
 
