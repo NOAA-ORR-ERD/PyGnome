@@ -334,3 +334,20 @@ def test_location_file():
     '''
     model = Model.loads({'json_': 'save'}, '.')
     assert model == Model()
+
+
+def test_load_fails(saveloc_):
+    '''
+    if load fails on map or any of the collections, no model is created
+    '''
+    model = make_model()
+    model.zipsave = False
+    model.save(saveloc_)
+    model_json = json.load(open(os.path.join(saveloc_, 'Model.json'), 'r'))
+    model_json['map']['filename'] = 'junk.bna'
+
+    with open(os.path.join(saveloc_, 'Model.json'), 'w') as fd:
+        json.dump(model_json, fd, indent=True)
+
+    with pytest.raises(Exception):
+        load(saveloc_)

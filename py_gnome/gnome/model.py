@@ -1212,9 +1212,7 @@ class Model(Serializable):
 
         # there are no datafiles for model properties; so no need for following
         # at present
-        sucess = cls._update_datafile_path(json_data, saveloc)
-        if not sucess:
-            return None
+        cls._update_datafile_path(json_data, saveloc)
 
         # deserialize after removing references
         _to_dict = cls.deserialize(json_data)

@@ -9,6 +9,10 @@ import logging
 
 import gnome
 
+# as long as loggers are configured before module is loaded, module scope
+# logger will work. If loggers are configured after this module is loaded and
+# the default behavior to disable_existing_loggers is True, then this will no
+# longer work
 log = logging.getLogger(__name__)
 
 
@@ -106,6 +110,7 @@ def class_from_objtype(obj_type):
         return obj
     except AttributeError:
         log.warning("{0} is not part of gnome namespace".format(obj_type))
+        raise
 
 
 def load(saveloc, fname='Model.json', references=None):
@@ -363,7 +368,7 @@ class Savable(object):
         '''
         datafiles = cls._state.get_field_by_attribute('isdatafile')
         if len(datafiles) == 0:
-            return True
+            return
 
         iszip = False
 
@@ -389,8 +394,6 @@ class Savable(object):
                                                      json_data[field.name])
         if iszip:
             z.close()
-
-        return True
 
     @classmethod
     def loads(cls, json_data, saveloc=None, references=None):
@@ -420,9 +423,7 @@ class Savable(object):
         '''
         references = (references, References())[references is None]
         ref_dict = cls._load_refs(json_data, saveloc, references)
-        sucess = cls._update_datafile_path(json_data, saveloc)
-        if not sucess:
-            return None
+        cls._update_datafile_path(json_data, saveloc)
 
         # deserialize after removing references
         _to_dict = cls.deserialize(json_data)
