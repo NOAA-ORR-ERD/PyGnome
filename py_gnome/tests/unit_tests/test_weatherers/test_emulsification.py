@@ -89,7 +89,7 @@ def test_emulsification(oil, temp, num_elems, on):
                                            ])
 def test_full_run(sample_model_fcn, oil, temp):
     '''
-    test evapoartion outputs post step for a full run of model. Dump json
+    test emulsification outputs post step for a full run of model. Dump json
     for 'weathering_model.json' in dump directory
     '''
     model = sample_model_weathering2(sample_model_fcn, oil, temp)

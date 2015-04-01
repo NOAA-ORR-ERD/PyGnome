@@ -558,11 +558,72 @@ def sample_model():
             'release_end_pos': end_points}
 
 
+@pytest.fixture(scope='module')
+def sample_model2():
+    """
+    sample model with no outputter and no spills. Use this as a template for
+    fixtures to add spills
+    Uses:
+        sample_data/MapBounds_Island.bna
+        Contains: gnome.movers.SimpleMover(velocity=(1.0, -1.0, 0.0))
+        duration is 1 hour with 15min intervals so 5 timesteps total,
+        including initial condition,
+        model is uncertain and cache is not enabled
+        No spills or outputters defined
+
+    To use:
+        add a spill and run
+
+    :returns: It returns a dict -
+        {'model':model,
+         'release_start_pos':start_points,
+         'release_end_pos':end_points}
+        The release_start_pos and release_end_pos can be used by test to define
+        the spill's 'start_position' and 'end_position'
+    """
+
+    release_time = datetime(2012, 9, 15, 12, 0)
+
+    # the image output map
+
+    mapfile = os.path.join(os.path.dirname(__file__), './sample_data/long_island_sound',
+                           'LongIslandSoundMap.BNA')
+
+    # the land-water map
+
+    map_ = MapFromBNA(mapfile, refloat_halflife=06)  # seconds
+
+    model = Model(time_step=timedelta(minutes=15),
+                  start_time=release_time,
+                  duration=timedelta(hours=1),
+                  map=map_,
+                  uncertain=True,
+                  cache_enabled=False,
+                  )
+
+    #model.movers += SimpleMover(velocity=(1., -1., 0.0))
+
+    #model.uncertain = True
+
+    start_points = np.zeros((3, ), dtype=np.float64)
+    end_points = np.zeros((3, ), dtype=np.float64)
+
+    start_points[:] = (-72.83, 41.13, 0)
+    end_points[:] = (-72.83, 41.13, 0)
+
+    return {'model': model, 'release_start_pos': start_points,
+            'release_end_pos': end_points}
+
 @pytest.fixture(scope='function')
 def sample_model_fcn():
     'sample_model with function scope'
     return sample_model()
 
+
+@pytest.fixture(scope='function')
+def sample_model_fcn2():
+    'sample_model with function scope'
+    return sample_model2()
 
 def sample_model_weathering(sample_model_fcn,
                             oil,
@@ -587,9 +648,9 @@ def sample_model_weathering(sample_model_fcn,
     return model
 
 
-def sample_model_weathering2(sample_model_fcn, oil, temp=311.16):
-    model = sample_model_fcn['model']
-    rel_pos = sample_model_fcn['release_start_pos']
+def sample_model_weathering2(sample_model_fcn2, oil, temp=311.16):
+    model = sample_model_fcn2['model']
+    rel_pos = sample_model_fcn2['release_start_pos']
     'update model the same way for multiple tests'
     model.uncertain = False     # fixme: with uncertainty, copying spill fails!
     model.duration = timedelta(hours=24)
