@@ -105,13 +105,13 @@ def test_wind_circ_fixture(wind_circ):
 
     # output is in knots
 
-    gtime_val = wm.get_timeseries(format='uv').view(dtype=np.recarray)
+    gtime_val = wm.get_wind_data(format='uv').view(dtype=np.recarray)
     assert np.all(gtime_val.time == wind_circ['uv'].time)
     assert np.allclose(gtime_val.value, wind_circ['uv'].value, atol, rtol)
 
     # output is in meter per second
 
-    gtime_val = wm.get_timeseries(format='uv', units='meter per second'
+    gtime_val = wm.get_wind_data(format='uv', units='meter per second'
                                   ).view(dtype=np.recarray)
     expected = unit_conversion.convert('Velocity', wm.units,
             'meter per second', wind_circ['uv'].value)
@@ -163,7 +163,7 @@ def wind_rand(rq_rand):
 def all_winds(request):
     """
     NOTE: Since random test setup (wind_rand) occasionally
-    makes test_get_timeseries_by_time_scalar fail, omit
+    makes test_get_wind_data_by_time_scalar fail, omit
     this test case for now. It is being investigated.
 
     Create Wind object using the time series given by the test fixture
@@ -210,26 +210,26 @@ class TestWind:
         # assert id(all_winds['wind']) == all_winds['wind'].id
         pass
 
-    def test_get_timeseries(self, all_winds):
+    def test_get_wind_data(self, all_winds):
         """
-        get_timeseries with default output format
+        get_wind_data with default output format
         """
         # check get_time_value()
 
-        gtime_val = all_winds['wind'].get_timeseries()
+        gtime_val = all_winds['wind'].get_wind_data()
         assert np.all(gtime_val['time'] == all_winds['rq'].time)
         assert np.allclose(gtime_val['value'], all_winds['rq'].value,
                            atol, rtol)
 
     def test_set_timeseries(self, all_winds):
         """
-        get_timeseries with default output format
+        get_wind_data with default output format
         """
         # check get_time_value()
 
-        wm = Wind(timeseries=all_winds['wind'].get_timeseries(),
+        wm = Wind(timeseries=all_winds['wind'].get_wind_data(),
                   format='r-theta', units='meter per second')
-        gtime_val = wm.get_timeseries()
+        gtime_val = wm.get_wind_data()
         x = gtime_val[:2]
         x['value'] = [(1, 10), (2, 20)]
 
@@ -237,44 +237,44 @@ class TestWind:
         wm.set_timeseries(x, 'meter per second')
 
         # only matches to 10^-14
-        assert np.allclose(wm.get_timeseries()['value'][:, 0],
+        assert np.allclose(wm.get_wind_data()['value'][:, 0],
                            x['value'][:, 0], atol, rtol)
-        assert np.all(wm.get_timeseries()['time'] == x['time'])
+        assert np.all(wm.get_wind_data()['time'] == x['time'])
 
-    def test_get_timeseries_rq(self, all_winds):
+    def test_get_wind_data_rq(self, all_winds):
         """
         Initialize from timeseries and test the get_time_value method
         """
         # check get_time_value()
 
-        gtime_val = all_winds['wind'].get_timeseries(format='r-theta')
+        gtime_val = all_winds['wind'].get_wind_data(format='r-theta')
         assert np.all(gtime_val['time'] == all_winds['rq'].time)
         assert np.allclose(gtime_val['value'], all_winds['rq'].value,
                            atol, rtol)
 
-    def test_get_timeseries_uv(self, all_winds):
+    def test_get_wind_data_uv(self, all_winds):
         """
         Initialize from timeseries and test the get_time_value method
         """
         gtime_val = (all_winds['wind']
-                     .get_timeseries(format='uv')
+                     .get_wind_data(format='uv')
                      .view(dtype=np.recarray))
         assert np.all(gtime_val.time == all_winds['uv'].time)
         assert np.allclose(gtime_val.value, all_winds['uv'].value, atol, rtol)
 
-    def test_get_timeseries_by_time(self, all_winds):
+    def test_get_wind_data_by_time(self, all_winds):
         """
         get time series, but this time provide it with the datetime values
         for which you want timeseries
         """
         gtime_val = (all_winds['wind']
-                     .get_timeseries(format='r-theta',
+                     .get_wind_data(format='r-theta',
                                      datetime=all_winds['rq'].time)
                      .view(dtype=np.recarray))
         assert np.all(gtime_val.time == all_winds['rq'].time)
         assert np.allclose(gtime_val.value, all_winds['rq'].value, atol, rtol)
 
-    def test_get_timeseries_by_time_scalar(self, all_winds):
+    def test_get_wind_data_by_time_scalar(self, all_winds):
         """
         Get single time value in the middle of the 0th and 1st index
         of the timeseries.
@@ -288,11 +288,11 @@ class TestWind:
         dt = t0 + ((t1 - t0) / 2)
 
         get_rq = (all_winds['wind']
-                  .get_timeseries(format='r-theta', datetime=dt)
+                  .get_wind_data(format='r-theta', datetime=dt)
                   .view(dtype=np.recarray))
 
         get_uv = (all_winds['wind']
-                  .get_timeseries(format='uv', datetime=dt)
+                  .get_wind_data(format='uv', datetime=dt)
                   .view(dtype=np.recarray))
 
         np.set_printoptions(precision=4)
@@ -358,15 +358,15 @@ def test_constant_wind():
     wind = constant_wind(10, 45, 'knots')
 
     dt = datetime(2013, 1, 10, 12, 0)
-    assert np.allclose(wind.get_timeseries(datetime=dt, units='knots')[0][1],
+    assert np.allclose(wind.get_wind_data(datetime=dt, units='knots')[0][1],
                        (10, 45))
 
     dt = datetime(2013, 1, 10, 12, 0)
-    assert np.allclose(wind.get_timeseries(datetime=dt, units='knots')[0][1],
+    assert np.allclose(wind.get_wind_data(datetime=dt, units='knots')[0][1],
                        (10, 45))
 
     dt = datetime(2013, 1, 10, 12, 0)
-    assert np.allclose(wind.get_timeseries(datetime=dt, units='knots')[0][1],
+    assert np.allclose(wind.get_wind_data(datetime=dt, units='knots')[0][1],
                        (10, 45))
 
 

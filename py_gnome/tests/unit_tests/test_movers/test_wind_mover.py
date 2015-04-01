@@ -68,7 +68,7 @@ def test_read_file_init():
 
     wind = Wind(filename=file_)
     wm = WindMover(wind)
-    wind_ts = wind.get_timeseries(format='uv', units='meter per second')
+    wind_ts = wind.get_wind_data(format='uv', units='meter per second')
     _defaults(wm)  # check defaults set correctly
     cpp_timeseries = _get_timeseries_from_cpp(wm)
     _assert_timeseries_equivalence(cpp_timeseries, wind_ts)
@@ -77,7 +77,7 @@ def test_read_file_init():
     # NOTE: Following functionality is already tested in test_wind.py,
     #       but what the heck - do it here too.
 
-    wind_ts = wind.get_timeseries(format=ts_format.uv)
+    wind_ts = wind.get_wind_data(format=ts_format.uv)
     cpp_timeseries['value'] = unit_conversion.convert('Velocity',
                                                       'meter per second',
                                                       wind.units,
@@ -392,7 +392,7 @@ def test_constant_wind_mover():
 
     print wm
     print repr(wm.wind)
-    print wm.wind.get_timeseries()
+    print wm.wind.get_wind_data()
 
     time_step = 1000
     model_time = datetime(2013, 3, 1, 0)
@@ -499,7 +499,7 @@ def _get_timeseries_from_cpp(windmover):
 
     This is simply used for testing.
     """
-    dtv = windmover.wind.get_timeseries(format=ts_format.uv)
+    dtv = windmover.wind.get_wind_data(format=ts_format.uv)
     tv = convert.to_time_value_pair(dtv, ts_format.uv)
     val = windmover.mover.get_time_value(tv['time'])
     tv['value']['u'] = val['u']
