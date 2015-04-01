@@ -300,7 +300,7 @@ class Wind(serializable.Serializable, Timeseries, Environment):
                      '{0.year:04}, '
                      '{0.hour:02}, '
                      '{0.minute:02}, '
-                     '{1:02.4f}, {2:02.4f}\n'.format(idt,
+                     '{1:02.2f}, {2:02.2f}\n'.format(idt,
                                                      round(val[i, 0], 4),
                                                      round(val[i, 1], 4)))
 
