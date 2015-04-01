@@ -29,6 +29,7 @@ from gnome.persist import validators, base_schema
 
 from .environment import Environment
 from gnome.utilities.timeseries import Timeseries
+from gnome.cy_gnome.cy_ossm_time import ossm_wind_units
 from .. import _valid_units
 
 
@@ -158,6 +159,9 @@ class Wind(serializable.Serializable, Timeseries, Environment):
             self.name = kwargs.pop('name', os.path.split(self.filename)[1])
             # set _user_units attribute to match user_units read from file.
             self._user_units = self.ossm.user_units
+
+            if units is not None:
+                self.units = units
         else:
             if kwargs.get('source_type') in basic_types.wind_datasource._attr:
                 self.source_type = kwargs.pop('source_type')
@@ -283,14 +287,20 @@ class Wind(serializable.Serializable, Timeseries, Environment):
         '''
         Takes a general file descriptor as input and writes data to it.
         '''
+        if self.units in ossm_wind_units.values():
+            data_units = self.units
+        else:
+            # we know C++ understands this unit
+            data_units = 'meters per second'
+
         header = ('Station Name\n'
                   'Position\n'
-                  'knots\n'
+                  '{0}\n'
                   'LTime\n'
-                  '0,0,0,0,0,0,0,0\n')
-        val = self.get_wind_data(units='knots')['value']
-        dt = (self.get_wind_data(units='knots')['time']
-              .astype(datetime.datetime))
+                  '0,0,0,0,0,0,0,0\n').format(data_units)
+        data = self.get_wind_data(units=data_units)
+        val = data['value']
+        dt = data['time'].astype(datetime.datetime)
 
         fd.write(header)
 

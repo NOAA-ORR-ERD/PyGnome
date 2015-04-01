@@ -131,7 +131,7 @@ class ModelConsumer(mp.Process):
                      if isinstance(e, Wind)]
 
         for obj in wind_objs:
-            ts = obj.get_timeseries()
+            ts = obj.get_wind_data()
             for tse in ts:
                 res.append(tse['value'])
 
