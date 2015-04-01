@@ -576,8 +576,6 @@ class Spill(serializable.Serializable):
         """
         toserial = self.to_serialize(json_)
         schema = self.__class__._schema()
-        #schema = self.__class__._schema(
-        #    release=self.release.__class__._schema(json_))
 
         o_json_ = schema.serialize(toserial)
         o_json_['element_type'] = self.element_type.serialize(json_)
