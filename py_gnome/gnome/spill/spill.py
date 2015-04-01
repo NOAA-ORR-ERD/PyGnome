@@ -605,7 +605,7 @@ class Spill(serializable.Serializable):
                 deserialized, created and added to this dict by load method
                 '''
                 etcls = \
-                    class_from_objtype(json_['element_type'].pop('obj_type'))
+                    class_from_objtype(json_['element_type']['obj_type'])
                 dict_['element_type'] = \
                     etcls.deserialize(json_['element_type'])
 
