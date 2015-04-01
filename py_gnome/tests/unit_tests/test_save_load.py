@@ -24,7 +24,9 @@ def test_warning_logged():
     in the gnome namespace
     '''
     with LogCapture() as l:
-        class_from_objtype('os.path')
+        with pytest.raises(AttributeError):
+            class_from_objtype('os.path')
+
         l.check(('gnome.persist.save_load',
                  'WARNING',
                  'os.path is not part of gnome namespace'))
