@@ -383,8 +383,6 @@ class Savable(object):
                 # filenames in archive do not contain paths with '..'
                 # In here, we just extract datafile to saveloc/.
                 if iszip:
-                    json_data[field.name] = \
-                        os.path.split(json_data[field.name])[1]
                     z.extract(json_data[field.name], saveloc)
 
                 json_data[field.name] = os.path.join(saveloc,
