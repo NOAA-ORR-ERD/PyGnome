@@ -92,16 +92,16 @@ class FayGravityViscous(object):
         updated, let's apply this in here.
 
 
-        .. note:: Assumes init_area, init_volume for blog of oil is evenly
+        .. note:: Assumes init_area, init_volume for blob of oil is evenly
             divided into number of elements. The computation here requires the
-            init_volume and init_area for blob of oil. To get this we sum up
-            the init_volume and init_area for all LEs with same age.
+            init_volume and init_area for blob of oil. To get this, sum up
+            init_volume and init_area for all LEs with same age.
 
-        .. todo: unsure if thickness check should be here or outside this object.
+        .. todo: unsure if thickness check should be here or elsewhere.
             Since thickness limit is here, leave it for now, but maybe
             eventually move thickness_limit to OilProps/make it property of
-            substance - say 'max_spreading_thickness', then move thickness check
-            and frac_coverage back to WeatheringData
+            substance - say 'max_spreading_thickness', then move thickness
+            check and frac_coverage back to WeatheringData
         '''
         self._check_relative_bouyancy(relative_bouyancy)
         if np.any(age == 0):
