@@ -62,8 +62,8 @@ class ElementType(Serializable):
         if substance is not None:
             self.substance = substance
 
-        self.logger.debug(self._pid + 'constructed element_type: ',
-                          '{0}'.format(self.__class__.__name__))
+        self.logger.debug(self._pid + 'constructed element_type: ' +
+                          self.__class__.__name__)
 
     def __repr__(self):
         return ('{0.__class__.__module__}.{0.__class__.__name__}('
