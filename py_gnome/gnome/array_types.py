@@ -171,8 +171,9 @@ _default_values = {'positions': ((3,), world_point_type, 'positions',
                                            'evap_decay_constant', None),
 
                    # following used to compute spreading (LE thickness)
-                   # init_volume initial volume of blob of oil - it'll be
-                   # the same for all LEs released at once
+                   # init_volume initial volume of blob of oil - the sum of all
+                   # LEs with same age is the volume of the blob. It is evenly
+                   # divided to number of LEs
                    'init_volume': ((), np.float64, 'init_volume', 0),
                    'init_area': ((), np.float64, 'init_area', 0),
                    'relative_bouyancy': ((), np.float64, 'relative_bouyancy',
