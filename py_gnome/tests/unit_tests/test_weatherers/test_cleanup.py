@@ -3,7 +3,7 @@ tests for cleanup options
 '''
 from datetime import datetime, timedelta
 
-from pytest import mark
+from pytest import mark, raises
 import numpy as np
 import unit_conversion as uc
 
@@ -11,10 +11,11 @@ from gnome.basic_types import oil_status, fate
 from gnome.environment import Water
 from gnome.weatherers.intrinsic import WeatheringData
 
-from gnome.weatherers import Skimmer, Burn
+from gnome.weatherers import Skimmer, Burn, ChemicalDispersion
 from gnome.spill_container import SpillContainer
 from gnome.spill import point_line_release_spill
 from gnome.utilities.inf_datetime import InfDateTime
+from gnome.environment import Waves, constant_wind, Water
 
 from ..conftest import test_oil
 
@@ -28,36 +29,29 @@ amount = 36000.
 units = 'kg'    # leave as SI units
 
 
-def test_objs():
-    '''
-    function for created tests SpillContainer and test WeatheringData object
-    test objects so we can run Skimmer, Burn like a model without using a
-    full on Model
-    '''
-    intrinsic = WeatheringData(Water())
-    sc = SpillContainer()
-    sc.spills += point_line_release_spill(10,
-                                          (0, 0, 0),
-                                          rel_time,
-                                          substance=test_oil,
-                                          amount=amount,
-                                          units='kg')
-    return (sc, intrinsic)
-
-
-class TestSkimmer:
-    skimmer = Skimmer(amount,
-                      'kg',
-                      efficiency=0.3,
-                      active_start=active_start,
-                      active_stop=active_stop)
-
-    (sc, intrinsic) = test_objs()
+class ObjForTests:
+    @classmethod
+    def mk_test_objs(self):
+        '''
+        create SpillContainer and test WeatheringData object test objects so
+        we can run Skimmer, Burn like a model without using a full on Model
+        '''
+        intrinsic = WeatheringData(Water())
+        sc = SpillContainer()
+        sc.spills += point_line_release_spill(10,
+                                              (0, 0, 0),
+                                              rel_time,
+                                              substance=test_oil,
+                                              amount=amount,
+                                              units='kg')
+        return (sc, intrinsic)
 
     def reset_test_objs(self):
         '''
-        reset the test objects
+        reset test objects
         '''
+        # print '\n------------\n', 'reset_and_release', '\n------------'
+        self.sc.rewind()
         self.sc.rewind()
         self.sc.prepare_for_model_run(self.intrinsic.array_types)
         self.intrinsic.initialize(self.sc)
@@ -69,6 +63,16 @@ class TestSkimmer:
         self.reset_test_objs()
         num_rel = self.sc.release_elements(time_step, rel_time)
         self.intrinsic.update(num_rel, self.sc)
+
+
+class TestSkimmer(ObjForTests):
+    skimmer = Skimmer(amount,
+                      'kg',
+                      efficiency=0.3,
+                      active_start=active_start,
+                      active_stop=active_stop)
+
+    (sc, intrinsic) = ObjForTests.mk_test_objs()
 
     def test_prepare_for_model_run(self):
         self.reset_and_release()
@@ -194,8 +198,8 @@ class TestBurnProperties:
                 == b.thickness)
 
 
-class TestBurn:
-    (sc, intrinsic) = test_objs()
+class TestBurn(ObjForTests):
+    (sc, intrinsic) = ObjForTests.mk_test_objs()
     spill = sc.spills[0]
     op = spill.get('substance')
     volume = spill.get_mass()/op.get_density(intrinsic.water.temperature)
@@ -205,16 +209,6 @@ class TestBurn:
     # test with non SI units
     burn = Burn(area, thick, active_start,
                 area_units='km^2', thickness_units='km')
-
-    def reset_test_objs(self):
-        '''
-        reset test objects
-        '''
-        self.sc.rewind()
-        at = self.intrinsic.array_types
-        at.update(self.burn.array_types)
-        self.intrinsic.initialize(self.sc)
-        self.sc.prepare_for_model_run(at)
 
     def test_init(self):
         '''
@@ -241,18 +235,15 @@ class TestBurn:
         once thickness reaches _min_thickness, test the mover becomes inactive
         if mover is off, it is also inactive
         '''
-        burn = Burn(self.area,
-                    self.thick,
-                    active_start=active_start)
-        burn.prepare_for_model_run(self.sc)
+        self.burn.prepare_for_model_run(self.sc)
         self._oil_thickness = 0.002
-        burn.prepare_for_model_step(self.sc, time_step, rel_time)
-        assert not burn._active
+        self.burn.prepare_for_model_step(self.sc, time_step, rel_time)
+        assert not self.burn._active
 
         # turn it off
-        burn.on = False
-        burn.prepare_for_model_step(self.sc, time_step, rel_time)
-        assert not burn._active
+        self.burn.on = False
+        self.burn.prepare_for_model_step(self.sc, time_step, rel_time)
+        assert not self.burn._active
 
     def _weather_elements_helper(self, burn, avg_frac_water=0.0):
         '''
@@ -392,3 +383,53 @@ class TestBurn:
         assert init_th1 > init_th2 > init_th3
         #assert (burn1._burn_duration > burn2._burn_duration >
         #        burn3._burn_duration)
+
+
+class TestChemicalDispersion(ObjForTests):
+    (sc, intrinsic) = ObjForTests.mk_test_objs()
+    spill = sc.spills[0]
+    op = spill.get('substance')
+    spill_volume = spill.get_mass()/op.get_density()
+    c_disp = ChemicalDispersion(spill_volume * 0.2,
+                                active_start,
+                                active_stop,
+                                units='m^3',
+                                efficiency=0.3)
+
+    def test_prepare_for_model_run_waves(self):
+        '''
+        test efficiency gets set correctly
+        '''
+        self.reset_test_objs()
+        waves = Waves(constant_wind(0, 0),
+                      water=Water())
+        c_disp = ChemicalDispersion(self.spill_volume * 0.2,
+                                    active_start,
+                                    active_stop)
+        with raises(AttributeError):
+            c_disp.prepare_for_model_run(self.sc)
+
+        c_disp.waves = waves
+        assert 'chemically_dispersed' not in self.sc.weathering_data
+
+        c_disp.prepare_for_model_run(self.sc)
+        assert self.sc.weathering_data['chemically_dispersed'] == 0.0
+        assert c_disp.efficiency == 0.241
+
+        # make wind large so efficiency goes to 0 or should it be 0.241?
+        c_disp.efficiency = None
+        waves.wind.timeseries = (waves.wind.timeseries[0]['time'], (100, 0))
+        c_disp.prepare_for_model_run(self.sc)
+        assert c_disp.efficiency == 0
+
+    def test_prepare_for_model_step(self):
+        self.reset_and_release()
+
+        assert np.all(self.sc['fate_status'] == fate.surface_weather)
+
+        self.c_disp.prepare_for_model_run(self.sc)
+        self.c_disp.prepare_for_model_step(self.sc, time_step, active_start)
+        d_mass = self.sc['mass'][self.sc['fate_status'] == fate.disperse].sum()
+        exp_mass = self.c_disp.volume / self.op.get_density()
+
+        assert d_mass - exp_mass < self.sc['mass'][0]

@@ -96,7 +96,7 @@ def make_model(uncertain=False,
     volume = spill.get_mass()/spill.get('substance').get_density()
     burn = Burn(0.2 * volume, 1.0,
                 active_start=skim_start)
-    c_disp = ChemicalDispersion(0.1*amount, units=units, efficiency=0.5,
+    c_disp = ChemicalDispersion(0.1*volume, units='m^3', efficiency=0.5,
                                 active_start=skim_start,
                                 active_stop=skim_start + timedelta(hours=1))
 

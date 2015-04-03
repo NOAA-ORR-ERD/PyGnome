@@ -899,8 +899,8 @@ def test_contains_object(sample_model_fcn):
                       active_stop=skim_start + timedelta(hours=1))
     burn = burn_obj(sp)
     disp_start = skim_start + timedelta(hours=1)
-    dispersion = ChemicalDispersion(0.1 * sp.amount,
-                                    units=sp.units,
+    dispersion = ChemicalDispersion(10,
+                                    units='m^3',
                                     active_start=disp_start,
                                     active_stop=disp_start + timedelta(hours=1))
     model.weatherers += [evaporation, dispersion, burn, skimmer]
@@ -940,10 +940,9 @@ def chemical_disperson_obj(spill, delay_hours=1, duration=1):
     '''
     rel_time = spill.get('release_time')
     disp_start = rel_time + timedelta(hours=delay_hours)
-    amount = spill.amount
-    units = spill.units
+    spill_vol = spill.get_mass()/spill.get('substance').get_density()
     c_disp = \
-        ChemicalDispersion(.1 * amount, units=units,
+        ChemicalDispersion(.1 * spill_vol, units='m^3',
                            active_start=disp_start,
                            active_stop=disp_start + timedelta(hours=duration),
                            efficiency=0.3)
@@ -1234,7 +1233,7 @@ def test_weatherer_sort():
                       active_start=datetime(2014, 1, 1, 0, 0),
                       active_stop=datetime(2014, 1, 1, 0, 3))
     burn = Burn(100, 1, active_start=datetime(2014, 1, 1, 0, 0))
-    c_disp = ChemicalDispersion(100, units='kg',
+    c_disp = ChemicalDispersion(100, units='m^3',
                                 active_start=datetime(2014, 1, 1, 0, 0),
                                 active_stop=datetime(2014, 1, 1, 0, 3),
                                 efficiency=0.2)
