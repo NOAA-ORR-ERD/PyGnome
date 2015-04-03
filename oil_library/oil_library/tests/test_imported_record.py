@@ -78,7 +78,7 @@ class OilTestCase(BaseTestCase):
             u'pour_point_max_k': u'2.6715e2',
             u'product_type': u'Crude',
             u'comments': u'Test Oil Comments',
-            u'asphaltene_content': u'2e-2',
+            u'asphaltenes': u'2e-2',
             u'wax_content': u'7e-2',
             u'aromatics': u'4e-2',
             u'water_content_emulsion': u'9e-1',
@@ -93,7 +93,7 @@ class OilTestCase(BaseTestCase):
             u'cut_units': u'volume',
             u'oil_class': u'Group 3',
             u'adhesion': u'2.8e-1',
-            u'benezene': u'6e-2',
+            u'benzene': u'6e-2',
             u'naphthenes': u'7e-2',
             u'paraffins': u'8e-2',
             u'polars': u'9e-2',
@@ -122,7 +122,7 @@ class OilTestCase(BaseTestCase):
         assert oil.pour_point_max_k == u'2.6715e2'
         assert oil.product_type == u'Crude'
         assert oil.comments == u'Test Oil Comments'
-        assert oil.asphaltene_content == u'2e-2'
+        assert oil.asphaltenes == u'2e-2'
         assert oil.wax_content == u'7e-2'
         assert oil.aromatics == u'4e-2'
         assert oil.water_content_emulsion == u'9e-1'
@@ -137,7 +137,7 @@ class OilTestCase(BaseTestCase):
         assert oil.cut_units == u'volume'
         assert oil.oil_class == u'Group 3'
         assert oil.adhesion == u'2.8e-1'
-        assert oil.benezene == u'6e-2'
+        assert oil.benzene == u'6e-2'
         assert oil.naphthenes == u'7e-2'
         assert oil.paraffins == u'8e-2'
         assert oil.polars == u'9e-2'

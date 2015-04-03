@@ -23,7 +23,7 @@ def test_OilProps_exceptions():
 
 
 @pytest.mark.parametrize(("search", "isNone"),
-                         [('FUEL OIL NO.6', False), (51, True)])
+                         [('LUCKENBACH FUEL OIL', False), (51, True)])
 def test_get_oil(search, isNone):
 
     if isNone:
@@ -39,7 +39,7 @@ def test_get_oil(search, isNone):
 # but mass fractions do not sum upto one so valid OilProps object not created.
 # In this case return None
 @pytest.mark.parametrize(("search", "isNone"),
-                         [('FUEL OIL NO.6', False), (51, True)])
+                         [('LUCKENBACH FUEL OIL', False), (51, True)])
 def test_get_oil_props(search, isNone):
     if isNone:
         with raises(NoResultFound):
@@ -72,15 +72,15 @@ def test_OilProps_sample_oil(oil, density, units):
     # assert abs(o.get_density() - d) < 1e-3
 
 
-@pytest.mark.parametrize(('oil', 'api'), [('FUEL OIL NO.6', 12.3)])
+@pytest.mark.parametrize(('oil', 'api'), [('LUCKENBACH FUEL OIL', 13.06)])
 def test_OilProps_DBquery(oil, api):
     """ test dbquery worked for an example like FUEL OIL NO.6 """
     o = get_oil_props(oil)
-    assert o.api == api
+    assert np.isclose(o.api, api, atol=0.01)
 
 
 class TestProperties:
-    op = get_oil_props(u'ALASKA NORTH SLOPE')
+    op = get_oil_props(u'ALASKA NORTH SLOPE (MIDDLE PIPELINE)')
     s_comp = sorted(op._r_oil.sara_fractions, key=lambda s: s.ref_temp_k)
 
     s_dens = sorted(op._r_oil.sara_densities, key=lambda s: s.ref_temp_k)
