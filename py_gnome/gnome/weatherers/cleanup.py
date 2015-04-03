@@ -115,7 +115,7 @@ class CleanUpBase(Weatherer):
             self.logger.debug(self._pid + 'marked {0} LEs with mass: '
                               '{1}'.format(ix, data['mass'][:ix].sum()))
 
-        sc.update_from_fatedataview(substance, 'surface_weather')
+        sc.update_from_fatedataview(substance)
 
     def _set__timestep(self, time_step, model_time):
         '''
@@ -150,6 +150,18 @@ class CleanUpBase(Weatherer):
                           sum()/data['mass'].sum())
         return (1 - avg_frac_water)
 
+    def _active_within_start_stop_time(self, time_step, model_time):
+        if not self.on:
+            self._active = False
+            return
+
+        if (model_time + timedelta(seconds=time_step) > self.active_start and
+            self.active_stop > model_time):
+            self._active = True
+        else:
+            self._active = False
+            return
+
 
 class Skimmer(CleanUpBase, Serializable):
     _state = copy.deepcopy(Weatherer._state)
@@ -171,6 +183,20 @@ class Skimmer(CleanUpBase, Serializable):
         active_start and active_stop time are required
         cleanup operations must have a valid datetime - cannot use -inf and inf
         active_start/active_stop is used to get the mass removal rate
+
+        :param amount: amount if oil/water skimmed as either mass or volume
+        :type amount: float
+        :param units: valid mass or volume units
+        :type units: str
+        :param efficiency: efficiency of skimming operation, value between 0
+            and 1 where 1 indicates 100% efficiency
+        :param active_start: start time of operation
+        :type active_start: datetime
+        :param active_stop: stop time of operation
+        :type active_stop: datetime
+
+        remaining kwargs include 'on' and 'name' and these are passed to base
+        class via super
         '''
 
         super(Skimmer, self).__init__(active_start=active_start,
@@ -234,16 +260,7 @@ class Skimmer(CleanUpBase, Serializable):
         code checks to see if any LEs are marked for skimming and if
         none are found, it marks them.
         '''
-        if not self.on:
-            self._active = False
-            return
-
-        if (model_time + timedelta(seconds=time_step) > self.active_start and
-            self.active_stop > model_time):
-            self._active = True
-        else:
-            self._active = False
-            return
+        self._active_within_start_stop_time(time_step, model_time)
 
         # only when it is active, update the status codes
         self._set__timestep(time_step, model_time)
@@ -291,12 +308,6 @@ class Skimmer(CleanUpBase, Serializable):
             total_mass = data['mass'].sum()
             rm_mass_frac = min(rm_mass / total_mass, 1.0)
             rm_mass = rm_mass_frac * total_mass
-
-            # if elements are also evaporating following could be true
-            # need to include weathering for skimmed particles, then test and
-            # add if following is required.
-            # if rm_mass_frac > 1:
-            #     rm_mass_frac = 1.0
 
             data['mass_components'] = \
                 (1 - rm_mass_frac) * data['mass_components']
@@ -574,27 +585,148 @@ class Burn(CleanUpBase, Serializable):
         sc.update_from_fatedataview(fate='burn')
 
 
-class Dispersion(Weatherer, Serializable):
+class ChemicalDispersion(CleanUpBase, Serializable):
     _state = copy.deepcopy(Weatherer._state)
     _schema = WeathererSchema
 
+    def __init__(self,
+                 volume,
+                 units,
+                 active_start,
+                 active_stop,
+                 waves=None,
+                 efficiency=None,
+                 **kwargs):
+        '''
+        another mass removal mechanism. The volume specified gets dispersed
+        with efficiency based on wave conditions.
+
+        :param volume: volume of oil (not oil/water?) applied with surfactant
+        :type volume: float
+        :param units: volume units
+        :type units: str
+        :param active_start: start time of operation
+        :type active_start: datetime
+        :param active_stop: stop time of operation
+        :type active_stop: datetime
+        :param waves: waves object - query to get height. It must contain
+            get_value() method. Default is None to support object creation by
+            WebClient before a waves object is defined
+        :type waves: an object with same interface as gnome.environment.Waves
+
+        Optional Argument: Either efficiency or waves must be set before
+        running the model. If efficiency is not set, then use wave height to
+        estimate an efficiency
+
+        :param efficiency: efficiency of operation.
+        :type efficiency: float between 0 and 1
+
+        remaining kwargs include 'on' and 'name' and these are passed to base
+        class via super
+        '''
+        self.volume = volume
+        self.units = units
+        self.waves = waves
+        self.efficiency = efficiency
+        super(ChemicalDispersion, self).__init__(active_start=active_start,
+                                                 active_stop=active_stop,
+                                                 **kwargs)
+
     def prepare_for_model_run(self, sc):
-        if sc.spills:
-            sc.weathering_data['dispersed'] = 0.0
+        self._rate = self.volume/(self.active_stop -
+                                  self.active_start).total_seconds()
+        if self.on:
+            sc.weathering_data['chemically_dispersed'] = 0.0
+
+            # assume fixed waveheight for efficiency at present
+            # since LEs are marked based on mass/volume removed as opposed to
+            # location on map, use a fixed efficiency. In future, when LEs are
+            # marked by location - this can be updated to compute efficiency
+            # based on wave conditions
+            if self.efficiency is None:
+                # if wave height > 6.4 m, we get negative results - log and
+                # reset to 0 if this occurs
+                # can efficiency go to 0? Is there a minimum threshold?
+                w = 0.3 * self.waves.get_value(self.active_start)[0]
+                self.efficiency = (0.241 + 0.587*w - 0.191*w**2 +
+                                   0.02616*w**3 - 0.0016 * w**4 -
+                                   0.000037*w**5)
+                if self.efficiency < 0:
+                    self.efficiency = 0
+                    msg = ("wave height {0} - results in negative efficiency. "
+                           "Reset to 0")
+                    self.logger.warning(msg)
+
+    def _update_LE_status_codes(self,
+                                sc,
+                                new_status,
+                                substance,
+                                mass_to_remove):
+        '''
+        currently, for dispersion, user enters volume of oil (not oil/water
+        mixture that is dispersed) - double check that this is how we want
+        to proceed.
+        '''
+        arrays = {'fate_status', 'mass', 'frac_water'}
+        data = sc.substancefatedata(substance, arrays, 'surface_weather')
+
+        if mass_to_remove >= data['mass'].sum():
+            data['fate_status'][:] = new_status
+            msg = "insufficient mass released for cleanup"
+            self.logger.warning(self._pid + msg)
+            self.logger.warning(self._pid + "marked ALL ({0}) LEs, total mass:"
+                                " {1}".format(len(data['fate_status']),
+                                              data['mass'].sum()))
+        else:
+            # sum up mass until threshold is reached, find index where
+            # total_mass_removed is reached or exceeded
+            ix = np.where(np.cumsum(data['mass']) >= mass_to_remove)[0][0]
+            # change status for elements upto and including 'ix'
+            data['fate_status'][:ix + 1] = new_status
+
+            self.logger.debug(self._pid + 'marked {0} LEs with mass: '
+                              '{1}'.format(ix, data['mass'][:ix].sum()))
+
+        sc.update_from_fatedataview(substance, 'surface_weather')
+
+    def prepare_for_model_step(self, sc, time_step, model_time):
+        '''
+        '''
+        self._active_within_start_stop_time(time_step, model_time)
+        # only when it is active, update the status codes
+        self._set__timestep(time_step, model_time)
+        if (sc['fate_status'] == bt_fate.disperse).sum() == 0:
+            substance = self._get_substance(sc)
+            total_mass_removed = (self._get_mass(substance, self.volume,
+                                                 self.units) *
+                                  self.efficiency)
+
+            self._update_LE_status_codes(sc, bt_fate.disperse,
+                                         substance, total_mass_removed)
 
     def weather_elements(self, sc, time_step, model_time):
         'for now just take away 0.1% at every step'
         if self.active and len(sc) > 0:
-            for substance, data in sc.itersubstancedata(self.array_types):
+            for substance, data in sc.itersubstancedata(self.array_types,
+                                                        fate='disperse'):
                 if len(data['mass']) is 0:
                     continue
 
-                # take out 0.25% of the mass
-                pct_per_le = (1 - 0.015/data['mass_components'].shape[1])
-                mass_remain = pct_per_le * data['mass_components']
-                sc.weathering_data['dispersed'] += \
-                    np.sum(data['mass_components'] - mass_remain[:, :])
-                data['mass_components'] = mass_remain
+                rm_amount = self._rate * self._timestep
+                rm_mass = self._get_mass(substance,
+                                         rm_amount,
+                                         self.units) * self.efficiency
+
+                total_mass = data['mass'].sum()
+                rm_mass_frac = min(rm_mass / total_mass, 1.0)
+                rm_mass = rm_mass_frac * total_mass
+
+                data['mass_components'] = \
+                    (1 - rm_mass_frac) * data['mass_components']
                 data['mass'] = data['mass_components'].sum(1)
 
-            sc.update_from_fatedataview()
+                sc.weathering_data['chemically_dispersed'] += rm_mass
+                self.logger.debug(self._pid + 'amount chemically dispersed for'
+                                  ' {0}: {1}'.format(substance.name, rm_mass))
+
+            sc.update_from_fatedataview(fate='disperse')

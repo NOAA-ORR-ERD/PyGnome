@@ -28,7 +28,7 @@ from gnome.movers import SimpleMover, RandomMover, WindMover, CatsMover
 
 from gnome.weatherers import (HalfLifeWeatherer,
                               Evaporation,
-                              Dispersion,
+                              ChemicalDispersion,
                               Burn,
                               Skimmer,
                               Emulsification)
@@ -258,11 +258,11 @@ def test_simple_run_with_map():
         assert step['step_num'] == model.current_time_step
 
 
-def test_simple_run_with_image_output(dump):
+def test_simple_run_with_image_output(tmpdir):
     '''
     Pretty much all this tests is that the model will run and output images
     '''
-    images_dir = os.path.join(dump, 'Test_images')
+    images_dir = tmpdir.mkdir('Test_images').strpath
 
     if os.path.isdir(images_dir):
         shutil.rmtree(images_dir)
@@ -319,11 +319,11 @@ def test_simple_run_with_image_output(dump):
     assert num_steps_output == calculated_steps
 
 
-def test_simple_run_with_image_output_uncertainty(dump):
+def test_simple_run_with_image_output_uncertainty(tmpdir):
     '''
     Pretty much all this tests is that the model will run and output images
     '''
-    images_dir = os.path.join(dump, 'Test_images2')
+    images_dir = tmpdir.mkdir('Test_images2').strpath
 
     if os.path.isdir(images_dir):
         shutil.rmtree(images_dir)
@@ -893,15 +893,19 @@ def test_contains_object(sample_model_fcn):
     movers = [m for m in model.movers]
 
     evaporation = Evaporation(model.water, model.environment[0])
-    dispersion = Dispersion()
     skim_start = sp.get('release_time') + timedelta(hours=1)
     skimmer = Skimmer(.5*sp.amount, units=sp.units, efficiency=0.3,
                       active_start=skim_start,
                       active_stop=skim_start + timedelta(hours=1))
     burn = burn_obj(sp)
+    disp_start = skim_start + timedelta(hours=1)
+    dispersion = ChemicalDispersion(0.1 * sp.amount,
+                                    units=sp.units,
+                                    active_start=disp_start,
+                                    active_stop=disp_start + timedelta(hours=1))
     model.weatherers += [evaporation, dispersion, burn, skimmer]
 
-    renderer = Renderer(images_dir='Test_images',
+    renderer = Renderer(images_dir='junk',
                         size=(400, 300))
     model.outputters += renderer
 
@@ -924,10 +928,26 @@ def make_skimmer(spill, delay_hours=1, duration=2):
     skim_start = rel_time + timedelta(hours=delay_hours)
     amount = spill.amount
     units = spill.units
-    skimmer = Skimmer(.5*amount, units=units, efficiency=0.3,
+    skimmer = Skimmer(.3*amount, units=units, efficiency=0.3,
                       active_start=skim_start,
                       active_stop=skim_start + timedelta(hours=duration))
     return skimmer
+
+
+def chemical_disperson_obj(spill, delay_hours=1, duration=1):
+    '''
+    apply chemical dispersion to 10% of spill
+    '''
+    rel_time = spill.get('release_time')
+    disp_start = rel_time + timedelta(hours=delay_hours)
+    amount = spill.amount
+    units = spill.units
+    c_disp = \
+        ChemicalDispersion(.1 * amount, units=units,
+                           active_start=disp_start,
+                           active_stop=disp_start + timedelta(hours=duration),
+                           efficiency=0.3)
+    return c_disp
 
 
 def burn_obj(spill, delay_hours=1.5):
@@ -958,6 +978,10 @@ def test_staggered_spills_weathering(sample_model_fcn, delay):
     model.start_time = rel_time - timedelta(hours=1)
     model.duration = timedelta(days=1)
 
+    # test with outputter + w/ cache enabled
+    model.cache = True
+    model.outputters += gnome.outputters.WeatheringOutput()
+
     et = floating(substance=model.spills[0].get('substance').name)
     cs = point_line_release_spill(500, (0, 0, 0),
                                   rel_time + delay,
@@ -977,9 +1001,10 @@ def test_staggered_spills_weathering(sample_model_fcn, delay):
     model.environment += constant_wind(1., 0)
     skimmer = make_skimmer(model.spills[0])
     burn = burn_obj(model.spills[0])
+    c_disp = chemical_disperson_obj(model.spills[0], 4)
     model.weatherers += [Evaporation(model.water,
                                      model.environment[0]),
-                         Dispersion(),
+                         c_disp,
                          burn,
                          skimmer]
     # model.full_run()
@@ -990,7 +1015,7 @@ def test_staggered_spills_weathering(sample_model_fcn, delay):
             # and ensure this equals the total amount released
             sum_ = (sc.weathering_data['beached'] +
                     sc.weathering_data['burned'] +
-                    sc.weathering_data['dispersed'] +
+                    sc.weathering_data['chemically_dispersed'] +
                     sc.weathering_data['evaporated'] +
                     sc.weathering_data['floating'] +
                     sc.weathering_data['skimmed']
@@ -1042,7 +1067,8 @@ def test_two_substance_spills_weathering(sample_model_fcn, s0, s1):
         '''
         skimmer = make_skimmer(model.spills[0], 2)
         burn = burn_obj(model.spills[0], 2.5)
-        model.weatherers += [Dispersion(),
+        c_disp = chemical_disperson_obj(model.spills[0], 3)
+        model.weatherers += [c_disp,
                              burn,
                              skimmer]
 
@@ -1057,7 +1083,7 @@ def test_two_substance_spills_weathering(sample_model_fcn, s0, s1):
                 # mass marked for skimming/burning/dispersion that is not yet
                 # removed - cleanup operations only work on single substance
                 sum_ += (sc.weathering_data['burned'] +
-                         sc.weathering_data['dispersed'] +
+                         sc.weathering_data['chemically_dispersed'] +
                          sc.weathering_data['skimmed'])
 
             sum_ += (sc.weathering_data['beached'] +
@@ -1200,7 +1226,7 @@ class TestMergeModels:
 def test_weatherer_sort():
     '''
     Sample model with weatherers - only tests sorting of weathereres. The
-    Model may or may not run.
+    Model will likely not run
     '''
     model = Model()
     model.water = Water()
@@ -1208,11 +1234,15 @@ def test_weatherer_sort():
                       active_start=datetime(2014, 1, 1, 0, 0),
                       active_stop=datetime(2014, 1, 1, 0, 3))
     burn = Burn(100, 1, active_start=datetime(2014, 1, 1, 0, 0))
+    c_disp = ChemicalDispersion(100, units='kg',
+                                active_start=datetime(2014, 1, 1, 0, 0),
+                                active_stop=datetime(2014, 1, 1, 0, 3),
+                                efficiency=0.2)
     weatherers = [Emulsification(),
                   Evaporation(model.water,
                               constant_wind(1, 0)),
                   burn,
-                  Dispersion(),
+                  c_disp,
                   skimmer]
     exp_order = [weatherers[ix] for ix in (2, 4, 3, 1, 0)]
 
@@ -1226,8 +1256,8 @@ def test_weatherer_sort():
     model.rewind()
     assert model.weatherers.values() == exp_order
 
-    # Burn, Dispersion are at same sorting level so appending another Burn to
-    # end of the list will sort it to be just after Dispersion so index 2
+    # Burn, ChemicalDispersion are at same sorting level so appending another Burn to
+    # end of the list will sort it to be just after ChemicalDispersion so index 2
     burn = Burn(50, 1, active_start=datetime(2014, 1, 1, 0, 0))
     exp_order.insert(2, burn)
     model.weatherers += exp_order[2]  # add this and check sorting still works

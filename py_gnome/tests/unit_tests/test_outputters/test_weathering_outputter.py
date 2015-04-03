@@ -9,7 +9,7 @@ import numpy as np
 import pytest
 
 from gnome.environment import constant_wind, Water
-from gnome.weatherers import Evaporation, Dispersion, Skimmer, Burn
+from gnome.weatherers import Evaporation, ChemicalDispersion, Skimmer, Burn
 from gnome.spill import point_line_release_spill
 
 from gnome.outputters import WeatheringOutput
@@ -52,16 +52,20 @@ def model(sample_model):
     skim_start = rel_time + timedelta(hours=1)
     amount = model.spills[0].amount
     units = model.spills[0].units
-    skimmer = Skimmer(.5*amount, units=units, efficiency=0.3,
+    skimmer = Skimmer(.3*amount, units=units, efficiency=0.3,
                       active_start=skim_start,
                       active_stop=skim_start + timedelta(hours=1))
     # thickness = 1m so area is just 20% of volume
     volume = spill.get_mass()/spill.get('substance').get_density()
     burn = Burn(0.2 * volume, 1.0,
                 active_start=skim_start)
+    c_disp = ChemicalDispersion(.1*amount, units=units, efficiency=0.5,
+                                active_start=skim_start,
+                                active_stop=skim_start + timedelta(hours=1))
+
     model.weatherers += [Evaporation(model.water,
                                      model.environment[-1]),
-                         Dispersion(),
+                         c_disp,
                          burn,
                          skimmer]
 
