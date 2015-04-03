@@ -591,9 +591,9 @@ class ChemicalDispersion(CleanUpBase, Serializable):
 
     def __init__(self,
                  volume,
-                 units,
                  active_start,
                  active_stop,
+                 units='m^3',
                  waves=None,
                  efficiency=None,
                  **kwargs):
@@ -636,8 +636,13 @@ class ChemicalDispersion(CleanUpBase, Serializable):
         self._rate = self.volume/(self.active_stop -
                                   self.active_start).total_seconds()
         if self.on:
-            sc.weathering_data['chemically_dispersed'] = 0.0
+            if self.efficiency is None and self.waves is None:
+                msg = ("Either efficiency or waves object must be set. "
+                       "Both cannot be None")
+                self.logger.error(msg)
+                raise AttributeError(msg)
 
+            sc.weathering_data['chemically_dispersed'] = 0.0
             # assume fixed waveheight for efficiency at present
             # since LEs are marked based on mass/volume removed as opposed to
             # location on map, use a fixed efficiency. In future, when LEs are
