@@ -31,18 +31,19 @@ movers needs
 
 import sys
 
+import numpy
+np = numpy
+
 from gnome.basic_types import (world_point_type,
                                windage_type,
                                status_code_type,
                                oil_status,
                                id_type,
                                fate)
-
-import numpy
-np = numpy
+from gnome import AddLogger
 
 
-class ArrayType(object):
+class ArrayType(AddLogger):
     """
     Object used to capture attributes of numpy data array for elements
 
@@ -99,6 +100,22 @@ class ArrayType(object):
             arr[:] = initial_value
         return arr
 
+    def split_element(self, num, value, *args):
+        '''
+        define how an LE gets split for specified ArrayType
+
+        :param num: number of elements that current value should get split into
+        :type num: int
+        :param value: the current value that is replicated
+        :type value: this must have shape and dtype equal to self.shape
+            and self.dtype
+        :param *args: accept more arguments as derived class may divide LE on
+            split and in this case, user can specify a list of fractions for
+            this division.
+        '''
+        shape = value.shape if self.shape is None else self.shape
+        return self.initialize(num, shape, value)
+
     def __eq__(self, other):
         if not isinstance(other, self.__class__):
             return False
@@ -123,20 +140,51 @@ class IdArrayType(ArrayType):
     """
     The 'id' array assigns a unique int for every particle released.
     """
-    def initialize(self, num_elements, shape=None):
+    def initialize(self, num_elements, *args):
         '''
         overrides base initialize functionality to output a range of values
 
             self.initial_value to num_elements + self.initial_value
 
-        This is only used for 'id' of particle and shape attribute is ignored
+        This is only used for 'id' of particle.
+        shape attribute and initial_value are ignored
         since you always get an array of shape (num_elements,)
-        Keep it in method signature so we don't have to override
-        initialize_null as well
+        Define *args to keep method signature the same
         '''
         array = np.arange(self.initial_value,
                           num_elements + self.initial_value, dtype=self.dtype)
         return array
+
+    def split_element(self, num, value, *args):
+        '''
+        split elements into num and assign 'value' to all of them
+        '''
+        arr = np.zeros((num,) + self.shape, dtype=self.dtype)
+        arr[:] = value
+
+        return arr
+
+
+class ArrayTypeDivideOnSplit(ArrayType):
+    def split_element(self, num, value, l_frac=None):
+        '''
+        define how an LE gets split for specified ArrayType
+
+        :param num: number of elements that current value should get split into
+        :type num: int
+        :param value: the current value that is replicated
+        :type value: this must have shape and dtype equal to self.shape
+            and self.dtype
+        :param l_frac: user can specify a list of fractions for
+            this division - if None, then evenly divide 'value' into 'num'
+        '''
+        shape = value.shape if self.shape is None else self.shape
+        split = self.initialize(num, shape, value)
+
+        if l_frac is None:
+            return split[:]/num
+        else:
+            return np.asarray(l_frac) * split
 
 
 # SpillContainer manipulates initial_value property to initialize 'spill_num'
@@ -154,7 +202,6 @@ _default_values = {'positions': ((3,), world_point_type, 'positions',
                                     oil_status.in_water),
                    'spill_num': ((), id_type, 'spill_num', 0),
                    'id': ((), np.uint32, 'id', 0, IdArrayType),
-                   'mass': ((), np.float64, 'mass', 0),
                    'windages': ((), windage_type, 'windages', 0),
                    'windage_range': ((2,), np.float64, 'windage_range',
                                      (0., 0.)),
@@ -163,19 +210,19 @@ _default_values = {'positions': ((3,), world_point_type, 'positions',
                    'droplet_diameter': ((), np.float64, 'droplet_diameter',
                                         0.),
                    'age': ((), np.int32, 'age', 0),
-                   # default assumes mass=0
-                   'density': ((), np.float64, 'density', 0),
-                   'mass_components': (None, np.float64, 'mass_components',
-                                       None),
-                   'evap_decay_constant': (None, np.float64,
-                                           'evap_decay_constant', None),
 
+                   # WEATHERING DATA
                    # following used to compute spreading (LE thickness)
                    # init_volume initial volume of blob of oil - the sum of all
                    # LEs with same age is the volume of the blob. It is evenly
                    # divided to number of LEs
-                   'init_volume': ((), np.float64, 'init_volume', 0),
-                   'init_area': ((), np.float64, 'init_area', 0),
+                   'init_volume': ((), np.float64, 'init_volume', 0,
+                                   ArrayTypeDivideOnSplit),
+                   'init_area': ((), np.float64, 'init_area', 0,
+                                 ArrayTypeDivideOnSplit),
+                   'density': ((), np.float64, 'density', 0),
+                   'evap_decay_constant': (None, np.float64,
+                                           'evap_decay_constant', None),
                    'relative_bouyancy': ((), np.float64, 'relative_bouyancy',
                                          0),
                    'thickness': ((), np.float64, 'thickness', 0),
@@ -183,21 +230,28 @@ _default_values = {'positions': ((3,), world_point_type, 'positions',
                    'viscosity': ((), np.float64, 'viscosity', 0),
                    # fractional water content in emulsion
                    'frac_water': ((), np.float64, 'frac_water', 0),
-                   # frac of mass lost due to evaporation + dissolution.
-                   # Used to update viscosity
-                   'frac_lost': ((), np.float64, 'frac_lost', 0),
-                   'init_mass': ((), np.float64, 'init_mass', 0),
                    'interfacial_area': ((), np.float64, 'interfacial_area', 0),
                    # use negative as a not yet set flag
                    'bulltime': ((), np.float64, 'bulltime', -1.),
                    'frac_coverage': ((), np.float32, 'frac_coverage', 1),
+                   'frac_lost': ((), np.float64, 'frac_lost', 0),
 
                    # substance index - used label elements from same substance
                    # used internally only by SpillContainer *if* more than one
                    # substance
                    'substance': ((), np.uint8, 'substance', 0),
                    'fate_status': ((), np.uint8, 'fate_status',
-                                   fate.non_weather)
+                                   fate.non_weather),
+
+                   # Following objects will divide value of element when
+                   # calling split_element(), use: ArrayTypeDivideOnSplit()
+                   'mass': ((), np.float64, 'mass', 0, ArrayTypeDivideOnSplit),
+                   'mass_components': (None, np.float64, 'mass_components',
+                                       None, ArrayTypeDivideOnSplit),
+                   # frac of mass lost due to evaporation + dissolution.
+                   # Used to update viscosity
+                   'init_mass': ((), np.float64, 'init_mass', 0,
+                                 ArrayTypeDivideOnSplit),
                    }
 
 
