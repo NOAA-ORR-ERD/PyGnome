@@ -521,14 +521,13 @@ def test_ordered_collection_api():
 
 
 """ tests w/ element types set for two spills """
-oil = test_oil
 el0 = ElementType([InitWindages((0.02, 0.02), -1),
                    InitRiseVelFromDist(
                        distribution=UniformDistribution(low=1, high=10))
-                   ], substance=oil)
+                   ], substance=test_oil)
 
 el1 = ElementType([InitWindages(),
-                   InitRiseVelFromDist()], substance=oil)
+                   InitRiseVelFromDist()], substance=test_oil)
 
 arr_types = {'windages', 'windage_range', 'windage_persist', 'rise_vel'}
 
@@ -1060,25 +1059,6 @@ def get_eq_spills():
     assert spill == spill2
 
     return (spill, spill2)
-
-
-@pytest.mark.xfail
-def test_reuse_substance():
-    '''
-    reuse substance
-    marked as xfail due to a testing issue
-    - this works fine if pytest is run on this file; however, when pytest is
-    run on all files, this fails when trying to make copy of spills
-    '''
-    scp = SpillContainerPair(uncertain=True)
-    s0 = Spill(Release(datetime.now(), 10),
-               element_type=floating(substance=test_oil))
-    s1 = Spill(Release(datetime.now(), 10),
-               element_type=floating(substance=s0.get('substance')))
-    assert s1.element_type is not s0.element_type
-    assert s1.element_type == s0.element_type
-    assert s1.get('substance') is s0.get('substance')
-    scp += [s0, s1]
 
 
 class TestSpillContainerPairGetSetDel:
