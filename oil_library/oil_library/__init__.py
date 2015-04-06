@@ -132,12 +132,14 @@ def get_oil(oil_, max_cuts=None):
     """
     function returns the Oil object given the name of the oil as a string.
 
-    :param oil_: name of the oil that spilled. If it is one of the names
-            stored in _sample_oil dict, then an Oil object with specified
-            API is returned.
-            Otherwise, query the database for the oil_name and return the
-            associated Oil object.
-    :type oil_: str
+    :param oil_: The oil that spilled.
+                 - If it is a dictionary of items, then we will assume it is
+                   a JSON payload sufficient for creating an Oil object.
+                 - If it is one of the names stored in _sample_oil dict,
+                   then an Oil object with specified API is returned.
+                 - Otherwise, query the database for the oil_name and return
+                   the associated Oil object.
+    :type oil_: str or dict
 
     Optional arg:
 
@@ -160,7 +162,7 @@ def get_oil(oil_, max_cuts=None):
     end user.
     """
     if isinstance(oil_, dict):
-        return sample_oil_to_mock_oil(max_cuts=max_cuts, **oil_)
+        return Oil.from_json(**oil_)
 
     if oil_ in _sample_oils.keys():
         return _sample_oils[oil_]
