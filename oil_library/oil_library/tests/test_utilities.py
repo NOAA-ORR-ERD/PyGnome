@@ -11,7 +11,7 @@ from oil_library.utilities import (get_density,
                                    get_boiling_points_from_api)
 
 
-oil_ = get_oil('FUEL OIL NO.6')
+oil_ = get_oil('LUCKENBACH FUEL OIL')
 
 # Test case - get ref temps from densities then append ref_temp for
 # density at 0th index for a few more values:
