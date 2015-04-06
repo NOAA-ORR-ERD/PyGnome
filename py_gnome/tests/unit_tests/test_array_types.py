@@ -11,7 +11,11 @@ from gnome.basic_types import world_point_type, oil_status, \
     status_code_type
 
 from gnome.array_types import ArrayType
-from gnome.array_types import reset_to_defaults, age
+from gnome.array_types import (reset_to_defaults,
+                               age,
+                               mass,
+                               mass_components)
+from pytest import mark, raises
 
 
 def test_reset_to_defaults():
@@ -74,3 +78,71 @@ class TestArrayType_eq(object):
         positions = ArrayType((3, ), world_point_type, 'positions')
         positions2 = ArrayType((3, ), world_point_type, 'positions')
         assert positions == positions2  # wrong shape
+
+
+class TestSplitElement:
+    def test_split_element_exception(self):
+        with raises(ValueError):
+            age.split_element(1, 5)
+
+    def _replace_le_after_split(self, vals, ix, split_elems):
+        '''
+        helper function - this is how spill_container will integrate new elements
+        into original array
+        '''
+        # insert split_elems until the last element before ix, then replace
+        # ix with last element of split_elems. This doesn't require a delete, then
+        # insert. It also works for splittle all elements.
+        new_vals = np.insert(vals, ix, split_elems[:-1], 0)
+        new_vals[ix + len(split_elems) - 1] = split_elems[-1]
+        return new_vals
+
+    @mark.parametrize("num", (2, 4))
+    def test_split_element_clone_values(self, num):
+        ''' as an example age should get cloned upon split '''
+        # use an object of ArrayType (base) instance
+        vals = age.initialize(10)
+        vals[:] = np.arange(0, 100, 10)
+        split_into = num
+        ix = 5
+        split_elems = age.split_element(split_into, vals[ix])
+        assert split_elems.dtype == vals.dtype
+        assert np.all(split_elems[:] == vals[ix])
+        assert len(split_elems) == split_into
+        new_vals = self._replace_le_after_split(vals, ix, split_elems)
+
+        assert np.all(new_vals[ix:ix + split_into] == new_vals[ix])
+        assert np.all(new_vals[:ix] == vals[:ix])
+        assert np.all(new_vals[ix + split_into:] == vals[ix + 1:])
+        assert len(new_vals) == len(vals) + num - 1
+
+    @mark.parametrize(("num", "l_frac"), [(3, None),
+                                          (2, (.6, .4)),
+                                          (3, (.6, .3, .1))])
+    def test_split_element_divide(self, num, l_frac):
+        '''
+        test mass/mass_components being split correctly
+        '''
+        num_les = 5
+        m_array = mass.initialize(num_les)
+        m_array[:] = 10
+        mc = mass_components.initialize(num_les,
+                                        (4,),
+                                        np.asarray([0.2, 0.2, 0.4, 0.2])*10)
+        # split element 3 into 2 elements
+        ix = 3
+        m_split = mass.split_element(num, m_array[ix], l_frac)
+        new_m_array = self._replace_le_after_split(m_array, ix, m_split)
+
+        mc_split = mass_components.split_element(num, mc[ix], l_frac)
+        if l_frac is None:
+            assert np.all(mc_split[0] == mc_split)
+        else:
+            for i in xrange(len(mc_split)):
+                # check l_frac is correctly applied
+                assert np.allclose(mc_split[i], l_frac[i] * mc[ix])
+
+        assert np.allclose(mc_split.sum(0), mc[ix])
+
+        new_mc_array = self._replace_le_after_split(mc, ix, mc_split)
+        assert np.allclose(new_mc_array.sum(1), new_m_array)

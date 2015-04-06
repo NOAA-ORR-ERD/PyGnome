@@ -96,8 +96,8 @@ class ArrayType(AddLogger):
             initial_value = self.initial_value
 
         arr = np.zeros((num_elements,) + shape, dtype=self.dtype)
-        if len(arr) > 0 and initial_value != 0.:
-            arr[:] = initial_value
+        arr[:] = initial_value
+
         return arr
 
     def split_element(self, num, value, *args):
@@ -113,6 +113,9 @@ class ArrayType(AddLogger):
             split and in this case, user can specify a list of fractions for
             this division.
         '''
+        if num < 2:
+            raise ValueError("'num' to split into must be at least 2")
+
         shape = value.shape if self.shape is None else self.shape
         return self.initialize(num, shape, value)
 
@@ -126,6 +129,9 @@ class ArrayType(AddLogger):
         for (key, val) in self.__dict__.iteritems():
             if key not in other.__dict__:
                 return False
+            elif key == 'initial_value':
+                if np.any(val != other.__dict__[key]):
+                    return False
             elif val != other.__dict__[key]:
                 return False
 
@@ -159,6 +165,9 @@ class IdArrayType(ArrayType):
         '''
         split elements into num and assign 'value' to all of them
         '''
+        if num < 2:
+            raise ValueError("'num' to split into must be at least 2")
+
         arr = np.zeros((num,) + self.shape, dtype=self.dtype)
         arr[:] = value
 
@@ -168,7 +177,8 @@ class IdArrayType(ArrayType):
 class ArrayTypeDivideOnSplit(ArrayType):
     def split_element(self, num, value, l_frac=None):
         '''
-        define how an LE gets split for specified ArrayType
+        define how an LE gets split for specified ArrayType. l_frac if given
+        should sum to 1.0
 
         :param num: number of elements that current value should get split into
         :type num: int
@@ -176,15 +186,29 @@ class ArrayTypeDivideOnSplit(ArrayType):
         :type value: this must have shape and dtype equal to self.shape
             and self.dtype
         :param l_frac: user can specify a list of fractions for
-            this division - if None, then evenly divide 'value' into 'num'
+            this division - if None, then evenly divide 'value' into 'num'.
+            sum(l_frac) = 1.0
         '''
+        if num < 2:
+            raise ValueError("'num' to split into must be at least 2")
+
+        if l_frac is not None:
+            l_frac = np.asarray(l_frac)
+            if not np.allclose(l_frac.sum(), 1.0):
+                msg = "sum 'l_frac' must be 1.0"
+                raise ValueError(msg)
+
         shape = value.shape if self.shape is None else self.shape
         split = self.initialize(num, shape, value)
 
         if l_frac is None:
             return split[:]/num
         else:
-            return np.asarray(l_frac) * split
+            if len(split.shape) > 1:
+                # 2D array so reshape l_frac
+                return split * l_frac.reshape(len(l_frac), -1)
+            else:
+                return split * l_frac
 
 
 # SpillContainer manipulates initial_value property to initialize 'spill_num'
