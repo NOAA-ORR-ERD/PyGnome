@@ -1243,5 +1243,40 @@ class TestSubstanceSpillsDataStructure():
                     assert np.all(data[array] == sc[array][mask])
 
 
+def test_split_element():
+    '''
+    test split_element() method
+    '''
+    sc = SpillContainer()
+    o_sc = SpillContainer()
+    reltime = datetime(2015, 1, 1, 12, 0, 0)
+    num_les = 10
+    sc.spills += point_line_release_spill(num_les, (1, 1, 1),
+                                          reltime,
+                                          amount=100,
+                                          units='kg',
+                                          substance=test_oil)
+    o_sc.spills += copy.deepcopy(sc.spills[0])
+
+    sc.release_elements(900, reltime)
+    o_sc.release_elements(900, reltime)
+
+    # now do a split at element
+    ix = 0
+    num = 2
+    l_frac = (.65, .35)
+    sc.split_element(ix, num, l_frac)
+    for name in sc._data_arrays:
+        split = sc[name]
+        orig = o_sc[name]
+        assert len(split) == num_les + num - 1
+        at = sc.array_types[name]
+        if isinstance(at, array_types.ArrayTypeDivideOnSplit):
+            assert np.allclose(split[ix:ix + num].sum(0), orig[ix])
+            assert np.allclose(split[ix], l_frac[0] * orig[ix])
+        else:
+            assert np.all(split[ix:ix + num] == orig[ix])
+
+
 if __name__ == '__main__':
     test_rewind()

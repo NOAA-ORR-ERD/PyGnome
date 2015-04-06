@@ -17,6 +17,8 @@ from gnome.array_types import (reset_to_defaults,
                                mass_components)
 from pytest import mark, raises
 
+from testfixtures import log_capture, LogCapture
+
 
 def test_reset_to_defaults():
     '''
@@ -81,10 +83,34 @@ class TestArrayType_eq(object):
 
 
 class TestSplitElement:
-    def test_split_element_exception(self):
+    @log_capture()
+    def test_exception_split_gt_1(self, l):
         with raises(ValueError):
             age.split_element(1, 5)
 
+        l.check(('gnome.array_types.ArrayType',
+                 'ERROR',
+                 "'num' to split into must be at least 2"))
+
+    @log_capture()
+    def test_exception_l_frac_len(self, l):
+        with raises(ValueError):
+            mass.split_element(3, 5, l_frac=(.2, ))
+
+        l.check(('gnome.array_types.ArrayTypeDivideOnSplit',
+                 'ERROR',
+                 "in split_element() len(l_frac) must equal 'num'"))
+
+    @log_capture()
+    def test_exception_sum_l_frac_1(self, l):
+        with raises(ValueError):
+            mass.split_element(3, 5, l_frac=(.2, .1, .2))
+
+        l.check(('gnome.array_types.ArrayTypeDivideOnSplit',
+                 'ERROR',
+                 "sum 'l_frac' must be 1.0"))
+
+    # -------- END EXCEPTION TESTING
     def _replace_le_after_split(self, vals, ix, split_elems):
         '''
         helper function - this is how spill_container will integrate new elements

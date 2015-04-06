@@ -100,6 +100,12 @@ class ArrayType(AddLogger):
 
         return arr
 
+    def _num_gt_2(self, num):
+        if num < 2:
+            msg = "'num' to split into must be at least 2"
+            self.logger.error(msg)
+            raise ValueError(msg)
+
     def split_element(self, num, value, *args):
         '''
         define how an LE gets split for specified ArrayType
@@ -113,8 +119,7 @@ class ArrayType(AddLogger):
             split and in this case, user can specify a list of fractions for
             this division.
         '''
-        if num < 2:
-            raise ValueError("'num' to split into must be at least 2")
+        self._num_gt_2(num)
 
         shape = value.shape if self.shape is None else self.shape
         return self.initialize(num, shape, value)
@@ -165,8 +170,7 @@ class IdArrayType(ArrayType):
         '''
         split elements into num and assign 'value' to all of them
         '''
-        if num < 2:
-            raise ValueError("'num' to split into must be at least 2")
+        self._num_gt_2(num)
 
         arr = np.zeros((num,) + self.shape, dtype=self.dtype)
         arr[:] = value
@@ -189,13 +193,18 @@ class ArrayTypeDivideOnSplit(ArrayType):
             this division - if None, then evenly divide 'value' into 'num'.
             sum(l_frac) = 1.0
         '''
-        if num < 2:
-            raise ValueError("'num' to split into must be at least 2")
+        self._num_gt_2(num)
 
         if l_frac is not None:
+            if len(l_frac) != num:
+                msg = "in split_element() len(l_frac) must equal 'num'"
+                self.logger.error(msg)
+                raise ValueError(msg)
+
             l_frac = np.asarray(l_frac)
             if not np.allclose(l_frac.sum(), 1.0):
                 msg = "sum 'l_frac' must be 1.0"
+                self.logger.error(msg)
                 raise ValueError(msg)
 
         shape = value.shape if self.shape is None else self.shape
