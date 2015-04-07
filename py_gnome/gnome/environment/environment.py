@@ -6,9 +6,11 @@ import copy
 
 from colander import SchemaNode, Float, MappingSchema, drop, String, OneOf
 import unit_conversion as uc
+import gsw
 
 from gnome.utilities import serializable
 from gnome.persist import base_schema
+from gnome import constants
 
 from .. import _valid_units
 
@@ -30,7 +32,6 @@ class Environment(object):
         '''
         if name:
             self.name = name
-
 
     def prepare_for_model_run(self, model_time):
         """
@@ -153,9 +154,12 @@ class Water(Environment, serializable.Serializable):
         self.sediment = sediment
         self.wave_height = wave_height
         self.fetch = fetch
-        self.density = 997
+        self._density = 997
         self.kinematic_viscosity = 0.000001
         self.name = name
+
+        # sea level pressure in decibar
+        self._sea_level_pressure = constants.atmos_pressure * 0.0001
 
     def __repr__(self):
         info = ("{0.__class__.__module__}.{0.__class__.__name__}"
@@ -200,3 +204,13 @@ class Water(Environment, serializable.Serializable):
 
         setattr(self, attr, value)
         self.units[attr] = unit
+
+    @property
+    def density(self):
+        '''
+        define a _set_density() with lru_cache
+        '''
+        temp_c = uc.convert('Temperature', 'K', 'C', self.temperature)
+        rho = gsw.rho(self.salinity, temp_c, self._sea_level_pressure)
+        self._density = rho
+        return rho
