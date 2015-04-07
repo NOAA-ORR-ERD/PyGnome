@@ -162,7 +162,7 @@ def get_oil(oil_, max_cuts=None):
     end user.
     """
     if isinstance(oil_, dict):
-        return Oil.from_json(**oil_)
+        return Oil.from_json(oil_)
 
     if oil_ in _sample_oils.keys():
         return _sample_oils[oil_]
