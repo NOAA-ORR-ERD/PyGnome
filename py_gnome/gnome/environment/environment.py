@@ -218,6 +218,9 @@ class Water(Environment, serializable.Serializable):
     @property
     def density(self):
         '''
-        define a _set_density() with lru_cache
+        return the density based on water salinity and temperature. The
+        salinity is in 'psu'; it is not being converted to absolute salinity
+        units - for our purposes, this is sufficient. Using gsw.rho()
+        internally which expects salinity in absolute units.
         '''
         return self._get_density(self.salinity, self.temperature)
