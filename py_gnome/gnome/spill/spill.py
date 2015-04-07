@@ -553,6 +553,11 @@ class Spill(serializable.Serializable):
 
         Also, the set_newparticle_values() method for all element_type gets
         called so each element_type sets the values for its own data correctly
+
+        .. note:: if 'bulk_init_volume' is in data_arrays, it will get
+            initialized here by summing the mass of all LEs released together
+            and dividing by the API density. Spill does not know about 'water'
+            object.
         """
         if self.element_type is not None:
             self.element_type.set_newparticle_values(num_new_particles, self,
@@ -563,6 +568,13 @@ class Spill(serializable.Serializable):
 
         data_arrays['mass'][-num_new_particles:] = \
             self._elem_mass(num_new_particles, current_time, time_step)
+
+        if 'bulk_init_volume' in data_arrays:
+            # use API density - Spill does not know about water object
+            # WeatheringData will correct this for water temperature
+            data_arrays['bulk_init_volume'][-num_new_particles:] = \
+                (data_arrays['mass'][-num_new_particles:].sum(0) /
+                 self.get('substance').get_density())
 
         # set arrays that are spill specific - 'frac_coverage'
         if 'frac_coverage' in data_arrays:

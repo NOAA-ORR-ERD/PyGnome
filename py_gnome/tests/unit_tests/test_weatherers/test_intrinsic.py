@@ -28,15 +28,15 @@ water = Water()
 def data_arrays(num_elems=10):
     '''
     return a dict of numpy arrays similar to SpillContainer's data_arrays
-    All elements are released together so they have same init_volume
+    All elements are released together so they have same bulk_init_volume
     '''
-    init_volume = np.asarray([elem_volume*num_elems] * num_elems)
+    bulk_init_volume = np.asarray([elem_volume*num_elems] * num_elems)
     relative_bouyancy = np.asarray([elem_rel_bouy] * num_elems)
-    age = np.zeros_like(init_volume, dtype=int)
-    init_area = np.zeros_like(init_volume)
-    thickness = np.zeros_like(init_volume)
+    age = np.zeros_like(bulk_init_volume, dtype=int)
+    init_area = np.zeros_like(bulk_init_volume)
+    thickness = np.zeros_like(bulk_init_volume)
 
-    return (init_volume, relative_bouyancy, age, init_area, thickness)
+    return (bulk_init_volume, relative_bouyancy, age, init_area, thickness)
 
 
 class TestFayGravityViscous:
@@ -72,25 +72,25 @@ class TestFayGravityViscous:
 
         with pytest.raises(ValueError):
             'relative_bouyancy >= 0'
-            (init_volume,
+            (bulk_init_volume,
              relative_bouyancy,
              age, init_area, thickness) = data_arrays()
             relative_bouyancy[0] = -relative_bouyancy[0]
             age[:] = 900
             self.spread.update_thickness(water_viscosity,
                                          init_area,
-                                         init_volume,
+                                         bulk_init_volume,
                                          relative_bouyancy,
                                          age,
                                          thickness)
         with pytest.raises(ValueError):
             'age must be > 0'
-            (init_volume,
+            (bulk_init_volume,
              relative_bouyancy,
              age, init_area, thickness) = data_arrays()
             self.spread.update_thickness(water_viscosity,
                                          init_area,
-                                         init_volume,
+                                         bulk_init_volume,
                                          relative_bouyancy,
                                          age,
                                          thickness)
@@ -100,46 +100,46 @@ class TestFayGravityViscous:
         Compare output of _init_area and _update_thickness to expected output
         returned by self.expected() function.
         '''
-        (init_volume,
+        (bulk_init_volume,
          relative_bouyancy,
          age, init_area, thickness) = data_arrays()
         init_area[:] = self.spread.init_area(water_viscosity,
-                                             init_volume[0],
+                                             bulk_init_volume[0],
                                              relative_bouyancy)
 
         age[:] = 900
-        # init_volume[0] and age[0] represents the volume and age of all
+        # bulk_init_volume[0] and age[0] represents the volume and age of all
         # particles released at once
         # computes the init_area and updated area for particles at 900 sec
-        (A0, p_area) = self.expected(init_volume[0], age[0])
+        (A0, p_area) = self.expected(bulk_init_volume[0], age[0])
         assert all(A0 == init_area)
 
-        thickness[:] = init_volume/init_area    # initialize it correctly
+        thickness[:] = bulk_init_volume/init_area    # initialize it correctly
         thickness[:] = self.spread.update_thickness(water_viscosity,
                                                     init_area,
-                                                    init_volume,
+                                                    bulk_init_volume,
                                                     relative_bouyancy,
                                                     age,
                                                     thickness)
 
-        assert all(thickness == init_volume[0]/p_area)
+        assert all(thickness == bulk_init_volume[0]/p_area)
 
     def test_minthickness_values(self):
-        (init_volume,
+        (bulk_init_volume,
          relative_bouyancy,
          age, init_area, thickness) = data_arrays()
         init_area[:] = self.spread.init_area(water_viscosity,
-                                             sum(init_volume),
+                                             sum(bulk_init_volume),
                                              relative_bouyancy)
         # initial value
-        thickness[:] = init_volume/init_area
+        thickness[:] = bulk_init_volume/init_area
 
         age[:] = 900
         thickness[[0, 2, 8]] = self.spread.thickness_limit
 
         new_thick = self.spread.update_thickness(water_viscosity,
                                                  init_area,
-                                                 init_volume,
+                                                 bulk_init_volume,
                                                  relative_bouyancy,
                                                  age,
                                                  thickness)
@@ -287,11 +287,11 @@ class TestWeatheringData:
                 assert np.allclose(sc10['mass'][mask10].sum(),
                                    sc100['mass'][mask100].sum(), atol=1e-6)
 
-                # init_volume/init_area/area
-                assert (np.unique(sc10['init_volume'][mask10]) ==
-                        sc10['init_volume'][mask10][0])
-                assert np.allclose(sc10['init_volume'][mask10][0],
-                                   sc100['init_volume'][mask100][0], atol=1e-6)
+                # bulk_init_volume/init_area/area
+                assert (np.unique(sc10['bulk_init_volume'][mask10]) ==
+                        sc10['bulk_init_volume'][mask10][0])
+                assert np.allclose(sc10['bulk_init_volume'][mask10][0],
+                                   sc100['bulk_init_volume'][mask100][0], atol=1e-6)
                 assert np.allclose(np.unique(sc10['init_area'][mask10]),
                                    sc10['init_area'][mask10][0], atol=1e-6)
                 assert np.allclose(sc10['thickness'][mask10][0],
@@ -355,9 +355,9 @@ class TestWeatheringData:
                 # area arrays initialized correctly
                 mask = sc['age'] == 0
                 assert np.allclose(sc['init_area'][mask],
-                                   sc['init_volume'][mask]/sc['thickness'][mask])
+                                   sc['bulk_init_volume'][mask]/sc['thickness'][mask])
                 assert all(sc['init_area'][~mask] <
-                           sc['init_volume'][~mask]/sc['thickness'][~mask])
+                           sc['bulk_init_volume'][~mask]/sc['thickness'][~mask])
 
                 assert all(sc['thickness'] > 0)
                 assert all(sc['init_mass'] > 0)
@@ -404,3 +404,33 @@ class TestWeatheringData:
         assert np.all(sc['fate_status'][still_beached] == bt_fate.non_weather)
         assert np.all(sc['fate_status'][refloat] == bt_fate.subsurf_weather)
         assert np.all(sc['status_codes'][refloat] == oil_status.in_water) 
+
+    def test_bulk_init_volume(self):
+        '''
+        for two different spills, ensure bulk_init_volume is set correctly.
+        The volume of the blob should be associated only with its own spill and
+        it should be based on water temperature at release time.
+        '''
+        rel_time = datetime.now().replace(microsecond=0)
+        (sc, intrinsic) = self.sample_sc_intrinsic(1, rel_time)
+        sc.spills[0].set('end_release_time', None)
+        sc.spills += point_line_release_spill(1, (0, 0, 0),
+                                              rel_time,
+                                              amount=10,
+                                              units='kg',
+                                              substance=test_oil)
+        op = sc.spills[0].get('substance')
+        rho = op.get_density(intrinsic.water.temperature)
+        b_init_vol = [spill.get_mass()/rho for spill in sc.spills]
+        print b_init_vol
+
+        sc.prepare_for_model_run(intrinsic.array_types)
+        intrinsic.initialize(sc)
+
+        # release elements
+        num = sc.release_elements(900, rel_time)
+        intrinsic.update(num, sc)
+        # bulk_init_volume is set in same order as b_init_vol
+        print sc['bulk_init_volume']
+        print b_init_vol
+        assert np.all(sc['bulk_init_volume'] == b_init_vol)

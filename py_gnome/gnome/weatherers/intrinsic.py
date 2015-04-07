@@ -145,7 +145,7 @@ class WeatheringData(AddLogger):
                             'density', 'viscosity',
                             'mass_components', 'mass',
                             # init volume of particles released together
-                            'init_volume',
+                            'bulk_init_volume',
                             'init_mass', 'frac_water', 'frac_lost',
                             'init_area', 'relative_bouyancy',
                             'frac_coverage', 'thickness', 'age'}
@@ -168,10 +168,10 @@ class WeatheringData(AddLogger):
     def update(self, num_new_released, sc):
         '''
         Uses 'substance' properties together with 'water' properties to update
-        'density', 'init_volume', etc
-        The 'init_volume' is not updated at each step; however, it depends on
+        'density', 'bulk_init_volume', etc
+        The 'bulk_init_volume' is not updated at each step; however, it depends on
         the 'density' which must be set/updated first and this depends on
-        water object. So it was easiest to initialize the 'init_volume' for
+        water object. So it was easiest to initialize the 'bulk_init_volume' for
         newly released particles here.
         '''
         if len(sc) > 0:
@@ -321,26 +321,30 @@ class WeatheringData(AddLogger):
                 substance.get_viscosity(water_temp)
 
         '''
-        Sets relative_bouyancy, init_volume, init_area, thickness all of
+        Sets relative_bouyancy, bulk_init_volume, init_area, thickness all of
         which are required when computing the 'thickness' of each LE
         '''
         data['relative_bouyancy'][mask] = \
             self._set_relative_bouyancy(data['density'][mask])
 
+        # update the bulk_init_volume that was initialized by each spill
+        # from API density, using the density based on water
+        # temperature at release time.
+        data['bulk_init_volume'][mask] = (data['bulk_init_volume'][mask] *
+                                          substance.get_density() /
+                                          data['density'][mask])
         # Cannot change the init_area in place since the following:
         #    sc['init_area'][-new_LEs:][in_spill]
         # is an advanced indexing operation that makes a copy anyway
-        # Also, init_volume is same for all these new LEs so just provide
+        # Also, bulk_init_volume is same for all these new LEs so just provide
         # a scalar value
-        data['init_volume'][mask] = np.sum(data['init_mass'][mask] /
-                                           data['density'][mask], 0)
         data['init_area'][mask] = \
             self.spreading.init_area(self.water.get('kinematic_viscosity',
                                                     'square meter per second'),
-                                     data['init_volume'][mask][0],
+                                     data['bulk_init_volume'][mask][0],
                                      data['relative_bouyancy'][mask][0])
         data['thickness'][mask] = \
-            data['init_volume'][mask]/data['init_area'][mask]
+            data['bulk_init_volume'][mask]/data['init_area'][mask]
 
         # initialize the fate_status array based on positions and status_codes
         self._init_fate_status(mask, data)
@@ -466,7 +470,7 @@ class WeatheringData(AddLogger):
             self.spreading.update_thickness(self.water.get('kinematic_viscosity',
                                                            'square meter per second'),
                                             data['init_area'][mask],
-                                            data['init_volume'][mask],
+                                            data['bulk_init_volume'][mask],
                                             data['relative_bouyancy'][mask],
                                             data['age'][mask],
                                             data['thickness'][mask],
