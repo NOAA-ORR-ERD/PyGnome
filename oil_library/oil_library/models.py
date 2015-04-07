@@ -451,6 +451,30 @@ class Oil(Base):
             if (a in self.columns):
                 setattr(self, a, v)
 
+    @classmethod
+    def from_json(cls, oil_json):
+        oil_obj = cls(**oil_json)
+        oil_obj._add_relationships_from_json(oil_json)
+        return oil_obj
+
+    def _add_relationships_from_json(self, oil_json):
+        for r in self.one_to_many_relationships:
+            if r in oil_json:
+                current_attr = getattr(self, r)
+                py_class = self._get_class_from_relationship_property(r)
+
+                if py_class is not None:
+                    for kwargs in oil_json[r]:
+                        obj = py_class(**kwargs)
+                        current_attr.append(obj)
+
+    def _get_class_from_relationship_property(self, attr_name):
+        for p in self.__mapper__.iterate_properties:
+            if (isinstance(p, RelationshipProperty)) and p.key == attr_name:
+                return p.mapper.class_manager.class_
+
+        return None
+
     def __repr__(self):
         return '<Oil("{0.name}")>'.format(self)
 
@@ -512,7 +536,5 @@ class MolecularWeight(Base):
 
     def __repr__(self):
         return ('<MolecularWeight('
-                'saturate={0.saturate}, '
-                'aromatic={0.aromatic} '
-                'at {0.ref_temp_k}K)>'
+                '{0.sara_type}={0.g_mol}gm/mol at {0.ref_temp_k}K)>'
                 .format(self))
