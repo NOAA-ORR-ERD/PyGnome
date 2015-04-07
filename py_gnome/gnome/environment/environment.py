@@ -7,6 +7,7 @@ import copy
 from colander import SchemaNode, Float, MappingSchema, drop, String, OneOf
 import unit_conversion as uc
 import gsw
+from repoze.lru import lru_cache
 
 from gnome.utilities import serializable
 from gnome.persist import base_schema
@@ -131,8 +132,7 @@ class Water(Environment, serializable.Serializable):
     def __init__(self,
                  temperature=311.15,
                  salinity=35.0,
-                 #sediment=None,
-                 sediment=.005,	# kg/m^3 oceanic default
+                 sediment=.005,	 # kg/m^3 oceanic default
                  wave_height=None,
                  fetch=None,
                  name='Water'):
@@ -154,12 +154,8 @@ class Water(Environment, serializable.Serializable):
         self.sediment = sediment
         self.wave_height = wave_height
         self.fetch = fetch
-        self._density = 997
         self.kinematic_viscosity = 0.000001
         self.name = name
-
-        # sea level pressure in decibar
-        self._sea_level_pressure = constants.atmos_pressure * 0.0001
 
     def __repr__(self):
         info = ("{0.__class__.__module__}.{0.__class__.__name__}"
@@ -205,12 +201,23 @@ class Water(Environment, serializable.Serializable):
         setattr(self, attr, value)
         self.units[attr] = unit
 
+    @lru_cache(2)
+    def _get_density(self, salinity, temp):
+        '''
+        use lru cache so we don't recompute if temp is not changing
+        '''
+        temp_c = uc.convert('Temperature', self.units['temperature'], 'C',
+                            temp)
+        # sea level pressure in decibar - don't expect atmos_pressure to change
+        # also expect constants to have SI units
+        rho = gsw.rho(salinity,
+                      temp_c,
+                      constants.atmos_pressure * 0.0001)
+        return rho
+
     @property
     def density(self):
         '''
         define a _set_density() with lru_cache
         '''
-        temp_c = uc.convert('Temperature', 'K', 'C', self.temperature)
-        rho = gsw.rho(self.salinity, temp_c, self._sea_level_pressure)
-        self._density = rho
-        return rho
+        return self._get_density(self.salinity, self.temperature)

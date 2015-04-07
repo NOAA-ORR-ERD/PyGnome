@@ -33,7 +33,8 @@ sphinx
 progressbar
 six
 geojson
-repoze.lru
+repoze.lru 
+gsw             # Thermodynamic Equations Of Seawater - density computation
 
 git+https://github.com/NOAA-ORR-ERD/PyNUCOS.git#egg=unit_conversion
 
