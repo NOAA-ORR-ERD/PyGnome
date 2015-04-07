@@ -195,10 +195,9 @@ class ElementType(Serializable):
             # we don't have a way to construct to object fromjson()
             dict_ = et_schema.deserialize(json_)
 
-            substance = json_.pop('substance', None)
-            if substance is not None:
-                if 'name' in substance:
-                    dict_['substance'] = substance['name']
+            if 'substance' in json_:
+                # no colander validation for oil object
+                dict_['substance'] = json_['substance']
 
             d_init = []
 
