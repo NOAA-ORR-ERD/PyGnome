@@ -240,9 +240,15 @@ class TestWeatheringData:
         self.mock_weather_data(sc, intrinsic, 3)
         sc['age'] += 900
 
+        # create a mock_water type on which we can set the density - only for
+        # this test
+        mock_water = type('mock_water',
+                          (Water,),
+                          dict(density=sc['density'][0] - 10))
+
         # say we are now in 2nd step - no new particles are released
-        # just updating the previously released particles
-        intrinsic.water.density = sc['density'][0] - 10  # force this for test
+        # so just updating the previously released particles
+        intrinsic.water = mock_water()
         intrinsic.update(0, sc)
         assert np.all(sc['density'] >= intrinsic.water.density)
 
