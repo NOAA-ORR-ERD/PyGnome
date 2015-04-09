@@ -95,7 +95,7 @@ class ElementType(Serializable):
               Then we output the JSON from the unlinked object.
         '''
         if self._substance is not None:
-            return get_oil(self._substance.tojson()).tojson()
+            return self._substance.tojson()
 
     @property
     def substance(self):
