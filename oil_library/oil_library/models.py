@@ -429,6 +429,7 @@ class Oil(Base):
     adhesion_kg_m_2 = Column(Float(53))
     sulphur_fraction = Column(Float(53))
     soluability = Column(Float(53))
+    k0y = Column(Float(53))
 
     categories = relationship('Category', secondary=oil_to_category,
                               backref='oils')
