@@ -16,7 +16,7 @@ from .initializers import (InitRiseVelFromDropletSizeFromDist,
                            InitRiseVelFromDist,
                            InitWindages,
                            InitMassFromPlume)
-from oil_library import get_oil_props
+from oil_library import get_oil_props, get_oil
 
 from gnome.persist import base_schema, class_from_objtype
 import unit_conversion as uc
@@ -83,10 +83,19 @@ class ElementType(Serializable):
         return False
 
     def substance_to_dict(self):
-        ''' call the tojson() method on substance -
-        no colander schema for it yet '''
+        '''
+            Call the tojson() method on substance
+            - An Oil object that has been queried from the database
+              contains a lot of unnecessary relationships that we do not
+              want to represent in our JSON output,
+              So we prune them by first constructing an Oil object from the
+              JSON payload of the queried Oil object.
+              This creates an Oil object in memory that does not have any
+              database links.
+              Then we output the JSON from the unlinked object.
+        '''
         if self._substance is not None:
-            return self._substance.tojson()
+            return get_oil(self._substance.tojson()).tojson()
 
     @property
     def substance(self):
