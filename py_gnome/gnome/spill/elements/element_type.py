@@ -195,7 +195,7 @@ class ElementType(Serializable):
             # we don't have a way to construct to object fromjson()
             dict_ = et_schema.deserialize(json_)
 
-            if 'substance' in json_:
+            if 'substance' in json_ and json_['substance'] is not {}:
                 # no colander validation for oil object
                 dict_['substance'] = json_['substance']
 
