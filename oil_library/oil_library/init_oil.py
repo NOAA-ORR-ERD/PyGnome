@@ -76,7 +76,8 @@ def add_oil(record):
     add_densities(record, oil)
     add_viscosities(record, oil)
     add_oil_water_interfacial_tension(record, oil)
-    # TODO: should we add oil/seawater tension as well???
+    add_oil_seawater_interfacial_tension(record, oil)
+
     add_pour_point(record, oil)
     add_flash_point(record, oil)
     add_emulsion_water_fraction_max(record, oil)
@@ -93,6 +94,8 @@ def add_oil(record):
     add_component_densities(record, oil)
     add_saturate_aromatic_fractions(record, oil)
     adjust_resin_asphaltene_fractions(record, oil)
+
+    add_k0y(record, oil)
 
     reject_oil_if_bad(record, oil)
 
@@ -279,7 +282,14 @@ def add_oil_water_interfacial_tension(imported_rec, oil):
 
         oil.estimated.oil_water_interfacial_tension_n_m = True
         oil.estimated.oil_water_interfacial_tension_ref_temp_k = True
-    pass
+
+
+def add_oil_seawater_interfacial_tension(imported_rec, oil):
+    if imported_rec.oil_seawater_interfacial_tension_n_m is not None:
+        oil.oil_seawater_interfacial_tension_n_m = \
+            imported_rec.oil_seawater_interfacial_tension_n_m
+        oil.oil_seawater_interfacial_tension_ref_temp_k = \
+            imported_rec.oil_seawater_interfacial_tension_ref_temp_k
 
 
 def add_pour_point(imported_rec, oil):
@@ -855,6 +865,11 @@ def add_component_densities(imported_rec, oil):
         oil.sara_densities.append(SARADensity(sara_type=c_type,
                                               density=P_try,
                                               ref_temp_k=T_i))
+
+
+def add_k0y(imported_rec, oil):
+    if imported_rec.k0y is not None:
+        oil.k0y = imported_rec.k0y
 
 
 def reject_oil_if_bad(imported_rec, oil):
