@@ -30,7 +30,7 @@ arrays.update(intrinsic.array_types)
 
 def test_evaporation_no_wind():
     et = floating(substance=test_oil)
-    sc = sample_sc_release(num_elements=100,
+    sc = sample_sc_release(num_elements=2,
                            element_type=et,
                            arr_types=arrays)
     intrinsic.update(sc.num_released, sc)

@@ -490,15 +490,6 @@ class WeatheringData(AddLogger):
                  (1 + (fw_d_fref/(1.187 - fw_d_fref)))**2.49)
 
         self._update_fay_area(mask, data)
-        #======================================================================
-        # data['fay_area'][mask] = \
-        #     self.spreading.update_area(self.water.get('kinematic_viscosity',
-        #                                               'square meter per second'),
-        #                                data['bulk_init_volume'][mask],
-        #                                data['fay_area'][mask],
-        #                                data['relative_bouyancy'][mask],
-        #                                data['age'][mask])
-        #======================================================================
 
     def _set_relative_bouyancy(self, rho_oil, rho_h2o):
         '''

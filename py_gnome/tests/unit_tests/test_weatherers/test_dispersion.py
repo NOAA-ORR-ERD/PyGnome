@@ -21,6 +21,8 @@ from ..conftest import (sample_sc_release,
                         sample_model_weathering2)
 
 
+pytestmark = pytest.mark.skipif()
+
 water = Water()
 wind = constant_wind(15., 270, 'knots')	#also test with lower wind no dispersion
 waves = Waves(wind,water)
