@@ -251,14 +251,12 @@ _default_values = {'positions': ((3,), world_point_type, 'positions',
                    # It is evenly divided to number of LEs
                    'bulk_init_volume': ((), np.float64, 'bulk_init_volume', 0,
                                         ArrayTypeDivideOnSplit),
-                   'init_area': ((), np.float64, 'init_area', 0,
-                                 ArrayTypeDivideOnSplit),
                    'density': ((), np.float64, 'density', 0),
                    'evap_decay_constant': (None, np.float64,
                                            'evap_decay_constant', None),
-                   'relative_bouyancy': ((), np.float64, 'relative_bouyancy',
-                                         0),
+                   # todo: remove thickness
                    'thickness': ((), np.float64, 'thickness', 0),
+                   'fay_area': ((), np.float64, 'fay_area', 0),
 
                    'viscosity': ((), np.float64, 'viscosity', 0),
                    # fractional water content in emulsion

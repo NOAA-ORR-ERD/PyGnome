@@ -35,7 +35,7 @@ class Evaporation(Weatherer, Serializable):
         self.wind = wind
 
         super(Evaporation, self).__init__(**kwargs)
-        self.array_types.update({'thickness', 'evap_decay_constant',
+        self.array_types.update({'fay_area', 'evap_decay_constant',
                                  'frac_water', 'frac_lost', 'init_mass'})
 
     def prepare_for_model_run(self, sc):
@@ -84,12 +84,9 @@ class Evaporation(Weatherer, Serializable):
             f_diff = (1.0 - data['frac_water'])
 
         vp = substance.vapor_pressure(water_temp)
-        rho = substance.get_density()
 
         mw = substance.molecular_weight
-        sum_frac_mw = (data['mass_components'][:, :len(vp)] /
-                       data['mass'].reshape(-1, 1) /
-                       mw).sum(axis=1)
+        sum_mi_mw = (data['mass_components'][:, :len(vp)] / mw).sum(axis=1)
         # d_numer = -1/rho * f_diff.reshape(-1, 1) * K * vp
         # d_denom = (data['thickness'] * constants.gas_constant *
         #            water_temp * sum_frac_mw).reshape(-1, 1)
@@ -99,9 +96,9 @@ class Evaporation(Weatherer, Serializable):
         # of data - left sum_frac_mw, which is a copy but easier to
         # read/understand
         data['evap_decay_constant'][:, :len(vp)] = \
-            ((-1/rho * f_diff.reshape(-1, 1) * K * vp) /
-             (data['thickness'] * constants.gas_constant *
-              water_temp * sum_frac_mw).reshape(-1, 1))
+            ((-data['fay_area'] * f_diff * K /
+              (constants.gas_constant * water_temp * sum_mi_mw)).reshape(-1, 1)
+             * vp)
 
         self.logger.debug(self._pid + 'max decay: {0}, min decay: {1}'.
                           format(np.max(data['evap_decay_constant']),

@@ -31,8 +31,8 @@ class FayGravityViscous(object):
 
     def init_area(self,
                   water_viscosity,
-                  init_volume,
-                  relative_bouyancy):
+                  relative_bouyancy,
+                  blob_init_vol):
         '''
         Initial area is computed for each LE only once. This takes scalars
         inputs since water_viscosity, init_volume and relative_bouyancy for a
@@ -51,7 +51,7 @@ class FayGravityViscous(object):
         '''
         self._check_relative_bouyancy(relative_bouyancy)
         out = (np.pi*(self.spreading_const[1]**4/self.spreading_const[0]**2)
-               * (((init_volume)**5*constants.gravity*relative_bouyancy) /
+               * (((blob_init_vol)**5*constants.gravity*relative_bouyancy) /
                   (water_viscosity**2))**(1./6.))
 
         return out
@@ -67,62 +67,59 @@ class FayGravityViscous(object):
             raise ValueError("Found particles with relative_bouyancy < 0. "
                              "Area does not handle this case at present.")
 
-    def update_thickness(self,
-                         water_viscosity,
-                         init_area,
-                         init_volume,
-                         relative_bouyancy,
-                         age,
-                         thickness,
-                         frac_coverage=None):
+    @lru_cache(5)
+    def _update_blob_area(self, water_viscosity, relative_bouyancy,
+                          blob_init_volume, age):
         '''
-        Update thickness and stuff it in out array. This takes numpy arrays
-        as input for init_volume, relative_bouyancy, age, thickness. Each
-        element of the array is the property for an LE - array should be the
-        same shape.
-
-        Since this is for updating area/thickness, it assumes age > 0 for all
-        elements. It is used inside WeatheringData and invoked for particles
-        with age > 0 so assumption is fine since user doesn't interact with it
-
-        It only updates the area for particles with thickness > xxx
-        Since the frac_coverage should only be applied to particles which are
-        updated, let's apply this in here.
-
-        .. todo: unsure if thickness check should be here or outside this object.
-            Since thickness limit is here, leave it for now, but maybe
-            eventually move thickness_limit to OilProps/make it property of
-            substance - say 'max_spreading_thickness', then move thickness
-            check and frac_coverage back to WeatheringData
+        create a function that can be cached upto 5 (arbitrarily chosen)
         '''
-        self._check_relative_bouyancy(relative_bouyancy)
+        i_area = self.init_area(water_viscosity,
+                                relative_bouyancy,
+                                blob_init_volume)
+        dFay = (self.spreading_const[1]**2./16. *
+                (constants.gravity*relative_bouyancy *
+                 blob_init_volume**2 / np.sqrt(water_viscosity*age)))
+        dEddy = 0.033*age**(4./25)
+        i_area += (dFay + dEddy) * age
+
+        return i_area
+
+    def update_area(self,
+                    water_viscosity,
+                    relative_bouyancy,
+                    blob_init_volume,
+                    area,
+                    age):
+        '''
+        update area array in place, also return area array
+        not including frac_coverage at present
+        each blob is defined by its age. This updates the area of each blob,
+        as such, use the mean relative_bouyancy for each blob. Still check
+        and ensure relative bouyancy is > 0 for all LEs
+        '''
         if np.any(age == 0):
-            raise ValueError('for new particles use init_area - age '
-                             'must be > 0')
+            msg = "use init_area for age == 0"
+            raise ValueError(msg)
 
-        area = np.zeros_like(init_volume, dtype=np.float64)
+        self._check_relative_bouyancy(relative_bouyancy)
 
-        # ADIOS 2 used 0.1 mm as a minimum average spillet thickness for crude
-        # oil and heavy refined products and 0.01 mm for lighter refined
-        # products. Use 0.1mm for now
-        area[:] = init_volume/thickness
-        mask = thickness > self.thickness_limit  # units of meters
-        if np.any(mask):
-            area[mask] = init_area[mask]
-            dFay = (self.spreading_const[1]**2./16. *
-                    (constants.gravity*relative_bouyancy[mask] *
-                     init_volume[mask]**2 /
-                     np.sqrt(water_viscosity*age[mask])))
-            dEddy = 0.033*age[mask]**(4./25)
-            area[mask] += (dFay + dEddy) * age[mask]
+        # update area for each blob of LEs
+        for b_age in np.unique(age):
+            # within each age blob_init_volume should also be the same
+            m_age = b_age == age
 
-            # apply fraction coverage here so particles less than min thickness
-            # are not changed
-            if frac_coverage is not None:
-                area[mask] *= frac_coverage[mask]
+            # now update area of old LEs
+            blob_thickness = blob_init_volume[m_age][0]/area[m_age].sum()
+            if blob_thickness > self.thickness_limit:
+                # update area
+                blob_area = \
+                    self._update_blob_area(water_viscosity,
+                                           np.mean(relative_bouyancy[m_age]),
+                                           blob_init_volume[m_age][0],
+                                           age[m_age][0])
+                area[m_age] = blob_area/m_age.sum()
 
-        # finally return the new thickness
-        return init_volume/area
+        return area
 
 
 class WeatheringData(AddLogger):
@@ -147,8 +144,9 @@ class WeatheringData(AddLogger):
                             # init volume of particles released together
                             'bulk_init_volume',
                             'init_mass', 'frac_water', 'frac_lost',
-                            'init_area', 'relative_bouyancy',
-                            'frac_coverage', 'thickness', 'age'}
+                            'fay_area',
+                            'frac_coverage', 'age',
+                            'spill_num'}
 
         # following used to update viscosity
         self.visc_curvfit_param = 1.5e3     # units are sec^0.5 / m
@@ -320,34 +318,70 @@ class WeatheringData(AddLogger):
             data['viscosity'][mask] = \
                 substance.get_viscosity(water_temp)
 
+        # initialize bulk_init_volume and fay_area for new particles per spill
+        # other properties must be set (like 'mass', 'density')
+        self._init_data_by_spill(mask, data, substance)
+
+        # initialize the fate_status array based on positions and status_codes
+        self._init_fate_status(mask, data)
+
+    def _init_data_by_spill(self, mask, data, substance):
+        '''
+        set bulk_init_volume and fay_area. These are set on a per spill bases
+        in addition to per substance.
+        '''
+        # do this once incase there are any unit conversions, it only needs to
+        # happen once - for efficiency
+        water_kvis = self.water.get('kinematic_viscosity',
+                                    'square meter per second')
+        rho_h2o = self.water.get('density', 'kg/m^3')
+
         '''
         Sets relative_bouyancy, bulk_init_volume, init_area, thickness all of
         which are required when computing the 'thickness' of each LE
         '''
-        data['relative_bouyancy'][mask] = \
-            self._set_relative_bouyancy(data['density'][mask])
+        for s_num in np.unique(data['spill_num'][mask]):
+            s_mask = np.logical_and(mask,
+                                    data['spill_num'] == s_num)
+            # do the sum only once for efficiency
+            num = s_mask.sum()
 
-        # update the bulk_init_volume that was initialized by each spill
-        # from API density, using the density based on water
-        # temperature at release time.
-        data['bulk_init_volume'][mask] = (data['bulk_init_volume'][mask] *
-                                          substance.get_density() /
-                                          data['density'][mask])
-        # Cannot change the init_area in place since the following:
-        #    sc['init_area'][-new_LEs:][in_spill]
-        # is an advanced indexing operation that makes a copy anyway
-        # Also, bulk_init_volume is same for all these new LEs so just provide
-        # a scalar value
-        data['init_area'][mask] = \
-            self.spreading.init_area(self.water.get('kinematic_viscosity',
-                                                    'square meter per second'),
-                                     data['bulk_init_volume'][mask][0],
-                                     data['relative_bouyancy'][mask][0])
-        data['thickness'][mask] = \
-            data['bulk_init_volume'][mask]/data['init_area'][mask]
+            # since we know the 'density', 'mass' etc are the same for all LEs
+            # released together. Be more efficient and only do one computation
+            # instead of doing the whole array
+            rel_bouy = self._set_relative_bouyancy(data['density'][s_mask][0],
+                                                   rho_h2o)
+            data['bulk_init_volume'][s_mask] = \
+                (data['mass'][s_mask][0]/data['density'][s_mask][0]) * num
+            init_blob_area = \
+                self.spreading.init_area(water_kvis,
+                                         data['bulk_init_volume'][s_mask][0],
+                                         rel_bouy)
 
-        # initialize the fate_status array based on positions and status_codes
-        self._init_fate_status(mask, data)
+            data['fay_area'][s_mask] = init_blob_area/num
+
+    def _update_fay_area(self, mask, data):
+        '''
+        update fay area per spill
+        '''
+        # do this once incase there are any unit conversions, it only needs to
+        # happen once - for efficiency
+        water_kvis = self.water.get('kinematic_viscosity',
+                                    'square meter per second')
+        rho_h2o = self.water.get('density', 'kg/m^3')
+        for s_num in np.unique(data['spill_num'][mask]):
+            s_mask = np.logical_and(mask,
+                                    data['spill_num'] == s_num)
+            # update relative_bouyancy - this may not be the same for all LEs
+            # any longer
+            rel_bouy = self._set_relative_bouyancy(data['density'][s_mask],
+                                                   rho_h2o)
+            data['fay_area'][s_mask] = \
+                self.spreading.update_area(water_kvis,
+                                           rel_bouy,
+                                           data['bulk_init_volume'][s_mask],
+                                           data['fay_area'][s_mask],
+                                           data['age'][s_mask])
 
     def _init_fate_status(self, update_LEs_mask, data):
         '''
@@ -375,7 +409,7 @@ class WeatheringData(AddLogger):
         data['fate_status'][surf_mask] = fate.surface_weather
         data['fate_status'][subs_mask] = fate.subsurf_weather
 
-    @lru_cache(2)
+    @lru_cache(1)
     def _get_kv1_weathering_visc_update(self, v0):
         '''
         kv1 is constant.
@@ -401,7 +435,7 @@ class WeatheringData(AddLogger):
 
         return kv1
 
-    @lru_cache(2)
+    @lru_cache(1)
     def _get_k_rho_weathering_dens_update(self, substance):
         '''
         use lru_cache on substance. substance is an OilProps object, if this
@@ -455,31 +489,20 @@ class WeatheringData(AddLogger):
                              data['frac_lost'][mask]) *
                  (1 + (fw_d_fref/(1.187 - fw_d_fref)))**2.49)
 
-        # todo: Need formulas to update density
-        # prev_rel = sc.num_released-new_LEs
-        # if prev_rel > 0:
-        #    update density, viscosity .. etc
+        self._update_fay_area(mask, data)
+        #======================================================================
+        # data['fay_area'][mask] = \
+        #     self.spreading.update_area(self.water.get('kinematic_viscosity',
+        #                                               'square meter per second'),
+        #                                data['bulk_init_volume'][mask],
+        #                                data['fay_area'][mask],
+        #                                data['relative_bouyancy'][mask],
+        #                                data['age'][mask])
+        #======================================================================
 
-        # update self.spreading.thickness_limit based on type of substance
-        # create 'frac_coverage' array and pass it in to scale area by it
-        # update_area will only update the area for particles with
-        # thickness greater than some minimum thickness and the frac_coverage
-        # is only applied to LEs whose area is updated. Elements below a min
-        # thickness should not be updated
-        data['thickness'][mask] = \
-            self.spreading.update_thickness(self.water.get('kinematic_viscosity',
-                                                           'square meter per second'),
-                                            data['init_area'][mask],
-                                            data['bulk_init_volume'][mask],
-                                            data['relative_bouyancy'][mask],
-                                            data['age'][mask],
-                                            data['thickness'][mask],
-                                            data['frac_coverage'][mask])
-
-    def _set_relative_bouyancy(self, rho_oil):
+    def _set_relative_bouyancy(self, rho_oil, rho_h2o):
         '''
         relative bouyancy of oil: (rho_water - rho_oil) / rho_water
-        only 3 lines but made it a function for easy testing
+        only 1 line but made it a function for easy testing
         '''
-        rho_h2o = self.water.get('density', 'kg/m^3')
         return (rho_h2o - rho_oil)/rho_h2o
