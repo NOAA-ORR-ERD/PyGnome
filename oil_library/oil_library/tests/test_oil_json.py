@@ -35,7 +35,8 @@ def test_get_oil_from_json():
                  'pour_point_max_k',
                  'pour_point_min_k',
                  'soluability',
-                 'sulphur_fraction',):
+                 'sulphur_fraction',
+                 'k0y',):
         assert getattr(oil_from_db, attr) == getattr(oil_from_json, attr)
 
     for db_obj, json_obj in zip(oil_from_db.cuts, oil_from_json.cuts):

@@ -18,6 +18,7 @@ import numpy as np
 
 import unit_conversion as uc
 from .utilities import get_density, get_viscosity
+from .models import Oil
 
 
 # create a dtype for storing sara information in numpy array
@@ -211,8 +212,19 @@ class OilProps(object):
         return Pi
 
     def tojson(self):
-        'for now, just convert underlying oil object to json'
-        return self._r_oil.tojson()
+        '''
+            For now, just convert underlying oil object tojson() method
+            - An Oil object that has been queried from the database
+              contains a lot of unnecessary relationships that we do not
+              want to represent in our JSON output,
+              So we prune them by first constructing an Oil object from the
+              JSON payload of the queried Oil object.
+              This creates an Oil object in memory that does not have any
+              database links.
+              Then we output the JSON from the unlinked object.
+        '''
+
+        return Oil.from_json(self._r_oil.tojson()).tojson()
 
     def _compare__dict(self, other):
         '''
