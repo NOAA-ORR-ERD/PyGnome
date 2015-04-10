@@ -445,9 +445,10 @@ class TestWeatheringData:
         assert np.all(sc['fate_status'][refloat] == bt_fate.subsurf_weather)
         assert np.all(sc['status_codes'][refloat] == oil_status.in_water) 
 
-    def test_bulk_init_volume(self):
+    def test_bulk_init_volume_fay_area_two_spills(self):
         '''
-        for two different spills, ensure bulk_init_volume is set correctly.
+        for two different spills, ensure bulk_init_volume and fay_aray is set
+        correctly based on the blob of volume released from each spill.
         The volume of the blob should be associated only with its own spill and
         it should be based on water temperature at release time.
         '''
@@ -470,7 +471,16 @@ class TestWeatheringData:
         # release elements
         num = sc.release_elements(900, rel_time)
         intrinsic.update(num, sc)
+
         # bulk_init_volume is set in same order as b_init_vol
         print sc['bulk_init_volume']
         print b_init_vol
         assert np.all(sc['bulk_init_volume'] == b_init_vol)
+        assert sc['fay_area'][0] != sc['fay_area'][1]
+        i_area = sc['fay_area'].copy()
+
+        # update age and test fay_area update remains unequal
+        sc['age'][:] = 900
+        intrinsic.update(0, sc)
+        assert sc['fay_area'][0] != sc['fay_area'][1]
+        assert np.all(sc['fay_area'] > i_area)
