@@ -341,7 +341,7 @@ class Wind(serializable.Serializable, Timeseries, Environment):
         :type datetime: datetime object
         :param units: [optional] outputs data in these units. Default is to
             output data without unit conversion
-        :type units: string. Uses the hazpy.unit_conversion module.
+        :type units: string. Uses the unit_conversion module.
         :param format: output format for the times series:
                        either 'r-theta' or 'uv'
         :type format: either string or integer value defined by
