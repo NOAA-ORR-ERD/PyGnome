@@ -16,7 +16,7 @@ from gnome.basic_types import oil_status, fate
 from gnome import AddLogger, constants
 
 
-class FayGravityViscous(object):
+class FayGravityViscous(AddLogger):
     '''
     Model the FayGravityViscous spreading of the oil. This assumes all LEs
     released together spread as a blob. The blob can be partitioned into 'N'
@@ -67,7 +67,6 @@ class FayGravityViscous(object):
             raise ValueError("Found particles with relative_bouyancy < 0. "
                              "Area does not handle this case at present.")
 
-    @lru_cache(5)
     def _update_blob_area(self, water_viscosity, relative_bouyancy,
                           blob_init_volume, age):
         '''
@@ -111,13 +110,26 @@ class FayGravityViscous(object):
             # now update area of old LEs
             blob_thickness = blob_init_volume[m_age][0]/area[m_age].sum()
             if blob_thickness > self.thickness_limit:
+                rel_bouy = np.mean(relative_bouyancy[m_age])
+
+                self.logger.debug(self._pid + "Before update: ")
+                msg = ("\n\trel_bouy: {0}\n"
+                       "\tblob_i_vol: {1}\n"
+                       "\tage: {2}\n"
+                       "\tarea: {3}".
+                       format(rel_bouy, blob_init_volume[m_age][0],
+                              age[m_age][0], area[m_age].sum()))
+                self.logger.debug(msg)
+
                 # update area
                 blob_area = \
                     self._update_blob_area(water_viscosity,
-                                           np.mean(relative_bouyancy[m_age]),
+                                           rel_bouy,
                                            blob_init_volume[m_age][0],
                                            age[m_age][0])
                 area[m_age] = blob_area/m_age.sum()
+                self.logger.debug(self._pid +
+                                  "\tarea after update: {0}".format(blob_area))
 
         return area
 
@@ -376,6 +388,7 @@ class WeatheringData(AddLogger):
             # any longer
             rel_bouy = self._set_relative_bouyancy(data['density'][s_mask],
                                                    rho_h2o)
+
             data['fay_area'][s_mask] = \
                 self.spreading.update_area(water_kvis,
                                            rel_bouy,
