@@ -414,6 +414,7 @@ class Oil(Base):
     estimated_id = Column(Integer, ForeignKey('estimated.id'))
 
     name = Column(String(100), unique=True, nullable=False)
+    adios_oil_id = Column(String(16))
     api = Column(Float(53))
     oil_water_interfacial_tension_n_m = Column(Float(53))
     oil_water_interfacial_tension_ref_temp_k = Column(Float(53))

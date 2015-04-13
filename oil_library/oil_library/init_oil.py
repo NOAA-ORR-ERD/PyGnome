@@ -104,6 +104,7 @@ def add_oil(record):
 
 def add_demographics(imported_rec, oil):
     oil.name = imported_rec.oil_name
+    oil.adios_oil_id = imported_rec.adios_oil_id
 
 
 def add_densities(imported_rec, oil):
