@@ -30,11 +30,12 @@ arrays.update(intrinsic.array_types)
 
 def test_evaporation_no_wind():
     et = floating(substance=test_oil)
+    time_step = 15. * 60
     sc = sample_sc_release(num_elements=2,
                            element_type=et,
-                           arr_types=arrays)
-    intrinsic.update(sc.num_released, sc)
-    time_step = 15. * 60
+                           arr_types=arrays,
+                           time_step=time_step)
+    intrinsic.update(sc.num_released, sc, time_step)
     model_time = (sc.spills[0].get('release_time') +
                   timedelta(seconds=time_step))
 
@@ -57,11 +58,12 @@ def test_evaporation(oil, temp, num_elems, on):
     still working on tests ..
     '''
     et = floating(substance=oil)
+    time_step = 15. * 60
     sc = sample_sc_release(num_elements=num_elems,
                            element_type=et,
-                           arr_types=arrays)
-    intrinsic.update(sc.num_released, sc)
-    time_step = 15. * 60
+                           arr_types=arrays,
+                           time_step=time_step)
+    intrinsic.update(sc.num_released, sc, time_step)
     model_time = (sc.spills[0].get('release_time') +
                   timedelta(seconds=time_step))
 
@@ -102,12 +104,11 @@ class TestDecayConst:
     WIP - Currently has one working test, but may have more so grouped it in
     a class
     '''
-    def setup_test(self, delay, num_les):
+    def setup_test(self, end_time_delay, num_les, ts=900.):
         stime = datetime(2015, 1, 1, 12, 0)
-        etime = stime + delay
+        etime = stime + end_time_delay
         st_pos = (0, 0, 0)
         oil = test_oil
-        ts = 3600.
 
         m1 = Model(start_time=stime, time_step=ts)
         m1.environment += constant_wind(0, 0)
@@ -157,14 +158,22 @@ class TestDecayConst:
                 if d_time1 == d_time2:
                     assert np.allclose(val1, val2)
 
-    @pytest.mark.parametrize("delay", [timedelta(hours=0),
-                                       timedelta(hours=4)])
-    def test_evap_decay_const_vary_numLE(self, delay):
+    @pytest.mark.parametrize("end_time_delay", [timedelta(hours=0),
+                                                timedelta(hours=4)])
+    def test_evap_decay_const_vary_numLE(self, end_time_delay):
         '''
         test checks the evaporation decay constant does not depend on the number
         of elements.
         '''
-        (m1, m2) = self.setup_test(delay, (1, 4))
+        # for a 15min timestep, make sure at least one LE per timestep is
+        # released for test to work.
+        if end_time_delay == 0:
+            num_les_one_per_ts = 1
+        else:
+            num_les_one_per_ts = end_time_delay.total_seconds()/900.
+
+        (m1, m2) = self.setup_test(end_time_delay, (num_les_one_per_ts,
+                                                    4*num_les_one_per_ts))
 
         for ix in xrange(m1.num_time_steps):
             w1 = m1.step()['WeatheringOutput']

@@ -71,7 +71,7 @@ class Evaporation(Weatherer, Serializable):
         else:
             return 0.06 * c_evap * wind_speed ** 2
 
-    def _set_evap_decay_constant(self, model_time, data, substance):
+    def _set_evap_decay_constant(self, model_time, data, substance, time_step):
         # used to compute the evaporation decay constant
         K = self._mass_transport_coeff(model_time)
         water_temp = self.water.get('temperature', 'K')
@@ -116,13 +116,13 @@ class Evaporation(Weatherer, Serializable):
 
         Following diff eq models rate of change each pseudocomponent of oil:
         ::
-            dm(t)/dt = -(1 - fw) * A/(B * C) * m(t)
+            dm(t)/dt = -(1 - fw) * A/B * m(t)
 
         Over a time-step, A, B, C are assumed constant. m(t) is the component
         mass at beginning of timestep; m(t + Dt) is mass at end of timestep:
         ::
             m(t + Dt) = m(t) * exp(-L * Dt)
-            L := (1 - fw) * A/(B * C)
+            L := (1 - fw) * A/B
 
         Define properties for each pseudocomponent of oil and constants:
         ::
@@ -133,12 +133,9 @@ class Evaporation(Weatherer, Serializable):
         thickness of the blob is same for all LEs regardless of how many LEs
         are used to model the blob:
         ::
-            rho: density of oil - use API density in SI units
-            blob_mass: mass of blob; LEs modeling the blob have same 'age'
-            blob_mass/rho: volume of the blob
-            thickness: thickness of blob over time modeled by FayGravityViscous
-            f_i: mass fraction of component i, so m_i/blob_mass
-            sum_f_mw: sum(f_i/mw_i) over all components
+            area: area computed from fay spreading
+            m_i:
+            sum_m_mw: sum(m_i/mw_i) over all components
 
         effect of wind - mass transport coefficient:
         ::
@@ -146,13 +143,12 @@ class Evaporation(Weatherer, Serializable):
 
         Finally, Evaporation of component 'i' for blob of oil:
         ::
-            A = (blob_mass/rho) * K * vp
-            B = thickness * gas_constant * water_temp
-            C = blob_mass * sum_f_mw
+            A = area * K * vp
+            B = gas_constant * water_temp * sum_m_mw
 
         L becomes:
         ::
-            L = (1 - fw) * 1/rho * K * vp
+            L = (1 - fw) * area * K * vp/(gas_constant * water_temp * sum_m_mw)
         '''
         if not self.active:
             return
@@ -164,7 +160,7 @@ class Evaporation(Weatherer, Serializable):
                 continue
 
             # set evap_decay_constant array
-            self._set_evap_decay_constant(model_time, data, substance)
+            self._set_evap_decay_constant(model_time, data, substance, time_step)
             mass_remain = \
                 self._exp_decay(data['mass_components'],
                                 data['evap_decay_constant'],
@@ -218,3 +214,49 @@ class Evaporation(Weatherer, Serializable):
         _to_dict = schema.deserialize(json_)
 
         return _to_dict
+
+
+class BlobEvaporation(Evaporation):
+    '''
+    playing around with blob evaporation and time varying fay_area
+    experimental
+    '''
+    def _set_evap_decay_constant(self, model_time, data, substance, time_step):
+        '''
+        testing - for now assume only one spill and instantaneous spill
+        '''
+        # data should contain 'spill_num' as well so compute decay rate for
+        # blobs released together
+        # used to compute the evaporation decay constant
+        K = self._mass_transport_coeff(model_time)
+        water_temp = self.water.get('temperature', 'K')
+
+        f_diff = 1.0
+        if 'frac_water' in data:
+            # frac_water content in emulsion will be a per element but is
+            # currently not being set by anything. Fix once we initialize
+            # and properly set frac_water
+            f_diff = (1.0 - np.mean(data['frac_water']))
+
+        vp = substance.vapor_pressure(water_temp)
+
+        mw = substance.molecular_weight
+
+        # for now, for testing, assume instantaneous spill so get the
+        # mass of the blob
+        sum_mi_mw = (data['mass_components'][:, :].sum(0) / mw).sum()
+        const = -(f_diff * K * vp /
+                  (constants.gas_constant * water_temp * sum_mi_mw))
+
+        blob_area = data['fay_area'][0] * len(data['fay_area'])
+        # let's dFay, dEddy here
+        if data['age'][0] == 0:
+            # we only have init_area
+            data['evap_decay_constant'][:, :] = const * blob_area
+        else:
+            int_area = blob_area * 2./3 * time_step
+            data['evap_decay_constant'][:, :] = const * int_area
+
+        self.logger.debug(self._pid + 'max decay: {0}, min decay: {1}'.
+                          format(np.max(data['evap_decay_constant']),
+                                 np.min(data['evap_decay_constant'])))
