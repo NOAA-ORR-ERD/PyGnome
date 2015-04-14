@@ -392,30 +392,6 @@ class WeatheringData(AddLogger):
 
             data['fay_area'][s_mask] = init_blob_area/num
 
-    def _update_fay_area(self, mask, data):
-        '''
-        update fay area per spill
-        '''
-        # do this once incase there are any unit conversions, it only needs to
-        # happen once - for efficiency
-        water_kvis = self.water.get('kinematic_viscosity',
-                                    'square meter per second')
-        rho_h2o = self.water.get('density', 'kg/m^3')
-        for s_num in np.unique(data['spill_num'][mask]):
-            s_mask = np.logical_and(mask,
-                                    data['spill_num'] == s_num)
-            # update relative_bouyancy - this may not be the same for all LEs
-            # any longer
-            rel_bouy = self._set_relative_bouyancy(data['density'][s_mask],
-                                                   rho_h2o)
-
-            data['fay_area'][s_mask] = \
-                self.spreading.update_area(water_kvis,
-                                           rel_bouy,
-                                           data['bulk_init_volume'][s_mask],
-                                           data['fay_area'][s_mask],
-                                           data['age'][s_mask])
-
     def _init_fate_status(self, update_LEs_mask, data):
         '''
         initialize fate_status for newly released LEs or refloated LEs
@@ -491,38 +467,58 @@ class WeatheringData(AddLogger):
         update density, area
         '''
         k_rho = self._get_k_rho_weathering_dens_update(substance)
-        # sub-select mass_components array by substance.num_components.
-        # Currently, the physics for modeling multiple spills with different
-        # substances is not being correctly done in the same model. However,
-        # let's put some basic code in place so the data arrays can infact
-        # contain two substances and the code does not raise exceptions. The
-        # mass_components are zero padded for substance which has fewer
-        # psuedocomponents. Subselecting mass_components array by
-        # [mask, :substance.num_components] ensures numpy operations work
-        mass_frac = \
-            (data['mass_components'][mask, :substance.num_components] /
-             data['mass'][mask].reshape(np.sum(mask), -1))
-        # check if density becomes > water, set it equal to water in this case
-        new_rho = k_rho*(substance.component_density * mass_frac).sum(1)
-        if np.any(new_rho > self.water.density):
-            new_rho[new_rho > self.water.density] = self.water.density
-            self.logger.info(self._pid + "during update, density is greater "
-                             "than water density - set it to water density ")
 
-        data['density'][mask] = new_rho
+        water_kvis = self.water.get('kinematic_viscosity',
+                                    'square meter per second')
+        rho_h2o = self.water.get('density', 'kg/m^3')
 
-        # following implementation results in an extra array called
-        # fw_d_fref but is easy to read
-        v0 = substance.get_viscosity(self.water.get('temperature', 'K'))
-        if v0 is not None:
-            kv1 = self._get_kv1_weathering_visc_update(v0)
-            fw_d_fref = data['frac_water'][mask]/self.visc_f_ref
-            data['viscosity'][mask] = \
-                (v0 * np.exp(kv1 *
-                             data['frac_lost'][mask]) *
-                 (1 + (fw_d_fref/(1.187 - fw_d_fref)))**2.49)
+        # must update intrinsic properties per spill. Same substance but
+        # multiple spills - update intrinsic for each spill.
+        for s_num in np.unique(data['spill_num'][mask]):
+            s_mask = np.logical_and(mask,
+                                    data['spill_num'] == s_num)
+            # sub-select mass_components array by substance.num_components.
+            # Currently, the physics for modeling multiple spills with different
+            # substances is not being correctly done in the same model. However,
+            # let's put some basic code in place so the data arrays can infact
+            # contain two substances and the code does not raise exceptions. The
+            # mass_components are zero padded for substance which has fewer
+            # psuedocomponents. Subselecting mass_components array by
+            # [mask, :substance.num_components] ensures numpy operations work
+            mass_frac = \
+                (data['mass_components'][s_mask, :substance.num_components] /
+                 data['mass'][s_mask].reshape(np.sum(s_mask), -1))
+            # check if density becomes > water, set it equal to water in this
+            # case
+            new_rho = k_rho*(substance.component_density * mass_frac).sum(1)
+            if np.any(new_rho > self.water.density):
+                new_rho[new_rho > self.water.density] = self.water.density
+                self.logger.info(self._pid + "during update, density is larger"
+                                 " than water density - set to water density")
 
-        self._update_fay_area(mask, data)
+            data['density'][s_mask] = new_rho
+
+            # following implementation results in an extra array called
+            # fw_d_fref but is easy to read
+            v0 = substance.get_viscosity(self.water.get('temperature', 'K'))
+            if v0 is not None:
+                kv1 = self._get_kv1_weathering_visc_update(v0)
+                fw_d_fref = data['frac_water'][s_mask]/self.visc_f_ref
+                data['viscosity'][s_mask] = \
+                    (v0 * np.exp(kv1 *
+                                 data['frac_lost'][s_mask]) *
+                     (1 + (fw_d_fref/(1.187 - fw_d_fref)))**2.49)
+
+            # update relative_bouyancy - this may not be the same for all LEs
+            # any longer
+            rel_bouy = self._set_relative_bouyancy(data['density'][s_mask],
+                                                   rho_h2o)
+            data['fay_area'][s_mask] = \
+                self.spreading.update_area(water_kvis,
+                                           rel_bouy,
+                                           data['bulk_init_volume'][s_mask],
+                                           data['fay_area'][s_mask],
+                                           data['age'][s_mask])
 
     def _set_relative_bouyancy(self, rho_oil, rho_h2o):
         '''
