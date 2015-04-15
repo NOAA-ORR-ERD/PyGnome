@@ -130,7 +130,7 @@ class Water(Environment, serializable.Serializable):
                    }
 
     def __init__(self,
-                 temperature=311.15,
+                 temperature=300.0,
                  salinity=35.0,
                  sediment=.005,	 # kg/m^3 oceanic default
                  wave_height=None,
