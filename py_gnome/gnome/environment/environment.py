@@ -165,6 +165,7 @@ class Water(Environment, serializable.Serializable):
 
     __str__ = __repr__
 
+    @lru_cache(7)
     def get(self, attr, unit=None):
         '''
         return value in desired unit. If None, then return the value without
@@ -173,7 +174,7 @@ class Water(Environment, serializable.Serializable):
         be sure the unit are as desired
 
         .. note:: unit_conversion does not contain a conversion for 'pressure'
-        Need to add this at some point for completeness
+            Need to add this at some point for completeness.
         '''
         val = getattr(self, attr)
         if unit is None or unit == self.units[attr]:

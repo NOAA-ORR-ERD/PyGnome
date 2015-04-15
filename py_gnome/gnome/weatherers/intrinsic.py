@@ -127,21 +127,20 @@ class FayGravityViscous(AddLogger):
             # now update area of old LEs
             blob_thickness = blob_init_volume[m_age][0]/area[m_age].sum()
             if blob_thickness > self.thickness_limit:
-                rel_bouy = np.mean(relative_bouyancy[m_age])
 
                 self.logger.debug(self._pid + "Before update: ")
                 msg = ("\n\trel_bouy: {0}\n"
                        "\tblob_i_vol: {1}\n"
                        "\tage: {2}\n"
                        "\tarea: {3}".
-                       format(rel_bouy, blob_init_volume[m_age][0],
+                       format(relative_bouyancy, blob_init_volume[m_age][0],
                               age[m_age][0], area[m_age].sum()))
                 self.logger.debug(msg)
 
                 # update area
                 blob_area = \
                     self._update_blob_area(water_viscosity,
-                                           rel_bouy,
+                                           relative_bouyancy,
                                            blob_init_volume[m_age][0],
                                            age[m_age][0])
                 area[m_age] = blob_area/m_age.sum()
@@ -180,6 +179,11 @@ class WeatheringData(AddLogger):
         # following used to update viscosity
         self.visc_curvfit_param = 1.5e3     # units are sec^0.5 / m
         self.visc_f_ref = 0.84
+
+        # relative_bouyancy - use density at release time. For now
+        # temperature is fixed so just compute once and store. When temperature
+        # varies over time, may want to do something different
+        self._init_relative_bouyancy = None
 
     def initialize(self, sc):
         '''
@@ -329,6 +333,11 @@ class WeatheringData(AddLogger):
         water_temp = self.water.get('temperature', 'K')
         data['density'][mask] = substance.get_density(water_temp)
 
+        if self._init_relative_bouyancy is None:
+            rho_h2o = self.water.get('density', 'kg/m^3')
+            self._init_relative_bouyancy = \
+                (rho_h2o - data['density'][mask][0])/rho_h2o
+
         # initialize mass_components -
         # sub-select mass_components array by substance.num_components.
         # Currently, the physics for modeling multiple spills with different
@@ -377,16 +386,11 @@ class WeatheringData(AddLogger):
             # do the sum only once for efficiency
             num = s_mask.sum()
 
-            # since we know the 'density', 'mass' etc are the same for all LEs
-            # released together. Be more efficient and only do one computation
-            # instead of doing the whole array
-            rel_bouy = self._set_relative_bouyancy(data['density'][s_mask][0],
-                                                   rho_h2o)
             data['bulk_init_volume'][s_mask] = \
                 (data['mass'][s_mask][0]/data['density'][s_mask][0]) * num
             init_blob_area = \
                 self.spreading.init_area(water_kvis,
-                                         rel_bouy,
+                                         self._init_relative_bouyancy,
                                          data['bulk_init_volume'][s_mask][0],
                                          time_step)
 
@@ -470,7 +474,6 @@ class WeatheringData(AddLogger):
 
         water_kvis = self.water.get('kinematic_viscosity',
                                     'square meter per second')
-        rho_h2o = self.water.get('density', 'kg/m^3')
 
         # must update intrinsic properties per spill. Same substance but
         # multiple spills - update intrinsic for each spill.
@@ -508,21 +511,9 @@ class WeatheringData(AddLogger):
                     (v0 * np.exp(kv1 *
                                  data['frac_lost'][s_mask]) *
                      (1 + (fw_d_fref/(1.187 - fw_d_fref)))**2.49)
-
-            # update relative_bouyancy - this may not be the same for all LEs
-            # any longer
-            rel_bouy = self._set_relative_bouyancy(data['density'][s_mask],
-                                                   rho_h2o)
             data['fay_area'][s_mask] = \
                 self.spreading.update_area(water_kvis,
-                                           rel_bouy,
+                                           self._init_relative_bouyancy,
                                            data['bulk_init_volume'][s_mask],
                                            data['fay_area'][s_mask],
                                            data['age'][s_mask])
-
-    def _set_relative_bouyancy(self, rho_oil, rho_h2o):
-        '''
-        relative bouyancy of oil: (rho_water - rho_oil) / rho_water
-        only 1 line but made it a function for easy testing
-        '''
-        return (rho_h2o - rho_oil)/rho_h2o
