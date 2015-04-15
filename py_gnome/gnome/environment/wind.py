@@ -130,7 +130,7 @@ class Wind(serializable.Serializable, Timeseries, Environment):
                       serializable.Field('timeseries', save=False,
                                          update=True),
                       # test for equality of units a little differently
-                      serializable.Field('units', save=False,
+                      serializable.Field('units', save=True,
                                          update=True, test_for_eq=False),
                       ])
     _state['name'].test_for_eq = False
