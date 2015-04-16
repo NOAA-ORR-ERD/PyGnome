@@ -387,7 +387,7 @@ class TestWeatheringData:
             num_released = sc.release_elements(ts, curr_time)
             intrinsic.update(num_released, sc, ts)
             for key, val in sc.weathering_data.iteritems():
-                if len(sc) > 0 and key != 'beached':
+                if len(sc) > 0 and key not in ('beached', 'non_weathering'):
                     assert val > 0
                 else:
                     # everything, including avg_density is 0 if nothing is

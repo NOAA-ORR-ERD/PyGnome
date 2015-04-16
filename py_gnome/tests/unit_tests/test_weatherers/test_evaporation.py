@@ -179,13 +179,11 @@ class TestDecayConst:
             w1 = m1.step()['WeatheringOutput']
             w2 = m2.step()['WeatheringOutput']
 
-            val1 = w1.values()
-            val2 = w2.values()
-            d_time1 = val1.pop(4)
-            d_time2 = val2.pop(4)
+            d_time1 = w1.pop('time_stamp')
+            d_time2 = w2.pop('time_stamp')
 
             assert d_time1 == d_time2
-            assert np.allclose(val1, val2)
+            assert np.allclose(w1.values(), w2.values())
 
 
 def assert_helper(sc, new_p):
