@@ -21,7 +21,7 @@ from ..conftest import (sample_sc_release,
                         sample_model_weathering2)
 
 
-pytestmark = pytest.mark.skipif()
+#pytestmark = pytest.mark.skipif()
 
 water = Water()
 wind = constant_wind(15., 270, 'knots')	#also test with lower wind no dispersion
@@ -86,10 +86,14 @@ arrays.update(intrinsic.array_types)
 #      if oil == 'ALASKA NORTH SLOPE (MIDDLE PIPELINE)':
 #          assert sc.weathering_data['dispersed_natural'] == 0
 # 
-@pytest.mark.parametrize(('oil', 'temp'), [('ABU SAFAH', 333.0),
-                                            ('ALASKA NORTH SLOPE (MIDDLE PIPELINE)', 333.0),
-                                            ('BAHIA', 311.15),
-                                            ])
+# @pytest.mark.parametrize(('oil', 'temp'), [('ABU SAFAH', 333.0),
+#                                             ('ALASKA NORTH SLOPE (MIDDLE PIPELINE)', 333.0),
+#                                             ('BAHIA', 311.15),
+#                                             ])
+@pytest.mark.parametrize(('oil', 'temp'), [('ABU SAFAH', 288.7),
+                                            #('ALASKA NORTH SLOPE (MIDDLE PIPELINE)', 288.7),
+                                            #('BAHIA', 288.7),
+                                             ])
 def test_full_run(sample_model_fcn2, oil, temp):
      '''
      test dispersion outputs post step for a full run of model. Dump json

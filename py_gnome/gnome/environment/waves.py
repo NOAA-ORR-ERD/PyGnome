@@ -218,7 +218,9 @@ class Waves(Environment, serializable.Serializable):
             ## or zero less than 3, then a sharp increase to 4m/s?
             fw = (0.0125*U) / Tm
         else:
-            fw = (0.01*U + 0.01) / Tm  # Ding and Farmer (JPO 1994)
+            #fw = (0.01*U + 0.01) / Tm  # Ding and Farmer (JPO 1994)
+            # old ADIOS had a .5 factor - not sure why but we'll keep it for now
+            fw = .5*(0.01*U + 0.01) / Tm  # Ding and Farmer (JPO 1994) 
 
         return fw if fw <= 1.0 else 1.0  # only with U > 200m/s!
 

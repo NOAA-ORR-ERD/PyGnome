@@ -120,7 +120,8 @@ def test_whitecap_fraction(U):
     assert f <= 1.0
 
     if U == 4.0:
-        assert round(f, 8) == round(0.05 / 3.85, 8)
+        #assert round(f, 8) == round(0.05 / 3.85, 8)
+        assert round(f, 8) == round(0.05 / 3.85 / 2, 8) # included the .5 factor from ADIOS2
 
 
 @pytest.mark.parametrize("U", [0.0, 1.0, 2.0, 3.0, 4.0, 8.0, 16.0, 32.0])

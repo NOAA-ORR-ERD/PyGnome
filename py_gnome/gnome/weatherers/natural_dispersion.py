@@ -10,10 +10,9 @@ import numpy as np
 import gnome    # required by new_from_dict
 
 from gnome.array_types import (viscosity,	
-                               #area,
-                               thickness,
                                mass,
                                density,
+                               fay_area,
                                frac_water)
                                
 from gnome.utilities.serializable import Serializable, Field
@@ -47,10 +46,9 @@ class NaturalDispersion(Weatherer, Serializable):
 
         super(NaturalDispersion, self).__init__(**kwargs)
         self.array_types.update({'viscosity': viscosity,
-                                 #'area': area,
-                                 'thickness':  mass,
                                  'mass':  mass,
                                  'density': density,
+                                 'fay_area': fay_area,
                                  'frac_water': frac_water,
                                  })
 
@@ -62,7 +60,7 @@ class NaturalDispersion(Weatherer, Serializable):
         # create 'dispersed' key if it doesn't exist - are we tracking this ?
         # let's only define this the first time
         if self.active:
-            sc.weathering_data['dispersed_natural'] = 0.0
+            sc.weathering_data['natural_dispersion'] = 0.0
 
 
     def prepare_for_model_step(self, sc, time_step, model_time):
@@ -83,8 +81,6 @@ class NaturalDispersion(Weatherer, Serializable):
         '''
         weather elements over time_step
         - sets 'dispersion_natural' in sc.weathering_data
-        - currently also sets 'density' in sc.weathering_data but may update
-          this as we add more weatherers and perhaps density gets set elsewhere
         '''
 
         if not self.active:
@@ -96,9 +92,9 @@ class NaturalDispersion(Weatherer, Serializable):
         wave_height = self.waves.get_value(model_time)[0] # from the waves module
         frac_breaking_waves = self.waves.get_value(model_time)[2] # from the waves module
         disp_wave_energy = self.waves.get_value(model_time)[3] # from the waves module
-        visc_w = self.water.kinematic_viscosity
-        rho_w = self.water.density
-        sediment = self.water.sediment
+        visc_w = self.waves.water.kinematic_viscosity
+        rho_w = self.waves.water.density
+        sediment = self.waves.water.sediment
 
         for substance, data in sc.itersubstancedata(self.array_types):
             if len(data['frac_water']) == 0:
@@ -109,14 +105,12 @@ class NaturalDispersion(Weatherer, Serializable):
             ka = constants.ka # oil sticking term
 
             disp = np.zeros((len(data['frac_water'])), dtype=np.float64)
-
             disperse_oil(time_step,
                          data['frac_water'],
-                         data['thickness'],
                          data['mass'],
-                         #data['area'],
                          data['viscosity'],
                          data['density'],
+                         data['fay_area'],
                          disp,
                          frac_breaking_waves,
                          disp_wave_energy,
@@ -127,20 +121,17 @@ class NaturalDispersion(Weatherer, Serializable):
                          V_entrain,
                          ka)
 
-            #sc.weathering_data['emulsified'] += \
-                #np.sum(data['frac_water'][:]) / sc.num_released
-            # just average the water fraction each time - it is not per time step value but at a certain time value
-            #sc.weathering_data['dispersed_natural'] = \
-                #np.sum(disp[:]) / len(data['frac_water']
-            sc.weathering_data['dispersed_natural'] += np.sum(disp[:])
+            sc.weathering_data['natural_dispersion'] += np.sum(disp[:])
 
+            print "sc.weathering_data['natural_dispersion']"
+            print sc.weathering_data['natural_dispersion']
             disp_mass_frac = np.sum(disp[:]) / data['mass'].sum()
             data['mass_components'] = \
                 (1 - disp_mass_frac) * data['mass_components']
             data['mass'] = data['mass_components'].sum(1)
 
             self.logger.info('Amount Dispersed: {0}'.
-                             format(sc.weathering_data['dispersed_natural']))
+                             format(sc.weathering_data['natural_dispersion']))
 
         sc.update_from_fatedataview()
                 
