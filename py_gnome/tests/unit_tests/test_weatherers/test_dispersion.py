@@ -66,25 +66,25 @@ arrays.update(intrinsic.array_types)
 #      print sc['frac_lost'][:]
 #      disp.prepare_for_model_step(sc, time_step, model_time)
 #      disp.weather_elements(sc, time_step, model_time)
-#      print "sc.weathering_data['dispersed_natural']"
-#      print sc.weathering_data['dispersed_natural']
+#      print "sc.weathering_data['natural_dispersion']"
+#      print sc.weathering_data['natural_dispersion']
 #  
 #      if on:
 #          #assert np.all(sc['frac_lost'] > 0) and np.all(sc['frac_lost'] < 1.0)
-#          assert sc.weathering_data['dispersed_natural'] > 0
+#          assert sc.weathering_data['natural_dispersion'] > 0
 #      else:
-#          assert np.all(sc.weathering_data['dispersed_natural'] == 0)
+#          assert np.all(sc.weathering_data['natural_dispersion'] == 0)
 #  
 #      sc['frac_lost'][:] = .2
 #      print "sc['frac_lost'][:]"
 #      print sc['frac_lost'][:]
 #      disp.prepare_for_model_step(sc, time_step, model_time)
 #      disp.weather_elements(sc, time_step, model_time)
-#      print "sc.weathering_data['dispersed_natural']"
-#      print sc.weathering_data['dispersed_natural']
+#      print "sc.weathering_data['natural_dispersion']"
+#      print sc.weathering_data['natural_dispersion']
 #  
 #      if oil == 'ALASKA NORTH SLOPE (MIDDLE PIPELINE)':
-#          assert sc.weathering_data['dispersed_natural'] == 0
+#          assert sc.weathering_data['natural_dispersion'] == 0
 # 
 # @pytest.mark.parametrize(('oil', 'temp'), [('ABU SAFAH', 333.0),
 #                                             ('ALASKA NORTH SLOPE (MIDDLE PIPELINE)', 333.0),
@@ -109,9 +109,9 @@ def test_full_run(sample_model_fcn2, oil, temp):
      for step in model:
          for sc in model.spills.items():
              if step['step_num'] > 0:
-                   assert (sc.weathering_data['dispersed_natural'] > 0)
+                   assert (sc.weathering_data['natural_dispersion'] > 0)
              print ("Dispersed: {0}".
-                   format(sc.weathering_data['dispersed_natural']))
+                   format(sc.weathering_data['natural_dispersion']))
              print "Completed step: {0}\n".format(step['step_num'])
  
 
