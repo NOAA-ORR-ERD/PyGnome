@@ -248,14 +248,11 @@ class BlobEvaporation(Evaporation):
         const = -(f_diff * K * vp /
                   (constants.gas_constant * water_temp * sum_mi_mw))
 
+        # do it the same way for initial and all subsequent times
         blob_area = data['fay_area'][0] * len(data['fay_area'])
-        # let's dFay, dEddy here
-        if data['age'][0] == 0:
-            # we only have init_area
-            data['evap_decay_constant'][:, :] = const * blob_area
-        else:
-            int_area = blob_area * 2./3 * time_step
-            data['evap_decay_constant'][:, :] = const * int_area
+        corr_area = blob_area * 2./3
+        #corr_area = data['fay_area'].reshape(-1, 1) * 2./3
+        data['evap_decay_constant'][:, :] = const * corr_area
 
         self.logger.debug(self._pid + 'max decay: {0}, min decay: {1}'.
                           format(np.max(data['evap_decay_constant']),
