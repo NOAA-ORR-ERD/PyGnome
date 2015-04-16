@@ -593,7 +593,7 @@ def sample_model2():
 
     map_ = MapFromBNA(mapfile, refloat_halflife=06)  # seconds
 
-    model = Model(time_step=timedelta(minutes=15),
+    model = Model(time_step=timedelta(minutes=10),
                   start_time=release_time,
                   duration=timedelta(hours=1),
                   map=map_,
@@ -662,7 +662,7 @@ def sample_model_weathering2(sample_model_fcn2, oil, temp=311.16):
                                                  start_time,
                                                  end_release_time=end_time,
                                                  element_type=et,
-                                                 amount=100,
+                                                 amount=10000,
                                                  units='kg')
     model.spills += spill
     return model

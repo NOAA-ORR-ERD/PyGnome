@@ -10,10 +10,9 @@ import numpy as np
 import gnome    # required by new_from_dict
 
 from gnome.array_types import (viscosity,	
-                               #area,
-                               thickness,
                                mass,
                                density,
+                               fay_area,
                                frac_water)
                                
 from gnome.utilities.serializable import Serializable, Field
@@ -47,10 +46,9 @@ class NaturalDispersion(Weatherer, Serializable):
 
         super(NaturalDispersion, self).__init__(**kwargs)
         self.array_types.update({'viscosity': viscosity,
-                                 #'area': area,
-                                 'thickness':  mass,
                                  'mass':  mass,
                                  'density': density,
+                                 'fay_area': fay_area,
                                  'frac_water': frac_water,
                                  })
 
@@ -83,8 +81,6 @@ class NaturalDispersion(Weatherer, Serializable):
         '''
         weather elements over time_step
         - sets 'dispersion_natural' in sc.weathering_data
-        - currently also sets 'density' in sc.weathering_data but may update
-          this as we add more weatherers and perhaps density gets set elsewhere
         '''
 
         if not self.active:
@@ -109,14 +105,12 @@ class NaturalDispersion(Weatherer, Serializable):
             ka = constants.ka # oil sticking term
 
             disp = np.zeros((len(data['frac_water'])), dtype=np.float64)
-
             disperse_oil(time_step,
                          data['frac_water'],
-                         data['thickness'],
                          data['mass'],
-                         #data['area'],
                          data['viscosity'],
                          data['density'],
+                         data['fay_area'],
                          disp,
                          frac_breaking_waves,
                          disp_wave_energy,
@@ -127,13 +121,10 @@ class NaturalDispersion(Weatherer, Serializable):
                          V_entrain,
                          ka)
 
-            #sc.weathering_data['emulsified'] += \
-                #np.sum(data['frac_water'][:]) / sc.num_released
-            # just average the water fraction each time - it is not per time step value but at a certain time value
-            #sc.weathering_data['dispersed_natural'] = \
-                #np.sum(disp[:]) / len(data['frac_water']
             sc.weathering_data['dispersed_natural'] += np.sum(disp[:])
 
+            print "sc.weathering_data['dispersed_natural']"
+            print sc.weathering_data['dispersed_natural']
             disp_mass_frac = np.sum(disp[:]) / data['mass'].sum()
             data['mass_components'] = \
                 (1 - disp_mass_frac) * data['mass_components']

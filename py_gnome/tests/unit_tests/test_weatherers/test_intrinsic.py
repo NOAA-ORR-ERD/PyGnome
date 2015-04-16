@@ -21,7 +21,7 @@ num_elems = 10
 water_viscosity = 0.000001
 bulk_init_vol = 100.0     # m^3
 elem_rel_bouy = 0.2
-default_ts = 900.0  # default timestep for tests
+default_ts = 900  # default timestep for tests
 
 water = Water()
 
