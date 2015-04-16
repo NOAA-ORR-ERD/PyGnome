@@ -254,8 +254,7 @@ class WeatheringData(AddLogger):
         # add 'non_weathering' key if any mass is released for nonweathering
         # particles.
         nonweather = sc['mass'][sc['fate_status'] == fate.non_weather].sum()
-        if nonweather > 0:
-            sc.weathering_data['non_weathering'] = nonweather
+        sc.weathering_data['non_weathering'] = nonweather
 
         if new_LEs > 0:
             amount_released = np.sum(sc['mass'][-new_LEs:])
