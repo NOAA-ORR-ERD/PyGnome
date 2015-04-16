@@ -122,9 +122,6 @@ class NaturalDispersion(Weatherer, Serializable):
                          ka)
 
             sc.weathering_data['natural_dispersion'] += np.sum(disp[:])
-
-            print "sc.weathering_data['natural_dispersion']"
-            print sc.weathering_data['natural_dispersion']
             disp_mass_frac = np.sum(disp[:]) / data['mass'].sum()
             data['mass_components'] = \
                 (1 - disp_mass_frac) * data['mass_components']
@@ -134,7 +131,6 @@ class NaturalDispersion(Weatherer, Serializable):
                              format(sc.weathering_data['natural_dispersion']))
 
         sc.update_from_fatedataview()
-                
 
     def serialize(self, json_='webapi'):
         """
@@ -143,7 +139,7 @@ class NaturalDispersion(Weatherer, Serializable):
         toserial = self.to_serialize(json_)
         schema = self.__class__._schema()
         serial = schema.serialize(toserial)
-        
+
         if json_ == 'webapi':
             if self.waves:
                 serial['waves'] = self.waves.serialize(json_)

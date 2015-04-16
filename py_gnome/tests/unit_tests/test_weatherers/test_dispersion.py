@@ -95,24 +95,24 @@ arrays.update(intrinsic.array_types)
                                             #('BAHIA', 288.7),
                                              ])
 def test_full_run(sample_model_fcn2, oil, temp):
-     '''
-     test dispersion outputs post step for a full run of model. Dump json
-     for 'weathering_model.json' in dump directory
-     '''
-     model = sample_model_weathering2(sample_model_fcn2, oil, temp)
-     model.water = Water(temp)
-     model.environment += [wind,  waves]
-     model.weatherers += Evaporation(model.water, model.environment[0])
-     model.weatherers += Emulsification(model.environment[1])
-     model.weatherers += NaturalDispersion(model.environment[1],model.water)
- 
-     for step in model:
-         for sc in model.spills.items():
-             if step['step_num'] > 0:
-                   assert (sc.weathering_data['natural_dispersion'] > 0)
-             print ("Dispersed: {0}".
+    '''
+    test dispersion outputs post step for a full run of model. Dump json
+    for 'weathering_model.json' in dump directory
+    '''
+    model = sample_model_weathering2(sample_model_fcn2, oil, temp)
+    model.water = Water(temp)
+    model.environment += [wind,  waves]
+    model.weatherers += Evaporation(model.water, model.environment[0])
+    model.weatherers += Emulsification(model.environment[1])
+    model.weatherers += NaturalDispersion(model.environment[1],model.water)
+
+    for step in model:
+        for sc in model.spills.items():
+            if step['step_num'] > 0:
+                assert (sc.weathering_data['natural_dispersion'] > 0)
+            print ("Dispersed: {0}".
                    format(sc.weathering_data['natural_dispersion']))
-             print "Completed step: {0}\n".format(step['step_num'])
+            print "Completed step: {0}\n".format(step['step_num'])
  
 
 # def test_full_run_disp_not_active(sample_model_fcn):
