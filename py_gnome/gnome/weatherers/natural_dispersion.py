@@ -60,7 +60,7 @@ class NaturalDispersion(Weatherer, Serializable):
         # create 'dispersed' key if it doesn't exist - are we tracking this ?
         # let's only define this the first time
         if self.active:
-            sc.weathering_data['dispersed_natural'] = 0.0
+            sc.weathering_data['natural_dispersion'] = 0.0
 
 
     def prepare_for_model_step(self, sc, time_step, model_time):
@@ -92,9 +92,9 @@ class NaturalDispersion(Weatherer, Serializable):
         wave_height = self.waves.get_value(model_time)[0] # from the waves module
         frac_breaking_waves = self.waves.get_value(model_time)[2] # from the waves module
         disp_wave_energy = self.waves.get_value(model_time)[3] # from the waves module
-        visc_w = self.water.kinematic_viscosity
-        rho_w = self.water.density
-        sediment = self.water.sediment
+        visc_w = self.waves.water.kinematic_viscosity
+        rho_w = self.waves.water.density
+        sediment = self.waves.water.sediment
 
         for substance, data in sc.itersubstancedata(self.array_types):
             if len(data['frac_water']) == 0:
@@ -121,17 +121,17 @@ class NaturalDispersion(Weatherer, Serializable):
                          V_entrain,
                          ka)
 
-            sc.weathering_data['dispersed_natural'] += np.sum(disp[:])
+            sc.weathering_data['natural_dispersion'] += np.sum(disp[:])
 
-            print "sc.weathering_data['dispersed_natural']"
-            print sc.weathering_data['dispersed_natural']
+            print "sc.weathering_data['natural_dispersion']"
+            print sc.weathering_data['natural_dispersion']
             disp_mass_frac = np.sum(disp[:]) / data['mass'].sum()
             data['mass_components'] = \
                 (1 - disp_mass_frac) * data['mass_components']
             data['mass'] = data['mass_components'].sum(1)
 
             self.logger.info('Amount Dispersed: {0}'.
-                             format(sc.weathering_data['dispersed_natural']))
+                             format(sc.weathering_data['natural_dispersion']))
 
         sc.update_from_fatedataview()
                 

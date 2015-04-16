@@ -225,7 +225,7 @@ class ElementCache(object):
         'add mass balance data to arrays'
         if sc.weathering_data:
             data['weathering_data'] = np.chararray((len(sc.weathering_data),),
-                                                   itemsize=15)
+                                                   itemsize=30)
             for ix, key in enumerate(sc.weathering_data):
                 # an array with a scalar for each spill
                 data[key] = np.asarray(sc.weathering_data[key])
