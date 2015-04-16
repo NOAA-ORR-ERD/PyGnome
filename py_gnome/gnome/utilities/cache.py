@@ -224,8 +224,16 @@ class ElementCache(object):
     def _set_weathering_data(self, sc, data):
         'add mass balance data to arrays'
         if sc.weathering_data:
-            data['weathering_data'] = np.chararray((len(sc.weathering_data),),
-                                                   itemsize=30)
+            # let's convert weathering data to numpy_arrays. In order to save
+            # it in the samefile, we'll also need to store the keys so we know
+            # which arrays belong to weathering_data when reconstructing
+            # set the itemsize of char array to be the len of largest key in
+            # 'weathering_data'
+            max_name = len(max(sc.weathering_data.keys(),
+                               key=lambda l: len(l)))
+            data['weathering_data'] = \
+                np.chararray((len(sc.weathering_data),),
+                             itemsize=max_name)
             for ix, key in enumerate(sc.weathering_data):
                 # an array with a scalar for each spill
                 data[key] = np.asarray(sc.weathering_data[key])
