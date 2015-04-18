@@ -121,7 +121,7 @@ class FayGravityViscous(AddLogger):
             m_age = b_age == age
             t0 = self._gravity_spreading_t0(water_viscosity,
                                             relative_bouyancy,
-                                            blob_init_volume)
+                                            blob_init_volume[m_age][0])
 
             if b_age <= t0:
                 '''
@@ -159,6 +159,34 @@ class FayGravityViscous(AddLogger):
                                   "\tarea after update: {0}".format(blob_area))
 
         return area
+
+
+class ConstantArea(AddLogger):
+    '''
+    Used for testing and diagnostics
+    - must be manually hooked up
+    '''
+    def __init__(self, area):
+        self.area = area
+
+    def init_area(self, *args):
+        return self.area
+
+    def update_area(self,
+                    water_viscosity=None,
+                    relative_bouyancy=None,
+                    blob_init_volume=None,
+                    area=None,
+                    age=None):
+        '''
+        return the area array as it was entered since that contains area per
+        LE if there is more than one LE. Kept the interface the same as
+        FayGravityViscous since WeatheringData will call it the same way.
+        '''
+        if area is None:
+            return self.area
+        else:
+            return area
 
 
 class WeatheringData(AddLogger):
