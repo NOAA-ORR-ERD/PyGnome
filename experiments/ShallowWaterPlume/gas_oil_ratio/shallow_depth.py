@@ -34,7 +34,7 @@ from collections import namedtuple
 import numpy
 np = numpy
 
-from hazpy.unit_conversion import convert
+from unit_conversion import convert
 from common.unit_conversion import Volume, Force
 
 from release_fraction import ReleaseFraction

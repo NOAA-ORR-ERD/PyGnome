@@ -1159,7 +1159,7 @@ class TestMergeModels:
             for item in getattr(m, oc):
                 assert item in getattr(model, oc)
 
-    def test_load_location_file(self):
+    def test_load_location_file(self, dump, model):
         '''
         create a model
         load save file from script_boston which contains a spill. Then merge
@@ -1172,10 +1172,11 @@ class TestMergeModels:
         m.spills += point_line_release_spill(10, (0, 0, 0),
                                              datetime(2014, 1, 1, 12, 0))
 
-        here = os.path.dirname(__file__)
-        sample_save_file = \
-            os.path.join(here,
-                         '../../scripts/script_boston/save_model/Model.json')
+        # create save model
+        folder_name = os.path.join(dump, 'SampleSave')
+        os.mkdir(folder_name)
+        sample_save_file = os.path.join(folder_name, 'SampleSaveModel.zip')
+        model.save(folder_name, name='SampleSaveModel.zip')
         if os.path.exists(sample_save_file):
             model = load(sample_save_file)
             assert model.water is None

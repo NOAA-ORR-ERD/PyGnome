@@ -6,6 +6,8 @@ the Wind object defines the Wind conditions for the spill
 import datetime
 import os
 import copy
+import StringIO
+import zipfile
 
 import numpy
 np = numpy
@@ -27,6 +29,7 @@ from gnome.persist import validators, base_schema
 
 from .environment import Environment
 from gnome.utilities.timeseries import Timeseries
+from gnome.cy_gnome.cy_ossm_time import ossm_wind_units
 from .. import _valid_units
 
 
@@ -96,7 +99,7 @@ class WindSchema(base_schema.ObjType):
     name = 'wind'
 
 
-class Wind(Timeseries, Environment, serializable.Serializable):
+class Wind(serializable.Serializable, Timeseries, Environment):
     '''
     Defines the Wind conditions for a spill
     '''
@@ -127,7 +130,7 @@ class Wind(Timeseries, Environment, serializable.Serializable):
                       serializable.Field('timeseries', save=False,
                                          update=True),
                       # test for equality of units a little differently
-                      serializable.Field('units', save=False,
+                      serializable.Field('units', save=True,
                                          update=True, test_for_eq=False),
                       ])
     _state['name'].test_for_eq = False
@@ -151,25 +154,32 @@ class Wind(Timeseries, Environment, serializable.Serializable):
         self.speed_uncertainty_scale = speed_uncertainty_scale
 
         if filename is not None:
-            super(Wind, self).__init__(filename=filename, format=format,
-                                       **kwargs)
+            self.source_type = kwargs.pop('source_type', 'file')
+            super(Wind, self).__init__(filename=filename, format=format)
+            self.name = kwargs.pop('name', os.path.split(self.filename)[1])
             # set _user_units attribute to match user_units read from file.
             self._user_units = self.ossm.user_units
+
+            if units is not None:
+                self.units = units
         else:
+            if kwargs.get('source_type') in basic_types.wind_datasource._attr:
+                self.source_type = kwargs.pop('source_type')
+            else:
+                self.source_type = 'undefined'
+
             # either timeseries is given or nothing is given
             # create an empty default object
-            source_type = (kwargs.pop('source_type')
-                           if kwargs.get('source_type')
-                           in basic_types.wind_datasource._attr
-                           else 'undefined')
-            super(Wind, self).__init__(source_type=source_type,
-                                       **kwargs)
+            super(Wind, self).__init__()
+
             self.units = 'mps'  # units for default object
             if timeseries is not None:
                 if units is None:
                     raise TypeError('Units must be provided with timeseries')
 
-                self.set_timeseries(timeseries, units, format)
+                self.set_wind_data(timeseries, units, format)
+
+            self.name = kwargs.pop('name', self.__class__.__name__)
 
     def _check_units(self, units):
         '''
@@ -197,7 +207,7 @@ class Wind(Timeseries, Environment, serializable.Serializable):
         returns entire timeseries in 'r-theta' format in the units in which
         the data was entered or as specified by units attribute
         '''
-        return self.get_timeseries(units=self.units)
+        return self.get_wind_data(units=self.units)
 
     @timeseries.setter
     def timeseries(self, value):
@@ -206,7 +216,7 @@ class Wind(Timeseries, Environment, serializable.Serializable):
         self.units attribute. Property converts the units to 'm/s' so Cython/
         C++ object stores timeseries in 'm/s'
         '''
-        self.set_timeseries(value, units=self.units)
+        self.set_wind_data(value, units=self.units)
 
     @property
     def units(self):
@@ -245,45 +255,70 @@ class Wind(Timeseries, Environment, serializable.Serializable):
 
     def save(self, saveloc, references=None, name=None):
         '''
-        Write Wind timeseries to file, then call save method using super
+        Write Wind timeseries to file or to zip,
+        then call save method using super
         '''
         name = (name, 'Wind.json')[name is None]
-        datafile = os.path.join(saveloc,
-                                os.path.splitext(name)[0] + '_data.WND')
-        self._write_timeseries_to_file(datafile)
-        self._filename = datafile
+        ts_name = os.path.splitext(name)[0] + '_data.WND'
+
+        if zipfile.is_zipfile(saveloc):
+            self._write_timeseries_to_zip(saveloc, ts_name)
+            self._filename = ts_name
+        else:
+            datafile = os.path.join(saveloc, ts_name)
+            self._write_timeseries_to_file(datafile)
+            self._filename = datafile
         return super(Wind, self).save(saveloc, references, name)
 
+    def _write_timeseries_to_zip(self, saveloc, ts_name):
+        '''
+        use a StringIO type of file descriptor and write directly to zipfile
+        '''
+        fd = StringIO.StringIO()
+        self._write_timeseries_to_fd(fd)
+        self._write_to_zip(saveloc, ts_name, fd.getvalue())
+
     def _write_timeseries_to_file(self, datafile):
-        '''write to temp file '''
+        '''write timeseries data to file '''
+        with open(datafile, 'w') as fd:
+            self._write_timeseries_to_fd(fd)
+
+    def _write_timeseries_to_fd(self, fd):
+        '''
+        Takes a general file descriptor as input and writes data to it.
+        '''
+        if self.units in ossm_wind_units.values():
+            data_units = self.units
+        else:
+            # we know C++ understands this unit
+            data_units = 'meters per second'
 
         header = ('Station Name\n'
                   'Position\n'
-                  'knots\n'
+                  '{0}\n'
                   'LTime\n'
-                  '0,0,0,0,0,0,0,0\n')
-        val = self.get_timeseries(units='knots')['value']
-        dt = (self.get_timeseries(units='knots')['time']
-              .astype(datetime.datetime))
+                  '0,0,0,0,0,0,0,0\n').format(data_units)
+        data = self.get_wind_data(units=data_units)
+        val = data['value']
+        dt = data['time'].astype(datetime.datetime)
 
-        with open(datafile, 'w') as file_:
-            file_.write(header)
+        fd.write(header)
 
-            for i, idt in enumerate(dt):
-                file_.write('{0.day:02}, '
-                            '{0.month:02}, '
-                            '{0.year:04}, '
-                            '{0.hour:02}, '
-                            '{0.minute:02}, '
-                            '{1:02.4f}, {2:02.4f}\n'
-                            .format(idt,
-                                    round(val[i, 0], 4),
-                                    round(val[i, 1], 4))
-                            )
-        file_.close()   # just incase we get issues on windows
+        for i, idt in enumerate(dt):
+            fd.write('{0.day:02}, '
+                     '{0.month:02}, '
+                     '{0.year:04}, '
+                     '{0.hour:02}, '
+                     '{0.minute:02}, '
+                     '{1:02.2f}, {2:02.2f}\n'.format(idt,
+                                                     round(val[i, 0], 4),
+                                                     round(val[i, 1], 4)))
 
     def update_from_dict(self, data):
         '''
+        update attributes from dict - override base class because we want to
+        set the units before updating the data so conversion is done correctly.
+        Internally all data is stored in SI units.
         '''
         updated = self.update_attr('units', data.pop('units', self.units))
         if super(Wind, self).update_from_dict(data):
@@ -291,7 +326,7 @@ class Wind(Timeseries, Environment, serializable.Serializable):
         else:
             return updated
 
-    def get_timeseries(self, datetime=None, units=None, format='r-theta'):
+    def get_wind_data(self, datetime=None, units=None, format='r-theta'):
         """
         Returns the timeseries in the requested format. If datetime=None,
         then the original timeseries that was entered is returned.
@@ -306,7 +341,7 @@ class Wind(Timeseries, Environment, serializable.Serializable):
         :type datetime: datetime object
         :param units: [optional] outputs data in these units. Default is to
             output data without unit conversion
-        :type units: string. Uses the hazpy.unit_conversion module.
+        :type units: string. Uses the unit_conversion module.
         :param format: output format for the times series:
                        either 'r-theta' or 'uv'
         :type format: either string or integer value defined by
@@ -330,7 +365,7 @@ class Wind(Timeseries, Environment, serializable.Serializable):
 
         return datetimeval
 
-    def set_timeseries(self, datetime_value_2d, units, format='r-theta'):
+    def set_wind_data(self, datetime_value_2d, units, format='r-theta'):
         """
         Sets the timeseries of the Wind object to the new value given by
         a numpy array.  The format for the input data defaults to
@@ -367,9 +402,9 @@ class Wind(Timeseries, Environment, serializable.Serializable):
         :param time: the time(s) you want the data for
         :type time: datetime object or sequence of datetime objects.
 
-        .. note:: It invokes get_timeseries(..) function
+        .. note:: It invokes get_wind_data(..) function
         '''
-        data = self.get_timeseries(time, 'm/s', 'r-theta')
+        data = self.get_wind_data(time, 'm/s', 'r-theta')
         return tuple(data[0]['value'])
 
     def set_speed_uncertainty(self, up_or_down=None):
@@ -403,7 +438,7 @@ class Wind(Timeseries, Environment, serializable.Serializable):
         else:
             percent_uncertainty = self.speed_uncertainty_scale
 
-        time_series = self.get_timeseries()
+        time_series = self.get_wind_data()
 
         for tse in time_series:
             sigma = rayleigh.sigma_from_wind(tse['value'][0])
@@ -414,7 +449,21 @@ class Wind(Timeseries, Environment, serializable.Serializable):
                 tse['value'][0] = rayleigh.quantile(0.5 - percent_uncertainty,
                                                     sigma)
 
-        self.set_timeseries(time_series, self.units)
+        self.set_wind_data(time_series, self.units)
+
+        return True
+
+    def __eq__(self, other):
+        '''
+        invoke super to check equality for all 'save' parameters. Also invoke
+        __eq__ for Timeseries object to check equality of timeseries. Super
+        is not used in any of the __eq__ methods
+        '''
+        if not super(Wind, self).__eq__(other):
+            return False
+
+        if not Timeseries.__eq__(self, other):
+            return False
 
         return True
 

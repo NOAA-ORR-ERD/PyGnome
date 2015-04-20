@@ -32,7 +32,7 @@ class AddLogger(object):
         property makes the logger available to each object.
         - default log_level is INFO
         '''
-        if not self._log:
+        if self._log is None:
             self._log = init_obj_log(self)
         return self._log
 

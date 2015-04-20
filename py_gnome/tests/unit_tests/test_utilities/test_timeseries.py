@@ -82,3 +82,19 @@ def test_set_timeseries_prop():
     ts.set_timeseries(x)
     assert ts.get_timeseries()['time'] == x[0]
     assert np.allclose(ts.get_timeseries()['value'], x[1], atol=1e-6)
+
+
+def test__eq():
+    ''' only checks timeseries values match '''
+    ts1 = Timeseries(filename=wind_file)
+    ts2 = Timeseries(timeseries=ts1.get_timeseries())
+    assert ts1 == ts2
+
+
+def test_ne():
+    ''' change timeseries '''
+    ts1 = Timeseries(filename=wind_file)
+    ts = ts1.get_timeseries()
+    ts[0]['value'] += (1, 1)
+    ts2 = Timeseries(timeseries=ts)
+    assert ts1 != ts2

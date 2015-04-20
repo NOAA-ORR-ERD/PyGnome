@@ -15,8 +15,8 @@ np = numpy
 import unit_conversion as uc
 from colander import (SchemaNode, Bool, String, Float, drop)
 
-import gnome    # required by new_from_dict
 from gnome.utilities import serializable
+from gnome.persist import class_from_objtype
 from gnome.persist.base_schema import ObjType
 
 from . import elements
@@ -576,8 +576,6 @@ class Spill(serializable.Serializable):
         """
         toserial = self.to_serialize(json_)
         schema = self.__class__._schema()
-        #schema = self.__class__._schema(
-        #    release=self.release.__class__._schema(json_))
 
         o_json_ = schema.serialize(toserial)
         o_json_['element_type'] = self.element_type.serialize(json_)
@@ -598,17 +596,18 @@ class Spill(serializable.Serializable):
             schema = cls._schema()
 
             dict_ = schema.deserialize(json_)
-            rel = json_['release']['obj_type']
-            dict_['release'] = eval(rel).deserialize(json_['release'])
+            relcls = class_from_objtype(json_['release']['obj_type'])
+            dict_['release'] = relcls.deserialize(json_['release'])
 
             if json_['json_'] == 'webapi':
                 '''
                 save files store a reference to element_type so it will get
                 deserialized, created and added to this dict by load method
                 '''
-                element_type = json_['element_type']['obj_type']
-                dict_['element_type'] = (eval(element_type).deserialize(
-                                                        json_['element_type']))
+                etcls = \
+                    class_from_objtype(json_['element_type']['obj_type'])
+                dict_['element_type'] = \
+                    etcls.deserialize(json_['element_type'])
 
             else:
                 '''
@@ -618,9 +617,7 @@ class Spill(serializable.Serializable):
                 For the 'webapi', we're not always creating a new object
                 so do this only for 'save' files
                 '''
-                obj_dict = dict_.pop('release')
-                obj_type = obj_dict.pop('obj_type')
-                obj = eval(obj_type).new_from_dict(obj_dict)
+                obj = relcls.new_from_dict(dict_.pop('release'))
                 dict_['release'] = obj
 
             return dict_

@@ -1,6 +1,7 @@
 '''
 primarily tests the operations of the scenario module, the colander schemas,
 and the ability of Model to be recreated in midrun
+tests save/load to directory - original functionality and save/load to zip
 '''
 
 import os
@@ -22,20 +23,8 @@ from gnome.persist import load
 from gnome.spill import point_line_release_spill
 from gnome.movers import RandomMover, WindMover, CatsMover, ComponentMover
 from gnome.weatherers import Evaporation, Skimmer, Burn
-from gnome.outputters import Renderer
 
 from conftest import dump, testdata, test_oil
-
-
-@pytest.fixture(scope='function')
-def saveloc_(tmpdir, request):
-    name = 'save_' + request.function.func_name
-    if request._pyfuncitem._genid is not None:
-        name += '_{0}'.format(request._pyfuncitem._genid)
-
-    name = tmpdir.mkdir(name).strpath
-
-    return name
 
 
 def make_model(uncertain=False):
@@ -156,33 +145,46 @@ def make_model(uncertain=False):
     return model
 
 
+def zipname(saveloc, mdl):
+    # put common two lines of functionality here
+    if mdl.zipsave:
+        # default name of zip file is same as model.name attribute
+        return os.path.join(saveloc, mdl.name + '.zip')
+    return saveloc
+
+
 def test_init_exception(saveloc_):
     m = make_model(False)
-    with raises(ValueError):
+    with raises(IOError):
         m.save(os.path.join(saveloc_, 'x', 'junk'))
 
 
 @pytest.mark.slow
-@pytest.mark.parametrize('uncertain', [False, True])
-def test_save_load_model(uncertain, saveloc_):
+@pytest.mark.parametrize(('uncertain', 'zipsave'),
+                         [(False, False), (True, False),
+                          (False, True), (True, True)])
+def test_save_load_model(uncertain, zipsave, saveloc_):
     '''
     create a model, save it, then load it back up and check it is equal to
     original model
     '''
     model = make_model(uncertain)
+    model.zipsave = zipsave
 
     print 'saving scenario ..'
     model.save(saveloc_)
 
     print 'loading scenario ..'
-    model2 = load(saveloc_)
+    model2 = load(zipname(saveloc_, model))
 
     assert model == model2
 
 
 @pytest.mark.slow
-@pytest.mark.parametrize('uncertain', [False, True])
-def test_save_load_midrun_scenario(uncertain, saveloc_):
+@pytest.mark.parametrize(('uncertain', 'zipsave'),
+                         [(False, False), (True, False),
+                          (False, True), (True, True)])
+def test_save_load_midrun_scenario(uncertain, zipsave, saveloc_):
     """
     create model, save it after 1step, then load and check equality of original
     model and persisted model
@@ -195,7 +197,7 @@ def test_save_load_midrun_scenario(uncertain, saveloc_):
     model.save(saveloc_)
 
     print 'loading scenario ..'
-    model2 = load(os.path.join(saveloc_, 'Model.json'))
+    model2 = load(zipname(saveloc_, model))
 
     for sc in zip(model.spills.items(), model2.spills.items()):
         sc[0]._array_allclose_atol = 1e-5  # need to change both atol
@@ -206,8 +208,10 @@ def test_save_load_midrun_scenario(uncertain, saveloc_):
 
 
 @pytest.mark.slow
-@pytest.mark.parametrize('uncertain', [False, True])
-def test_save_load_midrun_no_movers(uncertain, saveloc_):
+@pytest.mark.parametrize(('uncertain', 'zipsave'),
+                         [(False, False), (True, False),
+                          (False, True), (True, True)])
+def test_save_load_midrun_no_movers(uncertain, zipsave, saveloc_):
     """
     create model, save it after 1step, then load and check equality of original
     model and persisted model
@@ -224,7 +228,7 @@ def test_save_load_midrun_no_movers(uncertain, saveloc_):
     model.save(saveloc_)
 
     print 'loading scenario ..'
-    model2 = load(os.path.join(saveloc_, 'Model.json'))
+    model2 = load(zipname(saveloc_, model))
 
     for sc in zip(model.spills.items(), model2.spills.items()):
         # need to change both atol since reading persisted data
@@ -253,7 +257,7 @@ def test_load_midrun_ne_rewound_model(uncertain, saveloc_):
     model.save(saveloc_)
 
     model.rewind()
-    model2 = load(os.path.join(saveloc_, 'Model.json'))
+    model2 = load(zipname(saveloc_, model))
 
     assert model.spills != model2.spills
     assert model != model2
@@ -328,5 +332,22 @@ def test_location_file():
     '''
     Simple test to check if json_ contains nothing - default model is created
     '''
-    model = Model.load('.', {'json_': 'save'})
+    model = Model.loads({'json_': 'save'}, '.')
     assert model == Model()
+
+
+def test_load_fails(saveloc_):
+    '''
+    if load fails on map or any of the collections, no model is created
+    '''
+    model = make_model()
+    model.zipsave = False
+    model.save(saveloc_)
+    model_json = json.load(open(os.path.join(saveloc_, 'Model.json'), 'r'))
+    model_json['map']['filename'] = 'junk.bna'
+
+    with open(os.path.join(saveloc_, 'Model.json'), 'w') as fd:
+        json.dump(model_json, fd, indent=True)
+
+    with pytest.raises(Exception):
+        load(saveloc_)

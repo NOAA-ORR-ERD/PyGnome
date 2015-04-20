@@ -907,6 +907,29 @@ class SpillContainer(AddLogger, SpillContainerData):
 
         return total_released
 
+    def split_element(self, ix, num, l_frac=None):
+        '''
+        split an element into specified number.
+        For data, like mass, that gets divided, l_frac can be optionally
+        provided. l_frac is a list containing fraction of component's value
+        given to each new element. len(l_frac) must be equal to num and
+        sum(l_frac) == 1.0
+
+        :param ix: index into numpy array of the element that will be split
+        :type ix: int
+        :param num: split ix into 'num' number of elements
+        :type num: int
+        :param l_frac: list containing fractions that sum to 1.0 with
+            len(l_frac) == num
+        :type l_frac: list or tuple or numpy array
+        '''
+        for name, at in self.array_types.iteritems():
+            data = self[name]
+            split_elems = at.split_element(num, self[name][ix], l_frac)
+            data = np.insert(data, ix, split_elems[:-1], 0)
+            data[ix + len(split_elems) - 1] = split_elems[-1]
+            self._data_arrays[name] = data
+
     def model_step_is_done(self):
         '''
         Called at the end of a time step

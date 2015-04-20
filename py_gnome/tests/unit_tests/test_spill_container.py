@@ -521,14 +521,13 @@ def test_ordered_collection_api():
 
 
 """ tests w/ element types set for two spills """
-oil = test_oil
 el0 = ElementType([InitWindages((0.02, 0.02), -1),
                    InitRiseVelFromDist(
                        distribution=UniformDistribution(low=1, high=10))
-                   ], substance=oil)
+                   ], substance=test_oil)
 
 el1 = ElementType([InitWindages(),
-                   InitRiseVelFromDist()], substance=oil)
+                   InitRiseVelFromDist()], substance=test_oil)
 
 arr_types = {'windages', 'windage_range', 'windage_persist', 'rise_vel'}
 
@@ -1062,25 +1061,6 @@ def get_eq_spills():
     return (spill, spill2)
 
 
-@pytest.mark.xfail
-def test_reuse_substance():
-    '''
-    reuse substance
-    marked as xfail due to a testing issue
-    - this works fine if pytest is run on this file; however, when pytest is
-    run on all files, this fails when trying to make copy of spills
-    '''
-    scp = SpillContainerPair(uncertain=True)
-    s0 = Spill(Release(datetime.now(), 10),
-               element_type=floating(substance=test_oil))
-    s1 = Spill(Release(datetime.now(), 10),
-               element_type=floating(substance=s0.get('substance')))
-    assert s1.element_type is not s0.element_type
-    assert s1.element_type == s0.element_type
-    assert s1.get('substance') is s0.get('substance')
-    scp += [s0, s1]
-
-
 class TestSpillContainerPairGetSetDel:
     s0 = [point_line_release_spill(1, (0, 0, 0), datetime.now()),
           point_line_release_spill(2, (0, 0, 0), datetime.now())]
@@ -1261,6 +1241,41 @@ class TestSubstanceSpillsDataStructure():
                 for array in at:
                     assert array in data
                     assert np.all(data[array] == sc[array][mask])
+
+
+def test_split_element():
+    '''
+    test split_element() method
+    '''
+    sc = SpillContainer()
+    o_sc = SpillContainer()
+    reltime = datetime(2015, 1, 1, 12, 0, 0)
+    num_les = 10
+    sc.spills += point_line_release_spill(num_les, (1, 1, 1),
+                                          reltime,
+                                          amount=100,
+                                          units='kg',
+                                          substance=test_oil)
+    o_sc.spills += copy.deepcopy(sc.spills[0])
+
+    sc.release_elements(900, reltime)
+    o_sc.release_elements(900, reltime)
+
+    # now do a split at element
+    ix = 0
+    num = 2
+    l_frac = (.65, .35)
+    sc.split_element(ix, num, l_frac)
+    for name in sc._data_arrays:
+        split = sc[name]
+        orig = o_sc[name]
+        assert len(split) == num_les + num - 1
+        at = sc.array_types[name]
+        if isinstance(at, array_types.ArrayTypeDivideOnSplit):
+            assert np.allclose(split[ix:ix + num].sum(0), orig[ix])
+            assert np.allclose(split[ix], l_frac[0] * orig[ix])
+        else:
+            assert np.all(split[ix:ix + num] == orig[ix])
 
 
 if __name__ == '__main__':

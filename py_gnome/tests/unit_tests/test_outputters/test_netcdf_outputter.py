@@ -25,15 +25,11 @@ from gnome.model import Model
 from ..conftest import test_oil
 
 
-pytestmark = pytest.mark.serial
-
-
 @pytest.fixture(scope='function')
 def output_filename(output_dir, request):
     '''
     trying to create a unique file for tests so pytest_xdist doesn't have
-    issues. However, this still seems to fail occasionally so just mark
-    these tests as serial
+    issues.
     '''
     dirname = output_dir
     if not os.path.exists(dirname):

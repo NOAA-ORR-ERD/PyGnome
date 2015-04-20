@@ -68,7 +68,7 @@ class TestSkimmer:
         '''
         self.reset_test_objs()
         num_rel = self.sc.release_elements(time_step, rel_time)
-        self.intrinsic.update(num_rel, self.sc)
+        self.intrinsic.update(num_rel, self.sc, time_step)
 
     def test_prepare_for_model_run(self):
         self.reset_and_release()
@@ -127,7 +127,7 @@ class TestSkimmer:
             num_rel = self.sc.release_elements(time_step, model_time)
             if num_rel > 0:
                 self.sc['frac_water'][:] = avg_frac_water
-            self.intrinsic.update(num_rel, self.sc)
+            self.intrinsic.update(num_rel, self.sc, time_step)
             self.skimmer.prepare_for_model_step(self.sc, time_step, model_time)
 
             self.skimmer.weather_elements(self.sc, time_step, model_time)
@@ -274,7 +274,7 @@ class TestBurn:
             num = self.sc.release_elements(time_step, model_time)
             if num > 0:
                 self.sc['frac_water'][:] = avg_frac_water
-            self.intrinsic.update(num, self.sc)
+            self.intrinsic.update(num, self.sc, time_step)
 
             dt = timedelta(seconds=time_step)
             burn.prepare_for_model_step(self.sc, time_step, model_time)

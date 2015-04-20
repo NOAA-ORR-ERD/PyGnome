@@ -3,17 +3,41 @@ test functionality of the save_load module used to persist save files
 '''
 import os
 from datetime import datetime
-import shutil
-import sys
+from zipfile import ZipFile, ZIP_DEFLATED
 
-from gnome.persist import References, load, Savable
+from gnome.persist import References, load
 from gnome.movers import constant_wind_mover
 from gnome import movers, outputters, environment, map, spill, weatherers
+from gnome.persist import class_from_objtype, is_savezip_valid
+# following is modified for testing only
+from gnome.persist import save_load
+
 from conftest import testdata, test_oil
 
 import pytest
+from testfixtures import LogCapture
 
-pytestmark = pytest.mark.serial
+
+def test_warning_logged():
+    '''
+    warning is logged if we try to get a class from 'obj_type' that is not
+    in the gnome namespace
+    '''
+    with LogCapture() as l:
+        with pytest.raises(AttributeError):
+            class_from_objtype('os.path')
+
+        l.check(('gnome.persist.save_load',
+                 'WARNING',
+                 'os.path is not part of gnome namespace'))
+
+
+def test_class_from_objtype():
+    '''
+    test that correct class is returned by class_from_objtype
+    '''
+    cls = class_from_objtype('gnome.movers.WindMover')
+    assert cls is movers.WindMover
 
 
 def test_exceptions():
@@ -72,23 +96,13 @@ here and parametrize it by the objects
 '''
 
 
-def test_savloc_created(dump):
-    'unit test for _make_saveloc method'
-    sav = Savable()
-    temp = os.path.join(dump, 'test_make_saveloc')
-    sav._make_saveloc(temp)
-
-    assert os.path.exists(temp)
-    shutil.rmtree(temp)
-
-
 base_dir = os.path.dirname(__file__)
 
 
 # For WindMover test_save_load in test_wind_mover
 g_objects = (environment.Tide(testdata['CatsMover']['tide']),
              environment.Wind(filename=testdata['ComponentMover']['wind']),
-             environment.Wind(timeseries=(0, (1, 4)), units='mps'),
+             environment.Wind(timeseries=(0, (0, 0)), units='mps'),
              environment.Water(temperature=273),
              movers.random_movers.RandomMover(),
              movers.CatsMover(testdata['CatsMover']['curr']),
@@ -98,17 +112,6 @@ g_objects = (environment.Tide(testdata['CatsMover']['tide']),
              movers.ComponentMover(testdata['ComponentMover']['curr'],
                  wind=environment.Wind(
                      filename=testdata['ComponentMover']['wind'])),
-            #==================================================================
-            # movers.CurrentCycleMover(testdata['CurrentCycleMover']['curr'],
-            #   topology_file=testdata['CurrentCycleMover']['topology'],
-            #   tide=environment.Tide(testdata['CurrentCycleMover']['tide'])),
-            # movers.CurrentCycleMover(testdata['CurrentCycleMover']['curr'],
-            #   topology_file=testdata['CurrentCycleMover']['topology']),
-            # movers.GridCurrentMover(testdata['GridCurrentMover']['curr'],
-            #   testdata['GridCurrentMover']['topology']),
-            # movers.GridWindMover(testdata['GridWindMover']['wind'],
-            #   testdata['GridWindMover']['topology']),
-            #===================================================================
              movers.RandomVerticalMover(),
              movers.SimpleMover(velocity=(10.0, 10.0, 0.0)),
              map.MapFromBNA(testdata['MapFromBNA']['testmap'], 6),
@@ -121,8 +124,6 @@ g_objects = (environment.Tide(testdata['CatsMover']['tide']),
                                     start_position=(0, 0, 0)),
              spill.point_line_release_spill(10, (0, 0, 0), datetime.now()),
              spill.elements.ElementType(substance=test_oil),
-             weatherers.Evaporation(environment.constant_wind(1., 0.),
-                                    environment.Water(333.0)),
              weatherers.Skimmer(100, 'kg', 0.3, datetime(2014, 1, 1, 0, 0),
                                 datetime(2014, 1, 1, 4, 0)),
              weatherers.Burn(100, 1, datetime(2014, 1, 1, 0, 0)),
@@ -135,19 +136,39 @@ g_objects = (environment.Tide(testdata['CatsMover']['tide']),
 
 
 @pytest.mark.parametrize("obj", g_objects)
-def test_save_load(clean_saveloc, obj):
+def test_save_load(saveloc_, obj):
     'test save/load functionality'
-    refs = obj.save(clean_saveloc)
-    obj2 = load(os.path.join(clean_saveloc, refs.reference(obj)))
+    refs = obj.save(saveloc_)
+    obj2 = load(os.path.join(saveloc_, refs.reference(obj)))
     assert obj == obj2
 
+
 '''
-Following movers fail on windows with clean_saveloc fixture. The clean_saveloc
-fixture deletes ./temp directory before each run of test_save_load(). This is
-causing an issue in windows for the NetCDF files - for some reason it is not
-able to delete the netcdf data files. All files are being closed in C++, but
-until we find the solution, lets break up above tests and not call
-clean_saveloc for following tests.
+Wind objects need more work - the data is being written out to file in
+'r-theta' format accurate to 2 decimal places and in knots. All the conversions
+mean the allclose() check on timeseries fails - xfail for now. When loading
+for a file it works fine, no decimal places stored in file for magnitude
+'''
+
+
+@pytest.mark.parametrize("obj",
+                         (environment.Wind(timeseries=(0, (1, 30)),
+                                           units='meters per second'),
+                          weatherers.Evaporation(environment.
+                                                 constant_wind(1., 30.),
+                                                 environment.Water(333.0)),)
+                         )
+def test_save_load_wind_objs(saveloc_, obj):
+    'test save/load functionality'
+    refs = obj.save(saveloc_)
+    obj2 = load(os.path.join(saveloc_, refs.reference(obj)))
+    assert obj == obj2
+
+
+'''
+Following movers fail on windows with fixture. This is causing an issue in
+windows for the NetCDF files - for some reason it is not able to delete the
+netcdf data files. All files are being closed in C++.
 '''
 
 l_movers2 = (movers.CurrentCycleMover(testdata['CurrentCycleMover']['curr'],
@@ -163,11 +184,85 @@ l_movers2 = (movers.CurrentCycleMover(testdata['CurrentCycleMover']['curr'],
 
 
 @pytest.mark.parametrize("obj", l_movers2)
-def test_save_load_grids(obj, dump):
+def test_save_load_grids(saveloc_, obj):
     'test save/load functionality'
+    refs = obj.save(saveloc_)
+    obj2 = load(os.path.join(saveloc_, refs.reference(obj)))
+    assert obj == obj2
+    #==========================================================================
+    # temp = os.path.join(dump, 'temp')
+    # for dir_ in (temp, os.path.relpath(temp)):
+    #     refs = obj.save(dir_)
+    #     obj2 = load(os.path.join(dir_, refs.reference(obj)))
+    #     assert obj == obj2
+    #==========================================================================
 
-    temp = os.path.join(dump, 'temp')
-    for dir_ in (temp, os.path.relpath(temp)):
-        refs = obj.save(dir_)
-        obj2 = load(os.path.join(dir_, refs.reference(obj)))
-        assert obj == obj2
+
+class TestSaveZipIsValid:
+    def test_invalid_zip(self):
+        ''' invalid zipfile '''
+        with LogCapture() as l:
+            assert not is_savezip_valid('junk.zip')
+            l.check(('gnome.persist.save_load',
+                     'WARNING',
+                     'junk.zip is not a valid zipfile'))
+
+    # need a bad zip that fails CRC check
+    # check max_json_filesize
+    def test_max_json_filesize(self):
+        '''
+        create a fake zip containing
+        'sample_data/boston_data/MerrimackMassCoastOSSM.json'
+        change _max_json_filesize 4K
+        '''
+        save_load._max_json_filesize = 8 * 1024
+        badzip = 'sample_data/badzip_max_json_filesize.zip'
+        filetoobig = 'filetoobig.json'
+        with ZipFile(badzip, 'a', compression=ZIP_DEFLATED) as z:
+            z.write(testdata['boston_data']['cats_ossm'], filetoobig)
+
+        with LogCapture() as l:
+            assert not is_savezip_valid(badzip)
+            l.check(('gnome.persist.save_load',
+                     'WARNING',
+                     "Filesize of {0} is {1}. It must be less than "
+                     "_max_json_filesize: {2}. Rejecting zipfile.".
+                     format(filetoobig,
+                            z.NameToInfo[filetoobig].file_size,
+                            save_load._max_json_filesize)))
+
+        save_load._max_json_filesize = 1 * 1024
+
+    def test_check_max_compress_ratio(self):
+        '''
+        create fake zip containing 100 '0' as string. The compression ratio
+        should be big
+        '''
+        badzip = 'sample_data/badzip_max_compress_ratio.zip'
+        badfile = 'badcompressratio.json'
+        with ZipFile(badzip, 'a', compression=ZIP_DEFLATED) as z:
+            z.writestr(badfile, ''.join(['0'] * 100))
+
+        with LogCapture() as l:
+            assert not is_savezip_valid(badzip)
+            zi = z.NameToInfo[badfile]
+            l.check(('gnome.persist.save_load',
+                     'WARNING',
+                     ("uncompressed filesize is {0} time compressed filesize."
+                      "_max_compress_ratio must be less than {1}. Rejecting "
+                      "zipfile".format(zi.file_size/zi.compress_size,
+                                       save_load._max_compress_ratio))))
+
+    def test_filenames_dont_contain_dotdot(self):
+        '''
+        '''
+        badzip = 'sample_data/badzip_max_compress_ratio.zip'
+        badfile = './../badpath.json'
+        with ZipFile(badzip, 'a', compression=ZIP_DEFLATED) as z:
+            z.writestr(badfile, 'bad file, contains path')
+
+        with LogCapture() as l:
+            assert not is_savezip_valid(badzip)
+            l.check(('gnome.persist.save_load',
+                     'WARNING',
+                     "Found '..' in " + badfile + ". Rejecting zipfile"))

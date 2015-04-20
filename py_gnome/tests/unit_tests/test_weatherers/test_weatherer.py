@@ -59,15 +59,15 @@ class TestWeatherer:
         calls one weathering step and checks that we decayed at the expected
         rate. Needs more tests with varying half_lives
         '''
+        time_step = 15 * secs_in_minute
         intrinsic.initialize(test_sc)
-        intrinsic.update(sc.num_released, test_sc)
+        intrinsic.update(sc.num_released, test_sc, time_step)
 
         print '\nsc["mass"]:\n', test_sc['mass']
 
         orig_mc = np.copy(test_sc['mass_components'])
 
         model_time = rel_time
-        time_step = 15 * secs_in_minute
 
         hl = tuple([time_step] * test_sc['mass_components'].shape[1])
         weatherer = HalfLifeWeatherer(half_lives=hl)

@@ -7,8 +7,6 @@ import copy
 
 import numpy as np
 
-import gnome    # required by new_from_dict
-
 from gnome.array_types import (frac_lost,  # due to evaporation and dissolution
                                age,
                                mass,
@@ -21,7 +19,7 @@ from gnome import constants
 from .core import WeathererSchema
 from gnome.weatherers import Weatherer
 from gnome.cy_gnome.cy_weatherers import emulsify_oil
-from gnome.basic_types import fate as bt_fate
+from gnome.persist import class_from_objtype
 
 
 class Emulsification(Weatherer, Serializable):
@@ -156,12 +154,9 @@ class Emulsification(Weatherer, Serializable):
             schema = cls._schema()
 
             dict_ = schema.deserialize(json_)
-#             if 'wind' in json_:
-#                 obj = json_['wind']['obj_type']
-#                 dict_['wind'] = (eval(obj).deserialize(json_['wind']))
             if 'waves' in json_:
-                obj = json_['waves']['obj_type']
-                dict_['waves'] = (eval(obj).deserialize(json_['waves']))
+                waves = class_from_objtype(json_['waves'].pop('obj_type'))
+                dict_['waves'] = waves.deserialize(json_['waves'])
             return dict_
 
         else:

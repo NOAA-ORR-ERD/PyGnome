@@ -579,6 +579,9 @@ class Serializable(GnomeId, Savable):
             if dict_:
                 new_obj.update_from_dict(dict_)
 
+        msg = "constructed object {0}".format(new_obj.__class__.__name__)
+        new_obj.logger.debug(new_obj._pid + msg)
+
         return new_obj
 
     def _attrlist(self, do=('update', 'read')):

@@ -8,7 +8,7 @@ from gnome.environment import Water
 
 def test_Water_init():
     w = Water()
-    assert w.temperature == 311.15
+    assert w.temperature == 300.0
     assert w.salinity == 35.0
     w = Water(temperature=273, salinity=0)
     assert w.temperature == 273.0
@@ -53,3 +53,11 @@ def test_Water_set(attr, unit):
     w.set(attr, 1.0, unit)
     assert getattr(w, attr) == 1.0
     assert w.units[attr] == unit
+
+
+def test_Water_density():
+    '''
+    for default salinity and water temp, water density is > 1000.0 kg/m^3
+    '''
+    w = Water()
+    assert w.density > 1000.0

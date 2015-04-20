@@ -6,9 +6,12 @@ import copy
 
 from colander import SchemaNode, Float, MappingSchema, drop, String, OneOf
 import unit_conversion as uc
+import gsw
+from repoze.lru import lru_cache
 
 from gnome.utilities import serializable
 from gnome.persist import base_schema
+from gnome import constants
 
 from .. import _valid_units
 
@@ -30,7 +33,6 @@ class Environment(object):
         '''
         if name:
             self.name = name
-
 
     def prepare_for_model_run(self, model_time):
         """
@@ -128,9 +130,9 @@ class Water(Environment, serializable.Serializable):
                    }
 
     def __init__(self,
-                 temperature=311.15,
+                 temperature=300.0,
                  salinity=35.0,
-                 sediment=None,
+                 sediment=.005,	 # kg/m^3 oceanic default
                  wave_height=None,
                  fetch=None,
                  name='Water'):
@@ -152,7 +154,6 @@ class Water(Environment, serializable.Serializable):
         self.sediment = sediment
         self.wave_height = wave_height
         self.fetch = fetch
-        self.density = 997
         self.kinematic_viscosity = 0.000001
         self.name = name
 
@@ -164,6 +165,7 @@ class Water(Environment, serializable.Serializable):
 
     __str__ = __repr__
 
+    @lru_cache(7)
     def get(self, attr, unit=None):
         '''
         return value in desired unit. If None, then return the value without
@@ -172,7 +174,7 @@ class Water(Environment, serializable.Serializable):
         be sure the unit are as desired
 
         .. note:: unit_conversion does not contain a conversion for 'pressure'
-        Need to add this at some point for completeness
+            Need to add this at some point for completeness.
         '''
         val = getattr(self, attr)
         if unit is None or unit == self.units[attr]:
@@ -199,3 +201,27 @@ class Water(Environment, serializable.Serializable):
 
         setattr(self, attr, value)
         self.units[attr] = unit
+
+    @lru_cache(2)
+    def _get_density(self, salinity, temp):
+        '''
+        use lru cache so we don't recompute if temp is not changing
+        '''
+        temp_c = uc.convert('Temperature', self.units['temperature'], 'C',
+                            temp)
+        # sea level pressure in decibar - don't expect atmos_pressure to change
+        # also expect constants to have SI units
+        rho = gsw.rho(salinity,
+                      temp_c,
+                      constants.atmos_pressure * 0.0001)
+        return rho
+
+    @property
+    def density(self):
+        '''
+        return the density based on water salinity and temperature. The
+        salinity is in 'psu'; it is not being converted to absolute salinity
+        units - for our purposes, this is sufficient. Using gsw.rho()
+        internally which expects salinity in absolute units.
+        '''
+        return self._get_density(self.salinity, self.temperature)
