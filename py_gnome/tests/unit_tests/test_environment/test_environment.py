@@ -61,3 +61,23 @@ def test_Water_density():
     '''
     w = Water()
     assert w.density > 1000.0
+
+
+def test_Water_update_from_dict():
+    '''
+    test that the update_from_dict correctly sets fetch and wave_height to None
+    if it is dropped from json payload so user chose compute from wind option.
+    '''
+    w = Water()
+    json_ = w.serialize()
+    w.fetch = 0.0
+    w.wave_height = 1.0
+    json_with_values = w.serialize()
+
+    w.update_from_dict(Water.deserialize(json_))
+    assert w.fetch is None
+    assert w.wave_height is None
+
+    w.update_from_dict(Water.deserialize(json_with_values))
+    assert w.fetch == 0.0
+    assert w.wave_height == 1.0
