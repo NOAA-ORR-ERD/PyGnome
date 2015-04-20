@@ -20,7 +20,7 @@ def test_Water_init():
 # similarly, sediment only has mg/l as units - decide if we want more units
 # here
 @pytest.mark.parametrize(("attr", "unit"), [('temperature', 'kg'),
-                                            ('sediment', 'kg/m^3'),
+                                            ('sediment', 'kg'),
                                             ('salinity', 'ppt'),
                                             ('wave_height', 'l'),
                                             ('fetch', 'ppt')])
@@ -81,3 +81,21 @@ def test_Water_update_from_dict():
     w.update_from_dict(Water.deserialize(json_with_values))
     assert w.fetch == 0.0
     assert w.wave_height == 1.0
+
+
+@pytest.mark.parametrize(("attr", "unit", "val", "exp_si"),
+                         [('temperature', 'C', 0, 273.16),
+                          ('sediment', 'mg/l', 5, 0.005),
+                          ('wave_height', 'km', .001, 1),
+                          ('fetch', 'km', .01, 10),
+                          ('fetch', 'm', 0.323, 0.323)])
+def test_properties_in_si(attr, unit, val, exp_si):
+    '''
+    set properties in non SI units and check default get() returns it in SI
+    '''
+    kw = {attr: val, 'units': {attr: unit}}
+    w = Water(**kw)
+    assert getattr(w, attr) == val
+    assert w.units[attr] == unit
+
+    assert w.get(attr) == exp_si
