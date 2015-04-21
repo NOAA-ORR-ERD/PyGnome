@@ -178,7 +178,6 @@ class Water(Environment, serializable.Serializable):
 
     __str__ = __repr__
 
-    @lru_cache(7)
     def get(self, attr, unit=None):
         '''
         return value in desired unit. If None, then return the value in SI
