@@ -12,7 +12,7 @@ transaction
 zope.sqlalchemy
 awesome-slugify
 pytest
-numpy
+numpy>=1.9.0
 git+https://github.com/NOAA-ORR-ERD/PyNUCOS.git#egg=unit_conversion
 
 
