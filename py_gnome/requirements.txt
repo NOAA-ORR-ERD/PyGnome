@@ -10,7 +10,7 @@
 pip>=1.5.6
 
 #setuptools>=2.1    # needed before pip can be installed anyway...
-#numpy>=1.7.0   
+numpy>=1.9.0   
 #netCDF4            # requires netcdf-4 binaries 
 #matplotlib
 #
