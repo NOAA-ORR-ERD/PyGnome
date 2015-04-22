@@ -82,7 +82,7 @@ OSErr emulsify(int n, unsigned long step_len, double *frac_water, double *interf
 	return err;
 }
 
-OSErr disperse(int n, unsigned long step_len, double *frac_water, double *le_mass, double *le_viscosity, double *le_density, double *fay_area, double *d_disp, double frac_breaking_waves, double disp_wave_energy, double wave_height, double visc_w, double rho_w, double C_sed, double V_entrain, double ka)
+OSErr disperse(int n, unsigned long step_len, double *frac_water, double *le_mass, double *le_viscosity, double *le_density, double *fay_area, double *d_disp, double *d_sed, double frac_breaking_waves, double disp_wave_energy, double wave_height, double visc_w, double rho_w, double C_sed, double V_entrain, double ka)
 {
 	OSErr err = 0;
 	
@@ -135,12 +135,21 @@ OSErr disperse(int n, unsigned long step_len, double *frac_water, double *le_mas
 		else
 			Q_sed=0.0;
 	
-		d_disp[i] = (q_disp + (1.0 - Y) * Q_sed) * step_len; //total vol oil loss
+		//d_disp[i] = (q_disp + (1.0 - Y) * Q_sed) * step_len; //total vol oil loss
+		d_disp[i] = q_disp * step_len; //total vol oil loss due to dispersion
+		d_sed[i] = (1.0 - Y) * Q_sed * step_len; //total vol oil loss due to sedimentation
 		
 		d_disp[i] = d_disp[i] * le_density[i]; 
+		d_sed[i] = d_sed[i] * le_density[i]; 
 	
-		if (d_disp[i] > le_mass[i])
-			d_disp[i] = le_mass[i];
+		//if (d_disp[i] > le_mass[i])
+			//d_disp[i] = le_mass[i];
+		if (d_disp[i] + d_sed[i] > le_mass[i])
+		{
+			double ratio = d_disp[i] / (d_disp[i] + d_sed[i]);
+			d_disp[i] = ratio * le_mass[i];
+			d_sed[i] = le_mass[i] - d_disp[i];
+		}
 	}
 
 	return err;
