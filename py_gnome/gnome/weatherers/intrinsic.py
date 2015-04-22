@@ -29,11 +29,16 @@ class FayGravityViscous(AddLogger):
         self.spreading_const = (1.53, 1.21)
         self.thickness_limit = .0001
 
-    @lru_cache(1)
+    @lru_cache(4)
     def _gravity_spreading_t0(self,
                               water_viscosity,
                               relative_bouyancy,
                               blob_init_vol):
+        '''
+        time for the initial transient phase of spreading to complete. This
+        depends on blob volume, but is on the order of minutes. Cache upto 4
+        inputs - don't expect 4 or more spills in one scenario.
+        '''
         # time to reach a0
         t0 = ((self.spreading_const[1]/self.spreading_const[0]) ** 4.0 *
               (blob_init_vol/(water_viscosity * constants.gravity *
@@ -43,8 +48,7 @@ class FayGravityViscous(AddLogger):
     def init_area(self,
                   water_viscosity,
                   relative_bouyancy,
-                  blob_init_vol,
-                  time_step):
+                  blob_init_vol):
         '''
         This takes scalars inputs since water_viscosity, init_volume and
         relative_bouyancy for a bunch of LEs released together will be the same
@@ -65,21 +69,13 @@ class FayGravityViscous(AddLogger):
 
         Equation for gravity spreading:
         ::
-            A0 = np.pi*(k2**4/k1**2)*(((n_LE*V0)**5*g*dbuoy)/(nu_h2o**2))**(1./6.)
+            A0 = np.pi*(k2**4/k1**2)*((V0**5*g*dbuoy)/(nu_h2o**2))**(1./6.)
         '''
         self._check_relative_bouyancy(relative_bouyancy)
-        t0 = self._gravity_spreading_t0(water_viscosity,
-                                        relative_bouyancy,
-                                        blob_init_vol)
-        if t0 >= time_step:
-            a0 = (np.pi*(self.spreading_const[1]**4/self.spreading_const[0]**2)
-                  * (((blob_init_vol)**5*constants.gravity*relative_bouyancy) /
-                     (water_viscosity**2))**(1./6.))
-            return a0
-        else:
-            area = self._update_blob_area(water_viscosity, relative_bouyancy,
-                                          blob_init_vol, time_step - t0)
-            return area
+        a0 = (np.pi*(self.spreading_const[1]**4/self.spreading_const[0]**2)
+              * (((blob_init_vol)**5*constants.gravity*relative_bouyancy) /
+                 (water_viscosity**2))**(1./6.))
+        return a0
 
     def _check_relative_bouyancy(self, rel_bouy):
         '''
@@ -123,11 +119,22 @@ class FayGravityViscous(AddLogger):
         for b_age in np.unique(age):
             # within each age blob_init_volume should also be the same
             m_age = b_age == age
+            t0 = self._gravity_spreading_t0(water_viscosity,
+                                            relative_bouyancy,
+                                            blob_init_volume[m_age][0])
 
-            # now update area of old LEs
-            blob_thickness = blob_init_volume[m_age][0]/area[m_age].sum()
-            if blob_thickness > self.thickness_limit:
+            if b_age <= t0:
+                '''
+                only update initial area, A_0, if age is past the transient
+                phase. Expect this to be the case since t0 is on the order of
+                minutes; but do a check incase we want to experiment with
+                smaller timesteps.
+                '''
+                continue
 
+            # now update area of old LEs - only update till max area is reached
+            max_area = blob_init_volume[m_age][0]/self.thickness_limit
+            if area[m_age].sum() < max_area:
                 self.logger.debug(self._pid + "Before update: ")
                 msg = ("\n\trel_bouy: {0}\n"
                        "\tblob_i_vol: {1}\n"
@@ -143,11 +150,43 @@ class FayGravityViscous(AddLogger):
                                            relative_bouyancy,
                                            blob_init_volume[m_age][0],
                                            age[m_age][0])
-                area[m_age] = blob_area/m_age.sum()
+                if blob_area > max_area:
+                    area[m_age] = max_area/m_age.sum()
+                else:
+                    area[m_age] = blob_area/m_age.sum()
+
                 self.logger.debug(self._pid +
                                   "\tarea after update: {0}".format(blob_area))
 
         return area
+
+
+class ConstantArea(AddLogger):
+    '''
+    Used for testing and diagnostics
+    - must be manually hooked up
+    '''
+    def __init__(self, area):
+        self.area = area
+
+    def init_area(self, *args):
+        return self.area
+
+    def update_area(self,
+                    water_viscosity=None,
+                    relative_bouyancy=None,
+                    blob_init_volume=None,
+                    area=None,
+                    age=None):
+        '''
+        return the area array as it was entered since that contains area per
+        LE if there is more than one LE. Kept the interface the same as
+        FayGravityViscous since WeatheringData will call it the same way.
+        '''
+        if area is None:
+            return self.area
+        else:
+            return area
 
 
 class WeatheringData(AddLogger):
@@ -390,8 +429,7 @@ class WeatheringData(AddLogger):
             init_blob_area = \
                 self.spreading.init_area(water_kvis,
                                          self._init_relative_bouyancy,
-                                         data['bulk_init_volume'][s_mask][0],
-                                         time_step)
+                                         data['bulk_init_volume'][s_mask][0])
 
             data['fay_area'][s_mask] = init_blob_area/num
 

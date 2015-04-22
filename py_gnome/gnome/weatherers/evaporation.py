@@ -250,9 +250,13 @@ class BlobEvaporation(Evaporation):
 
         # do it the same way for initial and all subsequent times
         blob_area = data['fay_area'][0] * len(data['fay_area'])
-        corr_area = blob_area * 2./3
-        #corr_area = data['fay_area'].reshape(-1, 1) * 2./3
-        data['evap_decay_constant'][:, :] = const * corr_area
+        t = data['age'][0]
+        if t == 0:
+            int_area = blob_area
+        else:
+            int_area = (blob_area * 2./3 *
+                        ((t + time_step)**(3./2)/np.sqrt(t) - t))
+        data['evap_decay_constant'][:, :] = const * int_area
 
         self.logger.debug(self._pid + 'max decay: {0}, min decay: {1}'.
                           format(np.max(data['evap_decay_constant']),
