@@ -90,7 +90,7 @@ class WeatheringOutput(Outputter, Serializable):
         output_info.update(dict_)
         self.logger.debug(self._pid + 'step_num: {0}'.format(step_num))
         for name, val in dict_.iteritems():
-            msg = ('\t{0}: {1}').format(name, val)
+            msg = ('\t{0}: {1}'.format(name, val))
             self.logger.debug(msg)
 
         if self.output_dir:

@@ -59,7 +59,7 @@ class NaturalDispersion(Weatherer, Serializable):
         '''
         # create 'dispersed' key if it doesn't exist - are we tracking this ?
         # let's only define this the first time
-        if self.active:
+        if self.on:
             sc.weathering_data['natural_dispersion'] = 0.0
 
 
@@ -94,10 +94,11 @@ class NaturalDispersion(Weatherer, Serializable):
         disp_wave_energy = self.waves.get_value(model_time)[3] # from the waves module
         visc_w = self.waves.water.kinematic_viscosity
         rho_w = self.waves.water.density
-        sediment = self.waves.water.sediment
+        sediment = self.waves.water.get('sediment',unit='kg/m^3')	# web has different units
+        #sediment = self.waves.water.sediment
 
         for substance, data in sc.itersubstancedata(self.array_types):
-            if len(data['frac_water']) == 0:
+            if len(data['mass']) == 0:
                 # substance does not contain any surface_weathering LEs
                 continue
 
@@ -127,8 +128,8 @@ class NaturalDispersion(Weatherer, Serializable):
                 (1 - disp_mass_frac) * data['mass_components']
             data['mass'] = data['mass_components'].sum(1)
 
-            self.logger.info('Amount Dispersed: {0}'.
-                             format(sc.weathering_data['natural_dispersion']))
+            self.logger.debug(self._pid + 'Amount Dispersed for {0}: {1}'.
+                             format(substance.name, sc.weathering_data['natural_dispersion']))
 
         sc.update_from_fatedataview()
 
