@@ -12,7 +12,6 @@ from colander import (SchemaNode, Float, String, drop)
 from gnome.basic_types import oil_status, fate as bt_fate
 from gnome.weatherers import Weatherer
 from gnome.utilities.serializable import Serializable, Field
-from gnome.utilities.inf_datetime import InfDateTime
 
 from .core import WeathererSchema
 from .. import _valid_units
@@ -150,6 +149,28 @@ class CleanUpBase(Weatherer):
                           sum()/data['mass'].sum())
         return (1 - avg_frac_water)
 
+    def prepare_for_model_step(self, sc, time_step, model_time):
+        '''
+        Do sub timestep resolution here so numbers add up correctly
+        Mark LEs to be skimmed - do them in order right now. Assume all LEs
+        that are released together will be skimmed together since they would
+        be closer to each other in position.
+
+        Assumes: there is more mass in water than amount of mass to be
+        skimmed. The LEs marked for Skimming are marked only once -
+        code checks to see if any LEs are marked for skimming and if
+        none are found, it marks them.
+        '''
+        if not self.on:
+            self._active = False
+            return
+
+        if (model_time + timedelta(seconds=time_step) > self.active_start and
+            self.active_stop > model_time):
+            self._active = True
+        else:
+            self._active = False
+
 
 class Skimmer(CleanUpBase, Serializable):
     _state = copy.deepcopy(Weatherer._state)
@@ -234,18 +255,11 @@ class Skimmer(CleanUpBase, Serializable):
         code checks to see if any LEs are marked for skimming and if
         none are found, it marks them.
         '''
-        if not self.on:
-            self._active = False
+        super(Skimmer, self).prepare_for_model_step(sc, time_step, model_time)
+        if not self.active:
             return
 
-        if (model_time + timedelta(seconds=time_step) > self.active_start and
-            self.active_stop > model_time):
-            self._active = True
-        else:
-            self._active = False
-            return
-
-        # only when it is active, update the status codes
+        # if active, setup timestep correctly
         self._set__timestep(time_step, model_time)
         if (sc['fate_status'] == bt_fate.skim).sum() == 0:
             substance = self._get_substance(sc)
@@ -312,9 +326,10 @@ class Skimmer(CleanUpBase, Serializable):
 class BurnSchema(WeathererSchema):
     area = SchemaNode(Float())
     thickness = SchemaNode(Float())
-    _oil_thickness = SchemaNode(Float(), missing=drop)
     area_units = SchemaNode(String())
     thickness_units = SchemaNode(String())
+    _oil_thickness = SchemaNode(Float(), missing=drop)
+    efficiency = SchemaNode(Float(), missing=drop)
 
 
 class Burn(CleanUpBase, Serializable):
@@ -325,7 +340,17 @@ class Burn(CleanUpBase, Serializable):
                Field('thickness', save=True, update=True),
                Field('area_units', save=True, update=True),
                Field('thickness_units', save=True, update=True),
-               Field('_oil_thickness', save=True)]
+               Field('efficiency', save=True, update=True),
+               Field('_oilwater_thickness', save=True),
+               Field('wind', save=True, update=True, save_reference=True)]
+
+    # no need to save active_stop or update active_stop
+    # for some reason, the schema is not dropping None of this type. For now
+    # just toggle its save and update to False - figure out why it is not being
+    # dropped
+    # del _state['active_stop']
+    _state['active_stop'].save = False
+    _state['active_stop'].update = False
 
     valid_area_units = _valid_units('Area')
     valid_length_units = _valid_units('Length')
@@ -336,14 +361,31 @@ class Burn(CleanUpBase, Serializable):
                  active_start,
                  area_units='m^2',
                  thickness_units='m',
+                 efficiency=None,
+                 wind=None,
                  **kwargs):
         '''
-        Set the area of boomed oil to be burned. Assumes the area and thickness
-        are in SI units so 'area' is in 'm^2' and 'thickness' in 'm'. There
-        is no unit conversion.
+        Set the area of boomed oil to be burned.
+        Cleanup operations must have a valid datetime for active_start,
+        cannot use -inf. Cannot set active_stop - burn automatically stops
+        when oil/water thickness reaches 2mm.
 
-        Set intial thickness of this oil as specified by user.
-        cleanup operations must have a valid datetime - cannot use -inf
+        :param float area: area of boomed oil/water mixture to burn
+        :param float thickness: thickness of boomed oil/water mixture
+        :param datetime active_start: time when the burn starts
+        :param str area_units: default is 'm^2'
+        :param str thickness_units: default is 'm'
+        :param float efficiency: burn efficiency, must be greater than 0 and
+            less than or equal to 1.0
+        :param wind: gnome.environment.Wind object. Only used to set
+            efficiency if efficiency is None. Efficiency is defined as:
+                1 - 0.07 * wind.get_value(model_time)
+            where wind.get_value(model_time) is value of wind at model_time
+
+        Kwargs passed onto base class:
+
+        :param str name: name of object
+        :param bool on: whether object is on or not for the run
         '''
         if 'active_stop' in kwargs:
             # user cannot set 'active_stop'
@@ -352,86 +394,38 @@ class Burn(CleanUpBase, Serializable):
         super(Burn, self).__init__(active_start=active_start,
                                    **kwargs)
 
-        # store in SI units - internally, object uses these
-        self._si_thickness = None  # in SI units
-        self._si_area = None       # in SI units
-
-        # validate user units before setting _area_units/_thickness_units
-        # if any of the following are updated via setters, then update
-        # _si_thickness/_si_area
-        self._area = area
-        self._thickness = thickness
-
         # initialize user units to valid units - setters following this will
         # initialize area_units and thickness_units per input values
         self._area_units = 'm^2'
         self._thickness_units = 'm'
 
+        # thickness of burned/boomed oil which is updated at each timestep
+        # this will be set once we figure out how much oil will be burned
+        # in prepare_for_model_step()
+        self._oilwater_thickness = None  # in SI units
+        self._min_thickness = 0.002      # stop burn threshold in SI 2mm
+
+        # need frac_water
+        self._burn_duration = None      # time for oil/water thick to reach 2mm
+        self._oil_vol_burnrate = None   # burn rate of only the oil
+
+        # validate user units before setting _area_units/_thickness_units
+        self._thickness = thickness
+        self.area = area
+
         # setters will validate the units
         self.area_units = area_units
         self.thickness_units = thickness_units
 
-        # thickness of burned/boomed oil which is updated at each timestep
-        # this will be set once we figure out how much oil will be burned
-        # in prepare_for_model_step()
-        self._oil_thickness = None
-        self._min_thickness = 0.002     # stop burn threshold
+        self._efficiency = None
+        self.efficiency = efficiency
+        self.wind = wind
 
-        # burn rate is defined as a volume rate in m^3/sec
-        # where rate = 0.000058 * self.area * (1 - frac_water_content)
-        # However, the area will cancel out when we compute the burn time:
-        # burn_time = area/burn_rate * (thickness - 0.002)
-        self._burn_rate_constant = 0.000058
-        self._burn_duration = None
-
-    def _update_si_area(self):
-        '''
-        update internal _area variable. Called if user sets the 'area' or
-        the 'area_units'
-        '''
-        if self.area_units != 'm^2':
-            value = uc.Convert('Area', self.area_units, 'm^2', self.area)
-        else:
-            value = self.area
-
-        self._si_area = value
-
-    def _update_si_thickness(self):
-        '''
-        update internal _thickness variable. Called if user sets 'thickness'
-        or the 'thickness_units'
-        '''
-        if self.thickness_units != 'm':
-            value = uc.Convert('Length', self.thickness_units, 'm',
-                               self.thickness)
-        else:
-            value = self.thickness
-
-        self._si_thickness = value
-
-    @property
-    def area(self):
-        '''
-        return area in user specified area_units
-        '''
-        return self._area
-
-    @area.setter
-    def area(self, value):
-        self._area = value
-        self._update_si_area()
-
-    @property
-    def thickness(self):
-        '''
-        return thickness in user specified area_units
-        '''
-        return self._thickness
-
-    @thickness.setter
-    def thickness(self, value):
-        self._thickness = value
-        self._update_si_thickness()
+        if self.efficiency is None and wind is None:
+            msg = ("Set the 'efficiency' or provide 'wind' object so "
+                   "efficiency can be computed. Without at least one, it "
+                   "will fail during step")
+            self.logger.warning(msg)
 
     @property
     def area_units(self):
@@ -439,12 +433,45 @@ class Burn(CleanUpBase, Serializable):
 
     @area_units.setter
     def area_units(self, value):
+        '''
+        value must be one of the valid units given in valid_area_units
+        '''
         if value not in self.valid_area_units:
-            self.logger.error(self._pid + "ignoring invalid area units: {0}".
-                              format(value))
+            e = uc.InvalidUnitError((value, 'Area'))
+            self.logger.error(e.message)
+            raise e
         else:
             self._area_units = value
-            self._update_si_area()
+
+    @property
+    def thickness(self):
+        return self._thickness
+
+    @thickness.setter
+    def thickness(self, value):
+        '''
+        log a warning if thickness in SI units is less than _min_thickness
+        '''
+        if value not in self.valid_length_units:
+            e = uc.InvalidUnitError((value, 'Length'))
+            self.logger.error(e.message)
+            raise e
+        self._thickness = value
+        self._log_thickness_warning()
+
+    def _log_thickness_warning(self):
+        '''
+        when thickness or thickness_units are updated, check to see that the
+        value in SI units is > _min_thickness. If it is not, then log a
+        warning
+        '''
+        if (uc.Convert('Length', self.thickness_units, 'm',
+                       self.thickness) <= self._min_thickness):
+            msg = ("thickness of {0} {1}, is less than min required {2} m."
+                   " Burn will not occur".
+                   format(self.thickness, self.thickness_units,
+                          self._min_thickness))
+            self.logger.warning(msg)
 
     @property
     def thickness_units(self):
@@ -452,88 +479,153 @@ class Burn(CleanUpBase, Serializable):
 
     @thickness_units.setter
     def thickness_units(self, value):
+        '''
+        value must be one of the valid units given in valid_length_units
+        '''
         if value not in self.valid_length_units:
-            self.logger.error(self._pid + "ignoring invalid thickness units: "
-                              "{0}".format(value))
-        else:
-            self._thickness_units = value
-            self._update_si_thickness()
+            e = uc.InvalidUnitError((value, 'Length'))
+            self.logger.error(e.message)
+            raise e
+
+        self._thickness_units = value
+
+        # if thickness in these units is < min required, log a warning
+        self._log_thickness_warning()
+
+    @property
+    def efficiency(self):
+        return self._efficiency
+
+    @efficiency.setter
+    def efficiency(self, value):
+        '''
+        update efficiency.
+
+        It must be greater than 0 and less than or equal to 1.0. It can also be
+        None since that means use wind to compute efficiency.
+        '''
+        if value is None or (value > 0 and value <= 1):
+            self._efficiency = value
+
+        elif value <= 0 or value > 1.0:
+            msg = "efficiency must be > 0 and <= 1.0"
+            self.logger.warning(msg)
 
     def prepare_for_model_run(self, sc):
         '''
-        resets internal _oil_thickness variable to initial thickness specified
-        by user. Also resets _burn_duration to None
+        resets internal _oilwater_thickness variable to initial thickness
+        specified by user. Also resets _burn_duration to 0.0
+        initializes sc.weathering_data['burned'] = 0.0
         '''
         # reset current thickness to initial thickness whenever model is rerun
-        self._oil_thickness = None
-        self._burn_duration = None
+        self._burn_duration = 0.0
+        self._oilwater_thickness = \
+            uc.Convert('Length', self.thickness_units, 'm', self.thickness)
+
         if self.on:
             sc.weathering_data['burned'] = 0.0
 
     def prepare_for_model_step(self, sc, time_step, model_time):
         '''
-        Do sub timestep resolution here so numbers add up correctly
-        Mark LEs to be burned - do them in order right now. Assume all LEs
-        that are released together will be burned together since they would
-        be closer to each other in position.
-
-        Assumes: there is more mass in water than amount of mass to be
-        skimmed. The LEs marked for Burning are marked only once -
-        code checks to see if any LEs are marked and if
-        none are found, it marks them.
+        1. set 'active' flag based on active_start, and model_time
+        2. Mark LEs to be burned - do them in order right now. Assume all LEs
+           that are released together will be burned together since they would
+           be closer to each other in position.
+           Assumes: there is more mass in water than amount of mass to be
+           skimmed. The LEs marked for Burning are marked only once -
+           during the very first step that the object becomes active
         '''
-        if not self.on:
-            self._active = False
+        super(Burn, self).prepare_for_model_step(sc, time_step, model_time)
+        if not self.active:
             return
 
-        if model_time + timedelta(seconds=time_step) > self.active_start:
-            self._active = True
-        else:
+        # if initial oilwater_thickness is < _min_thickness, then stop
+        if self._oilwater_thickness <= self._min_thickness:
             self._active = False
             return
 
         # only when it is active, update the status codes
-        self._set__timestep(time_step, model_time)
         if (sc['fate_status'] == bt_fate.burn).sum() == 0:
             substance = self._get_substance(sc)
+            _si_area = uc.Convert('Area', self.area_units, 'm^2', self.area)
+            _si_thickness = \
+                uc.Convert('Length', self.thickness_units, 'm', self.thickness)
             mass_to_remove = self._get_mass(substance,
-                                            self._si_area * self._si_thickness,
+                                            _si_area * _si_thickness,
                                             'm^3')
             self._update_LE_status_codes(sc, bt_fate.burn,
                                          substance, mass_to_remove)
-            # now also set up self._oil_thickness
-            self._oil_thickness = \
-                (sc['mass'][sc['fate_status'] == bt_fate.burn].sum() /
-                 (substance.get_density() * self._si_area))
 
-        # check _oil_thickness after property is set in code block above
-        if self._oil_thickness <= self._min_thickness:
-            self._active = False
-            return
+            self._set_burn_params(sc, substance)
+
+        # set timestep after active stop is set
+        self._set__timestep(time_step, model_time)
+
+    def _set_burn_params(self, sc, substance):
+        '''
+        Once LEs are marked for burn, the frac_water does not change
+        set burn rate for oil/water thickness, as well as volume burn rate for
+        oil:
+
+        If data contains LEs marked for burning, then:
+
+            avg_frac_oil = mass_weighed_avg(1 - data['frac_water'])
+            _oilwater_thick_burnrate = 0.000058 * avg_frac_oil
+            _oil_vol_burnrate = _oilwater_thick_burnrate * avg_frac_oil * area
+
+        The burn duration is also known if efficiency is constant. However, if
+        efficiency is based on variable wind, then duration cannot be computed.
+        '''
+        # burn rate is defined as a thickness rate in m/sec
+        # where rate = 0.000058 * self.area * (1 - frac_water_content)
+        _burn_constant = 0.000058
+
+        # once LEs are marked for burn, they do not weather. The
+        # frac_water content will not change - let's find total_mass_rm,
+        # burn_duration and rate since that is now known
+        data = sc.substancefatedata(substance, {'mass', 'frac_water'},
+                                    'burn')
+        avg_frac_oil = self._avg_frac_oil(data)
+        _si_area = uc.Convert('Area', self.area_units, 'm^2', self.area)
+
+        # rate if efficiency is 100 %
+        self._oilwater_thick_burnrate = _burn_constant * avg_frac_oil
+        self._oil_vol_burnrate = (_burn_constant * avg_frac_oil**2 * _si_area)
+
+    def _get_efficiency(self, model_time):
+        '''
+        return burn efficiency either from efficiency attribute or computed
+        from wind
+        '''
+        if self.efficiency is None and self.wind is None:
+            self.logger.error("Set the 'efficiency' or provide 'wind' "
+                              "object so efficiency can be computed. "
+                              "Else using 100% efficiency")
+
+            return 1.0
+
+        if self.efficiency is not None:
+            eff = self.efficiency
+        else:
+            # get it from wind
+            ws = self.wind.get_value(model_time)
+            if ws > 1./0.07:
+                msg = ("wind speed is greater than {0}."
+                       " Set efficiency to 0".format(1./0.07))
+                self.logger.warning(msg)
+                eff = 0
+            else:
+                eff = 1 - 0.07 * ws
+
+        return eff
 
     def weather_elements(self, sc, time_step, model_time):
         '''
-        Given burn rate and fixed area, we have the rate of change of thickness
-        Do a weighted average of frac_water array for the elements marked as
-        burn. This is the avg_frac_water to use when computing the burn rate.
-
-            burn_rate_th := burn_rate/area = 0.000058 * (1 - avg_frac_water)
-            burn_time = ((self._oil_thickness - 0.002) / burn_rate_th
-            _timestep = min(burn_time, time_step)
-            remove_volume = burn_rate_th * _timestep * area
-
-        The data is masked to operate only on LEs marked for burning:
-            mask = data['status_codes'] == burn
-
-        Convert remove_volume to remove_mass. Find fraction of mass to remove:
-            rm_mass_frac = remove_mass/data['mass'][mask].sum()
-
-        Then update the 'mass_components' array per:
-            data['mass_components'][mask] = \
-                (1 - rm_mass_frac) * data['mass_components'][mask]
-
-        update the 'mass' array and the amount burned in weathering_data dict
-        Also update the _burn_duration attribute.
+        1. figure out the mass to remove for current timestep based on rate and
+           efficiency. Find fraction of total mass and remove equally from all
+           'mass_components' of LEs marked for burning.
+        2. update 'mass' array and the amount burned in weathering_data dict
+        3. append to _burn_duration for each timestep
         '''
         if not self.active or len(sc) == 0:
             return
@@ -543,35 +635,52 @@ class Burn(CleanUpBase, Serializable):
             if len(data['mass']) is 0:
                 continue
 
-            # keep updating thickness
-            burn_th_rate = \
-                self._burn_rate_constant * self._avg_frac_oil(data)
-            burn_time = ((self._oil_thickness - self._min_thickness) /
-                         burn_th_rate)
+            eff = self._get_efficiency(model_time)
 
-            self._timestep = min(burn_time, self._timestep)
-            if self._timestep > 0:
-                th_burned = burn_th_rate * self._timestep
-                rm_mass = self._get_mass(substance, th_burned * self._si_area,
-                                         'm^3')
-                rm_mass_frac = rm_mass / data['mass'].sum()
-                data['mass_components'] = \
-                    (1 - rm_mass_frac) * data['mass_components']
-                data['mass'] = data['mass_components'].sum(1)
+            # scale rates by efficiency
+            oilwater_thick_rate = self._oilwater_thick_burnrate
+            oil_vol_rate = self._oil_vol_burnrate * eff
 
-                # new thickness
-                self._oil_thickness -= th_burned
+            time_left = ((self._oilwater_thickness - self._min_thickness) /
+                         oilwater_thick_rate)
 
-                sc.weathering_data['burned'] += rm_mass
-                self.logger.debug(self._pid + 'amount burned for {0}: {1}'.
-                                  format(substance.name, rm_mass))
+            # prepare_for_model_step initializes time_step
+            self._timestep = min(time_left, self._timestep)
 
-                # update burn duration at each timestep
-                self._burn_duration = \
-                    (model_time + timedelta(seconds=self._timestep) -
-                     self.active_start).total_seconds()
+            # this is volume of oil burned - need to get mass from this
+            vol_oil_burned = oil_vol_rate * self._timestep
+            rm_mass = self._get_mass(substance, vol_oil_burned, 'm^3')
+            rm_mass_frac = rm_mass / data['mass'].sum()
+            data['mass_components'] = \
+                (1 - rm_mass_frac) * data['mass_components']
+            data['mass'] = data['mass_components'].sum(1)
+
+            # new thickness of oil/water mixture
+            self._oilwater_thickness -= (oilwater_thick_rate * self._timestep)
+            self._burn_duration += self._timestep
+
+            sc.weathering_data['burned'] += rm_mass
+            self.logger.debug(self._pid + 'amount burned for {0}: {1}'.
+                              format(substance.name, rm_mass))
 
         sc.update_from_fatedataview(fate='burn')
+
+    def serialize(self, json_='webapi'):
+        """
+        Since 'wind'/'waves' property is saved as references in save file
+        need to add appropriate node to WindMover schema for 'webapi'
+        """
+        serial = super(Burn, self).serialize(json_)
+
+        if json_ == 'webapi':
+            if self.wind is not None:
+                serial['wind'] = self.wind.serialize(json_)
+        return serial
+
+    def update_from_dict(self, data):
+        if 'efficiency' not in data:
+            setattr(self, 'efficiency', None)
+        super(Burn, self).update_from_dict(data)
 
 
 class Dispersion(Weatherer, Serializable):
