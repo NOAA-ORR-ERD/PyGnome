@@ -533,7 +533,7 @@ class WeatheringData(AddLogger):
 
             # oil/water emulsion density
             new_rho = (data['frac_water'][s_mask] * water_rho +
-                       (1 - data['frac_water']) * oil_rho)
+                       (1 - data['frac_water'][s_mask]) * oil_rho)
             if np.any(new_rho > self.water.density):
                 new_rho[new_rho > self.water.density] = self.water.density
                 self.logger.info(self._pid + "during update, density is larger"
