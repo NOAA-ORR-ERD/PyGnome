@@ -328,7 +328,7 @@ class BurnSchema(WeathererSchema):
     thickness = SchemaNode(Float())
     area_units = SchemaNode(String())
     thickness_units = SchemaNode(String())
-    _oil_thickness = SchemaNode(Float(), missing=drop)
+    _oilwater_thickness = SchemaNode(Float(), missing=drop)
     efficiency = SchemaNode(Float(), missing=drop)
 
 
