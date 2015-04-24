@@ -452,10 +452,6 @@ class Burn(CleanUpBase, Serializable):
         '''
         log a warning if thickness in SI units is less than _min_thickness
         '''
-        if value not in self.valid_length_units:
-            e = uc.InvalidUnitError((value, 'Length'))
-            self.logger.error(e.message)
-            raise e
         self._thickness = value
         self._log_thickness_warning()
 
