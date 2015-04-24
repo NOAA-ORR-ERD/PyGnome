@@ -412,8 +412,6 @@ class WeatheringData(AddLogger):
         # happen once - for efficiency
         water_kvis = self.water.get('kinematic_viscosity',
                                     'square meter per second')
-        rho_h2o = self.water.get('density', 'kg/m^3')
-
         '''
         Sets relative_bouyancy, bulk_init_volume, init_area, thickness all of
         which are required when computing the 'thickness' of each LE
@@ -511,6 +509,7 @@ class WeatheringData(AddLogger):
 
         water_kvis = self.water.get('kinematic_viscosity',
                                     'square meter per second')
+        water_rho = self.water.get('density')
 
         # must update intrinsic properties per spill. Same substance but
         # multiple spills - update intrinsic for each spill.
@@ -529,8 +528,12 @@ class WeatheringData(AddLogger):
                 (data['mass_components'][s_mask, :substance.num_components] /
                  data['mass'][s_mask].reshape(np.sum(s_mask), -1))
             # check if density becomes > water, set it equal to water in this
-            # case
-            new_rho = k_rho*(substance.component_density * mass_frac).sum(1)
+            # case - 'density' is for the oil-water emulsion
+            oil_rho = k_rho*(substance.component_density * mass_frac).sum(1)
+
+            # oil/water emulsion density
+            new_rho = (data['frac_water'][s_mask] * water_rho +
+                       (1 - data['frac_water'][s_mask]) * oil_rho)
             if np.any(new_rho > self.water.density):
                 new_rho[new_rho > self.water.density] = self.water.density
                 self.logger.info(self._pid + "during update, density is larger"

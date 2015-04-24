@@ -271,7 +271,40 @@ class TestWeatheringData:
             assert np.all(sc['density'] > init_dens)
             assert np.all(sc['viscosity'] > init_visc)
         else:
-            # nothing weathered so equations should have produced no change
+            # nothing weathered and no emulsion so equations should have
+            # produced no change
+            intrinsic.update(0, sc, default_ts)
+            assert np.allclose(sc['density'], init_dens)
+            assert np.allclose(sc['viscosity'], init_visc)
+
+    @pytest.mark.parametrize("vary_frac_water", (False, True))
+    def test_density_update_frac_water(self, vary_frac_water):
+        rel_time = datetime.now().replace(microsecond=0)
+        (sc, intrinsic) = self.sample_sc_intrinsic(100, rel_time)
+        spill = sc.spills[0]
+        init_dens = \
+            spill.get('substance').get_density(intrinsic.water.temperature)
+        init_visc = \
+            spill.get('substance').get_viscosity(intrinsic.water.temperature)
+
+        num = sc.release_elements(default_ts, rel_time)
+        intrinsic.update(num, sc, default_ts)
+        assert np.allclose(sc['density'], init_dens)
+        assert np.allclose(sc['viscosity'], init_visc)
+
+        # need this so 'area' computation doesn't break
+        # todo: this shouldn't be required, revisit this!
+        sc['age'] += default_ts
+        if vary_frac_water:
+            sc['frac_water'][:] = 0.3
+            intrinsic.update(0, sc, default_ts)
+
+            exp_res = (intrinsic.water.get('density') * sc['frac_water'] +
+                       (1 - sc['frac_water']) * init_dens)
+            assert np.all(sc['density'] == exp_res)
+            assert np.all(sc['density'] > init_dens)
+            assert np.all(sc['viscosity'] > init_visc)
+        else:
             intrinsic.update(0, sc, default_ts)
             assert np.allclose(sc['density'], init_dens)
             assert np.allclose(sc['viscosity'], init_visc)
