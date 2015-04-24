@@ -416,14 +416,18 @@ class TestBurn:
         assert self.burn.efficiency is not None
         del json_['efficiency']
 
-        self.burn.update_from_dict(Burn.deserialize(json_))
+        dict_ = Burn.deserialize(json_)
+        dict_['wind'] = self.burn.wind
+        assert 'wind' in dict_
+        self.burn.update_from_dict(dict_)
         assert self.burn.efficiency is None
 
         json_['efficiency'] = .4
 
         # hook up wind object - API will deserialize and hook this up
-        json_['wind'] = self.burn.wind
-        self.burn.update_from_dict(Burn.deserialize(json_))
+        dict_ = Burn.deserialize(json_)
+        dict_['wind'] = self.burn.wind
+        self.burn.update_from_dict(dict_)
         assert self.burn.efficiency == json_['efficiency']
 
     def test_set_efficiency(self):

@@ -12,6 +12,7 @@ from colander import (SchemaNode, Float, String, drop)
 from gnome.basic_types import oil_status, fate as bt_fate
 from gnome.weatherers import Weatherer
 from gnome.utilities.serializable import Serializable, Field
+from gnome.environment.wind import WindSchema
 
 from .core import WeathererSchema
 from .. import _valid_units
@@ -672,6 +673,19 @@ class Burn(CleanUpBase, Serializable):
             if self.wind is not None:
                 serial['wind'] = self.wind.serialize(json_)
         return serial
+
+    @classmethod
+    def deserialize(cls, json_):
+        """
+        append correct schema for wind object
+        """
+        schema = cls._schema()
+        if 'wind' in json_:
+            schema.add(WindSchema(name='wind'))
+
+        _to_dict = schema.deserialize(json_)
+
+        return _to_dict
 
     def update_from_dict(self, data):
         if 'efficiency' not in data:
