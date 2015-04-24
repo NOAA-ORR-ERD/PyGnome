@@ -680,7 +680,7 @@ class Burn(CleanUpBase, Serializable):
         append correct schema for wind object
         """
         schema = cls._schema()
-        if 'wind' in json_:
+        if 'wind' in json_ and json_['wind'] is not None:
             schema.add(WindSchema(name='wind'))
 
         _to_dict = schema.deserialize(json_)
