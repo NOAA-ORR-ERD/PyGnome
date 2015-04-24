@@ -424,9 +424,9 @@ class TestBurn:
 
         json_['efficiency'] = .4
 
-        # hook up wind object - API will deserialize and hook this up
+        # make sure None for wind doesn't break it
+        dict_['wind'] = None
         dict_ = Burn.deserialize(json_)
-        dict_['wind'] = self.burn.wind
         self.burn.update_from_dict(dict_)
         assert self.burn.efficiency == json_['efficiency']
 
