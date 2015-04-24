@@ -95,9 +95,11 @@ def test_full_run(sample_model_fcn, oil, temp):
     '''
     model = sample_model_weathering2(sample_model_fcn, oil, temp)
     model.water = Water(temp)
-    model.environment += [waves, constant_wind(15., 0)]
-    model.weatherers += Evaporation(model.water, model.environment[1])
-    model.weatherers += Emulsification(model.environment[0])
+    wind = constant_wind(15., 0)
+    waves = Waves(wind, model.water)
+    model.environment += [waves, wind]
+    model.weatherers += Evaporation(model.water, wind)
+    model.weatherers += Emulsification(waves)
 
     for step in model:
         for sc in model.spills.items():

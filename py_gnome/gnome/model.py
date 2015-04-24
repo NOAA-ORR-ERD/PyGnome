@@ -135,12 +135,6 @@ class Model(Serializable):
         model = object.__new__(cls)
         model.__restore__(**default_restore)
 
-        # if there are other values in dict_, setattr
-        if json_ == 'webapi':
-            model.update_from_dict(dict_)
-        else:
-            cls._restore_attr_from_save(model, dict_)
-
         [model.environment.add(obj) for obj in l_env]
         [model.outputters.add(obj) for obj in l_out]
         [model.spills.add(obj) for obj in l_spills]
@@ -156,6 +150,14 @@ class Model(Serializable):
 
         model.environment.register_callback(model._callback_add_weatherer_env,
                                             ('add', 'replace'))
+
+        # if there are other values in dict_, setattr, do this after adding
+        # to collections - this ensures the 'water' object doesn't get added
+        # out of order. OrderedCollections are being used so maintain order.
+        if json_ == 'webapi':
+            model.update_from_dict(dict_)
+        else:
+            cls._restore_attr_from_save(model, dict_)
 
         # todo: set Water / intrinsic properties
         if model.water is not None and len(model.weatherers) > 0:
@@ -247,7 +249,11 @@ class Model(Serializable):
             self.name = name
 
         self._map = map
-        self.water = water
+        self._water = None
+
+        if water is not None:
+            # automatically add water object to environment collection
+            self.water = water
 
         # reset _current_time_step
         self._current_time_step = -1
@@ -420,6 +426,19 @@ class Model(Serializable):
         py:attribute:`time_step`
         '''
         return self._num_time_steps
+
+    @property
+    def water(self):
+        return self._water
+
+    @water.setter
+    def water(self, value):
+        '''
+        If water attribute is updated, also add it to environment collection
+        '''
+        if value not in self.environment:
+            self.environment += value
+        self._water = value
 
     def _reset_num_time_steps(self):
         '''
@@ -812,6 +831,10 @@ class Model(Serializable):
             if obj_added.waves.id not in self.environment:
                 self.environment += obj_added.waves
 
+        if hasattr(obj_added, 'water') and obj_added.water is not None:
+            if obj_added.water.id not in self.environment:
+                self.environment += obj_added.water
+
     def _add_water(self, water):
         '''
         if Water object is found in obj_added as an attribute, then also set
@@ -842,10 +865,9 @@ class Model(Serializable):
         '''
         self._add_to_environ_collec(obj_added)
         if isinstance(obj_added, Water):
+            # Water object must have been added to environment collection
             self._add_water(obj_added)
-        else:
-            if hasattr(obj_added, 'water') and obj_added.water is not None:
-                self._add_water(obj_added.water)
+
         self.rewind()  # rewind model if a new weatherer is added
 
     def __eq__(self, other):
@@ -1091,6 +1113,7 @@ class Model(Serializable):
             os.remove(u_spill_data)
 
     # todo: remove following
+
     def _empty_save_dir(self, saveloc):
         '''
         Remove all files, directories under saveloc

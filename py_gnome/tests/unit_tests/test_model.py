@@ -798,9 +798,10 @@ def test_callback_add_weather():
 
     model.weatherers += Evaporation(water, wind)
 
-    # only wind is added to environment collection
-    assert len(model.environment) == 1
+    # wind and water added to environment collection
+    assert len(model.environment) == 2
     assert wind in model.environment
+    assert water in model.environment
 
 
 def test_callback_add_water_to_env():
@@ -812,6 +813,28 @@ def test_callback_add_water_to_env():
     assert model.water is None
     model.environment += Water()
     assert model.environment[-1] == model.water
+
+
+def test_add_water_to_model():
+    'water object should also get added to environment collection'
+    model = Model()
+    w1 = Water()
+    w2 = Water()
+    model.water = w1
+    assert w1 in model.environment
+    assert len(model.environment) == 1
+
+    model.water = w2
+    assert len(model.environment) == 2
+
+    for obj in (w1, w2):
+        assert obj in model.environment
+
+    model.water = w1
+    assert len(model.environment) == 2
+
+    for obj in (w1, w2):
+        assert obj in model.environment
 
 
 def test_simple_run_no_spills(model):
@@ -978,7 +1001,7 @@ def test_staggered_spills_weathering(sample_model_fcn, delay):
     skimmer = make_skimmer(model.spills[0])
     burn = burn_obj(model.spills[0])
     model.weatherers += [Evaporation(model.water,
-                                     model.environment[0]),
+                                     model.environment[-1]),
                          Dispersion(),
                          burn,
                          skimmer]
@@ -1035,7 +1058,7 @@ def test_two_substance_spills_weathering(sample_model_fcn, s0, s1):
 
     model.water = Water()
     model.environment += constant_wind(1., 0)
-    model.weatherers += Evaporation(model.water, model.environment[0])
+    model.weatherers += Evaporation(model.water, model.environment[-1])
     if s0 == s1:
         '''
         multiple substances will not work with Skimmer or Burn
