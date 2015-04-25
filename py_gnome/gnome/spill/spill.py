@@ -435,8 +435,8 @@ class Spill(serializable.Serializable):
     def get_mass(self, units=None):
         '''
         Return the mass released during the spill.
-        The default units for mass are as defined in 'mass_units' property.
         User can also specify desired output units in the function.
+        If units are not specified, then return in 'SI' units ('kg')
         If volume is given, then use density to find mass. Density is always
         at 15degC, consistent with API definition
         '''
