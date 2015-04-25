@@ -799,7 +799,12 @@ class ChemicalDispersion(CleanUpBase, Serializable):
     def prepare_for_model_step(self, sc, time_step, model_time):
         '''
         '''
-        self._active_within_start_stop_time(time_step, model_time)
+        super(ChemicalDispersion, self).prepare_for_model_step(sc,
+                                                               time_step,
+                                                               model_time)
+        if not self.active:
+            return
+
         # only when it is active, update the status codes
         self._set__timestep(time_step, model_time)
         if (sc['fate_status'] == bt_fate.disperse).sum() == 0:
