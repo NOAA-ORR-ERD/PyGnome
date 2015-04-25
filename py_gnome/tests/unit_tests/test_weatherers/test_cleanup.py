@@ -33,7 +33,7 @@ units = 'kg'    # leave as SI units
 
 class ObjForTests:
     @classmethod
-    def mk_test_objs(self):
+    def mk_test_objs(cls):
         '''
         create SpillContainer and test WeatheringData object test objects so
         we can run Skimmer, Burn like a model without using a full on Model
@@ -164,12 +164,12 @@ class TestSkimmer(ObjForTests):
                            atol=1e-6)
 
 
-class TestBurn:
+class TestBurn(ObjForTests):
     '''
     Define a default object
     default units are SI
     '''
-    (sc, intrinsic) = test_objs()
+    (sc, intrinsic) = ObjForTests.mk_test_objs()
     spill = sc.spills[0]
     op = spill.get('substance')
     volume = spill.get_mass()/op.get_density()
