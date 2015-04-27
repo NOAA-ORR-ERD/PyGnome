@@ -41,13 +41,16 @@ The following has been tested against [Python 2.7.6](https://www.python.org/down
 
 For Linux use appropriate package manager (apt-get on ubuntu) to download/install binary dependencies.
 
-#### Binary Dependencies ####
 
-1. Python Imaging Library (PIL) requires:  
-    `$ sudo apt-get install libjpeg-dev libfreetype6-dev zlib1g-dev`
+#### Binary Dependencies ####
+1. setuptools and distutils are required. distutils should come installed with Python.
+   `$ sudo apt-get install python-setuptools`
+
+2. [Pillow](http://pillow.readthedocs.org/en/latest/installation.html) has binary dependencies.
+   Visit the docs to get list of dependencies for your system. 
    
-   Use apt-get to build dependencies for PIL  
-    `$ sudo apt-get install build-dep python-imaging`
+   Pillow requires Python's development libraries and 
+    `$ sudo apt-get install python-dev`
 
    This did not build symlinks to libraries for me in /usr/lib, so had to
    manually create them:  
@@ -57,9 +60,9 @@ For Linux use appropriate package manager (apt-get on ubuntu) to download/instal
 	    $ sudo ln -s /usr/lib/`uname -i`-linux-gnu/libz.so /usr/lib/
 	```
     
-2. netCDF4 python module requires NetCDF libraries: libhdf5-serial-dev, libnetcdf-dev
+3. netCDF4 python module requires NetCDF libraries: libhdf5-serial-dev, libnetcdf-dev
 
-3. The following python packages, documented in PyGnome's requirements.txt,
+4. The following python packages, documented in PyGnome's requirements.txt,
    may need to be manually installed. Binaries for 
    [Numpy](http://packages.ubuntu.com/raring/python/python-numpy) and 
    [Cython](http://packages.ubuntu.com/raring/python/cython) can be installed using apt-get. 
@@ -75,7 +78,7 @@ For Linux use appropriate package manager (apt-get on ubuntu) to download/instal
         $ pip install numpy
         $ pip install cython
         $ pip install netCDF4
-        $ pip install PIL
+        $ pip install Pillow
    ```
 
 The remaining dependencies are python packages and can be installed using pip install -r requirements.txt  
@@ -131,7 +134,7 @@ Here are the binary packages required:
    ```
 3. [numpy-MKL](http://www.lfd.uci.edu/~gohlke/pythonlibs/#numpy)
 4. [Cython](http://www.lfd.uci.edu/~gohlke/pythonlibs/#cython)
-5. Install [PIL](http://www.pythonware.com/products/pil/)
+5. Install [Pillow](https://pypi.python.org/pypi/Pillow/2.8.1)
 6. 32-bit 1.0.6 version of [netCDF4](http://www.lfd.uci.edu/~gohlke/pythonlibs/#netcdf4)
 7. [lxml] (http://www.lfd.uci.edu/~gohlke/pythonlibs/#lxml) - required for webgnome
 8. [python-cjson] (http://www.lfd.uci.edu/~gohlke/pythonlibs/#python-cjson) - required for webgnome
