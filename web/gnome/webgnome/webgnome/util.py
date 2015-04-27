@@ -22,7 +22,7 @@ from pyramid.exceptions import Forbidden
 from pyramid.renderers import JSON
 import colander
 
-from hazpy.unit_conversion.unit_data import ConvertDataUnits
+from unit_conversion.unit_data import ConvertDataUnits
 from gnome.utilities.cache import CacheError
 from webgnome.schema import LongLat
 

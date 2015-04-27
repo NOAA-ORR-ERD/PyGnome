@@ -891,6 +891,9 @@ OSErr OSSMTimeValue_c::ReadTimeValues(char *path, short format, short unitsIfKno
 		case kMilesPerHour:
 			conversionFactor = MILESTOMETERSPERSEC;
 			break;
+		case kKilometersPerHour:
+			conversionFactor = KMHRTOMETERSPERSEC;
+			break;
 		case kMetersPerSec:
 			conversionFactor = 1.0;
 			break;

@@ -13,7 +13,7 @@ from gnome.spill import SpatialRelease, Spill, point_line_release_spill
 from gnome.basic_types import oil_status
 
 
-@pytest.fixture(scope='module')
+@pytest.fixture(scope='function')
 def model(sample_model, output_dir):
     model = sample_model['model']
     rel_start_pos = sample_model['release_start_pos']
@@ -63,17 +63,6 @@ def test_rewind(model, output_dir):
 
     files = glob(os.path.join(output_dir, '*.geojson'))
     assert len(files) == 0
-
-
-# keep this incase we want to look at geo_json output in a file
-#==============================================================================
-# def test_model_dump_outputgeojson(model):
-#     'test geojson outputter with a model since simplest to do that'
-#     model.rewind()
-#     model.full_run()
-#     files = glob(os.path.join(output_dir, '*.geojson'))
-#     assert len(files) == model.num_time_steps
-#==============================================================================
 
 
 @pytest.mark.slow

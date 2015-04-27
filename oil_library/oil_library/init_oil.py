@@ -54,6 +54,7 @@ def process_oils(session_class):
         #       import job significantly.  But this is necessary if we
         #       want the option of rejecting oil records.
         session = session_class()
+        transaction.begin()
         rec = (session.query(ImportedRecord)
                .filter(ImportedRecord.adios_oil_id == record_id)
                .one())
@@ -75,7 +76,8 @@ def add_oil(record):
     add_densities(record, oil)
     add_viscosities(record, oil)
     add_oil_water_interfacial_tension(record, oil)
-    # TODO: should we add oil/seawater tension as well???
+    add_oil_seawater_interfacial_tension(record, oil)
+
     add_pour_point(record, oil)
     add_flash_point(record, oil)
     add_emulsion_water_fraction_max(record, oil)
@@ -93,6 +95,8 @@ def add_oil(record):
     add_saturate_aromatic_fractions(record, oil)
     adjust_resin_asphaltene_fractions(record, oil)
 
+    add_k0y(record, oil)
+
     reject_oil_if_bad(record, oil)
 
     record.oil = oil
@@ -100,6 +104,7 @@ def add_oil(record):
 
 def add_demographics(imported_rec, oil):
     oil.name = imported_rec.oil_name
+    oil.adios_oil_id = imported_rec.adios_oil_id
 
 
 def add_densities(imported_rec, oil):
@@ -129,20 +134,21 @@ def add_densities(imported_rec, oil):
         d_0 = density_at_temperature(oil, 273.15 + 15)
 
         oil.api = (141.5 * 1000 / d_0) - 131.5
-        oil.estimated.api = True
+        # oil.estimated.api = True
     else:
         print ('Warning: no densities and no api for record {0}'
                .format(imported_rec.adios_oil_id))
 
     if not [d for d in oil.densities
-            if np.isclose(d.ref_temp_k, 273.0 + 15, atol=.15)]:
+            if d.ref_temp_k is not None
+            and np.isclose(d.ref_temp_k, 273.0 + 15, atol=.15)]:
         # add a 15C density from api
         kg_m_3, ref_temp_k = estimate_density_from_api(oil.api)
 
         oil.densities.append(Density(kg_m_3=kg_m_3,
                                      ref_temp_k=ref_temp_k,
                                      weathering=0.0))
-        oil.estimated.densities = True
+        # oil.estimated.densities = True
 
 
 def estimate_density_from_api(api):
@@ -156,7 +162,8 @@ def density_at_temperature(oil_rec, temperature, weathering=0.0):
     # first, get the density record closest to our temperature
     density_list = [(d, abs(d.ref_temp_k - temperature))
                     for d in oil_rec.densities
-                    if d.weathering == weathering]
+                    if d.ref_temp_k is not None
+                    and d.weathering == weathering]
     if density_list:
         density_rec = sorted(density_list, key=lambda d: d[1])[0][0]
         d_ref = density_rec.kg_m_3
@@ -240,7 +247,7 @@ def get_kvis_from_dvis(oil_rec):
                          d.ref_temp_k,
                          (0.0 if d.weathering is None else d.weathering))
                          for d in oil_rec.dvis
-                         if d.kg_ms > 0.0]:
+                         if d.kg_ms > 0.0 and d.ref_temp_k is not None]:
             density = density_at_temperature(oil_rec, t, w)
 
             # kvis = dvis/density
@@ -276,7 +283,14 @@ def add_oil_water_interfacial_tension(imported_rec, oil):
 
         oil.estimated.oil_water_interfacial_tension_n_m = True
         oil.estimated.oil_water_interfacial_tension_ref_temp_k = True
-    pass
+
+
+def add_oil_seawater_interfacial_tension(imported_rec, oil):
+    if imported_rec.oil_seawater_interfacial_tension_n_m is not None:
+        oil.oil_seawater_interfacial_tension_n_m = \
+            imported_rec.oil_seawater_interfacial_tension_n_m
+        oil.oil_seawater_interfacial_tension_ref_temp_k = \
+            imported_rec.oil_seawater_interfacial_tension_ref_temp_k
 
 
 def add_pour_point(imported_rec, oil):
@@ -409,7 +423,8 @@ def add_emulsion_water_fraction_max(imported_rec, oil):
 
 def add_resin_fractions(imported_rec, oil):
     try:
-        if (imported_rec.resins is not None and
+        if (imported_rec is not None and
+            imported_rec.resins is not None and
                 imported_rec.resins >= 0.0 and
                 imported_rec.resins <= 1.0):
             f_res = imported_rec.resins
@@ -430,10 +445,11 @@ def add_resin_fractions(imported_rec, oil):
 
 def add_asphaltene_fractions(imported_rec, oil):
     try:
-        if (imported_rec.asphaltene_content is not None and
-                imported_rec.asphaltene_content >= 0.0 and
-                imported_rec.asphaltene_content <= 1.0):
-            f_asph = imported_rec.asphaltene_content
+        if (imported_rec is not None and
+            imported_rec.asphaltenes is not None and
+                imported_rec.asphaltenes >= 0.0 and
+                imported_rec.asphaltenes <= 1.0):
+            f_asph = imported_rec.asphaltenes
         else:
             a, b = get_corrected_density_and_viscosity(oil)
 
@@ -612,12 +628,19 @@ def add_distillation_cut_boiling_point(imported_rec, oil):
 
 
 def add_molecular_weights(imported_rec, oil):
+    '''
+        Molecular weight units = g/mol
+    '''
     for c in oil.cuts:
         saturate = get_saturate_molecular_weight(c.vapor_temp_k)
         aromatic = get_aromatic_molecular_weight(c.vapor_temp_k)
 
-        oil.molecular_weights.append(MolecularWeight(saturate=saturate,
-                                                     aromatic=aromatic,
+        oil.molecular_weights.append(MolecularWeight(sara_type='Saturates',
+                                                     g_mol=saturate,
+                                                     ref_temp_k=c.vapor_temp_k)
+                                     )
+        oil.molecular_weights.append(MolecularWeight(sara_type='Aromatics',
+                                                     g_mol=aromatic,
                                                      ref_temp_k=c.vapor_temp_k)
                                      )
 
@@ -756,8 +779,9 @@ def get_sa_mass_fractions(oil_obj):
             sg = P_try / 1000
             mw = None
             for v in oil_obj.molecular_weights:
-                if np.isclose(v.ref_temp_k, T_i):
-                    mw = v.saturate
+                if (np.isclose(v.ref_temp_k, T_i) and
+                        v.sara_type == 'Saturates'):
+                    mw = v.g_mol
                     break
 
             if mw is not None:
@@ -844,6 +868,11 @@ def add_component_densities(imported_rec, oil):
                                               ref_temp_k=T_i))
 
 
+def add_k0y(imported_rec, oil):
+    if imported_rec.k0y is not None:
+        oil.k0y = imported_rec.k0y
+
+
 def reject_oil_if_bad(imported_rec, oil):
     '''
         Here, we have an oil in which all estimations have been made.
@@ -858,8 +887,17 @@ def reject_oil_if_bad(imported_rec, oil):
     if imported_rec_was_manually_rejected(imported_rec):
         errors.append('Imported Record was manually rejected')
 
+    if not oil_has_kvis(oil):
+        errors.append('Oil has no kinematic viscosities')
+
     if oil_has_duplicate_cuts(oil):
         errors.append('Oil has duplicate cuts')
+
+    if oil_has_heavy_sa_components(oil):
+        errors.append('Oil has heavy SA components')
+
+    if not oil_api_matches_density(oil):
+        errors.append('Oil API does not match its density')
 
     if errors:
         raise OilRejected(errors, imported_rec.adios_oil_id)
@@ -885,6 +923,17 @@ def imported_rec_was_manually_rejected(imported_rec):
     return False
 
 
+def oil_has_kvis(oil):
+    '''
+        Our oil record should have at least one kinematic viscosity when
+        estimations are complete.
+    '''
+    if len(oil.kvis) > 0:
+        return True
+    else:
+        return False
+
+
 def oil_has_duplicate_cuts(oil):
     '''
         Some oil records have been found to have distillation cuts with
@@ -897,3 +946,33 @@ def oil_has_duplicate_cuts(oil):
         return True
     else:
         return False
+
+
+def oil_has_heavy_sa_components(oil):
+    '''
+        Some oil records have been found to have Saturate & Asphaltene
+        densities that were calculated to be heavier than the Resins &
+        Asphaltenes.
+        This is highly improbable and indicates the record has problems
+        with its imported data values.
+    '''
+    for d in oil.sara_densities:
+        if d.sara_type in ('Saturates', 'Aromatics'):
+            if d.density > 1100.0:
+                return True
+
+    return False
+
+
+def oil_api_matches_density(oil):
+    '''
+        The oil API should pretty closely match its density at 15C.
+    '''
+    d_0 = density_at_temperature(oil, 273.15 + 15)
+    api_from_density = (141.5 * 1000 / d_0) - 131.5
+
+    if np.isclose(oil.api, api_from_density, atol=1.0):
+        return True
+
+    print '(oil.api, api_from_density) = ', (oil.api, api_from_density)
+    return False

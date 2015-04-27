@@ -11,15 +11,14 @@ These are properties that are spill specific like:
 '''
 import copy
 
-import gnome    # required by new_from_dict
 from gnome.utilities.serializable import Serializable, Field
 from .initializers import (InitRiseVelFromDropletSizeFromDist,
                            InitRiseVelFromDist,
                            InitWindages,
                            InitMassFromPlume)
-from oil_library import get_oil_props
+from oil_library import get_oil_props, get_oil
 
-from gnome.persist import base_schema
+from gnome.persist import base_schema, class_from_objtype
 import unit_conversion as uc
 
 
@@ -27,10 +26,6 @@ class ElementType(Serializable):
     _state = copy.deepcopy(Serializable._state)
     _state.add(save=['initializers'],
                update=['initializers'])
-    # for some reason, the test for equality on the underlying OilProps object
-    # is failing - for now, don't check for equality and just manually override
-    # __eq__ and check 'substance' name is equal. Need to figure out why
-    # equality is failing
     _state += Field('substance', save=True, update=True, test_for_eq=False)
     _schema = base_schema.ObjType
 
@@ -67,6 +62,9 @@ class ElementType(Serializable):
         if substance is not None:
             self.substance = substance
 
+        self.logger.debug(self._pid + 'constructed element_type: ' +
+                          self.__class__.__name__)
+
     def __repr__(self):
         return ('{0.__class__.__module__}.{0.__class__.__name__}('
                 'initializers={0.initializers}, '
@@ -85,8 +83,17 @@ class ElementType(Serializable):
         return False
 
     def substance_to_dict(self):
-        ''' call the tojson() method on substance -
-        no colander schema for it yet '''
+        '''
+            Call the tojson() method on substance
+            - An Oil object that has been queried from the database
+              contains a lot of unnecessary relationships that we do not
+              want to represent in our JSON output,
+              So we prune them by first constructing an Oil object from the
+              JSON payload of the queried Oil object.
+              This creates an Oil object in memory that does not have any
+              database links.
+              Then we output the JSON from the unlinked object.
+        '''
         if self._substance is not None:
             return self._substance.tojson()
 
@@ -103,6 +110,9 @@ class ElementType(Serializable):
         try:
             self._substance = get_oil_props(val)
         except:
+            if isinstance(val, basestring):
+                raise
+
             self.logger.info('Failed to get_oil_props for {0}. Use as is '
                              'assuming has OilProps interface'.format(val))
             self._substance = val
@@ -194,22 +204,22 @@ class ElementType(Serializable):
             # we don't have a way to construct to object fromjson()
             dict_ = et_schema.deserialize(json_)
 
-            substance = json_.pop('substance', None)
-            if substance is not None:
-                if 'name' in substance:
-                    dict_['substance'] = substance['name']
+            if 'substance' in json_ and json_['substance'] is not {}:
+                # no colander validation for oil object
+                dict_['substance'] = json_['substance']
 
             d_init = []
 
             for i_val in json_['initializers']:
-                deserial = eval(i_val['obj_type']).deserialize(i_val)
+                i_cls = class_from_objtype(i_val['obj_type'])
+                deserial = i_cls.deserialize(i_val)
 
                 if json_['json_'] == 'save':
                     '''
                     If loading from save file, convert the dict_ to new object
                     here itself
                     '''
-                    obj = eval(deserial['obj_type']).new_from_dict(deserial)
+                    obj = i_cls.new_from_dict(deserial)
                     d_init.append(obj)
                 else:
                     d_init.append(deserial)

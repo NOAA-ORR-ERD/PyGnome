@@ -15,8 +15,8 @@ np = numpy
 import unit_conversion as uc
 from colander import (SchemaNode, Bool, String, Float, drop)
 
-import gnome    # required by new_from_dict
 from gnome.utilities import serializable
+from gnome.persist import class_from_objtype
 from gnome.persist.base_schema import ObjType
 
 from . import elements
@@ -97,7 +97,6 @@ class Spill(serializable.Serializable):
         self.element_type = element_type
 
         self.on = on    # spill is active or not
-        self._rate = None
         self._units = None
         self.amount = amount
 
@@ -212,6 +211,7 @@ class Spill(serializable.Serializable):
         # set 'mass' data array if amount is given
         le_mass = 0.
         _mass = self.get_mass('kg')
+        self.logger.debug(self._pid + "spill mass (kg): {0}".format(_mass))
 
         if _mass is not None:
             rd_sec = self.get('release_duration')
@@ -233,6 +233,8 @@ class Spill(serializable.Serializable):
 
                 _mass_in_ts = _mass/rd_sec * time_step
                 le_mass = _mass_in_ts / num_new_particles
+
+        self.logger.debug(self._pid + "LE mass (kg): {0}".format(le_mass))
 
         return le_mass
 
@@ -463,9 +465,16 @@ class Spill(serializable.Serializable):
 
         Not much to this method, but it could be overridden to do something
         fancier in the future or a subclass.
-        """
 
+        There are a number of python objects that cannot be deepcopied.
+        - Logger objects
+
+        So we copy them temporarily to local variables before we deepcopy
+        our Spill object.
+        """
         u_copy = copy.deepcopy(self)
+        self.logger.debug(self._pid + "deepcopied spill {0}".format(self.id))
+
         return u_copy
 
     def set_amount_uncertainty(self, up_or_down=None):
@@ -567,8 +576,6 @@ class Spill(serializable.Serializable):
         """
         toserial = self.to_serialize(json_)
         schema = self.__class__._schema()
-        #schema = self.__class__._schema(
-        #    release=self.release.__class__._schema(json_))
 
         o_json_ = schema.serialize(toserial)
         o_json_['element_type'] = self.element_type.serialize(json_)
@@ -589,17 +596,18 @@ class Spill(serializable.Serializable):
             schema = cls._schema()
 
             dict_ = schema.deserialize(json_)
-            rel = json_['release']['obj_type']
-            dict_['release'] = eval(rel).deserialize(json_['release'])
+            relcls = class_from_objtype(json_['release']['obj_type'])
+            dict_['release'] = relcls.deserialize(json_['release'])
 
             if json_['json_'] == 'webapi':
                 '''
                 save files store a reference to element_type so it will get
                 deserialized, created and added to this dict by load method
                 '''
-                element_type = json_['element_type']['obj_type']
-                dict_['element_type'] = (eval(element_type).deserialize(
-                                                        json_['element_type']))
+                etcls = \
+                    class_from_objtype(json_['element_type']['obj_type'])
+                dict_['element_type'] = \
+                    etcls.deserialize(json_['element_type'])
 
             else:
                 '''
@@ -609,9 +617,7 @@ class Spill(serializable.Serializable):
                 For the 'webapi', we're not always creating a new object
                 so do this only for 'save' files
                 '''
-                obj_dict = dict_.pop('release')
-                obj_type = obj_dict.pop('obj_type')
-                obj = eval(obj_type).new_from_dict(obj_dict)
+                obj = relcls.new_from_dict(dict_.pop('release'))
                 dict_['release'] = obj
 
             return dict_

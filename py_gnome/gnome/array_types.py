@@ -30,19 +30,20 @@ movers needs
 '''
 
 import sys
-import inspect
+
+import numpy
+np = numpy
 
 from gnome.basic_types import (world_point_type,
                                windage_type,
                                status_code_type,
                                oil_status,
-                               id_type)
+                               id_type,
+                               fate)
+from gnome import AddLogger
 
-import numpy
-np = numpy
 
-
-class ArrayType(object):
+class ArrayType(AddLogger):
     """
     Object used to capture attributes of numpy data array for elements
 
@@ -95,9 +96,33 @@ class ArrayType(object):
             initial_value = self.initial_value
 
         arr = np.zeros((num_elements,) + shape, dtype=self.dtype)
-        if len(arr) > 0 and initial_value != 0.:
-            arr[:] = initial_value
+        arr[:] = initial_value
+
         return arr
+
+    def _num_gt_2(self, num):
+        if num < 2:
+            msg = "'num' to split into must be at least 2"
+            self.logger.error(msg)
+            raise ValueError(msg)
+
+    def split_element(self, num, value, *args):
+        '''
+        define how an LE gets split for specified ArrayType
+
+        :param num: number of elements that current value should get split into
+        :type num: int
+        :param value: the current value that is replicated
+        :type value: this must have shape and dtype equal to self.shape
+            and self.dtype
+        :param *args: accept more arguments as derived class may divide LE on
+            split and in this case, user can specify a list of fractions for
+            this division.
+        '''
+        self._num_gt_2(num)
+
+        shape = value.shape if self.shape is None else self.shape
+        return self.initialize(num, shape, value)
 
     def __eq__(self, other):
         if not isinstance(other, self.__class__):
@@ -109,6 +134,9 @@ class ArrayType(object):
         for (key, val) in self.__dict__.iteritems():
             if key not in other.__dict__:
                 return False
+            elif key == 'initial_value':
+                if np.any(val != other.__dict__[key]):
+                    return False
             elif val != other.__dict__[key]:
                 return False
 
@@ -123,20 +151,73 @@ class IdArrayType(ArrayType):
     """
     The 'id' array assigns a unique int for every particle released.
     """
-    def initialize(self, num_elements, shape=None):
+    def initialize(self, num_elements, *args):
         '''
         overrides base initialize functionality to output a range of values
 
             self.initial_value to num_elements + self.initial_value
 
-        This is only used for 'id' of particle and shape attribute is ignored
+        This is only used for 'id' of particle.
+        shape attribute and initial_value are ignored
         since you always get an array of shape (num_elements,)
-        Keep it in method signature so we don't have to override
-        initialize_null as well
+        Define *args to keep method signature the same
         '''
         array = np.arange(self.initial_value,
                           num_elements + self.initial_value, dtype=self.dtype)
         return array
+
+    def split_element(self, num, value, *args):
+        '''
+        split elements into num and assign 'value' to all of them
+        '''
+        self._num_gt_2(num)
+
+        arr = np.zeros((num,) + self.shape, dtype=self.dtype)
+        arr[:] = value
+
+        return arr
+
+
+class ArrayTypeDivideOnSplit(ArrayType):
+    def split_element(self, num, value, l_frac=None):
+        '''
+        define how an LE gets split for specified ArrayType. l_frac if given
+        should sum to 1.0
+
+        :param num: number of elements that current value should get split into
+        :type num: int
+        :param value: the current value that is replicated
+        :type value: this must have shape and dtype equal to self.shape
+            and self.dtype
+        :param l_frac: user can specify a list of fractions for
+            this division - if None, then evenly divide 'value' into 'num'.
+            sum(l_frac) = 1.0
+        '''
+        self._num_gt_2(num)
+
+        if l_frac is not None:
+            if len(l_frac) != num:
+                msg = "in split_element() len(l_frac) must equal 'num'"
+                self.logger.error(msg)
+                raise ValueError(msg)
+
+            l_frac = np.asarray(l_frac)
+            if not np.allclose(l_frac.sum(), 1.0):
+                msg = "sum 'l_frac' must be 1.0"
+                self.logger.error(msg)
+                raise ValueError(msg)
+
+        shape = value.shape if self.shape is None else self.shape
+        split = self.initialize(num, shape, value)
+
+        if l_frac is None:
+            return split[:]/num
+        else:
+            if len(split.shape) > 1:
+                # 2D array so reshape l_frac
+                return split * l_frac.reshape(len(l_frac), -1)
+            else:
+                return split * l_frac
 
 
 # SpillContainer manipulates initial_value property to initialize 'spill_num'
@@ -153,8 +234,7 @@ _default_values = {'positions': ((3,), world_point_type, 'positions',
                    'status_codes': ((), status_code_type, 'status_codes',
                                     oil_status.in_water),
                    'spill_num': ((), id_type, 'spill_num', 0),
-                   'id': ((), np.uint32, 0, 'id', IdArrayType),
-                   'mass': ((), np.float64, 'mass', 0),
+                   'id': ((), np.uint32, 'id', 0, IdArrayType),
                    'windages': ((), windage_type, 'windages', 0),
                    'windage_range': ((2,), np.float64, 'windage_range',
                                      (0., 0.)),
@@ -163,39 +243,46 @@ _default_values = {'positions': ((3,), world_point_type, 'positions',
                    'droplet_diameter': ((), np.float64, 'droplet_diameter',
                                         0.),
                    'age': ((), np.int32, 'age', 0),
-                   # default assumes mass=0
+
+                   # WEATHERING DATA
+                   # following used to compute spreading (LE thickness)
+                   # bulk_init_volume initial volume of blob of oil - the sum
+                   # of all LEs released together is the volume of the blob.
+                   # It is evenly divided to number of LEs
+                   'bulk_init_volume': ((), np.float64, 'bulk_init_volume', 0,
+                                        ArrayTypeDivideOnSplit),
                    'density': ((), np.float64, 'density', 0),
-                   'thickness': ((), np.float64, 'thickness', 0),
-                   'mol': ((), np.float64, 'mol', 0.),
-                   'mass_components': (None, np.float64, 'mass_components',
-                                       None),
                    'evap_decay_constant': (None, np.float64,
                                            'evap_decay_constant', None),
+                   # todo: remove thickness
+                   'thickness': ((), np.float64, 'thickness', 0),
+                   'fay_area': ((), np.float64, 'fay_area', 0),
 
-                   # initial volume - used to compute spreading (LE area)
-                   # this is initial volume of oil released per LE - it'll be
-                   # the same for all LEs released at once
-                   'init_volume': ((), np.float64, 'init_volume', 0),
-                   'init_area': ((), np.float64, 'init_area', 0),
-                   'relative_bouyancy': ((), np.float64, 'relative_bouyancy',
-                                         0),
-                   'area': ((), np.float64, 'area', 0),
                    'viscosity': ((), np.float64, 'viscosity', 0),
                    # fractional water content in emulsion
                    'frac_water': ((), np.float64, 'frac_water', 0),
-                   # frac of mass lost due to evaporation + dissolution.
-                   # Used to update viscosity
-                   'frac_lost': ((), np.float64, 'frac_lost', 0),
-                   'init_mass': ((), np.float64, 'init_mass', 0),
                    'interfacial_area': ((), np.float64, 'interfacial_area', 0),
                    # use negative as a not yet set flag
                    'bulltime': ((), np.float64, 'bulltime', -1.),
                    'frac_coverage': ((), np.float32, 'frac_coverage', 1),
+                   'frac_lost': ((), np.float64, 'frac_lost', 0),
 
                    # substance index - used label elements from same substance
                    # used internally only by SpillContainer *if* more than one
                    # substance
-                   'substance': ((), np.uint8, 'substance', 0)
+                   'substance': ((), np.uint8, 'substance', 0),
+                   'fate_status': ((), np.uint8, 'fate_status',
+                                   fate.non_weather),
+
+                   # Following objects will divide value of element when
+                   # calling split_element(), use: ArrayTypeDivideOnSplit()
+                   'mass': ((), np.float64, 'mass', 0, ArrayTypeDivideOnSplit),
+                   'mass_components': (None, np.float64, 'mass_components',
+                                       None, ArrayTypeDivideOnSplit),
+                   # frac of mass lost due to evaporation + dissolution.
+                   # Used to update viscosity
+                   'init_mass': ((), np.float64, 'init_mass', 0,
+                                 ArrayTypeDivideOnSplit),
                    }
 
 
@@ -215,22 +302,20 @@ for key, val in _default_values.iteritems():
                                 initial_value=_default_values[key][3])
 
 
-# use reflection to:
-#    - define all array_types once the above for loop defines the ArrayTypes
-#      in module scope
-_to_reset = inspect.getmembers(sys.modules[__name__],
-                               predicate=lambda members:
-                               (False, True)[isinstance(members, ArrayType)])
-
 # list of names of all ArrayTypes defined in this module
-_at_names = [item[0] for item in _to_reset]
+mod = sys.modules[__name__]
 
 
 #    define a function to reset all ArrayTypes to defaults
-def reset_to_defaults(names=_at_names):
-    for item in _to_reset:
-        if item[0] in names:
-            obj = eval(item[0])
-            obj.shape = _default_values[item[0]][0]
-            obj.dtype = _default_values[item[0]][1]
-            obj.initial_value = _default_values[item[0]][2]
+def reset_to_defaults(names=_default_values.keys()):
+    for name in names:
+        try:
+            obj = getattr(mod, name)
+            obj.shape = _default_values[name][0]
+            obj.dtype = _default_values[name][1]
+            obj.name = _default_values[name][2]
+            obj.initial_value = _default_values[name][3]
+
+        except AttributeError:
+            # name is not part of the defaults - ignore it
+            pass

@@ -32,11 +32,11 @@ import gnome.array_types as gat
 
 base_dir = os.path.dirname(__file__)
 
-test_oil = u'ALASKA NORTH SLOPE'
+test_oil = u'ALASKA NORTH SLOPE (MIDDLE PIPELINE)'
 
 
 @pytest.fixture(scope="session")
-def dump(dump_loc=None):
+def dump():
     '''
     create dump folder for output data/files
     session scope so it is only executed the first time it is used
@@ -46,8 +46,8 @@ def dump(dump_loc=None):
     this as a function and use it to define their own dump directory if desired
     '''
     # dump_loc = os.path.join(request.session.fspath.strpath, 'dump')
-    if dump_loc is None:
-        dump_loc = os.path.join(base_dir, 'dump')
+    dump_loc = os.path.join(base_dir, 'dump')
+
     try:
         shutil.rmtree(dump_loc)
     except:
@@ -57,6 +57,20 @@ def dump(dump_loc=None):
     except:
         pass
     return dump_loc
+
+
+@pytest.fixture(autouse=True)
+def skip_serial(request):
+    '''
+    when defined in ..conftest.py, this wasn't loaded if tests are run from
+    here. For now, moved this to unit_tests/conftest.py since all tests are
+    contained here
+    '''
+    if (request.node.get_marker('serial') and
+        getattr(request.config, 'slaveinput', {}).get('slaveid', 'local') !=
+        'local'):
+        # under xdist and serial so skip the test
+        pytest.skip('serial')
 
 
 def mock_sc_array_types(array_types):
@@ -234,6 +248,8 @@ def get_testdata():
                                         'WindDataFromGnome_BadUnits.WND'),
          'wind_cardinal': os.path.join(s_data,
                                        'WindDataFromGnomeCardinal.WND'),
+         'wind_kph': os.path.join(s_data,
+                                       'WindDataFromGnomeKPH.WND'),
          'tide_shio': get_datafile(os.path.join(tide_dir, 'CLISShio.txt')),
          'tide_ossm': get_datafile(os.path.join(tide_dir, 'TideHdr.FINAL'))
          }
@@ -542,13 +558,77 @@ def sample_model():
             'release_end_pos': end_points}
 
 
+@pytest.fixture(scope='module')
+def sample_model2():
+    """
+    sample model with no outputter and no spills. Use this as a template for
+    fixtures to add spills
+    Uses:
+        sample_data/MapBounds_Island.bna
+        Contains: gnome.movers.SimpleMover(velocity=(1.0, -1.0, 0.0))
+        duration is 1 hour with 15min intervals so 5 timesteps total,
+        including initial condition,
+        model is uncertain and cache is not enabled
+        No spills or outputters defined
+
+    To use:
+        add a spill and run
+
+    :returns: It returns a dict -
+        {'model':model,
+         'release_start_pos':start_points,
+         'release_end_pos':end_points}
+        The release_start_pos and release_end_pos can be used by test to define
+        the spill's 'start_position' and 'end_position'
+    """
+
+    release_time = datetime(2012, 9, 15, 12, 0)
+
+    # the image output map
+
+    mapfile = os.path.join(os.path.dirname(__file__), './sample_data/long_island_sound',
+                           'LongIslandSoundMap.BNA')
+
+    # the land-water map
+
+    map_ = MapFromBNA(mapfile, refloat_halflife=06)  # seconds
+
+    model = Model(time_step=timedelta(minutes=10),
+                  start_time=release_time,
+                  duration=timedelta(hours=1),
+                  map=map_,
+                  uncertain=True,
+                  cache_enabled=False,
+                  )
+
+    #model.movers += SimpleMover(velocity=(1., -1., 0.0))
+
+    #model.uncertain = True
+
+    start_points = np.zeros((3, ), dtype=np.float64)
+    end_points = np.zeros((3, ), dtype=np.float64)
+
+    start_points[:] = (-72.83, 41.13, 0)
+    end_points[:] = (-72.83, 41.13, 0)
+
+    return {'model': model, 'release_start_pos': start_points,
+            'release_end_pos': end_points}
+
 @pytest.fixture(scope='function')
 def sample_model_fcn():
     'sample_model with function scope'
     return sample_model()
 
 
-def sample_model_weathering(sample_model_fcn, oil, temp=311.16):
+@pytest.fixture(scope='function')
+def sample_model_fcn2():
+    'sample_model with function scope'
+    return sample_model2()
+
+def sample_model_weathering(sample_model_fcn,
+                            oil,
+                            temp=311.16,
+                            num_les=10):
     model = sample_model_fcn['model']
     rel_pos = sample_model_fcn['release_start_pos']
     'update model the same way for multiple tests'
@@ -557,7 +637,7 @@ def sample_model_weathering(sample_model_fcn, oil, temp=311.16):
     et = gnome.spill.elements.floating(substance=oil)
     start_time = model.start_time + timedelta(hours=1)
     end_time = start_time + timedelta(seconds=model.time_step*3)
-    spill = gnome.spill.point_line_release_spill(10,
+    spill = gnome.spill.point_line_release_spill(num_les,
                                                  rel_pos,
                                                  start_time,
                                                  end_release_time=end_time,
@@ -568,9 +648,9 @@ def sample_model_weathering(sample_model_fcn, oil, temp=311.16):
     return model
 
 
-def sample_model_weathering2(sample_model_fcn, oil, temp=311.16):
-    model = sample_model_fcn['model']
-    rel_pos = sample_model_fcn['release_start_pos']
+def sample_model_weathering2(sample_model_fcn2, oil, temp=311.16):
+    model = sample_model_fcn2['model']
+    rel_pos = sample_model_fcn2['release_start_pos']
     'update model the same way for multiple tests'
     model.uncertain = False     # fixme: with uncertainty, copying spill fails!
     model.duration = timedelta(hours=24)
@@ -582,30 +662,21 @@ def sample_model_weathering2(sample_model_fcn, oil, temp=311.16):
                                                  start_time,
                                                  end_release_time=end_time,
                                                  element_type=et,
-                                                 amount=100,
+                                                 amount=10000,
                                                  units='kg')
     model.spills += spill
     return model
 
 
-@pytest.fixture(scope='function', params=['relpath', 'abspath'])
-def clean_saveloc(dump, request):
-    temp = os.path.join(dump, 'temp')   # absolute path
+@pytest.fixture(scope='function')
+def saveloc_(tmpdir, request):
+    '''
+    create a temporary save location
+    '''
+    name = 'save_' + request.function.func_name
+    name = tmpdir.mkdir(name).strpath
 
-    def cleanup():
-        print '\nCleaning up %s' % temp
-        shutil.rmtree(temp)
-
-    if os.path.exists(temp):
-        cleanup()
-
-    request.addfinalizer(cleanup)
-
-    os.mkdir(temp)    # let path get created by save_load
-    if request.param == 'relpath':
-        return os.path.relpath(temp)    # do save/load tests with relative path
-    else:
-        return temp
+    return name
 
 
 '''

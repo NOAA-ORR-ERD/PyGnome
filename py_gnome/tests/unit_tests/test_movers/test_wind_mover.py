@@ -35,6 +35,7 @@ from ..conftest import sample_sc_release, testdata
 
 file_ = testdata['timeseries']['wind_ts']
 file2_ = testdata['timeseries']['wind_cardinal']
+filekph_ = testdata['timeseries']['wind_kph']
 
 
 def test_exceptions():
@@ -67,7 +68,7 @@ def test_read_file_init():
 
     wind = Wind(filename=file_)
     wm = WindMover(wind)
-    wind_ts = wind.get_timeseries(format='uv', units='meter per second')
+    wind_ts = wind.get_wind_data(format='uv', units='meter per second')
     _defaults(wm)  # check defaults set correctly
     cpp_timeseries = _get_timeseries_from_cpp(wm)
     _assert_timeseries_equivalence(cpp_timeseries, wind_ts)
@@ -76,7 +77,7 @@ def test_read_file_init():
     # NOTE: Following functionality is already tested in test_wind.py,
     #       but what the heck - do it here too.
 
-    wind_ts = wind.get_timeseries(format=ts_format.uv)
+    wind_ts = wind.get_wind_data(format=ts_format.uv)
     cpp_timeseries['value'] = unit_conversion.convert('Velocity',
                                                       'meter per second',
                                                       wind.units,
@@ -130,7 +131,7 @@ def test_update_wind(wind_circ):
                   for i in range(3)]
     t_dtv.value = np.random.uniform(1, 5, (3, 2))
 
-    o_wind.set_timeseries(t_dtv, units='meter per second', format='uv')
+    o_wind.set_wind_data(t_dtv, units='meter per second', format='uv')
 
     cpp_timeseries = _get_timeseries_from_cpp(wm)
 
@@ -138,12 +139,12 @@ def test_update_wind(wind_circ):
     assert np.allclose(cpp_timeseries['value'], t_dtv.value, atol, rtol)
 
     # set the wind timeseries back to test fixture values
-    o_wind.set_timeseries(wind_circ['rq'], units='meter per second')
+    o_wind.set_wind_data(wind_circ['rq'], units='meter per second')
     cpp_timeseries = _get_timeseries_from_cpp(wm)
 
     assert np.all(cpp_timeseries['time'] == wind_circ['uv']['time'])
-    assert np.allclose(cpp_timeseries['value'], wind_circ['uv']['value'
-                       ], atol, rtol)
+    assert np.allclose(cpp_timeseries['value'], wind_circ['uv']['value'],
+                       atol, rtol)
 
 
 def test_prepare_for_model_step():
@@ -241,8 +242,7 @@ class TestWindMover:
 
     def test_update_wind_vel(self):
         self.time_val['value'] = (1., 120.)  # now given as (r, theta)
-        self.wind.set_timeseries(self.time_val, units='meter per second'
-                                 )
+        self.wind.set_wind_data(self.time_val, units='meter per second')
         self.test_get_move()
         self.test_get_move_exceptions()
 
@@ -391,7 +391,7 @@ def test_constant_wind_mover():
 
     print wm
     print repr(wm.wind)
-    print wm.wind.get_timeseries()
+    print wm.wind.get_wind_data()
 
     time_step = 1000
     model_time = datetime(2013, 3, 1, 0)
@@ -415,6 +415,12 @@ def test_wind_mover_from_file_cardinal():
     assert wm.wind.filename == file2_
 
 
+def test_wind_mover_from_file_kph_units():
+    wm = wind_mover_from_file(filekph_)
+    print wm.wind.filename
+    assert wm.wind.filename == filekph_
+
+
 def test_serialize_deserialize(wind_circ):
     """
     tests and illustrate the funcitonality of serialize/deserialize for
@@ -433,16 +439,11 @@ def test_serialize_deserialize(wind_circ):
 
 
 @pytest.mark.parametrize("save_ref", [False, True])
-def test_save_load(save_ref):
+def test_save_load(save_ref, saveloc_):
     """
     tests and illustrates the functionality of save/load for
     WindMover
     """
-    #saveloc = clean_saveloc
-    base_dir = os.path.dirname(__file__)
-    saveloc = os.path.join(base_dir, 'temp')
-    if not os.path.exists(saveloc):
-        os.mkdir(saveloc)
     wind = Wind(filename=file_)
     wm = WindMover(wind)
     wm_fname = 'WindMover_save_test.json'
@@ -451,37 +452,15 @@ def test_save_load(save_ref):
         w_fname = 'Wind.json'
         refs = References()
         refs.reference(wind, w_fname)
-        wind.save(saveloc, refs, w_fname)
+        wind.save(saveloc_, refs, w_fname)
 
-    wm.save(saveloc, references=refs, name=wm_fname)
+    wm.save(saveloc_, references=refs, name=wm_fname)
 
     l_refs = References()
-    obj = load(os.path.join(saveloc, wm_fname), l_refs)
+    obj = load(os.path.join(saveloc_, wm_fname), l_refs)
     assert (obj == wm and obj is not wm)
     assert (obj.wind == wind and obj.wind is not wind)
-    shutil.rmtree(saveloc)  # clean-up
-
-
-#==============================================================================
-# def test_new_from_dict():
-#     """
-#     Currently only checks that new object can be created from dict
-#     It does not check equality of objects
-#     """
-#     wind = Wind(filename=file_)
-#     wm = WindMover(wind)  # WindMover does not modify Wind object!
-#     wm_state = wm.to_dict('save')
-# 
-#     # must create a Wind object and add this to wm_state dict
-# 
-#     wind2 = Wind.new_from_dict(wind.to_dict('save'))
-#     wm_state.update({'wind': wind2})
-#     wm2 = WindMover.new_from_dict(wm_state)
-# 
-#     assert wm is not wm2
-#     assert wm.wind is not wm2.wind
-#     assert wm == wm2
-#==============================================================================
+    shutil.rmtree(saveloc_)  # clean-up
 
 
 def test_array_types():
@@ -519,7 +498,7 @@ def _get_timeseries_from_cpp(windmover):
 
     This is simply used for testing.
     """
-    dtv = windmover.wind.get_timeseries(format=ts_format.uv)
+    dtv = windmover.wind.get_wind_data(format=ts_format.uv)
     tv = convert.to_time_value_pair(dtv, ts_format.uv)
     val = windmover.mover.get_time_value(tv['time'])
     tv['value']['u'] = val['u']

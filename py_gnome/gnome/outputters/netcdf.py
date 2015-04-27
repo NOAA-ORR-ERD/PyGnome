@@ -787,12 +787,22 @@ class NetCDFOutput(Outputter, Serializable):
         return self._json_to_saveloc(json_, saveloc, references, name)
 
     @classmethod
-    def load(cls, saveloc, json_data, references=None):
+    def loads(cls, json_data, saveloc, references=None):
         '''
-        update path to 'netcdf_filename' in json_data, then finsih loading
-        by calling super class' load method
-        '''
-        json_data['netcdf_filename'] = os.path.join(saveloc,
-                                        json_data['netcdf_filename'])
+        loads object from json_data
 
-        return super(NetCDFOutput, cls).load(saveloc, json_data, references)
+        update path to 'netcdf_filename' in json_data, then finish loading
+        by calling super class' load method
+
+        :param saveloc: location of data files. Setup path of netcdf_filename
+            to this location
+
+        Optional parameter
+
+        :param references: references object - if this is called by the Model,
+            it will pass a references object. It is not required.
+        '''
+        json_data['netcdf_filename'] = \
+            os.path.join(saveloc, json_data['netcdf_filename'])
+
+        return super(NetCDFOutput, cls).loads(json_data, saveloc, references)

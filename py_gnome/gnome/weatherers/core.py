@@ -44,7 +44,7 @@ class Weatherer(Process):
         super(Weatherer, self).__init__(**kwargs)
 
         # arrays that all weatherers will update - use this to ask
-        self.array_types.update(['mass_components', 'mass', 'status_codes'])
+        self.array_types.update({'mass_components', 'mass'})
 
     def __repr__(self):
         return ('{0.__class__.__module__}.{0.__class__.__name__}('
@@ -135,6 +135,4 @@ class HalfLifeWeatherer(Weatherer):
             data['mass_components'][:] = hl
             data['mass'][:] = data['mass_components'].sum(1)
 
-        sc.update_from_substancedata(arrays)
-        #sc['mass_components'][:] = hl
-        #sc['mass'][:] = sc['mass_components'].sum(1)
+        sc.update_from_fatedataview()

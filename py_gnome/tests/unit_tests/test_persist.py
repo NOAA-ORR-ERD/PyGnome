@@ -1,6 +1,7 @@
 '''
 primarily tests the operations of the scenario module, the colander schemas,
 and the ability of Model to be recreated in midrun
+tests save/load to directory - original functionality and save/load to zip
 '''
 
 import os
@@ -22,40 +23,11 @@ from gnome.persist import load
 from gnome.spill import point_line_release_spill
 from gnome.movers import RandomMover, WindMover, CatsMover, ComponentMover
 from gnome.weatherers import Evaporation, Skimmer, Burn
-from gnome.outputters import Renderer
-# from gnome.utilities.remote_data import get_datafile
 
 from conftest import dump, testdata, test_oil
 
 
-saveloc_ = os.path.join(dump(), 'save_model')
-webapi_files = os.path.join(dump(), 'webapi_json')
-
-
-# clean up saveloc_ if it exists
-# let Scenario.__init__() create saveloc_
-def del_saveloc(saveloc_):
-    if os.path.exists(saveloc_):
-        shutil.rmtree(saveloc_)
-
-del_saveloc(saveloc_)
-
-
-@pytest.fixture(scope='module')
-def images_dir(dump):
-    '''
-    create images dir
-    '''
-    images_dir = os.path.join(dump, 'test_images')
-    if os.path.exists(images_dir):
-        shutil.rmtree(images_dir)
-
-    os.makedirs(images_dir)
-
-    return images_dir
-
-
-def make_model(images_dir, uncertain=False):
+def make_model(uncertain=False):
     '''
     Create a model from the data in sample_data/boston_data
     It contains:
@@ -74,11 +46,6 @@ def make_model(images_dir, uncertain=False):
                   uncertain=uncertain,
                   map=MapFromBNA(testdata['boston_data']['map'],
                                  refloat_halflife=1))
-
-    print 'adding a renderer'
-
-    model.outputters += Renderer(testdata['boston_data']['map'],
-                                 images_dir, size=(800, 600))
 
     print 'adding a spill'
     start_position = (144.664166, 13.441944, 0.0)
@@ -178,53 +145,59 @@ def make_model(images_dir, uncertain=False):
     return model
 
 
-def test_init_exception(images_dir):
-    m = make_model(images_dir)
-    with raises(ValueError):
+def zipname(saveloc, mdl):
+    # put common two lines of functionality here
+    if mdl.zipsave:
+        # default name of zip file is same as model.name attribute
+        return os.path.join(saveloc, mdl.name + '.zip')
+    return saveloc
+
+
+def test_init_exception(saveloc_):
+    m = make_model(False)
+    with raises(IOError):
         m.save(os.path.join(saveloc_, 'x', 'junk'))
 
 
-def test_dir_gets_created(images_dir):
-    model = make_model(images_dir, True)
-    assert not os.path.exists(saveloc_)
-    model.save(os.path.join(saveloc_))
-    assert os.path.exists(saveloc_)
-
-
 @pytest.mark.slow
-@pytest.mark.parametrize('uncertain', [False, True])
-def test_save_load_model(images_dir, uncertain):
+@pytest.mark.parametrize(('uncertain', 'zipsave'),
+                         [(False, False), (True, False),
+                          (False, True), (True, True)])
+def test_save_load_model(uncertain, zipsave, saveloc_):
     '''
     create a model, save it, then load it back up and check it is equal to
     original model
     '''
-    model = make_model(images_dir, uncertain)
+    model = make_model(uncertain)
+    model.zipsave = zipsave
 
     print 'saving scenario ..'
     model.save(saveloc_)
 
     print 'loading scenario ..'
-    model2 = load(saveloc_)
+    model2 = load(zipname(saveloc_, model))
 
     assert model == model2
 
 
 @pytest.mark.slow
-@pytest.mark.parametrize('uncertain', [False, True])
-def test_save_load_midrun_scenario(images_dir, uncertain):
+@pytest.mark.parametrize(('uncertain', 'zipsave'),
+                         [(False, False), (True, False),
+                          (False, True), (True, True)])
+def test_save_load_midrun_scenario(uncertain, zipsave, saveloc_):
     """
     create model, save it after 1step, then load and check equality of original
     model and persisted model
     """
 
-    model = make_model(images_dir, uncertain)
+    model = make_model(uncertain)
 
     model.step()
     print 'saving scnario ..'
     model.save(saveloc_)
 
     print 'loading scenario ..'
-    model2 = load(os.path.join(saveloc_, 'Model.json'))
+    model2 = load(zipname(saveloc_, model))
 
     for sc in zip(model.spills.items(), model2.spills.items()):
         sc[0]._array_allclose_atol = 1e-5  # need to change both atol
@@ -235,15 +208,17 @@ def test_save_load_midrun_scenario(images_dir, uncertain):
 
 
 @pytest.mark.slow
-@pytest.mark.parametrize('uncertain', [False, True])
-def test_save_load_midrun_no_movers(images_dir, uncertain):
+@pytest.mark.parametrize(('uncertain', 'zipsave'),
+                         [(False, False), (True, False),
+                          (False, True), (True, True)])
+def test_save_load_midrun_no_movers(uncertain, zipsave, saveloc_):
     """
     create model, save it after 1step, then load and check equality of original
     model and persisted model
     Remove all movers and ensure it still works as expected
     """
 
-    model = make_model(images_dir, uncertain)
+    model = make_model(uncertain)
 
     for mover in model.movers:
         del model.movers[mover.id]
@@ -253,7 +228,7 @@ def test_save_load_midrun_no_movers(images_dir, uncertain):
     model.save(saveloc_)
 
     print 'loading scenario ..'
-    model2 = load(os.path.join(saveloc_, 'Model.json'))
+    model2 = load(zipname(saveloc_, model))
 
     for sc in zip(model.spills.items(), model2.spills.items()):
         # need to change both atol since reading persisted data
@@ -266,7 +241,7 @@ def test_save_load_midrun_no_movers(images_dir, uncertain):
 
 @pytest.mark.slow
 @pytest.mark.parametrize('uncertain', [False, True])
-def test_load_midrun_ne_rewound_model(images_dir, uncertain):
+def test_load_midrun_ne_rewound_model(uncertain, saveloc_):
     """
     Load the same model that was persisted previously after 1 step
     This time rewind the original model and test that the two are not equal.
@@ -275,20 +250,28 @@ def test_load_midrun_ne_rewound_model(images_dir, uncertain):
 
     # data arrays in model.spills no longer equal
 
-    model = make_model(images_dir, uncertain)
+    model = make_model(uncertain)
 
     model.step()
     print 'saving scenario ..'
     model.save(saveloc_)
 
     model.rewind()
-    model2 = load(os.path.join(saveloc_, 'Model.json'))
+    model2 = load(zipname(saveloc_, model))
 
     assert model.spills != model2.spills
     assert model != model2
 
 
 class TestWebApi:
+
+    webapi_files = os.path.join(dump(), 'webapi_json')
+
+    # clean up saveloc_ if it exists
+    # let Scenario.__init__() create saveloc_
+    def del_saveloc(self, saveloc_):
+        if os.path.exists(saveloc_):
+            shutil.rmtree(saveloc_)
 
     def _write_to_file(self, fname, data):
         with open(fname, 'w') as outfile:
@@ -298,18 +281,18 @@ class TestWebApi:
         # for each object in the model, dump the json
         for count, obj in enumerate(coll_):
             serial = obj.serialize('webapi')
-            fname = os.path.join(webapi_files,
+            fname = os.path.join(self.webapi_files,
                                  '{0}_{1}.json'.format(obj.__class__.__name__,
                                                        count))
             self._write_to_file(fname, serial)
 
     @pytest.mark.parametrize('uncertain', [False, True])
-    def test_dump_webapi_option(self, images_dir, uncertain):
-        model = make_model(images_dir, uncertain)
-        del_saveloc(webapi_files)
-        os.makedirs(webapi_files)
+    def test_dump_webapi_option(self, uncertain):
+        model = make_model(uncertain)
+        self.del_saveloc(self.webapi_files)
+        os.makedirs(self.webapi_files)
         serial = model.serialize('webapi')
-        fname = os.path.join(webapi_files, 'Model.json')
+        fname = os.path.join(self.webapi_files, 'Model.json')
         self._write_to_file(fname, serial)
 
         for coll in ['movers', 'weatherers', 'environment', 'outputters']:
@@ -322,14 +305,14 @@ class TestWebApi:
                 for idx, spill in enumerate(sc.spills):
                     for obj in ['release', 'element_type']:
                         serial = getattr(spill, obj).serialize('webapi')
-                        fname = os.path.join(webapi_files,
+                        fname = os.path.join(self.webapi_files,
                                              'Spill{0}_{1}.json'.format(idx,
                                                                         obj))
                         self._write_to_file(fname, serial)
 
     @pytest.mark.parametrize('uncertain', [False, True])
-    def test_model_rt(self, images_dir, uncertain):
-        model = make_model(images_dir, uncertain)
+    def test_model_rt(self, uncertain):
+        model = make_model(uncertain)
         deserial = Model.deserialize(model.serialize('webapi'))
 
         # update the dict so it gives a valid model to load
@@ -349,5 +332,22 @@ def test_location_file():
     '''
     Simple test to check if json_ contains nothing - default model is created
     '''
-    model = Model.load('.', {'json_': 'save'})
+    model = Model.loads({'json_': 'save'}, '.')
     assert model == Model()
+
+
+def test_load_fails(saveloc_):
+    '''
+    if load fails on map or any of the collections, no model is created
+    '''
+    model = make_model()
+    model.zipsave = False
+    model.save(saveloc_)
+    model_json = json.load(open(os.path.join(saveloc_, 'Model.json'), 'r'))
+    model_json['map']['filename'] = 'junk.bna'
+
+    with open(os.path.join(saveloc_, 'Model.json'), 'w') as fd:
+        json.dump(model_json, fd, indent=True)
+
+    with pytest.raises(Exception):
+        load(saveloc_)

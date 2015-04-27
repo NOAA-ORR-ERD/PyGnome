@@ -148,6 +148,9 @@ void ConvertToUnits (long unitCode, char *unitStr)
 		case kMilesPerHour:
 			strcpy(unitStr,"miles / hour");
 			break;
+		case kKilometersPerHour:
+			strcpy(unitStr,"kilometer / hour");
+			break;
 	}
 
 	return;
@@ -168,6 +171,9 @@ void ConvertToUnitsShort (long unitCode, char *unitStr)
 			break;
 		case kMilesPerHour:
 			strcpy(unitStr,"mph");
+			break;
+		case kKilometersPerHour:
+			strcpy(unitStr,"km/h");
 			break;
 	}
 
@@ -210,6 +216,8 @@ double speedconversion(long speedUnits)
 			return 1;
 		case kMilesPerHour://JLM
 			return MILESTOMETERSPERSEC;
+		case kKilometersPerHour://JLM
+			return KMHRTOMETERSPERSEC;
 		default:
 			return -1;
 	}
@@ -222,6 +230,9 @@ long StrToSpeedUnits(char* str)
 	if (!strcmpnocase(str,"MPS")) return kMetersPerSec;
 	if (!strcmpnocase(str,"MilesPerHour")) return kMilesPerHour;
 	if (!strcmpnocase(str,"MPH")) return kMilesPerHour;
+	if (!strcmpnocase(str,"kilometer per hour")) return kKilometersPerHour;
+	if (!strcmpnocase(str,"kph")) return kKilometersPerHour;
+	if (!strcmpnocase(str,"km/h")) return kKilometersPerHour;
 	// these we added to support OSSM's "Long Wind File" format
 	if(!strcmpnocase(str,"miles per hour")) return kMilesPerHour;
 	if(!strcmpnocase(str,"meters per second")) return kMetersPerSec;
@@ -244,6 +255,9 @@ void SpeedUnitsToStr(long unitCode, char *unitStr)
 			break;
 		case kMilesPerHour:
 			strcpy(unitStr,"miles per hour");
+			break;
+		case kKilometersPerHour:
+			strcpy(unitStr,"kilometer per hour");
 			break;
 	}
 

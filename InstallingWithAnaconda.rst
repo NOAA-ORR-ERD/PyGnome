@@ -73,7 +73,37 @@ Building with conda should be straightforward. In the oil_library directory::
   conda build oil_library_conda_recipe/
 
 
-     
+**********************************************
+Notes on installation of py_gnome for Windows.
+**********************************************
+
+These instuctions assume you have the py_gnoem source from gitHub (or similar source): https://github.com/NOAA-ORR-ERD/PyGnome
+
+Using the Anaconda Python Distribution
+======================================
+
+* Install Anaconda:
+
+https://store.continuum.io/cshop/anaconda/
+
+You want the Windows 64 bit Python 2.7 version. Installing wit the defautls works fine. YOu probably want to let it set the PATH for you -- that's a pain to do by hand.
+
+It's a good idea to update anaconda -- particularly if you didn't just install it::
+
+  > conda update conda
+  > conda update anaconda
+
+C / C++ compiler
+----------------
+
+In order to compile py_gnome (and maybe other packages) you need a compiler. Anaconda provides gcc, but we have set up the py_gnome build to use the MS compiler, and even Anaconda itself is built with the MS compiler. 
+
+Download the MS compiler here:
+
+http://www.microsoft.com/en-us/download/details.aspx?id=44266
+
+Installing with the defaults works fine there, too.
+
 
 
 

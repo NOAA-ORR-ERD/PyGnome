@@ -5,8 +5,9 @@ from datetime import datetime, timedelta
 
 from pytest import mark
 import numpy as np
+import unit_conversion as uc
 
-from gnome.basic_types import oil_status
+from gnome.basic_types import oil_status, fate
 from gnome.environment import Water
 from gnome.weatherers.intrinsic import WeatheringData
 
@@ -67,7 +68,7 @@ class TestSkimmer:
         '''
         self.reset_test_objs()
         num_rel = self.sc.release_elements(time_step, rel_time)
-        self.intrinsic.update(num_rel, self.sc)
+        self.intrinsic.update(num_rel, self.sc, time_step)
 
     def test_prepare_for_model_run(self):
         self.reset_and_release()
@@ -102,7 +103,7 @@ class TestSkimmer:
         assert self.skimmer.active is active
         if active:
             assert self.skimmer._timestep == ts
-            mask = self.sc['status_codes'] == oil_status.skim
+            mask = self.sc['fate_status'] & fate.skim == fate.skim
             assert mask.sum() > 0
 
     @mark.parametrize("avg_frac_water", [0.0, 0.4])
@@ -126,7 +127,7 @@ class TestSkimmer:
             num_rel = self.sc.release_elements(time_step, model_time)
             if num_rel > 0:
                 self.sc['frac_water'][:] = avg_frac_water
-            self.intrinsic.update(num_rel, self.sc)
+            self.intrinsic.update(num_rel, self.sc, time_step)
             self.skimmer.prepare_for_model_step(self.sc, time_step, model_time)
 
             self.skimmer.weather_elements(self.sc, time_step, model_time)
@@ -157,6 +158,42 @@ class TestSkimmer:
                            atol=1e-6)
 
 
+class TestBurnProperties:
+    area = 10.
+    thick = 1.
+    start = datetime(2015, 1, 1, 1, 0)
+
+    def test_area_units(self):
+        b = Burn(self.area, self.thick, self.start)
+        b.area_units = 'km^2'
+        assert self.area == b.area
+        assert (uc.convert('Area', 'm^2', b.area_units, b._si_area) ==
+                b.area)
+
+    def test_area(self):
+        b = Burn(self.area, self.thick, self.start)
+        new_area = self.area / 1000.
+        b.area = new_area
+        assert new_area == b.area
+        assert (uc.convert('Area', 'm^2', b.area_units, b._si_area) ==
+                b.area)
+
+    def test_thick_units(self):
+        b = Burn(self.area, self.thick, self.start)
+        b.thickness_units = 'km'
+        assert self.thick == b.thickness
+        assert (uc.convert('Length', 'm', b.thickness_units, b._si_thickness)
+                == b.thickness)
+
+    def test_thickness(self):
+        b = Burn(self.area, self.thick, self.start)
+        new_thick = self.thick / 1000.
+        b.thickness = new_thick
+        assert new_thick == b.thickness
+        assert (uc.convert('Length', 'm', b.thickness_units, b._si_thickness)
+                == b.thickness)
+
+
 class TestBurn:
     (sc, intrinsic) = test_objs()
     spill = sc.spills[0]
@@ -164,7 +201,10 @@ class TestBurn:
     volume = spill.get_mass()/op.get_density(intrinsic.water.temperature)
     thick = 1
     area = (0.5 * volume)/thick
-    burn = Burn(area, thick, active_start)
+
+    # test with non SI units
+    burn = Burn(area, thick, active_start,
+                area_units='km^2', thickness_units='km')
 
     def reset_test_objs(self):
         '''
@@ -234,7 +274,7 @@ class TestBurn:
             num = self.sc.release_elements(time_step, model_time)
             if num > 0:
                 self.sc['frac_water'][:] = avg_frac_water
-            self.intrinsic.update(num, self.sc)
+            self.intrinsic.update(num, self.sc, time_step)
 
             dt = timedelta(seconds=time_step)
             burn.prepare_for_model_step(self.sc, time_step, model_time)
@@ -306,7 +346,7 @@ class TestBurn:
                       self.op.get_density())
         assert np.isclose(self.sc.weathering_data['burned'], exp_burned)
 
-        mask = self.sc['status_codes'] == oil_status.burn
+        mask = self.sc['fate_status'] & fate.burn == fate.burn
 
         # given LEs are discrete elements, we cannot add a fraction of an LE
         mass_per_le = self.sc['init_mass'][mask][0]

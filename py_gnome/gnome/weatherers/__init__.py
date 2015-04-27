@@ -1,6 +1,7 @@
 from core import Weatherer, HalfLifeWeatherer
 from evaporation import Evaporation
 from emulsification import Emulsification
+from natural_dispersion import NaturalDispersion
 from intrinsic import WeatheringData
 from cleanup import Skimmer, Burn, Dispersion
 
@@ -8,6 +9,7 @@ __all__ = [Weatherer,
            HalfLifeWeatherer,
            Evaporation,
            Emulsification,
+           NaturalDispersion,
            Skimmer,
            Burn,
            Dispersion,
@@ -50,7 +52,7 @@ def weatherer_sort(weatherer):
     if isinstance(weatherer, (Evaporation,)):
         return 3
 
-    if isinstance(weatherer, (Dispersion,)):
+    if isinstance(weatherer, (NaturalDispersion,)):
         return 4
 
     if isinstance(weatherer, (Emulsification,)):

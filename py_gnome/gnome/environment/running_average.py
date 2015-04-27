@@ -145,33 +145,6 @@ class RunningAverage(Environment, Serializable):
     def __str__(self):
         return "Running Average ( timeseries=RunningAverage.get_timeseries('uv'), format='uv')"
 
-    def __eq__(self, other):
-        '''
-        call super to test for equality of objects for all attributes
-        except 'units' and 'timeseries' - test 'timeseries' here by converting
-        to consistent units
-        '''
-        # since this has numpy array - need to compare that as well
-        # By default, tolerance for comparison is atol=1e-10, rtol=0
-        # persisting data requires unit conversions and finite precision,
-        # both of which will introduce a difference between two objects
-
-        check = super(RunningAverage, self).__eq__(other)
-
-        if check:
-            sts = self.get_timeseries(units=self.units)
-            ots = other.get_timeseries(units=self.units)
-
-            if (sts['time'] != ots['time']).all():
-                return False
-            else:
-                return np.allclose(sts['value'], ots['value'], 0, 1e-2)
-
-        return check
-
-    def __ne__(self, other):
-        return not self == other
-
     @property
     def past_hours_to_average(self):
         return self._past_hours_to_average
@@ -184,7 +157,7 @@ class RunningAverage(Environment, Serializable):
         """
         # may want a check on value
         self._past_hours_to_average = value
-        
+
     @property
     def timeseries(self):
         return self.get_timeseries()

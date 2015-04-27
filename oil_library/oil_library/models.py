@@ -153,7 +153,7 @@ class ImportedRecord(Base):
     pour_point_max_k = Column(Float(53))
     product_type = Column(String(16))
     comments = Column(Text)
-    asphaltene_content = Column(Float(53))
+    asphaltenes = Column(Float(53))
     wax_content = Column(Float(53))
     aromatics = Column(Float(53))
     water_content_emulsion = Column(Float(53))
@@ -168,7 +168,7 @@ class ImportedRecord(Base):
     cut_units = Column(String(16))
     oil_class = Column(String(16))
     adhesion = Column(Float(53))
-    benezene = Column(Float(53))
+    benzene = Column(Float(53))
     naphthenes = Column(Float(53))
     paraffins = Column(Float(53))
     polars = Column(Float(53))
@@ -414,6 +414,7 @@ class Oil(Base):
     estimated_id = Column(Integer, ForeignKey('estimated.id'))
 
     name = Column(String(100), unique=True, nullable=False)
+    adios_oil_id = Column(String(16))
     api = Column(Float(53))
     oil_water_interfacial_tension_n_m = Column(Float(53))
     oil_water_interfacial_tension_ref_temp_k = Column(Float(53))
@@ -429,6 +430,7 @@ class Oil(Base):
     adhesion_kg_m_2 = Column(Float(53))
     sulphur_fraction = Column(Float(53))
     soluability = Column(Float(53))
+    k0y = Column(Float(53))
 
     categories = relationship('Category', secondary=oil_to_category,
                               backref='oils')
@@ -445,6 +447,35 @@ class Oil(Base):
                                   cascade="all, delete, delete-orphan")
     molecular_weights = relationship('MolecularWeight', backref='oil',
                                      cascade="all, delete, delete-orphan")
+
+    def __init__(self, **kwargs):
+        for a, v in kwargs.iteritems():
+            if (a in self.columns):
+                setattr(self, a, v)
+
+    @classmethod
+    def from_json(cls, oil_json):
+        oil_obj = cls(**oil_json)
+        oil_obj._add_relationships_from_json(oil_json)
+        return oil_obj
+
+    def _add_relationships_from_json(self, oil_json):
+        for r in self.one_to_many_relationships:
+            if r in oil_json:
+                current_attr = getattr(self, r)
+                py_class = self._get_class_from_relationship_property(r)
+
+                if py_class is not None:
+                    for kwargs in oil_json[r]:
+                        obj = py_class(**kwargs)
+                        current_attr.append(obj)
+
+    def _get_class_from_relationship_property(self, attr_name):
+        for p in self.__mapper__.iterate_properties:
+            if (isinstance(p, RelationshipProperty)) and p.key == attr_name:
+                return p.mapper.class_manager.class_
+
+        return None
 
     def __repr__(self):
         return '<Oil("{0.name}")>'.format(self)
@@ -495,8 +526,9 @@ class MolecularWeight(Base):
     id = Column(Integer, primary_key=True)
     oil_id = Column(Integer, ForeignKey('oils.id'))
 
-    saturate = Column(Float(53))
-    aromatic = Column(Float(53))
+    sara_type = Column(Enum('Saturates', 'Aromatics', 'Resins', 'Asphaltenes'),
+                       nullable=False)
+    g_mol = Column(Float(53))
     ref_temp_k = Column(Float(53))
 
     def __init__(self, **kwargs):
@@ -506,7 +538,5 @@ class MolecularWeight(Base):
 
     def __repr__(self):
         return ('<MolecularWeight('
-                'saturate={0.saturate}, '
-                'aromatic={0.aromatic} '
-                'at {0.ref_temp_k}K)>'
+                '{0.sara_type}={0.g_mol}gm/mol at {0.ref_temp_k}K)>'
                 .format(self))

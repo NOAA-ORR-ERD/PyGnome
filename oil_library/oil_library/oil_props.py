@@ -11,12 +11,14 @@ object used to initialize and OilProps object
 Not sure at present if this needs to be serializable?
 '''
 import copy
+from itertools import groupby, chain
 
 from repoze.lru import lru_cache
 import numpy as np
 
 import unit_conversion as uc
-from .utilities import get_density, get_boiling_points_from_cuts, get_viscosity
+from .utilities import get_density, get_viscosity
+from .models import Oil
 
 
 # create a dtype for storing sara information in numpy array
@@ -70,6 +72,9 @@ class OilProps(object):
         self.molecular_weight = None
         self._component_mw()
 
+        self._bullwinkle = None
+        self._bulltime = None
+
     def __repr__(self):
         return ('{0.__class__.__module__}.{0.__class__.__name__}('
                 'oil_={0._r_oil!r})'.format(self))
@@ -117,7 +122,8 @@ class OilProps(object):
         '''
         return get_viscosity(self._r_oil, temp, out)
 
-    def get_bulltime(self):
+    @property
+    def bulltime(self):
         '''
         return bulltime (time to emulsify)
         either user set or just return a flag
@@ -125,7 +131,37 @@ class OilProps(object):
         # check for user input value, otherwise set to -999 as a flag
         bulltime = -999.
 
-        return bulltime
+        if self._bulltime is not None:
+            return self._bulltime
+        else:
+            return bulltime
+
+    @bulltime.setter
+    def bulltime(self, value):
+        """
+        time to start emulsification 
+        """
+        self._bulltime = value
+
+    @property
+    def bullwinkle(self):
+        '''
+        return bullwinkle (emulsion constant)
+        either user set or return database value
+        '''
+        # check for user input value, otherwise return database value
+
+        if self._bullwinkle is not None:
+            return self._bullwinkle
+        else:
+            return self.get('bullwinkle_fraction')
+
+    @bullwinkle.setter
+    def bullwinkle(self, value):
+        """
+        emulsion constant 
+        """
+        self._bullwinkle = value
 
     @property
     def num_components(self):
@@ -176,8 +212,19 @@ class OilProps(object):
         return Pi
 
     def tojson(self):
-        'for now, just convert underlying oil object to json'
-        return self._r_oil.tojson()
+        '''
+            For now, just convert underlying oil object tojson() method
+            - An Oil object that has been queried from the database
+              contains a lot of unnecessary relationships that we do not
+              want to represent in our JSON output,
+              So we prune them by first constructing an Oil object from the
+              JSON payload of the queried Oil object.
+              This creates an Oil object in memory that does not have any
+              database links.
+              Then we output the JSON from the unlinked object.
+        '''
+
+        return Oil.from_json(self._r_oil.tojson()).tojson()
 
     def _compare__dict(self, other):
         '''
@@ -253,10 +300,22 @@ class OilProps(object):
 
         Omit components that have 0 mass fraction
         '''
-        all_comp = sorted(self._r_oil.sara_fractions,
-                          key=lambda s: s.ref_temp_k)
-        all_dens = sorted(self._r_oil.sara_densities,
-                          key=lambda s: s.ref_temp_k)
+        all_comp = list(chain(*[sorted(list(g), key=lambda s: s.sara_type,
+                                       reverse=True)
+                                for k, g
+                                in groupby(sorted(self._r_oil.sara_fractions,
+                                                  key=lambda s: s.ref_temp_k),
+                                           lambda x: x.ref_temp_k)]
+                              ))
+
+        all_dens = list(chain(*[sorted(list(g), key=lambda s: s.sara_type,
+                                       reverse=True)
+                                for k, g
+                                in groupby(sorted(self._r_oil.sara_densities,
+                                                  key=lambda s: s.ref_temp_k),
+                                           lambda x: x.ref_temp_k)]
+                              ))
+
         items = []
         sum_frac = 0.
         for comp, dens in zip(all_comp, all_dens):

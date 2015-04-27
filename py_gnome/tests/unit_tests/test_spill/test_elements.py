@@ -338,20 +338,19 @@ def test_serialize_deserialize():
 
 
 @pytest.mark.parametrize(("test_obj"), test_l)
-def test_save_load(clean_saveloc, test_obj):
+def test_save_load(saveloc_, test_obj):
     '''
     test save/load for initializers and for ElementType objects containing
     each initializer. Tests serialize/deserialize as well.
     These are stored as nested objects in the Spill but this should also work
     so test it here
     '''
-    refs = test_obj.save(clean_saveloc)
-    test_obj2 = load(os.path.join(clean_saveloc, refs.reference(test_obj)))
+    refs = test_obj.save(saveloc_)
+    test_obj2 = load(os.path.join(saveloc_, refs.reference(test_obj)))
     assert test_obj == test_obj2
 
 
 @pytest.mark.parametrize("substance", [test_oil,
-                                       'ALASKA NORTH SLOPE',  # oil record in DB
                                        get_oil_props(test_oil)])
 def test_element_type_init(substance):
     et = ElementType(substance=substance)
@@ -361,3 +360,8 @@ def test_element_type_init(substance):
         assert et.substance.get('id') == substance
     else:
         assert et.substance.get('name') == substance.get('name')
+
+
+def test_exception():
+    with pytest.raises(Exception):
+        ElementType(substance='junk')

@@ -17,7 +17,7 @@ from ..conftest import test_oil
 
 
 @pytest.fixture(scope='module')
-def model(sample_model, output_dir):
+def model(sample_model):
     model = sample_model['model']
     rel_start_pos = sample_model['release_start_pos']
     rel_end_pos = sample_model['release_end_pos']
@@ -65,7 +65,7 @@ def model(sample_model, output_dir):
                          burn,
                          skimmer]
 
-    model.outputters += WeatheringOutput(output_dir=output_dir)
+    model.outputters += WeatheringOutput()
     model.rewind()
 
     return model
@@ -77,8 +77,12 @@ def test_init():
     assert g.output_dir is None
 
 
-def test_model_webapi_output(model):
-    'Test weathering outputter with a model since simplest to do that'
+@pytest.mark.slow
+def test_model_webapi_output(model, output_dir):
+    '''
+    Test weathering outputter with a model since simplest to do that
+    '''
+    model.outputters[-1].output_dir = output_dir
     model.rewind()
 
     # floating mass at beginning of step - though tests will only pass for
@@ -99,16 +103,13 @@ def test_model_webapi_output(model):
             # For nominal, sum up all mass and ensure it equals the mass at
             # step initialization - ignore step 0
             sum_mass += step['WeatheringOutput'][key]['floating']
-            np.isclose(sum_mass, step['WeatheringOutput'][key]['amount_released'])
+            np.isclose(sum_mass,
+                       step['WeatheringOutput'][key]['amount_released'])
 
-        print 'Completed step: ', step
+        print 'Completed step: ', step['WeatheringOutput']['step_num']
 
-
-def test_model_dump_output(model):
-    'Test weathering outputter with a model since simplest to do that'
-    output_dir = model.outputters[0].output_dir
-    model.rewind()
-    model.full_run()
-    files = glob(os.path.join(output_dir, '*.json'))
-    assert len(files) == model.num_time_steps
-    model.outputters[0].output_dir = None
+    # removed last test and do the assertion here itself instead of writing to
+    # file again which takes awhile!
+    if output_dir is not None:
+        files = glob(os.path.join(output_dir, '*.json'))
+        assert len(files) == model.num_time_steps

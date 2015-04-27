@@ -42,6 +42,25 @@ end_position = (24.0, -79.5, 1.0)
 end_release_time = datetime(2012, 1, 1, 12) + timedelta(hours=4)
 
 
+def test_total_mass():
+    '''
+    test total_mass attribute
+    '''
+    sc = SpillContainer()
+    sc.spills += [Spill(Release(datetime.now(), 10),
+                        amount=100,
+                        units='kg'),
+                  Spill(Release(datetime.now(), 1000),
+                        amount=1234,
+                        units='kg'),
+                  Spill(Release(datetime.now(), 100))]
+    assert sc.total_mass == 100 + 1234
+
+    sc.spills.clear()
+    sc.spills += [Spill(Release(datetime.now(), 10))]
+    assert sc.total_mass is None
+
+
 def test_simple_init():
     sc = SpillContainer()
     assert sc is not None
@@ -502,14 +521,13 @@ def test_ordered_collection_api():
 
 
 """ tests w/ element types set for two spills """
-oil = test_oil
 el0 = ElementType([InitWindages((0.02, 0.02), -1),
                    InitRiseVelFromDist(
                        distribution=UniformDistribution(low=1, high=10))
-                   ], substance=oil)
+                   ], substance=test_oil)
 
 el1 = ElementType([InitWindages(),
-                   InitRiseVelFromDist()], substance=oil)
+                   InitRiseVelFromDist()], substance=test_oil)
 
 arr_types = {'windages', 'windage_range', 'windage_persist', 'rise_vel'}
 
@@ -565,25 +583,51 @@ def test_element_types(elem_type, arr_types, sample_sc_no_uncertainty):
                         assert (np.all(sc[key][spill_mask] <= high))
 
 
-def test_init_SpillContainerPair():
-    'All this does is test that it can be initialized'
-    SpillContainerPair()
-    SpillContainerPair(True)
+class TestSpillContainerPairBasicTests:
+    '''
+    Group basic tests together
+    '''
+    def test_init_SpillContainerPair(self):
+        'All this does is test that it can be initialized'
+        SpillContainerPair()
+        SpillContainerPair(True)
+        assert True
 
-    assert True
+    def test_SpillContainerPair_uncertainty(self):
+        'test uncertainty property'
 
+        u_scp = SpillContainerPair(True)
+        u_scp.uncertain = False
+        assert not u_scp.uncertain
+        assert not hasattr(u_scp, '_u_spill_container')
 
-def test_SpillContainerPair_uncertainty():
-    'test uncertainty property'
+        u_scp.uncertain = True
+        assert u_scp.uncertain
+        assert hasattr(u_scp, '_u_spill_container')
 
-    u_scp = SpillContainerPair(True)
-    u_scp.uncertain = False
-    assert not u_scp.uncertain
-    assert not hasattr(u_scp, '_u_spill_container')
+    def test_rewind_change_spill_attribute(self):
+        '''
+        check that if an attribute of forcast spillcontainer is updated,
+        the uncertain spill container creates a new copy of uncertain spills
+        '''
+        num_elements = 100
+        release_time = datetime(2012, 1, 1, 12)
+        start_position = (23.0, -78.5, 0.0)
+        scp = SpillContainerPair(uncertain=True)
 
-    u_scp.uncertain = True
-    assert u_scp.uncertain
-    assert hasattr(u_scp, '_u_spill_container')
+        scp += point_line_release_spill(num_elements, start_position,
+                                        release_time)
+        (forecast_sc, uncertain_sc) = scp.items()
+        assert forecast_sc.spills == uncertain_sc.spills
+
+        forecast_sc.spills[0].set('release_time',
+                                  release_time + timedelta(hours=1))
+        (forecast_sc, uncertain_sc) = scp.items()
+        assert forecast_sc.spills != uncertain_sc.spills
+
+        scp.rewind()
+        (forecast_sc, uncertain_sc) = scp.items()
+        assert forecast_sc.spills == uncertain_sc.spills
 
 
 class TestAddSpillContainerPair:
@@ -1017,25 +1061,6 @@ def get_eq_spills():
     return (spill, spill2)
 
 
-@pytest.mark.xfail
-def test_reuse_substance():
-    '''
-    reuse substance
-    marked as xfail due to a testing issue
-    - this works fine if pytest is run on this file; however, when pytest is
-    run on all files, this fails when trying to make copy of spills
-    '''
-    scp = SpillContainerPair(uncertain=True)
-    s0 = Spill(Release(datetime.now(), 10),
-               element_type=floating(substance='ALASKA NORTH SLOPE'))
-    s1 = Spill(Release(datetime.now(), 10),
-               element_type=floating(substance=s0.get('substance')))
-    assert s1.element_type is not s0.element_type
-    assert s1.element_type == s0.element_type
-    assert s1.get('substance') is s0.get('substance')
-    scp += [s0, s1]
-
-
 class TestSpillContainerPairGetSetDel:
     s0 = [point_line_release_spill(1, (0, 0, 0), datetime.now()),
           point_line_release_spill(2, (0, 0, 0), datetime.now())]
@@ -1116,7 +1141,10 @@ class TestSubstanceSpillsDataStructure():
     def test_spills_with_and_notwith_substance(self):
         '''
         datastructure only adds substance/spills if substance is not None
-        deleting spill resets datastructure
+        deleting spill resets datastructure.
+
+        - the spills in _substances_spills 'is' the same as the spills
+          in sc.spills - same object
         '''
         sc = SpillContainer()
         sc.spills += [Spill(Release(datetime.now(), 10),
@@ -1129,10 +1157,9 @@ class TestSubstanceSpillsDataStructure():
         assert len(sc.get_substances()) == 2
         sc.prepare_for_model_run()
         all_spills = list(chain.from_iterable(sc._substances_spills.spills))
-        for ix, spill in enumerate(all_spills):
-            # spills are added to data structure in same order as present in
-            # sc.spills
-            assert spill is sc.spills[ix]
+        assert len(all_spills) == len(sc.spills)
+        for spill in all_spills:
+            assert sc.spills[spill.id] is spill
 
         del sc.spills[-1]
         assert len(sc.get_substances()) == 1
@@ -1140,32 +1167,31 @@ class TestSubstanceSpillsDataStructure():
 
     def test_spills_same_substance_init(self):
         sc = SpillContainer()
-        et = floating(substance='ALASKA NORTH SLOPE')
+        et = floating(substance=test_oil)
         sp_add = [point_line_release_spill(3, (1, 1, 1), datetime.now(),
                                            element_type=et),
                   Spill(Release(datetime.now(), 10),
                         amount=100, units='kg',
-                        element_type=floating(substance='ALASKA NORTH SLOPE')),
+                        element_type=floating(substance=test_oil)),
                   Spill(Release(datetime.now(), 10),
                         element_type=floating(substance=et.substance))
                   ]
         sc.spills += sp_add
         assert len(sc.get_substances()) == 1
         sc.prepare_for_model_run()
-        assert sc._substances_spills.data[0] is sc._data_arrays
         assert all([sp_add == spills for spills in sc.iterspillsbysubstance()])
 
     def test_spills_different_substance_init(self):
         sc = SpillContainer()
         splls0 = [point_line_release_spill(3, (1, 1, 1),
                                            datetime.now(),
-                                           element_type=floating(substance='ALASKA NORTH SLOPE')),
+                                           element_type=floating(substance=test_oil)),
                   Spill(Release(datetime.now(), 10),
-                        element_type=floating(substance='ALASKA NORTH SLOPE')),
+                        element_type=floating(substance=test_oil)),
                   ]
         sc.spills += splls0
         splls1 = [Spill(Release(datetime.now(), 10),
-                        element_type=floating(substance='oil_conservative'))
+                        element_type=floating(substance='oil_crude'))
                   ]
         sc.spills += splls1
 
@@ -1184,12 +1210,12 @@ class TestSubstanceSpillsDataStructure():
         splls0 = [point_line_release_spill(100, (1, 1, 1),
                                            rel_time,
                                            end_release_time=end_time,
-                                           element_type=floating(substance='ALASKA NORTH SLOPE'),
+                                           element_type=floating(substance=test_oil),
                                            amount=100,
                                            units='kg'),
                   point_line_release_spill(50, (2, 2, 2),
                                            rel_time + timedelta(seconds=900),
-                                           element_type=floating(substance='ALASKA NORTH SLOPE'),
+                                           element_type=floating(substance=test_oil),
                                            amount=150,
                                            units='kg'),
                   ]
@@ -1209,12 +1235,47 @@ class TestSubstanceSpillsDataStructure():
             num_rel = sc.release_elements(time_step, time)
             print num_rel
             for substance, data in sc.itersubstancedata(at):
-                assert substance.name == 'ALASKA NORTH SLOPE'
+                assert substance.name == test_oil
                 idx = sc._substances_spills.substances.index(substance)
                 mask = sc['substance'] == idx
                 for array in at:
                     assert array in data
                     assert np.all(data[array] == sc[array][mask])
+
+
+def test_split_element():
+    '''
+    test split_element() method
+    '''
+    sc = SpillContainer()
+    o_sc = SpillContainer()
+    reltime = datetime(2015, 1, 1, 12, 0, 0)
+    num_les = 10
+    sc.spills += point_line_release_spill(num_les, (1, 1, 1),
+                                          reltime,
+                                          amount=100,
+                                          units='kg',
+                                          substance=test_oil)
+    o_sc.spills += copy.deepcopy(sc.spills[0])
+
+    sc.release_elements(900, reltime)
+    o_sc.release_elements(900, reltime)
+
+    # now do a split at element
+    ix = 0
+    num = 2
+    l_frac = (.65, .35)
+    sc.split_element(ix, num, l_frac)
+    for name in sc._data_arrays:
+        split = sc[name]
+        orig = o_sc[name]
+        assert len(split) == num_les + num - 1
+        at = sc.array_types[name]
+        if isinstance(at, array_types.ArrayTypeDivideOnSplit):
+            assert np.allclose(split[ix:ix + num].sum(0), orig[ix])
+            assert np.allclose(split[ix], l_frac[0] * orig[ix])
+        else:
+            assert np.all(split[ix:ix + num] == orig[ix])
 
 
 if __name__ == '__main__':

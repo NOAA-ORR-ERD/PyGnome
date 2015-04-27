@@ -127,7 +127,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     #comp_mover = ComponentMover(curr_file1, curr_file2, Wind(timeseries=series, units='m/s'))
     #comp_mover = ComponentMover(curr_file1, curr_file2, wind=Wind(filename=wind_file))
 
-    comp_mover.ref_point = (-75.263166,39.1428333)
+    comp_mover.scale_refpoint = (-75.263166,39.1428333)
     comp_mover.pat1_angle = 315
     comp_mover.pat1_speed = 30
     comp_mover.pat1_speed_units = 1
