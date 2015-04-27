@@ -21,9 +21,8 @@ class LocalDateTime(DateTime):
 
     def strip_timezone(self, _datetime):
         if (_datetime and
-            (isinstance(_datetime, datetime.datetime) or
-             isinstance(_datetime, datetime.date))
-            ):
+                (isinstance(_datetime, datetime.datetime) or
+                 isinstance(_datetime, datetime.date))):
             _datetime = _datetime.replace(tzinfo=None)
         return _datetime
 
@@ -104,10 +103,40 @@ class DatetimeValue2dArray(Sequence):
         if cstruct is null:
             return null
 
-        items = super(DatetimeValue2dArray, self).deserialize(node,
-                cstruct, accept_scalar=False)
+        items = (super(DatetimeValue2dArray, self)
+                 .deserialize(node, cstruct, accept_scalar=False))
 
         timeseries = np.array(items, dtype=gnome.basic_types.datetime_value_2d)
+
+        return timeseries  # validator requires numpy array
+
+
+class DatetimeValue1dArray(Sequence):
+    """
+    A subclass of :class:`colander.Sequence` that converts itself to a numpy
+    array using :class:`gnome.basic_types.datetime_value_2d` as the data type.
+    """
+    def serialize(self, node, appstruct):
+        if appstruct is null:  # colander.null
+            return null
+
+        series = []
+
+        for wind_value in appstruct:
+            dt = wind_value[0].astype(object)
+            series.append((dt, (wind_value[1][0],)))
+        appstruct = series
+
+        return super(DatetimeValue1dArray, self).serialize(node, appstruct)
+
+    def deserialize(self, node, cstruct):
+        if cstruct is null:
+            return null
+
+        items = (super(DatetimeValue1dArray, self)
+                 .deserialize(node, cstruct, accept_scalar=False))
+
+        timeseries = np.array(items, dtype=gnome.basic_types.datetime_value_1d)
 
         return timeseries  # validator requires numpy array
 
@@ -144,3 +173,7 @@ class DefaultTupleSchema(TupleSchema):
 
 class DatetimeValue2dArraySchema(SequenceSchema):
     schema_type = DatetimeValue2dArray
+
+
+class DatetimeValue1dArraySchema(SequenceSchema):
+    schema_type = DatetimeValue1dArray

@@ -4,7 +4,6 @@ add these as weatherers
 '''
 from datetime import timedelta
 import copy
-import os
 
 import numpy as np
 from colander import (SchemaNode, Float, String, drop)
@@ -168,7 +167,7 @@ class CleanUpBase(Weatherer):
             return
 
         if (model_time + timedelta(seconds=time_step) > self.active_start and
-            self.active_stop > model_time):
+                self.active_stop > model_time):
             self._active = True
         else:
             self._active = False
