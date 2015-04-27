@@ -347,11 +347,8 @@ class Burn(CleanUpBase, Serializable):
                Field('_oilwater_thickness', save=True),
                Field('wind', save=True, update=True, save_reference=True)]
 
-    # no need to save active_stop or update active_stop
-    # for some reason, the schema is not dropping None of this type. For now
-    # just toggle its save and update to False - figure out why it is not being
-    # dropped
-    # del _state['active_stop']
+    # save active_stop once burn duration is known - not update able but is
+    # returned in webapi json_ so make it readable
     _state['active_stop'].save = False
     _state['active_stop'].update = False
     _state['active_stop'].read = True
