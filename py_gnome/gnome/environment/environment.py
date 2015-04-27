@@ -54,7 +54,7 @@ _valid_dist_units = _valid_units('Length')
 _valid_kvis_units = _valid_units('Kinematic Viscosity')
 _valid_density_units = _valid_units('Density')
 _valid_salinity_units = ('psu',)
-_valid_sediment_units = ('mg/l', 'kg/m^3')
+_valid_sediment_units = _valid_units('Concentration In Water')
 
 
 class UnitsSchema(MappingSchema):
@@ -121,7 +121,8 @@ class Water(Environment, serializable.Serializable):
 
     _units_type = {'temperature': ('temperature', _valid_temp_units),
                    'salinity': ('salinity', _valid_salinity_units),
-                   'sediment': ('sediment', _valid_sediment_units),
+                   'sediment': ('concentration in water',
+                                _valid_sediment_units),
                    'wave_height': ('length', _valid_dist_units),
                    'fetch': ('length', _valid_dist_units),
                    'kinematic_viscosity': ('kinematic viscosity',
@@ -196,12 +197,8 @@ class Water(Environment, serializable.Serializable):
                 unit = self._si_units[attr]
 
         if unit in self._units_type[attr][1]:
-            if attr == 'sediment':
-                return self._convert_sediment_units(self._units[attr],
-                                                    self._si_units[attr])
-            else:
-                return uc.convert(self._units_type[attr][0], self.units[attr],
-                                  unit, val)
+            return uc.convert(self._units_type[attr][0], self.units[attr],
+                              unit, val)
         else:
             # log to file if we have logger
             ex = uc.InvalidUnitError((unit, self._units_type[attr][0]))
