@@ -6,7 +6,6 @@ from datetime import datetime, timedelta
 import numpy as np
 import unit_conversion as uc
 from pytest import mark, raises
-from testfixtures import log_capture
 
 from gnome.basic_types import oil_status, fate
 from gnome.environment import Water, constant_wind
@@ -218,12 +217,10 @@ class TestBurn:
     def test_prepare_for_model_run(self):
         ''' check _oilwater_thickness, _burn_duration is reset'''
         self.burn._oilwater_thickness = 0.002   # reached terminal thickness
-        self.burn._burn_duration = 23000.0
         self.burn.prepare_for_model_run(self.sc)
         assert (self.burn._oilwater_thickness ==
                 uc.convert('Length', self.burn.thickness_units, 'm',
                            self.burn.thickness))
-        assert self.burn._burn_duration == 0.0
 
     def test_prepare_for_model_step(self):
         '''
@@ -268,16 +265,17 @@ class TestBurn:
             dt = timedelta(seconds=time_step)
             burn.prepare_for_model_step(self.sc, time_step, model_time)
 
-            if burn._oilwater_thickness <= burn._min_thickness:
+            #if burn._oilwater_thickness <= burn._min_thickness:
                 # inactive flag is set in prepare_for_model_step() - not set in
                 # weather_elements()
-                assert not burn._active
-            elif model_time + dt <= burn.active_start:
+            #    assert not burn.active
+            if (model_time + dt <= burn.active_start or
+                  model_time >= burn.active_stop):
                 # if model_time + dt == burn.active_start, then start the burn
                 # in next step
-                assert not burn._active
+                assert not burn.active
             else:
-                assert burn._active
+                assert burn.active
 
             burn.weather_elements(self.sc, time_step, model_time)
 
@@ -290,7 +288,8 @@ class TestBurn:
                 raise Exception(msg)
                 break
 
-        assert burn._burn_duration > 0.0
+        # check that active_stop is being correctly set
+        assert InfDateTime('inf') > burn.active_stop
         print '\nCompleted steps: {0:2}'.format(step_num)
 
     @mark.parametrize(("thick", "avg_frac_water", "units"), [(0.003, 0, 'm'),
@@ -348,9 +347,10 @@ class TestBurn:
         mass_remain_for_burn_LEs = self.sc['mass'][mask].sum()
         assert np.allclose(exp_mass_remain, mass_remain_for_burn_LEs)
 
+        duration = (burn.active_stop-burn.active_start).total_seconds()/3600
         print ('Current Thickness: {0:.3f}, '
                'Duration (hrs): {1:.3f}').format(burn._oilwater_thickness,
-                                                 burn._burn_duration/3600)
+                                                 duration)
 
     def test_elements_weather_faster_with_frac_water(self):
         '''
@@ -376,11 +376,15 @@ class TestBurn:
         self._weather_elements_helper(burn2, avg_frac_water=0.3)
         self._weather_elements_helper(burn3, avg_frac_water=0.5)
 
-        print "frac_water", 1.0, "burn_duration", round(burn1._burn_duration)
-        print "frac_water", 0.3, "burn_duration", round(burn2._burn_duration)
-        print "frac_water", 0.9, "burn_duration", round(burn3._burn_duration)
-        assert (burn1._burn_duration < burn2._burn_duration <
-                burn3._burn_duration)
+        print "frac_water", 1.0, "burn_duration", \
+            round((burn1.active_stop - burn1.active_start).total_seconds())
+        print "frac_water", 0.3, "burn_duration", \
+            round((burn2.active_stop - burn2.active_start).total_seconds())
+        print "frac_water", 0.9, "burn_duration", \
+            round((burn3.active_stop - burn3.active_start).total_seconds())
+        assert (burn1.active_stop - burn1.active_start <
+                burn2.active_stop - burn2.active_start <
+                burn3.active_stop - burn3.active_start)
 
     def test_efficiency(self):
         '''
@@ -404,7 +408,8 @@ class TestBurn:
         amount_burn2 = self.sc.weathering_data['burned']
 
         assert np.isclose(amount_burn2/amount_burn1, eff)
-        assert burn1._burn_duration == burn2._burn_duration
+        assert burn1.active_start == burn2.active_start
+        assert burn1.active_stop == burn2.active_stop
 
     def test_update_from_dict(self):
         '''

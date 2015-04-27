@@ -13,6 +13,7 @@ from gnome.basic_types import oil_status, fate as bt_fate
 from gnome.weatherers import Weatherer
 from gnome.utilities.serializable import Serializable, Field
 from gnome.environment.wind import WindSchema
+from gnome.utilities.inf_datetime import InfDateTime
 
 from .core import WeathererSchema
 from .. import _valid_units
@@ -172,6 +173,8 @@ class CleanUpBase(Weatherer):
         else:
             self._active = False
 
+        self._set__timestep(time_step, model_time)
+
 
 class Skimmer(CleanUpBase, Serializable):
     _state = copy.deepcopy(Weatherer._state)
@@ -261,7 +264,6 @@ class Skimmer(CleanUpBase, Serializable):
             return
 
         # if active, setup timestep correctly
-        self._set__timestep(time_step, model_time)
         if (sc['fate_status'] == bt_fate.skim).sum() == 0:
             substance = self._get_substance(sc)
             total_mass_removed = (self._get_mass(substance, self.amount,
@@ -352,6 +354,7 @@ class Burn(CleanUpBase, Serializable):
     # del _state['active_stop']
     _state['active_stop'].save = False
     _state['active_stop'].update = False
+    _state['active_stop'].read = True
 
     valid_area_units = _valid_units('Area')
     valid_length_units = _valid_units('Length')
@@ -407,7 +410,6 @@ class Burn(CleanUpBase, Serializable):
         self._min_thickness = 0.002      # stop burn threshold in SI 2mm
 
         # need frac_water
-        self._burn_duration = None      # time for oil/water thick to reach 2mm
         self._oil_vol_burnrate = None   # burn rate of only the oil
 
         # validate user units before setting _area_units/_thickness_units
@@ -511,13 +513,14 @@ class Burn(CleanUpBase, Serializable):
     def prepare_for_model_run(self, sc):
         '''
         resets internal _oilwater_thickness variable to initial thickness
-        specified by user. Also resets _burn_duration to 0.0
+        specified by user and active_stop to 'inf' again.
         initializes sc.weathering_data['burned'] = 0.0
         '''
         # reset current thickness to initial thickness whenever model is rerun
-        self._burn_duration = 0.0
         self._oilwater_thickness = \
             uc.Convert('Length', self.thickness_units, 'm', self.thickness)
+
+        self.active_stop = InfDateTime('inf')
 
         if self.on:
             sc.weathering_data['burned'] = 0.0
@@ -537,6 +540,8 @@ class Burn(CleanUpBase, Serializable):
             return
 
         # if initial oilwater_thickness is < _min_thickness, then stop
+        # don't want to deal with active_start being equal to active_stop, need
+        # this incase user sets a bad initial value
         if self._oilwater_thickness <= self._min_thickness:
             self._active = False
             return
@@ -555,8 +560,8 @@ class Burn(CleanUpBase, Serializable):
 
             self._set_burn_params(sc, substance)
 
-        # set timestep after active stop is set
-        self._set__timestep(time_step, model_time)
+            # set timestep after active stop is set
+            self._set__timestep(time_step, model_time)
 
     def _set_burn_params(self, sc, substance):
         '''
@@ -588,6 +593,13 @@ class Burn(CleanUpBase, Serializable):
         # rate if efficiency is 100 %
         self._oilwater_thick_burnrate = _burn_constant * avg_frac_oil
         self._oil_vol_burnrate = (_burn_constant * avg_frac_oil**2 * _si_area)
+
+        # burn duration is knowns once rate is known
+        burn_duration = ((self._oilwater_thickness - self._min_thickness) /
+                         self._oilwater_thick_burnrate)
+
+        self.active_stop = \
+            self.active_start + timedelta(seconds=burn_duration)
 
     def _get_efficiency(self, model_time):
         '''
@@ -635,14 +647,7 @@ class Burn(CleanUpBase, Serializable):
             eff = self._get_efficiency(model_time)
 
             # scale rates by efficiency
-            oilwater_thick_rate = self._oilwater_thick_burnrate
             oil_vol_rate = self._oil_vol_burnrate * eff
-
-            time_left = ((self._oilwater_thickness - self._min_thickness) /
-                         oilwater_thick_rate)
-
-            # prepare_for_model_step initializes time_step
-            self._timestep = min(time_left, self._timestep)
 
             # this is volume of oil burned - need to get mass from this
             vol_oil_burned = oil_vol_rate * self._timestep
@@ -653,8 +658,8 @@ class Burn(CleanUpBase, Serializable):
             data['mass'] = data['mass_components'].sum(1)
 
             # new thickness of oil/water mixture
-            self._oilwater_thickness -= (oilwater_thick_rate * self._timestep)
-            self._burn_duration += self._timestep
+            self._oilwater_thickness -= \
+                (self._oilwater_thick_burnrate * self._timestep)
 
             sc.weathering_data['burned'] += rm_mass
             self.logger.debug(self._pid + 'amount burned for {0}: {1}'.
