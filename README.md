@@ -44,13 +44,16 @@ For Linux use appropriate package manager (apt-get on ubuntu) to download/instal
 
 #### Binary Dependencies ####
 1. setuptools and distutils are required. distutils should come installed with Python.
-   `$ sudo apt-get install python-setuptools`
+        ```
+            $ sudo apt-get install python-setuptools
+        ```
 
 2. [Pillow](http://pillow.readthedocs.org/en/latest/installation.html) has binary dependencies.
-   Visit the docs to get list of dependencies for your system. 
-   
-   Pillow requires Python's development libraries and 
-    `$ sudo apt-get install python-dev`
+   Visit the docs to get list of dependencies for your system.
+   Pillow requires Python's development libraries
+        ```
+            $ sudo apt-get install python-dev
+        ```
 
    This did not build symlinks to libraries for me in /usr/lib, so had to
    manually create them:  
