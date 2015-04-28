@@ -123,8 +123,29 @@ Class Reference:
     :members:
     :inherited-members:
 
-``gnome.weather`` -- PyGnome environment classes
----------------------------------------------------
+``gnome.weatherers`` -- PyGnome/Adios weathering/mass removal classes
+-------------------------------------------------------------------------
+.. automodule:: gnome.weatherers
+.. autoclass:: Weatherer
+   :members:
+.. autoclass:: Evaporation
+   :members:
+.. autoclass:: Emulsification
+   :members:
+   :inherited-members:
+.. autoclass:: NaturalDispersion
+    :members:
+    :inherited-members:
+.. autoclass:: Skimmer
+   :members:
+   :show-inheritance:
+.. autoclass:: Burn
+    :members:
+    :inherited-members:
+
+
+``gnome.environment`` -- PyGnome environment classes
+-------------------------------------------------------
 .. automodule:: gnome.environment
 .. autoclass:: Tide
     :members:
