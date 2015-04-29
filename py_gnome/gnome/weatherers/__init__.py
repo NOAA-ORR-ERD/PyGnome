@@ -4,7 +4,7 @@ from emulsification import Emulsification
 from natural_dispersion import NaturalDispersion
 from intrinsic import WeatheringData
 from cleanup import Skimmer, Burn, ChemicalDispersion
-
+from manual_beaching import Beaching
 __all__ = [Weatherer,
            HalfLifeWeatherer,
            Evaporation,
@@ -13,6 +13,7 @@ __all__ = [Weatherer,
            Skimmer,
            Burn,
            ChemicalDispersion,
+           Beaching,
            WeatheringData]
 
 

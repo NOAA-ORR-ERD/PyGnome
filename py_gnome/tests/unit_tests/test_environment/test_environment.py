@@ -34,18 +34,24 @@ def test_exceptions(attr, unit):
         w.set(attr, 5, unit)
 
 
-def test_Water_get():
-    w = Water(temperature=273.16)
-    w.sediment = 10.0
-    w.wave_height = 5.0
+@pytest.mark.parametrize(("attr", "unit", "val", "si_val"),
+                         [('temperature', 'C', 0, 273.16),
+                          ('sediment', 'mg/l', 5, 0.005),
+                          ('sediment', 'percent', 0.005, 0.05),
+                          ('wave_height', 'cm', 100.0, 1.0),
+                          ('fetch', 'km', 1.0, 1000.0)])
+def test_Water_get(attr, unit, val, si_val):
+    w = Water()
+    setattr(w, attr, val)
+    w.units[attr] = unit
 
-    assert w.get('temperature', 'K') == 273.16
-    assert w.get('temperature', 'C') == 0.0
-    assert w.get('wave_height', 'km') == w.wave_height / 1000.0
+    assert w.get(attr) == si_val
+    assert w.get(attr, unit) == val
 
 
 @pytest.mark.parametrize(("attr", "unit"), [('temperature', 'F'),
                                             ('sediment', 'mg/l'),
+                                            ('sediment', 'part per thousand'),
                                             ('wave_height', 'km'),
                                             ('fetch', 'km')])
 def test_Water_set(attr, unit):
