@@ -196,7 +196,13 @@ class TestBurn:
                     active_stop=active_start,
                     name='test_burn',
                     on=False)   # this is ignored!
-        assert burn.active_stop == InfDateTime('inf')
+        # use burn constant for test - it isn't stored anywhere
+        duration = (uc.convert('Length', burn.thickness_units, 'm',
+                               burn.thickness) -
+                    burn._min_thickness)/burn._burn_constant
+
+        assert (burn.active_stop ==
+                burn.active_start + timedelta(seconds=duration))
         assert burn.name == 'test_burn'
         assert not burn.on
 
