@@ -454,8 +454,8 @@ class TestChemicalDispersion(ObjForTests):
     (sc, intrinsic) = ObjForTests.mk_test_objs()
     spill = sc.spills[0]
     op = spill.get('substance')
-    spill_volume = spill.get_mass()/op.get_density()
-    c_disp = ChemicalDispersion(spill_volume * 0.2,
+    spill_pct = 0.2  # 20%
+    c_disp = ChemicalDispersion(spill_pct,
                                 active_start,
                                 active_stop,
                                 units='m^3',
@@ -468,18 +468,16 @@ class TestChemicalDispersion(ObjForTests):
         self.reset_test_objs()
         waves = Waves(constant_wind(0, 0),
                       water=Water())
-        c_disp = ChemicalDispersion(self.spill_volume * 0.2,
+        c_disp = ChemicalDispersion(self.spill_pct,
                                     active_start,
                                     active_stop)
-        with raises(AttributeError):
-            c_disp.prepare_for_model_run(self.sc)
 
         c_disp.waves = waves
         assert 'chemically_dispersed' not in self.sc.weathering_data
 
         c_disp.prepare_for_model_run(self.sc)
         assert self.sc.weathering_data['chemically_dispersed'] == 0.0
-        assert c_disp.efficiency == 0.241
+        assert c_disp.efficiency == 1.0
 
         # make wind large so efficiency goes to 0 or should it be 0.241?
         c_disp.efficiency = None
@@ -495,6 +493,6 @@ class TestChemicalDispersion(ObjForTests):
         self.c_disp.prepare_for_model_run(self.sc)
         self.c_disp.prepare_for_model_step(self.sc, time_step, active_start)
         d_mass = self.sc['mass'][self.sc['fate_status'] == fate.disperse].sum()
-        exp_mass = self.c_disp.volume / self.op.get_density()
-
-        assert d_mass - exp_mass < self.sc['mass'][0]
+        assert d_mass == self.c_disp.percent_sprayed * self.spill.get_mass()
+        #exp_mass = self.c_disp.volume / self.op.get_density()
+        #assert d_mass - exp_mass < self.sc['mass'][0]

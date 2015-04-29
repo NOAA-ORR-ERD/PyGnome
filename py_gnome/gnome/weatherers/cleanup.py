@@ -706,12 +706,11 @@ class ChemicalDispersion(CleanUpBase, Serializable):
     _schema = WeathererSchema
 
     def __init__(self,
-                 volume,
+                 percent_sprayed,
                  active_start,
                  active_stop,
-                 units='m^3',
                  waves=None,
-                 efficiency=None,
+                 efficiency=1.0,
                  **kwargs):
         '''
         another mass removal mechanism. The volume specified gets dispersed
@@ -740,8 +739,8 @@ class ChemicalDispersion(CleanUpBase, Serializable):
         remaining kwargs include 'on' and 'name' and these are passed to base
         class via super
         '''
-        self.volume = volume
-        self.units = units
+        # percent_sprayed must be > 0 and <= 1.0
+        self.percent_sprayed = percent_sprayed
         self.waves = waves
         self.efficiency = efficiency
         super(ChemicalDispersion, self).__init__(active_start=active_start,
@@ -749,15 +748,7 @@ class ChemicalDispersion(CleanUpBase, Serializable):
                                                  **kwargs)
 
     def prepare_for_model_run(self, sc):
-        self._rate = self.volume/(self.active_stop -
-                                  self.active_start).total_seconds()
         if self.on:
-            if self.efficiency is None and self.waves is None:
-                msg = ("Either efficiency or waves object must be set. "
-                       "Both cannot be None")
-                self.logger.error(msg)
-                raise AttributeError(msg)
-
             sc.weathering_data['chemically_dispersed'] = 0.0
             # assume fixed waveheight for efficiency at present
             # since LEs are marked based on mass/volume removed as opposed to
@@ -823,9 +814,8 @@ class ChemicalDispersion(CleanUpBase, Serializable):
         self._set__timestep(time_step, model_time)
         if (sc['fate_status'] == bt_fate.disperse).sum() == 0:
             substance = self._get_substance(sc)
-            total_mass_removed = (self._get_mass(substance, self.volume,
-                                                 self.units) *
-                                  self.efficiency)
+            mass = sum([spill.get_mass() for spill in sc.spills])
+            total_mass_removed = mass * self.percent_sprayed
 
             self._update_LE_status_codes(sc, bt_fate.disperse,
                                          substance, total_mass_removed)
@@ -856,3 +846,8 @@ class ChemicalDispersion(CleanUpBase, Serializable):
                                   ' {0}: {1}'.format(substance.name, rm_mass))
 
             sc.update_from_fatedataview(fate='disperse')
+
+    def update_from_dict(self, data):
+        if 'efficiency' not in data:
+            setattr(self, 'efficiency', None)
+        super(ChemicalDispersion, self).update_from_dict(data)
