@@ -424,12 +424,6 @@ class Burn(CleanUpBase, Serializable):
         self.efficiency = efficiency
         self.wind = wind
 
-        if self.efficiency is None and wind is None:
-            msg = ("Set the 'efficiency' or provide 'wind' object so "
-                   "efficiency can be computed. Without at least one, it "
-                   "will fail during step")
-            self.logger.warning(msg)
-
         # initialize rates and active_stop based on frac_water = 0.0
         self._init_rate_duration()
 
