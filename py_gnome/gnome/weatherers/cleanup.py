@@ -39,8 +39,31 @@ class CleanUpBase(Weatherer):
         add 'frac_water' to array_types and pass **kwargs to base class
         __init__ using super
         '''
+        self._efficiency = None
+        self.efficiency = kwargs.pop("efficiency", 1.0)
+
         super(CleanUpBase, self).__init__(**kwargs)
+
         self.array_types.update({'frac_water'})
+
+    @property
+    def efficiency(self):
+        return self._efficiency
+
+    @efficiency.setter
+    def efficiency(self, value):
+        '''
+        update efficiency.
+
+        It must be greater than 0 and less than or equal to 1.0. It can also be
+        None since that means use wind to compute efficiency.
+        '''
+        if value is None or (value > 0 and value <= 1):
+            self._efficiency = value
+
+        elif value <= 0 or value > 1.0:
+            msg = "efficiency must be > 0 and <= 1.0"
+            self.logger.warning(msg)
 
     def _get_mass(self, substance, amount, units):
         '''
@@ -195,14 +218,13 @@ class Skimmer(CleanUpBase, Serializable):
         cleanup operations must have a valid datetime - cannot use -inf and inf
         active_start/active_stop is used to get the mass removal rate
         '''
-
         super(Skimmer, self).__init__(active_start=active_start,
                                       active_stop=active_stop,
+                                      efficiency=efficiency,
                                       **kwargs)
         self._units = None
         self.amount = amount
         self.units = units
-        self.efficiency = efficiency
 
         # get the rate as amount/sec, use this to compute amount at each step
         # set in prepare_for_model_run()
@@ -394,6 +416,7 @@ class Burn(CleanUpBase, Serializable):
             kwargs.pop('active_stop')
 
         super(Burn, self).__init__(active_start=active_start,
+                                   efficiency=efficiency,
                                    **kwargs)
 
         # initialize user units to valid units - setters following this will
@@ -419,9 +442,6 @@ class Burn(CleanUpBase, Serializable):
         # setters will validate the units
         self.area_units = area_units
         self.thickness_units = thickness_units
-
-        self._efficiency = None
-        self.efficiency = efficiency
         self.wind = wind
 
         # initialize rates and active_stop based on frac_water = 0.0
@@ -487,25 +507,6 @@ class Burn(CleanUpBase, Serializable):
 
         # if thickness in these units is < min required, log a warning
         self._log_thickness_warning()
-
-    @property
-    def efficiency(self):
-        return self._efficiency
-
-    @efficiency.setter
-    def efficiency(self, value):
-        '''
-        update efficiency.
-
-        It must be greater than 0 and less than or equal to 1.0. It can also be
-        None since that means use wind to compute efficiency.
-        '''
-        if value is None or (value > 0 and value <= 1):
-            self._efficiency = value
-
-        elif value <= 0 or value > 1.0:
-            msg = "efficiency must be > 0 and <= 1.0"
-            self.logger.warning(msg)
 
     def prepare_for_model_run(self, sc):
         '''
@@ -604,7 +605,7 @@ class Burn(CleanUpBase, Serializable):
         avg_frac_oil = self._avg_frac_oil(data)
         self._init_rate_duration(avg_frac_oil)
 
-    def _get_efficiency(self, model_time):
+    def _set_efficiency(self, model_time):
         '''
         return burn efficiency either from efficiency attribute or computed
         from wind
@@ -614,22 +615,18 @@ class Burn(CleanUpBase, Serializable):
                               "object so efficiency can be computed. "
                               "Else using 100% efficiency")
 
-            return 1.0
+            self.efficiency = 1.0
 
-        if self.efficiency is not None:
-            eff = self.efficiency
-        else:
+        if self.efficiency is None:
             # get it from wind
             ws = self.wind.get_value(model_time)
             if ws > 1./0.07:
                 msg = ("wind speed is greater than {0}."
                        " Set efficiency to 0".format(1./0.07))
                 self.logger.warning(msg)
-                eff = 0
+                self._efficiency = 0
             else:
-                eff = 1 - 0.07 * ws
-
-        return eff
+                self.efficiency = 1 - 0.07 * ws
 
     def weather_elements(self, sc, time_step, model_time):
         '''
@@ -647,10 +644,10 @@ class Burn(CleanUpBase, Serializable):
             if len(data['mass']) is 0:
                 continue
 
-            eff = self._get_efficiency(model_time)
+            self._set_efficiency(model_time)
 
             # scale rates by efficiency
-            oil_vol_rate = self._oil_vol_burnrate * eff
+            oil_vol_rate = self._oil_vol_burnrate * self.efficiency
 
             # this is volume of oil burned - need to get mass from this
             vol_oil_burned = oil_vol_rate * self._timestep
@@ -739,35 +736,25 @@ class ChemicalDispersion(CleanUpBase, Serializable):
         remaining kwargs include 'on' and 'name' and these are passed to base
         class via super
         '''
+        super(ChemicalDispersion, self).__init__(active_start=active_start,
+                                                 active_stop=active_stop,
+                                                 efficiency=efficiency,
+                                                 **kwargs)
+
         # percent_sprayed must be > 0 and <= 1.0
         self.percent_sprayed = percent_sprayed
         self.waves = waves
-        self.efficiency = efficiency
-        super(ChemicalDispersion, self).__init__(active_start=active_start,
-                                                 active_stop=active_stop,
-                                                 **kwargs)
+
+        # rate is set the first timestep in which the object becomes active
+        self._rate = None
 
     def prepare_for_model_run(self, sc):
+        '''
+        reset _rate to None. It gets set when LEs are marked to be dispersed.
+        '''
+        self._rate = None
         if self.on:
-            sc.weathering_data['chemically_dispersed'] = 0.0
-            # assume fixed waveheight for efficiency at present
-            # since LEs are marked based on mass/volume removed as opposed to
-            # location on map, use a fixed efficiency. In future, when LEs are
-            # marked by location - this can be updated to compute efficiency
-            # based on wave conditions
-            if self.efficiency is None:
-                # if wave height > 6.4 m, we get negative results - log and
-                # reset to 0 if this occurs
-                # can efficiency go to 0? Is there a minimum threshold?
-                w = 0.3 * self.waves.get_value(self.active_start)[0]
-                self.efficiency = (0.241 + 0.587*w - 0.191*w**2 +
-                                   0.02616*w**3 - 0.0016 * w**4 -
-                                   0.000037*w**5)
-                if self.efficiency < 0:
-                    self.efficiency = 0
-                    msg = ("wave height {0} - results in negative efficiency. "
-                           "Reset to 0")
-                    self.logger.warning(msg)
+            sc.weathering_data['chem_dispersed'] = 0.0
 
     def _update_LE_status_codes(self,
                                 sc,
@@ -815,10 +802,30 @@ class ChemicalDispersion(CleanUpBase, Serializable):
         if (sc['fate_status'] == bt_fate.disperse).sum() == 0:
             substance = self._get_substance(sc)
             mass = sum([spill.get_mass() for spill in sc.spills])
-            total_mass_removed = mass * self.percent_sprayed
+            rm_total_mass_si = mass * self.percent_sprayed
 
             self._update_LE_status_codes(sc, bt_fate.disperse,
-                                         substance, total_mass_removed)
+                                         substance, rm_total_mass_si)
+            self._rate = \
+                (rm_total_mass_si /
+                 (self.active_stop - self.active_start).total_seconds())
+
+    def _set_efficiency(self, model_time):
+        if self.efficiency is None:
+            # if wave height > 6.4 m, we get negative results - log and
+            # reset to 0 if this occurs
+            # can efficiency go to 0? Is there a minimum threshold?
+            w = 0.3 * self.waves.get_value(model_time)[0]
+            efficiency = (0.241 + 0.587*w - 0.191*w**2 +
+                          0.02616*w**3 - 0.0016 * w**4 -
+                          0.000037*w**5)
+            if efficiency < 0:
+                self._efficiency = 0
+                msg = ("wave height {0} - results in negative efficiency. "
+                       "Reset to 0")
+                self.logger.warning(msg)
+            else:
+                self.efficiency = efficiency
 
     def weather_elements(self, sc, time_step, model_time):
         'for now just take away 0.1% at every step'
@@ -828,10 +835,8 @@ class ChemicalDispersion(CleanUpBase, Serializable):
                 if len(data['mass']) is 0:
                     continue
 
-                rm_amount = self._rate * self._timestep
-                rm_mass = self._get_mass(substance,
-                                         rm_amount,
-                                         self.units) * self.efficiency
+                self._set_efficiency(model_time)
+                rm_mass = self._rate * self._timestep * self.efficiency
 
                 total_mass = data['mass'].sum()
                 rm_mass_frac = min(rm_mass / total_mass, 1.0)
@@ -841,7 +846,7 @@ class ChemicalDispersion(CleanUpBase, Serializable):
                     (1 - rm_mass_frac) * data['mass_components']
                 data['mass'] = data['mass_components'].sum(1)
 
-                sc.weathering_data['chemically_dispersed'] += rm_mass
+                sc.weathering_data['chem_dispersed'] += rm_mass
                 self.logger.debug(self._pid + 'amount chemically dispersed for'
                                   ' {0}: {1}'.format(substance.name, rm_mass))
 

@@ -9,9 +9,9 @@ import unit_conversion as uc
 from pytest import mark, raises
 
 from gnome.basic_types import oil_status, fate
-from gnome.environment import Water, constant_wind
 from gnome.weatherers.intrinsic import WeatheringData
 
+from gnome.weatherers.cleanup import CleanUpBase
 from gnome.weatherers import Skimmer, Burn, ChemicalDispersion
 from gnome.spill_container import SpillContainer
 from gnome.spill import point_line_release_spill
@@ -64,6 +64,30 @@ class ObjForTests:
         self.reset_test_objs()
         num_rel = self.sc.release_elements(time_step, rel_time)
         self.intrinsic.update(num_rel, self.sc, time_step)
+
+
+class TestCleanUpBase:
+    base = CleanUpBase()
+
+    def test_init(self):
+        base = CleanUpBase()
+        assert base.efficiency == 1.0
+
+    def test_set_efficiency(self):
+        '''
+        efficiency updates only if value is valid
+        '''
+        curr_val = .4
+        self.base.efficiency = curr_val
+
+        self.base.efficiency = 0
+        assert self.base.efficiency == curr_val
+
+        self.base.efficiency = 1.1
+        assert self.base.efficiency == curr_val
+
+        self.base.efficiency = 1.0
+        assert self.base.efficiency == 1.0
 
 
 class TestSkimmer(ObjForTests):
@@ -433,22 +457,6 @@ class TestBurn(ObjForTests):
         self.burn.update_from_dict(dict_)
         assert self.burn.efficiency == json_['efficiency']
 
-    def test_set_efficiency(self):
-        '''
-        efficiency updates only if value is valid
-        '''
-        curr_val = .4
-        self.burn.efficiency = curr_val
-
-        self.burn.efficiency = 0
-        assert self.burn.efficiency == curr_val
-
-        self.burn.efficiency = 1.1
-        assert self.burn.efficiency == curr_val
-
-        self.burn.efficiency = 1.0
-        assert self.burn.efficiency == 1.0
-
 
 class TestChemicalDispersion(ObjForTests):
     (sc, intrinsic) = ObjForTests.mk_test_objs()
@@ -461,38 +469,84 @@ class TestChemicalDispersion(ObjForTests):
                                 units='m^3',
                                 efficiency=0.3)
 
-    def test_prepare_for_model_run_waves(self):
+    def test_prepare_for_model_run(self):
         '''
         test efficiency gets set correctly
         '''
         self.reset_test_objs()
-        waves = Waves(constant_wind(0, 0),
-                      water=Water())
+
+        assert 'chem_dispersed' not in self.sc.weathering_data
+
+        self.c_disp.prepare_for_model_run(self.sc)
+        assert self.sc.weathering_data['chem_dispersed'] == 0.0
+
+    def test_set_efficiency(self):
+        '''
+        for wave height > 6.4 m, efficiency goes to 0
+        '''
+        # make wind large so efficiency goes to 0
+        waves = Waves(constant_wind(0, 0), water=Water())
         c_disp = ChemicalDispersion(self.spill_pct,
                                     active_start,
-                                    active_stop)
-
-        c_disp.waves = waves
-        assert 'chemically_dispersed' not in self.sc.weathering_data
-
-        c_disp.prepare_for_model_run(self.sc)
-        assert self.sc.weathering_data['chemically_dispersed'] == 0.0
+                                    active_stop,
+                                    waves=waves)
+        c_disp._set_efficiency(self.spill.get('release_time'))
         assert c_disp.efficiency == 1.0
 
-        # make wind large so efficiency goes to 0 or should it be 0.241?
         c_disp.efficiency = None
         waves.wind.timeseries = (waves.wind.timeseries[0]['time'], (100, 0))
-        c_disp.prepare_for_model_run(self.sc)
+        c_disp._set_efficiency(self.spill.get('release_time'))
         assert c_disp.efficiency == 0
 
-    def test_prepare_for_model_step(self):
+    @mark.parametrize("efficiency", (0.5, 1.0))
+    def test_prepare_for_model_step(self, efficiency):
+        '''
+        efficiency does not impact the mass of LEs marked as having been
+        sprayed. precent_sprayed determines percent of LEs marked as disperse.
+        '''
         self.reset_and_release()
+        self.c_disp.efficiency = efficiency
 
         assert np.all(self.sc['fate_status'] == fate.surface_weather)
 
         self.c_disp.prepare_for_model_run(self.sc)
         self.c_disp.prepare_for_model_step(self.sc, time_step, active_start)
         d_mass = self.sc['mass'][self.sc['fate_status'] == fate.disperse].sum()
+
         assert d_mass == self.c_disp.percent_sprayed * self.spill.get_mass()
-        #exp_mass = self.c_disp.volume / self.op.get_density()
-        #assert d_mass - exp_mass < self.sc['mass'][0]
+        exp_mass = self.spill.get_mass() * self.c_disp.percent_sprayed
+        assert d_mass - exp_mass < self.sc['mass'][0]
+
+    @mark.parametrize("efficiency", (1.0, 0.7))
+    def test_weather_elements(self, efficiency):
+        self.reset_test_objs()
+        self.c_disp.efficiency = efficiency
+        self.c_disp.prepare_for_model_run(self.sc)
+        assert self.sc.weathering_data['chem_dispersed'] == 0.0
+
+        model_time = self.spill.get('release_time')
+        while (model_time < self.c_disp.active_stop +
+               timedelta(seconds=time_step)):
+            amt_disp = self.sc.weathering_data['chem_dispersed']
+            num_rel = self.sc.release_elements(time_step, model_time)
+            self.intrinsic.update(num_rel, self.sc, time_step)
+            self.c_disp.prepare_for_model_step(self.sc, time_step, model_time)
+
+            self.c_disp.weather_elements(self.sc, time_step, model_time)
+
+            if not self.c_disp.active:
+                assert self.sc.weathering_data['chem_dispersed'] == amt_disp
+            else:
+                assert self.sc.weathering_data['chem_dispersed'] > amt_disp
+
+            self.c_disp.model_step_is_done(self.sc)
+            self.sc.model_step_is_done()
+            # model would do the following
+            self.sc['age'][:] = self.sc['age'][:] + time_step
+            model_time += timedelta(seconds=time_step)
+
+        assert np.allclose(amount, self.sc.weathering_data['chem_dispersed'] +
+                           self.sc['mass'].sum(), atol=1e-6)
+        assert np.allclose(self.sc.weathering_data['chem_dispersed'] /
+                           self.spill.get_mass(),
+                           self.c_disp.percent_sprayed * efficiency)
