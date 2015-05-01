@@ -723,7 +723,11 @@ class ChemicalDispersionSchema(WeathererSchema):
 
 class ChemicalDispersion(CleanUpBase, Serializable):
     _state = copy.deepcopy(Weatherer._state)
-    _schema = WeathererSchema
+    _schema = ChemicalDispersionSchema
+    _state += [Field('percent_sprayed', save=True, update=True),
+               Field('efficiency', save=True, update=True),
+               Field('waves', save=True, update=True, save_reference=True),
+               Field('_rate', save=True)]
 
     def __init__(self,
                  percent_sprayed,
