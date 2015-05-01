@@ -523,8 +523,8 @@ class TestChemicalDispersion(ObjForTests):
         self.c_disp.prepare_for_model_step(self.sc, time_step, active_start)
         d_mass = self.sc['mass'][self.sc['fate_status'] == fate.disperse].sum()
 
-        assert d_mass == self.c_disp.percent_sprayed * self.spill.get_mass()
-        exp_mass = self.spill.get_mass() * self.c_disp.percent_sprayed
+        assert d_mass == self.c_disp.fraction_sprayed * self.spill.get_mass()
+        exp_mass = self.spill.get_mass() * self.c_disp.fraction_sprayed
         assert d_mass - exp_mass < self.sc['mass'][0]
 
     @mark.parametrize("frac_water", (0.5, 0.0))
@@ -541,8 +541,8 @@ class TestChemicalDispersion(ObjForTests):
         self.c_disp.prepare_for_model_step(self.sc, time_step, active_start)
         d_mass = self.sc['mass'][self.sc['fate_status'] == fate.disperse].sum()
 
-        assert d_mass == self.c_disp.percent_sprayed * self.spill.get_mass()
-        exp_mass = self.spill.get_mass() * self.c_disp.percent_sprayed
+        assert d_mass == self.c_disp.fraction_sprayed * self.spill.get_mass()
+        exp_mass = self.spill.get_mass() * self.c_disp.fraction_sprayed
         assert d_mass - exp_mass < self.sc['mass'][0]
 
     @mark.parametrize("efficiency", (1.0, 0.7))
@@ -577,4 +577,4 @@ class TestChemicalDispersion(ObjForTests):
                            self.sc['mass'].sum(), atol=1e-6)
         assert np.allclose(self.sc.weathering_data['chem_dispersed'] /
                            self.spill.get_mass(),
-                           self.c_disp.percent_sprayed * efficiency)
+                           self.c_disp.fraction_sprayed * efficiency)
