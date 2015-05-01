@@ -517,6 +517,24 @@ class TestChemicalDispersion(ObjForTests):
         exp_mass = self.spill.get_mass() * self.c_disp.percent_sprayed
         assert d_mass - exp_mass < self.sc['mass'][0]
 
+    @mark.parametrize("frac_water", (0.5, 0.0))
+    def test__update_LE_status_codes(self, frac_water):
+        '''
+        efficiency does not impact the mass of LEs marked as having been
+        sprayed. precent_sprayed determines percent of LEs marked as disperse.
+        '''
+        self.reset_and_release()
+        self.sc['frac_water'][:] = frac_water
+        assert np.all(self.sc['fate_status'] == fate.surface_weather)
+
+        self.c_disp.prepare_for_model_run(self.sc)
+        self.c_disp.prepare_for_model_step(self.sc, time_step, active_start)
+        d_mass = self.sc['mass'][self.sc['fate_status'] == fate.disperse].sum()
+
+        assert d_mass == self.c_disp.percent_sprayed * self.spill.get_mass()
+        exp_mass = self.spill.get_mass() * self.c_disp.percent_sprayed
+        assert d_mass - exp_mass < self.sc['mass'][0]
+
     @mark.parametrize("efficiency", (1.0, 0.7))
     def test_weather_elements(self, efficiency):
         self.reset_test_objs()
