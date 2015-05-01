@@ -922,8 +922,7 @@ def test_contains_object(sample_model_fcn):
                       active_stop=skim_start + timedelta(hours=1))
     burn = burn_obj(sp)
     disp_start = skim_start + timedelta(hours=1)
-    dispersion = ChemicalDispersion(10,
-                                    units='m^3',
+    dispersion = ChemicalDispersion(0.1,
                                     active_start=disp_start,
                                     active_stop=disp_start + timedelta(hours=1))
     model.weatherers += [evaporation, dispersion, burn, skimmer]
@@ -963,9 +962,8 @@ def chemical_disperson_obj(spill, delay_hours=1, duration=1):
     '''
     rel_time = spill.get('release_time')
     disp_start = rel_time + timedelta(hours=delay_hours)
-    spill_vol = spill.get_mass()/spill.get('substance').get_density()
     c_disp = \
-        ChemicalDispersion(.1 * spill_vol, units='m^3',
+        ChemicalDispersion(.1,
                            active_start=disp_start,
                            active_stop=disp_start + timedelta(hours=duration),
                            efficiency=0.3)
@@ -1037,7 +1035,7 @@ def test_staggered_spills_weathering(sample_model_fcn, delay):
             # and ensure this equals the total amount released
             sum_ = (sc.weathering_data['beached'] +
                     sc.weathering_data['burned'] +
-                    sc.weathering_data['chemically_dispersed'] +
+                    sc.weathering_data['chem_dispersed'] +
                     sc.weathering_data['evaporated'] +
                     sc.weathering_data['floating'] +
                     sc.weathering_data['skimmed']
@@ -1105,7 +1103,7 @@ def test_two_substance_spills_weathering(sample_model_fcn, s0, s1):
                 # mass marked for skimming/burning/dispersion that is not yet
                 # removed - cleanup operations only work on single substance
                 sum_ += (sc.weathering_data['burned'] +
-                         sc.weathering_data['chemically_dispersed'] +
+                         sc.weathering_data['chem_dispersed'] +
                          sc.weathering_data['skimmed'])
 
             sum_ += (sc.weathering_data['beached'] +
@@ -1254,7 +1252,7 @@ def test_weatherer_sort():
                       active_start=datetime(2014, 1, 1, 0, 0),
                       active_stop=datetime(2014, 1, 1, 0, 3))
     burn = Burn(100, 1, active_start=datetime(2014, 1, 1, 0, 0))
-    c_disp = ChemicalDispersion(100, units='m^3',
+    c_disp = ChemicalDispersion(.3,
                                 active_start=datetime(2014, 1, 1, 0, 0),
                                 active_stop=datetime(2014, 1, 1, 0, 3),
                                 efficiency=0.2)

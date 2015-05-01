@@ -60,7 +60,7 @@ def model(sample_model):
     burn = Burn(0.2 * volume, 1.0,
                 active_start=skim_start,
                 efficiency=0.9)
-    c_disp = ChemicalDispersion(.1*amount, units=units, efficiency=0.5,
+    c_disp = ChemicalDispersion(.1, efficiency=0.5,
                                 active_start=skim_start,
                                 active_stop=skim_start + timedelta(hours=1))
 
