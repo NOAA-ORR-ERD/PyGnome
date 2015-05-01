@@ -20,7 +20,61 @@ from .. import _valid_units
 import unit_conversion as uc
 
 
-class CleanUpBase(Weatherer):
+class RemoveMass(object):
+    '''
+    create a mixin for mass removal. These methods are used by CleanUpBase and
+    also by manual_beaching.
+    '''
+    def _set__timestep(self, time_step, model_time):
+        '''
+        For cleanup operations we may know the start time pretty precisely.
+        Use this to set _timestep to less than time_step resolution. Mostly
+        done for testing right now so if XXX amount is skimmed between
+        active_start and active_stop, the rate * duration gives the correct
+        amount. Object must be active before invoking this, else
+        self._timestep will give invalid results
+        '''
+        if not self.active:
+            return
+
+        self._timestep = time_step
+        dt = timedelta(seconds=time_step)
+
+        if (model_time < self.active_start):
+            self._timestep = \
+                time_step - (self.active_start -
+                             model_time).total_seconds()
+
+        if (self.active_stop < model_time + dt):
+            self._timestep = (self.active_stop -
+                              model_time).total_seconds()
+
+    def prepare_for_model_step(self, sc, time_step, model_time):
+        '''
+        Do sub timestep resolution here so numbers add up correctly
+        Mark LEs to be skimmed - do them in order right now. Assume all LEs
+        that are released together will be skimmed together since they would
+        be closer to each other in position.
+
+        Assumes: there is more mass in water than amount of mass to be
+        skimmed. The LEs marked for Skimming are marked only once -
+        code checks to see if any LEs are marked for skimming and if
+        none are found, it marks them.
+        '''
+        if not self.on:
+            self._active = False
+            return
+
+        if (model_time + timedelta(seconds=time_step) > self.active_start and
+                self.active_stop > model_time):
+            self._active = True
+        else:
+            self._active = False
+
+        self._set__timestep(time_step, model_time)
+
+
+class CleanUpBase(RemoveMass, Weatherer):
     '''
     Just need to add a few internal methods for Skimmer + Burn common code
     Currently defined as a base class.
@@ -145,30 +199,6 @@ class CleanUpBase(Weatherer):
 
         sc.update_from_fatedataview(substance, 'surface_weather')
 
-    def _set__timestep(self, time_step, model_time):
-        '''
-        For cleanup operations we may know the start time pretty precisely.
-        Use this to set _timestep to less than time_step resolution. Mostly
-        done for testing right now so if XXX amount is skimmed between
-        active_start and active_stop, the rate * duration gives the correct
-        amount. Object must be active before invoking this, else
-        self._timestep will give invalid results
-        '''
-        if not self.active:
-            return
-
-        self._timestep = time_step
-        dt = timedelta(seconds=time_step)
-
-        if (model_time < self.active_start):
-            self._timestep = \
-                time_step - (self.active_start -
-                             model_time).total_seconds()
-
-        if (self.active_stop < model_time + dt):
-            self._timestep = (self.active_stop -
-                              model_time).total_seconds()
-
     def _avg_frac_oil(self, data):
         '''
         find weighted average of frac_water array, return (1 - avg_frac_water)
@@ -177,30 +207,6 @@ class CleanUpBase(Weatherer):
         avg_frac_water = ((data['mass'] * data['frac_water']).
                           sum()/data['mass'].sum())
         return (1 - avg_frac_water)
-
-    def prepare_for_model_step(self, sc, time_step, model_time):
-        '''
-        Do sub timestep resolution here so numbers add up correctly
-        Mark LEs to be skimmed - do them in order right now. Assume all LEs
-        that are released together will be skimmed together since they would
-        be closer to each other in position.
-
-        Assumes: there is more mass in water than amount of mass to be
-        skimmed. The LEs marked for Skimming are marked only once -
-        code checks to see if any LEs are marked for skimming and if
-        none are found, it marks them.
-        '''
-        if not self.on:
-            self._active = False
-            return
-
-        if (model_time + timedelta(seconds=time_step) > self.active_start and
-                self.active_stop > model_time):
-            self._active = True
-        else:
-            self._active = False
-
-        self._set__timestep(time_step, model_time)
 
 
 class SkimmerSchema(WeathererSchema):
