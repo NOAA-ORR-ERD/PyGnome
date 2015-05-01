@@ -482,10 +482,14 @@ class Burn(CleanUpBase, Serializable):
     @thickness.setter
     def thickness(self, value):
         '''
-        log a warning if thickness in SI units is less than _min_thickness
+        1. log a warning if thickness in SI units is less than _min_thickness
+        2. if thickness changes, invoke _init_rate_duration() to reset
+           active_stop - more important for UI so it reflects the correct
+           duration.
         '''
         self._thickness = value
         self._log_thickness_warning()
+        self._init_rate_duration()
 
     def _log_thickness_warning(self):
         '''
@@ -509,6 +513,7 @@ class Burn(CleanUpBase, Serializable):
     def thickness_units(self, value):
         '''
         value must be one of the valid units given in valid_length_units
+        also reset active_stop()
         '''
         if value not in self.valid_length_units:
             e = uc.InvalidUnitError((value, 'Length'))
@@ -516,6 +521,7 @@ class Burn(CleanUpBase, Serializable):
             raise e
 
         self._thickness_units = value
+        self._init_rate_duration()
 
         # if thickness in these units is < min required, log a warning
         self._log_thickness_warning()
@@ -699,9 +705,9 @@ class Burn(CleanUpBase, Serializable):
         schema = cls._schema()
         if 'wind' in json_ and json_['wind'] is not None:
             schema.add(WindSchema(name='wind'))
- 
+
         _to_dict = schema.deserialize(json_)
- 
+
         return _to_dict
 
     def update_from_dict(self, data):

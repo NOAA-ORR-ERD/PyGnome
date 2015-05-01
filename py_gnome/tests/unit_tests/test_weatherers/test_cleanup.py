@@ -457,6 +457,16 @@ class TestBurn(ObjForTests):
         self.burn.update_from_dict(dict_)
         assert self.burn.efficiency == json_['efficiency']
 
+        # update area/thickness
+        st = self.burn.active_stop
+        self.burn.thickness *= 2
+        assert self.burn.active_stop > st
+
+        # burn duration just depents on thickness - not area
+        st = self.burn.active_stop
+        self.burn.area *= 2
+        assert self.burn.active_stop == st
+
 
 class TestChemicalDispersion(ObjForTests):
     (sc, intrinsic) = ObjForTests.mk_test_objs()
