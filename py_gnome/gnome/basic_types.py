@@ -98,6 +98,14 @@ tide_height_data = np.dtype([('time', seconds), ('height', np.double),
 w_point_2d = np.dtype([('long', world_point_type), ('lat',
                       world_point_type)])
 
+long_point = np.dtype([('long', np_long), ('lat',
+                      np_long)], align=True)
+
+triangle_data = np.dtype([('v1', np_long), ('v2', np_long), 
+                       ('v3', np_long), ('n1', np_long),
+                       ('n2', np_long), ('n3', np_long)],
+                       align=True)
+
 # In the C++ TypeDefs.h, the enum type for LEStatus is defined as a short
 # this is also consistent with the definition in type_defs.pxd ..
 # define it here to keep things consistent

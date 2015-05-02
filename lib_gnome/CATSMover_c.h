@@ -22,6 +22,7 @@
 #else
 #include "OSSMTimeValue_c.h"
 #include "GridVel_c.h"
+#include "DagTree.h"
 //#include "Map_c.h"
 #define TOSSMTimeValue OSSMTimeValue_c
 #define TGridVel GridVel_c
@@ -75,6 +76,10 @@ public:
 	virtual OSErr 		PrepareForModelStep(const Seconds&, const Seconds&, bool, int numLESets, int* LESetsSizesList); // AH 07/10/2012
 	virtual void 		ModelStepIsDone();
 	virtual Boolean		VelocityStrAtPoint(WorldPoint3D wp, char *velStr);
+	VelocityFH GetVelocityHdl();
+	LongPointHdl GetPointsHdl(void);
+	TopologyHdl GetTopologyHdl(void);
+	WORLDPOINTH	GetTriangleCenters();
 
 	virtual	OSErr TextRead(vector<string> &linesInFile);
 	virtual	OSErr TextRead(char* path);

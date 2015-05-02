@@ -32,12 +32,19 @@ TopologyHdl TriGridVel_c::GetTopologyHdl(void)
 	return fDagTree->GetTopologyHdl();
 }
 
-/*DAGHdl TriGridVel_c::GetDagTreeHdl(void)
+VelocityFH TriGridVel_c::GetVelocityHdl(void)
+{
+	if(!fDagTree) return nil;
+	
+	return fDagTree->GetVelocityHdl();
+}
+
+DAGHdl TriGridVel_c::GetDagTreeHdl(void)
  {
- if(!fDagTree) return nil;
- 
- return fDagTree->GetDagTreeHdl();
- }*/
+	 if(!fDagTree) return nil;
+	 
+	 return fDagTree->GetDagTreeHdl();
+ }
 
 long TriGridVel_c::GetNumTriangles(void)
 {

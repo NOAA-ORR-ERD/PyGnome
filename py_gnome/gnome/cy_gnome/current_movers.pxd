@@ -11,6 +11,7 @@ from utils cimport OSSMTimeValue_c
 
 from movers cimport Mover_c
 from grids cimport TimeGridVel_c
+from grids cimport GridVel_c
 
 cdef extern from "CurrentMover_c.h":
     cdef cppclass CurrentMover_c(Mover_c):
@@ -24,6 +25,7 @@ cdef extern from "CurrentMover_c.h":
 cdef extern from "CATSMover_c.h":
     cdef cppclass CATSMover_c(CurrentMover_c):
         CATSMover_c() except +
+        GridVel_c		*fGrid
         double          fEddyDiffusion
         double          fEddyV0
         short           scaleType   # set this automatically!
@@ -38,6 +40,10 @@ cdef extern from "CATSMover_c.h":
                        WorldPoint3D* ref, WorldPoint3D* delta, short* LE_status,
                        LEType spillType, long spillID)
         void  SetTimeDep(OSSMTimeValue_c *ossm)
+        LongPointHdl  GetPointsHdl()
+        VelocityFH  GetVelocityHdl()
+        TopologyHdl  GetTopologyHdl()
+        WORLDPOINTH  GetTriangleCenters()
 
 
 cdef extern from "ComponentMover_c.h":
