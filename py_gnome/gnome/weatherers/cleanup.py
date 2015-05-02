@@ -717,20 +717,20 @@ class Burn(CleanUpBase, Serializable):
 
 
 class ChemicalDispersionSchema(WeathererSchema):
-    percent_sprayed = SchemaNode(Float(), validator=Range(0, 1.0))
+    fraction_sprayed = SchemaNode(Float(), validator=Range(0, 1.0))
     efficiency = SchemaNode(Float(), missing=drop, validator=Range(0, 1.0))
 
 
 class ChemicalDispersion(CleanUpBase, Serializable):
     _state = copy.deepcopy(Weatherer._state)
     _schema = ChemicalDispersionSchema
-    _state += [Field('percent_sprayed', save=True, update=True),
+    _state += [Field('fraction_sprayed', save=True, update=True),
                Field('efficiency', save=True, update=True),
                Field('waves', save=True, update=True, save_reference=True),
                Field('_rate', save=True)]
 
     def __init__(self,
-                 percent_sprayed,
+                 fraction_sprayed,
                  active_start,
                  active_stop,
                  waves=None,
@@ -768,8 +768,8 @@ class ChemicalDispersion(CleanUpBase, Serializable):
                                                  efficiency=efficiency,
                                                  **kwargs)
 
-        # percent_sprayed must be > 0 and <= 1.0
-        self.percent_sprayed = percent_sprayed
+        # fraction_sprayed must be > 0 and <= 1.0
+        self.fraction_sprayed = fraction_sprayed
         self.waves = waves
 
         # rate is set the first timestep in which the object becomes active
@@ -800,7 +800,7 @@ class ChemicalDispersion(CleanUpBase, Serializable):
         if (sc['fate_status'] == bt_fate.disperse).sum() == 0:
             substance = self._get_substance(sc)
             mass = sum([spill.get_mass() for spill in sc.spills])
-            rm_total_mass_si = mass * self.percent_sprayed
+            rm_total_mass_si = mass * self.fraction_sprayed
 
             # the mass to remove is actual oil mass not mass of oil/water
             # mixture
