@@ -17,7 +17,7 @@ from colander import (SchemaNode, drop,
 
 import unit_conversion as uc
 
-from gnome import basic_types
+from gnome.basic_types import datetime_value_1d
 from gnome.weatherers import Weatherer
 from gnome.utilities.serializable import Serializable, Field
 
@@ -75,7 +75,7 @@ class BeachingSchema(WeathererSchema):
     timeseries = BeachingTimeSeriesSchema(missing=drop)
 
 
-class Beaching(RemoveMass, Serializable):
+class Beaching(RemoveMass, Weatherer, Serializable):
     '''
     It isn't really a reponse/cleanup option; however, it works in the same
     manner in that Beaching removes mass at a user specified rate. Mixin the
@@ -87,7 +87,6 @@ class Beaching(RemoveMass, Serializable):
     _schema = BeachingSchema
 
     def __init__(self,
-                 name,
                  active_start,
                  units='m^3',
                  timeseries=None,
@@ -111,7 +110,7 @@ class Beaching(RemoveMass, Serializable):
         super(Beaching, self).__init__(active_start=active_start,
                                        **kwargs)
 
-        self.name = name
+        self._units = None
         self.units = units
 
         # store mass removal rate as kg/sec for manual beaching
@@ -121,14 +120,6 @@ class Beaching(RemoveMass, Serializable):
         if timeseries is not None:
             self.timeseries = timeseries
 
-#==============================================================================
-#             if units is None:
-#                 raise TypeError('Units must be provided with timeseries')
-# 
-#             self.timeseries = timeseries
-#             self.convert_to_internal_volume()
-#==============================================================================
-
     @property
     def timeseries(self):
         return self._timeseries[1:]
@@ -136,11 +127,30 @@ class Beaching(RemoveMass, Serializable):
     @timeseries.setter
     def timeseries(self, value):
         '''
+        1. convert value to numpy array with dtype=datetime_value_1d
+        2. set timeseries and also sets active_stop = timeseries['time'][-1]
         '''
-        # do checks to ensure data is good before setting
         # prepends active_start to _timeseries array. This is for convenience
-        self._timeseries = np.insert(value, 0, self.active_start)
-        self.active_stop = self.timeseries[-1].astype(datetime)
+        value = np.asarray(value, dtype=datetime_value_1d)
+        self._timeseries = np.insert(value, 0,
+                                     np.asarray((self.active_start, 0),
+                                                dtype=datetime_value_1d))
+        self.active_stop = self.timeseries['time'][-1].astype(datetime)
+
+    @property
+    def units(self):
+        return self._units
+
+    @units.setter
+    def units(self, value):
+        '''
+        set units if value is in valid_vol_units
+        '''
+        if value not in self.valid_vol_units:
+            self.logger.warning("{0} are not valid volume units".format(value))
+            return
+
+        self._units = value
 
     def convert_to_internal_volume(self):
         data = self.timeseries['value']
@@ -181,16 +191,51 @@ class Beaching(RemoveMass, Serializable):
         # find rate for time interval (model_time, model_time + time_step)
         # function is called for model_time within active_start and active_stop
         # so following should always work
+        # Expect the timestep to be much smaller than the delta time between
+        # timeseries, however, let's not make this assumption since it can't be
+        # enforced
         t_int = np.where(model_time > self._timeseries['time'])[0][0]
-        dt = min(time_step, (self._timeseries['time'][t_int + 1] -
-                             model_time).total_seconds())
-        rm_mass = self._rate[t_int] * dt
 
-        if dt < time_step:
-            # (model_time, model_time + time_step) like in an interval with two
-            # removal rates
-            rm_mass += self._rate[t_int + 1] * (time_step - dt)
+        # Say the time for timeseries is given as follows:
+        #    [t_o, t_1, t_2, ..]
+        #
+        # if time interval resides within a timeseries timeinterval,
+        #     so model_time > t_int and
+        #        model_time + dt < t_int; then rm_mass = dt * rate[t_int]
+        #
+        # if time interval straddles two rates,
+        #     so model_time > t_int and
+        #        model_time + dt > t_int;
+        # then rm_mass = \
+        #    (self._timeseries['time'][t_int + 1] - model_time) * rate[t_int] +
+        #    (dt - self._timeseries['time'][t_int + 1] - model_time) *
+        #     rate[t_int + 1]
+        #
+        # The logic will also handle the case where the time interval straddles
+        # multiple rates. This is not expected but the logic should work.
+        time_remain = time_step
+        start_time = model_time
+        rm_mass = 0.0
+        while time_remain > 0:
+            dt_for_curr_rate = (self._timeseries['time'][t_int + 1] -
+                                start_time).total_seconds()
+            dt = min(time_remain, dt_for_curr_rate)
+            rm_mass += self._rate[t_int] * dt
+            time_remain -= dt
 
+            # update start_time and t_int
+            t_int += 1
+            start_time = self._timeseries['time'][t_int]
+#==============================================================================
+#         dt = min(time_step, (self._timeseries['time'][t_int + 1] -
+#                              model_time).total_seconds())
+#         rm_mass = self._rate[t_int] * dt
+#
+#         if dt < time_step:
+#             # (model_time, model_time + time_step) like in an interval with two
+#             # removal rates
+#             rm_mass += self._rate[t_int + 1] * (time_step - dt)
+#==============================================================================
         return rm_mass
 
     def weather_elements(self, sc, time_step, model_time):
@@ -203,7 +248,7 @@ class Beaching(RemoveMass, Serializable):
         for substance, data in sc.itersubstancedata(self.array_types):
             if len(data['mass']) is 0:
                 continue
-            rm_mass = self._remove_mass(time_step, model_time, substance)
+            rm_mass = self._remove_mass(self._timestep, model_time, substance)
             rm_mass_frac = rm_mass / data['mass'].sum()
             data['mass_components'] = \
                 (1 - rm_mass_frac) * data['mass_components']

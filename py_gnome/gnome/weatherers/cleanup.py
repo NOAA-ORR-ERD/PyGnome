@@ -25,6 +25,23 @@ class RemoveMass(object):
     create a mixin for mass removal. These methods are used by CleanUpBase and
     also by manual_beaching.
     '''
+    # todo: following is same as Spill code so rework to make it DRY
+    valid_vol_units = _valid_units('Volume')
+    valid_mass_units = _valid_units('Mass')
+
+    def _get_mass(self, substance, amount, units):
+        '''
+        return 'amount' in units of 'kg' for specified substance
+        uses the density corresponding with API temperature
+        '''
+        if units in self.valid_mass_units:
+            rm_mass = uc.convert('Mass', units, 'kg', amount)
+        else:   # amount must be in volume units
+            rm_vol = uc.convert('Volume', units, 'm^3', amount)
+            rm_mass = substance.get_density() * rm_vol
+
+        return rm_mass
+
     def _set__timestep(self, time_step, model_time):
         '''
         For cleanup operations we may know the start time pretty precisely.
@@ -79,10 +96,6 @@ class CleanUpBase(RemoveMass, Weatherer):
     Just need to add a few internal methods for Skimmer + Burn common code
     Currently defined as a base class.
     '''
-    # todo: following is same as Spill code so rework to make it DRY
-    valid_vol_units = _valid_units('Volume')
-    valid_mass_units = _valid_units('Mass')
-
     def __init__(self, **kwargs):
         '''
         add 'frac_water' to array_types and pass **kwargs to base class
@@ -113,19 +126,6 @@ class CleanUpBase(RemoveMass, Weatherer):
         elif value <= 0 or value > 1.0:
             msg = "efficiency must be > 0 and <= 1.0"
             self.logger.warning(msg)
-
-    def _get_mass(self, substance, amount, units):
-        '''
-        return 'amount' in units of 'kg' for specified substance
-        uses the density corresponding with API temperature
-        '''
-        if units in self.valid_mass_units:
-            rm_mass = uc.convert('Mass', units, 'kg', amount)
-        else:   # amount must be in volume units
-            rm_vol = uc.convert('Volume', units, 'm^3', amount)
-            rm_mass = substance.get_density() * rm_vol
-
-        return rm_mass
 
     def _get_substance(self, sc):
         '''
