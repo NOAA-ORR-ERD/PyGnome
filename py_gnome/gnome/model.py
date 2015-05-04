@@ -992,8 +992,6 @@ class Model(Serializable):
             to change it - but not sure if that will ever be needed?
             '''
             self._save_spill_data(saveloc, 'spills_data_arrays.nc')
-            if self.uncertain:
-                self._save_spill_data(saveloc, 'spills_data_arrays_uncertain.nc')
 
         # if saved as zipfile, then store model's json in Model.json - this is
         # default if name is None
@@ -1060,6 +1058,10 @@ class Model(Serializable):
                                  allowZip64=self._allowzip64) as z:
                 z.write(datafile, nc_file)
                 os.remove(datafile)
+                if self.uncertain:
+                    u_file = nc_out.uncertain_filename
+                    z.write(u_file, os.path.split(u_file)[1])
+                    os.remove(u_file)
 
     def _load_spill_data(self, saveloc, nc_file):
         """
@@ -1073,7 +1075,6 @@ class Model(Serializable):
                 saveloc = os.path.split(saveloc)[0]
                 z.extract(nc_file, saveloc)
                 if self.uncertain:
-                    #fname = "spills_data_arrays_uncertain.nc"
                     spill_data_fname, ext = os.path.splitext(nc_file)
                     fname = '{0}_uncertain{1}'.format(spill_data_fname, ext)
                     z.extract(fname, saveloc)

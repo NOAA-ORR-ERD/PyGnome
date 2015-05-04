@@ -295,6 +295,13 @@ class NetCDFOutput(Outputter, Serializable):
             self._netcdf_filename = new_name
 
     @property
+    def uncertain_filename(self):
+        '''
+        if uncertain SpillContainer is present, write its data out to this file
+        '''
+        return self._u_netcdf_filename
+
+    @property
     def which_data(self):
         return self._which_data
 
