@@ -20,6 +20,7 @@ import unit_conversion as uc
 from gnome.basic_types import datetime_value_1d
 from gnome.weatherers import Weatherer
 from gnome.utilities.serializable import Serializable, Field
+from gnome.utilities.inf_datetime import InfDateTime
 
 from gnome.persist import validators, base_schema
 from gnome.persist.extend_colander import (DefaultTupleSchema,
@@ -126,11 +127,14 @@ class Beaching(RemoveMass, Weatherer, Serializable):
         1. convert value to numpy array with dtype=datetime_value_1d
         2. set timeseries and also sets active_stop = timeseries['time'][-1]
         '''
-        # prepends active_start to _timeseries array. This is for convenience
         value = np.asarray(value, dtype=datetime_value_1d)
-        self._timeseries = np.insert(value, 0,
-                                     np.asarray((self.active_start, 0),
-                                                dtype=datetime_value_1d))
+
+        # prepends active_start to _timeseries array. This is for convenience
+        to_insert = np.zeros(0, dtype=datetime_value_1d)
+        if self.active_start != InfDateTime('-inf'):
+            to_insert['time'][0] = np.datetime64(self.active_start)
+
+        self._timeseries = np.insert(value, 0, to_insert)
         self.active_stop = self.timeseries['time'][-1].astype(datetime)
 
     @property
