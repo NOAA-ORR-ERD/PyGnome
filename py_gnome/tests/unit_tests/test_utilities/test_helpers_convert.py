@@ -118,6 +118,7 @@ def test_to_time_value_pair(wind_ts, in_ts_format):
     assert np.allclose(wind_ts['tv'].value.v, out_tv.value.v, atol, rtol)
 
 
+@pytest.mark.xfail
 def test_to_time_value_pair_from_1d():
     data = np.zeros((4,), dtype=datetime_value_1d)
     data['value'] = np.random.uniform(1, 10, len(data)).reshape(-1, 1)
@@ -127,6 +128,7 @@ def test_to_time_value_pair_from_1d():
     assert np.all(out_tv['value']['u'] == data['value'].reshape(-1))
 
 
+@pytest.mark.xfail
 def test_to_datetime_value_1d(wind_ts):
     'test convert from time_value_pair to datetime_value_1d'
     out_dtval = to_datetime_value_1d(wind_ts['tv']).view(dtype=np.recarray)
