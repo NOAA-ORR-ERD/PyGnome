@@ -58,7 +58,7 @@ datetime_value_2d = np.dtype([('time', 'datetime64[s]'),
 # convert from datetime_value_1d to time_value_pair by setting 2nd component
 # of value to 0.0
 datetime_value_1d = np.dtype([('time', 'datetime64[s]'),
-    ('value', mover_type, (1,))], align=True)
+    ('value', mover_type, ())], align=True)
 
 # enums that are same as C++ values are defined in cy_basic_types
 # Define enums that are independent of C++ here so we

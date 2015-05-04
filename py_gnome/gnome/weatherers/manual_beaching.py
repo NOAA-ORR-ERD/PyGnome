@@ -6,7 +6,7 @@
     It is modelled as a weathering process.
 '''
 
-from datetime import datetime, timedelta
+from datetime import datetime
 import copy
 
 import numpy
@@ -178,12 +178,11 @@ class Beaching(RemoveMass, Weatherer, Serializable):
         '''
         if self._rate is None:
             # ensure active_start < timeseries['time'][0]
-            # explicitly make sure d_t is in seconds
-            dt = [dt.total_seconds() for dt in
-                  np.diff(np.insert(self.timeseries['time'], 0,
-                                    self.active_start))]
+            # timedelta64 seems to be in seconds
+            dt = np.diff(self._timeseries['time']).astype(np.float64)
+
             # convert timeseries to 'kg'
-            dv = np.diff(np.insert(self.timeseries['value'], 0, 0))
+            dv = self.timeseries['value']
             dm = (uc.convert('Volume', self.units, 'm^3', dv) *
                   substance.get_density())
             self._rate = dm/dt
@@ -194,7 +193,8 @@ class Beaching(RemoveMass, Weatherer, Serializable):
         # Expect the timestep to be much smaller than the delta time between
         # timeseries, however, let's not make this assumption since it can't be
         # enforced
-        t_int = np.where(model_time > self._timeseries['time'])[0][0]
+        t_int = np.where(np.datetime64(model_time) >=
+                         self._timeseries['time'])[0][-1]
 
         # Say the time for timeseries is given as follows:
         #    [t_o, t_1, t_2, ..]
@@ -217,25 +217,17 @@ class Beaching(RemoveMass, Weatherer, Serializable):
         start_time = model_time
         rm_mass = 0.0
         while time_remain > 0:
-            dt_for_curr_rate = (self._timeseries['time'][t_int + 1] -
-                                start_time).total_seconds()
+            dt_for_curr_rate = \
+                (self._timeseries['time'][t_int + 1].astype(datetime) -
+                 start_time).total_seconds()
             dt = min(time_remain, dt_for_curr_rate)
             rm_mass += self._rate[t_int] * dt
             time_remain -= dt
 
             # update start_time and t_int
             t_int += 1
-            start_time = self._timeseries['time'][t_int]
-#==============================================================================
-#         dt = min(time_step, (self._timeseries['time'][t_int + 1] -
-#                              model_time).total_seconds())
-#         rm_mass = self._rate[t_int] * dt
-#
-#         if dt < time_step:
-#             # (model_time, model_time + time_step) like in an interval with two
-#             # removal rates
-#             rm_mass += self._rate[t_int + 1] * (time_step - dt)
-#==============================================================================
+            start_time = self._timeseries['time'][t_int].astype(datetime)
+
         return rm_mass
 
     def weather_elements(self, sc, time_step, model_time):
