@@ -273,7 +273,7 @@ class Skimmer(CleanUpBase, Serializable):
             self._units = value
         else:
             msg = ('{0} are not valid volume or mass units.'
-                   ' Not updated').format('value')
+                   ' Not updated').format(value)
             self.logger.warn(msg)
 
     def prepare_for_model_run(self, sc):

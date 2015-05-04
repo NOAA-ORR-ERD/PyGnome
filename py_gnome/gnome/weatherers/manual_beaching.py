@@ -146,11 +146,12 @@ class Beaching(RemoveMass, Weatherer, Serializable):
         '''
         set units if value is in valid_vol_units
         '''
-        if value not in self.valid_vol_units:
-            self.logger.warning("{0} are not valid volume units".format(value))
-            return
-
-        self._units = value
+        if value in self.valid_vol_units or value in self.valid_mass_units:
+            self._units = value
+        else:
+            msg = ('{0} are not valid volume or mass units.'
+                   ' Not updated').format(value)
+            self.logger.warn(msg)
 
     def convert_to_internal_volume(self):
         data = self.timeseries['value']

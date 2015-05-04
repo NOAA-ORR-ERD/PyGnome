@@ -7,6 +7,8 @@ import numpy as np
 
 from gnome.basic_types import datetime_value_1d
 from gnome.weatherers import Beaching
+import unit_conversion as uc
+
 from .test_cleanup import ObjForTests
 
 from pytest import mark
@@ -19,14 +21,14 @@ timeseries = [(active_start + timedelta(hours=1), 5),
               (active_start + timedelta(hours=7), 8)]
 
 
-@mark.parametrize("timeseries", [timeseries,
-                                 np.asarray(timeseries,
-                                            dtype=datetime_value_1d)])
-def test_init(timeseries):
-    b = Beaching(active_start, 'l', timeseries, name='test_beaching')
+@mark.parametrize(("timeseries", "units"),
+                  [(timeseries, 'kg'),
+                   (np.asarray(timeseries, dtype=datetime_value_1d), 'l')])
+def test_init(timeseries, units):
+    b = Beaching(active_start, units, timeseries, name='test_beaching')
 
     assert b.name == 'test_beaching'
-    assert b.units == 'l'
+    assert b.units == units
     assert b.active_start == active_start
     assert b.timeseries[-1][0] == b.active_stop
 
@@ -38,6 +40,7 @@ def test_init(timeseries):
 
 class TestBeaching(ObjForTests):
     (sc, intrinsic) = ObjForTests.mk_test_objs()
+    sc.spills[0].set('release_time', active_start)
     b = Beaching(active_start, 'l', timeseries, name='test_beaching')
     substance = sc.spills[0].get('substance')
 
@@ -71,6 +74,58 @@ class TestBeaching(ObjForTests):
                 to_rm += self.b._rate[ix] * dt
 
             assert to_rm == mass_to_rm
+
+    def test_weather_elements(self):
+        '''
+        test weather_elements removes amount of mass specified by timeseries
+        '''
+        time_step = 900
+        total = self.sc.spills[0].get_mass()
+        model_time = self.sc.spills[0].get('release_time')
+
+        self.reset_test_objs()
+        self.b.prepare_for_model_run(self.sc)
+
+        assert self.sc.weathering_data['manual_beached'] == 0.0
+
+        while (model_time <
+               self.b.active_stop + timedelta(seconds=time_step)):
+
+            amt = self.sc.weathering_data['manual_beached']
+
+            num_rel = self.sc.release_elements(time_step, model_time)
+            self.intrinsic.update(num_rel, self.sc, time_step)
+            self.b.prepare_for_model_step(self.sc, time_step, model_time)
+
+            self.b.weather_elements(self.sc, time_step, model_time)
+
+            if not self.b.active:
+                assert self.sc.weathering_data['manual_beached'] == amt
+            else:
+                # check total amount removed at each timestep
+                assert self.sc.weathering_data['manual_beached'] > amt
+
+            self.b.model_step_is_done(self.sc)
+            self.sc.model_step_is_done()
+            # model would do the following
+            self.sc['age'][:] = self.sc['age'][:] + time_step
+            model_time += timedelta(seconds=time_step)
+
+            # check - useful for debugging issues with recursion
+            assert np.isclose(total, self.sc.weathering_data['manual_beached']
+                              + self.sc['mass'].sum())
+
+        # following should finally hold true for entire run
+        assert np.allclose(total, self.sc.weathering_data['manual_beached'] +
+                           self.sc['mass'].sum(), atol=1e-6)
+
+        # volume units
+        total_mass = self.b._get_mass(self.substance,
+                                      self.b.timeseries['value'].sum(),
+                                      self.b.units)
+
+        assert np.isclose(self.sc.weathering_data['manual_beached'],
+                          total_mass)
 
     def test_serialize_deserialize_update_from_dict(self):
         '''
