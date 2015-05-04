@@ -72,6 +72,14 @@ class TestBeaching(ObjForTests):
 
             assert to_rm == mass_to_rm
 
-    def test_serialize_deserialize(self):
+    def test_serialize_deserialize_update_from_dict(self):
+        '''
+        test serialize/deserialize works correctly for datetime_value_1d dtype
+        numpy arrays
+        '''
         json_ = self.b.serialize()
-        print json_
+        json_['timeseries'][0] = (json_['timeseries'][0][0],
+                                  json_['timeseries'][0][1] + 4)
+        d_ = Beaching.deserialize(json_)
+        self.b.update_from_dict(d_)
+        assert json_ == self.b.serialize()

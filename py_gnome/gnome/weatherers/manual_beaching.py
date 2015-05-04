@@ -29,16 +29,6 @@ from .core import WeathererSchema
 from .cleanup import RemoveMass
 
 
-class AmountTuple(DefaultTupleSchema):
-    amount = SchemaNode(Float(),
-                        default=0,
-                        validator=Range(min=0,
-                                        min_err='amount must be '
-                                                'greater than or equal to 0'
-                                        )
-                        )
-
-
 class BeachingTupleSchema(DefaultTupleSchema):
     '''
     Schema for each tuple in TimeSeries list
@@ -46,7 +36,13 @@ class BeachingTupleSchema(DefaultTupleSchema):
     datetime = SchemaNode(LocalDateTime(default_tzinfo=None),
                           default=base_schema.now,
                           validator=validators.convertible_to_seconds)
-    amount = AmountTuple()
+    amount = SchemaNode(Float(),
+                        default=0,
+                        validator=Range(min=0,
+                                        min_err='amount must be '
+                                                'greater than or equal to 0'
+                                        )
+                        )
 
 
 class BeachingTimeSeriesSchema(DatetimeValue1dArraySchema):
