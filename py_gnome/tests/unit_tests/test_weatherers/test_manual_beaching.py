@@ -7,7 +7,6 @@ import numpy as np
 
 from gnome.basic_types import datetime_value_1d
 from gnome.weatherers import Beaching
-import unit_conversion as uc
 
 from .test_cleanup import ObjForTests
 
