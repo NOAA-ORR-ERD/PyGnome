@@ -10,6 +10,9 @@ from type_defs cimport (OSErr,
                         WorldPoint3D,
                         Seconds,
                         WorldRect,
+                        LongPointHdl,
+                        TopologyHdl,
+                        DAGHdl,
                         LONGH)
 
 
@@ -19,6 +22,20 @@ Keep following two definitions for now so current cython movers code works
 cdef extern from "GridVel_c.h":
     cdef cppclass GridVel_c:
         pass
+
+cdef extern from "DagTree.h":
+    cdef cppclass TDagTree:
+        LongPointHdl	GetPointsHdl()
+        TopologyHdl		GetTopologyHdl()
+        VelocityFH		GetVelocityHdl()
+        DAGHdl			GetDagTreeHdl()
+
+cdef extern from "TriGridVel_c.h":
+    cdef cppclass TriGridVel_c:
+        TDagTree *fDagTree
+        LongPointHdl GetPointsHdl()
+        TopologyHdl GetTopologyHdl()
+        VelocityFH GetVelocityHdl()
 
 cdef extern from "TimeGridVel_c.h":
     cdef cppclass TimeGridVel_c:

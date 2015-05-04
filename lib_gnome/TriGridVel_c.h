@@ -29,7 +29,8 @@ public:
 	TDagTree*  GetDagTree(){return fDagTree;}
 	LongPointHdl GetPointsHdl(void);
 	TopologyHdl GetTopologyHdl(void);
-	//DAGHdl GetDagTreeHdl(void);
+	VelocityFH GetVelocityHdl(void);
+	DAGHdl GetDagTreeHdl(void);
 	virtual long GetNumTriangles(void);
 	long 	GetNumDepths(void);
 	void SetBathymetry(FLOATH depthsH){fBathymetryH=depthsH;}

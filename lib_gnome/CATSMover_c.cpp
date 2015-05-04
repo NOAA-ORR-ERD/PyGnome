@@ -676,3 +676,59 @@ void CATSMover_c::SetTimeDep(TOSSMTimeValue *newTimeDep)
 {
 	timeDep = newTimeDep;
 }
+
+VelocityFH CATSMover_c::GetVelocityHdl(void)
+{
+	return dynamic_cast<TriGridVel_c *>(fGrid)->GetVelocityHdl();
+}
+
+LongPointHdl CATSMover_c::GetPointsHdl(void)
+{
+	return dynamic_cast<TriGridVel_c *>(fGrid)->GetPointsHdl();
+}
+
+TopologyHdl CATSMover_c::GetTopologyHdl(void)
+{
+	return dynamic_cast<TriGridVel_c *>(fGrid)->GetTopologyHdl();
+}
+
+WORLDPOINTH	CATSMover_c::GetTriangleCenters()
+{
+	OSErr err = 0;
+	LongPointHdl ptsH = 0;
+	WORLDPOINTH wpH = 0;
+	TopologyHdl topH ;
+	LongPoint wp1,wp2,wp3;
+	WorldPoint wp;
+	int32_t numPts = 0, numTri = 0;
+	
+	topH = dynamic_cast<TriGridVel_c *>(fGrid)->GetTopologyHdl();
+	ptsH = GetPointsHdl();
+	numTri = _GetHandleSize((Handle)topH)/sizeof(Topology);
+	numPts = _GetHandleSize((Handle)ptsH)/sizeof(LongPoint);
+	wpH = (WORLDPOINTH)_NewHandle(numTri * sizeof(WorldPoint));
+	if (!wpH) {
+		err = -1;
+		TechError("CATSMover_c::GetPointsHdl()", "_NewHandle()", 0);
+		goto done;
+	}
+	
+	for (int i=0; i<numTri; i++)
+	{
+		wp1 = (*ptsH)[(*topH)[i].vertex1];
+		wp2 = (*ptsH)[(*topH)[i].vertex2];
+		wp3 = (*ptsH)[(*topH)[i].vertex3];
+
+#ifndef pyGNOME
+		wp.pLong = (wp1.h+wp2.h+wp3.h)/3;
+		wp.pLat = (wp1.v+wp2.v+wp3.v)/3;
+#else
+		wp.pLong = (double)(wp1.h+wp2.h+wp3.h)/3.e6;
+		wp.pLat = (double)(wp1.v+wp2.v+wp3.v)/3.e6;
+#endif
+		INDEXH(wpH,i) = wp;
+	}
+	
+done:
+	return wpH;
+}
