@@ -130,7 +130,7 @@ class Beaching(RemoveMass, Weatherer, Serializable):
         value = np.asarray(value, dtype=datetime_value_1d)
 
         # prepends active_start to _timeseries array. This is for convenience
-        to_insert = np.zeros(0, dtype=datetime_value_1d)
+        to_insert = np.zeros(1, dtype=datetime_value_1d)
         if self.active_start != InfDateTime('-inf'):
             to_insert['time'][0] = np.datetime64(self.active_start)
 
@@ -242,6 +242,12 @@ class Beaching(RemoveMass, Weatherer, Serializable):
                 continue
             rm_mass = self._remove_mass(self._timestep, model_time, substance)
             rm_mass_frac = rm_mass / data['mass'].sum()
+            if rm_mass_frac > 1.0:
+                rm_mass_frac = 1.0
+                msg = ("Beaching() removing more mass than available at {0}".
+                       format(model_time))
+                self.logger.warning(msg)
+
             data['mass_components'] = \
                 (1 - rm_mass_frac) * data['mass_components']
             data['mass'] = data['mass_components'].sum(1)
