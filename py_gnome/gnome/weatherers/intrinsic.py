@@ -27,7 +27,22 @@ class FayGravityViscous(AddLogger):
     '''
     def __init__(self):
         self.spreading_const = (1.53, 1.21)
-        self.thickness_limit = .0001
+        self.thickness_limit = None
+
+    def set_thickness_limit(self, vo):
+        '''
+        set the spreading thickness limit based on viscosity
+        todo: documented in langmiur docs, just double check this
+            1. vo >= 1e-4;           limit = 1e-4 m
+            2. 1e-4 > vo >= 1e-6;    limit = 1e-5 + 0.9091*(vo - 1e-6) m
+            3. 1e-6 > vo;            limit = 1e-5 m
+        '''
+        if vo >= 1e-4:
+            self.thickness_limit = 1e-4
+        elif 1e-4 > vo and vo >= 1e-6:
+            self.thickness_limit = 1e-5 + 0.9091 * (vo - 1e-6)
+        elif vo < 1e-6:
+            self.thickness_limit = 1e-5
 
     @lru_cache(4)
     def _gravity_spreading_t0(self,
@@ -188,6 +203,41 @@ class ConstantArea(AddLogger):
         else:
             return area
 
+    def set_thickness_limit(self, vo):
+        '''
+        just use constant area so not setting any thickness limit
+        '''
+        pass
+
+
+class Langmuir(AddLogger):
+    '''
+    define a mixin with a couple of functions to model langmuir
+    '''
+    def thickness_limit(self, vo):
+        '''
+        returns the spreading thickness limit based on viscosity
+        The documentation for this was with the Langmuir documentation so
+        it is included as part of the langmuir mixin, but should ask and
+        consider moving this to FayGravityViscous()
+            1. vo >= 1e-4;           limit = 1e-4 m
+            2. 1e-4 > vo >= 1e-6;    limit = 1e-5 + 0.9091*(vo - 1e-6) m
+            3. 1e-6 > vo;            limit = 1e-5 m
+        '''
+        if vo >= 1e-4:
+            return 1e-4
+        elif 1e-4 > vo and vo >= 1e-6:
+            val = 1e-5 + 0.9091 * (vo - 1e-6)
+            return val
+        elif vo < 1e-6:
+            return 1e-5
+
+    def frac_coverage(self, vmax, rel_bouy, thickness):
+        '''
+        return fractional coverage for a blob of oil given
+        '''
+        pass
+
 
 class WeatheringData(AddLogger):
     '''
@@ -227,13 +277,24 @@ class WeatheringData(AddLogger):
     def initialize(self, sc):
         '''
         1. initialize standard keys:
-        avg_density, floating, amount_released, avg_viscosity to 0.0
+           avg_density, floating, amount_released, avg_viscosity to 0.0
         2. set init_density for all ElementType objects in each Spill
+        3. set spreading thickness limit based on viscosity of oil at
+           water temperature which is constant for now.
         '''
         # nothing released yet - set everything to 0.0
         for key in ('avg_density', 'floating', 'amount_released',
                     'avg_viscosity', 'beached'):
             sc.weathering_data[key] = 0.0
+
+        # initialize the thickness_limit for FayGravityViscous based on
+        # viscosity of oil - assume only one type of substance for all spills
+        # make sure we have spills with valid substances no spills yet
+        subs = sc.get_substances(False)
+        if len(subs) > 0:
+            vo = subs[0].get_viscosity(self.water.get('temperature'))
+            # set thickness_limit
+            self.spreading.set_thickness_limit(vo)
 
     def update(self, num_new_released, sc, time_step):
         '''
