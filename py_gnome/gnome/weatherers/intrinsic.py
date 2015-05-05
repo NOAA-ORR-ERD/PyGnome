@@ -124,13 +124,46 @@ class FayGravityViscous(AddLogger, SpreadingThicknessLimit):
                     relative_bouyancy,
                     blob_init_volume,
                     area,
-                    age):
+                    age,
+                    at_max_area):
         '''
         update area array in place, also return area array
         not including frac_coverage at present
         each blob is defined by its age. This updates the area of each blob,
         as such, use the mean relative_bouyancy for each blob. Still check
         and ensure relative bouyancy is > 0 for all LEs
+
+        :param water_viscosity: viscosity of water
+        :type water_viscosity: float
+        :param relative_bouyancy: relative bouyancy of oil wrt water at release
+            time. This does not change over time.
+        :type relative_bouyancy: float
+        :param blob_init_volume: numpy array of floats containing initial
+            release volume of blob. This is the same for all LEs released
+            together.
+        :type blob_init_volume: numpy array
+        :param area: numpy array of floats containing area of each LE. Assume
+            The LEs with same age belong to the same blob. Sum these up to
+            get the area of the blob to compare it to max_area (or min
+            thickness). Keep updating blob area till max_area is achieved.
+            Equally divide updated_blob_area into the number of LEs used to
+            model the blob.
+        :type area: numpy array
+        :param age: numpy array the same size as area and blob_init_volume.
+            This is the age of each LE. The LEs with the same age belong to
+            the same blob. Age is in seconds.
+        :type age: numpy array of int32
+        :param at_max_area: np.bool array. If a blob reaches max_area beyond
+            which it will not spread, toggle the LEs associated with that blob
+            to True. Max spreading is based on min thickness based on initial
+            viscosity of oil. This is used by Langmuir since the process acts
+            on particles after spreading completes.
+        :type at_max_area: numpy array of bools
+
+        :returns: (updated 'area' array, updated 'at_max_area' array).
+            It also changes the input 'area' array and the 'at_max_area' bool
+            array inplace. However, the input arrays could be copies so best
+            to also return the updates.
         '''
         if np.any(age == 0):
             msg = "use init_area for age == 0"
@@ -175,13 +208,15 @@ class FayGravityViscous(AddLogger, SpreadingThicknessLimit):
                                            age[m_age][0])
                 if blob_area > max_area:
                     area[m_age] = max_area/m_age.sum()
+                    if at_max_area is not None:
+                        at_max_area[m_age] = True
                 else:
                     area[m_age] = blob_area/m_age.sum()
 
                 self.logger.debug(self._pid +
                                   "\tarea after update: {0}".format(blob_area))
 
-        return area
+        return (area, at_max_area)
 
 
 class ConstantArea(AddLogger):
@@ -200,7 +235,8 @@ class ConstantArea(AddLogger):
                     relative_bouyancy=None,
                     blob_init_volume=None,
                     area=None,
-                    age=None):
+                    age=None,
+                    at_max_area=None):
         '''
         return the area array as it was entered since that contains area per
         LE if there is more than one LE. Kept the interface the same as
@@ -240,7 +276,7 @@ class WeatheringData(AddLogger):
                             # init volume of particles released together
                             'bulk_init_volume',
                             'init_mass', 'frac_water', 'frac_lost',
-                            'fay_area',
+                            'fay_area', 'at_max_area',
                             'frac_coverage', 'age',
                             'spill_num'}
 
@@ -601,9 +637,10 @@ class WeatheringData(AddLogger):
                     (v0 * np.exp(kv1 *
                                  data['frac_lost'][s_mask]) *
                      (1 + (fw_d_fref/(1.187 - fw_d_fref)))**2.49)
-            data['fay_area'][s_mask] = \
+            data['fay_area'][s_mask], data['at_max_area'][s_mask] = \
                 self.spreading.update_area(water_kvis,
                                            self._init_relative_bouyancy,
                                            data['bulk_init_volume'][s_mask],
                                            data['fay_area'][s_mask],
-                                           data['age'][s_mask])
+                                           data['age'][s_mask],
+                                           data['at_max_area'][s_mask])

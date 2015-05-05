@@ -36,8 +36,9 @@ def data_arrays(num_elems=10):
     relative_bouyancy = np.asarray([elem_rel_bouy] * num_elems)
     age = np.zeros_like(bulk_init_volume, dtype=int)
     area = np.zeros_like(bulk_init_volume)
+    at_max_area = np.zeros(num_elems, dtype=bool)
 
-    return (bulk_init_volume, relative_bouyancy, age, area)
+    return (bulk_init_volume, relative_bouyancy, age, area, at_max_area)
 
 
 # todo: update tests for new spreading model
@@ -75,22 +76,26 @@ class TestFayGravityViscous:
 
         with pytest.raises(ValueError):
             'relative_bouyancy >= 0'
-            (bulk_init_volume, relative_bouyancy, age, area) = data_arrays()
+            (bulk_init_volume, relative_bouyancy, age, area, at_max_area) = \
+                data_arrays()
             relative_bouyancy[0] = -relative_bouyancy[0]
             age[:] = 900
             self.spread.update_area(water_viscosity,
                                     relative_bouyancy,
                                     bulk_init_volume,
                                     area,
-                                    age)
+                                    age,
+                                    at_max_area)
         with pytest.raises(ValueError):
             'age must be > 0'
-            (bulk_init_volume, relative_bouyancy, age, area) = data_arrays()
+            (bulk_init_volume, relative_bouyancy, age, area, at_max_area) = \
+                data_arrays()
             self.spread.update_area(water_viscosity,
                                     relative_bouyancy,
                                     bulk_init_volume,
                                     age,
-                                    area)
+                                    area,
+                                    at_max_area)
 
     @pytest.mark.parametrize("num", (1, 10))
     def test_values_same_age(self, num):
@@ -98,7 +103,8 @@ class TestFayGravityViscous:
         Compare output of _init_area and _update_thickness to expected output
         returned by self.expected() function.
         '''
-        (bulk_init_volume, relative_bouyancy, age, area) = data_arrays(num)
+        (bulk_init_volume, relative_bouyancy, age, area, at_max_area) = \
+            data_arrays(num)
         area[:] = self.spread.init_area(water_viscosity,
                                         elem_rel_bouy,
                                         bulk_init_volume[0])/len(area)
@@ -114,7 +120,8 @@ class TestFayGravityViscous:
                                 relative_bouyancy,
                                 bulk_init_volume,
                                 area,
-                                age)
+                                age,
+                                at_max_area)
 
         assert np.isclose(area.sum(), p_area)
 
@@ -123,7 +130,7 @@ class TestFayGravityViscous:
         test update_area works correctly for a continuous spill with varying
         age array
         '''
-        (bulk_init_volume, relative_bouyancy, age, area) = \
+        (bulk_init_volume, relative_bouyancy, age, area, at_max_area) = \
             data_arrays(10)
         (a0, area_900) = self.expected(bulk_init_volume[0], 900)
         age[0::2] = 900
@@ -138,7 +145,8 @@ class TestFayGravityViscous:
                                           relative_bouyancy,
                                           bulk_init_volume,
                                           area,
-                                          age)
+                                          age,
+                                          at_max_area)
         assert np.isclose(area[0::2].sum(), area_900)
         assert np.isclose(area[1::2].sum(), area_1800)
 
@@ -146,7 +154,7 @@ class TestFayGravityViscous:
         '''
         vary bulk_init_vol and age
         '''
-        (bulk_init_volume, relative_bouyancy, age, area) = \
+        (bulk_init_volume, relative_bouyancy, age, area, at_max_area) = \
             data_arrays(10)
         relative_bouyancy[0] = 0.1
         age[0::2] = 900
@@ -164,7 +172,8 @@ class TestFayGravityViscous:
                                           relative_bouyancy,
                                           bulk_init_volume,
                                           area,
-                                          age)
+                                          age,
+                                          at_max_area)
         assert np.isclose(area[0::2].sum(), area_900)
         assert np.isclose(area[1::2].sum(), area_1800)
 
@@ -172,7 +181,8 @@ class TestFayGravityViscous:
         '''
         tests that when blob reaches minimum thickness, area no longer changes
         '''
-        (bulk_init_volume, relative_bouyancy, age, area) = data_arrays()
+        (bulk_init_volume, relative_bouyancy, age, area, at_max_area) = \
+            data_arrays()
         area[:] = self.spread.init_area(water_viscosity,
                                         relative_bouyancy[0],
                                         bulk_init_volume[0])
@@ -191,7 +201,8 @@ class TestFayGravityViscous:
                                 relative_bouyancy,
                                 bulk_init_volume,
                                 area,
-                                age)
+                                age,
+                                at_max_area)
         assert np.all(area[:4] == i_area)
         assert np.all(area[4:] > i_area)
 
