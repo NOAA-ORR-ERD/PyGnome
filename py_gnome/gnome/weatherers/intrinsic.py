@@ -85,8 +85,9 @@ class FayGravityViscous(AddLogger):
         area?
         '''
         if np.any(rel_bouy < 0):
-            raise ValueError("Found particles with relative_bouyancy < 0. "
-                             "Area does not handle this case at present.")
+            msg = ("Found particles with relative_bouyancy < 0. "
+                   "Oil is a sinker")
+            self.logger.error(msg)
 
     def _update_blob_area(self, water_viscosity, relative_bouyancy,
                           blob_init_volume, age):
@@ -369,7 +370,17 @@ class WeatheringData(AddLogger):
         :param time_step: timestep for this step
         '''
         water_temp = self.water.get('temperature', 'K')
-        data['density'][mask] = substance.get_density(water_temp)
+        density = substance.get_density(water_temp)
+        if density > self.water.get('density'):
+            msg = ("{0} will sink at given water temperature: {1}. Set density"
+                   " to water density".
+                   format(substance.name,
+                          self.water.get('temperature',
+                                         self.water.units['temperature'])))
+            self.logger.error(msg)
+            data['density'][mask] = self.water.get('density')
+        else:
+            data['density'][mask] = density
 
         if self._init_relative_bouyancy is None:
             rho_h2o = self.water.get('density', 'kg/m^3')

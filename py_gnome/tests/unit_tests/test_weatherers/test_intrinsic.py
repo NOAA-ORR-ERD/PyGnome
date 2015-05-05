@@ -5,6 +5,7 @@ from datetime import datetime, timedelta
 
 import numpy as np
 import pytest
+from testfixtures import log_capture
 
 from gnome import constants
 from gnome.environment import Water
@@ -520,3 +521,33 @@ class TestWeatheringData:
         intrinsic.update(0, sc, default_ts)
         assert sc['fay_area'][0] != sc['fay_area'][1]
         assert np.all(sc['fay_area'] > i_area)
+
+    @log_capture()
+    def test_density_error(self, l):
+        '''
+        log error if init density is less than water
+        '''
+        l.uninstall()
+        rel_time = datetime.now().replace(microsecond=0)
+        (sc, intrinsic) = self.sample_sc_intrinsic(1, rel_time)
+        intrinsic.water.set('temperature', 288, 'K')
+        intrinsic.water.set('salinity', 0, 'psu')
+        new_subs = 'TEXTRACT, STAR ENTERPRISE'
+        sc.spills[0].set('substance', new_subs)
+
+        # substance changed - do a rewind
+        sc.rewind()
+        sc.prepare_for_model_run(intrinsic.array_types)
+
+        num = sc.release_elements(default_ts, rel_time)
+
+        # only capture and test density error
+        l.install()
+        intrinsic.update(num, sc, default_ts)
+        assert all(sc['fay_area'] == 0.)
+
+        msg = ("{0} will sink at given water temperature: {1}. "
+               "Set density to water density".format(new_subs, 288.0))
+        l.check(('gnome.weatherers.intrinsic.WeatheringData',
+                 'ERROR',
+                 msg))
