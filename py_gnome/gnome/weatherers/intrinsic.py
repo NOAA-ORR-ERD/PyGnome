@@ -16,19 +16,12 @@ from gnome.basic_types import oil_status, fate
 from gnome import AddLogger, constants
 
 
-class FayGravityViscous(AddLogger):
+class SpreadingThicknessLimit(object):
     '''
-    Model the FayGravityViscous spreading of the oil. This assumes all LEs
-    released together spread as a blob. The blob can be partitioned into 'N'
-    LEs and the assumption is that the thickness and initial volume of the
-    blob applies to all LEs in it. As such, instead of computing area, lets
-    compute thickness - whether 1 or 10 LEs is used to model the blob, the
-    thickness remains the same.
+    define a mixin for computing the thickness spreading limit based on init
+    oil viscosity. The set_thickness_limit() mixin is used by spreading code
+    and langmuir code.
     '''
-    def __init__(self):
-        self.spreading_const = (1.53, 1.21)
-        self.thickness_limit = None
-
     def set_thickness_limit(self, vo):
         '''
         set the spreading thickness limit based on viscosity
@@ -43,6 +36,20 @@ class FayGravityViscous(AddLogger):
             self.thickness_limit = 1e-5 + 0.9091 * (vo - 1e-6)
         elif vo < 1e-6:
             self.thickness_limit = 1e-5
+
+
+class FayGravityViscous(AddLogger, SpreadingThicknessLimit):
+    '''
+    Model the FayGravityViscous spreading of the oil. This assumes all LEs
+    released together spread as a blob. The blob can be partitioned into 'N'
+    LEs and the assumption is that the thickness and initial volume of the
+    blob applies to all LEs in it. As such, instead of computing area, lets
+    compute thickness - whether 1 or 10 LEs is used to model the blob, the
+    thickness remains the same.
+    '''
+    def __init__(self):
+        self.spreading_const = (1.53, 1.21)
+        self.thickness_limit = None
 
     @lru_cache(4)
     def _gravity_spreading_t0(self,
@@ -206,35 +213,6 @@ class ConstantArea(AddLogger):
     def set_thickness_limit(self, vo):
         '''
         just use constant area so not setting any thickness limit
-        '''
-        pass
-
-
-class Langmuir(AddLogger):
-    '''
-    define a mixin with a couple of functions to model langmuir
-    '''
-    def thickness_limit(self, vo):
-        '''
-        returns the spreading thickness limit based on viscosity
-        The documentation for this was with the Langmuir documentation so
-        it is included as part of the langmuir mixin, but should ask and
-        consider moving this to FayGravityViscous()
-            1. vo >= 1e-4;           limit = 1e-4 m
-            2. 1e-4 > vo >= 1e-6;    limit = 1e-5 + 0.9091*(vo - 1e-6) m
-            3. 1e-6 > vo;            limit = 1e-5 m
-        '''
-        if vo >= 1e-4:
-            return 1e-4
-        elif 1e-4 > vo and vo >= 1e-6:
-            val = 1e-5 + 0.9091 * (vo - 1e-6)
-            return val
-        elif vo < 1e-6:
-            return 1e-5
-
-    def frac_coverage(self, vmax, rel_bouy, thickness):
-        '''
-        return fractional coverage for a blob of oil given
         '''
         pass
 

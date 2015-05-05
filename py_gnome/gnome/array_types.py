@@ -255,8 +255,8 @@ _default_values = {'positions': ((3,), world_point_type, 'positions',
                    'evap_decay_constant': (None, np.float64,
                                            'evap_decay_constant', None),
                    # todo: remove thickness
-                   'thickness': ((), np.float64, 'thickness', 0),
                    'fay_area': ((), np.float64, 'fay_area', 0),
+                   'at_max_area': ((), np.bool, 'at_max_area', False),
 
                    'viscosity': ((), np.float64, 'viscosity', 0),
                    # fractional water content in emulsion
