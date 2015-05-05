@@ -354,6 +354,8 @@ class Wind(serializable.Serializable, Timeseries, Environment):
         .. note:: Invokes self._convert_units() to do the unit conversion.
             Override this method to define the derived object's unit conversion
             functionality
+
+        todo: return data in appropriate significant digits
         """
         datetimeval = super(Wind, self).get_timeseries(datetime, format)
         units = (units, self._user_units)[units is None]
