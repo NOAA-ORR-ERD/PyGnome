@@ -67,6 +67,21 @@ class FayGravityViscous(AddLogger, SpreadingThicknessLimit):
                               relative_bouyancy))**(1./3))
         return t0
 
+    def _time_to_reach_max_area(self,
+                                water_viscosity,
+                                rel_buoy,
+                                blob_init_vol):
+        '''
+        just a convenience function to compute the time to reach max area
+        All inputs are scalars
+        '''
+        max_area = blob_init_vol/self.thickness_limit
+        time = (max_area/(np.pi * self.spreading_const[1] ** 2) *
+                (np.sqrt(water_viscosity) /
+                 (blob_init_vol**2 * constants.gravity * rel_buoy))**(1./3)
+                )**2
+        return time
+
     def init_area(self,
                   water_viscosity,
                   relative_bouyancy,
@@ -191,15 +206,6 @@ class FayGravityViscous(AddLogger, SpreadingThicknessLimit):
             # now update area of old LEs - only update till max area is reached
             max_area = blob_init_volume[m_age][0]/self.thickness_limit
             if area[m_age].sum() < max_area:
-                self.logger.debug(self._pid + "Before update: ")
-                msg = ("\n\trel_bouy: {0}\n"
-                       "\tblob_i_vol: {1}\n"
-                       "\tage: {2}\n"
-                       "\tarea: {3}".
-                       format(relative_bouyancy, blob_init_volume[m_age][0],
-                              age[m_age][0], area[m_age].sum()))
-                self.logger.debug(msg)
-
                 # update area
                 blob_area = \
                     self._update_blob_area(water_viscosity,
