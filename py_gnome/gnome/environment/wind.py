@@ -218,6 +218,14 @@ class Wind(serializable.Serializable, Timeseries, Environment):
         '''
         self.set_wind_data(value, units=self.units)
 
+    def timeseries_to_dict(self):
+        '''
+        when serializing data - round it to 2 decimal places
+        '''
+        ts = self.get_wind_data(units=self.units)
+        ts['value'][:] = np.round(ts['value'], 2)
+        return ts
+
     @property
     def units(self):
         '''
