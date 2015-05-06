@@ -63,7 +63,7 @@ class ObjForTests:
         '''
         self.reset_test_objs()
         num_rel = self.sc.release_elements(time_step, rel_time)
-        self.intrinsic.update(num_rel, self.sc, time_step)
+        self.intrinsic.update(num_rel, self.sc)
 
 
 class TestCleanUpBase:
@@ -156,7 +156,7 @@ class TestSkimmer(ObjForTests):
             num_rel = self.sc.release_elements(time_step, model_time)
             if num_rel > 0:
                 self.sc['frac_water'][:] = avg_frac_water
-            self.intrinsic.update(num_rel, self.sc, time_step)
+            self.intrinsic.update(num_rel, self.sc)
             self.skimmer.prepare_for_model_step(self.sc, time_step, model_time)
 
             self.skimmer.weather_elements(self.sc, time_step, model_time)
@@ -282,7 +282,7 @@ class TestBurn(ObjForTests):
             num = self.sc.release_elements(time_step, model_time)
             if num > 0:
                 self.sc['frac_water'][:] = avg_frac_water
-            self.intrinsic.update(num, self.sc, time_step)
+            self.intrinsic.update(num, self.sc)
 
             dt = timedelta(seconds=time_step)
             burn.prepare_for_model_step(self.sc, time_step, model_time)
@@ -557,7 +557,7 @@ class TestChemicalDispersion(ObjForTests):
                timedelta(seconds=time_step)):
             amt_disp = self.sc.weathering_data['chem_dispersed']
             num_rel = self.sc.release_elements(time_step, model_time)
-            self.intrinsic.update(num_rel, self.sc, time_step)
+            self.intrinsic.update(num_rel, self.sc)
             self.c_disp.prepare_for_model_step(self.sc, time_step, model_time)
 
             self.c_disp.weather_elements(self.sc, time_step, model_time)

@@ -757,7 +757,7 @@ class Model(Serializable):
             # in the next step
             num_released = sc.release_elements(self.time_step, self.model_time)
             if self._weathering_data:
-                self._weathering_data.update(num_released, sc, self.time_step)
+                self._weathering_data.update(num_released, sc)
 
             self.logger.debug("{1._pid} released {0} new elements for step:"
                               " {1.current_time_step} for {1.name}".

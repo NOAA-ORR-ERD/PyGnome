@@ -91,11 +91,6 @@ class FayGravityViscous(AddLogger):
         :param relative_bouyancy: relative bouyance of oil wrt water:
             (rho_water - rho_oil)/rho_water where rho defines density
         :type relative_bouyancy: float
-        :param time_step: age of particle at the end of this model step. If
-            is greater than the time for gravity spreading, then return initial
-            area due to gravity spreading. If this is greater, then set age
-            = time_step - gravity_spreading_time and invoke update_area().
-        :type time_step: float
 
         Equation for gravity spreading:
         ::
@@ -332,7 +327,7 @@ class WeatheringData(AddLogger):
             # set thickness_limit
             self.spreading.set_thickness_limit(vo)
 
-    def update(self, num_new_released, sc, time_step):
+    def update(self, num_new_released, sc):
         '''
         Uses 'substance' properties together with 'water' properties to update
         'density', 'bulk_init_volume', etc
@@ -342,7 +337,7 @@ class WeatheringData(AddLogger):
         newly released particles here.
         '''
         if len(sc) > 0:
-            self._update_intrinsic_props(sc, time_step)
+            self._update_intrinsic_props(sc)
             self._update_weathering_data(num_new_released, sc)
 
     def _update_weathering_data(self, new_LEs, sc):
@@ -403,7 +398,7 @@ class WeatheringData(AddLogger):
             else:
                 sc.weathering_data['amount_released'] = amount_released
 
-    def _update_intrinsic_props(self, sc, time_step):
+    def _update_intrinsic_props(self, sc):
         '''
         - initialize 'density', 'viscosity', and other optional arrays for
         newly released particles.
@@ -418,12 +413,10 @@ class WeatheringData(AddLogger):
                 continue
 
             # could also use 'age' but better to use an uninitialized var since
-            # we might end up changing 'age' to something with less than a
-            # time_step resolution
+            # we might end up changing 'age' to something other than 0
             new_LEs_mask = data['density'] == 0
             if sum(new_LEs_mask) > 0:
-                self._init_new_particles(new_LEs_mask, data, substance,
-                                         time_step)
+                self._init_new_particles(new_LEs_mask, data, substance)
             if sum(~new_LEs_mask) > 0:
                 self._update_old_particles(~new_LEs_mask, data, substance)
 
@@ -455,7 +448,7 @@ class WeatheringData(AddLogger):
 
         sc.update_from_fatedataview(fate='all')
 
-    def _init_new_particles(self, mask, data, substance, time_step):
+    def _init_new_particles(self, mask, data, substance):
         '''
         initialize new particles released together in a given timestep
 
@@ -463,7 +456,6 @@ class WeatheringData(AddLogger):
         :type mask: numpy bool array
         :param data: dict containing numpy arrays
         :param substance: OilProps object defining the substance spilled
-        :param time_step: timestep for this step
         '''
         water_temp = self.water.get('temperature', 'K')
         density = substance.get_density(water_temp)
@@ -505,12 +497,12 @@ class WeatheringData(AddLogger):
 
         # initialize bulk_init_volume and fay_area for new particles per spill
         # other properties must be set (like 'mass', 'density')
-        self._init_data_by_spill(mask, data, substance, time_step)
+        self._init_data_by_spill(mask, data, substance)
 
         # initialize the fate_status array based on positions and status_codes
         self._init_fate_status(mask, data)
 
-    def _init_data_by_spill(self, mask, data, substance, time_step):
+    def _init_data_by_spill(self, mask, data, substance):
         '''
         set bulk_init_volume and fay_area. These are set on a per spill bases
         in addition to per substance.

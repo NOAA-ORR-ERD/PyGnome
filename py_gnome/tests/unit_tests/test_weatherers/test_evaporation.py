@@ -35,7 +35,7 @@ def test_evaporation_no_wind():
                            element_type=et,
                            arr_types=arrays,
                            time_step=time_step)
-    intrinsic.update(sc.num_released, sc, time_step)
+    intrinsic.update(sc.num_released, sc)
     model_time = (sc.spills[0].get('release_time') +
                   timedelta(seconds=time_step))
 
@@ -63,7 +63,7 @@ def test_evaporation(oil, temp, num_elems, on):
                            element_type=et,
                            arr_types=arrays,
                            time_step=time_step)
-    intrinsic.update(sc.num_released, sc, time_step)
+    intrinsic.update(sc.num_released, sc)
     model_time = (sc.spills[0].get('release_time') +
                   timedelta(seconds=time_step))
 

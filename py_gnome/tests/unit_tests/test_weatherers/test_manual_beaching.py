@@ -93,7 +93,7 @@ class TestBeaching(ObjForTests):
             amt = self.sc.weathering_data['observed_beached']
 
             num_rel = self.sc.release_elements(time_step, model_time)
-            self.intrinsic.update(num_rel, self.sc, time_step)
+            self.intrinsic.update(num_rel, self.sc)
             self.b.prepare_for_model_step(self.sc, time_step, model_time)
 
             self.b.weather_elements(self.sc, time_step, model_time)

@@ -61,7 +61,7 @@ class TestWeatherer:
         '''
         time_step = 15 * secs_in_minute
         intrinsic.initialize(test_sc)
-        intrinsic.update(sc.num_released, test_sc, time_step)
+        intrinsic.update(sc.num_released, test_sc)
 
         print '\nsc["mass"]:\n', test_sc['mass']
 
