@@ -256,7 +256,12 @@ _default_values = {'positions': ((3,), world_point_type, 'positions',
                                            'evap_decay_constant', None),
                    # todo: remove thickness
                    'fay_area': ((), np.float64, 'fay_area', 0),
-                   'at_max_area': ((), np.bool, 'at_max_area', False),
+
+                   # decided not to use np.bool since netcdf needs a primitive
+                   # type. The conversion would need to happen between bool on
+                   # write and read in NetCDFOutput - requires more code so
+                   # decided to make it a uint8 instead
+                   'at_max_area': ((), np.uint8, 'at_max_area', False),
 
                    'viscosity': ((), np.float64, 'viscosity', 0),
                    # fractional water content in emulsion
