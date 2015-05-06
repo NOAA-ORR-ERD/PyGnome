@@ -256,11 +256,11 @@ class CatsMover(CyMover, serializable.Serializable):
 class GridCurrentMoverSchema(ObjType, ProcessSchema):
     filename = SchemaNode(String(), missing=drop)
     topology_file = SchemaNode(String(), missing=drop)
-    current_scale = SchemaNode(Float(), default=1)
-    uncertain_duration = SchemaNode(Float(), default=24)
-    uncertain_time_delay = SchemaNode(Float(), default=0)
-    uncertain_along = SchemaNode(Float(), default=.5)
-    uncertain_cross = SchemaNode(Float(), default=.25)
+    current_scale = SchemaNode(Float(), missing=drop)
+    uncertain_duration = SchemaNode(Float(), missing=drop)
+    uncertain_time_delay = SchemaNode(Float(), missing=drop)
+    uncertain_along = SchemaNode(Float(), missing=drop)
+    uncertain_cross = SchemaNode(Float(), missing=drop)
 
 
 class GridCurrentMover(CyMover, serializable.Serializable):
