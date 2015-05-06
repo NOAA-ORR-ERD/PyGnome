@@ -16,29 +16,7 @@ from gnome.basic_types import oil_status, fate
 from gnome import AddLogger, constants
 
 
-class SpreadingThicknessLimit(object):
-    '''
-    define a mixin for computing the thickness spreading limit based on init
-    oil viscosity. The set_thickness_limit() mixin is used by spreading code
-    and langmuir code.
-    '''
-    def set_thickness_limit(self, vo):
-        '''
-        set the spreading thickness limit based on viscosity
-        todo: documented in langmiur docs, just double check this
-            1. vo >= 1e-4;           limit = 1e-4 m
-            2. 1e-4 > vo >= 1e-6;    limit = 1e-5 + 0.9091*(vo - 1e-6) m
-            3. 1e-6 > vo;            limit = 1e-5 m
-        '''
-        if vo >= 1e-4:
-            self.thickness_limit = 1e-4
-        elif 1e-4 > vo and vo >= 1e-6:
-            self.thickness_limit = 1e-5 + 0.9091 * (vo - 1e-6)
-        elif vo < 1e-6:
-            self.thickness_limit = 1e-5
-
-
-class FayGravityViscous(AddLogger, SpreadingThicknessLimit):
+class FayGravityViscous(AddLogger):
     '''
     Model the FayGravityViscous spreading of the oil. This assumes all LEs
     released together spread as a blob. The blob can be partitioned into 'N'
@@ -82,6 +60,21 @@ class FayGravityViscous(AddLogger, SpreadingThicknessLimit):
                 )**2
         return time
 
+    def set_thickness_limit(self, vo):
+        '''
+        set the spreading thickness limit based on viscosity
+        todo: documented in langmiur docs
+            1. vo >= 1e-4;           limit = 1e-4 m
+            2. 1e-4 > vo >= 1e-6;    limit = 1e-5 + 0.9091*(vo - 1e-6) m
+            3. 1e-6 > vo;            limit = 1e-5 m
+        '''
+        if vo >= 1e-4:
+            self.thickness_limit = 1e-4
+        elif 1e-4 > vo and vo >= 1e-6:
+            self.thickness_limit = 1e-5 + 0.9091 * (vo - 1e-6)
+        elif vo < 1e-6:
+            self.thickness_limit = 1e-5
+
     def init_area(self,
                   water_viscosity,
                   relative_bouyancy,
@@ -112,6 +105,16 @@ class FayGravityViscous(AddLogger, SpreadingThicknessLimit):
         a0 = (np.pi*(self.spreading_const[1]**4/self.spreading_const[0]**2)
               * (((blob_init_vol)**5*constants.gravity*relative_bouyancy) /
                  (water_viscosity**2))**(1./6.))
+
+        # highly unlikely to reach max_area, min_thickness during
+        # initialization, but it is possible so add a check for it and log
+        # an error/warning? for it
+        max_area = blob_init_vol/self.thickness_limit
+        a0 = min(a0, max_area)
+        if a0 == max_area:
+            msg = "max_area is achieved during init_area() ..blah! fix"
+            self.logger.error(msg)
+
         return a0
 
     def _check_relative_bouyancy(self, rel_bouy):
@@ -143,7 +146,6 @@ class FayGravityViscous(AddLogger, SpreadingThicknessLimit):
                     at_max_area):
         '''
         update area array in place, also return area array
-        not including frac_coverage at present
         each blob is defined by its age. This updates the area of each blob,
         as such, use the mean relative_bouyancy for each blob. Still check
         and ensure relative bouyancy is > 0 for all LEs
@@ -273,7 +275,15 @@ class WeatheringData(AddLogger):
     '''
     def __init__(self,
                  water,
-                 spreading=FayGravityViscous()):
+                 spreading=FayGravityViscous(),
+                 langmuir=None):
+        '''
+        Consier Langmuir as an environmental process. It is used to update the
+        frac_coverage which gets applied to Area. Let WeatheringData control
+        the invocation of Langmuir to update frac_coverage or maybe directly
+        update 'fay_area' - though need to see if that effects dispersion
+        adversely
+        '''
         self.water = water
         self.spreading = spreading
         self.array_types = {'fate_status', 'positions', 'status_codes',
@@ -289,6 +299,11 @@ class WeatheringData(AddLogger):
         # following used to update viscosity
         self.visc_curvfit_param = 1.5e3     # units are sec^0.5 / m
         self.visc_f_ref = 0.84
+
+        if langmuir is not None:
+            # todo: since langmuir is optionally part of this object, we may
+            # need to persist it upon save
+            self.langmuir = langmuir
 
         # relative_bouyancy - use density at release time. For now
         # temperature is fixed so just compute once and store. When temperature
@@ -650,3 +665,12 @@ class WeatheringData(AddLogger):
                                            data['fay_area'][s_mask],
                                            data['age'][s_mask],
                                            data['at_max_area'][s_mask])
+
+            # update frac_coverage for particles that have reached max area
+            #if self.langmuir is None:
+            #    if np.all(data[s_mask]):
+            #        '''
+            #        all elements in s_mask will have the same area which
+            #        corresponds with min thickness
+            #        '''
+            #        self.langmuir.get_value()
