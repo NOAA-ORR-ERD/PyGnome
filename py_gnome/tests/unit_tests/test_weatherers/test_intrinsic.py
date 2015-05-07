@@ -567,26 +567,21 @@ class TestWeatheringData:
         set langmuir attribute and check that fractional area is being updated
         '''
         rel_time = datetime.now().replace(microsecond=0)
-        (sc1, intrinsic1) = self.sample_sc_intrinsic(1, rel_time)
-
-        # make a copy for testing
-        sc2 = sc1.uncertain_copy()
-        sc2.uncertain = False
-        intrinsic2 = WeatheringData(intrinsic1.water,
-                                    langmuir=Langmuir(constant_wind(5.0, 0)))
-        sc2.prepare_for_model_run(intrinsic2.array_types)
-        intrinsic2.prepare_for_model_run(sc2)
-
+        (sc1, i_1) = self.sample_sc_intrinsic(1, rel_time)
+        i_1.langmuir = Langmuir(constant_wind(5.0, 0))
         num = sc1.release_elements(default_ts, rel_time)
-        intrinsic1.prepare_for_model_run(sc1)
-        intrinsic1.update(num, sc1)
+        i_1.prepare_for_model_run(sc1)
+        i_1.update(num, sc1)
 
-        num = sc2.release_elements(default_ts, rel_time)
-        intrinsic2.update(num, sc2)
-
-        #======================================================================
-        # h2o_kvis = intrinsic1.water.get('kinematic_viscosity',
-        #                                 'square meter per second')
-        # intrinsic1.spreading._time_to_reach_max_area(h2o_kvis,
-        #                                              intrinsic1._init_)
-        #======================================================================
+        h2o_kvis = i_1.water.get('kinematic_viscosity',
+                                 'square meter per second')
+        assert sc1['fay_area'] == sc1['area']
+        assert not sc1['at_max_area']
+        t_to_max_area = \
+            i_1.spreading._time_to_reach_max_area(h2o_kvis,
+                                                  i_1._init_relative_buoyancy,
+                                                  sc1['bulk_init_volume'][0])
+        sc1['age'][:] = np.ceil(t_to_max_area)
+        i_1.update(0, sc1)
+        assert sc1['fay_area'] > sc1['area']
+        assert sc1['at_max_area']

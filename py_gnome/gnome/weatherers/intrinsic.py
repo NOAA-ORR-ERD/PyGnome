@@ -209,15 +209,19 @@ class FayGravityViscous(AddLogger):
                                            relative_bouyancy,
                                            blob_init_volume[m_age][0],
                                            age[m_age][0])
-                if blob_area > max_area:
+                if blob_area >= max_area:
                     area[m_age] = max_area/m_age.sum()
-                    if at_max_area is not None:
-                        at_max_area[m_age] = True
+                    at_max_area[m_age] = True
                 else:
                     area[m_age] = blob_area/m_age.sum()
 
                 self.logger.debug(self._pid +
                                   "\tarea after update: {0}".format(blob_area))
+            else:
+                # area is at max_area - ensure at_max_area is set correctly
+                # at_max_area should always be correctly set
+                if not np.any(at_max_area[m_age]):
+                    at_max_area[m_age] = True
 
         return (area, at_max_area)
 
@@ -534,6 +538,7 @@ class WeatheringData(AddLogger):
                                          data['bulk_init_volume'][s_mask][0])
 
             data['fay_area'][s_mask] = init_blob_area/num
+            data['area'][s_mask] = data['fay_area'][s_mask]
 
     def _init_fate_status(self, update_LEs_mask, data):
         '''
@@ -667,10 +672,13 @@ class WeatheringData(AddLogger):
             # update area for particles that have reached max area and if
             # langmuir is defined
             if self.langmuir is not None:
-                if np.all(data[s_mask]):
+                if np.all(data['at_max_area'][s_mask]):
                     '''
                     all elements in s_mask will have the same area which
-                    corresponds with min thickness
+                    corresponds with min thickness;
+                    however, the density could be different for each LE so
+                    compute the rel_buoy for each LE, then get correcponding
+                    frac_coverage from langmuir per LE
                     '''
                     rel_buoy = \
                         self._get_relative_buoyancy(data['density'][s_mask])
@@ -679,7 +687,6 @@ class WeatheringData(AddLogger):
                                                 rel_buoy,
                                                 self.spreading.thickness_limit)
 
-    @lru_cache(2)
     def _get_relative_buoyancy(self, rho_oil):
         '''
         given density of oil (rho_oil), return the relative_buoyancy:

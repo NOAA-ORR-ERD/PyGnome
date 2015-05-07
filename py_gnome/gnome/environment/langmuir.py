@@ -53,12 +53,19 @@ class Langmuir(Environment, Serializable):
         cr_k = \
             (v_max**2 * 4 * np.pi**2/(thickness * rel_buoy * gravity))**(1./3)
         frac_cov = 1./cr_k
-        if frac_cov < 0.1:
-            return 0.1
-        elif frac_cov > 1.0:
-            return 1.0
 
-        return frac_cov
+        # if rel_buoy is an array, then frac_cov will be an array
+        if not isinstance(frac_cov, np.ndarray):
+            frac_cov = np.asarray([frac_cov], np.float64)
+
+        frac_cov[frac_cov < 0.1] = 0.1
+        frac_cov[frac_cov > 1.0] = 1.0
+
+        if isinstance(cr_k, np.ndarray):
+            return frac_cov
+        else:
+            # must be a scalar
+            return frac_cov[0]
 
     def _wind_speed_bound(self, rel_buoy, thickness):
         '''
