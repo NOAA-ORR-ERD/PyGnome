@@ -11,7 +11,7 @@ np = numpy
 from colander import (SchemaNode,
                       Float, Int, Bool, drop)
 
-from gnome.environment import Environment, Water
+from gnome.environment import Environment, Water, Langmuir
 
 import gnome.utilities.cache
 from gnome.utilities.time_utils import round_time
@@ -476,6 +476,22 @@ class Model(Serializable):
 
         return False
 
+    def find_by_class(self, obj, collection, ret_all=False):
+        '''
+        Look for an object that isinstance() of obj in specified colleciton.
+        By default, it will return the first object of this type.
+        To get all obects of this type, set ret_all to True
+        '''
+        all_objs = []
+        for item in getattr(self, collection):
+            if isinstance(item, obj):
+                if not ret_all:
+                    return obj
+                else:
+                    all_objs.append(obj)
+
+        return all_objs
+
     def _order_weatherers(self):
         'use weatherer_sort to sort the weatherers'
         s_weatherers = sorted(self.weatherers, key=weatherer_sort)
@@ -524,12 +540,18 @@ class Model(Serializable):
 
             if self._weathering_data is None:
                 self._weathering_data = WeatheringData(self.water)
+                langmuir = self.find_by_class(Langmuir, 'environment')
+
+                # use the first Langmuir object in environ collection
+                if langmuir is not None:
+                    self._weathering_data.langmuir = langmuir
 
             # this adds 'density' array. It also adds data_arrays used to
             # compute area if Evaporation is included since it requires 'area'
             array_types.update(self._weathering_data.array_types)
         else:
-            # reset to None if no weatherers found
+            # reset to None if no weatherers found - don't want to carry around
+            # all the extra data arrays
             self._weathering_data = None
 
         for environment in self.environment:
@@ -553,7 +575,7 @@ class Model(Serializable):
             sc.prepare_for_model_run(array_types)
             if self._weathering_data:
                 # do this only if we have user has added spills!
-                self._weathering_data.initialize(sc)
+                self._weathering_data.prepare_for_model_run(sc)
 
         # outputters need array_types, so this needs to come after those
         # have been updated.
