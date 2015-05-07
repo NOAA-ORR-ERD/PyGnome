@@ -418,7 +418,10 @@ class WeatheringData(AddLogger):
             if sum(new_LEs_mask) > 0:
                 self._init_new_particles(new_LEs_mask, data, substance)
             if sum(~new_LEs_mask) > 0:
-                self._update_old_particles(~new_LEs_mask, data, substance)
+                self._update_old_particles(~new_LEs_mask,
+                                           data,
+                                           substance,
+                                           sc.current_time_stamp)
 
         sc.update_from_fatedataview(fate='all')
 
@@ -600,7 +603,7 @@ class WeatheringData(AddLogger):
 
         return k_rho
 
-    def _update_old_particles(self, mask, data, substance):
+    def _update_old_particles(self, mask, data, substance, model_time):
         '''
         update density, area
         '''
@@ -659,10 +662,13 @@ class WeatheringData(AddLogger):
                                            data['at_max_area'][s_mask])
 
             # update frac_coverage for particles that have reached max area
-            #if self.langmuir is None:
-            #    if np.all(data[s_mask]):
-            #        '''
-            #        all elements in s_mask will have the same area which
-            #        corresponds with min thickness
-            #        '''
-            #        self.langmuir.get_value()
+            if self.langmuir is None:
+                if np.all(data[s_mask]):
+                    '''
+                    all elements in s_mask will have the same area which
+                    corresponds with min thickness
+                    '''
+                    data['frac_coverage'][s_mask] = \
+                        self.langmuir.get_value(model_time,
+                                                self._init_relative_bouyancy,
+                                                self.spreading.thickness_limit)
