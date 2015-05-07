@@ -295,10 +295,9 @@ class WeatheringData(AddLogger):
         self.visc_curvfit_param = 1.5e3     # units are sec^0.5 / m
         self.visc_f_ref = 0.84
 
-        if langmuir is not None:
-            # todo: since langmuir is optionally part of this object, we may
-            # need to persist it upon save
-            self.langmuir = langmuir
+        # todo: since langmuir is optionally part of this object, we may
+        # need to persist it upon save
+        self.langmuir = langmuir
 
         # relative_bouyancy - use density at release time. For now
         # temperature is fixed so just compute once and store. When temperature
@@ -662,7 +661,7 @@ class WeatheringData(AddLogger):
                                            data['at_max_area'][s_mask])
 
             # update frac_coverage for particles that have reached max area
-            if self.langmuir is None:
+            if self.langmuir is not None:
                 if np.all(data[s_mask]):
                     '''
                     all elements in s_mask will have the same area which
