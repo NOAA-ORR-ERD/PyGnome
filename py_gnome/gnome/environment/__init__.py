@@ -7,6 +7,7 @@ from waves import Waves, WavesSchema
 from tide import Tide, TideSchema
 from wind import Wind, WindSchema, constant_wind
 from running_average import RunningAverage, RunningAverageSchema
+from langmuir import Langmuir
 
 
 __all__ = [Environment,
@@ -20,4 +21,5 @@ __all__ = [Environment,
            WindSchema,
            RunningAverage,
            RunningAverageSchema,
-           constant_wind]
+           constant_wind,
+           Langmuir]
