@@ -288,7 +288,7 @@ class WeatheringData(AddLogger):
                             'bulk_init_volume',
                             'init_mass', 'frac_water', 'frac_lost',
                             'fay_area', 'at_max_area',
-                            'frac_coverage', 'age',
+                            'area', 'age',
                             'spill_num'}
 
         # following used to update viscosity
@@ -302,9 +302,9 @@ class WeatheringData(AddLogger):
         # relative_bouyancy - use density at release time. For now
         # temperature is fixed so just compute once and store. When temperature
         # varies over time, may want to do something different
-        self._init_relative_bouyancy = None
+        self._init_relative_buoyancy = None
 
-    def initialize(self, sc):
+    def prepare_for_model_run(self, sc):
         '''
         1. initialize standard keys:
            avg_density, floating, amount_released, avg_viscosity to 0.0
@@ -325,6 +325,10 @@ class WeatheringData(AddLogger):
             vo = subs[0].get_viscosity(self.water.get('temperature'))
             # set thickness_limit
             self.spreading.set_thickness_limit(vo)
+
+        # reset _init_relative_buoyancy for every run
+        # make it None so no stale data
+        self._init_relative_buoyancy = None
 
     def update(self, num_new_released, sc):
         '''
@@ -472,10 +476,9 @@ class WeatheringData(AddLogger):
         else:
             data['density'][mask] = density
 
-        if self._init_relative_bouyancy is None:
-            rho_h2o = self.water.get('density', 'kg/m^3')
-            self._init_relative_bouyancy = \
-                (rho_h2o - data['density'][mask][0])/rho_h2o
+        if self._init_relative_buoyancy is None:
+            self._init_relative_buoyancy = \
+                self._get_relative_buoyancy(data['density'][mask][0])
 
         # initialize mass_components -
         # sub-select mass_components array by substance.num_components.
@@ -527,7 +530,7 @@ class WeatheringData(AddLogger):
                 (data['mass'][s_mask][0]/data['density'][s_mask][0]) * num
             init_blob_area = \
                 self.spreading.init_area(water_kvis,
-                                         self._init_relative_bouyancy,
+                                         self._init_relative_buoyancy,
                                          data['bulk_init_volume'][s_mask][0])
 
             data['fay_area'][s_mask] = init_blob_area/num
@@ -654,20 +657,33 @@ class WeatheringData(AddLogger):
                      (1 + (fw_d_fref/(1.187 - fw_d_fref)))**2.49)
             data['fay_area'][s_mask], data['at_max_area'][s_mask] = \
                 self.spreading.update_area(water_kvis,
-                                           self._init_relative_bouyancy,
+                                           self._init_relative_buoyancy,
                                            data['bulk_init_volume'][s_mask],
                                            data['fay_area'][s_mask],
                                            data['age'][s_mask],
                                            data['at_max_area'][s_mask])
 
-            # update frac_coverage for particles that have reached max area
+            data['area'][s_mask] = data['fay_area'][s_mask]
+            # update area for particles that have reached max area and if
+            # langmuir is defined
             if self.langmuir is not None:
                 if np.all(data[s_mask]):
                     '''
                     all elements in s_mask will have the same area which
                     corresponds with min thickness
                     '''
-                    data['frac_coverage'][s_mask] = \
+                    rel_buoy = \
+                        self._get_relative_buoyancy(data['density'][s_mask])
+                    data['area'][s_mask] *= \
                         self.langmuir.get_value(model_time,
-                                                self._init_relative_bouyancy,
+                                                rel_buoy,
                                                 self.spreading.thickness_limit)
+
+    @lru_cache(2)
+    def _get_relative_buoyancy(self, rho_oil):
+        '''
+        given density of oil (rho_oil), return the relative_buoyancy:
+            (rho_water - rho_oil)/rho_water
+        '''
+        rho_h2o = self.water.get('density', 'kg/m^3')
+        return (rho_h2o - rho_oil)/rho_h2o

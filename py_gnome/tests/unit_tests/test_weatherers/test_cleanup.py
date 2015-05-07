@@ -55,7 +55,7 @@ class ObjForTests:
         self.sc.rewind()
         self.sc.rewind()
         self.sc.prepare_for_model_run(self.intrinsic.array_types)
-        self.intrinsic.initialize(self.sc)
+        self.intrinsic.prepare_for_model_run(self.sc)
 
     def reset_and_release(self):
         '''

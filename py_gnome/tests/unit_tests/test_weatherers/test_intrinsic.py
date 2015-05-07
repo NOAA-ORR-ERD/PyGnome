@@ -8,7 +8,7 @@ import pytest
 from testfixtures import log_capture
 
 from gnome import constants
-from gnome.environment import Water
+from gnome.environment import Water, Langmuir, constant_wind
 from gnome.weatherers.intrinsic import FayGravityViscous, WeatheringData
 from gnome.spill import point_line_release_spill
 from gnome.spill_container import SpillContainer
@@ -215,7 +215,7 @@ class TestWeatheringData:
         sc.prepare_for_model_run(intrinsic.array_types)
 
         # test initialization as well
-        intrinsic.initialize(sc)
+        intrinsic.prepare_for_model_run(sc)
         for val in sc.weathering_data.values():
             assert val == 0.0
 
@@ -406,7 +406,7 @@ class TestWeatheringData:
         sc.prepare_for_model_run(intrinsic.array_types)
 
         # test initialization as well
-        intrinsic.initialize(sc)
+        intrinsic.prepare_for_model_run(sc)
         for val in sc.weathering_data.values():
             assert val == 0.0
 
@@ -477,7 +477,7 @@ class TestWeatheringData:
         assert np.all(sc['status_codes'][still_beached] == oil_status.on_land)
         assert np.all(sc['fate_status'][still_beached] == bt_fate.non_weather)
         assert np.all(sc['fate_status'][refloat] == bt_fate.subsurf_weather)
-        assert np.all(sc['status_codes'][refloat] == oil_status.in_water) 
+        assert np.all(sc['status_codes'][refloat] == oil_status.in_water)
 
     def test_bulk_init_volume_fay_area_two_spills(self):
         '''
@@ -500,7 +500,7 @@ class TestWeatheringData:
         print b_init_vol
 
         sc.prepare_for_model_run(intrinsic.array_types)
-        intrinsic.initialize(sc)
+        intrinsic.prepare_for_model_run(sc)
 
         # release elements
         num = sc.release_elements(default_ts, rel_time)
@@ -548,3 +548,45 @@ class TestWeatheringData:
         l.check(('gnome.weatherers.intrinsic.WeatheringData',
                  'ERROR',
                  msg))
+
+    def test_no_substance(self):
+        rel_time = datetime.now().replace(microsecond=0)
+        (sc, intrinsic) = self.sample_sc_intrinsic(1, rel_time)
+        sc.spills[0].set('substance', None)
+        # substance changed - do a rewind
+        sc.rewind()
+        sc.prepare_for_model_run(intrinsic.array_types)
+        intrinsic.prepare_for_model_run(sc)
+
+        num = sc.release_elements(default_ts, rel_time)
+        intrinsic.update(num, sc)
+        intrinsic.update(0, sc)
+
+    def test_langmuir(self):
+        '''
+        set langmuir attribute and check that fractional area is being updated
+        '''
+        rel_time = datetime.now().replace(microsecond=0)
+        (sc1, intrinsic1) = self.sample_sc_intrinsic(1, rel_time)
+
+        # make a copy for testing
+        sc2 = sc1.uncertain_copy()
+        sc2.uncertain = False
+        intrinsic2 = WeatheringData(intrinsic1.water,
+                                    langmuir=Langmuir(constant_wind(5.0, 0)))
+        sc2.prepare_for_model_run(intrinsic2.array_types)
+        intrinsic2.prepare_for_model_run(sc2)
+
+        num = sc1.release_elements(default_ts, rel_time)
+        intrinsic1.prepare_for_model_run(sc1)
+        intrinsic1.update(num, sc1)
+
+        num = sc2.release_elements(default_ts, rel_time)
+        intrinsic2.update(num, sc2)
+
+        #======================================================================
+        # h2o_kvis = intrinsic1.water.get('kinematic_viscosity',
+        #                                 'square meter per second')
+        # intrinsic1.spreading._time_to_reach_max_area(h2o_kvis,
+        #                                              intrinsic1._init_)
+        #======================================================================
