@@ -337,10 +337,10 @@ class WeatheringData(AddLogger):
         newly released particles here.
         '''
         if len(sc) > 0:
-            self._update_intrinsic_props(sc)
-            self._update_weathering_data(num_new_released, sc)
+            self._update_weathering_dataarrays(sc)
+            self._update_aggregated_data(num_new_released, sc)
 
-    def _update_weathering_data(self, new_LEs, sc):
+    def _update_aggregated_data(self, new_LEs, sc):
         '''
         intrinsic LE properties not set by any weatherer so let SpillContainer
         set these - will user be able to use select weatherers? Currently,
@@ -398,7 +398,7 @@ class WeatheringData(AddLogger):
             else:
                 sc.weathering_data['amount_released'] = amount_released
 
-    def _update_intrinsic_props(self, sc):
+    def _update_weathering_dataarrays(self, sc):
         '''
         - initialize 'density', 'viscosity', and other optional arrays for
         newly released particles.
