@@ -24,7 +24,7 @@ class GeoJsonSchema(BaseSchema):
     output_dir = SchemaNode(String(), missing=drop)
 
 
-class GeoJson(Outputter, Serializable):
+class GeoJsonTrajectoryOut(Outputter, Serializable):
     '''
     class that outputs GNOME results in a geojson format. The output is a
     collection of Features. Each Feature contains a Point object with
@@ -86,11 +86,11 @@ class GeoJson(Outputter, Serializable):
         self.round_to = round_to
         self.output_dir = output_dir
 
-        super(GeoJson, self).__init__(**kwargs)
+        super(GeoJsonTrajectoryOut, self).__init__(**kwargs)
 
     def write_output(self, step_num, islast_step=False):
         'dump data in geojson format'
-        super(GeoJson, self).write_output(step_num, islast_step)
+        super(GeoJsonTrajectoryOut, self).write_output(step_num, islast_step)
 
         if not self._write_step:
             return None
@@ -156,7 +156,7 @@ class GeoJson(Outputter, Serializable):
 
     def rewind(self):
         'remove previously written files'
-        super(GeoJson, self).rewind()
+        super(GeoJsonTrajectoryOut, self).rewind()
         self.clean_output_files()
 
     def clean_output_files(self):
