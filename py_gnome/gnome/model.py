@@ -490,6 +490,9 @@ class Model(Serializable):
                 else:
                     all_objs.append(obj)
 
+        if len(all_objs) == 0:
+            return None
+
         return all_objs
 
     def _order_weatherers(self):
