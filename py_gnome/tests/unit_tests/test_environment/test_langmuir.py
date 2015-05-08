@@ -5,7 +5,8 @@ from datetime import datetime
 
 import pytest
 
-from gnome.environment import constant_wind, Langmuir
+from gnome.environment import constant_wind
+from gnome.weatherers import Langmuir
 
 
 rel_buoy = 0.2

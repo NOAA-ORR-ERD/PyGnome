@@ -18,7 +18,7 @@ from gnome.utilities import inf_datetime
 from gnome.persist import load
 
 import gnome.map
-from gnome.environment import Wind, Tide, constant_wind, Water, Langmuir
+from gnome.environment import Wind, Tide, constant_wind, Water
 from gnome.model import Model
 
 from gnome.spill import Spill, SpatialRelease, point_line_release_spill
@@ -859,17 +859,15 @@ def test_all_weatherers_in_model(model, add_langmuir):
     '''
     model.weatherers += HalfLifeWeatherer()
 
-    if add_langmuir:
-        wind = constant_wind(5.0, 0)
-        langmuir = Langmuir(wind)
-        model.environment += langmuir
-        assert wind in model.environment
+    #==========================================================================
+    # if add_langmuir:
+    #     wind = constant_wind(5.0, 0)
+    #     langmuir = Langmuir(wind)
+    #     model.environment += langmuir
+    #     assert wind in model.environment
+    #==========================================================================
 
     model.full_run()
-
-    if add_langmuir:
-        assert (model._weathering_data.langmuir is
-                model.find_by_class(Langmuir, 'environment'))
 
     expected_keys = {'mass_components'}
     assert expected_keys.issubset(model.spills.LE_data)

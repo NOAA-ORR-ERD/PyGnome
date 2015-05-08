@@ -9,19 +9,19 @@ import numpy as np
 from gnome.utilities.serializable import Serializable, Field
 from gnome.environment import constant_wind, WindSchema
 from gnome.constants import gravity
-from .environment import Environment
+from .core import Weatherer
 
 from gnome.persist.base_schema import ObjType
 
 
-class Langmuir(Environment, Serializable):
+class Langmuir(Weatherer, Serializable):
     '''
     Easiest to define this as an environmental process
     WeatheringData uses it to set the fractional_coverage for
     '''
     _schema = ObjType
 
-    _state = copy.deepcopy(Environment._state)
+    _state = copy.deepcopy(Weatherer._state)
     _state += [Field('wind', update=True, save=True, save_reference=True)]
 
     def __init__(self,
@@ -31,6 +31,7 @@ class Langmuir(Environment, Serializable):
         initialize wind to (0, 0) if it is None
         '''
         super(Langmuir, self).__init__(**kwargs)
+        self.array_types.update(('area', ))
 
         if wind is None:
             self.wind = constant_wind(0, 0)
@@ -78,6 +79,12 @@ class Langmuir(Environment, Serializable):
         v_max = np.sqrt((1./0.1)**3 * thickness * rel_buoy * gravity /
                         (4 * np.pi**2))/0.005
         return (v_min, v_max)
+
+    def weather_elements(self):
+        '''
+        set the 'area' array based on the Langmuir process
+        '''
+        pass
 
     def serialize(self, json_='webapi'):
         """

@@ -11,7 +11,7 @@ np = numpy
 from colander import (SchemaNode,
                       Float, Int, Bool, drop)
 
-from gnome.environment import Environment, Water, Langmuir
+from gnome.environment import Environment, Water
 
 import gnome.utilities.cache
 from gnome.utilities.time_utils import round_time
@@ -543,11 +543,6 @@ class Model(Serializable):
 
             if self._weathering_data is None:
                 self._weathering_data = WeatheringData(self.water)
-                langmuir = self.find_by_class(Langmuir, 'environment')
-
-                # use the first Langmuir object in environ collection
-                if langmuir is not None:
-                    self._weathering_data.langmuir = langmuir
 
             # this adds 'density' array. It also adds data_arrays used to
             # compute area if Evaporation is included since it requires 'area'

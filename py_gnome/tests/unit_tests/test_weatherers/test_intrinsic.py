@@ -8,7 +8,7 @@ import pytest
 from testfixtures import log_capture
 
 from gnome import constants
-from gnome.environment import Water, Langmuir, constant_wind
+from gnome.environment import Water, constant_wind
 from gnome.weatherers.intrinsic import FayGravityViscous, WeatheringData
 from gnome.spill import point_line_release_spill
 from gnome.spill_container import SpillContainer
@@ -562,6 +562,7 @@ class TestWeatheringData:
         intrinsic.update(num, sc)
         intrinsic.update(0, sc)
 
+    @pytest.mark.skipif
     def test_langmuir(self):
         '''
         set langmuir attribute and check that fractional area is being updated

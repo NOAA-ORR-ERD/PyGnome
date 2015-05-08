@@ -274,8 +274,7 @@ class WeatheringData(AddLogger):
     '''
     def __init__(self,
                  water,
-                 spreading=FayGravityViscous(),
-                 langmuir=None):
+                 spreading=FayGravityViscous()):
         '''
         Consier Langmuir as an environmental process. It is used to update the
         frac_coverage which gets applied to Area. Let WeatheringData control
@@ -298,10 +297,6 @@ class WeatheringData(AddLogger):
         # following used to update viscosity
         self.visc_curvfit_param = 1.5e3     # units are sec^0.5 / m
         self.visc_f_ref = 0.84
-
-        # todo: since langmuir is optionally part of this object, we may
-        # need to persist it upon save
-        self.langmuir = langmuir
 
         # relative_bouyancy - use density at release time. For now
         # temperature is fixed so just compute once and store. When temperature
@@ -669,23 +664,6 @@ class WeatheringData(AddLogger):
                                            data['at_max_area'][s_mask])
 
             data['area'][s_mask] = data['fay_area'][s_mask]
-            # update area for particles that have reached max area and if
-            # langmuir is defined
-            if self.langmuir is not None:
-                if np.all(data['at_max_area'][s_mask]):
-                    '''
-                    all elements in s_mask will have the same area which
-                    corresponds with min thickness;
-                    however, the density could be different for each LE so
-                    compute the rel_buoy for each LE, then get correcponding
-                    frac_coverage from langmuir per LE
-                    '''
-                    rel_buoy = \
-                        self._get_relative_buoyancy(data['density'][s_mask])
-                    data['area'][s_mask] *= \
-                        self.langmuir.get_value(model_time,
-                                                rel_buoy,
-                                                self.spreading.thickness_limit)
 
     def _get_relative_buoyancy(self, rho_oil):
         '''
