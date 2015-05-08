@@ -16,7 +16,29 @@ from gnome.basic_types import oil_status, fate
 from gnome import AddLogger, constants
 
 
-class FayGravityViscous(AddLogger):
+class SpreadingThicknessLimit(object):
+    '''
+    define a mixin for computing the thickness spreading limit based on init
+    oil viscosity. The set_thickness_limit() mixin is used by spreading code
+    and langmuir code.
+    '''
+    def set_thickness_limit(self, vo):
+        '''
+        set the spreading thickness limit based on viscosity
+        todo: documented in langmiur docs, just double check this
+            1. vo >= 1e-4;           limit = 1e-4 m
+            2. 1e-4 > vo >= 1e-6;    limit = 1e-5 + 0.9091*(vo - 1e-6) m
+            3. 1e-6 > vo;            limit = 1e-5 m
+        '''
+        if vo >= 1e-4:
+            self.thickness_limit = 1e-4
+        elif 1e-4 > vo and vo >= 1e-6:
+            self.thickness_limit = 1e-5 + 0.9091 * (vo - 1e-6)
+        elif vo < 1e-6:
+            self.thickness_limit = 1e-5
+
+
+class FayGravityViscous(AddLogger, SpreadingThicknessLimit):
     '''
     Model the FayGravityViscous spreading of the oil. This assumes all LEs
     released together spread as a blob. The blob can be partitioned into 'N'
@@ -27,7 +49,7 @@ class FayGravityViscous(AddLogger):
     '''
     def __init__(self):
         self.spreading_const = (1.53, 1.21)
-        self.thickness_limit = .0001
+        self.thickness_limit = None
 
     @lru_cache(4)
     def _gravity_spreading_t0(self,
@@ -44,6 +66,21 @@ class FayGravityViscous(AddLogger):
               (blob_init_vol/(water_viscosity * constants.gravity *
                               relative_bouyancy))**(1./3))
         return t0
+
+    def _time_to_reach_max_area(self,
+                                water_viscosity,
+                                rel_buoy,
+                                blob_init_vol):
+        '''
+        just a convenience function to compute the time to reach max area
+        All inputs are scalars
+        '''
+        max_area = blob_init_vol/self.thickness_limit
+        time = (max_area/(np.pi * self.spreading_const[1] ** 2) *
+                (np.sqrt(water_viscosity) /
+                 (blob_init_vol**2 * constants.gravity * rel_buoy))**(1./3)
+                )**2
+        return time
 
     def init_area(self,
                   water_viscosity,
@@ -102,13 +139,46 @@ class FayGravityViscous(AddLogger):
                     relative_bouyancy,
                     blob_init_volume,
                     area,
-                    age):
+                    age,
+                    at_max_area):
         '''
         update area array in place, also return area array
         not including frac_coverage at present
         each blob is defined by its age. This updates the area of each blob,
         as such, use the mean relative_bouyancy for each blob. Still check
         and ensure relative bouyancy is > 0 for all LEs
+
+        :param water_viscosity: viscosity of water
+        :type water_viscosity: float
+        :param relative_bouyancy: relative bouyancy of oil wrt water at release
+            time. This does not change over time.
+        :type relative_bouyancy: float
+        :param blob_init_volume: numpy array of floats containing initial
+            release volume of blob. This is the same for all LEs released
+            together.
+        :type blob_init_volume: numpy array
+        :param area: numpy array of floats containing area of each LE. Assume
+            The LEs with same age belong to the same blob. Sum these up to
+            get the area of the blob to compare it to max_area (or min
+            thickness). Keep updating blob area till max_area is achieved.
+            Equally divide updated_blob_area into the number of LEs used to
+            model the blob.
+        :type area: numpy array
+        :param age: numpy array the same size as area and blob_init_volume.
+            This is the age of each LE. The LEs with the same age belong to
+            the same blob. Age is in seconds.
+        :type age: numpy array of int32
+        :param at_max_area: np.bool array. If a blob reaches max_area beyond
+            which it will not spread, toggle the LEs associated with that blob
+            to True. Max spreading is based on min thickness based on initial
+            viscosity of oil. This is used by Langmuir since the process acts
+            on particles after spreading completes.
+        :type at_max_area: numpy array of bools
+
+        :returns: (updated 'area' array, updated 'at_max_area' array).
+            It also changes the input 'area' array and the 'at_max_area' bool
+            array inplace. However, the input arrays could be copies so best
+            to also return the updates.
         '''
         if np.any(age == 0):
             msg = "use init_area for age == 0"
@@ -136,15 +206,6 @@ class FayGravityViscous(AddLogger):
             # now update area of old LEs - only update till max area is reached
             max_area = blob_init_volume[m_age][0]/self.thickness_limit
             if area[m_age].sum() < max_area:
-                self.logger.debug(self._pid + "Before update: ")
-                msg = ("\n\trel_bouy: {0}\n"
-                       "\tblob_i_vol: {1}\n"
-                       "\tage: {2}\n"
-                       "\tarea: {3}".
-                       format(relative_bouyancy, blob_init_volume[m_age][0],
-                              age[m_age][0], area[m_age].sum()))
-                self.logger.debug(msg)
-
                 # update area
                 blob_area = \
                     self._update_blob_area(water_viscosity,
@@ -153,13 +214,15 @@ class FayGravityViscous(AddLogger):
                                            age[m_age][0])
                 if blob_area > max_area:
                     area[m_age] = max_area/m_age.sum()
+                    if at_max_area is not None:
+                        at_max_area[m_age] = True
                 else:
                     area[m_age] = blob_area/m_age.sum()
 
                 self.logger.debug(self._pid +
                                   "\tarea after update: {0}".format(blob_area))
 
-        return area
+        return (area, at_max_area)
 
 
 class ConstantArea(AddLogger):
@@ -178,7 +241,8 @@ class ConstantArea(AddLogger):
                     relative_bouyancy=None,
                     blob_init_volume=None,
                     area=None,
-                    age=None):
+                    age=None,
+                    at_max_area=None):
         '''
         return the area array as it was entered since that contains area per
         LE if there is more than one LE. Kept the interface the same as
@@ -188,6 +252,12 @@ class ConstantArea(AddLogger):
             return self.area
         else:
             return area
+
+    def set_thickness_limit(self, vo):
+        '''
+        just use constant area so not setting any thickness limit
+        '''
+        pass
 
 
 class WeatheringData(AddLogger):
@@ -212,7 +282,7 @@ class WeatheringData(AddLogger):
                             # init volume of particles released together
                             'bulk_init_volume',
                             'init_mass', 'frac_water', 'frac_lost',
-                            'fay_area',
+                            'fay_area', 'at_max_area',
                             'frac_coverage', 'age',
                             'spill_num'}
 
@@ -228,13 +298,24 @@ class WeatheringData(AddLogger):
     def initialize(self, sc):
         '''
         1. initialize standard keys:
-        avg_density, floating, amount_released, avg_viscosity to 0.0
+           avg_density, floating, amount_released, avg_viscosity to 0.0
         2. set init_density for all ElementType objects in each Spill
+        3. set spreading thickness limit based on viscosity of oil at
+           water temperature which is constant for now.
         '''
         # nothing released yet - set everything to 0.0
         for key in ('avg_density', 'floating', 'amount_released',
                     'avg_viscosity', 'beached'):
             sc.weathering_data[key] = 0.0
+
+        # initialize the thickness_limit for FayGravityViscous based on
+        # viscosity of oil - assume only one type of substance for all spills
+        # make sure we have spills with valid substances no spills yet
+        subs = sc.get_substances(False)
+        if len(subs) > 0:
+            vo = subs[0].get_viscosity(self.water.get('temperature'))
+            # set thickness_limit
+            self.spreading.set_thickness_limit(vo)
 
     def update(self, num_new_released, sc, time_step):
         '''
@@ -562,9 +643,10 @@ class WeatheringData(AddLogger):
                     (v0 * np.exp(kv1 *
                                  data['frac_lost'][s_mask]) *
                      (1 + (fw_d_fref/(1.187 - fw_d_fref)))**2.49)
-            data['fay_area'][s_mask] = \
+            data['fay_area'][s_mask], data['at_max_area'][s_mask] = \
                 self.spreading.update_area(water_kvis,
                                            self._init_relative_bouyancy,
                                            data['bulk_init_volume'][s_mask],
                                            data['fay_area'][s_mask],
-                                           data['age'][s_mask])
+                                           data['age'][s_mask],
+                                           data['at_max_area'][s_mask])

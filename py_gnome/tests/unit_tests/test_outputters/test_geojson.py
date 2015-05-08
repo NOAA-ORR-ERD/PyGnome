@@ -8,7 +8,7 @@ from datetime import timedelta
 import numpy as np
 import pytest
 
-from gnome.outputters import GeoJson
+from gnome.outputters import GeoJsonTrajectoryOut
 from gnome.spill import SpatialRelease, Spill, point_line_release_spill
 from gnome.basic_types import oil_status
 
@@ -38,7 +38,7 @@ def model(sample_model, output_dir):
                              release_time=model.start_time)
 
     model.spills += Spill(release)
-    model.outputters += GeoJson(output_dir=output_dir)
+    model.outputters += GeoJsonTrajectoryOut(output_dir=output_dir)
     model.rewind()
 
     return model
@@ -46,7 +46,7 @@ def model(sample_model, output_dir):
 
 def test_init():
     'simple initialization passes'
-    g = GeoJson()
+    g = GeoJsonTrajectoryOut()
     assert g.output_dir is None
     assert g.round_to == 4
     assert g.round_data
@@ -96,8 +96,8 @@ def test_geojson_multipoint_output(model):
     model.rewind()
     round_to = model.outputters[0].round_to
     for step in model:
-        fc = step['GeoJson']['feature_collection']['features']
-        assert 'output_filename' not in step['GeoJson']
+        fc = step['GeoJsonTrajectoryOut']['feature_collection']['features']
+        assert 'output_filename' not in step['GeoJsonTrajectoryOut']
         for feature in fc:
             if feature['properties']['sc_type'] == 'uncertain':
                 uncertain = True
