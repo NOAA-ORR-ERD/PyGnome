@@ -59,6 +59,7 @@ public:
 						CATSMover_c ();
 	virtual			   ~CATSMover_c () { Dispose (); }
 	virtual void		Dispose ();
+	virtual OSErr		InitMover ();
 	virtual OSErr		AddUncertainty(long setIndex, long leIndex,VelocityRec *patVelocity,double timeStep,Boolean useEddyUncertainty);
 	void				SetRefPosition(WorldPoint3D pos) {this->refPt3D = pos; }
 	void				GetRefPosition (WorldPoint3D *pos) { (*pos) = this->refPt3D; }
@@ -78,6 +79,7 @@ public:
 	virtual Boolean		VelocityStrAtPoint(WorldPoint3D wp, char *velStr);
 	VelocityFH GetVelocityHdl();
 	LongPointHdl GetPointsHdl(void);
+	WORLDPOINTH GetWorldPointsHdl(void);
 	TopologyHdl GetTopologyHdl(void);
 	WORLDPOINTH	GetTriangleCenters();
 
