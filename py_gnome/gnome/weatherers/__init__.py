@@ -5,7 +5,7 @@ from natural_dispersion import NaturalDispersion
 from intrinsic import WeatheringData
 from cleanup import Skimmer, Burn, ChemicalDispersion
 from manual_beaching import Beaching
-from langmuir import Langmuir
+from spreading import Langmuir
 
 __all__ = [Weatherer,
            HalfLifeWeatherer,
