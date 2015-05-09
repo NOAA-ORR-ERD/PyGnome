@@ -37,7 +37,7 @@ class TestLangmuir:
         '''
         self.l.wind.timeseries = (self.l.wind.timeseries['time'][0],
                                   (speed, 0.0))
-        frac_cov = l.get_value(self.model_time, rel_buoy, self.thick)
+        frac_cov = l._get_frac_coverage(self.model_time, rel_buoy, self.thick)
         assert frac_cov == exp_bound
 
     def test_update_from_dict(self):

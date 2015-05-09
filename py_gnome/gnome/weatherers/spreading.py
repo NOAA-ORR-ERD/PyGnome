@@ -272,13 +272,13 @@ class ConstantArea(SpreadingThicknessLimit, AddLogger):
 
 class Langmuir(Weatherer, Serializable, SpreadingThicknessLimit):
     '''
-    Easiest to define this as an environmental process
-    WeatheringData uses it to set the fractional_coverage for
+    Easiest to define this as a weathering process that updates 'area' array
     '''
     _schema = ObjType
 
     _state = copy.deepcopy(Weatherer._state)
-    _state += [Field('wind', update=True, save=True, save_reference=True)]
+    _state += [Field('wind', update=True, save=True, save_reference=True),
+               Field('water', update=True, save=True, save_reference=True)]
 
     def __init__(self,
                  wind=None,
@@ -311,7 +311,7 @@ class Langmuir(Weatherer, Serializable, SpreadingThicknessLimit):
             vo = subs[0].get_viscosity(self.water.get('temperature'))
             self.set_thickness_limit(vo)
 
-    def get_value(self, model_time, rel_buoy, thickness):
+    def _get_frac_coverage(self, model_time, rel_buoy, thickness):
         '''
         return fractional coverage for a blob of oil with inputs;
         relative_buoyancy, and thickness
@@ -353,11 +353,17 @@ class Langmuir(Weatherer, Serializable, SpreadingThicknessLimit):
                         (4 * np.pi**2))/0.005
         return (v_min, v_max)
 
-    def weather_elements(self):
+    def weather_elements(self, sc, time_step, model_time):
         '''
         set the 'area' array based on the Langmuir process
         '''
-        pass
+        if not self.active or sc.num_released == 0:
+            return
+
+        for substance, data in sc.itersubstancedata(self.array_types,
+                                                    fate='all'):
+            # Langmuir should act on all LEs
+            pass
 
     def serialize(self, json_='webapi'):
         """
