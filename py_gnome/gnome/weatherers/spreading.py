@@ -288,7 +288,7 @@ class Langmuir(Weatherer, Serializable, SpreadingThicknessLimit):
         initialize wind to (0, 0) if it is None
         '''
         super(Langmuir, self).__init__(**kwargs)
-        self.array_types.update(('area', ))
+        self.array_types.update(('area', 'at_max_area'))
 
         if wind is None:
             self.wind = constant_wind(0, 0)
@@ -360,10 +360,19 @@ class Langmuir(Weatherer, Serializable, SpreadingThicknessLimit):
         if not self.active or sc.num_released == 0:
             return
 
+        rho_h2o = self.water.get('density', 'kg/m^3')
         for substance, data in sc.itersubstancedata(self.array_types,
                                                     fate='all'):
-            # Langmuir should act on all LEs
-            pass
+            mask = data['at_max_area'] == True
+
+            if np.any(mask):
+                # assume only one type of oil is modeled so thickness_limit is
+                # already set and constant for all
+                rel_buoy = (rho_h2o - data['density'][mask])/rho_h2o
+                data['area'][mask] *= self._get_frac_coverage(model_time,
+                                                              rel_buoy,
+                                                              self.thickness_limit)
+        sc.update_from_fatedataview()
 
     def serialize(self, json_='webapi'):
         """
