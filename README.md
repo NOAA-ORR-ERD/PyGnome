@@ -167,7 +167,9 @@ There are however some extra steps you need to perform in order to build py_gnom
 	    $ pip install -r requirements.txt
 	```
 
-3. build the py_gnome module in develop mode first as install mode may still need some testing/work. Note: using 'developall' argument will automatically build the oil_library in develop mode. This is required for PyGnome and is currently part of this repo so easiest to automatically built it. Other options are to clean the development environment (cleandev) and to rebuild the oil library database (remake_oil_db)
+3. build the py_gnome module in develop mode first as install mode may still need some testing/work. Note: using 'developall' argument will automatically build the oil_library in develop mode. This is required for PyGnome and is currently part of this repo so easiest to automatically built it. Other options are to clean the development environment (cleandev) and to rebuild the oil library database (remake_oil_db).
+
+NOTE: 'developall' is not recognized on Linux (only Mac & Windows). If building on Linux, then do python setup.py develop for py_gnome/. and /oil_library/. separately.
 	```
 	    $ python setup.py developall  
 	```
