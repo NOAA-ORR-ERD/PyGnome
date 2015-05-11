@@ -203,6 +203,8 @@ def test_save_load_grids(saveloc_, obj):
 
 
 class TestSaveZipIsValid:
+    here = os.path.dirname(__file__)
+
     def test_invalid_zip(self):
         ''' invalid zipfile '''
         with LogCapture() as l:
@@ -220,7 +222,8 @@ class TestSaveZipIsValid:
         change _max_json_filesize 4K
         '''
         save_load._max_json_filesize = 8 * 1024
-        badzip = 'sample_data/badzip_max_json_filesize.zip'
+        badzip = os.path.join(self.here,
+                              'sample_data/badzip_max_json_filesize.zip')
         filetoobig = 'filetoobig.json'
         with ZipFile(badzip, 'a', compression=ZIP_DEFLATED) as z:
             z.write(testdata['boston_data']['cats_ossm'], filetoobig)
@@ -242,7 +245,8 @@ class TestSaveZipIsValid:
         create fake zip containing 100 '0' as string. The compression ratio
         should be big
         '''
-        badzip = 'sample_data/badzip_max_compress_ratio.zip'
+        badzip = os.path.join(self.here,
+                              'sample_data/badzip_max_compress_ratio.zip')
         badfile = 'badcompressratio.json'
         with ZipFile(badzip, 'a', compression=ZIP_DEFLATED) as z:
             z.writestr(badfile, ''.join(['0'] * 100))
@@ -260,7 +264,8 @@ class TestSaveZipIsValid:
     def test_filenames_dont_contain_dotdot(self):
         '''
         '''
-        badzip = 'sample_data/badzip_max_compress_ratio.zip'
+        badzip = os.path.join(self.here,
+                              'sample_data/badzip_max_compress_ratio.zip')
         badfile = './../badpath.json'
         with ZipFile(badzip, 'a', compression=ZIP_DEFLATED) as z:
             z.writestr(badfile, 'bad file, contains path')
