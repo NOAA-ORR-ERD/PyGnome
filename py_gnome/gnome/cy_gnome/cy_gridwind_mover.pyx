@@ -3,16 +3,21 @@ import numpy as np
 import os
 
 from type_defs cimport *
-from movers cimport GridWindMover_c
+from movers cimport GridWindMover_c, WindMover_c, Mover_c
 
-# Make CyWindMover is base class so set/get for properties are not repeated
-# also cimport dynamic casts
-from cy_wind_mover cimport CyWindMover, dc_gw_mover_to_wm, dc_mover_to_gw
+from cy_mover cimport CyWindMoverBase
 
 from gnome.cy_gnome.cy_helpers cimport to_bytes
 
 
-cdef class CyGridWindMover(CyWindMover):
+cdef extern from *:
+    GridWindMover_c* dc_mover_to_gw "dynamic_cast<GridWindMover_c *>" \
+        (Mover_c *) except NULL
+    WindMover_c* dc_gw_mover_to_wm "dynamic_cast<GridWindMover_c *>" \
+        (Mover_c *) except NULL
+
+
+cdef class CyGridWindMover(CyWindMoverBase):
 
     cdef GridWindMover_c *grid_wind
 
