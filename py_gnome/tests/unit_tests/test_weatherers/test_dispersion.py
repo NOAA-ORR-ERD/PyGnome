@@ -45,7 +45,7 @@ def test_dispersion(oil, temp, num_elems, on):
                             arr_types=arrays)
      sc.amount = 10000
      time_step = 15. * 60
-     intrinsic.update(sc.num_released, sc, time_step)
+     intrinsic.update(sc.num_released, sc)
      model_time = (sc.spills[0].get('release_time') +
                    timedelta(seconds=time_step))
  
@@ -84,7 +84,7 @@ def test_dispersion_not_active(oil, temp, num_elems):
                             arr_types=arrays)
      sc.amount = 10000
      time_step = 15. * 60
-     intrinsic.update(sc.num_released, sc, time_step)
+     intrinsic.update(sc.num_released, sc)
      model_time = (sc.spills[0].get('release_time') +
                    timedelta(seconds=time_step))
  

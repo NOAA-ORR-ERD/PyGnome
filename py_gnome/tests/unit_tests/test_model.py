@@ -852,12 +852,20 @@ def test_simple_run_no_spills(model):
     assert True
 
 
-def test_all_weatherers_in_model(model):
+@pytest.mark.parametrize("add_langmuir", (False, True))
+def test_all_weatherers_in_model(model, add_langmuir):
     '''
     test model run with weatherer
     '''
     model.weatherers += HalfLifeWeatherer()
-    print 'model.weatherers:', model.weatherers
+
+    #==========================================================================
+    # if add_langmuir:
+    #     wind = constant_wind(5.0, 0)
+    #     langmuir = Langmuir(wind)
+    #     model.environment += langmuir
+    #     assert wind in model.environment
+    #==========================================================================
 
     model.full_run()
 

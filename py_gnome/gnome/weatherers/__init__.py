@@ -5,6 +5,8 @@ from natural_dispersion import NaturalDispersion
 from intrinsic import WeatheringData
 from cleanup import Skimmer, Burn, ChemicalDispersion
 from manual_beaching import Beaching
+from spreading import Langmuir
+
 __all__ = [Weatherer,
            HalfLifeWeatherer,
            Evaporation,
@@ -14,7 +16,8 @@ __all__ = [Weatherer,
            Burn,
            ChemicalDispersion,
            Beaching,
-           WeatheringData]
+           WeatheringData,
+           Langmuir]
 
 
 def weatherer_sort(weatherer):
