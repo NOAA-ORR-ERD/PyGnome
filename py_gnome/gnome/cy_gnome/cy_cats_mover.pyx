@@ -109,6 +109,11 @@ cdef class CyCatsMover(CyCurrentMover):
         def __set__(self, value):
             self.cats.fEddyV0 = value
 
+    property ref_scale:
+        def __get__(self):
+            return self.cats.refScale
+
+
     property ref_point:
         def __get__(self):
             """
@@ -212,6 +217,16 @@ cdef class CyCatsMover(CyCurrentMover):
             raise ValueError('CATSMover.text_read(..) returned an error. '
                              'OSErr: {0}'.format(err))
         return True
+
+    def init_mover(self):
+        """
+        compute velocity scale
+        """
+        cdef OSErr err
+        err = self.cats.InitMover()
+        if err != False:
+            raise ValueError('CATSMover.init_mover(..) returned an error. '
+                             'OSErr: {0}'.format(err))
         return True
 
     def get_move(self,
@@ -308,6 +323,26 @@ cdef class CyCatsMover(CyCurrentMover):
 
         # allocate memory and copy it over
         pts_hdl = self.cats.GetTriangleCenters()
+        sz = _GetHandleSize(<Handle>pts_hdl)
+
+        # will this always work?
+        pts = np.empty((sz / tmp_size,), dtype=basic_types.w_point_2d)
+
+        memcpy(&pts[0], pts_hdl[0], sz)
+
+        return pts
+
+    def _get_world_points(self):
+        """
+            Invokes the GetTriangleCenters method of TriGridVel_c object
+            to get the velocities for the grid
+        """
+        cdef short tmp_size = sizeof(WorldPoint)
+        cdef WORLDPOINTH pts_hdl
+        cdef cnp.ndarray[WorldPoint, ndim = 1] pts
+
+        # allocate memory and copy it over
+        pts_hdl = self.cats.GetWorldPointsHdl()
         sz = _GetHandleSize(<Handle>pts_hdl)
 
         # will this always work?

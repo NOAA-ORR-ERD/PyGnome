@@ -18,15 +18,23 @@
 class TriGridVel_c : virtual public GridVel_c {
 
 protected:
+	WORLDPOINTH WPtH;
+	WORLDPOINTH CenterPtsH;
 	FLOATH fBathymetryH;
 	TDagTree *fDagTree;
 	
 public:
-	TriGridVel_c(){fDagTree = 0; fBathymetryH=0;}
+	TriGridVel_c(){fDagTree = 0; fBathymetryH=0; CenterPtsH=0; WPtH=0;}
 	virtual	~TriGridVel_c() { Dispose (); }
 	//virtual ClassID 	GetClassID 	() { return TYPE_TRIGRIDVEL; }
 	void SetDagTree(TDagTree *dagTree){fDagTree=dagTree;}
 	TDagTree*  GetDagTree(){return fDagTree;}
+	WORLDPOINTH GetWorldPointsHdl(void);
+	//WORLDPOINTH GetWorldPointsHdl(return WPtH);
+	WORLDPOINTH GetCenterPointsHdl(void);
+	//WORLDPOINTH GetCenterPointsHdl(return CenterPtsH);
+	WORLDPOINTH SetWorldPointsHdl(WORLDPOINTH worldPts){WPtH = worldPts;}
+	WORLDPOINTH SetCenterPointsHdl(WORLDPOINTH centerPts){CenterPtsH = centerPts;}
 	LongPointHdl GetPointsHdl(void);
 	TopologyHdl GetTopologyHdl(void);
 	VelocityFH GetVelocityHdl(void);

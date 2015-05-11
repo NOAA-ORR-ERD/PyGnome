@@ -32,7 +32,7 @@ from gnome.weatherers import (HalfLifeWeatherer,
                               Burn,
                               Skimmer,
                               Emulsification)
-from gnome.outputters import Renderer, GeoJson
+from gnome.outputters import Renderer, TrajectoryGeoJsonOutput
 
 from conftest import sample_model_weathering, testdata, test_oil
 
@@ -275,7 +275,7 @@ def test_simple_run_with_image_output(tmpdir):
                                      refloat_halflife=6)  # hours
     renderer = gnome.outputters.Renderer(testdata['MapFromBNA']['testmap'],
                                          images_dir, size=(400, 300))
-    geo_json = GeoJson(output_dir=images_dir)
+    geo_json = TrajectoryGeoJsonOutput(output_dir=images_dir)
 
     model = Model(time_step=timedelta(minutes=15),
                   start_time=start_time, duration=timedelta(hours=1),

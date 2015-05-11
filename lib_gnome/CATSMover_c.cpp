@@ -86,6 +86,11 @@ void CATSMover_c::Dispose()
 }
 
 
+OSErr CATSMover_c::InitMover()
+{
+	// this is for python  - time is not used so set to 0
+	(this)->ComputeVelocityScale(0);
+}
 
 // this function computes and sets this->refScale
 // returns Error when the refScale is not defined
@@ -687,12 +692,22 @@ LongPointHdl CATSMover_c::GetPointsHdl(void)
 	return dynamic_cast<TriGridVel_c *>(fGrid)->GetPointsHdl();
 }
 
+WORLDPOINTH CATSMover_c::GetWorldPointsHdl(void)
+{
+	return dynamic_cast<TriGridVel_c *>(fGrid)->GetWorldPointsHdl();
+}
+
 TopologyHdl CATSMover_c::GetTopologyHdl(void)
 {
 	return dynamic_cast<TriGridVel_c *>(fGrid)->GetTopologyHdl();
 }
 
 WORLDPOINTH	CATSMover_c::GetTriangleCenters()
+{
+	return dynamic_cast<TriGridVel_c *>(fGrid)->GetCenterPointsHdl();
+}
+
+/*WORLDPOINTH	CATSMover_c::GetTriangleCenters()
 {
 	OSErr err = 0;
 	LongPointHdl ptsH = 0;
@@ -731,4 +746,4 @@ WORLDPOINTH	CATSMover_c::GetTriangleCenters()
 	
 done:
 	return wpH;
-}
+}*/

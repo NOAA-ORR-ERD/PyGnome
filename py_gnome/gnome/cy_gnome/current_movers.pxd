@@ -30,17 +30,20 @@ cdef extern from "CATSMover_c.h":
         double          fEddyV0
         short           scaleType   # set this automatically!
         double          scaleValue
+        double          refScale
         Boolean         bTimeFileActive
 
         int             TextRead(char* path)
         void            SetRefPosition(WorldPoint3D p)
         WorldPoint3D    GetRefPosition()
+        OSErr    InitMover()
 
         OSErr get_move(int n, unsigned long model_time, unsigned long step_len,
                        WorldPoint3D* ref, WorldPoint3D* delta, short* LE_status,
                        LEType spillType, long spillID)
         void  SetTimeDep(OSSMTimeValue_c *ossm)
         LongPointHdl  GetPointsHdl()
+        WORLDPOINTH  GetWorldPointsHdl()
         VelocityFH  GetVelocityHdl()
         TopologyHdl  GetTopologyHdl()
         WORLDPOINTH  GetTriangleCenters()

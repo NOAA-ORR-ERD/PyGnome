@@ -24,7 +24,7 @@ from gnome.spill import point_line_release_spill
 from gnome.movers import RandomMover, WindMover, CatsMover
 from gnome.weatherers import Evaporation, ChemicalDispersion, Burn, Skimmer
 
-from gnome.outputters import WeatheringOutput, GeoJson
+from gnome.outputters import WeatheringOutput, TrajectoryGeoJsonOutput
 
 from gnome.multi_model_broadcast import ModelBroadcaster
 from conftest import testdata, test_oil
@@ -111,7 +111,7 @@ def make_model(uncertain=False,
     model.outputters += WeatheringOutput()
 
     if geojson_output:
-        model.outputters += GeoJson()
+        model.outputters += TrajectoryGeoJsonOutput()
 
     return model
 
