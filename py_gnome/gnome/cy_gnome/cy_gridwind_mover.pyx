@@ -3,64 +3,43 @@ import numpy as np
 import os
 
 from type_defs cimport *
-from movers cimport Mover_c,GridWindMover_c,TimeGridVel_c
-cimport cy_mover
+from movers cimport GridWindMover_c
+
+# Make CyWindMover is base class so set/get for properties are not repeated
+# also cimport dynamic casts
+from cy_wind_mover cimport CyWindMover, dc_gw_mover_to_wm, dc_mover_to_gw
 
 from gnome.cy_gnome.cy_helpers cimport to_bytes
 
-"""
-Dynamic casts are not currently supported in Cython - define it here instead.
-Since this function is custom for each mover, just keep it with the definition for each mover
-"""
-cdef extern from *:
-    GridWindMover_c* dynamic_cast_ptr "dynamic_cast<GridWindMover_c *>" (Mover_c *) except NULL
 
-cdef class CyGridWindMover(cy_mover.CyMover):
+cdef class CyGridWindMover(CyWindMover):
 
     cdef GridWindMover_c *grid_wind
 
     def __cinit__(self):
+        '''
+        nothing derives from CyGridWindMover so no need to do a type() check
+        before constructing GridWindMover_c
+        '''
         self.mover = new GridWindMover_c()
-        self.grid_wind = dynamic_cast_ptr(self.mover)
+        self.grid_wind = dc_mover_to_gw(self.mover)
+        self.wind = dc_gw_mover_to_wm(self.mover)
 
     def __dealloc__(self):
+        '''
+        free memory
+        '''
         del self.mover
+        self.mover = NULL
+        self.wind = NULL
         self.grid_wind = NULL
 
     property wind_scale:
         def __get__(self):
             return self.grid_wind.fWindScale
-        
+
         def __set__(self, value):
             self.grid_wind.fWindScale = value
-        
-    property uncertain_duration:
-        def __get__(self):
-            return self.grid_wind.fDuration
-
-        def __set__(self, value):
-            self.grid_wind.fDuration = value
-
-    property uncertain_time_delay:
-        def __get__(self):
-            return self.grid_wind.fUncertainStartTime
-
-        def __set__(self, value):
-            self.grid_wind.fUncertainStartTime = value
-
-    property uncertain_speed_scale:
-        def __get__(self):
-            return self.grid_wind.fSpeedScale
-
-        def __set__(self, value):
-            self.grid_wind.fSpeedScale = value
-
-    property uncertain_angle_scale:
-        def __get__(self):
-            return self.grid_wind.fAngleScale
-
-        def __set__(self, value):
-            self.grid_wind.fAngleScale = value
 
     def text_read(self, time_grid_file, topology_file=None):
         """

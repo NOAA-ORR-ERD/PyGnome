@@ -26,14 +26,10 @@ cdef class CyMover(object):
     CyMover object in Python. Though this object doesn't do anything and it
     does not have a get_move method.
     """
-    def __init__(self,
-                 uncertain_duration=48*3600):
-        """
-        By default it sets self.mover=NULL. This is only so Python doesn't
-        crash if user instantiates a CyMover object in Python.
-        Though the main purpose of this class is to serve as a base class
-        to all the cython wrappers around the C++ movers.
-        """
+    def __cinit__(self):
+        '''
+        initialize mover to NULL
+        '''
         self.mover = NULL
 
     def __repr__(self):

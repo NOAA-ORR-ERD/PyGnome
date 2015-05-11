@@ -24,7 +24,6 @@ cdef class CyWindMover(cy_mover.CyMover):
     It derives from cy_mover.CyMover base class which defines default
     functionality for some methods
     """
-    cdef WindMover_c * wind
 
     def __cinit__(self):
         """
@@ -32,13 +31,18 @@ cdef class CyWindMover(cy_mover.CyMover):
         member variable 'self.mover' to WindMover_c
         so all members of WindMover_c are available to this class
         """
-        self.mover = new WindMover_c()
-        self.wind = dynamic_cast_ptr(self.mover)
+        if type(self) == CyWindMover:
+            self.mover = new WindMover_c()
+            self.wind = dynamic_cast_ptr(self.mover)
+        else:
+            self.wind = NULL
 
     def __dealloc__(self):
-        # since this is allocated in this class, free memory here as well
-        del self.mover
-        self.wind = NULL
+        # let derived class free memory if it was defined by deri
+        if self.mover is not NULL:
+            del self.mover
+            self.mover = NULL
+            self.wind = NULL
 
     def __init__(self, uncertain_duration=10800, uncertain_time_delay=0,
                  uncertain_speed_scale=2, uncertain_angle_scale=0.4):
