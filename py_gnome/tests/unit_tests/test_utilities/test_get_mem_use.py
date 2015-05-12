@@ -33,6 +33,9 @@ def test_increase():
 
     Note: this may not pass if the python process has a bunch of spare memory
     allocated already..
+
+    todo: make this test better, it doesn't always pass. The memory usage does
+    not always increase.
     """
     import array
     start = get_mem_use()
