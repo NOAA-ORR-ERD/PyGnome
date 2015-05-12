@@ -281,8 +281,8 @@ class Langmuir(Weatherer, Serializable, SpreadingThicknessLimit):
                Field('water', update=True, save=True, save_reference=True)]
 
     def __init__(self,
-                 wind=None,
                  water=None,
+                 wind=None,
                  **kwargs):
         '''
         initialize wind to (0, 0) if it is None
@@ -402,7 +402,7 @@ class Langmuir(Weatherer, Serializable, SpreadingThicknessLimit):
             schema.add(WindSchema(name='wind'))
 
         if 'water' in json_:
-            schema.add(WindSchema(name='water'))
+            schema.add(WaterSchema(name='water'))
 
         _to_dict = schema.deserialize(json_)
 

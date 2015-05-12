@@ -192,12 +192,13 @@ class TestLangmuir:
     thick = 1e-4
     wind = constant_wind(5, 0)
     model_time = datetime(2015, 1, 1, 12, 0)
+    water = Water()
 
-    l = Langmuir(wind)
+    l = Langmuir(water, wind)
     (vmin, vmax) = l._wind_speed_bound(rel_buoy, thick)
 
     def test_init(self):
-        l = Langmuir(self.wind)
+        l = Langmuir(self.water, self.wind)
         assert l.wind is self.wind
 
     @pytest.mark.parametrize(("l", "speed", "exp_bound"),
@@ -228,13 +229,12 @@ class TestLangmuir:
         assert self.l.serialize() == j
 
     def test_weather_elements(self):
-        water = Water()
-        l = Langmuir(constant_wind(5., 0.), water)
+        l = Langmuir(self.water, constant_wind(5., 0.))
 
         # create WeatheringData object, initialize instantaneously released
         # elements
         arrays = l.array_types
-        intrinsic = WeatheringData(water)
+        intrinsic = WeatheringData(self.water)
         arrays.update(intrinsic.array_types)
         et = floating(substance=test_oil)
         time_step = 15. * 60
@@ -248,7 +248,7 @@ class TestLangmuir:
         # prepare_for_model_run after the release
         intrinsic.prepare_for_model_run(sc)
         intrinsic.update(sc.num_released, sc)
-        water_kvis = water.get('kinematic_viscosity')
+        water_kvis = self.water.get('kinematic_viscosity')
         # update the age of one of the LEs by n_age
         n_age = (intrinsic.spreading.
                  _time_to_reach_max_area(water_kvis,
