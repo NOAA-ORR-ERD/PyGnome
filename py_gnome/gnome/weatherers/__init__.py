@@ -26,6 +26,7 @@ def weatherer_sort(weatherer):
 
     Weatherers are sorted as follows:
 
+    -1. Langmuir - sets the 'area' array, do this first
     0.  cleanup options including Skimmer, Burn
     1.  chemical dispersion - currently there is only one Dispersion
     2.  half-life - these are not used with following real weatherers but need
@@ -37,6 +38,9 @@ def weatherer_sort(weatherer):
     7.  biodegradation - does not exist
     8.  emulsification
     '''
+    if isinstance(weatherer, (Langmuir)):
+        return -1
+
     if isinstance(weatherer, (Skimmer, Burn)):
         return 0
 

@@ -418,8 +418,8 @@ class WeatheringData(AddLogger):
                                            data['fay_area'][s_mask],
                                            data['age'][s_mask],
                                            data['at_max_area'][s_mask])
-
-            data['area'][s_mask] = data['fay_area'][s_mask]
+            if not np.all(data['at_max_area'][s_mask]):
+                data['area'][s_mask] = data['fay_area'][s_mask]
 
     def _get_relative_buoyancy(self, rho_oil):
         '''
