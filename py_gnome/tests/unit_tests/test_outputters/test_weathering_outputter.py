@@ -19,7 +19,7 @@ from ..conftest import test_oil
 @pytest.fixture(scope='module')
 def model(sample_model):
     model = sample_model['model']
-    model._make_default_refs = True
+    model.make_default_refs = True
     rel_start_pos = sample_model['release_start_pos']
     rel_end_pos = sample_model['release_end_pos']
 

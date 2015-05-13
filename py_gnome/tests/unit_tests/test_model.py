@@ -72,7 +72,7 @@ def model(sample_model_fcn, tmpdir):
 
     # for weatherers and environment objects, make referenced to default
     # wind/water/waves 
-    model._make_default_refs = True
+    model.make_default_refs = True
 
     return model
 
@@ -971,7 +971,7 @@ def test_staggered_spills_weathering(sample_model_fcn, delay):
     test exposed a bug, which is now fixed
     '''
     model = sample_model_weathering(sample_model_fcn, test_oil)
-    model._make_default_refs = True
+    model.make_default_refs = True
     model.map = gnome.map.GnomeMap()    # make it all water
     model.uncertain = False
     rel_time = model.spills[0].get('release_time')
@@ -1036,7 +1036,7 @@ def test_two_substance_spills_weathering(sample_model_fcn, s0, s1):
     independently
     '''
     model = sample_model_weathering(sample_model_fcn, s0)
-    model._make_default_refs = True
+    model.make_default_refs = True
     model.map = gnome.map.GnomeMap()    # make it all water
     model.uncertain = False
     rel_time = model.spills[0].get('release_time')

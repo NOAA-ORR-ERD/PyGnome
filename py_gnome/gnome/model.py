@@ -157,7 +157,7 @@ class Model(Serializable):
         # todo: get Water from environment collection
         model._weathering_data = None
         if any([w.on for w in model.weatherers]):
-            water = model._find_by_attr('_ref_as', 'water', model.environment)
+            water = model.find_by_attr('_ref_as', 'water', model.environment)
             model._weathering_data = WeatheringData(water)
 
         # restore the spill data outside this method - let's not try to find
@@ -210,9 +210,6 @@ class Model(Serializable):
 
         self.environment.register_callback(self._callback_add_weatherer_env,
                                            ('add', 'replace'))
-        # model creates references to weatherers/environment if
-        # _make_default_refs is True
-        self._make_default_refs = True
 
     def __restore__(self, time_step, start_time, duration,
                     weathering_substeps, uncertain, cache_enabled, map, name):
@@ -256,6 +253,10 @@ class Model(Serializable):
 
         # default is to zip save file
         self.zipsave = True
+
+        # model creates references to weatherers/environment if
+        # make_default_refs is True
+        self.make_default_refs = True
 
     def reset(self, **kwargs):
         '''
@@ -470,7 +471,7 @@ class Model(Serializable):
 
         return all_objs
 
-    def _find_by_attr(self, attr, value, collection):
+    def find_by_attr(self, attr, value, collection):
         '''
         find first object in collection where the 'attr' attribute matches
         'value'. This is primarily used to find 'wind', 'water', 'waves'
@@ -504,10 +505,10 @@ class Model(Serializable):
         attach references
         '''
         attr = {'wind': None, 'water': None, 'waves': None}
-        attr['wind'] = self._find_by_attr('_ref_as', 'wind', self.environment)
-        attr['water'] = self._find_by_attr('_ref_as', 'water',
+        attr['wind'] = self.find_by_attr('_ref_as', 'wind', self.environment)
+        attr['water'] = self.find_by_attr('_ref_as', 'water',
                                            self.environment)
-        attr['waves'] = self._find_by_attr('_ref_as', 'waves',
+        attr['waves'] = self.find_by_attr('_ref_as', 'waves',
                                            self.environment)
 
         weathering = False
@@ -543,7 +544,7 @@ class Model(Serializable):
         # that will be added
         array_types = set()
 
-        if self._make_default_refs:
+        if self.make_default_refs:
             self._attach_references()
             if self._weathering_data is not None:
                 array_types.update(self._weathering_data.array_types)
