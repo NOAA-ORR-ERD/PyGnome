@@ -48,8 +48,11 @@ class Waves(Environment, serializable.Serializable):
 
     _state['name'].test_for_eq = False
 
-    def __init__(self, wind, water, **kwargs):
+    def __init__(self, wind=None, water=None, **kwargs):
         """
+        wind and water must be set before running the model; however, these
+        can be set after object construction
+
         :param wind: A wind object to get the wind speed.
                      This should be a moving average wind object.
         :type wind: a Wind type, or equivelent

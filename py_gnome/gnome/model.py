@@ -155,10 +155,10 @@ class Model(Serializable):
             cls._restore_attr_from_save(model, dict_)
 
         # todo: get Water from environment collection
-        if len(model.weatherers) > 0:
+        model._weathering_data = None
+        if any([w.on for w in model.weatherers]):
+            water = model._find_by_attr('_ref_as', 'water', model.environment)
             model._weathering_data = WeatheringData(water)
-        else:
-            model._weathering_data = None
 
         # restore the spill data outside this method - let's not try to find
         # the saveloc here
@@ -210,6 +210,9 @@ class Model(Serializable):
 
         self.environment.register_callback(self._callback_add_weatherer_env,
                                            ('add', 'replace'))
+        # model creates references to weatherers/environment if
+        # _make_default_refs is True
+        self._make_default_refs = True
 
     def __restore__(self, time_step, start_time, duration,
                     weathering_substeps, uncertain, cache_enabled, map, name):
@@ -469,8 +472,10 @@ class Model(Serializable):
 
     def _find_by_attr(self, attr, value, collection):
         '''
-        find first object in collection where the 'attr' attribute matches.
-        'value'.
+        find first object in collection where the 'attr' attribute matches
+        'value'. This is primarily used to find 'wind', 'water', 'waves'
+        objects in environment collection. Use the '_ref_as' attribute to
+        search.
 
         Ignore AttributeError since all objects in collection may not contain
         the attribute over which we are searching.
@@ -498,9 +503,12 @@ class Model(Serializable):
         '''
         attach references
         '''
-        wind = self._find_by_attr('_ref_as', 'wind', self.environment)
-        water = self._find_by_attr('_ref_as', 'water', self.environment)
-        waves = self._find_by_attr('_ref_as', 'waves', self.environment)
+        attr = {'wind': None, 'water': None, 'waves': None}
+        attr['wind'] = self._find_by_attr('_ref_as', 'wind', self.environment)
+        attr['water'] = self._find_by_attr('_ref_as', 'water',
+                                           self.environment)
+        attr['waves'] = self._find_by_attr('_ref_as', 'waves',
+                                           self.environment)
 
         weathering = False
         for coll in ('environment', 'weatherers'):
@@ -509,17 +517,19 @@ class Model(Serializable):
                 if coll == 'weatherers' and item.on:
                     weathering = True
 
-                if hasattr(item, 'wind'):
-                    setattr(item, 'wind', wind)
-                elif hasattr(item, 'water'):
-                    setattr(item, 'water', water)
-                elif hasattr(item, 'waves'):
-                    setattr(item, 'waves', waves)
+                for name, val in attr.iteritems():
+                    if hasattr(item, name):
+                        setattr(item, name, val)
+
         if weathering:
+            if attr['water'] is None:
+                msg = ("model has weathering but no water object - expect "
+                       "failure at runtime")
+                self.logger.error(msg)
             if self._weathering_data is None:
-                self._weathering_data = WeatheringData(water)
+                self._weathering_data = WeatheringData(attr['water'])
             else:
-                setattr(self._weathering_data, 'water', water)
+                setattr(self._weathering_data, 'water', attr['water'])
         else:
             # reset to None if no weatherers found - don't want to carry around
             # all the extra data arrays
@@ -529,13 +539,16 @@ class Model(Serializable):
         '''
         Sets up each mover for the model run
         '''
-
-        self._attach_references()
-        self.spills.rewind()  # why is rewind for spills here?
-
         # use a set since we only want to add unique 'names' for data_arrays
         # that will be added
         array_types = set()
+
+        if self._make_default_refs:
+            self._attach_references()
+            if self._weathering_data is not None:
+                array_types.update(self._weathering_data.array_types)
+
+        self.spills.rewind()  # why is rewind for spills here?
 
         # remake orderedcollections defined by model
         for oc in [self.movers, self.weatherers,
