@@ -43,6 +43,7 @@ class ModelSchema(ObjType):
     uncertain = SchemaNode(Bool(), missing=drop)
     cache_enabled = SchemaNode(Bool(), missing=drop)
     num_time_steps = SchemaNode(Int(), missing=drop)
+    make_default_refs = SchemaNode(Bool(), missing=drop)
 
     def __init__(self, json_='webapi', *args, **kwargs):
         '''
@@ -97,7 +98,8 @@ class Model(Serializable):
     # collections and that would not be the correct way to check equality
     _state += [Field('spills', save=True, update=True, test_for_eq=False),
                Field('uncertain_spills', save=True, test_for_eq=False),
-               Field('num_time_steps', read=True)]
+               Field('num_time_steps', read=True),
+               Field('make_default_refs', save=True, update=True)]
 
     # list of OrderedCollections
     _oc_list = ['movers', 'weatherers', 'environment', 'outputters']
