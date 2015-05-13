@@ -103,8 +103,8 @@ class Wind(serializable.Serializable, Timeseries, Environment):
     '''
     Defines the Wind conditions for a spill
     '''
-    # removed 'id' from list below. id, filename and units cannot be updated
-    # - read only properties
+    # object is referenced by others using this attribute name
+    _ref_as = 'wind'
 
     # default units for input/output data
     _update = ['description',

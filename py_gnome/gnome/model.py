@@ -97,10 +97,7 @@ class Model(Serializable):
     # collections and that would not be the correct way to check equality
     _state += [Field('spills', save=True, update=True, test_for_eq=False),
                Field('uncertain_spills', save=True, test_for_eq=False),
-               Field('num_time_steps', read=True),
-               # save water a reference so if same object is contained in
-               # Environment collection, it isn't saved in two locations
-               Field('water', update=True, save=True, save_reference=True)]
+               Field('num_time_steps', read=True)]
 
     # list of OrderedCollections
     _oc_list = ['movers', 'weatherers', 'environment', 'outputters']
@@ -151,17 +148,15 @@ class Model(Serializable):
         model.environment.register_callback(model._callback_add_weatherer_env,
                                             ('add', 'replace'))
 
-        # if there are other values in dict_, setattr, do this after adding
-        # to collections - this ensures the 'water' object doesn't get added
-        # out of order. OrderedCollections are being used so maintain order.
+        # OrderedCollections are being used so maintain order.
         if json_ == 'webapi':
             model.update_from_dict(dict_)
         else:
             cls._restore_attr_from_save(model, dict_)
 
-        # todo: set Water / intrinsic properties
-        if model.water is not None and len(model.weatherers) > 0:
-            model._weathering_data = WeatheringData(model.water)
+        # todo: get Water from environment collection
+        if len(model.weatherers) > 0:
+            model._weathering_data = WeatheringData(water)
         else:
             model._weathering_data = None
 
@@ -217,8 +212,7 @@ class Model(Serializable):
                                            ('add', 'replace'))
 
     def __restore__(self, time_step, start_time, duration,
-                    weathering_substeps, uncertain, cache_enabled, map, name,
-                    water=None):
+                    weathering_substeps, uncertain, cache_enabled, map, name):
         '''
         Take out initialization that does not register the callback here.
         This is because new_from_dict will use this to restore the model _state
@@ -249,11 +243,6 @@ class Model(Serializable):
             self.name = name
 
         self._map = map
-        self._water = None
-
-        if water is not None:
-            # automatically add water object to environment collection
-            self.water = water
 
         # reset _current_time_step
         self._current_time_step = -1
@@ -427,19 +416,6 @@ class Model(Serializable):
         '''
         return self._num_time_steps
 
-    @property
-    def water(self):
-        return self._water
-
-    @water.setter
-    def water(self, value):
-        '''
-        If water attribute is updated, also add it to environment collection
-        '''
-        if value not in self.environment:
-            self.environment += value
-        self._water = value
-
     def _reset_num_time_steps(self):
         '''
         reset number of time steps if duration, or time_step change
@@ -456,10 +432,6 @@ class Model(Serializable):
     def contains_object(self, obj_id):
         if self.map.id == obj_id:
             return True
-
-        if self.water is not None:
-            if self.water.id == obj_id:
-                return True
 
         for collection in (self.environment,
                            self.spills,
@@ -495,6 +467,26 @@ class Model(Serializable):
 
         return all_objs
 
+    def _find_by_attr(self, attr, value, collection):
+        '''
+        find first object in collection where the 'attr' attribute matches.
+        'value'.
+
+        Ignore AttributeError since all objects in collection may not contain
+        the attribute over which we are searching.
+
+        :param str attr: attribute whose value must match
+        :param str value: desired value of the attribute
+        :param OrderedCollection collection: the ordered collection in which
+            to search
+        '''
+        for item in collection:
+            try:
+                if getattr(item, attr) == value:
+                    return item
+            except AttributeError:
+                pass
+
     def _order_weatherers(self):
         'use weatherer_sort to sort the weatherers'
         s_weatherers = sorted(self.weatherers, key=weatherer_sort)
@@ -502,11 +494,43 @@ class Model(Serializable):
             self.weatherers.clear()
             self.weatherers += s_weatherers
 
+    def _attach_references(self):
+        '''
+        attach references
+        '''
+        wind = self._find_by_attr('_ref_as', 'wind', self.environment)
+        water = self._find_by_attr('_ref_as', 'water', self.environment)
+        waves = self._find_by_attr('_ref_as', 'waves', self.environment)
+
+        weathering = False
+        for coll in ('environment', 'weatherers'):
+            for item in getattr(self, coll):
+
+                if coll == 'weatherers' and item.on:
+                    weathering = True
+
+                if hasattr(item, 'wind'):
+                    setattr(item, 'wind', wind)
+                elif hasattr(item, 'water'):
+                    setattr(item, 'water', water)
+                elif hasattr(item, 'waves'):
+                    setattr(item, 'waves', waves)
+        if weathering:
+            if self._weathering_data is None:
+                self._weathering_data = WeatheringData(water)
+            else:
+                setattr(self._weathering_data, 'water', water)
+        else:
+            # reset to None if no weatherers found - don't want to carry around
+            # all the extra data arrays
+            self._weathering_data = None
+
     def setup_model_run(self):
         '''
         Sets up each mover for the model run
         '''
 
+        self._attach_references()
         self.spills.rewind()  # why is rewind for spills here?
 
         # use a set since we only want to add unique 'names' for data_arrays
@@ -537,21 +561,6 @@ class Model(Serializable):
                     weathering = True
                     array_types.update(w.array_types)
 
-        if weathering:
-            if self.water is None:
-                self.water = Water()
-
-            if self._weathering_data is None:
-                self._weathering_data = WeatheringData(self.water)
-
-            # this adds 'density' array. It also adds data_arrays used to
-            # compute area if Evaporation is included since it requires 'area'
-            array_types.update(self._weathering_data.array_types)
-        else:
-            # reset to None if no weatherers found - don't want to carry around
-            # all the extra data arrays
-            self._weathering_data = None
-
         for environment in self.environment:
             environment.prepare_for_model_run(self.start_time)
 
@@ -571,7 +580,7 @@ class Model(Serializable):
 
         for sc in self.spills.items():
             sc.prepare_for_model_run(array_types)
-            if self._weathering_data:
+            if self._weathering_data is not None:
                 # do this only if we have user has added spills!
                 self._weathering_data.prepare_for_model_run(sc)
 
@@ -855,21 +864,6 @@ class Model(Serializable):
             if obj_added.water.id not in self.environment:
                 self.environment += obj_added.water
 
-    def _add_water(self, water):
-        '''
-        if Water object is found in obj_added as an attribute, then also set
-        the Model's 'water' attribute to this object
-        '''
-        if self.water is None:
-            self.water = water
-        else:
-            if self.water is not water:
-                msg = ("{0._pid} water attribute is different from newly "
-                       "added water named: {1.name}. "
-                       "Model's Water object is used to update intrinsic "
-                       "properties").format(self, water)
-                self.logger.warning(msg)
-
     def _callback_add_mover(self, obj_added):
         'Callback after mover has been added'
         self._add_to_environ_collec(obj_added)
@@ -880,14 +874,9 @@ class Model(Serializable):
         Callback after weatherer/environment object has been added. 'waves'
         environment object contains 'wind' and 'water' so add those to
         environment collection and the 'water' attribute.
-        If 'Water' object is added to environment collection, set self.water
-        if it is not set.
+        todo: simplify this
         '''
         self._add_to_environ_collec(obj_added)
-        if isinstance(obj_added, Water):
-            # Water object must have been added to environment collection
-            self._add_water(obj_added)
-
         self.rewind()  # rewind model if a new weatherer is added
 
     def __eq__(self, other):
@@ -1168,8 +1157,6 @@ class Model(Serializable):
         schema = self.__class__._schema(json_)
         o_json_ = schema.serialize(toserial)
         o_json_['map'] = self.map.serialize(json_)
-        if self.water:
-            o_json_['water'] = self.water.serialize(json_)
 
         if json_ == 'webapi':
             for attr in ('environment', 'outputters', 'weatherers', 'movers',
@@ -1196,10 +1183,9 @@ class Model(Serializable):
         '''
         schema = cls._schema(json_['json_'])
         deserial = schema.deserialize(json_)
-        for obj in ('map', 'water'):
-            if obj in json_:
-                d_item = cls._deserialize_nested_obj(json_[obj])
-                deserial[obj] = d_item
+        if 'map' in json_:
+            d_item = cls._deserialize_nested_obj(json_['map'])
+            deserial['map'] = d_item
 
         if json_['json_'] == 'webapi':
             for attr in ('environment', 'outputters', 'weatherers', 'movers',

@@ -804,39 +804,6 @@ def test_callback_add_weather():
     assert water in model.environment
 
 
-def test_callback_add_water_to_env():
-    '''
-    test callback if Water is added to environment collection, it sets Model's
-    water attribute if it is None
-    '''
-    model = Model()
-    assert model.water is None
-    model.environment += Water()
-    assert model.environment[-1] == model.water
-
-
-def test_add_water_to_model():
-    'water object should also get added to environment collection'
-    model = Model()
-    w1 = Water()
-    w2 = Water()
-    model.water = w1
-    assert w1 in model.environment
-    assert len(model.environment) == 1
-
-    model.water = w2
-    assert len(model.environment) == 2
-
-    for obj in (w1, w2):
-        assert obj in model.environment
-
-    model.water = w1
-    assert len(model.environment) == 2
-
-    for obj in (w1, w2):
-        assert obj in model.environment
-
-
 def test_simple_run_no_spills(model):
     # model = setup_simple_model()
 
@@ -866,7 +833,7 @@ def test_all_weatherers_in_model(model, add_langmuir):
     #     model.environment += langmuir
     #     assert wind in model.environment
     #==========================================================================
-
+    model.environment += Water()
     model.full_run()
 
     expected_keys = {'mass_components'}
@@ -908,7 +875,6 @@ def test_contains_object(sample_model_fcn):
     model.duration = timedelta(days=1)
 
     water, wind = Water(), constant_wind(1., 0)
-    model.water = water
     model.environment += wind
 
     et = floating(substance=model.spills[0].get('substance').name)
@@ -923,7 +889,7 @@ def test_contains_object(sample_model_fcn):
 
     movers = [m for m in model.movers]
 
-    evaporation = Evaporation(model.water, model.environment[0])
+    evaporation = Evaporation()
     skim_start = sp.get('release_time') + timedelta(hours=1)
     skimmer = Skimmer(.5*sp.amount, units=sp.units, efficiency=0.3,
                       active_start=skim_start,
@@ -1025,12 +991,11 @@ def test_staggered_spills_weathering(sample_model_fcn, delay):
     for spill in model.spills:
         exp_total_mass += spill.get_mass()
 
-    model.water = Water()
-    model.environment += constant_wind(1., 0)
+    model.environment += [Water(), constant_wind(1., 0)]
     skimmer = make_skimmer(model.spills[0])
     burn = burn_obj(model.spills[0])
     c_disp = chemical_disperson_obj(model.spills[0], 4)
-    model.weatherers += [Evaporation(model.water,
+    model.weatherers += [Evaporation(model.environment[0],
                                      model.environment[-1]),
                          c_disp,
                          burn,
@@ -1086,9 +1051,8 @@ def test_two_substance_spills_weathering(sample_model_fcn, s0, s1):
     for spill in model.spills:
         exp_total_mass += spill.get_mass()
 
-    model.water = Water()
-    model.environment += constant_wind(1., 0)
-    model.weatherers += Evaporation(model.water, model.environment[-1])
+    model.environment += [Water(), constant_wind(1., 0)]
+    model.weatherers += Evaporation(model.environment[0], model.environment[-1])
     if s0 == s1:
         '''
         multiple substances will not work with Skimmer or Burn
@@ -1141,10 +1105,9 @@ def test_weathering_data_attr():
     for sc in model.spills.items():
         assert sc.weathering_data == {}
 
-    model.water = Water()
-    model.environment += constant_wind(0., 0)
-    model.weatherers += [Evaporation(model.water,
-                                     model.environment[0])]
+    model.environment += [Water(), constant_wind(0., 0)]
+    model.weatherers += [Evaporation(model.environment[0],
+                                     model.environment[1])]
 
     # use different element_type and initializers for both spills
     s[0].amount = 10.0
@@ -1220,9 +1183,8 @@ class TestMergeModels:
         the created model into the model loaded from save file
         '''
         m = Model()
-        m.water = Water()
-        m.environment += constant_wind(1., 0.)
-        m.weatherers += Evaporation(m.water, m.environment[-1])
+        m.environment += [Water(), constant_wind(1., 0.)]
+        m.weatherers += Evaporation(m.environment[0], m.environment[-1])
         m.spills += point_line_release_spill(10, (0, 0, 0),
                                              datetime(2014, 1, 1, 12, 0))
 
@@ -1231,10 +1193,8 @@ class TestMergeModels:
         model.save(saveloc_, name='SampleSaveModel.zip')
         if os.path.exists(sample_save_file):
             model = load(sample_save_file)
-            assert model.water is None
 
             model.merge(m)
-            assert m.water is model.water
             for oc in m._oc_list:
                 for item in getattr(m, oc):
                     model_oc = getattr(model, oc)
@@ -1255,7 +1215,6 @@ def test_weatherer_sort():
     Model will likely not run
     '''
     model = Model()
-    model.water = Water()
     skimmer = Skimmer(100, 'kg', efficiency=0.3,
                       active_start=datetime(2014, 1, 1, 0, 0),
                       active_stop=datetime(2014, 1, 1, 0, 3))
@@ -1265,7 +1224,7 @@ def test_weatherer_sort():
                                 active_stop=datetime(2014, 1, 1, 0, 3),
                                 efficiency=0.2)
     weatherers = [Emulsification(),
-                  Evaporation(model.water,
+                  Evaporation(Water(),
                               constant_wind(1, 0)),
                   burn,
                   c_disp,

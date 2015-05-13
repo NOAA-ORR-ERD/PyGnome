@@ -40,6 +40,7 @@ class Waves(Environment, serializable.Serializable):
     At the moment, it only does a single point, non spatially
     variable, but may be extended in the future
     """
+    _ref_as = 'waves'
     _state = copy.deepcopy(Environment._state)
     _state += [Field('water', save=True, update=True, save_reference=True),
                Field('wind', save=True, update=True, save_reference=True)]
