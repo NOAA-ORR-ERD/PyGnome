@@ -46,18 +46,19 @@ for script in scripts:
 
     saveloc = os.path.join(os.path.dirname(script), 'save_model')
 
-    # make sure it is rewound so we're not doing a MIDRUN save
-    # which does not currently work
-    model.rewind()
+    # todo: maybe separate this since it is currently not working
+    ## make sure it is rewound so we're not doing a MIDRUN save
+    ## which does not currently work
+    #model.rewind()
 
-    script_runner.save(model, saveloc)
+    #script_runner.save(model, saveloc)
 
-    print 'completed saving model _state for: {0}'.format(script)
+    #print 'completed saving model _state for: {0}'.format(script)
 
-    try:
-        script_runner.run_from_save(os.path.join(saveloc, 'Model.json'))
-        print ('completed loading and running saved model _state '
-               'from: {0}'.format(saveloc))
-    except Exception, ex:
-        print ('Exception in script_runner.run_from_save(saveloc)'
-               '\n\t{0}'.format(ex))
+    #try:
+    #    script_runner.run_from_save(os.path.join(saveloc, 'Model.json'))
+    #    print ('completed loading and running saved model _state '
+    #           'from: {0}'.format(saveloc))
+    #except Exception, ex:
+    #    print ('Exception in script_runner.run_from_save(saveloc)'
+    #           '\n\t{0}'.format(ex))
