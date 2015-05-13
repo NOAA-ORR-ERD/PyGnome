@@ -140,7 +140,8 @@ def make_model(uncertain=False):
                                  efficiency=.3,
                                  active_start=skim_start,
                                  active_stop=skim_start + timedelta(hours=2)),
-                         Burn(0.2 * spill_volume, 1.0, skim_start)]
+                         Burn(0.2 * spill_volume, 1.0, skim_start,
+                              efficiency=0.9)]
 
     return model
 

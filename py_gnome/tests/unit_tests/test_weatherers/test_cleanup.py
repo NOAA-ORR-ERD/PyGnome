@@ -3,18 +3,20 @@ tests for cleanup options
 '''
 from datetime import datetime, timedelta
 
+from pytest import mark
 import numpy as np
 import unit_conversion as uc
 from pytest import mark, raises
 
 from gnome.basic_types import oil_status, fate
-from gnome.environment import Water, constant_wind
 from gnome.weatherers.intrinsic import WeatheringData
 
-from gnome.weatherers import Skimmer, Burn
+from gnome.weatherers.cleanup import CleanUpBase
+from gnome.weatherers import Skimmer, Burn, ChemicalDispersion
 from gnome.spill_container import SpillContainer
 from gnome.spill import point_line_release_spill
 from gnome.utilities.inf_datetime import InfDateTime
+from gnome.environment import Waves, constant_wind, Water
 
 from ..conftest import test_oil
 
@@ -28,39 +30,32 @@ amount = 36000.
 units = 'kg'    # leave as SI units
 
 
-def test_objs():
-    '''
-    function for created tests SpillContainer and test WeatheringData object
-    test objects so we can run Skimmer, Burn like a model without using a
-    full on Model
-    '''
-    intrinsic = WeatheringData(Water())
-    sc = SpillContainer()
-    sc.spills += point_line_release_spill(10,
-                                          (0, 0, 0),
-                                          rel_time,
-                                          substance=test_oil,
-                                          amount=amount,
-                                          units='kg')
-    return (sc, intrinsic)
-
-
-class TestSkimmer:
-    skimmer = Skimmer(amount,
-                      'kg',
-                      efficiency=0.3,
-                      active_start=active_start,
-                      active_stop=active_stop)
-
-    (sc, intrinsic) = test_objs()
+class ObjForTests:
+    @classmethod
+    def mk_test_objs(cls):
+        '''
+        create SpillContainer and test WeatheringData object test objects so
+        we can run Skimmer, Burn like a model without using a full on Model
+        '''
+        intrinsic = WeatheringData(Water())
+        sc = SpillContainer()
+        sc.spills += point_line_release_spill(10,
+                                              (0, 0, 0),
+                                              rel_time,
+                                              substance=test_oil,
+                                              amount=amount,
+                                              units='kg')
+        return (sc, intrinsic)
 
     def reset_test_objs(self):
         '''
-        reset the test objects
+        reset test objects
         '''
+        # print '\n------------\n', 'reset_and_release', '\n------------'
+        self.sc.rewind()
         self.sc.rewind()
         self.sc.prepare_for_model_run(self.intrinsic.array_types)
-        self.intrinsic.initialize(self.sc)
+        self.intrinsic.prepare_for_model_run(self.sc)
 
     def reset_and_release(self):
         '''
@@ -68,7 +63,41 @@ class TestSkimmer:
         '''
         self.reset_test_objs()
         num_rel = self.sc.release_elements(time_step, rel_time)
-        self.intrinsic.update(num_rel, self.sc, time_step)
+        self.intrinsic.update(num_rel, self.sc)
+
+
+class TestCleanUpBase:
+    base = CleanUpBase()
+
+    def test_init(self):
+        base = CleanUpBase()
+        assert base.efficiency == 1.0
+
+    def test_set_efficiency(self):
+        '''
+        efficiency updates only if value is valid
+        '''
+        curr_val = .4
+        self.base.efficiency = curr_val
+
+        self.base.efficiency = 0
+        assert self.base.efficiency == curr_val
+
+        self.base.efficiency = 1.1
+        assert self.base.efficiency == curr_val
+
+        self.base.efficiency = 1.0
+        assert self.base.efficiency == 1.0
+
+
+class TestSkimmer(ObjForTests):
+    skimmer = Skimmer(amount,
+                      'kg',
+                      efficiency=0.3,
+                      active_start=active_start,
+                      active_stop=active_stop)
+
+    (sc, intrinsic) = ObjForTests.mk_test_objs()
 
     def test_prepare_for_model_run(self):
         self.reset_and_release()
@@ -127,7 +156,7 @@ class TestSkimmer:
             num_rel = self.sc.release_elements(time_step, model_time)
             if num_rel > 0:
                 self.sc['frac_water'][:] = avg_frac_water
-            self.intrinsic.update(num_rel, self.sc, time_step)
+            self.intrinsic.update(num_rel, self.sc)
             self.skimmer.prepare_for_model_step(self.sc, time_step, model_time)
 
             self.skimmer.weather_elements(self.sc, time_step, model_time)
@@ -158,12 +187,12 @@ class TestSkimmer:
                            atol=1e-6)
 
 
-class TestBurn:
+class TestBurn(ObjForTests):
     '''
     Define a default object
     default units are SI
     '''
-    (sc, intrinsic) = test_objs()
+    (sc, intrinsic) = ObjForTests.mk_test_objs()
     spill = sc.spills[0]
     op = spill.get('substance')
     volume = spill.get_mass()/op.get_density()
@@ -175,16 +204,6 @@ class TestBurn:
     burn = Burn(area, thick, active_start,
                 area_units='km^2', thickness_units='km',
                 efficiency=1.0)
-
-    def reset_test_objs(self):
-        '''
-        reset test objects
-        '''
-        self.sc.rewind()
-        at = self.intrinsic.array_types
-        at.update(self.burn.array_types)
-        self.intrinsic.initialize(self.sc)
-        self.sc.prepare_for_model_run(at)
 
     def test_init(self):
         '''
@@ -233,18 +252,15 @@ class TestBurn:
         once thickness reaches _min_thickness, test the mover becomes inactive
         if mover is off, it is also inactive
         '''
-        burn = Burn(self.area,
-                    self.thick,
-                    active_start=active_start)
-        burn.prepare_for_model_run(self.sc)
+        self.burn.prepare_for_model_run(self.sc)
         self._oil_thickness = 0.002
-        burn.prepare_for_model_step(self.sc, time_step, rel_time)
-        assert not burn._active
+        self.burn.prepare_for_model_step(self.sc, time_step, rel_time)
+        assert not self.burn._active
 
         # turn it off
-        burn.on = False
-        burn.prepare_for_model_step(self.sc, time_step, rel_time)
-        assert not burn._active
+        self.burn.on = False
+        self.burn.prepare_for_model_step(self.sc, time_step, rel_time)
+        assert not self.burn._active
 
     def _weather_elements_helper(self, burn, avg_frac_water=0.0):
         '''
@@ -266,7 +282,7 @@ class TestBurn:
             num = self.sc.release_elements(time_step, model_time)
             if num > 0:
                 self.sc['frac_water'][:] = avg_frac_water
-            self.intrinsic.update(num, self.sc, time_step)
+            self.intrinsic.update(num, self.sc)
 
             dt = timedelta(seconds=time_step)
             burn.prepare_for_model_step(self.sc, time_step, model_time)
@@ -441,18 +457,124 @@ class TestBurn:
         self.burn.update_from_dict(dict_)
         assert self.burn.efficiency == json_['efficiency']
 
+        # update area/thickness
+        st = self.burn.active_stop
+        self.burn.thickness *= 2
+        assert self.burn.active_stop > st
+
+        # burn duration just depents on thickness - not area
+        st = self.burn.active_stop
+        self.burn.area *= 2
+        assert self.burn.active_stop == st
+
+
+class TestChemicalDispersion(ObjForTests):
+    (sc, intrinsic) = ObjForTests.mk_test_objs()
+    spill = sc.spills[0]
+    op = spill.get('substance')
+    spill_pct = 0.2  # 20%
+    c_disp = ChemicalDispersion(spill_pct,
+                                active_start,
+                                active_stop,
+                                units='m^3',
+                                efficiency=0.3)
+
+    def test_prepare_for_model_run(self):
+        '''
+        test efficiency gets set correctly
+        '''
+        self.reset_test_objs()
+
+        assert 'chem_dispersed' not in self.sc.weathering_data
+
+        self.c_disp.prepare_for_model_run(self.sc)
+        assert self.sc.weathering_data['chem_dispersed'] == 0.0
+
     def test_set_efficiency(self):
         '''
-        efficiency updates only if value is valid
+        for wave height > 6.4 m, efficiency goes to 0
         '''
-        curr_val = .4
-        self.burn.efficiency = curr_val
+        # make wind large so efficiency goes to 0
+        waves = Waves(constant_wind(0, 0), water=Water())
+        c_disp = ChemicalDispersion(self.spill_pct,
+                                    active_start,
+                                    active_stop,
+                                    waves=waves)
+        c_disp._set_efficiency(self.spill.get('release_time'))
+        assert c_disp.efficiency == 1.0
 
-        self.burn.efficiency = 0
-        assert self.burn.efficiency == curr_val
+        c_disp.efficiency = None
+        waves.wind.timeseries = (waves.wind.timeseries[0]['time'], (100, 0))
+        c_disp._set_efficiency(self.spill.get('release_time'))
+        assert c_disp.efficiency == 0
 
-        self.burn.efficiency = 1.1
-        assert self.burn.efficiency == curr_val
+    @mark.parametrize("efficiency", (0.5, 1.0))
+    def test_prepare_for_model_step(self, efficiency):
+        '''
+        efficiency does not impact the mass of LEs marked as having been
+        sprayed. precent_sprayed determines percent of LEs marked as disperse.
+        '''
+        self.reset_and_release()
+        self.c_disp.efficiency = efficiency
 
-        self.burn.efficiency = 1.0
-        assert self.burn.efficiency == 1.0
+        assert np.all(self.sc['fate_status'] == fate.surface_weather)
+
+        self.c_disp.prepare_for_model_run(self.sc)
+        self.c_disp.prepare_for_model_step(self.sc, time_step, active_start)
+        d_mass = self.sc['mass'][self.sc['fate_status'] == fate.disperse].sum()
+
+        assert d_mass == self.c_disp.fraction_sprayed * self.spill.get_mass()
+        exp_mass = self.spill.get_mass() * self.c_disp.fraction_sprayed
+        assert d_mass - exp_mass < self.sc['mass'][0]
+
+    @mark.parametrize("frac_water", (0.5, 0.0))
+    def test__update_LE_status_codes(self, frac_water):
+        '''
+        efficiency does not impact the mass of LEs marked as having been
+        sprayed. precent_sprayed determines percent of LEs marked as disperse.
+        '''
+        self.reset_and_release()
+        self.sc['frac_water'][:] = frac_water
+        assert np.all(self.sc['fate_status'] == fate.surface_weather)
+
+        self.c_disp.prepare_for_model_run(self.sc)
+        self.c_disp.prepare_for_model_step(self.sc, time_step, active_start)
+        d_mass = self.sc['mass'][self.sc['fate_status'] == fate.disperse].sum()
+
+        assert d_mass == self.c_disp.fraction_sprayed * self.spill.get_mass()
+        exp_mass = self.spill.get_mass() * self.c_disp.fraction_sprayed
+        assert d_mass - exp_mass < self.sc['mass'][0]
+
+    @mark.parametrize("efficiency", (1.0, 0.7))
+    def test_weather_elements(self, efficiency):
+        self.reset_test_objs()
+        self.c_disp.efficiency = efficiency
+        self.c_disp.prepare_for_model_run(self.sc)
+        assert self.sc.weathering_data['chem_dispersed'] == 0.0
+
+        model_time = self.spill.get('release_time')
+        while (model_time < self.c_disp.active_stop +
+               timedelta(seconds=time_step)):
+            amt_disp = self.sc.weathering_data['chem_dispersed']
+            num_rel = self.sc.release_elements(time_step, model_time)
+            self.intrinsic.update(num_rel, self.sc)
+            self.c_disp.prepare_for_model_step(self.sc, time_step, model_time)
+
+            self.c_disp.weather_elements(self.sc, time_step, model_time)
+
+            if not self.c_disp.active:
+                assert self.sc.weathering_data['chem_dispersed'] == amt_disp
+            else:
+                assert self.sc.weathering_data['chem_dispersed'] > amt_disp
+
+            self.c_disp.model_step_is_done(self.sc)
+            self.sc.model_step_is_done()
+            # model would do the following
+            self.sc['age'][:] = self.sc['age'][:] + time_step
+            model_time += timedelta(seconds=time_step)
+
+        assert np.allclose(amount, self.sc.weathering_data['chem_dispersed'] +
+                           self.sc['mass'].sum(), atol=1e-6)
+        assert np.allclose(self.sc.weathering_data['chem_dispersed'] /
+                           self.spill.get_mass(),
+                           self.c_disp.fraction_sprayed * efficiency)

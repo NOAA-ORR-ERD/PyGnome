@@ -17,6 +17,7 @@ from gnome.basic_types import (world_point,
 from gnome.utilities import inf_datetime
 from gnome.utilities import time_utils, serializable
 from gnome.cy_gnome.cy_rise_velocity_mover import CyRiseVelocityMover
+from gnome import AddLogger
 
 
 class ProcessSchema(MappingSchema):
@@ -31,7 +32,7 @@ class ProcessSchema(MappingSchema):
                              validator=convertible_to_seconds)
 
 
-class Process(object):
+class Process(AddLogger):
     """
     Base class from which all Python movers/weatherers can inherit
 

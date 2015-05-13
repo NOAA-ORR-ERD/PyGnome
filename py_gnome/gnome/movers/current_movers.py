@@ -129,6 +129,8 @@ class CatsMover(CyMover, serializable.Serializable):
                 self.scale_refpoint is None):
             raise TypeError("Provide a reference point in 'scale_refpoint'.")
 
+        self.mover.init_mover()
+
         super(CatsMover, self).__init__(**kwargs)
 
     def __repr__(self):
@@ -193,6 +195,10 @@ class CatsMover(CyMover, serializable.Serializable):
                                                            val))
 
     @property
+    def ref_scale(self):
+        return self.mover.ref_scale
+
+    @property
     def scale_refpoint(self):
         return self.mover.ref_point
 
@@ -226,6 +232,24 @@ class CatsMover(CyMover, serializable.Serializable):
 
         self._tide = tide_obj
 
+    def get_scaled_velocities(self, model_time):
+        """
+        Get file values scaled to ref pt value, with tide applied (if any)
+        """
+        velocities = self.mover._get_velocity_handle()
+        ref_scale = self.ref_scale # this needs to be computed, needs a time
+        if self._tide is not None:
+            time_value = self._tide.cy_obj.get_time_value(model_time)
+            tide = time_value[0][0]
+        else:
+            tide = 1
+
+        velocities['u'] *= ref_scale
+        velocities['v'] *= ref_scale
+        velocities['u'] *= tide
+        velocities['v'] *= tide
+        return velocities
+
     def serialize(self, json_='webapi'):
         """
         Since 'wind' property is saved as a reference when used in save file
@@ -256,11 +280,11 @@ class CatsMover(CyMover, serializable.Serializable):
 class GridCurrentMoverSchema(ObjType, ProcessSchema):
     filename = SchemaNode(String(), missing=drop)
     topology_file = SchemaNode(String(), missing=drop)
-    current_scale = SchemaNode(Float(), default=1)
-    uncertain_duration = SchemaNode(Float(), default=24)
-    uncertain_time_delay = SchemaNode(Float(), default=0)
-    uncertain_along = SchemaNode(Float(), default=.5)
-    uncertain_cross = SchemaNode(Float(), default=.25)
+    current_scale = SchemaNode(Float(), missing=drop)
+    uncertain_duration = SchemaNode(Float(), missing=drop)
+    uncertain_time_delay = SchemaNode(Float(), missing=drop)
+    uncertain_along = SchemaNode(Float(), missing=drop)
+    uncertain_cross = SchemaNode(Float(), missing=drop)
 
 
 class GridCurrentMover(CyMover, serializable.Serializable):

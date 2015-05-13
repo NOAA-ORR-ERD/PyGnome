@@ -7,7 +7,7 @@ import datetime
 import numpy
 np = numpy
 
-from colander import Float, DateTime, Sequence, null, Tuple, \
+from colander import Float, DateTime, Sequence, Tuple, \
     TupleSchema, SequenceSchema, null
 
 import gnome.basic_types
@@ -120,12 +120,7 @@ class DatetimeValue1dArray(Sequence):
         if appstruct is null:  # colander.null
             return null
 
-        series = []
-
-        for wind_value in appstruct:
-            dt = wind_value[0].astype(object)
-            series.append((dt, (wind_value[1][0],)))
-        appstruct = series
+        appstruct = zip(appstruct['time'].astype(object), appstruct['value'])
 
         return super(DatetimeValue1dArray, self).serialize(node, appstruct)
 

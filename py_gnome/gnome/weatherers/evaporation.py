@@ -35,7 +35,7 @@ class Evaporation(Weatherer, Serializable):
         self.wind = wind
 
         super(Evaporation, self).__init__(**kwargs)
-        self.array_types.update({'fay_area', 'evap_decay_constant',
+        self.array_types.update({'area', 'evap_decay_constant',
                                  'frac_water', 'frac_lost', 'init_mass'})
 
     def prepare_for_model_run(self, sc):
@@ -96,7 +96,7 @@ class Evaporation(Weatherer, Serializable):
         # of data - left sum_frac_mw, which is a copy but easier to
         # read/understand
         data['evap_decay_constant'][:, :len(vp)] = \
-            ((-data['fay_area'] * f_diff * K /
+            ((-data['area'] * f_diff * K /
               (constants.gas_constant * water_temp * sum_mi_mw)).reshape(-1, 1)
              * vp)
 
@@ -249,7 +249,7 @@ class BlobEvaporation(Evaporation):
                   (constants.gas_constant * water_temp * sum_mi_mw))
 
         # do it the same way for initial and all subsequent times
-        blob_area = data['fay_area'][0] * len(data['fay_area'])
+        blob_area = data['area'][0] * len(data['area'])
         t = data['age'][0]
         if t == 0:
             int_area = blob_area

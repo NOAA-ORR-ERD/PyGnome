@@ -295,6 +295,13 @@ class NetCDFOutput(Outputter, Serializable):
             self._netcdf_filename = new_name
 
     @property
+    def uncertain_filename(self):
+        '''
+        if uncertain SpillContainer is present, write its data out to this file
+        '''
+        return self._u_netcdf_filename
+
+    @property
     def which_data(self):
         return self._which_data
 
@@ -541,6 +548,11 @@ class NetCDFOutput(Outputter, Serializable):
 
     def _create_nc_var(self, grp, var_name, dtype, shape, chunksz):
         'chunksizes are optional'
+        if dtype == np.bool:
+            # this is not primitive so it is not understood
+            # Make it 8-bit unsigned - numpy stores True/False in 1 byte
+            dtype = 'u1'
+
         var = grp.createVariable(var_name,
                                  dtype,
                                  shape,
@@ -753,16 +765,20 @@ class NetCDFOutput(Outputter, Serializable):
 
             # get the data
             for array_name in data_arrays:
-                #special case time and positions:
+                # special case time and positions:
                 if array_name == 'positions':
                     positions = np.zeros((elem, 3), dtype=world_point_type)
-                    positions[:, 0] = data.variables['longitude'][_start_ix:_stop_ix]
-                    positions[:, 1] = data.variables['latitude'][_start_ix:_stop_ix]
-                    positions[:, 2] = data.variables['depth'][_start_ix:_stop_ix]
+                    positions[:, 0] = \
+                        data.variables['longitude'][_start_ix:_stop_ix]
+                    positions[:, 1] = \
+                        data.variables['latitude'][_start_ix:_stop_ix]
+                    positions[:, 2] = \
+                        data.variables['depth'][_start_ix:_stop_ix]
 
                     arrays_dict['positions'] = positions
                 else:
-                    arrays_dict[array_name] = (data.variables[array_name][_start_ix:_stop_ix])
+                    arrays_dict[array_name] = \
+                        data.variables[array_name][_start_ix:_stop_ix]
 
             # get weathering_data
             weathering_data = {}

@@ -6,7 +6,7 @@ confuse with standard python random functions
 """
 
 import numpy as np
-from math import sqrt
+
 from gnome.cy_gnome import cy_helpers
 import random
 

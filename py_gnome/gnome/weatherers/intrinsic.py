@@ -13,180 +13,8 @@ import numpy as np
 from repoze.lru import lru_cache
 
 from gnome.basic_types import oil_status, fate
-from gnome import AddLogger, constants
-
-
-class FayGravityViscous(AddLogger):
-    '''
-    Model the FayGravityViscous spreading of the oil. This assumes all LEs
-    released together spread as a blob. The blob can be partitioned into 'N'
-    LEs and the assumption is that the thickness and initial volume of the
-    blob applies to all LEs in it. As such, instead of computing area, lets
-    compute thickness - whether 1 or 10 LEs is used to model the blob, the
-    thickness remains the same.
-    '''
-    def __init__(self):
-        self.spreading_const = (1.53, 1.21)
-        self.thickness_limit = .0001
-
-    @lru_cache(4)
-    def _gravity_spreading_t0(self,
-                              water_viscosity,
-                              relative_bouyancy,
-                              blob_init_vol):
-        '''
-        time for the initial transient phase of spreading to complete. This
-        depends on blob volume, but is on the order of minutes. Cache upto 4
-        inputs - don't expect 4 or more spills in one scenario.
-        '''
-        # time to reach a0
-        t0 = ((self.spreading_const[1]/self.spreading_const[0]) ** 4.0 *
-              (blob_init_vol/(water_viscosity * constants.gravity *
-                              relative_bouyancy))**(1./3))
-        return t0
-
-    def init_area(self,
-                  water_viscosity,
-                  relative_bouyancy,
-                  blob_init_vol):
-        '''
-        This takes scalars inputs since water_viscosity, init_volume and
-        relative_bouyancy for a bunch of LEs released together will be the same
-        It
-
-        :param water_viscosity: viscosity of water
-        :type water_viscosity: float
-        :param init_volume: total initial volume of all LEs released together
-        :type init_volume: float
-        :param relative_bouyancy: relative bouyance of oil wrt water:
-            (rho_water - rho_oil)/rho_water where rho defines density
-        :type relative_bouyancy: float
-        :param time_step: age of particle at the end of this model step. If
-            is greater than the time for gravity spreading, then return initial
-            area due to gravity spreading. If this is greater, then set age
-            = time_step - gravity_spreading_time and invoke update_area().
-        :type time_step: float
-
-        Equation for gravity spreading:
-        ::
-            A0 = np.pi*(k2**4/k1**2)*((V0**5*g*dbuoy)/(nu_h2o**2))**(1./6.)
-        '''
-        self._check_relative_bouyancy(relative_bouyancy)
-        a0 = (np.pi*(self.spreading_const[1]**4/self.spreading_const[0]**2)
-              * (((blob_init_vol)**5*constants.gravity*relative_bouyancy) /
-                 (water_viscosity**2))**(1./6.))
-        return a0
-
-    def _check_relative_bouyancy(self, rel_bouy):
-        '''
-        For now just raise an error if any relative_bouyancy is < 0. These
-        particles will sink, ask how we want to deal with them. They should
-        be removed or we should only look at floating particles when computing
-        area?
-        '''
-        if np.any(rel_bouy < 0):
-            raise ValueError("Found particles with relative_bouyancy < 0. "
-                             "Area does not handle this case at present.")
-
-    def _update_blob_area(self, water_viscosity, relative_bouyancy,
-                          blob_init_volume, age):
-        area = (np.pi * self.spreading_const[1]**2 *
-                (blob_init_volume**2 * constants.gravity * relative_bouyancy /
-                 np.sqrt(water_viscosity)) ** (1./3) * np.sqrt(age))
-
-        return area
-
-    def update_area(self,
-                    water_viscosity,
-                    relative_bouyancy,
-                    blob_init_volume,
-                    area,
-                    age):
-        '''
-        update area array in place, also return area array
-        not including frac_coverage at present
-        each blob is defined by its age. This updates the area of each blob,
-        as such, use the mean relative_bouyancy for each blob. Still check
-        and ensure relative bouyancy is > 0 for all LEs
-        '''
-        if np.any(age == 0):
-            msg = "use init_area for age == 0"
-            raise ValueError(msg)
-
-        self._check_relative_bouyancy(relative_bouyancy)
-
-        # update area for each blob of LEs
-        for b_age in np.unique(age):
-            # within each age blob_init_volume should also be the same
-            m_age = b_age == age
-            t0 = self._gravity_spreading_t0(water_viscosity,
-                                            relative_bouyancy,
-                                            blob_init_volume[m_age][0])
-
-            if b_age <= t0:
-                '''
-                only update initial area, A_0, if age is past the transient
-                phase. Expect this to be the case since t0 is on the order of
-                minutes; but do a check incase we want to experiment with
-                smaller timesteps.
-                '''
-                continue
-
-            # now update area of old LEs - only update till max area is reached
-            max_area = blob_init_volume[m_age][0]/self.thickness_limit
-            if area[m_age].sum() < max_area:
-                self.logger.debug(self._pid + "Before update: ")
-                msg = ("\n\trel_bouy: {0}\n"
-                       "\tblob_i_vol: {1}\n"
-                       "\tage: {2}\n"
-                       "\tarea: {3}".
-                       format(relative_bouyancy, blob_init_volume[m_age][0],
-                              age[m_age][0], area[m_age].sum()))
-                self.logger.debug(msg)
-
-                # update area
-                blob_area = \
-                    self._update_blob_area(water_viscosity,
-                                           relative_bouyancy,
-                                           blob_init_volume[m_age][0],
-                                           age[m_age][0])
-                if blob_area > max_area:
-                    area[m_age] = max_area/m_age.sum()
-                else:
-                    area[m_age] = blob_area/m_age.sum()
-
-                self.logger.debug(self._pid +
-                                  "\tarea after update: {0}".format(blob_area))
-
-        return area
-
-
-class ConstantArea(AddLogger):
-    '''
-    Used for testing and diagnostics
-    - must be manually hooked up
-    '''
-    def __init__(self, area):
-        self.area = area
-
-    def init_area(self, *args):
-        return self.area
-
-    def update_area(self,
-                    water_viscosity=None,
-                    relative_bouyancy=None,
-                    blob_init_volume=None,
-                    area=None,
-                    age=None):
-        '''
-        return the area array as it was entered since that contains area per
-        LE if there is more than one LE. Kept the interface the same as
-        FayGravityViscous since WeatheringData will call it the same way.
-        '''
-        if area is None:
-            return self.area
-        else:
-            return area
+from gnome import AddLogger
+from .spreading import FayGravityViscous
 
 
 class WeatheringData(AddLogger):
@@ -203,6 +31,13 @@ class WeatheringData(AddLogger):
     def __init__(self,
                  water,
                  spreading=FayGravityViscous()):
+        '''
+        Consier Langmuir as an environmental process. It is used to update the
+        frac_coverage which gets applied to Area. Let WeatheringData control
+        the invocation of Langmuir to update frac_coverage or maybe directly
+        update 'fay_area' - though need to see if that effects dispersion
+        adversely
+        '''
         self.water = water
         self.spreading = spreading
         self.array_types = {'fate_status', 'positions', 'status_codes',
@@ -211,8 +46,8 @@ class WeatheringData(AddLogger):
                             # init volume of particles released together
                             'bulk_init_volume',
                             'init_mass', 'frac_water', 'frac_lost',
-                            'fay_area',
-                            'frac_coverage', 'age',
+                            'fay_area', 'at_max_area',
+                            'area', 'age',
                             'spill_num'}
 
         # following used to update viscosity
@@ -222,20 +57,35 @@ class WeatheringData(AddLogger):
         # relative_bouyancy - use density at release time. For now
         # temperature is fixed so just compute once and store. When temperature
         # varies over time, may want to do something different
-        self._init_relative_bouyancy = None
+        self._init_relative_buoyancy = None
 
-    def initialize(self, sc):
+    def prepare_for_model_run(self, sc):
         '''
         1. initialize standard keys:
-        avg_density, floating, amount_released, avg_viscosity to 0.0
+           avg_density, floating, amount_released, avg_viscosity to 0.0
         2. set init_density for all ElementType objects in each Spill
+        3. set spreading thickness limit based on viscosity of oil at
+           water temperature which is constant for now.
         '''
         # nothing released yet - set everything to 0.0
         for key in ('avg_density', 'floating', 'amount_released',
                     'avg_viscosity', 'beached'):
             sc.weathering_data[key] = 0.0
 
-    def update(self, num_new_released, sc, time_step):
+        # initialize the thickness_limit for FayGravityViscous based on
+        # viscosity of oil - assume only one type of substance for all spills
+        # make sure we have spills with valid substance
+        subs = sc.get_substances(False)
+        if len(subs) > 0:
+            vo = subs[0].get_viscosity(self.water.get('temperature'))
+            # set thickness_limit
+            self.spreading.set_thickness_limit(vo)
+
+        # reset _init_relative_buoyancy for every run
+        # make it None so no stale data
+        self._init_relative_buoyancy = None
+
+    def update(self, num_new_released, sc):
         '''
         Uses 'substance' properties together with 'water' properties to update
         'density', 'bulk_init_volume', etc
@@ -245,10 +95,10 @@ class WeatheringData(AddLogger):
         newly released particles here.
         '''
         if len(sc) > 0:
-            self._update_intrinsic_props(sc, time_step)
-            self._update_weathering_data(num_new_released, sc)
+            self._update_weathering_dataarrays(sc)
+            self._update_aggregated_data(num_new_released, sc)
 
-    def _update_weathering_data(self, new_LEs, sc):
+    def _update_aggregated_data(self, new_LEs, sc):
         '''
         intrinsic LE properties not set by any weatherer so let SpillContainer
         set these - will user be able to use select weatherers? Currently,
@@ -306,7 +156,7 @@ class WeatheringData(AddLogger):
             else:
                 sc.weathering_data['amount_released'] = amount_released
 
-    def _update_intrinsic_props(self, sc, time_step):
+    def _update_weathering_dataarrays(self, sc):
         '''
         - initialize 'density', 'viscosity', and other optional arrays for
         newly released particles.
@@ -321,14 +171,15 @@ class WeatheringData(AddLogger):
                 continue
 
             # could also use 'age' but better to use an uninitialized var since
-            # we might end up changing 'age' to something with less than a
-            # time_step resolution
+            # we might end up changing 'age' to something other than 0
             new_LEs_mask = data['density'] == 0
             if sum(new_LEs_mask) > 0:
-                self._init_new_particles(new_LEs_mask, data, substance,
-                                         time_step)
+                self._init_new_particles(new_LEs_mask, data, substance)
             if sum(~new_LEs_mask) > 0:
-                self._update_old_particles(~new_LEs_mask, data, substance)
+                self._update_old_particles(~new_LEs_mask,
+                                           data,
+                                           substance,
+                                           sc.current_time_stamp)
 
         sc.update_from_fatedataview(fate='all')
 
@@ -358,7 +209,7 @@ class WeatheringData(AddLogger):
 
         sc.update_from_fatedataview(fate='all')
 
-    def _init_new_particles(self, mask, data, substance, time_step):
+    def _init_new_particles(self, mask, data, substance):
         '''
         initialize new particles released together in a given timestep
 
@@ -366,15 +217,23 @@ class WeatheringData(AddLogger):
         :type mask: numpy bool array
         :param data: dict containing numpy arrays
         :param substance: OilProps object defining the substance spilled
-        :param time_step: timestep for this step
         '''
         water_temp = self.water.get('temperature', 'K')
-        data['density'][mask] = substance.get_density(water_temp)
+        density = substance.get_density(water_temp)
+        if density > self.water.get('density'):
+            msg = ("{0} will sink at given water temperature: {1}. Set density"
+                   " to water density".
+                   format(substance.name,
+                          self.water.get('temperature',
+                                         self.water.units['temperature'])))
+            self.logger.error(msg)
+            data['density'][mask] = self.water.get('density')
+        else:
+            data['density'][mask] = density
 
-        if self._init_relative_bouyancy is None:
-            rho_h2o = self.water.get('density', 'kg/m^3')
-            self._init_relative_bouyancy = \
-                (rho_h2o - data['density'][mask][0])/rho_h2o
+        if self._init_relative_buoyancy is None:
+            self._init_relative_buoyancy = \
+                self._get_relative_buoyancy(data['density'][mask][0])
 
         # initialize mass_components -
         # sub-select mass_components array by substance.num_components.
@@ -398,12 +257,12 @@ class WeatheringData(AddLogger):
 
         # initialize bulk_init_volume and fay_area for new particles per spill
         # other properties must be set (like 'mass', 'density')
-        self._init_data_by_spill(mask, data, substance, time_step)
+        self._init_data_by_spill(mask, data, substance)
 
         # initialize the fate_status array based on positions and status_codes
         self._init_fate_status(mask, data)
 
-    def _init_data_by_spill(self, mask, data, substance, time_step):
+    def _init_data_by_spill(self, mask, data, substance):
         '''
         set bulk_init_volume and fay_area. These are set on a per spill bases
         in addition to per substance.
@@ -426,10 +285,11 @@ class WeatheringData(AddLogger):
                 (data['mass'][s_mask][0]/data['density'][s_mask][0]) * num
             init_blob_area = \
                 self.spreading.init_area(water_kvis,
-                                         self._init_relative_bouyancy,
+                                         self._init_relative_buoyancy,
                                          data['bulk_init_volume'][s_mask][0])
 
             data['fay_area'][s_mask] = init_blob_area/num
+            data['area'][s_mask] = data['fay_area'][s_mask]
 
     def _init_fate_status(self, update_LEs_mask, data):
         '''
@@ -501,7 +361,7 @@ class WeatheringData(AddLogger):
 
         return k_rho
 
-    def _update_old_particles(self, mask, data, substance):
+    def _update_old_particles(self, mask, data, substance, model_time):
         '''
         update density, area
         '''
@@ -551,9 +411,20 @@ class WeatheringData(AddLogger):
                     (v0 * np.exp(kv1 *
                                  data['frac_lost'][s_mask]) *
                      (1 + (fw_d_fref/(1.187 - fw_d_fref)))**2.49)
-            data['fay_area'][s_mask] = \
+            data['fay_area'][s_mask], data['at_max_area'][s_mask] = \
                 self.spreading.update_area(water_kvis,
-                                           self._init_relative_bouyancy,
+                                           self._init_relative_buoyancy,
                                            data['bulk_init_volume'][s_mask],
                                            data['fay_area'][s_mask],
-                                           data['age'][s_mask])
+                                           data['age'][s_mask],
+                                           data['at_max_area'][s_mask])
+            if not np.all(data['at_max_area'][s_mask]):
+                data['area'][s_mask] = data['fay_area'][s_mask]
+
+    def _get_relative_buoyancy(self, rho_oil):
+        '''
+        given density of oil (rho_oil), return the relative_buoyancy:
+            (rho_water - rho_oil)/rho_water
+        '''
+        rho_h2o = self.water.get('density', 'kg/m^3')
+        return (rho_h2o - rho_oil)/rho_h2o

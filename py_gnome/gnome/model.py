@@ -476,6 +476,25 @@ class Model(Serializable):
 
         return False
 
+    def find_by_class(self, obj, collection, ret_all=False):
+        '''
+        Look for an object that isinstance() of obj in specified colleciton.
+        By default, it will return the first object of this type.
+        To get all obects of this type, set ret_all to True
+        '''
+        all_objs = []
+        for item in getattr(self, collection):
+            if isinstance(item, obj):
+                if not ret_all:
+                    return obj
+                else:
+                    all_objs.append(obj)
+
+        if len(all_objs) == 0:
+            return None
+
+        return all_objs
+
     def _order_weatherers(self):
         'use weatherer_sort to sort the weatherers'
         s_weatherers = sorted(self.weatherers, key=weatherer_sort)
@@ -529,7 +548,8 @@ class Model(Serializable):
             # compute area if Evaporation is included since it requires 'area'
             array_types.update(self._weathering_data.array_types)
         else:
-            # reset to None if no weatherers found
+            # reset to None if no weatherers found - don't want to carry around
+            # all the extra data arrays
             self._weathering_data = None
 
         for environment in self.environment:
@@ -553,7 +573,7 @@ class Model(Serializable):
             sc.prepare_for_model_run(array_types)
             if self._weathering_data:
                 # do this only if we have user has added spills!
-                self._weathering_data.initialize(sc)
+                self._weathering_data.prepare_for_model_run(sc)
 
         # outputters need array_types, so this needs to come after those
         # have been updated.
@@ -757,7 +777,7 @@ class Model(Serializable):
             # in the next step
             num_released = sc.release_elements(self.time_step, self.model_time)
             if self._weathering_data:
-                self._weathering_data.update(num_released, sc, self.time_step)
+                self._weathering_data.update(num_released, sc)
 
             self.logger.debug("{1._pid} released {0} new elements for step:"
                               " {1.current_time_step} for {1.name}".
@@ -1058,6 +1078,10 @@ class Model(Serializable):
                                  allowZip64=self._allowzip64) as z:
                 z.write(datafile, nc_file)
                 os.remove(datafile)
+                if self.uncertain:
+                    u_file = nc_out.uncertain_filename
+                    z.write(u_file, os.path.split(u_file)[1])
+                    os.remove(u_file)
 
     def _load_spill_data(self, saveloc, nc_file):
         """
@@ -1070,6 +1094,10 @@ class Model(Serializable):
 
                 saveloc = os.path.split(saveloc)[0]
                 z.extract(nc_file, saveloc)
+                if self.uncertain:
+                    spill_data_fname, ext = os.path.splitext(nc_file)
+                    fname = '{0}_uncertain{1}'.format(spill_data_fname, ext)
+                    z.extract(fname, saveloc)
 
         spill_data = os.path.join(saveloc, nc_file)
         if not os.path.exists(spill_data):

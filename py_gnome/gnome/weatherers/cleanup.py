@@ -6,13 +6,13 @@ from datetime import timedelta
 import copy
 
 import numpy as np
-from colander import (SchemaNode, Float, String, drop)
+from colander import (SchemaNode, Float, String, drop, Range)
 
 from gnome.basic_types import oil_status, fate as bt_fate
 from gnome.weatherers import Weatherer
 from gnome.utilities.serializable import Serializable, Field
 from gnome.environment.wind import WindSchema
-from gnome.utilities.inf_datetime import InfDateTime
+from gnome.environment import Waves
 
 from .core import WeathererSchema
 from .. import _valid_units
@@ -20,28 +20,14 @@ from .. import _valid_units
 import unit_conversion as uc
 
 
-class SkimmerSchema(WeathererSchema):
-    amount = SchemaNode(Float())
-    units = SchemaNode(String())
-    efficiency = SchemaNode(Float())
-
-
-class CleanUpBase(Weatherer):
+class RemoveMass(object):
     '''
-    Just need to add a few internal methods for Skimmer + Burn common code
-    Currently defined as a base class.
+    create a mixin for mass removal. These methods are used by CleanUpBase and
+    also by manual_beaching.
     '''
     # todo: following is same as Spill code so rework to make it DRY
     valid_vol_units = _valid_units('Volume')
     valid_mass_units = _valid_units('Mass')
-
-    def __init__(self, **kwargs):
-        '''
-        add 'frac_water' to array_types and pass **kwargs to base class
-        __init__ using super
-        '''
-        super(CleanUpBase, self).__init__(**kwargs)
-        self.array_types.update({'frac_water'})
 
     def _get_mass(self, substance, amount, units):
         '''
@@ -55,67 +41,6 @@ class CleanUpBase(Weatherer):
             rm_mass = substance.get_density() * rm_vol
 
         return rm_mass
-
-    def _get_substance(self, sc):
-        '''
-        return a single substance - cleanup operations only know about the
-        total amount removed. Unclear how to assign this to multiple substances
-        For now, just log an error if more than one substance present
-        '''
-        substance = sc.get_substances(complete=False)
-        if len(substance) > 1:
-            msg = ('Found more than one type of Oil - not supported. '
-                   'Results will be incorrect')
-            self.logger.error(msg)
-        return substance[0]
-
-    def _update_LE_status_codes(self,
-                                sc,
-                                new_status,
-                                substance,
-                                mass_to_remove):
-        '''
-        Need to mark LEs to 'new_status'. It updates the 'fate_status' for
-        'surface_weather' LEs. Mark LEs based on mass.
-        Mass to remove is the oil_water mixture so we need to find the
-        oil_amount given the water_frac:
-
-            volume = sc['mass']/API_density
-            (1 - sc['frac_water']) * oil_water_vol = volume
-            oil_water_vol = volume / (1 - sc['frac_water'])
-
-        Now, do a cumsum of oil_water_mass and find where
-            np.cumsum(oil_water_vol) >= vol_to_remove
-        and change the status_codes of these LEs. Can just as easily multiple
-        everything by API_density to get
-            np.cumsum(oil_water_mass) >= mass_to_remove
-            mass_to_remove = sc['mass'] / (1 - sc['frac_water'])
-        This is why the input is 'mass_to_remove' instead of 'vol_to_remove'
-        - less computation
-        '''
-        arrays = {'fate_status', 'mass', 'frac_water'}
-        data = sc.substancefatedata(substance, arrays, 'surface_weather')
-        oil_water = data['mass'] / (1 - data['frac_water'])
-
-        # (1 - frac_water) * mass_to_remove
-        if mass_to_remove >= oil_water.sum():
-            data['fate_status'][:] = new_status
-            msg = "insufficient mass released for cleanup"
-            self.logger.warning(self._pid + msg)
-            self.logger.warning(self._pid + "marked ALL ({0}) LEs, total mass:"
-                                " {1}".format(len(data['fate_status']),
-                                              data['mass'].sum()))
-        else:
-            # sum up mass until threshold is reached, find index where
-            # total_mass_removed is reached or exceeded
-            ix = np.where(np.cumsum(oil_water) >= mass_to_remove)[0][0]
-            # change status for elements upto and including 'ix'
-            data['fate_status'][:ix + 1] = new_status
-
-            self.logger.debug(self._pid + 'marked {0} LEs with mass: '
-                              '{1}'.format(ix, data['mass'][:ix].sum()))
-
-        sc.update_from_fatedataview(substance, 'surface_weather')
 
     def _set__timestep(self, time_step, model_time):
         '''
@@ -140,15 +65,6 @@ class CleanUpBase(Weatherer):
         if (self.active_stop < model_time + dt):
             self._timestep = (self.active_stop -
                               model_time).total_seconds()
-
-    def _avg_frac_oil(self, data):
-        '''
-        find weighted average of frac_water array, return (1 - avg_frac_water)
-        since we want the average fraction of oil in this data
-        '''
-        avg_frac_water = ((data['mass'] * data['frac_water']).
-                          sum()/data['mass'].sum())
-        return (1 - avg_frac_water)
 
     def prepare_for_model_step(self, sc, time_step, model_time):
         '''
@@ -175,6 +91,130 @@ class CleanUpBase(Weatherer):
         self._set__timestep(time_step, model_time)
 
 
+class CleanUpBase(RemoveMass, Weatherer):
+    '''
+    Just need to add a few internal methods for Skimmer + Burn common code
+    Currently defined as a base class.
+    '''
+    def __init__(self, **kwargs):
+        '''
+        add 'frac_water' to array_types and pass **kwargs to base class
+        __init__ using super
+        '''
+        self._efficiency = None
+        self.efficiency = kwargs.pop("efficiency", 1.0)
+
+        super(CleanUpBase, self).__init__(**kwargs)
+
+        self.array_types.update({'frac_water'})
+
+    @property
+    def efficiency(self):
+        return self._efficiency
+
+    @efficiency.setter
+    def efficiency(self, value):
+        '''
+        update efficiency.
+
+        It must be greater than 0 and less than or equal to 1.0. It can also be
+        None since that means use wind to compute efficiency.
+        '''
+        if value is None or (value > 0 and value <= 1):
+            self._efficiency = value
+
+        elif value <= 0 or value > 1.0:
+            msg = "efficiency must be > 0 and <= 1.0"
+            self.logger.warning(msg)
+
+    def _get_substance(self, sc):
+        '''
+        return a single substance - cleanup operations only know about the
+        total amount removed. Unclear how to assign this to multiple substances
+        For now, just log an error if more than one substance present
+        '''
+        substance = sc.get_substances(complete=False)
+        if len(substance) > 1:
+            msg = ('Found more than one type of Oil - not supported. '
+                   'Results will be incorrect')
+            self.logger.error(msg)
+        return substance[0]
+
+    def _update_LE_status_codes(self,
+                                sc,
+                                new_status,
+                                substance,
+                                mass_to_remove,
+                                oilwater_mix=True):
+        '''
+        Need to mark LEs to 'new_status'. It updates the 'fate_status' for
+        'surface_weather' LEs. Mark LEs based on mass.
+        Mass to remove is assumed to be the oil/water mixture by default
+        (oilwater_mix=True) so we need to find the oil_amount given the
+        water_frac:
+
+            volume = sc['mass']/API_density
+            (1 - sc['frac_water']) * oil_water_vol = volume
+            oil_water_vol = volume / (1 - sc['frac_water'])
+
+        Now, do a cumsum of oil_water_mass and find where
+            np.cumsum(oil_water_vol) >= vol_to_remove
+        and change the status_codes of these LEs. Can just as easily multiple
+        everything by API_density to get
+            np.cumsum(oil_water_mass) >= mass_to_remove
+            mass_to_remove = sc['mass'] / (1 - sc['frac_water'])
+        This is why the input is 'mass_to_remove' instead of 'vol_to_remove'
+        - less computation
+
+        Note: For ChemicalDispersion, the mass_to_remove is not the mass of the
+            oil/water mixture, but the mass of the oil. Use the oilwater_mix
+            flag to indicate this is the case.
+        '''
+        arrays = {'fate_status', 'mass', 'frac_water'}
+        data = sc.substancefatedata(substance, arrays, 'surface_weather')
+        curr_mass = data['mass']
+
+        if oilwater_mix:
+            # create a mass array of oil/water mixture and use this when
+            # marking LEs for removal
+            curr_mass = curr_mass / (1 - data['frac_water'])
+
+        # (1 - frac_water) * mass_to_remove
+        if mass_to_remove >= curr_mass.sum():
+            data['fate_status'][:] = new_status
+            msg = "insufficient mass released for cleanup"
+            self.logger.warning(self._pid + msg)
+            self.logger.warning(self._pid + "marked ALL ({0}) LEs, total mass:"
+                                " {1}".format(len(data['fate_status']),
+                                              data['mass'].sum()))
+        else:
+            # sum up mass until threshold is reached, find index where
+            # total_mass_removed is reached or exceeded
+            ix = np.where(np.cumsum(curr_mass) >= mass_to_remove)[0][0]
+            # change status for elements upto and including 'ix'
+            data['fate_status'][:ix + 1] = new_status
+
+            self.logger.debug(self._pid + 'marked {0} LEs with mass: '
+                              '{1}'.format(ix, data['mass'][:ix].sum()))
+
+        sc.update_from_fatedataview(substance, 'surface_weather')
+
+    def _avg_frac_oil(self, data):
+        '''
+        find weighted average of frac_water array, return (1 - avg_frac_water)
+        since we want the average fraction of oil in this data
+        '''
+        avg_frac_water = ((data['mass'] * data['frac_water']).
+                          sum()/data['mass'].sum())
+        return (1 - avg_frac_water)
+
+
+class SkimmerSchema(WeathererSchema):
+    amount = SchemaNode(Float())
+    units = SchemaNode(String())
+    efficiency = SchemaNode(Float())
+
+
 class Skimmer(CleanUpBase, Serializable):
     _state = copy.deepcopy(Weatherer._state)
     _state += [Field('amount', save=True, update=True),
@@ -196,14 +236,13 @@ class Skimmer(CleanUpBase, Serializable):
         cleanup operations must have a valid datetime - cannot use -inf and inf
         active_start/active_stop is used to get the mass removal rate
         '''
-
         super(Skimmer, self).__init__(active_start=active_start,
                                       active_stop=active_stop,
+                                      efficiency=efficiency,
                                       **kwargs)
         self._units = None
         self.amount = amount
         self.units = units
-        self.efficiency = efficiency
 
         # get the rate as amount/sec, use this to compute amount at each step
         # set in prepare_for_model_run()
@@ -234,7 +273,7 @@ class Skimmer(CleanUpBase, Serializable):
             self._units = value
         else:
             msg = ('{0} are not valid volume or mass units.'
-                   ' Not updated').format('value')
+                   ' Not updated').format(value)
             self.logger.warn(msg)
 
     def prepare_for_model_run(self, sc):
@@ -364,7 +403,7 @@ class Burn(CleanUpBase, Serializable):
                  active_start,
                  area_units='m^2',
                  thickness_units='m',
-                 efficiency=None,
+                 efficiency=1.0,
                  wind=None,
                  **kwargs):
         '''
@@ -395,6 +434,7 @@ class Burn(CleanUpBase, Serializable):
             kwargs.pop('active_stop')
 
         super(Burn, self).__init__(active_start=active_start,
+                                   efficiency=efficiency,
                                    **kwargs)
 
         # initialize user units to valid units - setters following this will
@@ -420,16 +460,7 @@ class Burn(CleanUpBase, Serializable):
         # setters will validate the units
         self.area_units = area_units
         self.thickness_units = thickness_units
-
-        self._efficiency = None
-        self.efficiency = efficiency
         self.wind = wind
-
-        if self.efficiency is None and wind is None:
-            msg = ("Set the 'efficiency' or provide 'wind' object so "
-                   "efficiency can be computed. Without at least one, it "
-                   "will fail during step")
-            self.logger.warning(msg)
 
         # initialize rates and active_stop based on frac_water = 0.0
         self._init_rate_duration()
@@ -457,10 +488,14 @@ class Burn(CleanUpBase, Serializable):
     @thickness.setter
     def thickness(self, value):
         '''
-        log a warning if thickness in SI units is less than _min_thickness
+        1. log a warning if thickness in SI units is less than _min_thickness
+        2. if thickness changes, invoke _init_rate_duration() to reset
+           active_stop - more important for UI so it reflects the correct
+           duration.
         '''
         self._thickness = value
         self._log_thickness_warning()
+        self._init_rate_duration()
 
     def _log_thickness_warning(self):
         '''
@@ -484,6 +519,7 @@ class Burn(CleanUpBase, Serializable):
     def thickness_units(self, value):
         '''
         value must be one of the valid units given in valid_length_units
+        also reset active_stop()
         '''
         if value not in self.valid_length_units:
             e = uc.InvalidUnitError((value, 'Length'))
@@ -491,28 +527,10 @@ class Burn(CleanUpBase, Serializable):
             raise e
 
         self._thickness_units = value
+        self._init_rate_duration()
 
         # if thickness in these units is < min required, log a warning
         self._log_thickness_warning()
-
-    @property
-    def efficiency(self):
-        return self._efficiency
-
-    @efficiency.setter
-    def efficiency(self, value):
-        '''
-        update efficiency.
-
-        It must be greater than 0 and less than or equal to 1.0. It can also be
-        None since that means use wind to compute efficiency.
-        '''
-        if value is None or (value > 0 and value <= 1):
-            self._efficiency = value
-
-        elif value <= 0 or value > 1.0:
-            msg = "efficiency must be > 0 and <= 1.0"
-            self.logger.warning(msg)
 
     def prepare_for_model_run(self, sc):
         '''
@@ -611,7 +629,7 @@ class Burn(CleanUpBase, Serializable):
         avg_frac_oil = self._avg_frac_oil(data)
         self._init_rate_duration(avg_frac_oil)
 
-    def _get_efficiency(self, model_time):
+    def _set_efficiency(self, model_time):
         '''
         return burn efficiency either from efficiency attribute or computed
         from wind
@@ -621,22 +639,18 @@ class Burn(CleanUpBase, Serializable):
                               "object so efficiency can be computed. "
                               "Else using 100% efficiency")
 
-            return 1.0
+            self.efficiency = 1.0
 
-        if self.efficiency is not None:
-            eff = self.efficiency
-        else:
+        if self.efficiency is None:
             # get it from wind
             ws = self.wind.get_value(model_time)
             if ws > 1./0.07:
                 msg = ("wind speed is greater than {0}."
                        " Set efficiency to 0".format(1./0.07))
                 self.logger.warning(msg)
-                eff = 0
+                self._efficiency = 0
             else:
-                eff = 1 - 0.07 * ws
-
-        return eff
+                self.efficiency = 1 - 0.07 * ws
 
     def weather_elements(self, sc, time_step, model_time):
         '''
@@ -654,13 +668,12 @@ class Burn(CleanUpBase, Serializable):
             if len(data['mass']) is 0:
                 continue
 
-            eff = self._get_efficiency(model_time)
+            self._set_efficiency(model_time)
 
-            # scale rates by efficiency
-            oil_vol_rate = self._oil_vol_burnrate * eff
-
+            # scale rate by efficiency
             # this is volume of oil burned - need to get mass from this
-            vol_oil_burned = oil_vol_rate * self._timestep
+            vol_oil_burned = \
+                self._oil_vol_burnrate * self.efficiency * self._timestep
             rm_mass = self._get_mass(substance, vol_oil_burned, 'm^3')
             rm_mass_frac = rm_mass / data['mass'].sum()
             data['mass_components'] = \
@@ -679,8 +692,9 @@ class Burn(CleanUpBase, Serializable):
 
     def serialize(self, json_='webapi'):
         """
-        Since 'wind'/'waves' property is saved as references in save file
-        need to add appropriate node to WindMover schema for 'webapi'
+        'wind'/'waves' property is saved as references in save file
+        need to add serialized object for 'webapi'. Burn could have 'wind' and
+        ChemicalDispersion could have 'waves'.
         """
         serial = super(Burn, self).serialize(json_)
 
@@ -708,27 +722,169 @@ class Burn(CleanUpBase, Serializable):
         super(Burn, self).update_from_dict(data)
 
 
-class Dispersion(Weatherer, Serializable):
+class ChemicalDispersionSchema(WeathererSchema):
+    fraction_sprayed = SchemaNode(Float(), validator=Range(0, 1.0))
+    efficiency = SchemaNode(Float(), missing=drop, validator=Range(0, 1.0))
+
+
+class ChemicalDispersion(CleanUpBase, Serializable):
     _state = copy.deepcopy(Weatherer._state)
-    _schema = WeathererSchema
+    _schema = ChemicalDispersionSchema
+    _state += [Field('fraction_sprayed', save=True, update=True),
+               Field('efficiency', save=True, update=True),
+               Field('waves', save=True, update=True, save_reference=True),
+               Field('_rate', save=True)]
+
+    def __init__(self,
+                 fraction_sprayed,
+                 active_start,
+                 active_stop,
+                 waves=None,
+                 efficiency=1.0,
+                 **kwargs):
+        '''
+        another mass removal mechanism. The volume specified gets dispersed
+        with efficiency based on wave conditions.
+
+        :param volume: volume of oil (not oil/water?) applied with surfactant
+        :type volume: float
+        :param units: volume units
+        :type units: str
+        :param active_start: start time of operation
+        :type active_start: datetime
+        :param active_stop: stop time of operation
+        :type active_stop: datetime
+        :param waves: waves object - query to get height. It must contain
+            get_value() method. Default is None to support object creation by
+            WebClient before a waves object is defined
+        :type waves: an object with same interface as gnome.environment.Waves
+
+        Optional Argument: Either efficiency or waves must be set before
+        running the model. If efficiency is not set, then use wave height to
+        estimate an efficiency
+
+        :param efficiency: efficiency of operation.
+        :type efficiency: float between 0 and 1
+
+        remaining kwargs include 'on' and 'name' and these are passed to base
+        class via super
+        '''
+        super(ChemicalDispersion, self).__init__(active_start=active_start,
+                                                 active_stop=active_stop,
+                                                 efficiency=efficiency,
+                                                 **kwargs)
+
+        # fraction_sprayed must be > 0 and <= 1.0
+        self.fraction_sprayed = fraction_sprayed
+        self.waves = waves
+
+        # rate is set the first timestep in which the object becomes active
+        self._rate = None
 
     def prepare_for_model_run(self, sc):
-        if sc.spills:
-            sc.weathering_data['dispersed'] = 0.0
+        '''
+        reset _rate to None. It gets set when LEs are marked to be dispersed.
+        '''
+        self._rate = None
+        if self.on:
+            sc.weathering_data['chem_dispersed'] = 0.0
+
+    def prepare_for_model_step(self, sc, time_step, model_time):
+        '''
+        1. invoke base class method (using super) to set active flag
+        2. mark LEs for removal
+        3. set internal _rate attribute for mass removal [kg/sec]
+        '''
+        super(ChemicalDispersion, self).prepare_for_model_step(sc,
+                                                               time_step,
+                                                               model_time)
+        if not self.active:
+            return
+
+        # only when it is active, update the status codes
+        self._set__timestep(time_step, model_time)
+        if (sc['fate_status'] == bt_fate.disperse).sum() == 0:
+            substance = self._get_substance(sc)
+            mass = sum([spill.get_mass() for spill in sc.spills])
+            rm_total_mass_si = mass * self.fraction_sprayed
+
+            # the mass to remove is actual oil mass not mass of oil/water
+            # mixture
+            self._update_LE_status_codes(sc, bt_fate.disperse,
+                                         substance, rm_total_mass_si,
+                                         oilwater_mix=False)
+            self._rate = \
+                (rm_total_mass_si /
+                 (self.active_stop - self.active_start).total_seconds())
+
+    def _set_efficiency(self, model_time):
+        if self.efficiency is None:
+            # if wave height > 6.4 m, we get negative results - log and
+            # reset to 0 if this occurs
+            # can efficiency go to 0? Is there a minimum threshold?
+            w = 0.3 * self.waves.get_value(model_time)[0]
+            efficiency = (0.241 + 0.587*w - 0.191*w**2 +
+                          0.02616*w**3 - 0.0016 * w**4 -
+                          0.000037*w**5)
+            if efficiency < 0:
+                self._efficiency = 0
+                msg = ("wave height {0} - results in negative efficiency. "
+                       "Reset to 0")
+                self.logger.warning(msg)
+            else:
+                self.efficiency = efficiency
 
     def weather_elements(self, sc, time_step, model_time):
         'for now just take away 0.1% at every step'
         if self.active and len(sc) > 0:
-            for substance, data in sc.itersubstancedata(self.array_types):
+            for substance, data in sc.itersubstancedata(self.array_types,
+                                                        fate='disperse'):
                 if len(data['mass']) is 0:
                     continue
 
-                # take out 0.25% of the mass
-                pct_per_le = (1 - 0.015/data['mass_components'].shape[1])
-                mass_remain = pct_per_le * data['mass_components']
-                sc.weathering_data['dispersed'] += \
-                    np.sum(data['mass_components'] - mass_remain[:, :])
-                data['mass_components'] = mass_remain
+                self._set_efficiency(model_time)
+                rm_mass = self._rate * self._timestep * self.efficiency
+
+                total_mass = data['mass'].sum()
+                rm_mass_frac = min(rm_mass / total_mass, 1.0)
+                rm_mass = rm_mass_frac * total_mass
+
+                data['mass_components'] = \
+                    (1 - rm_mass_frac) * data['mass_components']
                 data['mass'] = data['mass_components'].sum(1)
 
-            sc.update_from_fatedataview()
+                sc.weathering_data['chem_dispersed'] += rm_mass
+                self.logger.debug(self._pid + 'amount chemically dispersed for'
+                                  ' {0}: {1}'.format(substance.name, rm_mass))
+
+            sc.update_from_fatedataview(fate='disperse')
+
+    def update_from_dict(self, data):
+        if 'efficiency' not in data:
+            setattr(self, 'efficiency', None)
+        super(ChemicalDispersion, self).update_from_dict(data)
+
+    def serialize(self, json_='webapi'):
+        """
+        'wind'/'waves' property is saved as references in save file
+        need to add serialized object for 'webapi'. Burn could have 'wind' and
+        ChemicalDispersion could have 'waves'.
+        """
+        serial = super(ChemicalDispersion, self).serialize(json_)
+
+        if json_ == 'webapi':
+            if self.waves is not None:
+                serial['waves'] = self.waves.serialize(json_)
+        return serial
+
+    @classmethod
+    def deserialize(cls, json_):
+        """
+        ChemicalDispersion could include 'waves'.
+        """
+        schema = cls._schema()
+        _to_dict = schema.deserialize(json_)
+        if 'waves' in json_ and json_['waves'] is not None:
+            _to_dict['waves'] = Waves.deserialize(json_['waves'])
+
+        return _to_dict

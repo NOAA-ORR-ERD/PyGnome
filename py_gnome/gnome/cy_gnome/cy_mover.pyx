@@ -26,14 +26,10 @@ cdef class CyMover(object):
     CyMover object in Python. Though this object doesn't do anything and it
     does not have a get_move method.
     """
-    def __init__(self,
-                 uncertain_duration=48*3600):
-        """
-        By default it sets self.mover=NULL. This is only so Python doesn't
-        crash if user instantiates a CyMover object in Python.
-        Though the main purpose of this class is to serve as a base class
-        to all the cython wrappers around the C++ movers.
-        """
+    def __cinit__(self):
+        '''
+        initialize mover to NULL
+        '''
         self.mover = NULL
 
     def __repr__(self):
@@ -115,3 +111,67 @@ cdef class CyMover(object):
                 err = self.mover.ReallocateUncertainty(num_LEs, &LE_status[0])
         if self.mover:
             self.mover.ModelStepIsDone()
+
+
+cdef class CyWindMoverBase(CyMover):
+
+    def __cinit__(self):
+        '''
+        Wind object must be defined by one of the children
+        '''
+        self.wind = NULL
+
+    def __init__(self, uncertain_duration=10800, uncertain_time_delay=0,
+                 uncertain_speed_scale=2, uncertain_angle_scale=0.4):
+        """
+        .. function:: __init__(self, uncertain_duration=10800, uncertain_time_delay=0,
+                 uncertain_speed_scale=2, uncertain_angle_scale=0.4)
+
+        initialize a constant wind mover
+
+        :param uncertain_duation: time in seconds after which the uncertainty
+            values are updated
+        :param uncertain_time_delay: wait this long after model_start_time to
+            turn on uncertainty
+        :param uncertain_speed_scale: used in uncertainty computation
+        :param uncertain_angle_scale: used in uncertainty computation
+
+        constant_wind_value is a tuple of values: (u, v)
+        """
+
+        # Assume wind is constant, but initialize velocity to 0.
+        self.wind.fIsConstantWind = 1
+        self.wind.fConstantValue.u = 0
+        self.wind.fConstantValue.v = 0
+        self.wind.fDuration = uncertain_duration
+        self.wind.fUncertainStartTime = uncertain_time_delay
+        self.wind.fSpeedScale = uncertain_speed_scale
+        self.wind.fAngleScale = uncertain_angle_scale
+
+    property uncertain_duration:
+        def __get__(self):
+            return self.wind.fDuration
+
+        def __set__(self, value):
+            self.wind.fDuration = value
+
+    property uncertain_time_delay:
+        def __get__(self):
+            return self.wind.fUncertainStartTime
+
+        def __set__(self, value):
+            self.wind.fUncertainStartTime = value
+
+    property uncertain_speed_scale:
+        def __get__(self):
+            return self.wind.fSpeedScale
+
+        def __set__(self, value):
+            self.wind.fSpeedScale = value
+
+    property uncertain_angle_scale:
+        def __get__(self):
+            return self.wind.fAngleScale
+
+        def __set__(self, value):
+            self.wind.fAngleScale = value

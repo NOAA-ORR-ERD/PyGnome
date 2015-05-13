@@ -34,6 +34,8 @@ cdef extern from "GEOMETRY.H":
         long hiLong
         long hiLat
         
+    ctypedef WorldPoint **WORLDPOINTH
+
 cdef extern from "TypeDefs.h":
 #     ctypedef struct TModelDialogVariables:
 #         Boolean bUncertain
@@ -70,12 +72,18 @@ cdef extern from "TypeDefs.h":
         double v
         
     ctypedef struct VelocityFRec:
-        float u
-        float v
+        double u
+        double v
         
     ctypedef VelocityFRec **VelocityFH
+    ctypedef VelocityRec **VelocityH
     
+    ctypedef struct LongPoint:
+        long h
+        long v
+
     ctypedef long **LONGH
+    ctypedef LongPoint **LongPointHdl
     
     ctypedef struct LoadedData:
         long timeIndex
@@ -134,3 +142,23 @@ cdef extern from "TypeDefs.h":
         CURVILINEAR
         TRIANGULAR
         REGRIDDED
+
+cdef extern from "DagTree.h":
+    ctypedef struct Topology:
+        long	vertex1
+        long	vertex2
+        long	vertex3
+        long	adjTri1
+        long	adjTri2
+        long	adjTri3
+
+    ctypedef Topology **TopologyHdl
+
+    ctypedef struct DAG:
+        long	topoIndex
+        long	branchLeft
+        long	branchRight
+
+    ctypedef DAG **DAGHdl
+
+       

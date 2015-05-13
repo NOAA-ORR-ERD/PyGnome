@@ -126,12 +126,16 @@ g_objects = (environment.Tide(testdata['CatsMover']['tide']),
              spill.elements.ElementType(substance=test_oil),
              weatherers.Skimmer(100, 'kg', 0.3, datetime(2014, 1, 1, 0, 0),
                                 datetime(2014, 1, 1, 4, 0)),
-             weatherers.Burn(100, 1, datetime(2014, 1, 1, 0, 0)),
+             weatherers.Burn(100, 1, datetime(2014, 1, 1, 0, 0),
+                             efficiency=.9),
+             weatherers.ChemicalDispersion(.2, datetime(2014, 1, 1, 0, 0),
+                                           datetime(2014, 1, 1, 4, 0),
+                                           efficiency=.3),
             # todo: ask Caitlin how to fix
             #movers.RiseVelocityMover(),
             # todo: This is incomplete - no _schema for SpatialRelease, GeoJson
             #spill.SpatialRelease(datetime.now(), ((0, 0, 0), (1, 2, 0))),
-            outputters.GeoJson(),
+            outputters.TrajectoryGeoJsonOutput(),
             )
 
 
@@ -199,6 +203,8 @@ def test_save_load_grids(saveloc_, obj):
 
 
 class TestSaveZipIsValid:
+    here = os.path.dirname(__file__)
+
     def test_invalid_zip(self):
         ''' invalid zipfile '''
         with LogCapture() as l:
@@ -216,7 +222,8 @@ class TestSaveZipIsValid:
         change _max_json_filesize 4K
         '''
         save_load._max_json_filesize = 8 * 1024
-        badzip = 'sample_data/badzip_max_json_filesize.zip'
+        badzip = os.path.join(self.here,
+                              'sample_data/badzip_max_json_filesize.zip')
         filetoobig = 'filetoobig.json'
         with ZipFile(badzip, 'a', compression=ZIP_DEFLATED) as z:
             z.write(testdata['boston_data']['cats_ossm'], filetoobig)
@@ -238,7 +245,8 @@ class TestSaveZipIsValid:
         create fake zip containing 100 '0' as string. The compression ratio
         should be big
         '''
-        badzip = 'sample_data/badzip_max_compress_ratio.zip'
+        badzip = os.path.join(self.here,
+                              'sample_data/badzip_max_compress_ratio.zip')
         badfile = 'badcompressratio.json'
         with ZipFile(badzip, 'a', compression=ZIP_DEFLATED) as z:
             z.writestr(badfile, ''.join(['0'] * 100))
@@ -256,7 +264,8 @@ class TestSaveZipIsValid:
     def test_filenames_dont_contain_dotdot(self):
         '''
         '''
-        badzip = 'sample_data/badzip_max_compress_ratio.zip'
+        badzip = os.path.join(self.here,
+                              'sample_data/badzip_max_compress_ratio.zip')
         badfile = './../badpath.json'
         with ZipFile(badzip, 'a', compression=ZIP_DEFLATED) as z:
             z.writestr(badfile, 'bad file, contains path')
