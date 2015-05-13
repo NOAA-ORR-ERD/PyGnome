@@ -12,6 +12,7 @@ from colander import SchemaNode, String, drop, Int, Bool
 
 from gnome.utilities.time_utils import date_to_sec
 from gnome.utilities.serializable import Serializable, Field
+from gnome.persist import class_from_objtype
 
 from .outputter import Outputter, BaseSchema
 
@@ -192,8 +193,8 @@ class CurrentGridGeoJsonOutput(Outputter, Serializable):
                                           "properties": {"velocity": [u, v]
                                                          },
                                           "geometry": {"type": "Point",
-                                                       "coordinates": [<LONGITUDE>,
-                                                                       <LATITUDE>]
+                                                       "coordinates": [<LONG>,
+                                                                       <LAT>]
                                                        },
                                           },
                                           ...
@@ -205,6 +206,9 @@ class CurrentGridGeoJsonOutput(Outputter, Serializable):
 
     # need a schema and also need to override save so output_dir
     # is saved correctly - maybe point it to saveloc
+    _state.add_field(Field('current_mover',
+                           save=True, update=True, save_reference=True))
+
     _schema = CurrentGridGeoJsonSchema
 
     def __init__(self, current_mover, **kwargs):
@@ -220,9 +224,9 @@ class CurrentGridGeoJsonOutput(Outputter, Serializable):
 
         use super to pass optional \*\*kwargs to base class __init__ method
         '''
-        super(CurrentGridGeoJsonOutput, self).__init__(**kwargs)
-
         self.current_mover = current_mover
+
+        super(CurrentGridGeoJsonOutput, self).__init__(**kwargs)
 
     def write_output(self, step_num, islast_step=False):
         'dump data in geojson format'
@@ -245,9 +249,9 @@ class CurrentGridGeoJsonOutput(Outputter, Serializable):
         centers = self.current_mover.mover._get_center_points()
 
         for v, c in zip(velocities, centers):
-            feature = Feature(geometry=Point(c),
+            feature = Feature(geometry=Point(list(c)),
                               id="1",
-                              properties={'velocity': v})
+                              properties={'velocity': list(v)})
             features.append(feature)
 
         geojson = FeatureCollection(features)
@@ -264,24 +268,17 @@ class CurrentGridGeoJsonOutput(Outputter, Serializable):
         'remove previously written files'
         super(CurrentGridGeoJsonOutput, self).rewind()
 
+    @classmethod
+    def deserialize(cls, json_):
+        """
+        append correct schema for wind object
+        """
+        schema = cls._schema()
+        _to_dict = schema.deserialize(json_)
 
+        if 'current_mover' in json_:
+            cm_cls = class_from_objtype(json_['current_mover']['obj_type'])
+            cm_dict = cm_cls.deserialize(json_['current_mover'])
+            _to_dict['current_mover'] = cm_dict
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+        return _to_dict
