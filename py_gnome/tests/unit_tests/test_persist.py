@@ -131,10 +131,10 @@ def make_model(uncertain=False):
     # model.movers += comp_mover
 
     print 'adding a Weatherer'
-    model.water = Water(311.15)
+    model.environment += Water(311.15)
     skim_start = start_time + timedelta(hours=3)
-
-    model.weatherers += [Evaporation(model.water, w_mover.wind),
+    model._make_default_refs = True
+    model.weatherers += [Evaporation(),
                          Skimmer(spill_amount * .5,
                                  spill_units,
                                  efficiency=.3,
@@ -318,7 +318,8 @@ class TestWebApi:
 
         # update the dict so it gives a valid model to load
         deserial['map'] = model.map
-        deserial['water'] = model.water
+        water = model._find_by_attr('_ref_as', 'water', model.environment)
+        deserial['water'] = water
         for coll in ['movers', 'weatherers', 'environment', 'outputters',
                      'spills']:
             for ix, item in enumerate(deserial[coll]):

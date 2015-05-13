@@ -70,6 +70,10 @@ def model(sample_model_fcn, tmpdir):
 
     model.spills += Spill(release, substance=test_oil)
 
+    # for weatherers and environment objects, make referenced to default
+    # wind/water/waves 
+    model._make_default_refs = True
+
     return model
 
 
@@ -842,6 +846,7 @@ def test_all_weatherers_in_model(model, add_langmuir):
 
 def test_setup_model_run(model):
     'turn of movers/weatherers and ensure data_arrays change'
+    model.environment += Water()
     model.rewind()
     model.step()
     exp_keys = {'windages', 'windage_range', 'mass_components',
@@ -875,7 +880,7 @@ def test_contains_object(sample_model_fcn):
     model.duration = timedelta(days=1)
 
     water, wind = Water(), constant_wind(1., 0)
-    model.environment += wind
+    model.environment += [water, wind]
 
     et = floating(substance=model.spills[0].get('substance').name)
     sp = point_line_release_spill(500, (0, 0, 0),
@@ -966,6 +971,7 @@ def test_staggered_spills_weathering(sample_model_fcn, delay):
     test exposed a bug, which is now fixed
     '''
     model = sample_model_weathering(sample_model_fcn, test_oil)
+    model._make_default_refs = True
     model.map = gnome.map.GnomeMap()    # make it all water
     model.uncertain = False
     rel_time = model.spills[0].get('release_time')
@@ -995,8 +1001,7 @@ def test_staggered_spills_weathering(sample_model_fcn, delay):
     skimmer = make_skimmer(model.spills[0])
     burn = burn_obj(model.spills[0])
     c_disp = chemical_disperson_obj(model.spills[0], 4)
-    model.weatherers += [Evaporation(model.environment[0],
-                                     model.environment[-1]),
+    model.weatherers += [Evaporation(),
                          c_disp,
                          burn,
                          skimmer]
@@ -1031,6 +1036,7 @@ def test_two_substance_spills_weathering(sample_model_fcn, s0, s1):
     independently
     '''
     model = sample_model_weathering(sample_model_fcn, s0)
+    model._make_default_refs = True
     model.map = gnome.map.GnomeMap()    # make it all water
     model.uncertain = False
     rel_time = model.spills[0].get('release_time')
@@ -1052,7 +1058,8 @@ def test_two_substance_spills_weathering(sample_model_fcn, s0, s1):
         exp_total_mass += spill.get_mass()
 
     model.environment += [Water(), constant_wind(1., 0)]
-    model.weatherers += Evaporation(model.environment[0], model.environment[-1])
+    # model will automatically setup default references
+    model.weatherers += Evaporation()
     if s0 == s1:
         '''
         multiple substances will not work with Skimmer or Burn

@@ -19,12 +19,13 @@ from ..conftest import test_oil
 @pytest.fixture(scope='module')
 def model(sample_model):
     model = sample_model['model']
+    model._make_default_refs = True
     rel_start_pos = sample_model['release_start_pos']
     rel_end_pos = sample_model['release_end_pos']
 
     model.cache_enabled = True
     model.uncertain = False
-    model.water = Water(311.15)
+    model.environment += Water(311.15)
 
     print 'adding a Weatherer'
     model.environment += constant_wind(1.0, 0.0)
@@ -64,8 +65,7 @@ def model(sample_model):
                                 active_start=skim_start,
                                 active_stop=skim_start + timedelta(hours=1))
 
-    model.weatherers += [Evaporation(model.water,
-                                     model.environment[-1]),
+    model.weatherers += [Evaporation(),
                          c_disp,
                          burn,
                          skimmer]

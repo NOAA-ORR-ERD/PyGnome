@@ -25,7 +25,7 @@ from ..conftest import (sample_sc_release,
 
 water = Water()
 wind = constant_wind(15., 270, 'knots')	#also test with lower wind no dispersion
-waves = Waves(wind,water)
+waves = Waves(wind, water)
 
 arrays = NaturalDispersion().array_types
 intrinsic = WeatheringData(water)
@@ -45,6 +45,7 @@ def test_dispersion(oil, temp, num_elems, on):
                             arr_types=arrays)
      sc.amount = 10000
      time_step = 15. * 60
+     intrinsic.prepare_for_model_run(sc)
      intrinsic.update(sc.num_released, sc)
      model_time = (sc.spills[0].get('release_time') +
                    timedelta(seconds=time_step))
@@ -114,11 +115,11 @@ def test_full_run(sample_model_fcn2, oil, temp):
     for 'weathering_model.json' in dump directory
     '''
     model = sample_model_weathering2(sample_model_fcn2, oil, temp)
-    model.water = Water(temp)
-    model.environment += [wind,  waves]
-    model.weatherers += Evaporation(model.water, wind)
+    model._make_default_refs = True
+    model.environment += [Water(temp), wind,  waves]
+    model.weatherers += Evaporation()
     model.weatherers += Emulsification(waves)
-    model.weatherers += NaturalDispersion(waves, model.water)
+    model.weatherers += NaturalDispersion()
 
     for step in model:
         for sc in model.spills.items():
