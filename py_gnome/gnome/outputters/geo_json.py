@@ -169,13 +169,13 @@ class TrajectoryGeoJsonOutput(Outputter, Serializable):
                 os.remove(f)
 
 
-class CurrentGridGeoJsonSchema(BaseSchema):
+class CurrentGeoJsonSchema(BaseSchema):
     '''
     Nothing is required for initialization
     '''
 
 
-class CurrentGridGeoJsonOutput(Outputter, Serializable):
+class CurrentGeoJsonOutput(Outputter, Serializable):
     '''
     Class that outputs GNOME current velocity results for each current mover
     in a geojson format.  The output is a collection of Features.
@@ -209,7 +209,7 @@ class CurrentGridGeoJsonOutput(Outputter, Serializable):
     _state.add_field(Field('current_mover',
                            save=True, update=True, save_reference=True))
 
-    _schema = CurrentGridGeoJsonSchema
+    _schema = CurrentGeoJsonSchema
 
     def __init__(self, current_movers, **kwargs):
         '''
@@ -220,12 +220,11 @@ class CurrentGridGeoJsonOutput(Outputter, Serializable):
         '''
         self.current_movers = current_movers
 
-        super(CurrentGridGeoJsonOutput, self).__init__(**kwargs)
+        super(CurrentGeoJsonOutput, self).__init__(**kwargs)
 
     def write_output(self, step_num, islast_step=False):
         'dump data in geojson format'
-        super(CurrentGridGeoJsonOutput, self).write_output(step_num,
-                                                           islast_step)
+        super(CurrentGeoJsonOutput, self).write_output(step_num, islast_step)
 
         if not self._write_step:
             return None
@@ -260,7 +259,7 @@ class CurrentGridGeoJsonOutput(Outputter, Serializable):
 
     def rewind(self):
         'remove previously written files'
-        super(CurrentGridGeoJsonOutput, self).rewind()
+        super(CurrentGeoJsonOutput, self).rewind()
 
     @classmethod
     def deserialize(cls, json_):
