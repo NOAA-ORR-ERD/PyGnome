@@ -128,7 +128,7 @@ class HalfLifeWeatherer(Weatherer):
         if sc.num_released == 0:
             return
 
-        arrays = ['mass_components', 'mass']
+        arrays = {'mass_components', 'mass'}
         for substance, data in sc.itersubstancedata(arrays):
             hl = self._halflife(data['mass_components'],
                                 self.half_lives, time_step)

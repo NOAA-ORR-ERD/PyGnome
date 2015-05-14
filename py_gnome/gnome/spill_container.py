@@ -48,6 +48,9 @@ substances_spills = namedtuple('substances_spills',
 
 
 class FateDataView(AddLogger):
+    _dicts_ = ('surface_weather', 'subsurf_weather', 'skim', 'burn',
+               'disperse', 'non_weather', 'all')
+
     def __init__(self, substance_id):
         self.reset()
         self.substance_id = substance_id
@@ -107,6 +110,8 @@ class FateDataView(AddLogger):
         'all', 'surface_weather', 'subsurf_weather', 'skim', 'non_weather',
         'burn'
         '''
+        # always add 'id' to array_types
+        array_types.update({'id'})
         self._set_data(sc, array_types,
                        self._get_fate_mask(sc, fate),
                        fate)
@@ -160,6 +165,19 @@ class FateDataView(AddLogger):
 
         if reset_view:
             setattr(self, fate, {})
+
+    def _reset_fatedata(self, sc, ix):
+        '''
+        reset all arrays that contain LE with 'id' = ix
+        '''
+        for fate in self._dicts_:
+            data = getattr(self, fate)
+            if len(data) > 0:
+                idx = np.where(data['id'] == ix)[0]
+                if len(idx) > 0:
+                    self._set_data(sc, data.keys(),
+                                   self._get_fate_mask(sc, fate),
+                                   fate)
 
 
 class SpillContainerData(object):
@@ -925,13 +943,27 @@ class SpillContainer(AddLogger, SpillContainerData):
         :type l_frac: list or tuple or numpy array
         '''
         # split the first location where 'id' matches
-        idx = np.where(self['id'] == ix)[0][0]
+        try:
+            idx = np.where(self['id'] == ix)[0][0]
+        except IndexError:
+            msg = "no element with id = {0} found".format(ix)
+            self.logger.warning(msg)
+            raise
+
         for name, at in self.array_types.iteritems():
             data = self[name]
             split_elems = at.split_element(num, self[name][idx], l_frac)
             data = np.insert(data, idx, split_elems[:-1], 0)
             data[idx + len(split_elems) - 1] = split_elems[-1]
             self._data_arrays[name] = data
+
+        # update fate_dataview which contains this LE
+        # for now we only have one type of substance
+        if len(self._fate_data_list) > 1:
+            msg = "split_elements assumes only one substance is being modeled"
+            self.logger.error(msg)
+
+        self._fate_data_list[0]._reset_fatedata(self, ix)
 
     def model_step_is_done(self):
         '''
