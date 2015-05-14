@@ -10,11 +10,15 @@ def init_obj_log(obj, setLevel=logging.INFO):
     convenience function for initializing a logger with an object
     the logging.getLogger() will always return the same logger so calling
     this multiple times for same object is valid.
+
+    By default adds a NullHandler() so we don't get errors if application
+    using PyGnome hasn't configured a logging.
     '''
     logger = logging.getLogger("{0.__class__.__module__}."
                                "{0.__class__.__name__}".format(obj))
     logger.propagate = True
     logger.setLevel = setLevel
+    logger.addHandler(logging.NullHandler())
     return logger
 
 
@@ -131,3 +135,62 @@ class GnomeId(AddLogger):
     @name.setter
     def name(self, val):
         self._name = val
+
+    def validate(self):
+        '''
+        All pygnome objects should be able to validate themselves. Many
+        py_gnome objects reference other objects like wind, water, waves. These
+        may not be defined when object is created so they can be None at
+        construction time; however, they should reference valid objects
+        before running model. validate() for each object must check these
+        required references are correctly setup.
+
+        'wind', 'water', 'waves' attributes also have special meaning. An
+        object containing this attribute references the corresponding object.
+
+        Logs errors/warnings
+        '''
+        msgs = []
+        try:
+            if self.wind is None:
+                msg = 'no wind object defined'
+                self.logger.error(msg)
+                msgs.append(self._err_pre + msg)
+        except AttributeError:
+            pass
+
+        try:
+            if self.water is None:
+                msg = 'no water object defined'
+                self.logger.error(msg)
+                msgs.append(self._err_pre + msg)
+        except AttributeError:
+            pass
+
+        try:
+            if self.waves is None:
+                msg = 'no waves object defined'
+                self.logger.error(msg)
+                msgs.append(self._err_pre + msg)
+        except AttributeError:
+            pass
+
+        return msgs
+
+    @property
+    def _err_pre(self):
+        '''
+        standard text prepended to error messages - not required for logging
+        used by validate to prepend to message since it also returns a list
+        of messages that were logged
+        '''
+        return 'error: ' + self.__class__.__name__ + ': '
+
+    @property
+    def _warn_pre(self):
+        '''
+        standard text prepended to warning messages - not required for logging
+        used by validate to prepend to message since it also returns a list
+        of messages that were logged
+        '''
+        return 'warning: ' + self.__class__.__name__ + ': '

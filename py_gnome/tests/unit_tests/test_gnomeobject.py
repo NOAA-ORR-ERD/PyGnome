@@ -2,7 +2,7 @@
 Test if this is how we want id property of
 object that inherits from GnomeId to behave
 """
-
+from datetime import datetime, timedelta
 import pytest
 import copy
 
@@ -12,6 +12,8 @@ from gnome import (environment,
                    movers,
                    outputters,
                    spill)
+from gnome.environment import Waves, Wind
+from gnome.weatherers import Evaporation, NaturalDispersion
 
 
 def test_exceptions():
@@ -56,3 +58,22 @@ def test_set_name(b_class):
 
     obj.name = obj.__class__.__name__
     assert obj.name == obj.__class__.__name__
+
+
+t = datetime(2015, 1, 1, 12, 0)
+
+
+@pytest.mark.parametrize("obj",
+                         (Wind(timeseries=[(t, (0, 1)),
+                                           (t + timedelta(10), (0, 2))],
+                               units='m/s'),
+                          Evaporation(),
+                          NaturalDispersion()))
+def test_base_validate(obj):
+    '''
+    base validate checks wind/water/waves objects are not None. Check these
+    primarily for weatherers.
+    '''
+    out = obj.validate()
+    print out
+    assert len(out) > 0

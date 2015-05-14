@@ -288,4 +288,3 @@ class Waves(Environment, serializable.Serializable):
         return _to_dict
 
 # wind.get_timeseries(self, datetime=None, units=None, format='r-theta')
-

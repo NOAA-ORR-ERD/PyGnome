@@ -477,6 +477,20 @@ class Wind(serializable.Serializable, Timeseries, Environment):
 
         return True
 
+    def validate(self):
+        '''
+        waves and water must not be None
+        '''
+        msgs = []
+        if np.all(self.timeseries['value'][:, 0] == 0.0):
+            msg = 'wind speed is 0'
+            self.logger.warning(msg)
+            msgs.append(self._warn_pre + msg)
+
+        return msgs
+
+        return msgs
+
 
 def constant_wind(speed, direction, units='m/s'):
     """

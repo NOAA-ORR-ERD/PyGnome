@@ -1341,3 +1341,35 @@ class Model(Serializable):
 
         # force rewind after merge?
         self.rewind()
+
+    def validate(self):
+        '''
+        invoke validate for all gnome objects contained in model
+        todo: should also check wind, water, waves are defined if weatherers
+        are defined
+        '''
+        # since model does not contain wind, waves, water attributes, no need
+        # to call base class method
+        requires = {'wind': False, 'water': False, 'waves': False}
+        msgs = []
+        for oc in self._oc_list:
+            for item in getattr(self, oc):
+                msgs.extend(item.validate())
+
+                for at, val in requires.iteritems():
+                    if not val and hasattr(item, at):
+                        requires[at] = True
+
+        # ensure that required objects are present in environment collection
+        # if Model's make_default_refs is True
+        if self.make_default_refs:
+            for at, val in requires.iteritems():
+                if val:
+                    obj = self.find_by_attr('_ref_as', at, self.environment)
+                    if obj is None:
+                        msg = ("{0} not found in environment collection".
+                               format(at))
+                        self.logger.error(msg)
+                        msgs.append(self._err_pre + msg)
+
+        return msgs
