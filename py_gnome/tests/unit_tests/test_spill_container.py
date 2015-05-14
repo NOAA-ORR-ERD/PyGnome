@@ -1268,14 +1268,15 @@ def test_split_element():
     sc.split_element(ix, num, l_frac)
     for name in sc._data_arrays:
         split = sc[name]
+        idx = np.where(sc['id'] == ix)[0][0]
         orig = o_sc[name]
         assert len(split) == num_les + num - 1
         at = sc.array_types[name]
         if isinstance(at, array_types.ArrayTypeDivideOnSplit):
-            assert np.allclose(split[ix:ix + num].sum(0), orig[ix])
-            assert np.allclose(split[ix], l_frac[0] * orig[ix])
+            assert np.allclose(split[idx:idx + num].sum(0), orig[idx])
+            assert np.allclose(split[idx], l_frac[0] * orig[idx])
         else:
-            assert np.all(split[ix:ix + num] == orig[ix])
+            assert np.all(split[idx:idx + num] == orig[idx])
 
 
 if __name__ == '__main__':

@@ -915,7 +915,8 @@ class SpillContainer(AddLogger, SpillContainerData):
         given to each new element. len(l_frac) must be equal to num and
         sum(l_frac) == 1.0
 
-        :param ix: index into numpy array of the element that will be split
+        :param ix: id of element to be split - before splitting each element
+            has a unique 'id' defined in 'id' data array
         :type ix: int
         :param num: split ix into 'num' number of elements
         :type num: int
@@ -923,11 +924,13 @@ class SpillContainer(AddLogger, SpillContainerData):
             len(l_frac) == num
         :type l_frac: list or tuple or numpy array
         '''
+        # split the first location where 'id' matches
+        idx = np.where(self['id'] == ix)[0][0]
         for name, at in self.array_types.iteritems():
             data = self[name]
-            split_elems = at.split_element(num, self[name][ix], l_frac)
-            data = np.insert(data, ix, split_elems[:-1], 0)
-            data[ix + len(split_elems) - 1] = split_elems[-1]
+            split_elems = at.split_element(num, self[name][idx], l_frac)
+            data = np.insert(data, idx, split_elems[:-1], 0)
+            data[idx + len(split_elems) - 1] = split_elems[-1]
             self._data_arrays[name] = data
 
     def model_step_is_done(self):
