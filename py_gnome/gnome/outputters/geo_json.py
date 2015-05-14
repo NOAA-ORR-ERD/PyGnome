@@ -206,7 +206,7 @@ class CurrentGeoJsonOutput(Outputter, Serializable):
 
     # need a schema and also need to override save so output_dir
     # is saved correctly - maybe point it to saveloc
-    _state.add_field(Field('current_mover',
+    _state.add_field(Field('current_movers',
                            save=True, update=True, save_reference=True))
 
     _schema = CurrentGeoJsonSchema
@@ -270,8 +270,20 @@ class CurrentGeoJsonOutput(Outputter, Serializable):
         _to_dict = schema.deserialize(json_)
 
         if 'current_movers' in json_:
-            cm_cls = class_from_objtype(json_['current_mover']['obj_type'])
-            cm_dict = cm_cls.deserialize(json_['current_mover'])
-            _to_dict['current_mover'] = cm_dict
+            _to_dict['current_movers'] = []
+            for i, cm in enumerate(json_['current_movers']):
+                cm_cls = class_from_objtype(cm['obj_type'])
+                cm_dict = cm_cls.deserialize(json_['current_movers'][i])
+
+                _to_dict['current_movers'].append(cm_dict)
 
         return _to_dict
+
+
+
+
+
+
+
+
+
