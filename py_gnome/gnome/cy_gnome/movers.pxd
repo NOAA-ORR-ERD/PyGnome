@@ -26,20 +26,6 @@ cdef extern from "Mover_c.h":
         void ModelStepIsDone()
         OSErr ReallocateUncertainty(int numLEs, short* LE_status)
 
-cdef extern from "WindMover_c.h":
-    cdef cppclass WindMover_c(Mover_c):
-        WindMover_c() except +
-        Boolean fIsConstantWind
-        VelocityRec fConstantValue
-        double fDuration
-        double fUncertainStartTime
-        double fSpeedScale
-        double fAngleScale
-
-        OSErr get_move(int n, unsigned long model_time, unsigned long step_len, WorldPoint3D* ref, WorldPoint3D* delta, double* windages, short* LE_status, LEType spillType, long spill_ID)
-        void SetTimeDep(OSSMTimeValue_c *ossm)
-        OSErr GetTimeValue(Seconds &time, VelocityRec *vel)
-
 cdef extern from "Random_c.h":
     cdef cppclass Random_c(Mover_c):
         Random_c() except +
@@ -68,6 +54,19 @@ cdef extern from "RiseVelocity_c.h":
                        double* rise_velocity,
                        short* LE_status, LEType spillType, long spillID)        
 
+cdef extern from "WindMover_c.h":
+    cdef cppclass WindMover_c(Mover_c):
+        WindMover_c() except +
+        Boolean fIsConstantWind
+        VelocityRec fConstantValue
+        double fDuration
+        double fUncertainStartTime
+        double fSpeedScale
+        double fAngleScale
+
+        OSErr get_move(int n, unsigned long model_time, unsigned long step_len, WorldPoint3D* ref, WorldPoint3D* delta, double* windages, short* LE_status, LEType spillType, long spill_ID)
+        void SetTimeDep(OSSMTimeValue_c *ossm)
+        OSErr GetTimeValue(Seconds &time, VelocityRec *vel)
 
 cdef extern from "GridWindMover_c.h":
     cdef cppclass GridWindMover_c(WindMover_c):

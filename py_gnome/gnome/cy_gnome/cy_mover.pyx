@@ -175,3 +175,107 @@ cdef class CyWindMoverBase(CyMover):
 
         def __set__(self, value):
             self.wind.fAngleScale = value
+
+
+cdef class CyCurrentMoverBase(CyMover):
+    '''
+    Base class - expect children to instantiate/destroy the C++ current mover
+    object. This keeps common properties.
+    Don't expect python to create/use a C++ CurrentMover_c object
+    '''
+    def __cinit__(self):
+        self.curr_mv = NULL
+
+    def __init__(self,
+                 uncertain_duration=172800,
+                 uncertain_time_delay=0,
+                 up_cur_uncertain=.3,
+                 down_cur_uncertain=-.3,
+                 right_cur_uncertain=.1,
+                 left_cur_uncertain=-.1,
+                 ):
+        '''
+        :param uncertain_duration: how often does a given uncertain element
+            get reset. Default (48 hours = 48*3600 sec)
+        :param uncertain_time_delay: when does the uncertainly kick in.
+        :param up_cur_uncertain: Scale for uncertainty along the flow
+        :param down_cur_uncertain: Scale for uncertainty along the flow
+        :param right_cur_uncertain: Scale for uncertainty across the flow
+        :param left_cur_uncertain: Scale for uncertainty across the flow
+        '''
+        # move following two to Mover base class
+        self.curr_mv.fDuration = uncertain_duration
+        self.curr_mv.fUncertainStartTime = uncertain_time_delay
+
+        self.curr_mv.fUpCurUncertainty = up_cur_uncertain
+        self.curr_mv.fDownCurUncertainty = down_cur_uncertain
+        self.curr_mv.fLeftCurUncertainty = left_cur_uncertain
+        self.curr_mv.fRightCurUncertainty = right_cur_uncertain
+
+    property uncertain_duration:
+        def __get__(self):
+            return self.curr_mv.fDuration
+
+        def __set__(self, value):
+            self.curr_mv.fDuration = value
+
+    property uncertain_time_delay:
+        def __get__(self):
+            return self.curr_mv.fUncertainStartTime
+
+        def __set__(self, value):
+            self.curr_mv.fUncertainStartTime = value
+
+    property up_cur_uncertain:
+        def __get__(self):
+            return self.curr_mv.fUpCurUncertainty
+
+        def __set__(self, value):
+            self.curr_mv.fUpCurUncertainty = value
+
+    property down_cur_uncertain:
+        def __get__(self):
+            return self.curr_mv.fDownCurUncertainty
+
+        def __set__(self, value):
+            self.curr_mv.fDownCurUncertainty = value
+
+    property right_cur_uncertain:
+        def __get__(self):
+            return self.curr_mv.fRightCurUncertainty
+
+        def __set__(self, value):
+            self.curr_mv.fRightCurUncertainty = value
+
+    property left_cur_uncertain:
+        def __get__(self):
+            return self.curr_mv.fLeftCurUncertainty
+
+        def __set__(self, value):
+            self.curr_mv.fLeftCurUncertainty = value
+
+    def __repr__(self):
+        """
+        Return an unambiguous representation of this object so it can be
+        recreated
+        """
+        return ('{0.__class__.__name__}('
+                'uncertain_duration={0.uncertain_duration}, '
+                'uncertain_time_delay={0.uncertain_time_delay}, '
+                'up_cur_uncertain={0.up_cur_uncertain}, '
+                'down_cur_uncertain={0.down_cur_uncertain}, '
+                'right_cur_uncertain={0.right_cur_uncertain}, '
+                'left_cur_uncertain={0.left_cur_uncertain})'
+                .format(self))
+
+    def __str__(self):
+        """Return string representation of this object"""
+        return ('{0.__class__.__name__} object '
+                '- see attributes for more info\n'
+                '  uncertain_duration = {0.uncertain_duration}\n'
+                '  uncertain_time_delay = {0.uncertain_time_delay}\n'
+                '  up_cur_uncertain = {0.up_cur_uncertain}\n'
+                '  down_cur_uncertain = {0.down_cur_uncertain}\n'
+                '  right_cur_uncertain = {0.right_cur_uncertain}\n'
+                '  left_cur_uncertain = {0.left_cur_uncertain}\n'
+                .format(self))
