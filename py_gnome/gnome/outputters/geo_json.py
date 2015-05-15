@@ -12,6 +12,7 @@ from colander import SchemaNode, String, drop, Int, Bool
 
 from gnome.utilities.time_utils import date_to_sec
 from gnome.utilities.serializable import Serializable, Field
+from gnome.persist import class_from_objtype
 
 from .outputter import Outputter, BaseSchema
 
@@ -168,17 +169,17 @@ class TrajectoryGeoJsonOutput(Outputter, Serializable):
                 os.remove(f)
 
 
-class CurrentGridGeoJsonSchema(BaseSchema):
+class CurrentGeoJsonSchema(BaseSchema):
     '''
     Nothing is required for initialization
     '''
 
 
-class CurrentGridGeoJsonOutput(Outputter, Serializable):
+class CurrentGeoJsonOutput(Outputter, Serializable):
     '''
-    class that outputs GNOME current velocity results in a geojson format.
-    The output is a collection of Features. Each Feature contains a Point
-    object with associated properties.
+    Class that outputs GNOME current velocity results for each current mover
+    in a geojson format.  The output is a collection of Features.
+    Each Feature contains a Point object with associated properties.
     Following is the output format - the data in <> are the results
     for each element.
 
@@ -186,96 +187,97 @@ class CurrentGridGeoJsonOutput(Outputter, Serializable):
     {
      "time_stamp": <TIME IN ISO FORMAT>,
      "step_num": <OUTPUT ASSOCIATED WITH THIS STEP NUMBER>,
-     "feature_collection": {"type": "FeatureCollection",
-                            "features": [{"type": "Feature",
-                                          "id": <PARTICLE_ID>,
-                                          "properties": {"velocity": [u, v]
-                                                         },
-                                          "geometry": {"type": "Point",
-                                                       "coordinates": [<LONGITUDE>,
-                                                                       <LATITUDE>]
-                                                       },
+     "feature_collections": {<mover_id>: {"type": "FeatureCollection",
+                                          "features": [{"type": "Feature",
+                                                        "id": <PARTICLE_ID>,
+                                                        "properties": {"velocity": [u, v]
+                                                                       },
+                                                        "geometry": {"type": "Point",
+                                                                     "coordinates": [<LONG>, <LAT>]
+                                                                     },
+                                                        },
+                                                        ...
+                                                       ],
                                           },
-                                          ...
-                                          ],
-                            },
-     }
+                             ...
+                             }
     '''
     _state = copy.deepcopy(Outputter._state)
 
     # need a schema and also need to override save so output_dir
     # is saved correctly - maybe point it to saveloc
-    _schema = CurrentGridGeoJsonSchema
+    _state.add_field(Field('current_movers',
+                           save=True, update=True, save_reference=True))
 
-    def __init__(self, current_mover, **kwargs):
+    _schema = CurrentGeoJsonSchema
+
+    def __init__(self, current_movers, **kwargs):
         '''
-        :param bool round_data=True: if True, then round the numpy arrays
-            containing float to number of digits specified by 'round_to'.
-            Default is True
-        :param int round_to=4: round float arrays to these number of digits.
-            Default is 4.
-        :param str output_dir=None: output directory for geojson files. Default
-            is None since data is returned in dict for webapi. For using
-            write_output_post_run(), this must be set
+        :param list current_movers: A list or collection of current grid mover
+                                    objects.
 
         use super to pass optional \*\*kwargs to base class __init__ method
         '''
-        super(CurrentGridGeoJsonOutput, self).__init__(**kwargs)
+        self.current_movers = current_movers
 
-        self.current_mover = current_mover
+        super(CurrentGeoJsonOutput, self).__init__(**kwargs)
 
     def write_output(self, step_num, islast_step=False):
         'dump data in geojson format'
-        super(CurrentGridGeoJsonOutput, self).write_output(step_num,
-                                                           islast_step)
+        super(CurrentGeoJsonOutput, self).write_output(step_num, islast_step)
 
         if not self._write_step:
             return None
-
-        # one feature per element client; replaced with multipoint
-        # because client performance is much more stable with one
-        # feature per step rather than (n) features per step.
-        features = []
 
         for sc in self.cache.load_timestep(step_num).items():
             pass
 
         model_time = date_to_sec(sc.current_time_stamp)
-        velocities = self.current_mover.get_scaled_velocities(model_time)
-        centers = self.current_mover.mover._get_center_points()
 
-        for v, c in zip(velocities, centers):
-            feature = Feature(geometry=Point(c),
-                              id="1",
-                              properties={'velocity': v})
-            features.append(feature)
+        geojson = {}
+        for cm in self.current_movers:
+            features = []
+            velocities = cm.get_scaled_velocities(model_time)
+            centers = cm.mover._get_center_points()
 
-        geojson = FeatureCollection(features)
+            for v, c in zip(velocities, centers):
+                feature = Feature(geometry=Point(list(c)),
+                                  id="1",
+                                  properties={'velocity': list(v)})
+                features.append(feature)
+
+            geojson[cm.id] = FeatureCollection(features)
+
         # default geojson should not output data to file
         # read data from file and send it to web client
         output_info = {'step_num': step_num,
                        'time_stamp': sc.current_time_stamp.isoformat(),
-                       'feature_collection': geojson
+                       'feature_collections': geojson
                        }
 
         return output_info
 
     def rewind(self):
         'remove previously written files'
-        super(CurrentGridGeoJsonOutput, self).rewind()
+        super(CurrentGeoJsonOutput, self).rewind()
 
+    @classmethod
+    def deserialize(cls, json_):
+        """
+        append correct schema for wind object
+        """
+        schema = cls._schema()
+        _to_dict = schema.deserialize(json_)
 
+        if 'current_movers' in json_:
+            _to_dict['current_movers'] = []
+            for i, cm in enumerate(json_['current_movers']):
+                cm_cls = class_from_objtype(cm['obj_type'])
+                cm_dict = cm_cls.deserialize(json_['current_movers'][i])
 
+                _to_dict['current_movers'].append(cm_dict)
 
-
-
-
-
-
-
-
-
-
+        return _to_dict
 
 
 

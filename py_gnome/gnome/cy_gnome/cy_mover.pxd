@@ -1,5 +1,6 @@
 import cython
 from movers cimport Mover_c, WindMover_c
+from current_movers cimport CurrentMover_c
 '''
 Define base classes that keep common code here. These classes don't create
 C++ objects; the derived classes create the C++ objects. These base classes
@@ -16,3 +17,6 @@ cdef class CyMover:
 
 cdef class CyWindMoverBase(CyMover):
     cdef WindMover_c * wind
+
+cdef class CyCurrentMoverBase(CyMover):
+    cdef CurrentMover_c * curr_mv
