@@ -15,7 +15,7 @@ from gnome.utilities import time_utils
 from gnome.environment import Tide
 from gnome.spill import SpatialRelease, Spill, point_line_release_spill
 from gnome.movers import CatsMover
-from gnome.outputters import CurrentGridGeoJsonOutput
+from gnome.outputters import CurrentGeoJsonOutput
 
 from ..conftest import testdata
 
@@ -58,7 +58,7 @@ def model(sample_model, output_dir):
 
     model.movers += c_cats
 
-    model.outputters += CurrentGridGeoJsonOutput(c_cats)
+    model.outputters += CurrentGeoJsonOutput([c_cats])
 
     model.rewind()
 
@@ -67,8 +67,8 @@ def model(sample_model, output_dir):
 
 def test_init():
     'simple initialization passes'
-    g = CurrentGridGeoJsonOutput(c_cats)
-    assert g.current_mover == c_cats
+    g = CurrentGeoJsonOutput([c_cats])
+    assert g.current_movers[0] == c_cats
 
 
 def test_current_grid_geojson_output(model):
@@ -79,30 +79,60 @@ def test_current_grid_geojson_output(model):
     model.rewind()
 
     for step in model:
-        assert 'CurrentGridGeoJsonOutput' in step
-        assert 'step_num' in step['CurrentGridGeoJsonOutput']
-        assert 'time_stamp' in step['CurrentGridGeoJsonOutput']
-        assert 'feature_collection' in step['CurrentGridGeoJsonOutput']
+        assert 'CurrentGeoJsonOutput' in step
+        assert 'step_num' in step['CurrentGeoJsonOutput']
+        assert 'time_stamp' in step['CurrentGeoJsonOutput']
+        assert 'feature_collections' in step['CurrentGeoJsonOutput']
 
-        fc = step['CurrentGridGeoJsonOutput']['feature_collection']
-        assert 'type' in fc
-        assert fc['type'] == 'FeatureCollection'
-        assert 'features' in fc
-        assert len(fc['features']) > 0
+        fcs = step['CurrentGeoJsonOutput']['feature_collections']
 
-        for feature in fc['features']:
-            assert 'type' in feature
-            assert feature['type'] == 'Feature'
+        # There should be only one key, but we will iterate anyway.
+        # We just want to verify here that our keys exist in the movers
+        # collection.
+        for k in fcs.keys():
+            assert model.movers.index(k) > 0
 
-            assert 'properties' in feature
-            assert 'velocity' in feature['properties']
+        # Check that our structure is correct.
+        for fc in fcs.values():
+            assert 'type' in fc
+            assert fc['type'] == 'FeatureCollection'
+            assert 'features' in fc
+            assert len(fc['features']) > 0
 
-            assert 'geometry' in feature
-            assert len(feature['geometry']) > 0
+            for feature in fc['features']:
+                assert 'type' in feature
+                assert feature['type'] == 'Feature'
 
-            geometry = feature['geometry']
-            assert 'type' in geometry
-            assert geometry['type'] == 'Point'
+                assert 'properties' in feature
+                assert 'velocity' in feature['properties']
 
-            assert 'coordinates' in geometry
-            assert len(geometry['coordinates']) == 2
+                assert 'geometry' in feature
+                assert len(feature['geometry']) > 0
+
+                geometry = feature['geometry']
+                assert 'type' in geometry
+                assert geometry['type'] == 'Point'
+
+                assert 'coordinates' in geometry
+                assert len(geometry['coordinates']) == 2
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
