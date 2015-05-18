@@ -1,17 +1,15 @@
 #!/usr/bin/env python
 import copy
-from datetime import timedelta
 
 import numpy
 np = numpy
-from colander import (SchemaNode, drop, Bool)
+from colander import SchemaNode
 
-from gnome.persist.validators import convertible_to_seconds
+from gnome.persist.extend_colander import NumpyArray
 from gnome.persist.base_schema import ObjType
-from gnome.persist.extend_colander import LocalDateTime
 
 from gnome.array_types import mass_components
-from gnome.utilities.serializable import Serializable
+from gnome.utilities.serializable import Serializable, Field
 
 from gnome.movers.movers import Process, ProcessSchema
 
@@ -87,10 +85,18 @@ class Weatherer(Process):
         return mass_remain
 
 
-class HalfLifeWeatherer(Weatherer):
+class HalfLifeWeathererSchema(WeathererSchema):
+    half_lives = SchemaNode(NumpyArray())
+
+
+class HalfLifeWeatherer(Weatherer, Serializable):
     '''
     Give half-life for all components and decay accordingly
     '''
+    _schema = HalfLifeWeathererSchema
+    _state = copy.deepcopy(Weatherer._state)
+    _state += Field('half_lives', save=True, update=True)
+
     def __init__(self, half_lives=(15.*60, ), **kwargs):
         '''
         The half_lives are a property of HalfLifeWeatherer. If the
