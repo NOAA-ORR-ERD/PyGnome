@@ -23,10 +23,12 @@ _sample_oils = {
                                   'api': uc.convert('Density',
                                                     'gram per cubic centimeter',
                                                     'API degree', 0.75),
-                                  'kvis': [{'m_2_s': 1.32e-6, 'ref_temp_k': 273.15},
-                                           {'m_2_s': 9.98e-7, 'ref_temp_k': 288.15},
-                                           {'m_2_s': 8.6e-7, 'ref_temp_k': 311.0},
-                                           ],
+                                  'kvis': [{'m_2_s': 1.32e-6,
+                                            'ref_temp_k': 273.15},
+                                           {'m_2_s': 9.98e-7,
+                                            'ref_temp_k': 288.15},
+                                           {'m_2_s': 8.6e-7,
+                                            'ref_temp_k': 311.0}],
                                   }
                                ),
     'oil_jetfuels':
@@ -35,11 +37,14 @@ _sample_oils = {
                                   'api': uc.convert('Density',
                                                     'gram per cubic centimeter',
                                                     'API degree', 0.81),
-                                  'kvis': [{'m_2_s': 6.9e-6, 'ref_temp_k': 255.0},
-                                           {'m_2_s': 2.06e-6, 'ref_temp_k': 273.0},
-                                           {'m_2_s': 2.08e-6, 'ref_temp_k': 288.0},
-                                           {'m_2_s': 1.3e-6, 'ref_temp_k': 313.0},
-                                           ],
+                                  'kvis': [{'m_2_s': 6.9e-6,
+                                            'ref_temp_k': 255.0},
+                                           {'m_2_s': 2.06e-6,
+                                            'ref_temp_k': 273.0},
+                                           {'m_2_s': 2.08e-6,
+                                            'ref_temp_k': 288.0},
+                                           {'m_2_s': 1.3e-6,
+                                            'ref_temp_k': 313.0}],
                                   }
                                ),
     'oil_diesel':
@@ -48,10 +53,12 @@ _sample_oils = {
                                   'api': uc.convert('Density',
                                                     'gram per cubic centimeter',
                                                     'API degree', 0.87),
-                                  'kvis': [{'m_2_s': 6.5e-6, 'ref_temp_k': 273.0},
-                                           {'m_2_s': 3.9e-6, 'ref_temp_k': 288.0},
-                                           {'m_2_s': 2.27e-6, 'ref_temp_k': 311.0},
-                                           ],
+                                  'kvis': [{'m_2_s': 6.5e-6,
+                                            'ref_temp_k': 273.0},
+                                           {'m_2_s': 3.9e-6,
+                                            'ref_temp_k': 288.0},
+                                           {'m_2_s': 2.27e-6,
+                                            'ref_temp_k': 311.0}],
                                   }
                                ),
     'oil_4':
@@ -60,11 +67,14 @@ _sample_oils = {
                                   'api': uc.convert('Density',
                                                     'gram per cubic centimeter',
                                                     'API degree', 0.90),
-                                  'kvis': [{'m_2_s': 0.06, 'ref_temp_k': 273.0},
-                                           {'m_2_s': 0.03, 'ref_temp_k': 278.0},
-                                           {'m_2_s': 0.0175, 'ref_temp_k': 283.0},
-                                           {'m_2_s': 0.0057, 'ref_temp_k': 288.0},
-                                           ],
+                                  'kvis': [{'m_2_s': 0.06,
+                                            'ref_temp_k': 273.0},
+                                           {'m_2_s': 0.03,
+                                            'ref_temp_k': 278.0},
+                                           {'m_2_s': 0.0175,
+                                            'ref_temp_k': 283.0},
+                                           {'m_2_s': 0.0057,
+                                            'ref_temp_k': 288.0}],
                                   }
                                ),
     'oil_crude':
@@ -73,11 +83,14 @@ _sample_oils = {
                                   'api': uc.convert('Density',
                                                     'gram per cubic centimeter',
                                                     'API degree', 0.90),
-                                  'kvis': [{'m_2_s': 0.0005, 'ref_temp_k': 273.0},
-                                           {'m_2_s': 0.0006, 'ref_temp_k': 288.0},
-                                           {'m_2_s': 8.3e-5, 'ref_temp_k': 293.0},
-                                           {'m_2_s': 8.53e-5, 'ref_temp_k': 311.0},
-                                           ],
+                                  'kvis': [{'m_2_s': 0.0005,
+                                            'ref_temp_k': 273.0},
+                                           {'m_2_s': 0.0006,
+                                            'ref_temp_k': 288.0},
+                                           {'m_2_s': 8.3e-5,
+                                            'ref_temp_k': 293.0},
+                                           {'m_2_s': 8.53e-5,
+                                            'ref_temp_k': 311.0}],
                                   }
                                ),
     'oil_6':
@@ -86,12 +99,16 @@ _sample_oils = {
                                   'api': uc.convert('Density',
                                                     'gram per cubic centimeter',
                                                     'API degree', 0.99),
-                                  'kvis': [{'m_2_s': 0.25, 'ref_temp_k': 273.0},
-                                           {'m_2_s': 0.038, 'ref_temp_k': 278.0},
-                                           {'m_2_s': 0.019, 'ref_temp_k': 283.0},
-                                           {'m_2_s': 0.017, 'ref_temp_k': 288.0},
-                                           {'m_2_s': 0.000826, 'ref_temp_k': 323.0},
-                                           ],
+                                  'kvis': [{'m_2_s': 0.25,
+                                            'ref_temp_k': 273.0},
+                                           {'m_2_s': 0.038,
+                                            'ref_temp_k': 278.0},
+                                           {'m_2_s': 0.019,
+                                            'ref_temp_k': 283.0},
+                                           {'m_2_s': 0.017,
+                                            'ref_temp_k': 288.0},
+                                           {'m_2_s': 0.000826,
+                                            'ref_temp_k': 323.0}],
                                   }
                                ),
     # 'oil_conservative':
@@ -162,6 +179,7 @@ def get_oil(oil_, max_cuts=None):
     end user.
     """
     if isinstance(oil_, dict):
+        prune_db_ids(oil_)
         return Oil.from_json(oil_)
 
     if oil_ in _sample_oils.keys():
@@ -187,6 +205,25 @@ def get_oil(oil_, max_cuts=None):
                           "{1}".format(oil_, ex.message))
             ex.args = (ex.message, )
             raise ex
+
+
+def prune_db_ids(oil_):
+    '''
+        If we are instantiating an oil using a JSON payload, we do not
+        need any id to be passed.  It is not necessary, and is in fact
+        misleading.
+        We probably only need to do it here in this module.
+    '''
+    for attr in ('id', 'oil_id', 'imported_record_id', 'estimated_id'):
+        if attr in oil_:
+            del oil_[attr]
+
+    for list_attr in ('cuts', 'densities', 'kvis', 'molecular_weights',
+                      'sara_fractions', 'sara_densities'):
+        for item in oil_[list_attr]:
+            for attr in ('id', 'oil_id', 'imported_record_id', 'estimated_id'):
+                if attr in item:
+                    del item[attr]
 
 
 def get_oil_props(oil_info, max_cuts=None):
