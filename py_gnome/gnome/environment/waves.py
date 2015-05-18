@@ -47,7 +47,7 @@ class Waves(Environment, serializable.Serializable):
 
     _state['name'].test_for_eq = False
 
-    def __init__(self, wind, water):
+    def __init__(self, wind, water, **kwargs):
         """
         :param wind: A wind object to get the wind speed.
                      This should be a moving average wind object.
@@ -55,10 +55,15 @@ class Waves(Environment, serializable.Serializable):
 
         :param water: water properties, specifically fetch and wave height
         :type water: environment.Water object.
+
+        .. note:: must take **kwargs since base class supports more inputs like
+            'name'. The new_from_dict() alternate constructor will invoke
+            __init__ will arguments that supported by baseclass
         """
 
         self.wind = wind
         self.water = water
+        super(Waves, self).__init__(**kwargs)
 
     # def update_water(self):
     #     """
@@ -213,7 +218,9 @@ class Waves(Environment, serializable.Serializable):
             ## or zero less than 3, then a sharp increase to 4m/s?
             fw = (0.0125*U) / Tm
         else:
-            fw = (0.01*U + 0.01) / Tm  # Ding and Farmer (JPO 1994)
+            #fw = (0.01*U + 0.01) / Tm  # Ding and Farmer (JPO 1994)
+            # old ADIOS had a .5 factor - not sure why but we'll keep it for now
+            fw = .5*(0.01*U + 0.01) / Tm  # Ding and Farmer (JPO 1994) 
 
         return fw if fw <= 1.0 else 1.0  # only with U > 200m/s!
 

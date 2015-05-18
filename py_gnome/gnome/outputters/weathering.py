@@ -88,6 +88,10 @@ class WeatheringOutput(Outputter, Serializable):
         output_info = {'step_num': step_num,
                        'time_stamp': sc.current_time_stamp.isoformat()}
         output_info.update(dict_)
+        self.logger.debug(self._pid + 'step_num: {0}'.format(step_num))
+        for name, val in dict_.iteritems():
+            msg = ('\t{0}: {1}'.format(name, val))
+            self.logger.debug(msg)
 
         if self.output_dir:
             output_filename = self.output_to_file(output_info, step_num)

@@ -130,7 +130,7 @@ class Wind(serializable.Serializable, Timeseries, Environment):
                       serializable.Field('timeseries', save=False,
                                          update=True),
                       # test for equality of units a little differently
-                      serializable.Field('units', save=False,
+                      serializable.Field('units', save=True,
                                          update=True, test_for_eq=False),
                       ])
     _state['name'].test_for_eq = False
@@ -217,6 +217,14 @@ class Wind(serializable.Serializable, Timeseries, Environment):
         C++ object stores timeseries in 'm/s'
         '''
         self.set_wind_data(value, units=self.units)
+
+    def timeseries_to_dict(self):
+        '''
+        when serializing data - round it to 2 decimal places
+        '''
+        ts = self.get_wind_data(units=self.units)
+        ts['value'][:] = np.round(ts['value'], 2)
+        return ts
 
     @property
     def units(self):
@@ -354,6 +362,8 @@ class Wind(serializable.Serializable, Timeseries, Environment):
         .. note:: Invokes self._convert_units() to do the unit conversion.
             Override this method to define the derived object's unit conversion
             functionality
+
+        todo: return data in appropriate significant digits
         """
         datetimeval = super(Wind, self).get_timeseries(datetime, format)
         units = (units, self._user_units)[units is None]

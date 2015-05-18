@@ -10,6 +10,7 @@
 #include "TriGridVel_c.h"
 #include "RectUtils.h"
 #include "MemUtils.h"
+#include "Replacements.h"
 using std::cout;
 
 GridVel_c::GridVel_c() 
@@ -32,12 +33,19 @@ TopologyHdl TriGridVel_c::GetTopologyHdl(void)
 	return fDagTree->GetTopologyHdl();
 }
 
-/*DAGHdl TriGridVel_c::GetDagTreeHdl(void)
+VelocityFH TriGridVel_c::GetVelocityHdl(void)
+{
+	if(!fDagTree) return nil;
+	
+	return fDagTree->GetVelocityHdl();
+}
+
+DAGHdl TriGridVel_c::GetDagTreeHdl(void)
  {
- if(!fDagTree) return nil;
- 
- return fDagTree->GetDagTreeHdl();
- }*/
+	 if(!fDagTree) return nil;
+	 
+	 return fDagTree->GetDagTreeHdl();
+ }
 
 long TriGridVel_c::GetNumTriangles(void)
 {
@@ -46,6 +54,85 @@ long TriGridVel_c::GetNumTriangles(void)
 	if (topoH) numTriangles = _GetHandleSize((Handle)topoH)/sizeof(**topoH);
 	
 	return numTriangles;
+}
+
+WORLDPOINTH TriGridVel_c::GetWorldPointsHdl(void)
+{
+	OSErr err = 0;
+	int32_t numPts = 0, numTri = 0;
+	WorldPoint wp;
+	LongPoint lp;
+	
+	if (WPtH) return WPtH;
+		
+	LongPointHdl ptsH = GetPointsHdl();
+	TopologyHdl topoH = GetTopologyHdl();
+	if (ptsH) numPts = _GetHandleSize((Handle)ptsH)/sizeof(**ptsH);
+	if (topoH) numTri = _GetHandleSize((Handle)topoH)/sizeof(**topoH);
+	
+	WPtH = (WORLDPOINTH)_NewHandle(numPts * sizeof(WorldPoint));
+	if (!WPtH) {
+		err = -1;
+		TechError("TriGridVel_c::GetWorldPointsHdl()", "_NewHandle()", 0);
+		goto done;
+	}
+	for (int i=0; i<numPts; i++)
+	{
+		lp = (*ptsH)[i];
+#ifndef pyGNOME
+		wp.pLong = lp.h;
+		wp.pLat = lp.v;
+#else
+		wp.pLong = (double)lp.h / 1.e6;
+		wp.pLat = (double)lp.v / 1.e6;
+#endif
+		INDEXH(WPtH,i) = wp;
+	}
+done:
+	return WPtH;
+}
+
+WORLDPOINTH	TriGridVel_c::GetCenterPointsHdl()
+{
+	OSErr err = 0;
+	LongPointHdl ptsH = 0;
+	WORLDPOINTH wpH = 0;
+	TopologyHdl topH ;
+	LongPoint wp1,wp2,wp3;
+	WorldPoint wp;
+	int32_t numPts = 0, numTri = 0;
+	
+	if (CenterPtsH) return CenterPtsH;
+	
+	topH = GetTopologyHdl();
+	ptsH = GetPointsHdl();
+	numTri = _GetHandleSize((Handle)topH)/sizeof(Topology);
+	numPts = _GetHandleSize((Handle)ptsH)/sizeof(LongPoint);
+	CenterPtsH = (WORLDPOINTH)_NewHandle(numTri * sizeof(WorldPoint));
+	if (!CenterPtsH) {
+		err = -1;
+		TechError("TriGridVel_c::GetCenterPointsHdl()", "_NewHandle()", 0);
+		goto done;
+	}
+	
+	for (int i=0; i<numTri; i++)
+	{
+		wp1 = (*ptsH)[(*topH)[i].vertex1];
+		wp2 = (*ptsH)[(*topH)[i].vertex2];
+		wp3 = (*ptsH)[(*topH)[i].vertex3];
+
+#ifndef pyGNOME
+		wp.pLong = (wp1.h+wp2.h+wp3.h)/3;
+		wp.pLat = (wp1.v+wp2.v+wp3.v)/3;
+#else
+		wp.pLong = (double)(wp1.h+wp2.h+wp3.h)/3.e6;
+		wp.pLat = (double)(wp1.v+wp2.v+wp3.v)/3.e6;
+#endif
+		INDEXH(CenterPtsH,i) = wp;
+	}
+	
+done:
+	return CenterPtsH;
 }
 
 long TriGridVel_c::GetNumDepths(void)
@@ -415,6 +502,16 @@ void TriGridVel_c::Dispose ()
 	{
 		DisposeHandle((Handle)fBathymetryH);
 		fBathymetryH = 0;
+	}
+	if (CenterPtsH)
+	{
+		DisposeHandle((Handle)CenterPtsH);
+		CenterPtsH = 0;
+	}
+	if (WPtH)
+	{
+		DisposeHandle((Handle)WPtH);
+		WPtH = 0;
 	}
 	GridVel_c::Dispose();
 }

@@ -90,25 +90,13 @@ class Base(object):
             if 'oils' in c:
                 del c['oils']
 
-        for c in oil_json['cuts']:
-            if 'imported' in c:
-                del c['imported']
-            if 'oil' in c:
-                del c['oil']
-
-        for d in oil_json['densities']:
-            if 'imported' in d:
-                del d['imported']
-            if 'oil' in d:
-                del d['oil']
-
-        for k in oil_json['kvis']:
-            if 'oil' in k:
-                del k['oil']
-
-        for f in oil_json['sara_fractions']:
-            if 'oil' in f:
-                del f['oil']
+        for list_attr in ('cuts', 'densities', 'kvis', 'molecular_weights',
+                          'sara_fractions', 'sara_densities'):
+            for attr in oil_json[list_attr]:
+                if 'imported' in attr:
+                    del attr['imported']
+                if 'oil' in attr:
+                    del attr['oil']
 
         return oil_json
 
@@ -414,6 +402,7 @@ class Oil(Base):
     estimated_id = Column(Integer, ForeignKey('estimated.id'))
 
     name = Column(String(100), unique=True, nullable=False)
+    adios_oil_id = Column(String(16))
     api = Column(Float(53))
     oil_water_interfacial_tension_n_m = Column(Float(53))
     oil_water_interfacial_tension_ref_temp_k = Column(Float(53))

@@ -52,13 +52,13 @@ water_current_type = np.float64
 
 # value has two components: (u, v) or (r, theta) etc
 datetime_value_2d = np.dtype([('time', 'datetime64[s]'),
-    ('value', mover_type, (2, ))], align=True)
+                              ('value', mover_type, (2, ))], align=True)
 
 # value has one component: (u,)
 # convert from datetime_value_1d to time_value_pair by setting 2nd component
 # of value to 0.0
 datetime_value_1d = np.dtype([('time', 'datetime64[s]'),
-    ('value', mover_type, (1,))], align=True)
+                              ('value', mover_type, ())], align=True)
 
 # enums that are same as C++ values are defined in cy_basic_types
 # Define enums that are independent of C++ here so we
@@ -97,6 +97,14 @@ tide_height_data = np.dtype([('time', seconds), ('height', np.double),
 
 w_point_2d = np.dtype([('long', world_point_type), ('lat',
                       world_point_type)])
+
+long_point = np.dtype([('long', np_long), ('lat',
+                      np_long)], align=True)
+
+triangle_data = np.dtype([('v1', np_long), ('v2', np_long), 
+                       ('v3', np_long), ('n1', np_long),
+                       ('n2', np_long), ('n3', np_long)],
+                       align=True)
 
 # In the C++ TypeDefs.h, the enum type for LEStatus is defined as a short
 # this is also consistent with the definition in type_defs.pxd ..

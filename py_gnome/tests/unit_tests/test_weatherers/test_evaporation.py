@@ -30,11 +30,13 @@ arrays.update(intrinsic.array_types)
 
 def test_evaporation_no_wind():
     et = floating(substance=test_oil)
-    sc = sample_sc_release(num_elements=100,
-                           element_type=et,
-                           arr_types=arrays)
-    intrinsic.update(sc.num_released, sc)
     time_step = 15. * 60
+    sc = sample_sc_release(num_elements=2,
+                           element_type=et,
+                           arr_types=arrays,
+                           time_step=time_step)
+    intrinsic.prepare_for_model_run(sc)
+    intrinsic.update(sc.num_released, sc)
     model_time = (sc.spills[0].get('release_time') +
                   timedelta(seconds=time_step))
 
@@ -57,11 +59,13 @@ def test_evaporation(oil, temp, num_elems, on):
     still working on tests ..
     '''
     et = floating(substance=oil)
+    time_step = 15. * 60
     sc = sample_sc_release(num_elements=num_elems,
                            element_type=et,
-                           arr_types=arrays)
+                           arr_types=arrays,
+                           time_step=time_step)
+    intrinsic.prepare_for_model_run(sc)
     intrinsic.update(sc.num_released, sc)
-    time_step = 15. * 60
     model_time = (sc.spills[0].get('release_time') +
                   timedelta(seconds=time_step))
 
@@ -102,12 +106,11 @@ class TestDecayConst:
     WIP - Currently has one working test, but may have more so grouped it in
     a class
     '''
-    def setup_test(self, delay, num_les):
+    def setup_test(self, end_time_delay, num_les, ts=900.):
         stime = datetime(2015, 1, 1, 12, 0)
-        etime = stime + delay
+        etime = stime + end_time_delay
         st_pos = (0, 0, 0)
         oil = test_oil
-        ts = 3600.
 
         m1 = Model(start_time=stime, time_step=ts)
         m1.environment += constant_wind(0, 0)
@@ -130,7 +133,7 @@ class TestDecayConst:
         m2.outputters += WeatheringOutput()
         return (m1, m2)
 
-    @pytest.mark.xfail
+    @pytest.mark.skipif
     def test_evap_decay_const_vary_ts(self, delay=timedelta(0)):
         '''
         evap decay constant does depend on timestep since thickness has a
@@ -157,26 +160,32 @@ class TestDecayConst:
                 if d_time1 == d_time2:
                     assert np.allclose(val1, val2)
 
-    @pytest.mark.parametrize("delay", [timedelta(hours=0),
-                                       timedelta(hours=4)])
-    def test_evap_decay_const_vary_numLE(self, delay):
+    @pytest.mark.parametrize("end_time_delay", [timedelta(hours=0),
+                                                timedelta(hours=4)])
+    def test_evap_decay_const_vary_numLE(self, end_time_delay):
         '''
         test checks the evaporation decay constant does not depend on the number
         of elements.
         '''
-        (m1, m2) = self.setup_test(delay, (10, 100))
+        # for a 15min timestep, make sure at least one LE per timestep is
+        # released for test to work.
+        if end_time_delay == 0:
+            num_les_one_per_ts = 1
+        else:
+            num_les_one_per_ts = end_time_delay.total_seconds()/900.
+
+        (m1, m2) = self.setup_test(end_time_delay, (num_les_one_per_ts,
+                                                    4*num_les_one_per_ts))
 
         for ix in xrange(m1.num_time_steps):
             w1 = m1.step()['WeatheringOutput']
             w2 = m2.step()['WeatheringOutput']
 
-            val1 = w1.values()
-            val2 = w2.values()
-            d_time1 = val1.pop(4)
-            d_time2 = val2.pop(4)
+            d_time1 = w1.pop('time_stamp')
+            d_time2 = w2.pop('time_stamp')
 
             assert d_time1 == d_time2
-            assert np.allclose(val1, val2)
+            assert np.allclose(w1.values(), w2.values())
 
 
 def assert_helper(sc, new_p):

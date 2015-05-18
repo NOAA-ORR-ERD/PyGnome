@@ -17,7 +17,7 @@ from gnome.array_types import (reset_to_defaults,
                                mass_components)
 from pytest import mark, raises
 
-from testfixtures import log_capture, LogCapture
+from testfixtures import log_capture
 
 
 def test_reset_to_defaults():

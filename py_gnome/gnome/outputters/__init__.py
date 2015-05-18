@@ -2,7 +2,7 @@
 from outputter import Outputter, BaseSchema
 from netcdf import NetCDFOutput, NetCDFOutputSchema
 from renderer import Renderer, RendererSchema
-from geo_json import GeoJson
+from geo_json import TrajectoryGeoJsonOutput, CurrentGeoJsonOutput
 from weathering import WeatheringOutput
 
 __all__ = [BaseSchema,
@@ -11,5 +11,6 @@ __all__ = [BaseSchema,
            NetCDFOutputSchema,
            Renderer,
            RendererSchema,
-           GeoJson,
+           TrajectoryGeoJsonOutput,
+           CurrentGeoJsonOutput,
            WeatheringOutput]

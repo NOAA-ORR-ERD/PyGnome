@@ -7,15 +7,17 @@ import os
 from glob import glob
 
 import numpy as np
-from geojson import Feature, FeatureCollection, dump, MultiPoint
+from geojson import Feature, FeatureCollection, dump, MultiPoint, Point
 from colander import SchemaNode, String, drop, Int, Bool
 
+from gnome.utilities.time_utils import date_to_sec
 from gnome.utilities.serializable import Serializable, Field
+from gnome.persist import class_from_objtype
 
 from .outputter import Outputter, BaseSchema
 
 
-class GeoJsonSchema(BaseSchema):
+class TrajectoryGeoJsonSchema(BaseSchema):
     '''
     Nothing is required for initialization
     '''
@@ -24,7 +26,7 @@ class GeoJsonSchema(BaseSchema):
     output_dir = SchemaNode(String(), missing=drop)
 
 
-class GeoJson(Outputter, Serializable):
+class TrajectoryGeoJsonOutput(Outputter, Serializable):
     '''
     class that outputs GNOME results in a geojson format. The output is a
     collection of Features. Each Feature contains a Point object with
@@ -66,7 +68,7 @@ class GeoJson(Outputter, Serializable):
     _state += [Field('round_data', update=True, save=True),
                Field('round_to', update=True, save=True),
                Field('output_dir', update=True, save=True)]
-    _schema = GeoJsonSchema
+    _schema = TrajectoryGeoJsonSchema
 
     def __init__(self, round_data=True, round_to=4, output_dir=None,
                  **kwargs):
@@ -86,11 +88,12 @@ class GeoJson(Outputter, Serializable):
         self.round_to = round_to
         self.output_dir = output_dir
 
-        super(GeoJson, self).__init__(**kwargs)
+        super(TrajectoryGeoJsonOutput, self).__init__(**kwargs)
 
     def write_output(self, step_num, islast_step=False):
         'dump data in geojson format'
-        super(GeoJson, self).write_output(step_num, islast_step)
+        super(TrajectoryGeoJsonOutput, self).write_output(step_num,
+                                                          islast_step)
 
         if not self._write_step:
             return None
@@ -156,7 +159,7 @@ class GeoJson(Outputter, Serializable):
 
     def rewind(self):
         'remove previously written files'
-        super(GeoJson, self).rewind()
+        super(TrajectoryGeoJsonOutput, self).rewind()
         self.clean_output_files()
 
     def clean_output_files(self):
@@ -164,3 +167,138 @@ class GeoJson(Outputter, Serializable):
             files = glob(os.path.join(self.output_dir, 'geojson_*.geojson'))
             for f in files:
                 os.remove(f)
+
+
+class CurrentGeoJsonSchema(BaseSchema):
+    '''
+    Nothing is required for initialization
+    '''
+
+
+class CurrentGeoJsonOutput(Outputter, Serializable):
+    '''
+    Class that outputs GNOME current velocity results for each current mover
+    in a geojson format.  The output is a collection of Features.
+    Each Feature contains a Point object with associated properties.
+    Following is the output format - the data in <> are the results
+    for each element.
+
+    ::
+    {
+     "time_stamp": <TIME IN ISO FORMAT>,
+     "step_num": <OUTPUT ASSOCIATED WITH THIS STEP NUMBER>,
+     "feature_collections": {<mover_id>: {"type": "FeatureCollection",
+                                          "features": [{"type": "Feature",
+                                                        "id": <PARTICLE_ID>,
+                                                        "properties": {"velocity": [u, v]
+                                                                       },
+                                                        "geometry": {"type": "Point",
+                                                                     "coordinates": [<LONG>, <LAT>]
+                                                                     },
+                                                        },
+                                                        ...
+                                                       ],
+                                          },
+                             ...
+                             }
+    '''
+    _state = copy.deepcopy(Outputter._state)
+
+    # need a schema and also need to override save so output_dir
+    # is saved correctly - maybe point it to saveloc
+    _state.add_field(Field('current_movers',
+                           save=True, update=True, save_reference=True))
+
+    _schema = CurrentGeoJsonSchema
+
+    def __init__(self, current_movers, **kwargs):
+        '''
+        :param list current_movers: A list or collection of current grid mover
+                                    objects.
+
+        use super to pass optional \*\*kwargs to base class __init__ method
+        '''
+        self.current_movers = current_movers
+
+        super(CurrentGeoJsonOutput, self).__init__(**kwargs)
+
+    def write_output(self, step_num, islast_step=False):
+        'dump data in geojson format'
+        super(CurrentGeoJsonOutput, self).write_output(step_num, islast_step)
+
+        if self.on is False or not self._write_step:
+            return None
+
+        for sc in self.cache.load_timestep(step_num).items():
+            pass
+
+        model_time = date_to_sec(sc.current_time_stamp)
+
+        geojson = {}
+        for cm in self.current_movers:
+            features = []
+            velocities = cm.get_scaled_velocities(model_time)
+            centers = cm.mover._get_center_points()
+
+            for v, c in zip(velocities, centers):
+                feature = Feature(geometry=Point(list(c)),
+                                  id="1",
+                                  properties={'velocity': list(v)})
+                features.append(feature)
+
+            geojson[cm.id] = FeatureCollection(features)
+
+        # default geojson should not output data to file
+        # read data from file and send it to web client
+        output_info = {'step_num': step_num,
+                       'time_stamp': sc.current_time_stamp.isoformat(),
+                       'feature_collections': geojson
+                       }
+
+        return output_info
+
+    def rewind(self):
+        'remove previously written files'
+        super(CurrentGeoJsonOutput, self).rewind()
+
+    def serialize(self, json_='webapi'):
+        """
+            Serialize our current velocities outputter to JSON
+        """
+        dict_ = self.to_serialize(json_)
+        schema = self.__class__._schema()
+        json_out = schema.serialize(dict_)
+
+        json_out['current_movers'] = []
+
+        for cm in self.current_movers:
+            json_out['current_movers'].append(cm.serialize(json_))
+
+        return json_out
+
+    @classmethod
+    def deserialize(cls, json_):
+        """
+        append correct schema for current mover
+        """
+        schema = cls._schema()
+        _to_dict = schema.deserialize(json_)
+
+        if 'current_movers' in json_:
+            _to_dict['current_movers'] = []
+            for i, cm in enumerate(json_['current_movers']):
+                cm_cls = class_from_objtype(cm['obj_type'])
+                cm_dict = cm_cls.deserialize(json_['current_movers'][i])
+
+                _to_dict['current_movers'].append(cm_dict)
+
+        return _to_dict
+
+
+
+
+
+
+
+
+

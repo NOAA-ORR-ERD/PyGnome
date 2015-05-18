@@ -120,18 +120,18 @@ def test_to_time_value_pair(wind_ts, in_ts_format):
 
 def test_to_time_value_pair_from_1d():
     data = np.zeros((4,), dtype=datetime_value_1d)
-    data['value'] = np.random.uniform(1, 10, len(data)).reshape(-1, 1)
+    data['value'] = np.random.uniform(1, 10, len(data))
     out_tv = to_time_value_pair(data)
 
     assert np.all(out_tv['value']['v'] == 0.0)
-    assert np.all(out_tv['value']['u'] == data['value'].reshape(-1))
+    assert np.all(out_tv['value']['u'] == data['value'])
 
 
 def test_to_datetime_value_1d(wind_ts):
     'test convert from time_value_pair to datetime_value_1d'
     out_dtval = to_datetime_value_1d(wind_ts['tv']).view(dtype=np.recarray)
-    assert out_dtval['value'].shape[1] == 1
-    assert np.all(out_dtval['value'] == wind_ts['tv'].value.u.reshape(-1, 1))
+    assert len(out_dtval.shape) == 1
+    assert np.all(out_dtval['value'] == wind_ts['tv'].value.u)
 
 
 @pytest.mark.parametrize('out_ts_format',
@@ -139,7 +139,7 @@ def test_to_datetime_value_1d(wind_ts):
 def test_to_datetime_value_2d_rq(wind_ts, out_ts_format):
     out_dtval = to_datetime_value_2d(wind_ts['tv'],
             out_ts_format).view(dtype=np.recarray)
-    #assert np.all(out_dtval.time == wind_ts['dtv_rq'].time)
+    assert np.all(out_dtval.time == wind_ts['dtv_rq'].time)
     assert np.allclose(out_dtval.value, wind_ts['dtv_rq'].value, atol,
                        rtol)
 

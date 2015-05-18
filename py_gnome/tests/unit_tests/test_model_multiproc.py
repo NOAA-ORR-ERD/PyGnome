@@ -22,9 +22,9 @@ from gnome.environment import Wind, Water, Tide
 from gnome.spill import point_line_release_spill
 
 from gnome.movers import RandomMover, WindMover, CatsMover
-from gnome.weatherers import Evaporation, Dispersion, Burn, Skimmer
+from gnome.weatherers import Evaporation, ChemicalDispersion, Burn, Skimmer
 
-from gnome.outputters import WeatheringOutput, GeoJson
+from gnome.outputters import WeatheringOutput, TrajectoryGeoJsonOutput
 
 from gnome.multi_model_broadcast import ModelBroadcaster
 from conftest import testdata, test_oil
@@ -89,26 +89,29 @@ def make_model(uncertain=False,
     units = spill.units
 
     # define skimmer/burn cleanup options
-    skimmer = Skimmer(0.5*amount, units=units, efficiency=0.3,
+    skimmer = Skimmer(0.3*amount, units=units, efficiency=0.3,
                       active_start=skim_start,
                       active_stop=skim_start + timedelta(hours=4))
     # thickness = 1m so area is just 20% of volume
     volume = spill.get_mass()/spill.get('substance').get_density()
     burn = Burn(0.2 * volume, 1.0,
-                active_start=skim_start)
+                active_start=skim_start, efficiency=.9)
+    c_disp = ChemicalDispersion(0.1, efficiency=0.5,
+                                active_start=skim_start,
+                                active_stop=skim_start + timedelta(hours=1))
 
     water_env = Water(311.15)
     model.environment += water_env
     model.weatherers += [Evaporation(water_env, wind),
-                         Dispersion(),
-                         burn,]
-                         #skimmer]
+                         c_disp,
+                         burn,
+                         skimmer]
 
     print 'adding outputters'
     model.outputters += WeatheringOutput()
 
     if geojson_output:
-        model.outputters += GeoJson()
+        model.outputters += TrajectoryGeoJsonOutput()
 
     return model
 

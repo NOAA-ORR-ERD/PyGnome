@@ -71,11 +71,19 @@ typedef struct VelocityRec
 	double v;
 } VelocityRec, *VelocityP, **VelocityH;
 
+#ifndef pyGNOME
 typedef struct VelocityFRec
 {
 	float u;
 	float v;
 } VelocityFRec, *VelocityFP, **VelocityFH;
+#else
+typedef struct VelocityFRec
+{
+	double u;
+	double v;
+} VelocityFRec, *VelocityFP, **VelocityFH;
+#endif
 
 typedef struct VelocityRec3D
 {

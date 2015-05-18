@@ -246,19 +246,25 @@ _default_values = {'positions': ((3,), world_point_type, 'positions',
 
                    # WEATHERING DATA
                    # following used to compute spreading (LE thickness)
-                   # init_volume initial volume of blob of oil - the sum of all
-                   # LEs with same age is the volume of the blob. It is evenly
-                   # divided to number of LEs
-                   'init_volume': ((), np.float64, 'init_volume', 0,
-                                   ArrayTypeDivideOnSplit),
-                   'init_area': ((), np.float64, 'init_area', 0,
-                                 ArrayTypeDivideOnSplit),
+                   # bulk_init_volume initial volume of blob of oil - the sum
+                   # of all LEs released together is the volume of the blob.
+                   # It is evenly divided to number of LEs
+                   'bulk_init_volume': ((), np.float64, 'bulk_init_volume', 0,
+                                        ArrayTypeDivideOnSplit),
                    'density': ((), np.float64, 'density', 0),
                    'evap_decay_constant': (None, np.float64,
                                            'evap_decay_constant', None),
-                   'relative_bouyancy': ((), np.float64, 'relative_bouyancy',
-                                         0),
-                   'thickness': ((), np.float64, 'thickness', 0),
+
+                   # area is frac_coverage * fay_area - it is the area adjusted
+                   # by langmuir
+                   'fay_area': ((), np.float64, 'fay_area', 0),
+                   'area': ((), np.float64, 'area', 1),
+
+                   # decided not to use np.bool since netcdf needs a primitive
+                   # type. The conversion would need to happen between bool on
+                   # write and read in NetCDFOutput - requires more code so
+                   # decided to make it a uint8 instead
+                   'at_max_area': ((), np.uint8, 'at_max_area', False),
 
                    'viscosity': ((), np.float64, 'viscosity', 0),
                    # fractional water content in emulsion
@@ -266,7 +272,6 @@ _default_values = {'positions': ((3,), world_point_type, 'positions',
                    'interfacial_area': ((), np.float64, 'interfacial_area', 0),
                    # use negative as a not yet set flag
                    'bulltime': ((), np.float64, 'bulltime', -1.),
-                   'frac_coverage': ((), np.float32, 'frac_coverage', 1),
                    'frac_lost': ((), np.float64, 'frac_lost', 0),
 
                    # substance index - used label elements from same substance
