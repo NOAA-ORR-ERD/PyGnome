@@ -20,6 +20,7 @@ from gnome.utilities.serializable import Serializable, Field
 
 class BaseSchema(base_schema.ObjType, MappingSchema):
     'Base schema for all outputters - they all contain the following'
+    on = SchemaNode(Bool(), missing=drop)
     output_zero_step = SchemaNode(Bool())
     output_last_step = SchemaNode(Bool())
     output_timestep = SchemaNode(extend_colander.TimeDelta(), missing=drop)
@@ -32,13 +33,15 @@ class Outputter(Serializable):
     of a gnome model. As such, it should never need to be serialized
     '''
     _state = copy.deepcopy(Serializable._state)
-    _state += (Field('output_zero_step', save=True, update=True),
+    _state += (Field('on', save=True, update=True),
+               Field('output_zero_step', save=True, update=True),
                Field('output_last_step', save=True, update=True),
                Field('output_timestep', save=True, update=True))
     _schema = BaseSchema
 
     def __init__(self,
                  cache=None,
+                 on=True,
                  output_timestep=None,
                  output_zero_step=True,
                  output_last_step=True,
@@ -64,6 +67,7 @@ class Outputter(Serializable):
         :type output_last_step: boolean
         """
         self.cache = cache
+        self.on = on
         self.output_zero_step = output_zero_step
         self.output_last_step = output_last_step
         if output_timestep:

@@ -226,7 +226,7 @@ class CurrentGeoJsonOutput(Outputter, Serializable):
         'dump data in geojson format'
         super(CurrentGeoJsonOutput, self).write_output(step_num, islast_step)
 
-        if not self._write_step:
+        if self.on is False or not self._write_step:
             return None
 
         for sc in self.cache.load_timestep(step_num).items():
