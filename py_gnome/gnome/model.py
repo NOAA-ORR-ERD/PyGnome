@@ -1372,4 +1372,21 @@ class Model(Serializable):
                         self.logger.error(msg)
                         msgs.append(self._err_pre + msg)
 
+        if len(self.spills) == 0:
+            msg = '{0} contains no spills'.format(self.name)
+            self.logger.warning(msg)
+            msgs.append(self._warn_pre + msg)
+
+        for spill in self.spills:
+            if spill.get('release_time') > self.start_time:
+                msg = ('{0} has release time after model start time'.
+                       format(spill.name))
+
+            elif spill.get('release_time') < self.start_time:
+                msg = ('{0} has release time before model start time'
+                       .format(spill.name))
+
+            self.logger.warning(msg)
+            msgs.append(self._warn_pre + msg)
+
         return msgs

@@ -21,7 +21,10 @@ import gnome.map
 from gnome.environment import Wind, Tide, constant_wind, Water
 from gnome.model import Model
 
-from gnome.spill import Spill, SpatialRelease, point_line_release_spill
+from gnome.spill import (Spill,
+                         SpatialRelease,
+                         point_line_release_spill,
+                         Release)
 from gnome.spill.elements import floating
 
 from gnome.movers import SimpleMover, RandomMover, WindMover, CatsMover
@@ -1259,6 +1262,28 @@ def test_weatherer_sort():
 
     model.setup_model_run()
     assert model.weatherers.values() == exp_order
+
+
+def test_validate_model():
+    '''
+    test warning messages output for no spills and model start time mismatch
+    with release time
+    '''
+    start_time = datetime(2015, 1, 1, 12, 0)
+    model = Model(start_time=start_time)
+    msgs = model.validate()
+    assert len(msgs) == 1
+    assert ('{0} contains no spills'.format(model.name) in msgs[0])
+    model.spills += Spill(Release(start_time + timedelta(hours=1), 1))
+    msgs = model.validate()
+    assert len(msgs) == 1
+    assert ('Spill has release time after model start time' in msgs[0])
+
+    model.spills[0].set('release_time', start_time - timedelta(hours=1))
+    msgs = model.validate()
+    assert len(msgs) == 1
+    assert ('Spill has release time before model start time' in msgs[0])
+
 
 if __name__ == '__main__':
 
