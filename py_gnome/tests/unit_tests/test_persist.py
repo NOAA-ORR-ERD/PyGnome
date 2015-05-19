@@ -293,6 +293,9 @@ class TestWebApi:
         self.del_saveloc(self.webapi_files)
         os.makedirs(self.webapi_files)
         serial = model.serialize('webapi')
+        assert 'valid' in serial
+        assert serial['valid']
+
         fname = os.path.join(self.webapi_files, 'Model.json')
         self._write_to_file(fname, serial)
 
