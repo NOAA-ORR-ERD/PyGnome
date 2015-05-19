@@ -27,7 +27,6 @@ class AddLogger(object):
     Mixin for including a logger
     '''
     _log = None
-    make_default_refs = True
 
     @property
     def logger(self):
@@ -58,6 +57,7 @@ class GnomeId(AddLogger):
     A class for assigning a unique ID for an object
     '''
     _id = None
+    make_default_refs = True
 
     @property
     def id(self):
