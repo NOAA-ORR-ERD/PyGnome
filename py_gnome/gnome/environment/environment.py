@@ -25,6 +25,13 @@ class Environment(object):
     """
     _state = copy.deepcopy(serializable.Serializable._state)
 
+    # env objects referenced by others using this attribute name
+    # eg: For Wind objects, set to 'wind', for Water object set to 'water'
+    # so we have a way to identify all wind objects without relying on
+    # insinstance() checks. Used by model to automatically hook up objects that
+    # reference environment objects
+    _ref_as = 'environment'
+
     def __init__(self, name=None):
         '''
         base class for environment objects
@@ -106,6 +113,7 @@ class Water(Environment, serializable.Serializable):
     Defined in a Serializable class since user will need to set/get some of
     these properties through the client
     '''
+    _ref_as = 'water'
     _state = copy.deepcopy(Environment._state)
     _state += [serializable.Field('units', update=True, save=True),
                serializable.Field('temperature', update=True, save=True),

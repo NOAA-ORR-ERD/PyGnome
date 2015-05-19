@@ -103,8 +103,8 @@ class Wind(serializable.Serializable, Timeseries, Environment):
     '''
     Defines the Wind conditions for a spill
     '''
-    # removed 'id' from list below. id, filename and units cannot be updated
-    # - read only properties
+    # object is referenced by others using this attribute name
+    _ref_as = 'wind'
 
     # default units for input/output data
     _update = ['description',
@@ -476,6 +476,20 @@ class Wind(serializable.Serializable, Timeseries, Environment):
             return False
 
         return True
+
+    def validate(self):
+        '''
+        waves and water must not be None
+        '''
+        msgs = []
+        if np.all(self.timeseries['value'][:, 0] == 0.0):
+            msg = 'wind speed is 0'
+            self.logger.warning(msg)
+            msgs.append(self._warn_pre + msg)
+
+        return msgs
+
+        return msgs
 
 
 def constant_wind(speed, direction, units='m/s'):

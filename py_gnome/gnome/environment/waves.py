@@ -40,6 +40,7 @@ class Waves(Environment, serializable.Serializable):
     At the moment, it only does a single point, non spatially
     variable, but may be extended in the future
     """
+    _ref_as = 'waves'
     _state = copy.deepcopy(Environment._state)
     _state += [Field('water', save=True, update=True, save_reference=True),
                Field('wind', save=True, update=True, save_reference=True)]
@@ -47,8 +48,11 @@ class Waves(Environment, serializable.Serializable):
 
     _state['name'].test_for_eq = False
 
-    def __init__(self, wind, water, **kwargs):
+    def __init__(self, wind=None, water=None, **kwargs):
         """
+        wind and water must be set before running the model; however, these
+        can be set after object construction
+
         :param wind: A wind object to get the wind speed.
                      This should be a moving average wind object.
         :type wind: a Wind type, or equivelent
@@ -284,4 +288,3 @@ class Waves(Environment, serializable.Serializable):
         return _to_dict
 
 # wind.get_timeseries(self, datetime=None, units=None, format='r-theta')
-
