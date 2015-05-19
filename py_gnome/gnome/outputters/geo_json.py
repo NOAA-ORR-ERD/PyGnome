@@ -226,7 +226,7 @@ class CurrentGeoJsonOutput(Outputter, Serializable):
         'dump data in geojson format'
         super(CurrentGeoJsonOutput, self).write_output(step_num, islast_step)
 
-        if not self._write_step:
+        if self.on is False or not self._write_step:
             return None
 
         for sc in self.cache.load_timestep(step_num).items():
@@ -261,10 +261,25 @@ class CurrentGeoJsonOutput(Outputter, Serializable):
         'remove previously written files'
         super(CurrentGeoJsonOutput, self).rewind()
 
+    def serialize(self, json_='webapi'):
+        """
+            Serialize our current velocities outputter to JSON
+        """
+        dict_ = self.to_serialize(json_)
+        schema = self.__class__._schema()
+        json_out = schema.serialize(dict_)
+
+        json_out['current_movers'] = []
+
+        for cm in self.current_movers:
+            json_out['current_movers'].append(cm.serialize(json_))
+
+        return json_out
+
     @classmethod
     def deserialize(cls, json_):
         """
-        append correct schema for wind object
+        append correct schema for current mover
         """
         schema = cls._schema()
         _to_dict = schema.deserialize(json_)
