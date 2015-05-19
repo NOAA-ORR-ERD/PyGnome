@@ -64,19 +64,21 @@ def test_set_name(b_class):
 t = datetime(2015, 1, 1, 12, 0)
 
 
-@pytest.mark.parametrize("obj",
-                         (Wind(timeseries=[(t, (0, 1)),
-                                           (t + timedelta(10), (0, 2))],
-                               units='m/s'),
-                          Evaporation(),
-                          NaturalDispersion()))
-def test_base_validate(obj):
+@pytest.mark.parametrize(("obj", "objvalid"),
+                         [(Wind(timeseries=[(t, (0, 1)),
+                                            (t + timedelta(10), (0, 2))],
+                                units='m/s'), True),
+                          (Evaporation(), False),
+                          (NaturalDispersion(), False)])
+def test_base_validate(obj, objvalid):
     '''
     base validate checks wind/water/waves objects are not None. Check these
     primarily for weatherers.
     '''
-    out = obj.validate()
+    (out, isvalid) = obj.validate()
     print out
+    print isvalid
+    assert isvalid is objvalid
     assert len(out) > 0
 
 

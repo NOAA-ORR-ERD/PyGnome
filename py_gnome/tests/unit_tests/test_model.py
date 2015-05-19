@@ -18,7 +18,7 @@ from gnome.utilities import inf_datetime
 from gnome.persist import load
 
 import gnome.map
-from gnome.environment import Wind, Tide, constant_wind, Water
+from gnome.environment import Wind, Tide, constant_wind, Water, Waves
 from gnome.model import Model
 
 from gnome.spill import (Spill,
@@ -1264,25 +1264,80 @@ def test_weatherer_sort():
     assert model.weatherers.values() == exp_order
 
 
-def test_validate_model():
-    '''
-    test warning messages output for no spills and model start time mismatch
-    with release time
-    '''
+class TestValidateModel():
+    ''' Group several model validation tests in one place '''
     start_time = datetime(2015, 1, 1, 12, 0)
-    model = Model(start_time=start_time)
-    msgs = model.validate()
-    assert len(msgs) == 1
-    assert ('{0} contains no spills'.format(model.name) in msgs[0])
-    model.spills += Spill(Release(start_time + timedelta(hours=1), 1))
-    msgs = model.validate()
-    assert len(msgs) == 1
-    assert ('Spill has release time after model start time' in msgs[0])
 
-    model.spills[0].set('release_time', start_time - timedelta(hours=1))
-    msgs = model.validate()
-    assert len(msgs) == 1
-    assert ('Spill has release time before model start time' in msgs[0])
+    def test_validate_model_spills_time_mismatch_warning(self):
+        '''
+        test warning messages output for no spills and model start time
+        mismatch with release time
+        '''
+        model = Model(start_time=self.start_time)
+        (msgs, isvalid) = model.validate()
+        assert len(msgs) == 1 and isvalid
+        assert ('{0} contains no spills'.format(model.name) in msgs[0])
+
+        model.spills += Spill(Release(self.start_time + timedelta(hours=1), 1))
+        (msgs, isvalid) = model.validate()
+        assert len(msgs) == 1 and isvalid
+        assert ('Spill has release time after model start time' in msgs[0])
+
+        model.spills[0].set('release_time',
+                            self.start_time - timedelta(hours=1))
+        (msgs, isvalid) = model.validate()
+        assert len(msgs) == 1 and isvalid
+        assert ('Spill has release time before model start time' in msgs[0])
+
+    def make_model_incomplete_waves(self):
+        '''
+        create a model with waves objects with no referenced wind, water.
+        Include Spill so we don't get warnings for it
+        '''
+        model = Model(start_time=self.start_time)
+        model.spills += Spill(Release(self.start_time, 1))
+        waves = Waves()
+        model.environment += waves
+        return (model, waves)
+
+    @pytest.mark.parametrize("obj_make_default_refs", (False, True))
+    def test_validate_model_env_obj(self, obj_make_default_refs):
+        '''
+        test that Model is invalid if make_default_refs is True and referenced
+        objects are not in model's environment collection
+        '''
+        # object is complete but model must contain
+        (model, waves) = self.make_model_incomplete_waves()
+        waves.water = Water()
+        waves.wind = constant_wind(5, 0)
+
+        assert len(model.environment) == 1
+
+        waves.make_default_refs = obj_make_default_refs
+        (msgs, isvalid) = model.validate()
+        print msgs
+        if obj_make_default_refs:
+            assert not isvalid
+            assert len(msgs) > 0
+            assert ('error: Model: water not found in environment collection'
+                    in msgs)
+            assert ('error: Model: wind not found in environment collection'
+                    in msgs)
+        else:
+            assert isvalid
+            assert len(msgs) == 0
+
+    def test_validate_model_obj_invalid(self):
+        '''
+        test object level validation fails
+        '''
+        model = self.make_model_incomplete_waves()[0]
+        model.make_default_refs = False
+        (msgs, isvalid) = model.validate()
+
+        assert not isvalid
+        for msg in msgs:
+            assert msg.startswith('error: Waves:')
 
 
 if __name__ == '__main__':

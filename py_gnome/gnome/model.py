@@ -1349,21 +1349,28 @@ class Model(Serializable):
         are defined
         '''
         # since model does not contain wind, waves, water attributes, no need
-        # to call base class method
-        requires = {'wind': False, 'water': False, 'waves': False}
+        # to call base class method - model requires following only if an
+        # object in collection requires it
+        model_rq = {'wind': False, 'water': False, 'waves': False}
         msgs = []
+        isvalid = True
         for oc in self._oc_list:
             for item in getattr(self, oc):
-                msgs.extend(item.validate())
+                (msg, isvalid) = item.validate()
+                msgs.extend(msg)
 
-                for at, val in requires.iteritems():
-                    if not val and hasattr(item, at):
-                        requires[at] = True
+                for at, val in model_rq.iteritems():
+                    if not val:
+                        # if model_rq are False, then we need to check if item
+                        # requires any of these objects because its own
+                        # make_default_refs is set
+                        if hasattr(item, at) and item.make_default_refs:
+                            model_rq[at] = True
 
         # ensure that required objects are present in environment collection
         # if Model's make_default_refs is True
         if self.make_default_refs:
-            for at, val in requires.iteritems():
+            for at, val in model_rq.iteritems():
                 if val:
                     obj = self.find_by_attr('_ref_as', at, self.environment)
                     if obj is None:
@@ -1371,6 +1378,7 @@ class Model(Serializable):
                                format(at))
                         self.logger.error(msg)
                         msgs.append(self._err_pre + msg)
+                        isvalid = False
 
         if len(self.spills) == 0:
             msg = '{0} contains no spills'.format(self.name)
@@ -1378,6 +1386,7 @@ class Model(Serializable):
             msgs.append(self._warn_pre + msg)
 
         for spill in self.spills:
+            msg = None
             if spill.get('release_time') > self.start_time:
                 msg = ('{0} has release time after model start time'.
                        format(spill.name))
@@ -1386,7 +1395,8 @@ class Model(Serializable):
                 msg = ('{0} has release time before model start time'
                        .format(spill.name))
 
-            self.logger.warning(msg)
-            msgs.append(self._warn_pre + msg)
+            if msg is not None:
+                self.logger.warning(msg)
+                msgs.append(self._warn_pre + msg)
 
-        return msgs
+        return (msgs, isvalid)

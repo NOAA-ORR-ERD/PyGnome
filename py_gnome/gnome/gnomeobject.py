@@ -150,13 +150,18 @@ class GnomeId(AddLogger):
         object containing this attribute references the corresponding object.
 
         Logs errors/warnings
+        :returns: a tuple of length two containing:
+            (a list of messages that were logged, isvalid bool)
+            If log level for message is error or higher, object is not valid
         '''
+        isvalid = True
         msgs = []
         try:
             if self.wind is None:
                 msg = 'no wind object defined'
                 self.logger.error(msg)
                 msgs.append(self._err_pre + msg)
+                isvalid = False
         except AttributeError:
             pass
 
@@ -165,6 +170,7 @@ class GnomeId(AddLogger):
                 msg = 'no water object defined'
                 self.logger.error(msg)
                 msgs.append(self._err_pre + msg)
+                isvalid = False
         except AttributeError:
             pass
 
@@ -173,10 +179,11 @@ class GnomeId(AddLogger):
                 msg = 'no waves object defined'
                 self.logger.error(msg)
                 msgs.append(self._err_pre + msg)
+                isvalid = False
         except AttributeError:
             pass
 
-        return msgs
+        return (msgs, isvalid)
 
     @property
     def _err_pre(self):
