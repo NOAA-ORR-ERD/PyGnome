@@ -554,6 +554,7 @@ def test_linearity_of_wind_movers(wind_persist):
 
     num_LEs = 1000
     model1 = Model()
+    model1.make_default_refs = False
     model1.duration = timedelta(hours=1)
     model1.time_step = timedelta(hours=1)
     model1.start_time = start_time
@@ -564,6 +565,7 @@ def test_linearity_of_wind_movers(wind_persist):
     model1.movers += WindMover(Wind(timeseries=series1, units=units))
 
     model2 = Model()
+    model2.make_default_refs = False
     model2.duration = timedelta(hours=10)
     model2.time_step = timedelta(hours=1)
     model2.start_time = start_time

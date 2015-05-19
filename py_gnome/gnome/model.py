@@ -514,7 +514,7 @@ class Model(Serializable):
                                            self.environment)
 
         weathering = False
-        for coll in ('environment', 'weatherers'):
+        for coll in ('environment', 'weatherers', 'movers'):
             for item in getattr(self, coll):
 
                 if coll == 'weatherers' and item.on:
