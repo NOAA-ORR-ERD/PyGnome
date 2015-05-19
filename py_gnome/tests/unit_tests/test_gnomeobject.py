@@ -12,7 +12,8 @@ from gnome import (environment,
                    movers,
                    outputters,
                    spill)
-from gnome.environment import Waves, Wind
+from gnome.model import Model
+from gnome.environment import Waves, Wind, Water
 from gnome.weatherers import Evaporation, NaturalDispersion
 
 
@@ -77,3 +78,29 @@ def test_base_validate(obj):
     out = obj.validate()
     print out
     assert len(out) > 0
+
+
+def test_make_default_refs():
+    '''
+    ensure make_default_refs is a thread-safe operation
+    once object is instantiated, object.make_default_refs is an attribute of
+    instance
+    '''
+    model = Model()
+    wind = Wind(timeseries=[(t, (0, 1))], units='m/s')
+    water = Water()
+
+    waves = Waves(name='waves')
+    waves.make_default_refs = False
+    waves1 = Waves(name='waves1')
+    model.environment += [wind,
+                          water,
+                          waves,
+                          waves1]
+
+    # waves1 should get auto hooked up/waves2 should not
+    model.step()
+    assert waves.wind is None
+    assert waves.water is None
+    assert waves1.wind is wind
+    assert waves1.water is water

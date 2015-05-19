@@ -521,7 +521,7 @@ class Model(Serializable):
                     weathering = True
 
                 for name, val in attr.iteritems():
-                    if hasattr(item, name):
+                    if hasattr(item, name) and item.make_default_refs:
                         setattr(item, name, val)
 
         if weathering:

@@ -27,6 +27,7 @@ class AddLogger(object):
     Mixin for including a logger
     '''
     _log = None
+    make_default_refs = True
 
     @property
     def logger(self):
