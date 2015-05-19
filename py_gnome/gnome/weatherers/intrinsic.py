@@ -221,11 +221,12 @@ class WeatheringData(AddLogger):
         water_temp = self.water.get('temperature', 'K')
         density = substance.get_density(water_temp)
         if density > self.water.get('density'):
-            msg = ("{0} will sink at given water temperature: {1}. Set density"
-                   " to water density".
+            msg = ("{0} will sink at given water temperature: {1} {2}. "
+                   "Set density to water density".
                    format(substance.name,
                           self.water.get('temperature',
-                                         self.water.units['temperature'])))
+                                         self.water.units['temperature']),
+                          self.water.units['temperature']))
             self.logger.error(msg)
             data['density'][mask] = self.water.get('density')
         else:
