@@ -370,8 +370,10 @@ class TestWeatheringData:
         intrinsic.update(num, sc)
         assert all(sc['fay_area'] == 0.)
 
-        msg = ("{0} will sink at given water temperature: {1}. "
-               "Set density to water density".format(new_subs, 288.0))
+        msg = ("{0} will sink at given water temperature: {1} {2}. "
+               "Set density to water density".format(new_subs,
+                                                     288.0,
+                                                     'K'))
         l.check(('gnome.weatherers.intrinsic.WeatheringData',
                  'ERROR',
                  msg))

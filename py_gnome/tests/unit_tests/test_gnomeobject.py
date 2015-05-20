@@ -2,7 +2,7 @@
 Test if this is how we want id property of
 object that inherits from GnomeId to behave
 """
-
+from datetime import datetime, timedelta
 import pytest
 import copy
 
@@ -12,6 +12,9 @@ from gnome import (environment,
                    movers,
                    outputters,
                    spill)
+from gnome.model import Model
+from gnome.environment import Waves, Wind, Water
+from gnome.weatherers import Evaporation, NaturalDispersion
 
 
 def test_exceptions():
@@ -56,3 +59,50 @@ def test_set_name(b_class):
 
     obj.name = obj.__class__.__name__
     assert obj.name == obj.__class__.__name__
+
+
+t = datetime(2015, 1, 1, 12, 0)
+
+
+@pytest.mark.parametrize(("obj", "objvalid"),
+                         [(Wind(timeseries=[(t, (0, 1)),
+                                            (t + timedelta(10), (0, 2))],
+                                units='m/s'), True),
+                          (Evaporation(), False),
+                          (NaturalDispersion(), False)])
+def test_base_validate(obj, objvalid):
+    '''
+    base validate checks wind/water/waves objects are not None. Check these
+    primarily for weatherers.
+    '''
+    (out, isvalid) = obj.validate()
+    print out
+    print isvalid
+    assert isvalid is objvalid
+    assert len(out) > 0
+
+
+def test_make_default_refs():
+    '''
+    ensure make_default_refs is a thread-safe operation
+    once object is instantiated, object.make_default_refs is an attribute of
+    instance
+    '''
+    model = Model()
+    wind = Wind(timeseries=[(t, (0, 1))], units='m/s')
+    water = Water()
+
+    waves = Waves(name='waves')
+    waves.make_default_refs = False
+    waves1 = Waves(name='waves1')
+    model.environment += [wind,
+                          water,
+                          waves,
+                          waves1]
+
+    # waves1 should get auto hooked up/waves2 should not
+    model.step()
+    assert waves.wind is None
+    assert waves.water is None
+    assert waves1.wind is wind
+    assert waves1.water is water

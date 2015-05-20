@@ -258,10 +258,14 @@ class ConstantArea(SpreadingThicknessLimit, AddLogger):
         LE if there is more than one LE. Kept the interface the same as
         FayGravityViscous since WeatheringData will call it the same way.
         '''
+        if at_max_area is None:
+            at_max_area = np.asarray(blob_init_volume, np.uint8)
+        at_max_area[:] = True
+
         if area is None:
-            return self.area
+            return (self.area, at_max_area)
         else:
-            return area
+            return (area, at_max_area)
 
     def set_thickness_limit(self, vo):
         '''

@@ -69,6 +69,9 @@ class Process(AddLogger):
         self.active_start = active_start
         self.active_stop = active_stop
 
+        if 'make_default_refs' in kwargs:
+            self.make_default_refs = kwargs.pop('make_default_refs')
+
         # empty dict since no array_types required for all movers at present
         self.array_types = set()
         self.name = kwargs.pop('name', self.__class__.__name__)
