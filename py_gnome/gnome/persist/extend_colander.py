@@ -8,7 +8,7 @@ import numpy
 np = numpy
 
 from colander import Float, DateTime, Sequence, Tuple, \
-    TupleSchema, SequenceSchema, null
+    TupleSchema, SequenceSchema, null, List
 
 import gnome.basic_types
 from gnome.utilities import inf_datetime
@@ -59,16 +59,17 @@ class DefaultTuple(Tuple):
         return items
 
 
-class NumpyArray(Tuple):
+class NumpyFixedLen(Tuple):
     """
-    A subclass of :class:`colander.Sequence` that converts itself to a numpy
-    array representing a [velX, velY, velZ] value.
+    A subclass of :class:`colander.Tuple` that converts itself to a Tuple and
+    back to a numpy array. This is used to define schemas for Numpy arrays that
+    have a fixed size like WorldPoint, 3D velocity of SimpleMover.
     """
     def serialize(self, node, appstruct):
         if appstruct is null:  # colander.null
             return null
 
-        return super(NumpyArray, self).serialize(node, list(appstruct))
+        return super(NumpyFixedLen, self).serialize(node, appstruct.tolist())
 
     def deserialize(self, node, cstruct):
         if cstruct is null:
@@ -77,27 +78,45 @@ class NumpyArray(Tuple):
         return np.array(cstruct, dtype=np.float64)
 
 
-class NumpyArraySchema(TupleSchema):
-    schema_type = NumpyArray
+class NumpyArray(List):
+    """
+    A subclass of :class:`colander.List` that converts itself to a more general
+    numpy array of greater than length 1.
+    """
+    def serialize(self, node, appstruct):
+        if appstruct is null:  # colander.null
+            return null
+
+        return super(NumpyArray, self).serialize(node, appstruct.tolist())
+
+    def deserialize(self, node, cstruct):
+        if cstruct is null:
+            return null
+
+        return np.array(cstruct, dtype=np.float64)
+
+
+class NumpyFixedLenSchema(TupleSchema):
+    schema_type = NumpyFixedLen
 
 
 class DatetimeValue2dArray(Sequence):
     """
     A subclass of :class:`colander.Sequence` that converts itself to a numpy
     array using :class:`gnome.basic_types.datetime_value_2d` as the data type.
+
+    todo: serialize/deserialize must happen for each element - not very
+        efficient.
     """
     def serialize(self, node, appstruct):
         if appstruct is null:  # colander.null
             return null
 
-        series = []
+        # getting serialized by PyGnome so data should be correct
+        series = zip(appstruct['time'].astype(object),
+                     appstruct['value'].tolist())
 
-        for wind_value in appstruct:
-            dt = wind_value[0].astype(object)
-            series.append((dt, (wind_value[1][0], wind_value[1][1])))
-        appstruct = series
-
-        return super(DatetimeValue2dArray, self).serialize(node, appstruct)
+        return super(DatetimeValue2dArray, self).serialize(node, series)
 
     def deserialize(self, node, cstruct):
         if cstruct is null:
@@ -105,7 +124,6 @@ class DatetimeValue2dArray(Sequence):
 
         items = (super(DatetimeValue2dArray, self)
                  .deserialize(node, cstruct, accept_scalar=False))
-
         timeseries = np.array(items, dtype=gnome.basic_types.datetime_value_2d)
 
         return timeseries  # validator requires numpy array

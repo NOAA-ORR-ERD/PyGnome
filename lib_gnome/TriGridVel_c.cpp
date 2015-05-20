@@ -207,6 +207,66 @@ InterpolationVal TriGridVel_c::GetInterpolationValues(WorldPoint refPoint)
 	return interpolationVal;
 }
 
+InterpolationVal TriGridVel_c::GetInterpolationValuesFromIndex(long triNum)
+{
+	InterpolationVal interpolationVal;
+	LongPoint lp;
+	ExPoint vertex1,vertex2,vertex3;
+	double denom,refLon,refLat;
+	double num1,num2,num3;
+	
+	TopologyHdl topH ;
+	LongPointHdl ptsH ;
+	
+	memset(&interpolationVal,0,sizeof(interpolationVal));
+	
+	if(!fDagTree) return interpolationVal;
+	
+	if (triNum < 0) 
+	{
+		interpolationVal.ptIndex1 = triNum; // flag it
+		return interpolationVal;
+	}
+	
+	refLon = lp.h/1000000.;
+	refLat = lp.v/1000000.;
+	
+	topH = fDagTree->GetTopologyHdl();
+	ptsH = fDagTree->GetPointsHdl();
+	
+	if(!topH || !ptsH) return interpolationVal;
+	
+	// get the index into the pts handle for each vertex
+	
+	interpolationVal.ptIndex1 = (*topH)[triNum].vertex1;
+	interpolationVal.ptIndex2 = (*topH)[triNum].vertex2;
+	interpolationVal.ptIndex3 = (*topH)[triNum].vertex3;
+	
+	// get the vertices from fPtsH and figure out the interpolation coefficients
+	
+	vertex1.h = (*ptsH)[interpolationVal.ptIndex1].h/1000000.;
+	vertex1.v = (*ptsH)[interpolationVal.ptIndex1].v/1000000.;
+	vertex2.h = (*ptsH)[interpolationVal.ptIndex2].h/1000000.;
+	vertex2.v = (*ptsH)[interpolationVal.ptIndex2].v/1000000.;
+	vertex3.h = (*ptsH)[interpolationVal.ptIndex3].h/1000000.;
+	vertex3.v = (*ptsH)[interpolationVal.ptIndex3].v/1000000.;
+	
+	
+	// use a1*x1+a2*x2+a3*x3=x_ref, a1*y1+a2*y2+a3*y3=y_ref, and a1+a2+a3=1
+	
+	denom = (vertex3.v-vertex1.v)*(vertex2.h-vertex1.h)-(vertex3.h-vertex1.h)*(vertex2.v-vertex1.v);
+	
+	num1 = ((refLat-vertex3.v)*(vertex3.h-vertex2.h)-(refLon-vertex3.h)*(vertex3.v-vertex2.v));
+	num2 = ((refLon-vertex1.h)*(vertex3.v-vertex1.v)-(refLat-vertex1.v)*(vertex3.h-vertex1.h));
+	num3 = ((refLat-vertex1.v)*(vertex2.h-vertex1.h)-(refLon-vertex1.h)*(vertex2.v-vertex1.v));
+	
+	interpolationVal.alpha1 = num1/denom;
+	interpolationVal.alpha2 = num2/denom;
+	interpolationVal.alpha3 = num3/denom;
+	
+	return interpolationVal;
+}
+
 long TriGridVel_c::GetRectIndexFromTriIndex2(long triIndex,LONGH ptrVerdatToNetCDFH,long numCols_ext)
 {
 	// code goes here, may eventually want to get interpolation indices around point

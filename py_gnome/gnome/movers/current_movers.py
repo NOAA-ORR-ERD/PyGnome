@@ -15,22 +15,57 @@ from gnome.utilities import serializable
 
 from gnome.cy_gnome.cy_cats_mover import CyCatsMover
 from gnome.cy_gnome.cy_gridcurrent_mover import CyGridCurrentMover
+from gnome.cy_gnome.cy_ice_mover import CyIceMover
 from gnome.cy_gnome.cy_currentcycle_mover import CyCurrentCycleMover
 from gnome.cy_gnome.cy_shio_time import CyShioTime
 from gnome.cy_gnome.cy_ossm_time import CyOSSMTime
 from gnome.cy_gnome.cy_component_mover import CyComponentMover
 
 
-class CatsMoverSchema(ObjType, ProcessSchema):
+class CurrentMoversBaseSchema(ObjType, ProcessSchema):
+    uncertain_duration = SchemaNode(Float(), missing=drop)
+    uncertain_time_delay = SchemaNode(Float(), missing=drop)
+
+
+class CurrentMoversBase(CyMover):
+    _state = copy.deepcopy(CyMover._state)
+    _state.add(update=['uncertain_duration', 'uncertain_time_delay'],
+               save=['uncertain_duration', 'uncertain_time_delay'])
+
+    def __init__(self,
+                 uncertain_duration=24,
+                 uncertain_time_delay=0,
+                 **kwargs):
+        '''
+        set common properties
+        children should define self.mover, then we can set common properties
+        '''
+        self.uncertain_duration = uncertain_duration
+        self.uncertain_time_delay = uncertain_time_delay
+        super(CurrentMoversBase, self).__init__(**kwargs)
+
+    uncertain_duration = property(lambda self:
+                                  self.mover.uncertain_duration / 3600.,
+                                  lambda self, val: setattr(self.mover,
+                                                            'uncertain_duration',
+                                                            val * 3600.))
+
+    uncertain_time_delay = property(lambda self:
+                                    self.mover.uncertain_time_delay / 3600.,
+                                    lambda self, val: setattr(self.mover,
+                                                              'uncertain_time_delay',
+                                                              val * 3600.))
+
+
+class CatsMoverSchema(CurrentMoversBaseSchema):
     '''static schema for CatsMover'''
     filename = SchemaNode(String(), missing=drop)
     scale = SchemaNode(Bool(), missing=drop)
     scale_refpoint = WorldPoint(missing=drop)
     scale_value = SchemaNode(Float(), missing=drop)
+
     # the following six could be shared with grid_current
     # in a currents base class
-    uncertain_duration = SchemaNode(Float(), missing=drop)
-    uncertain_time_delay = SchemaNode(Float(), missing=drop)
     down_cur_uncertain = SchemaNode(Float(), missing=drop)
     up_cur_uncertain = SchemaNode(Float(), missing=drop)
     right_cur_uncertain = SchemaNode(Float(), missing=drop)
@@ -39,12 +74,11 @@ class CatsMoverSchema(ObjType, ProcessSchema):
     uncertain_eddy_v0 = SchemaNode(Float(), missing=drop)
 
 
-class CatsMover(CyMover, serializable.Serializable):
+class CatsMover(CurrentMoversBase, serializable.Serializable):
 
-    _state = copy.deepcopy(CyMover._state)
+    _state = copy.deepcopy(CurrentMoversBase._state)
 
     _update = ['scale', 'scale_refpoint', 'scale_value',
-               'uncertain_duration', 'uncertain_time_delay',
                'up_cur_uncertain', 'down_cur_uncertain',
                'right_cur_uncertain', 'left_cur_uncertain',
                'uncertain_eddy_diffusion', 'uncertain_eddy_v0']
@@ -60,6 +94,7 @@ class CatsMover(CyMover, serializable.Serializable):
     _schema = CatsMoverSchema
 
     def __init__(self, filename, tide=None,
+                 uncertain_duration=48,
                  **kwargs):
         """
         Uses super to invoke base class __init__ method.
@@ -109,8 +144,6 @@ class CatsMover(CyMover, serializable.Serializable):
         self.scale_value = kwargs.get('scale_value',
                                       self.mover.scale_value)
 
-        self.uncertain_duration = kwargs.pop('uncertain_duration', 48)
-        self.uncertain_time_delay = kwargs.pop('uncertain_time_delay', 0)
         self.up_cur_uncertain = kwargs.pop('up_cur_uncertain', .3)
         self.down_cur_uncertain = kwargs.pop('down_cur_uncertain', -.3)
         self.right_cur_uncertain = kwargs.pop('right_cur_uncertain', .1)
@@ -131,7 +164,7 @@ class CatsMover(CyMover, serializable.Serializable):
 
         self.mover.init_mover()
 
-        super(CatsMover, self).__init__(**kwargs)
+        super(CatsMover, self).__init__(uncertain_duration, **kwargs)
 
     def __repr__(self):
         """
@@ -150,18 +183,6 @@ class CatsMover(CyMover, serializable.Serializable):
                            lambda self, val: setattr(self.mover,
                                                      'scale_value',
                                                      val))
-
-    uncertain_duration = property(lambda self:
-                                  self.mover.uncertain_duration / 3600.,
-                                  lambda self, val: setattr(self.mover,
-                                                            'uncertain_duration',
-                                                            val * 3600.))
-
-    uncertain_time_delay = property(lambda self:
-                                    self.mover.uncertain_time_delay / 3600.,
-                                    lambda self, val: setattr(self.mover,
-                                                              'uncertain_time_delay',
-                                                              val * 3600.))
 
     up_cur_uncertain = property(lambda self: self.mover.up_cur_uncertain,
                                 lambda self, val: setattr(self.mover,
@@ -277,23 +298,19 @@ class CatsMover(CyMover, serializable.Serializable):
             return json_
 
 
-class GridCurrentMoverSchema(ObjType, ProcessSchema):
+class GridCurrentMoverSchema(CurrentMoversBaseSchema):
     filename = SchemaNode(String(), missing=drop)
     topology_file = SchemaNode(String(), missing=drop)
     current_scale = SchemaNode(Float(), missing=drop)
-    uncertain_duration = SchemaNode(Float(), missing=drop)
-    uncertain_time_delay = SchemaNode(Float(), missing=drop)
     uncertain_along = SchemaNode(Float(), missing=drop)
     uncertain_cross = SchemaNode(Float(), missing=drop)
 
 
-class GridCurrentMover(CyMover, serializable.Serializable):
+class GridCurrentMover(CurrentMoversBase, serializable.Serializable):
 
-    _update = ['uncertain_duration', 'uncertain_time_delay',
-               'uncertain_cross', 'uncertain_along', 'current_scale']
-    _save = ['uncertain_duration', 'uncertain_time_delay',
-             'uncertain_cross', 'uncertain_along', 'current_scale']
-    _state = copy.deepcopy(CyMover._state)
+    _update = ['uncertain_cross', 'uncertain_along', 'current_scale']
+    _save = ['uncertain_cross', 'uncertain_along', 'current_scale']
+    _state = copy.deepcopy(CurrentMoversBase._state)
 
     _state.add(update=_update, save=_save)
     _state.add_field([serializable.Field('filename',
@@ -308,6 +325,9 @@ class GridCurrentMover(CyMover, serializable.Serializable):
                  topology_file=None,
                  extrapolate=False,
                  time_offset=0,
+                 current_scale=1,
+                 uncertain_along=0.5,
+                 uncertain_across=0.25,
                  **kwargs):
         """
         Initialize a GridCurrentMover
@@ -332,8 +352,9 @@ class GridCurrentMover(CyMover, serializable.Serializable):
         uses super, super(GridCurrentMover,self).__init__(\*\*kwargs)
         """
 
-        # NOTE: will need to add uncertainty parameters and other dialog fields
-        #       use super with kwargs to invoke base class __init__
+        # if child is calling, the self.mover is set by child - do not reset
+        if type(self) == GridCurrentMover:
+            self.mover = CyGridCurrentMover()
 
         if not os.path.exists(filename):
             raise ValueError('Path for current file does not exist: {0}'
@@ -349,13 +370,9 @@ class GridCurrentMover(CyMover, serializable.Serializable):
 
         # check if this is stored with cy_gridcurrent_mover?
         self.topology_file = topology_file
-
-        #self.mover = cy_gridcurrent_mover.CyGridCurrentMover()
-        self.mover = CyGridCurrentMover(current_scale=kwargs.pop('current_scale', 1),
-                                        uncertain_duration=3600. * kwargs.pop('uncertain_duration', 24),
-                                        uncertain_time_delay=3600. * kwargs.pop('uncertain_time_delay', 0),
-                                        uncertain_along=kwargs.pop('uncertain_along', 0.5),
-                                        uncertain_cross=kwargs.pop('uncertain_cross', 0.25))
+        self.current_scale = current_scale
+        self.uncertain_along = uncertain_along
+        self.uncertain_across = uncertain_across
         self.mover.text_read(filename, topology_file)
         self.mover.extrapolate_in_time(extrapolate)
         self.mover.offset_time(time_offset * 3600.)
@@ -390,18 +407,6 @@ class GridCurrentMover(CyMover, serializable.Serializable):
 
     # Define properties using lambda functions: uses lambda function, which are
     #accessible via fget/fset as follows:
-    uncertain_duration = property(lambda self:
-                                  self.mover.uncertain_duration / 3600.,
-                                  lambda self, val: setattr(self.mover,
-                                                            'uncertain_duration',
-                                                            val * 3600.))
-
-    uncertain_time_delay = property(lambda self:
-                                    self.mover.uncertain_time_delay / 3600.,
-                                    lambda self, val: setattr(self.mover,
-                                                              'uncertain_time_delay',
-                                                              val * 3600.))
-
     uncertain_cross = property(lambda self: self.mover.uncertain_cross,
                                lambda self, val: setattr(self.mover,
                                                          'uncertain_cross',
@@ -462,6 +467,193 @@ class GridCurrentMover(CyMover, serializable.Serializable):
         return (self.mover.get_offset_time()) / 3600.
 
 
+class IceMoverSchema(CurrentMoversBaseSchema):
+    filename = SchemaNode(String(), missing=drop)
+    topology_file = SchemaNode(String(), missing=drop)
+    current_scale = SchemaNode(Float(), missing=drop)
+    uncertain_along = SchemaNode(Float(), missing=drop)
+    uncertain_cross = SchemaNode(Float(), missing=drop)
+
+
+class IceMover(CurrentMoversBase, serializable.Serializable):
+
+    _update = ['uncertain_cross', 'uncertain_along',
+               'current_scale']
+    _save = ['uncertain_cross', 'uncertain_along',
+             'current_scale']
+    _state = copy.deepcopy(CurrentMoversBase._state)
+
+    _state.add(update=_update, save=_save)
+    _state.add_field([serializable.Field('filename',
+                                         save=True, read=True, isdatafile=True,
+                                         test_for_eq=False),
+                      serializable.Field('topology_file',
+                                         save=True, read=True, isdatafile=True,
+                                         test_for_eq=False)])
+    _schema = IceMoverSchema
+
+    def __init__(self, filename,
+                 topology_file=None,
+                 extrapolate=False,
+                 time_offset=0,
+                 **kwargs):
+        """
+        Initialize an IceMover
+
+        :param filename: absolute or relative path to the data file:
+                         could be netcdf or filelist
+        :param topology_file=None: absolute or relative path to topology file.
+                                   If not given, the IceMover will
+                                   compute the topology from the data file.
+        :param active_start: datetime when the mover should be active
+        :param active_stop: datetime after which the mover should be inactive
+        :param current_scale: Value to scale current data
+        :param uncertain_duration: how often does a given uncertain element
+                                   get reset
+        :param uncertain_time_delay: when does the uncertainly kick in.
+        :param uncertain_cross: Scale for uncertainty perpendicular to the flow
+        :param uncertain_along: Scale for uncertainty parallel to the flow
+        :param extrapolate: Allow current data to be extrapolated
+                            before and after file data
+        :param time_offset: Time zone shift if data is in GMT
+
+        uses super, super(IceMover,self).__init__(\*\*kwargs)
+        """
+
+        # NOTE: will need to add uncertainty parameters and other dialog fields
+        #       use super with kwargs to invoke base class __init__
+
+        # if child is calling, the self.mover is set by child - do not reset
+        if type(self) == IceMover:
+            self.mover = CyIceMover()
+
+        if not os.path.exists(filename):
+            raise ValueError('Path for current file does not exist: {0}'
+                             .format(filename))
+
+        if topology_file is not None:
+            if not os.path.exists(topology_file):
+                raise ValueError('Path for Topology file does not exist: {0}'
+                                 .format(topology_file))
+
+        # check if this is stored with cy_ice_mover?
+        self.filename = filename
+
+        # check if this is stored with cy_ice_mover?
+        self.topology_file = topology_file
+
+        #self.mover = cy_ice_mover.CyIceMover()
+#         self.mover = CyIceMover(current_scale=kwargs.pop('current_scale', 1),
+#                                         uncertain_duration=3600. * kwargs.pop('uncertain_duration', 24),
+#                                         uncertain_time_delay=3600. * kwargs.pop('uncertain_time_delay', 0),
+#                                         uncertain_along=kwargs.pop('uncertain_along', 0.5),
+#                                         uncertain_cross=kwargs.pop('uncertain_cross', 0.25))
+        self.mover.text_read(filename, topology_file)
+        self.mover.extrapolate_in_time(extrapolate)
+        self.mover.offset_time(time_offset * 3600.)
+
+        super(IceMover, self).__init__(**kwargs)
+
+    def __repr__(self):
+        """
+        .. todo::
+            We probably want to include more information.
+        """
+
+        return ('IceMover('
+                'uncertain_duration={0.uncertain_duration},'
+                'uncertain_time_delay={0.uncertain_time_delay}, '
+                'uncertain_cross={0.uncertain_cross}, '
+                'uncertain_along={0.uncertain_along}, '
+                'active_start={1.active_start}, '
+                'active_stop={1.active_stop}, '
+                'on={1.on})'.format(self.mover, self))
+
+    def __str__(self):
+        return ('IceMover - current _state.\n'
+                '  uncertain_duration={0.uncertain_duration}\n'
+                '  uncertain_time_delay={0.uncertain_time_delay}\n'
+                '  uncertain_cross={0.uncertain_cross}\n'
+                '  uncertain_along={0.uncertain_along}\n'
+                '  active_start time={1.active_start}\n'
+                '  active_stop time={1.active_stop}\n'
+                '  current on/off status={1.on}'
+                .format(self.mover, self))
+
+    # Define properties using lambda functions: uses lambda function, which are
+    #accessible via fget/fset as follows:
+    uncertain_cross = property(lambda self: self.mover.uncertain_cross,
+                               lambda self, val: setattr(self.mover,
+                                                         'uncertain_cross',
+                                                         val))
+
+    uncertain_along = property(lambda self: self.mover.uncertain_along,
+                               lambda self, val: setattr(self.mover,
+                                                         'uncertain_along',
+                                                         val))
+
+    current_scale = property(lambda self: self.mover.current_scale,
+                             lambda self, val: setattr(self.mover,
+                                                       'current_scale',
+                                                       val))
+
+    extrapolate = property(lambda self: self.mover.extrapolate,
+                           lambda self, val: setattr(self.mover,
+                                                     'extrapolate',
+                                                     val))
+
+    time_offset = property(lambda self: self.mover.time_offset / 3600.,
+                           lambda self, val: setattr(self.mover,
+                                                     'time_offset',
+                                                     val * 3600.))
+
+    def get_ice_fields(self,time):
+        """
+        :param offset_time=0: Allow data to be in GMT with a time zone offset
+                              (hours).
+        """
+        num_tri = self.mover.get_num_triangles()
+        frac_coverage = np.zeros(num_tri, dtype=np.float64)
+        thickness = np.zeros(num_tri, dtype=np.float64)
+        self.mover.get_ice_fields(time,thickness,frac_coverage)
+        return frac_coverage, thickness
+
+
+    def export_topology(self, topology_file):
+        """
+        :param topology_file=None: absolute or relative path where
+                                   topology file will be written.
+        """
+
+        if topology_file is None:
+            raise ValueError('Topology file path required: {0}'
+                             .format(topology_file))
+
+        self.mover.export_topology(topology_file)
+
+    def extrapolate_in_time(self, extrapolate):
+        """
+        :param extrapolate=false: allow current data to be extrapolated
+                                  before and after file data.
+        """
+
+        self.mover.extrapolate_in_time(extrapolate)
+
+    def offset_time(self, time_offset):
+        """
+        :param offset_time=0: allow data to be in GMT with a time zone offset
+                              (hours).
+        """
+        self.mover.offset_time(time_offset * 3600.)
+
+    def get_offset_time(self):
+        """
+        :param offset_time=0: allow data to be in GMT with a time zone offset
+                              (hours).
+        """
+        return (self.mover.get_offset_time()) / 3600.
+
+
 class CurrentCycleMoverSchema(ObjType, ProcessSchema):
     filename = SchemaNode(String(), missing=drop)
     topology_file = SchemaNode(String(), missing=drop)
@@ -472,22 +664,9 @@ class CurrentCycleMoverSchema(ObjType, ProcessSchema):
     uncertain_cross = SchemaNode(Float(), default=.25)
 
 
-class CurrentCycleMover(CyMover, serializable.Serializable):
-
-    _update = ['uncertain_duration', 'uncertain_time_delay',
-               'uncertain_cross', 'uncertain_along', 'current_scale']
-    _save = ['uncertain_duration', 'uncertain_time_delay',
-               'uncertain_cross', 'uncertain_along', 'current_scale']
-    _state = copy.deepcopy(CyMover._state)
-
-    _state.add(update=_update, save=_save)
-    _state.add_field([serializable.Field('filename',
-                                         save=True, read=True, isdatafile=True,
-                                         test_for_eq=False),
-                      serializable.Field('topology_file',
-                                         save=True, read=True, isdatafile=True,
-                                         test_for_eq=False),
-                      serializable.Field('tide',
+class CurrentCycleMover(GridCurrentMover, serializable.Serializable):
+    _state = copy.deepcopy(GridCurrentMover._state)
+    _state.add_field([serializable.Field('tide',
                                          save=True, update=True,
                                          save_reference=True)])
     _schema = CurrentCycleMoverSchema
@@ -495,9 +674,6 @@ class CurrentCycleMover(CyMover, serializable.Serializable):
     def __init__(self,
                  filename,
                  topology_file=None,
-                 extrapolate=False,
-                 time_offset=0,
-                 tide=None,
                  **kwargs):
         """
         Initialize a CurrentCycleMover
@@ -527,36 +703,15 @@ class CurrentCycleMover(CyMover, serializable.Serializable):
         # NOTE: will need to add uncertainty parameters
         #       and other dialog fields.
         #       use super with kwargs to invoke base class __init__
-
-        if not os.path.exists(filename):
-            raise ValueError('Path for current file does not exist: {0}'
-                             .format(filename))
-
-        if topology_file is not None:
-            if not os.path.exists(topology_file):
-                raise ValueError('Path for Topology file does not exist: {0}'
-                                 .format(topology_file))
-
-        # check if this is stored with cy_currentcycle_mover?
-        self.filename = filename
-
-        # check if this is stored with cy_currentcycle_mover?
-        self.topology_file = topology_file
-
-        self.mover = CyCurrentCycleMover(current_scale=kwargs.pop('current_scale', 1),
-                                         uncertain_duration=3600. * kwargs.pop('uncertain_duration', 24),
-                                         uncertain_time_delay=3600. * kwargs.pop('uncertain_time_delay', 0),
-                                         uncertain_along=kwargs.pop('uncertain_along', 0.5),
-                                         uncertain_cross=kwargs.pop('uncertain_cross', 0.25))
-        self.mover.text_read(filename, topology_file)
-        self.mover.extrapolate_in_time(extrapolate)
-        self.mover.offset_time(time_offset * 3600.)
-
+        self.mover = CyCurrentCycleMover()
+        tide = kwargs.pop('tide', None)
         self._tide = None
         if tide is not None:
             self.tide = tide
 
-        super(CurrentCycleMover, self).__init__(**kwargs)
+        super(CurrentCycleMover, self).__init__(filename=filename,
+                                                topology_file=topology_file,
+                                                **kwargs)
 
     def __repr__(self):
         """
@@ -582,45 +737,6 @@ class CurrentCycleMover(CyMover, serializable.Serializable):
                 '  active_stop time={1.active_stop}'
                 '  current on/off status={1.on}'
                 .format(self.mover, self))
-
-    # Define properties using lambda functions: uses lambda function, which are
-    #accessible via fget/fset as follows:
-    uncertain_duration = property(lambda self:
-                                  self.mover.uncertain_duration / 3600.,
-                                  lambda self, val: setattr(self.mover,
-                                                            'uncertain_duration',
-                                                            val * 3600.))
-
-    uncertain_time_delay = property(lambda self:
-                                    self.mover.uncertain_time_delay / 3600.,
-                                    lambda self, val: setattr(self.mover,
-                                                              'uncertain_time_delay',
-                                                              val * 3600.))
-
-    uncertain_cross = property(lambda self: self.mover.uncertain_cross,
-                               lambda self, val: setattr(self.mover,
-                                                         'uncertain_cross',
-                                                         val))
-
-    uncertain_along = property(lambda self: self.mover.uncertain_along,
-                               lambda self, val: setattr(self.mover,
-                                                         'uncertain_along',
-                                                         val))
-
-    current_scale = property(lambda self: self.mover.current_scale,
-                             lambda self, val: setattr(self.mover,
-                                                       'current_scale',
-                                                       val))
-
-    extrapolate = property(lambda self: self.mover.extrapolate,
-                           lambda self, val: setattr(self.mover,
-                                                     'extrapolate',
-                                                     val))
-
-    time_offset = property(lambda self: self.mover.time_offset / 3600.,
-                           lambda self, val: setattr(self.mover,
-                                                     'time_offset',
-                                                     val * 3600.))
 
     @property
     def tide(self):
@@ -665,38 +781,6 @@ class CurrentCycleMover(CyMover, serializable.Serializable):
             schema.add(environment.TideSchema())
 
         return schema.deserialize(json_)
-
-    def export_topology(self, topology_file):
-        """
-        :param topology_file=None: Absolute or relative path where
-                                   topology file will be written.
-        """
-        if topology_file is None:
-            raise ValueError('Topology file path required: {0}'
-                             .format(topology_file))
-
-        self.mover.export_topology(topology_file)
-
-    def extrapolate_in_time(self, extrapolate):
-        """
-        :param extrapolate=false: Allow current data to be extrapolated
-                                  before and after file data.
-        """
-        self.mover.extrapolate_in_time(extrapolate)
-
-    def offset_time(self, time_offset):
-        """
-        :param offset_time=0: Allow data to be in GMT with a time zone offset
-                              (hours).
-        """
-        self.mover.offset_time(time_offset * 3600.)
-
-    def get_offset_time(self):
-        """
-        :param offset_time=0: Allow data to be in GMT with a time zone offset
-                              (hours).
-        """
-        return (self.mover.get_offset_time()) / 3600.
 
 
 class ComponentMoverSchema(ObjType, ProcessSchema):

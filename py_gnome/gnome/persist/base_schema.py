@@ -4,7 +4,7 @@ from colander import (SchemaNode, deferred, drop,
                       SequenceSchema, TupleSchema, MappingSchema,
                       String, Float, Int)
 
-from extend_colander import NumpyArraySchema
+from extend_colander import NumpyFixedLenSchema
 
 
 @deferred
@@ -57,9 +57,9 @@ class WorldPoint(LongLat):
     z = SchemaNode(Float(), default=0.0)
 
 
-class WorldPointNumpy(NumpyArraySchema):
+class WorldPointNumpy(NumpyFixedLenSchema):
     '''
-    Define same schema as WorldPoint; however, the base class NumpyArraySchema
+    Define same schema as WorldPoint; however, the base class NumpyFixedLenSchema
     serializes/deserializes it from/to a numpy array
     '''
     long = SchemaNode(Float())
