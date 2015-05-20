@@ -18,7 +18,7 @@ cdef extern from *:
 
 cdef class CyGridCurrentMover(CyCurrentMoverBase):
 
-    cdef GridCurrentMover_c *grid_current
+    #cdef GridCurrentMover_c *grid_current
 
     def __cinit__(self):
         self.mover = new GridCurrentMover_c()

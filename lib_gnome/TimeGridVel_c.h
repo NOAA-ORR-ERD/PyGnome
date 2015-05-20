@@ -126,7 +126,9 @@ public:
 
 	virtual void		DisposeTimeHdl();
 	void 				DisposeLoadedData(LoadedData * dataPtr);	
+	void 				DisposeLoadedData(LoadedFieldData * dataPtr);	
 	void 				ClearLoadedData(LoadedData * dataPtr);
+	void 				ClearLoadedData(LoadedFieldData *dataPtr);
 	void 				DisposeAllLoadedData();
 };
 
@@ -262,6 +264,46 @@ public:
 
 	virtual OSErr TextRead(const char *path, const char *topFilePath);
 };
+
+class TimeGridVelIce_c : virtual public TimeGridVelCurv_c
+{
+public:
+	
+	LoadedData fStartDataIce; 
+	LoadedData fEndDataIce;
+		
+	LoadedFieldData fStartDataThickness;
+	LoadedFieldData fEndDataThickness;
+	
+	LoadedFieldData fStartDataFraction;
+	LoadedFieldData fEndDataFraction;
+	
+	TimeGridVelIce_c ();
+	virtual ~TimeGridVelIce_c () { Dispose (); }
+	virtual void		Dispose ();
+	//virtual ClassID 	GetClassID () { return TYPE_TIMEGRIDVELICE; }
+	//virtual Boolean	IAm(ClassID id) { if(id==TYPE_TIMEGRIDVELICE) return TRUE; return TimeGridVelCurv_c::IAm(id); }
+	//void 				ClearLoadedData(LoadedFieldData *dataPtr);
+	//void 				DisposeLoadedFieldData(LoadedFieldData *dataPtr);
+	void 				DisposeLoadedStartData();
+	void 				DisposeLoadedEndData();
+	void 				ClearLoadedEndData();
+	void 				ShiftInterval();
+	virtual OSErr 		SetInterval(char *errmsg, const Seconds& model_time);
+	//OSErr 				ReadTimeData(long index,VelocityFH *velocityH, char* errmsg); 
+	OSErr 				CheckAndScanFile(char *errmsg, const Seconds& model_time);
+	double 				GetStartFieldValue(long index, long field);
+	double 				GetEndFieldValue(long index, long field);
+	OSErr 				ReadTimeDataIce(long index,VelocityFH *velocityH, char* errmsg); 
+	OSErr 				ReadTimeDataFields(long index,DOUBLEH *thicknessH, DOUBLEH *fractionH, char* errmsg); 
+	OSErr 				GetIceFields(Seconds time, double *thickness, double *fraction);
+	OSErr 				GetIceVelocities(Seconds time, double *u, double *v);
+	//VelocityRec 		GetScaledPatValue(const Seconds& model_time, WorldPoint3D refPoint);
+	//VelocityRec 		GetScaledPatValue3D(const Seconds& model_time, InterpolationVal interpolationVal,float depth);
+	
+	//virtual OSErr TextRead(const char *path, const char *topFilePath);
+};
+
 
 
 //#ifndef pyGNOME
