@@ -112,7 +112,7 @@ cdef extern from "IceMover_c.h":
         LongPointHdl  GetPointsHdl()
         TopologyHdl  GetTopologyHdl()
         long  GetNumTriangles()
-        OSErr  GetIceFields(Seconds time, double *thickness, double *fraction)
+        OSErr  GetIceFields(Seconds time, double *fraction, double *thickness)
         OSErr  GetIceVelocities(Seconds time, VelocityFRec *ice_velocity)
 
 cdef extern from "CurrentCycleMover_c.h":

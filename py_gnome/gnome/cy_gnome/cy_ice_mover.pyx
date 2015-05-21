@@ -114,14 +114,14 @@ cdef class CyIceMover(CyGridCurrentMover):
         return num_tri
 
     def get_ice_fields(self, Seconds model_time,
-                 cnp.ndarray[cnp.npy_double] thickness,
-                 cnp.ndarray[cnp.npy_double] fraction):
+                 cnp.ndarray[cnp.npy_double] fraction,
+                 cnp.ndarray[cnp.npy_double] thickness):
         """
             Invokes the GetIceFields method of TimeGridVelIce_c object
             to get the fields on the triangles
         """
         cdef OSErr err
-        err = self.grid_ice.GetIceFields(model_time,&thickness[0],&fraction[0])
+        err = self.grid_ice.GetIceFields(model_time,&fraction[0],&thickness[0])
 
         if err != 0:
             """
