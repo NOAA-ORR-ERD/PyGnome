@@ -5258,6 +5258,110 @@ done:
 	return err;
 }
 
+OSErr TimeGridVelCurv_c::GetScaledVelocities(Seconds time, VelocityFRec *scaled_velocity)
+{	// use for curvilinear
+	double timeAlpha;
+	Seconds startTime,endTime;
+	OSErr err = 0;
+	char errmsg[256];
+	
+	long numVertices,i,numTri,index=-1;
+	InterpolationVal interpolationVal;
+	LongPointHdl ptsHdl = 0;
+	TopologyHdl topH ;
+	long timeDataInterval;
+	Boolean loaded;
+	//TTriGridVel* triGrid = (TTriGridVel*)fGrid;
+	TTriGridVel* triGrid = (dynamic_cast<TTriGridVel*>(fGrid));
+	VelocityFRec velocity;
+	
+	err = this -> SetInterval(errmsg, time);
+	if(err) return err;
+	
+	loaded = this -> CheckInterval(timeDataInterval, time);	 
+	
+	if(!loaded) return -1;
+	
+	//topH = triGrid -> GetTopologyHdl();
+	topH = fGrid -> GetTopologyHdl();
+	if(topH)
+		numTri = _GetHandleSize((Handle)topH)/sizeof(**topH);
+	else 
+		numTri = 0;
+		
+	/*ptsHdl = triGrid -> GetPointsHdl();
+	if(ptsHdl)
+		numVertices = _GetHandleSize((Handle)ptsHdl)/sizeof(**ptsHdl);
+	else 
+		numVertices = 0;*/
+	
+	// Check for time varying current 
+	if((GetNumTimesInFile()>1 || GetNumFiles()>1) && loaded && !err)
+	{
+		// Calculate the time weight factor
+		if (GetNumFiles()>1 && fOverLap)
+			startTime = fOverLapStartTime + fTimeShift;
+		else
+			startTime = (*fTimeHdl)[fStartData.timeIndex] + fTimeShift;
+
+		if (fEndData.timeIndex == UNASSIGNEDINDEX && (time > startTime || time < startTime) && fAllowExtrapolationInTime)
+		{
+			timeAlpha = 1;
+		}
+		else
+		{	
+			endTime = (*fTimeHdl)[fEndData.timeIndex] + fTimeShift;
+			timeAlpha = (endTime - time)/(double)(endTime - startTime);
+		}
+	}
+	
+	for (i = 0 ; i< numTri; i++)
+	{
+		if (bVelocitiesOnNodes)
+		{
+			//index = ((TTriGridVel*)fGrid)->GetRectIndexFromTriIndex(refPoint,fVerdatToNetCDFH,fNumCols);// curvilinear grid
+			//interpolationVal = triGrid -> GetInterpolationValues(refPoint.p);
+			interpolationVal = triGrid -> GetInterpolationValuesFromIndex(i);
+			if (interpolationVal.ptIndex1<0) {scaled_velocity[i].u = 0;	scaled_velocity[i].v = 0;}// should this be an error?
+			//ptIndex1 =  (*fVerdatToNetCDFH)[interpolationVal.ptIndex1];	
+			//ptIndex2 =  (*fVerdatToNetCDFH)[interpolationVal.ptIndex2];
+			//ptIndex3 =  (*fVerdatToNetCDFH)[interpolationVal.ptIndex3];
+			index = (*fVerdatToNetCDFH)[interpolationVal.ptIndex1];
+		}
+		else // for now just use the u,v at left and bottom midpoints of grid box as velocity over entire gridbox
+			//index = (dynamic_cast<TTriGridVel*>(fGrid))->GetRectIndexFromTriIndex(refPoint.p,fVerdatToNetCDFH,fNumCols+1);// curvilinear grid
+			index = triGrid->GetRectIndexFromTriIndex2(i,fVerdatToNetCDFH,fNumCols+1);// curvilinear grid
+
+		if (index < 0) {scaled_velocity[i].u = 0;	scaled_velocity[i].v = 0;}// should this be an error?
+		
+		// Should check vs fFillValue
+		// Check for constant current 
+		if(((GetNumTimesInFile()==1 && !(GetNumFiles()>1)) || timeAlpha == 1) && index!=-1)
+		{
+				velocity.u = GetStartUVelocity(index);
+				velocity.v = GetStartVVelocity(index);
+		}
+		else if (index!=-1)// time varying current
+		{
+			velocity.u = timeAlpha*GetStartUVelocity(index) + (1-timeAlpha)*GetEndUVelocity(index);
+			velocity.v = timeAlpha*GetStartVVelocity(index) + (1-timeAlpha)*GetEndVVelocity(index);
+		}
+		if (velocity.u == fFillValue) velocity.u = 0.;
+		if (velocity.v == fFillValue) velocity.v = 0.;
+		/*if ((velocity.u != 0 || velocity.v != 0) && (velocity.u != fFillValue && velocity.v != fFillValue)) // should already have handled fill value issue
+		{
+			// code goes here, fill up arrays with data
+			float inchesX = (velocity.u * refScale * fVar.fileScaleFactor) / arrowScale;
+			float inchesY = (velocity.v * refScale * fVar.fileScaleFactor) / arrowScale;
+		}*/
+		//u[i] = velocity.u * fVar.fileScaleFactor;
+		//v[i] = velocity.v * fVar.fileScaleFactor;
+		scaled_velocity[i].u = velocity.u * fVar.fileScaleFactor;
+		scaled_velocity[i].v = velocity.v * fVar.fileScaleFactor;
+	}
+	return err;
+}
+
 TimeGridVelIce_c::TimeGridVelIce_c () : TimeGridVelCurv_c(), TimeGridVel_c()
 {
 	memset(&fStartDataIce,0,sizeof(fStartDataIce));
@@ -5678,6 +5782,50 @@ double TimeGridVelIce_c::GetEndFieldValue(long index, long field)
 	return value;
 }
 
+/////////////////////////////////////////////////
+double TimeGridVelIce_c::GetStartIceUVelocity(long index)
+{	// 
+	double u = 0;
+	if (index>=0)
+	{
+		if (fStartDataIce.dataHdl) u = INDEXH(fStartDataIce.dataHdl,index).u;
+		if (u==fFillValue) u = 0;
+	}
+	return u;
+}
+
+double TimeGridVelIce_c::GetEndIceUVelocity(long index)
+{
+	double u = 0;
+	if (index>=0)
+	{
+		if (fEndDataIce.dataHdl) u = INDEXH(fEndDataIce.dataHdl,index).u;
+		if (u==fFillValue) u = 0;
+	}
+	return u;
+}
+
+double TimeGridVelIce_c::GetStartIceVVelocity(long index)
+{
+	double v = 0;
+	if (index >= 0)
+	{
+		if (fStartDataIce.dataHdl) v = INDEXH(fStartDataIce.dataHdl,index).v;
+		if (v==fFillValue) v = 0;
+	}
+	return v;
+}
+
+double TimeGridVelIce_c::GetEndIceVVelocity(long index)
+{
+	double v = 0;
+	if (index >= 0)
+	{
+		if (fEndDataIce.dataHdl) v = INDEXH(fEndDataIce.dataHdl,index).v;
+		if (v==fFillValue) v = 0;
+	}
+	return v;
+}
 OSErr TimeGridVelIce_c::ReadTimeDataIce(long index,VelocityFH *velocityH, char* errmsg) 
 {
 	OSErr err = 0;
@@ -6151,7 +6299,8 @@ OSErr TimeGridVelIce_c::GetIceFields(Seconds time, double *thickness, double *fr
 	return err;
 }
 
-OSErr TimeGridVelIce_c::GetIceVelocities(Seconds time, double *u, double *v)
+//OSErr TimeGridVelIce_c::GetIceVelocities(Seconds time, double *u, double *v)
+OSErr TimeGridVelIce_c::GetIceVelocities(Seconds time, VelocityFRec *ice_velocity)
 {	// use for curvilinear
 	double timeAlpha;
 	Seconds startTime,endTime;
@@ -6215,7 +6364,7 @@ OSErr TimeGridVelIce_c::GetIceVelocities(Seconds time, double *u, double *v)
 			//index = ((TTriGridVel*)fGrid)->GetRectIndexFromTriIndex(refPoint,fVerdatToNetCDFH,fNumCols);// curvilinear grid
 			//interpolationVal = triGrid -> GetInterpolationValues(refPoint.p);
 			interpolationVal = triGrid -> GetInterpolationValuesFromIndex(i);
-			if (interpolationVal.ptIndex1<0) {u[i] = 0;	v[i] = 0;}// should this be an error?
+			if (interpolationVal.ptIndex1<0) {ice_velocity[i].u = 0;	ice_velocity[i].v = 0;}// should this be an error?
 			//ptIndex1 =  (*fVerdatToNetCDFH)[interpolationVal.ptIndex1];	
 			//ptIndex2 =  (*fVerdatToNetCDFH)[interpolationVal.ptIndex2];
 			//ptIndex3 =  (*fVerdatToNetCDFH)[interpolationVal.ptIndex3];
@@ -6225,21 +6374,19 @@ OSErr TimeGridVelIce_c::GetIceVelocities(Seconds time, double *u, double *v)
 			//index = (dynamic_cast<TTriGridVel*>(fGrid))->GetRectIndexFromTriIndex(refPoint.p,fVerdatToNetCDFH,fNumCols+1);// curvilinear grid
 			index = triGrid->GetRectIndexFromTriIndex2(i,fVerdatToNetCDFH,fNumCols+1);// curvilinear grid
 
-		if (index < 0) {u[i] = 0;	v[i] = 0;}// should this be an error?
-
-
+		if (index < 0) {ice_velocity[i].u = 0;	ice_velocity[i].v = 0;}// should this be an error?
 		
 		// Should check vs fFillValue
 		// Check for constant current 
 		if(((GetNumTimesInFile()==1 && !(GetNumFiles()>1)) || timeAlpha == 1) && index!=-1)
 		{
-				velocity.u = GetStartUVelocity(index);
-				velocity.v = GetStartVVelocity(index);
+				velocity.u = GetStartIceUVelocity(index);
+				velocity.v = GetStartIceVVelocity(index);
 		}
 		else if (index!=-1)// time varying current
 		{
-			velocity.u = timeAlpha*GetStartUVelocity(index) + (1-timeAlpha)*GetEndUVelocity(index);
-			velocity.v = timeAlpha*GetStartVVelocity(index) + (1-timeAlpha)*GetEndVVelocity(index);
+			velocity.u = timeAlpha*GetStartIceUVelocity(index) + (1-timeAlpha)*GetEndIceUVelocity(index);
+			velocity.v = timeAlpha*GetStartIceVVelocity(index) + (1-timeAlpha)*GetEndIceVVelocity(index);
 		}
 		if (velocity.u == fFillValue) velocity.u = 0.;
 		if (velocity.v == fFillValue) velocity.v = 0.;
@@ -6249,8 +6396,10 @@ OSErr TimeGridVelIce_c::GetIceVelocities(Seconds time, double *u, double *v)
 			float inchesX = (velocity.u * refScale * fVar.fileScaleFactor) / arrowScale;
 			float inchesY = (velocity.v * refScale * fVar.fileScaleFactor) / arrowScale;
 		}*/
-		u[i] = velocity.u * fVar.fileScaleFactor;
-		v[i] = velocity.v * fVar.fileScaleFactor;
+		//u[i] = velocity.u * fVar.fileScaleFactor;
+		//v[i] = velocity.v * fVar.fileScaleFactor;
+		ice_velocity[i].u = velocity.u * fVar.fileScaleFactor;
+		ice_velocity[i].v = velocity.v * fVar.fileScaleFactor;
 	}
 	return err;
 }

@@ -439,4 +439,9 @@ VelocityRec GridCurrentMover_c::GetPatValue(WorldPoint p)
 	return v;
 }
 
+OSErr GridCurrentMover_c::GetScaledVelocities(Seconds model_time, VelocityFRec *velocities)
+{
+	return timeGrid->GetScaledVelocities(model_time, velocities);
+}
+
 

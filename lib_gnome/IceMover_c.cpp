@@ -424,6 +424,11 @@ OSErr IceMover_c::TextRead(char *path, char *topFilePath)
 }
 
 
+LongPointHdl IceMover_c::GetPointsHdl(void)
+{
+	return timeGrid->fGrid->GetPointsHdl();
+}
+
 TopologyHdl IceMover_c::GetTopologyHdl(void)
 {
 	return timeGrid->fGrid->GetTopologyHdl();
@@ -441,6 +446,11 @@ long IceMover_c::GetNumTriangles(void)
 OSErr IceMover_c::GetIceFields(Seconds model_time, double *ice_fraction, double *ice_thickness)
 {
 	return dynamic_cast<TimeGridVelIce_c *>(timeGrid)->GetIceFields(model_time, ice_thickness, ice_fraction);
+}
+
+OSErr IceMover_c::GetIceVelocities(Seconds model_time, VelocityFRec *ice_velocities)
+{
+	return dynamic_cast<TimeGridVelIce_c *>(timeGrid)->GetIceVelocities(model_time, ice_velocities);
 }
 
 /*VelocityRec IceMover_c::GetScaledPatValue(const Seconds& model_time, WorldPoint p,Boolean * useEddyUncertainty)

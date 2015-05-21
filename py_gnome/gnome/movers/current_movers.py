@@ -5,6 +5,8 @@ Movers using currents and tides as forcing functions
 import os
 import copy
 
+import numpy as np
+
 from colander import (SchemaNode, Bool, String, Float, drop)
 
 from gnome.persist.base_schema import ObjType, WorldPoint, LongLat
@@ -13,6 +15,7 @@ from gnome.movers import CyMover, ProcessSchema
 from gnome import environment
 from gnome.utilities import serializable
 
+from gnome import basic_types
 from gnome.cy_gnome.cy_cats_mover import CyCatsMover
 from gnome.cy_gnome.cy_gridcurrent_mover import CyGridCurrentMover
 from gnome.cy_gnome.cy_ice_mover import CyIceMover
@@ -432,6 +435,15 @@ class GridCurrentMover(CurrentMoversBase, serializable.Serializable):
                                                      'time_offset',
                                                      val * 3600.))
 
+    def get_scaled_velocities(self,time):
+        """
+        :param model_time=0: 
+        """
+        num_tri = self.mover.get_num_triangles()
+        vels = np.zeros(num_tri, dtype=basic_types.velocity_rec)
+        self.mover.get_scaled_velocities(time,vels)
+        return vels
+
     def export_topology(self, topology_file):
         """
         :param topology_file=None: absolute or relative path where
@@ -607,15 +619,33 @@ class IceMover(CurrentMoversBase, serializable.Serializable):
                                                      'time_offset',
                                                      val * 3600.))
 
-    def get_ice_fields(self,time):
+    def get_scaled_velocities(self,model_time):
         """
-        :param offset_time=0: Allow data to be in GMT with a time zone offset
-                              (hours).
+        :param model_time=0: 
+        """
+        num_tri = self.mover.get_num_triangles()
+        vels = np.zeros(num_tri, dtype=basic_types.velocity_rec)
+        self.mover.get_scaled_velocities(model_time,vels)
+        return vels
+
+    def get_ice_velocities(self,model_time):
+        """
+        :param model_time=0: 
+        """
+        num_tri = self.mover.get_num_triangles()
+        vels = np.zeros(num_tri, dtype=basic_types.velocity_rec)
+        self.mover.get_ice_velocities(model_time,vels)
+        return vels
+
+
+    def get_ice_fields(self,model_time):
+        """
+        :param model_time=0: 
         """
         num_tri = self.mover.get_num_triangles()
         frac_coverage = np.zeros(num_tri, dtype=np.float64)
         thickness = np.zeros(num_tri, dtype=np.float64)
-        self.mover.get_ice_fields(time,thickness,frac_coverage)
+        self.mover.get_ice_fields(model_time,thickness,frac_coverage)
         return frac_coverage, thickness
 
 

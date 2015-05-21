@@ -355,7 +355,7 @@ cdef class CyCatsMover(CyCurrentMover):
     def _get_points(self):
         """
             Invokes the GetPointsHdl method of TriGridVel_c object
-            to get the velocities for the grid
+            to get the points for the grid
         """
         cdef short tmp_size = sizeof(LongPoint)
         cdef LongPointHdl pts_hdl
