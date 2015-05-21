@@ -207,6 +207,8 @@ def get_testdata():
          'curr_reg': get_datafile(os.path.join(curr_dir, 'test.cdf')),
          'curr_curv': get_datafile(os.path.join(curr_dir, 'ny_cg.nc')),
          'top_curv': get_datafile(os.path.join(curr_dir, 'NYTopology.dat')),
+         'ice_curr_curv': get_datafile(os.path.join(curr_dir, 'acnfs_example.nc')),
+         'ice_top_curv': get_datafile(os.path.join(curr_dir, 'acnfs_topo.dat')),
          'ptCur': get_datafile(os.path.join(curr_dir, 'ptCurNoMap.cur')),
          'grid_ts': get_datafile(os.path.join(curr_dir, 'gridcur_ts.cur')),
          'series_gridCur': get_datafile(os.path.join(curr_dir,
@@ -215,6 +217,10 @@ def get_testdata():
                                                   'flist2.txt')),
          'series_top': get_datafile(os.path.join(curr_dir, 'file_series',
                                                  'HiROMSTopology.dat'))}
+
+    data['IceMover'] = \
+        {'ice_curr_curv': get_datafile(os.path.join(curr_dir, 'acnfs_example.nc')),
+         'ice_top_curv': get_datafile(os.path.join(curr_dir, 'acnfs_topo.dat'))}
 
     # get netcdf stored in fileseries flist2.txt, gridcur_ts_hdr2
     get_datafile(os.path.join(curr_dir, 'file_series', 'hiog_file1.nc'))

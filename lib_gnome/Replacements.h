@@ -49,6 +49,7 @@
 #define TimeGridVelRect TimeGridVelRect_c
 #define TimeGridVelCurv TimeGridVelCurv_c
 #define TimeGridVelTri TimeGridVelTri_c
+#define TimeGridVelIce TimeGridVelIce_c
 #define TimeGridCurTri TimeGridCurTri_c
 #define TimeGridCurRect TimeGridCurRect_c
 #define TimeGridWindRect TimeGridWindRect_c
@@ -92,6 +93,9 @@ Boolean IsGridWindFile (char *path, short *selectedUnits);
 
 bool IsShioFile (std::vector<std::string> &linesInFile);
 Boolean IsShioFile (char *path);
+
+bool IsTriGridFile (std::vector<std::string> &linesInFile);
+Boolean IsTriGridFile (char *path);
 
 Boolean IsCATS3DFile (char *path);
 
