@@ -1189,6 +1189,12 @@ class Model(Serializable):
                          'spills'):
                 o_json_[attr] = self.serialize_oc(attr, json_)
 
+            # validate and send validation flag
+            (msgs, isvalid) = self.validate()
+            o_json_['valid'] = isvalid
+            if len(msgs) > 0:
+                o_json_['messages'] = msgs
+
         return o_json_
 
     def serialize_oc(self, attr, json_='webapi'):
