@@ -1012,6 +1012,10 @@ def test_staggered_spills_weathering(sample_model_fcn, delay):
                          skimmer]
     # model.full_run()
     for step in model:
+        if not step['valid']:
+            print step['messages']
+            raise RuntimeError("Model has error in setup_model_run")
+
         for sc in model.spills.items():
             print "completed step {0}".format(step)
             # sum up all the weathered mass + mass of LEs marked for weathering
@@ -1338,6 +1342,15 @@ class TestValidateModel():
         assert not isvalid
         for msg in msgs:
             assert msg.startswith('error: Waves:')
+
+    def test_invalid_model_first_step(self):
+        '''
+        invalid model - returns 'valid' flag set to false and 'messages'
+        '''
+        model = self.make_model_incomplete_waves()[0]
+        output = model.step()
+        assert not output['valid']
+        assert 'messages' in output and len(output['messages']) > 0
 
 
 if __name__ == '__main__':

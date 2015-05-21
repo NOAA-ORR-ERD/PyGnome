@@ -277,8 +277,10 @@ def test_weathering_output_only():
     res = model_broadcaster.cmd('step', {})
 
     assert len(res) == 9
+
+    # added a 'valid' flag to output
     assert [r.keys() for r in res
-            if len(r.keys()) == 1
+            if len(r.keys()) == 2
             and 'WeatheringOutput' in r]
 
     model_broadcaster.stop()
