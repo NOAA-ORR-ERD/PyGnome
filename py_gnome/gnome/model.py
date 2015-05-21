@@ -740,7 +740,7 @@ class Model(Serializable):
         for outputter in self.outputters:
             outputter.model_step_is_done()
 
-    def write_output(self):
+    def write_output(self, valid, messages=None):
         output_info = {}
 
         for outputter in self.outputters:
@@ -755,6 +755,9 @@ class Model(Serializable):
         if not output_info:
             return {'step_num': self.current_time_step}
 
+        # append 'valid' flag to output
+        output_info['valid'] = valid
+
         return output_info
 
     def step(self):
@@ -762,6 +765,7 @@ class Model(Serializable):
         Steps the model forward (or backward) in time. Needs testing for
         hind casting.
         '''
+        isvalid = True
         for sc in self.spills.items():
             # Set the current time stamp only after current_time_step is
             # incremented and before the output is written. Set it to None here
@@ -771,6 +775,12 @@ class Model(Serializable):
         if self.current_time_step == -1:
             # that's all we need to do for the zeroth time step
             self.setup_model_run()
+
+            # validate and send validation flag if model is invalid
+            (msgs, isvalid) = self.validate()
+            if not isvalid:
+                return {'valid': isvalid,
+                        'messages': msgs}
 
         elif self.current_time_step >= self._num_time_steps - 1:
             # _num_time_steps is set when self.time_step is set. If user does
@@ -812,7 +822,7 @@ class Model(Serializable):
         # current_time_stamp in spill_containers (self.spills) is not updated
         # till we go through the prepare_for_model_step
         self._cache.save_timestep(self.current_time_step, self.spills)
-        output_info = self.write_output()
+        output_info = self.write_output(isvalid)
         self.logger.debug("{0._pid} Completed step: {0.current_time_step} "
                           "for {0.name}".format(self))
         return output_info
@@ -1178,11 +1188,6 @@ class Model(Serializable):
             for attr in ('environment', 'outputters', 'weatherers', 'movers',
                          'spills'):
                 o_json_[attr] = self.serialize_oc(attr, json_)
-
-            # validate and send validation flag
-            # currently, messages are ignored but may want to return them
-            (msgs, isvalid) = self.validate()
-            o_json_['valid'] = isvalid
 
         return o_json_
 
