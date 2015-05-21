@@ -781,6 +781,9 @@ class ChemicalDispersion(CleanUpBase, Serializable):
         # rate is set the first timestep in which the object becomes active
         self._rate = None
 
+        # since efficiency can also be set - do not make_default_refs
+        self.make_default_refs = False
+
     def prepare_for_model_run(self, sc):
         '''
         reset _rate to None. It gets set when LEs are marked to be dispersed.
