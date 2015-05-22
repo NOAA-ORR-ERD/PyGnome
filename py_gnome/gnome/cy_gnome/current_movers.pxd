@@ -111,6 +111,7 @@ cdef extern from "IceMover_c.h":
         WorldPoint3D    GetMove(Seconds&,Seconds&,Seconds&,Seconds&, long, long, LERec *, LETYPE)
         LongPointHdl  GetPointsHdl()
         TopologyHdl  GetTopologyHdl()
+        WORLDPOINTH  GetTriangleCenters()
         long  GetNumTriangles()
         OSErr  GetIceFields(Seconds time, double *fraction, double *thickness)
         OSErr  GetIceVelocities(Seconds time, VelocityFRec *ice_velocity)

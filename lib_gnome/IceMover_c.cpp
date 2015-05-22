@@ -434,6 +434,11 @@ TopologyHdl IceMover_c::GetTopologyHdl(void)
 	return timeGrid->fGrid->GetTopologyHdl();
 }
 
+WORLDPOINTH	IceMover_c::GetTriangleCenters()
+{
+	return timeGrid->fGrid->GetCenterPointsHdl();
+}
+
 long IceMover_c::GetNumTriangles(void)
 {
 	long numTriangles = 0;

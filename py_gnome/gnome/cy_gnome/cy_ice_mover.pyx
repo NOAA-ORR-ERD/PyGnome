@@ -83,6 +83,26 @@ cdef class CyIceMover(CyGridCurrentMover):
 
         return pts
 
+    def _get_center_points(self):
+        """
+            Invokes the GetTriangleCenters method of TriGridVel_c object
+            to get the velocities for the grid
+        """
+        cdef short tmp_size = sizeof(WorldPoint)
+        cdef WORLDPOINTH pts_hdl
+        cdef cnp.ndarray[WorldPoint, ndim = 1] pts
+
+        # allocate memory and copy it over
+        pts_hdl = self.grid_ice.GetTriangleCenters()
+        sz = _GetHandleSize(<Handle>pts_hdl)
+
+        # will this always work?
+        pts = np.empty((sz / tmp_size,), dtype=basic_types.w_point_2d)
+
+        memcpy(&pts[0], pts_hdl[0], sz)
+
+        return pts
+
     def _get_triangle_data(self):
         """
             Invokes the GetToplogyHdl method of TriGridVel_c object
