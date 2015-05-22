@@ -101,6 +101,14 @@ class Process(AddLogger):
         """
         pass
 
+    def initialize_data(self):
+        '''
+        Let movers/weatherers have a way to customize the initialization of
+        data arrays. Currently, only some weatherers use this to customize
+        initialization of data arrays.
+        '''
+        pass
+
     def prepare_for_model_step(self, sc, time_step, model_time_datetime):
         """
         sets active flag based on time_span and on flag.
@@ -120,7 +128,7 @@ class Process(AddLogger):
             (model_time_datetime + timedelta(seconds=time_step/2)) and
             self.active_stop >=
             (model_time_datetime + timedelta(seconds=time_step/2)) and
-             self.on):
+            self.on):
             self._active = True
         else:
             self._active = False
