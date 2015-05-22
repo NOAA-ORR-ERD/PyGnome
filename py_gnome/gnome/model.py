@@ -776,18 +776,19 @@ class Model(Serializable):
             # that's all we need to do for the zeroth time step
             self.setup_model_run()
 
+            # let each object raise appropriate error if obj is incomplete
             # validate and send validation flag if model is invalid
-            (msgs, isvalid) = self.validate()
-            if not isvalid:
-                return {'valid': isvalid,
-                        'messages': msgs}
+            #(msgs, isvalid) = self.validate()
+            #if not isvalid:
+            #    raise StopIteration("Setup model run complete but model "
+            #                        "is invalid", msgs)
 
         elif self.current_time_step >= self._num_time_steps - 1:
             # _num_time_steps is set when self.time_step is set. If user does
             # not specify time_step, then setup_model_run() automatically
             # initializes it. Thus, do StopIteration check after
             # setup_model_run() is invoked
-            raise StopIteration
+            raise StopIteration("Run complete for {0}".format(self.name))
 
         else:
             self.setup_time_step()
@@ -1392,8 +1393,8 @@ class Model(Serializable):
                     if obj is None:
                         msg = ("{0} not found in environment collection".
                                format(at))
-                        self.logger.error(msg)
-                        msgs.append(self._err_pre + msg)
+                        self.logger.warning(msg)
+                        msgs.append(self._warn_pre + msg)
                         isvalid = False
 
         if len(self.spills) == 0:

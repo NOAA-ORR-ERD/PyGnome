@@ -149,18 +149,18 @@ class GnomeId(AddLogger):
         'wind', 'water', 'waves' attributes also have special meaning. An
         object containing this attribute references the corresponding object.
 
-        Logs errors/warnings
+        Logs warnings
         :returns: a tuple of length two containing:
             (a list of messages that were logged, isvalid bool)
-            If log level for message is error or higher, object is not valid
+            If any references are missing, object is not valid
         '''
         isvalid = True
         msgs = []
         try:
             if self.wind is None:
                 msg = 'no wind object defined'
-                self.logger.error(msg)
-                msgs.append(self._err_pre + msg)
+                self.logger.warning(msg)
+                msgs.append(self._warn_pre + msg)
                 isvalid = False
         except AttributeError:
             pass
@@ -168,8 +168,8 @@ class GnomeId(AddLogger):
         try:
             if self.water is None:
                 msg = 'no water object defined'
-                self.logger.error(msg)
-                msgs.append(self._err_pre + msg)
+                self.logger.warning(msg)
+                msgs.append(self._warn_pre + msg)
                 isvalid = False
         except AttributeError:
             pass
@@ -177,22 +177,13 @@ class GnomeId(AddLogger):
         try:
             if self.waves is None:
                 msg = 'no waves object defined'
-                self.logger.error(msg)
-                msgs.append(self._err_pre + msg)
+                self.logger.warning(msg)
+                msgs.append(self._warn_pre + msg)
                 isvalid = False
         except AttributeError:
             pass
 
         return (msgs, isvalid)
-
-    @property
-    def _err_pre(self):
-        '''
-        standard text prepended to error messages - not required for logging
-        used by validate to prepend to message since it also returns a list
-        of messages that were logged
-        '''
-        return 'error: ' + self.__class__.__name__ + ': '
 
     @property
     def _warn_pre(self):
