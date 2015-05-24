@@ -369,12 +369,13 @@ class IceGeoJsonOutput(Outputter, Serializable):
         for mover in self.ice_movers:
             features = []
             ice_thickness, ice_coverage = mover.get_ice_fields(model_time)
+            centers = mover.mover._get_center_points()
 
-            for t, c in izip(ice_thickness, ice_coverage):
+            for t, c, cp in izip(ice_thickness, ice_coverage, centers):
                 features.append(Feature(id="1",
                                         properties={'thickness': t,
                                                     'coverage': c},
-                                        # geometry=Point(list(cp)),
+                                        geometry=Point(list(cp))
                                         ))
 
             geojson[mover.id] = FeatureCollection(features)

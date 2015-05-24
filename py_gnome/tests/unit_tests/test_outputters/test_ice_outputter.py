@@ -106,6 +106,9 @@ def test_ice_geojson_output(model):
                 assert 'coverage' in feature['properties']
 
                 assert 'geometry' in feature
+                geometry = feature['geometry']
+                assert len(geometry) == 2
+
         print 'checked step at: ', time.time() - begin
 
 
