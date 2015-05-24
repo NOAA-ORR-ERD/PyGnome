@@ -374,7 +374,7 @@ class IceGeoJsonOutput(Outputter, Serializable):
                 features.append(Feature(id="1",
                                         properties={'thickness': t,
                                                     'coverage': c},
-                                        # geometry=Point(list(c)),
+                                        # geometry=Point(list(cp)),
                                         ))
 
             geojson[mover.id] = FeatureCollection(features)

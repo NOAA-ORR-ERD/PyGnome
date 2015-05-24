@@ -409,7 +409,7 @@ class GridCurrentMover(CurrentMoversBase, serializable.Serializable):
                 .format(self.mover, self))
 
     # Define properties using lambda functions: uses lambda function, which are
-    #accessible via fget/fset as follows:
+    # accessible via fget/fset as follows:
     uncertain_cross = property(lambda self: self.mover.uncertain_cross,
                                lambda self, val: setattr(self.mover,
                                                          'uncertain_cross',
@@ -435,13 +435,13 @@ class GridCurrentMover(CurrentMoversBase, serializable.Serializable):
                                                      'time_offset',
                                                      val * 3600.))
 
-    def get_scaled_velocities(self,time):
+    def get_scaled_velocities(self, time):
         """
-        :param model_time=0: 
+        :param model_time=0:
         """
         num_tri = self.mover.get_num_triangles()
         vels = np.zeros(num_tri, dtype=basic_types.velocity_rec)
-        self.mover.get_scaled_velocities(time,vels)
+        self.mover.get_scaled_velocities(time, vels)
         return vels
 
     def export_topology(self, topology_file):
@@ -539,6 +539,12 @@ class IceMover(CurrentMoversBase, serializable.Serializable):
         if type(self) == IceMover:
             self.mover = CyIceMover()
 
+#        self.mover = CyIceMover(current_scale=kwargs.pop('current_scale', 1),
+#                                uncertain_duration=3600. * kwargs.pop('uncertain_duration', 24),
+#                                uncertain_time_delay=3600. * kwargs.pop('uncertain_time_delay', 0),
+#                                uncertain_along=kwargs.pop('uncertain_along', 0.5),
+#                                uncertain_cross=kwargs.pop('uncertain_cross', 0.25))
+
         if not os.path.exists(filename):
             raise ValueError('Path for current file does not exist: {0}'
                              .format(filename))
@@ -554,12 +560,6 @@ class IceMover(CurrentMoversBase, serializable.Serializable):
         # check if this is stored with cy_ice_mover?
         self.topology_file = topology_file
 
-        #self.mover = cy_ice_mover.CyIceMover()
-#         self.mover = CyIceMover(current_scale=kwargs.pop('current_scale', 1),
-#                                         uncertain_duration=3600. * kwargs.pop('uncertain_duration', 24),
-#                                         uncertain_time_delay=3600. * kwargs.pop('uncertain_time_delay', 0),
-#                                         uncertain_along=kwargs.pop('uncertain_along', 0.5),
-#                                         uncertain_cross=kwargs.pop('uncertain_cross', 0.25))
         self.mover.text_read(filename, topology_file)
         self.mover.extrapolate_in_time(extrapolate)
         self.mover.offset_time(time_offset * 3600.)
@@ -573,7 +573,7 @@ class IceMover(CurrentMoversBase, serializable.Serializable):
         """
 
         return ('IceMover('
-                'uncertain_duration={0.uncertain_duration},'
+                'uncertain_duration={0.uncertain_duration}, '
                 'uncertain_time_delay={0.uncertain_time_delay}, '
                 'uncertain_cross={0.uncertain_cross}, '
                 'uncertain_along={0.uncertain_along}, '
@@ -593,7 +593,7 @@ class IceMover(CurrentMoversBase, serializable.Serializable):
                 .format(self.mover, self))
 
     # Define properties using lambda functions: uses lambda function, which are
-    #accessible via fget/fset as follows:
+    # accessible via fget/fset as follows:
     uncertain_cross = property(lambda self: self.mover.uncertain_cross,
                                lambda self, val: setattr(self.mover,
                                                          'uncertain_cross',
@@ -619,35 +619,33 @@ class IceMover(CurrentMoversBase, serializable.Serializable):
                                                      'time_offset',
                                                      val * 3600.))
 
-    def get_scaled_velocities(self,model_time):
+    def get_scaled_velocities(self, model_time):
         """
-        :param model_time=0: 
-        """
-        num_tri = self.mover.get_num_triangles()
-        vels = np.zeros(num_tri, dtype=basic_types.velocity_rec)
-        self.mover.get_scaled_velocities(model_time,vels)
-        return vels
-
-    def get_ice_velocities(self,model_time):
-        """
-        :param model_time=0: 
+        :param model_time=0:
         """
         num_tri = self.mover.get_num_triangles()
         vels = np.zeros(num_tri, dtype=basic_types.velocity_rec)
-        self.mover.get_ice_velocities(model_time,vels)
+        self.mover.get_scaled_velocities(model_time, vels)
         return vels
 
-
-    def get_ice_fields(self,model_time):
+    def get_ice_velocities(self, model_time):
         """
-        :param model_time=0: 
+        :param model_time=0:
+        """
+        num_tri = self.mover.get_num_triangles()
+        vels = np.zeros(num_tri, dtype=basic_types.velocity_rec)
+        self.mover.get_ice_velocities(model_time, vels)
+        return vels
+
+    def get_ice_fields(self, model_time):
+        """
+        :param model_time=0:
         """
         num_tri = self.mover.get_num_triangles()
         frac_coverage = np.zeros(num_tri, dtype=np.float64)
         thickness = np.zeros(num_tri, dtype=np.float64)
-        self.mover.get_ice_fields(model_time,frac_coverage,thickness)
+        self.mover.get_ice_fields(model_time, frac_coverage, thickness)
         return frac_coverage, thickness
-
 
     def export_topology(self, topology_file):
         """
@@ -817,10 +815,10 @@ class ComponentMoverSchema(ObjType, ProcessSchema):
     '''static schema for ComponentMover'''
     filename1 = SchemaNode(String(), missing=drop)
     filename2 = SchemaNode(String(), missing=drop)
-    #scale = SchemaNode(Bool())
-    #ref_point = WorldPoint(missing=drop)
+    # scale = SchemaNode(Bool())
+    # ref_point = WorldPoint(missing=drop)
     scale_refpoint = WorldPoint(missing=drop)
-    #scale_value = SchemaNode(Float())
+    # scale_value = SchemaNode(Float())
 
 
 class ComponentMover(CyMover, serializable.Serializable):
@@ -891,9 +889,9 @@ class ComponentMover(CyMover, serializable.Serializable):
         if wind is not None:
             self.wind = wind
 
-        #self.scale = kwargs.pop('scale', self.mover.scale_type)
-        #self.scale_value = kwargs.get('scale_value',
-                #self.mover.scale_value)
+        # self.scale = kwargs.pop('scale', self.mover.scale_type)
+        # self.scale_value = kwargs.get('scale_value',
+        #                               self.mover.scale_value)
 
         # TODO: no need to check for None since properties that are None
         #       are not persisted
