@@ -9,55 +9,45 @@ which is defined in a gnome model if there are weatherers defined.
 For now just define a FayGravityInertial class here
 It is only used by WeatheringData to update the 'area' and related arrays
 '''
+import copy
+
 import numpy as np
 from repoze.lru import lru_cache
 
 from gnome.basic_types import oil_status, fate
-from gnome import AddLogger
+from gnome.utilities import Serializable
 from .spreading import FayGravityViscous
+from .core import Weatherer, WeathererSchema
 
 
-class WeatheringData(AddLogger):
+class WeatheringData(Weatherer, Serializable):
     '''
-    Updates intrinsic properties of Oil
+    Serves to initialize weathering data arrays. Also updates data arrays
+    like density, viscosity
     Doesn't have an id like other gnome objects. It isn't exposed to
     application since Model will automatically instantiate if there
     are any Weathering objects defined
 
     Use this to manage data_arrays associated with weathering that are not
-    defined in Weatherers. This is inplace of defining initializers for every
-    single array, let WeatheringData set/initialize/update these arrays.
+    initialized anywhere else. This is inplace of defining initializers for
+    every single array, let WeatheringData set/initialize/update these arrays.
     '''
+    _state = copy.deepcopy(Weatherer._state)
+    _schema = WeathererSchema
+
     def __init__(self,
-                 water,
-                 spreading=FayGravityViscous()):
+                 water):
         '''
-        Consier Langmuir as an environmental process. It is used to update the
-        frac_coverage which gets applied to Area. Let WeatheringData control
-        the invocation of Langmuir to update frac_coverage or maybe directly
-        update 'fay_area' - though need to see if that effects dispersion
-        adversely
+        XXX
         '''
         self.water = water
-        self.spreading = spreading
         self.array_types = {'fate_status', 'positions', 'status_codes',
-                            'density', 'viscosity',
-                            'mass_components', 'mass',
-                            # init volume of particles released together
-                            'bulk_init_volume',
-                            'init_mass', 'frac_water', 'frac_lost',
-                            'fay_area', 'at_max_area',
-                            'area', 'age',
-                            'spill_num'}
+                            'density', 'viscosity', 'mass_components', 'mass',
+                            'init_mass', 'frac_water', 'frac_lost', 'age'}
 
         # following used to update viscosity
         self.visc_curvfit_param = 1.5e3     # units are sec^0.5 / m
         self.visc_f_ref = 0.84
-
-        # relative_bouyancy - use density at release time. For now
-        # temperature is fixed so just compute once and store. When temperature
-        # varies over time, may want to do something different
-        self._init_relative_buoyancy = None
 
     def prepare_for_model_run(self, sc):
         '''
@@ -71,19 +61,6 @@ class WeatheringData(AddLogger):
         for key in ('avg_density', 'floating', 'amount_released',
                     'avg_viscosity', 'beached'):
             sc.weathering_data[key] = 0.0
-
-        # initialize the thickness_limit for FayGravityViscous based on
-        # viscosity of oil - assume only one type of substance for all spills
-        # make sure we have spills with valid substance
-        subs = sc.get_substances(False)
-        if len(subs) > 0:
-            vo = subs[0].get_viscosity(self.water.get('temperature'))
-            # set thickness_limit
-            self.spreading.set_thickness_limit(vo)
-
-        # reset _init_relative_buoyancy for every run
-        # make it None so no stale data
-        self._init_relative_buoyancy = None
 
     def update(self, num_new_released, sc):
         '''
@@ -256,41 +233,8 @@ class WeatheringData(AddLogger):
             data['viscosity'][mask] = \
                 substance.get_viscosity(water_temp)
 
-        # initialize bulk_init_volume and fay_area for new particles per spill
-        # other properties must be set (like 'mass', 'density')
-        self._init_data_by_spill(mask, data, substance)
-
         # initialize the fate_status array based on positions and status_codes
         self._init_fate_status(mask, data)
-
-    def _init_data_by_spill(self, mask, data, substance):
-        '''
-        set bulk_init_volume and fay_area. These are set on a per spill bases
-        in addition to per substance.
-        '''
-        # do this once incase there are any unit conversions, it only needs to
-        # happen once - for efficiency
-        water_kvis = self.water.get('kinematic_viscosity',
-                                    'square meter per second')
-        '''
-        Sets relative_bouyancy, bulk_init_volume, init_area, thickness all of
-        which are required when computing the 'thickness' of each LE
-        '''
-        for s_num in np.unique(data['spill_num'][mask]):
-            s_mask = np.logical_and(mask,
-                                    data['spill_num'] == s_num)
-            # do the sum only once for efficiency
-            num = s_mask.sum()
-
-            data['bulk_init_volume'][s_mask] = \
-                (data['mass'][s_mask][0]/data['density'][s_mask][0]) * num
-            init_blob_area = \
-                self.spreading.init_area(water_kvis,
-                                         self._init_relative_buoyancy,
-                                         data['bulk_init_volume'][s_mask][0])
-
-            data['fay_area'][s_mask] = init_blob_area/num
-            data['area'][s_mask] = data['fay_area'][s_mask]
 
     def _init_fate_status(self, update_LEs_mask, data):
         '''
@@ -368,8 +312,6 @@ class WeatheringData(AddLogger):
         '''
         k_rho = self._get_k_rho_weathering_dens_update(substance)
 
-        water_kvis = self.water.get('kinematic_viscosity',
-                                    'square meter per second')
         water_rho = self.water.get('density')
 
         # must update intrinsic properties per spill. Same substance but
@@ -412,20 +354,3 @@ class WeatheringData(AddLogger):
                     (v0 * np.exp(kv1 *
                                  data['frac_lost'][s_mask]) *
                      (1 + (fw_d_fref/(1.187 - fw_d_fref)))**2.49)
-            data['fay_area'][s_mask], data['at_max_area'][s_mask] = \
-                self.spreading.update_area(water_kvis,
-                                           self._init_relative_buoyancy,
-                                           data['bulk_init_volume'][s_mask],
-                                           data['fay_area'][s_mask],
-                                           data['age'][s_mask],
-                                           data['at_max_area'][s_mask])
-            if not np.all(data['at_max_area'][s_mask]):
-                data['area'][s_mask] = data['fay_area'][s_mask]
-
-    def _get_relative_buoyancy(self, rho_oil):
-        '''
-        given density of oil (rho_oil), return the relative_buoyancy:
-            (rho_water - rho_oil)/rho_water
-        '''
-        rho_h2o = self.water.get('density', 'kg/m^3')
-        return (rho_h2o - rho_oil)/rho_h2o

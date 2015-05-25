@@ -258,7 +258,7 @@ _default_values = {'positions': ((3,), world_point_type, 'positions',
                    # area is frac_coverage * fay_area - it is the area adjusted
                    # by langmuir
                    'fay_area': ((), np.float64, 'fay_area', 0),
-                   'area': ((), np.float64, 'area', 1),
+                   'area': ((), np.float64, 'area', 0),
 
                    # decided not to use np.bool since netcdf needs a primitive
                    # type. The conversion would need to happen between bool on
