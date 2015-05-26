@@ -5,8 +5,10 @@ Does not contain a schema for persistence yet
 import copy
 import os
 from glob import glob
+from itertools import izip
 
 import numpy as np
+
 from geojson import Feature, FeatureCollection, dump, MultiPoint, Point
 from colander import SchemaNode, String, drop, Int, Bool
 
@@ -240,7 +242,7 @@ class CurrentGeoJsonOutput(Outputter, Serializable):
             velocities = cm.get_scaled_velocities(model_time)
             centers = cm.mover._get_center_points()
 
-            for v, c in zip(velocities, centers):
+            for v, c in izip(velocities, centers):
                 feature = Feature(geometry=Point(list(c)),
                                   id="1",
                                   properties={'velocity': list(v)})
@@ -295,10 +297,130 @@ class CurrentGeoJsonOutput(Outputter, Serializable):
         return _to_dict
 
 
+class IceGeoJsonSchema(BaseSchema):
+    '''
+    Nothing is required for initialization
+    '''
 
 
+class IceGeoJsonOutput(Outputter, Serializable):
+    '''
+    Class that outputs GNOME ice velocity results for each ice mover
+    in a geojson format.  The output is a collection of Features.
+    Each Feature contains a Point object with associated properties.
+    Following is the output format - the data in <> are the results
+    for each element.
 
+    ::
+    {
+     "time_stamp": <TIME IN ISO FORMAT>,
+     "step_num": <OUTPUT ASSOCIATED WITH THIS STEP NUMBER>,
+     "feature_collections": {<mover_id>: {"type": "FeatureCollection",
+                                          "features": [{"type": "Feature",
+                                                        "id": <PARTICLE_ID>,
+                                                        "properties": {"ice_fraction": <FRACTION>,
+                                                                       "ice_thickness": <METERS>,
+                                                                       "water_velocity": [u, v],
+                                                                       "ice_velocity": [u, v]
+                                                                       },
+                                                        "geometry": {"type": "Point",
+                                                                     "coordinates": [<LONG>, <LAT>]
+                                                                     },
+                                                        },
+                                                        ...
+                                                       ],
+                                          },
+                             ...
+                             }
+    '''
+    _state = copy.deepcopy(Outputter._state)
 
+    # need a schema and also need to override save so output_dir
+    # is saved correctly - maybe point it to saveloc
+    _state.add_field(Field('ice_movers',
+                           save=True, update=True, save_reference=True))
 
+    _schema = IceGeoJsonSchema
 
+    def __init__(self, ice_movers, **kwargs):
+        '''
+        :param list current_movers: A list or collection of current grid mover
+                                    objects.
 
+        use super to pass optional \*\*kwargs to base class __init__ method
+        '''
+        self.ice_movers = ice_movers
+
+        super(IceGeoJsonOutput, self).__init__(**kwargs)
+
+    def write_output(self, step_num, islast_step=False):
+        'dump data in geojson format'
+        super(IceGeoJsonOutput, self).write_output(step_num, islast_step)
+
+        if self.on is False or not self._write_step:
+            return None
+
+        for sc in self.cache.load_timestep(step_num).items():
+            pass
+
+        model_time = date_to_sec(sc.current_time_stamp)
+
+        geojson = {}
+        for mover in self.ice_movers:
+            features = []
+            ice_thickness, ice_coverage = mover.get_ice_fields(model_time)
+
+            for t, c in izip(ice_thickness, ice_coverage):
+                features.append(Feature(id="1",
+                                        properties={'thickness': t,
+                                                    'coverage': c},
+                                        # geometry=Point(list(c)),
+                                        ))
+
+            geojson[mover.id] = FeatureCollection(features)
+
+        # default geojson should not output data to file
+        # read data from file and send it to web client
+        output_info = {'step_num': step_num,
+                       'time_stamp': sc.current_time_stamp.isoformat(),
+                       'feature_collections': geojson
+                       }
+
+        return output_info
+
+    def rewind(self):
+        'remove previously written files'
+        super(IceGeoJsonOutput, self).rewind()
+
+    def serialize(self, json_='webapi'):
+        """
+            Serialize our current velocities outputter to JSON
+        """
+        dict_ = self.to_serialize(json_)
+        schema = self.__class__._schema()
+        json_out = schema.serialize(dict_)
+
+        json_out['ice_movers'] = []
+
+        for cm in self.ice_movers:
+            json_out['ice_movers'].append(cm.serialize(json_))
+
+        return json_out
+
+    @classmethod
+    def deserialize(cls, json_):
+        """
+        append correct schema for current mover
+        """
+        schema = cls._schema()
+        _to_dict = schema.deserialize(json_)
+
+        if 'ice_movers' in json_:
+            _to_dict['ice_movers'] = []
+            for i, cm in enumerate(json_['ice_movers']):
+                cm_cls = class_from_objtype(cm['obj_type'])
+                cm_dict = cm_cls.deserialize(json_['ice_movers'][i])
+
+                _to_dict['ice_movers'].append(cm_dict)
+
+        return _to_dict

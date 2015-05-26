@@ -13,7 +13,7 @@ from gnome.utilities import time_utils
 
 from ..conftest import sample_sc_release, testdata
 
-curr_file = testdata['IceMover']['ice_curr_curv']
+ice_file = testdata['IceMover']['ice_curr_curv']
 topology_file = testdata['IceMover']['ice_top_curv']
 
 
@@ -34,9 +34,9 @@ topology_file = testdata['IceMover']['ice_top_curv']
 
 num_le = 4
 start_pos = (-164.01696, 72.921024, 0)
-#start_pos = (-72.921024, 164.01696, 0)
 rel_time = datetime.datetime(2015, 5, 14, 0)
 time_step = 15 * 60  # seconds
+test_time = time_utils.date_to_sec(rel_time)
 model_time = time_utils.sec_to_date(time_utils.date_to_sec(rel_time))
 
 
@@ -48,8 +48,8 @@ def test_loop():
     """
 
     pSpill = sample_sc_release(num_le, start_pos, rel_time)
-    curr = IceMover(curr_file, topology_file)
-    delta = _certain_loop(pSpill, curr)
+    ice_mover = IceMover(ice_file, topology_file)
+    delta = _certain_loop(pSpill, ice_mover)
 
     _assert_move(delta)
 
@@ -67,7 +67,7 @@ def test_loop_gridcurrent():
     """
 
     pSpill = sample_sc_release(num_le, start_pos, rel_time)
-    curr = GridCurrentMover(curr_file, topology_file)
+    curr = GridCurrentMover(ice_file, topology_file)
     delta = _certain_loop(pSpill, curr)
 
     _assert_move(delta)
@@ -77,6 +77,23 @@ def test_loop_gridcurrent():
     assert np.all(delta[:, 2] == 0)  # 'z' is zeros
 
     return delta
+
+def test_ice_fields():
+    """
+    test one time step with no uncertainty on the spill
+    checks there is non-zero motion.
+    also checks the motion is same for all LEs
+    """
+
+    pSpill = sample_sc_release(num_le, start_pos, rel_time)
+    ice_mover = IceMover(ice_file, topology_file)
+    vels = ice_mover.get_ice_velocities(test_time)
+    frac, thick = ice_mover.get_ice_fields(test_time)
+
+    assert (np.all(frac[:] <= 1) and np.all(frac[:] >= 0)) # fraction values between 0 and 1
+    assert (np.all(thick[:] <= 10) and np.all(thick[:] >= 0)) # thickness >=0, < 10 in this example...
+
+    #return frac, thick
 
 
 # def test_uncertain_loop(uncertain_time_delay=0):
@@ -114,7 +131,7 @@ def test_loop_gridcurrent():
 #     assert np.all(delta[:, :2] == u_delta[:, :2])
 # 
 
-c_grid = IceMover(curr_file,topology_file)
+c_grid = IceMover(ice_file,topology_file)
 
 
 # def test_default_props():
@@ -183,20 +200,20 @@ def _assert_move(delta):
     assert np.all(delta[:, 2] == 0)
 
 
-def _certain_loop(pSpill, curr):
-    curr.prepare_for_model_run()
-    curr.prepare_for_model_step(pSpill, time_step, model_time)
-    delta = curr.get_move(pSpill, time_step, model_time)
-    curr.model_step_is_done()
+def _certain_loop(pSpill, mover):
+    mover.prepare_for_model_run()
+    mover.prepare_for_model_step(pSpill, time_step, model_time)
+    delta = mover.get_move(pSpill, time_step, model_time)
+    mover.model_step_is_done()
 
     return delta
 
 
-def _uncertain_loop(pSpill, curr):
-    curr.prepare_for_model_run()
-    curr.prepare_for_model_step(pSpill, time_step, model_time)
-    u_delta = curr.get_move(pSpill, time_step, model_time)
-    curr.model_step_is_done()
+def _uncertain_loop(pSpill, mover):
+    mover.prepare_for_model_run()
+    mover.prepare_for_model_step(pSpill, time_step, model_time)
+    u_delta = mover.get_move(pSpill, time_step, model_time)
+    mover.model_step_is_done()
 
     return u_delta
 

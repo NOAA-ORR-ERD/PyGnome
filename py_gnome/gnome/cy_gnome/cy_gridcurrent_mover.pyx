@@ -207,3 +207,20 @@ cdef class CyGridCurrentMover(CyCurrentMoverBase):
         """
         if err == 2:
             raise ValueError("The value for spill type can only be 'forecast' or 'uncertainty' - you've chosen: " + str(spill_type))
+
+    def get_scaled_velocities(self, Seconds model_time,
+                 cnp.ndarray[VelocityFRec] vels):
+        """
+            Invokes the GetScaledVelocities method of TimeGridVel_c object
+            to get the velocities on the triangles
+        """
+        cdef OSErr err
+        err = self.grid_current.GetScaledVelocities(model_time,&vels[0])
+
+        if err != 0:
+            """
+            For now just raise an OSError - until the types of possible errors
+            are defined and enumerated
+            """
+            raise OSError("GridCurrentMover_c.GetScaledVelocities returned an error.")
+

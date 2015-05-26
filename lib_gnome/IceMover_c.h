@@ -69,8 +69,11 @@ public:
 	virtual void 		ModelStepIsDone();
 	
 			TopologyHdl GetTopologyHdl(void);
+			LongPointHdl GetPointsHdl(void);
+			WORLDPOINTH	GetTriangleCenters();
 			long 		GetNumTriangles(void);
 			OSErr 		GetIceFields(Seconds model_time, double *ice_fraction, double *ice_thickness);
+			OSErr 		GetIceVelocities(Seconds model_time, VelocityFRec *ice_velocity);
 			OSErr		TextRead(char *path,char *topFilePath);
 			OSErr 		ExportTopology(char* path){return timeGrid->ExportTopology(path);}
 
