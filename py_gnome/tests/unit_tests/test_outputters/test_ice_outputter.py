@@ -94,9 +94,9 @@ def test_ice_geojson_output(model):
         for fc in fcs.values():
             assert 'type' in fc
             assert fc['type'] == 'FeatureCollection'
+
             assert 'features' in fc
             assert len(fc['features']) > 0
-
             for feature in fc['features']:
                 assert 'type' in feature
                 assert feature['type'] == 'Feature'
