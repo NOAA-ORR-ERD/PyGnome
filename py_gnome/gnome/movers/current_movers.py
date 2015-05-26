@@ -485,14 +485,15 @@ class IceMoverSchema(CurrentMoversBaseSchema):
     current_scale = SchemaNode(Float(), missing=drop)
     uncertain_along = SchemaNode(Float(), missing=drop)
     uncertain_cross = SchemaNode(Float(), missing=drop)
+    extrapolate = SchemaNode(Bool(), missing=drop)
 
 
 class IceMover(CurrentMoversBase, serializable.Serializable):
 
     _update = ['uncertain_cross', 'uncertain_along',
-               'current_scale']
+               'current_scale', 'extrapolate']
     _save = ['uncertain_cross', 'uncertain_along',
-             'current_scale']
+             'current_scale', 'extrapolate']
     _state = copy.deepcopy(CurrentMoversBase._state)
 
     _state.add(update=_update, save=_save)
@@ -561,6 +562,7 @@ class IceMover(CurrentMoversBase, serializable.Serializable):
         self.topology_file = topology_file
 
         self.mover.text_read(filename, topology_file)
+        self.extrapolate = extrapolate
         self.mover.extrapolate_in_time(extrapolate)
         self.mover.offset_time(time_offset * 3600.)
 
@@ -666,6 +668,7 @@ class IceMover(CurrentMoversBase, serializable.Serializable):
         """
 
         self.mover.extrapolate_in_time(extrapolate)
+        self.extrapolate = extrapolate
 
     def offset_time(self, time_offset):
         """

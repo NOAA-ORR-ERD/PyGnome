@@ -136,7 +136,7 @@ def test_ice_fields():
 #     assert np.all(delta[:, :2] == u_delta[:, :2])
 #
 
-c_grid = IceMover(ice_file, topology_file)
+ice_grid = IceMover(ice_file, topology_file)
 
 
 # def test_default_props():
@@ -144,13 +144,13 @@ c_grid = IceMover(ice_file, topology_file)
 #     test default properties
 #     """
 #
-#     assert c_grid.current_scale == 1
-#     assert c_grid.uncertain_time_delay == 0
-#     assert c_grid.uncertain_duration == 24
-#     assert c_grid.uncertain_cross == .25
-#     assert c_grid.uncertain_along == .5
-#     assert c_grid.extrapolate == False
-#     assert c_grid.time_offset == 0
+#     assert ice_grid.current_scale == 1
+#     assert ice_grid.uncertain_time_delay == 0
+#     assert ice_grid.uncertain_duration == 24
+#     assert ice_grid.uncertain_cross == .25
+#     assert ice_grid.uncertain_along == .5
+#     assert ice_grid.extrapolate == False
+#     assert ice_grid.time_offset == 0
 #
 
 # def test_scale():
@@ -158,8 +158,8 @@ c_grid = IceMover(ice_file, topology_file)
 #     test setting / getting properties
 #     """
 #
-#     c_grid.uncertain_time_delay = 3
-#     assert c_grid.uncertain_time_delay == 3
+#     ice_grid.uncertain_time_delay = 3
+#     assert ice_grid.uncertain_time_delay == 3
 #
 #
 # def test_scale_value():
@@ -167,9 +167,9 @@ c_grid = IceMover(ice_file, topology_file)
 #     test setting / getting properties
 #     """
 #
-#     c_grid.current_scale = 2
-#     print c_grid.current_scale
-#     assert c_grid.current_scale == 2
+#     ice_grid.current_scale = 2
+#     print ice_grid.current_scale
+#     assert ice_grid.current_scale == 2
 #
 #
 # def test_extrapolate():
@@ -177,9 +177,9 @@ c_grid = IceMover(ice_file, topology_file)
 #     test setting / getting properties
 #     """
 #
-#     c_grid.extrapolate = True
-#     print c_grid.extrapolate
-#     assert c_grid.extrapolate == True
+#     ice_grid.extrapolate = True
+#     print ice_grid.extrapolate
+#     assert ice_grid.extrapolate == True
 #
 #
 # def test_offset_time():
@@ -187,9 +187,9 @@ c_grid = IceMover(ice_file, topology_file)
 #     test setting / getting properties
 #     """
 #
-#     c_grid.time_offset = -8
-#     print c_grid.time_offset
-#     assert c_grid.time_offset == -8
+#     ice_grid.time_offset = -8
+#     print ice_grid.time_offset
+#     assert ice_grid.time_offset == -8
 #
 #
 # Helper functions for tests
@@ -223,17 +223,16 @@ def _uncertain_loop(pSpill, mover):
     return u_delta
 
 
-# def test_serialize_deserialize():
-#     """
-#     test to_dict function for Ice object
-#     create a new ice object and make sure it has same properties
-#     """
-#
-#     c_grid = IceMover(curr_file, topology_file)
-#     serial = c_grid.serialize('webapi')
-#     dict_ = IceMover.deserialize(serial)
-#     c2 = IceMover.new_from_dict(dict_)
-#     assert c_grid == c2
-#
-#     c_grid.update_from_dict(dict_)  # tests no failures
-#
+def test_serialize_deserialize():
+    """
+    test to_dict function for Ice object
+    create a new ice object and make sure it has same properties
+    """
+
+    ice_grid = IceMover(ice_file, topology_file)
+    serial = ice_grid.serialize('webapi')
+    dict_ = IceMover.deserialize(serial)
+    ice2 = IceMover.new_from_dict(dict_)
+    assert ice_grid == ice2
+
+    ice_grid.update_from_dict(dict_)  # tests no failures
