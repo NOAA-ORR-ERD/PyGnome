@@ -62,6 +62,35 @@ class WeatheringData(Weatherer, Serializable):
                     'avg_viscosity', 'beached'):
             sc.weathering_data[key] = 0.0
 
+    def initialize_data(self, sc, num_elements):
+        '''
+        initialize all weathering data arrays
+        '''
+        for substance, data in sc.itersubstancedata(self.array_types,
+                                                    fate='all'):
+            'update properties only if elements are released'
+            if len(data['density']) == 0:
+                continue
+
+            # could also use 'age' but better to use an uninitialized var since
+            # we might end up changing 'age' to something other than 0
+            # model should only call initialize_data if new particles were
+            # released
+            if num_elements > 0:
+                new_LEs_mask = data['density'] == 0
+                self._init_new_particles(new_LEs_mask, data, substance)
+
+        sc.update_from_fatedataview(fate='all')
+
+        # also initialize/update aggregated data
+        self._aggregated_data(sc, num_elements)
+
+    def weather_elements(self, sc, time_step, model_time):
+        '''
+        
+        '''
+        #self._aggregated_data(sc, 0)
+
     def update(self, num_new_released, sc):
         '''
         Uses 'substance' properties together with 'water' properties to update
@@ -73,9 +102,9 @@ class WeatheringData(Weatherer, Serializable):
         '''
         if len(sc) > 0:
             self._update_weathering_dataarrays(sc)
-            self._update_aggregated_data(num_new_released, sc)
+            self._aggregated_data(sc, num_new_released)
 
-    def _update_aggregated_data(self, new_LEs, sc):
+    def _aggregated_data(self, sc, new_LEs):
         '''
         intrinsic LE properties not set by any weatherer so let SpillContainer
         set these - will user be able to use select weatherers? Currently,

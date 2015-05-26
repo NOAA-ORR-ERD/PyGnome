@@ -101,7 +101,7 @@ class Process(AddLogger):
         """
         pass
 
-    def initialize_data(self):
+    def initialize_data(self, sc, num_elements):
         '''
         Let movers/weatherers have a way to customize the initialization of
         data arrays. Currently, only some weatherers use this to customize
