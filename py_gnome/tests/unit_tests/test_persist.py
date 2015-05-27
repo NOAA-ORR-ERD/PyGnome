@@ -165,7 +165,7 @@ def test_init_exception(saveloc_):
         m.save(os.path.join(saveloc_, 'x', 'junk'))
 
 
-#@pytest.mark.slow
+@pytest.mark.slow
 @pytest.mark.parametrize(('uncertain', 'zipsave'),
                          [(False, False), (True, False),
                           (False, True), (True, True)])
