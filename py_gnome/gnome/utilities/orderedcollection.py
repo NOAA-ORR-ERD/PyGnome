@@ -241,9 +241,9 @@ class OrderedCollection(object):
         else:
             strlist = ['\t%s: %s,' % i for i in itemlist]
 
-        return ('{0}(\n'
+        return ('{0}({{\n'
                 '{1}\n'
-                ')'.format(self.__class__.__name__, '\n'.join(strlist)))
+                '}})'.format(self.__class__.__name__, '\n'.join(strlist)))
 
     def __repr__(self):
         return self.__str__()
