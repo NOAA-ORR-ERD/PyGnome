@@ -9,7 +9,9 @@ from itertools import izip
 
 import numpy as np
 
-from geojson import Feature, FeatureCollection, dump, MultiPoint, Point
+from geojson import (Feature, FeatureCollection, dump,
+                     MultiPoint, Point, Polygon)
+
 from colander import SchemaNode, String, drop, Int, Bool
 
 from gnome.utilities.time_utils import date_to_sec
@@ -373,13 +375,13 @@ class IceGeoJsonOutput(Outputter, Serializable):
         for mover in self.ice_movers:
             features = []
             ice_thickness, ice_coverage = mover.get_ice_fields(model_time)
-            centers = mover.mover._get_center_points()
+            triangles = self.get_triangles(mover)
 
-            for t, c, cp in izip(ice_thickness, ice_coverage, centers):
+            for t, c, tri in izip(ice_thickness, ice_coverage, triangles):
                 features.append(Feature(id="1",
                                         properties={'thickness': t,
                                                     'coverage': c},
-                                        geometry=Point(list(cp))
+                                        geometry=Polygon(list(tri))
                                         ))
 
             geojson[mover.id] = FeatureCollection(features)
@@ -392,6 +394,34 @@ class IceGeoJsonOutput(Outputter, Serializable):
                        }
 
         return output_info
+
+    def get_triangles(self, mover):
+        '''
+            The triangle data that we get from the mover is in the form of
+            indices into the points array.
+            So we get our triangle data and points array, and then build our
+            triangle coordinates by reference.
+        '''
+        triangle_data = self.get_triangle_data(mover)
+        points = self.get_points(mover)
+
+        triangles = []
+        for ti in triangle_data:
+            coords = points[list(ti)[:3]].tolist()
+            triangles.append([coords])
+
+        return triangles
+
+    def get_triangle_data(self, mover):
+        return mover.mover._get_triangle_data()
+
+    def get_points(self, mover):
+        points = (mover.mover._get_points()
+                  .astype([('long', '<f8'), ('lat', '<f8')]))
+        points['long'] /= 10 ** 6
+        points['lat'] /= 10 ** 6
+
+        return points
 
     def rewind(self):
         'remove previously written files'
