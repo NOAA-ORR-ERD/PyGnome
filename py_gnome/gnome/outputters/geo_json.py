@@ -241,11 +241,18 @@ class CurrentGeoJsonOutput(Outputter, Serializable):
         geojson = {}
         for cm in self.current_movers:
             features = []
-            velocities = cm.get_scaled_velocities(model_time)
             centers = cm.mover._get_center_points()
 
-            for v, c in izip(velocities, centers):
-                feature = Feature(geometry=Point(list(c)),
+            velocities = cm.get_scaled_velocities(model_time)
+            rounded_velocities = self.get_rounded_velocities(velocities)
+            unique_velocities = self.get_unique_velocities(rounded_velocities)
+
+            for v in unique_velocities:
+                matching = self.get_matching_velocities(rounded_velocities, v)
+                points = centers[matching]
+                feature = Feature(geometry=MultiPoint(coordinates=[p.tolist()
+                                                                   for p
+                                                                   in points]),
                                   id="1",
                                   properties={'velocity': list(v)})
                 features.append(feature)
@@ -260,6 +267,22 @@ class CurrentGeoJsonOutput(Outputter, Serializable):
                        }
 
         return output_info
+
+    def get_rounded_velocities(self, velocities):
+        return np.vstack((velocities['u'].round(decimals=1),
+                          velocities['v'].round(decimals=1))).T
+
+    def get_unique_velocities(self, velocities):
+        rowsize = velocities.dtype.itemsize * velocities.shape[1]
+        contiguous_velocities = (np.ascontiguousarray(velocities)
+                                 .view(np.dtype((np.void, rowsize)))
+                                 )
+        _, idx = np.unique(contiguous_velocities, return_index=True)
+
+        return velocities[idx]
+
+    def get_matching_velocities(self, velocities, v):
+        return np.where((velocities == v).all(axis=1))
 
     def rewind(self):
         'remove previously written files'
