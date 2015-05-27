@@ -30,6 +30,7 @@ from gnome.persist import (extend_colander,
                            class_from_objtype)
 from gnome.persist.base_schema import (ObjType,
                                        OrderedCollectionItemsList)
+from gnome.exceptions import ReferencedObjectNotSet
 
 
 class ModelSchema(ObjType):
@@ -1368,35 +1369,35 @@ class Model(Serializable):
         # since model does not contain wind, waves, water attributes, no need
         # to call base class method - model requires following only if an
         # object in collection requires it
-        model_rq = {'wind': False, 'water': False, 'waves': False}
+        env_req = set()
         msgs = []
         isvalid = True
         for oc in self._oc_list:
             for item in getattr(self, oc):
-                (msg, isvalid) = item.validate()
+                (msg, i_isvalid) = item.validate()
+                if not i_isvalid:
+                    isvalid = i_isvalid
+
                 msgs.extend(msg)
 
-                for at, val in model_rq.iteritems():
-                    if not val:
-                        # if model_rq are False, then we need to check if item
-                        # requires any of these objects because its own
-                        # make_default_refs is set
-                        if hasattr(item, at) and item.make_default_refs:
-                            model_rq[at] = True
+                if item.make_default_refs:
+                    if hasattr(item, 'on') and not item.on:
+                        continue
+
+                    for attr in ('wind', 'water', 'waves'):
+                        if hasattr(item, attr):
+                            env_req.update({attr})
 
         # ensure that required objects are present in environment collection
-        # if Model's make_default_refs is True
-        if self.make_default_refs:
-            for at, val in model_rq.iteritems():
-                if val:
-                    obj = self.find_by_attr('_ref_as', at, self.environment)
-                    if obj is None:
-                        msg = ("{0} not found in environment collection".
-                               format(at))
-                        self.logger.warning(msg)
-                        msgs.append(self._warn_pre + msg)
-                        isvalid = False
+        # if Model's make_default_refs is True. Even if make_default_refs is
+        # False, they should still be in env colleciton; however, this is not
+        # required.
+        (ref_msgs, ref_isvalid) = self.validate_refs('warning', env_req)
+        if not ref_isvalid:
+            isvalid = ref_isvalid
+        msgs.extend(ref_msgs)
 
+        # Spill warnings
         if len(self.spills) == 0:
             msg = '{0} contains no spills'.format(self.name)
             self.logger.warning(msg)
@@ -1415,5 +1416,36 @@ class Model(Serializable):
             if msg is not None:
                 self.logger.warning(msg)
                 msgs.append(self._warn_pre + msg)
+
+        return (msgs, isvalid)
+
+    def validate_refs(self, level='warning', refs=None):
+        '''
+        validate refs + log warnings or raise error if required refs not found.
+        If refs is None, model must query its weatherers/movers/environment
+        collections to figure out what objects it needs to have in environment.
+        '''
+        msgs = []
+        isvalid = True
+
+        if self.make_default_refs:
+            raise_exc = self._raise_exc(level)
+
+            if refs is None:
+                # need to go through orderedcollections to see if water, waves
+                # and wind refs are required
+                pass
+
+            for ref in refs:
+                obj = self.find_by_attr('_ref_as', ref, self.environment)
+                if obj is None:
+                    msg = ("{0} not found in environment collection".
+                           format(ref))
+                    if raise_exc:
+                        raise ReferencedObjectNotSet(msg)
+                    else:
+                        self.logger.warning(msg)
+                        msgs.append(self._warn_pre + msg)
+                        isvalid = False
 
         return (msgs, isvalid)

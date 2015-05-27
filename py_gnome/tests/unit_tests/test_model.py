@@ -1306,7 +1306,7 @@ class TestValidateModel():
         model.environment += waves
         return (model, waves)
 
-    @pytest.mark.parametrize("obj_make_default_refs", (False, True))
+    @pytest.mark.parametrize("obj_make_default_refs", (True, True))
     def test_validate_model_env_obj(self, obj_make_default_refs):
         '''
         test that Model is invalid if make_default_refs is True and referenced
