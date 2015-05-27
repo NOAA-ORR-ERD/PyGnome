@@ -273,11 +273,17 @@ class CurrentGeoJsonOutput(Outputter, Serializable):
                           velocities['v'].round(decimals=1))).T
 
     def get_unique_velocities(self, velocities):
-        rowsize = velocities.dtype.itemsize * velocities.shape[1]
-        contiguous_velocities = (np.ascontiguousarray(velocities)
-                                 .view(np.dtype((np.void, rowsize)))
-                                 )
-        _, idx = np.unique(contiguous_velocities, return_index=True)
+        '''
+            In order to make numpy perform this function fast, we will use a
+            contiguous structured array using a view of a void type that
+            joins the whole row into a single item.
+        '''
+        dtype = np.dtype((np.void,
+                          velocities.dtype.itemsize * velocities.shape[1]))
+
+        voidtype_array = np.ascontiguousarray(velocities).view(dtype)
+
+        _, idx = np.unique(voidtype_array, return_index=True)
 
         return velocities[idx]
 
