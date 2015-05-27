@@ -26,10 +26,9 @@ from gnome.outputters import Outputter, NetCDFOutput, WeatheringOutput
 from gnome.persist import (extend_colander,
                            validators,
                            References,
-                           load,
                            class_from_objtype)
 from gnome.persist.base_schema import (ObjType,
-                                       OrderedCollectionItemsList)
+                                       CollectionItemsList)
 
 
 class ModelSchema(ObjType):
@@ -55,15 +54,15 @@ class ModelSchema(ObjType):
         schema for 'webapi'
         '''
         if json_ == 'save':
-            self.add(OrderedCollectionItemsList(missing=drop, name='spills'))
-            self.add(OrderedCollectionItemsList(missing=drop,
+            self.add(CollectionItemsList(missing=drop, name='spills'))
+            self.add(CollectionItemsList(missing=drop,
                      name='uncertain_spills'))
-            self.add(OrderedCollectionItemsList(missing=drop, name='movers'))
-            self.add(OrderedCollectionItemsList(missing=drop,
+            self.add(CollectionItemsList(missing=drop, name='movers'))
+            self.add(CollectionItemsList(missing=drop,
                      name='weatherers'))
-            self.add(OrderedCollectionItemsList(missing=drop,
+            self.add(CollectionItemsList(missing=drop,
                      name='environment'))
-            self.add(OrderedCollectionItemsList(missing=drop,
+            self.add(CollectionItemsList(missing=drop,
                      name='outputters'))
         super(ModelSchema, self).__init__(*args, **kwargs)
 
@@ -473,7 +472,7 @@ class Model(Serializable):
 
         return all_objs
 
-    def find_by_attr(self, attr, value, collection):
+    def find_by_attr(self, attr, value, collection, allitems=False):
         '''
         find first object in collection where the 'attr' attribute matches
         'value'. This is primarily used to find 'wind', 'water', 'waves'
@@ -488,12 +487,19 @@ class Model(Serializable):
         :param OrderedCollection collection: the ordered collection in which
             to search
         '''
+        items = []
         for item in collection:
             try:
                 if getattr(item, attr) == value:
-                    return item
+                    if allitems:
+                        items.append(item)
+                    else:
+                        return item
             except AttributeError:
                 pass
+        items = None if items == [] else items
+
+        return items
 
     def _order_weatherers(self):
         'use weatherer_sort to sort the weatherers'
@@ -1035,43 +1041,6 @@ class Model(Serializable):
 
         return references
 
-    def _save_collection(self, saveloc, coll_, refs, coll_json):
-        """
-        Reference objects inside OrderedCollections. Since the OC itself
-        isn't a reference but the objects in the list are a reference, do
-        something a little differently here
-
-        :param OrderedCollection coll_: ordered collection to be saved
-        """
-        for count, obj in enumerate(coll_):
-            json_ = obj.serialize('save')
-            for field in obj._state:
-                if field.save_reference:
-                    '''
-                    if attribute is stored as a reference to environment list,
-                    then update the json_ here
-                    '''
-                    if getattr(obj, field.name) is not None:
-                        ref_obj = getattr(obj, field.name)
-                        try:
-                            index = self.environment.index(ref_obj)
-                            json_[field.name] = index
-                        except ValueError:
-                            '''
-                            reference is not part of environment list, it must
-                            be handled elsewhere
-                            '''
-                            pass
-            obj_ref = refs.get_reference(obj)
-            if obj_ref is None:
-                # try following name - if 'fname' already exists in references,
-                # then obj.save() assigns a different name to file
-                fname = '{0.__class__.__name__}_{1}.json'.format(obj, count)
-                obj.save(saveloc, refs, fname)
-                coll_json[count]['id'] = refs.reference(obj)
-            else:
-                coll_json[count]['id'] = obj_ref
-
     def _save_spill_data(self, saveloc, nc_file):
         """
         save the data arrays for current timestep to NetCDF
@@ -1185,9 +1154,11 @@ class Model(Serializable):
         o_json_['map'] = self.map.serialize(json_)
 
         if json_ == 'webapi':
+            # for webapi, we serialize forecast spills just like all other
+            # collections - ignore spills in uncertain spill container
             for attr in ('environment', 'outputters', 'weatherers', 'movers',
                          'spills'):
-                o_json_[attr] = self.serialize_oc(attr, json_)
+                o_json_[attr] = self.serialize_oc(getattr(self, attr), json_)
 
             # validate and send validation flag
             (msgs, isvalid) = self.validate()
@@ -1197,17 +1168,6 @@ class Model(Serializable):
 
         return o_json_
 
-    def serialize_oc(self, attr, json_='webapi'):
-        '''
-        Serialize Model attributes of type ordered collection
-        '''
-        json_out = []
-        attr = getattr(self, attr)
-        if isinstance(attr, (OrderedCollection, SpillContainerPair)):
-            for item in attr:
-                json_out.append(item.serialize(json_))
-        return json_out
-
     @classmethod
     def deserialize(cls, json_):
         '''
@@ -1216,8 +1176,11 @@ class Model(Serializable):
         schema = cls._schema(json_['json_'])
         deserial = schema.deserialize(json_)
         if 'map' in json_:
-            d_item = cls._deserialize_nested_obj(json_['map'])
-            deserial['map'] = d_item
+            #d_item = cls._deserialize_nested_obj(json_['map'])
+            #deserial['map'] = d_item
+            # map will be deserialized later - no need to do it twice
+            # todo: clean this up
+            deserial['map'] = json_['map']
 
         if json_['json_'] == 'webapi':
             for attr in ('environment', 'outputters', 'weatherers', 'movers',
@@ -1230,34 +1193,6 @@ class Model(Serializable):
                     deserial[attr] = cls.deserialize_oc(json_[attr])
 
         return deserial
-
-    @classmethod
-    def deserialize_oc(cls, json_):
-        '''
-        check contents of orderered collections to figure out what schema to
-        use.
-        Basically, the json serialized ordered collection looks like a regular
-        list.
-        '''
-        deserial = []
-        for item in json_:
-            d_item = cls._deserialize_nested_obj(item)
-            deserial.append(d_item)
-
-        return deserial
-
-    @classmethod
-    def _deserialize_nested_obj(cls, json_):
-        if json_ is not None:
-            fqn = json_['obj_type']
-            name, scope = (list(reversed(fqn.rsplit('.', 1)))
-                           if fqn.find('.') >= 0
-                           else [fqn, ''])
-            my_module = __import__(scope, globals(), locals(), [str(name)], -1)
-            py_class = getattr(my_module, name)
-            return py_class.deserialize(json_)
-        else:
-            return None
 
     @classmethod
     def loads(cls, json_data, saveloc, references=None):
@@ -1315,22 +1250,6 @@ class Model(Serializable):
         model._load_spill_data(saveloc, 'spills_data_arrays.nc')
 
         return model
-
-    @classmethod
-    def _load_collection(cls, saveloc, l_coll_dict, refs):
-        '''
-        doesn't need to be classmethod of the Model, but its only used by
-        Model at present
-        '''
-        l_coll = []
-        for item in l_coll_dict:
-            i_ref = item['id']
-            if refs.retrieve(i_ref):
-                l_coll.append(refs.retrieve(i_ref))
-            else:
-                obj = load(saveloc, item['id'], refs)
-                l_coll.append(obj)
-        return (l_coll)
 
     def merge(self, model):
         '''

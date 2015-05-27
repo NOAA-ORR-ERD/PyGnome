@@ -29,7 +29,7 @@ class ObjType(MappingSchema):
     json_ = SchemaNode(String())    # either 'webapi' or 'save'
 
 
-class OrderedCollectionItemMap(MappingSchema):
+class CollectionItemMap(MappingSchema):
     '''
     This stores the obj_type and obj_index
     '''
@@ -37,8 +37,8 @@ class OrderedCollectionItemMap(MappingSchema):
     id = SchemaNode(String(), missing=drop)
 
 
-class OrderedCollectionItemsList(SequenceSchema):
-    item = OrderedCollectionItemMap()
+class CollectionItemsList(SequenceSchema):
+    item = CollectionItemMap()
 
 
 class LongLat(TupleSchema):

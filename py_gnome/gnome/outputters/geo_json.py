@@ -16,7 +16,8 @@ from colander import SchemaNode, String, drop, Int, Bool
 
 from gnome.utilities.time_utils import date_to_sec
 from gnome.utilities.serializable import Serializable, Field
-from gnome.persist import class_from_objtype
+from gnome.persist import class_from_objtype, References
+from gnome.persist.base_schema import CollectionItemsList
 
 from .outputter import Outputter, BaseSchema
 
@@ -210,8 +211,8 @@ class CurrentGeoJsonOutput(Outputter, Serializable):
 
     # need a schema and also need to override save so output_dir
     # is saved correctly - maybe point it to saveloc
-    _state.add_field(Field('current_movers',
-                           save=True, update=True, save_reference=True))
+    _state.add_field(Field('current_movers', save=True, update=True,
+                           iscollection=True))
 
     _schema = CurrentGeoJsonSchema
 
@@ -265,38 +266,12 @@ class CurrentGeoJsonOutput(Outputter, Serializable):
         'remove previously written files'
         super(CurrentGeoJsonOutput, self).rewind()
 
-    def serialize(self, json_='webapi'):
-        """
-            Serialize our current velocities outputter to JSON
-        """
-        dict_ = self.to_serialize(json_)
-        schema = self.__class__._schema()
-        json_out = schema.serialize(dict_)
-
-        json_out['current_movers'] = []
-
-        for cm in self.current_movers:
-            json_out['current_movers'].append(cm.serialize(json_))
-
-        return json_out
-
-    @classmethod
-    def deserialize(cls, json_):
-        """
-        append correct schema for current mover
-        """
-        schema = cls._schema()
-        _to_dict = schema.deserialize(json_)
-
-        if 'current_movers' in json_:
-            _to_dict['current_movers'] = []
-            for i, cm in enumerate(json_['current_movers']):
-                cm_cls = class_from_objtype(cm['obj_type'])
-                cm_dict = cm_cls.deserialize(json_['current_movers'][i])
-
-                _to_dict['current_movers'].append(cm_dict)
-
-        return _to_dict
+    def current_movers_to_dict(self):
+        '''
+        a dict containing 'obj_type' and 'id' for each object in
+        list/collection
+        '''
+        return self._collection_to_dict(self.current_movers)
 
 
 class IceGeoJsonSchema(BaseSchema):
@@ -340,7 +315,7 @@ class IceGeoJsonOutput(Outputter, Serializable):
     # need a schema and also need to override save so output_dir
     # is saved correctly - maybe point it to saveloc
     _state.add_field(Field('ice_movers',
-                           save=True, update=True, save_reference=True))
+                           save=True, update=True, iscollection=True))
 
     _schema = IceGeoJsonSchema
 

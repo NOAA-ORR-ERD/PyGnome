@@ -35,6 +35,8 @@ class CurrentMoversBase(CyMover):
     _state.add(update=['uncertain_duration', 'uncertain_time_delay'],
                save=['uncertain_duration', 'uncertain_time_delay'])
 
+    _ref_as = 'current_movers'
+
     def __init__(self,
                  uncertain_duration=24,
                  uncertain_time_delay=0,
