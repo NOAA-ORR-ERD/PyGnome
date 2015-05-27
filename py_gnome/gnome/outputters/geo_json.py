@@ -5,17 +5,17 @@ Does not contain a schema for persistence yet
 import copy
 import os
 from glob import glob
-from itertools import izip
 
 import numpy as np
 
 from geojson import (Feature, FeatureCollection, dump,
-                     MultiPoint, Point, Polygon)
+                     MultiPoint, MultiPolygon)
 
 from colander import SchemaNode, String, drop, Int, Bool
 
 from gnome.utilities.time_utils import date_to_sec
 from gnome.utilities.serializable import Serializable, Field
+
 from gnome.persist import class_from_objtype, References
 from gnome.persist.base_schema import CollectionItemsList
 
@@ -281,7 +281,6 @@ class CurrentGeoJsonOutput(Outputter, Serializable):
         '''
         dtype = np.dtype((np.void,
                           velocities.dtype.itemsize * velocities.shape[1]))
-
         voidtype_array = np.ascontiguousarray(velocities).view(dtype)
 
         _, idx = np.unique(voidtype_array, return_index=True)
@@ -374,15 +373,27 @@ class IceGeoJsonOutput(Outputter, Serializable):
         geojson = {}
         for mover in self.ice_movers:
             features = []
-            ice_thickness, ice_coverage = mover.get_ice_fields(model_time)
-            triangles = self.get_triangles(mover)
+            mover_triangles = self.get_triangles(mover)
 
-            for t, c, tri in izip(ice_thickness, ice_coverage, triangles):
-                features.append(Feature(id="1",
-                                        properties={'thickness': t,
-                                                    'coverage': c},
-                                        geometry=Polygon(list(tri))
-                                        ))
+            ice_coverage, ice_thickness = mover.get_ice_fields(model_time)
+            rounded_ice_vals = self.get_rounded_ice_values(ice_coverage,
+                                                           ice_thickness)
+            unique_ice_values = self.get_unique_ice_values(rounded_ice_vals)
+
+            for iv in unique_ice_values:
+                c, t = iv
+                matching = self.get_matching_ice_values(rounded_ice_vals, iv)
+                triangles = mover_triangles[matching]
+
+                feature = Feature(id="1",
+                                  properties={'coverage': c,
+                                              'thickness': t},
+                                  geometry=MultiPolygon(coordinates=[t.tolist()
+                                                                     for t in
+                                                                     triangles]
+                                                        ))
+
+                features.append(feature)
 
             geojson[mover.id] = FeatureCollection(features)
 
@@ -395,6 +406,27 @@ class IceGeoJsonOutput(Outputter, Serializable):
 
         return output_info
 
+    def get_rounded_ice_values(self, coverage, thickness):
+        return np.vstack((coverage.round(decimals=2),
+                          thickness.round(decimals=1))).T
+
+    def get_unique_ice_values(self, ice_values):
+        '''
+            In order to make numpy perform this function fast, we will use a
+            contiguous structured array using a view of a void type that
+            joins the whole row into a single item.
+        '''
+        dtype = np.dtype((np.void,
+                          ice_values.dtype.itemsize * ice_values.shape[1]))
+        voidtype_array = np.ascontiguousarray(ice_values).view(dtype)
+
+        _, idx = np.unique(voidtype_array, return_index=True)
+
+        return ice_values[idx]
+
+    def get_matching_ice_values(self, ice_values, v):
+        return np.where((ice_values == v).all(axis=1))
+
     def get_triangles(self, mover):
         '''
             The triangle data that we get from the mover is in the form of
@@ -405,10 +437,11 @@ class IceGeoJsonOutput(Outputter, Serializable):
         triangle_data = self.get_triangle_data(mover)
         points = self.get_points(mover)
 
-        triangles = []
-        for ti in triangle_data:
-            coords = points[list(ti)[:3]].tolist()
-            triangles.append([coords])
+        dtype = triangle_data[0].dtype.descr
+        unstructured = (triangle_data.view(dtype='<i8')
+                        .reshape(-1, len(dtype))[:, :3])
+
+        triangles = points[unstructured]
 
         return triangles
 

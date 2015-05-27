@@ -75,8 +75,8 @@ def test_ice_geojson_output(model):
 
     begin = time.time()
     for step in model:
-        print 'got step at: ', time.time() - begin
-        print '\n\n\n', step.keys()
+        print '\n\ngot step at: ', time.time() - begin
+
         assert 'IceGeoJsonOutput' in step
         assert 'step_num' in step['IceGeoJsonOutput']
         assert 'time_stamp' in step['IceGeoJsonOutput']
@@ -107,7 +107,12 @@ def test_ice_geojson_output(model):
 
                 assert 'geometry' in feature
                 geometry = feature['geometry']
-                assert len(geometry) == 2
+
+                assert 'type' in geometry
+                assert geometry['type'] == 'MultiPolygon'
+
+                assert 'coordinates' in geometry
+                assert len(geometry['coordinates']) > 0
 
         print 'checked step at: ', time.time() - begin
 
