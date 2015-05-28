@@ -29,6 +29,7 @@ from gnome.persist import (extend_colander,
                            class_from_objtype)
 from gnome.persist.base_schema import (ObjType,
                                        CollectionItemsList)
+from gnome.exceptions import ReferencedObjectNotSet
 
 
 class ModelSchema(ObjType):
@@ -1305,6 +1306,17 @@ class Model(Serializable):
                     for attr in ('wind', 'water', 'waves'):
                         if hasattr(item, attr):
                             env_req.update({attr})
+                            # if item make_default_refs is True, and it has
+                            # references, then model's make_default_refs must
+                            # also be True
+                            if not self.make_default_refs:
+                                isvalid = False
+                                msg = ("make_default_refs is True for {0} and "
+                                       "it references {1}. However, model's "
+                                       "make_default_refs is False. Set "
+                                       "model's make_default_refs to True".
+                                       format(item.name, attr))
+                                msgs.append(msg)
 
         # ensure that required objects are present in environment collection
         # if Model's make_default_refs is True. Even if make_default_refs is
@@ -1352,7 +1364,7 @@ class Model(Serializable):
             if refs is None:
                 # need to go through orderedcollections to see if water, waves
                 # and wind refs are required
-                pass
+                raise NotImplementedError("validate_refs() incomplete")
 
             for ref in refs:
                 obj = self.find_by_attr('_ref_as', ref, self.environment)

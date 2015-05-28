@@ -169,7 +169,12 @@ class GnomeId(AddLogger):
 
                 setattr(self.logger, level, msg)
                 msgs.append(prepend + msg)
-                isvalid = False
+
+                # if we get here, level is 'warning' or lower
+                # if make_default_refs is True, object is valid since Model
+                # will setup the missing references during run
+                if not self.make_default_refs:
+                    isvalid = False
 
         return (msgs, isvalid)
 
@@ -179,8 +184,10 @@ class GnomeId(AddLogger):
         py_gnome objects reference other objects like wind, water, waves. These
         may not be defined when object is created so they can be None at
         construction time; however, they should reference valid objects
-        before running model. validate() for each object must check these
-        required references are correctly setup.
+        when running model. If make_default_refs is True, then object isvalid
+        because model will set these up at runtime. To raise exception
+        for missing references at runtime, directly call
+        validate_refs(level='error')
 
         'wind', 'water', 'waves' attributes also have special meaning. An
         object containing this attribute references the corresponding object.
@@ -188,9 +195,11 @@ class GnomeId(AddLogger):
         Logs warnings
         :returns: a tuple of length two containing:
             (a list of messages that were logged, isvalid bool)
-            If any references are missing, object is not valid
+            If any references are missing and make_default_refs is False,
+            object is not valid
 
-        .. note: validate() only logs warnings. To log these as errors during
+        .. note: validate() only logs warnings since it designed to be used
+            to validate before running model. To log these as errors during
             model run, invoke validate_refs() directly.
         '''
         (msgs, isvalid) = self.validate_refs()
