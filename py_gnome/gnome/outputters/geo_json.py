@@ -386,8 +386,8 @@ class IceGeoJsonOutput(Outputter, Serializable):
                 triangles = mover_triangles[matching]
 
                 feature = Feature(id="1",
-                                  properties={'coverage': c,
-                                              'thickness': t},
+                                  properties={'coverage': '{:.2f}'.format(c),
+                                              'thickness': '{:.1f}'.format(t)},
                                   geometry=MultiPolygon(coordinates=[t.tolist()
                                                                      for t in
                                                                      triangles]
