@@ -372,39 +372,59 @@ class IceGeoJsonOutput(Outputter, Serializable):
 
         geojson = {}
         for mover in self.ice_movers:
-            features = []
             mover_triangles = self.get_triangles(mover)
-
             ice_coverage, ice_thickness = mover.get_ice_fields(model_time)
-            rounded_ice_vals = self.get_rounded_ice_values(ice_coverage,
-                                                           ice_thickness)
-            unique_ice_values = self.get_unique_ice_values(rounded_ice_vals)
 
-            for iv in unique_ice_values:
-                c, t = iv
-                matching = self.get_matching_ice_values(rounded_ice_vals, iv)
-                triangles = mover_triangles[matching]
-
-                feature = Feature(id="1",
-                                  properties={'coverage': '{:.2f}'.format(c),
-                                              'thickness': '{:.1f}'.format(t)},
-                                  geometry=MultiPolygon(coordinates=[t.tolist()
-                                                                     for t in
-                                                                     triangles]
-                                                        ))
-
-                features.append(feature)
-
-            geojson[mover.id] = FeatureCollection(features)
+            geojson[mover.id] = []
+            geojson[mover.id].append(self.get_coverage_fc(ice_coverage,
+                                                          mover_triangles))
+            geojson[mover.id].append(self.get_thickness_fc(ice_thickness,
+                                                           mover_triangles))
 
         # default geojson should not output data to file
-        # read data from file and send it to web client
         output_info = {'step_num': step_num,
                        'time_stamp': sc.current_time_stamp.isoformat(),
                        'feature_collections': geojson
                        }
 
         return output_info
+
+    def get_coverage_fc(self, coverage, triangles):
+        return self.get_grouped_fc_from_1d_array(coverage, triangles,
+                                                 'coverage',
+                                                 decimals=2)
+
+    def get_thickness_fc(self, thickness, triangles):
+        return self.get_grouped_fc_from_1d_array(thickness, triangles,
+                                                 'thickness',
+                                                 decimals=1)
+
+    def get_grouped_fc_from_1d_array(self, values, triangles,
+                                     property_name, decimals):
+        rounded = values.round(decimals=decimals)
+        unique = np.unique(rounded)
+
+        features = []
+        for u in unique:
+            matching = np.where(rounded == u)
+            matching_triangles = (triangles[matching])
+
+            dtype = matching_triangles.dtype.descr
+            shape = matching_triangles.shape + (len(dtype),)
+
+            coordinates = (matching_triangles.view(dtype='<f8')
+                           .reshape(shape).tolist())
+
+            prop_fmt = '{{:.{}f}}'.format(decimals)
+            properties = {'{}'.format(property_name): prop_fmt.format(u)}
+
+            feature = Feature(id="1",
+                              properties=properties,
+                              geometry=MultiPolygon(coordinates=coordinates
+                                                    ))
+            features.append(feature)
+
+        return FeatureCollection(features)
 
     def get_rounded_ice_values(self, coverage, thickness):
         return np.vstack((coverage.round(decimals=2),
