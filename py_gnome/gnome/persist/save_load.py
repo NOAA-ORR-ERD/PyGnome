@@ -300,6 +300,13 @@ class Savable(object):
         """
 
         json_ = self.serialize('save')
+        c_fields = self._state.get_field_by_attribute('iscollection')
+        for field in c_fields:
+            self._save_collection(saveloc,
+                                  getattr(self, field.name),
+                                  references,
+                                  json_[field.name])
+
         return self._json_to_saveloc(json_, saveloc, references=references,
                                      name=name)
 
@@ -431,9 +438,54 @@ class Savable(object):
         if ref_dict:
             _to_dict.update(ref_dict)
 
+        c_fields = cls._state.get_field_by_attribute('iscollection')
+        for field in c_fields:
+            _to_dict[field.name] = cls._load_collection(saveloc,
+                                                        _to_dict[field.name],
+                                                        references)
+
         obj = cls.new_from_dict(_to_dict)
 
         return obj
+
+    def _save_collection(self,
+                         saveloc,
+                         coll_,
+                         refs,
+                         coll_json):
+        """
+        Reference objects inside OrderedCollections or list. Since the OC
+        itself isn't a reference but the objects in the list are a reference,
+        do something a little differently here
+
+        :param OrderedCollection coll_: ordered collection/list to be saved
+        """
+        for count, obj in enumerate(coll_):
+            obj_ref = refs.get_reference(obj)
+            if obj_ref is None:
+                # try following name - if 'fname' already exists in references,
+                # then obj.save() assigns a different name to file
+                fname = '{0.__class__.__name__}_{1}.json'.format(obj, count)
+                obj.save(saveloc, refs, fname)
+                coll_json[count]['id'] = refs.reference(obj)
+            else:
+                coll_json[count]['id'] = obj_ref
+
+    @classmethod
+    def _load_collection(cls, saveloc, l_coll_dict, refs):
+        '''
+        doesn't need to be classmethod of the Model, but its only used by
+        Model at present
+        '''
+        l_coll = []
+        for item in l_coll_dict:
+            i_ref = item['id']
+            if refs.retrieve(i_ref):
+                l_coll.append(refs.retrieve(i_ref))
+            else:
+                obj = load(saveloc, item['id'], refs)
+                l_coll.append(obj)
+        return (l_coll)
 
 
 # max json filesize is 1MegaByte

@@ -4,6 +4,7 @@ tests for geojson outputter
 from pprint import PrettyPrinter
 pp = PrettyPrinter(indent=2, width=120)
 
+import time
 from datetime import datetime
 
 import numpy as np
@@ -12,21 +13,16 @@ import pytest
 # from gnome.basic_types import oil_status
 from gnome.utilities import time_utils
 
-from gnome.environment import Tide
 from gnome.spill import SpatialRelease, Spill, point_line_release_spill
-from gnome.movers import CatsMover
-from gnome.outputters import CurrentGeoJsonOutput
+from gnome.movers import IceMover
+from gnome.outputters import IceGeoJsonOutput
 
 from ..conftest import testdata
 
 
-td = Tide(filename=testdata['CatsMover']['tide'])
-c_cats = CatsMover(testdata['CatsMover']['curr'], tide=td)
-
-
-rel_time = datetime(2012, 9, 15, 12)
-time_step = 15 * 60  # seconds
-model_time = time_utils.sec_to_date(time_utils.date_to_sec(rel_time))
+curr_file = testdata['IceMover']['ice_curr_curv']
+topology_file = testdata['IceMover']['ice_top_curv']
+c_ice_mover = IceMover(curr_file, topology_file)
 
 
 @pytest.fixture(scope='function')
@@ -35,6 +31,7 @@ def model(sample_model, output_dir):
     rel_start_pos = sample_model['release_start_pos']
     rel_end_pos = sample_model['release_end_pos']
 
+    model.start_time = datetime(2015, 5, 14, 0)
     model.cache_enabled = True
     model.uncertain = True
 
@@ -43,22 +40,20 @@ def model(sample_model, output_dir):
     line_pos[:, 0] = np.linspace(rel_start_pos[0], rel_end_pos[0], N)
     line_pos[:, 1] = np.linspace(rel_start_pos[1], rel_end_pos[1], N)
 
-    # print start_points
-    model.environment += td
-
+    start_pos = (-164.01696, 72.921024, 0)
     model.spills += point_line_release_spill(1,
-                                             start_position=rel_start_pos,
+                                             start_position=start_pos,
                                              release_time=model.start_time,
-                                             end_position=rel_end_pos)
+                                             end_position=start_pos)
 
     release = SpatialRelease(start_position=line_pos,
                              release_time=model.start_time)
 
     model.spills += Spill(release)
 
-    model.movers += c_cats
+    model.movers += c_ice_mover
 
-    model.outputters += CurrentGeoJsonOutput([c_cats])
+    model.outputters += IceGeoJsonOutput([c_ice_mover])
 
     model.rewind()
 
@@ -67,24 +62,27 @@ def model(sample_model, output_dir):
 
 def test_init():
     'simple initialization passes'
-    g = CurrentGeoJsonOutput([c_cats])
-    assert g.current_movers[0] == c_cats
+    g = IceGeoJsonOutput([c_ice_mover])
+    assert g.ice_movers[0] == c_ice_mover
 
 
-def test_current_grid_geojson_output(model):
+def test_ice_geojson_output(model):
     '''
         test geojson outputter with a model since simplest to do that
     '''
     # default is to round data
     model.rewind()
 
+    begin = time.time()
     for step in model:
-        assert 'CurrentGeoJsonOutput' in step
-        assert 'step_num' in step['CurrentGeoJsonOutput']
-        assert 'time_stamp' in step['CurrentGeoJsonOutput']
-        assert 'feature_collections' in step['CurrentGeoJsonOutput']
+        print '\n\ngot step at: ', time.time() - begin
 
-        fcs = step['CurrentGeoJsonOutput']['feature_collections']
+        assert 'IceGeoJsonOutput' in step
+        assert 'step_num' in step['IceGeoJsonOutput']
+        assert 'time_stamp' in step['IceGeoJsonOutput']
+        assert 'feature_collections' in step['IceGeoJsonOutput']
+
+        fcs = step['IceGeoJsonOutput']['feature_collections']
 
         # There should be only one key, but we will iterate anyway.
         # We just want to verify here that our keys exist in the movers
@@ -93,7 +91,10 @@ def test_current_grid_geojson_output(model):
             assert model.movers.index(k) > 0
 
         # Check that our structure is correct.
-        for fc in fcs.values():
+        for fc_list in fcs.values():
+
+            # our first feature collection should be for coverage
+            fc = fc_list[0]
             assert 'type' in fc
             assert fc['type'] == 'FeatureCollection'
             assert 'features' in fc
@@ -104,14 +105,59 @@ def test_current_grid_geojson_output(model):
                 assert feature['type'] == 'Feature'
 
                 assert 'properties' in feature
-                assert 'velocity' in feature['properties']
+                assert 'coverage' in feature['properties']
 
                 assert 'geometry' in feature
-                assert len(feature['geometry']) > 0
-
                 geometry = feature['geometry']
+
                 assert 'type' in geometry
-                assert geometry['type'] == 'Point'
+                assert geometry['type'] == 'MultiPolygon'
 
                 assert 'coordinates' in geometry
                 assert len(geometry['coordinates']) > 0
+
+            # our second feature collection should be for thickness
+            fc = fc_list[1]
+            assert 'type' in fc
+            assert fc['type'] == 'FeatureCollection'
+            assert 'features' in fc
+            assert len(fc['features']) > 0
+
+            for feature in fc['features']:
+                assert 'type' in feature
+                assert feature['type'] == 'Feature'
+
+                assert 'properties' in feature
+                assert 'thickness' in feature['properties']
+
+                assert 'geometry' in feature
+                geometry = feature['geometry']
+
+                assert 'type' in geometry
+                assert geometry['type'] == 'MultiPolygon'
+
+                assert 'coordinates' in geometry
+                assert len(geometry['coordinates']) > 0
+
+        print 'checked step at: ', time.time() - begin
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

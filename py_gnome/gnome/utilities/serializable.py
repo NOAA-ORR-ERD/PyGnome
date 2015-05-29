@@ -14,6 +14,8 @@ np = numpy
 from gnome import GnomeId
 from gnome.persist import Savable
 from gnome.utilities.orderedcollection import OrderedCollection
+from gnome.persist import class_from_objtype
+from gnome.persist.base_schema import CollectionItemsList
 
 
 class Field(object):  # ,serializable.Serializable):
@@ -24,6 +26,7 @@ class Field(object):  # ,serializable.Serializable):
                  isdatafile=False,
                  update=False, save=False, read=False,
                  save_reference=False,
+                 iscollection=False,
                  test_for_eq=True):
         """
         Constructor for the Field object.
@@ -76,17 +79,14 @@ class Field(object):  # ,serializable.Serializable):
         self.update = update
         self.read = read
         self.save_reference = save_reference
+        self.iscollection = iscollection
         self.test_for_eq = test_for_eq
 
     def __eq__(self, other):
         if not isinstance(other, Field):
             return False
 
-        if (self.name == other.name and
-            self.isdatafile == other.isdatafile and
-            self.save == other.save and
-            self.update == other.update and
-            self.read == other.read):
+        if self.__dict__ == other.__dict__:
             return True
 
         return False
@@ -480,7 +480,7 @@ class Serializable(GnomeId, Savable):
     """
 
     _state = State(save=('obj_type', 'name'), read=('obj_type', 'id'),
-        update=('name',))
+                   update=('name',))
 
     # =========================================================================
     # @classmethod
@@ -904,7 +904,20 @@ class Serializable(GnomeId, Savable):
         """
         toserial = self.to_serialize(json_)
         schema = self.__class__._schema()
-        serial = schema.serialize(toserial)
+        c_fields = self._state.get_field_by_attribute('iscollection')
+
+        if json_ == 'webapi':
+            serial = schema.serialize(toserial)
+            # check for collections
+            for field in c_fields:
+                serial[field.name] = \
+                    self.serialize_oc(getattr(self, field.name), json_)
+        elif json_ == 'save':
+            for field in c_fields:
+                # add a node for each collection, then serialize
+                schema.add(CollectionItemsList(name=field.name))
+
+            serial = schema.serialize(toserial)
 
         return serial
 
@@ -922,6 +935,16 @@ class Serializable(GnomeId, Savable):
 
         return len(attr_list) == 0
 
+    def serialize_oc(self, coll, json_='webapi'):
+        '''
+        Serialize Model attributes of type ordered collection or list - an
+        iterable containing serializable objects
+        '''
+        json_out = []
+        for item in coll:
+            json_out.append(item.serialize(json_))
+        return json_out
+
     @classmethod
     def deserialize(cls, json_):
         """
@@ -933,6 +956,69 @@ class Serializable(GnomeId, Savable):
             not treat them, but just send them back.
         """
         if not cls.is_sparse(json_):
-            return cls._schema().deserialize(json_)
+            # if there are collections in object, dynamically update schema
+            schema = cls._schema()
+            c_fields = cls._state.get_field_by_attribute('iscollection')
+
+            if json_['json_'] == 'webapi':
+                _to_dict = schema.deserialize(json_)
+                for field in c_fields:
+                    if field.name in json_:
+                        _to_dict[field.name] = \
+                            cls.deserialize_oc(json_[field.name])
+            elif json_['json_'] == 'save':
+                for field in c_fields:
+                    if field.name in json_:
+                        # add a node for each collection, then deserialize
+                        schema.add(CollectionItemsList(name=field.name))
+
+                _to_dict = schema.deserialize(json_)
+            # return deserialized object
+            return _to_dict
+
         else:
             return json_
+
+    @classmethod
+    def deserialize_oc(cls, json_):
+        '''
+        check contents of orderered collections to figure out what schema to
+        use.
+        Basically, the json serialized ordered collection looks like a regular
+        list.
+        '''
+        deserial = []
+        for item in json_:
+            d_item = cls._deserialize_nested_obj(item)
+            deserial.append(d_item)
+
+        return deserial
+
+    @classmethod
+    def _deserialize_nested_obj(cls, json_):
+        if json_ is not None:
+            py_class = class_from_objtype(json_['obj_type'])
+            return py_class.deserialize(json_)
+        else:
+            return None
+
+    def _collection_to_dict(self, coll):
+        '''
+        Method takes the instance of a collection containing serializable gnome
+        objects and outputs a list of dicts, each with two fields:
+            {obj_type: object type <module.class>,
+            id: IDs of each object.}
+        This is a general way to make a dict for a collection which is then
+        serialized to a 'save' file
+        '''
+        items = []
+
+        for obj in coll:
+            try:
+                obj_type = '{0.__module__}.{0.__class__.__name__}'.format(obj)
+            except AttributeError:
+                obj_type = '{0.__class__.__name__}'.format(obj)
+            item = {'obj_type': obj_type, 'id': str(obj.id)}
+            items.append(item)
+
+        return items

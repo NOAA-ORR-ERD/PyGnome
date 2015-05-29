@@ -112,6 +112,8 @@ public:
 	virtual double 	GetEndUVelocity(long index);
 	virtual double 	GetEndVVelocity(long index);
 	
+	virtual OSErr 	GetScaledVelocities(Seconds time, VelocityFRec *velocity){return -1;}
+
 	long 					GetNumTimesInFile();
 	long 					GetNumFiles();
 	virtual OSErr 		CheckAndScanFile(char *errmsg, const Seconds& model_time);	
@@ -223,6 +225,8 @@ public:
 	float		GetTotalDepthFromTriIndex(long triIndex);
 	float		GetTotalDepth(WorldPoint refPoint,long ptIndex);
 
+	OSErr 	GetScaledVelocities(Seconds time, VelocityFRec *velocity);
+
 	virtual	OSErr ReadTopology(std::vector<std::string> &linesInFile);
 	virtual	OSErr ReadTopology(const char *path);
 
@@ -294,10 +298,15 @@ public:
 	OSErr 				CheckAndScanFile(char *errmsg, const Seconds& model_time);
 	double 				GetStartFieldValue(long index, long field);
 	double 				GetEndFieldValue(long index, long field);
+	double 				GetStartIceUVelocity(long index);
+	double 				GetStartIceVVelocity(long index);
+	double 				GetEndIceUVelocity(long index);
+	double 				GetEndIceVVelocity(long index);
 	OSErr 				ReadTimeDataIce(long index,VelocityFH *velocityH, char* errmsg); 
 	OSErr 				ReadTimeDataFields(long index,DOUBLEH *thicknessH, DOUBLEH *fractionH, char* errmsg); 
 	OSErr 				GetIceFields(Seconds time, double *thickness, double *fraction);
-	OSErr 				GetIceVelocities(Seconds time, double *u, double *v);
+	OSErr 				GetIceVelocities(Seconds time, VelocityFRec *ice_velocity);
+	//OSErr 				GetIceVelocities(Seconds time, double *u, double *v);
 	//VelocityRec 		GetScaledPatValue(const Seconds& model_time, WorldPoint3D refPoint);
 	//VelocityRec 		GetScaledPatValue3D(const Seconds& model_time, InterpolationVal interpolationVal,float depth);
 	
