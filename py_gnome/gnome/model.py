@@ -1291,6 +1291,9 @@ class Model(Serializable):
         isvalid = True
         for oc in self._oc_list:
             for item in getattr(self, oc):
+                if hasattr(item, 'on') and not item.on:
+                    continue
+
                 (msg, isvalid) = item.validate()
                 msgs.extend(msg)
 
