@@ -9,7 +9,7 @@ from glob import glob
 import numpy as np
 
 from geojson import (Feature, FeatureCollection, dump,
-                     MultiPoint, MultiPolygon)
+                     Point, MultiPoint, MultiPolygon)
 
 from colander import SchemaNode, String, drop, Int, Bool
 
@@ -243,17 +243,16 @@ class CurrentGeoJsonOutput(Outputter, Serializable):
         for cm in self.current_movers:
             features = []
             centers = cm.mover._get_center_points()
-
             velocities = cm.get_scaled_velocities(model_time)
-            rounded_velocities = self.get_rounded_velocities(velocities)
-            unique_velocities = self.get_unique_velocities(rounded_velocities)
 
-            for v in unique_velocities:
-                matching = self.get_matching_velocities(rounded_velocities, v)
-                points = centers[matching]
-                feature = Feature(geometry=MultiPoint(coordinates=[p.tolist()
-                                                                   for p
-                                                                   in points]),
+            current_vals = np.hstack((centers.view(dtype='<f8')
+                                      .reshape(-1, 2),
+                                      velocities.view(dtype='<f8')
+                                      .reshape(-1, 2)
+                                      )).reshape(-1, 2, 2)
+
+            for c, v in current_vals:
+                feature = Feature(geometry=Point(list(c)),
                                   id="1",
                                   properties={'velocity': list(v)})
                 features.append(feature)
