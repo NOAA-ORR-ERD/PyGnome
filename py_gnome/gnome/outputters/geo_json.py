@@ -5,15 +5,17 @@ Does not contain a schema for persistence yet
 import copy
 import os
 from glob import glob
-from itertools import izip
 
 import numpy as np
 
-from geojson import Feature, FeatureCollection, dump, MultiPoint, Point
+from geojson import (Feature, FeatureCollection, dump,
+                     Point, MultiPoint, MultiPolygon)
+
 from colander import SchemaNode, String, drop, Int, Bool
 
 from gnome.utilities.time_utils import date_to_sec
 from gnome.utilities.serializable import Serializable, Field
+
 from gnome.persist import class_from_objtype, References
 from gnome.persist.base_schema import CollectionItemsList
 
@@ -240,10 +242,16 @@ class CurrentGeoJsonOutput(Outputter, Serializable):
         geojson = {}
         for cm in self.current_movers:
             features = []
-            velocities = cm.get_scaled_velocities(model_time)
             centers = cm.mover._get_center_points()
+            velocities = cm.get_scaled_velocities(model_time)
 
-            for v, c in izip(velocities, centers):
+            current_vals = np.hstack((centers.view(dtype='<f8')
+                                      .reshape(-1, 2),
+                                      velocities.view(dtype='<f8')
+                                      .reshape(-1, 2)
+                                      )).reshape(-1, 2, 2)
+
+            for c, v in current_vals:
                 feature = Feature(geometry=Point(list(c)),
                                   id="1",
                                   properties={'velocity': list(v)})
@@ -259,6 +267,27 @@ class CurrentGeoJsonOutput(Outputter, Serializable):
                        }
 
         return output_info
+
+    def get_rounded_velocities(self, velocities):
+        return np.vstack((velocities['u'].round(decimals=1),
+                          velocities['v'].round(decimals=1))).T
+
+    def get_unique_velocities(self, velocities):
+        '''
+            In order to make numpy perform this function fast, we will use a
+            contiguous structured array using a view of a void type that
+            joins the whole row into a single item.
+        '''
+        dtype = np.dtype((np.void,
+                          velocities.dtype.itemsize * velocities.shape[1]))
+        voidtype_array = np.ascontiguousarray(velocities).view(dtype)
+
+        _, idx = np.unique(voidtype_array, return_index=True)
+
+        return velocities[idx]
+
+    def get_matching_velocities(self, velocities, v):
+        return np.where((velocities == v).all(axis=1))
 
     def rewind(self):
         'remove previously written files'
@@ -342,27 +371,109 @@ class IceGeoJsonOutput(Outputter, Serializable):
 
         geojson = {}
         for mover in self.ice_movers:
-            features = []
-            ice_thickness, ice_coverage = mover.get_ice_fields(model_time)
-            centers = mover.mover._get_center_points()
+            mover_triangles = self.get_triangles(mover)
+            ice_coverage, ice_thickness = mover.get_ice_fields(model_time)
 
-            for t, c, cp in izip(ice_thickness, ice_coverage, centers):
-                features.append(Feature(id="1",
-                                        properties={'thickness': t,
-                                                    'coverage': c},
-                                        geometry=Point(list(cp))
-                                        ))
-
-            geojson[mover.id] = FeatureCollection(features)
+            geojson[mover.id] = []
+            geojson[mover.id].append(self.get_coverage_fc(ice_coverage,
+                                                          mover_triangles))
+            geojson[mover.id].append(self.get_thickness_fc(ice_thickness,
+                                                           mover_triangles))
 
         # default geojson should not output data to file
-        # read data from file and send it to web client
         output_info = {'step_num': step_num,
                        'time_stamp': sc.current_time_stamp.isoformat(),
                        'feature_collections': geojson
                        }
 
         return output_info
+
+    def get_coverage_fc(self, coverage, triangles):
+        return self.get_grouped_fc_from_1d_array(coverage, triangles,
+                                                 'coverage',
+                                                 decimals=2)
+
+    def get_thickness_fc(self, thickness, triangles):
+        return self.get_grouped_fc_from_1d_array(thickness, triangles,
+                                                 'thickness',
+                                                 decimals=1)
+
+    def get_grouped_fc_from_1d_array(self, values, triangles,
+                                     property_name, decimals):
+        rounded = values.round(decimals=decimals)
+        unique = np.unique(rounded)
+
+        features = []
+        for u in unique:
+            matching = np.where(rounded == u)
+            matching_triangles = (triangles[matching])
+
+            dtype = matching_triangles.dtype.descr
+            shape = matching_triangles.shape + (len(dtype),)
+
+            coordinates = (matching_triangles.view(dtype='<f8')
+                           .reshape(shape).tolist())
+
+            prop_fmt = '{{:.{}f}}'.format(decimals)
+            properties = {'{}'.format(property_name): prop_fmt.format(u)}
+
+            feature = Feature(id="1",
+                              properties=properties,
+                              geometry=MultiPolygon(coordinates=coordinates
+                                                    ))
+            features.append(feature)
+
+        return FeatureCollection(features)
+
+    def get_rounded_ice_values(self, coverage, thickness):
+        return np.vstack((coverage.round(decimals=2),
+                          thickness.round(decimals=1))).T
+
+    def get_unique_ice_values(self, ice_values):
+        '''
+            In order to make numpy perform this function fast, we will use a
+            contiguous structured array using a view of a void type that
+            joins the whole row into a single item.
+        '''
+        dtype = np.dtype((np.void,
+                          ice_values.dtype.itemsize * ice_values.shape[1]))
+        voidtype_array = np.ascontiguousarray(ice_values).view(dtype)
+
+        _, idx = np.unique(voidtype_array, return_index=True)
+
+        return ice_values[idx]
+
+    def get_matching_ice_values(self, ice_values, v):
+        return np.where((ice_values == v).all(axis=1))
+
+    def get_triangles(self, mover):
+        '''
+            The triangle data that we get from the mover is in the form of
+            indices into the points array.
+            So we get our triangle data and points array, and then build our
+            triangle coordinates by reference.
+        '''
+        triangle_data = self.get_triangle_data(mover)
+        points = self.get_points(mover)
+
+        dtype = triangle_data[0].dtype.descr
+        unstructured = (triangle_data.view(dtype='<i8')
+                        .reshape(-1, len(dtype))[:, :3])
+
+        triangles = points[unstructured]
+
+        return triangles
+
+    def get_triangle_data(self, mover):
+        return mover.mover._get_triangle_data()
+
+    def get_points(self, mover):
+        points = (mover.mover._get_points()
+                  .astype([('long', '<f8'), ('lat', '<f8')]))
+        points['long'] /= 10 ** 6
+        points['lat'] /= 10 ** 6
+
+        return points
 
     def rewind(self):
         'remove previously written files'
