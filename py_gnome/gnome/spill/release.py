@@ -898,7 +898,7 @@ def release_from_splot_data(release_time, filename, elems_per_splot=5000):
     '''
     # use numpy loadtxt - much faster
     pos = np.loadtxt(filename)
-    num_per_pos = np.asarray(pos[:, 2] * 5000, dtype=int)
+    num_per_pos = np.asarray(pos[:, 2] * elems_per_splot, dtype=int)
     pos[:, 2] = 0
 
     # 'loaded data, repeat positions for splots next'
