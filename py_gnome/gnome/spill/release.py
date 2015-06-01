@@ -888,7 +888,7 @@ class InitElemsFromFile(Release):
         self.num_released = self.num_elements
 
 
-def release_from_splot_data(release_time, filename):
+def release_from_splot_data(release_time, filename, elems_per_splot=5000):
     '''
     Initialize a release object from a text file containing splots.
     The file contains 3 columns with following data:
@@ -902,7 +902,7 @@ def release_from_splot_data(release_time, filename):
         for line in fd:
             cols = line.split()
             pos.append((float(cols[0]), float(cols[1]), 0))
-            num_per_pos.append(float(cols[2]) * 5000)
+            num_per_pos.append(float(cols[2]) * elems_per_splot)
 
     # 'loaded data, repeat positions for splots next'
     pos = np.asarray(pos, dtype=world_point_type)
