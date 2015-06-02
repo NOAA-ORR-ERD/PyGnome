@@ -542,6 +542,8 @@ double TriGridVel_c::GetDepthAtPoint(WorldPoint p)
 
 	interpolationVal = this->GetInterpolationValues(p);
 
+	if (interpolationVal.ptIndex1 < 0) return depthAtPoint;
+
 	depth1 = (*fBathymetryH)[interpolationVal.ptIndex1];
 	depth2 = (*fBathymetryH)[interpolationVal.ptIndex2];
 	depth3 = (*fBathymetryH)[interpolationVal.ptIndex3];

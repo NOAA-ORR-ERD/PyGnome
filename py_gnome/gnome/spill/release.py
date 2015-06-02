@@ -886,3 +886,22 @@ class InitElemsFromFile(Release):
                 data_arrays[key][-num_new_particles:] = val
 
         self.num_released = self.num_elements
+
+
+def release_from_splot_data(release_time, filename, elems_per_splot=5000):
+    '''
+    Initialize a release object from a text file containing splots.
+    The file contains 3 columns with following data:
+        [longitude, latitude, num_LEs_per_splot/5000]
+
+    For each (longitude, latitude) release num_LEs_per_splot points
+    '''
+    # use numpy loadtxt - much faster
+    pos = np.loadtxt(filename)
+    num_per_pos = np.asarray(pos[:, 2] * elems_per_splot, dtype=int)
+    pos[:, 2] = 0
+
+    # 'loaded data, repeat positions for splots next'
+    start_positions = np.repeat(pos, num_per_pos, axis=0)
+
+    return SpatialRelease(release_time, start_positions)

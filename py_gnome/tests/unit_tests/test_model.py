@@ -1353,6 +1353,11 @@ class TestValidateModel():
         for msg in msgs:
             assert msg.startswith('warning: Waves:')
 
+    def test_model_weatherer_off(self):
+        model = Model(start_time=self.start_time)
+        model.weatherers += Evaporation(on=False)
+        print model.validate()
+
 
 if __name__ == '__main__':
 
