@@ -11,7 +11,7 @@ np = numpy
 from colander import (SchemaNode,
                       Float, Int, Bool, drop)
 
-from gnome.environment import Environment, Water
+from gnome.environment import Environment
 
 import gnome.utilities.cache
 from gnome.utilities.time_utils import round_time
@@ -553,10 +553,10 @@ class Model(Serializable):
         # that will be added
         array_types = set()
 
-        if self.make_default_refs:
-            self._attach_references()
-            if self._weathering_data is not None:
-                array_types.update(self._weathering_data.array_types)
+        # attach references
+        self._attach_references()
+        if self._weathering_data is not None:
+            array_types.update(self._weathering_data.array_types)
 
         self.spills.rewind()  # why is rewind for spills here?
 
@@ -1293,39 +1293,30 @@ class Model(Serializable):
         isvalid = True
         for oc in self._oc_list:
             for item in getattr(self, oc):
+                # if item is not on, no need to validate it
+                if hasattr(item, 'on') and not item.on:
+                    continue
+
+                # validate item
                 (msg, i_isvalid) = item.validate()
                 if not i_isvalid:
                     isvalid = i_isvalid
-
                 msgs.extend(msg)
 
+                # add to set of required env objects if item's
+                # make_default_refs is True
                 if item.make_default_refs:
-                    if hasattr(item, 'on') and not item.on:
-                        continue
-
                     for attr in ('wind', 'water', 'waves'):
                         if hasattr(item, attr):
                             env_req.update({attr})
-                            # if item make_default_refs is True, and it has
-                            # references, then model's make_default_refs must
-                            # also be True
-                            if not self.make_default_refs:
-                                isvalid = False
-                                msg = ("make_default_refs is True for {0} and "
-                                       "it references {1}. However, model's "
-                                       "make_default_refs is False. Set "
-                                       "model's make_default_refs to True".
-                                       format(item.name, attr))
-                                msgs.append(msg)
 
         # ensure that required objects are present in environment collection
-        # if Model's make_default_refs is True. Even if make_default_refs is
-        # False, they should still be in env colleciton; however, this is not
-        # required.
-        (ref_msgs, ref_isvalid) = self.validate_refs('warning', env_req)
-        if not ref_isvalid:
-            isvalid = ref_isvalid
-        msgs.extend(ref_msgs)
+        if len(env_req) > 0:
+            (ref_msgs, ref_isvalid) = \
+                self._validate_env_coll('warning', env_req)
+            if not ref_isvalid:
+                isvalid = ref_isvalid
+            msgs.extend(ref_msgs)
 
         # Spill warnings
         if len(self.spills) == 0:
@@ -1349,7 +1340,7 @@ class Model(Serializable):
 
         return (msgs, isvalid)
 
-    def validate_refs(self, level='warning', refs=None):
+    def _validate_env_coll(self, level='warning', refs=None):
         '''
         validate refs + log warnings or raise error if required refs not found.
         If refs is None, model must query its weatherers/movers/environment
@@ -1358,24 +1349,33 @@ class Model(Serializable):
         msgs = []
         isvalid = True
 
-        if self.make_default_refs:
-            raise_exc = self._raise_exc(level)
+        raise_exc = self._raise_exc(level)
 
-            if refs is None:
-                # need to go through orderedcollections to see if water, waves
-                # and wind refs are required
-                raise NotImplementedError("validate_refs() incomplete")
+        if refs is None:
+            # need to go through orderedcollections to see if water, waves
+            # and wind refs are required
+            raise NotImplementedError("validate_refs() incomplete")
 
-            for ref in refs:
-                obj = self.find_by_attr('_ref_as', ref, self.environment)
-                if obj is None:
-                    msg = ("{0} not found in environment collection".
-                           format(ref))
-                    if raise_exc:
-                        raise ReferencedObjectNotSet(msg)
-                    else:
-                        self.logger.warning(msg)
-                        msgs.append(self._warn_pre + msg)
-                        isvalid = False
+        for ref in refs:
+            obj = self.find_by_attr('_ref_as', ref, self.environment)
+            if obj is None:
+                msg = ("{0} not found in environment collection".
+                       format(ref))
+                if raise_exc:
+                    raise ReferencedObjectNotSet(msg)
+                else:
+                    self.logger.warning(msg)
+                    msgs.append(self._warn_pre + msg)
+                    isvalid = False
 
         return (msgs, isvalid)
+
+    def set_make_default_refs(self, value):
+        '''
+        make default refs for all items in ('weatherers', 'movers',
+        'environment') collections
+        '''
+        for attr in ('weatherers', 'movers', 'environment'):
+            oc = getattr(self, attr)
+            for item in oc:
+                item.make_default_refs = value
