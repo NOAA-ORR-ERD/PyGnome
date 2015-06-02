@@ -13,6 +13,7 @@ from .core import WeathererSchema
 from gnome.weatherers import Weatherer
 from gnome.environment import (WindSchema,
                                WaterSchema)
+from gnome.exceptions import ReferencedObjectNotSet
 
 
 class Evaporation(Weatherer, Serializable):
@@ -34,6 +35,10 @@ class Evaporation(Weatherer, Serializable):
         self.water = water
         self.wind = wind
 
+        if water is not None and wind is not None:
+            kwargs['make_default_refs'] = \
+                kwargs.pop('make_default_refs', False)
+
         super(Evaporation, self).__init__(**kwargs)
         self.array_types.update({'area', 'evap_decay_constant',
                                  'frac_water', 'frac_lost', 'init_mass'})
@@ -47,6 +52,8 @@ class Evaporation(Weatherer, Serializable):
         # create 'evaporated' key if it doesn't exist
         # let's only define this the first time
         if self.on:
+            super(Evaporation, self).prepare_for_model_run(sc)
+
             sc.weathering_data['evaporated'] = 0.0
             msg = ("{0._pid} init 'evaporated' key to 0.0").format(self)
             self.logger.debug(msg)

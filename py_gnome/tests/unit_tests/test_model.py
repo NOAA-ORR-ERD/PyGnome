@@ -1251,6 +1251,7 @@ def test_weatherer_sort():
                   skimmer]
     exp_order = [weatherers[ix] for ix in (2, 4, 3, 1, 0)]
 
+    model.environment += [Water(), constant_wind(5, 0), Waves()]
     model.weatherers += weatherers
     assert model.weatherers.values() != exp_order
 

@@ -29,6 +29,7 @@ from gnome.movers import (WindMover,
                           constant_wind_mover,
                           wind_mover_from_file)
 from gnome.persist import References, load
+from gnome.exceptions import ReferencedObjectNotSet
 from ..conftest import sample_sc_release, testdata
 
 """ WindMover tests """
@@ -42,8 +43,10 @@ def test_exceptions():
     """
     Test ValueError exception thrown if improper input arguments
     """
-    with raises(TypeError):
-        WindMover()
+    with raises(ReferencedObjectNotSet) as excinfo:
+        wm = WindMover()
+        wm.prepare_for_model_run()
+    print excinfo.value.message
 
     with raises(TypeError):
         """
@@ -70,6 +73,7 @@ def test_read_file_init():
     wm = WindMover(wind)
     wind_ts = wind.get_wind_data(format='uv', units='meter per second')
     _defaults(wm)  # check defaults set correctly
+    assert not wm.make_default_refs
     cpp_timeseries = _get_timeseries_from_cpp(wm)
     _assert_timeseries_equivalence(cpp_timeseries, wind_ts)
 
@@ -92,11 +96,23 @@ def test_timeseries_init(wind_circ):
     """
     wm = WindMover(wind_circ['wind'])
     _defaults(wm)
+    assert not wm.make_default_refs
     cpp_timeseries = _get_timeseries_from_cpp(wm)
 
     assert np.all(cpp_timeseries['time'] == wind_circ['uv']['time'])
     assert np.allclose(cpp_timeseries['value'], wind_circ['uv']['value'],
                        atol, rtol)
+
+
+def test_empty_init():
+    '''
+    wind=None
+    '''
+    wm = WindMover()
+    assert wm.make_default_refs
+    _defaults(wm)
+    assert wm.name == 'WindMover'
+    print wm.validate()
 
 
 def test_properties(wind_circ):

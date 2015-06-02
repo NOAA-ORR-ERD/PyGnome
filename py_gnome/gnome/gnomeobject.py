@@ -139,17 +139,7 @@ class GnomeId(AddLogger):
     def name(self, val):
         self._name = val
 
-    def _raise_exc(self, level):
-        '''
-        return True if level in ('error', 'critical' , 'exception'), False
-        otherwise
-        '''
-        if level in ('error', 'critical' , 'exception'):
-            return True
-
-        return False
-
-    def validate_refs(self, level='warning', refs=['wind', 'water', 'waves']):
+    def validate_refs(self, refs=['wind', 'water', 'waves']):
         '''
         level is the logging level to use for messages. Default is 'warning'
         but if called from prepare_for_model_run, we want to use error and
@@ -158,16 +148,12 @@ class GnomeId(AddLogger):
         isvalid = True
         msgs = []
         prepend = self._warn_pre
-        raise_exc = self._raise_exc(level)
 
         for attr in refs:
             if hasattr(self, attr) and getattr(self, attr) is None:
                 msg = 'no {0} object defined'.format(attr)
 
-                if raise_exc:
-                    raise ReferencedObjectNotSet(msg)
-
-                setattr(self.logger, level, msg)
+                setattr(self.logger, 'warning', msg)
                 msgs.append(prepend + msg)
 
                 # if we get here, level is 'warning' or lower

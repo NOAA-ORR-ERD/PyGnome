@@ -553,7 +553,8 @@ class Model(Serializable):
         # that will be added
         array_types = set()
 
-        # attach references
+        # attach references so objects don't raise ReferencedObjectNotSet error
+        # in prepare_for_model_run()
         self._attach_references()
         if self._weathering_data is not None:
             array_types.update(self._weathering_data.array_types)
@@ -1314,7 +1315,7 @@ class Model(Serializable):
         # ensure that required objects are present in environment collection
         if len(env_req) > 0:
             (ref_msgs, ref_isvalid) = \
-                self._validate_env_coll('warning', env_req)
+                self._validate_env_coll(env_req)
             if not ref_isvalid:
                 isvalid = ref_isvalid
             msgs.extend(ref_msgs)
@@ -1341,7 +1342,7 @@ class Model(Serializable):
 
         return (msgs, isvalid)
 
-    def _validate_env_coll(self, level='warning', refs=None):
+    def _validate_env_coll(self, refs, raise_exc=False):
         '''
         validate refs + log warnings or raise error if required refs not found.
         If refs is None, model must query its weatherers/movers/environment
@@ -1349,8 +1350,6 @@ class Model(Serializable):
         '''
         msgs = []
         isvalid = True
-
-        raise_exc = self._raise_exc(level)
 
         if refs is None:
             # need to go through orderedcollections to see if water, waves

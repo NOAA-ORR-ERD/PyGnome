@@ -16,4 +16,4 @@ class ReferencedObjectNotSet(Exception):
     *args can contains a message, and other arguments
     '''
     def __init__(self, *args):
-        super(GnomeRuntimeError, self).__init__(*args)
+        super(ReferencedObjectNotSet, self).__init__(*args)

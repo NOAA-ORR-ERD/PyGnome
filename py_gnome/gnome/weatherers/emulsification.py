@@ -38,6 +38,10 @@ class Emulsification(Weatherer, Serializable):
         '''
         self.waves = waves
 
+        if waves is not None:
+            kwargs['make_default_refs'] = \
+                kwargs.pop('make_default_refs', False)
+
         super(Emulsification, self).__init__(**kwargs)
         self.array_types.update({'age', 'bulltime', 'frac_water',
                                  'mass', 'interfacial_area', 'frac_lost'})
@@ -50,6 +54,7 @@ class Emulsification(Weatherer, Serializable):
         # create 'water_content' key if it doesn't exist
         # let's only define this the first time
         if self.on:
+            super(Emulsification, self).prepare_for_model_run(sc)
             sc.weathering_data['water_content'] = 0.0
 
     def prepare_for_model_step(self, sc, time_step, model_time):

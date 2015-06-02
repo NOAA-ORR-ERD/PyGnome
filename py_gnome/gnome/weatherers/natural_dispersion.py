@@ -25,6 +25,8 @@ from gnome.environment import (WaterSchema,
 
 
 from gnome.cy_gnome.cy_weatherers import disperse_oil
+from gnome.exceptions import ReferencedObjectNotSet
+
 
 class NaturalDispersion(Weatherer, Serializable):
     _state = copy.deepcopy(Weatherer._state)
@@ -60,9 +62,9 @@ class NaturalDispersion(Weatherer, Serializable):
         # create 'natural_dispersion' and 'sedimentation keys if they doesn't exist
         # let's only define this the first time
         if self.on:
+            super(NaturalDispersion, self).prepare_for_model_run(sc)
             sc.weathering_data['natural_dispersion'] = 0.0
             sc.weathering_data['sedimentation'] = 0.0
-
 
     def prepare_for_model_step(self, sc, time_step, model_time):
         '''
