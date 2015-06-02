@@ -115,11 +115,14 @@ def test_full_run(sample_model_fcn2, oil, temp):
     for 'weathering_model.json' in dump directory
     '''
     model = sample_model_weathering2(sample_model_fcn2, oil, temp)
-    model.make_default_refs = True
     model.environment += [Water(temp), wind,  waves]
     model.weatherers += Evaporation()
     model.weatherers += Emulsification(waves)
     model.weatherers += NaturalDispersion()
+
+    # set make_default_refs to True for objects contained in model after adding
+    # objects to the model
+    model.set_make_default_refs(True)
 
     for step in model:
         for sc in model.spills.items():

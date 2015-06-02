@@ -4,6 +4,8 @@ from uuid import uuid1, UUID
 import copy
 import logging
 
+from gnome.exceptions import ReferencedObjectNotSet
+
 
 def init_obj_log(obj, setLevel=logging.INFO):
     '''
@@ -137,62 +139,72 @@ class GnomeId(AddLogger):
     def name(self, val):
         self._name = val
 
+    def _raise_exc(self, level):
+        '''
+        return True if level in ('error', 'critical' , 'exception'), False
+        otherwise
+        '''
+        if level in ('error', 'critical' , 'exception'):
+            return True
+
+        return False
+
+    def validate_refs(self, level='warning', refs=['wind', 'water', 'waves']):
+        '''
+        level is the logging level to use for messages. Default is 'warning'
+        but if called from prepare_for_model_run, we want to use error and
+        raise exception.
+        '''
+        isvalid = True
+        msgs = []
+        prepend = self._warn_pre
+        raise_exc = self._raise_exc(level)
+
+        for attr in refs:
+            if hasattr(self, attr) and getattr(self, attr) is None:
+                msg = 'no {0} object defined'.format(attr)
+
+                if raise_exc:
+                    raise ReferencedObjectNotSet(msg)
+
+                setattr(self.logger, level, msg)
+                msgs.append(prepend + msg)
+
+                # if we get here, level is 'warning' or lower
+                # if make_default_refs is True, object is valid since Model
+                # will setup the missing references during run
+                if not self.make_default_refs:
+                    isvalid = False
+
+        return (msgs, isvalid)
+
     def validate(self):
         '''
         All pygnome objects should be able to validate themselves. Many
         py_gnome objects reference other objects like wind, water, waves. These
         may not be defined when object is created so they can be None at
         construction time; however, they should reference valid objects
-        before running model. validate() for each object must check these
-        required references are correctly setup.
+        when running model. If make_default_refs is True, then object isvalid
+        because model will set these up at runtime. To raise exception
+        for missing references at runtime, directly call
+        validate_refs(level='error')
 
         'wind', 'water', 'waves' attributes also have special meaning. An
         object containing this attribute references the corresponding object.
 
-        Logs errors/warnings
+        Logs warnings
         :returns: a tuple of length two containing:
             (a list of messages that were logged, isvalid bool)
-            If log level for message is error or higher, object is not valid
+            If any references are missing and make_default_refs is False,
+            object is not valid
+
+        .. note: validate() only logs warnings since it designed to be used
+            to validate before running model. To log these as errors during
+            model run, invoke validate_refs() directly.
         '''
-        isvalid = True
-        msgs = []
-        try:
-            if self.wind is None:
-                msg = 'no wind object defined'
-                self.logger.error(msg)
-                msgs.append(self._err_pre + msg)
-                isvalid = False
-        except AttributeError:
-            pass
-
-        try:
-            if self.water is None:
-                msg = 'no water object defined'
-                self.logger.error(msg)
-                msgs.append(self._err_pre + msg)
-                isvalid = False
-        except AttributeError:
-            pass
-
-        try:
-            if self.waves is None:
-                msg = 'no waves object defined'
-                self.logger.error(msg)
-                msgs.append(self._err_pre + msg)
-                isvalid = False
-        except AttributeError:
-            pass
+        (msgs, isvalid) = self.validate_refs()
 
         return (msgs, isvalid)
-
-    @property
-    def _err_pre(self):
-        '''
-        standard text prepended to error messages - not required for logging
-        used by validate to prepend to message since it also returns a list
-        of messages that were logged
-        '''
-        return 'error: ' + self.__class__.__name__ + ': '
 
     @property
     def _warn_pre(self):

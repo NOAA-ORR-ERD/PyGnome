@@ -11,7 +11,7 @@ np = numpy
 from colander import (SchemaNode,
                       Float, Int, Bool, drop)
 
-from gnome.environment import Environment, Water
+from gnome.environment import Environment
 
 import gnome.utilities.cache
 from gnome.utilities.time_utils import round_time
@@ -29,6 +29,7 @@ from gnome.persist import (extend_colander,
                            class_from_objtype)
 from gnome.persist.base_schema import (ObjType,
                                        CollectionItemsList)
+from gnome.exceptions import ReferencedObjectNotSet
 
 
 class ModelSchema(ObjType):
@@ -552,10 +553,10 @@ class Model(Serializable):
         # that will be added
         array_types = set()
 
-        if self.make_default_refs:
-            self._attach_references()
-            if self._weathering_data is not None:
-                array_types.update(self._weathering_data.array_types)
+        # attach references
+        self._attach_references()
+        if self._weathering_data is not None:
+            array_types.update(self._weathering_data.array_types)
 
         self.spills.rewind()  # why is rewind for spills here?
 
@@ -782,18 +783,19 @@ class Model(Serializable):
             # that's all we need to do for the zeroth time step
             self.setup_model_run()
 
+            # let each object raise appropriate error if obj is incomplete
             # validate and send validation flag if model is invalid
-            (msgs, isvalid) = self.validate()
-            if not isvalid:
-                return {'valid': isvalid,
-                        'messages': msgs}
+            #(msgs, isvalid) = self.validate()
+            #if not isvalid:
+            #    raise StopIteration("Setup model run complete but model "
+            #                        "is invalid", msgs)
 
         elif self.current_time_step >= self._num_time_steps - 1:
             # _num_time_steps is set when self.time_step is set. If user does
             # not specify time_step, then setup_model_run() automatically
             # initializes it. Thus, do StopIteration check after
             # setup_model_run() is invoked
-            raise StopIteration
+            raise StopIteration("Run complete for {0}".format(self.name))
 
         else:
             self.setup_time_step()
@@ -1286,38 +1288,38 @@ class Model(Serializable):
         # since model does not contain wind, waves, water attributes, no need
         # to call base class method - model requires following only if an
         # object in collection requires it
-        model_rq = {'wind': False, 'water': False, 'waves': False}
+        env_req = set()
         msgs = []
         isvalid = True
         for oc in self._oc_list:
             for item in getattr(self, oc):
+                # if item is not on, no need to validate it
                 if hasattr(item, 'on') and not item.on:
                     continue
 
-                (msg, isvalid) = item.validate()
+                # validate item
+                (msg, i_isvalid) = item.validate()
+                if not i_isvalid:
+                    isvalid = i_isvalid
+
                 msgs.extend(msg)
 
-                for at, val in model_rq.iteritems():
-                    if not val:
-                        # if model_rq are False, then we need to check if item
-                        # requires any of these objects because its own
-                        # make_default_refs is set
-                        if hasattr(item, at) and item.make_default_refs:
-                            model_rq[at] = True
+                # add to set of required env objects if item's
+                # make_default_refs is True
+                if item.make_default_refs:
+                    for attr in ('wind', 'water', 'waves'):
+                        if hasattr(item, attr):
+                            env_req.update({attr})
 
         # ensure that required objects are present in environment collection
-        # if Model's make_default_refs is True
-        if self.make_default_refs:
-            for at, val in model_rq.iteritems():
-                if val:
-                    obj = self.find_by_attr('_ref_as', at, self.environment)
-                    if obj is None:
-                        msg = ("{0} not found in environment collection".
-                               format(at))
-                        self.logger.error(msg)
-                        msgs.append(self._err_pre + msg)
-                        isvalid = False
+        if len(env_req) > 0:
+            (ref_msgs, ref_isvalid) = \
+                self._validate_env_coll('warning', env_req)
+            if not ref_isvalid:
+                isvalid = ref_isvalid
+            msgs.extend(ref_msgs)
 
+        # Spill warnings
         if len(self.spills) == 0:
             msg = '{0} contains no spills'.format(self.name)
             self.logger.warning(msg)
@@ -1338,3 +1340,43 @@ class Model(Serializable):
                 msgs.append(self._warn_pre + msg)
 
         return (msgs, isvalid)
+
+    def _validate_env_coll(self, level='warning', refs=None):
+        '''
+        validate refs + log warnings or raise error if required refs not found.
+        If refs is None, model must query its weatherers/movers/environment
+        collections to figure out what objects it needs to have in environment.
+        '''
+        msgs = []
+        isvalid = True
+
+        raise_exc = self._raise_exc(level)
+
+        if refs is None:
+            # need to go through orderedcollections to see if water, waves
+            # and wind refs are required
+            raise NotImplementedError("validate_refs() incomplete")
+
+        for ref in refs:
+            obj = self.find_by_attr('_ref_as', ref, self.environment)
+            if obj is None:
+                msg = ("{0} not found in environment collection".
+                       format(ref))
+                if raise_exc:
+                    raise ReferencedObjectNotSet(msg)
+                else:
+                    self.logger.warning(msg)
+                    msgs.append(self._warn_pre + msg)
+                    isvalid = False
+
+        return (msgs, isvalid)
+
+    def set_make_default_refs(self, value):
+        '''
+        make default refs for all items in ('weatherers', 'movers',
+        'environment') collections
+        '''
+        for attr in ('weatherers', 'movers', 'environment'):
+            oc = getattr(self, attr)
+            for item in oc:
+                item.make_default_refs = value

@@ -64,17 +64,19 @@ def test_set_name(b_class):
 t = datetime(2015, 1, 1, 12, 0)
 
 
-@pytest.mark.parametrize(("obj", "objvalid"),
+@pytest.mark.parametrize(("obj", "make_default_refs", "objvalid"),
                          [(Wind(timeseries=[(t, (0, 1)),
                                             (t + timedelta(10), (0, 2))],
-                                units='m/s'), True),
-                          (Evaporation(), False),
-                          (NaturalDispersion(), False)])
-def test_base_validate(obj, objvalid):
+                                units='m/s'), False, True),
+                          (Evaporation(), False, False),
+                          (NaturalDispersion(), False, False),
+                          (Evaporation(), True, True)])
+def test_base_validate(obj, make_default_refs, objvalid):
     '''
     base validate checks wind/water/waves objects are not None. Check these
     primarily for weatherers.
     '''
+    obj.make_default_refs = make_default_refs
     (out, isvalid) = obj.validate()
     print out
     print isvalid
@@ -94,7 +96,7 @@ def test_make_default_refs():
 
     waves = Waves(name='waves')
     waves.make_default_refs = False
-    waves1 = Waves(name='waves1')
+    waves1 = Waves(name='waves1', make_default_refs=True)
     model.environment += [wind,
                           water,
                           waves,
