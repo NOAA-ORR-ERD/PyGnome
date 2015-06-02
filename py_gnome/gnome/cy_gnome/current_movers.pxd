@@ -11,6 +11,7 @@ from utils cimport OSSMTimeValue_c
 
 from movers cimport Mover_c
 from grids cimport TimeGridVel_c
+from grids cimport GridVel_c
 
 cdef extern from "CurrentMover_c.h":
     cdef cppclass CurrentMover_c(Mover_c):
@@ -24,20 +25,28 @@ cdef extern from "CurrentMover_c.h":
 cdef extern from "CATSMover_c.h":
     cdef cppclass CATSMover_c(CurrentMover_c):
         CATSMover_c() except +
+        GridVel_c		*fGrid
         double          fEddyDiffusion
         double          fEddyV0
         short           scaleType   # set this automatically!
         double          scaleValue
+        double          refScale
         Boolean         bTimeFileActive
 
         int             TextRead(char* path)
         void            SetRefPosition(WorldPoint3D p)
         WorldPoint3D    GetRefPosition()
+        OSErr    InitMover()
 
         OSErr get_move(int n, unsigned long model_time, unsigned long step_len,
                        WorldPoint3D* ref, WorldPoint3D* delta, short* LE_status,
                        LEType spillType, long spillID)
         void  SetTimeDep(OSSMTimeValue_c *ossm)
+        LongPointHdl  GetPointsHdl()
+        WORLDPOINTH  GetWorldPointsHdl()
+        VelocityFH  GetVelocityHdl()
+        TopologyHdl  GetTopologyHdl()
+        WORLDPOINTH  GetTriangleCenters()
 
 
 cdef extern from "ComponentMover_c.h":
@@ -92,6 +101,20 @@ cdef extern from "GridCurrentMover_c.h":
         bool             GetExtrapolationInTime()
         void             SetTimeShift(long timeShift)
         long             GetTimeShift()
+        OSErr  			GetScaledVelocities(Seconds time, VelocityFRec *velocity)
+
+cdef extern from "IceMover_c.h":
+
+    cdef cppclass IceMover_c(GridCurrentMover_c):
+
+        IceMover_c ()
+        WorldPoint3D    GetMove(Seconds&,Seconds&,Seconds&,Seconds&, long, long, LERec *, LETYPE)
+        LongPointHdl  GetPointsHdl()
+        TopologyHdl  GetTopologyHdl()
+        WORLDPOINTH  GetTriangleCenters()
+        long  GetNumTriangles()
+        OSErr  GetIceFields(Seconds time, double *fraction, double *thickness)
+        OSErr  GetIceVelocities(Seconds time, VelocityFRec *ice_velocity)
 
 cdef extern from "CurrentCycleMover_c.h":
 

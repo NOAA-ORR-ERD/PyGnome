@@ -11,6 +11,9 @@
 #include "MemUtils.h"
 #include "TClassID.h"
 
+#include <vector>
+using namespace std;
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -138,6 +141,7 @@ class TTriGridVel3D : virtual public TriGridVel3D_c, public TTriGridVel
 		void DrawTriangle3D(Rect *r,long triNum,Boolean fillTriangle,Boolean selected);
 };
 
+bool IsTriGridFile (vector<string> &linesInFile);
 Boolean IsTriGridFile (char *path);
 Boolean IsRectGridFile (char *path);
 short ConcentrationTable(outputData **oilConcHdl,float *depthSlice,short tableType/*,double *triAreaArray,long numLevels*/);	// send oilconchdl

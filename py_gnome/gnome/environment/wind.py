@@ -103,8 +103,8 @@ class Wind(serializable.Serializable, Timeseries, Environment):
     '''
     Defines the Wind conditions for a spill
     '''
-    # removed 'id' from list below. id, filename and units cannot be updated
-    # - read only properties
+    # object is referenced by others using this attribute name
+    _ref_as = 'wind'
 
     # default units for input/output data
     _update = ['description',
@@ -217,6 +217,14 @@ class Wind(serializable.Serializable, Timeseries, Environment):
         C++ object stores timeseries in 'm/s'
         '''
         self.set_wind_data(value, units=self.units)
+
+    def timeseries_to_dict(self):
+        '''
+        when serializing data - round it to 2 decimal places
+        '''
+        ts = self.get_wind_data(units=self.units)
+        ts['value'][:] = np.round(ts['value'], 2)
+        return ts
 
     @property
     def units(self):
@@ -354,6 +362,8 @@ class Wind(serializable.Serializable, Timeseries, Environment):
         .. note:: Invokes self._convert_units() to do the unit conversion.
             Override this method to define the derived object's unit conversion
             functionality
+
+        todo: return data in appropriate significant digits
         """
         datetimeval = super(Wind, self).get_timeseries(datetime, format)
         units = (units, self._user_units)[units is None]
@@ -466,6 +476,18 @@ class Wind(serializable.Serializable, Timeseries, Environment):
             return False
 
         return True
+
+    def validate(self):
+        '''
+        only issues warning - object is always valid
+        '''
+        msgs = []
+        if np.all(self.timeseries['value'][:, 0] == 0.0):
+            msg = 'wind speed is 0'
+            self.logger.warning(msg)
+            msgs.append(self._warn_pre + msg)
+
+        return (msgs, True)
 
 
 def constant_wind(speed, direction, units='m/s'):

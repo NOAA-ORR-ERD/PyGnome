@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-import types
 
 
 class OrderedCollection(object):
@@ -77,7 +76,6 @@ class OrderedCollection(object):
 
     def add(self, elem):
         'Add an object to the collection '
-
         if isinstance(elem, self.dtype):
             l__id = self._s_id(elem)
 
@@ -145,10 +143,8 @@ class OrderedCollection(object):
             if ident in self._d_index:
                 l__key = ident
             else:
-                # user is trying to add new element like a dict
-                #self.add(new_elem)
                 raise KeyError('Cannot find object by this "id" in '
-                    'OrderedCollection')
+                               'OrderedCollection')
 
             idx = self._d_index[l__key]
 
@@ -174,7 +170,9 @@ class OrderedCollection(object):
             try:
                 idx = self._d_index[ident]
             except KeyError:
-                raise ValueError('{0} is not in OrderedCollection'.format(elem))
+                raise ValueError('{0} is not in OrderedCollection'
+                                 .format(elem))
+
         return sorted(self._d_index.values()).index(idx)
 
     def __len__(self):
@@ -192,7 +190,8 @@ class OrderedCollection(object):
         # there is some element in the list self._elems == elem.
         # We want to know if there is some index for which
         # self._elems[ix] is elem
-        # Check to see if there is an 'id' for this object in self._d_index dict
+        # Check to see if there is an 'id' for this object
+        # in self._d_index dict
         return id_ in self._d_index
 
     def _slice_attr(self, ident):
@@ -241,9 +240,10 @@ class OrderedCollection(object):
             strlist += ['\t%s: %s,' % i for i in itemlist[-2:]]
         else:
             strlist = ['\t%s: %s,' % i for i in itemlist]
-        return '''%s({
-%s
-})''' % (self.__class__.__name__, '\n'.join(strlist))
+
+        return ('{0}({{\n'
+                '{1}\n'
+                '}})'.format(self.__class__.__name__, '\n'.join(strlist)))
 
     def __repr__(self):
         return self.__str__()
@@ -264,12 +264,7 @@ class OrderedCollection(object):
         return True
 
     def __ne__(self, other):
-        'Check if two ordered collections are not equal (!= operator)'
-
-        if self == other:
-            return False
-        else:
-            return True
+        return not self == other
 
     def to_dict(self):
         '''

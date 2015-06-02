@@ -89,7 +89,7 @@ class Tide(Environment, Serializable):
     Currently, this internally defines and uses the CyShioTime object, which is
     a cython wrapper around the C++ Shio object
     """
-
+    _ref_as = 'tide'
     _state = copy.deepcopy(Environment._state)
     _schema = TideSchema
 

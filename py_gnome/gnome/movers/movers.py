@@ -17,6 +17,7 @@ from gnome.basic_types import (world_point,
 from gnome.utilities import inf_datetime
 from gnome.utilities import time_utils, serializable
 from gnome.cy_gnome.cy_rise_velocity_mover import CyRiseVelocityMover
+from gnome import AddLogger
 
 
 class ProcessSchema(MappingSchema):
@@ -31,7 +32,7 @@ class ProcessSchema(MappingSchema):
                              validator=convertible_to_seconds)
 
 
-class Process(object):
+class Process(AddLogger):
     """
     Base class from which all Python movers/weatherers can inherit
 
@@ -47,7 +48,7 @@ class Process(object):
 
     def __init__(self, **kwargs):   # default min + max values for timespan
         """
-        Initialize default Mover parameters
+        Initialize default Mover/Weatherer parameters
 
         All parameters are optional (kwargs)
 
@@ -71,6 +72,7 @@ class Process(object):
         # empty dict since no array_types required for all movers at present
         self.array_types = set()
         self.name = kwargs.pop('name', self.__class__.__name__)
+        self.make_default_refs = kwargs.pop('make_default_refs', True)
 
     def _check_active_startstop(self, active_start, active_stop):
         if active_stop <= active_start:

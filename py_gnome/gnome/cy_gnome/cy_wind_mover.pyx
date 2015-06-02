@@ -8,6 +8,7 @@ from movers cimport WindMover_c, Mover_c
 from type_defs cimport WorldPoint3D, LEWindUncertainRec, LEStatus, LEType, \
                        OSErr, Seconds, VelocityRec
 cimport cy_mover, cy_ossm_time
+from cy_mover cimport CyWindMoverBase
 
 """
 Dynamic casts are not currently supported in Cython - define it here instead.
@@ -15,16 +16,16 @@ Since this function is custom for each mover, just keep it with the definition
 for each mover
 """
 cdef extern from *:
-    WindMover_c * dynamic_cast_ptr "dynamic_cast<WindMover_c *>" (Mover_c *) except NULL
+    WindMover_c * dynamic_cast_ptr "dynamic_cast<WindMover_c *>" (Mover_c *) \
+        except NULL
 
 
-cdef class CyWindMover(cy_mover.CyMover):
+cdef class CyWindMover(CyWindMoverBase):
     """
     Cython wrapper for C++ WindMover_c object.
     It derives from cy_mover.CyMover base class which defines default
     functionality for some methods
     """
-    cdef WindMover_c * wind
 
     def __cinit__(self):
         """
@@ -36,8 +37,9 @@ cdef class CyWindMover(cy_mover.CyMover):
         self.wind = dynamic_cast_ptr(self.mover)
 
     def __dealloc__(self):
-        # since this is allocated in this class, free memory here as well
+        # let derived class free memory if it was defined by deri
         del self.mover
+        self.mover = NULL
         self.wind = NULL
 
     def __init__(self, uncertain_duration=10800, uncertain_time_delay=0,
@@ -110,34 +112,6 @@ cdef class CyWindMover(cy_mover.CyMover):
             return self.__eq(other)
         elif cmp == 3:
             return not self.__eq(other)
-
-    property uncertain_duration:
-        def __get__(self):
-            return self.wind.fDuration
-
-        def __set__(self, value):
-            self.wind.fDuration = value
-
-    property uncertain_time_delay:
-        def __get__(self):
-            return self.wind.fUncertainStartTime
-
-        def __set__(self, value):
-            self.wind.fUncertainStartTime = value
-
-    property uncertain_speed_scale:
-        def __get__(self):
-            return self.wind.fSpeedScale
-
-        def __set__(self, value):
-            self.wind.fSpeedScale = value
-
-    property uncertain_angle_scale:
-        def __get__(self):
-            return self.wind.fAngleScale
-
-        def __set__(self, value):
-            self.wind.fAngleScale = value
 
     def get_move(self, model_time, step_len,
                  cnp.ndarray[WorldPoint3D, ndim=1] ref_points,

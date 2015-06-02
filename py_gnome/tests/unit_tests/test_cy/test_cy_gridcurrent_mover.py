@@ -53,6 +53,17 @@ class Common:
         self.status[:] = oil_status.in_water
 
 
+def test_init():
+    kwargs = {'current_scale': 2,
+              'uncertain_duration': 10*3600,
+              'uncertain_time_delay': 900,
+              'uncertain_along': 0.75,
+              'uncertain_cross': 0.5}
+    gcm = CyGridCurrentMover(**kwargs)
+    for key, val in kwargs.iteritems():
+        assert getattr(gcm, key) == val
+
+
 @pytest.mark.slow
 class TestGridCurrentMover:
 

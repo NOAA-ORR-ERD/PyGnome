@@ -86,6 +86,11 @@ void CATSMover_c::Dispose()
 }
 
 
+OSErr CATSMover_c::InitMover()
+{
+	// this is for python  - time is not used so set to 0
+	(this)->ComputeVelocityScale(0);
+}
 
 // this function computes and sets this->refScale
 // returns Error when the refScale is not defined
@@ -527,6 +532,16 @@ OSErr CATSMover_c::TextRead(vector<string> &linesInFile)
 	errmsg[0] = 0;
 
 	MySpinCursor();
+	
+	if (IsTriGridFile(linesInFile)) 
+	{
+		//= new TTriGridVel;
+	}
+	else 
+	{
+		cerr << "File type is not supported" << endl;
+		goto done;
+	}
 
 	err = ReadTVertices(linesInFile, &line, &pts, &depths, errmsg);
 	if (err) {
@@ -676,3 +691,29 @@ void CATSMover_c::SetTimeDep(TOSSMTimeValue *newTimeDep)
 {
 	timeDep = newTimeDep;
 }
+
+VelocityFH CATSMover_c::GetVelocityHdl(void)
+{
+	return dynamic_cast<TriGridVel_c *>(fGrid)->GetVelocityHdl();
+}
+
+LongPointHdl CATSMover_c::GetPointsHdl(void)
+{
+	return dynamic_cast<TriGridVel_c *>(fGrid)->GetPointsHdl();
+}
+
+WORLDPOINTH CATSMover_c::GetWorldPointsHdl(void)
+{
+	return dynamic_cast<TriGridVel_c *>(fGrid)->GetWorldPointsHdl();
+}
+
+TopologyHdl CATSMover_c::GetTopologyHdl(void)
+{
+	return dynamic_cast<TriGridVel_c *>(fGrid)->GetTopologyHdl();
+}
+
+WORLDPOINTH	CATSMover_c::GetTriangleCenters()
+{
+	return dynamic_cast<TriGridVel_c *>(fGrid)->GetCenterPointsHdl();
+}
+

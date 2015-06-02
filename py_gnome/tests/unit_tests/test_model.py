@@ -18,21 +18,24 @@ from gnome.utilities import inf_datetime
 from gnome.persist import load
 
 import gnome.map
-from gnome.environment import Wind, Tide, constant_wind, Water
+from gnome.environment import Wind, Tide, constant_wind, Water, Waves
 from gnome.model import Model
 
-from gnome.spill import Spill, SpatialRelease, point_line_release_spill
+from gnome.spill import (Spill,
+                         SpatialRelease,
+                         point_line_release_spill,
+                         Release)
 from gnome.spill.elements import floating
 
 from gnome.movers import SimpleMover, RandomMover, WindMover, CatsMover
 
 from gnome.weatherers import (HalfLifeWeatherer,
                               Evaporation,
-                              Dispersion,
+                              ChemicalDispersion,
                               Burn,
                               Skimmer,
                               Emulsification)
-from gnome.outputters import Renderer, GeoJson
+from gnome.outputters import Renderer, TrajectoryGeoJsonOutput
 
 from conftest import sample_model_weathering, testdata, test_oil
 
@@ -69,6 +72,10 @@ def model(sample_model_fcn, tmpdir):
                              release_time=model.start_time)
 
     model.spills += Spill(release, substance=test_oil)
+
+    # for weatherers and environment objects, make referenced to default
+    # wind/water/waves 
+    model.set_make_default_refs(True)
 
     return model
 
@@ -258,11 +265,11 @@ def test_simple_run_with_map():
         assert step['step_num'] == model.current_time_step
 
 
-def test_simple_run_with_image_output(dump):
+def test_simple_run_with_image_output(tmpdir):
     '''
     Pretty much all this tests is that the model will run and output images
     '''
-    images_dir = os.path.join(dump, 'Test_images')
+    images_dir = tmpdir.mkdir('Test_images').strpath
 
     if os.path.isdir(images_dir):
         shutil.rmtree(images_dir)
@@ -275,7 +282,7 @@ def test_simple_run_with_image_output(dump):
                                      refloat_halflife=6)  # hours
     renderer = gnome.outputters.Renderer(testdata['MapFromBNA']['testmap'],
                                          images_dir, size=(400, 300))
-    geo_json = GeoJson(output_dir=images_dir)
+    geo_json = TrajectoryGeoJsonOutput(output_dir=images_dir)
 
     model = Model(time_step=timedelta(minutes=15),
                   start_time=start_time, duration=timedelta(hours=1),
@@ -319,11 +326,11 @@ def test_simple_run_with_image_output(dump):
     assert num_steps_output == calculated_steps
 
 
-def test_simple_run_with_image_output_uncertainty(dump):
+def test_simple_run_with_image_output_uncertainty(tmpdir):
     '''
     Pretty much all this tests is that the model will run and output images
     '''
-    images_dir = os.path.join(dump, 'Test_images2')
+    images_dir = tmpdir.mkdir('Test_images2').strpath
 
     if os.path.isdir(images_dir):
         shutil.rmtree(images_dir)
@@ -549,7 +556,7 @@ def test_linearity_of_wind_movers(wind_persist):
                        dtype=datetime_value_2d).reshape((1, ))
 
     num_LEs = 1000
-    model1 = Model()
+    model1 = Model(name='model1')
     model1.duration = timedelta(hours=1)
     model1.time_step = timedelta(hours=1)
     model1.start_time = start_time
@@ -557,9 +564,10 @@ def test_linearity_of_wind_movers(wind_persist):
                         start_position=(1., 2., 0.), release_time=start_time,
                         element_type=floating(windage_persist=wind_persist))
 
-    model1.movers += WindMover(Wind(timeseries=series1, units=units))
+    model1.movers += WindMover(Wind(timeseries=series1, units=units),
+                               make_default_refs=False)
 
-    model2 = Model()
+    model2 = Model(name='model2')
     model2.duration = timedelta(hours=10)
     model2.time_step = timedelta(hours=1)
     model2.start_time = start_time
@@ -574,19 +582,22 @@ def test_linearity_of_wind_movers(wind_persist):
     model2.movers += WindMover(Wind(timeseries=series2, units=units))
     model2.movers += WindMover(Wind(timeseries=series2, units=units))
     model2.movers += WindMover(Wind(timeseries=series3, units=units))
+    model2.set_make_default_refs(False)
 
     while True:
         try:
             model1.next()
-        except StopIteration:
-            print 'Done model1 ..'
+        except StopIteration as ex:
+            # print message
+            print ex.message
             break
 
     while True:
         try:
             model2.next()
-        except StopIteration:
-            print 'Done model2 ..'
+        except StopIteration as ex:
+            # print message
+            print ex.message
             break
 
     # mean and variance at the end should be fairly close
@@ -798,20 +809,10 @@ def test_callback_add_weather():
 
     model.weatherers += Evaporation(water, wind)
 
-    # only wind is added to environment collection
-    assert len(model.environment) == 1
+    # wind and water added to environment collection
+    assert len(model.environment) == 2
     assert wind in model.environment
-
-
-def test_callback_add_water_to_env():
-    '''
-    test callback if Water is added to environment collection, it sets Model's
-    water attribute if it is None
-    '''
-    model = Model()
-    assert model.water is None
-    model.environment += Water()
-    assert model.environment[-1] == model.water
+    assert water in model.environment
 
 
 def test_simple_run_no_spills(model):
@@ -829,13 +830,21 @@ def test_simple_run_no_spills(model):
     assert True
 
 
-def test_all_weatherers_in_model(model):
+@pytest.mark.parametrize("add_langmuir", (False, True))
+def test_all_weatherers_in_model(model, add_langmuir):
     '''
     test model run with weatherer
     '''
     model.weatherers += HalfLifeWeatherer()
-    print 'model.weatherers:', model.weatherers
 
+    #==========================================================================
+    # if add_langmuir:
+    #     wind = constant_wind(5.0, 0)
+    #     langmuir = Langmuir(wind)
+    #     model.environment += langmuir
+    #     assert wind in model.environment
+    #==========================================================================
+    model.environment += Water()
     model.full_run()
 
     expected_keys = {'mass_components'}
@@ -844,6 +853,7 @@ def test_all_weatherers_in_model(model):
 
 def test_setup_model_run(model):
     'turn of movers/weatherers and ensure data_arrays change'
+    model.environment += Water()
     model.rewind()
     model.step()
     exp_keys = {'windages', 'windage_range', 'mass_components',
@@ -877,8 +887,7 @@ def test_contains_object(sample_model_fcn):
     model.duration = timedelta(days=1)
 
     water, wind = Water(), constant_wind(1., 0)
-    model.water = water
-    model.environment += wind
+    model.environment += [water, wind]
 
     et = floating(substance=model.spills[0].get('substance').name)
     sp = point_line_release_spill(500, (0, 0, 0),
@@ -892,16 +901,19 @@ def test_contains_object(sample_model_fcn):
 
     movers = [m for m in model.movers]
 
-    evaporation = Evaporation(model.water, model.environment[0])
-    dispersion = Dispersion()
+    evaporation = Evaporation()
     skim_start = sp.get('release_time') + timedelta(hours=1)
     skimmer = Skimmer(.5*sp.amount, units=sp.units, efficiency=0.3,
                       active_start=skim_start,
                       active_stop=skim_start + timedelta(hours=1))
     burn = burn_obj(sp)
+    disp_start = skim_start + timedelta(hours=1)
+    dispersion = ChemicalDispersion(0.1,
+                                    active_start=disp_start,
+                                    active_stop=disp_start + timedelta(hours=1))
     model.weatherers += [evaporation, dispersion, burn, skimmer]
 
-    renderer = Renderer(images_dir='Test_images',
+    renderer = Renderer(images_dir='junk',
                         size=(400, 300))
     model.outputters += renderer
 
@@ -924,10 +936,24 @@ def make_skimmer(spill, delay_hours=1, duration=2):
     skim_start = rel_time + timedelta(hours=delay_hours)
     amount = spill.amount
     units = spill.units
-    skimmer = Skimmer(.5*amount, units=units, efficiency=0.3,
+    skimmer = Skimmer(.3*amount, units=units, efficiency=0.3,
                       active_start=skim_start,
                       active_stop=skim_start + timedelta(hours=duration))
     return skimmer
+
+
+def chemical_disperson_obj(spill, delay_hours=1, duration=1):
+    '''
+    apply chemical dispersion to 10% of spill
+    '''
+    rel_time = spill.get('release_time')
+    disp_start = rel_time + timedelta(hours=delay_hours)
+    c_disp = \
+        ChemicalDispersion(.1,
+                           active_start=disp_start,
+                           active_stop=disp_start + timedelta(hours=duration),
+                           efficiency=0.3)
+    return c_disp
 
 
 def burn_obj(spill, delay_hours=1.5):
@@ -958,6 +984,10 @@ def test_staggered_spills_weathering(sample_model_fcn, delay):
     model.start_time = rel_time - timedelta(hours=1)
     model.duration = timedelta(days=1)
 
+    # test with outputter + w/ cache enabled
+    model.cache = True
+    model.outputters += gnome.outputters.WeatheringOutput()
+
     et = floating(substance=model.spills[0].get('substance').name)
     cs = point_line_release_spill(500, (0, 0, 0),
                                   rel_time + delay,
@@ -973,24 +1003,29 @@ def test_staggered_spills_weathering(sample_model_fcn, delay):
     for spill in model.spills:
         exp_total_mass += spill.get_mass()
 
-    model.water = Water()
-    model.environment += constant_wind(1., 0)
+    model.environment += [Water(), constant_wind(1., 0)]
     skimmer = make_skimmer(model.spills[0])
     burn = burn_obj(model.spills[0])
-    model.weatherers += [Evaporation(model.water,
-                                     model.environment[0]),
-                         Dispersion(),
+    c_disp = chemical_disperson_obj(model.spills[0], 4)
+    model.weatherers += [Evaporation(),
+                         c_disp,
                          burn,
                          skimmer]
+    model.set_make_default_refs(True)
+
     # model.full_run()
     for step in model:
+        if not step['valid']:
+            print step['messages']
+            raise RuntimeError("Model has error in setup_model_run")
+
         for sc in model.spills.items():
             print "completed step {0}".format(step)
             # sum up all the weathered mass + mass of LEs marked for weathering
             # and ensure this equals the total amount released
             sum_ = (sc.weathering_data['beached'] +
                     sc.weathering_data['burned'] +
-                    sc.weathering_data['dispersed'] +
+                    sc.weathering_data['chem_dispersed'] +
                     sc.weathering_data['evaporated'] +
                     sc.weathering_data['floating'] +
                     sc.weathering_data['skimmed']
@@ -1033,18 +1068,21 @@ def test_two_substance_spills_weathering(sample_model_fcn, s0, s1):
     for spill in model.spills:
         exp_total_mass += spill.get_mass()
 
-    model.water = Water()
-    model.environment += constant_wind(1., 0)
-    model.weatherers += Evaporation(model.water, model.environment[0])
+    model.environment += [Water(), constant_wind(1., 0)]
+    # model will automatically setup default references
+    model.weatherers += Evaporation()
     if s0 == s1:
         '''
         multiple substances will not work with Skimmer or Burn
         '''
         skimmer = make_skimmer(model.spills[0], 2)
         burn = burn_obj(model.spills[0], 2.5)
-        model.weatherers += [Dispersion(),
+        c_disp = chemical_disperson_obj(model.spills[0], 3)
+        model.weatherers += [c_disp,
                              burn,
                              skimmer]
+
+    model.set_make_default_refs(True)
 
     # model.full_run()
     for step in model:
@@ -1057,7 +1095,7 @@ def test_two_substance_spills_weathering(sample_model_fcn, s0, s1):
                 # mass marked for skimming/burning/dispersion that is not yet
                 # removed - cleanup operations only work on single substance
                 sum_ += (sc.weathering_data['burned'] +
-                         sc.weathering_data['dispersed'] +
+                         sc.weathering_data['chem_dispersed'] +
                          sc.weathering_data['skimmed'])
 
             sum_ += (sc.weathering_data['beached'] +
@@ -1087,10 +1125,9 @@ def test_weathering_data_attr():
     for sc in model.spills.items():
         assert sc.weathering_data == {}
 
-    model.water = Water()
-    model.environment += constant_wind(0., 0)
-    model.weatherers += [Evaporation(model.water,
-                                     model.environment[0])]
+    model.environment += [Water(), constant_wind(0., 0)]
+    model.weatherers += [Evaporation(model.environment[0],
+                                     model.environment[1])]
 
     # use different element_type and initializers for both spills
     s[0].amount = 10.0
@@ -1159,30 +1196,25 @@ class TestMergeModels:
             for item in getattr(m, oc):
                 assert item in getattr(model, oc)
 
-    def test_load_location_file(self, dump, model):
+    def test_load_location_file(self, saveloc_, model):
         '''
         create a model
         load save file from script_boston which contains a spill. Then merge
         the created model into the model loaded from save file
         '''
         m = Model()
-        m.water = Water()
-        m.environment += constant_wind(1., 0.)
-        m.weatherers += Evaporation(m.water, m.environment[-1])
+        m.environment += [Water(), constant_wind(1., 0.)]
+        m.weatherers += Evaporation(m.environment[0], m.environment[-1])
         m.spills += point_line_release_spill(10, (0, 0, 0),
                                              datetime(2014, 1, 1, 12, 0))
 
         # create save model
-        folder_name = os.path.join(dump, 'SampleSave')
-        os.mkdir(folder_name)
-        sample_save_file = os.path.join(folder_name, 'SampleSaveModel.zip')
-        model.save(folder_name, name='SampleSaveModel.zip')
+        sample_save_file = os.path.join(saveloc_, 'SampleSaveModel.zip')
+        model.save(saveloc_, name='SampleSaveModel.zip')
         if os.path.exists(sample_save_file):
             model = load(sample_save_file)
-            assert model.water is None
 
             model.merge(m)
-            assert m.water is model.water
             for oc in m._oc_list:
                 for item in getattr(m, oc):
                     model_oc = getattr(model, oc)
@@ -1200,19 +1232,22 @@ class TestMergeModels:
 def test_weatherer_sort():
     '''
     Sample model with weatherers - only tests sorting of weathereres. The
-    Model may or may not run.
+    Model will likely not run
     '''
     model = Model()
-    model.water = Water()
     skimmer = Skimmer(100, 'kg', efficiency=0.3,
                       active_start=datetime(2014, 1, 1, 0, 0),
                       active_stop=datetime(2014, 1, 1, 0, 3))
     burn = Burn(100, 1, active_start=datetime(2014, 1, 1, 0, 0))
+    c_disp = ChemicalDispersion(.3,
+                                active_start=datetime(2014, 1, 1, 0, 0),
+                                active_stop=datetime(2014, 1, 1, 0, 3),
+                                efficiency=0.2)
     weatherers = [Emulsification(),
-                  Evaporation(model.water,
+                  Evaporation(Water(),
                               constant_wind(1, 0)),
                   burn,
-                  Dispersion(),
+                  c_disp,
                   skimmer]
     exp_order = [weatherers[ix] for ix in (2, 4, 3, 1, 0)]
 
@@ -1226,8 +1261,8 @@ def test_weatherer_sort():
     model.rewind()
     assert model.weatherers.values() == exp_order
 
-    # Burn, Dispersion are at same sorting level so appending another Burn to
-    # end of the list will sort it to be just after Dispersion so index 2
+    # Burn, ChemicalDispersion are at same sorting level so appending another Burn to
+    # end of the list will sort it to be just after ChemicalDispersion so index 2
     burn = Burn(50, 1, active_start=datetime(2014, 1, 1, 0, 0))
     exp_order.insert(2, burn)
     model.weatherers += exp_order[2]  # add this and check sorting still works
@@ -1235,6 +1270,94 @@ def test_weatherer_sort():
 
     model.setup_model_run()
     assert model.weatherers.values() == exp_order
+
+
+class TestValidateModel():
+    ''' Group several model validation tests in one place '''
+    start_time = datetime(2015, 1, 1, 12, 0)
+
+    def test_validate_model_spills_time_mismatch_warning(self):
+        '''
+        test warning messages output for no spills and model start time
+        mismatch with release time
+        '''
+        model = Model(start_time=self.start_time)
+        (msgs, isvalid) = model.validate()
+        assert len(msgs) == 1 and isvalid
+        assert ('{0} contains no spills'.format(model.name) in msgs[0])
+
+        model.spills += Spill(Release(self.start_time + timedelta(hours=1), 1))
+        (msgs, isvalid) = model.validate()
+        assert len(msgs) == 1 and isvalid
+        assert ('Spill has release time after model start time' in msgs[0])
+
+        model.spills[0].set('release_time',
+                            self.start_time - timedelta(hours=1))
+        (msgs, isvalid) = model.validate()
+        assert len(msgs) == 1 and isvalid
+        assert ('Spill has release time before model start time' in msgs[0])
+
+    def make_model_incomplete_waves(self):
+        '''
+        create a model with waves objects with no referenced wind, water.
+        Include Spill so we don't get warnings for it
+        '''
+        model = Model(start_time=self.start_time)
+        model.spills += Spill(Release(self.start_time, 1))
+        waves = Waves()
+        model.environment += waves
+        return (model, waves)
+
+    @pytest.mark.parametrize("obj_make_default_refs", (False, True))
+    def test_validate_model_env_obj(self, obj_make_default_refs):
+        '''
+        test that Model is invalid if make_default_refs is True and referenced
+        objects are not in model's environment collection
+        '''
+        # object is complete but model must contain
+        (model, waves) = self.make_model_incomplete_waves()
+        waves.water = Water()
+        waves.wind = constant_wind(5, 0)
+
+        assert len(model.environment) == 1
+
+        waves.make_default_refs = obj_make_default_refs
+        (msgs, isvalid) = model.validate()
+        print msgs
+        if obj_make_default_refs:
+            assert not isvalid
+            assert len(msgs) > 0
+            assert ('warning: Model: water not found in environment collection'
+                    in msgs)
+            assert ('warning: Model: wind not found in environment collection'
+                    in msgs)
+        else:
+            assert isvalid
+            assert len(msgs) == 0
+
+    def test_validate_model_obj_invalid(self):
+        '''
+        test object level validation fails if an object contained in a model's
+        collection is missing a reference and the object's make_default_refs
+        is False.
+        '''
+        (model, waves) = self.make_model_incomplete_waves()
+        waves.make_default_refs = False
+        model.environment += [Water(), constant_wind(5, 0)]
+        (msgs, isvalid) = model.validate()
+
+        assert not isvalid
+
+        # wave is missing references. Since waves object's make_default_refs is
+        # False, validation messages contain warning for only Waves
+        for msg in msgs:
+            assert msg.startswith('warning: Waves:')
+
+    def test_model_weatherer_off(self):
+        model = Model(start_time=self.start_time)
+        model.weatherers += Evaporation(on=False)
+        print model.validate()
+
 
 if __name__ == '__main__':
 

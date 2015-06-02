@@ -112,8 +112,13 @@ def test_default_props():
     """
     test default properties
     """
-
-    assert c_cats.scale == False
+    assert c_cats.uncertain_duration == 48.0
+    assert c_cats.uncertain_time_delay == 0
+    assert c_cats.up_cur_uncertain == 0.3
+    assert c_cats.down_cur_uncertain == -0.3
+    assert c_cats.right_cur_uncertain == 0.1
+    assert c_cats.left_cur_uncertain == -0.1
+    assert c_cats.scale is False
     assert c_cats.scale_value == 1
     assert c_cats.scale_refpoint is None
 

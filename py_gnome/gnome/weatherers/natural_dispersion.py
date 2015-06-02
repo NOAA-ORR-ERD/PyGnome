@@ -54,13 +54,14 @@ class NaturalDispersion(Weatherer, Serializable):
 
     def prepare_for_model_run(self, sc):
         '''
-        add dispersion key to weathering_data
+        add dispersion and sedimentation keys to weathering_data
         Assumes all spills have the same type of oil
         '''
-        # create 'dispersed' key if it doesn't exist - are we tracking this ?
+        # create 'natural_dispersion' and 'sedimentation keys if they doesn't exist
         # let's only define this the first time
         if self.on:
             sc.weathering_data['natural_dispersion'] = 0.0
+            sc.weathering_data['sedimentation'] = 0.0
 
 
     def prepare_for_model_step(self, sc, time_step, model_time):
@@ -69,7 +70,6 @@ class NaturalDispersion(Weatherer, Serializable):
 
         '''
 
-        # do we need this?
         super(NaturalDispersion, self).prepare_for_model_step(sc,
                                                         time_step,
                                                         model_time)
@@ -80,7 +80,7 @@ class NaturalDispersion(Weatherer, Serializable):
     def weather_elements(self, sc, time_step, model_time):
         '''
         weather elements over time_step
-        - sets 'dispersion_natural' in sc.weathering_data
+        - sets 'natural_dispersion' and 'sedimentation' in sc.weathering_data
         '''
 
         if not self.active:
@@ -94,7 +94,7 @@ class NaturalDispersion(Weatherer, Serializable):
         disp_wave_energy = self.waves.get_value(model_time)[3] # from the waves module
         visc_w = self.waves.water.kinematic_viscosity
         rho_w = self.waves.water.density
-        sediment = self.waves.water.get('sediment',unit='kg/m^3')	# web has different units
+        sediment = self.waves.water.get('sediment', unit='kg/m^3')	# web has different units
         #sediment = self.waves.water.sediment
 
         for substance, data in sc.itersubstancedata(self.array_types):
@@ -105,7 +105,8 @@ class NaturalDispersion(Weatherer, Serializable):
             V_entrain = constants.volume_entrained
             ka = constants.ka # oil sticking term
 
-            disp = np.zeros((len(data['frac_water'])), dtype=np.float64)
+            disp = np.zeros((len(data['mass'])), dtype=np.float64)
+            sed = np.zeros((len(data['mass'])), dtype=np.float64)
             disperse_oil(time_step,
                          data['frac_water'],
                          data['mass'],
@@ -113,6 +114,7 @@ class NaturalDispersion(Weatherer, Serializable):
                          data['density'],
                          data['fay_area'],
                          disp,
+                         sed,
                          frac_breaking_waves,
                          disp_wave_energy,
                          wave_height,
@@ -126,6 +128,12 @@ class NaturalDispersion(Weatherer, Serializable):
             disp_mass_frac = np.sum(disp[:]) / data['mass'].sum()
             data['mass_components'] = \
                 (1 - disp_mass_frac) * data['mass_components']
+            data['mass'] = data['mass_components'].sum(1)
+
+            sc.weathering_data['sedimentation'] += np.sum(sed[:])
+            sed_mass_frac = np.sum(sed[:]) / data['mass'].sum()
+            data['mass_components'] = \
+                (1 - sed_mass_frac) * data['mass_components']
             data['mass'] = data['mass_components'].sum(1)
 
             self.logger.debug(self._pid + 'Amount Dispersed for {0}: {1}'.

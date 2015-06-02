@@ -221,7 +221,7 @@ OSErr TCATSMover::ReplaceMover()
 OSErr TCATSMover::Write (BFPB *bfpb)
 {
 	char c;
-	long version = TCATSMoverREADWRITEVERSION; //JLM
+	long version = TCATSMoverREADWRITEVERSION, refPtZ; //JLM
 	ClassID id = GetClassID ();
 	OSErr err = 0;
 	
@@ -233,8 +233,9 @@ OSErr TCATSMover::Write (BFPB *bfpb)
 	if (err = WriteMacValue(bfpb, refPt3D.p.pLong)) return err;
 	if (err = WriteMacValue(bfpb, refPt3D.p.pLat)) return err;
 	if (err = WriteMacValue(bfpb, refScale)) return err;
+	refPtZ = (long)refPt3D.z; // this should always be zero
 	//if (err = WriteMacValue(bfpb, refZ)) return err;
-	if (err = WriteMacValue(bfpb, refPt3D.z)) return err;
+	if (err = WriteMacValue(bfpb, refPtZ)) return err;
 	if (err = WriteMacValue(bfpb, scaleType)) return err;
 	if (err = WriteMacValue(bfpb, scaleValue)) return err;
 	if (err = WriteMacValue(bfpb, scaleOtherFile, sizeof(scaleOtherFile))) return err; // don't swap !! 
@@ -272,7 +273,7 @@ OSErr TCATSMover::Write (BFPB *bfpb)
 OSErr TCATSMover::Read(BFPB *bfpb)
 {
 	char c;
-	long version;
+	long version, refPtZ;
 	ClassID id;
 	OSErr err = 0;
 	
@@ -286,8 +287,9 @@ OSErr TCATSMover::Read(BFPB *bfpb)
 	if (err = ReadMacValue(bfpb,&refPt3D.p.pLong)) return err;
 	if (err = ReadMacValue(bfpb,&refPt3D.p.pLat)) return err;
 	if (err = ReadMacValue(bfpb,&refScale)) return err;
-	//if (err = ReadMacValue(bfpb,&refZ)) return err;
-	if (err = ReadMacValue(bfpb,&refPt3D.z)) return err;
+	if (err = ReadMacValue(bfpb,&refPtZ)) return err;
+	//if (err = ReadMacValue(bfpb,&refPt3D.z)) return err;
+	refPt3D.z = (double)refPtZ;
 	if (err = ReadMacValue(bfpb,&scaleType)) return err;
 	if (err = ReadMacValue(bfpb,&scaleValue)) return err;
 	if (err = ReadMacValue(bfpb, scaleOtherFile, sizeof(scaleOtherFile))) return err;  // don't swap !! 

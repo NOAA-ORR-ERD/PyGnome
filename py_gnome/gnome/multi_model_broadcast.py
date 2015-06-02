@@ -1,5 +1,3 @@
-import logging
-
 from pprint import PrettyPrinter
 pp = PrettyPrinter(indent=2)
 
@@ -58,7 +56,11 @@ class ModelConsumer(mp.Process):
         # remove any root handlers else we get IOErrors for shared file
         # handlers
         # todo: find a better way to capture log messages for child processes
-        logging.getLogger().handlers = []
+        root_logger = logging.getLogger()
+        handler_list = root_logger.handlers[:]
+
+        root_logger.setLevel(logging.CRITICAL)
+        [root_logger.removeHandler(h) for h in handler_list]
 
         self.cleanup_inherited_files()
 
@@ -83,7 +85,7 @@ class ModelConsumer(mp.Process):
     def cleanup_inherited_files(self):
         proc = psutil.Process(os.getpid())
         [os.close(c.fd) for c in proc.get_connections()]
-        [os.close(f.fd) for f in proc.get_open_files()]
+        # [os.close(f.fd) for f in proc.get_open_files()]
 
     def handle_cmd(self, msg):
         '''

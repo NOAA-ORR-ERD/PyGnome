@@ -25,14 +25,23 @@ class Environment(object):
     """
     _state = copy.deepcopy(serializable.Serializable._state)
 
-    def __init__(self, name=None):
+    # env objects referenced by others using this attribute name
+    # eg: For Wind objects, set to 'wind', for Water object set to 'water'
+    # so we have a way to identify all wind objects without relying on
+    # insinstance() checks. Used by model to automatically hook up objects that
+    # reference environment objects
+    _ref_as = 'environment'
+
+    def __init__(self, name=None, make_default_refs=True):
         '''
         base class for environment objects
 
         :param name=None:
         '''
-        if name:
+        if name is not None:
             self.name = name
+
+        self.make_default_refs = make_default_refs
 
     def prepare_for_model_run(self, model_time):
         """
@@ -54,7 +63,7 @@ _valid_dist_units = _valid_units('Length')
 _valid_kvis_units = _valid_units('Kinematic Viscosity')
 _valid_density_units = _valid_units('Density')
 _valid_salinity_units = ('psu',)
-_valid_sediment_units = ('mg/l', 'kg/m^3')
+_valid_sediment_units = _valid_units('Concentration In Water')
 
 
 class UnitsSchema(MappingSchema):
@@ -106,6 +115,7 @@ class Water(Environment, serializable.Serializable):
     Defined in a Serializable class since user will need to set/get some of
     these properties through the client
     '''
+    _ref_as = 'water'
     _state = copy.deepcopy(Environment._state)
     _state += [serializable.Field('units', update=True, save=True),
                serializable.Field('temperature', update=True, save=True),
@@ -121,7 +131,8 @@ class Water(Environment, serializable.Serializable):
 
     _units_type = {'temperature': ('temperature', _valid_temp_units),
                    'salinity': ('salinity', _valid_salinity_units),
-                   'sediment': ('sediment', _valid_sediment_units),
+                   'sediment': ('concentration in water',
+                                _valid_sediment_units),
                    'wave_height': ('length', _valid_dist_units),
                    'fetch': ('length', _valid_dist_units),
                    'kinematic_viscosity': ('kinematic viscosity',
@@ -196,12 +207,8 @@ class Water(Environment, serializable.Serializable):
                 unit = self._si_units[attr]
 
         if unit in self._units_type[attr][1]:
-            if attr == 'sediment':
-                return self._convert_sediment_units(self._units[attr],
-                                                    self._si_units[attr])
-            else:
-                return uc.convert(self._units_type[attr][0], self.units[attr],
-                                  unit, val)
+            return uc.convert(self._units_type[attr][0], self.units[attr],
+                              unit, val)
         else:
             # log to file if we have logger
             ex = uc.InvalidUnitError((unit, self._units_type[attr][0]))

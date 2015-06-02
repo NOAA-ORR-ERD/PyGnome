@@ -4,17 +4,23 @@ from uuid import uuid1, UUID
 import copy
 import logging
 
+from gnome.exceptions import ReferencedObjectNotSet
+
 
 def init_obj_log(obj, setLevel=logging.INFO):
     '''
     convenience function for initializing a logger with an object
     the logging.getLogger() will always return the same logger so calling
     this multiple times for same object is valid.
+
+    By default adds a NullHandler() so we don't get errors if application
+    using PyGnome hasn't configured a logging.
     '''
     logger = logging.getLogger("{0.__class__.__module__}."
                                "{0.__class__.__name__}".format(obj))
     logger.propagate = True
     logger.setLevel = setLevel
+    logger.addHandler(logging.NullHandler())
     return logger
 
 
@@ -53,6 +59,7 @@ class GnomeId(AddLogger):
     A class for assigning a unique ID for an object
     '''
     _id = None
+    make_default_refs = True
 
     @property
     def id(self):
@@ -131,3 +138,79 @@ class GnomeId(AddLogger):
     @name.setter
     def name(self, val):
         self._name = val
+
+    def _raise_exc(self, level):
+        '''
+        return True if level in ('error', 'critical' , 'exception'), False
+        otherwise
+        '''
+        if level in ('error', 'critical' , 'exception'):
+            return True
+
+        return False
+
+    def validate_refs(self, level='warning', refs=['wind', 'water', 'waves']):
+        '''
+        level is the logging level to use for messages. Default is 'warning'
+        but if called from prepare_for_model_run, we want to use error and
+        raise exception.
+        '''
+        isvalid = True
+        msgs = []
+        prepend = self._warn_pre
+        raise_exc = self._raise_exc(level)
+
+        for attr in refs:
+            if hasattr(self, attr) and getattr(self, attr) is None:
+                msg = 'no {0} object defined'.format(attr)
+
+                if raise_exc:
+                    raise ReferencedObjectNotSet(msg)
+
+                setattr(self.logger, level, msg)
+                msgs.append(prepend + msg)
+
+                # if we get here, level is 'warning' or lower
+                # if make_default_refs is True, object is valid since Model
+                # will setup the missing references during run
+                if not self.make_default_refs:
+                    isvalid = False
+
+        return (msgs, isvalid)
+
+    def validate(self):
+        '''
+        All pygnome objects should be able to validate themselves. Many
+        py_gnome objects reference other objects like wind, water, waves. These
+        may not be defined when object is created so they can be None at
+        construction time; however, they should reference valid objects
+        when running model. If make_default_refs is True, then object isvalid
+        because model will set these up at runtime. To raise exception
+        for missing references at runtime, directly call
+        validate_refs(level='error')
+
+        'wind', 'water', 'waves' attributes also have special meaning. An
+        object containing this attribute references the corresponding object.
+
+        Logs warnings
+        :returns: a tuple of length two containing:
+            (a list of messages that were logged, isvalid bool)
+            If any references are missing and make_default_refs is False,
+            object is not valid
+
+        .. note: validate() only logs warnings since it designed to be used
+            to validate before running model. To log these as errors during
+            model run, invoke validate_refs() directly.
+        '''
+        (msgs, isvalid) = self.validate_refs()
+
+        return (msgs, isvalid)
+
+    @property
+    def _warn_pre(self):
+        '''
+        standard text prepended to warning messages - not required for logging
+        used by validate to prepend to message since it also returns a list
+        of messages that were logged
+        '''
+        return 'warning: ' + self.__class__.__name__ + ': '

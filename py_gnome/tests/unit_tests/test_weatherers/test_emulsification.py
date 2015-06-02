@@ -47,7 +47,8 @@ def test_emulsification(oil, temp, num_elems, on):
                            element_type=et,
                            arr_types=arrays,
                            time_step=time_step)
-    intrinsic.update(sc.num_released, sc, time_step)
+    intrinsic.prepare_for_model_run(sc)
+    intrinsic.update(sc.num_released, sc)
     model_time = (sc.spills[0].get('release_time') +
                   timedelta(seconds=time_step))
 
@@ -94,10 +95,10 @@ def test_full_run(sample_model_fcn, oil, temp):
     for 'weathering_model.json' in dump directory
     '''
     model = sample_model_weathering2(sample_model_fcn, oil, temp)
-    model.water = Water(temp)
-    model.environment += [waves, constant_wind(15., 0)]
-    model.weatherers += Evaporation(model.water, model.environment[1])
-    model.weatherers += Emulsification(model.environment[0])
+    model.environment += [Waves(), wind, Water(temp)]
+    model.weatherers += Evaporation()
+    model.weatherers += Emulsification()
+    model.set_make_default_refs(True)
 
     for step in model:
         for sc in model.spills.items():

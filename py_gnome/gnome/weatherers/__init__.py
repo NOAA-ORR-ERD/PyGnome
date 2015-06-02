@@ -3,7 +3,9 @@ from evaporation import Evaporation
 from emulsification import Emulsification
 from natural_dispersion import NaturalDispersion
 from intrinsic import WeatheringData
-from cleanup import Skimmer, Burn, Dispersion
+from cleanup import Skimmer, Burn, ChemicalDispersion
+from manual_beaching import Beaching
+from spreading import Langmuir
 
 __all__ = [Weatherer,
            HalfLifeWeatherer,
@@ -12,8 +14,10 @@ __all__ = [Weatherer,
            NaturalDispersion,
            Skimmer,
            Burn,
-           Dispersion,
-           WeatheringData]
+           ChemicalDispersion,
+           Beaching,
+           WeatheringData,
+           Langmuir]
 
 
 def weatherer_sort(weatherer):
@@ -22,6 +26,7 @@ def weatherer_sort(weatherer):
 
     Weatherers are sorted as follows:
 
+    -1. Langmuir - sets the 'area' array, do this first
     0.  cleanup options including Skimmer, Burn
     1.  chemical dispersion - currently there is only one Dispersion
     2.  half-life - these are not used with following real weatherers but need
@@ -33,10 +38,13 @@ def weatherer_sort(weatherer):
     7.  biodegradation - does not exist
     8.  emulsification
     '''
+    if isinstance(weatherer, (Langmuir)):
+        return -1
+
     if isinstance(weatherer, (Skimmer, Burn)):
         return 0
 
-    if isinstance(weatherer, (Dispersion,)):
+    if isinstance(weatherer, (ChemicalDispersion,)):
         return 1
 
     # NOTE:

@@ -5,10 +5,10 @@ from datetime import datetime, timedelta
 
 import numpy as np
 import pytest
+from testfixtures import log_capture
 
-from gnome import constants
 from gnome.environment import Water
-from gnome.weatherers.intrinsic import FayGravityViscous, WeatheringData
+from gnome.weatherers.intrinsic import WeatheringData
 from gnome.spill import point_line_release_spill
 from gnome.spill_container import SpillContainer
 from gnome.basic_types import oil_status, fate as bt_fate
@@ -16,183 +16,8 @@ from gnome.basic_types import oil_status, fate as bt_fate
 from ..conftest import test_oil
 
 
-# scalar inputs
-num_elems = 10
-water_viscosity = 0.000001
-bulk_init_vol = 100.0     # m^3
-elem_rel_bouy = 0.2
 default_ts = 900  # default timestep for tests
-
 water = Water()
-
-
-def data_arrays(num_elems=10):
-    '''
-    return a dict of numpy arrays similar to SpillContainer's data_arrays
-    All elements are released together so they have same bulk_init_volume
-    '''
-    bulk_init_volume = np.asarray([bulk_init_vol] * num_elems)
-    relative_bouyancy = np.asarray([elem_rel_bouy] * num_elems)
-    age = np.zeros_like(bulk_init_volume, dtype=int)
-    area = np.zeros_like(bulk_init_volume)
-
-    return (bulk_init_volume, relative_bouyancy, age, area)
-
-
-# todo: update tests for new spreading model
-@pytest.mark.skipif
-class TestFayGravityViscous:
-    spread = FayGravityViscous()
-
-    def expected(self, init_vol, p_age, elem_rel_bouy=elem_rel_bouy):
-        '''
-        Use this to ensure equations entered correctly in FayGravityViscous
-        Equations are easier to examine here
-        '''
-        k1 = self.spread.spreading_const[0]
-        k2 = self.spread.spreading_const[1]
-        g = constants.gravity
-        nu_h2o = water_viscosity
-        dbuoy = elem_rel_bouy
-        A0 = np.pi*(k2**4/k1**2)*(((init_vol)**5*g*dbuoy)/(nu_h2o**2))**(1./6.)
-
-        dFay = k2**2./16.*(g*dbuoy*init_vol**2/np.sqrt(nu_h2o*p_age))
-        dEddy = 0.033*p_age**(4./25)
-        p_area = A0 + (dFay + dEddy)*p_age
-
-        return (A0, p_area)
-
-    def test_exceptions(self):
-        '''
-        if relative_bouyancy is < 0, it just raises an exception
-        '''
-        with pytest.raises(ValueError):
-            'relative_bouyancy >= 0'
-            self.spread.init_area(water_viscosity,
-                                  -elem_rel_bouy,
-                                  bulk_init_vol)
-
-        with pytest.raises(ValueError):
-            'relative_bouyancy >= 0'
-            (bulk_init_volume, relative_bouyancy, age, area) = data_arrays()
-            relative_bouyancy[0] = -relative_bouyancy[0]
-            age[:] = 900
-            self.spread.update_area(water_viscosity,
-                                    relative_bouyancy,
-                                    bulk_init_volume,
-                                    area,
-                                    age)
-        with pytest.raises(ValueError):
-            'age must be > 0'
-            (bulk_init_volume, relative_bouyancy, age, area) = data_arrays()
-            self.spread.update_area(water_viscosity,
-                                    relative_bouyancy,
-                                    bulk_init_volume,
-                                    age,
-                                    area)
-
-    @pytest.mark.parametrize("num", (1, 10))
-    def test_values_same_age(self, num):
-        '''
-        Compare output of _init_area and _update_thickness to expected output
-        returned by self.expected() function.
-        '''
-        (bulk_init_volume, relative_bouyancy, age, area) = data_arrays(num)
-        area[:] = self.spread.init_area(water_viscosity,
-                                        elem_rel_bouy,
-                                        bulk_init_volume[0])/len(area)
-
-        # bulk_init_volume[0] and age[0] represents the volume and age of all
-        # particles released at once
-        # computes the init_area and updated area for particles at 900 sec
-        (A0, p_area) = self.expected(bulk_init_volume[0], default_ts)
-        assert A0 == area.sum()
-
-        age[:] = 900
-        self.spread.update_area(water_viscosity,
-                                relative_bouyancy,
-                                bulk_init_volume,
-                                area,
-                                age)
-
-        assert np.isclose(area.sum(), p_area)
-
-    def test_values_vary_age(self):
-        '''
-        test update_area works correctly for a continuous spill with varying
-        age array
-        '''
-        (bulk_init_volume, relative_bouyancy, age, area) = \
-            data_arrays(10)
-        (a0, area_900) = self.expected(bulk_init_volume[0], 900)
-        age[0::2] = 900
-        area[0::2] = a0/len(area[0::2])  # initialize else divide by 0 error
-
-        (a0, area_1800) = self.expected(bulk_init_volume[1], 1800)
-        age[1::2] = 1800
-        area[1::2] = a0/len(area[1::2])  # initialize else divide by 0 error
-
-        # now invoke update_area
-        area[:] = self.spread.update_area(water_viscosity,
-                                          relative_bouyancy,
-                                          bulk_init_volume,
-                                          area,
-                                          age)
-        assert np.isclose(area[0::2].sum(), area_900)
-        assert np.isclose(area[1::2].sum(), area_1800)
-
-    def test_values_vary_age_bulk_init_vol_rel_bouy(self):
-        '''
-        vary bulk_init_vol and age
-        '''
-        (bulk_init_volume, relative_bouyancy, age, area) = \
-            data_arrays(10)
-        relative_bouyancy[0] = 0.1
-        age[0::2] = 900
-        bulk_init_volume[0::2] = 60
-        (a0, area_900) = self.expected(bulk_init_volume[0], age[0],
-                                       np.mean(relative_bouyancy[0::2]))
-        area[0::2] = a0/len(area[0::2])  # initialize else divide by 0 error
-
-        age[1::2] = 1800
-        (a0, area_1800) = self.expected(bulk_init_volume[1], age[1])
-        area[1::2] = a0/len(area[1::2])  # initialize else divide by 0 error
-
-        # now invoke update_area
-        area[:] = self.spread.update_area(water_viscosity,
-                                          relative_bouyancy,
-                                          bulk_init_volume,
-                                          area,
-                                          age)
-        assert np.isclose(area[0::2].sum(), area_900)
-        assert np.isclose(area[1::2].sum(), area_1800)
-
-    def test_minthickness_values(self):
-        '''
-        tests that when blob reaches minimum thickness, area no longer changes
-        '''
-        (bulk_init_volume, relative_bouyancy, age, area) = data_arrays()
-        area[:] = self.spread.init_area(water_viscosity,
-                                        relative_bouyancy[0],
-                                        bulk_init_volume[0])
-
-        # assume first 4 elements are released together in one blob
-        area[:4] = (bulk_init_volume[0]/self.spread.thickness_limit)/4
-        i_area = area[0]
-
-        # elements with same age have the same area since area is computed for
-        # blob released at given time. So age must be different to
-        # differentiate two blobs
-        age[:4] = 1800
-        age[4:] = 900
-
-        self.spread.update_area(water_viscosity,
-                                relative_bouyancy,
-                                bulk_init_volume,
-                                area,
-                                age)
-        assert np.all(area[:4] == i_area)
-        assert np.all(area[4:] > i_area)
 
 
 class TestWeatheringData:
@@ -217,7 +42,7 @@ class TestWeatheringData:
         sc.prepare_for_model_run(intrinsic.array_types)
 
         # test initialization as well
-        intrinsic.initialize(sc)
+        intrinsic.prepare_for_model_run(sc)
         for val in sc.weathering_data.values():
             assert val == 0.0
 
@@ -252,7 +77,7 @@ class TestWeatheringData:
             spill.get('substance').get_viscosity(intrinsic.water.temperature)
 
         num = sc.release_elements(default_ts, rel_time)
-        intrinsic.update(num, sc, default_ts)
+        intrinsic.update(num, sc)
         assert np.allclose(sc['density'], init_dens)
         assert np.allclose(sc['viscosity'], init_visc)
 
@@ -264,15 +89,48 @@ class TestWeatheringData:
 
             # say we are now in 2nd step - no new particles are released
             # just updating the previously released particles
-            intrinsic.update(0, sc, default_ts)
+            intrinsic.update(0, sc)
 
             # viscosity/density
             # should weathered density/viscosity always increase?
             assert np.all(sc['density'] > init_dens)
             assert np.all(sc['viscosity'] > init_visc)
         else:
-            # nothing weathered so equations should have produced no change
-            intrinsic.update(0, sc, default_ts)
+            # nothing weathered and no emulsion so equations should have
+            # produced no change
+            intrinsic.update(0, sc)
+            assert np.allclose(sc['density'], init_dens)
+            assert np.allclose(sc['viscosity'], init_visc)
+
+    @pytest.mark.parametrize("vary_frac_water", (False, True))
+    def test_density_update_frac_water(self, vary_frac_water):
+        rel_time = datetime.now().replace(microsecond=0)
+        (sc, intrinsic) = self.sample_sc_intrinsic(100, rel_time)
+        spill = sc.spills[0]
+        init_dens = \
+            spill.get('substance').get_density(intrinsic.water.temperature)
+        init_visc = \
+            spill.get('substance').get_viscosity(intrinsic.water.temperature)
+
+        num = sc.release_elements(default_ts, rel_time)
+        intrinsic.update(num, sc)
+        assert np.allclose(sc['density'], init_dens)
+        assert np.allclose(sc['viscosity'], init_visc)
+
+        # need this so 'area' computation doesn't break
+        # todo: this shouldn't be required, revisit this!
+        sc['age'] += default_ts
+        if vary_frac_water:
+            sc['frac_water'][:] = 0.3
+            intrinsic.update(0, sc)
+
+            exp_res = (intrinsic.water.get('density') * sc['frac_water'] +
+                       (1 - sc['frac_water']) * init_dens)
+            assert np.all(sc['density'] == exp_res)
+            assert np.all(sc['density'] > init_dens)
+            assert np.all(sc['viscosity'] > init_visc)
+        else:
+            intrinsic.update(0, sc)
             assert np.allclose(sc['density'], init_dens)
             assert np.allclose(sc['viscosity'], init_visc)
 
@@ -283,7 +141,7 @@ class TestWeatheringData:
         rel_time = datetime.now().replace(microsecond=0)
         (sc, intrinsic) = self.sample_sc_intrinsic(100, rel_time)
         num = sc.release_elements(default_ts, rel_time)
-        intrinsic.update(num, sc, default_ts)
+        intrinsic.update(num, sc)
         self.mock_weather_data(sc, intrinsic, 3)
         sc['age'] += default_ts
 
@@ -296,7 +154,7 @@ class TestWeatheringData:
         # say we are now in 2nd step - no new particles are released
         # so just updating the previously released particles
         intrinsic.water = mock_water()
-        intrinsic.update(0, sc, default_ts)
+        intrinsic.update(0, sc)
         assert np.all(sc['density'] >= intrinsic.water.density)
 
     def test_intrinsic_props_vary_num_LEs(self):
@@ -318,10 +176,10 @@ class TestWeatheringData:
         for i in range(-1, 5):
             curr_time = rel_time + timedelta(seconds=i * ts)
             num1 = sc1.release_elements(ts, curr_time)
-            intrinsic1.update(num1, sc1, ts)
+            intrinsic1.update(num1, sc1)
 
             num2 = sc2.release_elements(ts, curr_time)
-            intrinsic2.update(num2, sc2, ts)
+            intrinsic2.update(num2, sc2)
 
             # for all LEs with same age values should be same
             if num1 == 0:
@@ -375,7 +233,7 @@ class TestWeatheringData:
         sc.prepare_for_model_run(intrinsic.array_types)
 
         # test initialization as well
-        intrinsic.initialize(sc)
+        intrinsic.prepare_for_model_run(sc)
         for val in sc.weathering_data.values():
             assert val == 0.0
 
@@ -385,7 +243,7 @@ class TestWeatheringData:
         for i in range(-1, 5):
             curr_time = rel_time + timedelta(seconds=i * ts)
             num_released = sc.release_elements(ts, curr_time)
-            intrinsic.update(num_released, sc, ts)
+            intrinsic.update(num_released, sc)
             for key, val in sc.weathering_data.iteritems():
                 if len(sc) > 0 and key not in ('beached', 'non_weathering'):
                     assert val > 0
@@ -421,7 +279,7 @@ class TestWeatheringData:
         rel_time = datetime.now().replace(microsecond=0)
         (sc, intrinsic) = self.sample_sc_intrinsic(100, rel_time)
         num = sc.release_elements(default_ts, rel_time)
-        intrinsic.update(num, sc, default_ts)
+        intrinsic.update(num, sc)
 
         # in next step and set some particles as beached
         beach_mask = np.arange(2, 20, 2)
@@ -433,7 +291,7 @@ class TestWeatheringData:
         sc['age'] += default_ts    # model updates age
 
         # next step, assume no particles released
-        intrinsic.update(0, sc, default_ts)     # no new particles released
+        intrinsic.update(0, sc)     # no new particles released
 
         # in the step a subset of particles are reflaoted
         refloat = beach_mask[:-5]
@@ -446,7 +304,7 @@ class TestWeatheringData:
         assert np.all(sc['status_codes'][still_beached] == oil_status.on_land)
         assert np.all(sc['fate_status'][still_beached] == bt_fate.non_weather)
         assert np.all(sc['fate_status'][refloat] == bt_fate.subsurf_weather)
-        assert np.all(sc['status_codes'][refloat] == oil_status.in_water) 
+        assert np.all(sc['status_codes'][refloat] == oil_status.in_water)
 
     def test_bulk_init_volume_fay_area_two_spills(self):
         '''
@@ -469,11 +327,11 @@ class TestWeatheringData:
         print b_init_vol
 
         sc.prepare_for_model_run(intrinsic.array_types)
-        intrinsic.initialize(sc)
+        intrinsic.prepare_for_model_run(sc)
 
         # release elements
         num = sc.release_elements(default_ts, rel_time)
-        intrinsic.update(num, sc, default_ts)
+        intrinsic.update(num, sc)
 
         # bulk_init_volume is set in same order as b_init_vol
         print sc['bulk_init_volume']
@@ -484,6 +342,51 @@ class TestWeatheringData:
 
         # update age and test fay_area update remains unequal
         sc['age'][:] = default_ts
-        intrinsic.update(0, sc, default_ts)
+        intrinsic.update(0, sc)
         assert sc['fay_area'][0] != sc['fay_area'][1]
         assert np.all(sc['fay_area'] > i_area)
+
+    @log_capture()
+    def test_density_error(self, l):
+        '''
+        log error if init density is less than water
+        '''
+        l.uninstall()
+        rel_time = datetime.now().replace(microsecond=0)
+        (sc, intrinsic) = self.sample_sc_intrinsic(1, rel_time)
+        intrinsic.water.set('temperature', 288, 'K')
+        intrinsic.water.set('salinity', 0, 'psu')
+        new_subs = 'TEXTRACT, STAR ENTERPRISE'
+        sc.spills[0].set('substance', new_subs)
+
+        # substance changed - do a rewind
+        sc.rewind()
+        sc.prepare_for_model_run(intrinsic.array_types)
+
+        num = sc.release_elements(default_ts, rel_time)
+
+        # only capture and test density error
+        l.install()
+        intrinsic.update(num, sc)
+        assert all(sc['fay_area'] == 0.)
+
+        msg = ("{0} will sink at given water temperature: {1} {2}. "
+               "Set density to water density".format(new_subs,
+                                                     288.0,
+                                                     'K'))
+        l.check(('gnome.weatherers.intrinsic.WeatheringData',
+                 'ERROR',
+                 msg))
+
+    def test_no_substance(self):
+        rel_time = datetime.now().replace(microsecond=0)
+        (sc, intrinsic) = self.sample_sc_intrinsic(1, rel_time)
+        sc.spills[0].set('substance', None)
+        # substance changed - do a rewind
+        sc.rewind()
+        sc.prepare_for_model_run(intrinsic.array_types)
+        intrinsic.prepare_for_model_run(sc)
+
+        num = sc.release_elements(default_ts, rel_time)
+        intrinsic.update(num, sc)
+        intrinsic.update(0, sc)

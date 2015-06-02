@@ -60,8 +60,8 @@ class TestWeatherer:
         rate. Needs more tests with varying half_lives
         '''
         time_step = 15 * secs_in_minute
-        intrinsic.initialize(test_sc)
-        intrinsic.update(sc.num_released, test_sc, time_step)
+        intrinsic.prepare_for_model_run(test_sc)
+        intrinsic.update(sc.num_released, test_sc)
 
         print '\nsc["mass"]:\n', test_sc['mass']
 

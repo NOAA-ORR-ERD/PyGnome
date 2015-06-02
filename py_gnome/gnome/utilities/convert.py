@@ -37,7 +37,7 @@ def to_time_value_pair(datetime_value, in_ts_format=None):
     time_value_pair['time'] = \
             time_utils.date_to_sec(datetime_value['time'])
     if datetime_value.dtype == basic_types.datetime_value_1d:
-        time_value_pair['value']['u'] = datetime_value['value'][:, 0]
+        time_value_pair['value']['u'] = datetime_value['value'][:]
 
     else:
         if in_ts_format is None:
@@ -133,8 +133,9 @@ def to_datetime_value_1d(time_value_pair):
     datetime_value_1d = np.zeros((len(time_value_pair), ),
                                  dtype=basic_types.datetime_value_1d)
     datetime_value_1d['time'] = \
-            time_utils.sec_to_date(time_value_pair['time'])
-    datetime_value_1d['value'][:, 0] = time_value_pair['value']['u']
+        time_utils.sec_to_date(time_value_pair['time'])
+
+    datetime_value_1d['value'][:] = time_value_pair['value']['u']
 
     return datetime_value_1d
 

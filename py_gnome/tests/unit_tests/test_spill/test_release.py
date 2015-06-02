@@ -5,7 +5,7 @@ test_spill.py was getting too big so moved the tests that do not use a Spill
 object here - more comprehensive tests of release objects within a Spill are
 in test_spill.py
 """
-
+import os
 from datetime import datetime, timedelta
 
 import pytest
@@ -21,6 +21,8 @@ from gnome.spill import (Release,
                          InitElemsFromFile,
                          Spill)
 from gnome.spill_container import SpillContainer
+from gnome.spill.release import release_from_splot_data
+
 from ..conftest import testdata
 
 
@@ -271,3 +273,31 @@ class TestPointLineRelease:
                               num_per_timestep=100,
                               end_release_time=self.rel_time+timedelta(hours=2))
         assert r != r1
+
+
+def test_release_from_splot_data():
+    '''
+    test release_from_splot_data by creating file with fake data
+    '''
+    test_data = \
+        ('-7.885776000000000E+01    4.280546000000000E+01   4.4909252E+01\n'
+         '-7.885776000000000E+01    4.279556000000000E+01   4.4909252E+01\n'
+         '-8.324346000000000E+01    4.196396000000001E+01   3.0546749E+01\n')
+    here = os.path.dirname(__file__)
+    td_file = os.path.join(here, 'test_data.txt')
+    with open(td_file, 'w') as td:
+        td.write(test_data)
+
+    exp = np.asarray((44.909252, 44.909252, 30.546749),
+                     dtype=int)
+    exp_num_elems = exp.sum()
+    rel = release_from_splot_data(datetime(2015, 1, 1), td_file)
+    assert rel.num_elements == exp_num_elems
+    assert len(rel.start_position) == exp_num_elems
+    cumsum = np.cumsum(exp)
+    for ix in xrange(len(cumsum)-1):
+        assert np.all(rel.start_position[cumsum[ix]] ==
+                      rel.start_position[cumsum[ix]:cumsum[ix + 1]])
+    assert np.all(rel.start_position[0] == rel.start_position[:cumsum[0]])
+
+    os.remove(td_file)
