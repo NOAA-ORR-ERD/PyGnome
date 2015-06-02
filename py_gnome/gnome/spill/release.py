@@ -2,7 +2,6 @@
 release objects that define how elements are released. A Spill() objects
 is composed of a release object and an ElementType
 '''
-import types
 import copy
 from datetime import datetime, timedelta
 
