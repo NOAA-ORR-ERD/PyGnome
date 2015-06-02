@@ -5826,6 +5826,198 @@ double TimeGridVelIce_c::GetEndIceVVelocity(long index)
 	}
 	return v;
 }
+
+VelocityRec TimeGridVelIce_c::GetScaledPatValue(const Seconds& model_time, WorldPoint3D refPoint)
+{
+	double frac_coverage = 0, max_coverage = .8, min_coverage = .2, fracAlpha;
+	VelocityRec scaledPatVelocity = {0.,0.}, iceVelocity = {0.,0.}, currentVelocity = {0.,0.};
+
+	frac_coverage = GetDataField(model_time, refPoint, 2);
+	iceVelocity = GetScaledPatValueIce(model_time, refPoint);
+	currentVelocity = TimeGridVelCurv_c::GetScaledPatValue(model_time, refPoint);
+	
+	if (frac_coverage >= max_coverage)
+	{
+		return iceVelocity;
+	}
+	else if (frac_coverage <= min_coverage)
+	{
+		return currentVelocity;
+	}
+	else
+	{
+		fracAlpha = (.8 - frac_coverage)/(double)(max_coverage - min_coverage);
+		scaledPatVelocity.u = fracAlpha*currentVelocity.u + (1 - fracAlpha)*iceVelocity.u;
+		scaledPatVelocity.v = fracAlpha*currentVelocity.v + (1 - fracAlpha)*iceVelocity.v;
+	}
+	return scaledPatVelocity;
+}
+
+VelocityRec TimeGridVelIce_c::GetScaledPatValueIce(const Seconds& model_time, WorldPoint3D refPoint)
+{	
+	double timeAlpha, depthAlpha, depth = refPoint.z;
+	float topDepth, bottomDepth;
+	long index = -1, depthIndex1, depthIndex2; 
+	float totalDepth; 
+	Seconds startTime,endTime;
+	VelocityRec scaledPatVelocity = {0.,0.};
+	InterpolationVal interpolationVal;
+	OSErr err = 0;
+	
+	if (fGrid) 
+	{
+		if (bVelocitiesOnNodes)
+		{
+			//index = ((TTriGridVel*)fGrid)->GetRectIndexFromTriIndex(refPoint,fVerdatToNetCDFH,fNumCols);// curvilinear grid
+			interpolationVal = fGrid -> GetInterpolationValues(refPoint.p);
+			if (interpolationVal.ptIndex1<0) return scaledPatVelocity;
+			//ptIndex1 =  (*fVerdatToNetCDFH)[interpolationVal.ptIndex1];	
+			//ptIndex2 =  (*fVerdatToNetCDFH)[interpolationVal.ptIndex2];
+			//ptIndex3 =  (*fVerdatToNetCDFH)[interpolationVal.ptIndex3];
+			index = (*fVerdatToNetCDFH)[interpolationVal.ptIndex1];
+		}
+		else // for now just use the u,v at left and bottom midpoints of grid box as velocity over entire gridbox
+			index = (dynamic_cast<TTriGridVel*>(fGrid))->GetRectIndexFromTriIndex(refPoint.p,fVerdatToNetCDFH,fNumCols+1);// curvilinear grid
+	}
+	if (index < 0) return scaledPatVelocity;
+	
+	totalDepth = GetTotalDepth(refPoint.p,index);	// may want to know depth relative to ice thickness...
+	
+	// Check for constant current 
+	if((GetNumTimesInFile()==1 && !(GetNumFiles()>1)) || (fEndData.timeIndex == UNASSIGNEDINDEX && model_time > ((*fTimeHdl)[fStartData.timeIndex] + fTimeShift) && fAllowExtrapolationInTime) || (fEndData.timeIndex == UNASSIGNEDINDEX && model_time < ((*fTimeHdl)[fStartData.timeIndex] + fTimeShift) && fAllowExtrapolationInTime))
+		//if(GetNumTimesInFile()==1)
+	{
+		// Calculate the interpolated velocity at the point
+		if (index >= 0) 
+		{
+			//scaledPatVelocity.u = INDEXH(fStartData.dataHdl,index).u;
+			//scaledPatVelocity.v = INDEXH(fStartData.dataHdl,index).v;
+			scaledPatVelocity.u = INDEXH(fStartDataIce.dataHdl,index).u;
+			scaledPatVelocity.v = INDEXH(fStartDataIce.dataHdl,index).v;
+		}
+		else	// set vel to zero
+		{
+			scaledPatVelocity.u = 0.;
+			scaledPatVelocity.v = 0.;
+		}
+	}
+	else // time varying current 
+	{
+		// Calculate the time weight factor
+		if (GetNumFiles()>1 && fOverLap)
+			startTime = fOverLapStartTime + fTimeShift;
+		else
+			startTime = (*fTimeHdl)[fStartData.timeIndex] + fTimeShift;
+		//startTime = (*fTimeHdl)[fStartData.timeIndex] + fTimeShift;
+		endTime = (*fTimeHdl)[fEndData.timeIndex] + fTimeShift;
+		timeAlpha = (endTime - model_time)/(double)(endTime - startTime);
+		
+		// Calculate the interpolated velocity at the point
+		if (index >= 0) 
+		{
+			//scaledPatVelocity.u = timeAlpha*INDEXH(fStartData.dataHdl,index).u + (1-timeAlpha)*INDEXH(fEndData.dataHdl,index).u;
+			//scaledPatVelocity.v = timeAlpha*INDEXH(fStartData.dataHdl,index).v + (1-timeAlpha)*INDEXH(fEndData.dataHdl,index).v;			{
+			scaledPatVelocity.u = timeAlpha*INDEXH(fStartDataIce.dataHdl,index).u + (1-timeAlpha)*INDEXH(fEndDataIce.dataHdl,index).u;
+			scaledPatVelocity.v = timeAlpha*INDEXH(fStartDataIce.dataHdl,index).v + (1-timeAlpha)*INDEXH(fEndDataIce.dataHdl,index).v;
+		}
+		else	// set vel to zero
+		{
+			scaledPatVelocity.u = 0.;
+			scaledPatVelocity.v = 0.;
+		}
+	}
+	
+scale:
+	
+	//scaledPatVelocity.u *= fVar.curScale; // is there a dialog scale factor?
+	//scaledPatVelocity.v *= fVar.curScale; 
+	scaledPatVelocity.u *= fVar.fileScaleFactor; // may want to allow some sort of scale factor, though should be in file
+	scaledPatVelocity.v *= fVar.fileScaleFactor; 
+			
+	return scaledPatVelocity;
+}
+
+double TimeGridVelIce_c::GetDataField(const Seconds& model_time, WorldPoint3D refPoint, long field)
+{	
+	double timeAlpha, depthAlpha, depth = refPoint.z;
+	long index = -1; 
+	float totalDepth; 
+	Seconds startTime,endTime;
+	double iceDataValue = 0.;
+	InterpolationVal interpolationVal;
+	OSErr err = 0;
+	
+	if (fGrid) 
+	{
+		if (bVelocitiesOnNodes)
+		{
+			//index = ((TTriGridVel*)fGrid)->GetRectIndexFromTriIndex(refPoint,fVerdatToNetCDFH,fNumCols);// curvilinear grid
+			interpolationVal = fGrid -> GetInterpolationValues(refPoint.p);
+			if (interpolationVal.ptIndex1<0) return iceDataValue;
+			//ptIndex1 =  (*fVerdatToNetCDFH)[interpolationVal.ptIndex1];	
+			//ptIndex2 =  (*fVerdatToNetCDFH)[interpolationVal.ptIndex2];
+			//ptIndex3 =  (*fVerdatToNetCDFH)[interpolationVal.ptIndex3];
+			index = (*fVerdatToNetCDFH)[interpolationVal.ptIndex1];
+		}
+		else // for now just use the u,v at left and bottom midpoints of grid box as velocity over entire gridbox
+			index = (dynamic_cast<TTriGridVel*>(fGrid))->GetRectIndexFromTriIndex(refPoint.p,fVerdatToNetCDFH,fNumCols+1);// curvilinear grid
+	}
+	if (index < 0) return iceDataValue;
+	
+	totalDepth = GetTotalDepth(refPoint.p,index);	// may want to know depth relative to ice thickness...
+	
+	// Check for constant current 
+	if((GetNumTimesInFile()==1 && !(GetNumFiles()>1)) || (fEndData.timeIndex == UNASSIGNEDINDEX && model_time > ((*fTimeHdl)[fStartData.timeIndex] + fTimeShift) && fAllowExtrapolationInTime) || (fEndData.timeIndex == UNASSIGNEDINDEX && model_time < ((*fTimeHdl)[fStartData.timeIndex] + fTimeShift) && fAllowExtrapolationInTime))
+		//if(GetNumTimesInFile()==1)
+	{
+		// Calculate the interpolated data at the point
+		if (index >= 0) 
+		{
+			//scaledPatVelocity.u = INDEXH(fStartData.dataHdl,index).u;
+			//scaledPatVelocity.v = INDEXH(fStartData.dataHdl,index).v;
+			if (field == 1) iceDataValue = INDEXH(fStartDataThickness.dataHdl,index);
+			if (field == 2) iceDataValue = INDEXH(fStartDataFraction.dataHdl,index);
+		}
+		else	// set value to zero
+		{
+			iceDataValue = 0.;
+		}
+	}
+	else // time varying current 
+	{
+		// Calculate the time weight factor
+		if (GetNumFiles()>1 && fOverLap)
+			startTime = fOverLapStartTime + fTimeShift;
+		else
+			startTime = (*fTimeHdl)[fStartData.timeIndex] + fTimeShift;
+		//startTime = (*fTimeHdl)[fStartData.timeIndex] + fTimeShift;
+		endTime = (*fTimeHdl)[fEndData.timeIndex] + fTimeShift;
+		timeAlpha = (endTime - model_time)/(double)(endTime - startTime);
+		
+		// Calculate the interpolated data at the point
+		if (index >= 0) 
+		{
+			//scaledPatVelocity.u = timeAlpha*INDEXH(fStartData.dataHdl,index).u + (1-timeAlpha)*INDEXH(fEndData.dataHdl,index).u;
+			//scaledPatVelocity.v = timeAlpha*INDEXH(fStartData.dataHdl,index).v + (1-timeAlpha)*INDEXH(fEndData.dataHdl,index).v;			
+			if (field == 1) iceDataValue = timeAlpha*INDEXH(fStartDataThickness.dataHdl,index) + (1-timeAlpha)*INDEXH(fEndDataThickness.dataHdl,index);
+			if (field == 2) iceDataValue = timeAlpha*INDEXH(fStartDataFraction.dataHdl,index) + (1-timeAlpha)*INDEXH(fEndDataFraction.dataHdl,index);
+		}
+		else	// set value to zero
+		{
+			iceDataValue = 0.;
+		}
+	}
+	
+scale:
+	
+	//scaledPatVelocity.u *= fVar.curScale; // is there a dialog scale factor?
+	//scaledPatVelocity.v *= fVar.curScale; 
+	//scaledPatVelocity.u *= fVar.fileScaleFactor; // may want to allow some sort of scale factor, though should be in file
+	//scaledPatVelocity.v *= fVar.fileScaleFactor; 
+			
+	return iceDataValue;
+}
+
 OSErr TimeGridVelIce_c::ReadTimeDataIce(long index,VelocityFH *velocityH, char* errmsg) 
 {
 	OSErr err = 0;
@@ -6400,6 +6592,143 @@ OSErr TimeGridVelIce_c::GetIceVelocities(Seconds time, VelocityFRec *ice_velocit
 		//v[i] = velocity.v * fVar.fileScaleFactor;
 		ice_velocity[i].u = velocity.u * fVar.fileScaleFactor;
 		ice_velocity[i].v = velocity.v * fVar.fileScaleFactor;
+	}
+	return err;
+}
+
+OSErr TimeGridVelIce_c::GetMovementVelocities(Seconds time, VelocityFRec *movement_velocity)
+{	// use for curvilinear
+	double timeAlpha;
+	double frac_coverage = 0, max_coverage = .8, min_coverage = .2, fracAlpha;
+	Seconds startTime,endTime;
+	OSErr err = 0;
+	char errmsg[256];
+	
+	long numVertices,i,numTri,index=-1;
+	InterpolationVal interpolationVal;
+	LongPointHdl ptsHdl = 0;
+	TopologyHdl topH ;
+	long timeDataInterval;
+	Boolean loaded;
+	//TTriGridVel* triGrid = (TTriGridVel*)fGrid;
+	TTriGridVel* triGrid = (dynamic_cast<TTriGridVel*>(fGrid));
+	VelocityRec velocity = {0.,0.}, iceVelocity = {0.,0.}, currentVelocity = {0.,0.};
+	VelocityRec iceVelocityStart = {0.,0.}, currentVelocityStart = {0.,0.}, iceVelocityEnd = {0.,0.}, currentVelocityEnd = {0.,0.};
+	
+	err = this -> SetInterval(errmsg, time);
+	if(err) return err;
+	
+	loaded = this -> CheckInterval(timeDataInterval, time);	 
+	
+	if(!loaded) return -1;
+	
+	//topH = triGrid -> GetTopologyHdl();
+	topH = fGrid -> GetTopologyHdl();
+	if(topH)
+		numTri = _GetHandleSize((Handle)topH)/sizeof(**topH);
+	else 
+		numTri = 0;
+		
+	/*ptsHdl = triGrid -> GetPointsHdl();
+	if(ptsHdl)
+		numVertices = _GetHandleSize((Handle)ptsHdl)/sizeof(**ptsHdl);
+	else 
+		numVertices = 0;*/
+	
+	// Check for time varying current 
+	if((GetNumTimesInFile()>1 || GetNumFiles()>1) && loaded && !err)
+	{
+		// Calculate the time weight factor
+		if (GetNumFiles()>1 && fOverLap)
+			startTime = fOverLapStartTime + fTimeShift;
+		else
+			startTime = (*fTimeHdl)[fStartData.timeIndex] + fTimeShift;
+
+		if (fEndData.timeIndex == UNASSIGNEDINDEX && (time > startTime || time < startTime) && fAllowExtrapolationInTime)
+		{
+			timeAlpha = 1;
+		}
+		else
+		{	
+			endTime = (*fTimeHdl)[fEndData.timeIndex] + fTimeShift;
+			timeAlpha = (endTime - time)/(double)(endTime - startTime);
+		}
+	}
+	
+	for (i = 0 ; i< numTri; i++)
+	{
+		if (bVelocitiesOnNodes)
+		{
+			//index = ((TTriGridVel*)fGrid)->GetRectIndexFromTriIndex(refPoint,fVerdatToNetCDFH,fNumCols);// curvilinear grid
+			//interpolationVal = triGrid -> GetInterpolationValues(refPoint.p);
+			interpolationVal = triGrid -> GetInterpolationValuesFromIndex(i);
+			if (interpolationVal.ptIndex1<0) {movement_velocity[i].u = 0;	movement_velocity[i].v = 0; return err;}// should this be an error?
+			//ptIndex1 =  (*fVerdatToNetCDFH)[interpolationVal.ptIndex1];	
+			//ptIndex2 =  (*fVerdatToNetCDFH)[interpolationVal.ptIndex2];
+			//ptIndex3 =  (*fVerdatToNetCDFH)[interpolationVal.ptIndex3];
+			index = (*fVerdatToNetCDFH)[interpolationVal.ptIndex1];
+		}
+		else // for now just use the u,v at left and bottom midpoints of grid box as velocity over entire gridbox
+			//index = (dynamic_cast<TTriGridVel*>(fGrid))->GetRectIndexFromTriIndex(refPoint.p,fVerdatToNetCDFH,fNumCols+1);// curvilinear grid
+			index = triGrid->GetRectIndexFromTriIndex2(i,fVerdatToNetCDFH,fNumCols+1);// curvilinear grid
+
+		if (index < 0) {movement_velocity[i].u = 0;	movement_velocity[i].v = 0; return err;}// should this be an error?
+		
+		// Should check vs fFillValue
+		// Check for constant current 
+		frac_coverage = GetStartFieldValue(index,2);
+		fracAlpha = (.8 - frac_coverage)/(double)(max_coverage - min_coverage);
+		iceVelocityStart.u = GetStartIceUVelocity(index);
+		iceVelocityStart.v = GetStartIceVVelocity(index);
+		currentVelocityStart.u = GetStartUVelocity(index);
+		currentVelocityStart.v = GetStartVVelocity(index);
+		if(((GetNumTimesInFile()==1 && !(GetNumFiles()>1)) || timeAlpha == 1) && index!=-1)
+		{
+			if (frac_coverage >= max_coverage)
+			{
+				velocity.u = iceVelocityStart.u;
+				velocity.v = iceVelocityStart.v;
+			}
+			else if (frac_coverage <= min_coverage)
+			{
+				velocity.u = currentVelocityStart.u;
+				velocity.v = currentVelocityStart.v;
+			}
+			else
+			{
+				velocity.u = fracAlpha*currentVelocityStart.u + (1 - fracAlpha)*iceVelocityStart.u;
+				velocity.v = fracAlpha*currentVelocityStart.v + (1 - fracAlpha)*iceVelocityStart.v;
+			}
+		}
+		else if (index!=-1)// time varying current
+		{
+			iceVelocityEnd.u = GetEndIceUVelocity(index);
+			iceVelocityEnd.v = GetEndIceVVelocity(index);
+			currentVelocityEnd.u = GetEndUVelocity(index);
+			currentVelocityEnd.v = GetEndVVelocity(index);
+			if (frac_coverage >= max_coverage)
+			{
+				velocity.u = timeAlpha*iceVelocityStart.u + (1-timeAlpha)*iceVelocityEnd.u;
+				velocity.v = timeAlpha*iceVelocityStart.v + (1-timeAlpha)*iceVelocityEnd.v;
+			}
+			else if (frac_coverage <= min_coverage)
+			{
+				velocity.u = timeAlpha*currentVelocityStart.u + (1-timeAlpha)*currentVelocityEnd.u;
+				velocity.v = timeAlpha*currentVelocityStart.v + (1-timeAlpha)*currentVelocityEnd.v;
+			}
+			else
+			{
+				currentVelocity.u = timeAlpha*currentVelocityStart.u + (1-timeAlpha)*currentVelocityEnd.u;
+				currentVelocity.v = timeAlpha*currentVelocityStart.v + (1-timeAlpha)*currentVelocityEnd.v;
+				iceVelocity.u = timeAlpha*iceVelocityStart.u + (1-timeAlpha)*iceVelocityEnd.u;
+				iceVelocity.v = timeAlpha*iceVelocityStart.v + (1-timeAlpha)*iceVelocityEnd.v;
+				velocity.u = fracAlpha*currentVelocity.u + (1 - fracAlpha)*iceVelocity.u;
+				velocity.v = fracAlpha*currentVelocity.v + (1 - fracAlpha)*iceVelocity.v;
+			}
+		}
+
+		movement_velocity[i].u = velocity.u * fVar.fileScaleFactor;
+		movement_velocity[i].v = velocity.v * fVar.fileScaleFactor;
 	}
 	return err;
 }

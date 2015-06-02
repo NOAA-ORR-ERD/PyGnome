@@ -302,10 +302,14 @@ public:
 	double 				GetStartIceVVelocity(long index);
 	double 				GetEndIceUVelocity(long index);
 	double 				GetEndIceVVelocity(long index);
+	VelocityRec 		GetScaledPatValue(const Seconds& model_time, WorldPoint3D refPoint);
+	VelocityRec 		GetScaledPatValueIce(const Seconds& model_time, WorldPoint3D refPoint);
+	double 				GetDataField(const Seconds& model_time, WorldPoint3D refPoint, long field);
 	OSErr 				ReadTimeDataIce(long index,VelocityFH *velocityH, char* errmsg); 
 	OSErr 				ReadTimeDataFields(long index,DOUBLEH *thicknessH, DOUBLEH *fractionH, char* errmsg); 
 	OSErr 				GetIceFields(Seconds time, double *thickness, double *fraction);
 	OSErr 				GetIceVelocities(Seconds time, VelocityFRec *ice_velocity);
+	OSErr 				GetMovementVelocities(Seconds time, VelocityFRec *movement_velocity);
 	//OSErr 				GetIceVelocities(Seconds time, double *u, double *v);
 	//VelocityRec 		GetScaledPatValue(const Seconds& model_time, WorldPoint3D refPoint);
 	//VelocityRec 		GetScaledPatValue3D(const Seconds& model_time, InterpolationVal interpolationVal,float depth);

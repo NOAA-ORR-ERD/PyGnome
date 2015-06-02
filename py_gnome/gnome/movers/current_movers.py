@@ -161,13 +161,12 @@ class CatsMover(CurrentMoversBase, serializable.Serializable):
 
         if 'scale_refpoint' in kwargs:
             self.scale_refpoint = kwargs.pop('scale_refpoint')
+            self.mover.compute_velocity_scale()
 
         if (self.scale and
             self.scale_value != 0.0 and
                 self.scale_refpoint is None):
             raise TypeError("Provide a reference point in 'scale_refpoint'.")
-
-        self.mover.init_mover()
 
         super(CatsMover, self).__init__(uncertain_duration, **kwargs)
 
@@ -238,6 +237,7 @@ class CatsMover(CurrentMoversBase, serializable.Serializable):
             self.mover.ref_point = (val[0], val[1], 0.)
         else:
             self.mover.ref_point = val
+        self.mover.compute_velocity_scale()
 
     @property
     def tide(self):

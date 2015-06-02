@@ -318,7 +318,7 @@ OSErr IceMover_c::TextRead(char *path, char *topFilePath)
 		IsNetCDFPathsFile(filePath, &isNetCDFPathsFile, fileNamesPath, &gridType))
 	{
 		if (gridType == CURVILINEAR) {
-			newTimeGrid = new TimeGridVelIce_c();	// need to handle different grids...
+			newTimeGrid = new TimeGridVelIce();	// need to handle different grids...
 		}
 		/*else if (gridType == TRIANGULAR) {
 			newTimeGrid = new TimeGridVelTri();
