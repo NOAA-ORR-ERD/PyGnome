@@ -1293,7 +1293,15 @@ class Model(Serializable):
         isvalid = True
         for oc in self._oc_list:
             for item in getattr(self, oc):
-                (msg, isvalid) = item.validate()
+                # if item is not on, no need to validate it
+                if hasattr(item, 'on') and not item.on:
+                    continue
+
+                # validate item
+                (msg, i_isvalid) = item.validate()
+                if not i_isvalid:
+                    isvalid = i_isvalid
+
                 msgs.extend(msg)
 
                 # add to set of required env objects if item's
