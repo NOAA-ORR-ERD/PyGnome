@@ -134,7 +134,6 @@ def make_model(uncertain=False):
     print 'adding a Weatherer'
     model.environment += Water(311.15)
     skim_start = start_time + timedelta(hours=3)
-    model.make_default_refs = True
     model.weatherers += [Evaporation(),
                          Skimmer(spill_amount * .5,
                                  spill_units,

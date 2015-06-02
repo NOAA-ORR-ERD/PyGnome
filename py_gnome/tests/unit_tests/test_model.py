@@ -75,7 +75,7 @@ def model(sample_model_fcn, tmpdir):
 
     # for weatherers and environment objects, make referenced to default
     # wind/water/waves 
-    model.make_default_refs = True
+    model.set_make_default_refs(True)
 
     return model
 
@@ -557,7 +557,6 @@ def test_linearity_of_wind_movers(wind_persist):
 
     num_LEs = 1000
     model1 = Model(name='model1')
-    model1.make_default_refs = False
     model1.duration = timedelta(hours=1)
     model1.time_step = timedelta(hours=1)
     model1.start_time = start_time
@@ -565,10 +564,10 @@ def test_linearity_of_wind_movers(wind_persist):
                         start_position=(1., 2., 0.), release_time=start_time,
                         element_type=floating(windage_persist=wind_persist))
 
-    model1.movers += WindMover(Wind(timeseries=series1, units=units))
+    model1.movers += WindMover(Wind(timeseries=series1, units=units),
+                               make_default_refs=False)
 
     model2 = Model(name='model2')
-    model2.make_default_refs = False
     model2.duration = timedelta(hours=10)
     model2.time_step = timedelta(hours=1)
     model2.start_time = start_time
@@ -583,6 +582,7 @@ def test_linearity_of_wind_movers(wind_persist):
     model2.movers += WindMover(Wind(timeseries=series2, units=units))
     model2.movers += WindMover(Wind(timeseries=series2, units=units))
     model2.movers += WindMover(Wind(timeseries=series3, units=units))
+    model2.set_make_default_refs(False)
 
     while True:
         try:
@@ -978,7 +978,6 @@ def test_staggered_spills_weathering(sample_model_fcn, delay):
     test exposed a bug, which is now fixed
     '''
     model = sample_model_weathering(sample_model_fcn, test_oil)
-    model.make_default_refs = True
     model.map = gnome.map.GnomeMap()    # make it all water
     model.uncertain = False
     rel_time = model.spills[0].get('release_time')
@@ -1012,6 +1011,8 @@ def test_staggered_spills_weathering(sample_model_fcn, delay):
                          c_disp,
                          burn,
                          skimmer]
+    model.set_make_default_refs(True)
+
     # model.full_run()
     for step in model:
         if not step['valid']:
@@ -1047,7 +1048,6 @@ def test_two_substance_spills_weathering(sample_model_fcn, s0, s1):
     independently
     '''
     model = sample_model_weathering(sample_model_fcn, s0)
-    model.make_default_refs = True
     model.map = gnome.map.GnomeMap()    # make it all water
     model.uncertain = False
     rel_time = model.spills[0].get('release_time')
@@ -1081,6 +1081,8 @@ def test_two_substance_spills_weathering(sample_model_fcn, s0, s1):
         model.weatherers += [c_disp,
                              burn,
                              skimmer]
+
+    model.set_make_default_refs(True)
 
     # model.full_run()
     for step in model:
@@ -1335,24 +1337,21 @@ class TestValidateModel():
 
     def test_validate_model_obj_invalid(self):
         '''
-        test object level validation fails
+        test object level validation fails if an object contained in a model's
+        collection is missing a reference and the object's make_default_refs
+        is False.
         '''
-        model = self.make_model_incomplete_waves()[0]
-        model.make_default_refs = False
+        (model, waves) = self.make_model_incomplete_waves()
+        waves.make_default_refs = False
+        model.environment += [Water(), constant_wind(5, 0)]
         (msgs, isvalid) = model.validate()
 
         assert not isvalid
+
+        # wave is missing references. Since waves object's make_default_refs is
+        # False, validation messages contain warning for only Waves
         for msg in msgs:
             assert msg.startswith('warning: Waves:')
-
-    def test_invalid_model_first_step(self):
-        '''
-        invalid model - returns 'valid' flag set to false and 'messages'
-        '''
-        model = self.make_model_incomplete_waves()[0]
-        output = model.step()
-        #assert not output['valid']
-        #assert 'messages' in output and len(output['messages']) > 0
 
 
 if __name__ == '__main__':
