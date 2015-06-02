@@ -288,7 +288,7 @@ def test_release_from_splot_data():
     with open(td_file, 'w') as td:
         td.write(test_data)
 
-    exp = np.asarray((44.909252 * 5000, 44.909252 * 5000, 30.546749 * 5000),
+    exp = np.asarray((44.909252, 44.909252, 30.546749),
                      dtype=int)
     exp_num_elems = exp.sum()
     rel = release_from_splot_data(datetime(2015, 1, 1), td_file)
