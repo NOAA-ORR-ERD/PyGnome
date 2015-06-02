@@ -46,6 +46,7 @@ Boolean NetCDFMoverTri_c::VelocityStrAtPoint(WorldPoint3D wp, char *diagnosticSt
 	
 	long ptIndex1=-1,ptIndex2=-1,ptIndex3=-1; 
 	long pt1depthIndex1, pt1depthIndex2, pt2depthIndex1, pt2depthIndex2, pt3depthIndex1, pt3depthIndex2;
+	long depthIndex1, depthIndex2;
 	InterpolationVal interpolationVal;
 	
 	// maybe should set interval right after reading the file...
@@ -108,6 +109,8 @@ Boolean NetCDFMoverTri_c::VelocityStrAtPoint(WorldPoint3D wp, char *diagnosticSt
 	{
 		if (!bVelocitiesOnTriangles)
 			return false;
+		double depthAtPoint = dynamic_cast<TTriGridVel *>(fGrid)->GetDepthAtPoint(wp.p);
+		dynamic_cast<NetCDFMoverCurv *>(this)->GetDepthIndices(triIndex,fVar.arrowDepth,depthAtPoint,&depthIndex1,&depthIndex2);
 	}
 	
 	// Check for constant current 
@@ -120,8 +123,24 @@ Boolean NetCDFMoverTri_c::VelocityStrAtPoint(WorldPoint3D wp, char *diagnosticSt
 			pt3depthIndex1 = -1;
 			if (triIndex > 0)
 			{
-				pt1interp.u = INDEXH(fStartData.dataHdl,triIndex).u; 
-				pt1interp.v = INDEXH(fStartData.dataHdl,triIndex).v; 
+				if (depthIndex1!=-1)
+				{	
+					if (depthIndex2!=-1)
+					{
+						topDepth = INDEXH(fDepthsH,depthIndex1);	
+						bottomDepth = INDEXH(fDepthsH,depthIndex2);
+						depthAlpha = (bottomDepth - fVar.arrowDepth)/(double)(bottomDepth - topDepth);
+						pt1interp.u = depthAlpha*INDEXH(fStartData.dataHdl,depthIndex1).u
+						+ (1-depthAlpha)*INDEXH(fStartData.dataHdl,depthIndex2).u;
+						pt1interp.v = depthAlpha*INDEXH(fStartData.dataHdl,depthIndex1).v
+						+ (1-depthAlpha)*INDEXH(fStartData.dataHdl,depthIndex2).v;
+					}
+					else 
+					{		
+						pt1interp.u = INDEXH(fStartData.dataHdl,triIndex).u; 
+						pt1interp.v = INDEXH(fStartData.dataHdl,triIndex).v; 
+					}
+				}
 			}
 		}
 		// Calculate the interpolated velocity at the point
@@ -198,8 +217,24 @@ Boolean NetCDFMoverTri_c::VelocityStrAtPoint(WorldPoint3D wp, char *diagnosticSt
 			pt3depthIndex1 = -1;
 			if (triIndex > 0)
 			{
-				pt1interp.u = INDEXH(fStartData.dataHdl,triIndex).u + (1-timeAlpha)*INDEXH(fEndData.dataHdl,triIndex).u; 
-				pt1interp.v = INDEXH(fStartData.dataHdl,triIndex).v + (1-timeAlpha)*INDEXH(fEndData.dataHdl,triIndex).v; 
+				if (depthIndex1!=-1)
+				{	
+					if (depthIndex2!=-1)
+					{
+						topDepth = INDEXH(fDepthsH,depthIndex1);	
+						bottomDepth = INDEXH(fDepthsH,depthIndex2);
+						depthAlpha = (bottomDepth - fVar.arrowDepth)/(double)(bottomDepth - topDepth);
+						pt1interp.u = depthAlpha*(timeAlpha*INDEXH(fStartData.dataHdl,depthIndex1).u + (1-timeAlpha)*INDEXH(fStartData.dataHdl,depthIndex1).u)
+						+ (1-depthAlpha)*(timeAlpha*INDEXH(fStartData.dataHdl,depthIndex2).u + (1-timeAlpha)*INDEXH(fStartData.dataHdl,depthIndex2).u);
+						pt1interp.v = depthAlpha*(timeAlpha*INDEXH(fStartData.dataHdl,depthIndex1).v + (1-timeAlpha)*INDEXH(fStartData.dataHdl,depthIndex1).v)
+						+ (1-depthAlpha)*(timeAlpha*INDEXH(fStartData.dataHdl,depthIndex2).v + (1-timeAlpha)*INDEXH(fStartData.dataHdl,depthIndex2).v);
+					}
+					else 
+					{		
+						pt1interp.u = INDEXH(fStartData.dataHdl,triIndex).u + (1-timeAlpha)*INDEXH(fEndData.dataHdl,triIndex).u; 
+						pt1interp.v = INDEXH(fStartData.dataHdl,triIndex).v + (1-timeAlpha)*INDEXH(fEndData.dataHdl,triIndex).v; 
+					}
+				}
 			}
 		}
 		
@@ -294,7 +329,9 @@ WorldPoint3D NetCDFMoverTri_c::GetMove(const Seconds& model_time, Seconds timeSt
 	WorldPoint refPoint = (*theLE).p;	
 	double dLong, dLat;
 	double timeAlpha, depth = (*theLE).z;
+	double topDepth, bottomDepth, depthAlpha;
 	long ptIndex1,ptIndex2,ptIndex3,triIndex; 
+	long depthIndex1, depthIndex2;
 	long index = -1; 
 	Seconds startTime,endTime;
 	Seconds time = model->GetModelTime();
@@ -343,6 +380,8 @@ WorldPoint3D NetCDFMoverTri_c::GetMove(const Seconds& model_time, Seconds timeSt
 	{
 		if (!bVelocitiesOnTriangles)
 			return deltaPoint;	// set to zero, avoid any accidental access violation
+		double depthAtPoint = dynamic_cast<TTriGridVel *>(fGrid)->GetDepthAtPoint(refPoint);
+		dynamic_cast<NetCDFMoverCurv *>(this)->GetDepthIndices(triIndex,depth,depthAtPoint,&depthIndex1,&depthIndex2);
 	}
 	
 	// code goes here, need interpolation in z if LE is below surface
@@ -352,7 +391,7 @@ WorldPoint3D NetCDFMoverTri_c::GetMove(const Seconds& model_time, Seconds timeSt
 		scaledPatVelocity = GetMove3D(interpolationVal,depth);
 		goto scale;
 	}						
-	if (depth > 0) return deltaPoint;	// set subsurface spill with no subsurface velocity
+	if (depth > 0 && !bVelocitiesOnTriangles) return deltaPoint;	// set subsurface spill with no subsurface velocity
 
 	// Check for constant current 
 	if((dynamic_cast<NetCDFMoverTri *>(this)->GetNumTimesInFile()==1 && !(dynamic_cast<NetCDFMoverTri *>(this)->GetNumFiles()>1)) || (fEndData.timeIndex == UNASSIGNEDINDEX && time > ((*fTimeHdl)[fStartData.timeIndex] + fTimeShift) && fAllowExtrapolationOfCurrentsInTime) || (fEndData.timeIndex == UNASSIGNEDINDEX && time < ((*fTimeHdl)[fStartData.timeIndex] + fTimeShift) && fAllowExtrapolationOfCurrentsInTime))
@@ -371,8 +410,26 @@ WorldPoint3D NetCDFMoverTri_c::GetMove(const Seconds& model_time, Seconds timeSt
 		{
 			if (bVelocitiesOnTriangles && triIndex > 0)
 			{
-				scaledPatVelocity.u = INDEXH(fStartData.dataHdl,triIndex).u;
-				scaledPatVelocity.v = INDEXH(fStartData.dataHdl,triIndex).v;
+				//scaledPatVelocity.u = INDEXH(fStartData.dataHdl,triIndex).u;
+				//scaledPatVelocity.v = INDEXH(fStartData.dataHdl,triIndex).v;
+				if (depthIndex1!=-1)
+				{	
+					if (depthIndex2!=-1)
+					{
+						topDepth = INDEXH(fDepthsH,depthIndex1);	
+						bottomDepth = INDEXH(fDepthsH,depthIndex2);
+						depthAlpha = (bottomDepth - depth)/(double)(bottomDepth - topDepth);
+						scaledPatVelocity.u = depthAlpha*INDEXH(fStartData.dataHdl,depthIndex1).u
+						+ (1-depthAlpha)*INDEXH(fStartData.dataHdl,depthIndex2).u;
+						scaledPatVelocity.v = depthAlpha*INDEXH(fStartData.dataHdl,depthIndex1).v
+						+ (1-depthAlpha)*INDEXH(fStartData.dataHdl,depthIndex2).v;
+					}
+					else 
+					{		
+						scaledPatVelocity.u = INDEXH(fStartData.dataHdl,triIndex).u; 
+						scaledPatVelocity.v = INDEXH(fStartData.dataHdl,triIndex).v; 
+					}
+				}
 			}
 			else
 			{
@@ -405,8 +462,26 @@ WorldPoint3D NetCDFMoverTri_c::GetMove(const Seconds& model_time, Seconds timeSt
 		{
 			if (bVelocitiesOnTriangles && triIndex > 0)
 			{
-				scaledPatVelocity.u = timeAlpha*INDEXH(fStartData.dataHdl,triIndex).u + (1-timeAlpha)*INDEXH(fEndData.dataHdl,triIndex).u;
-				scaledPatVelocity.v = timeAlpha*INDEXH(fStartData.dataHdl,triIndex).v + (1-timeAlpha)*INDEXH(fEndData.dataHdl,triIndex).v;
+				//scaledPatVelocity.u = timeAlpha*INDEXH(fStartData.dataHdl,triIndex).u + (1-timeAlpha)*INDEXH(fEndData.dataHdl,triIndex).u;
+				//scaledPatVelocity.v = timeAlpha*INDEXH(fStartData.dataHdl,triIndex).v + (1-timeAlpha)*INDEXH(fEndData.dataHdl,triIndex).v;
+				if (depthIndex1!=-1)
+				{	
+					if (depthIndex2!=-1)
+					{
+						topDepth = INDEXH(fDepthsH,depthIndex1);	
+						bottomDepth = INDEXH(fDepthsH,depthIndex2);
+						depthAlpha = (bottomDepth - depth)/(double)(bottomDepth - topDepth);
+						scaledPatVelocity.u = depthAlpha*INDEXH(fStartData.dataHdl,depthIndex1).u
+						+ (1-depthAlpha)*INDEXH(fStartData.dataHdl,depthIndex2).u;
+						scaledPatVelocity.v = depthAlpha*INDEXH(fStartData.dataHdl,depthIndex1).v
+						+ (1-depthAlpha)*INDEXH(fStartData.dataHdl,depthIndex2).v;
+					}
+					else 
+					{		
+						scaledPatVelocity.u = INDEXH(fStartData.dataHdl,triIndex).u; 
+						scaledPatVelocity.v = INDEXH(fStartData.dataHdl,triIndex).v; 
+					}
+				}
 			}
 			else
 			{

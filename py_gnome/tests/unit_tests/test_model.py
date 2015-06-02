@@ -1352,6 +1352,11 @@ class TestValidateModel():
         assert not output['valid']
         assert 'messages' in output and len(output['messages']) > 0
 
+    def test_model_weatherer_off(self):
+        model = Model(start_time=self.start_time)
+        model.weatherers += Evaporation(on=False)
+        print model.validate()
+
 
 if __name__ == '__main__':
 
